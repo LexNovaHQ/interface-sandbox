@@ -3,6 +3,7 @@ import Layout from "../components/Layout.jsx";
 import { routes } from "./routes.jsx";
 
 function normalizePath(pathname) {
+  if (pathname === "/maintenance") return "/delivery";
   const match = routes.find((route) => route.path === pathname);
   return match ? pathname : "/";
 }
@@ -25,6 +26,11 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (window.location.pathname === "/maintenance") {
+      window.history.replaceState({}, "", "/delivery");
+      setCurrentPath("/delivery");
+    }
+
     function handlePopState() {
       setCurrentPath(normalizePath(window.location.pathname));
     }

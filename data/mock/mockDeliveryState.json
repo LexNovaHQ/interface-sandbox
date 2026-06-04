@@ -1,9 +1,0 @@
-{
-  "matter_id": "matter_demo_001",
-  "company_name": "Sarvam AI",
-  "draft_bundle_status": "generated",
-  "crm_status": "pushed_to_dummy_crm",
-  "counsel_review_required": true,
-  "client_delivery_status": "ready_for_review",
-  "documents": []
-}

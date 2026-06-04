@@ -1,37 +1,57 @@
-# Lex Nova Interface Sandbox
+# The Interface
 
-Skeleton phase for the Lex Nova Sandbox OS.
+Wrapper Batch 1 rebuild for a public demo interface.
 
-This project builds the frontend shell, route structure, Cloudflare Pages Functions stubs, mock payloads, schemas, localStorage helpers, and environment placeholders for `sandbox.lexnovahq.com`.
+The app is a React/Vite Cloudflare Pages skeleton for operational legal-tech units. It is not a live engine implementation.
 
-## Scope
+## Public Surface
 
-This build is contracts only. The real engines are intentionally not implemented.
+- Brand: The Interface
+- Subtitle: Law × Technology · AI Governance · Privacy · Systems
+- Public posture: portfolio-inspired operational shell
+- Global disclaimer: Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information. Outputs are demo artifacts requiring qualified legal review before use.
 
-Included:
+## Operational Units
 
-- React + Vite frontend shell
-- Cloudflare Pages Functions API stubs
-- Mock responses for every V1 endpoint
-- JSON Schemas and mock examples for future engine work
-- localStorage helpers for sandbox state handoff
-- Premium dark operating-system dashboard UI
-- Environment documentation for later server-side Groq usage
+1. Wrapper
+   - Universal shell for identity, navigation, runtime status, handoff envelope status, disclaimers, and technical drawer.
+2. Diligence
+   - Future public evidence intake, source collection, classification, registry evaluation, diligence report, and Assembly handoff.
+3. Assembly
+   - Future handoff intake, canonical profile construction, document assembly routing, human review, and Delivery handoff.
+4. Delivery
+   - Future delivered packages, human review state, client package trail, and maintenance status.
+5. Horizon
+   - Future fixed regulatory source list, extraction, classification, storage, and Maintenance feed.
 
-Not included:
+Maintenance is not a top-level public route. It appears inside Delivery as an internal monitor fed by Horizon.
 
-- Real Diligence Engine logic
-- Scraping or public page retrieval
-- Live Groq calls
-- Hunter matching
-- Registry ingestion
-- Assembly clause logic
-- Final ToS, DPA, or AUP clauses
-- Real document generation
-- CRM integration
-- Maintenance Radar comparison
-- PDF upload
-- Authentication
+## Current Status
+
+Wrapper Batch 1 is UI cleanup only.
+
+No live engine logic exists yet:
+
+- no scraping
+- no Groq calls
+- no registry evaluation
+- no Vault question logic
+- no document assembly
+- no delivery portal integration
+- no regulatory scanner
+- no fake engine output
+
+Firebase/Firestore is the future backend database. It is currently shown as a status placeholder only and is not connected.
+
+## Runtime Artifacts Expected Later
+
+These artifacts are expected later and currently surface as missing in the Wrapper status panel unless installed:
+
+- `registry.runtime.json`
+- `registry_key.runtime.json`
+- `runtime_artifacts_manifest.json`
+- `02_DILIGENCE_RUNTIME_SANDBOX_v1.md`
+- `vault.js`
 
 ## Local Development
 
@@ -40,68 +60,18 @@ npm install
 npm run dev
 ```
 
-Vite serves local mock `/api/*` responses during development so the skeleton UI can be exercised without Wrangler or external services.
-
 ## Build
 
 ```bash
 npm run build
 ```
 
-## Cloudflare Pages Deployment
+## Cloudflare Pages
 
 Use Cloudflare Pages for production deploys.
-
-Set Cloudflare Pages to:
 
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Deploy command: leave blank
 
-The `functions` directory contains Cloudflare Pages Functions handlers for:
-
-- `GET /api/health`
-- `POST /api/diligence-url`
-- `POST /api/diligence-text`
-- `POST /api/assembly`
-- `POST /api/delivery`
-- `POST /api/maintenance`
-
-No `/api/diligence-pdf` route exists in V1.
-
-## Environment Variables
-
-Future server-side AI calls will use Cloudflare environment variables:
-
-```bash
-GROQ_API_KEY=
-GROQ_MODEL_PRIMARY=openai/gpt-oss-120b
-GROQ_MODEL_FALLBACK=llama-3.3-70b-versatile
-```
-
-Do not create `VITE_GROQ_API_KEY`. API keys must not be exposed to frontend code and must not be committed.
-
-## State
-
-The skeleton uses browser state only:
-
-- `lexnova:lastSourceBundle`
-- `lexnova:lastDiligenceReport`
-- `lexnova:lastVaultAnswers`
-- `lexnova:lastAssemblyOutput`
-- `lexnova:lastDeliveryState`
-- `lexnova:lastMaintenanceRun`
-
-## Future Engine Phases
-
-1. Diligence ingestion and classification
-2. Vault answer capture and validation
-3. Assembly route logic and clause-source mapping
-4. Review-ready draft generation
-5. Synthetic delivery workspace integration
-6. Maintenance Radar coverage comparison
-7. Optional PDF upload phase after V1
-
-## Safety Boundary
-
-This is a public sandbox. It provides no legal advice. Use public or user-provided materials only. Do not submit confidential information. The delivery layer is synthetic. Outputs are review-ready demo drafts requiring qualified legal review.
+Do not deploy this project through Wrangler for the static Pages flow.

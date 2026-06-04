@@ -2,26 +2,17 @@ import { ArrowUpRight } from "lucide-react";
 import StatusPill from "./StatusPill.jsx";
 import { STATUS_TEXT } from "../lib/constants.js";
 
-export default function EngineCard({ engine, onNavigate }) {
+export default function EngineCard({ unit, onNavigate }) {
   return (
-    <article className="engine-card">
+    <article className="unit-card">
       <div>
         <StatusPill>{STATUS_TEXT}</StatusPill>
-        <h3>{engine.title}</h3>
-        <p>{engine.summary}</p>
+        <span className="unit-code">{unit.unit}</span>
+        <h3>{unit.title}</h3>
+        <p>{unit.summary}</p>
       </div>
-      <dl>
-        <div>
-          <dt>Eventual input</dt>
-          <dd>{engine.input}</dd>
-        </div>
-        <div>
-          <dt>Eventual output</dt>
-          <dd>{engine.output}</dd>
-        </div>
-      </dl>
-      <button className="inline-action" type="button" onClick={() => onNavigate(engine.path)}>
-        <span>Open</span>
+      <button className="inline-action" type="button" onClick={() => onNavigate(unit.path)}>
+        <span>Open unit</span>
         <ArrowUpRight size={16} aria-hidden="true" />
       </button>
     </article>

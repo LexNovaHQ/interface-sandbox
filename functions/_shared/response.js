@@ -8,20 +8,11 @@ export function jsonResponse(payload, init = {}) {
   });
 }
 
-export function mockResponse(data) {
-  return jsonResponse({
-    ok: true,
-    phase: "skeleton",
-    message: "Mock response only. Engine logic pending.",
-    data
-  });
-}
-
 export function methodNotAllowed(methods) {
   return jsonResponse(
     {
       ok: false,
-      phase: "skeleton",
+      phase: "wrapper-batch-1",
       message: `Method not allowed. Use ${methods.join(", ")}.`
     },
     { status: 405, headers: { allow: methods.join(", ") } }

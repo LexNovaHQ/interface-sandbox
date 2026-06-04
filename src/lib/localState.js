@@ -1,6 +1,5 @@
-import { STORAGE_KEYS } from "./constants.js";
-
 const isBrowser = typeof window !== "undefined" && window.localStorage;
+const LEDGER_KEY = "interface:handoffLedger";
 
 export function readState(key) {
   if (!isBrowser) return null;
@@ -24,28 +23,10 @@ export function clearState(key) {
   window.localStorage.removeItem(key);
 }
 
-export function readLastDiligenceReport() {
-  return readState(STORAGE_KEYS.diligenceReport);
+export function readHandoffLedger() {
+  return readState(LEDGER_KEY) || [];
 }
 
-export function saveDiligenceArtifacts(payload) {
-  if (payload?.source_bundle) {
-    writeState(STORAGE_KEYS.sourceBundle, payload.source_bundle);
-  }
-
-  if (payload) {
-    writeState(STORAGE_KEYS.diligenceReport, payload);
-  }
-}
-
-export function saveAssemblyOutput(payload) {
-  return writeState(STORAGE_KEYS.assemblyOutput, payload);
-}
-
-export function saveDeliveryState(payload) {
-  return writeState(STORAGE_KEYS.deliveryState, payload);
-}
-
-export function saveMaintenanceRun(payload) {
-  return writeState(STORAGE_KEYS.maintenanceRun, payload);
+export function saveHandoffLedger(entries) {
+  return writeState(LEDGER_KEY, entries);
 }
