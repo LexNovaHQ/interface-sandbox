@@ -1,0 +1,51 @@
+{
+  "artifact": "runtime_artifacts_manifest",
+  "version": "v3.0 / runtime artifact manifest",
+  "generated_at": "2026-06-05T02:41:10+05:30",
+  "artifacts": [
+    {
+      "id": "registry_runtime",
+      "label": "Registry Runtime",
+      "path": "data/runtime/registry.runtime.json",
+      "type": "json",
+      "required": true,
+      "status": "installed",
+      "summary": "98-row threat registry runtime artifact."
+    },
+    {
+      "id": "registry_key_runtime",
+      "label": "Registry Key Runtime",
+      "path": "data/runtime/registry_key.runtime.json",
+      "type": "json",
+      "required": true,
+      "status": "installed",
+      "summary": "Registry Key v3.0 runtime artifact."
+    },
+    {
+      "id": "runtime_artifacts_manifest",
+      "label": "Runtime Artifacts Manifest",
+      "path": "data/runtime/runtime_artifacts_manifest.json",
+      "type": "json",
+      "required": true,
+      "status": "installed"
+    },
+    {
+      "id": "vault_reference",
+      "label": "Vault Reference",
+      "path": "docs/reference/vault.js",
+      "type": "reference",
+      "required": true,
+      "status": "installed",
+      "note": "Reference-only canonical Vault payload. Not imported or executed by the app."
+    },
+    {
+      "id": "diligence_groq_sandbox_runtime",
+      "label": "Diligence Groq Sandbox Runtime",
+      "path": "docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md",
+      "type": "markdown",
+      "required": true,
+      "status": "installed",
+      "note": "Sandbox/Groq runtime doctrine only. Not imported or executed by the app."
+    }
+  ]
+}
