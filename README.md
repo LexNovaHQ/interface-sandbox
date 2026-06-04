@@ -50,13 +50,13 @@ npm run build
 
 ## Cloudflare Pages Deployment
 
-Use Cloudflare Pages, not `npx wrangler deploy`, for production deploys.
+Use Cloudflare Pages for production deploys.
 
 Set Cloudflare Pages to:
 
 - Build command: `npm run build`
 - Build output directory: `dist`
-- Deploy command: leave empty
+- Deploy command: leave blank
 
 The `functions` directory contains Cloudflare Pages Functions handlers for:
 
