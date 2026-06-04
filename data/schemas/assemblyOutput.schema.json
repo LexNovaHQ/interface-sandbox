@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Assembly Output",
+  "type": "object",
+  "required": [
+    "run_id",
+    "product_profile",
+    "active_document_stack",
+    "clause_routes",
+    "schedule_routes",
+    "variable_map",
+    "draft_preview",
+    "review_notes",
+    "crm_delivery"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "product_profile": { "type": "object" },
+    "active_document_stack": { "type": "array" },
+    "clause_routes": { "type": "array" },
+    "schedule_routes": { "type": "array" },
+    "variable_map": { "type": "object" },
+    "draft_preview": {
+      "type": "object",
+      "properties": {
+        "format": { "type": "string", "enum": ["html"] },
+        "documents": { "type": "array" }
+      }
+    },
+    "review_notes": { "type": "array" },
+    "crm_delivery": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" }
+      }
+    }
+  }
+}

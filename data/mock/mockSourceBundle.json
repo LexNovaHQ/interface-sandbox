@@ -1,0 +1,21 @@
+{
+  "run_id": "demo_source_001",
+  "source_mode": "url",
+  "submitted_by_user": "",
+  "sources_read": [
+    {
+      "source_id": "src_001",
+      "type": "webpage",
+      "title": "Sarvam AI public website placeholder",
+      "url": "https://www.sarvam.ai",
+      "text": "Mock public source text. No live page fetch has occurred.",
+      "retrieved_at": "2026-06-04T00:00:00.000Z"
+    }
+  ],
+  "source_summary": {
+    "pages_attempted": 1,
+    "pages_read": 1,
+    "total_chars": 58,
+    "limitations": ["Skeleton mock only", "No scraping or live retrieval"]
+  }
+}

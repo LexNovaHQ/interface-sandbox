@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vault",
+  "type": "object",
+  "required": ["product_identity", "ai_architecture", "data_output", "commercial_controls"],
+  "properties": {
+    "product_identity": {
+      "type": "object",
+      "properties": {
+        "company_legal_name": { "type": "string" },
+        "product_name": { "type": "string" },
+        "market": { "type": "string", "enum": ["B2B", "B2C", "Hybrid"] },
+        "jurisdictions": { "type": "array" },
+        "users": { "type": "array" }
+      }
+    },
+    "ai_architecture": {
+      "type": "object",
+      "properties": {
+        "architecture": {
+          "type": "string",
+          "enum": ["RAG", "fine_tuning", "stateless", "agentic", "unknown"]
+        },
+        "model_provider": { "type": "string" },
+        "uses_vector_db": { "type": "boolean" },
+        "uses_agentic_actions": { "type": "boolean" },
+        "human_review": { "type": "boolean" }
+      }
+    },
+    "data_output": {
+      "type": "object",
+      "properties": {
+        "uses_personal_data": { "type": "boolean" },
+        "uses_sensitive_data": { "type": "boolean" },
+        "stores_prompts": { "type": "boolean" },
+        "customer_uploads": { "type": "boolean" },
+        "output_relied_on": { "type": "boolean" },
+        "output_ownership_position": { "type": "string" }
+      }
+    },
+    "commercial_controls": {
+      "type": "object",
+      "properties": {
+        "enterprise_customers": { "type": "boolean" },
+        "sla_needed": { "type": "boolean" },
+        "indemnity_concern": { "type": "boolean" },
+        "aup_needed": { "type": "boolean" },
+        "liability_cap_preference": { "type": "string" }
+      }
+    }
+  }
+}

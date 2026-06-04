@@ -1,0 +1,16 @@
+{
+  "run_id": "demo_assembly_001",
+  "product_profile": {},
+  "active_document_stack": [],
+  "clause_routes": [],
+  "schedule_routes": [],
+  "variable_map": {},
+  "draft_preview": {
+    "format": "html",
+    "documents": []
+  },
+  "review_notes": [],
+  "crm_delivery": {
+    "status": "ready_to_push"
+  }
+}

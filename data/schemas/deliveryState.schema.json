@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Delivery State",
+  "type": "object",
+  "required": [
+    "matter_id",
+    "company_name",
+    "draft_bundle_status",
+    "crm_status",
+    "counsel_review_required",
+    "client_delivery_status",
+    "documents"
+  ],
+  "properties": {
+    "matter_id": { "type": "string" },
+    "company_name": { "type": "string" },
+    "draft_bundle_status": { "type": "string" },
+    "crm_status": { "type": "string" },
+    "counsel_review_required": { "type": "boolean" },
+    "client_delivery_status": { "type": "string" },
+    "documents": { "type": "array" }
+  }
+}

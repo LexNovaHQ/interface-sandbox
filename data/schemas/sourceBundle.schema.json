@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source Bundle",
+  "type": "object",
+  "required": ["run_id", "source_mode", "submitted_by_user", "sources_read", "source_summary"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "source_mode": { "type": "string", "enum": ["url", "text"] },
+    "submitted_by_user": { "type": "string" },
+    "sources_read": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "type", "title", "url", "text", "retrieved_at"],
+        "properties": {
+          "source_id": { "type": "string" },
+          "type": { "type": "string", "enum": ["webpage", "pasted_text"] },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "text": { "type": "string" },
+          "retrieved_at": { "type": "string" }
+        }
+      }
+    },
+    "source_summary": {
+      "type": "object",
+      "required": ["pages_attempted", "pages_read", "total_chars", "limitations"],
+      "properties": {
+        "pages_attempted": { "type": "number" },
+        "pages_read": { "type": "number" },
+        "total_chars": { "type": "number" },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

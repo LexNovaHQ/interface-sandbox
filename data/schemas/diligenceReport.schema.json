@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diligence Report",
+  "type": "object",
+  "required": [
+    "run_id",
+    "source_bundle",
+    "company_profile",
+    "product_profile",
+    "classification",
+    "triggered_findings",
+    "document_route_summary",
+    "assembly_ready"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "source_bundle": { "type": "object" },
+    "company_profile": { "type": "object" },
+    "product_profile": { "type": "object" },
+    "classification": { "type": "object" },
+    "triggered_findings": { "type": "array" },
+    "document_route_summary": { "type": "array" },
+    "assembly_ready": { "type": "boolean" }
+  }
+}
