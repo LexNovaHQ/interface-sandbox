@@ -50,13 +50,15 @@ npm run build
 
 ## Cloudflare Pages Deployment
 
-Set Cloudflare Pages to build with:
+Use Cloudflare Pages, not `npx wrangler deploy`, for production deploys.
 
-```bash
-npm run build
-```
+Set Cloudflare Pages to:
 
-Use `dist` as the build output directory. The `functions` directory contains Cloudflare Pages Functions handlers for:
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Deploy command: leave empty
+
+The `functions` directory contains Cloudflare Pages Functions handlers for:
 
 - `GET /api/health`
 - `POST /api/diligence-url`
