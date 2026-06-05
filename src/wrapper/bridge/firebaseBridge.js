@@ -4,8 +4,14 @@ import {
   firebaseConfig,
   getFirebaseConfigStatus
 } from "../config/firebaseConfig.js";
+import { COLLECTIONS } from "../contracts/handoffEnvelope.js";
 
 let firebaseInitError = null;
+
+function safeErrorMessage(error) {
+  if (!error) return "";
+  return error.code || error.name || "Initialization unavailable";
+}
 
 export function getFirebaseApp() {
   const configStatus = getFirebaseConfigStatus();
@@ -38,17 +44,28 @@ export function getFirestoreBridgeStatus() {
     return {
       initialized: false,
       label: "Not initialized",
+      firebase_app: "missing_config",
+      firestore_db: "not_initialized",
+      project_id_present: configStatus.projectIdPresent,
       firebaseConfigStatus: configStatus,
-      errorLabel: null
+      error_message: ""
     };
   }
 
   const db = getFirestoreDb();
+  const hasError = Boolean(firebaseInitError);
 
   return {
     initialized: Boolean(db),
     label: db ? "Ready" : "Not initialized",
+    firebase_app: hasError ? "error" : "initialized",
+    firestore_db: hasError ? "error" : db ? "ready" : "not_initialized",
+    project_id_present: configStatus.projectIdPresent,
     firebaseConfigStatus: configStatus,
-    errorLabel: firebaseInitError ? "Initialization unavailable" : null
+    error_message: safeErrorMessage(firebaseInitError)
   };
+}
+
+export function getFirestoreCollectionNames() {
+  return [...COLLECTIONS];
 }

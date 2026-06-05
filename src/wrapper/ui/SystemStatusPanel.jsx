@@ -1,28 +1,92 @@
-import { getFirestoreBridgeStatus } from "../bridge/firebaseBridge.js";
+import { useEffect, useState } from "react";
+import {
+  getFirestoreBridgeStatus,
+  getFirestoreCollectionNames
+} from "../bridge/firebaseBridge.js";
 import { getFirebaseConfigStatus } from "../config/firebaseConfig.js";
 import {
   APP_MODE,
   GROQ_API_EXPOSURE_STATUS,
-  GROQ_FALLBACK_MODEL,
-  GROQ_PRIMARY_MODEL,
   RUNTIME_VERSION
 } from "../config/runtimeConfig.js";
 import { getRuntimeArtifactStatuses } from "../runtime/artifactStatus.js";
+import {
+  ENGINE_IDS,
+  HANDOFF_STATUSES,
+  PAYLOAD_TYPES
+} from "../contracts/handoffEnvelope.js";
+
+const SERVER_STATUS_INITIAL = {
+  reachable: false,
+  pending: true,
+  message: "Checking server status"
+};
 
 export default function SystemStatusPanel() {
+  const [serverStatus, setServerStatus] = useState(SERVER_STATUS_INITIAL);
   const firebaseStatus = getFirebaseConfigStatus();
   const firestoreStatus = getFirestoreBridgeStatus();
   const artifactStatuses = getRuntimeArtifactStatuses();
+  const collectionNames = getFirestoreCollectionNames();
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadServerStatus() {
+      try {
+        const response = await fetch("/api/system-status", {
+          headers: { accept: "application/json" },
+          signal: controller.signal
+        });
+
+        if (!response.ok) {
+          throw new Error("unavailable");
+        }
+
+        const data = await response.json();
+        setServerStatus({
+          reachable: true,
+          pending: false,
+          message: "Reachable",
+          data
+        });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setServerStatus({
+          reachable: false,
+          pending: false,
+          message: "Server status unavailable in local dev"
+        });
+      }
+    }
+
+    loadServerStatus();
+
+    return () => controller.abort();
+  }, []);
+
+  const groqStatus = serverStatus.data?.groq;
 
   const systemStatus = [
-    { label: "Firebase config", value: firebaseStatus.label },
-    { label: "Firestore bridge", value: firestoreStatus.label },
-    { label: "Handoff contract", value: "Loaded" },
+    { label: "Firebase config", value: firebaseStatus.configured ? "Configured" : "Missing config" },
+    { label: "Firebase project ID", value: firebaseStatus.projectId },
+    { label: "Firebase app", value: firestoreStatus.firebase_app },
+    { label: "Firestore bridge", value: firestoreStatus.firestore_db },
+    { label: "Firestore collections", value: `${collectionNames.length} expected` },
+    {
+      label: "Handoff contract",
+      value: `${ENGINE_IDS.length} engines / ${HANDOFF_STATUSES.length} statuses / ${PAYLOAD_TYPES.length} payloads`
+    },
     { label: "App mode", value: APP_MODE },
     { label: "Runtime version", value: RUNTIME_VERSION },
-    { label: "Primary model", value: GROQ_PRIMARY_MODEL },
-    { label: "Fallback model", value: GROQ_FALLBACK_MODEL },
-    { label: "Groq API key", value: GROQ_API_EXPOSURE_STATUS }
+    { label: "Server status", value: serverStatus.pending ? "Checking" : serverStatus.message },
+    {
+      label: "Groq configured",
+      value: groqStatus ? String(Boolean(groqStatus.configured)) : "unavailable"
+    },
+    { label: "Primary model", value: groqStatus?.primary_model || "server unavailable" },
+    { label: "Fallback model", value: groqStatus?.fallback_model || "server unavailable" },
+    { label: "Groq API key", value: groqStatus?.key_exposure || GROQ_API_EXPOSURE_STATUS }
   ];
 
   return (
@@ -64,8 +128,11 @@ export default function SystemStatusPanel() {
           Missing Firebase variables: {firebaseStatus.missingVariables.join(", ")}
         </p>
       ) : null}
-      {firestoreStatus.errorLabel ? (
-        <p className="drawer-note">{firestoreStatus.errorLabel}</p>
+      {firestoreStatus.error_message ? (
+        <p className="drawer-note">{firestoreStatus.error_message}</p>
+      ) : null}
+      {!serverStatus.reachable && !serverStatus.pending ? (
+        <p className="drawer-note">Server status unavailable in local dev or outside Cloudflare Pages.</p>
       ) : null}
     </details>
   );

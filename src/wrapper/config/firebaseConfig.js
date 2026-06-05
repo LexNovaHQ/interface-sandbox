@@ -28,6 +28,8 @@ export function getFirebaseConfigStatus() {
     configured,
     label: configured ? "Connected" : "Missing config",
     missingVariables,
+    projectId: firebaseConfig.projectId ? "present" : "missing",
+    projectIdPresent: Boolean(firebaseConfig.projectId),
     requiredVariables: [...FIREBASE_ENV_KEYS]
   };
 }

@@ -83,6 +83,34 @@ No engine logic exists yet. This batch does not add scraping, Groq calls, regist
 
 Base Diligence Engine rule for the future engine: all TRIGGERED threats are preserved in `findings[]`; filtering, sorting, and prioritising happen only at the UI or report-renderer level later.
 
+## Wrapper Final Stack Connection
+
+Firebase/Firestore frontend bridge initialization is driven only by `VITE_FIREBASE_*` public web config values. The Wrapper reports whether config is present, whether the project ID exists, whether Firebase initialized, and whether Firestore is ready. Firestore writes are not enabled for engine data yet.
+
+Groq status is checked only through the server-side Cloudflare Pages Function `/api/system-status`. The function reads `GROQ_API_KEY`, `GROQ_PRIMARY_MODEL`, and `GROQ_FALLBACK_MODEL` from Cloudflare server environment variables, returns safe configured/model/status fields, never returns the key, and does not call Groq.
+
+`GROQ_API_KEY` must never be exposed with a `VITE_` prefix.
+
+Cloudflare Pages environment variables must include:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
+- `VITE_INTERFACE_APP_MODE`
+- `VITE_INTERFACE_DEMO_MODE`
+- `VITE_INTERFACE_RUNTIME_VERSION`
+- `GROQ_API_KEY`
+- `GROQ_PRIMARY_MODEL`
+- `GROQ_FALLBACK_MODEL`
+
+The Cloudflare Pages build command remains `npm run build`. The output directory remains `dist`.
+
+No engine logic exists yet.
+
 ## Local Development
 
 ```bash
@@ -105,3 +133,5 @@ Use Cloudflare Pages for production deploys.
 - Deploy command: leave blank
 
 Do not deploy this project through Wrangler for the static Pages flow.
+
+<!-- deploy: cloudflare-pages-env-refresh -->

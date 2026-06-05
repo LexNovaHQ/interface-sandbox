@@ -18,9 +18,7 @@ export const DEMO_MODE = readBooleanEnv(viteEnv.VITE_INTERFACE_DEMO_MODE, true);
 export const RUNTIME_VERSION =
   viteEnv.VITE_INTERFACE_RUNTIME_VERSION || "wrapper-batch-1";
 
-export const GROQ_PRIMARY_MODEL =
-  viteEnv.GROQ_PRIMARY_MODEL || "openai/gpt-oss-120b";
-export const GROQ_FALLBACK_MODEL =
-  viteEnv.GROQ_FALLBACK_MODEL || "llama-3.3-70b-versatile";
+export const GROQ_PRIMARY_MODEL = "server-side only";
+export const GROQ_FALLBACK_MODEL = "server-side only";
 export const GROQ_API_CONFIGURED = false;
 export const GROQ_API_EXPOSURE_STATUS = "server-only / not exposed";
