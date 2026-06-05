@@ -1243,3 +1243,32 @@ All TRIGGERED threats must be emitted in findings[].
 No triggered threat may be hidden, ranked out, collapsed, sampled, or omitted.
 Filtering, sorting, prioritising, collapsing, and display grouping are UI-level functions only.
 ```
+
+---
+
+## ADDENDUM — STAGE PROMPT TEMPLATE INTEGRATION
+
+The following stage prompt templates are integrated under this governing runtime:
+
+- docs/prompts/diligence/01_Target_Feature_Extraction.prompt.md
+- docs/prompts/diligence/02_Legal_Stack_Review.prompt.md
+- docs/prompts/diligence/03_Registry_Evaluation.prompt.md
+- docs/prompts/diligence/04_Final_Compiler_And_Handoff.prompt.md
+- docs/prompts/diligence/PROMPT_INDEX.md
+
+These files are execution templates for bounded Groq calls.
+
+They do not replace this runtime.
+
+If any stage prompt conflicts with this runtime, this runtime controls.
+
+The Source Collector remains backend-owned and does not use Groq browsing.
+
+The Report Renderer remains UI-owned and does not rely on Groq for final visual structure.
+
+The base Diligence Engine remains a full threat report engine:
+
+- findings[] must contain every TRIGGERED threat.
+- controlled_rows[] must preserve every CONTROLLED row.
+- insufficient_evidence_rows[] must preserve every INSUFFICIENT_EVIDENCE row.
+- UI filtering and sorting must never mutate the base payload.

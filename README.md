@@ -137,3 +137,23 @@ Do not deploy this project through Wrangler for the static Pages flow.
 <!-- deploy: cloudflare-pages-env-refresh -->
 
 <!-- deploy: cloudflare-pages-env-refresh -->
+
+## Diligence Stage Prompt Templates
+
+The Diligence Engine now has stage-level Groq prompt templates under docs/prompts/diligence/.
+
+These templates are subordinate to docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md.
+
+Installed prompt templates:
+
+- 01_Target_Feature_Extraction.prompt.md
+- 02_Legal_Stack_Review.prompt.md
+- 03_Registry_Evaluation.prompt.md
+- 04_Final_Compiler_And_Handoff.prompt.md
+- PROMPT_INDEX.md
+
+The stage prompts are not engine implementation code. They are execution contracts for future bounded Groq calls.
+
+The Source Collector remains backend-owned. Groq does not browse, scrape, fetch, or search.
+
+The base Diligence Engine emits all TRIGGERED threats. Filtering, sorting, prioritising, grouping, and collapsing happen only in the UI/report renderer.
