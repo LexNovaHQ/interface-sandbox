@@ -447,6 +447,14 @@ p {
   font-size: 0.86rem;
 }
 
+.status-action {
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.85rem;
+  border-color: rgba(209, 174, 107, 0.36);
+  color: #f7d38a;
+  background: rgba(75, 55, 22, 0.26);
+}
+
 code {
   display: block;
   white-space: normal;

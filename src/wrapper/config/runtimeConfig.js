@@ -18,7 +18,28 @@ export const DEMO_MODE = readBooleanEnv(viteEnv.VITE_INTERFACE_DEMO_MODE, true);
 export const RUNTIME_VERSION =
   viteEnv.VITE_INTERFACE_RUNTIME_VERSION || "wrapper-batch-1";
 
-export const GROQ_PRIMARY_MODEL = "server-side only";
-export const GROQ_FALLBACK_MODEL = "server-side only";
-export const GROQ_API_CONFIGURED = false;
-export const GROQ_API_EXPOSURE_STATUS = "server-only / not exposed";
+export const WRAPPER_NAME = "Interface Wrapper";
+export const OPERATIONAL_UNITS = Object.freeze([
+  "Wrapper",
+  "Diligence",
+  "Assembly",
+  "Delivery",
+  "Horizon"
+]);
+
+export const AI_PROVIDERS = Object.freeze({
+  primary: "gemini",
+  fallback: "groq or none",
+  primaryModelLabel: "Gemini 3.5 Flash",
+  fastModelLabel: "Gemini 3.1 Flash-Lite"
+});
+
+export const CAPABILITY_LABELS = Object.freeze({
+  searchDiscovery: "Search Discovery",
+  geminiUrlContext: "Gemini URL Context",
+  knownPathSourceCollection: "Known-Path Source Collection",
+  firebaseClient: "Firebase Client",
+  firestoreClient: "Firestore Client"
+});
+
+export const AI_KEY_EXPOSURE_STATUS = "server-only";

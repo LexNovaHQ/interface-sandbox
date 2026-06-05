@@ -1,2 +1,16 @@
-import { methodNotAllowed, jsonResponse } from "../_shared/response.js";
-export async function onRequestGet(){return jsonResponse({ok:true,service:"interface-sandbox",server:{reachable:true},ai:{primary_provider:"gemini",fallback_provider:"groq",primary_model:"gemini-2.5-flash",fallback_model:"llama-3.1-8b-instant",gemini_configured:false,groq_configured:false,key_exposure:"server-only"},timestamp:new Date().toISOString()});}
+import { readAiProviderConfig } from "../_shared/aiProviderConfig.js";
+import { jsonResponse, methodNotAllowed } from "../_shared/response.js";
+
+export async function onRequest(context) {
+  if (context.request.method !== "GET") {
+    return methodNotAllowed(["GET"]);
+  }
+
+  const status = readAiProviderConfig(context.env || {});
+
+  return jsonResponse({
+    ok: true,
+    service: "interface-sandbox",
+    ...status
+  });
+}

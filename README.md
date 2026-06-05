@@ -47,7 +47,7 @@ Firebase/Firestore is the future backend database and junction for future engine
 
 Firebase/Firestore is the future backend junction for Wrapper, Diligence, Assembly, Delivery, Horizon, and Maintenance coordination.
 
-The browser uses `VITE_FIREBASE_*` public web config values. The Groq API key is server-only and must not be prefixed with `VITE_`.
+The browser uses `VITE_FIREBASE_*` public web config values. Gemini and optional Groq keys are server-only and must not be prefixed with `VITE_`.
 
 The user has configured local `.env.local` manually. Do not commit `.env.local`.
 
@@ -57,7 +57,20 @@ Cloudflare Pages variables must be set under project settings for the relevant e
 - Cloudflare Pages output directory remains `dist`.
 - No live engine logic exists yet.
 
-Configuration Batch 0 does not add scraping, Groq calls, registry evaluation, Vault question logic, document assembly, CRM simulation, Horizon scanner logic, or fake engine output.
+Configuration Batch 0 does not add scraping, Diligence AI provider calls, registry evaluation, Vault question logic, document assembly, CRM simulation, Horizon scanner logic, or fake engine output.
+
+## AI Provider Configuration
+
+Gemini is the primary AI provider for future backend work. Groq is optional fallback only.
+
+AI provider keys are server-side Cloudflare Pages secrets only. Never create a `VITE_`-prefixed Gemini key, and never expose Gemini or Groq keys to React. Firebase continues to use `VITE_FIREBASE_*` public web config values because Firebase web config is client-side build configuration.
+
+Provider status endpoints:
+
+- `/api/system-status` returns provider, model, capability, Firebase config, and server-only key-presence status without exposing secrets.
+- `/api/ai-smoke-test` accepts `POST` only and validates Gemini with the hardcoded prompt `Reply with exactly: GEMINI_OK`.
+
+Diligence Engine logic is not implemented in this step. This does not add Source Collector, registry evaluation, URL scraping, search scraping, report generation, or chat UI.
 
 ## Wrapper Batch 2 - Installed Runtime Artifacts
 
@@ -87,9 +100,11 @@ Base Diligence Engine rule for the future engine: all TRIGGERED threats are pres
 
 Firebase/Firestore frontend bridge initialization is driven only by `VITE_FIREBASE_*` public web config values. The Wrapper reports whether config is present, whether the project ID exists, whether Firebase initialized, and whether Firestore is ready. Firestore writes are not enabled for engine data yet.
 
-Groq status is checked only through the server-side Cloudflare Pages Function `/api/system-status`. The function reads `GROQ_API_KEY`, `GROQ_PRIMARY_MODEL`, and `GROQ_FALLBACK_MODEL` from Cloudflare server environment variables, returns safe configured/model/status fields, never returns the key, and does not call Groq.
+AI provider status is checked through the server-side Cloudflare Pages Function `/api/system-status`. The function reads Gemini, optional Groq fallback, capability flags, and Firebase public config presence from Cloudflare environment variables, returns safe configured/model/status fields, never returns keys, and does not call Gemini or Groq.
 
-`GROQ_API_KEY` must never be exposed with a `VITE_` prefix.
+Gemini smoke validation is available through the server-side Cloudflare Pages Function `/api/ai-smoke-test`. It calls Gemini using `GEMINI_API_KEY` from `context.env` only, with a fixed safe prompt and no arbitrary user input.
+
+`GEMINI_API_KEY` and `GROQ_API_KEY` must never be exposed with a `VITE_` prefix.
 
 Cloudflare Pages environment variables must include:
 
@@ -103,9 +118,20 @@ Cloudflare Pages environment variables must include:
 - `VITE_INTERFACE_APP_MODE`
 - `VITE_INTERFACE_DEMO_MODE`
 - `VITE_INTERFACE_RUNTIME_VERSION`
+- `AI_PRIMARY_PROVIDER`
+- `GEMINI_API_KEY`
+- `GEMINI_PRIMARY_MODEL`
+- `GEMINI_FAST_MODEL`
+- `AI_FALLBACK_PROVIDER`
 - `GROQ_API_KEY`
 - `GROQ_PRIMARY_MODEL`
 - `GROQ_FALLBACK_MODEL`
+- `AI_RATE_LIMIT_MODE`
+- `SANDBOX_PUBLIC_MODE`
+- `CLIENT_CONFIDENTIAL_INPUTS_ALLOWED`
+- `DILIGENCE_SOURCE_MODE`
+- `ENABLE_SEARCH_DISCOVERY`
+- `ENABLE_GEMINI_URL_CONTEXT`
 
 The Cloudflare Pages build command remains `npm run build`. The output directory remains `dist`.
 
