@@ -7,8 +7,9 @@
 - No prompt files created
 - No runtime code changed
 - No schemas changed
-- GPT Runtime source used: pasted/downloaded fallback at `C:\Users\hp\Downloads\01_DILIGENCE_RUNTIME_GPT_v1.md (1).md`
-- Repo search result: no in-repo file titled GPT Diligence Runtime v1 was found; related Groq/runtime and prompt references were inventoried below.
+- GPT Runtime source used: `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md`
+- GPT Runtime source of record: `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md`
+- Related Groq/runtime and prompt references were inventoried below.
 - Governing docs checked:
   - `docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md`
   - `docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md`
@@ -40,7 +41,7 @@ The old runtime remains canonical for forensic reasoning: evidence firewall, pub
 
 | Source file / pasted source | Exists? | Role | Canonical for reasoning? yes/no | Conflicts with spine? yes/no | Use in Phase 2B |
 |---|---:|---|---|---|---|
-| `C:\Users\hp\Downloads\01_DILIGENCE_RUNTIME_GPT_v1.md (1).md` | yes | GPT Diligence Runtime v1 fallback source; twelve-module monolith used for this map. | yes | yes | Primary reasoning source. Use for rules, not execution architecture. |
+| `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md` | yes | GPT Diligence Runtime v1 source of record; twelve-module monolith used for this map. | yes | yes | Primary reasoning source. Use for rules, not execution architecture. |
 | `docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md` | yes | Existing Groq sandbox conversion of the GPT runtime. | reference only | yes | Use as prior conversion aid, but Contract Spine supersedes Groq/provider assumptions and stale prompt file naming. |
 | `docs/prompts/diligence/PROMPT_INDEX.md` | yes | Existing Groq prompt index and validation notes. | no | yes | Inventory only. Do not copy old four-stage layout into Phase 2B. |
 | `docs/prompts/diligence/01_Target_Feature_Extraction.prompt.md` | yes | Existing Target/Feature stage prompt. | partial reference | yes | Mine for already-preserved target/feature rules, then rebuild under new v2 naming/schema. |
@@ -386,7 +387,7 @@ Search/grounding remains DISCOVERY_ONLY. It can identify candidate URLs, but sni
 
 Module XII's report instructions move to React. The compiler must preserve report substance as `report_data`, not HTML. React owns the Executive Report and Full Forensic Record display, including source review, feature map, threat matrix, legal redline, registry findings, assembly route, and technical audit.
 
-Executive Report 5A/5B behavior should be interpreted as two report layers under the spine's 7+7 structure: concise executive narrative plus exhaustive forensic record. The full forensic record preserves no-cap arrays in memory. Filters are view-only; they may hide or sort DOM rows, but they must not mutate or reduce the base payload. Clear filters restores the complete payload.
+Executive Report 5A/5B is one section inside Part I Executive Report: 5A = Material Findings Highlights. 5B = compact Triggered Findings Schedule. It is not a separate report layer. The two report layers are Part I Executive Report and Part II Full Forensic Record. The full forensic record preserves no-cap arrays in memory. Filters are view-only; they may hide or sort DOM rows, but they must not mutate or reduce the base payload. Clear filters restores the complete payload.
 
 ## 17. Node 5B Migration Notes
 
@@ -397,6 +398,15 @@ The confirmation boundary is strict. Public footprint can prefill product behavi
 Firestore persistence targets are defined/deferred by the spine. Phase 2A does not create persistence code, Firebase writes, Gemini calls, Source Collector code, or Node 5B implementation.
 
 ## 18. Phase 2B Prompt Build Instructions
+
+Phase 2B prompts must extract stage-specific operating instructions from this map. They must not paste the entire migration map, full contract spine, or full schema text into every prompt.
+
+Prompt source priority rule for each staged prompt:
+
+1. Use the migrated GPT Runtime rule from the Runtime Migration Map.
+2. Apply the relevant regenerated schema.
+3. Apply the shared preamble.
+4. Do not import old Groq prompt wording unless it matches the map.
 
 For `00_SHARED_SYSTEM_PREAMBLE.prompt.md`: use Module I identity, legal firewall, evidence firewall, absence mandate, zero-inference protocol, role boundary, and no-truncation discipline. Governing schema: none. Required shared blocks: identity, no legal advice, admitted evidence only, no browsing, no prior memory, public-footprint standard, JSON-only stage discipline. Forbidden content: HTML, Vault prefill, source hunting, sales/prospect language. Acceptance gate: safe to paste atop every stage prompt without changing output wrapper.
 
@@ -435,7 +445,7 @@ For `06_FINAL_COMPILER.prompt.md`: use Module XI and patched Module XII. Governi
 
 Files inspected:
 
-- `C:\Users\hp\Downloads\01_DILIGENCE_RUNTIME_GPT_v1.md (1).md`
+- `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md`
 - `docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md`
 - `docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md`
 - `docs/contracts/SCHEMA_REGENERATION_PLAN_v1.md`
@@ -473,8 +483,7 @@ Schemas checked:
 
 GPT Runtime source used:
 
-- Downloaded/pasted fallback source at `C:\Users\hp\Downloads\01_DILIGENCE_RUNTIME_GPT_v1.md (1).md`.
-- Repo search did not find a separate GPT Diligence Runtime v1 source file.
+- Repo source of record at `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md`.
 
 Files changed:
 
