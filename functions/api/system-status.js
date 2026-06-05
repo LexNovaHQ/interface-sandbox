@@ -9,4 +9,4 @@ function hasServerSecret(env, key) {
 }
 
 export async function onRequestGet({ env }) {
-  const geminiModel = readServerEnv(env, "GEMINI_MODEL", "gemini-2.5-flash");
+  const geminiModel = readServerEnv(env, "GEMINI_MODEL", "gemini
