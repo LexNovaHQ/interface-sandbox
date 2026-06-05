@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/legalStackReview.schema.json",
+  "title": "Legal Stack Review",
+  "description": "Canonical legal_stack_review produced by Stage 2. The legal_stack array must contain one entry for each document type: ToS, Privacy Policy, DPA, AUP, and SLA.",
+  "type": "object",
+  "required": ["legal_stack", "document_stack_redline", "document_stack_synthesis", "legal_stack_assessment", "limitations"],
+  "additionalProperties": false,
+  "properties": {
+    "legal_stack": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/legalDocument" }
+    },
+    "document_stack_redline": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/redline" }
+    },
+    "document_stack_synthesis": { "type": "string" },
+    "legal_stack_assessment": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "legalDocument": {
+      "type": "object",
+      "required": ["document_type", "exists", "document_url", "covers", "misses", "evidence_status", "linked_threat_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "document_type": { "type": "string", "enum": ["ToS", "Privacy Policy", "DPA", "AUP", "SLA"] },
+        "exists": { "type": "boolean" },
+        "document_url": { "type": "string" },
+        "covers": { "type": ["array", "null"], "items": { "type": "string" } },
+        "misses": { "type": "array", "items": { "type": "string" } },
+        "evidence_status": { "type": "string", "enum": ["INGESTED", "ABSENT", "ACCESS_FAILED", "INSUFFICIENT"] },
+        "linked_threat_ids": { "type": "array", "items": { "type": "string" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "exists": { "const": false } }, "required": ["exists"] },
+          "then": {
+            "properties": {
+              "document_url": { "const": "N/A" },
+              "covers": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "redline": {
+      "type": "object",
+      "required": ["mismatch_id", "type", "quote", "source", "feature_ref", "claim_type", "contradicts"],
+      "additionalProperties": false,
+      "properties": {
+        "mismatch_id": { "type": "string" },
+        "type": { "type": "string", "enum": ["QUOTE_VS_QUOTE", "CLAIM_VS_ABSENCE", "STACK_VS_REALITY"] },
+        "quote": { "type": "string" },
+        "source": { "type": "string" },
+        "feature_ref": { "type": "string" },
+        "claim_type": { "type": "string" },
+        "contradicts": { "type": "string" }
+      }
+    }
+  }
+}

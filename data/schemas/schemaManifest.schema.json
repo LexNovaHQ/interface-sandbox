@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/schemaManifest.schema.json",
+  "title": "Schema Manifest",
+  "description": "Canonical schema_manifest mapping logical schema names to file paths and governing contracts.",
+  "type": "object",
+  "required": ["version", "generated_from", "schemas", "canonical_objects", "notes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string" },
+    "generated_from": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "schemas": {
+      "type": "object",
+      "required": ["source_bundle", "target_feature_profile", "legal_stack_review", "registry_evaluation_ledger", "operator_challenge_gate", "diligence_compiler_output", "assembly_handoff_payload", "vault_payload", "handoff_envelope", "diligence_run_state"],
+      "additionalProperties": false,
+      "properties": {
+        "source_bundle": { "$ref": "#/$defs/schemaEntry" },
+        "target_feature_profile": { "$ref": "#/$defs/schemaEntry" },
+        "legal_stack_review": { "$ref": "#/$defs/schemaEntry" },
+        "registry_evaluation_ledger": { "$ref": "#/$defs/schemaEntry" },
+        "operator_challenge_gate": { "$ref": "#/$defs/schemaEntry" },
+        "diligence_compiler_output": { "$ref": "#/$defs/schemaEntry" },
+        "assembly_handoff_payload": { "$ref": "#/$defs/schemaEntry" },
+        "vault_payload": { "$ref": "#/$defs/schemaEntry" },
+        "handoff_envelope": { "$ref": "#/$defs/schemaEntry" },
+        "diligence_run_state": { "$ref": "#/$defs/schemaEntry" },
+        "delivery_state": { "$ref": "#/$defs/schemaEntry" },
+        "maintenance_run": { "$ref": "#/$defs/schemaEntry" }
+      }
+    },
+    "canonical_objects": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "schemaEntry": {
+      "type": "object",
+      "required": ["path", "canonical_object", "phase_status"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "canonical_object": { "type": "string" },
+        "phase_status": { "type": "string", "enum": ["active", "deferred", "downstream"] }
+      }
+    }
+  }
+}

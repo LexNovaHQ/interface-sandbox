@@ -1,38 +1,72 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Assembly Output",
+  "$id": "https://interface-sandbox.local/schemas/assemblyOutput.schema.json",
+  "title": "Assembly Handoff Payload",
+  "description": "Canonical assembly_handoff_payload for Diligence to Assembly. Vault prefill may contain only fields allowed by the Vault Canonical Map.",
   "type": "object",
-  "required": [
-    "run_id",
-    "product_profile",
-    "active_document_stack",
-    "clause_routes",
-    "schedule_routes",
-    "variable_map",
-    "draft_preview",
-    "review_notes",
-    "crm_delivery"
-  ],
+  "required": ["handoff_meta", "target_profile", "feature_map", "threat_findings", "document_stack_status", "vault_prefill_suggestions", "vault_confirmation_questions", "assembly_route_recommendation", "warnings"],
+  "additionalProperties": false,
   "properties": {
-    "run_id": { "type": "string" },
-    "product_profile": { "type": "object" },
-    "active_document_stack": { "type": "array" },
-    "clause_routes": { "type": "array" },
-    "schedule_routes": { "type": "array" },
-    "variable_map": { "type": "object" },
-    "draft_preview": {
+    "handoff_meta": {
       "type": "object",
+      "required": ["run_id", "created_at", "source_engine", "target_engine"],
+      "additionalProperties": true,
       "properties": {
-        "format": { "type": "string", "enum": ["html"] },
-        "documents": { "type": "array" }
+        "run_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "source_engine": { "const": "diligence" },
+        "target_engine": { "const": "assembly" }
       }
     },
-    "review_notes": { "type": "array" },
-    "crm_delivery": {
+    "target_profile": { "type": "object", "additionalProperties": true },
+    "feature_map": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "threat_findings": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "document_stack_status": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "vault_prefill_suggestions": {
       "type": "object",
+      "required": ["baseline", "architecture", "archetypes", "compliance"],
+      "additionalProperties": false,
       "properties": {
-        "status": { "type": "string" }
+        "baseline": { "$ref": "#/$defs/prefillGroup" },
+        "architecture": { "$ref": "#/$defs/prefillGroup" },
+        "archetypes": { "$ref": "#/$defs/prefillGroup" },
+        "compliance": { "$ref": "#/$defs/prefillGroup" }
       }
+    },
+    "vault_confirmation_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["field_path", "question", "why_it_matters", "source_context", "required_for"],
+        "additionalProperties": false,
+        "properties": {
+          "field_path": { "type": "string" },
+          "question": { "type": "string" },
+          "why_it_matters": { "type": "string" },
+          "source_context": { "type": "string" },
+          "required_for": { "type": "string" }
+        }
+      }
+    },
+    "assembly_route_recommendation": { "type": "object", "additionalProperties": true },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "prefillSuggestion": {
+      "type": "object",
+      "required": ["value", "basis", "confidence", "source_finding_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {},
+        "basis": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "source_finding_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "prefillGroup": {
+      "type": "object",
+      "description": "Only fields allowed by VAULT_JS_CANONICAL_MAP_v1.md may appear here.",
+      "additionalProperties": { "$ref": "#/$defs/prefillSuggestion" }
     }
   }
 }

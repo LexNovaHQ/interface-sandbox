@@ -1,34 +1,108 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/sourceBundle.schema.json",
   "title": "Source Bundle",
+  "description": "Canonical source_bundle. Discovery output is not evidence until Source Collector admission. Full raw scrape text is active-run material; final report payload stores excerpts, hashes, provenance, limitations, and admission status.",
   "type": "object",
-  "required": ["run_id", "source_mode", "submitted_by_user", "sources_read", "source_summary"],
+  "required": ["run_id", "source_mode", "target_input", "source_review", "discovery_candidates", "artifact_inventory", "evidence_buffer", "limitations"],
+  "additionalProperties": false,
   "properties": {
     "run_id": { "type": "string" },
-    "source_mode": { "type": "string", "enum": ["url", "text"] },
-    "submitted_by_user": { "type": "string" },
-    "sources_read": {
+    "source_mode": { "type": "string", "enum": ["url", "manual_urls", "text", "url_plus_text"] },
+    "target_input": {
+      "type": "object",
+      "required": ["submitted_at"],
+      "additionalProperties": false,
+      "properties": {
+        "primary_url": { "type": "string" },
+        "manual_urls": { "type": "array", "items": { "type": "string" } },
+        "pasted_text_present": { "type": "boolean" },
+        "submitted_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "source_review": {
+      "type": "object",
+      "required": ["summary", "pages_attempted", "pages_admitted", "limitations"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string" },
+        "pages_attempted": { "type": "integer", "minimum": 0 },
+        "pages_admitted": { "type": "integer", "minimum": 0 },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "discovery_candidates": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["source_id", "type", "title", "url", "text", "retrieved_at"],
+        "required": ["candidate_id", "source_url", "status"],
+        "additionalProperties": false,
         "properties": {
-          "source_id": { "type": "string" },
-          "type": { "type": "string", "enum": ["webpage", "pasted_text"] },
-          "title": { "type": "string" },
-          "url": { "type": "string" },
-          "text": { "type": "string" },
-          "retrieved_at": { "type": "string" }
+          "candidate_id": { "type": "string" },
+          "source_url": { "type": "string" },
+          "discovered_by": { "type": "string" },
+          "status": { "const": "DISCOVERY_ONLY" },
+          "notes": { "type": "string" }
         }
       }
     },
-    "source_summary": {
+    "artifact_inventory": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "evidence_buffer": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "artifactClass": {
+      "type": "string",
+      "enum": ["homepage", "product", "pricing", "terms", "privacy", "dpa", "aup", "sla", "security", "subprocessors", "docs", "api", "trust", "other"]
+    },
+    "zone": {
+      "type": "string",
+      "enum": ["mechanical", "commercial", "governance", "context", "manual_text"]
+    },
+    "admissionStatus": {
+      "type": "string",
+      "enum": ["ADMITTED", "DISCOVERY_ONLY", "REJECTED"]
+    },
+    "artifact": {
       "type": "object",
-      "required": ["pages_attempted", "pages_read", "total_chars", "limitations"],
+      "required": ["artifact_id", "source_url", "zone", "artifact_class", "status", "admission_status", "is_first_party", "source_hash", "extracted_excerpt", "limitations"],
+      "additionalProperties": false,
       "properties": {
-        "pages_attempted": { "type": "number" },
-        "pages_read": { "type": "number" },
-        "total_chars": { "type": "number" },
+        "artifact_id": { "type": "string" },
+        "source_url": { "type": "string" },
+        "zone": { "$ref": "#/$defs/zone" },
+        "artifact_class": { "$ref": "#/$defs/artifactClass" },
+        "status": { "type": "string", "enum": ["INGESTED", "ABSENT", "ACCESS_FAILED", "EXCLUDED", "DUPLICATE", "TEXT_ONLY"] },
+        "admission_status": { "$ref": "#/$defs/admissionStatus" },
+        "is_first_party": { "type": "boolean" },
+        "source_hash": { "type": "string" },
+        "extracted_excerpt": { "type": "string" },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["evidence_id", "artifact_id", "source_url", "source_type", "ingestion_method", "artifact_class", "zone", "evidence_text", "extracted_excerpt", "source_hash", "evidence_scope", "first_party_basis", "limitations"],
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": { "type": "string" },
+        "artifact_id": { "type": "string" },
+        "source_url": { "type": "string" },
+        "source_type": { "type": "string", "enum": ["webpage", "manual_text", "document"] },
+        "ingestion_method": { "type": "string", "enum": ["jina", "manual", "direct_url", "pasted_text"] },
+        "artifact_class": { "$ref": "#/$defs/artifactClass" },
+        "zone": { "$ref": "#/$defs/zone" },
+        "evidence_text": { "type": "string" },
+        "extracted_excerpt": { "type": "string" },
+        "source_hash": { "type": "string" },
+        "evidence_scope": { "type": "string" },
+        "first_party_basis": { "type": "string" },
         "limitations": { "type": "array", "items": { "type": "string" } }
       }
     }

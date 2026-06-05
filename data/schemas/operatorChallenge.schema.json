@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/operatorChallenge.schema.json",
+  "title": "Operator Challenge Gate",
+  "description": "Canonical operator_challenge_gate produced by Stage 4 and used to verify or reopen registry ledger rows.",
+  "type": "object",
+  "required": ["operator_challenge_gate", "corrected_ledger_entries"],
+  "additionalProperties": false,
+  "properties": {
+    "operator_challenge_gate": {
+      "type": "object",
+      "required": ["completed", "result", "registry_count_loaded", "registry_count_evaluated", "reopened_rows", "high_risk_checks", "notes"],
+      "additionalProperties": false,
+      "properties": {
+        "completed": { "type": "boolean" },
+        "result": { "type": "string", "enum": ["PASS", "PASS_WITH_WARNINGS", "REOPENED", "FAIL_RETRY_REQUIRED"] },
+        "registry_count_loaded": { "type": "integer", "minimum": 0 },
+        "registry_count_evaluated": { "type": "integer", "minimum": 0 },
+        "reopened_rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["threat_id", "previous_status", "reopened_status", "reason", "required_action"],
+            "additionalProperties": false,
+            "properties": {
+              "threat_id": { "type": "string" },
+              "previous_status": { "$ref": "#/$defs/finalStatus" },
+              "reopened_status": { "$ref": "#/$defs/finalStatus" },
+              "reason": { "type": "string" },
+              "required_action": { "type": "string" }
+            }
+          }
+        },
+        "high_risk_checks": { "type": "object", "additionalProperties": true },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "corrected_ledger_entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ledgerEntry" }
+    }
+  },
+  "$defs": {
+    "finalStatus": {
+      "type": "string",
+      "enum": ["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"]
+    },
+    "ledgerEntry": {
+      "type": "object",
+      "required": ["entry_number", "threat_id", "threat_name", "conditions", "trigger_if_result", "exclude_if_result", "final_status", "feature_refs", "evidence_ref", "reasoning_summary"],
+      "additionalProperties": true,
+      "properties": {
+        "entry_number": { "type": "integer", "minimum": 1 },
+        "threat_id": { "type": "string" },
+        "threat_name": { "type": "string" },
+        "conditions": { "type": "array", "items": { "type": "object" } },
+        "trigger_if_result": { "type": "boolean" },
+        "exclude_if_result": { "type": "boolean" },
+        "final_status": { "$ref": "#/$defs/finalStatus" },
+        "feature_refs": { "type": "array", "items": { "type": "string" } },
+        "evidence_ref": { "type": "string" },
+        "reasoning_summary": { "type": "string" }
+      }
+    }
+  }
+}

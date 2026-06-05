@@ -1,52 +1,135 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Vault",
+  "$id": "https://interface-sandbox.local/schemas/vault.schema.json",
+  "title": "Vault Payload",
+  "description": "Canonical vault_payload generated from VAULT_JS_CANONICAL_MAP_v1.md. Vault groups are baseline, architecture, archetypes, compliance, status, and submittedAt. HITL is a route effect, not a Vault field.",
   "type": "object",
-  "required": ["product_identity", "ai_architecture", "data_output", "commercial_controls"],
+  "required": ["baseline", "architecture", "archetypes", "compliance", "status", "submittedAt"],
+  "additionalProperties": false,
   "properties": {
-    "product_identity": {
+    "baseline": {
       "type": "object",
+      "description": "Module 1: baseline and commercial fields. Integrations and output ownership live here.",
+      "required": ["company", "products", "jurisdiction", "market", "delivery", "integrations"],
+      "additionalProperties": false,
       "properties": {
-        "company_legal_name": { "type": "string" },
-        "product_name": { "type": "string" },
-        "market": { "type": "string", "enum": ["B2B", "B2C", "Hybrid"] },
-        "jurisdictions": { "type": "array" },
-        "users": { "type": "array" }
-      }
-    },
-    "ai_architecture": {
-      "type": "object",
-      "properties": {
-        "architecture": {
-          "type": "string",
-          "enum": ["RAG", "fine_tuning", "stateless", "agentic", "unknown"]
+        "company": { "type": "string" },
+        "entity_type": { "type": "string" },
+        "address": { "type": "string" },
+        "legal_email": { "type": "string" },
+        "privacy_email": { "type": "string" },
+        "products": { "type": "array", "items": { "type": "string" } },
+        "jurisdiction": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "country": { "type": "string" },
+            "state": { "type": "string" }
+          }
         },
-        "model_provider": { "type": "string" },
-        "uses_vector_db": { "type": "boolean" },
-        "uses_agentic_actions": { "type": "boolean" },
-        "human_review": { "type": "boolean" }
+        "market": { "type": "string", "enum": ["b2b", "b2c", "hybrid"] },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "app": { "type": "boolean" },
+            "api": { "type": "boolean" }
+          }
+        },
+        "revenue_model": { "type": "string" },
+        "acv": { "type": "string" },
+        "has_beta": { "type": "boolean" },
+        "output_ownership": { "type": "string", "enum": ["full", "limited", "none"] },
+        "sla_type": { "type": "string", "enum": ["no", "standard", "custom"] },
+        "integrations": {
+          "type": "object",
+          "description": "Integrations are baseline fields, not architecture fields.",
+          "additionalProperties": false,
+          "properties": {
+            "slack": { "type": "boolean" },
+            "crm": { "type": "boolean" },
+            "stripe": { "type": "boolean" },
+            "github": { "type": "boolean" },
+            "webhooks": { "type": "boolean" },
+            "none": { "type": "boolean" }
+          }
+        },
+        "reliance_threshold": { "type": "string" }
       }
     },
-    "data_output": {
+    "architecture": {
       "type": "object",
+      "description": "Module 2: technical architecture fields only. Integration, ownership, and agent-limit fields are intentionally excluded from this group.",
+      "additionalProperties": false,
       "properties": {
-        "uses_personal_data": { "type": "boolean" },
-        "uses_sensitive_data": { "type": "boolean" },
-        "stores_prompts": { "type": "boolean" },
-        "customer_uploads": { "type": "boolean" },
-        "output_relied_on": { "type": "boolean" },
-        "output_ownership_position": { "type": "string" }
+        "memory": { "type": "string", "enum": ["rag", "stateless", "finetuning"] },
+        "models": { "type": "string", "enum": ["selfhosted", "thirdparty"] },
+        "sub_processors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "openai": { "type": "boolean" },
+            "anthropic": { "type": "boolean" },
+            "google": { "type": "boolean" },
+            "cohere": { "type": "boolean" },
+            "mistral": { "type": "boolean" },
+            "other": { "type": "string" },
+            "url": { "type": "string" }
+          }
+        },
+        "cloud_host": { "type": "string" },
+        "vector_db": { "type": "string" }
       }
     },
-    "commercial_controls": {
+    "archetypes": {
       "type": "object",
+      "description": "Module 3: engine flags. JDG fans out to is_judge, is_judge_hr, and is_judge_legal. OPT fans out to is_optimizer and sens_fin. CMP sets conversational_ui and a derived companion route without emitting a literal companion field.",
+      "additionalProperties": false,
       "properties": {
-        "enterprise_customers": { "type": "boolean" },
-        "sla_needed": { "type": "boolean" },
-        "indemnity_concern": { "type": "boolean" },
-        "aup_needed": { "type": "boolean" },
-        "liability_cap_preference": { "type": "string" }
+        "is_doer": { "type": "boolean" },
+        "is_orchestrator": { "type": "boolean" },
+        "agent_limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "session_cap": { "type": "string" },
+            "period_cap": { "type": "string" },
+            "retry_limit": { "type": "string" },
+            "loop_threshold": { "type": "string" }
+          }
+        },
+        "is_creator": { "type": "boolean" },
+        "is_reader": { "type": "boolean" },
+        "conversational_ui": { "type": "boolean" },
+        "sens_bio": { "type": "boolean" },
+        "is_judge": { "type": "boolean" },
+        "is_judge_hr": { "type": "boolean" },
+        "is_judge_legal": { "type": "boolean" },
+        "is_optimizer": { "type": "boolean" },
+        "sens_fin": { "type": "boolean" },
+        "is_shield": { "type": "boolean" },
+        "is_mover": { "type": "boolean" },
+        "is_generalist": { "type": "boolean" }
       }
-    }
+    },
+    "compliance": {
+      "type": "object",
+      "description": "Module 4: compliance and surface flags.",
+      "additionalProperties": false,
+      "properties": {
+        "processes_pii": { "type": "string", "enum": ["yes", "no"] },
+        "eu_users": { "type": "boolean" },
+        "ca_users": { "type": "boolean" },
+        "other_regions": { "type": "array", "items": { "type": "string" } },
+        "sens_health": { "type": "boolean" },
+        "sens_fin": { "type": "boolean" },
+        "sens_employment": { "type": "boolean" },
+        "minors": { "type": "boolean" },
+        "distress": { "type": "boolean" },
+        "standard_adults": { "type": "boolean" }
+      }
+    },
+    "status": { "type": "string", "enum": ["intake_received"] },
+    "submittedAt": { "type": "string", "format": "date-time" }
   }
 }

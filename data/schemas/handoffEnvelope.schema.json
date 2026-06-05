@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/handoffEnvelope.schema.json",
+  "title": "Handoff Envelope",
+  "description": "Canonical handoff_envelope schema mirroring src/wrapper/contracts/handoffEnvelope.js. Includes existing JS statuses plus queued/created for future contract compatibility.",
+  "type": "object",
+  "required": ["handoff_id", "run_id", "source_engine", "target_engine", "payload_type", "status", "created_at", "updated_at", "payload_ref", "summary", "warnings"],
+  "additionalProperties": false,
+  "properties": {
+    "handoff_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "source_engine": { "type": "string", "enum": ["wrapper", "diligence", "assembly", "delivery", "horizon", "maintenance"] },
+    "target_engine": { "type": "string", "enum": ["wrapper", "diligence", "assembly", "delivery", "horizon", "maintenance"] },
+    "payload_type": { "type": "string", "enum": ["assembly_handoff_payload", "delivery_package_payload", "regulatory_update_payload", "maintenance_alert_payload", "vault_confirmation_payload", "system_status_payload"] },
+    "status": { "type": "string", "enum": ["draft", "ready", "pushed", "received", "failed", "created", "queued"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "payload_ref": { "type": "string" },
+    "summary": { "type": "string" },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}

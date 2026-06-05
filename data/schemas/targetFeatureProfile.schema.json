@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/targetFeatureProfile.schema.json",
+  "title": "Target Feature Profile",
+  "description": "Canonical target_feature_profile produced by Stage 1 from admitted evidence.",
+  "type": "object",
+  "required": ["target_profile", "primary_product", "product_feature_map", "raw_feature_candidates", "feature_map_scratchpad", "limitations"],
+  "additionalProperties": false,
+  "properties": {
+    "target_profile": {
+      "type": "object",
+      "required": ["company_name", "website", "legal_entity", "hq_jurisdiction", "actual_processing_location", "data_sovereignty_signature", "primary_claim"],
+      "additionalProperties": false,
+      "properties": {
+        "company_name": { "type": "string" },
+        "website": { "type": "string" },
+        "legal_entity": { "type": "string" },
+        "hq_jurisdiction": { "type": "string" },
+        "actual_processing_location": { "type": "string" },
+        "data_sovereignty_signature": { "type": "string" },
+        "primary_claim": { "type": "string" }
+      }
+    },
+    "primary_product": {
+      "type": "object",
+      "required": ["product_name", "user", "function", "mechanism", "agent_actor", "agent_brand_name"],
+      "additionalProperties": false,
+      "properties": {
+        "product_name": { "type": "string" },
+        "user": { "type": "string" },
+        "function": { "type": "string" },
+        "mechanism": { "type": "string" },
+        "agent_actor": { "type": "string" },
+        "agent_brand_name": { "type": "string" }
+      }
+    },
+    "product_feature_map": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/feature" }
+    },
+    "raw_feature_candidates": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "feature_map_scratchpad": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "feature": {
+      "type": "object",
+      "required": ["feature_id", "feature_name", "feature_role", "feature_description", "archetype_codes", "archetype_labels", "surface_tokens", "evidence_quote", "feature_source_url", "linked_threat_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "feature_id": { "type": "string" },
+        "feature_name": { "type": "string" },
+        "feature_role": { "type": "string", "enum": ["CORE", "SECONDARY"] },
+        "feature_description": { "type": "string" },
+        "archetype_codes": { "type": "array", "items": { "type": "string" } },
+        "archetype_labels": { "type": "array", "items": { "type": "string" } },
+        "surface_tokens": { "type": "array", "items": { "type": "string" } },
+        "evidence_quote": { "type": "string" },
+        "feature_source_url": { "type": "string" },
+        "linked_threat_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
