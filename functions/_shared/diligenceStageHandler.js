@@ -2,7 +2,7 @@ import { DILIGENCE_SCHEMA_BUNDLE } from "../_generated/diligenceSchemaBundle.js"
 import { jsonResponse, methodNotAllowed } from "./response.js";
 import { runGeminiJsonStage } from "./geminiJsonRunner.js";
 import { loadDiligencePrompt } from "./diligencePromptLoader.js";
-import { formatSchemaErrors, validateJsonSchema } from "../../src/wrapper/diligence/validation/index.js";
+import { formatSchemaErrors, validateJsonSchema } from "./jsonSchemaValidator.js";
 
 function resolveSchemaEntry(schemaKey) {
   const direct = DILIGENCE_SCHEMA_BUNDLE.schemas?.[schemaKey];
