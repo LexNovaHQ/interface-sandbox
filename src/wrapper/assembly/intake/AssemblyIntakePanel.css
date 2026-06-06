@@ -1,0 +1,62 @@
+.assembly-intake-panel,
+.assembly-intake-empty,
+.assembly-intake-error,
+.assembly-intake-section {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.assembly-intake-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
+  gap: 1rem;
+  align-items: start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(221, 205, 176, 0.14);
+}
+
+.assembly-intake-grid,
+.assembly-prefill-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.assembly-intake-stat,
+.assembly-prefill-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(221, 205, 176, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 8, 7, 0.22);
+}
+
+.assembly-intake-stat span,
+.assembly-prefill-row span {
+  color: #bdb3a2;
+}
+
+.assembly-intake-stat span {
+  color: #b8a070;
+  font-size: 0.76rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1040px) {
+  .assembly-intake-header,
+  .assembly-intake-grid,
+  .assembly-prefill-preview {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .assembly-intake-header,
+  .assembly-intake-grid,
+  .assembly-prefill-preview {
+    grid-template-columns: 1fr;
+  }
+}
