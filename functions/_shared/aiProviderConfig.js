@@ -7,6 +7,13 @@ const REQUIRED_FIREBASE_ENV_KEYS = Object.freeze([
   "VITE_FIREBASE_APP_ID"
 ]);
 
+export const DEFAULT_GEMINI_MODELS = Object.freeze({
+  primary: "gemini-3.5-flash",
+  fast: "gemini-3.1-flash-lite",
+  fallback: "gemini-2.5-flash-lite",
+  secondary_fallback: "gemini-2.5-flash"
+});
+
 const SERVER_SECRET_PLACEHOLDERS = new Set([
   "server_secret_only_do_not_commit",
   "changeme",
@@ -27,6 +34,38 @@ export function maskConfigured(value) {
   const normalized = String(value).trim();
   if (!normalized) return false;
   return !SERVER_SECRET_PLACEHOLDERS.has(normalized.toLowerCase());
+}
+
+export function safeModelName(model, fallback = DEFAULT_GEMINI_MODELS.primary) {
+  return String(model || fallback).trim().replace(/^models\//, "");
+}
+
+function splitModelCsv(value) {
+  return String(value || "")
+    .split(",")
+    .map((model) => safeModelName(model, ""))
+    .filter(Boolean);
+}
+
+function uniqueModels(models) {
+  return [...new Set(models.map((model) => safeModelName(model, "")).filter(Boolean))];
+}
+
+export function getGeminiModelSequence(env = {}, options = {}) {
+  if (Array.isArray(options.modelSequence) && options.modelSequence.length) {
+    return uniqueModels(options.modelSequence);
+  }
+
+  const configuredSequence = splitModelCsv(env.GEMINI_MODEL_SEQUENCE);
+  if (configuredSequence.length) return uniqueModels(configuredSequence);
+
+  return uniqueModels([
+    options.model,
+    env.GEMINI_PRIMARY_MODEL || DEFAULT_GEMINI_MODELS.primary,
+    env.GEMINI_FAST_MODEL || DEFAULT_GEMINI_MODELS.fast,
+    env.GEMINI_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.fallback,
+    env.GEMINI_SECONDARY_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.secondary_fallback
+  ]);
 }
 
 function readFallbackProvider(env, groqConfigured) {
@@ -51,6 +90,7 @@ export function readAiProviderConfig(env = {}) {
   const groqConfigured = maskConfigured(env.GROQ_API_KEY);
   const fallbackProvider = readFallbackProvider(env, groqConfigured);
   const firebase = readFirebaseClientConfig(env);
+  const geminiModelSequence = getGeminiModelSequence(env);
   const warnings = [];
 
   if (!geminiConfigured) {
@@ -82,8 +122,11 @@ export function readAiProviderConfig(env = {}) {
     },
     ai: {
       primary_provider: "gemini",
-      primary_model: env.GEMINI_PRIMARY_MODEL || "gemini-3.5-flash",
-      fast_model: env.GEMINI_FAST_MODEL || "gemini-3.1-flash-lite",
+      primary_model: env.GEMINI_PRIMARY_MODEL || DEFAULT_GEMINI_MODELS.primary,
+      fast_model: env.GEMINI_FAST_MODEL || DEFAULT_GEMINI_MODELS.fast,
+      gemini_fallback_model: env.GEMINI_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.fallback,
+      gemini_secondary_fallback_model: env.GEMINI_SECONDARY_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.secondary_fallback,
+      gemini_model_sequence: geminiModelSequence,
       fallback_provider: fallbackProvider,
       fallback_model:
         fallbackProvider === "groq"
