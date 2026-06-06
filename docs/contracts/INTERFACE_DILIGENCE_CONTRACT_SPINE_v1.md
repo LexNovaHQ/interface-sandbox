@@ -14,7 +14,7 @@
 |---|---|
 | DEC-001 | Provider-agnostic engine with **Gemini as primary** and Groq as optional fallback/reference. Orchestration is client-driven: the browser sequences stages, each Gemini call is a server-side Pages Function, and Firestore holds run state once persistence is implemented. |
 | DEC-002 | Scrape transport = **client-side Jina** (`https://r.jina.ai/`) for public source collection. |
-| DEC-003 | Canonical prompt source material came from GPT Diligence Runtime v1; the active prompt chain is now the seven-stage v2 chain under `docs/prompts/diligence-v2/`. |
+| DEC-003 | Canonical prompt source material came from GPT Diligence Runtime v1; the active prompt chain is now the seven-stage v2 chain under `functions/_prompts/diligence-v2/`. |
 | DEC-004 | Runtime doctrine is split into surgical prompts with injected evidence. Model stages do not browse, fetch, search, or use prior memory as evidence. |
 | DEC-005 | Canonical contract = this spine + Vault canonical map + current schemas. Stale schemas/prompts/docs are regenerated to match. |
 | DEC-006 | Source Collector is followed by an LLM-assisted **Evidence Refiner** before Target/Feature extraction. |

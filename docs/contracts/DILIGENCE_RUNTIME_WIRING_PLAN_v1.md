@@ -16,7 +16,7 @@ Build to these documents in this order:
 1. docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md
 2. docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md
 3. docs/contracts/NODE_5B_DETERMINISTIC_ASSEMBLER_CONTRACT_v1.md
-4. docs/prompts/diligence-v2/PROMPT_INDEX.md
+4. functions/_prompts/diligence-v2/PROMPT_INDEX.md
 5. data/schemas/compilerOutput.schema.json
 6. data/runtime/registry_key.runtime.json
 7. data/runtime/registry.runtime.json
@@ -166,13 +166,13 @@ But do not duplicate logic long-term. One canonical implementation must own Node
 Pages Functions must load prompt text from:
 
 ```text
-docs/prompts/diligence-v2/00_SHARED_SYSTEM_PREAMBLE.prompt.md
-docs/prompts/diligence-v2/01_EVIDENCE_REFINER.prompt.md
-docs/prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md
-docs/prompts/diligence-v2/03_LEGAL_STACK_REVIEW.prompt.md
-docs/prompts/diligence-v2/04_REGISTRY_LEDGER_EVALUATION.prompt.md
-docs/prompts/diligence-v2/05_OPERATOR_CHALLENGE.prompt.md
-docs/prompts/diligence-v2/06_FINAL_COMPILER.prompt.md
+functions/_prompts/diligence-v2/00_SHARED_SYSTEM_PREAMBLE.prompt.md
+functions/_prompts/diligence-v2/01_EVIDENCE_REFINER.prompt.md
+functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md
+functions/_prompts/diligence-v2/03_LEGAL_STACK_REVIEW.prompt.md
+functions/_prompts/diligence-v2/04_REGISTRY_LEDGER_EVALUATION.prompt.md
+functions/_prompts/diligence-v2/05_OPERATOR_CHALLENGE.prompt.md
+functions/_prompts/diligence-v2/06_FINAL_COMPILER.prompt.md
 ```
 
 Each model call must compose:

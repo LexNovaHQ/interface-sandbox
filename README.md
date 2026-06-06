@@ -91,13 +91,13 @@ Base Diligence rule for the future engine: all TRIGGERED threats are preserved i
 The active Diligence prompt chain is under:
 
 ```text
-docs/prompts/diligence-v2/
+functions/_prompts/diligence-v2/
 ```
 
 Prompt index:
 
 ```text
-docs/prompts/diligence-v2/PROMPT_INDEX.md
+functions/_prompts/diligence-v2/PROMPT_INDEX.md
 ```
 
 Installed v2 prompt files:

@@ -35,9 +35,9 @@ These are retained as source/reference material, not active runtime authority:
 - `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md`
 - `docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md`
 - `docs/reference/vault.js`
-- `docs/prompts/diligence-v2/RUNTIME_MIGRATION_MAP_v1.md`
-- `docs/prompts/diligence-v2/PROMPT_ALLOCATION_MATRIX_v1.md`
-- `docs/prompts/diligence-v2/PROMPT_SOURCE_EXTRACTION_PACKETS_v1.md`
+- `functions/_prompts/diligence-v2/RUNTIME_MIGRATION_MAP_v1.md`
+- `functions/_prompts/diligence-v2/PROMPT_ALLOCATION_MATRIX_v1.md`
+- `functions/_prompts/diligence-v2/PROMPT_SOURCE_EXTRACTION_PACKETS_v1.md`
 - `SCHEMA_REGENERATION_PLAN_v1.md`
 
 If supporting reference material conflicts with the Contract Spine, Vault map, Node 5B contract, or runtime wiring plan, the current contract stack controls.

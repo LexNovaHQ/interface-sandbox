@@ -5,7 +5,7 @@
 This index governs the seven-stage Diligence Engine prompt chain under:
 
 ```text
-docs/prompts/diligence-v2/
+functions/_prompts/diligence-v2/
 ```
 
 The v2 chain replaces the older Groq-stage prompt index for the Gemini-primary Interface Diligence Engine.
