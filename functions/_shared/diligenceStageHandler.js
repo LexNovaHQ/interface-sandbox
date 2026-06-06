@@ -72,6 +72,7 @@ async function runDiligenceStageRequest(context, config) {
   const outputSchemaKey = config.outputSchemaKey;
   const outputKey = config.outputKey || "output";
   const schemaEntry = resolveSchemaEntry(outputSchemaKey);
+  const validationSchemaKey = schemaEntry?.schema_id || outputSchemaKey;
 
   if (!schemaEntry?.schema) {
     return jsonResponse(
@@ -139,7 +140,7 @@ async function runDiligenceStageRequest(context, config) {
     );
   }
 
-  const validation = validateJsonSchema(schemaEntry.schema, runResult.parsed_json);
+  const validation = validateJsonSchema(validationSchemaKey, runResult.parsed_json);
 
   if (!validation.ok) {
     return jsonResponse(
@@ -148,6 +149,8 @@ async function runDiligenceStageRequest(context, config) {
         stage_id: stageId,
         output_schema_key: outputSchemaKey,
         output_schema_path: schemaEntry.path,
+        validation_schema_key: validationSchemaKey,
+        validation_mode: validation.validation_mode,
         error_type: "SCHEMA_VALIDATION_ERROR",
         error: "Model output failed schema validation",
         validation_errors: validation.errors,
@@ -168,6 +171,8 @@ async function runDiligenceStageRequest(context, config) {
     stage_id: stageId,
     output_schema_key: outputSchemaKey,
     output_schema_path: schemaEntry.path,
+    validation_schema_key: validationSchemaKey,
+    validation_mode: validation.validation_mode,
     [outputKey]: runResult.parsed_json,
     model_metadata: publicModelMetadata(runResult),
     prompt_metadata: {
