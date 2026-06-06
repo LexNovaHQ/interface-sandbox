@@ -4,3 +4,6 @@ dist
 .env.*
 !.env.example
 .wrangler
+
+# Generated at build time
+functions/_generated/
