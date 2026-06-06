@@ -34,17 +34,19 @@ async function main() {
     }
   });
 
-  const validators = {};
+  const standaloneExports = {};
   const schemaKeyToExport = {};
 
   for (const [schemaId, schemaPath] of Object.entries(SCHEMA_PATHS)) {
     const schema = await readSchema(schemaPath);
     const exportName = validatorExportName(schemaId);
-    validators[exportName] = ajv.compile(schema);
+
+    ajv.addSchema(schema, schemaId);
+    standaloneExports[exportName] = schemaId;
     schemaKeyToExport[schemaId] = exportName;
   }
 
-  const validatorSource = standaloneCode(ajv, validators);
+  const validatorSource = standaloneCode(ajv, standaloneExports);
   const canonicalKeyToSchemaId = {};
 
   for (const [canonicalKey, schemaPath] of Object.entries(CANONICAL_SCHEMA_PATHS)) {
