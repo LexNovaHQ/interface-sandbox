@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://interface-sandbox.local/schemas/sourceBundle.schema.json",
   "title": "Source Bundle",
-  "description": "Canonical source_bundle. Discovery output is not evidence until Source Collector admission. Full raw scrape text is active-run material; final report payload stores excerpts, hashes, provenance, limitations, and admission status.",
+  "description": "Canonical source_bundle. Discovery output is not evidence until Source Collector admission. Full raw scrape text is active-run material; final report payload stores excerpts, hashes, provenance, limitations, and admission status. Multiple manual URLs are represented in target_input.manual_urls while source_mode remains url unless pasted text is also supplied.",
   "type": "object",
   "required": ["run_id", "source_mode", "target_input", "source_review", "discovery_candidates", "artifact_inventory", "evidence_buffer", "limitations"],
   "additionalProperties": false,
   "properties": {
     "run_id": { "type": "string" },
-    "source_mode": { "type": "string", "enum": ["url", "manual_urls", "text", "url_plus_text"] },
+    "source_mode": { "type": "string", "enum": ["url", "text", "url_plus_text"] },
     "target_input": {
       "type": "object",
       "required": ["submitted_at"],
