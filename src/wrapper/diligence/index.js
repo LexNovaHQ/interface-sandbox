@@ -43,3 +43,5 @@ export {
   buildDiligencePersistencePlan,
   persistDiligenceRun
 } from "./persistence/index.js";
+
+export { DiligenceReportRenderer } from "./report/index.js";
