@@ -17,3 +17,8 @@ export {
   callRegistryEndpoint,
   runRegistryLedgerBatches
 } from "./registryBatchRunner.js";
+
+export {
+  applyOperatorChallengeCorrections,
+  assertCorrectionMergeValid
+} from "./correctionMergeValidator.js";
