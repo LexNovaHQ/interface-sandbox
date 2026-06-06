@@ -1,3 +1,5 @@
+import "./DiligenceReportRenderer.css";
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
