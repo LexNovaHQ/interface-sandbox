@@ -38,3 +38,8 @@ export {
   VAULT_FIELD_PATH_SET,
   VAULT_GROUPS
 } from "./node5b/index.js";
+
+export {
+  buildDiligencePersistencePlan,
+  persistDiligenceRun
+} from "./persistence/index.js";
