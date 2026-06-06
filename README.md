@@ -1,8 +1,8 @@
 # The Interface
 
-Wrapper Batch 1 rebuild for a public demo interface.
+The Interface is a React/Vite Cloudflare Pages shell for Lex Nova HQ operational legal-tech units.
 
-The app is a React/Vite Cloudflare Pages skeleton for operational legal-tech units. It is not a live engine implementation.
+It is a public demo interface. It is **not** a law firm product, not legal advice, and not a live legal engine yet.
 
 ## Public Surface
 
@@ -28,73 +28,117 @@ Maintenance is not a top-level public route. It appears inside Delivery as an in
 
 ## Current Status
 
-Wrapper Batch 1 is UI cleanup only.
+The Wrapper shell, Firebase readiness bridge, provider status endpoints, runtime artifacts, Diligence v2 contracts, Diligence v2 prompt files, and schema contracts are installed.
 
-No live engine logic exists yet:
+No live Diligence engine orchestration exists yet:
 
-- no scraping
-- no Groq calls
-- no registry evaluation
-- no Vault question logic
+- no live Source Collector workflow
+- no Diligence stage runner
+- no registry batch execution
+- no Operator Challenge execution
+- no final compiler execution
+- no Node 5B assembler implementation
 - no document assembly
 - no delivery portal integration
 - no regulatory scanner
 - no fake engine output
 
-Firebase/Firestore is the future backend database and junction for future engine coordination. Configuration Batch 0 wires safe config detection only; it does not write engine data.
+Gemini smoke validation exists through a fixed server-side test endpoint. It is not the Diligence runtime.
 
-## Configuration Batch 0
-
-Firebase/Firestore is the future backend junction for Wrapper, Diligence, Assembly, Delivery, Horizon, and Maintenance coordination.
-
-The browser uses `VITE_FIREBASE_*` public web config values. Gemini and optional Groq keys are server-only and must not be prefixed with `VITE_`.
-
-The user has configured local `.env.local` manually. Do not commit `.env.local`.
-
-Cloudflare Pages variables must be set under project settings for the relevant environment/context, currently `sandbox`.
-
-- Cloudflare Pages build command remains `npm run build`.
-- Cloudflare Pages output directory remains `dist`.
-- No live engine logic exists yet.
-
-Configuration Batch 0 does not add scraping, Diligence AI provider calls, registry evaluation, Vault question logic, document assembly, CRM simulation, Horizon scanner logic, or fake engine output.
+Firebase/Firestore is the future backend database and junction for future engine coordination. The current bridge detects configuration/readiness only. It does not write engine data.
 
 ## AI Provider Configuration
 
-Gemini is the primary AI provider for future backend work. Groq is optional fallback only.
+Gemini is the primary AI provider for future backend work. Groq is optional fallback/reference only.
 
-AI provider keys are server-side Cloudflare Pages secrets only. Never create a `VITE_`-prefixed Gemini key, and never expose Gemini or Groq keys to React. Firebase continues to use `VITE_FIREBASE_*` public web config values because Firebase web config is client-side build configuration.
+AI provider keys are server-side Cloudflare Pages secrets only. Never create a `VITE_`-prefixed Gemini or Groq key, and never expose AI provider keys to React. Firebase continues to use `VITE_FIREBASE_*` public web config values because Firebase web config is client-side build configuration.
 
 Provider status endpoints:
 
 - `/api/system-status` returns provider, model, capability, Firebase config, and server-only key-presence status without exposing secrets.
 - `/api/ai-smoke-test` accepts `POST` only and validates Gemini with the hardcoded prompt `Reply with exactly: GEMINI_OK`.
 
-Diligence Engine logic is not implemented in this step. This does not add Source Collector, registry evaluation, URL scraping, search scraping, report generation, or chat UI.
+Diligence Engine logic is not implemented by those endpoints. They do not add Source Collector, registry evaluation, URL scraping, search scraping, report generation, or chat UI.
 
-## Wrapper Batch 2 - Installed Runtime Artifacts
+## Installed Runtime and Reference Artifacts
 
-Wrapper Batch 2 installed:
+Active Diligence runtime artifacts:
 
 - `data/runtime/registry.runtime.json`
 - `data/runtime/registry_key.runtime.json`
 - `data/runtime/runtime_artifacts_manifest.json`
+
+Reference-only artifacts:
+
 - `docs/reference/vault.js`
+- `docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md`
 - `docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md`
 
-`data/runtime/registry.runtime.json` contains the 98-row threat registry runtime artifact.
+`data/runtime/registry.runtime.json` contains the current threat registry runtime artifact.
 
 `data/runtime/registry_key.runtime.json` reflects Registry Key v3.0.
 
 `data/runtime/runtime_artifacts_manifest.json` tracks artifact status for the Wrapper runtime surface.
 
-`docs/reference/vault.js` is reference-only. It is not imported, executed, or wired into the app.
+`docs/reference/vault.js` is reference-only. It is not imported, executed, or wired into the app. It is retained as source material for the Vault canonical map and Node 5B deterministic assembler.
 
-`docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md` converts the GPT runtime into staged backend execution doctrine for the future Groq-compatible sandbox. It is not executed by the app.
+`docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md` and `docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md` are migration/reference materials. They are not active runtime dependencies and are not executed by the app.
 
-No engine logic exists yet. This batch does not add scraping, Groq calls, registry evaluation, Hunter Logic Gate execution, Vault question logic, document assembly, CRM simulation, Horizon scanner logic, or fake engine output.
+Base Diligence rule for the future engine: all TRIGGERED threats are preserved in `findings[]`; filtering, sorting, prioritising, grouping, and collapsing happen only at the UI or report-renderer level later.
 
-Base Diligence Engine rule for the future engine: all TRIGGERED threats are preserved in `findings[]`; filtering, sorting, and prioritising happen only at the UI or report-renderer level later.
+## Diligence v2 Prompt Chain
+
+The active Diligence prompt chain is under:
+
+```text
+docs/prompts/diligence-v2/
+```
+
+Prompt index:
+
+```text
+docs/prompts/diligence-v2/PROMPT_INDEX.md
+```
+
+Installed v2 prompt files:
+
+- `00_SHARED_SYSTEM_PREAMBLE.prompt.md`
+- `01_EVIDENCE_REFINER.prompt.md`
+- `02_TARGET_FEATURE_PROFILE.prompt.md`
+- `03_LEGAL_STACK_REVIEW.prompt.md`
+- `04_REGISTRY_LEDGER_EVALUATION.prompt.md`
+- `05_OPERATOR_CHALLENGE.prompt.md`
+- `06_FINAL_COMPILER.prompt.md`
+
+The old Groq prompt tree under `docs/prompts/diligence/` is legacy/reference material only. Do not use it for Diligence v2 implementation.
+
+## Diligence v2 Runtime Boundary
+
+The intended Diligence v2 runtime chain is:
+
+```text
+0.   Source Collector                    client / browser / Jina
+0.5  Evidence Refiner                    Gemini / Pages Function
+1.   Target + Feature Map                Gemini / Pages Function
+2.   Legal Stack + Redline               Gemini / Pages Function
+3.   Registry Ledger                     Gemini / Pages Function, batched
+4.   Operator Challenge                  Gemini / Pages Function, merged ledger only
+5.   Final Compiler                      Gemini / Pages Function
+5B.  Deterministic Backend Assembler      backend only, no model
+```
+
+Node 5 emits compiler output and `vault_confirmation_questions[]` only.
+
+Node 5B deterministically derives:
+
+```text
+vault_prefill_suggestions
+assembly_handoff
+handoff_envelope
+Firestore writes
+```
+
+No model stage may emit `vault_prefill_suggestions`, `assembly_handoff`, or `handoff_envelope`.
 
 ## Wrapper Final Stack Connection
 
@@ -135,8 +179,6 @@ Cloudflare Pages environment variables must include:
 
 The Cloudflare Pages build command remains `npm run build`. The output directory remains `dist`.
 
-No engine logic exists yet.
-
 ## Local Development
 
 ```bash
@@ -163,23 +205,3 @@ Do not deploy this project through Wrangler for the static Pages flow.
 <!-- deploy: cloudflare-pages-env-refresh -->
 
 <!-- deploy: cloudflare-pages-env-refresh -->
-
-## Diligence Stage Prompt Templates
-
-The Diligence Engine now has stage-level Groq prompt templates under docs/prompts/diligence/.
-
-These templates are subordinate to docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md.
-
-Installed prompt templates:
-
-- 01_Target_Feature_Extraction.prompt.md
-- 02_Legal_Stack_Review.prompt.md
-- 03_Registry_Evaluation.prompt.md
-- 04_Final_Compiler_And_Handoff.prompt.md
-- PROMPT_INDEX.md
-
-The stage prompts are not engine implementation code. They are execution contracts for future bounded Groq calls.
-
-The Source Collector remains backend-owned. Groq does not browse, scrape, fetch, or search.
-
-The base Diligence Engine emits all TRIGGERED threats. Filtering, sorting, prioritising, grouping, and collapsing happen only in the UI/report renderer.
