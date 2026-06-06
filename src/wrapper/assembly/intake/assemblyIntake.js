@@ -1,6 +1,6 @@
 import assemblyOutputSchema from "../../../../data/schemas/assemblyOutput.schema.json";
 import { validateHandoffEnvelope } from "../../contracts/handoffEnvelope.js";
-import { formatSchemaErrors, validateJsonSchema } from "../../diligence/validation/index.js";
+import { formatSchemaErrors, validateJsonSchema } from "../../diligence/validation/jsonSchemaValidator.js";
 
 const FORBIDDEN_ASSEMBLY_INTAKE_FIELDS = Object.freeze([
   "compiler_output",
