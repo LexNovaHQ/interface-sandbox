@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:prompts && vite build",
+    "build:prompts": "node scripts/generate-diligence-prompt-bundle.mjs",
     "preview": "vite preview",
     "validate:schemas": "node scripts/validate-schemas-smoke.mjs"
   },
