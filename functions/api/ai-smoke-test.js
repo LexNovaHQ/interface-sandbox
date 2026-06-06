@@ -1,7 +1,7 @@
 import { maskConfigured } from "../_shared/aiProviderConfig.js";
 import { jsonResponse, methodNotAllowed } from "../_shared/response.js";
 
-const GEMINI_OK_PROMPT = "Return JSON only with this exact shape: {\"status\":\"GEMINI_OK\"}";
+const GEMINI_OK_PROMPT = "Reply with exactly this token and nothing else: GEMINI_OK";
 
 function safeModelName(model) {
   return String(model || "gemini-3.5-flash").replace(/^models\//, "");
@@ -90,8 +90,7 @@ export async function onRequest(context) {
         ],
         generationConfig: {
           temperature: 0,
-          maxOutputTokens: 64,
-          responseMimeType: "application/json"
+          maxOutputTokens: 1024
         }
       })
     });
@@ -106,7 +105,8 @@ export async function onRequest(context) {
           model,
           configured: true,
           status: response.status,
-          error: payload?.error?.message || "Gemini request failed"
+          error: payload?.error?.message || "Gemini request failed",
+          diagnostics: safeCandidateDiagnostics(payload)
         },
         { status: 502 }
       );
@@ -114,7 +114,8 @@ export async function onRequest(context) {
 
     const responsePreview = extractGeminiText(payload);
     const parsed = parseSmokeJson(responsePreview);
-    const testPassed = parsed?.status === "GEMINI_OK" || responsePreview.includes("GEMINI_OK");
+    const normalizedPreview = responsePreview.trim();
+    const testPassed = parsed?.status === "GEMINI_OK" || normalizedPreview === "GEMINI_OK" || normalizedPreview.includes("GEMINI_OK");
 
     return jsonResponse({
       ok: true,
