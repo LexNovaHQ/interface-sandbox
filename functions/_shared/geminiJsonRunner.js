@@ -27,7 +27,7 @@ function extractGeminiText(payload) {
 function stripJsonFences(text) {
   const trimmed = String(text || "").trim();
   if (!trimmed.startsWith("```")) return trimmed;
-  return trimmed.replace(/^```(?:json)?\\s*/i, "").replace(/\\s*```$/i, "").trim();
+  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 }
 
 function extractJsonCandidate(text) {
@@ -55,7 +55,14 @@ export function parseGeminiJsonText(text) {
 }
 
 function buildPromptInput({ stageId, prompt, input }) {
-  return prompt.trim() + "\\n\\n---\\n\\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.\\n\\n---INPUT_JSON---\\n" + JSON.stringify({ stage_id: stageId, input }, null, 2);
+  return `${prompt.trim()}
+
+---
+
+Return valid JSON only. Do not include Markdown fences or commentary outside JSON.
+
+---INPUT_JSON---
+${JSON.stringify({ stage_id: stageId, input }, null, 2)}`;
 }
 
 function buildRequestBody({ stageId, prompt, input, options }) {
