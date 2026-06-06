@@ -1,54 +1,8 @@
-import { maskConfigured } from "../_shared/aiProviderConfig.js";
+import { getGeminiModelSequence, maskConfigured } from "../_shared/aiProviderConfig.js";
+import { runGeminiJsonStage } from "../_shared/geminiJsonRunner.js";
 import { jsonResponse, methodNotAllowed } from "../_shared/response.js";
 
-const GEMINI_OK_PROMPT = "Reply with exactly this token and nothing else: GEMINI_OK";
-
-function safeModelName(model) {
-  return String(model || "gemini-3.5-flash").replace(/^models\//, "");
-}
-
-function safeErrorMessage(error, fallback = "Gemini smoke test failed") {
-  if (!error) return fallback;
-  if (error.name === "AbortError") return "Gemini smoke test timed out";
-  return fallback;
-}
-
-function extractGeminiText(payload) {
-  const parts = payload?.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts)) return "";
-  return parts
-    .map((part) => (typeof part?.text === "string" ? part.text : ""))
-    .join("")
-    .trim();
-}
-
-function stripJsonFences(text) {
-  const trimmed = String(text || "").trim();
-  if (!trimmed.startsWith("```")) return trimmed;
-  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-}
-
-function parseSmokeJson(text) {
-  const candidate = stripJsonFences(text);
-  try {
-    return JSON.parse(candidate);
-  } catch (error) {
-    return null;
-  }
-}
-
-function safeCandidateDiagnostics(payload) {
-  const candidate = payload?.candidates?.[0] || null;
-  const parts = candidate?.content?.parts || [];
-
-  return {
-    candidate_count: Array.isArray(payload?.candidates) ? payload.candidates.length : 0,
-    finish_reason: candidate?.finishReason || "unknown",
-    parts_count: Array.isArray(parts) ? parts.length : 0,
-    safety_ratings: candidate?.safetyRatings || [],
-    usage_metadata: payload?.usageMetadata || null
-  };
-}
+const SMOKE_PROMPT = "Return valid JSON only with this exact shape: {\"status\":\"GEMINI_OK\"}.";
 
 export async function onRequest(context) {
   if (context.request.method !== "POST") {
@@ -56,10 +10,8 @@ export async function onRequest(context) {
   }
 
   const env = context.env || {};
-  const configured = maskConfigured(env.GEMINI_API_KEY);
-  const model = safeModelName(env.GEMINI_PRIMARY_MODEL);
 
-  if (!configured) {
+  if (!maskConfigured(env.GEMINI_API_KEY)) {
     return jsonResponse(
       {
         ok: false,
@@ -71,72 +23,59 @@ export async function onRequest(context) {
     );
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model
-  )}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+  const modelSequence = getGeminiModelSequence(env);
+  const attempts = [];
 
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
+  for (const model of modelSequence) {
+    const result = await runGeminiJsonStage({
+      env,
+      stageId: "ai_smoke_test",
+      prompt: SMOKE_PROMPT,
+      input: {
+        expected_status: "GEMINI_OK"
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: GEMINI_OK_PROMPT }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0,
-          maxOutputTokens: 1024
-        }
-      })
+      options: {
+        model,
+        maxOutputTokens: 4096,
+        temperature: 0
+      }
     });
 
-    const payload = await response.json().catch(() => null);
+    attempts.push({
+      model,
+      ok: result.ok,
+      error_type: result.error_type || null,
+      error: result.error || null,
+      finish_reason: result.finish_reason || null,
+      usage_metadata: result.usage_metadata || null
+    });
 
-    if (!response.ok) {
-      return jsonResponse(
-        {
-          ok: false,
-          provider: "gemini",
-          model,
-          configured: true,
-          status: response.status,
-          error: payload?.error?.message || "Gemini request failed",
-          diagnostics: safeCandidateDiagnostics(payload)
-        },
-        { status: 502 }
-      );
+    if (result.ok && result.parsed_json?.status === "GEMINI_OK") {
+      return jsonResponse({
+        ok: true,
+        provider: "gemini",
+        configured: true,
+        test_passed: true,
+        selected_model: model,
+        parsed_status: result.parsed_json.status,
+        attempted_models: attempts
+      });
     }
+  }
 
-    const responsePreview = extractGeminiText(payload);
-    const parsed = parseSmokeJson(responsePreview);
-    const normalizedPreview = responsePreview.trim();
-    const testPassed = parsed?.status === "GEMINI_OK" || normalizedPreview === "GEMINI_OK" || normalizedPreview.includes("GEMINI_OK");
+  const lastAttempt = attempts[attempts.length - 1] || null;
 
-    return jsonResponse({
+  return jsonResponse(
+    {
       ok: true,
       provider: "gemini",
-      model,
       configured: true,
-      test_passed: testPassed,
-      response_preview: responsePreview.slice(0, 160),
-      parsed_status: parsed?.status || null,
-      diagnostics: safeCandidateDiagnostics(payload)
-    });
-  } catch (error) {
-    return jsonResponse(
-      {
-        ok: false,
-        provider: "gemini",
-        model,
-        configured: true,
-        error: safeErrorMessage(error)
-      },
-      { status: 502 }
-    );
-  }
+      test_passed: false,
+      selected_model: null,
+      parsed_status: null,
+      attempted_models: attempts,
+      error: lastAttempt?.error || "All Gemini smoke attempts failed"
+    },
+    { status: 502 }
+  );
 }
