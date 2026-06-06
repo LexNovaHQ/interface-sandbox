@@ -2,8 +2,29 @@ import { maskConfigured } from "./aiProviderConfig.js";
 import { resolveModelRole } from "./modelRoleConfig.js";
 import { classifyGeminiProviderError, getRoleAttempts, shouldTryNextProviderAttempt } from "./providerKeyPool.js";
 
-const DEFAULT_TIMEOUT_MS = 90000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
+
+const ROLE_ATTEMPT_POLICY = Object.freeze({
+  json: { maxAttempts: 3, timeoutMs: 20000 },
+  reasoning: { maxAttempts: 3, timeoutMs: 30000 },
+  final: { maxAttempts: 3, timeoutMs: 50000 },
+  search: { maxAttempts: 2, timeoutMs: 30000 }
+});
+
+function clampNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, number));
+}
+
+function getAttemptPolicy(modelRole, options = {}) {
+  const base = ROLE_ATTEMPT_POLICY[modelRole] || ROLE_ATTEMPT_POLICY.json;
+  return {
+    model_role: modelRole,
+    max_attempts: clampNumber(options.maxAttempts ?? options.max_attempts, base.maxAttempts, 1, 4),
+    attempt_timeout_ms: clampNumber(options.timeoutMs ?? options.timeout_ms, base.timeoutMs, 5000, 55000)
+  };
+}
 
 function buildGeminiUrl(model, apiKey) {
   const url = new URL("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent");
@@ -55,14 +76,7 @@ export function parseGeminiJsonText(text) {
 }
 
 function buildPromptInput({ stageId, prompt, input }) {
-  return `${prompt.trim()}
-
----
-
-Return valid JSON only. Do not include Markdown fences or commentary outside JSON.
-
----INPUT_JSON---
-${JSON.stringify({ stage_id: stageId, input }, null, 2)}`;
+  return prompt.trim() + "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.\n\n---INPUT_JSON---\n" + JSON.stringify({ stage_id: stageId, input }, null, 2);
 }
 
 function buildRequestBody({ stageId, prompt, input, options }) {
@@ -91,8 +105,8 @@ function diagnosticsFromPayload(payload) {
     usage_metadata: payload?.usageMetadata || null
   };
 }
-async function runSingleJsonAttempt({ env, stageId, prompt, input, options, fetchImpl, attempt }) {
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+async function runSingleJsonAttempt({ stageId, prompt, input, options, fetchImpl, attempt, attemptPolicy }) {
+  const timeoutMs = attemptPolicy.attempt_timeout_ms;
   const abort = createAbortSignal(timeoutMs);
 
   try {
@@ -103,10 +117,17 @@ async function runSingleJsonAttempt({ env, stageId, prompt, input, options, fetc
       body: JSON.stringify(buildRequestBody({ stageId, prompt, input, options }))
     });
 
-    const providerPayload = await response.json().catch(() => null);
+    const responseText = await response.text().catch(() => "");
+    let providerPayload = null;
+
+    try {
+      providerPayload = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      providerPayload = null;
+    }
 
     if (!response.ok) {
-      const providerMessage = providerPayload?.error?.message || "Gemini request failed";
+      const providerMessage = providerPayload?.error?.message || responseText.slice(0, 500) || "Gemini request failed";
       return {
         ok: false,
         provider: "gemini",
@@ -139,6 +160,7 @@ async function runSingleJsonAttempt({ env, stageId, prompt, input, options, fetc
         status: response.status,
         error_type: "MODEL_JSON_PARSE_ERROR",
         error: parsed.error,
+        raw_text_preview: rawText.slice(0, 500),
         finish_reason: providerPayload?.candidates?.[0]?.finishReason || "unknown",
         usage_metadata: providerPayload?.usageMetadata || null,
         diagnostics: diagnosticsFromPayload(providerPayload)
@@ -171,12 +193,13 @@ async function runSingleJsonAttempt({ env, stageId, prompt, input, options, fetc
       pool: attempt.pool,
       configured: true,
       error_type: error?.name === "AbortError" ? "TIMEOUT" : "REQUEST_ERROR",
-      error: error?.name === "AbortError" ? "Gemini request timed out after " + timeoutMs + "ms" : "Gemini request failed"
+      error: error?.name === "AbortError" ? "Gemini request timed out after " + timeoutMs + "ms" : (error?.message || "Gemini request failed")
     };
   } finally {
     abort.cancel();
   }
 }
+
 export async function runGeminiJsonStage({ env = {}, stageId, prompt, input, options = {}, fetchImpl = fetch }) {
   const normalizedStageId = String(stageId || "").trim();
 
@@ -196,6 +219,8 @@ export async function runGeminiJsonStage({ env = {}, stageId, prompt, input, opt
 
   const modelRole = resolveModelRole(normalizedStageId, options);
   const preferredModel = options.model || "";
+  const attemptPolicy = getAttemptPolicy(modelRole, options);
+
   const { roleConfig, attempts } = getRoleAttempts({
     env,
     role: modelRole,
@@ -210,6 +235,7 @@ export async function runGeminiJsonStage({ env = {}, stageId, prompt, input, opt
       model_role: modelRole,
       pool: roleConfig.pool,
       configured: false,
+      attempt_policy: attemptPolicy,
       error_type: "CONFIG_ERROR",
       error: "No Gemini API keys configured for role " + modelRole + " using " + roleConfig.keysEnv
     };
@@ -217,18 +243,19 @@ export async function runGeminiJsonStage({ env = {}, stageId, prompt, input, opt
 
   const attempted_providers = [];
   let lastResult = null;
+  const cappedAttempts = attempts.slice(0, attemptPolicy.max_attempts);
 
-  for (const attempt of attempts) {
+  for (const attempt of cappedAttempts) {
     if (!maskConfigured(attempt.apiKey)) continue;
 
     const result = await runSingleJsonAttempt({
-      env,
       stageId: normalizedStageId,
       prompt,
       input,
       options,
       fetchImpl,
-      attempt
+      attempt,
+      attemptPolicy
     });
 
     attempted_providers.push({
@@ -247,6 +274,7 @@ export async function runGeminiJsonStage({ env = {}, stageId, prompt, input, opt
       return {
         ...result,
         model_role: modelRole,
+        attempt_policy: attemptPolicy,
         attempted_providers,
         attempted_models: attempted_providers
       };
@@ -266,6 +294,7 @@ export async function runGeminiJsonStage({ env = {}, stageId, prompt, input, opt
       error: "No Gemini provider attempts were run"
     }),
     model_role: modelRole,
+    attempt_policy: attemptPolicy,
     attempted_providers,
     attempted_models: attempted_providers
   };
