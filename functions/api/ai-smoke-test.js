@@ -1,7 +1,7 @@
 import { maskConfigured } from "../_shared/aiProviderConfig.js";
 import { jsonResponse, methodNotAllowed } from "../_shared/response.js";
 
-const GEMINI_OK_PROMPT = "Reply with exactly: GEMINI_OK";
+const GEMINI_OK_PROMPT = "Return JSON only with this exact shape: {\"status\":\"GEMINI_OK\"}";
 
 function safeModelName(model) {
   return String(model || "gemini-3.5-flash").replace(/^models\//, "");
@@ -20,6 +20,34 @@ function extractGeminiText(payload) {
     .map((part) => (typeof part?.text === "string" ? part.text : ""))
     .join("")
     .trim();
+}
+
+function stripJsonFences(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+}
+
+function parseSmokeJson(text) {
+  const candidate = stripJsonFences(text);
+  try {
+    return JSON.parse(candidate);
+  } catch (error) {
+    return null;
+  }
+}
+
+function safeCandidateDiagnostics(payload) {
+  const candidate = payload?.candidates?.[0] || null;
+  const parts = candidate?.content?.parts || [];
+
+  return {
+    candidate_count: Array.isArray(payload?.candidates) ? payload.candidates.length : 0,
+    finish_reason: candidate?.finishReason || "unknown",
+    parts_count: Array.isArray(parts) ? parts.length : 0,
+    safety_ratings: candidate?.safetyRatings || [],
+    usage_metadata: payload?.usageMetadata || null
+  };
 }
 
 export async function onRequest(context) {
@@ -56,15 +84,19 @@ export async function onRequest(context) {
       body: JSON.stringify({
         contents: [
           {
+            role: "user",
             parts: [{ text: GEMINI_OK_PROMPT }]
           }
         ],
         generationConfig: {
           temperature: 0,
-          maxOutputTokens: 16
+          maxOutputTokens: 64,
+          responseMimeType: "application/json"
         }
       })
     });
+
+    const payload = await response.json().catch(() => null);
 
     if (!response.ok) {
       return jsonResponse(
@@ -73,15 +105,16 @@ export async function onRequest(context) {
           provider: "gemini",
           model,
           configured: true,
-          error: "Gemini request failed"
+          status: response.status,
+          error: payload?.error?.message || "Gemini request failed"
         },
         { status: 502 }
       );
     }
 
-    const payload = await response.json();
     const responsePreview = extractGeminiText(payload);
-    const testPassed = responsePreview.includes("GEMINI_OK");
+    const parsed = parseSmokeJson(responsePreview);
+    const testPassed = parsed?.status === "GEMINI_OK" || responsePreview.includes("GEMINI_OK");
 
     return jsonResponse({
       ok: true,
@@ -89,7 +122,9 @@ export async function onRequest(context) {
       model,
       configured: true,
       test_passed: testPassed,
-      response_preview: responsePreview.slice(0, 80)
+      response_preview: responsePreview.slice(0, 160),
+      parsed_status: parsed?.status || null,
+      diagnostics: safeCandidateDiagnostics(payload)
     });
   } catch (error) {
     return jsonResponse(
