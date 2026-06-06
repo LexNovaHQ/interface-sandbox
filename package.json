@@ -10,7 +10,8 @@
     "build:prompts": "node scripts/generate-diligence-prompt-bundle.mjs",
     "build:schemas": "node scripts/generate-diligence-schema-bundle.mjs",
     "preview": "vite preview",
-    "validate:schemas": "node scripts/validate-schemas-smoke.mjs"
+    "validate:schemas": "node scripts/validate-schemas-smoke.mjs",
+    "test:e2e:dry-run": "node scripts/diligence-e2e-dry-run.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
