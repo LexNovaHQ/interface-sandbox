@@ -52,7 +52,18 @@ function publicModelMetadata(result) {
   };
 }
 
-export async function handleDiligenceStageRequest(context, config) {
+function runtimeErrorPayload(stageId, error) {
+  return {
+    ok: false,
+    stage_id: stageId || "unknown_stage",
+    error_type: "STAGE_HANDLER_RUNTIME_ERROR",
+    error_name: error?.name || "Error",
+    error: error?.message || String(error),
+    stack_preview: String(error?.stack || "").split("\n").slice(0, 6)
+  };
+}
+
+async function runDiligenceStageRequest(context, config) {
   if (context.request.method !== "POST") {
     return methodNotAllowed(["POST"]);
   }
@@ -120,7 +131,9 @@ export async function handleDiligenceStageRequest(context, config) {
         error_type: runResult.error_type,
         error: runResult.error,
         provider: runResult.provider,
-        model: runResult.model || null
+        model: runResult.model || null,
+        finish_reason: runResult.finish_reason || null,
+        usage_metadata: runResult.usage_metadata || null
       },
       { status: providerFailureStatus(runResult) }
     );
@@ -168,4 +181,12 @@ export async function handleDiligenceStageRequest(context, config) {
       sha256: schemaEntry.sha256
     }
   });
+}
+
+export async function handleDiligenceStageRequest(context, config) {
+  try {
+    return await runDiligenceStageRequest(context, config);
+  } catch (error) {
+    return jsonResponse(runtimeErrorPayload(config?.stageId, error), { status: 500 });
+  }
 }
