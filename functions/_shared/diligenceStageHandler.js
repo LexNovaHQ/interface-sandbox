@@ -82,6 +82,20 @@ function unwrapStageOutput(parsedJson, outputKey) {
   };
 }
 
+function maybeNormalizeStageOutput({ config, value, input, stageId }) {
+  if (typeof config.normalizeOutput !== "function") {
+    return {
+      value,
+      normalized: false
+    };
+  }
+
+  return {
+    value: config.normalizeOutput(value, input, { stageId }),
+    normalized: true
+  };
+}
+
 async function runDiligenceStageRequest(context, config) {
   if (context.request.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -160,7 +174,13 @@ async function runDiligenceStageRequest(context, config) {
   }
 
   const normalizedOutput = unwrapStageOutput(runResult.parsed_json, outputKey);
-  const validation = validateJsonSchema(validationSchemaKey, normalizedOutput.value);
+  const stageOutput = maybeNormalizeStageOutput({
+    config,
+    value: normalizedOutput.value,
+    input,
+    stageId
+  });
+  const validation = validateJsonSchema(validationSchemaKey, stageOutput.value);
 
   if (!validation.ok) {
     return jsonResponse(
@@ -172,6 +192,7 @@ async function runDiligenceStageRequest(context, config) {
         validation_schema_key: validationSchemaKey,
         validation_mode: validation.validation_mode,
         output_unwrapped: normalizedOutput.unwrapped,
+        output_normalized: stageOutput.normalized,
         error_type: "SCHEMA_VALIDATION_ERROR",
         error: "Model output failed schema validation",
         validation_errors: validation.errors,
@@ -195,7 +216,8 @@ async function runDiligenceStageRequest(context, config) {
     validation_schema_key: validationSchemaKey,
     validation_mode: validation.validation_mode,
     output_unwrapped: normalizedOutput.unwrapped,
-    [outputKey]: normalizedOutput.value,
+    output_normalized: stageOutput.normalized,
+    [outputKey]: stageOutput.value,
     model_metadata: publicModelMetadata(runResult),
     prompt_metadata: {
       prompt_root: promptBundle.prompt_root,
