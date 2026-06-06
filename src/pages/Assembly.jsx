@@ -1,12 +1,5 @@
-import { ArrowRight } from "lucide-react";
 import PlaceholderPanel from "../components/PlaceholderPanel.jsx";
-
-const expectedInputs = [
-  "Assembly Handoff Payload",
-  "Vault-compatible prefill suggestions",
-  "Vault confirmation questions",
-  "Canonical Vault payload"
-];
+import { AssemblyIntakePanel } from "../wrapper/assembly/index.js";
 
 export default function Assembly() {
   return (
@@ -14,26 +7,9 @@ export default function Assembly() {
       <PlaceholderPanel
         kicker="ASSEMBLY"
         title="Assembly Layer"
-        description="Future responsibility: Assembly Handoff Payload + Vault answers -> canonical client/product profile -> bespoke document assembly -> human review -> Delivery."
+        description="Operational function: validated Diligence handoff -> Vault prefill review -> Vault confirmation answers -> canonical Vault payload -> document assembly."
       >
-        <section className="document-shell">
-          <div className="section-title-row">
-            <h3>Expected Future Inputs</h3>
-            <span>Runtime pending</span>
-          </div>
-          <div className="report-list">
-            {expectedInputs.map((input, index) => (
-              <article className="report-row" key={input}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{input}</strong>
-              </article>
-            ))}
-          </div>
-        </section>
-        <button className="primary-action disabled-action" type="button" disabled>
-          <span>Push to Delivery — pending implementation</span>
-          <ArrowRight size={18} aria-hidden="true" />
-        </button>
+        <AssemblyIntakePanel handoffEnvelope={null} assemblyHandoff={null} />
       </PlaceholderPanel>
     </div>
   );
