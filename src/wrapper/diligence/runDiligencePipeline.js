@@ -44,6 +44,13 @@ function createStageRecord(stage_id, status, extra = {}) {
   };
 }
 
+function mergeStageOptions(options = {}, stageName) {
+  return {
+    ...(options.stageOptions || {}),
+    ...((options.stageOptionOverrides || {})[stageName] || {})
+  };
+}
+
 async function postJson({ endpointUrl, payload, fetchImpl = fetch }) {
   const response = await fetchImpl(endpointUrl, {
     method: "POST",
@@ -65,11 +72,11 @@ async function postJson({ endpointUrl, payload, fetchImpl = fetch }) {
   return body;
 }
 
-async function callStage({ endpointUrl, input, fetchImpl, outputKey }) {
+async function callStage({ endpointUrl, input, fetchImpl, outputKey, options = {} }) {
   const payload = await postJson({
     endpointUrl,
     fetchImpl,
-    payload: { input }
+    payload: { input, options }
   });
 
   const output = payload?.[outputKey];
@@ -175,7 +182,8 @@ export async function runDiligencePipeline(input = {}, options = {}) {
       endpointUrl: endpoints.evidence_refiner,
       fetchImpl,
       outputKey: "source_bundle",
-      input: buildEvidenceRefinerInput(source_collection)
+      input: buildEvidenceRefinerInput(source_collection),
+      options: mergeStageOptions(options, "evidence_refiner")
     });
     const source_bundle = evidence.output;
     stage_log.push(createStageRecord("evidence_refiner", "completed"));
@@ -189,7 +197,8 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         run_id: runId,
         source_bundle,
         registry_key: options.registry_key || registryKeyRuntime
-      }
+      },
+      options: mergeStageOptions(options, "target_feature_profile")
     });
     const target_feature_profile = targetFeature.output;
     stage_log.push(createStageRecord("target_feature_profile", "completed"));
@@ -203,7 +212,8 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         run_id: runId,
         source_bundle,
         target_feature_profile
-      }
+      },
+      options: mergeStageOptions(options, "legal_stack_review")
     });
     const legal_stack_review = legalStack.output;
     stage_log.push(createStageRecord("legal_stack_review", "completed"));
@@ -220,7 +230,8 @@ export async function runDiligencePipeline(input = {}, options = {}) {
       callRegistryBatch: (batchInput) => callRegistryEndpoint({
         endpointUrl: endpoints.registry_ledger,
         batchInput,
-        fetchImpl
+        fetchImpl,
+        options: mergeStageOptions(options, "registry_ledger")
       })
     });
     stage_log.push(createStageRecord("registry_ledger", "completed", {
@@ -240,7 +251,8 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         target_feature_profile,
         legal_stack_review,
         merged_registry_result
-      })
+      }),
+      options: mergeStageOptions(options, "operator_challenge")
     });
     const operator_challenge_result = operatorChallenge.output;
     stage_log.push(createStageRecord("operator_challenge", "completed", {
@@ -275,7 +287,8 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         correction_meta: correction_result.correction_meta,
         source_collection,
         merged_registry_result
-      })
+      }),
+      options: mergeStageOptions(options, "final_compiler")
     });
     const compiler_output = finalCompiler.output;
     stage_log.push(createStageRecord("final_compiler", "completed"));
