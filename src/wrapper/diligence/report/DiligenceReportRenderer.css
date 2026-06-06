@@ -1,0 +1,99 @@
+.report-row--detail {
+  align-items: start;
+  padding: 0.75rem;
+}
+
+.report-row--detail p {
+  margin: 0.25rem 0 0;
+}
+
+.diligence-report,
+.diligence-report-section,
+.diligence-report-header,
+.diligence-report-empty {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.diligence-report-header {
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+  align-items: start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(221, 205, 176, 0.14);
+}
+
+.diligence-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.diligence-kv {
+  display: grid;
+  gap: 0.2rem;
+  min-height: 4rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(221, 205, 176, 0.12);
+  border-radius: 8px;
+  background: rgba(8, 8, 7, 0.22);
+}
+
+.diligence-kv span {
+  color: #b8a070;
+  font-size: 0.76rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.diligence-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.diligence-table-wrap {
+  overflow-x: auto;
+}
+
+.diligence-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+}
+
+.diligence-table th,
+.diligence-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(221, 205, 176, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+
+.diligence-table th {
+  color: #b8a070;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.diligence-table td span {
+  display: block;
+  margin-top: 0.25rem;
+  color: #bdb3a2;
+}
+
+@media (max-width: 1040px) {
+  .diligence-card-grid,
+  .diligence-report-header {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .diligence-card-grid,
+  .diligence-kv-grid,
+  .diligence-report-header {
+    grid-template-columns: 1fr;
+  }
+}
