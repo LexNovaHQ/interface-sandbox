@@ -1,7 +1,7 @@
 {
   "artifact": "runtime_artifacts_manifest",
-  "version": "v3.0 / runtime artifact manifest",
-  "generated_at": "2026-06-05T02:41:10+05:30",
+  "version": "v3.1 / runtime artifact manifest",
+  "generated_at": "2026-06-06T00:00:00+05:30",
   "artifacts": [
     {
       "id": "registry_runtime",
@@ -10,7 +10,7 @@
       "type": "json",
       "required": true,
       "status": "installed",
-      "summary": "98-row threat registry runtime artifact."
+      "summary": "Current threat registry runtime artifact."
     },
     {
       "id": "registry_key_runtime",
@@ -36,16 +36,16 @@
       "type": "reference",
       "required": true,
       "status": "installed",
-      "note": "Reference-only canonical Vault payload. Not imported or executed by the app."
+      "note": "Reference-only canonical Vault payload. Not imported or executed by the app; retained for Vault map and Node 5B derivation."
     },
     {
       "id": "diligence_groq_sandbox_runtime",
-      "label": "Diligence Groq Sandbox Runtime",
+      "label": "Legacy Groq Sandbox Runtime Reference",
       "path": "docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md",
       "type": "markdown",
-      "required": true,
-      "status": "installed",
-      "note": "Sandbox/Groq runtime doctrine only. Not imported or executed by the app."
+      "required": false,
+      "status": "reference_only",
+      "note": "Legacy sandbox/Groq doctrine retained for migration history only. Not an active Diligence v2 runtime dependency."
     }
   ]
 }
