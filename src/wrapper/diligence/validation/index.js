@@ -6,6 +6,8 @@ export {
 
 export {
   assertValidAgainstSchema,
+  clearValidatorCache,
+  compileSchema,
   createValidator,
   formatSchemaErrors,
   validateAgainstSchema,
