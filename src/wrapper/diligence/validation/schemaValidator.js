@@ -1,4 +1,4 @@
-import Ajv from "ajv";
+import Ajv2020 from "ajv/dist/2020.js";
 import { loadSchema } from "./schemaLoader.js";
 
 const validatorCache = new Map();
@@ -30,7 +30,7 @@ export function formatSchemaErrors(errors = []) {
 }
 
 export function createValidator(options = {}) {
-  return new Ajv({
+  return new Ajv2020({
     allErrors: true,
     strict: false,
     validateFormats: false,
