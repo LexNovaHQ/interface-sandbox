@@ -1,7 +1,7 @@
 import assemblyOutputSchema from "../../../../data/schemas/assemblyOutput.schema.json";
 import compilerOutputSchema from "../../../../data/schemas/compilerOutput.schema.json";
 import { createHandoffEnvelope, validateHandoffEnvelope } from "../../contracts/handoffEnvelope.js";
-import { formatSchemaErrors, validateJsonSchema } from "../validation/index.js";
+import { formatSchemaErrors, validateJsonSchema } from "../validation/jsonSchemaValidator.js";
 import {
   FORBIDDEN_NODE5B_INPUT_FIELDS,
   VAULT_GROUPS,
