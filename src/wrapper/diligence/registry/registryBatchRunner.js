@@ -41,19 +41,22 @@ export async function runRegistryLedgerBatches({
   return assertMergedRegistryLedgerValid(mergeResult);
 }
 
-export async function callRegistryEndpoint({ endpointUrl = "/api/diligence-registry-ledger", batchInput, fetchImpl = fetch }) {
+export async function callRegistryEndpoint({ endpointUrl = "/api/diligence-registry-ledger", batchInput, fetchImpl = fetch, options = {} }) {
   const response = await fetchImpl(endpointUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json"
     },
-    body: JSON.stringify({ input: batchInput })
+    body: JSON.stringify({ input: batchInput, options })
   });
 
   const payload = await response.json().catch(() => null);
 
   if (!response.ok || !payload?.ok) {
-    throw new Error(payload?.error || `Registry endpoint failed with status ${response.status}`);
+    const error = new Error(payload?.error || `Registry endpoint failed with status ${response.status}`);
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
   }
 
   return payload.registry_ledger_result;
