@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://interface-sandbox.local/schemas/compilerOutput.schema.json",
   "title": "Diligence Compiler Output",
-  "description": "Stage 06 / Node 5 compiler-only output. This schema intentionally excludes Node 5B deterministic backend fields: vault_prefill_suggestions, assembly_handoff, and handoff_envelope.",
+  "description": "Stage 06 / Node 5 compiler-only output. This schema intentionally excludes Node 5B deterministic backend fields: vault_prefill_suggestions, assembly_handoff, and handoff_envelope. Multiple manual URLs are represented in upstream target_input.manual_urls while source_mode remains url unless pasted text is also supplied.",
   "type": "object",
   "required": [
     "diligence_run",
@@ -34,7 +34,7 @@
         "run_id": { "type": "string" },
         "submitted_at": { "type": "string" },
         "created_at": { "type": "string" },
-        "source_mode": { "type": "string", "enum": ["url", "manual_urls", "text", "url_plus_text"] },
+        "source_mode": { "type": "string", "enum": ["url", "text", "url_plus_text"] },
         "compiler_status": { "type": "string" }
       }
     },
