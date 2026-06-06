@@ -1,4 +1,5 @@
 import { DILIGENCE_SCHEMA_BUNDLE } from "../_generated/diligenceSchemaBundle.js";
+import { getGeminiModelSequence } from "./aiProviderConfig.js";
 import { jsonResponse, methodNotAllowed } from "./response.js";
 import { runGeminiJsonStage } from "./geminiJsonRunner.js";
 import { loadDiligencePrompt } from "./diligencePromptLoader.js";
@@ -47,6 +48,8 @@ function publicModelMetadata(result) {
   return {
     provider: result.provider,
     model: result.model,
+    selected_model: result.selected_model || result.model,
+    attempted_models: result.attempted_models || [],
     finish_reason: result.finish_reason,
     usage_metadata: result.usage_metadata || null
   };
@@ -93,6 +96,72 @@ function maybeNormalizeStageOutput({ config, value, input, stageId }) {
   return {
     value: config.normalizeOutput(value, input, { stageId }),
     normalized: true
+  };
+}
+
+function shouldTryNextModel(result) {
+  return [
+    "PROVIDER_ERROR",
+    "MODEL_JSON_PARSE_ERROR",
+    "TIMEOUT",
+    "REQUEST_ERROR"
+  ].includes(result?.error_type);
+}
+
+async function runStageModelWithFallback({ context, stageId, prompt, input, options }) {
+  const env = context.env || {};
+  const modelSequence = getGeminiModelSequence(env, {
+    model: options?.model,
+    modelSequence: options?.modelSequence
+  });
+
+  const attempted_models = [];
+  let lastResult = null;
+
+  for (const model of modelSequence) {
+    const result = await runGeminiJsonStage({
+      env,
+      stageId,
+      prompt,
+      input,
+      options: {
+        ...(options || {}),
+        model
+      }
+    });
+
+    attempted_models.push({
+      model,
+      ok: result.ok,
+      error_type: result.error_type || null,
+      error: result.error || null,
+      status: result.status || null,
+      finish_reason: result.finish_reason || null
+    });
+
+    if (result.ok) {
+      return {
+        ...result,
+        selected_model: model,
+        attempted_models
+      };
+    }
+
+    lastResult = result;
+    if (!shouldTryNextModel(result)) break;
+  }
+
+  return {
+    ...(lastResult || {
+      ok: false,
+      provider: "gemini",
+      stage_id: stageId,
+      model: modelSequence[0] || null,
+      configured: true,
+      error_type: "NO_MODEL_ATTEMPTED",
+      error: "No Gemini model attempts were run"
+    }),
+    attempted_models
   };
 }
 
@@ -149,8 +218,8 @@ async function runDiligenceStageRequest(context, config) {
   }
 
   const input = getStageInput(body);
-  const runResult = await runGeminiJsonStage({
-    env: context.env || {},
+  const runResult = await runStageModelWithFallback({
+    context,
     stageId,
     prompt: promptBundle.combined_prompt,
     input,
@@ -166,6 +235,8 @@ async function runDiligenceStageRequest(context, config) {
         error: runResult.error,
         provider: runResult.provider,
         model: runResult.model || null,
+        selected_model: runResult.selected_model || null,
+        attempted_models: runResult.attempted_models || [],
         finish_reason: runResult.finish_reason || null,
         usage_metadata: runResult.usage_metadata || null
       },
