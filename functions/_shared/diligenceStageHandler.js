@@ -63,6 +63,25 @@ function runtimeErrorPayload(stageId, error) {
   };
 }
 
+function unwrapStageOutput(parsedJson, outputKey) {
+  if (
+    parsedJson &&
+    typeof parsedJson === "object" &&
+    !Array.isArray(parsedJson) &&
+    Object.prototype.hasOwnProperty.call(parsedJson, outputKey)
+  ) {
+    return {
+      value: parsedJson[outputKey],
+      unwrapped: true
+    };
+  }
+
+  return {
+    value: parsedJson,
+    unwrapped: false
+  };
+}
+
 async function runDiligenceStageRequest(context, config) {
   if (context.request.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -140,7 +159,8 @@ async function runDiligenceStageRequest(context, config) {
     );
   }
 
-  const validation = validateJsonSchema(validationSchemaKey, runResult.parsed_json);
+  const normalizedOutput = unwrapStageOutput(runResult.parsed_json, outputKey);
+  const validation = validateJsonSchema(validationSchemaKey, normalizedOutput.value);
 
   if (!validation.ok) {
     return jsonResponse(
@@ -151,6 +171,7 @@ async function runDiligenceStageRequest(context, config) {
         output_schema_path: schemaEntry.path,
         validation_schema_key: validationSchemaKey,
         validation_mode: validation.validation_mode,
+        output_unwrapped: normalizedOutput.unwrapped,
         error_type: "SCHEMA_VALIDATION_ERROR",
         error: "Model output failed schema validation",
         validation_errors: validation.errors,
@@ -173,7 +194,8 @@ async function runDiligenceStageRequest(context, config) {
     output_schema_path: schemaEntry.path,
     validation_schema_key: validationSchemaKey,
     validation_mode: validation.validation_mode,
-    [outputKey]: runResult.parsed_json,
+    output_unwrapped: normalizedOutput.unwrapped,
+    [outputKey]: normalizedOutput.value,
     model_metadata: publicModelMetadata(runResult),
     prompt_metadata: {
       prompt_root: promptBundle.prompt_root,
