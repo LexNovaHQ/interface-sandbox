@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node --check server.js && node --check src/env.js && node --check src/source-capture/sourceCapture.js && node --check scripts/smoke-runtime.mjs",
+    "check": "node --check server.js && node --check src/env.js && node --check src/source-capture/sourceCapture.js && node --check src/diligence/stageConfigs.js && node --check src/diligence/stagePromptLoader.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageRunner.js && node --check src/routes/diligenceStageRoutes.js && node --check scripts/smoke-runtime.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs"
   },
   "engines": {
@@ -17,6 +17,6 @@
     "@google/genai": "^1.33.0",
     "cors": "^2.8.5",
     "express": "^4.22.1",
-    "helmet": "^8.1.0"
+    "helmet": "^8.1.1"
   }
 }
