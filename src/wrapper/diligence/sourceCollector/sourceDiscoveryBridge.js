@@ -1,7 +1,6 @@
 import { normalizeHttpUrl } from "./sourceMode.js";
 
 const DEFAULT_SOURCE_DISCOVERY_ENDPOINT = "/api/source-discovery-scout";
-const DEFAULT_MAX_DISCOVERED_URLS = 24;
 const READY_FOR_ADMISSION = "READY_FOR_ADMISSION";
 
 function asArray(value) {
@@ -149,7 +148,6 @@ export async function runSourceDiscoveryBridge({
   fetchImpl = fetch,
   endpoint = DEFAULT_SOURCE_DISCOVERY_ENDPOINT,
   enabled = true,
-  maxDiscoveredUrls = DEFAULT_MAX_DISCOVERED_URLS,
   options = {}
 } = {}) {
   if (!enabled) return createSkippedDiscovery("disabled_by_options");
@@ -199,8 +197,6 @@ export async function runSourceDiscoveryBridge({
     if (seenUrls.has(url)) continue;
     seenUrls.add(url);
     admittedSources.push(createAdmittedSource(candidate, url, admission.reason));
-
-    if (admittedSources.length >= maxDiscoveredUrls) break;
   }
 
   return {
