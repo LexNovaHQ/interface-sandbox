@@ -3,12 +3,13 @@ import helmet from "helmet";
 import cors from "cors";
 import { getRequiredRuntimeEnvStatus, readRuntimeEnv } from "./src/env.js";
 import { createSmokeRouter } from "./src/routes/smokeRoutes.js";
+import { createSourceDiscoveryRouter } from "./src/routes/sourceDiscoveryRoute.js";
 
 const app = express();
 const runtime = readRuntimeEnv();
 
 app.use(helmet());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "4mb" }));
 app.use(cors({ origin: runtime.allowed_origin }));
 
 function requireToken(req, res, next) {
@@ -33,8 +34,8 @@ function healthPayload() {
   return {
     ok: envStatus.required_missing.length === 0,
     service: "lexnova-runtime-api",
-    version: "0.2.0",
-    phase: "phase_2_gemini_pool_engine",
+    version: "0.3.0",
+    phase: "phase_3_source_discovery_runtime",
     runtime: {
       node_env: currentRuntime.node_env,
       allowed_origin: currentRuntime.allowed_origin,
@@ -60,6 +61,7 @@ app.get("/v1/runtime-status", requireToken, (req, res) => {
 });
 
 app.use("/v1/smoke", requireToken, createSmokeRouter());
+app.use("/v1/source-discovery", requireToken, createSourceDiscoveryRouter());
 
 app.use((req, res) => {
   res.status(404).json({ ok: false, service: "lexnova-runtime-api", error_type: "NOT_FOUND" });
