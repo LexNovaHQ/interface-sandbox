@@ -1,4 +1,4 @@
-import { classifyGeminiError } from "./geminiErrorClassifier.js";
+﻿import { classifyGeminiError } from "./geminiErrorClassifier.js";
 import { parseGeminiJsonPayload } from "./geminiResponseParser.js";
 
 function splitCsv(value) {
@@ -65,6 +65,17 @@ export function getPoolSnapshot(poolName, env = process.env) {
 }
 
 function buildGenerateContentBody({ prompt, responseMimeType = "application/json", maxOutputTokens = 1024, temperature = 0.1, enableSearchGrounding = false }) {
+  const generationConfig = {
+    temperature,
+    maxOutputTokens
+  };
+
+  // Gemini search grounding does not support responseMimeType.
+  // For grounded calls, prompt for JSON and parse JSON from returned text.
+  if (!enableSearchGrounding && responseMimeType) {
+    generationConfig.responseMimeType = responseMimeType;
+  }
+
   const body = {
     contents: [
       {
@@ -72,11 +83,7 @@ function buildGenerateContentBody({ prompt, responseMimeType = "application/json
         parts: [{ text: prompt }]
       }
     ],
-    generationConfig: {
-      temperature,
-      maxOutputTokens,
-      responseMimeType
-    }
+    generationConfig
   };
 
   if (enableSearchGrounding) {
@@ -141,7 +148,7 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
   const responseMimeType = options.responseMimeType || "application/json";
   const enableSearchGrounding = options.enableSearchGrounding ?? config.enable_search_grounding;
 
-  for (const model of models) {
+  modelLoop: for (const model of models) {
     for (let keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
       const selected_key_alias = `${config.alias_prefix}_${keyIndex + 1}`;
       const model_meta = {
@@ -160,9 +167,28 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
         attempts.push(attempt);
 
         if (!parsed.ok) {
+          const parseClassification = parsed.finish_reason === "MAX_TOKENS"
+            ? { category: "OUTPUT_TRUNCATED", retryable: true, rotate_key: false, rotate_model: true }
+            : { category: "JSON_PARSE_FAILED", retryable: true, rotate_key: false, rotate_model: true };
+
+          attempts[attempts.length - 1] = {
+            ...attempts[attempts.length - 1],
+            ok: false,
+            classification: parseClassification,
+            error: {
+              message: parsed.error,
+              finish_reason: parsed.finish_reason || null,
+              raw_text_preview: String(parsed.raw_text || "").slice(0, 500)
+            }
+          };
+
+          if (parseClassification.rotate_model) {
+            continue modelLoop;
+          }
+
           return {
             ok: false,
-            error_type: "JSON_PARSE_FAILED",
+            error_type: parseClassification.category,
             error: parsed.error,
             model_meta,
             attempts,
@@ -227,3 +253,7 @@ export async function runGeminiPool({ poolName, prompt, options = {}, env = proc
 
   return primary;
 }
+
+
+
+

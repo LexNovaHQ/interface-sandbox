@@ -1,7 +1,8 @@
-import express from "express";
+﻿import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import { getRequiredRuntimeEnvStatus, readRuntimeEnv } from "./src/env.js";
+import { createSmokeRouter } from "./src/routes/smokeRoutes.js";
 
 const app = express();
 const runtime = readRuntimeEnv();
@@ -32,8 +33,8 @@ function healthPayload() {
   return {
     ok: envStatus.required_missing.length === 0,
     service: "lexnova-runtime-api",
-    version: "0.1.0",
-    phase: "phase_1_runtime_skeleton",
+    version: "0.2.0",
+    phase: "phase_2_gemini_pool_engine",
     runtime: {
       node_env: currentRuntime.node_env,
       allowed_origin: currentRuntime.allowed_origin,
@@ -57,6 +58,8 @@ app.get("/health", (req, res) => {
 app.get("/v1/runtime-status", requireToken, (req, res) => {
   res.json(healthPayload());
 });
+
+app.use("/v1/smoke", requireToken, createSmokeRouter());
 
 app.use((req, res) => {
   res.status(404).json({ ok: false, service: "lexnova-runtime-api", error_type: "NOT_FOUND" });

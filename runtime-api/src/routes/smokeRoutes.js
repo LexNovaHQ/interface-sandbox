@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { SMOKE_PROMPTS } from "../gemini/smokePrompts.js";
 
@@ -9,7 +9,7 @@ export function createSmokeRouter() {
     const prompt = req.body?.prompt || SMOKE_PROMPTS[poolName];
     const options = {
       timeoutMs: Number(req.body?.timeoutMs || 45000),
-      maxOutputTokens: Number(req.body?.maxOutputTokens || 512),
+      maxOutputTokens: Number(req.body?.maxOutputTokens || (poolName === "reasoning" ? 2048 : 768)),
       temperature: Number(req.body?.temperature ?? 0.1),
       responseMimeType: "application/json"
     };
@@ -40,3 +40,4 @@ export function createSmokeRouter() {
 
   return router;
 }
+
