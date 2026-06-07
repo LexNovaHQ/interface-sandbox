@@ -174,9 +174,7 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         headers: options.sourceHeaders,
         sourceDiscoveryEndpoint: options.sourceDiscoveryEndpoint || endpoints.source_discovery,
         enableSourceDiscovery: options.enableSourceDiscovery !== false,
-        sourceDiscoveryOptions: options.sourceDiscoveryOptions || { maxAttempts: 1 },
-        sourceDiscoveryMaxUrls: options.sourceDiscoveryMaxUrls,
-        maxCollectedUrls: options.maxCollectedUrls
+        sourceDiscoveryOptions: options.sourceDiscoveryOptions || { maxAttempts: 1 }
       }
     );
     stage_log.push(createStageRecord("source_collector", "completed", {
