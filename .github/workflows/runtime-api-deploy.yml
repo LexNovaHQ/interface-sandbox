@@ -57,20 +57,70 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy to Cloud Run
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_REGISTRY_API_KEYS: ${{ secrets.GEMINI_REGISTRY_API_KEYS }}
+          GEMINI_SEARCH_MODEL_SEQUENCE: ${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
+          GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
         run: |
-          gcloud run deploy "${{ secrets.GCP_CLOUD_RUN_SERVICE }}" \
+          set -euo pipefail
+
+          required=(
+            GCP_PROJECT_ID
+            GCP_REGION
+            GCP_CLOUD_RUN_SERVICE
+            RUNTIME_ACCESS_TOKEN
+            ALLOWED_ORIGIN
+            GEMINI_SEARCH_API_KEYS
+            GEMINI_JSON_API_KEYS
+            GEMINI_REASONING_API_KEYS
+            GEMINI_REGISTRY_API_KEYS
+            GEMINI_SEARCH_MODEL_SEQUENCE
+            GEMINI_JSON_MODEL_SEQUENCE
+            GEMINI_REASONING_MODEL_SEQUENCE
+            GEMINI_REGISTRY_MODEL_SEQUENCE
+            GEMINI_FINAL_MODEL_SEQUENCE
+          )
+
+          for name in "${required[@]}"; do
+            value="${!name:-}"
+            if [[ -z "$value" ]]; then
+              echo "Missing required secret/env: $name" >&2
+              exit 1
+            fi
+            if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+              echo "Secret/env contains a newline and must be re-saved as a single-line value: $name" >&2
+              exit 1
+            fi
+          done
+
+          gcloud run deploy "$GCP_CLOUD_RUN_SERVICE" \
             --source . \
-            --project "${{ secrets.GCP_PROJECT_ID }}" \
-            --region "${{ secrets.GCP_REGION }}" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
             --allow-unauthenticated \
-            --set-env-vars="^|^RUNTIME_ACCESS_TOKEN=${{ secrets.RUNTIME_ACCESS_TOKEN }}|ALLOWED_ORIGIN=${{ secrets.ALLOWED_ORIGIN }}|GEMINI_SEARCH_API_KEYS=${{ secrets.GEMINI_SEARCH_API_KEYS }}|GEMINI_JSON_API_KEYS=${{ secrets.GEMINI_JSON_API_KEYS }}|GEMINI_REASONING_API_KEYS=${{ secrets.GEMINI_REASONING_API_KEYS }}|GEMINI_REGISTRY_API_KEYS=${{ secrets.GEMINI_REGISTRY_API_KEYS }}|GEMINI_SEARCH_MODEL_SEQUENCE=${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}|GEMINI_JSON_MODEL_SEQUENCE=${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}|GEMINI_REASONING_MODEL_SEQUENCE=${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}|GEMINI_REGISTRY_MODEL_SEQUENCE=${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}|GEMINI_FINAL_MODEL_SEQUENCE=${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}"
+            --set-env-vars="^|^RUNTIME_ACCESS_TOKEN=${RUNTIME_ACCESS_TOKEN}|ALLOWED_ORIGIN=${ALLOWED_ORIGIN}|GEMINI_SEARCH_API_KEYS=${GEMINI_SEARCH_API_KEYS}|GEMINI_JSON_API_KEYS=${GEMINI_JSON_API_KEYS}|GEMINI_REASONING_API_KEYS=${GEMINI_REASONING_API_KEYS}|GEMINI_REGISTRY_API_KEYS=${GEMINI_REGISTRY_API_KEYS}|GEMINI_SEARCH_MODEL_SEQUENCE=${GEMINI_SEARCH_MODEL_SEQUENCE}|GEMINI_JSON_MODEL_SEQUENCE=${GEMINI_JSON_MODEL_SEQUENCE}|GEMINI_REASONING_MODEL_SEQUENCE=${GEMINI_REASONING_MODEL_SEQUENCE}|GEMINI_REGISTRY_MODEL_SEQUENCE=${GEMINI_REGISTRY_MODEL_SEQUENCE}|GEMINI_FINAL_MODEL_SEQUENCE=${GEMINI_FINAL_MODEL_SEQUENCE}"
 
       - name: Resolve runtime URL
         id: runtime
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
         run: |
-          URL=$(gcloud run services describe "${{ secrets.GCP_CLOUD_RUN_SERVICE }}" \
-            --project "${{ secrets.GCP_PROJECT_ID }}" \
-            --region "${{ secrets.GCP_REGION }}" \
+          URL=$(gcloud run services describe "$GCP_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
             --format="value(status.url)")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
