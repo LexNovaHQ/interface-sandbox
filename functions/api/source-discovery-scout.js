@@ -93,6 +93,8 @@ async function handlePost(context) {
       attempted_models: result.attempted_models || [],
       raw_provider_preview: result.raw_provider_preview || null,
       raw_candidate_preview: result.raw_candidate_preview || null,
+      quality_status: result.quality_status || null,
+      scout_quality: result.scout_quality || null,
       grounding: result.grounding || null
     }, { status: publicFailureStatus(result.error_type) });
   }

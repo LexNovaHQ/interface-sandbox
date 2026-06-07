@@ -1,4 +1,5 @@
 import { buildSourceDiscoveryPrompt } from "./sourceDiscoveryPrompt.js";
+import { guardSourceDiscoveryOutput } from "./sourceDiscoveryOutputGuard.js";
 import { classifyGeminiProviderError, getRoleAttempts, shouldTryNextProviderAttempt } from "./providerKeyPool.js";
 
 const DEFAULT_TIMEOUT_MS = 30000;
@@ -140,6 +141,8 @@ async function runSingleDiscoveryAttempt({ attempt, input, options, fetchImpl, a
         finish_reason: payload?.candidates?.[0]?.finishReason || "unknown"
       };
     }
+
+    const guarded = guardSourceDiscoveryOutput(parsed.value, { grounding });
 
     return {
       ok: true,
