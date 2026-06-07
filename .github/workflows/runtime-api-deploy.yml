@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - "runtime-api/**"
+      - "functions/_generated/**"
       - ".github/workflows/runtime-api-deploy.yml"
 
 jobs:
@@ -19,6 +20,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Package generated diligence bundles
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -45,6 +57,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Package generated diligence bundles
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
