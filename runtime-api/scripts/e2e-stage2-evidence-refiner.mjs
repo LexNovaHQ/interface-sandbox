@@ -12,6 +12,25 @@ function fail(message, detail) {
   process.exit(1);
 }
 
+function normalizeRuntimeUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(withScheme);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error(`Unsupported protocol: ${parsed.protocol}`);
+    }
+    return parsed.toString().replace(/\/+$/, "");
+  } catch (error) {
+    fail("RUNTIME_URL must be a valid http(s) URL or hostname", {
+      received: raw,
+      normalized_attempt: withScheme,
+      error: error?.message || String(error)
+    });
+  }
+}
+
 async function readJson(response) {
   const text = await response.text();
   try {
@@ -80,7 +99,7 @@ if (!token) {
   fail("RUNTIME_ACCESS_TOKEN is required");
 }
 
-const base = runtimeUrl.replace(/\/+$/, "");
+const base = normalizeRuntimeUrl(runtimeUrl);
 const targetInput = {
   primary_url: primaryUrl,
   company_name: companyName,
