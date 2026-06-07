@@ -11,6 +11,7 @@ const STAGE_ROLE_MAP = Object.freeze({
   target_feature_profile: MODEL_ROLES.JSON,
   legal_stack_review: MODEL_ROLES.JSON,
   registry_ledger: MODEL_ROLES.JSON,
+  registry_ledger_evaluation: MODEL_ROLES.JSON,
   operator_challenge: MODEL_ROLES.REASONING,
   final_compiler: MODEL_ROLES.FINAL,
   source_discovery: MODEL_ROLES.SEARCH
@@ -36,7 +37,7 @@ const ROLE_CONFIG = Object.freeze({
   reasoning: {
     pool: "reasoning",
     keysEnv: "GEMINI_REASONING_API_KEYS",
-    modelsEnv: "GEMINI_REASONING_MODEL_SEQUENCE",
+    modelsEnv: "GEMINI_FINAL_MODEL_SEQUENCE",
     defaultModels: ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"],
     responseMimeType: true,
     tools: []
