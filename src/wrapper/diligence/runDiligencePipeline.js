@@ -172,6 +172,7 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         timeoutMs: options.sourceTimeoutMs,
         maxCharacters: options.sourceMaxCharacters,
         headers: options.sourceHeaders,
+        sourceFetchBatchSize: options.sourceFetchBatchSize,
         sourceDiscoveryEndpoint: options.sourceDiscoveryEndpoint || endpoints.source_discovery,
         enableSourceDiscovery: options.enableSourceDiscovery !== false,
         sourceDiscoveryOptions: options.sourceDiscoveryOptions || { maxAttempts: 1 }
