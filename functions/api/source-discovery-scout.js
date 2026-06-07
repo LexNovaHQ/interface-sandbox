@@ -2,6 +2,8 @@ import { parseBoolean } from "../_shared/aiProviderConfig.js";
 import { runGeminiSearchDiscovery } from "../_shared/geminiSearchDiscoveryRunner.js";
 import { jsonResponse, methodNotAllowed } from "../_shared/response.js";
 
+const SCOUT_FUNCTION_BUDGET_MS = 11000;
+
 async function readJsonBody(request) {
   const contentType = request.headers.get("content-type") || "";
   if (!contentType.toLowerCase().includes("application/json")) {
@@ -44,6 +46,46 @@ function runtimeErrorPayload(error) {
     stack_preview: String(error?.stack || "").split("\n").slice(0, 8)
   };
 }
+
+function createScoutTimeoutResult(input) {
+  return {
+    ok: false,
+    provider: "gemini",
+    model_role: "search",
+    configured: true,
+    error_type: "TIMEOUT",
+    error: `Source Discovery Scout exceeded ${SCOUT_FUNCTION_BUDGET_MS}ms production budget before Gemini Search returned. Use smaller search scope or move source discovery to queued/batched execution.`,
+    attempt_policy: {
+      model_role: "search",
+      max_attempts: 1,
+      function_budget_ms: SCOUT_FUNCTION_BUDGET_MS
+    },
+    attempted_models: [],
+    grounding: null,
+    quality_status: "SCOUT_TIMEOUT",
+    scout_quality: {
+      candidate_count: 0,
+      trace_complete_count: 0,
+      trace_incomplete_count: 0,
+      ready_for_admission_gate: false,
+      warnings: ["Gemini Search did not return before the production function budget."],
+      target: {
+        primary_url: input.primary_url || null,
+        company_name: input.company_name || null
+      }
+    }
+  };
+}
+
+function withFunctionBudget(promise, input) {
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(createScoutTimeoutResult(input)), SCOUT_FUNCTION_BUDGET_MS);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 async function handlePost(context) {
   if (!parseBoolean(context.env?.ENABLE_SEARCH_DISCOVERY, false)) {
     return jsonResponse({
@@ -64,6 +106,8 @@ async function handlePost(context) {
   const input = normalizeInput(body?.input || body || {});
   const options = {
     maxAttempts: 1,
+    timeoutMs: 9000,
+    maxOutputTokens: 4096,
     ...(body?.options || {})
   };
 
@@ -76,11 +120,11 @@ async function handlePost(context) {
     }, { status: 400 });
   }
 
-  const result = await runGeminiSearchDiscovery({
+  const result = await withFunctionBudget(runGeminiSearchDiscovery({
     env: context.env || {},
     input,
     options
-  });
+  }), input);
 
   if (!result.ok) {
     return jsonResponse({
