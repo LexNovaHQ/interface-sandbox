@@ -3,6 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import { getRequiredRuntimeEnvStatus, readRuntimeEnv } from "./src/env.js";
 import { createSmokeRouter } from "./src/routes/smokeRoutes.js";
+import { createPoolRouter } from "./src/routes/poolRoutes.js";
 import { createSourceDiscoveryRouter } from "./src/routes/sourceDiscoveryRoute.js";
 import { createSourceCaptureRouter } from "./src/routes/sourceCaptureRoute.js";
 const app = express();
@@ -61,6 +62,7 @@ app.get("/v1/runtime-status", requireToken, (req, res) => {
 });
 
 app.use("/v1/smoke", requireToken, createSmokeRouter());
+app.use("/v1/pool", requireToken, createPoolRouter());
 app.use("/v1/source-discovery", requireToken, createSourceDiscoveryRouter());
 app.use("/v1/source-capture", requireToken, createSourceCaptureRouter());
 
@@ -75,6 +77,7 @@ app.use((error, req, res, next) => {
 app.listen(runtime.port, () => {
   console.log(`lexnova-runtime-api listening on ${runtime.port}`);
 });
+
 
 
 

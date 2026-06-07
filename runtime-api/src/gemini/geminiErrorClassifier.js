@@ -1,4 +1,4 @@
-export function classifyGeminiError(errorLike = {}) {
+﻿export function classifyGeminiError(errorLike = {}) {
   const status = Number(errorLike.status || errorLike.statusCode || errorLike.code || 0);
   const message = String(errorLike.message || errorLike.error || "").toLowerCase();
   const reason = String(errorLike.reason || errorLike.error_type || "").toLowerCase();
@@ -37,3 +37,4 @@ export function classifyGeminiError(errorLike = {}) {
 
   return { category: "UNKNOWN", retryable: false, rotate_key: false, rotate_model: false };
 }
+

@@ -42,7 +42,11 @@ const POOL_CONFIG = {
   }
 };
 
-function getPoolConfig(poolName) {
+export function getGeminiPoolNames() {
+  return Object.keys(POOL_CONFIG);
+}
+
+export function getPoolConfig(poolName) {
   const config = POOL_CONFIG[poolName];
   if (!config) throw new Error(`Unknown Gemini pool: ${poolName}`);
   return config;
@@ -52,10 +56,14 @@ export function getPoolSnapshot(poolName, env = process.env) {
   const config = getPoolConfig(poolName);
   const keys = splitCsv(env[config.keys_env]);
   const models = splitCsv(env[config.models_env]);
+
   return {
     pool: poolName,
     configured: keys.length > 0 && models.length > 0,
+    keys_env: config.keys_env,
+    models_env: config.models_env,
     key_count: keys.length,
+    key_aliases: keys.map((_, index) => `${config.alias_prefix}_${index + 1}`),
     model_count: models.length,
     models,
     alias_prefix: config.alias_prefix,
@@ -64,14 +72,16 @@ export function getPoolSnapshot(poolName, env = process.env) {
   };
 }
 
+export function getAllPoolSnapshots(env = process.env) {
+  return Object.fromEntries(getGeminiPoolNames().map((poolName) => [poolName, getPoolSnapshot(poolName, env)]));
+}
+
 function buildGenerateContentBody({ prompt, responseMimeType = "application/json", maxOutputTokens = 1024, temperature = 0.1, enableSearchGrounding = false }) {
   const generationConfig = {
     temperature,
     maxOutputTokens
   };
 
-  // Gemini search grounding does not support responseMimeType.
-  // For grounded calls, prompt for JSON and parse JSON from returned text.
   if (!enableSearchGrounding && responseMimeType) {
     generationConfig.responseMimeType = responseMimeType;
   }
@@ -107,12 +117,14 @@ async function callGeminiRest({ apiKey, model, body, timeoutMs }) {
     });
 
     const payload = await response.json().catch(async () => ({ raw_text: await response.text().catch(() => "") }));
+
     if (!response.ok) {
       const err = new Error(payload?.error?.message || payload?.message || `Gemini HTTP ${response.status}`);
       err.status = response.status;
       err.payload = payload;
       throw err;
     }
+
     return payload;
   } finally {
     clearTimeout(timer);
@@ -126,6 +138,42 @@ function safeError(error) {
     provider_status: error?.payload?.error?.status || null,
     provider_code: error?.payload?.error?.code || null
   };
+}
+
+function decideRotation(classification, keyIndex, keyCount) {
+  if (!classification?.retryable) {
+    return "terminal";
+  }
+
+  if (classification.rotate_model === true && classification.rotate_key !== true) {
+    return "rotate_model";
+  }
+
+  if (classification.rotate_key === true && classification.rotate_model !== true) {
+    return keyIndex + 1 < keyCount ? "rotate_key" : "rotate_model_after_keys_exhausted";
+  }
+
+  if (classification.rotate_key === true && classification.rotate_model === true) {
+    return keyIndex + 1 < keyCount ? "rotate_key_then_model_if_needed" : "rotate_model_after_keys_exhausted";
+  }
+
+  return "retry_exhausted";
+}
+
+function parseFailureClassification(parsed) {
+  if (parsed.finish_reason === "MAX_TOKENS") {
+    return { category: "OUTPUT_TRUNCATED", retryable: true, rotate_key: false, rotate_model: true };
+  }
+
+  return { category: "MODEL_JSON_PARSE_FAILED", retryable: true, rotate_key: false, rotate_model: true };
+}
+
+function shouldContinueSameModel(decision) {
+  return decision === "rotate_key" || decision === "rotate_key_then_model_if_needed";
+}
+
+function shouldContinueNextModel(decision) {
+  return decision === "rotate_model" || decision === "rotate_model_after_keys_exhausted";
 }
 
 async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }) {
@@ -147,9 +195,19 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
   const temperature = Number(options.temperature ?? 0.1);
   const responseMimeType = options.responseMimeType || "application/json";
   const enableSearchGrounding = options.enableSearchGrounding ?? config.enable_search_grounding;
+  const maxAttempts = Number(options.maxAttempts || models.length * keys.length);
 
   modelLoop: for (const model of models) {
     for (let keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+      if (attempts.length >= maxAttempts) {
+        return {
+          ok: false,
+          error_type: "ATTEMPT_BUDGET_EXHAUSTED",
+          error: `Attempt budget exhausted for pool ${poolName}.`,
+          attempts
+        };
+      }
+
       const selected_key_alias = `${config.alias_prefix}_${keyIndex + 1}`;
       const model_meta = {
         pool: poolName,
@@ -160,21 +218,42 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
       };
 
       try {
-        const body = buildGenerateContentBody({ prompt, responseMimeType, maxOutputTokens, temperature, enableSearchGrounding });
-        const provider_payload = await callGeminiRest({ apiKey: keys[keyIndex], model, body, timeoutMs });
+        const body = buildGenerateContentBody({
+          prompt,
+          responseMimeType,
+          maxOutputTokens,
+          temperature,
+          enableSearchGrounding
+        });
+
+        const provider_payload = await callGeminiRest({
+          apiKey: keys[keyIndex],
+          model,
+          body,
+          timeoutMs
+        });
+
         const parsed = parseGeminiJsonPayload(provider_payload);
-        const attempt = { ok: parsed.ok, model_meta, finish_reason: parsed.finish_reason, usage_metadata: parsed.usage_metadata };
+
+        const attempt = {
+          ok: parsed.ok,
+          model_meta,
+          finish_reason: parsed.finish_reason,
+          usage_metadata: parsed.usage_metadata,
+          decision: parsed.ok ? "success" : null
+        };
+
         attempts.push(attempt);
 
         if (!parsed.ok) {
-          const parseClassification = parsed.finish_reason === "MAX_TOKENS"
-            ? { category: "OUTPUT_TRUNCATED", retryable: true, rotate_key: false, rotate_model: true }
-            : { category: "JSON_PARSE_FAILED", retryable: true, rotate_key: false, rotate_model: true };
+          const classification = parseFailureClassification(parsed);
+          const decision = decideRotation(classification, keyIndex, keys.length);
 
           attempts[attempts.length - 1] = {
             ...attempts[attempts.length - 1],
             ok: false,
-            classification: parseClassification,
+            classification,
+            decision,
             error: {
               message: parsed.error,
               finish_reason: parsed.finish_reason || null,
@@ -182,13 +261,17 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
             }
           };
 
-          if (parseClassification.rotate_model) {
+          if (shouldContinueNextModel(decision)) {
             continue modelLoop;
+          }
+
+          if (shouldContinueSameModel(decision)) {
+            continue;
           }
 
           return {
             ok: false,
-            error_type: parseClassification.category,
+            error_type: classification.category,
             error: parsed.error,
             model_meta,
             attempts,
@@ -210,8 +293,17 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
         };
       } catch (error) {
         const classification = classifyGeminiError(error);
-        attempts.push({ ok: false, model_meta, classification, error: safeError(error) });
-        if (!classification.retryable) {
+        const decision = decideRotation(classification, keyIndex, keys.length);
+
+        attempts.push({
+          ok: false,
+          model_meta,
+          classification,
+          decision,
+          error: safeError(error)
+        });
+
+        if (decision === "terminal") {
           return {
             ok: false,
             error_type: classification.category,
@@ -220,6 +312,22 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
             attempts
           };
         }
+
+        if (shouldContinueNextModel(decision)) {
+          continue modelLoop;
+        }
+
+        if (shouldContinueSameModel(decision)) {
+          continue;
+        }
+
+        return {
+          ok: false,
+          error_type: classification.category,
+          error: error?.message || String(error),
+          model_meta,
+          attempts
+        };
       }
     }
   }
@@ -234,11 +342,20 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
 
 export async function runGeminiPool({ poolName, prompt, options = {}, env = process.env }) {
   const primary = await runPoolOnce({ poolName, prompt, options, env });
-  if (primary.ok) return primary;
+
+  if (primary.ok) {
+    return {
+      ...primary,
+      fallback_used: false,
+      primary_error: null
+    };
+  }
 
   const config = getPoolConfig(poolName);
+
   if (config.fallback_pool) {
     const fallback = await runPoolOnce({ poolName: config.fallback_pool, prompt, options, env });
+
     return {
       ...fallback,
       fallback_used: true,
@@ -251,9 +368,9 @@ export async function runGeminiPool({ poolName, prompt, options = {}, env = proc
     };
   }
 
-  return primary;
+  return {
+    ...primary,
+    fallback_used: false,
+    primary_error: null
+  };
 }
-
-
-
-
