@@ -1,0 +1,72 @@
+{
+    "ok":  true,
+    "stage_id":  "operator_challenge",
+    "output_schema_key":  "operator_challenge_gate",
+    "output_schema_path":  "/data/schemas/operatorChallenge.schema.json",
+    "validation_schema_key":  "operatorChallenge",
+    "validation_mode":  "build_time_ajv_standalone",
+    "output_unwrapped":  false,
+    "operator_challenge_result":  {
+                                      "operator_challenge_gate":  {
+                                                                      "completed":  true,
+                                                                      "result":  "PASS",
+                                                                      "registry_count_loaded":  1,
+                                                                      "registry_count_evaluated":  1,
+                                                                      "reopened_rows":  [
+
+                                                                                        ],
+                                                                      "high_risk_checks":  {
+                                                                                               "b2b_enterprise_ai":  true,
+                                                                                               "autonomous_action":  false,
+                                                                                               "cybersecurity_ai":  false,
+                                                                                               "regulated_use":  false,
+                                                                                               "dpa_absent":  true,
+                                                                                               "aup_absent":  true,
+                                                                                               "sla_absent":  true,
+                                                                                               "ai_policy_absent":  true,
+                                                                                               "human_review_structure_absent":  true,
+                                                                                               "triggered_count":  1,
+                                                                                               "controlled_count":  0,
+                                                                                               "not_triggered_count":  0,
+                                                                                               "not_applicable_count":  0,
+                                                                                               "insufficient_evidence_count":  0,
+                                                                                               "high_risk_undercount_suspected":  false
+                                                                                           },
+                                                                      "notes":  [
+                                                                                    "Count validation passed: 1 loaded row and 1 evaluated ledger entry.",
+                                                                                    "Merged-ledger validation passed via test_run mode or parity.",
+                                                                                    "High-risk checks confirm B2B enterprise AI with governance artifacts (DPA/AUP/SLA) absent; Stage 04 correctly identified the triggered risk for unreviewed AI output reliance."
+                                                                                ]
+                                                                  },
+                                      "corrected_ledger_entries":  [
+
+                                                                   ]
+                                  },
+    "model_metadata":  {
+                           "provider":  "gemini",
+                           "model":  "gemini-3.1-flash-lite",
+                           "finish_reason":  "STOP",
+                           "usage_metadata":  {
+                                                  "promptTokenCount":  16818,
+                                                  "candidatesTokenCount":  346,
+                                                  "totalTokenCount":  17164,
+                                                  "promptTokensDetails":  [
+                                                                              {
+                                                                                  "modality":  "TEXT",
+                                                                                  "tokenCount":  16818
+                                                                              }
+                                                                          ],
+                                                  "serviceTier":  "standard"
+                                              }
+                       },
+    "prompt_metadata":  {
+                            "prompt_root":  "functions/_prompts/diligence-v2",
+                            "shared_sha256":  "4383fa7dfdd2a165464aa7b358b8e0ad1efc2f5deb54e5cdf3ce7bb4c4992426",
+                            "stage_sha256":  "d8e6a70a6ea441a258329a40654e3caa313955c46db0e7bbff9c504a33a6370d",
+                            "combined_characters":  54002
+                        },
+    "schema_metadata":  {
+                            "title":  "Operator Challenge Gate",
+                            "sha256":  "79f3f674b7a0cd068f408b2c8bf4217080ec1fb88841f08eb3a26abb8b458517"
+                        }
+}

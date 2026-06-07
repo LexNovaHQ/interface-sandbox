@@ -1,0 +1,596 @@
+{
+  "source_collection": {
+    "run_id": "step5-quality-audit-2026-06-06T16-04-21-836Z",
+    "source_mode": "url",
+    "target_input": {
+      "primary_url": "https://sarvam.ai/",
+      "manual_urls": [],
+      "pasted_text_present": false,
+      "submitted_at": "2026-06-06T16:04:21.840Z"
+    },
+    "raw_footprint": {
+      "records": [
+        {
+          "source_id": "step5-quality-audit-2026-06-06T16-04-21-836Z:url:0",
+          "source_type": "webpage",
+          "source_url": "https://sarvam.ai/",
+          "reader_url": "https://r.jina.ai/https://sarvam.ai/",
+          "status": "FETCHED",
+          "http_status": 200,
+          "fetched_at": "2026-06-06T16:04:22.722Z",
+          "raw_text": "Title: Sarvam | India's Full-Stack Sovereign AI Platform\n\nURL Source: https://sarvam.ai/\n\nMarkdown Content:\n![Image 1](https://assets.sarvam.ai/assets/pages/home/hero-gradient.svg)\n\n![Image 2](https://assets.sarvam.ai/assets/motifs/ui/motif.svg)\n\nIndia's Sovereign AI Platform\n\n## AI for all from India\n\nBuilt on sovereign compute. Powered by frontier-class models.\n\nDelivering population-scale impact.\n\nIndia builds with Sarvam\n\n![Image 3: Partner logo 1](https://assets.sarvam.ai/assets/logos/customers/aadhaar.svg)\n\n![Image 4: Partner logo 2](https://assets.sarvam.ai/assets/logos/customers/axis-bank.svg)\n\n![Image 5: Partner logo 3](https://assets.sarvam.ai/assets/logos/customers/cred.svg)\n\n![Image 6: Partner logo 4](https://assets.sarvam.ai/assets/logos/customers/cred-resolve.svg)\n\n![Image 7: Partner logo 5](https://assets.sarvam.ai/assets/logos/customers/decentro.svg)\n\n![Image 8: Partner logo 6](https://assets.sarvam.ai/assets/logos/customers/idfc.svg)\n\n![Image 9: Partner logo 7](https://assets.sarvam.ai/assets/logos/customers/india-mart.svg)\n\n![Image 10: Partner logo 8](https://assets.sarvam.ai/assets/logos/customers/infosys.svg)\n\n![Image 11: Partner logo 9](https://assets.sarvam.ai/assets/logos/customers/lic.svg)\n\n![Image 12: Partner logo 10](https://assets.sarvam.ai/assets/logos/customers/mahindra-finance.svg)\n\n![Image 13: Partner logo 11](https://assets.sarvam.ai/assets/logos/customers/nabard.svg)\n\n![Image 14: SBI Life](https://assets.sarvam.ai/assets/logos/customers/sbi-life.svg)\n\n![Image 15: Partner logo 13](https://assets.sarvam.ai/assets/logos/customers/skill-india.svg)\n\n![Image 16: Tata Capital](https://assets.sarvam.ai/assets/logos/customers/tata-capital.svg)\n\n![Image 17: Partner logo 15](https://assets.sarvam.ai/assets/logos/customers/urban-company.svg)\n\n![Image 18: Partner logo 1](https://assets.sarvam.ai/assets/logos/customers/aadhaar.svg)\n\n![Image 19: Partner logo 2](https://assets.sarvam.ai/assets/logos/customers/axis-bank.svg)\n\n![Image 20: Partner logo 3](https://assets.sarvam.ai/assets/logos/customers/cred.svg)\n\n![Image 21: Partner logo 4](https://assets.sarvam.ai/assets/logos/customers/cred-resolve.svg)\n\n![Image 22: Partner logo 5](https://assets.sarvam.ai/assets/logos/customers/decentro.svg)\n\n![Image 23: Partner logo 6](https://assets.sarvam.ai/assets/logos/customers/idfc.svg)\n\n![Image 24: Partner logo 7](https://assets.sarvam.ai/assets/logos/customers/india-mart.svg)\n\n![Image 25: Partner logo 8](https://assets.sarvam.ai/assets/logos/customers/infosys.svg)\n\n![Image 26: Partner logo 9](https://assets.sarvam.ai/assets/logos/customers/lic.svg)\n\n![Image 27: Partner logo 10](https://assets.sarvam.ai/assets/logos/customers/mahindra-finance.svg)\n\n![Image 28: Partner logo 11](https://assets.sarvam.ai/assets/logos/customers/nabard.svg)\n\n![Image 29: SBI Life](https://assets.sarvam.ai/assets/logos/customers/sbi-life.svg)\n\n![Image 30: Partner logo 13](https://assets.sarvam.ai/assets/logos/customers/skill-india.svg)\n\n![Image 31: Tata Capital](https://assets.sarvam.ai/assets/logos/customers/tata-capital.svg)\n\n![Image 32: Partner logo 15](https://assets.sarvam.ai/assets/logos/customers/urban-company.svg)\n\n## The AI Platform India Builds On\n\n## Build anything with Sarvam APIs\n\nEverything you need to add Indic AI to your product.\n\n## India Can\n\nFrom government services reaching 800 million citizens to enterprises transforming customer experience, AI that speaks India's languages is changing what's possible.\n\n## Powering India's AI-first future\n\nFor Enterprise | Government | Developers\n\n### Population-scale Applications\n\nBuilding products India can use. Conversational agents fluent in India's languages. Platforms that run enterprise workflows from start to finish.\n\n### State-of-the-Art Models\n\nState-of-the-art models trained on sovereign data, delivering strong performance across Indian languages.\n\n### Infrastructure to Serve Models Efficiently\n\nA token factory built to handle complexity of model serving so teams can focus on building products, not managing infrastructure.\n\n## Trusted by India's Largest Enterprises\n\nReal results from real customers across BFSI, government, and enterprise.\n\n## Enterprise-grade. Out of the box.\n\nCompliance, control, and confidence. Not bolted on. Built in from day one.\n\n### Forward deployed\n\nOur engineers work alongside yours, designing agents, integrating systems, and staying until you're live. Not a handoff. A partnership.\n\n*   Dedicated engineer from day one\n*   Joint workflow design and build\n*   Ongoing accuracy and cost optimisation\n*   SLA-backed production support\n\n### Deployment flexibility\n\nArya deploys where your data already lives. Private cloud, on-premise, hybrid, or fully air-gapped environments. Your agents run on your terms.\n\n*   Private cloud, on-premise, or hybrid\n*   Bring your own model or use ours\n*   Swap vendors without rewriting workflows\n*   Air-gapped deployment available\n\n### Security and governance\n\nEvery agent action is logged and traceable. Role-based access, audit trails, and data residency controls built into the core, not retrofitted. Arya meets you where your risk team is.\n\nSOC 2 Type II ISO 27001 DPDP compliant Role-based access Full audit trail Data residency controls\n\n[](https://sarvam.ai/contact-us)\n\n## Built to run\n\nanywhere your business runs\n\n## What our customers say\n\n## Research & Updates\n\n[](https://sarvam.ai/blogs)\n",
+          "raw_characters": 5392,
+          "clipped": false,
+          "source_hash": "simple-71e5fb3a",
+          "error": null
+        }
+      ],
+      "urls": [
+        "https://sarvam.ai/"
+      ],
+      "pasted_text_present": false,
+      "collected_at": "2026-06-06T16:04:22.723Z"
+    },
+    "scrape_meta": {
+      "pages_attempted": 1,
+      "pages_read": 1,
+      "urls": [
+        "https://sarvam.ai/"
+      ],
+      "zone_map": [
+        {
+          "source_id": "step5-quality-audit-2026-06-06T16-04-21-836Z:url:0",
+          "source_url": "https://sarvam.ai/",
+          "source_type": "webpage",
+          "zone": "unclassified_webpage",
+          "status": "FETCHED",
+          "raw_characters": 5392
+        }
+      ],
+      "limitations": [],
+      "collector": "diligence_source_collector_v1",
+      "transport": "jina_reader"
+    }
+  },
+  "source_bundle": {
+    "run_id": "step5-quality-audit-2026-06-06T16-04-21-836Z",
+    "source_mode": "url",
+    "target_input": {
+      "primary_url": "https://sarvam.ai/",
+      "manual_urls": [],
+      "pasted_text_present": false,
+      "submitted_at": "2026-06-06T16:04:21.840Z"
+    },
+    "source_review": {
+      "summary": "The source bundle contains the homepage of Sarvam.ai. The content provides high-level information regarding their AI platform, enterprise deployment models, and security/governance claims. No specific legal documents (e.g., full ToS, Privacy Policy, DPA) were directly accessible or linked as standalone artifacts in the provided scrape.",
+      "pages_attempted": 1,
+      "pages_admitted": 1,
+      "limitations": [
+        "Only the homepage was provided; no deep-linked legal or governance documents were captured.",
+        "Security and compliance claims (SOC 2, ISO 27001, DPDP) are mentioned as marketing text on the homepage and require further verification via formal documentation."
+      ]
+    },
+    "discovery_candidates": [],
+    "artifact_inventory": [
+      {
+        "artifact_id": "step5-quality-audit-2026-06-06T16-04-21-836Z:url:0",
+        "source_url": "https://sarvam.ai/",
+        "zone": "context",
+        "artifact_class": "homepage",
+        "status": "INGESTED",
+        "admission_status": "ADMITTED",
+        "is_first_party": true,
+        "source_hash": "simple-71e5fb3a",
+        "extracted_excerpt": "Enterprise-grade. Out of the box. Compliance, control, and confidence. Not bolted on. Built in from day one. SOC 2 Type II ISO 27001 DPDP compliant Role-based access Full audit trail Data residency controls",
+        "limitations": []
+      }
+    ],
+    "evidence_buffer": [
+      {
+        "evidence_id": "ev-001",
+        "artifact_id": "step5-quality-audit-2026-06-06T16-04-21-836Z:url:0",
+        "source_url": "https://sarvam.ai/",
+        "source_type": "webpage",
+        "ingestion_method": "jina",
+        "artifact_class": "homepage",
+        "zone": "governance",
+        "evidence_text": "SOC 2 Type II ISO 27001 DPDP compliant Role-based access Full audit trail Data residency controls",
+        "extracted_excerpt": "SOC 2 Type II ISO 27001 DPDP compliant",
+        "source_hash": "simple-71e5fb3a",
+        "evidence_scope": "security/trust claim",
+        "first_party_basis": "target domain page",
+        "limitations": [
+          "Claims are presented as marketing text on the homepage; formal certification documents were not provided."
+        ]
+      },
+      {
+        "evidence_id": "ev-002",
+        "artifact_id": "step5-quality-audit-2026-06-06T16-04-21-836Z:url:0",
+        "source_url": "https://sarvam.ai/",
+        "source_type": "webpage",
+        "ingestion_method": "jina",
+        "artifact_class": "homepage",
+        "zone": "mechanical",
+        "evidence_text": "Arya deploys where your data already lives. Private cloud, on-premise, hybrid, or fully air-gapped environments.",
+        "extracted_excerpt": "Private cloud, on-premise, hybrid, or fully air-gapped environments.",
+        "source_hash": "simple-71e5fb3a",
+        "evidence_scope": "product function",
+        "first_party_basis": "target domain page",
+        "limitations": []
+      }
+    ],
+    "limitations": [
+      "No formal legal or governance documents (ToS, Privacy Policy, DPA) were visible in the admitted source bundle.",
+      "The source bundle is limited to the homepage content."
+    ]
+  },
+  "target_feature_profile": {
+    "target_profile": {
+      "company_name": "Sarvam AI",
+      "website": "https://sarvam.ai/",
+      "legal_entity": "not visible in admitted evidence",
+      "hq_jurisdiction": "not visible in admitted evidence",
+      "actual_processing_location": "Private cloud, on-premise, hybrid, or fully air-gapped environments",
+      "data_sovereignty_signature": "Data residency controls mentioned; specific hosting regions not visible",
+      "primary_claim": "Enterprise-grade AI platform with built-in compliance and control"
+    },
+    "primary_product": {
+      "product_name": "Arya",
+      "user": "enterprise administrators",
+      "function": "AI deployment platform",
+      "mechanism": "deploys AI models into private cloud, on-premise, hybrid, or air-gapped environments",
+      "agent_actor": "no autonomous agent behavior visible in admitted evidence",
+      "agent_brand_name": "not visible in admitted evidence"
+    },
+    "product_feature_map": [
+      {
+        "feature_id": "F001",
+        "feature_name": "Enterprise AI Deployment",
+        "feature_role": "CORE",
+        "feature_description": "The platform deploys AI models into private cloud, on-premise, hybrid, or fully air-gapped environments to maintain data residency.",
+        "archetype_codes": [
+          "UNI"
+        ],
+        "archetype_labels": [
+          "Universal"
+        ],
+        "surface_tokens": [
+          "Enterprise-Private",
+          "Infrastructure"
+        ],
+        "evidence_quote": "Arya deploys where your data already lives. Private cloud, on-premise, hybrid, or fully air-gapped environments.",
+        "feature_source_url": "https://sarvam.ai/",
+        "linked_threat_ids": []
+      }
+    ],
+    "raw_feature_candidates": [],
+    "feature_map_scratchpad": [
+      {
+        "scratchpad_id": "S001",
+        "subject": "Arya deployment",
+        "evidence_basis": "Homepage mechanical text",
+        "classification_note": "Classified as CORE as it is the primary value proposition for the Arya product.",
+        "limitation": "No specific AI model generation or agentic behavior details were visible in the admitted homepage text."
+      }
+    ],
+    "limitations": [
+      "No formal legal or governance documents (ToS, Privacy Policy, DPA) were visible in the admitted source bundle.",
+      "The source bundle is limited to the homepage content.",
+      "Security and compliance claims (SOC 2, ISO 27001, DPDP) are marketing claims and require formal documentation for verification.",
+      "Legal entity and HQ jurisdiction are not visible in the admitted evidence."
+    ]
+  },
+  "legal_stack_review": {
+    "legal_stack": [
+      {
+        "document_type": "ToS",
+        "exists": false,
+        "document_url": "N/A",
+        "covers": null,
+        "misses": [],
+        "evidence_status": "ABSENT",
+        "linked_threat_ids": []
+      },
+      {
+        "document_type": "Privacy Policy",
+        "exists": false,
+        "document_url": "N/A",
+        "covers": null,
+        "misses": [],
+        "evidence_status": "ABSENT",
+        "linked_threat_ids": []
+      },
+      {
+        "document_type": "DPA",
+        "exists": false,
+        "document_url": "N/A",
+        "covers": null,
+        "misses": [],
+        "evidence_status": "ABSENT",
+        "linked_threat_ids": []
+      },
+      {
+        "document_type": "AUP",
+        "exists": false,
+        "document_url": "N/A",
+        "covers": null,
+        "misses": [],
+        "evidence_status": "ABSENT",
+        "linked_threat_ids": []
+      },
+      {
+        "document_type": "SLA",
+        "exists": false,
+        "document_url": "N/A",
+        "covers": null,
+        "misses": [],
+        "evidence_status": "ABSENT",
+        "linked_threat_ids": []
+      }
+    ],
+    "document_stack_redline": [
+      {
+        "mismatch_id": "M001",
+        "type": "CLAIM_VS_ABSENCE",
+        "quote": "SOC 2 Type II ISO 27001 DPDP compliant",
+        "source": "https://sarvam.ai/",
+        "feature_ref": "N/A",
+        "claim_type": "Compliance certification",
+        "contradicts": "The homepage makes explicit claims regarding SOC 2, ISO 27001, and DPDP compliance, but no formal legal or governance documents (ToS, Privacy Policy, DPA) are visible in the admitted public footprint to support these claims."
+      },
+      {
+        "mismatch_id": "M002",
+        "type": "STACK_VS_REALITY",
+        "quote": "Arya deploys where your data already lives. Private cloud, on-premise, hybrid, or fully air-gapped environments.",
+        "source": "https://sarvam.ai/",
+        "feature_ref": "F001",
+        "claim_type": "Data residency and infrastructure control",
+        "contradicts": "The product feature map highlights enterprise-grade deployment in private/on-premise environments, but the absence of a DPA or SLA means there is no visible public governance framework defining the terms of this data processing or service availability."
+      }
+    ],
+    "document_stack_synthesis": "The admitted public footprint for Sarvam AI is limited to the company homepage. While the homepage makes significant marketing claims regarding enterprise-grade compliance (SOC 2, ISO 27001, DPDP) and data residency controls, none of the five core legal/governance documents (ToS, Privacy Policy, DPA, AUP, SLA) are visible in the admitted evidence. A founder or enterprise customer reading the homepage might assume these governance surfaces exist and are aligned with the product's deployment model, but there is no public-footprint evidence to verify this. This absence requires qualified legal review to determine the actual governance architecture.",
+    "legal_stack_assessment": [
+      {
+        "assessment_id": "A001",
+        "document_type": "ToS",
+        "document_status": "not_visible_in_admitted_evidence",
+        "source_basis": "Homepage scrape",
+        "feature_refs": [],
+        "coverage_note": "No ToS visible.",
+        "false_belief_note": "A founder might assume standard terms exist for an enterprise AI platform, but none are publicly accessible.",
+        "limitation": "Source bundle limited to homepage."
+      },
+      {
+        "assessment_id": "A002",
+        "document_type": "Privacy Policy",
+        "document_status": "not_visible_in_admitted_evidence",
+        "source_basis": "Homepage scrape",
+        "feature_refs": [],
+        "coverage_note": "No Privacy Policy visible.",
+        "false_belief_note": "A founder might assume a privacy notice exists given the claims of DPDP compliance, but none is visible.",
+        "limitation": "Source bundle limited to homepage."
+      },
+      {
+        "assessment_id": "A003",
+        "document_type": "DPA",
+        "document_status": "not_visible_in_admitted_evidence",
+        "source_basis": "Homepage scrape",
+        "feature_refs": [
+          "F001"
+        ],
+        "coverage_note": "No DPA visible.",
+        "false_belief_note": "A founder might assume enterprise data processing terms are in place for a platform that handles private/on-premise data, but no DPA is visible.",
+        "limitation": "Source bundle limited to homepage."
+      },
+      {
+        "assessment_id": "A004",
+        "document_type": "AUP",
+        "document_status": "not_visible_in_admitted_evidence",
+        "source_basis": "Homepage scrape",
+        "feature_refs": [],
+        "coverage_note": "No AUP visible.",
+        "false_belief_note": "A founder might assume usage restrictions exist for an AI platform, but none are visible.",
+        "limitation": "Source bundle limited to homepage."
+      },
+      {
+        "assessment_id": "A005",
+        "document_type": "SLA",
+        "document_status": "not_visible_in_admitted_evidence",
+        "source_basis": "Homepage scrape",
+        "feature_refs": [
+          "F001"
+        ],
+        "coverage_note": "No SLA visible.",
+        "false_belief_note": "A founder might assume uptime or support commitments exist for an enterprise-grade platform, but none are visible.",
+        "limitation": "Source bundle limited to homepage."
+      }
+    ],
+    "limitations": [
+      "No formal legal or governance documents (ToS, Privacy Policy, DPA, AUP, SLA) were visible in the admitted source bundle.",
+      "The source bundle is limited to the homepage content.",
+      "Security and compliance claims (SOC 2, ISO 27001, DPDP) are marketing claims and require formal documentation for verification.",
+      "Legal entity and HQ jurisdiction are not visible in the admitted evidence."
+    ]
+  },
+  "merged_registry_result": {
+    "ok": true,
+    "run_id": "step5-quality-audit-2026-06-06T16-04-21-836Z",
+    "registry_count_loaded": 3,
+    "registry_count_evaluated": 3,
+    "batch_count": 1,
+    "registry_evaluation_ledger": [
+      {
+        "entry_number": 1,
+        "threat_id": "SMOKE-001",
+        "threat_name": "Unreviewed AI output reliance",
+        "archetype_gate": "INSUFFICIENT",
+        "surface_gate": "PASS",
+        "authority_relevance": "INSUFFICIENT",
+        "conditions": [
+          {
+            "condition_id": "CONDITION_1",
+            "result": true,
+            "basis": "TRUE_FEATURE_MAP: Product describes AI deployment platform; AI output generation is implied by the platform nature."
+          },
+          {
+            "condition_id": "CONDITION_2",
+            "result": true,
+            "basis": "TRUE_ABSENCE: No ToS or public disclaimer visible in admitted evidence."
+          }
+        ],
+        "trigger_if_result": true,
+        "exclude_if_result": false,
+        "final_status": "TRIGGERED",
+        "feature_refs": [
+          "F001"
+        ],
+        "evidence_ref": "legal_stack:ToS:ABSENT",
+        "reasoning_summary": "The product is an AI deployment platform (F001). While specific AI output reliance controls are not explicitly detailed in the homepage, the absence of any public ToS or disclaimer means no reliance-control proof exists. Trigger conditions are met; EXCLUDE_IF is false."
+      },
+      {
+        "entry_number": 2,
+        "threat_id": "SMOKE-002",
+        "threat_name": "Missing public AI/data processing posture",
+        "archetype_gate": "PASS",
+        "surface_gate": "PASS",
+        "authority_relevance": "MULTI",
+        "conditions": [
+          {
+            "condition_id": "CONDITION_1",
+            "result": true,
+            "basis": "TRUE_FEATURE_MAP: Product mentions AI deployment and data residency controls."
+          },
+          {
+            "condition_id": "CONDITION_2",
+            "result": true,
+            "basis": "TRUE_ABSENCE: legal_stack_review marks DPA and Privacy Policy as ABSENT from admitted public evidence."
+          }
+        ],
+        "trigger_if_result": true,
+        "exclude_if_result": false,
+        "final_status": "TRIGGERED",
+        "feature_refs": [
+          "F001"
+        ],
+        "evidence_ref": "legal_stack:DPA:ABSENT",
+        "reasoning_summary": "The product handles enterprise data and claims compliance, but no DPA or Privacy Policy is visible in the admitted public footprint. Trigger conditions are met; EXCLUDE_IF is false due to lack of public governance documentation."
+      },
+      {
+        "entry_number": 3,
+        "threat_id": "SMOKE-003",
+        "threat_name": "API/service terms coverage gap",
+        "archetype_gate": "PASS",
+        "surface_gate": "PASS",
+        "authority_relevance": "MULTI",
+        "conditions": [
+          {
+            "condition_id": "CONDITION_1",
+            "result": true,
+            "basis": "TRUE_FEATURE_MAP: Product is an enterprise AI deployment platform."
+          },
+          {
+            "condition_id": "CONDITION_2",
+            "result": true,
+            "basis": "TRUE_ABSENCE: legal_stack_review marks ToS, AUP, and SLA as ABSENT from admitted public evidence."
+          }
+        ],
+        "trigger_if_result": true,
+        "exclude_if_result": false,
+        "final_status": "TRIGGERED",
+        "feature_refs": [
+          "F001"
+        ],
+        "evidence_ref": "legal_stack:SLA:ABSENT",
+        "reasoning_summary": "The platform delivery is visible via the homepage, but no ToS, AUP, or SLA is publicly accessible to define service terms. Trigger conditions are met; EXCLUDE_IF is false."
+      }
+    ],
+    "batch_warnings": [],
+    "merge_errors": [],
+    "merge_meta": {
+      "expected_threat_ids": [
+        "SMOKE-001",
+        "SMOKE-002",
+        "SMOKE-003"
+      ],
+      "received_threat_ids": [
+        "SMOKE-001",
+        "SMOKE-002",
+        "SMOKE-003"
+      ],
+      "missing_threat_ids": [],
+      "unexpected_threat_ids": [],
+      "duplicate_threat_ids": [],
+      "batch_validations": [
+        {
+          "batch_id": "step5-quality-audit-2026-06-06T16-04-21-836Z:registry:1-of-1",
+          "ok": true,
+          "expected_count": 3,
+          "received_count": 3,
+          "errors": []
+        }
+      ]
+    }
+  },
+  "operator_challenge_result": {
+    "operator_challenge_gate": {
+      "completed": true,
+      "result": "PASS",
+      "registry_count_loaded": 3,
+      "registry_count_evaluated": 3,
+      "reopened_rows": [],
+      "high_risk_checks": {
+        "b2b_enterprise_ai": true,
+        "autonomous_action": false,
+        "cybersecurity_ai": false,
+        "regulated_use": false,
+        "dpa_absent": true,
+        "aup_absent": true,
+        "sla_absent": true,
+        "ai_policy_absent": true,
+        "human_review_structure_absent": true,
+        "triggered_count": 3,
+        "controlled_count": 0,
+        "not_triggered_count": 0,
+        "not_applicable_count": 0,
+        "insufficient_evidence_count": 0,
+        "high_risk_undercount_suspected": false
+      },
+      "notes": [
+        "Count validation passed: 3 loaded rows and 3 evaluated ledger entries.",
+        "Merged-ledger validation passed through registry_batch_meta parity.",
+        "High-risk checks confirm B2B enterprise AI status with multiple governance artifacts (DPA, AUP, SLA, AI Policy) absent; Stage 04 correctly identified these as triggered findings based on public-footprint absence."
+      ]
+    },
+    "corrected_ledger_entries": []
+  },
+  "correction_result": {
+    "ok": true,
+    "operator_challenge_gate": {
+      "completed": true,
+      "result": "PASS",
+      "registry_count_loaded": 3,
+      "registry_count_evaluated": 3,
+      "reopened_rows": [],
+      "high_risk_checks": {
+        "b2b_enterprise_ai": true,
+        "autonomous_action": false,
+        "cybersecurity_ai": false,
+        "regulated_use": false,
+        "dpa_absent": true,
+        "aup_absent": true,
+        "sla_absent": true,
+        "ai_policy_absent": true,
+        "human_review_structure_absent": true,
+        "triggered_count": 3,
+        "controlled_count": 0,
+        "not_triggered_count": 0,
+        "not_applicable_count": 0,
+        "insufficient_evidence_count": 0,
+        "high_risk_undercount_suspected": false
+      },
+      "notes": [
+        "Count validation passed: 3 loaded rows and 3 evaluated ledger entries.",
+        "Merged-ledger validation passed through registry_batch_meta parity.",
+        "High-risk checks confirm B2B enterprise AI status with multiple governance artifacts (DPA, AUP, SLA, AI Policy) absent; Stage 04 correctly identified these as triggered findings based on public-footprint absence."
+      ]
+    },
+    "corrected_count": 0,
+    "registry_count_loaded": 3,
+    "registry_count_evaluated": 3,
+    "post_challenge_ledger": [
+      {
+        "entry_number": 1,
+        "threat_id": "SMOKE-001",
+        "threat_name": "Unreviewed AI output reliance",
+        "archetype_gate": "INSUFFICIENT",
+        "surface_gate": "PASS",
+        "authority_relevance": "INSUFFICIENT",
+        "conditions": [
+          {
+            "condition_id": "CONDITION_1",
+            "result": true,
+            "basis": "TRUE_FEATURE_MAP: Product describes AI deployment platform; AI output generation is implied by the platform nature."
+          },
+          {
+            "condition_id": "CONDITION_2",
+            "result": true,
+            "basis": "TRUE_ABSENCE: No ToS or public disclaimer visible in admitted evidence."
+          }
+        ],
+        "trigger_if_result": true,
+        "exclude_if_result": false,
+        "final_status": "TRIGGERED",
+        "feature_refs": [
+          "F001"
+        ],
+        "evidence_ref": "legal_stack:ToS:ABSENT",
+        "reasoning_summary": "The product is an AI deployment platform (F001). While specific AI output reliance controls are not explicitly detailed in the homepage, the absence of any public ToS or disclaimer means no reliance-control proof exists. Trigger conditions are met; EXCLUDE_IF is false."
+      },
+      {
+        "entry_number": 2,
+        "threat_id": "SMOKE-002",
+        "threat_name": "Missing public AI/data processing posture",
+        "archetype_gate": "PASS",
+        "surface_gate": "PASS",
+        "authority_relevance": "MULTI",
+        "conditions": [
+          {
+            "condition_id": "CONDITION_1",
+            "result": true,
+            "basis": "TRUE_FEATURE_MAP: Product mentions AI deployment and data residency controls."
+          },
+          {
+            "condition_id": "CONDITION_2",
+            "result": true,
+            "basis": "TRUE_ABSENCE: legal_stack_review marks DPA and Privacy Policy as ABSENT from admitted public evidence."
+          }
+        ],
+        "trigger_if_result": true,
+        "exclude_if_result": false,
+        "final_status": "TRIGGERED",
+        "feature_refs": [
+          "F001"
+        ],
+        "evidence_ref": "legal_stack:DPA:ABSENT",
+        "reasoning_summary": "The product handles enterprise data and claims compliance, but no DPA or Privacy Policy is visible in the admitted public footprint. Trigger conditions are met; EXCLUDE_IF is false due to lack of public governance documentation."
+      },
+      {
+        "entry_number": 3,
+        "threat_id": "SMOKE-003",
+        "threat_name": "API/service terms coverage gap",
+        "archetype_gate": "PASS",
+        "surface_gate": "PASS",
+        "authority_relevance": "MULTI",
+        "conditions": [
+          {
+            "condition_id": "CONDITION_1",
+            "result": true,
+            "basis": "TRUE_FEATURE_MAP: Product is an enterprise AI deployment platform."
+          },
+          {
+            "condition_id": "CONDITION_2",
+            "result": true,
+            "basis": "TRUE_ABSENCE: legal_stack_review marks ToS, AUP, and SLA as ABSENT from admitted public evidence."
+          }
+        ],
+        "trigger_if_result": true,
+        "exclude_if_result": false,
+        "final_status": "TRIGGERED",
+        "feature_refs": [
+          "F001"
+        ],
+        "evidence_ref": "legal_stack:SLA:ABSENT",
+        "reasoning_summary": "The platform delivery is visible via the homepage, but no ToS, AUP, or SLA is publicly accessible to define service terms. Trigger conditions are met; EXCLUDE_IF is false."
+      }
+    ],
+    "correction_errors": [],
+    "correction_meta": {
+      "corrected_threat_ids": [],
+      "duplicate_corrected_threat_ids": [],
+      "unknown_corrected_threat_ids": [],
+      "post_correction_missing_threat_ids": [],
+      "post_correction_unexpected_threat_ids": [],
+      "post_correction_duplicate_threat_ids": []
+    }
+  }
+}

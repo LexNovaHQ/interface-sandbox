@@ -1,0 +1,99 @@
+{
+    "ok":  true,
+    "stage_id":  "evidence_refiner",
+    "output_schema_key":  "source_bundle",
+    "output_schema_path":  "/data/schemas/sourceBundle.schema.json",
+    "validation_schema_key":  "sourceBundle",
+    "validation_mode":  "build_time_ajv_standalone",
+    "output_unwrapped":  true,
+    "source_bundle":  {
+                          "run_id":  "step2-live-smoke-20260606-201106",
+                          "source_mode":  "text",
+                          "target_input":  {
+                                               "primary_url":  "https://example.com",
+                                               "manual_urls":  [
+
+                                                               ],
+                                               "pasted_text_present":  true,
+                                               "submitted_at":  "2026-06-06T14:41:06.2734798Z"
+                                           },
+                          "source_review":  {
+                                                "summary":  "The run was conducted using user-pasted public text only. No web-based source collection was performed. The admitted text provides a high-level description of the target\u0027s AI assistant and a disclaimer regarding output reliance.",
+                                                "pages_attempted":  0,
+                                                "pages_admitted":  1,
+                                                "limitations":  [
+                                                                    "Run performed using manual text only; no external web artifacts were collected or admitted.",
+                                                                    "Source provenance depends entirely on user submission."
+                                                                ]
+                                            },
+                          "discovery_candidates":  [
+
+                                                   ],
+                          "artifact_inventory":  [
+                                                     {
+                                                         "artifact_id":  "step2-live-smoke-20260606-201106:manual_text:0",
+                                                         "source_url":  "manual_text",
+                                                         "zone":  "manual_text",
+                                                         "artifact_class":  "other",
+                                                         "status":  "TEXT_ONLY",
+                                                         "admission_status":  "ADMITTED",
+                                                         "is_first_party":  true,
+                                                         "source_hash":  "manual-step2-smoke",
+                                                         "extracted_excerpt":  "Dry Run Co offers an AI assistant that helps users summarize business documents and answer product questions. It is available through a web app and API. The company says users should review outputs before relying on them.",
+                                                         "limitations":  [
+                                                                             "User-provided public text; source provenance depends on user submission."
+                                                                         ]
+                                                     }
+                                                 ],
+                          "evidence_buffer":  [
+                                                  {
+                                                      "evidence_id":  "ev-001",
+                                                      "artifact_id":  "step2-live-smoke-20260606-201106:manual_text:0",
+                                                      "source_url":  "manual_text",
+                                                      "source_type":  "manual_text",
+                                                      "ingestion_method":  "pasted_text",
+                                                      "artifact_class":  "other",
+                                                      "zone":  "manual_text",
+                                                      "evidence_text":  "Dry Run Co offers an AI assistant that helps users summarize business documents and answer product questions. It is available through a web app and API. The company says users should review outputs before relying on them.",
+                                                      "extracted_excerpt":  "The company says users should review outputs before relying on them.",
+                                                      "source_hash":  "manual-step2-smoke",
+                                                      "evidence_scope":  "AI output accuracy disclaimer",
+                                                      "first_party_basis":  "user-pasted public text",
+                                                      "limitations":  [
+                                                                          "User-provided public text; source provenance depends on user submission."
+                                                                      ]
+                                                  }
+                                              ],
+                          "limitations":  [
+                                              "Run performed using manual text only; no external web artifacts were collected or admitted.",
+                                              "Source provenance depends entirely on user submission."
+                                          ]
+                      },
+    "model_metadata":  {
+                           "provider":  "gemini",
+                           "model":  "gemini-3.1-flash-lite",
+                           "finish_reason":  "STOP",
+                           "usage_metadata":  {
+                                                  "promptTokenCount":  8897,
+                                                  "candidatesTokenCount":  783,
+                                                  "totalTokenCount":  9680,
+                                                  "promptTokensDetails":  [
+                                                                              {
+                                                                                  "modality":  "TEXT",
+                                                                                  "tokenCount":  8897
+                                                                              }
+                                                                          ],
+                                                  "serviceTier":  "standard"
+                                              }
+                       },
+    "prompt_metadata":  {
+                            "prompt_root":  "functions/_prompts/diligence-v2",
+                            "shared_sha256":  "4383fa7dfdd2a165464aa7b358b8e0ad1efc2f5deb54e5cdf3ce7bb4c4992426",
+                            "stage_sha256":  "9ab73c38fd32346925b438a3ac96063c2af55fccca41da4d2c3cbf699347e033",
+                            "combined_characters":  32893
+                        },
+    "schema_metadata":  {
+                            "title":  "Source Bundle",
+                            "sha256":  "a2caded5ba22b95dfbfd19030262a3abc95f2d6c17a3656a185be84bc75b2c2c"
+                        }
+}

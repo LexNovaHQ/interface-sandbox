@@ -1,0 +1,77 @@
+{
+    "ok":  true,
+    "stage_id":  "registry_ledger_evaluation",
+    "output_schema_key":  "registry_evaluation_ledger",
+    "output_schema_path":  "/data/schemas/registryLedger.schema.json",
+    "validation_schema_key":  "registryLedger",
+    "validation_mode":  "build_time_ajv_standalone",
+    "output_unwrapped":  false,
+    "registry_ledger_result":  {
+                                   "registry_batch_meta":  {
+                                                               "run_id":  "step2-live-smoke-20260606-201106",
+                                                               "registry_count_loaded":  1,
+                                                               "batch_id":  "step2-live-smoke-20260606-201106:registry:1-of-1"
+                                                           },
+                                   "registry_evaluation_ledger":  [
+                                                                      {
+                                                                          "entry_number":  1,
+                                                                          "threat_id":  "SMOKE-001",
+                                                                          "threat_name":  "Unreviewed AI output reliance",
+                                                                          "archetype_gate":  "PASS",
+                                                                          "surface_gate":  "PASS",
+                                                                          "authority_relevance":  "NOT_REQUIRED",
+                                                                          "conditions":  [
+                                                                                             {
+                                                                                                 "condition_id":  "CONDITION_1",
+                                                                                                 "result":  true,
+                                                                                                 "basis":  "TRUE_FEATURE_MAP: Product features F001 and F002 confirm the AI assistant generates summaries and answers."
+                                                                                             },
+                                                                                             {
+                                                                                                 "condition_id":  "CONDITION_2",
+                                                                                                 "result":  true,
+                                                                                                 "basis":  "TRUE_EVIDENCE: Admitted manual text confirms the product is an AI assistant that users rely on for business document summaries and product questions."
+                                                                                             }
+                                                                                         ],
+                                                                          "trigger_if_result":  true,
+                                                                          "exclude_if_result":  false,
+                                                                          "final_status":  "TRIGGERED",
+                                                                          "feature_refs":  [
+                                                                                               "F001",
+                                                                                               "F002"
+                                                                                           ],
+                                                                          "evidence_ref":  "manual_text",
+                                                                          "reasoning_summary":  "The product generates AI summaries and answers (F001, F002). While the company provides a brief output-reliance disclaimer in the manual text, it does not constitute a clear, formal human-review workflow or a robust no-reliance warning within a governance artifact (ToS/AUP), failing the EXCLUDE_IF burden under HER_001."
+                                                                      }
+                                                                  ],
+                                   "batch_warnings":  [
+
+                                                      ]
+                               },
+    "model_metadata":  {
+                           "provider":  "gemini",
+                           "model":  "gemini-3.1-flash-lite",
+                           "finish_reason":  "STOP",
+                           "usage_metadata":  {
+                                                  "promptTokenCount":  16801,
+                                                  "candidatesTokenCount":  481,
+                                                  "totalTokenCount":  17282,
+                                                  "promptTokensDetails":  [
+                                                                              {
+                                                                                  "modality":  "TEXT",
+                                                                                  "tokenCount":  16801
+                                                                              }
+                                                                          ],
+                                                  "serviceTier":  "standard"
+                                              }
+                       },
+    "prompt_metadata":  {
+                            "prompt_root":  "functions/_prompts/diligence-v2",
+                            "shared_sha256":  "4383fa7dfdd2a165464aa7b358b8e0ad1efc2f5deb54e5cdf3ce7bb4c4992426",
+                            "stage_sha256":  "db3165c1bbb079dfad111d89abc3c9634948b0b3c7d57ceb4fdd3439a57e2660",
+                            "combined_characters":  54264
+                        },
+    "schema_metadata":  {
+                            "title":  "Registry Evaluation Ledger",
+                            "sha256":  "419f77fc9565f9429fe544956d9035d41195d6ac7b41f1f434c47ab5bb162ec3"
+                        }
+}
