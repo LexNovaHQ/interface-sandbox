@@ -1,5 +1,5 @@
-import { DILIGENCE_SCHEMA_BUNDLE } from "../../../functions/_generated/diligenceSchemaBundle.js";
-import { validateGeneratedSchema } from "../../../functions/_generated/diligenceValidatorBundle.js";
+import { DILIGENCE_SCHEMA_BUNDLE } from "../../functions/_generated/diligenceSchemaBundle.js";
+import { validateGeneratedSchema } from "../../functions/_generated/diligenceValidatorBundle.js";
 
 function normalizeValidationError(error) {
   return {
