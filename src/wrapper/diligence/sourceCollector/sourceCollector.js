@@ -2,12 +2,28 @@ import { fetchWithJinaReader } from "./jinaClient.js";
 import { normalizeHttpUrl, normalizeSourceInput } from "./sourceMode.js";
 import { runSourceDiscoveryBridge } from "./sourceDiscoveryBridge.js";
 
+const DEFAULT_SOURCE_FETCH_BATCH_SIZE = 5;
+
 function createRunId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
 
   return `diligence-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function clampBatchSize(value) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 1) return DEFAULT_SOURCE_FETCH_BATCH_SIZE;
+  return number;
+}
+
+function chunkArray(values, size) {
+  const chunks = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
 }
 
 function createManualTextRecord({ runId, pastedText }) {
@@ -29,7 +45,7 @@ function createManualTextRecord({ runId, pastedText }) {
   };
 }
 
-function createUrlRecord({ runId, index, result, sourceInfo }) {
+function createUrlRecord({ runId, index, result, sourceInfo, batchMeta }) {
   return {
     source_id: `${runId}:url:${index}`,
     source_type: "webpage",
@@ -50,6 +66,7 @@ function createUrlRecord({ runId, index, result, sourceInfo }) {
     discovery_confidence: sourceInfo?.confidence || null,
     discovery_query_used: sourceInfo?.search_query_used || null,
     discovery_path_taken: sourceInfo?.path_taken || null,
+    source_batch: batchMeta || null,
     error: result.error
   };
 }
@@ -64,7 +81,8 @@ function createZoneMap(records) {
     artifact_class: record.artifact_class || "FOOTPRINT_WIDE",
     discovery_origin: record.discovery_origin || null,
     status: record.status,
-    raw_characters: record.raw_characters
+    raw_characters: record.raw_characters,
+    source_batch: record.source_batch || null
   }));
 }
 
@@ -133,6 +151,89 @@ function buildFetchPlan({ normalized, sourceDiscovery }) {
   return plan;
 }
 
+function createBatchPlan(fetchPlan, batchSize) {
+  const batches = chunkArray(fetchPlan, batchSize);
+  return batches.map((items, batchIndex) => ({
+    batch_id: `source-batch-${batchIndex + 1}-of-${batches.length}`,
+    batch_index: batchIndex,
+    batch_number: batchIndex + 1,
+    batch_count: batches.length,
+    batch_size: items.length,
+    start_index: batchIndex * batchSize,
+    end_index: batchIndex * batchSize + items.length - 1,
+    urls: items.map((item) => item.url)
+  }));
+}
+
+async function fetchSourceBatch({ runId, batchItems, batchMeta, globalStartIndex, fetchImpl, options }) {
+  const settled = await Promise.allSettled(batchItems.map((sourceInfo) => fetchWithJinaReader(sourceInfo.url, {
+    fetchImpl,
+    timeoutMs: options.timeoutMs,
+    maxCharacters: options.maxCharacters,
+    headers: options.headers
+  })));
+
+  return settled.map((settledResult, localIndex) => {
+    const sourceInfo = batchItems[localIndex];
+    const globalIndex = globalStartIndex + localIndex;
+    const result = settledResult.status === "fulfilled"
+      ? settledResult.value
+      : {
+          source_url: sourceInfo.url,
+          reader_url: null,
+          status: "FETCH_FAILED",
+          http_status: null,
+          fetched_at: new Date().toISOString(),
+          raw_text: "",
+          raw_characters: 0,
+          clipped: false,
+          source_hash: null,
+          error: settledResult.reason?.message || "Jina batch fetch failed"
+        };
+
+    return createUrlRecord({
+      runId,
+      index: globalIndex,
+      result,
+      sourceInfo,
+      batchMeta: {
+        batch_id: batchMeta.batch_id,
+        batch_number: batchMeta.batch_number,
+        batch_count: batchMeta.batch_count,
+        batch_index: batchMeta.batch_index,
+        local_index: localIndex
+      }
+    });
+  });
+}
+
+async function fetchSourcesInBatches({ runId, fetchPlan, fetchImpl, options }) {
+  const batchSize = clampBatchSize(options.sourceFetchBatchSize || options.batchSize);
+  const batchPlan = createBatchPlan(fetchPlan, batchSize);
+  const records = [];
+
+  for (const batchMeta of batchPlan) {
+    const batchItems = fetchPlan.slice(batchMeta.start_index, batchMeta.end_index + 1);
+    const batchRecords = await fetchSourceBatch({
+      runId,
+      batchItems,
+      batchMeta,
+      globalStartIndex: batchMeta.start_index,
+      fetchImpl,
+      options
+    });
+    records.push(...batchRecords);
+  }
+
+  return {
+    records,
+    batch_plan: batchPlan,
+    batch_size: batchSize,
+    batch_count: batchPlan.length,
+    batched: true
+  };
+}
+
 export async function collectDiligenceSources(input = {}, options = {}) {
   const runId = input.run_id || options.runId || createRunId();
   const normalized = normalizeSourceInput(input);
@@ -152,19 +253,13 @@ export async function collectDiligenceSources(input = {}, options = {}) {
     sourceDiscovery
   });
 
-  const urlResults = [];
-
-  for (let index = 0; index < fetchPlan.length; index += 1) {
-    const sourceInfo = fetchPlan[index];
-    const result = await fetchWithJinaReader(sourceInfo.url, {
-      fetchImpl,
-      timeoutMs: options.timeoutMs,
-      maxCharacters: options.maxCharacters,
-      headers: options.headers
-    });
-
-    urlResults.push(createUrlRecord({ runId, index, result, sourceInfo }));
-  }
+  const batchedFetch = await fetchSourcesInBatches({
+    runId,
+    fetchPlan,
+    fetchImpl,
+    options
+  });
+  const urlResults = batchedFetch.records;
 
   const manualRecords = normalized.pasted_text
     ? [createManualTextRecord({ runId, pastedText: normalized.pasted_text })]
@@ -205,6 +300,12 @@ export async function collectDiligenceSources(input = {}, options = {}) {
       pages_attempted: pagesAttempted,
       pages_read: pagesRead,
       urls: fetchPlan.map((item) => item.url),
+      source_fetch: {
+        batched: batchedFetch.batched,
+        batch_size: batchedFetch.batch_size,
+        batch_count: batchedFetch.batch_count,
+        batch_plan: batchedFetch.batch_plan
+      },
       source_discovery: {
         enabled: sourceDiscovery.enabled,
         status: sourceDiscovery.status,
@@ -216,7 +317,7 @@ export async function collectDiligenceSources(input = {}, options = {}) {
       zone_map: createZoneMap(records),
       limitations,
       collector: "diligence_source_collector_v2",
-      transport: "source_discovery_scout_plus_jina_reader"
+      transport: "source_discovery_scout_plus_batched_jina_reader"
     }
   };
 }
