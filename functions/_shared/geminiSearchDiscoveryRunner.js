@@ -2,7 +2,7 @@ import { buildSourceDiscoveryPrompt } from "./sourceDiscoveryPrompt.js";
 import { guardSourceDiscoveryOutput } from "./sourceDiscoveryOutputGuard.js";
 import { classifyGeminiProviderError, getRoleAttempts, shouldTryNextProviderAttempt } from "./providerKeyPool.js";
 
-const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 
 function clampNumber(value, fallback, min, max) {
@@ -14,8 +14,8 @@ function clampNumber(value, fallback, min, max) {
 function getSearchAttemptPolicy(options = {}) {
   return {
     model_role: "search",
-    max_attempts: clampNumber(options.maxAttempts ?? options.max_attempts, 2, 1, 4),
-    attempt_timeout_ms: clampNumber(options.timeoutMs ?? options.timeout_ms, DEFAULT_TIMEOUT_MS, 5000, 45000)
+    max_attempts: clampNumber(options.maxAttempts ?? options.max_attempts, 2, 1, 2),
+    attempt_timeout_ms: clampNumber(options.timeoutMs ?? options.timeout_ms, DEFAULT_TIMEOUT_MS, 5000, 15000)
   };
 }
 
@@ -82,6 +82,7 @@ function buildRequestBody({ input, options = {} }) {
     }
   };
 }
+
 async function runSingleDiscoveryAttempt({ attempt, input, options, fetchImpl, attemptPolicy }) {
   const timeoutMs = attemptPolicy.attempt_timeout_ms;
   const abort = createAbortSignal(timeoutMs);
@@ -152,7 +153,9 @@ async function runSingleDiscoveryAttempt({ attempt, input, options, fetchImpl, a
       selected_key_alias: attempt.key_alias,
       pool: attempt.pool,
       status: response.status,
-      discovery: parsed.value,
+      discovery: guarded.discovery,
+      quality_status: guarded.quality_status,
+      scout_quality: guarded.scout_quality,
       grounding,
       usage_metadata: payload?.usageMetadata || null,
       finish_reason: payload?.candidates?.[0]?.finishReason || "unknown"
