@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildSourceDiscoveryPrompt } from "../source-discovery/sourceDiscoveryPrompt.js";
 import { buildInputIdentity, guardSourceDiscoveryResult } from "../source-discovery/sourceDiscoveryGuard.js";
@@ -12,7 +12,8 @@ export function createSourceDiscoveryRouter() {
       const company_name = req.body?.company_name || req.body?.input?.company_name || null;
       const options = req.body?.options || {};
 
-      const identity = buildInputIdentity(primary_url);
+      const identity = buildInputIdentity({ primary_url });
+
       const prompt = buildSourceDiscoveryPrompt({
         primary_url: identity.primary_url,
         normalized_origin: identity.normalized_origin,
@@ -25,7 +26,7 @@ export function createSourceDiscoveryRouter() {
         prompt,
         options: {
           timeoutMs: Number(options.timeoutMs || 90000),
-          maxOutputTokens: Number(options.maxOutputTokens || 8192),
+          maxOutputTokens: Number(options.maxOutputTokens || 4096),
           temperature: Number(options.temperature ?? 0),
           responseMimeType: "application/json",
           enableSearchGrounding: true
@@ -46,7 +47,10 @@ export function createSourceDiscoveryRouter() {
         });
       }
 
-      const guardedDiscovery = guardSourceDiscoveryResult(result.json, identity);
+      const guardedDiscovery = guardSourceDiscoveryResult({
+        rawDiscovery: result.json,
+        input: identity
+      });
 
       return res.json({
         ok: true,
@@ -67,7 +71,6 @@ export function createSourceDiscoveryRouter() {
           discovery_limitations: guardedDiscovery.discovery_limitations.length
         },
         model_meta: result.model_meta,
-        attempts: result.attempts || [],
         usage_metadata: result.usage_metadata || null,
         grounding_metadata_present: Boolean(result.grounding_metadata),
         fallback_used: result.fallback_used === true,
@@ -80,3 +83,4 @@ export function createSourceDiscoveryRouter() {
 
   return router;
 }
+

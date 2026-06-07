@@ -1,189 +1,203 @@
-const REJECT_HOSTS = [
-  "linkedin.com",
-  "crunchbase.com",
-  "pitchbook.com",
-  "g2.com",
-  "capterra.com",
-  "trustpilot.com",
-  "facebook.com",
-  "instagram.com",
-  "x.com",
-  "twitter.com",
-  "youtube.com",
-  "medium.com",
-  "techcrunch.com",
-  "forbes.com",
-  "bloomberg.com",
-  "reuters.com"
-];
+﻿export function buildInputIdentity({ primary_url }) {
+  if (!primary_url || typeof primary_url !== "string") {
+    const err = new Error("primary_url is required");
+    err.statusCode = 400;
+    err.error_type = "BAD_REQUEST";
+    throw err;
+  }
 
-const ASSET_EXTENSIONS = [
-  ".css",
-  ".js",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".svg",
-  ".webp",
-  ".ico",
-  ".woff",
-  ".woff2",
-  ".ttf",
-  ".map"
-];
+  let parsed;
+  try {
+    const candidate = primary_url.match(/^https?:\/\//i) ? primary_url : `https://${primary_url}`;
+    parsed = new URL(candidate);
+  } catch {
+    const err = new Error("primary_url must be a valid URL");
+    err.statusCode = 400;
+    err.error_type = "BAD_REQUEST";
+    throw err;
+  }
 
-const GOVERNANCE_HOST_HINTS = [
-  "termly.io",
-  "iubenda.com",
-  "cookiebot.com",
-  "onetrust.com",
-  "trustarc.com",
-  "privacycenter",
-  "trustcenter",
-  "trust-center",
-  "legal",
-  "termsfeed.com"
-];
+  parsed.hash = "";
+  parsed.search = "";
 
-function stripWww(hostname) {
-  return String(hostname || "").toLowerCase().replace(/^www\./, "");
-}
+  const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  const labels = hostname.split(".").filter(Boolean);
+  const registrable_domain = labels.length >= 2 ? labels.slice(-2).join(".") : hostname;
 
-export function normalizeUrl(input) {
-  const raw = String(input || "").trim();
-  if (!raw) throw new Error("primary_url is required.");
-  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  const url = new URL(withProtocol);
-  url.hash = "";
-  return url.toString().replace(/\/$/, "");
-}
-
-export function getRegistrableDomain(urlLike) {
-  const url = new URL(normalizeUrl(urlLike));
-  const host = stripWww(url.hostname);
-  const parts = host.split(".").filter(Boolean);
-  if (parts.length <= 2) return host;
-
-  const lastTwo = parts.slice(-2).join(".");
-  const lastThree = parts.slice(-3).join(".");
-  const twoLevelSuffixes = ["co.uk", "com.au", "co.in", "com.br", "co.jp"];
-  if (twoLevelSuffixes.includes(lastTwo) && parts.length >= 3) return lastThree;
-  return lastTwo;
-}
-
-export function buildInputIdentity(primary_url) {
-  const normalized = normalizeUrl(primary_url);
-  const url = new URL(normalized);
-  const origin = `${url.protocol}//${url.hostname}`;
   return {
-    primary_url: normalized,
-    normalized_origin: origin,
-    hostname: stripWww(url.hostname),
-    registrable_domain: getRegistrableDomain(normalized)
+    primary_url,
+    normalized_origin: `${parsed.protocol}//${hostname}`,
+    hostname,
+    registrable_domain
   };
 }
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
 
-function normalizeCandidateUrl(input) {
+function normalizeUrl(value) {
+  if (!value || typeof value !== "string") return null;
   try {
-    return normalizeUrl(input);
+    const url = new URL(value.trim());
+    url.hash = "";
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString().replace(/\/$/, "");
   } catch {
     return null;
   }
 }
 
-function isAssetUrl(url) {
-  const pathname = new URL(url).pathname.toLowerCase();
-  return ASSET_EXTENSIONS.some((ext) => pathname.endsWith(ext));
-}
-
-function isRejectedHost(hostname) {
-  const host = stripWww(hostname);
-  return REJECT_HOSTS.some((blocked) => host === blocked || host.endsWith(`.${blocked}`));
-}
-
-function isFirstPartyHost(hostname, registrableDomain) {
-  const host = stripWww(hostname);
-  return host === registrableDomain || host.endsWith(`.${registrableDomain}`);
-}
-
-function isTraceQualifiedHosted(candidate, hostname) {
-  const artifactClass = String(candidate.artifact_class || "").toLowerCase();
-  const relationship = String(candidate.relationship_explanation || "").trim();
-  const zone = String(candidate.source_zone || "").toLowerCase();
-  const host = stripWww(hostname);
-  const hostHint = GOVERNANCE_HOST_HINTS.some((hint) => host.includes(hint));
-  const governanceZone = /legal|privacy|terms|security|trust|governance|cookie|dpa|subprocessor|compliance/.test(zone);
-  return artifactClass === "trace_qualified_hosted" && relationship.length >= 12 && governanceZone && hostHint;
-}
-
-function dedupeByUrl(items) {
-  const seen = new Set();
-  const out = [];
-  for (const item of items) {
-    const key = String(item.url || "").toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(item);
+function hostnameOf(value) {
+  try {
+    return new URL(value).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
   }
-  return out;
 }
 
-export function guardSourceDiscoveryResult(rawDiscovery, identity) {
-  const candidateSources = Array.isArray(rawDiscovery?.candidate_sources) ? rawDiscovery.candidate_sources : [];
-  const rejectedSources = Array.isArray(rawDiscovery?.rejected_sources) ? rawDiscovery.rejected_sources : [];
-  const admitted = [];
-  const rejected = [...rejectedSources];
+function pathOf(value) {
+  try {
+    return new URL(value).pathname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
 
-  for (const candidate of candidateSources) {
-    const normalized = normalizeCandidateUrl(candidate?.url);
+function isLikelyAsset(url) {
+  const path = pathOf(url);
+  return /\.(png|jpg|jpeg|gif|webp|svg|ico|css|js|woff|woff2|ttf|otf|pdf)$/i.test(path);
+}
+
+function inferSourceZone(url) {
+  const host = hostnameOf(url);
+  const path = pathOf(url);
+  const haystack = `${host}${path}`;
+
+  if (/privacy|data-protection|personal-data/.test(haystack)) return "privacy";
+  if (/terms|tos|legal|conditions/.test(haystack)) return "terms";
+  if (/security|trust|compliance|iso|soc|gdpr|hipaa/.test(haystack)) return "security";
+  if (/docs|documentation|developer|developers|api|reference|sdk/.test(haystack)) return "docs";
+  if (/status/.test(haystack)) return "status";
+  if (/pricing|plans|enterprise/.test(haystack)) return "enterprise";
+  if (/signup|sign-up|register|onboarding/.test(haystack)) return "signup";
+  if (/blog|changelog|release|updates/.test(haystack)) return "blog_product";
+  return "product";
+}
+
+function inferArtifactType(url) {
+  const host = hostnameOf(url);
+  const path = pathOf(url);
+  const haystack = `${host}${path}`;
+
+  if (/privacy/.test(haystack)) return "Privacy Policy";
+  if (/cookie/.test(haystack)) return "Cookie Policy";
+  if (/subprocessor/.test(haystack)) return "Subprocessors";
+  if (/dpa|data-processing/.test(haystack)) return "Data Processing Addendum";
+  if (/aup|acceptable-use/.test(haystack)) return "Acceptable Use Policy";
+  if (/sla|service-level/.test(haystack)) return "Service Level Agreement";
+  if (/terms|tos|conditions/.test(haystack)) return "Terms of Service";
+  if (/security|trust|compliance/.test(haystack)) return "Security / Trust Center";
+  if (/docs|documentation/.test(haystack)) return "Product Documentation";
+  if (/developer|developers|api|reference|sdk/.test(haystack)) return "Developer / API Documentation";
+  if (/pricing|plans/.test(haystack)) return "Pricing / Plans";
+  if (/enterprise/.test(haystack)) return "Enterprise Page";
+  if (/signup|sign-up|register|onboarding/.test(haystack)) return "Signup / Onboarding Page";
+  if (/blog|changelog|release|updates/.test(haystack)) return "Product Blog / Changelog";
+  return "Company Homepage / Product Page";
+}
+
+function isFirstPartyOrSubdomain(url, registrable_domain) {
+  const host = hostnameOf(url);
+  const root = String(registrable_domain || "").toLowerCase().replace(/^www\./, "");
+  return host === root || host.endsWith(`.${root}`);
+}
+
+function isBlockedThirdParty(url) {
+  const host = hostnameOf(url);
+  const blocked = [
+    "linkedin.com",
+    "crunchbase.com",
+    "pitchbook.com",
+    "twitter.com",
+    "x.com",
+    "facebook.com",
+    "instagram.com",
+    "youtube.com",
+    "g2.com",
+    "capterra.com",
+    "trustpilot.com",
+    "apps.apple.com",
+    "play.google.com"
+  ];
+  return blocked.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
+function artifactClassFor(url, registrable_domain) {
+  const host = hostnameOf(url);
+  const root = String(registrable_domain || "").toLowerCase().replace(/^www\./, "");
+  if (host === root) return "first_party_domain";
+  if (host.endsWith(`.${root}`)) return "first_party_subdomain";
+  return "trace_qualified_hosted";
+}
+
+function normalizeRawUrlEntries(rawDiscovery) {
+  const fromUrls = safeArray(rawDiscovery?.urls).map((url) => ({ url }));
+  const fromCandidates = safeArray(rawDiscovery?.candidate_sources);
+  return [...fromUrls, ...fromCandidates];
+}
+
+export function guardSourceDiscoveryResult({ rawDiscovery, input }) {
+  const registrable_domain = input?.registrable_domain;
+  const entries = normalizeRawUrlEntries(rawDiscovery);
+  const seen = new Set();
+  const candidate_sources = [];
+  const rejected_sources = [];
+
+  for (const entry of entries) {
+    const normalized = normalizeUrl(typeof entry === "string" ? entry : entry?.url);
+
     if (!normalized) {
-      rejected.push({ url: candidate?.url || "", reason: "Invalid URL returned by discovery model.", rejection_class: "invalid_url" });
+      rejected_sources.push({ url: String(entry?.url || entry || ""), reason: "invalid_url" });
       continue;
     }
 
-    const url = new URL(normalized);
-    const host = stripWww(url.hostname);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
 
-    if (isRejectedHost(host)) {
-      rejected.push({ url: normalized, reason: "Rejected host class for first-party diligence.", rejection_class: "third_party" });
+    if (isLikelyAsset(normalized)) {
+      rejected_sources.push({ url: normalized, reason: "asset_url" });
       continue;
     }
 
-    if (isAssetUrl(normalized)) {
-      rejected.push({ url: normalized, reason: "Asset URL is not usable source evidence.", rejection_class: "asset" });
+    if (isBlockedThirdParty(normalized)) {
+      rejected_sources.push({ url: normalized, reason: "blocked_third_party" });
       continue;
     }
 
-    const firstParty = isFirstPartyHost(host, identity.registrable_domain);
-    const traceQualified = isTraceQualifiedHosted(candidate, host);
+    const firstParty = isFirstPartyOrSubdomain(normalized, registrable_domain);
 
-    if (!firstParty && !traceQualified) {
-      rejected.push({ url: normalized, reason: "URL is not first-party and not trace-qualified hosted governance evidence.", rejection_class: "untraceable" });
+    if (!firstParty) {
+      rejected_sources.push({ url: normalized, reason: "not_first_party_or_trace_qualified" });
       continue;
     }
 
-    admitted.push({
+    candidate_sources.push({
       url: normalized,
-      source_zone: candidate.source_zone || "other_governance",
-      artifact_type: candidate.artifact_type || "Discovered source",
-      artifact_class: firstParty ? (host === identity.registrable_domain ? "first_party_domain" : "first_party_subdomain") : "trace_qualified_hosted",
-      confidence: Number(candidate.confidence ?? 0.7),
-      admission_readiness: candidate.admission_readiness === "review" ? "review" : "admit",
-      relationship_explanation: candidate.relationship_explanation || (firstParty ? `Host belongs to ${identity.registrable_domain}.` : "Trace-qualified hosted governance source."),
-      discovery_method: candidate.discovery_method || "search_grounding"
+      source_zone: entry?.source_zone || inferSourceZone(normalized),
+      artifact_type: entry?.artifact_type || inferArtifactType(normalized),
+      artifact_class: entry?.artifact_class || artifactClassFor(normalized, registrable_domain),
+      confidence: Number(entry?.confidence || 0.8),
+      admission_readiness: entry?.admission_readiness || "admit"
     });
   }
 
   return {
-    candidate_sources: dedupeByUrl(admitted),
-    rejected_sources: dedupeByUrl(rejected.map((item) => ({
-      url: item.url || "",
-      reason: item.reason || "Rejected by source discovery guard.",
-      rejection_class: item.rejection_class || "rejected"
-    }))),
-    missing_expected_paths: Array.isArray(rawDiscovery?.missing_expected_paths) ? rawDiscovery.missing_expected_paths : [],
-    search_queries_used: Array.isArray(rawDiscovery?.search_queries_used) ? rawDiscovery.search_queries_used : [],
-    discovery_limitations: Array.isArray(rawDiscovery?.discovery_limitations) ? rawDiscovery.discovery_limitations : []
+    candidate_sources,
+    rejected_sources,
+    missing_expected_paths: safeArray(rawDiscovery?.missing_expected_paths),
+    search_queries_used: safeArray(rawDiscovery?.search_queries_used),
+    discovery_limitations: safeArray(rawDiscovery?.limitations || rawDiscovery?.discovery_limitations)
   };
 }
+
+
