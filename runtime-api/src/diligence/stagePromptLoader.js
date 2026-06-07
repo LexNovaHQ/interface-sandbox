@@ -1,4 +1,4 @@
-import { DILIGENCE_PROMPT_BUNDLE } from "../../../functions/_generated/diligencePromptBundle.js";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageIds } from "./stageConfigs.js";
 
 function getPrompt(promptId) {
