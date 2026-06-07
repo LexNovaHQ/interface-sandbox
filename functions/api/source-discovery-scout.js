@@ -62,7 +62,10 @@ async function handlePost(context) {
   }
 
   const input = normalizeInput(body?.input || body || {});
-  const options = body?.options || {};
+  const options = {
+    maxAttempts: 1,
+    ...(body?.options || {})
+  };
 
   if (!input.primary_url && !input.company_name) {
     return jsonResponse({
@@ -108,6 +111,8 @@ async function handlePost(context) {
     selected_key_alias: result.selected_key_alias || null,
     attempt_policy: result.attempt_policy || null,
     attempted_models: result.attempted_models || [],
+    quality_status: result.quality_status || null,
+    scout_quality: result.scout_quality || null,
     discovery: result.discovery,
     grounding: result.grounding,
     usage_metadata: result.usage_metadata || null,

@@ -8,6 +8,7 @@ import {
 } from "./registry/index.js";
 
 const DEFAULT_ENDPOINTS = Object.freeze({
+  source_discovery: "/api/source-discovery-scout",
   evidence_refiner: "/api/diligence-evidence-refiner",
   target_feature_profile: "/api/diligence-target-feature-profile",
   legal_stack_review: "/api/diligence-legal-stack-review",
@@ -96,6 +97,7 @@ function buildEvidenceRefinerInput(sourceCollection) {
     run_id: sourceCollection.run_id,
     source_mode: sourceCollection.source_mode,
     target_input: sourceCollection.target_input,
+    source_discovery: sourceCollection.source_discovery,
     raw_footprint: sourceCollection.raw_footprint,
     scrape_meta: sourceCollection.scrape_meta
   };
@@ -130,6 +132,7 @@ function buildFinalCompilerInput({
     run_id: runId,
     source_mode: source_collection.source_mode,
     target_input: source_collection.target_input,
+    source_discovery: source_collection.source_discovery,
     source_bundle,
     target_feature_profile,
     legal_stack_review,
@@ -168,13 +171,19 @@ export async function runDiligencePipeline(input = {}, options = {}) {
         fetchImpl,
         timeoutMs: options.sourceTimeoutMs,
         maxCharacters: options.sourceMaxCharacters,
-        headers: options.sourceHeaders
+        headers: options.sourceHeaders,
+        sourceFetchBatchSize: options.sourceFetchBatchSize,
+        sourceDiscoveryEndpoint: options.sourceDiscoveryEndpoint || endpoints.source_discovery,
+        enableSourceDiscovery: options.enableSourceDiscovery !== false,
+        sourceDiscoveryOptions: options.sourceDiscoveryOptions || { maxAttempts: 1 }
       }
     );
     stage_log.push(createStageRecord("source_collector", "completed", {
       source_mode: source_collection.source_mode,
       pages_attempted: source_collection.scrape_meta.pages_attempted,
-      pages_read: source_collection.scrape_meta.pages_read
+      pages_read: source_collection.scrape_meta.pages_read,
+      source_discovery_status: source_collection.source_discovery?.status || "unknown",
+      source_discovery_admitted_urls: source_collection.source_discovery?.admitted_url_count ?? 0
     }));
 
     stage_log.push(createStageRecord("evidence_refiner", "started"));

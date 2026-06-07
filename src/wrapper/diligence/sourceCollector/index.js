@@ -11,4 +11,5 @@ export {
   normalizeSourceInput
 } from "./sourceMode.js";
 
+export { runSourceDiscoveryBridge } from "./sourceDiscoveryBridge.js";
 export { collectDiligenceSources } from "./sourceCollector.js";

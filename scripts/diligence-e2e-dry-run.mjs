@@ -134,8 +134,77 @@ function makeMockFetch() {
     const url = typeof input === "string" ? input : input?.url || "";
     calls.push({ url, method: init.method || "GET" });
 
+    if (url === "/api/source-discovery-scout") {
+      return jsonResponse({
+        ok: true,
+        service: "source-discovery-scout",
+        model_role: "search",
+        selected_model: "dry-run-search-model",
+        selected_key_alias: "dry-run-search-key",
+        attempt_policy: { model_role: "search", max_attempts: 1, attempt_timeout_ms: 15000 },
+        attempted_models: [{ provider: "gemini", pool: "search", key_alias: "dry-run-search-key", model: "dry-run-search-model", ok: true }],
+        quality_status: "READY_FOR_ADMISSION",
+        scout_quality: {
+          candidate_count: 2,
+          trace_complete_count: 2,
+          trace_incomplete_count: 0,
+          ready_for_admission_gate: true,
+          warnings: []
+        },
+        discovery: {
+          ok: true,
+          target: {
+            primary_url: "https://example.com/",
+            company_domain: "example.com",
+            company_name_guess: "Dry Run Co"
+          },
+          search_queries_used: ["site:example.com terms privacy security"],
+          candidate_sources: [
+            {
+              url: "https://example.com/terms",
+              title: "Terms of Service",
+              source_zone: "terms",
+              artifact_type: "Terms of Service",
+              artifact_class: "CORE_LEGAL",
+              search_query_used: "site:example.com terms",
+              cascade_level: "LEVEL_2",
+              path_taken: "Found through target-domain site query.",
+              first_party_claim: true,
+              legal_host_claim: false,
+              why_relevant: "Target-domain legal terms page.",
+              expected_evidence_type: "Legal terms text",
+              confidence: "HIGH",
+              admission_readiness: "READY_FOR_ADMISSION"
+            },
+            {
+              url: "https://example.com/security",
+              title: "Security",
+              source_zone: "security_trust",
+              artifact_type: "Security Page",
+              artifact_class: "GOVERNANCE_SURFACE",
+              search_query_used: "site:example.com security",
+              cascade_level: "LEVEL_2",
+              path_taken: "Found through target-domain site query.",
+              first_party_claim: true,
+              legal_host_claim: false,
+              why_relevant: "Target-domain security page.",
+              expected_evidence_type: "Security and governance text",
+              confidence: "HIGH",
+              admission_readiness: "READY_FOR_ADMISSION"
+            }
+          ],
+          rejected_sources: [],
+          missing_expected_paths: [],
+          discovery_limitations: []
+        },
+        grounding: { web_search_queries: ["site:example.com terms privacy security"], grounding_chunks: [], grounding_supports: [] },
+        usage_metadata: null,
+        finish_reason: "STOP"
+      });
+    }
+
     if (url.startsWith("https://r.jina.ai/")) {
-      return textResponse("Title: Dry Run Co\nDry Run Product is an AI software demo with public marketing copy.");
+      return textResponse("Title: Dry Run Co\nDry Run Product is an AI software demo with public marketing, legal, and security copy.");
     }
 
     if (url === "/api/diligence-evidence-refiner") {
@@ -145,6 +214,7 @@ function makeMockFetch() {
         source_bundle: {
           run_id: body.input?.run_id || "dry-run",
           source_mode: body.input?.source_mode || "url",
+          source_discovery: body.input?.source_discovery || {},
           source_bundle_summary: { dry_run: true },
           source_records: body.input?.raw_footprint?.records || [],
           scrape_meta: body.input?.scrape_meta || {}
@@ -242,12 +312,19 @@ async function main() {
       },
       {
         fetchImpl: mockFetch,
-        registryBatchSize: 25
+        registryBatchSize: 25,
+        sourceFetchBatchSize: 2
       }
     );
 
     assert(pipelineResult.ok, `Pipeline failed: ${pipelineResult.error || "unknown error"}`);
     assert(pipelineResult.compiler_output, "Pipeline did not return compiler_output.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.source_discovery.status === "COMPLETED", "Source discovery did not complete.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.source_discovery.admitted_url_count === 2, "Expected two discovered URLs to be admitted.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.pages_attempted === 3, "Expected primary URL plus two discovered URLs to be scraped.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batched === true, "Expected source fetch to be batched.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_size === 2, "Expected dry-run source fetch batch size 2.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_count === 2, "Expected two source fetch batches for three URLs.");
 
     const node5bResult = diligence.assembleNode5B(pipelineResult.compiler_output, {
       createdAt: "2026-01-01T00:00:00.000Z"
@@ -273,6 +350,12 @@ async function main() {
     console.log(JSON.stringify({
       run_id: pipelineResult.run_id,
       stage_count: pipelineResult.stage_log.length,
+      source_discovery_status: pipelineResult.pipeline_artifacts.source_collection.source_discovery.status,
+      source_discovery_admitted_url_count: pipelineResult.pipeline_artifacts.source_collection.source_discovery.admitted_url_count,
+      pages_attempted: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.pages_attempted,
+      source_fetch_batched: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batched,
+      source_fetch_batch_size: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_size,
+      source_fetch_batch_count: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_count,
       registry_count_evaluated: pipelineResult.pipeline_artifacts.merged_registry_result.registry_count_evaluated,
       node5b_ok: node5bResult.ok,
       persistence_write_count: persistencePlan.write_count,

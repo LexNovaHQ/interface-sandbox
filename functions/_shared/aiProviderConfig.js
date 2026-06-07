@@ -14,6 +14,21 @@ export const DEFAULT_GEMINI_MODELS = Object.freeze({
   secondary_fallback: "gemini-2.5-flash"
 });
 
+export const GEMINI_POOL_ENV = Object.freeze({
+  search: {
+    keysEnv: "GEMINI_SEARCH_API_KEYS",
+    modelsEnv: "GEMINI_SEARCH_MODEL_SEQUENCE"
+  },
+  json: {
+    keysEnv: "GEMINI_JSON_API_KEYS",
+    modelsEnv: "GEMINI_JSON_MODEL_SEQUENCE"
+  },
+  reasoning: {
+    keysEnv: "GEMINI_REASONING_API_KEYS",
+    modelsEnv: "GEMINI_FINAL_MODEL_SEQUENCE"
+  }
+});
+
 const SERVER_SECRET_PLACEHOLDERS = new Set([
   "server_secret_only_do_not_commit",
   "changeme",
@@ -40,38 +55,38 @@ export function safeModelName(model, fallback = DEFAULT_GEMINI_MODELS.primary) {
   return String(model || fallback).trim().replace(/^models\//, "");
 }
 
-function splitModelCsv(value) {
+function splitCsv(value) {
   return String(value || "")
     .split(",")
-    .map((model) => safeModelName(model, ""))
+    .map((item) => item.trim())
     .filter(Boolean);
 }
 
-function uniqueModels(models) {
-  return [...new Set(models.map((model) => safeModelName(model, "")).filter(Boolean))];
+function configuredCsvCount(value) {
+  return splitCsv(value).filter(maskConfigured).length;
 }
 
-export function getGeminiModelSequence(env = {}, options = {}) {
-  if (Array.isArray(options.modelSequence) && options.modelSequence.length) {
-    return uniqueModels(options.modelSequence);
+function configuredModelSequence(value) {
+  return [...new Set(splitCsv(value).map((model) => safeModelName(model, "")).filter(Boolean))];
+}
+
+function readGeminiPoolConfig(env = {}) {
+  const pools = {};
+
+  for (const [role, config] of Object.entries(GEMINI_POOL_ENV)) {
+    const keyCount = configuredCsvCount(env[config.keysEnv]);
+    const models = configuredModelSequence(env[config.modelsEnv]);
+
+    pools[role] = {
+      configured: keyCount > 0,
+      key_count: keyCount,
+      keys_env: config.keysEnv,
+      models_env: config.modelsEnv,
+      models
+    };
   }
 
-  const configuredSequence = splitModelCsv(env.GEMINI_MODEL_SEQUENCE);
-  if (configuredSequence.length) return uniqueModels(configuredSequence);
-
-  return uniqueModels([
-    options.model,
-    env.GEMINI_PRIMARY_MODEL || DEFAULT_GEMINI_MODELS.primary,
-    env.GEMINI_FAST_MODEL || DEFAULT_GEMINI_MODELS.fast,
-    env.GEMINI_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.fallback,
-    env.GEMINI_SECONDARY_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.secondary_fallback
-  ]);
-}
-
-function readFallbackProvider(env, groqConfigured) {
-  const configuredProvider = String(env.AI_FALLBACK_PROVIDER || "").trim().toLowerCase();
-  if (configuredProvider) return configuredProvider;
-  return groqConfigured ? "groq" : "none";
+  return pools;
 }
 
 function readFirebaseClientConfig(env) {
@@ -86,23 +101,19 @@ function readFirebaseClientConfig(env) {
 }
 
 export function readAiProviderConfig(env = {}) {
-  const geminiConfigured = maskConfigured(env.GEMINI_API_KEY);
-  const groqConfigured = maskConfigured(env.GROQ_API_KEY);
-  const fallbackProvider = readFallbackProvider(env, groqConfigured);
   const firebase = readFirebaseClientConfig(env);
-  const geminiModelSequence = getGeminiModelSequence(env);
+  const geminiPools = readGeminiPoolConfig(env);
+  const missingPools = Object.entries(geminiPools)
+    .filter(([, status]) => !status.configured)
+    .map(([role, status]) => `${role}:${status.keys_env}`);
   const warnings = [];
 
-  if (!geminiConfigured) {
-    warnings.push("GEMINI_API_KEY missing");
+  if (missingPools.length) {
+    warnings.push(`Gemini pool keys missing: ${missingPools.join(", ")}`);
   }
 
   if (!firebase.configured) {
     warnings.push("Firebase client config missing");
-  }
-
-  if (fallbackProvider === "groq" && !groqConfigured) {
-    warnings.push("Groq fallback disabled because GROQ_API_KEY is missing");
   }
 
   return {
@@ -122,25 +133,16 @@ export function readAiProviderConfig(env = {}) {
     },
     ai: {
       primary_provider: "gemini",
-      primary_model: env.GEMINI_PRIMARY_MODEL || DEFAULT_GEMINI_MODELS.primary,
-      fast_model: env.GEMINI_FAST_MODEL || DEFAULT_GEMINI_MODELS.fast,
-      gemini_fallback_model: env.GEMINI_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.fallback,
-      gemini_secondary_fallback_model: env.GEMINI_SECONDARY_FALLBACK_MODEL || DEFAULT_GEMINI_MODELS.secondary_fallback,
-      gemini_model_sequence: geminiModelSequence,
-      fallback_provider: fallbackProvider,
-      fallback_model:
-        fallbackProvider === "groq"
-          ? env.GROQ_FALLBACK_MODEL || env.GROQ_PRIMARY_MODEL || ""
-          : "",
-      gemini_configured: geminiConfigured,
-      groq_configured: groqConfigured,
       key_exposure: "server-only",
+      configured: missingPools.length === 0,
+      gemini_configured: missingPools.length === 0,
+      pools: geminiPools,
       rate_limit_mode: env.AI_RATE_LIMIT_MODE || "conservative"
     },
     capabilities: {
       search_discovery: parseBoolean(env.ENABLE_SEARCH_DISCOVERY, false),
       gemini_url_context: parseBoolean(env.ENABLE_GEMINI_URL_CONTEXT, false),
-      diligence_source_mode: env.DILIGENCE_SOURCE_MODE || "known_paths_only",
+      diligence_source_mode: env.DILIGENCE_SOURCE_MODE || "known_paths_plus_search",
       firebase_client: firebase.configured,
       firestore_client: firebase.configured
     },

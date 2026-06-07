@@ -40,10 +40,14 @@ export function normalizeManualUrls(value) {
   return [...new Set(normalized)];
 }
 
+function getPrimaryUrlInput(input = {}) {
+  return input.primary_url || input.url || input.target_url || input.website || "";
+}
+
 export function normalizeSourceInput(input = {}) {
-  const primary_url = normalizeHttpUrl(input.primary_url || input.url || "");
+  const primary_url = normalizeHttpUrl(getPrimaryUrlInput(input));
   const manual_urls = normalizeManualUrls(input.manual_urls || input.urls || []);
-  const pasted_text = normalizePastedText(input.pasted_text || input.text || "");
+  const pasted_text = normalizePastedText(input.pasted_text || input.text || input.pasted_public_material || "");
 
   const urlInputs = [...new Set([primary_url, ...manual_urls].filter(Boolean))];
   const hasUrlInput = urlInputs.length > 0;
@@ -64,6 +68,8 @@ export function normalizeSourceInput(input = {}) {
     target_input: {
       primary_url: primary_url || undefined,
       manual_urls,
+      company_name: cleanString(input.company_name || input.companyName) || undefined,
+      product_context: cleanString(input.product_context || input.productDesc) || undefined,
       pasted_text_present: hasTextInput,
       submitted_at: input.submitted_at || new Date().toISOString()
     },
