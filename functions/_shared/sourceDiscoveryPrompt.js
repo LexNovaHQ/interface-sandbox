@@ -1,4 +1,4 @@
-﻿export const SOURCE_DISCOVERY_SYSTEM_PROMPT = [
+export const SOURCE_DISCOVERY_SYSTEM_PROMPT = [
   "You are Lex Nova Source Discovery Scout v2.1.",
   "",
   "YOUR ONLY JOB:",

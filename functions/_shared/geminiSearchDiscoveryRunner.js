@@ -1,14 +1,25 @@
-﻿import { getGeminiModelSequence, maskConfigured, safeModelName } from "./aiProviderConfig.js";
 import { buildSourceDiscoveryPrompt } from "./sourceDiscoveryPrompt.js";
+import { classifyGeminiProviderError, getRoleAttempts, shouldTryNextProviderAttempt } from "./providerKeyPool.js";
 
-const DEFAULT_MODEL = "gemini-3.1-flash-lite";
-const DEFAULT_TIMEOUT_MS = 90000;
+const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 
+function clampNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, number));
+}
+
+function getSearchAttemptPolicy(options = {}) {
+  return {
+    model_role: "search",
+    max_attempts: clampNumber(options.maxAttempts ?? options.max_attempts, 2, 1, 4),
+    attempt_timeout_ms: clampNumber(options.timeoutMs ?? options.timeout_ms, DEFAULT_TIMEOUT_MS, 5000, 45000)
+  };
+}
+
 function createAbortSignal(timeoutMs) {
-  if (typeof AbortController === "undefined") {
-    return { signal: undefined, cancel: () => {} };
-  }
+  if (typeof AbortController === "undefined") return { signal: undefined, cancel: () => {} };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   return { signal: controller.signal, cancel: () => clearTimeout(timer) };
@@ -29,7 +40,7 @@ function extractText(payload) {
 function stripJsonFences(text) {
   const trimmed = String(text || "").trim();
   if (!trimmed.startsWith("```")) return trimmed;
-  return trimmed.replace(/^```(?:json)?\\s*/i, "").replace(/\\s*```$/i, "").trim();
+  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 }
 
 function parseJsonText(text) {
@@ -47,65 +58,64 @@ function parseJsonText(text) {
 function collectGroundingMetadata(payload) {
   const candidate = payload?.candidates?.[0] || null;
   const meta = candidate?.groundingMetadata || candidate?.grounding_metadata || null;
-  if (!meta) {
-    return {
-      web_search_queries: [],
-      grounding_chunks: [],
-      grounding_supports: []
-    };
-  }
+  if (!meta) return { web_search_queries: [], grounding_chunks: [], grounding_supports: [] };
   return {
     web_search_queries: meta.webSearchQueries || meta.web_search_queries || [],
     grounding_chunks: meta.groundingChunks || meta.grounding_chunks || [],
     grounding_supports: meta.groundingSupports || meta.grounding_supports || []
   };
 }
+
 function buildRequestBody({ input, options = {} }) {
   return {
     contents: [
       {
         role: "user",
-        parts: [
-          { text: buildSourceDiscoveryPrompt(input) }
-        ]
+        parts: [{ text: buildSourceDiscoveryPrompt(input) }]
       }
     ],
-    tools: [
-      { google_search: {} }
-    ],
+    tools: [{ google_search: {} }],
     generationConfig: {
       temperature: options.temperature ?? 0,
-      maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
-      responseMimeType: "application/json"
+      maxOutputTokens: options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS
     }
   };
 }
-
-function shouldTryNextModel(result) {
-  return ["PROVIDER_ERROR", "MODEL_JSON_PARSE_ERROR", "TIMEOUT", "REQUEST_ERROR"].includes(result?.error_type);
-}
-
-async function runSingleDiscoveryAttempt({ env, model, input, options, fetchImpl }) {
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+async function runSingleDiscoveryAttempt({ attempt, input, options, fetchImpl, attemptPolicy }) {
+  const timeoutMs = attemptPolicy.attempt_timeout_ms;
   const abort = createAbortSignal(timeoutMs);
+
   try {
-    const response = await fetchImpl(buildGeminiUrl(model, env.GEMINI_API_KEY), {
+    const response = await fetchImpl(buildGeminiUrl(attempt.model, attempt.apiKey), {
       method: "POST",
       headers: { "content-type": "application/json" },
       signal: abort.signal,
       body: JSON.stringify(buildRequestBody({ input, options }))
     });
 
-    const payload = await response.json().catch(() => null);
+    const responseText = await response.text().catch(() => "");
+    let payload = null;
+    try {
+      payload = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      payload = null;
+    }
+
     const grounding = collectGroundingMetadata(payload);
 
     if (!response.ok) {
+      const providerMessage = payload?.error?.message || responseText.slice(0, 800) || "Gemini Search discovery failed";
       return {
         ok: false,
-        model,
+        provider: "gemini",
+        model: attempt.model,
+        selected_model: attempt.model,
+        selected_key_alias: attempt.key_alias,
+        pool: attempt.pool,
         status: response.status,
-        error_type: "PROVIDER_ERROR",
-        error: payload?.error?.message || "Gemini Search discovery failed",
+        error_type: classifyGeminiProviderError(response.status, providerMessage),
+        error: providerMessage,
+        raw_provider_preview: responseText.slice(0, 1200),
         grounding
       };
     }
@@ -116,11 +126,15 @@ async function runSingleDiscoveryAttempt({ env, model, input, options, fetchImpl
     if (!parsed.ok) {
       return {
         ok: false,
-        model,
+        provider: "gemini",
+        model: attempt.model,
+        selected_model: attempt.model,
+        selected_key_alias: attempt.key_alias,
+        pool: attempt.pool,
         status: response.status,
         error_type: "MODEL_JSON_PARSE_ERROR",
         error: parsed.error,
-        raw_candidate_preview: String(parsed.candidate || "").slice(0, 1200),
+        raw_candidate_preview: String(parsed.candidate || rawText || "").slice(0, 1200),
         grounding,
         usage_metadata: payload?.usageMetadata || null,
         finish_reason: payload?.candidates?.[0]?.finishReason || "unknown"
@@ -129,8 +143,11 @@ async function runSingleDiscoveryAttempt({ env, model, input, options, fetchImpl
 
     return {
       ok: true,
-      model,
-      selected_model: model,
+      provider: "gemini",
+      model: attempt.model,
+      selected_model: attempt.model,
+      selected_key_alias: attempt.key_alias,
+      pool: attempt.pool,
       status: response.status,
       discovery: parsed.value,
       grounding,
@@ -140,43 +157,60 @@ async function runSingleDiscoveryAttempt({ env, model, input, options, fetchImpl
   } catch (error) {
     return {
       ok: false,
-      model,
+      provider: "gemini",
+      model: attempt.model,
+      selected_model: attempt.model,
+      selected_key_alias: attempt.key_alias,
+      pool: attempt.pool,
       status: null,
       error_type: error?.name === "AbortError" ? "TIMEOUT" : "REQUEST_ERROR",
-      error: error?.name === "AbortError" ? "Gemini Search discovery timed out after " + timeoutMs + "ms" : "Gemini Search discovery request failed"
+      error: error?.name === "AbortError" ? "Gemini Search discovery timed out after " + timeoutMs + "ms" : (error?.message || "Gemini Search discovery request failed")
     };
   } finally {
     abort.cancel();
   }
 }
+
 export async function runGeminiSearchDiscovery({ env = {}, input = {}, options = {}, fetchImpl = fetch }) {
-  if (!maskConfigured(env.GEMINI_API_KEY)) {
+  const attemptPolicy = getSearchAttemptPolicy(options);
+  const preferredModel = options.model || "";
+  const { roleConfig, attempts } = getRoleAttempts({
+    env,
+    role: "search",
+    preferredModel
+  });
+
+  if (!attempts.length) {
     return {
       ok: false,
+      provider: "gemini",
+      model_role: "search",
+      pool: roleConfig.pool,
+      configured: false,
+      attempt_policy: attemptPolicy,
       error_type: "CONFIG_ERROR",
-      error: "Gemini API key missing"
+      error: "No Gemini Search API keys configured using " + roleConfig.keysEnv
     };
   }
 
-  const modelSequence = getGeminiModelSequence(env, {
-    model: options.model || DEFAULT_MODEL,
-    modelSequence: options.modelSequence
-  }).map((model) => safeModelName(model, DEFAULT_MODEL));
-
   const attempted_models = [];
   let lastResult = null;
+  const cappedAttempts = attempts.slice(0, attemptPolicy.max_attempts);
 
-  for (const model of modelSequence) {
+  for (const attempt of cappedAttempts) {
     const result = await runSingleDiscoveryAttempt({
-      env,
-      model,
+      attempt,
       input,
       options,
-      fetchImpl
+      fetchImpl,
+      attemptPolicy
     });
 
     attempted_models.push({
-      model,
+      provider: "gemini",
+      pool: attempt.pool,
+      key_alias: attempt.key_alias,
+      model: attempt.model,
       ok: result.ok,
       status: result.status || null,
       error_type: result.error_type || null,
@@ -187,21 +221,26 @@ export async function runGeminiSearchDiscovery({ env = {}, input = {}, options =
     if (result.ok) {
       return {
         ...result,
-        selected_model: model,
+        model_role: "search",
+        attempt_policy: attemptPolicy,
+        selected_model: attempt.model,
         attempted_models
       };
     }
 
     lastResult = result;
-    if (!shouldTryNextModel(result)) break;
+    if (!shouldTryNextProviderAttempt(result)) break;
   }
 
   return {
     ...(lastResult || {
       ok: false,
+      provider: "gemini",
       error_type: "NO_MODEL_ATTEMPTED",
-      error: "No Gemini Search discovery model attempts were run"
+      error: "No Gemini Search discovery attempts were run"
     }),
+    model_role: "search",
+    attempt_policy: attemptPolicy,
     attempted_models
   };
 }
