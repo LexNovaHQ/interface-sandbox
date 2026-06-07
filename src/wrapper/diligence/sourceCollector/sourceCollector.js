@@ -110,7 +110,7 @@ function createUserUrlSourceInfo(url, index, normalized) {
   };
 }
 
-function buildFetchPlan({ normalized, sourceDiscovery, maxCollectedUrls }) {
+function buildFetchPlan({ normalized, sourceDiscovery }) {
   const plan = [];
   const seen = new Set();
 
@@ -130,9 +130,7 @@ function buildFetchPlan({ normalized, sourceDiscovery, maxCollectedUrls }) {
     discovery_origin: "source_discovery_scout"
   }));
 
-  return Number.isInteger(maxCollectedUrls) && maxCollectedUrls > 0
-    ? plan.slice(0, maxCollectedUrls)
-    : plan;
+  return plan;
 }
 
 export async function collectDiligenceSources(input = {}, options = {}) {
@@ -146,14 +144,12 @@ export async function collectDiligenceSources(input = {}, options = {}) {
     fetchImpl,
     endpoint: options.sourceDiscoveryEndpoint,
     enabled: options.enableSourceDiscovery !== false,
-    maxDiscoveredUrls: options.sourceDiscoveryMaxUrls,
     options: options.sourceDiscoveryOptions || {}
   });
 
   const fetchPlan = buildFetchPlan({
     normalized,
-    sourceDiscovery,
-    maxCollectedUrls: options.maxCollectedUrls
+    sourceDiscovery
   });
 
   const urlResults = [];
