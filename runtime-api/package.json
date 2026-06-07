@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node --check server.js && node --check src/env.js && node --check src/source-capture/sourceCapture.js && node --check src/diligence/stageConfigs.js && node --check src/diligence/stagePromptLoader.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageRunner.js && node --check src/routes/diligenceStageRoutes.js && node --check scripts/smoke-runtime.mjs",
+    "check": "node --check server.js && node --check src/env.js && node --check src/source-capture/sourceCapture.js && node --check src/diligence/stageConfigs.js && node --check src/diligence/stagePromptLoader.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageRunner.js && node --check src/diligence/adapters/sourceBundleAdapter.js && node --check src/diligence/adapters/sourceBundleAdapter.test.mjs && node --check src/routes/diligenceStageRoutes.js && node --check scripts/smoke-runtime.mjs && node src/diligence/adapters/sourceBundleAdapter.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs"
   },
   "engines": {
