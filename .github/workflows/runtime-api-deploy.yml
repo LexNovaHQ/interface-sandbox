@@ -1,0 +1,78 @@
+name: Runtime API Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "runtime-api/**"
+      - ".github/workflows/runtime-api-deploy.yml"
+
+jobs:
+  check:
+    name: Runtime syntax check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runtime-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: runtime-api/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Syntax check
+        run: npm run check
+
+  deploy:
+    name: Deploy Cloud Run runtime
+    needs: check
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    defaults:
+      run:
+        working-directory: runtime-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${{ secrets.GCP_CLOUD_RUN_SERVICE }}" \
+            --source . \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --region "${{ secrets.GCP_REGION }}" \
+            --allow-unauthenticated \
+            --set-env-vars="RUNTIME_ACCESS_TOKEN=${{ secrets.RUNTIME_ACCESS_TOKEN }},ALLOWED_ORIGIN=${{ secrets.ALLOWED_ORIGIN }},GEMINI_SEARCH_API_KEYS=${{ secrets.GEMINI_SEARCH_API_KEYS }},GEMINI_JSON_API_KEYS=${{ secrets.GEMINI_JSON_API_KEYS }},GEMINI_REASONING_API_KEYS=${{ secrets.GEMINI_REASONING_API_KEYS }},GEMINI_REGISTRY_API_KEYS=${{ secrets.GEMINI_REGISTRY_API_KEYS }},GEMINI_SEARCH_MODEL_SEQUENCE=${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }},GEMINI_JSON_MODEL_SEQUENCE=${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }},GEMINI_REASONING_MODEL_SEQUENCE=${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }},GEMINI_REGISTRY_MODEL_SEQUENCE=${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }},GEMINI_FINAL_MODEL_SEQUENCE=${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}"
+
+      - name: Resolve runtime URL
+        id: runtime
+        run: |
+          URL=$(gcloud run services describe "${{ secrets.GCP_CLOUD_RUN_SERVICE }}" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --region "${{ secrets.GCP_REGION }}" \
+            --format="value(status.url)")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke deployed runtime
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
