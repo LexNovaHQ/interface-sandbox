@@ -4,7 +4,7 @@ import cors from "cors";
 import { getRequiredRuntimeEnvStatus, readRuntimeEnv } from "./src/env.js";
 import { createSmokeRouter } from "./src/routes/smokeRoutes.js";
 import { createSourceDiscoveryRouter } from "./src/routes/sourceDiscoveryRoute.js";
-
+import { createSourceCaptureRouter } from "./src/routes/sourceCaptureRoute.js";
 const app = express();
 const runtime = readRuntimeEnv();
 
@@ -62,6 +62,7 @@ app.get("/v1/runtime-status", requireToken, (req, res) => {
 
 app.use("/v1/smoke", requireToken, createSmokeRouter());
 app.use("/v1/source-discovery", requireToken, createSourceDiscoveryRouter());
+app.use("/v1/source-capture", requireToken, createSourceCaptureRouter());
 
 app.use((req, res) => {
   res.status(404).json({ ok: false, service: "lexnova-runtime-api", error_type: "NOT_FOUND" });
@@ -74,3 +75,6 @@ app.use((error, req, res, next) => {
 app.listen(runtime.port, () => {
   console.log(`lexnova-runtime-api listening on ${runtime.port}`);
 });
+
+
+
