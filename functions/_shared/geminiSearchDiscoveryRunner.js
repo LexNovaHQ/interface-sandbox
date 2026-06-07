@@ -14,7 +14,7 @@ function clampNumber(value, fallback, min, max) {
 function getSearchAttemptPolicy(options = {}) {
   return {
     model_role: "search",
-    max_attempts: clampNumber(options.maxAttempts ?? options.max_attempts, 2, 1, 2),
+    max_attempts: clampNumber(options.maxAttempts ?? options.max_attempts, 1, 1, 2),
     attempt_timeout_ms: clampNumber(options.timeoutMs ?? options.timeout_ms, DEFAULT_TIMEOUT_MS, 5000, 15000)
   };
 }
