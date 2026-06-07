@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import { getRequiredRuntimeEnvStatus, readRuntimeEnv } from "./src/env.js";
@@ -35,8 +35,8 @@ function healthPayload() {
   return {
     ok: envStatus.required_missing.length === 0,
     service: "lexnova-runtime-api",
-    version: "0.3.0",
-    phase: "phase_3_source_discovery_runtime",
+    version: "0.3.1",
+    phase: "phase_3q_source_discovery_capture_pool_runtime",
     runtime: {
       node_env: currentRuntime.node_env,
       allowed_origin: currentRuntime.allowed_origin,
@@ -77,7 +77,5 @@ app.use((error, req, res, next) => {
 app.listen(runtime.port, () => {
   console.log(`lexnova-runtime-api listening on ${runtime.port}`);
 });
-
-
 
 
