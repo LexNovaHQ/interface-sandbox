@@ -312,7 +312,8 @@ async function main() {
       },
       {
         fetchImpl: mockFetch,
-        registryBatchSize: 25
+        registryBatchSize: 25,
+        sourceFetchBatchSize: 2
       }
     );
 
@@ -321,6 +322,9 @@ async function main() {
     assert(pipelineResult.pipeline_artifacts.source_collection.source_discovery.status === "COMPLETED", "Source discovery did not complete.");
     assert(pipelineResult.pipeline_artifacts.source_collection.source_discovery.admitted_url_count === 2, "Expected two discovered URLs to be admitted.");
     assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.pages_attempted === 3, "Expected primary URL plus two discovered URLs to be scraped.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batched === true, "Expected source fetch to be batched.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_size === 2, "Expected dry-run source fetch batch size 2.");
+    assert(pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_count === 2, "Expected two source fetch batches for three URLs.");
 
     const node5bResult = diligence.assembleNode5B(pipelineResult.compiler_output, {
       createdAt: "2026-01-01T00:00:00.000Z"
@@ -349,6 +353,9 @@ async function main() {
       source_discovery_status: pipelineResult.pipeline_artifacts.source_collection.source_discovery.status,
       source_discovery_admitted_url_count: pipelineResult.pipeline_artifacts.source_collection.source_discovery.admitted_url_count,
       pages_attempted: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.pages_attempted,
+      source_fetch_batched: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batched,
+      source_fetch_batch_size: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_size,
+      source_fetch_batch_count: pipelineResult.pipeline_artifacts.source_collection.scrape_meta.source_fetch.batch_count,
       registry_count_evaluated: pipelineResult.pipeline_artifacts.merged_registry_result.registry_count_evaluated,
       node5b_ok: node5bResult.ok,
       persistence_write_count: persistencePlan.write_count,
