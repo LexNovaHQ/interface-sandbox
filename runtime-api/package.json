@@ -1,0 +1,20 @@
+{
+  "name": "lexnova-runtime-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lex Nova HQ Cloud Run runtime API for server-side model execution.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@google/genai": "^1.33.0",
+    "cors": "^2.8.5",
+    "express": "^4.22.1",
+    "helmet": "^8.1.0"
+  }
+}
