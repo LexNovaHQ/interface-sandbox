@@ -1,4 +1,4 @@
-import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt } from "./sourceDiscoverySearchPlan.js";
+﻿import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt } from "./sourceDiscoverySearchPlan.js";
 import { buildDeterministicSourceCandidates } from "./sourceDiscoveryStrategy.js";
 import { probeDeterministicSources } from "./sourceDiscoveryProbe.js";
 import { buildDiscoveryBuckets } from "./sourceDiscoveryCategorizer.js";
@@ -237,10 +237,37 @@ async function fetchAnchorLinksForRecord({ record, identity, options }) {
   }
 }
 
-async function fetchAnchorLinksForGeminiAnchors({ geminiProbe, identity, options }) {
-  const anchors = mergeCandidates([geminiProbe.admitted])
-    .filter((record) => record.discovery_role === "primary")
-    .slice(0, Number(options.anchorFetchMaxAnchors || 16));
+function isGeminiAnchorEligible(record = {}) {
+  const method = String(record.discovery_method || "");
+  const role = String(record.discovery_role || "");
+  const batchId = String(record.batch_id || "");
+  return role === "primary"
+    || method.includes("gemini_search")
+    || method.includes("gemini_anchor_classification")
+    || Boolean(record.retrieval_intent_id)
+    || /^(product_profile|legal_governance|docs_developer|commercial|updates):/.test(batchId);
+}
+
+function explainAnchorEligibility(record = {}) {
+  if (record.discovery_role === "primary") return "discovery_role_primary";
+  if (String(record.discovery_method || "").includes("gemini_search")) return "gemini_search_method";
+  if (String(record.discovery_method || "").includes("gemini_anchor_classification")) return "gemini_anchor_method";
+  if (record.retrieval_intent_id) return "retrieval_intent_present";
+  if (/^(product_profile|legal_governance|docs_developer|commercial|updates):/.test(String(record.batch_id || ""))) return "family_batch_id_present";
+  return "missing_gemini_anchor_provenance";
+}
+
+async function fetchAnchorLinksForGeminiAnchors({ geminiCandidates = [], geminiProbe, identity, options }) {
+  const considered = mergeCandidates([geminiCandidates, geminiProbe.admitted]);
+  const eligible = considered.filter(isGeminiAnchorEligible);
+  const rejected = considered
+    .filter((record) => !isGeminiAnchorEligible(record))
+    .map((record) => ({
+      ...summarizeDiscoveryRecord(record),
+      rejection_reason: explainAnchorEligibility(record)
+    }));
+
+  const anchors = eligible.slice(0, Number(options.anchorFetchMaxAnchors || 16));
 
   const results = [];
   const concurrency = Math.max(1, Number(options.anchorFetchConcurrency || 4));
@@ -250,6 +277,12 @@ async function fetchAnchorLinksForGeminiAnchors({ geminiProbe, identity, options
   }
 
   return {
+    anchor_candidates_considered: considered.map((record) => ({
+      ...summarizeDiscoveryRecord(record),
+      eligibility_reason: explainAnchorEligibility(record),
+      eligible: isGeminiAnchorEligible(record)
+    })),
+    anchor_candidates_rejected: rejected,
     anchors_attempted: anchors.map(summarizeDiscoveryRecord),
     results,
     merged_links: mergeAnchorLinks(results)
@@ -549,3 +582,4 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     }
   };
 }
+
