@@ -12,7 +12,8 @@ const fixture = buildEvidenceRefinerInput({
   discoveryResponse: {
     discovery: {
       product_profile_sources: [
-        { url: "https://example.ai/", source_family: "product_profile", discovery_method: "deterministic_seed", status: 200 }
+        { url: "https://example.ai/", source_family: "product_profile", discovery_method: "deterministic_seed", status: 200 },
+        { url: "https://example.ai/models", source_family: "product_profile", discovery_method: "gemini_search", status: 200 }
       ],
       legal_governance_sources: [
         { url: "https://example.ai/privacy", source_family: "legal_governance", discovery_method: "gemini_search", status: 200 },
@@ -25,7 +26,7 @@ const fixture = buildEvidenceRefinerInput({
       rejected_sources: [],
       coverage_gaps: [],
       coverage: { product_profile_found: true, legal_governance_found: true },
-      counts: { candidate_sources: 4, legal_governance_sources: 2, product_profile_sources: 1, commercial_sources: 1 }
+      counts: { candidate_sources: 5, legal_governance_sources: 2, product_profile_sources: 2, commercial_sources: 1 }
     }
   },
   captureResponse: {
@@ -48,6 +49,24 @@ const fixture = buildEvidenceRefinerInput({
           structure: { title: "Example AI", headings: [{ level: 1, text: "Workflow agents" }], links: [] },
           chunks: [{ chunk_id: "chunk_0001", source_url: "https://example.ai/", start_char: 0, end_char: 42, text: "Example AI builds workflow agents for teams.", text_sha256: "chunk-home" }],
           quality: { empty_page: false, likely_js_rendered: false, word_count: 7, coverage_status: "full_visible_text_captured" }
+        },
+        {
+          url: "https://example.ai/models",
+          source_family: "product_profile",
+          fetch: { ok: true, final_url: "https://example.ai/models", http_status: 200, fetched_at: "2026-06-08T00:00:00.500Z" },
+          raw: { raw_html_length: 1800, raw_html_sha256: "raw-models" },
+          text: {
+            extraction_mode: "lossless_visible_text",
+            clean_text_length: 91,
+            clean_text_sha256: "txt-models",
+            word_count: 13,
+            clean_text_lossless: "Example AI Models. Speech, text, translation AI, model catalog, developer API platform.",
+            truncated_in_storage: false,
+            truncated_in_response: false
+          },
+          structure: { title: "Example Models: Speech, Text & Translation AI", headings: [{ level: 1, text: "Example Models" }], links: [] },
+          chunks: [{ chunk_id: "chunk_0001", source_url: "https://example.ai/models", start_char: 0, end_char: 91, text: "Example AI Models. Speech, text, translation AI, model catalog, developer API platform.", text_sha256: "chunk-models" }],
+          quality: { empty_page: false, likely_js_rendered: false, word_count: 13, coverage_status: "full_visible_text_captured" }
         },
         {
           url: "https://example.ai/privacy",
@@ -104,7 +123,7 @@ const fixture = buildEvidenceRefinerInput({
           quality: { empty_page: false, likely_js_rendered: false, word_count: 3, coverage_status: "full_visible_text_captured" }
         }
       ],
-      counts: { input_sources: 4, processed_sources: 4, fetch_ok: 4, fetch_failed: 0, total_chunks: 2 }
+      counts: { input_sources: 5, processed_sources: 5, fetch_ok: 5, fetch_failed: 0, total_chunks: 3 }
     }
   },
   generatedAt: "2026-06-08T00:00:00.000Z"
@@ -113,23 +132,25 @@ const fixture = buildEvidenceRefinerInput({
 assert.equal(fixture.run_id, "test_run_001");
 assert.equal(fixture.source_mode, "runtime_discovery_capture");
 assert.equal(fixture.target_input.primary_url, "https://example.ai");
-assert.equal(fixture.source_discovery.flattened_sources.length, 3);
-assert.equal(fixture.raw_footprint.source_records.length, 2);
+assert.equal(fixture.source_discovery.flattened_sources.length, 4);
+assert.equal(fixture.raw_footprint.source_records.length, 3);
 assert.equal(fixture.raw_footprint.duplicate_sources.length, 1);
 assert.equal(fixture.raw_footprint.filtered_sources.length, 1);
 assert.equal(fixture.raw_footprint.source_records[0].evidence_source_id, "SRC_001");
 assert.equal(fixture.raw_footprint.source_records[0].text.clean_text_lossless, "Example AI builds workflow agents for teams.");
-assert.equal(fixture.raw_footprint.source_records[1].text.clean_text_lossless.startsWith("Privacy Policy."), true);
-assert.equal(fixture.raw_footprint.source_records[1].chunk_index.length, 1);
-assert.equal(fixture.raw_footprint.source_records[1].chunk_index[0].text, undefined);
+assert.equal(fixture.raw_footprint.source_records[1].source_family, "product_profile");
+assert.equal(fixture.raw_footprint.source_records[1].url, "https://example.ai/models");
+assert.equal(fixture.raw_footprint.source_records[2].text.clean_text_lossless.startsWith("Privacy Policy."), true);
+assert.equal(fixture.raw_footprint.source_records[2].chunk_index.length, 1);
+assert.equal(fixture.raw_footprint.source_records[2].chunk_index[0].text, undefined);
 assert.equal(fixture.raw_footprint.clean_text_corpus, undefined);
 assert.equal(fixture.raw_footprint.chunks, undefined);
 assert.equal(fixture.raw_footprint.downstream_policy.full_admitted_documents_sent_once, true);
 assert.equal(fixture.raw_footprint.downstream_policy.summaries_used_as_evidence, false);
-assert.equal(fixture.scrape_meta.coverage_summary.source_counts.admitted, 2);
+assert.equal(fixture.scrape_meta.coverage_summary.source_counts.admitted, 3);
 assert.equal(fixture.scrape_meta.coverage_summary.source_counts.duplicates_removed, 1);
 assert.equal(fixture.scrape_meta.coverage_summary.source_counts.filtered, 1);
-assert.equal(fixture.scrape_meta.coverage_summary.by_family.product_profile.length, 1);
+assert.equal(fixture.scrape_meta.coverage_summary.by_family.product_profile.length, 2);
 assert.equal(fixture.scrape_meta.coverage_summary.by_family.legal_governance.length, 1);
 assert.ok(fixture.scrape_meta.hashes.raw_footprint_sha256);
 
