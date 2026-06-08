@@ -11,22 +11,28 @@ const fixture = buildEvidenceRefinerInput({
   },
   discoveryResponse: {
     discovery: {
+      company_profile_sources: [
+        { url: "https://example.ai/", source_family: "company_profile", reason: "Homepage company posture", status: 200 }
+      ],
       product_profile_sources: [
-        { url: "https://example.ai/", source_family: "product_profile", discovery_method: "deterministic_seed", status: 200 },
-        { url: "https://example.ai/models", source_family: "product_profile", discovery_method: "gemini_search", status: 200 }
+        { url: "https://example.ai/models", source_family: "product_profile", reason: "Models and API capabilities", status: 200 }
       ],
-      legal_governance_sources: [
-        { url: "https://example.ai/privacy", source_family: "legal_governance", discovery_method: "gemini_search", status: 200 },
-        { url: "https://example.ai/privacy#top", source_family: "legal_governance", discovery_method: "gemini_search", status: 200 }
+      legal_profile_sources: [
+        { url: "https://example.ai/privacy", source_family: "legal_profile", reason: "Privacy Policy", status: 200 },
+        { url: "https://example.ai/privacy#top", source_family: "legal_profile", reason: "Duplicate Privacy anchor", status: 200 }
       ],
-      commercial_sources: [
-        { url: "https://example.ai/contact", source_family: "commercial", discovery_method: "deterministic_seed", status: 200 }
+      governance_profile_sources: [
+        { url: "https://example.ai/trust", source_family: "governance_profile", reason: "Trust Center", status: 200 }
       ],
       candidate_sources: [],
       rejected_sources: [],
       coverage_gaps: [],
-      coverage: { product_profile_found: true, legal_governance_found: true },
-      counts: { candidate_sources: 5, legal_governance_sources: 2, product_profile_sources: 2, commercial_sources: 1 }
+      counts: {
+        company_profile_sources: 1,
+        product_profile_sources: 1,
+        legal_profile_sources: 2,
+        governance_profile_sources: 1
+      }
     }
   },
   captureResponse: {
@@ -34,7 +40,7 @@ const fixture = buildEvidenceRefinerInput({
       source_records: [
         {
           url: "https://example.ai/",
-          source_family: "product_profile",
+          source_family: "company_profile",
           fetch: { ok: true, final_url: "https://example.ai/", http_status: 200, fetched_at: "2026-06-08T00:00:00.000Z" },
           raw: { raw_html_length: 1200, raw_html_sha256: "raw-home" },
           text: {
@@ -70,7 +76,7 @@ const fixture = buildEvidenceRefinerInput({
         },
         {
           url: "https://example.ai/privacy",
-          source_family: "legal_governance",
+          source_family: "legal_profile",
           fetch: { ok: true, final_url: "https://example.ai/privacy", http_status: 200, fetched_at: "2026-06-08T00:00:01.000Z" },
           raw: { raw_html_length: 2200, raw_html_sha256: "raw-privacy" },
           text: {
@@ -88,7 +94,7 @@ const fixture = buildEvidenceRefinerInput({
         },
         {
           url: "https://example.ai/privacy#top",
-          source_family: "legal_governance",
+          source_family: "legal_profile",
           fetch: { ok: true, final_url: "https://example.ai/privacy", http_status: 200, fetched_at: "2026-06-08T00:00:02.000Z" },
           raw: { raw_html_length: 2200, raw_html_sha256: "raw-privacy" },
           text: {
@@ -105,9 +111,27 @@ const fixture = buildEvidenceRefinerInput({
           quality: { empty_page: false, likely_js_rendered: false, word_count: 12, coverage_status: "full_visible_text_captured" }
         },
         {
+          url: "https://example.ai/trust",
+          source_family: "governance_profile",
+          fetch: { ok: true, final_url: "https://example.ai/trust", http_status: 200, fetched_at: "2026-06-08T00:00:03.000Z" },
+          raw: { raw_html_length: 900, raw_html_sha256: "raw-trust" },
+          text: {
+            extraction_mode: "lossless_visible_text",
+            clean_text_length: 56,
+            clean_text_sha256: "txt-trust",
+            word_count: 8,
+            clean_text_lossless: "Trust Center. Security controls, compliance posture, status.",
+            truncated_in_storage: false,
+            truncated_in_response: false
+          },
+          structure: { title: "Trust Center", headings: [], links: [] },
+          chunks: [],
+          quality: { empty_page: false, likely_js_rendered: false, word_count: 8, coverage_status: "full_visible_text_captured" }
+        },
+        {
           url: "https://example.ai/contact",
-          source_family: "commercial",
-          fetch: { ok: true, final_url: "https://example.ai/contact", http_status: 200, fetched_at: "2026-06-08T00:00:03.000Z" },
+          source_family: "contact",
+          fetch: { ok: true, final_url: "https://example.ai/contact", http_status: 200, fetched_at: "2026-06-08T00:00:04.000Z" },
           raw: { raw_html_length: 900, raw_html_sha256: "raw-contact" },
           text: {
             extraction_mode: "lossless_visible_text",
@@ -123,35 +147,41 @@ const fixture = buildEvidenceRefinerInput({
           quality: { empty_page: false, likely_js_rendered: false, word_count: 3, coverage_status: "full_visible_text_captured" }
         }
       ],
-      counts: { input_sources: 5, processed_sources: 5, fetch_ok: 5, fetch_failed: 0, total_chunks: 3 }
+      counts: { input_sources: 6, processed_sources: 6, fetch_ok: 6, fetch_failed: 0, total_chunks: 3 }
     }
   },
   generatedAt: "2026-06-08T00:00:00.000Z"
 });
 
 assert.equal(fixture.run_id, "test_run_001");
+assert.equal(fixture.source_bundle_version, "source_bundle_v2_magna_carta");
 assert.equal(fixture.source_mode, "runtime_discovery_capture");
 assert.equal(fixture.target_input.primary_url, "https://example.ai");
-assert.equal(fixture.source_discovery.flattened_sources.length, 4);
-assert.equal(fixture.raw_footprint.source_records.length, 3);
+assert.equal(fixture.source_discovery.flattened_sources.length, 5);
+assert.equal(fixture.raw_footprint.source_records.length, 4);
 assert.equal(fixture.raw_footprint.duplicate_sources.length, 1);
 assert.equal(fixture.raw_footprint.filtered_sources.length, 1);
 assert.equal(fixture.raw_footprint.source_records[0].evidence_source_id, "SRC_001");
 assert.equal(fixture.raw_footprint.source_records[0].text.clean_text_lossless, "Example AI builds workflow agents for teams.");
 assert.equal(fixture.raw_footprint.source_records[1].source_family, "product_profile");
 assert.equal(fixture.raw_footprint.source_records[1].url, "https://example.ai/models");
+assert.equal(fixture.raw_footprint.source_records[2].source_family, "legal_profile");
 assert.equal(fixture.raw_footprint.source_records[2].text.clean_text_lossless.startsWith("Privacy Policy."), true);
 assert.equal(fixture.raw_footprint.source_records[2].chunk_index.length, 1);
 assert.equal(fixture.raw_footprint.source_records[2].chunk_index[0].text, undefined);
+assert.equal(fixture.raw_footprint.source_records[3].source_family, "governance_profile");
 assert.equal(fixture.raw_footprint.clean_text_corpus, undefined);
 assert.equal(fixture.raw_footprint.chunks, undefined);
 assert.equal(fixture.raw_footprint.downstream_policy.full_admitted_documents_sent_once, true);
 assert.equal(fixture.raw_footprint.downstream_policy.summaries_used_as_evidence, false);
-assert.equal(fixture.scrape_meta.coverage_summary.source_counts.admitted, 3);
+assert.equal(fixture.raw_footprint.downstream_policy.no_summary_no_compression_no_truncation, true);
+assert.equal(fixture.scrape_meta.coverage_summary.source_counts.admitted, 4);
 assert.equal(fixture.scrape_meta.coverage_summary.source_counts.duplicates_removed, 1);
 assert.equal(fixture.scrape_meta.coverage_summary.source_counts.filtered, 1);
-assert.equal(fixture.scrape_meta.coverage_summary.by_family.product_profile.length, 2);
-assert.equal(fixture.scrape_meta.coverage_summary.by_family.legal_governance.length, 1);
+assert.equal(fixture.scrape_meta.coverage_summary.by_family.company_profile.length, 1);
+assert.equal(fixture.scrape_meta.coverage_summary.by_family.product_profile.length, 1);
+assert.equal(fixture.scrape_meta.coverage_summary.by_family.legal_profile.length, 1);
+assert.equal(fixture.scrape_meta.coverage_summary.by_family.governance_profile.length, 1);
 assert.ok(fixture.scrape_meta.hashes.raw_footprint_sha256);
 
-console.log(JSON.stringify({ ok: true, adapter: "sourceBundleAdapter", run_id: fixture.run_id }, null, 2));
+console.log(JSON.stringify({ ok: true, adapter: "sourceBundleAdapter", version: fixture.source_bundle_version, run_id: fixture.run_id }, null, 2));
