@@ -1,14 +1,15 @@
-﻿export const SOURCE_DISCOVERY_FAMILIES = [
+export const SOURCE_DISCOVERY_FAMILIES = [
   {
     source_family: "product_profile",
     priority: 1,
-    target_min: 1,
-    target_max: 3,
+    target_min: 4,
+    target_max: 12,
     label: "Product / Profile",
-    mission: "Find first-party pages explaining what the company is, what products it offers, what capabilities/features exist, and what the platform does.",
+    mission: "Find first-party pages explaining what the company is, what products it offers, what capabilities/features exist, and what the platform does. Product pages are core evidence for feature mapping and must include product index pages plus nested product detail pages where available.",
     query_terms: [
       "product",
       "products",
+      "product pages",
       "platform",
       "features",
       "solutions",
@@ -23,7 +24,14 @@
       "speech",
       "translation",
       "transcription",
-      "agents"
+      "agents",
+      "conversational agents",
+      "workflow agents",
+      "studio",
+      "document intelligence",
+      "OCR",
+      "vision",
+      "dubbing"
     ]
   },
   {
@@ -57,7 +65,7 @@
     source_family: "docs_developer",
     priority: 1,
     target_min: 1,
-    target_max: 3,
+    target_max: 5,
     label: "Docs / Developer / API",
     mission: "Find first-party developer, API, docs, documentation, SDK, guide, quickstart, integration, or reference pages showing how the product is used technically.",
     query_terms: [
@@ -127,6 +135,7 @@ export function buildFamilySearchQueries({ registrable_domain, company_name = nu
   return SOURCE_DISCOVERY_FAMILIES.map((family) => {
     const groupedTerms = family.query_terms.map(quoteTerm).join(" OR ");
     const companyHint = company_name ? ` OR "${company_name}"` : "";
+    const productPathHint = family.source_family === "product_profile" ? ` OR site:${domain}/products/` : "";
 
     return {
       source_family: family.source_family,
@@ -135,7 +144,7 @@ export function buildFamilySearchQueries({ registrable_domain, company_name = nu
       target_max: family.target_max,
       label: family.label,
       mission: family.mission,
-      query: `site:${domain} (${groupedTerms}${companyHint})`
+      query: `site:${domain} (${groupedTerms}${companyHint})${productPathHint}`
     };
   });
 }
@@ -147,6 +156,10 @@ export function buildBoundedGeminiUrlDiscoveryPrompt({
   company_name = null,
   family_plan
 }) {
+  const productInstruction = family_plan.source_family === "product_profile"
+    ? "\nProduct discovery priority:\n- Product pages are core evidence for feature mapping.\n- Do not stop at the homepage/about/models page if first-party nested product pages exist.\n- Prefer product detail pages under /products/*, /product/*, /solutions/*, /agents/*, /studio, /models, /apis, or equivalent product-capability paths.\n- Return distinct product capability URLs, not repeated generic pages.\n"
+    : "";
+
   return `You are the source discovery engine for Lex Nova HQ legal architecture diligence.
 
 Your job is to find first-party source URLs for a company.
@@ -165,8 +178,8 @@ Boundaries:
 - Do not summarize.
 - Do not return page descriptions except the short reason field.
 - Search specifically for the requested source family.
-- Find 1 to 3 strong URLs for this source family if publicly available.
-- If none are publicly discoverable, return an empty urls array and explain the coverage gap.
+- Find ${family_plan.target_min} to ${family_plan.target_max} strong URLs for this source family if publicly available.
+- If none are publicly discoverable, return an empty urls array and explain the coverage gap.${productInstruction}
 
 Source family:
 - source_family: ${family_plan.source_family}
@@ -205,4 +218,3 @@ If no source is publicly found, return:
 }
 `;
 }
-
