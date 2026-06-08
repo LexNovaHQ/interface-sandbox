@@ -2,6 +2,18 @@ import { buildEvidenceJunction } from "./evidenceJunction.js";
 import { buildEvidenceJunctionWorkItems } from "./evidenceJunctionWorkItems.js";
 import { applyEvidenceJunctionAdjudications } from "./evidenceJunctionAdjudication.js";
 
+function compactAttempts(attempts = []) {
+  return (Array.isArray(attempts) ? attempts : []).slice(0, 4).map((attempt) => ({
+    ok: attempt.ok === true,
+    model: attempt.model_meta?.selected_model || null,
+    key_alias: attempt.model_meta?.selected_key_alias || null,
+    decision: attempt.decision || null,
+    finish_reason: attempt.finish_reason || null,
+    classification: attempt.classification?.category || null,
+    error: attempt.error?.message || null
+  }));
+}
+
 export async function buildEvidenceJunctionWithAdjudication({ sourceBundle = {}, adjudicateWorkItem = null, runId = null } = {}) {
   const base = buildEvidenceJunction({ sourceBundle, runId });
   const workItems = buildEvidenceJunctionWorkItems(base);
@@ -28,7 +40,14 @@ export async function buildEvidenceJunctionWithAdjudication({ sourceBundle = {},
       const result = await adjudicateWorkItem(workItem);
       const adjudication = result?.adjudication || result;
       if (adjudication?.dedupe_group_id) adjudications.push(adjudication);
-      else adjudicationErrors.push({ dedupe_group_id: workItem.dedupe_group_id, error_type: result?.error_type || "NO_ADJUDICATION_RETURNED" });
+      else {
+        adjudicationErrors.push({
+          dedupe_group_id: workItem.dedupe_group_id,
+          error_type: result?.error_type || "NO_ADJUDICATION_RETURNED",
+          error: result?.error || null,
+          attempts: compactAttempts(result?.attempts || [])
+        });
+      }
     } catch (error) {
       adjudicationErrors.push({ dedupe_group_id: workItem.dedupe_group_id, error_type: "ADJUDICATOR_THROW", error: error?.message || String(error) });
     }
