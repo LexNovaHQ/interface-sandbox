@@ -38,12 +38,13 @@ function promptFor(workItem = {}) {
   ].join("\n");
 }
 
-export async function adjudicateEvidenceJunctionWorkItem(workItem, { env = process.env, pool = "json" } = {}) {
+export async function adjudicateEvidenceJunctionWorkItem(workItem, { env = process.env, pool = null } = {}) {
+  const selectedPool = pool || env.STAGE3_GEMINI_POOL || "search";
   const result = await runGeminiPool({
-    poolName: pool,
+    poolName: selectedPool,
     prompt: promptFor(workItem),
     env,
-    options: { responseMimeType: "application/json", temperature: 0, maxOutputTokens: 800, timeoutMs: 20000, maxAttempts: 2 }
+    options: { responseMimeType: "application/json", temperature: 0, maxOutputTokens: 800, timeoutMs: 20000, maxAttempts: 2, enableSearchGrounding: false }
   });
   if (!result.ok) return { ok: false, fallback: true, error_type: result.error_type, error: result.error };
   return { ok: true, adjudication: sanitize(result.json || {}, workItem), model_metadata: result.model_meta || null };
