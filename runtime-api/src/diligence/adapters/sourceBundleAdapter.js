@@ -1,9 +1,18 @@
 import crypto from "node:crypto";
 
-const MAX_CHUNKS_PER_SOURCE = 3;
-const MAX_CHUNK_TEXT_CHARS = 3500;
-const MAX_EXTRACT_TEXT_CHARS = 9000;
-const MAX_TOTAL_TEXT_CHARS = 42000;
+const ADMITTED_SOURCE_FAMILIES = new Set([
+  "product_profile",
+  "legal_governance",
+  "docs_developer"
+]);
+
+const EXCLUDED_SOURCE_FAMILIES = new Set([
+  "commercial",
+  "update",
+  "updates",
+  "contact",
+  "unknown"
+]);
 
 function nowIso() {
   return new Date().toISOString();
@@ -21,20 +30,19 @@ function normalizeUrl(value) {
   try {
     const url = new URL(value);
     url.hash = "";
+    if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
     return url.toString();
   } catch {
     return null;
   }
 }
 
-function truncateText(value, maxChars) {
-  const text = String(value || "");
-  if (text.length <= maxChars) return { text, truncated: false, original_length: text.length };
-  return {
-    text: text.slice(0, maxChars),
-    truncated: true,
-    original_length: text.length
-  };
+function hostnameOf(value) {
+  try {
+    return new URL(value).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
 
 function normalizeTargetInput(input = {}) {
@@ -80,7 +88,7 @@ function flattenDiscoverySources(discovery = {}) {
       if (!url || byUrl.has(url)) continue;
       byUrl.set(url, {
         url,
-        source_family: record.source_family || bucketName.replace(/_sources$/, ""),
+        source_family: normalizeSourceFamily(record.source_family || bucketName.replace(/_sources$/, ""), record),
         source_bucket: bucketName,
         priority: record.priority ?? null,
         discovery_method: record.discovery_method || null,
@@ -98,7 +106,7 @@ function flattenDiscoverySources(discovery = {}) {
     if (!url || byUrl.has(url)) continue;
     byUrl.set(url, {
       url,
-      source_family: record.source_family || null,
+      source_family: normalizeSourceFamily(record.source_family || null, record),
       source_bucket: "candidate_sources",
       priority: record.priority ?? null,
       discovery_method: record.discovery_method || null,
@@ -112,50 +120,97 @@ function flattenDiscoverySources(discovery = {}) {
   return [...byUrl.values()];
 }
 
-function buildCompactChunks(chunks = [], evidenceSourceId, finalUrl, originalUrl, remainingBudget) {
-  const out = [];
-  let budgetLeft = Math.max(0, remainingBudget);
+function normalizeSourceFamily(value, record = {}) {
+  const raw = String(value || "").toLowerCase().trim();
+  const url = String(record.url || "").toLowerCase();
+  const label = String(record.label || record.title || record.source_label || "").toLowerCase();
+  const haystack = `${raw} ${url} ${label}`;
 
-  for (const chunk of chunks.slice(0, MAX_CHUNKS_PER_SOURCE)) {
-    if (budgetLeft <= 0) break;
-    const maxForChunk = Math.min(MAX_CHUNK_TEXT_CHARS, budgetLeft);
-    const compact = truncateText(chunk.text || "", maxForChunk);
-    if (!compact.text) continue;
-    budgetLeft -= compact.text.length;
-    out.push({
-      evidence_source_id: evidenceSourceId,
-      chunk_id: chunk.chunk_id || `chunk_${String(out.length + 1).padStart(4, "0")}`,
-      source_url: chunk.source_url || finalUrl || originalUrl,
-      start_char: chunk.start_char ?? null,
-      end_char: chunk.end_char ?? null,
-      text: compact.text,
-      text_sha256: chunk.text_sha256 || sha256(chunk.text || ""),
-      truncated_for_prompt: compact.truncated,
-      original_text_length: compact.original_length
-    });
+  if (raw === "legal_governance" || /terms|privacy|dpa|sub[-_ ]?processor|processor|security|trust|gdpr|data protection|policy|sla|acceptable use|aup/.test(haystack)) {
+    return "legal_governance";
   }
-
-  return { chunks: out, chars_used: out.reduce((sum, chunk) => sum + chunk.text.length, 0) };
+  if (raw === "docs_developer" || /docs|developer|api|sdk|guide|reference/.test(haystack)) {
+    return "docs_developer";
+  }
+  if (raw === "product_profile" || /product|model|platform|feature|solution|capabilit|homepage|home/.test(haystack)) {
+    return "product_profile";
+  }
+  if (raw === "commercial" || /pricing|contact|sales|demo|book/.test(haystack)) {
+    return "commercial";
+  }
+  if (raw === "update" || raw === "updates" || /blog|news|release|changelog|announcement|update/.test(haystack)) {
+    return "update";
+  }
+  return raw || "unknown";
 }
 
-function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, index = 0, budgetState = { remaining: MAX_TOTAL_TEXT_CHARS }) {
+function isFirstPartySource(url, targetInput = {}) {
+  const sourceHost = hostnameOf(url);
+  if (!sourceHost) return false;
+
+  const targetHost = hostnameOf(targetInput.primary_url || targetInput.normalized_origin || "");
+  const registrableDomain = String(targetInput.registrable_domain || "").toLowerCase().replace(/^www\./, "");
+
+  if (targetHost && (sourceHost === targetHost || sourceHost.endsWith(`.${targetHost}`))) return true;
+  if (registrableDomain && (sourceHost === registrableDomain || sourceHost.endsWith(`.${registrableDomain}`))) return true;
+
+  return false;
+}
+
+function getCleanText(captureRecord = {}) {
+  return captureRecord.clean_text_lossless || captureRecord.text?.clean_text_lossless || captureRecord.text?.clean_text || "";
+}
+
+function getCleanTextHash(captureRecord = {}, cleanText = "") {
+  return captureRecord.text?.clean_text_sha256 || captureRecord.clean_text_sha256 || sha256(cleanText);
+}
+
+function shouldAdmitSource({ captureRecord, discoveryRecord, targetInput }) {
   const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.url) || captureRecord?.url || null;
   const originalUrl = normalizeUrl(captureRecord?.url) || finalUrl;
-  const sourceFamily = captureRecord.source_family || discoveryRecord?.source_family || null;
+  const sourceFamily = normalizeSourceFamily(captureRecord.source_family || discoveryRecord?.source_family || null, {
+    url: finalUrl || originalUrl,
+    title: captureRecord.structure?.title || ""
+  });
+
+  if (captureRecord.fetch?.ok !== true) {
+    return { admitted: false, source_family: sourceFamily, reason: "fetch_failed" };
+  }
+
+  if (!isFirstPartySource(finalUrl || originalUrl, targetInput)) {
+    return { admitted: false, source_family: sourceFamily, reason: "not_first_party" };
+  }
+
+  if (ADMITTED_SOURCE_FAMILIES.has(sourceFamily)) {
+    return { admitted: true, source_family: sourceFamily, reason: "admitted_first_party_relevant_source" };
+  }
+
+  if (EXCLUDED_SOURCE_FAMILIES.has(sourceFamily)) {
+    return { admitted: false, source_family: sourceFamily, reason: "filtered_irrelevant_source_family" };
+  }
+
+  return { admitted: false, source_family: sourceFamily, reason: "filtered_unknown_source_family" };
+}
+
+function buildAdmittedSourceRecord({ captureRecord = {}, discoveryRecord = null, index = 0, sourceFamily }) {
+  const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.url) || captureRecord?.url || null;
+  const originalUrl = normalizeUrl(captureRecord?.url) || finalUrl;
   const evidenceSourceId = `SRC_${String(index + 1).padStart(3, "0")}`;
-  const cleanText = captureRecord.clean_text_lossless || captureRecord.text?.clean_text_lossless || captureRecord.text?.clean_text || "";
+  const cleanText = getCleanText(captureRecord);
+  const cleanTextSha = getCleanTextHash(captureRecord, cleanText);
   const chunks = Array.isArray(captureRecord.chunks) ? captureRecord.chunks : [];
-  const extractBudget = Math.min(MAX_EXTRACT_TEXT_CHARS, Math.max(0, budgetState.remaining));
-  const excerpt = truncateText(cleanText, extractBudget);
-  budgetState.remaining -= excerpt.text.length;
-  const compactChunks = buildCompactChunks(chunks, evidenceSourceId, finalUrl, originalUrl, budgetState.remaining);
-  budgetState.remaining -= compactChunks.chars_used;
 
   return {
     evidence_source_id: evidenceSourceId,
     url: originalUrl,
     final_url: finalUrl,
     source_family: sourceFamily,
+    admission: {
+      status: "admitted",
+      reason: "admitted_first_party_relevant_source",
+      duplicate: false,
+      full_text_sent_downstream: true
+    },
     discovery: discoveryRecord || null,
     fetch: captureRecord.fetch || { ok: false },
     raw: {
@@ -165,13 +220,11 @@ function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, i
     text: {
       extraction_mode: captureRecord.text?.extraction_mode || "lossless_visible_text",
       clean_text_length: captureRecord.text?.clean_text_length || cleanText.length || 0,
-      clean_text_sha256: captureRecord.text?.clean_text_sha256 || sha256(cleanText),
+      clean_text_sha256: cleanTextSha,
       word_count: captureRecord.text?.word_count || 0,
       truncated_in_storage: captureRecord.text?.truncated_in_storage === true,
       truncated_in_response: captureRecord.text?.truncated_in_response === true,
-      evidence_excerpt: excerpt.text,
-      prompt_excerpt_truncated: excerpt.truncated,
-      prompt_excerpt_original_length: excerpt.original_length
+      clean_text_lossless: cleanText
     },
     structure: captureRecord.structure || {
       title: "",
@@ -180,7 +233,13 @@ function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, i
       section_index: [],
       links: []
     },
-    chunks: compactChunks.chunks,
+    chunk_index: chunks.map((chunk) => ({
+      chunk_id: chunk.chunk_id || null,
+      source_url: chunk.source_url || finalUrl || originalUrl,
+      start_char: chunk.start_char ?? null,
+      end_char: chunk.end_char ?? null,
+      text_sha256: chunk.text_sha256 || sha256(chunk.text || "")
+    })),
     quality: captureRecord.quality || {
       empty_page: true,
       likely_js_rendered: false,
@@ -210,20 +269,17 @@ function groupEvidenceByFamily(sourceEvidence = []) {
   return grouped;
 }
 
-function buildCoverageSummary(discovery = {}, capture = {}, sourceEvidence = []) {
-  const successful = sourceEvidence.filter((record) => record.fetch?.ok === true);
-  const failed = sourceEvidence.filter((record) => record.fetch?.ok !== true);
-
+function buildCoverageSummary(discovery = {}, capture = {}, sourceEvidence = [], filteredSources = [], duplicateSources = []) {
   return {
     discovery_counts: discovery.counts || {},
     capture_counts: capture.counts || {},
     coverage: discovery.coverage || {},
     coverage_gaps: Array.isArray(discovery.coverage_gaps) ? discovery.coverage_gaps : [],
     source_counts: {
-      total: sourceEvidence.length,
-      fetch_ok: successful.length,
-      fetch_failed: failed.length,
-      total_chunks: sourceEvidence.reduce((sum, record) => sum + (record.chunks?.length || 0), 0),
+      admitted: sourceEvidence.length,
+      filtered: filteredSources.length,
+      duplicates_removed: duplicateSources.length,
+      fetch_ok: sourceEvidence.filter((record) => record.fetch?.ok === true).length,
       total_words: sourceEvidence.reduce((sum, record) => sum + (record.text?.word_count || 0), 0)
     },
     by_family: groupEvidenceByFamily(sourceEvidence)
@@ -244,40 +300,68 @@ export function buildEvidenceRefinerInput({
   const discoveredSources = flattenDiscoverySources(discovery);
   const discoveryByUrl = new Map(discoveredSources.map((record) => [record.url, record]));
   const captureRecords = Array.isArray(capture.source_records) ? capture.source_records : [];
-  const budgetState = { remaining: MAX_TOTAL_TEXT_CHARS };
 
-  const sourceEvidence = captureRecords.map((record, index) => {
-    const url = normalizeUrl(record?.url);
-    const finalUrl = normalizeUrl(record?.fetch?.final_url);
+  const admitted = [];
+  const filtered_sources = [];
+  const duplicate_sources = [];
+  const seenUrls = new Set();
+  const seenTextHashes = new Set();
+
+  for (const captureRecord of captureRecords) {
+    const url = normalizeUrl(captureRecord?.url);
+    const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url);
     const discoveryRecord = discoveryByUrl.get(url) || discoveryByUrl.get(finalUrl) || null;
-    return buildSourceEvidenceRecord(record, discoveryRecord, index, budgetState);
-  });
+    const admission = shouldAdmitSource({ captureRecord, discoveryRecord, targetInput: target_input });
+    const cleanText = getCleanText(captureRecord);
+    const textHash = getCleanTextHash(captureRecord, cleanText);
+    const urlKey = finalUrl || url || captureRecord?.url || "";
+
+    if (!admission.admitted) {
+      filtered_sources.push({
+        url: urlKey,
+        source_family: admission.source_family,
+        reason: admission.reason
+      });
+      continue;
+    }
+
+    if (seenUrls.has(urlKey) || (textHash && seenTextHashes.has(textHash))) {
+      duplicate_sources.push({
+        url: urlKey,
+        source_family: admission.source_family,
+        reason: seenUrls.has(urlKey) ? "duplicate_url" : "duplicate_clean_text_sha256",
+        clean_text_sha256: textHash
+      });
+      continue;
+    }
+
+    seenUrls.add(urlKey);
+    if (textHash) seenTextHashes.add(textHash);
+
+    admitted.push(buildAdmittedSourceRecord({
+      captureRecord,
+      discoveryRecord,
+      index: admitted.length,
+      sourceFamily: admission.source_family
+    }));
+  }
 
   const raw_footprint = {
-    source_records: sourceEvidence,
-    chunks: sourceEvidence.flatMap((record) => record.chunks || []),
-    clean_text_corpus: sourceEvidence
-      .filter((record) => record.text?.evidence_excerpt)
-      .map((record) => ({
-        evidence_source_id: record.evidence_source_id,
-        url: record.final_url || record.url,
-        source_family: record.source_family,
-        evidence_excerpt: record.text.evidence_excerpt,
-        clean_text_sha256: record.text.clean_text_sha256,
-        word_count: record.text.word_count || 0,
-        prompt_excerpt_truncated: record.text.prompt_excerpt_truncated,
-        prompt_excerpt_original_length: record.text.prompt_excerpt_original_length
-      })),
-    prompt_budget: {
-      max_total_text_chars: MAX_TOTAL_TEXT_CHARS,
-      remaining_text_chars: Math.max(0, budgetState.remaining),
-      prompt_compacted: true
+    source_records: admitted,
+    filtered_sources,
+    duplicate_sources,
+    downstream_policy: {
+      full_admitted_documents_sent_once: true,
+      chunks_text_omitted_to_avoid_duplicate_evidence: true,
+      summaries_used_as_evidence: false,
+      admitted_source_families: [...ADMITTED_SOURCE_FAMILIES],
+      filtered_source_families: [...EXCLUDED_SOURCE_FAMILIES]
     }
   };
 
   const scrape_meta = {
     adapter: "sourceBundleAdapter",
-    adapter_version: "1.1.0",
+    adapter_version: "1.2.0",
     generated_at: generatedAt,
     source_mode: sourceMode,
     hashes: {
@@ -285,7 +369,7 @@ export function buildEvidenceRefinerInput({
       capture_sha256: sha256(stableJson(capture)),
       raw_footprint_sha256: sha256(stableJson(raw_footprint))
     },
-    coverage_summary: buildCoverageSummary(discovery, capture, sourceEvidence)
+    coverage_summary: buildCoverageSummary(discovery, capture, admitted, filtered_sources, duplicate_sources)
   };
 
   const resolvedRunId = runId || `runtime_${sha256(`${target_input.primary_url || "unknown"}|${generatedAt}`).slice(0, 16)}`;
