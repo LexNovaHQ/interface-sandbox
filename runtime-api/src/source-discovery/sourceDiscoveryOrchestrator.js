@@ -1,4 +1,4 @@
-﻿import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt } from "./sourceDiscoverySearchPlan.js";
+import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt } from "./sourceDiscoverySearchPlan.js";
 import { buildDeterministicSourceCandidates } from "./sourceDiscoveryStrategy.js";
 import { probeDeterministicSources } from "./sourceDiscoveryProbe.js";
 import { buildDiscoveryBuckets } from "./sourceDiscoveryCategorizer.js";
@@ -41,6 +41,7 @@ function extractGeminiUrls({ geminiJson, familyPlan, registrableDomain }) {
       url,
       source_family: familyPlan.source_family,
       discovery_method: "gemini_search",
+      discovery_role: "primary",
       reason: typeof item === "object" ? item?.reason || "" : "",
       batch_id: familyPlan.source_family
     });
@@ -62,6 +63,7 @@ function mergeCandidates(candidateGroups) {
           url,
           source_family: item?.source_family || null,
           discovery_method: item?.discovery_method || "unknown",
+          discovery_role: item?.discovery_role || null,
           reason: item?.reason || "",
           batch_id: item?.batch_id || null
         });
@@ -73,6 +75,15 @@ function mergeCandidates(candidateGroups) {
         }
         if (!existing.source_family && item?.source_family) {
           existing.source_family = item.source_family;
+        }
+        if (!existing.discovery_role && item?.discovery_role) {
+          existing.discovery_role = item.discovery_role;
+        }
+        if (!existing.reason && item?.reason) {
+          existing.reason = item.reason;
+        }
+        if (!existing.batch_id && item?.batch_id) {
+          existing.batch_id = item.batch_id;
         }
       }
     }
@@ -142,6 +153,48 @@ async function probeCandidateSet({ candidates, options }) {
   };
 }
 
+function summarizeDiscoveryRecord(record = {}) {
+  return {
+    url: record.url || null,
+    source_family: record.source_family || null,
+    discovery_method: record.discovery_method || null,
+    discovery_role: record.discovery_role || null,
+    batch_id: record.batch_id || null,
+    reason: record.reason || "",
+    status: record.status || null,
+    http_status: record.http_status || null,
+    content_type: record.content_type || ""
+  };
+}
+
+function buildFamilyProvenanceAudit({ plans, geminiCandidates, supportCandidates, geminiProbe, supportProbe }) {
+  return plans.map((plan) => {
+    const family = plan.source_family;
+    const byFamily = (records) => (records || []).filter((record) => record.source_family === family);
+
+    return {
+      source_family: family,
+      label: plan.label,
+      target_minimum: plan.target_min,
+      target_maximum: plan.target_max,
+      gemini_primary: {
+        candidate_count: byFamily(geminiCandidates).length,
+        admitted_count: byFamily(geminiProbe.admitted).length,
+        rejected_count: byFamily(geminiProbe.rejected).length,
+        admitted: byFamily(geminiProbe.admitted).map(summarizeDiscoveryRecord),
+        rejected: byFamily(geminiProbe.rejected).map(summarizeDiscoveryRecord)
+      },
+      deterministic_support: {
+        candidate_count: byFamily(supportCandidates).length,
+        admitted_count: byFamily(supportProbe.admitted).length,
+        rejected_count: byFamily(supportProbe.rejected).length,
+        admitted: byFamily(supportProbe.admitted).map(summarizeDiscoveryRecord),
+        rejected: byFamily(supportProbe.rejected).map(summarizeDiscoveryRecord)
+      }
+    };
+  });
+}
+
 export async function runSourceDiscoveryOrchestrator({ identity, company_name = null, options = {}, runPool }) {
   if (!identity?.primary_url || !identity?.registrable_domain || !identity?.normalized_origin) {
     throw new Error("identity with primary_url, normalized_origin, and registrable_domain is required");
@@ -173,7 +226,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
       prompt,
       options: {
         timeoutMs: Number(options.searchTimeoutMs || 90000),
-        maxOutputTokens: Number(options.searchMaxOutputTokens || 1536),
+        maxOutputTokens: Number(options.searchMaxOutputTokens || 3072),
         temperature: Number(options.temperature ?? 0),
         responseMimeType: "application/json",
         enableSearchGrounding: true
@@ -230,17 +283,27 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
   buckets.coverage_gaps = coverage_gaps;
   buckets.counts.coverage_gaps = coverage_gaps.length;
 
+  const provenance_audit = buildFamilyProvenanceAudit({
+    plans,
+    geminiCandidates,
+    supportCandidates,
+    geminiProbe,
+    supportProbe
+  });
+
   return {
     discovery: buckets,
     diagnostics: {
       discovery_policy: {
         gemini_primary_for_all_families: true,
         deterministic_role: "support_only_after_gemini_family_gap",
-        source_family_preserved_from_gemini: true
+        source_family_preserved_from_gemini: true,
+        provenance_audit_location: "source_discovery_diagnostics"
       },
       plans,
       gemini_runs: geminiRuns,
       support_families: supportFamilies,
+      provenance_audit,
       candidate_counts: {
         gemini_candidates: geminiCandidates.length,
         deterministic_support_candidates: supportCandidates.length,
