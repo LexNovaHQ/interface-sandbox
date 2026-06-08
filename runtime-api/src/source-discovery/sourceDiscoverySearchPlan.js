@@ -1,217 +1,225 @@
 export const SOURCE_DISCOVERY_FAMILIES = [
   {
+    source_family: "company_profile",
+    priority: 1,
+    target_min: 1,
+    target_max: 5,
+    label: "Company Profile",
+    mission: "Find first-party pages that establish the company identity, public positioning, geography/entity clues, market posture, and broad marketing claim. Do not include pure contact, demo, sales, signup, login, or dashboard pages unless they contain substantive company identity or product evidence.",
+    page_family_plan: [
+      "Start with the homepage and core company/about anchors.",
+      "Expand to first-party about, company, team, mission, customer, and case-study pages only if they reveal company identity, market posture, or product/company substance.",
+      "Reject pure contact, demo, sales, signup, auth, or generic pricing pages unless they reveal substantive company/product information.",
+      "Do not treat legal, trust/security, or API docs as company profile unless they independently reveal company identity."
+    ],
+    common_route_hints: [
+      "/",
+      "/about",
+      "/about-us",
+      "/company",
+      "/team",
+      "/mission",
+      "/customers",
+      "/customer-stories",
+      "/case-studies"
+    ],
+    query_terms: [
+      "about",
+      "about us",
+      "company",
+      "team",
+      "mission",
+      "customers",
+      "customer stories",
+      "case studies",
+      "company profile",
+      "market",
+      "platform"
+    ]
+  },
+  {
     source_family: "product_profile",
     priority: 1,
     target_min: 4,
-    target_max: 12,
-    label: "Product / Profile",
-    mission: "Find first-party pages explaining what the company is, what products it offers, what capabilities/features exist, and what the platform does. Product pages are core evidence for feature mapping and must include product index pages plus nested product detail pages where available.",
+    target_max: 15,
+    label: "Product Profile",
+    mission: "Find first-party pages that explain products, product features, models, APIs, workflows, agents, inputs, outputs, deployment modes, integrations, docs, or product capabilities. The atomic unit is the feature. Blog/news/changelog/release/customer/case-study/pricing pages belong here only if they reveal product features, feature tiers, product movement, or product mechanics.",
     page_family_plan: [
-      "Find the product or platform navigation surface first.",
-      "Expand beyond homepage/about into first-party product detail pages, capability pages, model pages, agent pages, solution pages, and API/product pages.",
-      "Prefer pages that describe concrete product mechanics, named products, named models, named agents, workflow capabilities, input/output behavior, deployment options, or integrations.",
-      "Return distinct capability URLs; do not return repeated generic profile pages when deeper first-party product pages are discoverable."
+      "Start with product/platform/model/API/docs anchors and every first-party link those anchors lead to.",
+      "Find named products, named models, named agents, feature pages, API/reference pages, deployment pages, integration pages, and capability pages.",
+      "Prefer concrete pages that reveal features, mechanics, inputs/outputs, endpoints, workflows, deployment options, integrations, or feature tiers.",
+      "Do not fill the result with homepage/about/company pages when deeper product-feature pages are visible.",
+      "Blog, news, release, customer, case-study, pricing, and plan pages survive only if they reveal product features, product movement, feature tiers, or usage mechanics."
     ],
     common_route_hints: [
+      "/",
       "/products",
       "/product",
       "/platform",
-      "/solutions",
       "/features",
+      "/solutions",
+      "/use-cases",
       "/models",
       "/agents",
       "/studio",
-      "/apis"
-    ],
-    query_terms: [
-      "product",
-      "products",
-      "product pages",
-      "platform",
-      "features",
-      "solutions",
-      "use cases",
-      "about",
-      "company",
-      "team",
-      "customers",
-      "models",
-      "AI",
-      "voice",
-      "speech",
-      "translation",
-      "transcription",
-      "agents",
-      "conversational agents",
-      "workflow agents",
-      "studio",
-      "document intelligence",
-      "OCR",
-      "vision",
-      "dubbing"
-    ]
-  },
-  {
-    source_family: "legal_governance",
-    priority: 1,
-    target_min: 1,
-    target_max: 6,
-    label: "Legal / Governance",
-    mission: "Find first-party pages containing legal terms, privacy, security, trust, compliance, responsible AI, governance, DPA, subprocessors, acceptable use, SLA, or cookie/data protection posture.",
-    page_family_plan: [
-      "Find first-party legal navigation surfaces and footer legal links.",
-      "Expand beyond Terms and Privacy where separate DPA, SLA, security, trust, compliance, subprocessor, acceptable-use, cookie, responsible-AI, or governance pages exist.",
-      "If legal artifacts are embedded inside a Terms page rather than standalone pages, return the containing first-party URL and explain the embedded artifact in the reason field.",
-      "Do not treat marketing/product pages as legal evidence unless the page itself contains legal/governance obligations or disclosures."
-    ],
-    common_route_hints: [
-      "/legal",
-      "/terms",
-      "/terms-of-service",
-      "/privacy",
-      "/privacy-policy",
-      "/security",
-      "/trust",
-      "/compliance",
-      "/dpa",
-      "/data-processing-addendum",
-      "/subprocessors",
-      "/acceptable-use",
-      "/sla",
-      "/responsible-ai"
-    ],
-    query_terms: [
-      "terms",
-      "terms of service",
-      "privacy",
-      "privacy policy",
-      "legal",
-      "security",
-      "trust",
-      "compliance",
-      "DPA",
-      "data processing",
-      "subprocessors",
-      "acceptable use",
-      "SLA",
-      "cookie",
-      "responsible AI",
-      "governance",
-      "data protection"
-    ]
-  },
-  {
-    source_family: "docs_developer",
-    priority: 1,
-    target_min: 1,
-    target_max: 8,
-    label: "Docs / Developer / API",
-    mission: "Find first-party developer, API, docs, documentation, SDK, guide, quickstart, integration, or reference pages showing how the product is used technically.",
-    page_family_plan: [
-      "Find the developer/docs/API navigation surface first.",
-      "Expand to first-party API reference, quickstart, SDK, authentication, endpoint, guide, playground, integration, or model-specific docs where available.",
-      "Prefer pages showing technical mechanism, inputs/outputs, endpoints, SDKs, or implementation behavior.",
-      "Do not use third-party GitHub, package registries, or community docs unless they are first-party controlled and hosted on the company's domain/subdomain."
-    ],
-    common_route_hints: [
+      "/apis",
+      "/api",
+      "/developers",
+      "/developer",
       "/docs",
       "/documentation",
-      "/developer",
-      "/developers",
-      "/api",
-      "/apis",
       "/reference",
       "/sdk",
       "/quickstart",
-      "/guides"
-    ],
-    query_terms: [
-      "docs",
-      "documentation",
-      "developer",
-      "developers",
-      "API",
-      "API reference",
-      "SDK",
-      "guide",
-      "quickstart",
-      "integration",
-      "reference"
-    ]
-  },
-  {
-    source_family: "commercial",
-    priority: 2,
-    target_min: 1,
-    target_max: 4,
-    label: "Commercial / Enterprise",
-    mission: "Find first-party pricing, plans, enterprise, sales, contact-sales, onboarding, or commercial posture pages.",
-    page_family_plan: [
-      "Find first-party pricing, plans, enterprise, contact-sales, demo, onboarding, procurement, dashboard, or account creation surfaces.",
-      "Prefer pages that reveal buyer flow, enterprise posture, account tiers, onboarding path, or commercial constraints.",
-      "A contact page can belong here only if it is the best available commercial/sales route; do not treat it as product or legal evidence.",
-      "If no commercial page is public, return a coverage gap rather than inventing a sales/pricing URL."
-    ],
-    common_route_hints: [
-      "/pricing",
-      "/plans",
-      "/enterprise",
-      "/contact-sales",
-      "/sales",
-      "/contact",
-      "/demo",
-      "/signup",
-      "/dashboard"
-    ],
-    query_terms: [
-      "pricing",
-      "plans",
-      "enterprise",
-      "contact sales",
-      "sales",
-      "contact",
-      "onboarding",
-      "signup",
-      "dashboard",
-      "demo"
-    ]
-  },
-  {
-    source_family: "updates",
-    priority: 2,
-    target_min: 1,
-    target_max: 5,
-    label: "Updates / Blog / Releases",
-    mission: "Find first-party blog, changelog, release note, announcement, launch, update, or product update pages that reveal product movement.",
-    page_family_plan: [
-      "Find first-party blog, updates, changelog, release notes, news, announcement, launch, or product-update surfaces.",
-      "Prefer pages with product movement, feature launches, model releases, version changes, policy changes, or dated announcements.",
-      "Do not use third-party press/news sites as source evidence for this family.",
-      "If no updates surface is public, return a coverage gap instead of reusing generic homepage/product pages."
-    ],
-    common_route_hints: [
+      "/guides",
+      "/integrations",
+      "/playground",
       "/blog",
       "/changelog",
       "/release-notes",
       "/updates",
       "/news",
       "/announcements",
-      "/releases"
+      "/releases",
+      "/customers",
+      "/customer-stories",
+      "/case-studies",
+      "/pricing",
+      "/plans"
     ],
     query_terms: [
-      "blog",
-      "changelog",
-      "release notes",
-      "updates",
-      "news",
-      "announcements",
-      "launch",
-      "product update",
-      "new feature",
-      "release"
+      "product",
+      "products",
+      "features",
+      "platform",
+      "solutions",
+      "use cases",
+      "models",
+      "agents",
+      "studio",
+      "API",
+      "docs",
+      "developer",
+      "documentation",
+      "reference",
+      "SDK",
+      "quickstart",
+      "integrations",
+      "voice",
+      "speech",
+      "text to speech",
+      "speech to text",
+      "transcription",
+      "translation",
+      "dubbing",
+      "document intelligence",
+      "OCR",
+      "vision",
+      "workflow agents",
+      "deployment",
+      "private cloud",
+      "on prem",
+      "VPC"
+    ]
+  },
+  {
+    source_family: "legal_profile",
+    priority: 1,
+    target_min: 1,
+    target_max: 8,
+    label: "Legal Profile",
+    mission: "Find first-party binding legal terms and customer/user/data obligations, including Terms, Privacy, DPA, SLA, EULA, AUP, subprocessors, cookie policy, and data protection terms. Embedded legal artifacts count; if a DPA or SLA is inside Terms, return the containing Terms URL.",
+    page_family_plan: [
+      "Start with legal/footer anchors and every first-party legal link those anchors lead to.",
+      "Find Terms, Privacy, Cookie Policy, DPA, data processing, subprocessors, AUP, EULA, SLA, and legal center pages.",
+      "If legal artifacts are embedded in a containing page, return the containing first-party URL and identify the embedded artifact in the reason field.",
+      "Do not classify trust/security/compliance pages here unless they contain binding legal/customer obligations."
+    ],
+    common_route_hints: [
+      "/legal",
+      "/terms",
+      "/terms-of-service",
+      "/terms-and-conditions",
+      "/privacy",
+      "/privacy-policy",
+      "/cookie-policy",
+      "/data-protection",
+      "/dpa",
+      "/data-processing-addendum",
+      "/subprocessors",
+      "/acceptable-use",
+      "/acceptable-use-policy",
+      "/aup",
+      "/eula",
+      "/sla"
+    ],
+    query_terms: [
+      "legal",
+      "terms",
+      "terms of service",
+      "terms and conditions",
+      "privacy",
+      "privacy policy",
+      "cookie policy",
+      "data protection",
+      "DPA",
+      "data processing addendum",
+      "subprocessors",
+      "acceptable use",
+      "AUP",
+      "EULA",
+      "SLA"
+    ]
+  },
+  {
+    source_family: "governance_profile",
+    priority: 1,
+    target_min: 0,
+    target_max: 8,
+    label: "Governance Profile",
+    mission: "Find first-party trust, security, compliance, responsible AI, safety, governance, certifications, auditability, model/data controls, and status/incident posture pages.",
+    page_family_plan: [
+      "Start with trust, security, compliance, status, responsible-AI, governance, and safety anchors.",
+      "Find first-party pages that explain data security, enterprise security, certifications, model safety, responsible AI, governance controls, status, or auditability.",
+      "Classify subprocessor governance here only if framed as trust/security/compliance rather than legal terms.",
+      "Do not classify generic product or legal pages here unless they contain governance/security/compliance posture."
+    ],
+    common_route_hints: [
+      "/trust",
+      "/trust-center",
+      "/security",
+      "/compliance",
+      "/status",
+      "/responsible-ai",
+      "/ai-policy",
+      "/governance",
+      "/safety",
+      "/model-safety",
+      "/data-security",
+      "/certifications",
+      "/enterprise-security"
+    ],
+    query_terms: [
+      "trust",
+      "trust center",
+      "security",
+      "compliance",
+      "status",
+      "responsible AI",
+      "AI policy",
+      "governance",
+      "safety",
+      "model safety",
+      "data security",
+      "certifications",
+      "enterprise security",
+      "SOC 2",
+      "ISO"
     ]
   }
 ];
+
+export const SOURCE_DISCOVERY_MAGNA_CARTA_VERSION = "source_discovery_magna_carta_v1";
 
 function quoteTerm(term) {
   return term.includes(" ") ? `"${term}"` : term;
@@ -230,7 +238,7 @@ function anchorUrlsForFamily({ normalized_origin, family }) {
   return [...new Set(anchors.filter(Boolean))];
 }
 
-function compactTerms(terms = [], limit = 10) {
+function compactTerms(terms = [], limit = 12) {
   return terms.slice(0, limit).map(quoteTerm).join(" OR ");
 }
 
@@ -242,22 +250,22 @@ function buildRetrievalIntents({ domain, companyHint, family }) {
 
   return [
     {
-      intent_id: "family_navigation_surface",
-      label: "Find the family navigation/index surface",
-      query: `site:${domain} (${focusedTerms}${nameClause})`,
-      instruction: "Inspect the family anchor URLs first, then use search to find the strongest first-party navigation/index pages for this family. Do not stop at the homepage if family-specific pages are visible."
-    },
-    {
-      intent_id: "common_route_expansion",
-      label: "Expand common-route anchors without being limited by them",
+      intent_id: "family_anchor_minimum",
+      label: "Inspect minimum family anchors first",
       query: routeHints || `site:${domain} (${focusedTerms}${nameClause})`,
-      instruction: "Treat the listed anchor URLs as starting points to inspect. They are not limits. Return real first-party pages that exist and belong to this family, including differently named routes."
+      instruction: "The anchor URLs are the minimum surfaces that must be inspected first. They are not limits. Everything first-party that the anchors lead to must be considered for Gemini classification."
     },
     {
-      intent_id: "deep_detail_pages",
-      label: "Find deeper detail/capability/artifact pages",
+      intent_id: "family_feature_or_artifact_expansion",
+      label: "Expand from anchors into linked first-party detail pages",
+      query: `site:${domain} (${focusedTerms}${nameClause})`,
+      instruction: "Find deeper first-party pages reached from the anchors or public search results. Prefer feature, product, legal, governance, or company-substance pages over generic pages."
+    },
+    {
+      intent_id: "free_first_party_search",
+      label: "Free first-party search for anything missed",
       query: `site:${domain} (${broadTerms}${nameClause})`,
-      instruction: "Inspect anchors and search results for deeper first-party detail pages. Prefer concrete pages with named artifacts, capabilities, documents, APIs, releases, commercial flows, or governance content over generic overview pages."
+      instruction: "Run a compact free first-party search to catch anything not reached through anchors. Do not include third-party pages. Do not include low-value pages unless they reveal substance for the requested family."
     }
   ];
 }
@@ -309,71 +317,73 @@ export function buildBoundedGeminiUrlDiscoveryPrompt({
   retrieval_intent = null
 }) {
   const activeIntent = retrieval_intent || {
-    intent_id: "single_family_query",
-    label: "Single family query",
+    intent_id: "family_anchor_minimum",
+    label: "Inspect minimum family anchors first",
     query: family_plan.query,
-    instruction: "Find the strongest first-party URLs for this family."
+    instruction: "Inspect the family anchors and return first-party URLs for this family."
   };
 
-  return `You are the source discovery engine for Lex Nova HQ legal architecture diligence.
+  return `You are the Source Discovery engine for Lex Nova HQ legal architecture diligence.
 
-Your job is to find first-party source URLs for a company for exactly one source family and one retrieval intent.
+MAGNA CARTA SOURCE DISCOVERY RULES
+- Gemini discovers and classifies.
+- Deterministic code fetches, extracts, normalizes, deduplicates, verifies first-party status, and prepares source text.
+- Provenance reports history. Provenance never blocks a URL before classification.
+- Only four final families exist: company_profile, product_profile, legal_profile, governance_profile.
+- No docs_developer, commercial, updates, primary, support, or secondary final families exist.
+- The anchor URLs are minimum surfaces to inspect first. They are not limits.
+- Everything first-party that an anchor leads to must be considered for classification.
+- After anchor coverage, use a compact free first-party search to catch anything missed.
 
-Input:
+TARGET
 - primary_url: ${primary_url}
 - normalized_origin: ${normalized_origin}
 - registrable_domain: ${registrable_domain}
 - company_name: ${company_name || "unknown"}
 
-Architecture rule:
-- Gemini is the PRIMARY discovery layer for every source family.
-- Deterministic systems later validate, probe, fetch, dedupe, and prepare sources. They do not replace your discovery work.
-- Your output must therefore be a serious page-family discovery plan result, not a shallow homepage/footer guess.
-
-Boundaries:
+BOUNDARIES
 - Return first-party URLs only.
 - Include same-domain and first-party subdomain URLs.
-- Do not include LinkedIn, Crunchbase, GitHub, app stores, news sites, social media, or third-party URLs.
+- Do not include LinkedIn, Crunchbase, GitHub, app stores, news sites, social media, third-party URLs, images, CSS, JS, font files, tracking URLs, ad URLs, login-only URLs, unsafe protocols, or malformed URLs.
 - Do not invent URLs.
-- Do not summarize.
-- Do not return page descriptions except the short reason field.
-- Search specifically for the requested source family and retrieval intent.
-- Find strong URLs for this source family if publicly available.
-- If none are publicly discoverable for this intent, return an empty urls array and explain the coverage gap.
+- Do not summarize page contents.
+- Do not return full text.
+- The output is for URL discovery/classification only. Full admitted documents are fetched later and passed downstream losslessly.
 
-Source family:
+SOURCE FAMILY
 - source_family: ${family_plan.source_family}
 - label: ${family_plan.label}
 - mission: ${family_plan.mission}
 - target_min: ${family_plan.target_min}
 - target_max: ${family_plan.target_max}
 
-Page-family discovery plan:
+PAGE-FAMILY PLAN
 ${lines(family_plan.page_family_plan)}
 
-Family anchor URLs to inspect first:
+MINIMUM FAMILY ANCHOR URLS TO INSPECT FIRST
 ${lines(family_plan.anchor_urls)}
 
-Known/common route hints:
+KNOWN/COMMON ROUTE HINTS
 ${lines(family_plan.common_route_hints)}
 
-Important:
-- The family anchor URLs are inspection anchors. Start there, especially the normalized origin and family-specific anchor URLs.
-- The common route hints are hints only. They are not a limit.
-- You must look beyond these common routes when first-party pages exist under different naming conventions.
-- Return the best first-party pages for this family even if their paths differ from the hints.
-- Do not fill the result with generic pages when deeper family-specific pages are discoverable.
+ANCHOR RULE
+- The listed anchors are the minimum starting points.
+- They are not limits.
+- If a first-party anchor leads to deeper first-party pages that belong to this family, those deeper pages must be returned.
+- Do not stop at homepage/about pages when deeper product, legal, governance, or company-substance pages are visible.
+- Pages such as pricing, blog, news, changelog, releases, customers, and case studies should be returned only if they reveal product features, product movement, feature tiers, usage mechanics, or substantive company evidence.
 
-Retrieval intent:
+RETRIEVAL INTENT
 - intent_id: ${activeIntent.intent_id}
 - label: ${activeIntent.label}
 - instruction: ${activeIntent.instruction}
 
-Search query to use as retrieval intent:
+SEARCH QUERY / RETRIEVAL HINT
 ${activeIntent.query}
 
 Return only valid JSON in this exact shape:
 {
+  "source_discovery_version": "${SOURCE_DISCOVERY_MAGNA_CARTA_VERSION}",
   "source_family": "${family_plan.source_family}",
   "retrieval_intent_id": "${activeIntent.intent_id}",
   "urls": [
@@ -388,6 +398,7 @@ Return only valid JSON in this exact shape:
 
 If no source is publicly found, return:
 {
+  "source_discovery_version": "${SOURCE_DISCOVERY_MAGNA_CARTA_VERSION}",
   "source_family": "${family_plan.source_family}",
   "retrieval_intent_id": "${activeIntent.intent_id}",
   "urls": [],
