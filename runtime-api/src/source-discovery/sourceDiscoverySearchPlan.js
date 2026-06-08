@@ -223,6 +223,13 @@ function routeHintQuery(domain, family) {
   return hints.map((hint) => `site:${domain}${hint.endsWith("/") ? hint : hint + ""}`).join(" OR ");
 }
 
+function anchorUrlsForFamily({ normalized_origin, family }) {
+  const origin = String(normalized_origin || "").replace(/\/+$/, "");
+  const hints = Array.isArray(family.common_route_hints) ? family.common_route_hints : [];
+  const anchors = [origin || null, ...hints.map((hint) => `${origin}${hint.startsWith("/") ? hint : "/" + hint}`)];
+  return [...new Set(anchors.filter(Boolean))];
+}
+
 function compactTerms(terms = [], limit = 10) {
   return terms.slice(0, limit).map(quoteTerm).join(" OR ");
 }
@@ -238,29 +245,30 @@ function buildRetrievalIntents({ domain, companyHint, family }) {
       intent_id: "family_navigation_surface",
       label: "Find the family navigation/index surface",
       query: `site:${domain} (${focusedTerms}${nameClause})`,
-      instruction: "Find the strongest first-party navigation/index pages for this family. Do not stop at the homepage if family-specific pages are visible."
+      instruction: "Inspect the family anchor URLs first, then use search to find the strongest first-party navigation/index pages for this family. Do not stop at the homepage if family-specific pages are visible."
     },
     {
       intent_id: "common_route_expansion",
-      label: "Expand common-route hints without being limited by them",
+      label: "Expand common-route anchors without being limited by them",
       query: routeHints || `site:${domain} (${focusedTerms}${nameClause})`,
-      instruction: "Use the common route hints as search starting points only. Return real first-party pages that exist and belong to this family, including differently named routes."
+      instruction: "Treat the listed anchor URLs as starting points to inspect. They are not limits. Return real first-party pages that exist and belong to this family, including differently named routes."
     },
     {
       intent_id: "deep_detail_pages",
       label: "Find deeper detail/capability/artifact pages",
       query: `site:${domain} (${broadTerms}${nameClause})`,
-      instruction: "Find deeper first-party detail pages for this family. Prefer concrete pages with named artifacts, capabilities, documents, APIs, releases, commercial flows, or governance content over generic overview pages."
+      instruction: "Inspect anchors and search results for deeper first-party detail pages. Prefer concrete pages with named artifacts, capabilities, documents, APIs, releases, commercial flows, or governance content over generic overview pages."
     }
   ];
 }
 
-export function buildFamilySearchQueries({ registrable_domain, company_name = null }) {
+export function buildFamilySearchQueries({ registrable_domain, company_name = null, normalized_origin = null }) {
   const domain = String(registrable_domain || "").trim().toLowerCase();
   if (!domain) {
     throw new Error("registrable_domain is required");
   }
 
+  const inferredOrigin = normalized_origin || `https://${domain}`;
   const companyHint = company_name ? `"${company_name}"` : "";
 
   return SOURCE_DISCOVERY_FAMILIES.map((family) => {
@@ -270,6 +278,7 @@ export function buildFamilySearchQueries({ registrable_domain, company_name = nu
     const routeHintClause = routeHints ? ` OR (${routeHints})` : "";
     const query = `site:${domain} (${groupedTerms}${companyClause})${routeHintClause}`;
     const retrieval_intents = buildRetrievalIntents({ domain, companyHint, family });
+    const anchor_urls = anchorUrlsForFamily({ normalized_origin: inferredOrigin, family });
 
     return {
       source_family: family.source_family,
@@ -280,6 +289,7 @@ export function buildFamilySearchQueries({ registrable_domain, company_name = nu
       mission: family.mission,
       page_family_plan: family.page_family_plan,
       common_route_hints: family.common_route_hints,
+      anchor_urls,
       query,
       retrieval_intents
     };
@@ -341,10 +351,14 @@ Source family:
 Page-family discovery plan:
 ${lines(family_plan.page_family_plan)}
 
+Family anchor URLs to inspect first:
+${lines(family_plan.anchor_urls)}
+
 Known/common route hints:
 ${lines(family_plan.common_route_hints)}
 
 Important:
+- The family anchor URLs are inspection anchors. Start there, especially the normalized origin and family-specific anchor URLs.
 - The common route hints are hints only. They are not a limit.
 - You must look beyond these common routes when first-party pages exist under different naming conventions.
 - Return the best first-party pages for this family even if their paths differ from the hints.
