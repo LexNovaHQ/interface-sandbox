@@ -91,8 +91,12 @@ function preview(value, maxChars = Number(process.env.STAGE4_OUTPUT_PREVIEW_CHAR
   return JSON.stringify(value || {}).slice(0, maxChars);
 }
 
+function stableString(value) {
+  return JSON.stringify(value || {});
+}
+
 function countPossibleFeatures(targetFeatureProfile = {}) {
-  const json = JSON.stringify(targetFeatureProfile || {});
+  const json = stableString(targetFeatureProfile);
   const structuralCount = [
     targetFeatureProfile.features,
     targetFeatureProfile.product_features,
@@ -106,7 +110,7 @@ function countPossibleFeatures(targetFeatureProfile = {}) {
 }
 
 function countPossibleLegalFindings(legalStackReview = {}) {
-  const json = JSON.stringify(legalStackReview || {});
+  const json = stableString(legalStackReview);
   const structuralCount = [
     legalStackReview.legal_documents,
     legalStackReview.document_inventory,
@@ -119,6 +123,247 @@ function countPossibleLegalFindings(legalStackReview = {}) {
 
   const keywordHits = (json.match(/terms|privacy|dpa|processor|governance|legal|risk|gap|policy|sla|data/gi) || []).length;
   return { structural_count: structuralCount, keyword_hits: keywordHits };
+}
+
+function assertPromptMetadata(stageName, response) {
+  const metadata = response?.prompt_metadata || {};
+  const missing = [];
+  if (!metadata.prompt_root) missing.push("prompt_root");
+  if (!metadata.shared_sha256) missing.push("shared_sha256");
+  if (!metadata.stage_sha256) missing.push("stage_sha256");
+  if (!metadata.combined_characters) missing.push("combined_characters");
+
+  if (missing.length) {
+    fail(`${stageName} is missing prompt metadata`, {
+      missing,
+      prompt_metadata: metadata
+    });
+  }
+
+  return {
+    prompt_root: metadata.prompt_root,
+    shared_sha256: metadata.shared_sha256,
+    stage_sha256: metadata.stage_sha256,
+    combined_characters: metadata.combined_characters
+  };
+}
+
+function normalizeUrlForCompare(value) {
+  try {
+    const parsed = new URL(String(value || "").trim());
+    parsed.hash = "";
+    parsed.search = "";
+    return parsed.toString().replace(/\/+$/, "").toLowerCase();
+  } catch {
+    return String(value || "").trim().replace(/\/+$/, "").toLowerCase();
+  }
+}
+
+function extractSourceAudit(sourceBundle = {}) {
+  const artifactInventory = Array.isArray(sourceBundle.artifact_inventory) ? sourceBundle.artifact_inventory : [];
+  const discoveryCandidates = Array.isArray(sourceBundle.discovery_candidates) ? sourceBundle.discovery_candidates : [];
+
+  const admitted = artifactInventory
+    .filter((item) => String(item.admission_status || item.status || "").toUpperCase() !== "FILTERED")
+    .map((item) => ({
+      id: item.artifact_id || item.source_id || item.id || null,
+      url: item.source_url || item.url || null,
+      normalized_url: normalizeUrlForCompare(item.source_url || item.url || ""),
+      class: item.artifact_class || item.source_family || item.zone || null,
+      zone: item.zone || null,
+      hash: item.source_hash || item.clean_text_sha256 || null
+    }))
+    .filter((item) => item.id || item.url || item.hash);
+
+  const filtered = discoveryCandidates
+    .filter((item) => /DISCOVERY_ONLY|FILTERED|EXCLUDED|REJECTED/i.test(String(item.status || item.admission_status || "")))
+    .map((item) => ({
+      id: item.candidate_id || item.artifact_id || item.source_id || null,
+      url: item.source_url || item.url || null,
+      normalized_url: normalizeUrlForCompare(item.source_url || item.url || ""),
+      status: item.status || item.admission_status || null,
+      notes: item.notes || null
+    }))
+    .filter((item) => item.id || item.url);
+
+  const legalGovernance = admitted.filter((item) => /terms|privacy|dpa|processor|subprocessor|sla|security|trust|governance|policy|data/i.test(`${item.class || ""} ${item.zone || ""} ${item.url || ""}`));
+  const productDocs = admitted.filter((item) => /product|model|docs|developer|api|homepage|context|mechanical/i.test(`${item.class || ""} ${item.zone || ""} ${item.url || ""}`));
+
+  return {
+    admitted,
+    filtered,
+    legal_governance: legalGovernance,
+    product_docs: productDocs
+  };
+}
+
+function requireAnyReference(stageName, output, candidates, description) {
+  const json = stableString(output);
+  const hits = candidates.filter((candidate) => {
+    const tokens = [
+      candidate.id,
+      candidate.url,
+      candidate.normalized_url,
+      candidate.hash
+    ].filter(Boolean);
+
+    return tokens.some((token) => json.includes(token));
+  });
+
+  if (hits.length === 0) {
+    fail(`${stageName} output has no admitted-source trace for ${description}`, {
+      candidate_count: candidates.length,
+      candidates: candidates.slice(0, 10),
+      output_keys: Object.keys(output || {}),
+      preview: preview(output)
+    });
+  }
+
+  return hits;
+}
+
+function assertNoFilteredSourceLeak(stageName, output, filteredSources) {
+  const json = stableString(output);
+  const leaked = filteredSources.filter((source) => {
+    const tokens = [source.id, source.url, source.normalized_url]
+      .filter(Boolean)
+      .filter((token) => token.length > 8);
+    return tokens.some((token) => json.includes(token));
+  });
+
+  if (leaked.length) {
+    fail(`${stageName} output references filtered/excluded source(s)`, {
+      leaked,
+      preview: preview(output)
+    });
+  }
+
+  return leaked;
+}
+
+function assertBoundaryCompliance(stageName, output) {
+  const json = stableString(output);
+  const violations = [];
+
+  const affirmativeLawFirmPatterns = [
+    /\bwe are (a )?law firm\b/i,
+    /\bas (your|a|the) lawyer\b/i,
+    /\bas (your|an|the) attorney\b/i,
+    /\battorney-client relationship\b/i,
+    /\bsolicitor-client relationship\b/i,
+    /\bprivileged legal counsel\b/i,
+    /\bwe represent\b/i
+  ];
+
+  for (const pattern of affirmativeLawFirmPatterns) {
+    if (pattern.test(json)) violations.push(pattern.toString());
+  }
+
+  const legalAdviceMatches = [...json.matchAll(/legal advice/gi)];
+  for (const match of legalAdviceMatches) {
+    const start = Math.max(0, match.index - 40);
+    const context = json.slice(start, match.index + 80);
+    if (!/not legal advice|not constitute legal advice|does not constitute legal advice/i.test(context)) {
+      violations.push(`unqualified legal advice phrase near: ${context}`);
+    }
+  }
+
+  if (violations.length) {
+    fail(`${stageName} output violates Lex Nova boundary language`, {
+      violations,
+      preview: preview(output)
+    });
+  }
+
+  return { violations: [] };
+}
+
+function assertCoverageGapNotInvented(stageName, output, coverageGaps = []) {
+  const json = stableString(output);
+  const gapTerms = coverageGaps
+    .map((gap) => [gap.source_family, gap.label, gap.status])
+    .flat()
+    .filter(Boolean);
+
+  const hasCoverageGap = coverageGaps.length > 0;
+  const acknowledgesInsufficiency = /coverage_gap|coverage gap|not found|insufficient|missing|unavailable|not located|not discovered/i.test(json);
+
+  if (hasCoverageGap && !acknowledgesInsufficiency) {
+    fail(`${stageName} output does not acknowledge upstream coverage gap(s)`, {
+      coverage_gaps: coverageGaps,
+      gap_terms: gapTerms,
+      preview: preview(output)
+    });
+  }
+
+  return { acknowledged: hasCoverageGap ? acknowledgesInsufficiency : true };
+}
+
+function runPromptComplianceAudit({ sourceBundle, coverageGaps, evidenceRefinerResponse, targetFeatureResponse, targetFeatureProfile, legalStackResponse, legalStackReview }) {
+  const evidencePrompt = assertPromptMetadata("Evidence Refiner", evidenceRefinerResponse);
+  const targetPrompt = assertPromptMetadata("Target Feature Profile", targetFeatureResponse);
+  const legalPrompt = assertPromptMetadata("Legal Stack Review", legalStackResponse);
+
+  const sourceAudit = extractSourceAudit(sourceBundle);
+  if (sourceAudit.admitted.length === 0) {
+    fail("Prompt compliance audit could not find admitted source artifacts", {
+      source_bundle_keys: Object.keys(sourceBundle || {}),
+      preview: preview(sourceBundle)
+    });
+  }
+
+  if (sourceAudit.legal_governance.length === 0) {
+    fail("Prompt compliance audit could not find admitted legal/governance artifacts", {
+      admitted: sourceAudit.admitted
+    });
+  }
+
+  if (sourceAudit.product_docs.length === 0) {
+    fail("Prompt compliance audit could not find admitted product/docs artifacts", {
+      admitted: sourceAudit.admitted
+    });
+  }
+
+  const targetTraceHits = requireAnyReference("Target Feature Profile", targetFeatureProfile, sourceAudit.product_docs, "product/docs artifacts");
+  const legalTraceHits = requireAnyReference("Legal Stack Review", legalStackReview, sourceAudit.legal_governance, "legal/governance artifacts");
+
+  assertNoFilteredSourceLeak("Target Feature Profile", targetFeatureProfile, sourceAudit.filtered);
+  assertNoFilteredSourceLeak("Legal Stack Review", legalStackReview, sourceAudit.filtered);
+
+  assertBoundaryCompliance("Target Feature Profile", targetFeatureProfile);
+  assertBoundaryCompliance("Legal Stack Review", legalStackReview);
+
+  const targetCoverage = assertCoverageGapNotInvented("Target Feature Profile", targetFeatureProfile, coverageGaps);
+  const legalCoverage = assertCoverageGapNotInvented("Legal Stack Review", legalStackReview, coverageGaps);
+
+  return {
+    ok: true,
+    prompt_metadata: {
+      evidence_refiner: evidencePrompt,
+      target_feature_profile: targetPrompt,
+      legal_stack_review: legalPrompt
+    },
+    source_trace: {
+      admitted_count: sourceAudit.admitted.length,
+      filtered_count: sourceAudit.filtered.length,
+      legal_governance_count: sourceAudit.legal_governance.length,
+      product_docs_count: sourceAudit.product_docs.length,
+      target_trace_hits: targetTraceHits.map((item) => ({ id: item.id, url: item.url, class: item.class, zone: item.zone })),
+      legal_trace_hits: legalTraceHits.map((item) => ({ id: item.id, url: item.url, class: item.class, zone: item.zone }))
+    },
+    filtered_source_leakage: {
+      target_feature_profile: 0,
+      legal_stack_review: 0
+    },
+    boundary_compliance: {
+      target_feature_profile: "pass",
+      legal_stack_review: "pass"
+    },
+    coverage_gap_handling: {
+      target_feature_profile_acknowledged: targetCoverage.acknowledged,
+      legal_stack_review_acknowledged: legalCoverage.acknowledged
+    }
+  };
 }
 
 if (!runtimeUrl) {
@@ -215,6 +460,7 @@ console.log(JSON.stringify({
   ok: true,
   step: "evidence_refiner_complete",
   output_schema_key: evidenceRefinerResponse.output_schema_key,
+  prompt_metadata: evidenceRefinerResponse.prompt_metadata,
   source_bundle_keys: Object.keys(sourceBundle || {}),
   preview: preview(sourceBundle, Number(process.env.STAGE4_STEP_PREVIEW_CHARS || 1200))
 }, null, 2));
@@ -241,6 +487,7 @@ console.log(JSON.stringify({
   ok: true,
   step: "target_feature_profile_complete",
   output_schema_key: targetFeatureResponse.output_schema_key,
+  prompt_metadata: targetFeatureResponse.prompt_metadata,
   feature_signals: featureSignals,
   target_feature_profile_keys: Object.keys(targetFeatureProfile || {}),
   preview: preview(targetFeatureProfile, Number(process.env.STAGE4_STEP_PREVIEW_CHARS || 1200))
@@ -265,6 +512,16 @@ if (!legalStackReview || JSON.stringify(legalStackReview).length < 500 || (legal
   });
 }
 
+const complianceAudit = runPromptComplianceAudit({
+  sourceBundle,
+  coverageGaps: evidenceInput.scrape_meta.coverage_summary.coverage_gaps,
+  evidenceRefinerResponse,
+  targetFeatureResponse,
+  targetFeatureProfile,
+  legalStackResponse,
+  legalStackReview
+});
+
 console.log(JSON.stringify({
   ok: true,
   service: "lexnova-runtime-api",
@@ -273,17 +530,20 @@ console.log(JSON.stringify({
   run_id: evidenceInput.run_id,
   source_counts: sourceCounts,
   coverage_gaps: evidenceInput.scrape_meta.coverage_summary.coverage_gaps,
+  prompt_compliance_audit: complianceAudit,
   stages: {
     evidence_refiner: {
       ok: evidenceRefinerResponse.ok,
       output_schema_key: evidenceRefinerResponse.output_schema_key,
       model: evidenceRefinerResponse.model_metadata?.selected_model || null,
+      prompt_metadata: evidenceRefinerResponse.prompt_metadata,
       source_bundle_keys: Object.keys(sourceBundle || {})
     },
     target_feature_profile: {
       ok: targetFeatureResponse.ok,
       output_schema_key: targetFeatureResponse.output_schema_key,
       model: targetFeatureResponse.model_metadata?.selected_model || null,
+      prompt_metadata: targetFeatureResponse.prompt_metadata,
       feature_signals: featureSignals,
       output_keys: Object.keys(targetFeatureProfile || {}),
       preview: preview(targetFeatureProfile)
@@ -292,6 +552,7 @@ console.log(JSON.stringify({
       ok: legalStackResponse.ok,
       output_schema_key: legalStackResponse.output_schema_key,
       model: legalStackResponse.model_metadata?.selected_model || null,
+      prompt_metadata: legalStackResponse.prompt_metadata,
       legal_signals: legalSignals,
       output_keys: Object.keys(legalStackReview || {}),
       preview: preview(legalStackReview)
