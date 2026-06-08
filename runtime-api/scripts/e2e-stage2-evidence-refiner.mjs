@@ -14,6 +14,13 @@ const MAGNA_CARTA_BUCKETS = [
   "governance_profile_sources"
 ];
 
+const MAGNA_CARTA_FAMILIES = [
+  "company_profile",
+  "product_profile",
+  "legal_profile",
+  "governance_profile"
+];
+
 function fail(message, detail) {
   console.error(JSON.stringify({ ok: false, error: message, detail: detail || null }, null, 2));
   process.exit(1);
@@ -81,12 +88,12 @@ function collectBucket(discovery = {}, bucket) {
 
 function collectSources(discovery = {}) {
   const limit = Number(process.env.STAGE2_CAPTURE_LIMIT || 16);
-  const quotas = {
-    company_profile_sources: Number(process.env.STAGE2_COMPANY_CAPTURE_LIMIT || 2),
-    product_profile_sources: Number(process.env.STAGE2_PRODUCT_CAPTURE_LIMIT || 8),
-    legal_profile_sources: Number(process.env.STAGE2_LEGAL_CAPTURE_LIMIT || 3),
-    governance_profile_sources: Number(process.env.STAGE2_GOVERNANCE_CAPTURE_LIMIT || 3)
-  };
+  const priorityBuckets = [
+    ["legal_profile_sources", Number(process.env.STAGE2_LEGAL_CAPTURE_LIMIT || 3)],
+    ["governance_profile_sources", Number(process.env.STAGE2_GOVERNANCE_CAPTURE_LIMIT || 3)],
+    ["product_profile_sources", Number(process.env.STAGE2_PRODUCT_CAPTURE_LIMIT || 8)],
+    ["company_profile_sources", Number(process.env.STAGE2_COMPANY_CAPTURE_LIMIT || 2)]
+  ];
 
   const pools = Object.fromEntries(MAGNA_CARTA_BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
   const selected = [];
@@ -98,12 +105,12 @@ function collectSources(discovery = {}) {
     selected.push(record);
   }
 
-  for (const bucket of MAGNA_CARTA_BUCKETS) {
-    for (const record of pools[bucket].slice(0, quotas[bucket] || 0)) add(record);
+  for (const [bucket, quota] of priorityBuckets) {
+    for (const record of (pools[bucket] || []).slice(0, quota)) add(record);
   }
 
   for (const bucket of MAGNA_CARTA_BUCKETS) {
-    for (const record of pools[bucket]) add(record);
+    for (const record of pools[bucket] || []) add(record);
   }
 
   if (selected.length === 0 && Array.isArray(discovery.candidate_sources)) {
@@ -116,10 +123,6 @@ function collectSources(discovery = {}) {
   return selected;
 }
 
-function stagePayload(stageResponse = {}) {
-  return stageResponse.output || stageResponse.parsed_json || stageResponse.result?.json || stageResponse.result || stageResponse;
-}
-
 if (!runtimeUrl) fail("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required");
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 
@@ -129,10 +132,10 @@ const targetInput = { primary_url: primaryUrl, company_name: companyName, submit
 console.log(JSON.stringify({
   ok: true,
   step: "start",
-  phase: "stage_2_evidence_refiner_e2e_magna_carta",
+  phase: "stage_2_source_bundle_packager_e2e_magna_carta",
   target: targetInput,
   runtime_url: base,
-  capture_limit: Number(process.env.STAGE2_CAPTURE_LIMIT || 12)
+  capture_limit: Number(process.env.STAGE2_CAPTURE_LIMIT || 16)
 }, null, 2));
 
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
@@ -168,62 +171,56 @@ const captureResponse = await postJson(base, "/v1/source-capture", {
   options: { timeout_ms: Number(process.env.STAGE2_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length }
 });
 
-const evidenceInput = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `stage2_${Date.now()}` });
-const capturedOk = evidenceInput.scrape_meta?.coverage_summary?.source_counts?.fetch_ok || 0;
-const totalWords = evidenceInput.scrape_meta?.coverage_summary?.source_counts?.total_words || 0;
-const byFamily = evidenceInput.scrape_meta?.coverage_summary?.by_family || {};
-
-if (capturedOk === 0 || totalWords === 0) {
-  fail("Source capture produced no usable text for Evidence Refiner", {
-    source_counts: evidenceInput.scrape_meta?.coverage_summary?.source_counts || null,
-    by_family: byFamily
-  });
-}
-
-if (!Object.keys(byFamily).some((family) => ["company_profile", "product_profile", "legal_profile", "governance_profile"].includes(family) && byFamily[family]?.length)) {
-  fail("Adapter did not preserve any Magna Carta family evidence", { by_family: byFamily });
-}
-
-console.log(JSON.stringify({
-  ok: true,
-  step: "source_capture_and_adapter_complete",
-  run_id: evidenceInput.run_id,
-  source_bundle_version: evidenceInput.source_bundle_version,
-  source_counts: evidenceInput.scrape_meta.coverage_summary.source_counts,
-  by_family: byFamily,
-  raw_footprint_sha256: evidenceInput.scrape_meta.hashes.raw_footprint_sha256
-}, null, 2));
-
-const evidenceRefinerResponse = await postJson(base, "/v1/diligence/stage", {
-  stage: "evidence_refiner",
-  input: evidenceInput,
-  options: { poolAlias: "json" }
+const bundleInput = buildEvidenceRefinerInput({
+  targetInput,
+  discoveryResponse,
+  captureResponse,
+  runId: `stage2_${Date.now()}`
 });
 
-const output = stagePayload(evidenceRefinerResponse);
-const outputJson = JSON.stringify(output || {});
-if (!output || outputJson.length < 200) {
-  fail("Evidence Refiner returned an unexpectedly small output", {
-    response_keys: Object.keys(evidenceRefinerResponse || {}),
-    output_preview: outputJson.slice(0, 1000)
+const counts = bundleInput.scrape_meta?.coverage_summary?.source_counts || {};
+const byFamily = bundleInput.scrape_meta?.coverage_summary?.by_family || {};
+const duplicateCount = counts.duplicates_removed || 0;
+const filteredCount = counts.filtered || 0;
+const admittedCount = counts.admitted || 0;
+const fetchOk = counts.fetch_ok || 0;
+const totalWords = counts.total_words || 0;
+
+if (bundleInput.source_bundle_version !== "source_bundle_v2_magna_carta") {
+  fail("Stage 2 did not produce source_bundle_v2_magna_carta", { source_bundle_version: bundleInput.source_bundle_version });
+}
+
+if (admittedCount === 0 || fetchOk === 0 || totalWords === 0) {
+  fail("Stage 2 source bundle packager produced no usable captured text", { source_counts: counts, by_family: byFamily });
+}
+
+const populatedFamilies = MAGNA_CARTA_FAMILIES.filter((family) => Array.isArray(byFamily[family]) && byFamily[family].length > 0);
+if (populatedFamilies.length === 0) {
+  fail("Stage 2 did not preserve any Magna Carta family evidence", { by_family: byFamily });
+}
+
+const records = bundleInput.raw_footprint?.source_records || [];
+const missingLossless = records.filter((record) => !record?.text?.clean_text_lossless);
+if (missingLossless.length > 0) {
+  fail("Stage 2 admitted records missing clean_text_lossless", {
+    missing: missingLossless.map((record) => ({ id: record.evidence_source_id, url: record.url, family: record.source_family }))
   });
 }
 
 console.log(JSON.stringify({
   ok: true,
   service: "lexnova-runtime-api",
-  phase: "stage_2_evidence_refiner_e2e_magna_carta",
+  phase: "stage_2_source_bundle_packager_e2e_magna_carta",
   target: targetInput,
-  run_id: evidenceInput.run_id,
-  source_bundle_version: evidenceInput.source_bundle_version,
-  source_counts: evidenceInput.scrape_meta.coverage_summary.source_counts,
+  run_id: bundleInput.run_id,
+  source_bundle_version: bundleInput.source_bundle_version,
+  source_counts: counts,
+  populated_families: populatedFamilies,
   by_family: byFamily,
-  coverage_gaps: evidenceInput.scrape_meta.coverage_summary.coverage_gaps,
-  stage: {
-    ok: evidenceRefinerResponse.ok,
-    stage_id: evidenceRefinerResponse.stage_id || evidenceRefinerResponse.stage,
-    model_meta: evidenceRefinerResponse.model_meta || evidenceRefinerResponse.meta || null,
-    output_keys: Object.keys(output || {}),
-    output_preview: outputJson.slice(0, Number(process.env.STAGE2_OUTPUT_PREVIEW_CHARS || 3000))
-  }
+  duplicate_sources_removed: duplicateCount,
+  filtered_sources: filteredCount,
+  coverage_gaps: bundleInput.scrape_meta.coverage_summary.coverage_gaps,
+  raw_footprint_sha256: bundleInput.scrape_meta.hashes.raw_footprint_sha256,
+  deterministic_only: true,
+  gemini_called: false
 }, null, 2));
