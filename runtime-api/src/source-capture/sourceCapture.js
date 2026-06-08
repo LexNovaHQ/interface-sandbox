@@ -36,6 +36,18 @@ function normalizeUrl(value) {
   }
 }
 
+function buildSourceDiscoveryProvenance(source = {}) {
+  return {
+    source_family: source?.source_family || null,
+    discovery_method: source?.discovery_method || null,
+    discovery_role: source?.discovery_role || null,
+    batch_id: source?.batch_id || null,
+    reason: source?.reason || "",
+    probe_method: source?.probe_method || null,
+    source_bucket: source?.source_bucket || null
+  };
+}
+
 function parseIpv4Address(value) {
   const text = String(value || "").trim();
   const mapped = text.toLowerCase().startsWith("::ffff:") ? text.slice(7) : text;
@@ -169,14 +181,7 @@ export async function validateCaptureUrl(value) {
 function decodeHtmlEntities(input) {
   let text = String(input || "");
 
-  const named = {
-    nbsp: " ",
-    amp: "&",
-    lt: "<",
-    gt: ">",
-    quot: "\"",
-    apos: "'"
-  };
+  const named = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'" };
 
   text = text.replace(/&([a-zA-Z][a-zA-Z0-9]+);/g, (match, name) => {
     const key = String(name || "").toLowerCase();
@@ -186,21 +191,13 @@ function decodeHtmlEntities(input) {
   text = text.replace(/&#(\d+);/g, (match, code) => {
     const n = Number(code);
     if (!Number.isFinite(n)) return match;
-    try {
-      return String.fromCodePoint(n);
-    } catch {
-      return match;
-    }
+    try { return String.fromCodePoint(n); } catch { return match; }
   });
 
   text = text.replace(/&#x([0-9a-fA-F]+);/g, (match, code) => {
     const n = Number.parseInt(code, 16);
     if (!Number.isFinite(n)) return match;
-    try {
-      return String.fromCodePoint(n);
-    } catch {
-      return match;
-    }
+    try { return String.fromCodePoint(n); } catch { return match; }
   });
 
   return text;
@@ -305,7 +302,6 @@ function extractLinks(html, baseUrl) {
   }
 
   const seen = new Set();
-
   return links.filter((link) => {
     const key = link.href + "|" + link.text;
     if (seen.has(key)) return false;
@@ -320,13 +316,7 @@ function buildSectionIndex(cleanText, headings) {
   for (const heading of headings || []) {
     const index = cleanText.indexOf(heading.text);
     if (index === -1) continue;
-
-    sections.push({
-      heading: heading.text,
-      level: heading.level,
-      start_char: index,
-      end_char: null
-    });
+    sections.push({ heading: heading.text, level: heading.level, start_char: index, end_char: null });
   }
 
   sections.sort((a, b) => a.start_char - b.start_char);
@@ -356,18 +346,8 @@ function buildChunks({ cleanText, sourceUrl, chunkSize = 6000, chunkOverlap = 30
   while (start < text.length) {
     const end = Math.min(start + size, text.length);
     const chunkText = text.slice(start, end);
-
-    chunks.push({
-      chunk_id: "chunk_" + String(index).padStart(4, "0"),
-      source_url: sourceUrl,
-      start_char: start,
-      end_char: end,
-      text: chunkText,
-      text_sha256: sha256(chunkText)
-    });
-
+    chunks.push({ chunk_id: "chunk_" + String(index).padStart(4, "0"), source_url: sourceUrl, start_char: start, end_char: end, text: chunkText, text_sha256: sha256(chunkText) });
     if (end >= text.length) break;
-
     start = end - overlap;
     index += 1;
   }
@@ -384,31 +364,14 @@ async function fetchHtml(url, timeoutMs) {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetch(currentUrl, {
-        method: "GET",
-        redirect: "manual",
-        signal: controller.signal,
-        headers: {
-          "user-agent": "LexNovaHQ-SourceCapture/0.3C",
-          accept: "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.5"
-        }
-      });
-
+      const response = await fetch(currentUrl, { method: "GET", redirect: "manual", signal: controller.signal, headers: { "user-agent": "LexNovaHQ-SourceCapture/0.3C", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.5" } });
       if (response.status >= 300 && response.status < 400 && response.headers.get("location")) {
         const nextUrl = new URL(response.headers.get("location"), currentUrl).toString();
         currentUrl = await validateCaptureUrl(nextUrl);
         continue;
       }
-
       const rawHtml = await response.text();
-
-      return {
-        ok: response.ok,
-        http_status: response.status,
-        final_url: normalizeUrl(response.url) || currentUrl,
-        content_type: response.headers.get("content-type") || "",
-        raw_html: rawHtml
-      };
+      return { ok: response.ok, http_status: response.status, final_url: normalizeUrl(response.url) || currentUrl, content_type: response.headers.get("content-type") || "", raw_html: rawHtml };
     } finally {
       clearTimeout(timer);
     }
@@ -420,6 +383,7 @@ async function fetchHtml(url, timeoutMs) {
 export async function captureOneSource(source, options = {}) {
   const sourceUrl = normalizeUrl(source?.url || source);
   const sourceFamily = source?.source_family || null;
+  const discovery = buildSourceDiscoveryProvenance(source || {});
   const timeoutMs = Number(options.timeoutMs || 15000);
   const includeRawHtml = options.include_raw_html === true;
   const includeCleanText = options.include_clean_text !== false;
@@ -428,33 +392,13 @@ export async function captureOneSource(source, options = {}) {
     return {
       url: String(source?.url || source || ""),
       source_family: sourceFamily,
+      discovery,
       fetch: { ok: false, error: "invalid_url" },
-      raw: {
-        raw_html_length: 0,
-        raw_html_sha256: sha256("")
-      },
-      text: {
-        extraction_mode: "lossless_visible_text",
-        clean_text_length: 0,
-        clean_text_sha256: sha256(""),
-        word_count: 0,
-        truncated_in_storage: false,
-        truncated_in_response: false
-      },
-      structure: {
-        title: "",
-        meta_description: "",
-        headings: [],
-        section_index: [],
-        links: []
-      },
+      raw: { raw_html_length: 0, raw_html_sha256: sha256("") },
+      text: { extraction_mode: "lossless_visible_text", clean_text_length: 0, clean_text_sha256: sha256(""), word_count: 0, truncated_in_storage: false, truncated_in_response: false },
+      structure: { title: "", meta_description: "", headings: [], section_index: [], links: [] },
       chunks: [],
-      quality: {
-        empty_page: true,
-        likely_js_rendered: false,
-        word_count: 0,
-        coverage_status: "invalid_url"
-      }
+      quality: { empty_page: true, likely_js_rendered: false, word_count: 0, coverage_status: "invalid_url" }
     };
   }
 
@@ -465,99 +409,35 @@ export async function captureOneSource(source, options = {}) {
     const headings = extractHeadings(rawHtml);
     const links = extractLinks(rawHtml, fetched.final_url || sourceUrl);
     const sections = buildSectionIndex(cleanText, headings);
-
-    const chunks = buildChunks({
-      cleanText,
-      sourceUrl: fetched.final_url || sourceUrl,
-      chunkSize: options.chunk_size || 6000,
-      chunkOverlap: options.chunk_overlap || 300
-    });
-
+    const chunks = buildChunks({ cleanText, sourceUrl: fetched.final_url || sourceUrl, chunkSize: options.chunk_size || 6000, chunkOverlap: options.chunk_overlap || 300 });
     const wordCount = countWords(cleanText);
 
     const record = {
       url: sourceUrl,
       source_family: sourceFamily,
-      fetch: {
-        ok: fetched.ok,
-        http_status: fetched.http_status,
-        final_url: fetched.final_url,
-        content_type: fetched.content_type,
-        fetched_at: nowIso()
-      },
-      raw: {
-        raw_html_length: rawHtml.length,
-        raw_html_sha256: sha256(rawHtml)
-      },
-      text: {
-        extraction_mode: "lossless_visible_text",
-        clean_text_length: cleanText.length,
-        clean_text_sha256: sha256(cleanText),
-        word_count: wordCount,
-        truncated_in_storage: false,
-        truncated_in_response: false
-      },
-      structure: {
-        title: extractTitle(rawHtml),
-        meta_description: extractMetaDescription(rawHtml),
-        headings,
-        section_index: sections,
-        links
-      },
+      discovery,
+      fetch: { ok: fetched.ok, http_status: fetched.http_status, final_url: fetched.final_url, content_type: fetched.content_type, fetched_at: nowIso() },
+      raw: { raw_html_length: rawHtml.length, raw_html_sha256: sha256(rawHtml) },
+      text: { extraction_mode: "lossless_visible_text", clean_text_length: cleanText.length, clean_text_sha256: sha256(cleanText), word_count: wordCount, truncated_in_storage: false, truncated_in_response: false },
+      structure: { title: extractTitle(rawHtml), meta_description: extractMetaDescription(rawHtml), headings, section_index: sections, links },
       chunks,
-      quality: {
-        empty_page: cleanText.length === 0,
-        likely_js_rendered: rawHtml.length > 0 && cleanText.length < 200,
-        word_count: wordCount,
-        coverage_status: cleanText.length > 0 ? "full_visible_text_captured" : "html_fetch_insufficient"
-      }
+      quality: { empty_page: cleanText.length === 0, likely_js_rendered: rawHtml.length > 0 && cleanText.length < 200, word_count: wordCount, coverage_status: cleanText.length > 0 ? "full_visible_text_captured" : "html_fetch_insufficient" }
     };
 
-    if (includeRawHtml) {
-      record.raw.raw_html = rawHtml;
-    }
-
-    if (includeCleanText) {
-      record.text.clean_text_lossless = cleanText;
-    }
-
+    if (includeRawHtml) record.raw.raw_html = rawHtml;
+    if (includeCleanText) record.text.clean_text_lossless = cleanText;
     return record;
   } catch (error) {
     return {
       url: sourceUrl,
       source_family: sourceFamily,
-      fetch: {
-        ok: false,
-        error: error?.code || error?.name || error?.message || "FETCH_FAILED",
-        error_detail: error?.message || null,
-        fetched_at: nowIso()
-      },
-      raw: {
-        raw_html_length: 0,
-        raw_html_sha256: sha256("")
-      },
-      text: {
-        extraction_mode: "lossless_visible_text",
-        clean_text_length: 0,
-        clean_text_sha256: sha256(""),
-        word_count: 0,
-        truncated_in_storage: false,
-        truncated_in_response: false
-      },
-      structure: {
-        title: "",
-        meta_description: "",
-        headings: [],
-        section_index: [],
-        links: []
-      },
+      discovery,
+      fetch: { ok: false, error: error?.code || error?.name || error?.message || "FETCH_FAILED", error_detail: error?.message || null, fetched_at: nowIso() },
+      raw: { raw_html_length: 0, raw_html_sha256: sha256("") },
+      text: { extraction_mode: "lossless_visible_text", clean_text_length: 0, clean_text_sha256: sha256(""), word_count: 0, truncated_in_storage: false, truncated_in_response: false },
+      structure: { title: "", meta_description: "", headings: [], section_index: [], links: [] },
       chunks: [],
-      quality: {
-        empty_page: true,
-        likely_js_rendered: false,
-        word_count: 0,
-        coverage_status: error?.code === "BLOCKED_CAPTURE_URL" ? "blocked_url" : "fetch_failed"
-      }
+      quality: { empty_page: true, likely_js_rendered: false, word_count: 0, coverage_status: error?.code === "BLOCKED_CAPTURE_URL" ? "blocked_url" : "fetch_failed" }
     };
   }
 }
@@ -577,14 +457,5 @@ export async function captureSources(sources, options = {}) {
   const fetchFailed = sourceRecords.length - fetchOk;
   const totalChunks = sourceRecords.reduce((sum, record) => sum + (record.chunks?.length || 0), 0);
 
-  return {
-    source_records: sourceRecords,
-    counts: {
-      input_sources: inputSources.length,
-      processed_sources: sourceRecords.length,
-      fetch_ok: fetchOk,
-      fetch_failed: fetchFailed,
-      total_chunks: totalChunks
-    }
-  };
+  return { source_records: sourceRecords, counts: { input_sources: inputSources.length, processed_sources: sourceRecords.length, fetch_ok: fetchOk, fetch_failed: fetchFailed, total_chunks: totalChunks } };
 }
