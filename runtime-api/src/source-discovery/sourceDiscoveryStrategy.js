@@ -1,91 +1,69 @@
-export const PRODUCT_PROFILE_PATHS = [
-  "/",
-  "/about",
-  "/about-us",
-  "/company",
-  "/team",
-  "/products",
-  "/product",
-  "/products/models",
-  "/products/conversational-agents",
-  "/products/agents",
-  "/products/voice-agents",
-  "/products/studio",
-  "/products/document-intelligence",
-  "/products/ocr",
-  "/products/vision",
-  "/products/workflow-agents",
-  "/products/enterprise-agents",
-  "/products/akshar",
-  "/products/arya",
-  "/platform",
-  "/solutions",
-  "/solution",
-  "/use-cases",
-  "/use-case",
-  "/customers",
-  "/industries",
-  "/features",
-  "/models",
-  "/studio",
-  "/akshar",
-  "/arya",
-  "/samvaad",
-  "/playground",
-  "/agents",
-  "/conversational-agents",
-  "/voice-agents",
-  "/workflow-agents",
-  "/voice",
-  "/speech",
-  "/translate",
-  "/translation",
-  "/transcription",
-  "/vision",
-  "/ocr",
-  "/document-intelligence",
-  "/llm",
-  "/apis",
-  "/api",
-  "/developers",
-  "/developer",
-  "/docs",
-  "/documentation",
-  "/help",
-  "/blog",
-  "/changelog",
-  "/release-notes",
-  "/updates",
-  "/pricing",
-  "/plans",
-  "/enterprise",
-  "/contact-sales",
-  "/contact"
-];
+export const DETERMINISTIC_SUPPORT_PATHS_BY_FAMILY = {
+  product_profile: [
+    "/",
+    "/about",
+    "/about-us",
+    "/company",
+    "/products",
+    "/product",
+    "/platform",
+    "/solutions",
+    "/use-cases",
+    "/features",
+    "/models"
+  ],
+  legal_governance: [
+    "/legal",
+    "/terms",
+    "/terms-of-service",
+    "/privacy",
+    "/privacy-policy",
+    "/security",
+    "/trust",
+    "/compliance",
+    "/data-protection",
+    "/dpa",
+    "/data-processing-addendum",
+    "/subprocessors",
+    "/cookie-policy",
+    "/acceptable-use",
+    "/acceptable-use-policy",
+    "/aup",
+    "/sla",
+    "/responsible-ai",
+    "/ai-policy",
+    "/governance"
+  ],
+  docs_developer: [
+    "/docs",
+    "/documentation",
+    "/developer",
+    "/developers",
+    "/api",
+    "/apis",
+    "/reference",
+    "/sdk",
+    "/guide",
+    "/quickstart"
+  ],
+  commercial: [
+    "/pricing",
+    "/plans",
+    "/enterprise",
+    "/contact-sales",
+    "/sales"
+  ],
+  updates: [
+    "/blog",
+    "/changelog",
+    "/release-notes",
+    "/updates",
+    "/news",
+    "/announcements"
+  ]
+};
 
-export const LEGAL_GOVERNANCE_PATHS = [
-  "/legal",
-  "/terms",
-  "/terms-of-service",
-  "/privacy",
-  "/privacy-policy",
-  "/security",
-  "/trust",
-  "/compliance",
-  "/status",
-  "/data-protection",
-  "/dpa",
-  "/data-processing-addendum",
-  "/subprocessors",
-  "/cookie-policy",
-  "/acceptable-use",
-  "/acceptable-use-policy",
-  "/aup",
-  "/sla",
-  "/responsible-ai",
-  "/ai-policy",
-  "/governance"
-];
+const VALID_FAMILIES = new Set(Object.keys(DETERMINISTIC_SUPPORT_PATHS_BY_FAMILY));
 
 function normalizeBaseOrigin(value) {
   const parsed = new URL(value);
@@ -99,20 +77,33 @@ function joinUrl(origin, path) {
   return cleanPath === "/" ? origin : `${origin}${cleanPath}`;
 }
 
-export function buildDeterministicSourceCandidates({ normalized_origin }) {
+export function buildDeterministicSourceCandidates({ normalized_origin, source_families = null }) {
   const origin = normalizeBaseOrigin(normalized_origin);
-  const allPaths = [...PRODUCT_PROFILE_PATHS, ...LEGAL_GOVERNANCE_PATHS];
-  const seen = new Set();
-  const urls = [];
+  const requestedFamilies = Array.isArray(source_families) && source_families.length > 0
+    ? source_families.filter((family) => VALID_FAMILIES.has(family))
+    : [...VALID_FAMILIES];
 
-  for (const path of allPaths) {
-    const url = joinUrl(origin, path);
-    if (seen.has(url)) continue;
-    seen.add(url);
-    urls.push(url);
+  const seen = new Set();
+  const candidates = [];
+
+  for (const family of requestedFamilies) {
+    const paths = DETERMINISTIC_SUPPORT_PATHS_BY_FAMILY[family] || [];
+    for (const path of paths) {
+      const url = joinUrl(origin, path);
+      const key = `${family}::${url}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      candidates.push({
+        url,
+        source_family: family,
+        discovery_method: "deterministic_support_probe",
+        reason: "support probe used only after Gemini primary discovery did not meet family coverage target",
+        batch_id: `support_${family}`
+      });
+    }
   }
 
-  return urls;
+  return candidates;
 }
 
 export function buildSearchDiscoveryBatches({ registrable_domain, company_name = null }) {
