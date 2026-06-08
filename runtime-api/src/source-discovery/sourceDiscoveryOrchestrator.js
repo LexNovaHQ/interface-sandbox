@@ -174,11 +174,11 @@ async function classifyAnchorLinks({ plans, anchorExtraction, identity, company_
 
     const prompt = buildAnchorClassificationPrompt({ familyPlan: plan, links: anchorExtraction.merged_links, identity, company_name });
     const result = await runPool({
-      poolName: "search",
+      poolName: "json",
       prompt,
       options: {
-        timeoutMs: Number(options.anchorClassifyTimeoutMs || options.searchTimeoutMs || 90000),
-        maxOutputTokens: Number(options.anchorClassifyMaxOutputTokens || 4096),
+        timeoutMs: Number(options.anchorClassifyTimeoutMs || options.jsonTimeoutMs || options.searchTimeoutMs || 90000),
+        maxOutputTokens: Number(options.anchorClassifyMaxOutputTokens || 8192),
         temperature: Number(options.temperature ?? 0),
         responseMimeType: "application/json",
         enableSearchGrounding: false
@@ -295,8 +295,22 @@ async function probeFinalCandidates({ candidates, options }) {
     timeoutMs: Number(options.probeTimeoutMs || 5000),
     delayMs: Number(options.probeDelayMs || 25)
   });
-  const byUrl = new Map(candidates.map((item) => [normalizeCandidateUrl(item.url), item]));
-  const hydrate = (rows) => rows.map((row) => ({ ...row, ...(byUrl.get(normalizeCandidateUrl(row.url)) || {}) }));
+  const byUrl = new Map();
+  for (const item of candidates || []) {
+    for (const key of candidateLookupKeys(item.url)) {
+      if (!byUrl.has(key)) byUrl.set(key, item);
+    }
+  }
+
+  const hydrate = (rows) => rows.map((row) => {
+    let candidate = null;
+    for (const key of candidateLookupKeys(row.url)) {
+      candidate = byUrl.get(key);
+      if (candidate) break;
+    }
+    return { ...row, ...(candidate || {}) };
+  });
+
   return { probeResult, admitted: hydrate(probeResult.admitted), rejected: hydrate(probeResult.rejected) };
 }
 
@@ -401,6 +415,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     }
   };
 }
+
 
 
 
