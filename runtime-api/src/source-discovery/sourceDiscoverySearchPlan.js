@@ -223,17 +223,53 @@ function routeHintQuery(domain, family) {
   return hints.map((hint) => `site:${domain}${hint.endsWith("/") ? hint : hint + ""}`).join(" OR ");
 }
 
+function compactTerms(terms = [], limit = 10) {
+  return terms.slice(0, limit).map(quoteTerm).join(" OR ");
+}
+
+function buildRetrievalIntents({ domain, companyHint, family }) {
+  const routeHints = routeHintQuery(domain, family);
+  const focusedTerms = compactTerms(family.query_terms, 12);
+  const broadTerms = family.query_terms.map(quoteTerm).join(" OR ");
+  const nameClause = companyHint ? ` OR ${companyHint}` : "";
+
+  return [
+    {
+      intent_id: "family_navigation_surface",
+      label: "Find the family navigation/index surface",
+      query: `site:${domain} (${focusedTerms}${nameClause})`,
+      instruction: "Find the strongest first-party navigation/index pages for this family. Do not stop at the homepage if family-specific pages are visible."
+    },
+    {
+      intent_id: "common_route_expansion",
+      label: "Expand common-route hints without being limited by them",
+      query: routeHints || `site:${domain} (${focusedTerms}${nameClause})`,
+      instruction: "Use the common route hints as search starting points only. Return real first-party pages that exist and belong to this family, including differently named routes."
+    },
+    {
+      intent_id: "deep_detail_pages",
+      label: "Find deeper detail/capability/artifact pages",
+      query: `site:${domain} (${broadTerms}${nameClause})`,
+      instruction: "Find deeper first-party detail pages for this family. Prefer concrete pages with named artifacts, capabilities, documents, APIs, releases, commercial flows, or governance content over generic overview pages."
+    }
+  ];
+}
+
 export function buildFamilySearchQueries({ registrable_domain, company_name = null }) {
   const domain = String(registrable_domain || "").trim().toLowerCase();
   if (!domain) {
     throw new Error("registrable_domain is required");
   }
 
+  const companyHint = company_name ? `"${company_name}"` : "";
+
   return SOURCE_DISCOVERY_FAMILIES.map((family) => {
     const groupedTerms = family.query_terms.map(quoteTerm).join(" OR ");
-    const companyHint = company_name ? ` OR "${company_name}"` : "";
+    const companyClause = company_name ? ` OR "${company_name}"` : "";
     const routeHints = routeHintQuery(domain, family);
     const routeHintClause = routeHints ? ` OR (${routeHints})` : "";
+    const query = `site:${domain} (${groupedTerms}${companyClause})${routeHintClause}`;
+    const retrieval_intents = buildRetrievalIntents({ domain, companyHint, family });
 
     return {
       source_family: family.source_family,
@@ -244,7 +280,8 @@ export function buildFamilySearchQueries({ registrable_domain, company_name = nu
       mission: family.mission,
       page_family_plan: family.page_family_plan,
       common_route_hints: family.common_route_hints,
-      query: `site:${domain} (${groupedTerms}${companyHint})${routeHintClause}`
+      query,
+      retrieval_intents
     };
   });
 }
@@ -258,11 +295,19 @@ export function buildBoundedGeminiUrlDiscoveryPrompt({
   normalized_origin,
   registrable_domain,
   company_name = null,
-  family_plan
+  family_plan,
+  retrieval_intent = null
 }) {
+  const activeIntent = retrieval_intent || {
+    intent_id: "single_family_query",
+    label: "Single family query",
+    query: family_plan.query,
+    instruction: "Find the strongest first-party URLs for this family."
+  };
+
   return `You are the source discovery engine for Lex Nova HQ legal architecture diligence.
 
-Your job is to find first-party source URLs for a company for exactly one source family.
+Your job is to find first-party source URLs for a company for exactly one source family and one retrieval intent.
 
 Input:
 - primary_url: ${primary_url}
@@ -282,9 +327,9 @@ Boundaries:
 - Do not invent URLs.
 - Do not summarize.
 - Do not return page descriptions except the short reason field.
-- Search specifically for the requested source family.
-- Find ${family_plan.target_min} to ${family_plan.target_max} strong URLs for this source family if publicly available.
-- If none are publicly discoverable, return an empty urls array and explain the coverage gap.
+- Search specifically for the requested source family and retrieval intent.
+- Find strong URLs for this source family if publicly available.
+- If none are publicly discoverable for this intent, return an empty urls array and explain the coverage gap.
 
 Source family:
 - source_family: ${family_plan.source_family}
@@ -305,16 +350,22 @@ Important:
 - Return the best first-party pages for this family even if their paths differ from the hints.
 - Do not fill the result with generic pages when deeper family-specific pages are discoverable.
 
+Retrieval intent:
+- intent_id: ${activeIntent.intent_id}
+- label: ${activeIntent.label}
+- instruction: ${activeIntent.instruction}
+
 Search query to use as retrieval intent:
-${family_plan.query}
+${activeIntent.query}
 
 Return only valid JSON in this exact shape:
 {
   "source_family": "${family_plan.source_family}",
+  "retrieval_intent_id": "${activeIntent.intent_id}",
   "urls": [
     {
       "url": "https://example.com/path",
-      "reason": "short reason explaining why this URL belongs to this source family",
+      "reason": "short reason explaining why this URL belongs to this source family and retrieval intent",
       "discovery_method": "gemini_search"
     }
   ],
@@ -324,12 +375,14 @@ Return only valid JSON in this exact shape:
 If no source is publicly found, return:
 {
   "source_family": "${family_plan.source_family}",
+  "retrieval_intent_id": "${activeIntent.intent_id}",
   "urls": [],
   "coverage_gap": {
     "source_family": "${family_plan.source_family}",
+    "retrieval_intent_id": "${activeIntent.intent_id}",
     "target_minimum": ${family_plan.target_min},
     "found": 0,
-    "attempted_query": "${family_plan.query.replace(/"/g, String.fromCharCode(39))}",
+    "attempted_query": "${String(activeIntent.query || family_plan.query).replace(/"/g, String.fromCharCode(39))}",
     "status": "not_publicly_found"
   }
 }
