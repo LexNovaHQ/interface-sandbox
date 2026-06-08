@@ -1,5 +1,5 @@
-import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
-import { getDiligenceStageIds } from "./stageConfigs.js";
+﻿import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
+import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 
 function getPrompt(promptId) {
   const prompt = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
@@ -20,10 +20,17 @@ export function loadDiligencePrompt(stageId) {
 
   const sharedPromptId = DILIGENCE_PROMPT_BUNDLE.shared_prompt_id;
   const stagePromptId = DILIGENCE_PROMPT_BUNDLE.stage_prompt_ids?.[normalizedStageId];
+  const stageConfig = getDiligenceStageConfig(normalizedStageId);
 
   const sharedPrompt = getPrompt(sharedPromptId);
   const stagePrompt = getPrompt(stagePromptId);
-  const combinedPrompt = [sharedPrompt.text.trim(), "\n\n---\n\n", stagePrompt.text.trim()].join("");
+  const promptParts = [sharedPrompt.text.trim(), "\n\n---\n\n", stagePrompt.text.trim()];
+
+  if (stageConfig.runtime_instruction) {
+    promptParts.push("\n\n---STAGE_CONTEXT---\n\n", stageConfig.runtime_instruction.trim());
+  }
+
+  const combinedPrompt = promptParts.join("");
 
   return {
     stage_id: normalizedStageId,
@@ -72,3 +79,4 @@ export function assertDiligencePromptBundleReady() {
     stage_count: getDiligenceStageIds().length
   };
 }
+
