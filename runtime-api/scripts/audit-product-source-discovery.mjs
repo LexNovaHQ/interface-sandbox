@@ -75,11 +75,22 @@ function urlIncludesAny(url, terms) {
   return terms.some((term) => normalized.includes(term));
 }
 
+function isGeminiDiscovered(record) {
+  return String(record.discovery_method || "").split("+").includes("gemini_search");
+}
+
+function isSupportDiscovered(record) {
+  return String(record.discovery_method || "").split("+").includes("deterministic_support_probe");
+}
+
 function sourceSummary(record) {
   return {
     evidence_source_id: record.evidence_source_id,
     url: record.final_url || record.url,
     source_family: record.source_family,
+    discovery_method: record.discovery_method || null,
+    gemini_discovered: isGeminiDiscovered(record),
+    support_discovered: isSupportDiscovered(record),
     title: record.structure?.title || "",
     word_count: record.text?.word_count || 0,
     clean_text_sha256: record.text?.clean_text_sha256 || null
@@ -129,24 +140,36 @@ const admittedRecords = evidenceInput.raw_footprint?.source_records || [];
 const productRecords = admittedRecords.filter((record) => /product_profile|docs_developer/i.test(record.source_family || ""));
 const productUrls = productRecords.map((record) => record.final_url || record.url).filter(Boolean);
 const required = requiredSarvamProductChecks();
-const checks = required.map((item) => ({
-  key: item.key,
-  label: item.label,
-  passed: productUrls.some((url) => urlIncludesAny(url, item.terms)),
-  terms: item.terms
-}));
+const checks = required.map((item) => {
+  const matches = productRecords.filter((record) => urlIncludesAny(record.final_url || record.url, item.terms));
+  return {
+    key: item.key,
+    label: item.label,
+    passed: matches.length > 0 && matches.some(isGeminiDiscovered),
+    found: matches.length > 0,
+    gemini_primary_found: matches.some(isGeminiDiscovered),
+    support_only_found: matches.length > 0 && !matches.some(isGeminiDiscovered) && matches.some(isSupportDiscovered),
+    matched_sources: matches.map(sourceSummary),
+    terms: item.terms
+  };
+});
 const failed = checks.filter((item) => !item.passed);
 
 const result = {
   ok: failed.length === 0,
   service: "lexnova-runtime-api",
   phase: "product_source_discovery_audit",
+  discovery_policy: discoveryResponse.diagnostics?.discovery_policy || null,
+  support_families: discoveryResponse.diagnostics?.support_families || [],
   target: targetInput,
   discovery_counts: discoveryResponse.discovery?.counts || null,
+  diagnostic_candidate_counts: discoveryResponse.diagnostics?.candidate_counts || null,
   source_counts: evidenceInput.scrape_meta?.coverage_summary?.source_counts || null,
   coverage_gaps: discoveryResponse.discovery?.coverage_gaps || [],
   product_evidence: {
     product_document_count: productRecords.length,
+    gemini_discovered_count: productRecords.filter(isGeminiDiscovered).length,
+    support_discovered_count: productRecords.filter(isSupportDiscovered).length,
     documents: productRecords.map(sourceSummary)
   },
   required_product_page_checks: checks
@@ -155,9 +178,11 @@ const result = {
 console.log(JSON.stringify(result, null, 2));
 
 if (failed.length) {
-  fail("Required first-party product page(s) missing from admitted product evidence", {
+  fail("Required first-party product page(s) missing from Gemini-primary admitted product evidence", {
     failed,
     product_urls: productUrls,
+    discovery_policy: discoveryResponse.diagnostics?.discovery_policy || null,
+    support_families: discoveryResponse.diagnostics?.support_families || [],
     discovery_counts: discoveryResponse.discovery?.counts || null
   });
 }
