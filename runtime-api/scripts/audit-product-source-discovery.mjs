@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 
 const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
@@ -139,9 +139,11 @@ console.log(JSON.stringify({
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: { primary_url: primaryUrl, company_name: companyName },
   options: {
-    anchorFetchMaxAnchors: Number(process.env.AUDIT_ANCHOR_FETCH_MAX || 64),
-    anchorLinkLimit: Number(process.env.AUDIT_ANCHOR_LINK_LIMIT || 240),
-    anchorClassifyMaxOutputTokens: Number(process.env.AUDIT_ANCHOR_CLASSIFY_TOKENS || 4096)
+    sourceDiscoveryMode: process.env.AUDIT_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
+    runFreeFirstPartySearch: process.env.AUDIT_RUN_FREE_SEARCH === "true",
+    anchorFetchMaxAnchors: Number(process.env.AUDIT_ANCHOR_FETCH_MAX || 32),
+    anchorLinkLimit: Number(process.env.AUDIT_ANCHOR_LINK_LIMIT || 120),
+    anchorClassifyMaxOutputTokens: Number(process.env.AUDIT_ANCHOR_CLASSIFY_TOKENS || 8192)
   }
 });
 

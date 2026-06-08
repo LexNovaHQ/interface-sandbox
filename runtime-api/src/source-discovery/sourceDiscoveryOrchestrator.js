@@ -1,4 +1,4 @@
-﻿import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt, SOURCE_DISCOVERY_MAGNA_CARTA_VERSION } from "./sourceDiscoverySearchPlan.js";
+import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt, SOURCE_DISCOVERY_MAGNA_CARTA_VERSION } from "./sourceDiscoverySearchPlan.js";
 import { probeDeterministicSources } from "./sourceDiscoveryProbe.js";
 import {
   buildAnchorClassificationPrompt,
@@ -371,7 +371,11 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
 
   const anchorExtraction = await fetchAnchors({ plans, identity, options });
   const anchorClassification = await classifyAnchorLinks({ plans, anchorExtraction, identity, company_name, options, runPool });
-  const freeSearch = await runFreeFirstPartySearch({ plans, identity, company_name, options, runPool });
+
+  const shouldRunFreeSearch = options.runFreeFirstPartySearch === true || options.sourceDiscoveryMode === "sync_with_free_search";
+  const freeSearch = shouldRunFreeSearch
+    ? await runFreeFirstPartySearch({ plans, identity, company_name, options, runPool })
+    : { runs: [], candidates: [] };
 
   const allCandidates = dedupeRecords([...anchorClassification.candidates, ...freeSearch.candidates])
     .filter((item) => ALLOWED_FAMILIES.includes(item.source_family))
