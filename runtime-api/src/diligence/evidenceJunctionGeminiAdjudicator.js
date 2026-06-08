@@ -5,6 +5,11 @@ function compact(value, max = 600) {
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
+function positiveInt(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
 function validIds(workItem = {}) {
   return new Set((workItem.candidate_sources || []).map((source) => source.evidence_source_id).filter(Boolean));
 }
@@ -40,12 +45,13 @@ function promptFor(workItem = {}) {
 
 export async function adjudicateEvidenceJunctionWorkItem(workItem, { env = process.env, pool = null } = {}) {
   const selectedPool = pool || env.STAGE3_GEMINI_POOL || "search";
+  const maxAttempts = positiveInt(env.STAGE3_GEMINI_MAX_ATTEMPTS, 8);
   const result = await runGeminiPool({
     poolName: selectedPool,
     prompt: promptFor(workItem),
     env,
-    options: { responseMimeType: "application/json", temperature: 0, maxOutputTokens: 800, timeoutMs: 20000, maxAttempts: 2, enableSearchGrounding: false }
+    options: { responseMimeType: "application/json", temperature: 0, maxOutputTokens: 800, timeoutMs: 20000, maxAttempts, enableSearchGrounding: false }
   });
-  if (!result.ok) return { ok: false, fallback: true, error_type: result.error_type, error: result.error };
+  if (!result.ok) return { ok: false, fallback: true, error_type: result.error_type, error: result.error, attempts: result.attempts || [] };
   return { ok: true, adjudication: sanitize(result.json || {}, workItem), model_metadata: result.model_meta || null };
 }
