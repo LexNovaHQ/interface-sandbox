@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 
 const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
@@ -195,3 +195,4 @@ if (failed.length > 0) {
     candidate_counts: diagnostics.candidate_counts || null
   });
 }
+
