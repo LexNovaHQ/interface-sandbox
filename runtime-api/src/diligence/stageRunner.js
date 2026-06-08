@@ -22,6 +22,58 @@ function unwrapStageOutput(parsedJson, outputKey) {
   };
 }
 
+function stringifyLimitation(item) {
+  if (typeof item === "string") return item;
+  if (item == null) return "";
+  if (typeof item !== "object") return String(item);
+
+  const fields = [
+    item.limitation,
+    item.summary,
+    item.reason,
+    item.message,
+    item.description,
+    item.note,
+    item.value
+  ].filter((value) => typeof value === "string" && value.trim());
+
+  if (fields.length) return fields.join(" — ");
+
+  try {
+    return JSON.stringify(item);
+  } catch {
+    return String(item);
+  }
+}
+
+function normalizeStageOutputForSchema(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { value, repaired: false, repair_notes: [] };
+  }
+
+  const copy = { ...value };
+  const repairNotes = [];
+
+  if (Array.isArray(copy.limitations)) {
+    const normalized = copy.limitations
+      .map(stringifyLimitation)
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+
+    const changed = normalized.length !== copy.limitations.length || copy.limitations.some((item, index) => item !== normalized[index]);
+    if (changed) {
+      copy.limitations = normalized;
+      repairNotes.push("normalized_limitations_to_string_array");
+    }
+  }
+
+  return {
+    value: copy,
+    repaired: repairNotes.length > 0,
+    repair_notes: repairNotes
+  };
+}
+
 function buildPromptInput({ stageId, prompt, input }) {
   return [
     prompt.trim(),
@@ -31,7 +83,7 @@ function buildPromptInput({ stageId, prompt, input }) {
   ].join("");
 }
 
-function publicModelMetadata(result) {
+function publicModelMetadata(result, repair = {}) {
   return {
     pool: result?.model_meta?.pool || null,
     model: result?.model_meta?.selected_model || null,
@@ -42,7 +94,8 @@ function publicModelMetadata(result) {
     primary_error: result?.primary_error || null,
     usage_metadata: result?.usage_metadata || null,
     grounding_metadata: result?.grounding_metadata || null,
-    repaired: result?.repaired === true
+    repaired: result?.repaired === true || repair?.repaired === true,
+    repair_notes: repair?.repair_notes || []
   };
 }
 
@@ -100,7 +153,8 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   }
 
   const normalizedOutput = unwrapStageOutput(runResult.json, config.output_key);
-  const validation = validateDiligenceStageOutput(config.output_schema_key, normalizedOutput.value);
+  const schemaNormalizedOutput = normalizeStageOutputForSchema(normalizedOutput.value);
+  const validation = validateDiligenceStageOutput(config.output_schema_key, schemaNormalizedOutput.value);
 
   if (!validation.ok) {
     return {
@@ -112,11 +166,13 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
       validation_schema_key: validation.resolvedKey,
       validation_mode: validation.validation_mode,
       output_unwrapped: normalizedOutput.unwrapped,
+      output_repaired: schemaNormalizedOutput.repaired,
+      output_repair_notes: schemaNormalizedOutput.repair_notes,
       error_type: "SCHEMA_VALIDATION_ERROR",
       error: "Model output failed schema validation",
       validation_errors: validation.errors,
       error_summary: formatSchemaErrors(validation.errors),
-      model_metadata: publicModelMetadata(runResult),
+      model_metadata: publicModelMetadata(runResult, schemaNormalizedOutput),
       prompt_metadata: {
         prompt_root: promptBundle.prompt_root,
         shared_sha256: promptBundle.shared_prompt.sha256,
@@ -135,8 +191,10 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
     validation_schema_key: validation.resolvedKey,
     validation_mode: validation.validation_mode,
     output_unwrapped: normalizedOutput.unwrapped,
-    [config.output_key]: normalizedOutput.value,
-    model_metadata: publicModelMetadata(runResult),
+    output_repaired: schemaNormalizedOutput.repaired,
+    output_repair_notes: schemaNormalizedOutput.repair_notes,
+    [config.output_key]: schemaNormalizedOutput.value,
+    model_metadata: publicModelMetadata(runResult, schemaNormalizedOutput),
     prompt_metadata: {
       prompt_root: promptBundle.prompt_root,
       shared_sha256: promptBundle.shared_prompt.sha256,
