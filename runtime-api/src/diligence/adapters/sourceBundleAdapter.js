@@ -1,5 +1,10 @@
 import crypto from "node:crypto";
 
+const MAX_CHUNKS_PER_SOURCE = 3;
+const MAX_CHUNK_TEXT_CHARS = 3500;
+const MAX_EXTRACT_TEXT_CHARS = 9000;
+const MAX_TOTAL_TEXT_CHARS = 42000;
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -20,6 +25,16 @@ function normalizeUrl(value) {
   } catch {
     return null;
   }
+}
+
+function truncateText(value, maxChars) {
+  const text = String(value || "");
+  if (text.length <= maxChars) return { text, truncated: false, original_length: text.length };
+  return {
+    text: text.slice(0, maxChars),
+    truncated: true,
+    original_length: text.length
+  };
 }
 
 function normalizeTargetInput(input = {}) {
@@ -97,15 +112,47 @@ function flattenDiscoverySources(discovery = {}) {
   return [...byUrl.values()];
 }
 
-function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, index = 0) {
+function buildCompactChunks(chunks = [], evidenceSourceId, finalUrl, originalUrl, remainingBudget) {
+  const out = [];
+  let budgetLeft = Math.max(0, remainingBudget);
+
+  for (const chunk of chunks.slice(0, MAX_CHUNKS_PER_SOURCE)) {
+    if (budgetLeft <= 0) break;
+    const maxForChunk = Math.min(MAX_CHUNK_TEXT_CHARS, budgetLeft);
+    const compact = truncateText(chunk.text || "", maxForChunk);
+    if (!compact.text) continue;
+    budgetLeft -= compact.text.length;
+    out.push({
+      evidence_source_id: evidenceSourceId,
+      chunk_id: chunk.chunk_id || `chunk_${String(out.length + 1).padStart(4, "0")}`,
+      source_url: chunk.source_url || finalUrl || originalUrl,
+      start_char: chunk.start_char ?? null,
+      end_char: chunk.end_char ?? null,
+      text: compact.text,
+      text_sha256: chunk.text_sha256 || sha256(chunk.text || ""),
+      truncated_for_prompt: compact.truncated,
+      original_text_length: compact.original_length
+    });
+  }
+
+  return { chunks: out, chars_used: out.reduce((sum, chunk) => sum + chunk.text.length, 0) };
+}
+
+function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, index = 0, budgetState = { remaining: MAX_TOTAL_TEXT_CHARS }) {
   const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.url) || captureRecord?.url || null;
   const originalUrl = normalizeUrl(captureRecord?.url) || finalUrl;
   const sourceFamily = captureRecord.source_family || discoveryRecord?.source_family || null;
+  const evidenceSourceId = `SRC_${String(index + 1).padStart(3, "0")}`;
   const cleanText = captureRecord.clean_text_lossless || captureRecord.text?.clean_text_lossless || captureRecord.text?.clean_text || "";
   const chunks = Array.isArray(captureRecord.chunks) ? captureRecord.chunks : [];
+  const extractBudget = Math.min(MAX_EXTRACT_TEXT_CHARS, Math.max(0, budgetState.remaining));
+  const excerpt = truncateText(cleanText, extractBudget);
+  budgetState.remaining -= excerpt.text.length;
+  const compactChunks = buildCompactChunks(chunks, evidenceSourceId, finalUrl, originalUrl, budgetState.remaining);
+  budgetState.remaining -= compactChunks.chars_used;
 
   return {
-    evidence_source_id: `SRC_${String(index + 1).padStart(3, "0")}`,
+    evidence_source_id: evidenceSourceId,
     url: originalUrl,
     final_url: finalUrl,
     source_family: sourceFamily,
@@ -122,7 +169,9 @@ function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, i
       word_count: captureRecord.text?.word_count || 0,
       truncated_in_storage: captureRecord.text?.truncated_in_storage === true,
       truncated_in_response: captureRecord.text?.truncated_in_response === true,
-      clean_text_lossless: cleanText
+      evidence_excerpt: excerpt.text,
+      prompt_excerpt_truncated: excerpt.truncated,
+      prompt_excerpt_original_length: excerpt.original_length
     },
     structure: captureRecord.structure || {
       title: "",
@@ -131,15 +180,7 @@ function buildSourceEvidenceRecord(captureRecord = {}, discoveryRecord = null, i
       section_index: [],
       links: []
     },
-    chunks: chunks.map((chunk, chunkIndex) => ({
-      evidence_source_id: `SRC_${String(index + 1).padStart(3, "0")}`,
-      chunk_id: chunk.chunk_id || `chunk_${String(chunkIndex + 1).padStart(4, "0")}`,
-      source_url: chunk.source_url || finalUrl || originalUrl,
-      start_char: chunk.start_char ?? null,
-      end_char: chunk.end_char ?? null,
-      text: chunk.text || "",
-      text_sha256: chunk.text_sha256 || sha256(chunk.text || "")
-    })),
+    chunks: compactChunks.chunks,
     quality: captureRecord.quality || {
       empty_page: true,
       likely_js_rendered: false,
@@ -203,32 +244,40 @@ export function buildEvidenceRefinerInput({
   const discoveredSources = flattenDiscoverySources(discovery);
   const discoveryByUrl = new Map(discoveredSources.map((record) => [record.url, record]));
   const captureRecords = Array.isArray(capture.source_records) ? capture.source_records : [];
+  const budgetState = { remaining: MAX_TOTAL_TEXT_CHARS };
 
   const sourceEvidence = captureRecords.map((record, index) => {
     const url = normalizeUrl(record?.url);
     const finalUrl = normalizeUrl(record?.fetch?.final_url);
     const discoveryRecord = discoveryByUrl.get(url) || discoveryByUrl.get(finalUrl) || null;
-    return buildSourceEvidenceRecord(record, discoveryRecord, index);
+    return buildSourceEvidenceRecord(record, discoveryRecord, index, budgetState);
   });
 
   const raw_footprint = {
     source_records: sourceEvidence,
     chunks: sourceEvidence.flatMap((record) => record.chunks || []),
     clean_text_corpus: sourceEvidence
-      .filter((record) => record.text?.clean_text_lossless)
+      .filter((record) => record.text?.evidence_excerpt)
       .map((record) => ({
         evidence_source_id: record.evidence_source_id,
         url: record.final_url || record.url,
         source_family: record.source_family,
-        clean_text_lossless: record.text.clean_text_lossless,
+        evidence_excerpt: record.text.evidence_excerpt,
         clean_text_sha256: record.text.clean_text_sha256,
-        word_count: record.text.word_count || 0
-      }))
+        word_count: record.text.word_count || 0,
+        prompt_excerpt_truncated: record.text.prompt_excerpt_truncated,
+        prompt_excerpt_original_length: record.text.prompt_excerpt_original_length
+      })),
+    prompt_budget: {
+      max_total_text_chars: MAX_TOTAL_TEXT_CHARS,
+      remaining_text_chars: Math.max(0, budgetState.remaining),
+      prompt_compacted: true
+    }
   };
 
   const scrape_meta = {
     adapter: "sourceBundleAdapter",
-    adapter_version: "1.0.0",
+    adapter_version: "1.1.0",
     generated_at: generatedAt,
     source_mode: sourceMode,
     hashes: {
