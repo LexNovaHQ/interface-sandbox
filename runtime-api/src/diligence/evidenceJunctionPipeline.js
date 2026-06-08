@@ -10,6 +10,8 @@ export async function buildEvidenceJunctionWithAdjudication({ sourceBundle = {},
     return {
       ...base,
       adjudication_work_items: workItems,
+      adjudications: [],
+      adjudication_errors: [],
       processing_manifest: {
         ...base.processing_manifest,
         deterministic_router_completed: true,
@@ -20,14 +22,29 @@ export async function buildEvidenceJunctionWithAdjudication({ sourceBundle = {},
   }
 
   const adjudications = [];
+  const adjudicationErrors = [];
   for (const workItem of workItems) {
-    const result = await adjudicateWorkItem(workItem);
-    if (result && result.dedupe_group_id) adjudications.push(result);
+    try {
+      const result = await adjudicateWorkItem(workItem);
+      const adjudication = result?.adjudication || result;
+      if (adjudication?.dedupe_group_id) adjudications.push(adjudication);
+      else adjudicationErrors.push({ dedupe_group_id: workItem.dedupe_group_id, error_type: result?.error_type || "NO_ADJUDICATION_RETURNED" });
+    } catch (error) {
+      adjudicationErrors.push({ dedupe_group_id: workItem.dedupe_group_id, error_type: "ADJUDICATOR_THROW", error: error?.message || String(error) });
+    }
   }
 
+  const applied = applyEvidenceJunctionAdjudications(base, adjudications);
   return {
-    ...applyEvidenceJunctionAdjudications(base, adjudications),
+    ...applied,
     adjudication_work_items: workItems,
-    adjudications
+    adjudications,
+    adjudication_errors: adjudicationErrors,
+    processing_manifest: {
+      ...applied.processing_manifest,
+      gemini_called: true,
+      gemini_adjudication_fail_open: true,
+      deterministic_fallback_preserved: true
+    }
   };
 }
