@@ -27,9 +27,10 @@ function isFirstPartyUrl(value, registrableDomain) {
   }
 }
 
-function extractGeminiUrls({ geminiJson, familyPlan, registrableDomain }) {
+function extractGeminiUrls({ geminiJson, familyPlan, retrievalIntent, registrableDomain }) {
   const rawUrls = Array.isArray(geminiJson?.urls) ? geminiJson.urls : [];
   const out = [];
+  const intentId = retrievalIntent?.intent_id || geminiJson?.retrieval_intent_id || "family_query";
 
   for (const item of rawUrls) {
     const rawUrl = typeof item === "string" ? item : item?.url;
@@ -42,8 +43,9 @@ function extractGeminiUrls({ geminiJson, familyPlan, registrableDomain }) {
       source_family: familyPlan.source_family,
       discovery_method: "gemini_search",
       discovery_role: "primary",
+      retrieval_intent_id: intentId,
       reason: typeof item === "object" ? item?.reason || "" : "",
-      batch_id: familyPlan.source_family
+      batch_id: `${familyPlan.source_family}:${intentId}`
     });
   }
 
@@ -64,6 +66,7 @@ function mergeCandidates(candidateGroups) {
           source_family: item?.source_family || null,
           discovery_method: item?.discovery_method || "unknown",
           discovery_role: item?.discovery_role || null,
+          retrieval_intent_id: item?.retrieval_intent_id || null,
           reason: item?.reason || "",
           batch_id: item?.batch_id || null
         });
@@ -78,6 +81,9 @@ function mergeCandidates(candidateGroups) {
         }
         if (!existing.discovery_role && item?.discovery_role) {
           existing.discovery_role = item.discovery_role;
+        }
+        if (!existing.retrieval_intent_id && item?.retrieval_intent_id) {
+          existing.retrieval_intent_id = item.retrieval_intent_id;
         }
         if (!existing.reason && item?.reason) {
           existing.reason = item.reason;
@@ -114,7 +120,14 @@ function bucketCountForFamily(buckets, family) {
   return (familyToBucket[family] || []).length;
 }
 
-function buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies }) {
+function geminiStatusForFamily(geminiRuns, family) {
+  const runs = (geminiRuns || []).filter((run) => run.source_family === family);
+  if (!runs.length) return "not_run";
+  if (runs.some((run) => run.ok === true)) return "completed";
+  return "failed_or_empty";
+}
+
+function buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies, mode = "final" }) {
   const supportSet = new Set(supportFamilies || []);
 
   return plans
@@ -125,12 +138,17 @@ function buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies }) {
       target_minimum: plan.target_min,
       found: bucketCountForFamily(buckets, plan.source_family),
       attempted_methods: [
-        "gemini_search_primary",
+        "gemini_search_primary_multi_intent",
         "probe_validation",
-        ...(supportSet.has(plan.source_family) ? ["deterministic_support_probe"] : [])
+        ...(mode === "final" && supportSet.has(plan.source_family) ? ["deterministic_support_probe"] : [])
       ],
       attempted_query: plan.query,
-      gemini_status: geminiRuns.find((run) => run.source_family === plan.source_family)?.ok === true ? "completed" : "failed_or_empty",
+      retrieval_intents: (plan.retrieval_intents || []).map((intent) => ({
+        intent_id: intent.intent_id,
+        label: intent.label,
+        query: intent.query
+      })),
+      gemini_status: geminiStatusForFamily(geminiRuns, plan.source_family),
       status: "coverage_gap"
     }));
 }
@@ -159,6 +177,7 @@ function summarizeDiscoveryRecord(record = {}) {
     source_family: record.source_family || null,
     discovery_method: record.discovery_method || null,
     discovery_role: record.discovery_role || null,
+    retrieval_intent_id: record.retrieval_intent_id || null,
     batch_id: record.batch_id || null,
     reason: record.reason || "",
     status: record.status || null,
@@ -177,6 +196,11 @@ function buildFamilyProvenanceAudit({ plans, geminiCandidates, supportCandidates
       label: plan.label,
       target_minimum: plan.target_min,
       target_maximum: plan.target_max,
+      retrieval_intents: (plan.retrieval_intents || []).map((intent) => ({
+        intent_id: intent.intent_id,
+        label: intent.label,
+        query: intent.query
+      })),
       gemini_primary: {
         candidate_count: byFamily(geminiCandidates).length,
         admitted_count: byFamily(geminiProbe.admitted).length,
@@ -213,50 +237,69 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
   const geminiCandidates = [];
 
   for (const plan of plans) {
-    const prompt = buildBoundedGeminiUrlDiscoveryPrompt({
-      primary_url: identity.primary_url,
-      normalized_origin: identity.normalized_origin,
-      registrable_domain: identity.registrable_domain,
-      company_name,
-      family_plan: plan
-    });
+    const intents = Array.isArray(plan.retrieval_intents) && plan.retrieval_intents.length
+      ? plan.retrieval_intents
+      : [{ intent_id: "family_query", label: "Family query", query: plan.query, instruction: "Find first-party URLs for this family." }];
 
-    const result = await runPool({
-      poolName: "search",
-      prompt,
-      options: {
-        timeoutMs: Number(options.searchTimeoutMs || 90000),
-        maxOutputTokens: Number(options.searchMaxOutputTokens || 3072),
-        temperature: Number(options.temperature ?? 0),
-        responseMimeType: "application/json",
-        enableSearchGrounding: true
+    for (const retrievalIntent of intents) {
+      const prompt = buildBoundedGeminiUrlDiscoveryPrompt({
+        primary_url: identity.primary_url,
+        normalized_origin: identity.normalized_origin,
+        registrable_domain: identity.registrable_domain,
+        company_name,
+        family_plan: plan,
+        retrieval_intent: retrievalIntent
+      });
+
+      const result = await runPool({
+        poolName: "search",
+        prompt,
+        options: {
+          timeoutMs: Number(options.searchTimeoutMs || 90000),
+          maxOutputTokens: Number(options.searchMaxOutputTokens || 3072),
+          temperature: Number(options.temperature ?? 0),
+          responseMimeType: "application/json",
+          enableSearchGrounding: true
+        }
+      });
+
+      const run = {
+        source_family: plan.source_family,
+        retrieval_intent_id: retrievalIntent.intent_id,
+        retrieval_intent_label: retrievalIntent.label,
+        ok: result.ok === true,
+        model_meta: result.model_meta || null,
+        error_type: result.error_type || null,
+        error: result.error || null,
+        coverage_gap: result.json?.coverage_gap || null
+      };
+
+      geminiRuns.push(run);
+
+      if (result.ok === true) {
+        geminiCandidates.push(...extractGeminiUrls({
+          geminiJson: result.json,
+          familyPlan: plan,
+          retrievalIntent,
+          registrableDomain: identity.registrable_domain
+        }));
       }
-    });
-
-    const run = {
-      source_family: plan.source_family,
-      ok: result.ok === true,
-      model_meta: result.model_meta || null,
-      error_type: result.error_type || null,
-      error: result.error || null,
-      coverage_gap: result.json?.coverage_gap || null
-    };
-
-    geminiRuns.push(run);
-
-    if (result.ok === true) {
-      geminiCandidates.push(...extractGeminiUrls({
-        geminiJson: result.json,
-        familyPlan: plan,
-        registrableDomain: identity.registrable_domain
-      }));
     }
   }
 
-  const geminiProbe = await probeCandidateSet({ candidates: geminiCandidates, options });
+  const geminiCandidatesMerged = mergeCandidates([geminiCandidates]);
+  const geminiProbe = await probeCandidateSet({ candidates: geminiCandidatesMerged, options });
   const geminiOnlyBuckets = buildDiscoveryBuckets({
     admitted: geminiProbe.admitted,
     rejected: geminiProbe.rejected
+  });
+
+  const gemini_primary_coverage_gaps = buildCoverageGaps({
+    plans,
+    buckets: geminiOnlyBuckets,
+    geminiRuns,
+    supportFamilies: [],
+    mode: "gemini_primary"
   });
 
   const supportFamilies = plans
@@ -270,7 +313,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
       })
     : [];
 
-  const geminiUrls = new Set(geminiCandidates.map((item) => normalizeCandidateUrl(item.url)).filter(Boolean));
+  const geminiUrls = new Set(geminiCandidatesMerged.map((item) => normalizeCandidateUrl(item.url)).filter(Boolean));
   const supportCandidates = supportCandidatesRaw.filter((item) => !geminiUrls.has(normalizeCandidateUrl(item.url)));
   const supportProbe = supportCandidates.length > 0
     ? await probeCandidateSet({ candidates: supportCandidates, options })
@@ -279,13 +322,13 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
   const admitted = mergeCandidates([geminiProbe.admitted, supportProbe.admitted]);
   const rejected = mergeCandidates([geminiProbe.rejected, supportProbe.rejected]);
   const buckets = buildDiscoveryBuckets({ admitted, rejected });
-  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies });
+  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies, mode: "final" });
   buckets.coverage_gaps = coverage_gaps;
   buckets.counts.coverage_gaps = coverage_gaps.length;
 
   const provenance_audit = buildFamilyProvenanceAudit({
     plans,
-    geminiCandidates,
+    geminiCandidates: geminiCandidatesMerged,
     supportCandidates,
     geminiProbe,
     supportProbe
@@ -296,6 +339,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     diagnostics: {
       discovery_policy: {
         gemini_primary_for_all_families: true,
+        gemini_primary_strategy: "multi_intent_page_family_discovery",
         deterministic_role: "support_only_after_gemini_family_gap",
         source_family_preserved_from_gemini: true,
         provenance_audit_location: "source_discovery_diagnostics"
@@ -303,9 +347,10 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
       plans,
       gemini_runs: geminiRuns,
       support_families: supportFamilies,
+      gemini_primary_coverage_gaps,
       provenance_audit,
       candidate_counts: {
-        gemini_candidates: geminiCandidates.length,
+        gemini_candidates: geminiCandidatesMerged.length,
         deterministic_support_candidates: supportCandidates.length,
         merged_candidates: admitted.length + rejected.length
       },
