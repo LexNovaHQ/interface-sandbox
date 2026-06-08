@@ -1,18 +1,13 @@
 import crypto from "node:crypto";
 
-const ADMITTED_SOURCE_FAMILIES = new Set([
+export const MAGNA_CARTA_SOURCE_FAMILIES = [
+  "company_profile",
   "product_profile",
-  "legal_governance",
-  "docs_developer"
-]);
+  "legal_profile",
+  "governance_profile"
+];
 
-const EXCLUDED_SOURCE_FAMILIES = new Set([
-  "commercial",
-  "update",
-  "updates",
-  "contact",
-  "unknown"
-]);
+const ADMITTED_SOURCE_FAMILIES = new Set(MAGNA_CARTA_SOURCE_FAMILIES);
 
 function nowIso() {
   return new Date().toISOString();
@@ -47,7 +42,6 @@ function hostnameOf(value) {
 
 function normalizeTargetInput(input = {}) {
   const primaryUrl = input.primary_url || input.url || input.normalized_origin || null;
-
   return {
     primary_url: primaryUrl,
     company_name: input.company_name || null,
@@ -70,104 +64,94 @@ function unwrapCapture(input = {}) {
   return input || {};
 }
 
+function familyFromBucket(bucketName = "") {
+  return String(bucketName || "").replace(/_sources$/, "");
+}
+
+function hardLegalSignal(haystack = "") {
+  return /(^|[\/\s_-])(terms-of-service|terms|privacy-policy|privacy|legal|dpa|data-processing|data processing|sub[-_ ]?processors?|acceptable-use|acceptable use|aup|eula|sla|service-level|service level|cookie-policy|data-protection|data protection)([\/\s_-]|$)/i.test(haystack)
+    || /terms of service|privacy policy|data processing addendum|service level agreement|end user license|acceptable use policy|sub[- ]?processor/i.test(haystack);
+}
+
+function hardGovernanceSignal(haystack = "") {
+  return /(^|[\/\s_-])(trust-center|trust|security|compliance|status|responsible-ai|responsible ai|ai-policy|governance|safety|model-safety|data-security|certifications|enterprise-security|soc-?2|iso)([\/\s_-]|$)/i.test(haystack)
+    || /trust center|security posture|responsible ai|model safety|data security|certifications|system status|incident posture/i.test(haystack);
+}
+
+function hardProductSignal(haystack = "") {
+  return /(^|[\/\s_-])(models?|products?|features?|platform|solutions?|use-cases?|capabilities|apis?|api|docs?|documentation|developer|developers|reference|sdk|quickstart|guides|integrations|playground|agents?|studio|voice|speech|translation|dubbing|ocr|vision)([\/\s_-]|$)/i.test(haystack)
+    || /model catalog|developer api|text to speech|speech to text|document digitisation|document digitization|product page|api product|integration page|feature/i.test(haystack);
+}
+
+function hardCompanySignal(haystack = "") {
+  return /(^|[\/\s_-])(about-us|about|company|team|mission|careers|customers|customer-stories|case-studies|stories|homepage|home)([\/\s_-]|$)/i.test(haystack)
+    || /company identity|mission|team|market posture|customer story|case study|series a|funding/i.test(haystack);
+}
+
+export function normalizeSourceFamily(value, record = {}) {
+  const raw = String(value || "").toLowerCase().trim();
+  const url = String(record.url || record.final_url || "").toLowerCase();
+  const label = String(record.label || record.title || record.source_label || record.reason || record.link_text || "").toLowerCase();
+  const haystack = `${raw} ${url} ${label}`;
+
+  if (raw === "legal_profile" || raw === "legal_governance" || hardLegalSignal(haystack)) return "legal_profile";
+  if (raw === "governance_profile" || hardGovernanceSignal(haystack)) return "governance_profile";
+  if (raw === "product_profile" || raw === "docs_developer" || hardProductSignal(haystack)) return "product_profile";
+  if (raw === "company_profile" || raw === "commercial" || raw === "update" || raw === "updates" || hardCompanySignal(haystack)) return "company_profile";
+  return raw || "unknown";
+}
+
+function sourceRecordFromDiscovery(record = {}, bucketName = "candidate_sources") {
+  const url = normalizeUrl(record?.url || record?.final_url);
+  if (!url) return null;
+  return {
+    ...record,
+    url,
+    final_url: normalizeUrl(record.final_url) || null,
+    source_family: normalizeSourceFamily(record.source_family || familyFromBucket(bucketName), record),
+    source_bucket: bucketName,
+    status: record.status || null,
+    content_type: record.content_type || "",
+    inferred: record.inferred === true,
+    provenance: Array.isArray(record.provenance) ? record.provenance : []
+  };
+}
+
 function flattenDiscoverySources(discovery = {}) {
   const bucketNames = [
+    "company_profile_sources",
     "product_profile_sources",
-    "legal_governance_sources",
-    "docs_developer_sources",
-    "commercial_sources",
-    "update_sources"
+    "legal_profile_sources",
+    "governance_profile_sources"
   ];
-
   const byUrl = new Map();
 
   for (const bucketName of bucketNames) {
     const records = Array.isArray(discovery[bucketName]) ? discovery[bucketName] : [];
     for (const record of records) {
-      const url = normalizeUrl(record?.url);
-      if (!url || byUrl.has(url)) continue;
-      byUrl.set(url, {
-        url,
-        source_family: normalizeSourceFamily(record.source_family || bucketName.replace(/_sources$/, ""), record),
-        source_bucket: bucketName,
-        priority: record.priority ?? null,
-        discovery_method: record.discovery_method || null,
-        probe_method: record.probe_method || null,
-        status: record.status || null,
-        content_type: record.content_type || "",
-        inferred: record.inferred === true
-      });
+      const source = sourceRecordFromDiscovery(record, bucketName);
+      if (!source || byUrl.has(source.url)) continue;
+      byUrl.set(source.url, source);
     }
   }
 
   const candidates = Array.isArray(discovery.candidate_sources) ? discovery.candidate_sources : [];
   for (const record of candidates) {
-    const url = normalizeUrl(record?.url);
-    if (!url || byUrl.has(url)) continue;
-    byUrl.set(url, {
-      url,
-      source_family: normalizeSourceFamily(record.source_family || null, record),
-      source_bucket: "candidate_sources",
-      priority: record.priority ?? null,
-      discovery_method: record.discovery_method || null,
-      probe_method: record.probe_method || null,
-      status: record.status || null,
-      content_type: record.content_type || "",
-      inferred: record.inferred === true
-    });
+    const source = sourceRecordFromDiscovery(record, "candidate_sources");
+    if (!source || byUrl.has(source.url)) continue;
+    byUrl.set(source.url, source);
   }
 
   return [...byUrl.values()];
 }
 
-function hardProductSignal(haystack = "") {
-  return /(^|[\/\s_-])(models?|products?|features?|platform|solutions?|capabilities|apis?)([\/\s_-]|$)/.test(haystack)
-    || /sarvam models|speech, text|translation ai|large language models?|developer api platform|model catalog/.test(haystack);
-}
-
-function hardLegalSignal(haystack = "") {
-  return /(^|[\/\s_-])(terms-of-service|terms|privacy-policy|privacy|dpa|data-processing|data processing|sub[-_ ]?processors?|security|trust|gdpr|data-protection|data protection|acceptable-use|acceptable use|aup|sla|service-level|service level)([\/\s_-]|$)/.test(haystack)
-    || /terms of service|privacy policy|data processing addendum|service level agreement|sub[- ]?processor|acceptable use policy/.test(haystack);
-}
-
-function normalizeSourceFamily(value, record = {}) {
-  const raw = String(value || "").toLowerCase().trim();
-  const url = String(record.url || "").toLowerCase();
-  const label = String(record.label || record.title || record.source_label || "").toLowerCase();
-  const haystack = `${raw} ${url} ${label}`;
-
-  if (raw === "product_profile" && !hardLegalSignal(haystack)) return "product_profile";
-  if (raw === "docs_developer" && !hardLegalSignal(haystack)) return "docs_developer";
-  if (hardProductSignal(haystack) && !hardLegalSignal(haystack)) return "product_profile";
-
-  if (raw === "legal_governance" || hardLegalSignal(haystack)) {
-    return "legal_governance";
-  }
-  if (raw === "docs_developer" || /docs|developer|api|sdk|guide|reference/.test(haystack)) {
-    return "docs_developer";
-  }
-  if (raw === "product_profile" || /product|model|platform|feature|solution|capabilit|homepage|home/.test(haystack)) {
-    return "product_profile";
-  }
-  if (raw === "commercial" || /pricing|contact|sales|demo|book/.test(haystack)) {
-    return "commercial";
-  }
-  if (raw === "update" || raw === "updates" || /blog|news|release|changelog|announcement|update/.test(haystack)) {
-    return "update";
-  }
-  return raw || "unknown";
-}
-
 function isFirstPartySource(url, targetInput = {}) {
   const sourceHost = hostnameOf(url);
   if (!sourceHost) return false;
-
   const targetHost = hostnameOf(targetInput.primary_url || targetInput.normalized_origin || "");
-  const registrableDomain = String(targetInput.registrable_domain || "").toLowerCase().replace(/^www\./, "");
-
+  const registrableDomain = String(targetInput.registrable_domain || targetHost || "").toLowerCase().replace(/^www\./, "");
   if (targetHost && (sourceHost === targetHost || sourceHost.endsWith(`.${targetHost}`))) return true;
   if (registrableDomain && (sourceHost === registrableDomain || sourceHost.endsWith(`.${registrableDomain}`))) return true;
-
   return false;
 }
 
@@ -180,34 +164,23 @@ function getCleanTextHash(captureRecord = {}, cleanText = "") {
 }
 
 function shouldAdmitSource({ captureRecord, discoveryRecord, targetInput }) {
-  const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.url) || captureRecord?.url || null;
+  const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.final_url || captureRecord?.url) || captureRecord?.url || null;
   const originalUrl = normalizeUrl(captureRecord?.url) || finalUrl;
   const sourceFamily = normalizeSourceFamily(captureRecord.source_family || discoveryRecord?.source_family || null, {
     url: finalUrl || originalUrl,
-    title: captureRecord.structure?.title || ""
+    title: captureRecord.structure?.title || "",
+    reason: discoveryRecord?.reason || "",
+    link_text: discoveryRecord?.link_text || ""
   });
 
-  if (captureRecord.fetch?.ok !== true) {
-    return { admitted: false, source_family: sourceFamily, reason: "fetch_failed" };
-  }
-
-  if (!isFirstPartySource(finalUrl || originalUrl, targetInput)) {
-    return { admitted: false, source_family: sourceFamily, reason: "not_first_party" };
-  }
-
-  if (ADMITTED_SOURCE_FAMILIES.has(sourceFamily)) {
-    return { admitted: true, source_family: sourceFamily, reason: "admitted_first_party_relevant_source" };
-  }
-
-  if (EXCLUDED_SOURCE_FAMILIES.has(sourceFamily)) {
-    return { admitted: false, source_family: sourceFamily, reason: "filtered_irrelevant_source_family" };
-  }
-
-  return { admitted: false, source_family: sourceFamily, reason: "filtered_unknown_source_family" };
+  if (captureRecord.fetch?.ok !== true) return { admitted: false, source_family: sourceFamily, reason: "fetch_failed" };
+  if (!isFirstPartySource(finalUrl || originalUrl, targetInput)) return { admitted: false, source_family: sourceFamily, reason: "not_first_party" };
+  if (!ADMITTED_SOURCE_FAMILIES.has(sourceFamily)) return { admitted: false, source_family: sourceFamily, reason: "not_allowed_magna_carta_family" };
+  return { admitted: true, source_family: sourceFamily, reason: "admitted_first_party_magna_carta_source" };
 }
 
 function buildAdmittedSourceRecord({ captureRecord = {}, discoveryRecord = null, index = 0, sourceFamily }) {
-  const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.url) || captureRecord?.url || null;
+  const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.final_url || captureRecord?.url) || captureRecord?.url || null;
   const originalUrl = normalizeUrl(captureRecord?.url) || finalUrl;
   const evidenceSourceId = `SRC_${String(index + 1).padStart(3, "0")}`;
   const cleanText = getCleanText(captureRecord);
@@ -219,13 +192,16 @@ function buildAdmittedSourceRecord({ captureRecord = {}, discoveryRecord = null,
     url: originalUrl,
     final_url: finalUrl,
     source_family: sourceFamily,
+    source_bucket: discoveryRecord?.source_bucket || null,
     admission: {
       status: "admitted",
-      reason: "admitted_first_party_relevant_source",
+      reason: "admitted_first_party_magna_carta_source",
       duplicate: false,
-      full_text_sent_downstream: true
+      full_text_sent_downstream: true,
+      summaries_used_as_evidence: false
     },
     discovery: discoveryRecord || null,
+    provenance: Array.isArray(discoveryRecord?.provenance) ? discoveryRecord.provenance : [],
     fetch: captureRecord.fetch || { ok: false },
     raw: {
       raw_html_length: captureRecord.raw?.raw_html_length || 0,
@@ -235,18 +211,12 @@ function buildAdmittedSourceRecord({ captureRecord = {}, discoveryRecord = null,
       extraction_mode: captureRecord.text?.extraction_mode || "lossless_visible_text",
       clean_text_length: captureRecord.text?.clean_text_length || cleanText.length || 0,
       clean_text_sha256: cleanTextSha,
-      word_count: captureRecord.text?.word_count || 0,
+      word_count: captureRecord.text?.word_count || String(cleanText || "").split(/\s+/).filter(Boolean).length,
       truncated_in_storage: captureRecord.text?.truncated_in_storage === true,
       truncated_in_response: captureRecord.text?.truncated_in_response === true,
       clean_text_lossless: cleanText
     },
-    structure: captureRecord.structure || {
-      title: "",
-      meta_description: "",
-      headings: [],
-      section_index: [],
-      links: []
-    },
+    structure: captureRecord.structure || { title: "", meta_description: "", headings: [], section_index: [], links: [] },
     chunk_index: chunks.map((chunk) => ({
       chunk_id: chunk.chunk_id || null,
       source_url: chunk.source_url || finalUrl || originalUrl,
@@ -255,17 +225,16 @@ function buildAdmittedSourceRecord({ captureRecord = {}, discoveryRecord = null,
       text_sha256: chunk.text_sha256 || sha256(chunk.text || "")
     })),
     quality: captureRecord.quality || {
-      empty_page: true,
+      empty_page: !cleanText,
       likely_js_rendered: false,
-      word_count: 0,
-      coverage_status: "unknown"
+      word_count: String(cleanText || "").split(/\s+/).filter(Boolean).length,
+      coverage_status: cleanText ? "full_visible_text_captured" : "unknown"
     }
   };
 }
 
 function groupEvidenceByFamily(sourceEvidence = []) {
-  const grouped = {};
-
+  const grouped = Object.fromEntries(MAGNA_CARTA_SOURCE_FAMILIES.map((family) => [family, []]));
   for (const record of sourceEvidence) {
     const family = record.source_family || "unknown";
     if (!grouped[family]) grouped[family] = [];
@@ -279,7 +248,6 @@ function groupEvidenceByFamily(sourceEvidence = []) {
       coverage_status: record.quality?.coverage_status || "unknown"
     });
   }
-
   return grouped;
 }
 
@@ -300,6 +268,14 @@ function buildCoverageSummary(discovery = {}, capture = {}, sourceEvidence = [],
   };
 }
 
+function buildRawFootprintHash(sourceEvidence = [], filteredSources = [], duplicateSources = []) {
+  return sha256(stableJson({
+    admitted: sourceEvidence.map((record) => ({ url: record.url, family: record.source_family, hash: record.text?.clean_text_sha256 })),
+    filtered: filteredSources.map((record) => ({ url: record.url, family: record.source_family, reason: record.reason })),
+    duplicates: duplicateSources.map((record) => ({ url: record.url, hash: record.text_sha256 }))
+  }));
+}
+
 export function buildEvidenceRefinerInput({
   targetInput = {},
   discoveryResponse = {},
@@ -312,7 +288,7 @@ export function buildEvidenceRefinerInput({
   const capture = unwrapCapture(captureResponse);
   const target_input = normalizeTargetInput(targetInput);
   const discoveredSources = flattenDiscoverySources(discovery);
-  const discoveryByUrl = new Map(discoveredSources.map((record) => [record.url, record]));
+  const discoveryByUrl = new Map(discoveredSources.flatMap((record) => [[record.url, record], [normalizeUrl(record.final_url), record]].filter(([key]) => key)));
   const captureRecords = Array.isArray(capture.source_records) ? capture.source_records : [];
 
   const admitted = [];
@@ -323,7 +299,7 @@ export function buildEvidenceRefinerInput({
 
   for (const captureRecord of captureRecords) {
     const url = normalizeUrl(captureRecord?.url);
-    const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url);
+    const finalUrl = normalizeUrl(captureRecord?.fetch?.final_url || captureRecord?.final_url);
     const discoveryRecord = discoveryByUrl.get(url) || discoveryByUrl.get(finalUrl) || null;
     const admission = shouldAdmitSource({ captureRecord, discoveryRecord, targetInput: target_input });
     const cleanText = getCleanText(captureRecord);
@@ -331,72 +307,51 @@ export function buildEvidenceRefinerInput({
     const urlKey = finalUrl || url || captureRecord?.url || "";
 
     if (!admission.admitted) {
-      filtered_sources.push({
-        url: urlKey,
-        source_family: admission.source_family,
-        reason: admission.reason
-      });
+      filtered_sources.push({ url: urlKey, source_family: admission.source_family, reason: admission.reason, fetch: captureRecord.fetch || null });
       continue;
     }
 
     if (seenUrls.has(urlKey) || (textHash && seenTextHashes.has(textHash))) {
-      duplicate_sources.push({
-        url: urlKey,
-        source_family: admission.source_family,
-        reason: seenUrls.has(urlKey) ? "duplicate_url" : "duplicate_clean_text_sha256",
-        clean_text_sha256: textHash
-      });
+      duplicate_sources.push({ url: urlKey, source_family: admission.source_family, reason: "duplicate_url_or_text_hash", text_sha256: textHash });
       continue;
     }
 
     seenUrls.add(urlKey);
     if (textHash) seenTextHashes.add(textHash);
-
-    admitted.push(buildAdmittedSourceRecord({
-      captureRecord,
-      discoveryRecord,
-      index: admitted.length,
-      sourceFamily: admission.source_family
-    }));
+    admitted.push(buildAdmittedSourceRecord({ captureRecord, discoveryRecord, index: admitted.length, sourceFamily: admission.source_family }));
   }
 
-  const raw_footprint = {
-    source_records: admitted,
-    filtered_sources,
-    duplicate_sources,
-    downstream_policy: {
-      full_admitted_documents_sent_once: true,
-      chunks_text_omitted_to_avoid_duplicate_evidence: true,
-      summaries_used_as_evidence: false,
-      admitted_source_families: [...ADMITTED_SOURCE_FAMILIES],
-      filtered_source_families: [...EXCLUDED_SOURCE_FAMILIES]
-    }
-  };
-
-  const scrape_meta = {
-    adapter: "sourceBundleAdapter",
-    adapter_version: "1.3.0",
-    generated_at: generatedAt,
-    source_mode: sourceMode,
-    hashes: {
-      discovery_sha256: sha256(stableJson(discovery)),
-      capture_sha256: sha256(stableJson(capture)),
-      raw_footprint_sha256: sha256(stableJson(raw_footprint))
-    },
-    coverage_summary: buildCoverageSummary(discovery, capture, admitted, filtered_sources, duplicate_sources)
-  };
-
-  const resolvedRunId = runId || `runtime_${sha256(`${target_input.primary_url || "unknown"}|${generatedAt}`).slice(0, 16)}`;
+  const rawFootprintSha = buildRawFootprintHash(admitted, filtered_sources, duplicate_sources);
 
   return {
-    run_id: resolvedRunId,
+    run_id: runId || `evidence_refiner_${Date.now()}`,
+    generated_at: generatedAt,
     source_mode: sourceMode,
+    source_bundle_version: "source_bundle_v2_magna_carta",
     target_input,
     source_discovery: {
-      ...discovery,
-      flattened_sources: discoveredSources
+      source_discovery_version: discovery.source_discovery_version || discovery.discovery_policy?.source_discovery_version || "source_discovery_magna_carta_v1",
+      flattened_sources: discoveredSources,
+      allowed_families: MAGNA_CARTA_SOURCE_FAMILIES,
+      counts: discovery.counts || {},
+      coverage_gaps: Array.isArray(discovery.coverage_gaps) ? discovery.coverage_gaps : [],
+      provenance_audit: discovery.diagnostics?.provenance_audit || discovery.provenance_audit || []
     },
-    raw_footprint,
-    scrape_meta
+    raw_footprint: {
+      source_records: admitted,
+      filtered_sources,
+      duplicate_sources,
+      downstream_policy: {
+        full_admitted_documents_sent_once: true,
+        full_text_lossless_required: true,
+        summaries_used_as_evidence: false,
+        no_summary_no_compression_no_truncation: true,
+        processing_responsibility: "downstream_stages"
+      }
+    },
+    scrape_meta: {
+      coverage_summary: buildCoverageSummary(discovery, capture, admitted, filtered_sources, duplicate_sources),
+      hashes: { raw_footprint_sha256: rawFootprintSha }
+    }
   };
 }
