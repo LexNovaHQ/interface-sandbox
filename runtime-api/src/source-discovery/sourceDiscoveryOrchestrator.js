@@ -1,4 +1,4 @@
-import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt, SOURCE_DISCOVERY_MAGNA_CARTA_VERSION } from "./sourceDiscoverySearchPlan.js";
+﻿import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt, SOURCE_DISCOVERY_MAGNA_CARTA_VERSION } from "./sourceDiscoverySearchPlan.js";
 import { probeDeterministicSources } from "./sourceDiscoveryProbe.js";
 import {
   buildAnchorClassificationPrompt,
@@ -262,6 +262,33 @@ async function runFreeFirstPartySearch({ plans, identity, company_name, options,
   return { runs, candidates: dedupeRecords(candidates) };
 }
 
+function candidateLookupKeys(value) {
+  const normalized = normalizeCandidateUrl(value);
+  if (!normalized) return [];
+  const out = new Set([normalized]);
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    const altHosts = host.startsWith("www.")
+      ? [host.replace(/^www\./, "")]
+      : [`www.${host}`];
+
+    for (const altHost of altHosts) {
+      const alt = new URL(normalized);
+      alt.hostname = altHost;
+      out.add(alt.toString());
+    }
+
+    const noSlash = new URL(normalized);
+    if (noSlash.pathname !== "/" && noSlash.pathname.endsWith("/")) {
+      noSlash.pathname = noSlash.pathname.replace(/\/+$/, "");
+      out.add(noSlash.toString());
+    }
+  } catch {
+    // ignore alias failure
+  }
+  return [...out];
+}
 async function probeFinalCandidates({ candidates, options }) {
   const probeResult = await probeDeterministicSources(candidates.map((item) => item.url), {
     concurrency: Number(options.probeConcurrency || 6),
@@ -374,3 +401,4 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     }
   };
 }
+
