@@ -67,8 +67,9 @@ function mergeCandidates(candidateGroups) {
         });
       } else {
         const existing = seen.get(url);
-        if (existing.discovery_method !== item?.discovery_method) {
-          existing.discovery_method = existing.discovery_method + "+" + (item?.discovery_method || "unknown");
+        const nextMethod = item?.discovery_method || "unknown";
+        if (!String(existing.discovery_method || "").split("+").includes(nextMethod)) {
+          existing.discovery_method = existing.discovery_method + "+" + nextMethod;
         }
         if (!existing.source_family && item?.source_family) {
           existing.source_family = item.source_family;
@@ -80,7 +81,18 @@ function mergeCandidates(candidateGroups) {
   return [...seen.values()];
 }
 
-function buildCoverageGaps({ plans, buckets, geminiRuns }) {
+function metadataMapFor(candidates) {
+  return new Map((candidates || []).map((item) => [normalizeCandidateUrl(item.url), item]));
+}
+
+function hydrateProbeRecords(records, metadataByUrl) {
+  return (records || []).map((item) => ({
+    ...item,
+    ...(metadataByUrl.get(normalizeCandidateUrl(item.url)) || {})
+  }));
+}
+
+function bucketCountForFamily(buckets, family) {
   const familyToBucket = {
     product_profile: buckets.product_profile_sources || [],
     legal_governance: buckets.legal_governance_sources || [],
@@ -88,19 +100,46 @@ function buildCoverageGaps({ plans, buckets, geminiRuns }) {
     commercial: buckets.commercial_sources || [],
     updates: buckets.update_sources || []
   };
+  return (familyToBucket[family] || []).length;
+}
+
+function buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies }) {
+  const supportSet = new Set(supportFamilies || []);
 
   return plans
-    .filter((plan) => (familyToBucket[plan.source_family] || []).length < plan.target_min)
+    .filter((plan) => bucketCountForFamily(buckets, plan.source_family) < plan.target_min)
     .map((plan) => ({
       source_family: plan.source_family,
       label: plan.label,
       target_minimum: plan.target_min,
-      found: (familyToBucket[plan.source_family] || []).length,
-      attempted_methods: ["gemini_search", "deterministic_seed", "probe_validation"],
+      found: bucketCountForFamily(buckets, plan.source_family),
+      attempted_methods: [
+        "gemini_search_primary",
+        "probe_validation",
+        ...(supportSet.has(plan.source_family) ? ["deterministic_support_probe"] : [])
+      ],
       attempted_query: plan.query,
       gemini_status: geminiRuns.find((run) => run.source_family === plan.source_family)?.ok === true ? "completed" : "failed_or_empty",
       status: "coverage_gap"
     }));
+}
+
+async function probeCandidateSet({ candidates, options }) {
+  const metadataByUrl = metadataMapFor(candidates);
+  const probeResult = await probeDeterministicSources(
+    (candidates || []).map((item) => item.url),
+    {
+      concurrency: Number(options.probeConcurrency || 6),
+      timeoutMs: Number(options.probeTimeoutMs || 5000),
+      delayMs: Number(options.probeDelayMs || 25)
+    }
+  );
+
+  return {
+    probeResult,
+    admitted: hydrateProbeRecords(probeResult.admitted, metadataByUrl),
+    rejected: hydrateProbeRecords(probeResult.rejected, metadataByUrl)
+  };
 }
 
 export async function runSourceDiscoveryOrchestrator({ identity, company_name = null, options = {}, runPool }) {
@@ -161,53 +200,56 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     }
   }
 
-  const deterministicCandidates = buildDeterministicSourceCandidates({
-    normalized_origin: identity.normalized_origin
-  }).map((url) => ({
-    url,
-    discovery_method: "deterministic_seed"
-  }));
+  const geminiProbe = await probeCandidateSet({ candidates: geminiCandidates, options });
+  const geminiOnlyBuckets = buildDiscoveryBuckets({
+    admitted: geminiProbe.admitted,
+    rejected: geminiProbe.rejected
+  });
 
-  const mergedCandidates = mergeCandidates([geminiCandidates, deterministicCandidates]);
+  const supportFamilies = plans
+    .filter((plan) => bucketCountForFamily(geminiOnlyBuckets, plan.source_family) < plan.target_min)
+    .map((plan) => plan.source_family);
 
-  const probeResult = await probeDeterministicSources(
-    mergedCandidates.map((item) => item.url),
-    {
-      concurrency: Number(options.probeConcurrency || 6),
-      timeoutMs: Number(options.probeTimeoutMs || 5000),
-      delayMs: Number(options.probeDelayMs || 25)
-    }
-  );
+  const supportCandidatesRaw = supportFamilies.length > 0
+    ? buildDeterministicSourceCandidates({
+        normalized_origin: identity.normalized_origin,
+        source_families: supportFamilies
+      })
+    : [];
 
-  const metadataByUrl = new Map(mergedCandidates.map((item) => [normalizeCandidateUrl(item.url), item]));
+  const geminiUrls = new Set(geminiCandidates.map((item) => normalizeCandidateUrl(item.url)).filter(Boolean));
+  const supportCandidates = supportCandidatesRaw.filter((item) => !geminiUrls.has(normalizeCandidateUrl(item.url)));
+  const supportProbe = supportCandidates.length > 0
+    ? await probeCandidateSet({ candidates: supportCandidates, options })
+    : { probeResult: { counts: { admitted: 0, rejected: 0 } }, admitted: [], rejected: [] };
 
-  const admitted = probeResult.admitted.map((item) => ({
-    ...item,
-    ...(metadataByUrl.get(normalizeCandidateUrl(item.url)) || {})
-  }));
-
-  const rejected = probeResult.rejected.map((item) => ({
-    ...item,
-    ...(metadataByUrl.get(normalizeCandidateUrl(item.url)) || {})
-  }));
-
+  const admitted = mergeCandidates([geminiProbe.admitted, supportProbe.admitted]);
+  const rejected = mergeCandidates([geminiProbe.rejected, supportProbe.rejected]);
   const buckets = buildDiscoveryBuckets({ admitted, rejected });
-  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns });
+  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies });
   buckets.coverage_gaps = coverage_gaps;
   buckets.counts.coverage_gaps = coverage_gaps.length;
 
   return {
     discovery: buckets,
     diagnostics: {
+      discovery_policy: {
+        gemini_primary_for_all_families: true,
+        deterministic_role: "support_only_after_gemini_family_gap",
+        source_family_preserved_from_gemini: true
+      },
       plans,
       gemini_runs: geminiRuns,
+      support_families: supportFamilies,
       candidate_counts: {
         gemini_candidates: geminiCandidates.length,
-        deterministic_candidates: deterministicCandidates.length,
-        merged_candidates: mergedCandidates.length
+        deterministic_support_candidates: supportCandidates.length,
+        merged_candidates: admitted.length + rejected.length
       },
-      probe_counts: probeResult.counts
+      probe_counts: {
+        gemini_primary: geminiProbe.probeResult.counts,
+        deterministic_support: supportProbe.probeResult.counts
+      }
     }
   };
 }
-
