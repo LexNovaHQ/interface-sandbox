@@ -51,23 +51,53 @@ function normalizeUrl(value) {
   } catch { return null; }
 }
 
-function collectSources(discovery = {}) {
-  const byUrl = new Map();
-  for (const bucket of BUCKETS) {
-    for (const record of Array.isArray(discovery[bucket]) ? discovery[bucket] : []) {
-      const url = normalizeUrl(record?.url || record?.final_url);
-      if (!url || byUrl.has(url)) continue;
-      byUrl.set(url, { ...record, url, source_bucket: bucket });
-    }
+function collectBucket(discovery = {}, bucket) {
+  const out = [];
+  const seen = new Set();
+  for (const record of Array.isArray(discovery[bucket]) ? discovery[bucket] : []) {
+    const url = normalizeUrl(record?.url || record?.final_url);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push({ ...record, url, source_bucket: bucket });
   }
-  if (byUrl.size === 0 && Array.isArray(discovery.candidate_sources)) {
+  return out;
+}
+
+function collectSources(discovery = {}) {
+  const limit = Number(process.env.STAGE4_CAPTURE_LIMIT || 16);
+  const quotas = {
+    company_profile_sources: Number(process.env.STAGE4_COMPANY_CAPTURE_LIMIT || 2),
+    product_profile_sources: Number(process.env.STAGE4_PRODUCT_CAPTURE_LIMIT || 8),
+    legal_profile_sources: Number(process.env.STAGE4_LEGAL_CAPTURE_LIMIT || 3),
+    governance_profile_sources: Number(process.env.STAGE4_GOVERNANCE_CAPTURE_LIMIT || 3)
+  };
+
+  const pools = Object.fromEntries(BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
+  const selected = [];
+  const seen = new Set();
+
+  function add(record) {
+    if (!record?.url || seen.has(record.url) || selected.length >= limit) return;
+    seen.add(record.url);
+    selected.push(record);
+  }
+
+  for (const bucket of BUCKETS) {
+    for (const record of pools[bucket].slice(0, quotas[bucket] || 0)) add(record);
+  }
+
+  for (const bucket of BUCKETS) {
+    for (const record of pools[bucket]) add(record);
+  }
+
+  if (selected.length === 0 && Array.isArray(discovery.candidate_sources)) {
     for (const record of discovery.candidate_sources) {
       const url = normalizeUrl(record?.url || record?.final_url);
-      if (!url || byUrl.has(url)) continue;
-      byUrl.set(url, { ...record, url, source_bucket: "candidate_sources" });
+      add({ ...record, url, source_bucket: "candidate_sources" });
     }
   }
-  return [...byUrl.values()].slice(0, Number(process.env.STAGE4_CAPTURE_LIMIT || 16));
+
+  return selected;
 }
 
 function stagePayload(stageResponse = {}) {
