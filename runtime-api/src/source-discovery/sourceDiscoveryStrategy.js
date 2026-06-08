@@ -1,4 +1,4 @@
-﻿export const PRODUCT_PROFILE_PATHS = [
+export const PRODUCT_PROFILE_PATHS = [
   "/",
   "/about",
   "/about-us",
@@ -6,6 +6,18 @@
   "/team",
   "/products",
   "/product",
+  "/products/models",
+  "/products/conversational-agents",
+  "/products/agents",
+  "/products/voice-agents",
+  "/products/studio",
+  "/products/document-intelligence",
+  "/products/ocr",
+  "/products/vision",
+  "/products/workflow-agents",
+  "/products/enterprise-agents",
+  "/products/akshar",
+  "/products/arya",
   "/platform",
   "/solutions",
   "/solution",
@@ -16,13 +28,22 @@
   "/features",
   "/models",
   "/studio",
+  "/akshar",
+  "/arya",
+  "/samvaad",
   "/playground",
   "/agents",
+  "/conversational-agents",
+  "/voice-agents",
+  "/workflow-agents",
   "/voice",
   "/speech",
   "/translate",
   "/translation",
   "/transcription",
+  "/vision",
+  "/ocr",
+  "/document-intelligence",
   "/llm",
   "/apis",
   "/api",
@@ -70,7 +91,7 @@ function normalizeBaseOrigin(value) {
   const parsed = new URL(value);
   parsed.hash = "";
   parsed.search = "";
-  return `${parsed.protocol}//${parsed.hostname.toLowerCase().replace(/^www\\./, "")}`;
+  return `${parsed.protocol}//${parsed.hostname.toLowerCase().replace(/^www\./, "")}`;
 }
 
 function joinUrl(origin, path) {
@@ -105,6 +126,7 @@ export function buildSearchDiscoveryBatches({ registrable_domain, company_name =
       source_family: "product_profile",
       queries: [
         `site:${domain} product OR products OR platform OR feature OR features${nameHint}`,
+        `site:${domain}/products/ product OR products OR agents OR studio OR models OR OCR OR vision`,
         `site:${domain} solution OR solutions OR use-case OR use-cases OR industry OR industries`,
         `site:${domain} about OR company OR team OR customers`
       ]
@@ -127,7 +149,7 @@ export function buildSearchDiscoveryBatches({ registrable_domain, company_name =
       queries: [
         `site:${domain} AI OR model OR models OR LLM OR agent OR agents`,
         `site:${domain} voice OR speech OR transcription OR translation OR translate`,
-        `site:${domain} studio OR playground OR API OR APIs`
+        `site:${domain} studio OR document OR OCR OR vision OR workflow OR API OR APIs`
       ]
     },
     {
@@ -169,4 +191,3 @@ export function flattenSearchQueries(batches) {
     query
   })));
 }
-
