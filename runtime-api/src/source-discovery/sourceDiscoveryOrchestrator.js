@@ -2,6 +2,12 @@ import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt } from "
 import { buildDeterministicSourceCandidates } from "./sourceDiscoveryStrategy.js";
 import { probeDeterministicSources } from "./sourceDiscoveryProbe.js";
 import { buildDiscoveryBuckets } from "./sourceDiscoveryCategorizer.js";
+import {
+  buildAnchorClassificationPrompt,
+  extractAnchorClassifiedCandidates,
+  extractFirstPartyLinksFromHtml,
+  mergeAnchorLinks
+} from "./sourceDiscoveryAnchorLinks.js";
 
 function normalizeCandidateUrl(value) {
   try {
@@ -68,7 +74,9 @@ function mergeCandidates(candidateGroups) {
           discovery_role: item?.discovery_role || null,
           retrieval_intent_id: item?.retrieval_intent_id || null,
           reason: item?.reason || "",
-          batch_id: item?.batch_id || null
+          batch_id: item?.batch_id || null,
+          anchor_url: item?.anchor_url || null,
+          link_text: item?.link_text || ""
         });
       } else {
         const existing = seen.get(url);
@@ -76,21 +84,13 @@ function mergeCandidates(candidateGroups) {
         if (!String(existing.discovery_method || "").split("+").includes(nextMethod)) {
           existing.discovery_method = existing.discovery_method + "+" + nextMethod;
         }
-        if (!existing.source_family && item?.source_family) {
-          existing.source_family = item.source_family;
-        }
-        if (!existing.discovery_role && item?.discovery_role) {
-          existing.discovery_role = item.discovery_role;
-        }
-        if (!existing.retrieval_intent_id && item?.retrieval_intent_id) {
-          existing.retrieval_intent_id = item.retrieval_intent_id;
-        }
-        if (!existing.reason && item?.reason) {
-          existing.reason = item.reason;
-        }
-        if (!existing.batch_id && item?.batch_id) {
-          existing.batch_id = item.batch_id;
-        }
+        if (!existing.source_family && item?.source_family) existing.source_family = item.source_family;
+        if (!existing.discovery_role && item?.discovery_role) existing.discovery_role = item.discovery_role;
+        if (!existing.retrieval_intent_id && item?.retrieval_intent_id) existing.retrieval_intent_id = item.retrieval_intent_id;
+        if (!existing.reason && item?.reason) existing.reason = item.reason;
+        if (!existing.batch_id && item?.batch_id) existing.batch_id = item.batch_id;
+        if (!existing.anchor_url && item?.anchor_url) existing.anchor_url = item.anchor_url;
+        if (!existing.link_text && item?.link_text) existing.link_text = item.link_text;
       }
     }
   }
@@ -139,6 +139,7 @@ function buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies, mode =
       found: bucketCountForFamily(buckets, plan.source_family),
       attempted_methods: [
         "gemini_search_primary_multi_intent",
+        "gemini_anchor_link_classification",
         "probe_validation",
         ...(mode === "final" && supportSet.has(plan.source_family) ? ["deterministic_support_probe"] : [])
       ],
@@ -171,6 +172,143 @@ async function probeCandidateSet({ candidates, options }) {
   };
 }
 
+async function fetchAnchorLinksForRecord({ record, identity, options }) {
+  const anchorUrl = normalizeCandidateUrl(record?.url);
+  if (!anchorUrl || !isFirstPartyUrl(anchorUrl, identity.registrable_domain)) {
+    return { ok: false, anchor_url: anchorUrl, source_family: record?.source_family || null, error: "invalid_anchor", links: [] };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(options.anchorFetchTimeoutMs || 8000));
+
+  try {
+    const response = await fetch(anchorUrl, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "user-agent": "LexNovaHQ-SourceDiscovery/0.1",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      }
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || !/text\/html|application\/xhtml\+xml/i.test(contentType)) {
+      return {
+        ok: false,
+        anchor_url: anchorUrl,
+        source_family: record?.source_family || null,
+        status: response.status,
+        content_type: contentType,
+        error: "anchor_not_html_or_not_ok",
+        links: []
+      };
+    }
+
+    const html = await response.text();
+    const links = extractFirstPartyLinksFromHtml({
+      html,
+      anchorUrl,
+      registrableDomain: identity.registrable_domain,
+      limit: Number(options.anchorLinkLimit || 200)
+    });
+
+    return {
+      ok: true,
+      anchor_url: anchorUrl,
+      source_family: record?.source_family || null,
+      discovery_method: record?.discovery_method || null,
+      retrieval_intent_id: record?.retrieval_intent_id || null,
+      status: response.status,
+      content_type: contentType,
+      link_count: links.length,
+      links
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      anchor_url: anchorUrl,
+      source_family: record?.source_family || null,
+      error: error?.name === "AbortError" ? "anchor_fetch_timeout" : error?.message || "anchor_fetch_failed",
+      links: []
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchAnchorLinksForGeminiAnchors({ geminiProbe, identity, options }) {
+  const anchors = mergeCandidates([geminiProbe.admitted])
+    .filter((record) => record.discovery_role === "primary")
+    .slice(0, Number(options.anchorFetchMaxAnchors || 16));
+
+  const results = [];
+  const concurrency = Math.max(1, Number(options.anchorFetchConcurrency || 4));
+  for (let i = 0; i < anchors.length; i += concurrency) {
+    const batch = anchors.slice(i, i + concurrency);
+    results.push(...await Promise.all(batch.map((record) => fetchAnchorLinksForRecord({ record, identity, options }))));
+  }
+
+  return {
+    anchors_attempted: anchors.map(summarizeDiscoveryRecord),
+    results,
+    merged_links: mergeAnchorLinks(results)
+  };
+}
+
+async function classifyAnchorLinksByFamily({ plans, anchorLinks, identity, company_name, options, runPool }) {
+  const runs = [];
+  const candidates = [];
+
+  if (!anchorLinks.length) {
+    return { runs, candidates };
+  }
+
+  for (const plan of plans) {
+    const prompt = buildAnchorClassificationPrompt({
+      familyPlan: plan,
+      links: anchorLinks,
+      identity,
+      company_name
+    });
+
+    const result = await runPool({
+      poolName: "search",
+      prompt,
+      options: {
+        timeoutMs: Number(options.anchorClassifyTimeoutMs || options.searchTimeoutMs || 90000),
+        maxOutputTokens: Number(options.anchorClassifyMaxOutputTokens || 4096),
+        temperature: Number(options.temperature ?? 0),
+        responseMimeType: "application/json",
+        enableSearchGrounding: false
+      }
+    });
+
+    runs.push({
+      source_family: plan.source_family,
+      retrieval_intent_id: "anchor_link_classification",
+      retrieval_intent_label: "Classify extracted first-party anchor links",
+      ok: result.ok === true,
+      model_meta: result.model_meta || null,
+      error_type: result.error_type || null,
+      error: result.error || null,
+      admitted_count: Array.isArray(result.json?.admitted) ? result.json.admitted.length : 0,
+      rejected_count: Array.isArray(result.json?.rejected) ? result.json.rejected.length : 0,
+      coverage_gap: result.json?.coverage_gap || null
+    });
+
+    if (result.ok === true) {
+      candidates.push(...extractAnchorClassifiedCandidates({
+        classifierJson: result.json,
+        familyPlan: plan,
+        registrableDomain: identity.registrable_domain
+      }));
+    }
+  }
+
+  return { runs, candidates };
+}
+
 function summarizeDiscoveryRecord(record = {}) {
   return {
     url: record.url || null,
@@ -180,16 +318,19 @@ function summarizeDiscoveryRecord(record = {}) {
     retrieval_intent_id: record.retrieval_intent_id || null,
     batch_id: record.batch_id || null,
     reason: record.reason || "",
+    anchor_url: record.anchor_url || null,
+    link_text: record.link_text || "",
     status: record.status || null,
     http_status: record.http_status || null,
     content_type: record.content_type || ""
   };
 }
 
-function buildFamilyProvenanceAudit({ plans, geminiCandidates, supportCandidates, geminiProbe, supportProbe }) {
+function buildFamilyProvenanceAudit({ plans, geminiCandidates, supportCandidates, geminiProbe, supportProbe, anchorDiscovery }) {
   return plans.map((plan) => {
     const family = plan.source_family;
     const byFamily = (records) => (records || []).filter((record) => record.source_family === family);
+    const anchorCandidates = byFamily(anchorDiscovery?.candidates || []);
 
     return {
       source_family: family,
@@ -207,6 +348,13 @@ function buildFamilyProvenanceAudit({ plans, geminiCandidates, supportCandidates
         rejected_count: byFamily(geminiProbe.rejected).length,
         admitted: byFamily(geminiProbe.admitted).map(summarizeDiscoveryRecord),
         rejected: byFamily(geminiProbe.rejected).map(summarizeDiscoveryRecord)
+      },
+      gemini_anchor_classification: {
+        candidate_count: anchorCandidates.length,
+        admitted_count: byFamily(geminiProbe.admitted).filter((record) => String(record.discovery_method || "").includes("gemini_anchor_classification")).length,
+        admitted: byFamily(geminiProbe.admitted)
+          .filter((record) => String(record.discovery_method || "").includes("gemini_anchor_classification"))
+          .map(summarizeDiscoveryRecord)
       },
       deterministic_support: {
         candidate_count: byFamily(supportCandidates).length,
@@ -230,11 +378,12 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
 
   const plans = buildFamilySearchQueries({
     registrable_domain: identity.registrable_domain,
+    normalized_origin: identity.normalized_origin,
     company_name
   });
 
   const geminiRuns = [];
-  const geminiCandidates = [];
+  const geminiSearchCandidates = [];
 
   for (const plan of plans) {
     const intents = Array.isArray(plan.retrieval_intents) && plan.retrieval_intents.length
@@ -277,7 +426,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
       geminiRuns.push(run);
 
       if (result.ok === true) {
-        geminiCandidates.push(...extractGeminiUrls({
+        geminiSearchCandidates.push(...extractGeminiUrls({
           geminiJson: result.json,
           familyPlan: plan,
           retrievalIntent,
@@ -287,7 +436,25 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     }
   }
 
-  const geminiCandidatesMerged = mergeCandidates([geminiCandidates]);
+  const geminiSearchCandidatesMerged = mergeCandidates([geminiSearchCandidates]);
+  const geminiSearchProbe = await probeCandidateSet({ candidates: geminiSearchCandidatesMerged, options });
+
+  const anchorExtraction = await fetchAnchorLinksForGeminiAnchors({
+    geminiProbe: geminiSearchProbe,
+    identity,
+    options
+  });
+
+  const anchorClassification = await classifyAnchorLinksByFamily({
+    plans,
+    anchorLinks: anchorExtraction.merged_links,
+    identity,
+    company_name,
+    options,
+    runPool
+  });
+
+  const geminiCandidatesMerged = mergeCandidates([geminiSearchCandidatesMerged, anchorClassification.candidates]);
   const geminiProbe = await probeCandidateSet({ candidates: geminiCandidatesMerged, options });
   const geminiOnlyBuckets = buildDiscoveryBuckets({
     admitted: geminiProbe.admitted,
@@ -297,7 +464,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
   const gemini_primary_coverage_gaps = buildCoverageGaps({
     plans,
     buckets: geminiOnlyBuckets,
-    geminiRuns,
+    geminiRuns: [...geminiRuns, ...anchorClassification.runs],
     supportFamilies: [],
     mode: "gemini_primary"
   });
@@ -322,7 +489,7 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
   const admitted = mergeCandidates([geminiProbe.admitted, supportProbe.admitted]);
   const rejected = mergeCandidates([geminiProbe.rejected, supportProbe.rejected]);
   const buckets = buildDiscoveryBuckets({ admitted, rejected });
-  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies, mode: "final" });
+  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns: [...geminiRuns, ...anchorClassification.runs], supportFamilies, mode: "final" });
   buckets.coverage_gaps = coverage_gaps;
   buckets.counts.coverage_gaps = coverage_gaps.length;
 
@@ -331,7 +498,10 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     geminiCandidates: geminiCandidatesMerged,
     supportCandidates,
     geminiProbe,
-    supportProbe
+    supportProbe,
+    anchorDiscovery: {
+      candidates: anchorClassification.candidates
+    }
   });
 
   return {
@@ -339,22 +509,40 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
     diagnostics: {
       discovery_policy: {
         gemini_primary_for_all_families: true,
-        gemini_primary_strategy: "multi_intent_page_family_discovery",
-        deterministic_role: "support_only_after_gemini_family_gap",
+        gemini_primary_strategy: "anchor_link_expansion_with_gemini_classification",
+        deterministic_role: "fetch_extract_probe_prepare_support_only",
         source_family_preserved_from_gemini: true,
         provenance_audit_location: "source_discovery_diagnostics"
       },
       plans,
       gemini_runs: geminiRuns,
+      anchor_link_discovery: {
+        anchors_attempted: anchorExtraction.anchors_attempted,
+        anchor_fetch_results: anchorExtraction.results.map((result) => ({
+          ok: result.ok,
+          anchor_url: result.anchor_url,
+          source_family: result.source_family,
+          status: result.status || null,
+          content_type: result.content_type || "",
+          link_count: result.link_count || 0,
+          error: result.error || null
+        })),
+        extracted_first_party_link_count: anchorExtraction.merged_links.length,
+        classifier_runs: anchorClassification.runs,
+        classified_candidate_count: anchorClassification.candidates.length
+      },
       support_families: supportFamilies,
       gemini_primary_coverage_gaps,
       provenance_audit,
       candidate_counts: {
+        gemini_search_candidates: geminiSearchCandidatesMerged.length,
+        gemini_anchor_candidates: anchorClassification.candidates.length,
         gemini_candidates: geminiCandidatesMerged.length,
         deterministic_support_candidates: supportCandidates.length,
         merged_candidates: admitted.length + rejected.length
       },
       probe_counts: {
+        gemini_search_primary: geminiSearchProbe.probeResult.counts,
         gemini_primary: geminiProbe.probeResult.counts,
         deterministic_support: supportProbe.probeResult.counts
       }
