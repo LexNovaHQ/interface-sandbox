@@ -1,4 +1,12 @@
-﻿function safeUrl(value) {
+﻿const VALID_SOURCE_FAMILIES = new Set([
+  "product_profile",
+  "legal_governance",
+  "docs_developer",
+  "commercial",
+  "updates"
+]);
+
+function safeUrl(value) {
   try {
     const url = new URL(value);
     url.hash = "";
@@ -150,18 +158,32 @@ export function categorizeSourceUrl(value) {
   return { url: url.toString(), source_family: "product_profile", priority: 1, inferred: true };
 }
 
+function normalizeKnownFamily(value) {
+  const family = String(value || "").trim();
+  return VALID_SOURCE_FAMILIES.has(family) ? family : null;
+}
+
+function priorityForFamily(family, fallbackPriority) {
+  if (family === "legal_governance" || family === "docs_developer" || family === "product_profile") return 1;
+  if (family === "commercial" || family === "updates") return 2;
+  return fallbackPriority || 99;
+}
+
 function sourceRecordFromProbe(probeRecord) {
   const category = categorizeSourceUrl(probeRecord.url);
+  const discoveredFamily = normalizeKnownFamily(probeRecord.source_family);
+  const sourceFamily = discoveredFamily || category.source_family;
 
   return {
     url: category.url,
-    source_family: category.source_family,
-    priority: category.priority,
+    source_family: sourceFamily,
+    priority: priorityForFamily(sourceFamily, category.priority),
     discovery_method: probeRecord.discovery_method || "deterministic_probe",
     probe_method: probeRecord.probe_method || null,
     status: probeRecord.status || null,
     content_type: probeRecord.content_type || "",
-    inferred: category.inferred === true
+    inferred: discoveredFamily ? false : category.inferred === true,
+    categorized_from_url: discoveredFamily ? category.source_family : null
   };
 }
 
@@ -221,4 +243,3 @@ export function buildDiscoveryBuckets({ admitted = [], rejected = [], coverage_g
 
   return buckets;
 }
-
