@@ -120,13 +120,27 @@ function flattenDiscoverySources(discovery = {}) {
   return [...byUrl.values()];
 }
 
+function hardProductSignal(haystack = "") {
+  return /(^|[\/\s_-])(models?|products?|features?|platform|solutions?|capabilities|apis?)([\/\s_-]|$)/.test(haystack)
+    || /sarvam models|speech, text|translation ai|large language models?|developer api platform|model catalog/.test(haystack);
+}
+
+function hardLegalSignal(haystack = "") {
+  return /(^|[\/\s_-])(terms-of-service|terms|privacy-policy|privacy|dpa|data-processing|data processing|sub[-_ ]?processors?|security|trust|gdpr|data-protection|data protection|acceptable-use|acceptable use|aup|sla|service-level|service level)([\/\s_-]|$)/.test(haystack)
+    || /terms of service|privacy policy|data processing addendum|service level agreement|sub[- ]?processor|acceptable use policy/.test(haystack);
+}
+
 function normalizeSourceFamily(value, record = {}) {
   const raw = String(value || "").toLowerCase().trim();
   const url = String(record.url || "").toLowerCase();
   const label = String(record.label || record.title || record.source_label || "").toLowerCase();
   const haystack = `${raw} ${url} ${label}`;
 
-  if (raw === "legal_governance" || /terms|privacy|dpa|sub[-_ ]?processor|processor|security|trust|gdpr|data protection|policy|sla|acceptable use|aup/.test(haystack)) {
+  if (raw === "product_profile" && !hardLegalSignal(haystack)) return "product_profile";
+  if (raw === "docs_developer" && !hardLegalSignal(haystack)) return "docs_developer";
+  if (hardProductSignal(haystack) && !hardLegalSignal(haystack)) return "product_profile";
+
+  if (raw === "legal_governance" || hardLegalSignal(haystack)) {
     return "legal_governance";
   }
   if (raw === "docs_developer" || /docs|developer|api|sdk|guide|reference/.test(haystack)) {
@@ -361,7 +375,7 @@ export function buildEvidenceRefinerInput({
 
   const scrape_meta = {
     adapter: "sourceBundleAdapter",
-    adapter_version: "1.2.0",
+    adapter_version: "1.3.0",
     generated_at: generatedAt,
     source_mode: sourceMode,
     hashes: {
