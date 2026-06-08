@@ -7,6 +7,13 @@ const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
 
+const MAGNA_CARTA_BUCKETS = [
+  "company_profile_sources",
+  "product_profile_sources",
+  "legal_profile_sources",
+  "governance_profile_sources"
+];
+
 function fail(message, detail) {
   console.error(JSON.stringify({ ok: false, error: message, detail: detail || null }, null, 2));
   process.exit(1);
@@ -18,9 +25,7 @@ function normalizeRuntimeUrl(value) {
   const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
   try {
     const parsed = new URL(withScheme);
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      throw new Error(`Unsupported protocol: ${parsed.protocol}`);
-    }
+    if (!["http:", "https:"].includes(parsed.protocol)) throw new Error(`Unsupported protocol: ${parsed.protocol}`);
     return parsed.toString().replace(/\/+$/, "");
   } catch (error) {
     fail("RUNTIME_URL must be a valid http(s) URL or hostname", {
@@ -43,88 +48,78 @@ async function readJson(response) {
 async function postJson(base, path, body) {
   const response = await fetch(`${base}${path}`, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-runtime-access-token": token
-    },
+    headers: { "content-type": "application/json", "x-runtime-access-token": token },
     body: JSON.stringify(body)
   });
-
   const json = await readJson(response);
-  if (!response.ok || json?.ok === false) {
-    fail(`Request failed: ${path}`, { status: response.status, body: json });
-  }
-
+  if (!response.ok || json?.ok === false) fail(`Request failed: ${path}`, { status: response.status, body: json });
   return json;
 }
 
+function normalizeUrl(value) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 function collectSources(discovery = {}) {
-  const buckets = [
-    "product_profile_sources",
-    "legal_governance_sources",
-    "docs_developer_sources",
-    "commercial_sources",
-    "update_sources"
-  ];
-
   const byUrl = new Map();
-
-  for (const bucket of buckets) {
-    const records = Array.isArray(discovery[bucket]) ? discovery[bucket] : [];
-    for (const record of records) {
-      if (!record?.url || byUrl.has(record.url)) continue;
-      byUrl.set(record.url, { ...record, source_bucket: bucket });
+  for (const bucket of MAGNA_CARTA_BUCKETS) {
+    for (const record of Array.isArray(discovery[bucket]) ? discovery[bucket] : []) {
+      const url = normalizeUrl(record?.url || record?.final_url);
+      if (!url || byUrl.has(url)) continue;
+      byUrl.set(url, { ...record, url, source_bucket: bucket });
     }
   }
-
   if (byUrl.size === 0 && Array.isArray(discovery.candidate_sources)) {
     for (const record of discovery.candidate_sources) {
-      if (!record?.url || byUrl.has(record.url)) continue;
-      byUrl.set(record.url, { ...record, source_bucket: "candidate_sources" });
+      const url = normalizeUrl(record?.url || record?.final_url);
+      if (!url || byUrl.has(url)) continue;
+      byUrl.set(url, { ...record, url, source_bucket: "candidate_sources" });
     }
   }
-
-  return [...byUrl.values()].slice(0, Number(process.env.STAGE2_CAPTURE_LIMIT || 8));
+  return [...byUrl.values()].slice(0, Number(process.env.STAGE2_CAPTURE_LIMIT || 12));
 }
 
 function stagePayload(stageResponse = {}) {
   return stageResponse.output || stageResponse.parsed_json || stageResponse.result?.json || stageResponse.result || stageResponse;
 }
 
-if (!runtimeUrl) {
-  fail("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required");
-}
-
-if (!token) {
-  fail("RUNTIME_ACCESS_TOKEN is required");
-}
+if (!runtimeUrl) fail("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required");
+if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 
 const base = normalizeRuntimeUrl(runtimeUrl);
-const targetInput = {
-  primary_url: primaryUrl,
-  company_name: companyName,
-  submitted_at: new Date().toISOString()
-};
+const targetInput = { primary_url: primaryUrl, company_name: companyName, submitted_at: new Date().toISOString() };
 
 console.log(JSON.stringify({
   ok: true,
   step: "start",
+  phase: "stage_2_evidence_refiner_e2e_magna_carta",
   target: targetInput,
   runtime_url: base,
-  capture_limit: Number(process.env.STAGE2_CAPTURE_LIMIT || 8)
+  capture_limit: Number(process.env.STAGE2_CAPTURE_LIMIT || 12)
 }, null, 2));
 
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: targetInput,
   options: {
-    max_search_results_per_family: Number(process.env.STAGE2_MAX_SEARCH_RESULTS_PER_FAMILY || 4),
+    sourceDiscoveryMode: process.env.STAGE2_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
+    runFreeFirstPartySearch: process.env.STAGE2_RUN_FREE_SEARCH === "true",
+    anchorFetchMaxAnchors: Number(process.env.STAGE2_ANCHOR_FETCH_MAX || 32),
+    anchorLinkLimit: Number(process.env.STAGE2_ANCHOR_LINK_LIMIT || 120),
+    anchorClassifyMaxOutputTokens: Number(process.env.STAGE2_ANCHOR_CLASSIFY_TOKENS || 8192),
     probe_timeout_ms: Number(process.env.STAGE2_PROBE_TIMEOUT_MS || 8000)
   }
 });
 
 const sources = collectSources(discoveryResponse.discovery);
 if (sources.length === 0) {
-  fail("Source discovery returned no capturable sources", {
+  fail("Source discovery returned no capturable Magna Carta sources", {
     discovery_counts: discoveryResponse.discovery?.counts || null,
     coverage_gaps: discoveryResponse.discovery?.coverage_gaps || []
   });
@@ -140,48 +135,43 @@ console.log(JSON.stringify({
 
 const captureResponse = await postJson(base, "/v1/source-capture", {
   input: { sources },
-  options: {
-    timeout_ms: Number(process.env.STAGE2_CAPTURE_TIMEOUT_MS || 12000),
-    max_sources: sources.length
-  }
+  options: { timeout_ms: Number(process.env.STAGE2_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length }
 });
 
-const evidenceInput = buildEvidenceRefinerInput({
-  targetInput,
-  discoveryResponse,
-  captureResponse,
-  runId: `stage2_${Date.now()}`
-});
-
+const evidenceInput = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `stage2_${Date.now()}` });
 const capturedOk = evidenceInput.scrape_meta?.coverage_summary?.source_counts?.fetch_ok || 0;
 const totalWords = evidenceInput.scrape_meta?.coverage_summary?.source_counts?.total_words || 0;
+const byFamily = evidenceInput.scrape_meta?.coverage_summary?.by_family || {};
 
 if (capturedOk === 0 || totalWords === 0) {
   fail("Source capture produced no usable text for Evidence Refiner", {
     source_counts: evidenceInput.scrape_meta?.coverage_summary?.source_counts || null,
-    by_family: evidenceInput.scrape_meta?.coverage_summary?.by_family || null
+    by_family: byFamily
   });
+}
+
+if (!Object.keys(byFamily).some((family) => ["company_profile", "product_profile", "legal_profile", "governance_profile"].includes(family) && byFamily[family]?.length)) {
+  fail("Adapter did not preserve any Magna Carta family evidence", { by_family: byFamily });
 }
 
 console.log(JSON.stringify({
   ok: true,
   step: "source_capture_and_adapter_complete",
   run_id: evidenceInput.run_id,
+  source_bundle_version: evidenceInput.source_bundle_version,
   source_counts: evidenceInput.scrape_meta.coverage_summary.source_counts,
+  by_family: byFamily,
   raw_footprint_sha256: evidenceInput.scrape_meta.hashes.raw_footprint_sha256
 }, null, 2));
 
 const evidenceRefinerResponse = await postJson(base, "/v1/diligence/stage", {
   stage: "evidence_refiner",
   input: evidenceInput,
-  options: {
-    poolAlias: "json"
-  }
+  options: { poolAlias: "json" }
 });
 
 const output = stagePayload(evidenceRefinerResponse);
 const outputJson = JSON.stringify(output || {});
-
 if (!output || outputJson.length < 200) {
   fail("Evidence Refiner returned an unexpectedly small output", {
     response_keys: Object.keys(evidenceRefinerResponse || {}),
@@ -189,13 +179,15 @@ if (!output || outputJson.length < 200) {
   });
 }
 
-const summary = {
+console.log(JSON.stringify({
   ok: true,
   service: "lexnova-runtime-api",
-  phase: "stage_2_evidence_refiner_e2e",
+  phase: "stage_2_evidence_refiner_e2e_magna_carta",
   target: targetInput,
   run_id: evidenceInput.run_id,
+  source_bundle_version: evidenceInput.source_bundle_version,
   source_counts: evidenceInput.scrape_meta.coverage_summary.source_counts,
+  by_family: byFamily,
   coverage_gaps: evidenceInput.scrape_meta.coverage_summary.coverage_gaps,
   stage: {
     ok: evidenceRefinerResponse.ok,
@@ -204,6 +196,4 @@ const summary = {
     output_keys: Object.keys(output || {}),
     output_preview: outputJson.slice(0, Number(process.env.STAGE2_OUTPUT_PREVIEW_CHARS || 3000))
   }
-};
-
-console.log(JSON.stringify(summary, null, 2));
+}, null, 2));
