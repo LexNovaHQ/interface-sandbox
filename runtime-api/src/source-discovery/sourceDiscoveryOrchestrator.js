@@ -1,7 +1,5 @@
-﻿import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt } from "./sourceDiscoverySearchPlan.js";
-import { buildDeterministicSourceCandidates } from "./sourceDiscoveryStrategy.js";
+import { buildFamilySearchQueries, buildBoundedGeminiUrlDiscoveryPrompt, SOURCE_DISCOVERY_MAGNA_CARTA_VERSION } from "./sourceDiscoverySearchPlan.js";
 import { probeDeterministicSources } from "./sourceDiscoveryProbe.js";
-import { buildDiscoveryBuckets } from "./sourceDiscoveryCategorizer.js";
 import {
   buildAnchorClassificationPrompt,
   extractAnchorClassifiedCandidates,
@@ -9,302 +7,172 @@ import {
   mergeAnchorLinks
 } from "./sourceDiscoveryAnchorLinks.js";
 
+const ALLOWED_FAMILIES = ["company_profile", "product_profile", "legal_profile", "governance_profile"];
+
 function normalizeCandidateUrl(value) {
   try {
-    const url = new URL(value);
+    const raw = String(value || "").trim();
+    if (!raw) return null;
+    const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const url = new URL(withScheme);
+    if (!["http:", "https:"].includes(url.protocol)) return null;
     url.hash = "";
-    if (url.pathname !== "/" && url.pathname.endsWith("/")) {
-      url.pathname = url.pathname.slice(0, -1);
-    }
+    if (url.pathname !== "/" && url.pathname.endsWith("/")) url.pathname = url.pathname.replace(/\/+$/, "");
     return url.toString();
   } catch {
     return null;
   }
 }
 
+function hostWithoutWww(value) {
+  return String(value || "").toLowerCase().replace(/^www\./, "");
+}
+
 function isFirstPartyUrl(value, registrableDomain) {
   try {
     const url = new URL(value);
-    const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
-    const domain = String(registrableDomain || "").toLowerCase();
-    return hostname === domain || hostname.endsWith("." + domain);
+    const hostname = hostWithoutWww(url.hostname);
+    const domain = hostWithoutWww(registrableDomain);
+    return hostname === domain || hostname.endsWith(`.${domain}`);
   } catch {
     return false;
   }
 }
 
-function extractGeminiUrls({ geminiJson, familyPlan, retrievalIntent, registrableDomain }) {
-  const rawUrls = Array.isArray(geminiJson?.urls) ? geminiJson.urls : [];
-  const out = [];
-  const intentId = retrievalIntent?.intent_id || geminiJson?.retrieval_intent_id || "family_query";
+function isUnsafeUrl(value) {
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol)) return true;
+    const host = url.hostname.toLowerCase();
+    if (["localhost", "0.0.0.0"].includes(host)) return true;
+    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return true;
+    if (/^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
 
-  for (const item of rawUrls) {
-    const rawUrl = typeof item === "string" ? item : item?.url;
-    const url = normalizeCandidateUrl(rawUrl);
+function dedupeRecords(records = []) {
+  const map = new Map();
+  for (const record of records || []) {
+    const url = normalizeCandidateUrl(record?.url || record);
     if (!url) continue;
-    if (!isFirstPartyUrl(url, registrableDomain)) continue;
-
-    out.push({
-      url,
-      source_family: familyPlan.source_family,
-      discovery_method: "gemini_search",
-      discovery_role: "primary",
-      retrieval_intent_id: intentId,
-      reason: typeof item === "object" ? item?.reason || "" : "",
-      batch_id: `${familyPlan.source_family}:${intentId}`
-    });
-  }
-
-  return out.slice(0, familyPlan.target_max || 3);
-}
-
-function mergeCandidates(candidateGroups) {
-  const seen = new Map();
-
-  for (const group of candidateGroups || []) {
-    for (const item of group || []) {
-      const url = normalizeCandidateUrl(item?.url || item);
-      if (!url) continue;
-
-      if (!seen.has(url)) {
-        seen.set(url, {
-          url,
-          source_family: item?.source_family || null,
-          discovery_method: item?.discovery_method || "unknown",
-          discovery_role: item?.discovery_role || null,
-          retrieval_intent_id: item?.retrieval_intent_id || null,
-          reason: item?.reason || "",
-          batch_id: item?.batch_id || null,
-          anchor_url: item?.anchor_url || null,
-          link_text: item?.link_text || ""
-        });
-      } else {
-        const existing = seen.get(url);
-        const nextMethod = item?.discovery_method || "unknown";
-        if (!String(existing.discovery_method || "").split("+").includes(nextMethod)) {
-          existing.discovery_method = existing.discovery_method + "+" + nextMethod;
-        }
-        if (!existing.source_family && item?.source_family) existing.source_family = item.source_family;
-        if (!existing.discovery_role && item?.discovery_role) existing.discovery_role = item.discovery_role;
-        if (!existing.retrieval_intent_id && item?.retrieval_intent_id) existing.retrieval_intent_id = item.retrieval_intent_id;
-        if (!existing.reason && item?.reason) existing.reason = item.reason;
-        if (!existing.batch_id && item?.batch_id) existing.batch_id = item.batch_id;
-        if (!existing.anchor_url && item?.anchor_url) existing.anchor_url = item.anchor_url;
-        if (!existing.link_text && item?.link_text) existing.link_text = item.link_text;
-      }
+    const existing = map.get(url);
+    const next = { ...record, url };
+    if (!existing) {
+      map.set(url, {
+        ...next,
+        provenance: Array.isArray(next.provenance) ? next.provenance : []
+      });
+      continue;
     }
+    existing.provenance = [
+      ...(Array.isArray(existing.provenance) ? existing.provenance : []),
+      ...(Array.isArray(next.provenance) ? next.provenance : [])
+    ];
+    if (!existing.source_family && next.source_family) existing.source_family = next.source_family;
+    if (!existing.reason && next.reason) existing.reason = next.reason;
+    if (!existing.link_text && next.link_text) existing.link_text = next.link_text;
+    if (!existing.anchor_url && next.anchor_url) existing.anchor_url = next.anchor_url;
   }
-
-  return [...seen.values()];
+  return [...map.values()];
 }
 
-function metadataMapFor(candidates) {
-  return new Map((candidates || []).map((item) => [normalizeCandidateUrl(item.url), item]));
-}
-
-function hydrateProbeRecords(records, metadataByUrl) {
-  return (records || []).map((item) => ({
-    ...item,
-    ...(metadataByUrl.get(normalizeCandidateUrl(item.url)) || {})
-  }));
-}
-
-function bucketCountForFamily(buckets, family) {
-  const familyToBucket = {
-    product_profile: buckets.product_profile_sources || [],
-    legal_governance: buckets.legal_governance_sources || [],
-    docs_developer: buckets.docs_developer_sources || [],
-    commercial: buckets.commercial_sources || [],
-    updates: buckets.update_sources || []
-  };
-  return (familyToBucket[family] || []).length;
-}
-
-function geminiStatusForFamily(geminiRuns, family) {
-  const runs = (geminiRuns || []).filter((run) => run.source_family === family);
-  if (!runs.length) return "not_run";
-  if (runs.some((run) => run.ok === true)) return "completed";
-  return "failed_or_empty";
-}
-
-function buildCoverageGaps({ plans, buckets, geminiRuns, supportFamilies, mode = "final" }) {
-  const supportSet = new Set(supportFamilies || []);
-
-  return plans
-    .filter((plan) => bucketCountForFamily(buckets, plan.source_family) < plan.target_min)
-    .map((plan) => ({
-      source_family: plan.source_family,
-      label: plan.label,
-      target_minimum: plan.target_min,
-      found: bucketCountForFamily(buckets, plan.source_family),
-      attempted_methods: [
-        "gemini_search_primary_multi_intent",
-        "gemini_anchor_link_classification",
-        "probe_validation",
-        ...(mode === "final" && supportSet.has(plan.source_family) ? ["deterministic_support_probe"] : [])
-      ],
-      attempted_query: plan.query,
-      retrieval_intents: (plan.retrieval_intents || []).map((intent) => ({
-        intent_id: intent.intent_id,
-        label: intent.label,
-        query: intent.query
-      })),
-      gemini_status: geminiStatusForFamily(geminiRuns, plan.source_family),
-      status: "coverage_gap"
-    }));
-}
-
-async function probeCandidateSet({ candidates, options }) {
-  const metadataByUrl = metadataMapFor(candidates);
-  const probeResult = await probeDeterministicSources(
-    (candidates || []).map((item) => item.url),
-    {
-      concurrency: Number(options.probeConcurrency || 6),
-      timeoutMs: Number(options.probeTimeoutMs || 5000),
-      delayMs: Number(options.probeDelayMs || 25)
-    }
-  );
-
+function summarizeRecord(record = {}) {
   return {
-    probeResult,
-    admitted: hydrateProbeRecords(probeResult.admitted, metadataByUrl),
-    rejected: hydrateProbeRecords(probeResult.rejected, metadataByUrl)
+    url: record.url || null,
+    source_family: record.source_family || null,
+    reason: record.reason || "",
+    anchor_url: record.anchor_url || null,
+    link_text: record.link_text || "",
+    status: record.status || null,
+    content_type: record.content_type || "",
+    provenance: Array.isArray(record.provenance) ? record.provenance.slice(0, 8) : []
   };
 }
 
-async function fetchAnchorLinksForRecord({ record, identity, options }) {
-  const anchorUrl = normalizeCandidateUrl(record?.url);
-  if (!anchorUrl || !isFirstPartyUrl(anchorUrl, identity.registrable_domain)) {
-    return { ok: false, anchor_url: anchorUrl, source_family: record?.source_family || null, error: "invalid_anchor", links: [] };
+function anchorRecordFor(plan, url) {
+  return {
+    url,
+    source_family: plan.source_family,
+    anchor_family: plan.source_family,
+    provenance: [{ method: "family_anchor_url", family: plan.source_family, anchor_url: url }]
+  };
+}
+
+async function fetchAnchor({ record, identity, options }) {
+  const url = normalizeCandidateUrl(record?.url);
+  if (!url || isUnsafeUrl(url) || !isFirstPartyUrl(url, identity.registrable_domain)) {
+    return { ok: false, anchor_url: url, source_family: record?.source_family || null, error: "unsafe_or_not_first_party", links: [] };
   }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number(options.anchorFetchTimeoutMs || 8000));
-
   try {
-    const response = await fetch(anchorUrl, {
+    const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
       signal: controller.signal,
       headers: {
-        "user-agent": "LexNovaHQ-SourceDiscovery/0.1",
+        "user-agent": "LexNovaHQ-SourceDiscovery/1.0",
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
       }
     });
-
     const contentType = response.headers.get("content-type") || "";
     if (!response.ok || !/text\/html|application\/xhtml\+xml/i.test(contentType)) {
-      return {
-        ok: false,
-        anchor_url: anchorUrl,
-        source_family: record?.source_family || null,
-        status: response.status,
-        content_type: contentType,
-        error: "anchor_not_html_or_not_ok",
-        links: []
-      };
+      return { ok: false, anchor_url: url, source_family: record.source_family, status: response.status, content_type: contentType, error: "anchor_not_html_or_not_ok", links: [] };
     }
-
     const html = await response.text();
     const links = extractFirstPartyLinksFromHtml({
       html,
-      anchorUrl,
+      anchorUrl: url,
       registrableDomain: identity.registrable_domain,
       limit: Number(options.anchorLinkLimit || 200)
     });
-
-    return {
-      ok: true,
-      anchor_url: anchorUrl,
-      source_family: record?.source_family || null,
-      discovery_method: record?.discovery_method || null,
-      retrieval_intent_id: record?.retrieval_intent_id || null,
-      status: response.status,
-      content_type: contentType,
-      link_count: links.length,
-      links
-    };
+    return { ok: true, anchor_url: url, source_family: record.source_family, status: response.status, content_type: contentType, link_count: links.length, links };
   } catch (error) {
-    return {
-      ok: false,
-      anchor_url: anchorUrl,
-      source_family: record?.source_family || null,
-      error: error?.name === "AbortError" ? "anchor_fetch_timeout" : error?.message || "anchor_fetch_failed",
-      links: []
-    };
+    return { ok: false, anchor_url: url, source_family: record?.source_family || null, error: error?.name === "AbortError" ? "anchor_fetch_timeout" : error?.message || "anchor_fetch_failed", links: [] };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function isGeminiAnchorEligible(record = {}) {
-  const method = String(record.discovery_method || "");
-  const role = String(record.discovery_role || "");
-  const batchId = String(record.batch_id || "");
-  return role === "primary"
-    || method.includes("gemini_search")
-    || method.includes("gemini_anchor_classification")
-    || Boolean(record.retrieval_intent_id)
-    || /^(product_profile|legal_governance|docs_developer|commercial|updates):/.test(batchId);
-}
-
-function explainAnchorEligibility(record = {}) {
-  if (record.discovery_role === "primary") return "discovery_role_primary";
-  if (String(record.discovery_method || "").includes("gemini_search")) return "gemini_search_method";
-  if (String(record.discovery_method || "").includes("gemini_anchor_classification")) return "gemini_anchor_method";
-  if (record.retrieval_intent_id) return "retrieval_intent_present";
-  if (/^(product_profile|legal_governance|docs_developer|commercial|updates):/.test(String(record.batch_id || ""))) return "family_batch_id_present";
-  return "missing_gemini_anchor_provenance";
-}
-
-async function fetchAnchorLinksForGeminiAnchors({ geminiCandidates = [], geminiProbe, identity, options }) {
-  const considered = mergeCandidates([geminiCandidates, geminiProbe.admitted]);
-  const eligible = considered.filter(isGeminiAnchorEligible);
-  const rejected = considered
-    .filter((record) => !isGeminiAnchorEligible(record))
-    .map((record) => ({
-      ...summarizeDiscoveryRecord(record),
-      rejection_reason: explainAnchorEligibility(record)
-    }));
-
-  const anchors = eligible.slice(0, Number(options.anchorFetchMaxAnchors || 16));
-
-  const results = [];
+async function fetchAnchors({ plans, identity, options }) {
+  const anchorRecords = dedupeRecords(plans.flatMap((plan) => (plan.anchor_urls || []).map((url) => anchorRecordFor(plan, url))));
+  const limit = Math.max(1, Number(options.anchorFetchMaxAnchors || 48));
+  const selected = anchorRecords.slice(0, limit);
   const concurrency = Math.max(1, Number(options.anchorFetchConcurrency || 4));
-  for (let i = 0; i < anchors.length; i += concurrency) {
-    const batch = anchors.slice(i, i + concurrency);
-    results.push(...await Promise.all(batch.map((record) => fetchAnchorLinksForRecord({ record, identity, options }))));
+  const results = [];
+  for (let i = 0; i < selected.length; i += concurrency) {
+    const batch = selected.slice(i, i + concurrency);
+    results.push(...await Promise.all(batch.map((record) => fetchAnchor({ record, identity, options }))));
   }
+  return { anchor_records: selected, results, merged_links: mergeAnchorLinks(results) };
+}
 
+function familyCandidateFromAnchor(record, plan) {
   return {
-    anchor_candidates_considered: considered.map((record) => ({
-      ...summarizeDiscoveryRecord(record),
-      eligibility_reason: explainAnchorEligibility(record),
-      eligible: isGeminiAnchorEligible(record)
-    })),
-    anchor_candidates_rejected: rejected,
-    anchors_attempted: anchors.map(summarizeDiscoveryRecord),
-    results,
-    merged_links: mergeAnchorLinks(results)
+    url: record.url,
+    source_family: plan.source_family,
+    reason: `Minimum ${plan.label} anchor URL.`,
+    anchor_url: record.url,
+    link_text: "",
+    provenance: [{ method: "family_anchor_url", family: plan.source_family, anchor_url: record.url }]
   };
 }
 
-async function classifyAnchorLinksByFamily({ plans, anchorLinks, identity, company_name, options, runPool }) {
+async function classifyAnchorLinks({ plans, anchorExtraction, identity, company_name, options, runPool }) {
   const runs = [];
   const candidates = [];
-
-  if (!anchorLinks.length) {
-    return { runs, candidates };
-  }
+  const anchorSelfCandidates = [];
 
   for (const plan of plans) {
-    const prompt = buildAnchorClassificationPrompt({
-      familyPlan: plan,
-      links: anchorLinks,
-      identity,
-      company_name
-    });
+    for (const record of anchorExtraction.anchor_records.filter((item) => item.source_family === plan.source_family)) {
+      anchorSelfCandidates.push(familyCandidateFromAnchor(record, plan));
+    }
 
+    const prompt = buildAnchorClassificationPrompt({ familyPlan: plan, links: anchorExtraction.merged_links, identity, company_name });
     const result = await runPool({
       poolName: "search",
       prompt,
@@ -320,119 +188,60 @@ async function classifyAnchorLinksByFamily({ plans, anchorLinks, identity, compa
     runs.push({
       source_family: plan.source_family,
       retrieval_intent_id: "anchor_link_classification",
-      retrieval_intent_label: "Classify extracted first-party anchor links",
       ok: result.ok === true,
-      model_meta: result.model_meta || null,
-      error_type: result.error_type || null,
-      error: result.error || null,
       admitted_count: Array.isArray(result.json?.admitted) ? result.json.admitted.length : 0,
       rejected_count: Array.isArray(result.json?.rejected) ? result.json.rejected.length : 0,
-      coverage_gap: result.json?.coverage_gap || null
+      coverage_gap: result.json?.coverage_gap || null,
+      error_type: result.error_type || null,
+      error: result.error || null,
+      model_meta: result.model_meta || null
     });
 
     if (result.ok === true) {
-      candidates.push(...extractAnchorClassifiedCandidates({
-        classifierJson: result.json,
-        familyPlan: plan,
-        registrableDomain: identity.registrable_domain
-      }));
+      const extracted = extractAnchorClassifiedCandidates({ classifierJson: result.json, familyPlan: plan, registrableDomain: identity.registrable_domain });
+      for (const item of extracted) {
+        candidates.push({
+          ...item,
+          provenance: [{ method: "gemini_anchor_classification", family: plan.source_family, anchor_url: item.anchor_url, link_text: item.link_text, reason: item.reason }]
+        });
+      }
     }
   }
 
-  return { runs, candidates };
+  return { runs, candidates: dedupeRecords([anchorSelfCandidates, candidates].flat()) };
 }
 
-function summarizeDiscoveryRecord(record = {}) {
-  return {
-    url: record.url || null,
-    source_family: record.source_family || null,
-    discovery_method: record.discovery_method || null,
-    discovery_role: record.discovery_role || null,
-    retrieval_intent_id: record.retrieval_intent_id || null,
-    batch_id: record.batch_id || null,
-    reason: record.reason || "",
-    anchor_url: record.anchor_url || null,
-    link_text: record.link_text || "",
-    status: record.status || null,
-    http_status: record.http_status || null,
-    content_type: record.content_type || ""
-  };
-}
-
-function buildFamilyProvenanceAudit({ plans, geminiCandidates, supportCandidates, geminiProbe, supportProbe, anchorDiscovery }) {
-  return plans.map((plan) => {
-    const family = plan.source_family;
-    const byFamily = (records) => (records || []).filter((record) => record.source_family === family);
-    const anchorCandidates = byFamily(anchorDiscovery?.candidates || []);
-
-    return {
-      source_family: family,
-      label: plan.label,
-      target_minimum: plan.target_min,
-      target_maximum: plan.target_max,
-      retrieval_intents: (plan.retrieval_intents || []).map((intent) => ({
-        intent_id: intent.intent_id,
-        label: intent.label,
-        query: intent.query
-      })),
-      gemini_primary: {
-        candidate_count: byFamily(geminiCandidates).length,
-        admitted_count: byFamily(geminiProbe.admitted).length,
-        rejected_count: byFamily(geminiProbe.rejected).length,
-        admitted: byFamily(geminiProbe.admitted).map(summarizeDiscoveryRecord),
-        rejected: byFamily(geminiProbe.rejected).map(summarizeDiscoveryRecord)
-      },
-      gemini_anchor_classification: {
-        candidate_count: anchorCandidates.length,
-        admitted_count: byFamily(geminiProbe.admitted).filter((record) => String(record.discovery_method || "").includes("gemini_anchor_classification")).length,
-        admitted: byFamily(geminiProbe.admitted)
-          .filter((record) => String(record.discovery_method || "").includes("gemini_anchor_classification"))
-          .map(summarizeDiscoveryRecord)
-      },
-      deterministic_support: {
-        candidate_count: byFamily(supportCandidates).length,
-        admitted_count: byFamily(supportProbe.admitted).length,
-        rejected_count: byFamily(supportProbe.rejected).length,
-        admitted: byFamily(supportProbe.admitted).map(summarizeDiscoveryRecord),
-        rejected: byFamily(supportProbe.rejected).map(summarizeDiscoveryRecord)
-      }
-    };
-  });
-}
-
-export async function runSourceDiscoveryOrchestrator({ identity, company_name = null, options = {}, runPool }) {
-  if (!identity?.primary_url || !identity?.registrable_domain || !identity?.normalized_origin) {
-    throw new Error("identity with primary_url, normalized_origin, and registrable_domain is required");
+function extractGeminiUrls({ geminiJson, familyPlan, retrievalIntent, registrableDomain }) {
+  const rawUrls = Array.isArray(geminiJson?.urls) ? geminiJson.urls : [];
+  const out = [];
+  for (const item of rawUrls) {
+    const rawUrl = typeof item === "string" ? item : item?.url;
+    const url = normalizeCandidateUrl(rawUrl);
+    if (!url || isUnsafeUrl(url) || !isFirstPartyUrl(url, registrableDomain)) continue;
+    out.push({
+      url,
+      source_family: familyPlan.source_family,
+      reason: typeof item === "object" ? item?.reason || "Gemini free first-party search candidate." : "Gemini free first-party search candidate.",
+      provenance: [{ method: "free_first_party_search", family: familyPlan.source_family, retrieval_intent_id: retrievalIntent?.intent_id || "free_first_party_search", query: retrievalIntent?.query || familyPlan.query }]
+    });
   }
+  return out.slice(0, familyPlan.target_max || 8);
+}
 
-  if (typeof runPool !== "function") {
-    throw new Error("runPool function is required");
-  }
-
-  const plans = buildFamilySearchQueries({
-    registrable_domain: identity.registrable_domain,
-    normalized_origin: identity.normalized_origin,
-    company_name
-  });
-
-  const geminiRuns = [];
-  const geminiSearchCandidates = [];
-
+async function runFreeFirstPartySearch({ plans, identity, company_name, options, runPool }) {
+  const runs = [];
+  const candidates = [];
   for (const plan of plans) {
-    const intents = Array.isArray(plan.retrieval_intents) && plan.retrieval_intents.length
-      ? plan.retrieval_intents
-      : [{ intent_id: "family_query", label: "Family query", query: plan.query, instruction: "Find first-party URLs for this family." }];
-
-    for (const retrievalIntent of intents) {
+    const intents = (plan.retrieval_intents || []).filter((intent) => intent.intent_id === "free_first_party_search");
+    for (const intent of intents) {
       const prompt = buildBoundedGeminiUrlDiscoveryPrompt({
         primary_url: identity.primary_url,
         normalized_origin: identity.normalized_origin,
         registrable_domain: identity.registrable_domain,
         company_name,
         family_plan: plan,
-        retrieval_intent: retrievalIntent
+        retrieval_intent: intent
       });
-
       const result = await runPool({
         poolName: "search",
         prompt,
@@ -444,142 +253,124 @@ export async function runSourceDiscoveryOrchestrator({ identity, company_name = 
           enableSearchGrounding: true
         }
       });
-
-      const run = {
-        source_family: plan.source_family,
-        retrieval_intent_id: retrievalIntent.intent_id,
-        retrieval_intent_label: retrievalIntent.label,
-        ok: result.ok === true,
-        model_meta: result.model_meta || null,
-        error_type: result.error_type || null,
-        error: result.error || null,
-        coverage_gap: result.json?.coverage_gap || null
-      };
-
-      geminiRuns.push(run);
-
+      runs.push({ source_family: plan.source_family, retrieval_intent_id: intent.intent_id, ok: result.ok === true, error_type: result.error_type || null, error: result.error || null, coverage_gap: result.json?.coverage_gap || null, model_meta: result.model_meta || null });
       if (result.ok === true) {
-        geminiSearchCandidates.push(...extractGeminiUrls({
-          geminiJson: result.json,
-          familyPlan: plan,
-          retrievalIntent,
-          registrableDomain: identity.registrable_domain
-        }));
+        candidates.push(...extractGeminiUrls({ geminiJson: result.json, familyPlan: plan, retrievalIntent: intent, registrableDomain: identity.registrable_domain }));
       }
     }
   }
+  return { runs, candidates: dedupeRecords(candidates) };
+}
 
-  const geminiSearchCandidatesMerged = mergeCandidates([geminiSearchCandidates]);
-  const geminiSearchProbe = await probeCandidateSet({ candidates: geminiSearchCandidatesMerged, options });
-
-  const anchorExtraction = await fetchAnchorLinksForGeminiAnchors({
-    geminiProbe: geminiSearchProbe,
-    identity,
-    options
+async function probeFinalCandidates({ candidates, options }) {
+  const probeResult = await probeDeterministicSources(candidates.map((item) => item.url), {
+    concurrency: Number(options.probeConcurrency || 6),
+    timeoutMs: Number(options.probeTimeoutMs || 5000),
+    delayMs: Number(options.probeDelayMs || 25)
   });
+  const byUrl = new Map(candidates.map((item) => [normalizeCandidateUrl(item.url), item]));
+  const hydrate = (rows) => rows.map((row) => ({ ...row, ...(byUrl.get(normalizeCandidateUrl(row.url)) || {}) }));
+  return { probeResult, admitted: hydrate(probeResult.admitted), rejected: hydrate(probeResult.rejected) };
+}
 
-  const anchorClassification = await classifyAnchorLinksByFamily({
-    plans,
-    anchorLinks: anchorExtraction.merged_links,
-    identity,
-    company_name,
-    options,
-    runPool
+function buildDiscovery({ admitted, rejected, plans }) {
+  const candidate_sources = admitted.map((item) => ({ ...summarizeRecord(item), admission_status: "ADMITTED" }));
+  const rejected_sources = rejected.map((item) => ({ ...summarizeRecord(item), admission_status: "REJECTED", rejection_reason: item.reason || "probe_or_fetch_failed" }));
+  const byFamily = (family) => candidate_sources.filter((item) => item.source_family === family);
+  const counts = {
+    candidate_sources: candidate_sources.length,
+    company_profile_sources: byFamily("company_profile").length,
+    product_profile_sources: byFamily("product_profile").length,
+    legal_profile_sources: byFamily("legal_profile").length,
+    governance_profile_sources: byFamily("governance_profile").length,
+    rejected_sources: rejected_sources.length,
+    coverage_gaps: 0
+  };
+  const coverage_gaps = plans
+    .filter((plan) => byFamily(plan.source_family).length < plan.target_min)
+    .map((plan) => ({ source_family: plan.source_family, label: plan.label, target_minimum: plan.target_min, found: byFamily(plan.source_family).length, status: "coverage_gap" }));
+  counts.coverage_gaps = coverage_gaps.length;
+  return {
+    source_discovery_version: SOURCE_DISCOVERY_MAGNA_CARTA_VERSION,
+    candidate_sources,
+    company_profile_sources: byFamily("company_profile"),
+    product_profile_sources: byFamily("product_profile"),
+    legal_profile_sources: byFamily("legal_profile"),
+    governance_profile_sources: byFamily("governance_profile"),
+    rejected_sources,
+    coverage_gaps,
+    counts
+  };
+}
+
+function buildProvenanceAudit({ plans, anchorExtraction, anchorClassification, freeSearch, finalProbe }) {
+  return plans.map((plan) => {
+    const family = plan.source_family;
+    const finalAdmitted = finalProbe.admitted.filter((item) => item.source_family === family);
+    const finalRejected = finalProbe.rejected.filter((item) => item.source_family === family);
+    return {
+      source_family: family,
+      label: plan.label,
+      anchor_urls_attempted: anchorExtraction.anchor_records.filter((item) => item.source_family === family).map((item) => item.url),
+      anchor_fetch: anchorExtraction.results.filter((item) => item.source_family === family).map((item) => ({ ok: item.ok, anchor_url: item.anchor_url, status: item.status || null, content_type: item.content_type || "", link_count: item.link_count || 0, error: item.error || null })),
+      gemini_anchor_classification: anchorClassification.runs.filter((run) => run.source_family === family),
+      free_first_party_search: freeSearch.runs.filter((run) => run.source_family === family),
+      admitted: finalAdmitted.map(summarizeRecord),
+      rejected: finalRejected.map(summarizeRecord)
+    };
   });
+}
 
-  const geminiCandidatesMerged = mergeCandidates([geminiSearchCandidatesMerged, anchorClassification.candidates]);
-  const geminiProbe = await probeCandidateSet({ candidates: geminiCandidatesMerged, options });
-  const geminiOnlyBuckets = buildDiscoveryBuckets({
-    admitted: geminiProbe.admitted,
-    rejected: geminiProbe.rejected
-  });
+export async function runSourceDiscoveryOrchestrator({ identity, company_name = null, options = {}, runPool }) {
+  if (!identity?.primary_url || !identity?.registrable_domain || !identity?.normalized_origin) throw new Error("identity with primary_url, normalized_origin, and registrable_domain is required");
+  if (typeof runPool !== "function") throw new Error("runPool function is required");
 
-  const gemini_primary_coverage_gaps = buildCoverageGaps({
-    plans,
-    buckets: geminiOnlyBuckets,
-    geminiRuns: [...geminiRuns, ...anchorClassification.runs],
-    supportFamilies: [],
-    mode: "gemini_primary"
-  });
+  const plans = buildFamilySearchQueries({ registrable_domain: identity.registrable_domain, normalized_origin: identity.normalized_origin, company_name })
+    .filter((plan) => ALLOWED_FAMILIES.includes(plan.source_family));
 
-  const supportFamilies = plans
-    .filter((plan) => bucketCountForFamily(geminiOnlyBuckets, plan.source_family) < plan.target_min)
-    .map((plan) => plan.source_family);
+  const anchorExtraction = await fetchAnchors({ plans, identity, options });
+  const anchorClassification = await classifyAnchorLinks({ plans, anchorExtraction, identity, company_name, options, runPool });
+  const freeSearch = await runFreeFirstPartySearch({ plans, identity, company_name, options, runPool });
 
-  const supportCandidatesRaw = supportFamilies.length > 0
-    ? buildDeterministicSourceCandidates({
-        normalized_origin: identity.normalized_origin,
-        source_families: supportFamilies
-      })
-    : [];
+  const allCandidates = dedupeRecords([...anchorClassification.candidates, ...freeSearch.candidates])
+    .filter((item) => ALLOWED_FAMILIES.includes(item.source_family))
+    .filter((item) => normalizeCandidateUrl(item.url) && !isUnsafeUrl(item.url) && isFirstPartyUrl(item.url, identity.registrable_domain));
 
-  const geminiUrls = new Set(geminiCandidatesMerged.map((item) => normalizeCandidateUrl(item.url)).filter(Boolean));
-  const supportCandidates = supportCandidatesRaw.filter((item) => !geminiUrls.has(normalizeCandidateUrl(item.url)));
-  const supportProbe = supportCandidates.length > 0
-    ? await probeCandidateSet({ candidates: supportCandidates, options })
-    : { probeResult: { counts: { admitted: 0, rejected: 0 } }, admitted: [], rejected: [] };
-
-  const admitted = mergeCandidates([geminiProbe.admitted, supportProbe.admitted]);
-  const rejected = mergeCandidates([geminiProbe.rejected, supportProbe.rejected]);
-  const buckets = buildDiscoveryBuckets({ admitted, rejected });
-  const coverage_gaps = buildCoverageGaps({ plans, buckets, geminiRuns: [...geminiRuns, ...anchorClassification.runs], supportFamilies, mode: "final" });
-  buckets.coverage_gaps = coverage_gaps;
-  buckets.counts.coverage_gaps = coverage_gaps.length;
-
-  const provenance_audit = buildFamilyProvenanceAudit({
-    plans,
-    geminiCandidates: geminiCandidatesMerged,
-    supportCandidates,
-    geminiProbe,
-    supportProbe,
-    anchorDiscovery: {
-      candidates: anchorClassification.candidates
-    }
-  });
+  const finalProbe = await probeFinalCandidates({ candidates: allCandidates, options });
+  const discovery = buildDiscovery({ admitted: finalProbe.admitted, rejected: finalProbe.rejected, plans });
+  const provenance_audit = buildProvenanceAudit({ plans, anchorExtraction, anchorClassification, freeSearch, finalProbe });
 
   return {
-    discovery: buckets,
+    discovery,
     diagnostics: {
       discovery_policy: {
-        gemini_primary_for_all_families: true,
-        gemini_primary_strategy: "anchor_link_expansion_with_gemini_classification",
-        deterministic_role: "fetch_extract_probe_prepare_support_only",
-        source_family_preserved_from_gemini: true,
-        provenance_audit_location: "source_discovery_diagnostics"
+        source_discovery_version: SOURCE_DISCOVERY_MAGNA_CARTA_VERSION,
+        gemini_discovers_and_classifies: true,
+        deterministic_role: "fetch_extract_normalize_dedupe_first_party_probe_prepare_only",
+        final_allowed_families: ALLOWED_FAMILIES,
+        provenance_is_report_not_gate: true,
+        admitted_documents_downstream_lossless: true
       },
       plans,
-      gemini_runs: geminiRuns,
       anchor_link_discovery: {
-        anchors_attempted: anchorExtraction.anchors_attempted,
-        anchor_fetch_results: anchorExtraction.results.map((result) => ({
-          ok: result.ok,
-          anchor_url: result.anchor_url,
-          source_family: result.source_family,
-          status: result.status || null,
-          content_type: result.content_type || "",
-          link_count: result.link_count || 0,
-          error: result.error || null
-        })),
+        anchor_urls_attempted: anchorExtraction.anchor_records.map(summarizeRecord),
+        anchor_fetch_results: anchorExtraction.results.map((result) => ({ ok: result.ok, anchor_url: result.anchor_url, source_family: result.source_family, status: result.status || null, content_type: result.content_type || "", link_count: result.link_count || 0, error: result.error || null })),
         extracted_first_party_link_count: anchorExtraction.merged_links.length,
-        classifier_runs: anchorClassification.runs,
-        classified_candidate_count: anchorClassification.candidates.length
+        sample_extracted_links: anchorExtraction.merged_links.slice(0, 40)
       },
-      support_families: supportFamilies,
-      gemini_primary_coverage_gaps,
+      gemini_anchor_classification_runs: anchorClassification.runs,
+      free_first_party_search_runs: freeSearch.runs,
       provenance_audit,
       candidate_counts: {
-        gemini_search_candidates: geminiSearchCandidatesMerged.length,
-        gemini_anchor_candidates: anchorClassification.candidates.length,
-        gemini_candidates: geminiCandidatesMerged.length,
-        deterministic_support_candidates: supportCandidates.length,
-        merged_candidates: admitted.length + rejected.length
+        anchor_classified_candidates: anchorClassification.candidates.length,
+        free_search_candidates: freeSearch.candidates.length,
+        final_unique_candidates: allCandidates.length,
+        admitted: finalProbe.probeResult.counts.admitted,
+        rejected: finalProbe.probeResult.counts.rejected
       },
       probe_counts: {
-        gemini_search_primary: geminiSearchProbe.probeResult.counts,
-        gemini_primary: geminiProbe.probeResult.counts,
-        deterministic_support: supportProbe.probeResult.counts
+        final_candidates: finalProbe.probeResult.counts
       }
     }
   };
 }
-
