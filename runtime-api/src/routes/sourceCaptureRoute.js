@@ -20,7 +20,11 @@ export function createSourceCaptureRouter() {
         });
       }
 
-      const capture = await captureSources(sources, options);
+      const effectiveOptions = {
+        ...options,
+        max_sources: Object.prototype.hasOwnProperty.call(options, "max_sources") ? options.max_sources : Number.MAX_SAFE_INTEGER
+      };
+      const capture = await captureSources(sources, effectiveOptions);
 
       return res.json({
         ok: true,
