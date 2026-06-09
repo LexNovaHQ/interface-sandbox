@@ -15,6 +15,30 @@ function splitTokens(value) {
   return asText(value).split(/[|,;]/).map(asText).filter(Boolean);
 }
 
+function rowId(row, index) {
+  return asText(row?.Threat_ID || row?.threat_id || `ROW_${index + 1}`);
+}
+
+function rowName(row) {
+  return asText(row?.Threat_Name || row?.threat_name || "Unnamed row");
+}
+
+function rowArchetype(row) {
+  return asUpper(row?.Archetype || row?.archetype || row?.archetype_code || "");
+}
+
+function rowSurfaces(row) {
+  return splitTokens(row?.Surface || row?.surface || row?.Surface_Tokens || row?.surface_tokens || row?.Surfaces || row?.surfaces);
+}
+
+function rowTriggerText(row) {
+  return [row?.Hunter_Trigger, row?.hunter_trigger, row?.Trigger, row?.trigger, row?.Trigger_If, row?.trigger_if, row?.Exclude_If, row?.exclude_if].map(asText).filter(Boolean).join(" | ");
+}
+
+function isConditionalDocRow(row) {
+  return /terms|privacy|dpa|aup|sla|policy|contract|consent|notice|disclosure|processor|subprocessor|absence|missing|public|documentation|governance|control|exclude/i.test(rowTriggerText(row));
+}
+
 function activeSignals(profile = {}) {
   const archetypes = new Set();
   const surfaces = new Set();
@@ -36,32 +60,63 @@ function activeSignals(profile = {}) {
   return { archetypes, surfaces, refsByArchetype, refsBySurface };
 }
 
+function refsFor(row, active) {
+  const refs = new Set();
+  const archetype = rowArchetype(row);
+  if (active.refsByArchetype.has(archetype)) for (const ref of active.refsByArchetype.get(archetype)) refs.add(ref);
+  for (const surface of rowSurfaces(row)) if (active.refsBySurface.has(surface)) for (const ref of active.refsBySurface.get(surface)) refs.add(ref);
+  return [...refs];
+}
+
 function chunkRows(rows, batchSize) {
   const out = [];
   for (let index = 0; index < rows.length; index += batchSize) out.push(rows.slice(index, index + batchSize));
   return out;
 }
 
-export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8 } = {}) {
-  const sourceRows = asArray(rows);
+function normalizeRow(row, index) {
+  return { ...row, Threat_ID: rowId(row, index), Threat_Name: rowName(row), _registry_index: index, _registry_position: index + 1 };
+}
+
+function routeRow(row, active, includeConditional) {
+  const archetype = rowArchetype(row);
+  const surfaces = rowSurfaces(row);
+  const isUni = archetype === "UNI";
+  const archetypeMatch = Boolean(archetype && active.archetypes.has(archetype));
+  const surfaceMatch = surfaces.some((surface) => active.surfaces.has(surface));
+  if (isUni) return "UNI_ALWAYS_RUN";
+  if (archetypeMatch || surfaceMatch) return "STAGE5_INT_TRIGGERED";
+  if (includeConditional && isConditionalDocRow(row)) return "CONDITIONAL_DOC_REVIEW";
+  return "INT_NOT_TRIGGERED";
+}
+
+export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, includeConditional = true } = {}) {
+  const sourceRows = asArray(rows).map(normalizeRow);
   const active = activeSignals(profile);
+  const modelRows = [];
+  const deterministicRows = [];
+  const routeRecords = [];
+  for (const row of sourceRows) {
+    const reason = routeRow(row, active, includeConditional);
+    const shouldRun = reason === "UNI_ALWAYS_RUN" || reason === "STAGE5_INT_TRIGGERED" || reason === "CONDITIONAL_DOC_REVIEW";
+    const routeRecord = { threat_id: row.Threat_ID, threat_name: row.Threat_Name, archetype: rowArchetype(row), surfaces: rowSurfaces(row), route: shouldRun ? "RUN" : "SKIP", route_reason: reason, feature_refs: refsFor(row, active) };
+    routeRecords.push(routeRecord);
+    if (shouldRun) modelRows.push(row);
+    else deterministicRows.push(row);
+  }
+  const batches = chunkRows(modelRows, batchSize);
   return {
     plan_version: "priority_row_plan_v1",
     mode: "priority_first",
     batch_size: batchSize,
     active_archetypes: [...active.archetypes].sort(),
     active_surfaces: [...active.surfaces].sort(),
-    model_rows: sourceRows,
-    model_batches: chunkRows(sourceRows, batchSize),
-    deterministic_rows: [],
-    route_records: [],
-    counts: {
-      total_rows: sourceRows.length,
-      model_rows: sourceRows.length,
-      deterministic_rows: 0,
-      model_batch_count: sourceRows.length ? chunkRows(sourceRows, batchSize).length : 0
-    },
-    routing_summary: {}
+    model_rows: modelRows,
+    model_batches: batches,
+    deterministic_rows: deterministicRows,
+    route_records: routeRecords,
+    counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length },
+    routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {})
   };
 }
 
@@ -70,11 +125,5 @@ export function mergePriorityRows({ modelRows = [], deterministicRows = [], sour
 }
 
 export function validatePriorityMerge({ mergedRows = [], sourceRows = [] } = {}) {
-  return {
-    ok: asArray(mergedRows).length === asArray(sourceRows).length,
-    expected_count: asArray(sourceRows).length,
-    actual_count: asArray(mergedRows).length,
-    missing: [],
-    duplicate: []
-  };
+  return { ok: asArray(mergedRows).length === asArray(sourceRows).length, expected_count: asArray(sourceRows).length, actual_count: asArray(mergedRows).length, missing: [], duplicate: [] };
 }
