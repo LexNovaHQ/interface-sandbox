@@ -74,37 +74,29 @@ function refsFor(row, active) {
   return [...refs];
 }
 
-function skippedStatus(row, active) {
-  const archetype = rowArchetype(row);
-  const surfaces = rowSurfaces(row);
-  const archetypeMismatch = archetype && archetype !== "UNI" && !active.archetypes.has(archetype);
-  const surfaceMismatch = surfaces.length > 0 && !surfaces.some((surface) => active.surfaces.has(surface));
-  return archetypeMismatch || surfaceMismatch ? "NOT_APPLICABLE" : "NOT_TRIGGERED";
-}
-
 function deterministicEntry(row, index, active, routeReason) {
-  const status = skippedStatus(row, active);
   const refs = refsFor(row, active);
   return {
     entry_number: index + 1,
     [K_ID]: rowId(row, index),
     [K_NAME]: rowName(row),
-    archetype_gate: status === "NOT_APPLICABLE" ? "FAIL" : "PASS",
-    surface_gate: status === "NOT_APPLICABLE" ? "FAIL" : "PASS",
-    authority_relevance: "DETERMINISTIC_GATE",
+    archetype_gate: "FAIL",
+    surface_gate: "FAIL",
+    authority_relevance: "DETERMINISTIC_PRIORITY_GATE",
     conditions: [],
     [K_TRIGGER]: false,
     [K_EXCLUDE]: false,
-    [K_FINAL]: status,
-    feature_refs: refs.length ? refs : ["UNKNOWN"],
+    [K_FINAL]: "NOT_APPLICABLE",
+    feature_refs: refs.length ? refs : ["NO_STAGE5_TRIGGER"],
     evidence_ref: "stage5_priority_gate",
-    reasoning_summary: `${routeReason}: row was resolved by deterministic Stage 5 priority gate.`
+    reasoning_summary: `${routeReason}: non-triggered INT row skipped by deterministic Stage 5 priority gate and marked NOT_APPLICABLE.`
   };
 }
 
 function chunkRows(rows, batchSize) {
+  const size = Math.max(1, Number(batchSize || 8));
   const out = [];
-  for (let index = 0; index < rows.length; index += batchSize) out.push(rows.slice(index, index + batchSize));
+  for (let index = 0; index < rows.length; index += size) out.push(rows.slice(index, index + size));
   return out;
 }
 
@@ -139,7 +131,7 @@ export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, i
     else deterministicRows.push(deterministicEntry(row, index, active, reason));
   });
   const batches = chunkRows(modelRows, batchSize);
-  return { plan_version: "priority_row_plan_v1", mode: "priority_first", batch_size: batchSize, active_archetypes: [...active.archetypes].sort(), active_surfaces: [...active.surfaces].sort(), model_rows: modelRows, model_batches: batches, deterministic_rows: deterministicRows, route_records: routeRecords, counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length }, routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {}) };
+  return { plan_version: "priority_row_plan_v1", mode: "priority_first", batch_size: Math.max(1, Number(batchSize || 8)), active_archetypes: [...active.archetypes].sort(), active_surfaces: [...active.surfaces].sort(), model_rows: modelRows, model_batches: batches, deterministic_rows: deterministicRows, route_records: routeRecords, counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length }, routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {}) };
 }
 
 export function mergePriorityRows({ modelRows = [], deterministicRows = [], sourceRows = [] } = {}) {
