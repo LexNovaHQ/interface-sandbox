@@ -117,7 +117,47 @@ function snapQuoteToEvidence(feature, evidenceBuffer = []) { if (!feature?.evide
 function repairTargetFeatureProfileQuotes(value, input) { if (!value || typeof value !== "object" || !Array.isArray(value.product_feature_map)) return { value, repaired: false, repair_notes: [] }; const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : []; if (!evidenceBuffer.length) return { value, repaired: false, repair_notes: [] }; const copy = { ...value, product_feature_map: value.product_feature_map.map((feature) => ({ ...feature })) }; let repairedCount = 0; for (const feature of copy.product_feature_map) { const snapped = snapQuoteToEvidence(feature, evidenceBuffer); if (snapped && quoteNorm(snapped) !== quoteNorm(feature.evidence_quote)) { feature.evidence_quote = snapped; repairedCount += 1; } } return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`snapped_${repairedCount}_target_feature_evidence_quotes_to_admitted_source_text`] : [] }; }
 function gateFailure(entry = {}) { return entry.archetype_gate === "FAIL" || entry.surface_gate === "FAIL"; }
 function derivedRegistryStatus(entry = {}) { if (gateFailure(entry)) return "NOT_APPLICABLE"; if (entry.final_status === "NOT_APPLICABLE" || entry.final_status === "INSUFFICIENT_EVIDENCE") return entry.final_status; if (entry.trigger_if_result === true && entry.exclude_if_result === true) return "CONTROLLED"; if (entry.trigger_if_result === true && entry.exclude_if_result === false) return "TRIGGERED"; if (entry.trigger_if_result === false && ["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED"].includes(entry.final_status)) return "NOT_TRIGGERED"; return entry.final_status; }
-function repairRegistryLedgerFinalStatuses(value) { if (!value || typeof value !== "object" || !Array.isArray(value.registry_evaluation_ledger)) return { value, repaired: false, repair_notes: [] }; const copy = { ...value, registry_evaluation_ledger: value.registry_evaluation_ledger.map((entry) => ({ ...entry })) }; let repairedCount = 0; let gateRepairCount = 0; for (const entry of copy.registry_evaluation_ledger) { const derived = derivedRegistryStatus(entry); if (derived && derived !== entry.final_status) { entry.final_status = derived; repairedCount += 1; if (derived === "NOT_APPLICABLE" && gateFailure(entry)) gateRepairCount += 1; } } const notes = []; if (repairedCount > 0) notes.push(`normalized_${repairedCount}_registry_final_statuses_without_overriding_not_applicable_or_insufficient`); if (gateRepairCount > 0) notes.push(`forced_${gateRepairCount}_gate_fail_rows_to_not_applicable`); return { value: copy, repaired: repairedCount > 0, repair_notes: notes }; }
+function repairRegistryConditionBasis(condition = {}) {
+  const basis = String(condition?.basis || "").trim();
+  if (!basis) return false;
+  const replacements = [
+    [/^TRUE_INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:"],
+    [/^INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:"],
+    [/^TRUE_NOT_SATISFIED\s*:/i, "FALSE_NOT_SATISFIED:"],
+    [/^TRUE_NOT_APPLICABLE\s*:/i, "FALSE_NOT_APPLICABLE:"]
+  ];
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(basis)) {
+      condition.basis = basis.replace(pattern, replacement);
+      condition.result = false;
+      return true;
+    }
+  }
+  return false;
+}
+function repairRegistryLedgerFinalStatuses(value) {
+  if (!value || typeof value !== "object" || !Array.isArray(value.registry_evaluation_ledger)) return { value, repaired: false, repair_notes: [] };
+  const copy = { ...value, registry_evaluation_ledger: value.registry_evaluation_ledger.map((entry) => ({ ...entry, conditions: Array.isArray(entry?.conditions) ? entry.conditions.map((condition) => ({ ...condition })) : entry?.conditions })) };
+  let repairedCount = 0;
+  let gateRepairCount = 0;
+  let conditionPrefixRepairCount = 0;
+  for (const entry of copy.registry_evaluation_ledger) {
+    if (Array.isArray(entry.conditions)) {
+      for (const condition of entry.conditions) if (repairRegistryConditionBasis(condition)) conditionPrefixRepairCount += 1;
+    }
+    const derived = derivedRegistryStatus(entry);
+    if (derived && derived !== entry.final_status) {
+      entry.final_status = derived;
+      repairedCount += 1;
+      if (derived === "NOT_APPLICABLE" && gateFailure(entry)) gateRepairCount += 1;
+    }
+  }
+  const notes = [];
+  if (repairedCount > 0) notes.push(`normalized_${repairedCount}_registry_final_statuses_without_overriding_not_applicable_or_insufficient`);
+  if (gateRepairCount > 0) notes.push(`forced_${gateRepairCount}_gate_fail_rows_to_not_applicable`);
+  if (conditionPrefixRepairCount > 0) notes.push(`normalized_${conditionPrefixRepairCount}_registry_condition_basis_prefixes`);
+  return { value: copy, repaired: repairedCount > 0 || conditionPrefixRepairCount > 0, repair_notes: notes };
+}
 function buildPromptInput({ stageId, prompt, runtimeInstruction, input }) { return [prompt.trim(), runtimeInstruction ? `\n\n---RUNTIME_STAGE_INSTRUCTION---\n${runtimeInstruction.trim()}` : "", "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.", "\n\n---INPUT_JSON---\n", JSON.stringify({ stage_id: stageId, input }, null, 2)].join(""); }
 function publicModelMetadata(result, repair = {}) { return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] }; }
 function providerFailureStatus(result) { if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503; if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502; if (result?.error_type === "TIMEOUT") return 504; return 502; }
