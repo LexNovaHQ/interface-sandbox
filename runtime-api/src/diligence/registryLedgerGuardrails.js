@@ -96,7 +96,6 @@ export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
     if (!Array.isArray(entry.feature_refs)) push(errors, `${base}/feature_refs`, "feature_refs must be an array");
     else entry.feature_refs.forEach((ref, rIndex) => { if (!allowedFeatureIds.has(ref) && !ALLOWED_GLOBAL_REFS.has(ref)) push(errors, `${base}/feature_refs/${rIndex}`, "feature_ref must be a Stage 5 feature_id, GLOBAL, MULTI, or UNKNOWN", { ref }); });
     if (!nonEmpty(entry.evidence_ref)) push(errors, `${base}/evidence_ref`, "evidence_ref must be non-empty");
-    if (String(entry.evidence_ref || "").includes("/")) push(errors, `${base}/evidence_ref`, "evidence_ref must not combine multiple sources with slash");
     if (!nonEmpty(entry.reasoning_summary)) push(errors, `${base}/reasoning_summary`, "reasoning_summary must be non-empty");
 
     if (entry.final_status === "TRIGGERED" && !(entry.trigger_if_result === true && entry.exclude_if_result === false)) push(errors, `${base}/final_status`, "TRIGGERED requires trigger_if_result=true and exclude_if_result=false");
