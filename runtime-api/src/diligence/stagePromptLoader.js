@@ -1,5 +1,12 @@
-﻿import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { resolve } from "node:path";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
+
+function sha256(value) {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 function getPrompt(promptId) {
   const prompt = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
@@ -9,6 +16,20 @@ function getPrompt(promptId) {
   }
 
   return prompt;
+}
+
+function getCompanyProfilePrompt() {
+  const fileName = "02_COMPANY_PROFILE.prompt.md";
+  const path = "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md";
+  const text = readFileSync(resolve(process.cwd(), "..", path), "utf8");
+  return {
+    prompt_id: "company_profile",
+    file_name: fileName,
+    path,
+    sha256: sha256(text),
+    characters: text.length,
+    text
+  };
 }
 
 export function loadDiligencePrompt(stageId) {
@@ -23,7 +44,7 @@ export function loadDiligencePrompt(stageId) {
   const stageConfig = getDiligenceStageConfig(normalizedStageId);
 
   const sharedPrompt = getPrompt(sharedPromptId);
-  const stagePrompt = getPrompt(stagePromptId);
+  const stagePrompt = normalizedStageId === "company_profile" ? getCompanyProfilePrompt() : getPrompt(stagePromptId);
   const promptParts = [sharedPrompt.text.trim(), "\n\n---\n\n", stagePrompt.text.trim()];
 
   if (stageConfig.runtime_instruction) {
@@ -35,7 +56,7 @@ export function loadDiligencePrompt(stageId) {
   return {
     stage_id: normalizedStageId,
     prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
-    bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
+    bundle_generated_at: normalizedStageId === "company_profile" ? "source_prompt_runtime_loaded" : DILIGENCE_PROMPT_BUNDLE.generated_at,
     shared_prompt: {
       prompt_id: sharedPrompt.prompt_id,
       file_name: sharedPrompt.file_name,
@@ -63,6 +84,7 @@ export function assertDiligencePromptBundleReady() {
   if (!DILIGENCE_PROMPT_BUNDLE?.shared_prompt_id) missing.push("shared_system_preamble");
 
   for (const stageId of getDiligenceStageIds()) {
+    if (stageId === "company_profile") continue;
     const promptId = DILIGENCE_PROMPT_BUNDLE.stage_prompt_ids?.[stageId];
     const prompt = promptId ? DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId] : null;
     if (!prompt?.text) missing.push(`stage:${stageId}`);
@@ -76,7 +98,7 @@ export function assertDiligencePromptBundleReady() {
     ok: true,
     prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
     generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
+    source_loaded_stages: ["company_profile"],
     stage_count: getDiligenceStageIds().length
   };
 }
-
