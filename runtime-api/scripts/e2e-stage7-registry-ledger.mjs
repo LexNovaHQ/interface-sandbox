@@ -27,7 +27,7 @@ function normalizeRow(row, index) { return { ...row, Threat_ID: threatId(row, in
 function selectRows(registry) {
   const allRows = Array.isArray(registry?.threats) ? registry.threats.map(normalizeRow) : [];
   if (!allRows.length) fail("Registry runtime contains no threats[]", { registryPath });
-  const batchSize = Number(process.env.STAGE7_BATCH_SIZE || 5);
+  const batchSize = Number(process.env.STAGE7_BATCH_SIZE || 8);
   const preferredArchetypes = new Set(["UNI", "TRN", "CRT", "RDR", "ORC"]);
   const picked = [];
   const seen = new Set();
@@ -51,27 +51,14 @@ const registry = readJsonFile(registryPath, "Registry runtime");
 const registryKey = readJsonFile(registryKeyPath, "Registry key runtime");
 const { allRows, picked } = selectRows(registry);
 const batch = makeBatch(picked, Number(registry.registry_count || allRows.length));
-
 console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_7_registry_ledger_e2e", cache_path: stage6CachePath, runtime_url: base, registry_total_count: allRows.length, batch_size: picked.length, expected_threat_ids: batch.expected_threat_ids }, null, 2));
-
-const adapterResult = buildRegistryLedgerInput({
-  sourceBundle: cache.source_bundle,
-  evidenceJunction: cache.evidence_junction,
-  targetFeatureProfile: cache.target_feature_profile,
-  legalStackReview: cache.legal_stack_review,
-  registryBatch: batch,
-  registryKey,
-  runId: batch.run_id,
-  budget: { max_input_chars: Number(process.env.STAGE7_MAX_INPUT_CHARS || 120000), max_estimated_tokens: Number(process.env.STAGE7_MAX_ESTIMATED_TOKENS || 60000), max_single_source_chars: Number(process.env.STAGE7_MAX_SINGLE_SOURCE_CHARS || 60000), prompt_overhead_tokens: Number(process.env.STAGE7_PROMPT_OVERHEAD_TOKENS || 25000) }
-});
+const adapterResult = buildRegistryLedgerInput({ sourceBundle: cache.source_bundle, evidenceJunction: cache.evidence_junction, targetFeatureProfile: cache.target_feature_profile, legalStackReview: cache.legal_stack_review, registryBatch: batch, registryKey, runId: batch.run_id, budget: { max_input_chars: Number(process.env.STAGE7_MAX_INPUT_CHARS || 120000), max_estimated_tokens: Number(process.env.STAGE7_MAX_ESTIMATED_TOKENS || 60000), max_single_source_chars: Number(process.env.STAGE7_MAX_SINGLE_SOURCE_CHARS || 60000), prompt_overhead_tokens: Number(process.env.STAGE7_PROMPT_OVERHEAD_TOKENS || 25000) } });
 if (!adapterResult.ok) fail("Registry Ledger input adapter failed", adapterResult);
 const stage7Input = adapterResult.registry_ledger_input;
 console.log(JSON.stringify({ ok: true, step: "stage7_adapter_complete", budget_status: stage7Input.input_budget.budget_status, estimated_total_prompt_tokens: stage7Input.input_budget.estimated_total_prompt_tokens, included_sources: stage7Input.input_budget.included_sources.length, excluded_sources: stage7Input.input_budget.excluded_sources.length, source_selection_policy: stage7Input.source_bundle.source_review.source_selection_policy }, null, 2));
-
-const registryStage = await postJson(base, "/v1/diligence/stage", { stage: "registry_ledger_evaluation", input: stage7Input, options: { pool: process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.STAGE7_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.STAGE7_TIMEOUT_MS || 90000) } });
+const registryStage = await postJson(base, "/v1/diligence/stage", { stage: "registry_ledger_evaluation", input: stage7Input, options: { pool: process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.STAGE7_MAX_OUTPUT_TOKENS || 16384), timeoutMs: Number(process.env.STAGE7_TIMEOUT_MS || 90000) } });
 const ledger = registryStage.registry_ledger;
 if (!ledger) fail("Registry Ledger stage returned no ledger", registryStage);
 if (!Array.isArray(ledger.registry_evaluation_ledger)) fail("registry_evaluation_ledger missing", ledger);
-
 const actualPromptTokens = registryStage.model_metadata?.usage_metadata?.promptTokenCount || null;
 console.log(JSON.stringify({ ok: true, phase: "stage_7_registry_ledger_e2e", adapter_version: stage7Input.registry_ledger_input_version, batch_id: stage7Input.batch_id, registry_count_loaded: ledger.registry_batch_meta?.registry_count_loaded, expected_batch_size: picked.length, ledger_count: ledger.registry_evaluation_ledger.length, expected_threat_ids: batch.expected_threat_ids, emitted_threat_ids: ledger.registry_evaluation_ledger.map((entry) => entry.threat_id), final_status_counts: ledger.registry_evaluation_ledger.reduce((acc, entry) => { acc[entry.final_status] = (acc[entry.final_status] || 0) + 1; return acc; }, {}), budget_status: stage7Input.input_budget.budget_status, estimated_total_prompt_tokens: stage7Input.input_budget.estimated_total_prompt_tokens, actual_prompt_tokens: actualPromptTokens, token_estimate_drift_ratio: tokenDrift(actualPromptTokens, stage7Input.input_budget.estimated_total_prompt_tokens), included_sources: stage7Input.input_budget.included_sources.length, excluded_sources: stage7Input.input_budget.excluded_sources.length, validation_mode: registryStage.validation_mode, guardrail_validation_mode: registryStage.guardrail_validation_mode, model_metadata: registryStage.model_metadata || null }, null, 2));
