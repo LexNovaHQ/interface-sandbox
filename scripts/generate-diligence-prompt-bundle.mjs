@@ -10,6 +10,7 @@ const outputPath = resolve(repoRoot, "functions/_generated/diligencePromptBundle
 const PROMPT_FILES = Object.freeze({
   shared_system_preamble: "00_SHARED_SYSTEM_PREAMBLE.prompt.md",
   evidence_refiner: "01_EVIDENCE_REFINER.prompt.md",
+  company_profile: "02_COMPANY_PROFILE.prompt.md",
   target_feature_profile: "02_TARGET_FEATURE_PROFILE.prompt.md",
   legal_stack_review: "03_LEGAL_STACK_REVIEW.prompt.md",
   registry_ledger_evaluation: "04_REGISTRY_LEDGER_EVALUATION.prompt.md",
@@ -19,6 +20,7 @@ const PROMPT_FILES = Object.freeze({
 
 const STAGE_PROMPT_IDS = Object.freeze({
   evidence_refiner: "evidence_refiner",
+  company_profile: "company_profile",
   target_feature_profile: "target_feature_profile",
   legal_stack_review: "legal_stack_review",
   registry_ledger_evaluation: "registry_ledger_evaluation",
