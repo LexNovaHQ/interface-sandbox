@@ -34,6 +34,13 @@ function normalizeUrl(value) {
   } catch { return null; }
 }
 
+function tokenDrift(actual, estimated) {
+  const a = Number(actual || 0);
+  const e = Number(estimated || 0);
+  if (!a || !e) return null;
+  return Number((a / e).toFixed(3));
+}
+
 async function readJson(response) {
   const text = await response.text();
   try { return JSON.parse(text); }
@@ -154,8 +161,9 @@ const adapterResult = buildTargetFeatureProfileInput({
   runId: `stage5_target_feature_profile_input_${Date.now()}`,
   budget: {
     max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 120000),
-    max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 30000),
-    max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000)
+    max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 60000),
+    max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000),
+    prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000)
   }
 });
 
@@ -165,7 +173,9 @@ console.log(JSON.stringify({
   ok: true,
   step: "stage5_adapter_complete",
   budget_status: stage5Input.input_budget.budget_status,
-  estimated_input_tokens: stage5Input.input_budget.estimated_input_tokens,
+  estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens,
+  estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens,
+  estimated_total_prompt_tokens: stage5Input.input_budget.estimated_total_prompt_tokens,
   included_sources: stage5Input.input_budget.included_sources.length,
   excluded_sources: stage5Input.input_budget.excluded_sources.length
 }, null, 2));
@@ -184,6 +194,9 @@ const profile = featureStage.target_feature_profile;
 if (!profile) fail("Target Feature Profile stage returned no profile", featureStage);
 if (!Array.isArray(profile.product_feature_map)) fail("Target Feature Profile product_feature_map missing", profile);
 
+const actualPromptTokens = featureStage.model_metadata?.usage_metadata?.promptTokenCount || null;
+const estimatedTotalPromptTokens = stage5Input.input_budget.estimated_total_prompt_tokens;
+
 console.log(JSON.stringify({
   ok: true,
   phase: "stage_5_target_feature_profile_e2e",
@@ -191,7 +204,11 @@ console.log(JSON.stringify({
   evidence_junction_version: junction.evidence_junction_version,
   adapter_version: stage5Input.target_feature_profile_input_version,
   budget_status: stage5Input.input_budget.budget_status,
-  estimated_input_tokens: stage5Input.input_budget.estimated_input_tokens,
+  estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens,
+  estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens,
+  estimated_total_prompt_tokens: estimatedTotalPromptTokens,
+  actual_prompt_tokens: actualPromptTokens,
+  token_estimate_drift_ratio: tokenDrift(actualPromptTokens, estimatedTotalPromptTokens),
   included_sources: stage5Input.input_budget.included_sources.length,
   excluded_sources: stage5Input.input_budget.excluded_sources.length,
   target_company_name: profile.target_profile?.company_name || null,
