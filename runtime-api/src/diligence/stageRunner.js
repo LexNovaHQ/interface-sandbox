@@ -20,14 +20,27 @@ function stringifyLimitation(item) {
   try { return JSON.stringify(item); } catch { return String(item); }
 }
 
+function objectReadableFields(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const preferredKeys = [
+    "summary", "value", "category", "primary", "sub_sector", "sector", "industry", "description", "signal", "name", "type", "model", "mechanism", "status", "confidence"
+  ];
+  const out = [];
+  for (const key of preferredKeys) {
+    const item = value[key];
+    if (typeof item === "string" && item.trim()) out.push(item.trim());
+  }
+  return [...new Set(out)];
+}
+
 function asString(value, fallback = "unknown") {
   if (typeof value === "string" && value.trim()) return value.trim();
   if (Array.isArray(value)) return value.map((item) => asString(item, "")).filter(Boolean).join(", ") || fallback;
   if (value == null) return fallback;
   if (typeof value === "object") {
-    const fields = [value.value, value.summary, value.description, value.signal, value.name, value.type].filter((item) => typeof item === "string" && item.trim());
+    const fields = objectReadableFields(value);
     if (fields.length) return fields.join(" — ");
-    try { return JSON.stringify(value); } catch { return fallback; }
+    return fallback;
   }
   return String(value).trim() || fallback;
 }
