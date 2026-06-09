@@ -74,13 +74,105 @@ function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function validateTargetFeatureProfileGuardrails(profile, { threatMappingSupplied = false } = {}) {
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeUrl(value) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString();
+  } catch {
+    return String(value || "").trim();
+  }
+}
+
+function evidenceUrlKeys(record = {}) {
+  return [record.source_url, record.final_url, record.url, record.feature_source_url]
+    .filter((value) => typeof value === "string" && value.trim())
+    .flatMap((value) => {
+      const normalized = normalizeUrl(value);
+      return [value.trim(), normalized].filter(Boolean);
+    });
+}
+
+function buildEvidenceIndex(evidenceBuffer = []) {
+  const byUrl = new Map();
+  const all = [];
+
+  for (const record of Array.isArray(evidenceBuffer) ? evidenceBuffer : []) {
+    const text = record?.clean_text_lossless || record?.text?.clean_text_lossless || "";
+    const indexed = {
+      evidence_source_id: record?.evidence_source_id || null,
+      source_family: record?.source_family || "unknown",
+      source_url: record?.source_url || record?.url || null,
+      final_url: record?.final_url || null,
+      clean_text_lossless: text,
+      normalized_text: normalizeText(text)
+    };
+    all.push(indexed);
+    for (const key of evidenceUrlKeys(record)) {
+      if (!byUrl.has(key)) byUrl.set(key, []);
+      byUrl.get(key).push(indexed);
+    }
+  }
+
+  return { byUrl, all };
+}
+
+function quoteAppearsInSource(quote, sourceRecords = []) {
+  const normalizedQuote = normalizeText(quote);
+  if (!normalizedQuote) return false;
+  return sourceRecords.some((record) => record.normalized_text.includes(normalizedQuote));
+}
+
+function matchingEvidenceRecords(featureSourceUrl, evidenceIndex) {
+  const keys = evidenceUrlKeys({ source_url: featureSourceUrl });
+  const matches = [];
+  const seen = new Set();
+  for (const key of keys) {
+    for (const record of evidenceIndex.byUrl.get(key) || []) {
+      const id = `${record.evidence_source_id || ""}|${record.source_url || ""}|${record.final_url || ""}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      matches.push(record);
+    }
+  }
+  return matches;
+}
+
+function verifyFeatureQuote(feature, base, errors, evidenceIndex) {
+  if (!nonEmptyString(feature.evidence_quote) || !nonEmptyString(feature.feature_source_url)) return;
+  const sourceMatches = matchingEvidenceRecords(feature.feature_source_url, evidenceIndex);
+  if (!sourceMatches.length) {
+    push(errors, `${base}/feature_source_url`, "feature_source_url must match an admitted evidence_buffer source URL", {
+      feature_source_url: feature.feature_source_url
+    });
+    return;
+  }
+  if (!quoteAppearsInSource(feature.evidence_quote, sourceMatches)) {
+    push(errors, `${base}/evidence_quote`, "evidence_quote must appear in the admitted clean_text_lossless for feature_source_url", {
+      feature_source_url: feature.feature_source_url,
+      evidence_quote: feature.evidence_quote
+    });
+  }
+}
+
+export function validateTargetFeatureProfileGuardrails(profile, { threatMappingSupplied = false, evidenceBuffer = [] } = {}) {
   const errors = [];
   if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
     push(errors, "", "target_feature_profile must be an object");
     return { ok: false, errors };
   }
 
+  const evidenceIndex = buildEvidenceIndex(evidenceBuffer);
   walkKeys(profile, errors, "");
 
   const features = Array.isArray(profile.product_feature_map) ? profile.product_feature_map : [];
@@ -108,6 +200,8 @@ export function validateTargetFeatureProfileGuardrails(profile, { threatMappingS
     if (!nonEmptyString(feature.feature_description)) push(errors, `${base}/feature_description`, "feature_description must be non-empty");
     if (!nonEmptyString(feature.evidence_quote)) push(errors, `${base}/evidence_quote`, "evidence_quote must be non-empty for every final feature");
     if (!nonEmptyString(feature.feature_source_url)) push(errors, `${base}/feature_source_url`, "feature_source_url must be non-empty for every final feature");
+
+    verifyFeatureQuote(feature, base, errors, evidenceIndex);
 
     const codes = Array.isArray(feature.archetype_codes) ? feature.archetype_codes : [];
     const labels = Array.isArray(feature.archetype_labels) ? feature.archetype_labels : [];
