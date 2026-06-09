@@ -3,60 +3,45 @@ import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js
 
 const LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES = `
 
----MANDATORY_LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES---
+---MANDATORY_LEGAL_STACK_CONTROL_SIGNAL_MAP_RULES---
 
 These rules are supreme runtime rules for legal_stack_review. Apply them before writing legal_stack[], document_stack_redline[], document_stack_synthesis, legal_stack_assessment[], or limitations[].
 
-This stage must not run registry evaluation and must not assign registry final_status values. Its job is to create a complete public-footprint legal/control map for later Hunter EXCLUDE_IF review.
+This stage must not run registry evaluation and must not assign registry final_status values. Its job is to review the public legal stack and prepare compact control evidence for later Hunter EXCLUDE_IF review.
 
-Embedded artifact rule:
-Inspect admitted legal/governance text for embedded annexures, schedules, addenda, appendices, exhibits, notices, tables, policy sections, support terms, subprocessor lists, DPA sections, AUP/prohibited-use sections, SLA/service-credit sections, security terms, transfer notices, consent notices, retention notices, and special product terms. Treat embedded artifacts as first-class evidence inside legal_stack_assessment[]. Do not add them as sixth legal_stack[] document types.
+Use the deterministic legal_control_signal_map:
+The input may include legal_control_signal_map. It is built deterministically from admitted full legal/governance text before this model call. Treat it as a reading aid, not a legal conclusion. The full admitted text in source_bundle.evidence_buffer remains the authority.
 
-Mandatory embedded_artifact_index entries:
-If an embedded artifact is visible, create at least one legal_stack_assessment[] entry with assessment_type: "embedded_artifact_index". Include parent_document_type, embedded_artifact_type, section_heading, source_basis, feature_refs, coverage_note, evidence_quote, and limitation. Use the admitted source URL or manual_text as source_basis. Keep evidence_quote short and exact.
+No exhaustive control inventory:
+Do not create a long legal_control_index. Do not repeat every signal. legal_stack_assessment[] should stay compact and material.
 
-Mandatory legal_control_index entries:
-If admitted text contains a control relevant to later Hunter EXCLUDE_IF analysis, create a legal_stack_assessment[] entry with assessment_type: "legal_control_index". Include control_family, parent_document_type, source_basis, control_strength, feature_refs, coverage_note, evidence_quote, and limitation. The control index is not a legal conclusion; it is a public-footprint inventory of visible controls.
+Output budget rule:
+Create at most 8 legal_stack_assessment[] entries total unless a document is impossible to assess without more. Prefer the highest-value entries for later Stage 7 EXCLUDE_IF review.
 
-Minimum control families to inspect:
-- subprocessor disclosure;
-- subprocessor change notice;
-- subprocessor objection process;
-- model training opt-in or opt-out;
-- no sell/share or CPRA-style restriction;
-- consent withdrawal;
-- data deletion;
-- data subject rights;
-- cross-border transfer safeguards;
-- biometric or voice consent;
-- biometric or voice retention;
-- AI output reliance disclaimer;
-- output ownership or generated-content allocation;
-- prohibited-use or AUP controls;
-- deepfake, impersonation, or voice-cloning restrictions;
-- DPA controller/processor roles;
-- DPA processing instructions;
-- security measures;
-- breach notification;
-- SLA uptime;
-- SLA remedies or service credits;
-- liability limitation;
-- warranty disclaimer.
+Priority controls to mention if visible in legal_control_signal_map or full text:
+1. subprocessor disclosure / change notice / objection;
+2. model training or fine-tuning opt-in or opt-out;
+3. consent withdrawal, deletion, or data-subject rights;
+4. biometric, voice, deepfake, or impersonation controls;
+5. AUP or prohibited-use restrictions;
+6. AI output reliance/accuracy disclaimer;
+7. output ownership or generated-content allocation;
+8. DPA roles / processing instructions;
+9. security or breach controls;
+10. SLA remedies / service credits;
+11. liability or warranty limits.
+
+Embedded artifact handling:
+If legal_control_signal_map flags an embedded artifact such as an annexure, schedule, notice, table, subprocessor list, AUP section, DPA section, SLA section, or support terms, check the corresponding full text before declaring related coverage absent. Do not add embedded artifacts as sixth legal_stack[] document types.
 
 No contradicted misses rule:
-Do not write a miss such as "No visible subprocessor disclosure", "No visible consent withdrawal", "No visible deletion process", "No visible model-training restriction", "No visible biometric/voice control", "No visible AUP", or "No visible SLA remedy" until you have checked all admitted ToS, Privacy Policy, DPA, AUP, SLA, annexures, schedules, addenda, appendices, exhibits, notices, tables, trust/security pages, and supporting governance surfaces supplied in source_bundle. If admitted text contains a relevant embedded artifact or control, record it as coverage/control or explain specifically why it does not satisfy the coverage issue.
+Before writing a miss such as "No visible subprocessor disclosure", "No visible consent withdrawal", "No visible deletion process", "No visible model-training restriction", "No visible biometric/voice control", "No visible AUP", or "No visible SLA remedy", first check legal_control_signal_map and the full admitted source text. If a signal exists, either record it as coverage/control or explain the exact mismatch in one compact limitation.
 
-Annexure/schedule priority rule:
-If an admitted Privacy Policy, ToS, DPA, AUP, SLA, or supporting governance surface contains headings such as "Annexure", "Schedule", "Appendix", "Exhibit", "Notice", "Sub-processors", "Data Sub-processors", "Service Providers", "International Transfers", "Biometric", "Voice", "AI", "Acceptable Use", "Prohibited Use", "Service Levels", or "Support", you must inspect and index those sections before declaring related coverage absent.
-
-Control strength labels:
-Use practical control_strength labels inside legal_stack_assessment[] such as "specific_named_control", "specific_process_control", "specific_notice_control", "generic_clause_only", "partial_control", "unclear_control", or "not_visible_in_admitted_evidence". These are assessment labels only, not schema-level enums and not registry statuses.
+Compact entry rule:
+If you create legal_stack_assessment[] entries for controls or embedded artifacts, keep coverage_note under 25 words and evidence_quote under 25 words. Do not duplicate the same control family across documents unless the second document adds materially different control evidence.
 
 Stage 7 handoff rule:
-The legal_control_index should be clear enough that registry_ledger_evaluation can later decide whether row-specific EXCLUDE_IF is satisfied. Do not decide EXCLUDE_IF here. Do not output CONTROLLED, TRIGGERED, NOT_TRIGGERED, NOT_APPLICABLE, or INSUFFICIENT_EVIDENCE as threat classifications.
-
-Self-check before output:
-Before returning JSON, verify that every absence/miss statement has been checked against embedded artifacts and the legal_control_index. If a miss would be contradicted by an admitted annexure, schedule, notice, table, or embedded section, revise the miss into a cover/control entry or add a limitation explaining the exact unresolved mismatch.
+The output should help registry_ledger_evaluation later decide row-specific EXCLUDE_IF. Do not decide EXCLUDE_IF here. Do not output CONTROLLED, TRIGGERED, NOT_TRIGGERED, NOT_APPLICABLE, or INSUFFICIENT_EVIDENCE as threat classifications.
 `;
 
 const REGISTRY_HUNTER_ENGINE_RULES = `
