@@ -30,15 +30,34 @@ function rowName(row) {
 }
 
 function rowArchetype(row) {
-  return asUpper(row?.Archetype || row?.archetype || row?.archetype_code || "");
+  return asUpper(row?.Archetype || row?.archetype?.code || row?.archetype || row?.archetype_code || row?.Helper_Archetype || row?.helper_archetype || "");
 }
 
 function rowSurfaces(row) {
-  return splitTokens(row?.Surface || row?.surface || row?.Surface_Tokens || row?.surface_tokens || row?.Surfaces || row?.surfaces);
+  return splitTokens(row?.Surface || row?.surface?.tokens || row?.surface?.raw || row?.surface || row?.Surface_Tokens || row?.surface_tokens || row?.Surfaces || row?.surfaces);
+}
+
+function hunterTriggerParts(row = {}) {
+  const trigger = row?.hunter_trigger && typeof row.hunter_trigger === "object" ? row.hunter_trigger : {};
+  const conditions = trigger.conditions && typeof trigger.conditions === "object" ? Object.values(trigger.conditions) : [];
+  return [
+    row?.Hunter_Trigger,
+    trigger.raw,
+    ...conditions,
+    trigger.trigger_if,
+    trigger.exclude_if,
+    row?.hunter_trigger,
+    row?.Trigger,
+    row?.trigger,
+    row?.Trigger_If,
+    row?.trigger_if,
+    row?.Exclude_If,
+    row?.exclude_if
+  ];
 }
 
 function rowTriggerText(row) {
-  return [row?.Hunter_Trigger, row?.hunter_trigger, row?.Trigger, row?.trigger, row?.Trigger_If, row?.trigger_if, row?.Exclude_If, row?.exclude_if].map(asText).filter(Boolean).join(" | ");
+  return hunterTriggerParts(row).map(asText).filter(Boolean).join(" | ");
 }
 
 function isConditionalDocRow(row) {
