@@ -22,9 +22,7 @@ function stringifyLimitation(item) {
 
 function objectReadableFields(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  const preferredKeys = [
-    "summary", "value", "category", "primary", "sub_sector", "sector", "industry", "description", "signal", "name", "type", "model", "mechanism", "status", "confidence"
-  ];
+  const preferredKeys = ["summary", "value", "category", "primary", "sub_sector", "sector", "industry", "description", "signal", "name", "type", "model", "mechanism", "status", "confidence"];
   const out = [];
   for (const key of preferredKeys) {
     const item = value[key];
@@ -205,7 +203,8 @@ function providerFailureStatus(result) {
 function guardrailResultFor(config, output, input) {
   if (config.output_schema_key !== "targetFeatureProfile") return { ok: true, errors: [], validation_mode: null };
   const threatMappingSupplied = input?.threat_mapping_supplied === true || input?.source_bundle?.source_review?.threat_mapping_supplied === true;
-  const result = validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied });
+  const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : [];
+  const result = validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied, evidenceBuffer });
   return { ...result, validation_mode: "target_feature_profile_runtime_guardrails" };
 }
 
