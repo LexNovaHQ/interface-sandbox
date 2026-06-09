@@ -1,22 +1,15 @@
 name: Runtime API Deploy
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
-      - "runtime-api/**"
-      - "functions/_prompts/**"
-      - "data/schemas/**"
-      - "src/lib/schemas.js"
-      - "scripts/generate-diligence-*.mjs"
-      - "scripts/audit-runtime-bundles.mjs"
-      - ".github/workflows/runtime-api-deploy.yml"
+      - 'runtime-api/**'
+      - '.github/workflows/runtime-api-deploy.yml'
+  workflow_dispatch:
 
 jobs:
   check:
-    name: Runtime syntax check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,42 +18,20 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Generate and audit diligence bundles
-        run: npm run build:runtime
-
-      - name: Package generated diligence bundles
-        run: |
-          set -euo pipefail
-          mkdir -p runtime-api/functions/_generated
-          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
-          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
-          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
-          test -s runtime-api/functions/_generated/diligencePromptBundle.js
-          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
-          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
-
-      - name: Audit packaged runtime bundles
+      - name: Install runtime deps
         working-directory: runtime-api
-        run: node ../scripts/audit-runtime-bundles.mjs
+        run: npm ci
 
-      - name: Install runtime dependencies
-        working-directory: runtime-api
-        run: npm install
-
-      - name: Syntax check
+      - name: Runtime syntax check
         working-directory: runtime-api
         run: npm run check
 
   deploy:
-    name: Deploy Cloud Run runtime
     needs: check
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: read
       id-token: write
@@ -71,111 +42,44 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Generate and audit diligence bundles
-        run: npm run build:runtime
-
-      - name: Package generated diligence bundles
-        run: |
-          set -euo pipefail
-          mkdir -p runtime-api/functions/_generated
-          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
-          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
-          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
-          test -s runtime-api/functions/_generated/diligencePromptBundle.js
-          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
-          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
-
-      - name: Audit packaged runtime bundles
+      - name: Install runtime deps
         working-directory: runtime-api
-        run: node ../scripts/audit-runtime-bundles.mjs
+        run: npm ci
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@v2
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      - name: Setup gcloud
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy to Cloud Run
+      - name: Configure Docker auth
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and push runtime image
         working-directory: runtime-api
-        env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_REGION: ${{ secrets.GCP_REGION }}
-          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
-          GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
-          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
-          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
-          GEMINI_REGISTRY_API_KEYS: ${{ secrets.GEMINI_REGISTRY_API_KEYS }}
-          GEMINI_SEARCH_MODEL_SEQUENCE: ${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}
-          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
-          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
-          GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
-          GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
         run: |
-          set -euo pipefail
+          IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/lexnova-runtime-api/runtime-api:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
-          required=(
-            GCP_PROJECT_ID
-            GCP_REGION
-            GCP_CLOUD_RUN_SERVICE
-            RUNTIME_ACCESS_TOKEN
-            ALLOWED_ORIGIN
-            GEMINI_SEARCH_API_KEYS
-            GEMINI_JSON_API_KEYS
-            GEMINI_REASONING_API_KEYS
-            GEMINI_REGISTRY_API_KEYS
-            GEMINI_SEARCH_MODEL_SEQUENCE
-            GEMINI_JSON_MODEL_SEQUENCE
-            GEMINI_REASONING_MODEL_SEQUENCE
-            GEMINI_REGISTRY_MODEL_SEQUENCE
-            GEMINI_FINAL_MODEL_SEQUENCE
-          )
-
-          for name in "${required[@]}"; do
-            value="${!name:-}"
-            if [[ -z "$value" ]]; then
-              echo "Missing required secret/env: $name" >&2
-              exit 1
-            fi
-            if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
-              echo "Secret/env contains a newline and must be re-saved as a single-line value: $name" >&2
-              exit 1
-            fi
-          done
-
-          gcloud run deploy "$GCP_CLOUD_RUN_SERVICE" \
-            --source . \
-            --project "$GCP_PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --allow-unauthenticated \
-            --set-env-vars="^|^RUNTIME_ACCESS_TOKEN=${RUNTIME_ACCESS_TOKEN}|ALLOWED_ORIGIN=${ALLOWED_ORIGIN}|GEMINI_SEARCH_API_KEYS=${GEMINI_SEARCH_API_KEYS}|GEMINI_JSON_API_KEYS=${GEMINI_JSON_API_KEYS}|GEMINI_REASONING_API_KEYS=${GEMINI_REASONING_API_KEYS}|GEMINI_REGISTRY_API_KEYS=${GEMINI_REGISTRY_API_KEYS}|GEMINI_SEARCH_MODEL_SEQUENCE=${GEMINI_SEARCH_MODEL_SEQUENCE}|GEMINI_JSON_MODEL_SEQUENCE=${GEMINI_JSON_MODEL_SEQUENCE}|GEMINI_REASONING_MODEL_SEQUENCE=${GEMINI_REASONING_MODEL_SEQUENCE}|GEMINI_REGISTRY_MODEL_SEQUENCE=${GEMINI_REGISTRY_MODEL_SEQUENCE}|GEMINI_FINAL_MODEL_SEQUENCE=${GEMINI_FINAL_MODEL_SEQUENCE}"
-
-      - name: Resolve runtime URL
+      - name: Deploy Cloud Run runtime
         id: runtime
-        env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_REGION: ${{ secrets.GCP_REGION }}
-          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
         run: |
-          URL=$(gcloud run services describe "$GCP_CLOUD_RUN_SERVICE" \
-            --project "$GCP_PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --format="value(status.url)")
+          gcloud run deploy lexnova-runtime-api \
+            --image "$IMAGE" \
+            --region us-central1 \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "RUNTIME_ACCESS_TOKEN=${{ secrets.RUNTIME_ACCESS_TOKEN }}" \
+            --set-secrets "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY_SECRET_NAME }}:latest,GEMINI_API_KEY_2=${{ secrets.GEMINI_API_KEY_2_SECRET_NAME }}:latest,GEMINI_API_KEY_3=${{ secrets.GEMINI_API_KEY_3_SECRET_NAME }}:latest,GEMINI_API_KEY_4=${{ secrets.GEMINI_API_KEY_4_SECRET_NAME }}:latest,GEMINI_API_KEY_5=${{ secrets.GEMINI_API_KEY_5_SECRET_NAME }}:latest,GEMINI_API_KEY_6=${{ secrets.GEMINI_API_KEY_6_SECRET_NAME }}:latest,GEMINI_API_KEY_7=${{ secrets.GEMINI_API_KEY_7_SECRET_NAME }}:latest,GEMINI_API_KEY_8=${{ secrets.GEMINI_API_KEY_8_SECRET_NAME }}:latest,GEMINI_API_KEY_9=${{ secrets.GEMINI_API_KEY_9_SECRET_NAME }}:latest,GEMINI_API_KEY_10=${{ secrets.GEMINI_API_KEY_10_SECRET_NAME }}:latest" \
+            --quiet
+          URL=$(gcloud run services describe lexnova-runtime-api --region us-central1 --format='value(status.url)')
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Install runtime dependencies
-        working-directory: runtime-api
-        run: npm install
 
       - name: Smoke deployed runtime
         working-directory: runtime-api
@@ -211,3 +115,11 @@ jobs:
           RUNTIME_URL: ${{ steps.runtime.outputs.url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage7:registry
+
+      - name: Upload runtime E2E cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-e2e-cache
+          path: runtime-api/.runtime-e2e-cache
+          if-no-files-found: warn
