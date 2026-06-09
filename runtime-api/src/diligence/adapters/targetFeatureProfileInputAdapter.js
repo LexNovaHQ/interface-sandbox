@@ -3,7 +3,8 @@ import crypto from "node:crypto";
 const DEFAULT_MAX_INPUT_CHARS = 120000;
 const DEFAULT_MAX_ESTIMATED_TOKENS = 30000;
 const DEFAULT_MAX_SINGLE_SOURCE_CHARS = 45000;
-const ESTIMATED_CHARS_PER_TOKEN = 4;
+const DEFAULT_PROMPT_OVERHEAD_TOKENS = 30000;
+const ESTIMATED_CHARS_PER_TOKEN = 3;
 const PRODUCT_STAGE_KEY = "target_feature_profile";
 const SOURCE_PRIORITY = {
   product_profile: 10,
@@ -54,6 +55,14 @@ function sortSources(records = []) {
   });
 }
 
+function estimateSourceTokens(chars) {
+  return Math.ceil(Number(chars || 0) / ESTIMATED_CHARS_PER_TOKEN);
+}
+
+function estimateTotalPromptTokens(sourceChars, promptOverheadTokens = DEFAULT_PROMPT_OVERHEAD_TOKENS) {
+  return estimateSourceTokens(sourceChars) + promptOverheadTokens;
+}
+
 function artifactFromRecord(record = {}) {
   const text = cleanText(record);
   return {
@@ -65,6 +74,7 @@ function artifactFromRecord(record = {}) {
     word_count: record?.text?.word_count || 0,
     clean_text_sha256: record?.text?.clean_text_sha256 || sha256(text),
     clean_text_length: text.length,
+    estimated_source_tokens: estimateSourceTokens(text.length),
     coverage_status: record?.quality?.coverage_status || "unknown",
     full_text_in_evidence_buffer: true
   };
@@ -80,6 +90,7 @@ function evidenceFromRecord(record = {}) {
     title: titleOf(record),
     clean_text_sha256: record?.text?.clean_text_sha256 || sha256(text),
     word_count: record?.text?.word_count || 0,
+    estimated_source_tokens: estimateSourceTokens(text.length),
     clean_text_lossless: text,
     evidence_policy: {
       admitted_source: true,
@@ -111,7 +122,9 @@ export function buildTargetFeatureProfileInput({
   const maxInputChars = normalizeLimit(budget.max_input_chars) || DEFAULT_MAX_INPUT_CHARS;
   const maxEstimatedTokens = normalizeLimit(budget.max_estimated_tokens) || DEFAULT_MAX_ESTIMATED_TOKENS;
   const maxSingleSourceChars = normalizeLimit(budget.max_single_source_chars) || DEFAULT_MAX_SINGLE_SOURCE_CHARS;
-  const hardTokenCharLimit = maxEstimatedTokens * ESTIMATED_CHARS_PER_TOKEN;
+  const promptOverheadTokens = normalizeLimit(budget.prompt_overhead_tokens) || DEFAULT_PROMPT_OVERHEAD_TOKENS;
+  const effectiveSourceTokenLimit = Math.max(0, maxEstimatedTokens - promptOverheadTokens);
+  const hardTokenCharLimit = effectiveSourceTokenLimit * ESTIMATED_CHARS_PER_TOKEN;
   const effectiveCharLimit = Math.min(maxInputChars, hardTokenCharLimit);
 
   const included = [];
@@ -128,6 +141,7 @@ export function buildTargetFeatureProfileInput({
       final_url: record.final_url || null,
       title: titleOf(record),
       clean_text_length: textLength,
+      estimated_source_tokens: estimateSourceTokens(textLength),
       clean_text_sha256: record?.text?.clean_text_sha256 || sha256(text)
     };
 
@@ -150,7 +164,8 @@ export function buildTargetFeatureProfileInput({
     usedChars += textLength;
   }
 
-  const estimatedTokens = Math.ceil(usedChars / ESTIMATED_CHARS_PER_TOKEN);
+  const estimatedSourceTokens = estimateSourceTokens(usedChars);
+  const estimatedTotalPromptTokens = estimateTotalPromptTokens(usedChars, promptOverheadTokens);
   const hardFailure = included.length === 0 && sortedRecords.some((record) => cleanText(record).length > 0);
   const limitations = [];
 
@@ -195,8 +210,13 @@ export function buildTargetFeatureProfileInput({
       max_input_chars: maxInputChars,
       max_estimated_tokens: maxEstimatedTokens,
       max_single_source_chars: maxSingleSourceChars,
+      prompt_overhead_tokens: promptOverheadTokens,
+      source_token_estimation_ratio_chars_per_token: ESTIMATED_CHARS_PER_TOKEN,
       estimated_input_chars: usedChars,
-      estimated_input_tokens: estimatedTokens,
+      estimated_source_tokens: estimatedSourceTokens,
+      estimated_prompt_overhead_tokens: promptOverheadTokens,
+      estimated_total_prompt_tokens: estimatedTotalPromptTokens,
+      estimated_input_tokens: estimatedTotalPromptTokens,
       total_packet_sources: packetRecords.length,
       included_sources: included.map(artifactFromRecord),
       excluded_sources: excluded,
