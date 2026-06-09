@@ -13,14 +13,15 @@ const POOL_CONFIG = {
   final: { keys_env: "GEMINI_REASONING_API_KEYS", models_env: "GEMINI_FINAL_MODEL_SEQUENCE", alias_prefix: "reasoning_key", enable_search_grounding: false, priority_env: "GEMINI_FINAL_MODEL_PRIORITY", deprioritize_env: "GEMINI_FINAL_MODEL_DEPRIORITIZE" }
 };
 
+const STABLE_MODEL_PRIORITY = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"];
 const DEFAULT_MODEL_PRIORITIES = {
-  registry: ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"],
-  reasoning: [],
-  final: [],
-  json: [],
+  registry: STABLE_MODEL_PRIORITY,
+  reasoning: STABLE_MODEL_PRIORITY,
+  final: STABLE_MODEL_PRIORITY,
+  json: STABLE_MODEL_PRIORITY,
   search: []
 };
-const DEFAULT_MODEL_DEPRIORITIZE = { registry: ["gemini-3.5-flash"], reasoning: [], final: [], json: [], search: [] };
+const DEFAULT_MODEL_DEPRIORITIZE = { registry: ["gemini-3.5-flash"], reasoning: ["gemini-3.5-flash"], final: ["gemini-3.5-flash"], json: ["gemini-3.5-flash"], search: [] };
 
 export function getGeminiPoolNames() { return Object.keys(POOL_CONFIG); }
 export function getPoolConfig(poolName) { const config = POOL_CONFIG[poolName]; if (!config) throw new Error(`Unknown Gemini pool: ${poolName}`); return config; }
