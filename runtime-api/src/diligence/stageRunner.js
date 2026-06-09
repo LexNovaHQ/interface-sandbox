@@ -46,7 +46,150 @@ function stringifyLimitation(item) {
   }
 }
 
-function normalizeStageOutputForSchema(value) {
+function asString(value, fallback = "unknown") {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (Array.isArray(value)) return value.map((item) => asString(item, "")).filter(Boolean).join(", ") || fallback;
+  if (value == null) return fallback;
+  if (typeof value === "object") {
+    const fields = [value.value, value.summary, value.description, value.signal, value.name, value.type]
+      .filter((item) => typeof item === "string" && item.trim());
+    if (fields.length) return fields.join(" — ");
+    try { return JSON.stringify(value); } catch { return fallback; }
+  }
+  return String(value).trim() || fallback;
+}
+
+function asStringArray(value) {
+  if (Array.isArray(value)) return value.map((item) => asString(item, "")).map((item) => item.trim()).filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+}
+
+function confidence(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["high", "medium", "low", "unknown"].includes(normalized) ? normalized : "unknown";
+}
+
+function domainFrom(value) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(String(value || "")) ? value : `https://${value}`);
+    return url.hostname.replace(/^www\./i, "") || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function confidenceFromLabels(labels, key) {
+  if (!labels || typeof labels !== "object") return "unknown";
+  return confidence(labels[key] || labels[`${key}_confidence`] || labels.confidence);
+}
+
+function normalizeEvidenceSource(item, index) {
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    return {
+      evidence_source_id: `company_profile_evidence_${index + 1}`,
+      source_url: "unknown",
+      claim_supported: asString(item, "unknown"),
+      confidence: "unknown"
+    };
+  }
+  return {
+    evidence_source_id: asString(item.evidence_source_id || item.source_id || item.id, `company_profile_evidence_${index + 1}`),
+    source_url: asString(item.source_url || item.url || item.final_url, "unknown"),
+    claim_supported: asString(item.claim_supported || item.claim || item.supports || item.summary, "unknown"),
+    confidence: confidence(item.confidence)
+  };
+}
+
+function normalizeEvidence(value) {
+  if (Array.isArray(value)) {
+    return {
+      primary_company_sources: value.map(normalizeEvidenceSource).slice(0, 3),
+      supporting_company_sources: value.map(normalizeEvidenceSource).slice(3),
+      evidence_notes: [],
+      unresolved_questions: []
+    };
+  }
+  const evidence = value && typeof value === "object" ? value : {};
+  return {
+    primary_company_sources: asStringArray(evidence.primary_company_sources).length
+      ? asStringArray(evidence.primary_company_sources).map((item, index) => normalizeEvidenceSource({ claim_supported: item }, index))
+      : (Array.isArray(evidence.primary_company_sources) ? evidence.primary_company_sources.map(normalizeEvidenceSource) : []),
+    supporting_company_sources: asStringArray(evidence.supporting_company_sources).length
+      ? asStringArray(evidence.supporting_company_sources).map((item, index) => normalizeEvidenceSource({ claim_supported: item }, index))
+      : (Array.isArray(evidence.supporting_company_sources) ? evidence.supporting_company_sources.map(normalizeEvidenceSource) : []),
+    evidence_notes: asStringArray(evidence.evidence_notes || evidence.notes),
+    unresolved_questions: asStringArray(evidence.unresolved_questions || evidence.open_questions)
+  };
+}
+
+function normalizeCompanyProfileOutput(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { value, repaired: false, repair_notes: [] };
+  }
+
+  const repairNotes = [];
+  const src = { ...value };
+  const identitySrc = src.company_identity && typeof src.company_identity === "object" ? src.company_identity : {};
+  const businessSrc = src.business_model && typeof src.business_model === "object" ? src.business_model : {};
+  const marketSrc = src.market_context && typeof src.market_context === "object" ? src.market_context : {};
+  const operatingSrc = src.operating_profile && typeof src.operating_profile === "object" ? src.operating_profile : {};
+  const assumptionsSrc = src.downstream_assumptions && typeof src.downstream_assumptions === "object" ? src.downstream_assumptions : {};
+
+  const website = asString(identitySrc.website || src.website, "unknown");
+
+  const normalized = {
+    company_profile_version: "company_profile_v1",
+    company_identity: {
+      brand_name: asString(identitySrc.brand_name || identitySrc.name || src.brand_name || src.company_name, "unknown"),
+      legal_or_corporate_name: asString(identitySrc.legal_or_corporate_name || identitySrc.legal_name || identitySrc.corporate_name, "unknown"),
+      website,
+      domain: asString(identitySrc.domain, domainFrom(website)),
+      headquarters_or_origin_signal: asString(identitySrc.headquarters_or_origin_signal || identitySrc.headquarters || identitySrc.origin, "unknown"),
+      corporate_status_signal: asString(identitySrc.corporate_status_signal || identitySrc.funding_status || identitySrc.corporate_status, "unknown"),
+      identity_confidence: confidence(identitySrc.identity_confidence || confidenceFromLabels(identitySrc.confidence_labels, "identity"))
+    },
+    business_model: {
+      company_type: asString(businessSrc.company_type || businessSrc.type, "unknown"),
+      primary_customer_type: asString(businessSrc.primary_customer_type || businessSrc.customers || businessSrc.customer_type, "unknown"),
+      sales_motion: asString(businessSrc.sales_motion, "unknown"),
+      revenue_model_signal: asString(businessSrc.revenue_model_signal || businessSrc.revenue_model, "unknown"),
+      enterprise_or_self_serve_signal: asString(businessSrc.enterprise_or_self_serve_signal || businessSrc.enterprise_self_serve, "unknown"),
+      business_model_confidence: confidence(businessSrc.business_model_confidence || confidenceFromLabels(businessSrc.confidence_labels, "business_model"))
+    },
+    market_context: {
+      industry: asString(marketSrc.industry, "unknown"),
+      target_geographies: asStringArray(marketSrc.target_geographies || marketSrc.geographies),
+      target_languages: asStringArray(marketSrc.target_languages || marketSrc.languages),
+      regulated_sector_exposure: asStringArray(marketSrc.regulated_sector_exposure || marketSrc.regulated_sectors),
+      public_sector_or_enterprise_signal: asString(marketSrc.public_sector_or_enterprise_signal || marketSrc.public_sector_enterprise_signal, "unknown"),
+      market_context_confidence: confidence(marketSrc.market_context_confidence || confidenceFromLabels(marketSrc.confidence_labels, "market_context"))
+    },
+    operating_profile: {
+      high_level_offering: asString(operatingSrc.high_level_offering || operatingSrc.offering, "unknown"),
+      ai_system_type: asString(operatingSrc.ai_system_type || operatingSrc.system_type, "unknown"),
+      deployment_model_signal: asString(operatingSrc.deployment_model_signal || operatingSrc.deployment_model, "unknown"),
+      user_data_touchpoints: asStringArray(operatingSrc.user_data_touchpoints || operatingSrc.user_customer_data_touchpoints),
+      customer_data_touchpoints: asStringArray(operatingSrc.customer_data_touchpoints || operatingSrc.user_customer_data_touchpoints),
+      operating_profile_confidence: confidence(operatingSrc.operating_profile_confidence || confidenceFromLabels(operatingSrc.confidence_labels, "operating_profile"))
+    },
+    downstream_assumptions: {
+      for_product_profile: asStringArray(assumptionsSrc.for_product_profile || assumptionsSrc.product_profile),
+      for_legal_review: asStringArray(assumptionsSrc.for_legal_review || assumptionsSrc.legal_review || assumptionsSrc.compliance_requirements),
+      for_registry_matching: asStringArray(assumptionsSrc.for_registry_matching || assumptionsSrc.registry_matching || assumptionsSrc.regulatory_implications),
+      assumption_warnings: asStringArray(assumptionsSrc.assumption_warnings || assumptionsSrc.warnings)
+    },
+    evidence: normalizeEvidence(src.evidence),
+    limitations: asStringArray(src.limitations)
+  };
+
+  repairNotes.push("normalized_company_profile_aliases_to_schema");
+  return { value: normalized, repaired: true, repair_notes: repairNotes };
+}
+
+function normalizeStageOutputForSchema(value, schemaKey) {
+  if (schemaKey === "companyProfile") return normalizeCompanyProfileOutput(value);
+
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { value, repaired: false, repair_notes: [] };
   }
@@ -153,7 +296,7 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   }
 
   const normalizedOutput = unwrapStageOutput(runResult.json, config.output_key);
-  const schemaNormalizedOutput = normalizeStageOutputForSchema(normalizedOutput.value);
+  const schemaNormalizedOutput = normalizeStageOutputForSchema(normalizedOutput.value, config.output_schema_key);
   const validation = validateDiligenceStageOutput(config.output_schema_key, schemaNormalizedOutput.value);
 
   if (!validation.ok) {
