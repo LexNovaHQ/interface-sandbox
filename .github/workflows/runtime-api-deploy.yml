@@ -8,8 +8,10 @@ on:
     paths:
       - "runtime-api/**"
       - "functions/_prompts/**"
-      - "functions/_schemas/**"
+      - "data/schemas/**"
+      - "src/lib/schemas.js"
       - "scripts/generate-diligence-*.mjs"
+      - "scripts/audit-runtime-bundles.mjs"
       - ".github/workflows/runtime-api-deploy.yml"
 
 jobs:
@@ -28,7 +30,7 @@ jobs:
       - name: Install root dependencies
         run: npm install
 
-      - name: Generate diligence bundles
+      - name: Generate and audit diligence bundles
         run: npm run build:runtime
 
       - name: Package generated diligence bundles
@@ -41,6 +43,10 @@ jobs:
           test -s runtime-api/functions/_generated/diligencePromptBundle.js
           test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
           test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Audit packaged runtime bundles
+        working-directory: runtime-api
+        run: node ../scripts/audit-runtime-bundles.mjs
 
       - name: Install runtime dependencies
         working-directory: runtime-api
@@ -70,7 +76,7 @@ jobs:
       - name: Install root dependencies
         run: npm install
 
-      - name: Generate diligence bundles
+      - name: Generate and audit diligence bundles
         run: npm run build:runtime
 
       - name: Package generated diligence bundles
@@ -83,6 +89,10 @@ jobs:
           test -s runtime-api/functions/_generated/diligencePromptBundle.js
           test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
           test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Audit packaged runtime bundles
+        working-directory: runtime-api
+        run: node ../scripts/audit-runtime-bundles.mjs
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
