@@ -77,6 +77,15 @@ function countsByStatus(rows = []) {
   }, {});
 }
 
+function coverage(expectedIds = [], emittedIds = []) {
+  const expectedSet = new Set(expectedIds);
+  const emittedSet = new Set(emittedIds);
+  const missing = expectedIds.filter((id) => !emittedSet.has(id));
+  const unexpected = emittedIds.filter((id) => !expectedSet.has(id));
+  const duplicate = emittedIds.filter((id, index) => emittedIds.indexOf(id) !== index);
+  return { ok: missing.length === 0 && unexpected.length === 0 && duplicate.length === 0 && expectedIds.length === emittedIds.length, expected_count: expectedIds.length, emitted_count: emittedIds.length, missing, unexpected, duplicate: [...new Set(duplicate)] };
+}
+
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = baseUrl(runtimeUrl);
 const cache = readJson(cachePath, "Stage 6 cache");
@@ -90,7 +99,7 @@ const runId = `stage7_priority_run_${Date.now()}`;
 const modelRows = [];
 const batchSummaries = [];
 
-console.log(JSON.stringify({ ok: true, phase: "stage_7_priority_start", runtime_url: base, cache_path: cachePath, total_rows: rows.length, plan_version: plan.plan_version, counts: plan.counts, routing_summary: plan.routing_summary, active_archetypes: plan.active_archetypes, active_surfaces: plan.active_surfaces }, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage_7_priority_start", runtime_url: base, cache_path: cachePath, total_rows: rows.length, batch_size_config: batchSize, plan_version: plan.plan_version, counts: plan.counts, routing_summary: plan.routing_summary, active_archetypes: plan.active_archetypes, active_surfaces: plan.active_surfaces }, null, 2));
 
 for (let index = 0; index < plan.model_batches.length; index += 1) {
   const rowBatch = plan.model_batches[index];
@@ -111,12 +120,18 @@ for (let index = 0; index < plan.model_batches.length; index += 1) {
   const result = await postJson(base, "/v1/diligence/stage", { stage: "registry_" + "ledger_evaluation", input, options: { pool: process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.STAGE7_MAX_OUTPUT_TOKENS || 16384), timeoutMs: Number(process.env.STAGE7_TIMEOUT_MS || 120000) } });
   const ledger = result.registry_ledger;
   if (!ledger || !Array.isArray(ledger.registry_evaluation_ledger)) fail("Stage 7 returned no usable ledger", result);
+  const emittedIds = ledger.registry_evaluation_ledger.map((entry) => entry.threat_id);
+  const batchCoverage = coverage(batch["expected_" + "threat_ids"], emittedIds);
+  if (!batchCoverage.ok) fail("Stage 7 batch coverage failed before merge", { batch_number: batch.batch_number, batch_count: batch.batch_count, coverage: batchCoverage });
   modelRows.push(...ledger.registry_evaluation_ledger);
-  batchSummaries.push({ batch_number: batch.batch_number, batch_count: batch.batch_count, expected_batch_size: batch.batch_size, ledger_count: ledger.registry_evaluation_ledger.length, expected_ids: batch["expected_" + "threat_ids"], emitted_ids: ledger.registry_evaluation_ledger.map((entry) => entry.threat_id), final_status_counts: countsByStatus(ledger.registry_evaluation_ledger), model_metadata: result.model_metadata || null });
+  batchSummaries.push({ batch_number: batch.batch_number, batch_count: batch.batch_count, expected_batch_size: batch.batch_size, ledger_count: ledger.registry_evaluation_ledger.length, expected_ids: batch["expected_" + "threat_ids"], emitted_ids: emittedIds, coverage: batchCoverage, final_status_counts: countsByStatus(ledger.registry_evaluation_ledger), model_metadata: result.model_metadata || null });
 }
+
+const modelCoverage = coverage(plan.model_rows.map((row) => row["Threat" + "_ID"]), modelRows.map((entry) => entry.threat_id));
+if (!modelCoverage.ok) fail("Stage 7 model-row coverage failed before deterministic merge", { coverage: modelCoverage });
 
 const merged = mergePriorityRows({ modelRows, deterministicRows: plan.deterministic_rows, sourceRows: rows });
 const validation = validatePriorityMerge({ mergedRows: merged, sourceRows: rows });
 if (!validation.ok) fail("Merged Stage 7 output failed validation", validation);
 
-console.log(JSON.stringify({ ok: true, phase: "stage_7_priority_complete", counts: plan.counts, routing_summary: plan.routing_summary, model_rows_returned: modelRows.length, deterministic_rows: plan.deterministic_rows.length, merged_rows: merged.length, final_status_counts: countsByStatus(merged), validation, batch_summaries: batchSummaries }, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage_7_priority_complete", batch_size_config: batchSize, counts: plan.counts, routing_summary: plan.routing_summary, model_rows_returned: modelRows.length, model_coverage: modelCoverage, deterministic_rows: plan.deterministic_rows.length, merged_rows: merged.length, final_status_counts: countsByStatus(merged), validation, batch_summaries: batchSummaries }, null, 2));
