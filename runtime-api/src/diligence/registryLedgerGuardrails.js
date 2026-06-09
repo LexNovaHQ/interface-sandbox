@@ -4,18 +4,34 @@ const TRUE_BASIS_PREFIXES = ["TRUE_EVIDENCE:", "TRUE_ABSENCE:", "TRUE_FEATURE_MA
 const FALSE_BASIS_PREFIXES = ["FALSE_NOT_SATISFIED:", "FALSE_NOT_APPLICABLE:", "FALSE_INSUFFICIENT:"];
 const ALLOWED_GLOBAL_REFS = new Set(["GLOBAL", "MULTI", "UNKNOWN"]);
 const FORBIDDEN_KEYS = new Set(["source_bundle", "target_feature_profile", "legal_stack_review", "operator_challenge_gate", "high_risk_checks", "reopened_rows", "findings", "controlled_rows", "insufficient_evidence_rows", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions", "assembly_route", "technical_audit_log", "html", "registry_batch_evaluation"]);
-const LEGAL_ADVICE_PATTERNS = [/\billegal\b/i, /\bnon-compliant\b/i, /\bliable\b/i, /\bunenforceable\b/i, /confirmed violation/i, /certif(?:y|ies|ied) compliance/i, /make[s]? .* liable/i];
+const LEGAL_CONCLUSION_GUIDANCE_PATTERNS = [/\billegal\b/i, /\bnon-compliant\b/i, /\bliable\b/i, /\bunenforceable\b/i, /confirmed violation/i, /certif(?:y|ies|ied) compliance/i, /make[s]? .* liable/i];
 
 function push(errors, instancePath, message, params = {}) { errors.push({ keyword: "registry_ledger_guardrail", instancePath, schemaPath: "#/registryLedgerGuardrails", message, params }); }
-function walk(value, errors, path = "") { if (!value || typeof value !== "object") return; if (Array.isArray(value)) { value.forEach((item, index) => walk(item, errors, `${path}/${index}`)); return; } for (const [key, child] of Object.entries(value)) { const childPath = `${path}/${key}`; if (FORBIDDEN_KEYS.has(key)) push(errors, childPath, `forbidden key emitted: ${key}`, { key }); if (typeof child === "string") for (const pattern of LEGAL_ADVICE_PATTERNS) if (pattern.test(child)) push(errors, childPath, "legal advice or liability/compliance conclusion emitted", { value: child }); walk(child, errors, childPath); } }
+function warn(warnings, instancePath, message, params = {}) { warnings.push({ keyword: "registry_ledger_guidance", instancePath, schemaPath: "#/registryLedgerGuidance", message, params }); }
+function walk(value, errors, warnings, path = "") {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) { value.forEach((item, index) => walk(item, errors, warnings, `${path}/${index}`)); return; }
+  for (const [key, child] of Object.entries(value)) {
+    const childPath = `${path}/${key}`;
+    if (FORBIDDEN_KEYS.has(key)) push(errors, childPath, `forbidden key emitted: ${key}`, { key });
+    if (typeof child === "string") {
+      for (const pattern of LEGAL_CONCLUSION_GUIDANCE_PATTERNS) {
+        if (pattern.test(child)) warn(warnings, childPath, "legal-conclusion wording detected; treat as tone guidance, not runtime blocker", { value: child });
+      }
+    }
+    walk(child, errors, warnings, childPath);
+  }
+}
 function rowThreatId(row, index) { return String(row?.Threat_ID || row?.threat_id || `MISSING_THREAT_ID_ROW_${index + 1}`).trim(); }
+function rowArchetype(row) { return String(row?.Threat_ID || row?.threat_id || "").split("_")[0] || String(row?.Archetype || row?.archetype?.code || row?.archetype || "").trim(); }
 function nonEmpty(value) { return typeof value === "string" && value.trim().length > 0; }
 function featureIds(input = {}) { return new Set((input?.target_feature_profile?.product_feature_map || []).map((feature) => feature?.feature_id).filter(Boolean)); }
 
 export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
   const errors = [];
-  if (!output || typeof output !== "object" || Array.isArray(output)) { push(errors, "", "registry ledger output must be an object"); return { ok: false, errors }; }
-  walk(output, errors, "");
+  const warnings = [];
+  if (!output || typeof output !== "object" || Array.isArray(output)) { push(errors, "", "registry ledger output must be an object"); return { ok: false, errors, warnings }; }
+  walk(output, errors, warnings, "");
   const rows = Array.isArray(input?.registry_rows) ? input.registry_rows : [];
   const ledger = Array.isArray(output.registry_evaluation_ledger) ? output.registry_evaluation_ledger : [];
   const meta = output.registry_batch_meta || {};
@@ -61,8 +77,7 @@ export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
     if (entry.final_status === "NOT_TRIGGERED" && entry.trigger_if_result !== false) push(errors, `${base}/final_status`, "NOT_TRIGGERED requires trigger_if_result=false");
     if (entry.archetype_gate === "FAIL" && entry.final_status !== "NOT_APPLICABLE") push(errors, `${base}/final_status`, "archetype_gate=FAIL must produce NOT_APPLICABLE", { final_status: entry.final_status });
     if (entry.surface_gate === "FAIL" && entry.final_status !== "NOT_APPLICABLE") push(errors, `${base}/final_status`, "surface_gate=FAIL must produce NOT_APPLICABLE", { final_status: entry.final_status });
-    const rowArchetype = String(row?.Archetype || row?.archetype || "").trim();
-    if (rowArchetype === "UNI" && entry.final_status === "NOT_APPLICABLE" && /archetype/i.test(entry.reasoning_summary || "")) push(errors, `${base}/final_status`, "UNI rows must not be NOT_APPLICABLE merely because of archetype mismatch");
+    if (rowArchetype(row) === "UNI" && entry.final_status === "NOT_APPLICABLE" && /archetype/i.test(entry.reasoning_summary || "")) push(errors, `${base}/final_status`, "UNI rows must not be NOT_APPLICABLE merely because of archetype mismatch");
   });
-  return { ok: errors.length === 0, errors };
+  return { ok: errors.length === 0, errors, warnings };
 }
