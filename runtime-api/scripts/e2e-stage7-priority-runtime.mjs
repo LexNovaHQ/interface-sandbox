@@ -13,6 +13,7 @@ const cachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), 
 const rowsPath = process.env.REGISTRY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry.runtime.json");
 const keyPath = process.env.REGISTRY_KEY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry_key.runtime.json");
 const batchSize = Number(process.env.STAGE7_PRIORITY_BATCH_SIZE || process.env.STAGE7_BATCH_SIZE || 8);
+const auditExportPath = process.env.STAGE7_AUDIT_EXPORT_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage7-priority-ledger.json");
 
 function fail(message, detail) {
   console.error(JSON.stringify({ ok: false, error: message, detail: detail || null }, null, 2));
@@ -22,6 +23,11 @@ function fail(message, detail) {
 function readJson(filePath, label) {
   if (!fs.existsSync(filePath)) fail(`${label} file missing`, { filePath });
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function writeJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
 }
 
 function baseUrl(value) {
@@ -134,4 +140,24 @@ const merged = mergePriorityRows({ modelRows, deterministicRows: plan.determinis
 const validation = validatePriorityMerge({ mergedRows: merged, sourceRows: rows });
 if (!validation.ok) fail("Merged Stage 7 output failed validation", validation);
 
-console.log(JSON.stringify({ ok: true, phase: "stage_7_priority_complete", batch_size_config: batchSize, counts: plan.counts, routing_summary: plan.routing_summary, model_rows_returned: modelRows.length, model_coverage: modelCoverage, deterministic_rows: plan.deterministic_rows.length, merged_rows: merged.length, final_status_counts: countsByStatus(merged), validation, batch_summaries: batchSummaries }, null, 2));
+const summary = { ok: true, phase: "stage_7_priority_complete", batch_size_config: batchSize, counts: plan.counts, routing_summary: plan.routing_summary, model_rows_returned: modelRows.length, model_coverage: modelCoverage, deterministic_rows: plan.deterministic_rows.length, merged_rows: merged.length, final_status_counts: countsByStatus(merged), validation, batch_summaries: batchSummaries };
+const auditExport = {
+  artifact_type: "stage7_priority_ledger_audit_export",
+  generated_at: new Date().toISOString(),
+  runtime_url: base,
+  cache_path: cachePath,
+  rows_path: rowsPath,
+  key_path: keyPath,
+  run_id: runId,
+  summary,
+  active_archetypes: plan.active_archetypes,
+  active_surfaces: plan.active_surfaces,
+  route_records: plan.route_records,
+  deterministic_rows: plan.deterministic_rows,
+  model_rows: modelRows,
+  merged_ledger: merged,
+  source_row_count: rows.length
+};
+writeJson(auditExportPath, auditExport);
+console.log(JSON.stringify({ ok: true, step: "stage7_audit_export_written", audit_export_path: auditExportPath, merged_rows: merged.length, model_rows: modelRows.length, deterministic_rows: plan.deterministic_rows.length }, null, 2));
+console.log(JSON.stringify(summary, null, 2));
