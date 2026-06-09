@@ -204,3 +204,10 @@ jobs:
           RUNTIME_URL: ${{ steps.runtime.outputs.url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage6:legal
+
+      - name: Run Stage 7 Registry Ledger E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run e2e:stage7:registry
