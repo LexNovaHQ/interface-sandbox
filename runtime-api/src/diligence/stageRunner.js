@@ -116,7 +116,24 @@ function candidateSnippets(text = "") { const cleaned = String(text || "").repla
 function snapQuoteToEvidence(feature, evidenceBuffer = []) { if (!feature?.evidence_quote || !feature?.feature_source_url) return null; const matches = evidenceMatchesForUrl(evidenceBuffer, feature.feature_source_url); if (!matches.length) return null; const current = quoteNorm(feature.evidence_quote); for (const record of matches) if (quoteNorm(sourceText(record)).includes(current)) return feature.evidence_quote; let best = null; for (const record of matches) for (const candidate of candidateSnippets(sourceText(record))) { const score = overlapScore(feature.evidence_quote, candidate); if (!best || score > best.score) best = { quote: candidate, score }; } return best && best.score >= 0.18 ? best.quote : null; }
 function repairTargetFeatureProfileQuotes(value, input) { if (!value || typeof value !== "object" || !Array.isArray(value.product_feature_map)) return { value, repaired: false, repair_notes: [] }; const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : []; if (!evidenceBuffer.length) return { value, repaired: false, repair_notes: [] }; const copy = { ...value, product_feature_map: value.product_feature_map.map((feature) => ({ ...feature })) }; let repairedCount = 0; for (const feature of copy.product_feature_map) { const snapped = snapQuoteToEvidence(feature, evidenceBuffer); if (snapped && quoteNorm(snapped) !== quoteNorm(feature.evidence_quote)) { feature.evidence_quote = snapped; repairedCount += 1; } } return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`snapped_${repairedCount}_target_feature_evidence_quotes_to_admitted_source_text`] : [] }; }
 function gateFailure(entry = {}) { return entry.archetype_gate === "FAIL" || entry.surface_gate === "FAIL"; }
-function derivedRegistryStatus(entry = {}) { if (gateFailure(entry)) return "NOT_APPLICABLE"; if (entry.final_status === "NOT_APPLICABLE" || entry.final_status === "INSUFFICIENT_EVIDENCE") return entry.final_status; if (entry.trigger_if_result === true && entry.exclude_if_result === true) return "CONTROLLED"; if (entry.trigger_if_result === true && entry.exclude_if_result === false) return "TRIGGERED"; if (entry.trigger_if_result === false && ["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED"].includes(entry.final_status)) return "NOT_TRIGGERED"; return entry.final_status; }
+function derivedRegistryStatus(entry = {}) { if (gateFailure(entry)) return "NOT_APPLICABLE"; if (entry.final_status === "INSUFFICIENT_EVIDENCE") return entry.final_status; if (entry.trigger_if_result === true && entry.exclude_if_result === true) return "CONTROLLED"; if (entry.trigger_if_result === true && entry.exclude_if_result === false) return "TRIGGERED"; if (entry.trigger_if_result === false) return "NOT_TRIGGERED"; return entry.final_status; }
+function conditionResults(entry = {}) { const out = new Map(); for (const condition of Array.isArray(entry.conditions) ? entry.conditions : []) { const id = String(condition?.condition_id || "").trim().toUpperCase(); if (/^CONDITION_\d+$/.test(id) && typeof condition.result === "boolean") out.set(id, condition.result); } return out; }
+function triggerFormulaFromRow(row = {}) { const hunter = row?.hunter_trigger || row?.Hunter_Trigger || {}; if (hunter && typeof hunter === "object" && typeof hunter.trigger_if === "string" && hunter.trigger_if.trim()) return hunter.trigger_if.trim(); const raw = typeof hunter === "string" ? hunter : (typeof hunter?.raw === "string" ? hunter.raw : ""); const match = raw.match(/TRIGGER_IF\s*:\s*([^|]+?)(?:\s*\|\s*EXCLUDE_IF\s*:|$)/i); return match ? match[1].trim() : ""; }
+function replaceConditionAtom(expression, results) { return expression.replace(/CONDITION_\d+\s*=\s*(TRUE|FALSE)/gi, (match, expected) => { const id = match.match(/CONDITION_\d+/i)?.[0]?.toUpperCase(); if (!id || !results.has(id)) return "__UNKNOWN__"; const actual = results.get(id); return String(expected).toUpperCase() === "TRUE" ? (actual ? "TRUE" : "FALSE") : (!actual ? "TRUE" : "FALSE"); }); }
+function replaceAtLeastOne(expression, results) { return expression.replace(/AT_LEAST_1_OF\s*\(([^)]*)\)\s*=\s*(TRUE|FALSE)/gi, (match, inner, expected) => { const ids = String(inner || "").split(",").map((part) => part.trim().toUpperCase()).filter((part) => /^CONDITION_\d+$/.test(part)); if (!ids.length || ids.some((id) => !results.has(id))) return "__UNKNOWN__"; const actual = ids.some((id) => results.get(id) === true); return String(expected).toUpperCase() === "TRUE" ? (actual ? "TRUE" : "FALSE") : (!actual ? "TRUE" : "FALSE"); }); }
+function evalBooleanExpression(expression) {
+  const tokens = String(expression || "").match(/TRUE|FALSE|AND|OR|\(|\)/gi) || [];
+  if (!tokens.length || tokens.join("").toUpperCase() !== String(expression || "").replace(/\s+/g, "").toUpperCase()) return null;
+  let index = 0;
+  function peek() { return tokens[index]?.toUpperCase(); }
+  function consume(value) { if (peek() === value) { index += 1; return true; } return false; }
+  function primary() { if (consume("TRUE")) return true; if (consume("FALSE")) return false; if (consume("(")) { const value = orExpr(); if (!consume(")")) return null; return value; } return null; }
+  function andExpr() { let value = primary(); if (value === null) return null; while (consume("AND")) { const right = primary(); if (right === null) return null; value = value && right; } return value; }
+  function orExpr() { let value = andExpr(); if (value === null) return null; while (consume("OR")) { const right = andExpr(); if (right === null) return null; value = value || right; } return value; }
+  const result = orExpr();
+  return index === tokens.length ? result : null;
+}
+function computeTriggerIfFromFormula(formula, entry) { const results = conditionResults(entry); if (!results.size || !formula) return null; let expression = String(formula).trim(); expression = replaceAtLeastOne(expression, results); expression = replaceConditionAtom(expression, results); if (/__UNKNOWN__/.test(expression)) return null; return evalBooleanExpression(expression); }
 function repairRegistryConditionBasis(condition = {}) {
   const basis = String(condition?.basis || "").trim();
   if (!basis) return false;
@@ -164,15 +181,25 @@ function repairRegistryConditionBasis(condition = {}) {
   }
   return false;
 }
-function repairRegistryLedgerFinalStatuses(value) {
+function repairRegistryLedgerFinalStatuses(value, input = {}) {
   if (!value || typeof value !== "object" || !Array.isArray(value.registry_evaluation_ledger)) return { value, repaired: false, repair_notes: [] };
+  const rows = Array.isArray(input?.registry_rows) ? input.registry_rows : [];
+  const rowById = new Map(rows.map((row, index) => [String(row?.Threat_ID || row?.threat_id || `ROW_${index + 1}`).trim(), row]));
   const copy = { ...value, registry_evaluation_ledger: value.registry_evaluation_ledger.map((entry) => ({ ...entry, conditions: Array.isArray(entry?.conditions) ? entry.conditions.map((condition) => ({ ...condition })) : entry?.conditions })) };
   let repairedCount = 0;
   let gateRepairCount = 0;
   let conditionPrefixRepairCount = 0;
-  for (const entry of copy.registry_evaluation_ledger) {
+  let triggerFormulaRepairCount = 0;
+  for (let index = 0; index < copy.registry_evaluation_ledger.length; index += 1) {
+    const entry = copy.registry_evaluation_ledger[index];
     if (Array.isArray(entry.conditions)) {
       for (const condition of entry.conditions) if (repairRegistryConditionBasis(condition)) conditionPrefixRepairCount += 1;
+    }
+    const row = rowById.get(String(entry?.threat_id || "").trim()) || rows[index] || {};
+    const computedTrigger = computeTriggerIfFromFormula(triggerFormulaFromRow(row), entry);
+    if (typeof computedTrigger === "boolean" && entry.trigger_if_result !== computedTrigger) {
+      entry.trigger_if_result = computedTrigger;
+      triggerFormulaRepairCount += 1;
     }
     const derived = derivedRegistryStatus(entry);
     if (derived && derived !== entry.final_status) {
@@ -182,10 +209,11 @@ function repairRegistryLedgerFinalStatuses(value) {
     }
   }
   const notes = [];
-  if (repairedCount > 0) notes.push(`normalized_${repairedCount}_registry_final_statuses_without_overriding_not_applicable_or_insufficient`);
+  if (repairedCount > 0) notes.push(`normalized_${repairedCount}_registry_final_statuses_without_overriding_insufficient`);
   if (gateRepairCount > 0) notes.push(`forced_${gateRepairCount}_gate_fail_rows_to_not_applicable`);
   if (conditionPrefixRepairCount > 0) notes.push(`normalized_${conditionPrefixRepairCount}_registry_condition_basis_prefixes`);
-  return { value: copy, repaired: repairedCount > 0 || conditionPrefixRepairCount > 0, repair_notes: notes };
+  if (triggerFormulaRepairCount > 0) notes.push(`recomputed_${triggerFormulaRepairCount}_registry_trigger_if_results_from_formula`);
+  return { value: copy, repaired: repairedCount > 0 || conditionPrefixRepairCount > 0 || triggerFormulaRepairCount > 0, repair_notes: notes };
 }
 function buildPromptInput({ stageId, prompt, runtimeInstruction, input }) { return [prompt.trim(), runtimeInstruction ? `\n\n---RUNTIME_STAGE_INSTRUCTION---\n${runtimeInstruction.trim()}` : "", "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.", "\n\n---INPUT_JSON---\n", JSON.stringify({ stage_id: stageId, input }, null, 2)].join(""); }
 function publicModelMetadata(result, repair = {}) { return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] }; }
@@ -203,7 +231,7 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const normalizedOutput = unwrapStageOutput(runResult.json, config.output_key);
   const schemaNormalizedOutput = normalizeStageOutputForSchema(normalizedOutput.value, config.output_schema_key);
   const quoteRepair = config.output_schema_key === "targetFeatureProfile" ? repairTargetFeatureProfileQuotes(schemaNormalizedOutput.value, input) : { value: schemaNormalizedOutput.value, repaired: false, repair_notes: [] };
-  const registryRepair = config.output_schema_key === "registryLedger" ? repairRegistryLedgerFinalStatuses(quoteRepair.value) : { value: quoteRepair.value, repaired: false, repair_notes: [] };
+  const registryRepair = config.output_schema_key === "registryLedger" ? repairRegistryLedgerFinalStatuses(quoteRepair.value, input) : { value: quoteRepair.value, repaired: false, repair_notes: [] };
   const finalOutput = registryRepair.value;
   const repair = { repaired: schemaNormalizedOutput.repaired || quoteRepair.repaired || registryRepair.repaired, repair_notes: [...(schemaNormalizedOutput.repair_notes || []), ...(quoteRepair.repair_notes || []), ...(registryRepair.repair_notes || [])] };
   const validation = validateDiligenceStageOutput(config.output_schema_key, finalOutput);
