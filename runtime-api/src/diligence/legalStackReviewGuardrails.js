@@ -18,7 +18,7 @@ const FORBIDDEN_KEYS = new Set([
   "html"
 ]);
 const FORBIDDEN_STATUSES = new Set(["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"]);
-const LEGAL_ADVICE_PHRASES = [
+const LEGAL_ADVICE_GUIDANCE_PHRASES = [
   /\bcertif(?:y|ies|ied) compliance\b/i,
   /\bconfirmed violation\b/i,
   /\billegal\b/i,
@@ -28,17 +28,20 @@ const LEGAL_ADVICE_PHRASES = [
 function push(errors, instancePath, message, params = {}) {
   errors.push({ keyword: "legal_stack_review_guardrail", instancePath, schemaPath: "#/legalStackReviewGuardrails", message, params });
 }
-function walk(value, errors, path = "") {
+function warn(warnings, instancePath, message, params = {}) {
+  warnings.push({ keyword: "legal_stack_review_guidance", instancePath, schemaPath: "#/legalStackReviewGuidance", message, params });
+}
+function walk(value, errors, warnings, path = "") {
   if (!value || typeof value !== "object") return;
-  if (Array.isArray(value)) { value.forEach((item, index) => walk(item, errors, `${path}/${index}`)); return; }
+  if (Array.isArray(value)) { value.forEach((item, index) => walk(item, errors, warnings, `${path}/${index}`)); return; }
   for (const [key, child] of Object.entries(value)) {
     const childPath = `${path}/${key}`;
     if (FORBIDDEN_KEYS.has(key)) push(errors, childPath, `forbidden key emitted: ${key}`, { key });
     if (typeof child === "string") {
       if (FORBIDDEN_STATUSES.has(child.trim())) push(errors, childPath, `forbidden registry status emitted: ${child}`, { value: child });
-      for (const pattern of LEGAL_ADVICE_PHRASES) if (pattern.test(child)) push(errors, childPath, "legal advice or compliance conclusion emitted", { value: child });
+      for (const pattern of LEGAL_ADVICE_GUIDANCE_PHRASES) if (pattern.test(child)) warn(warnings, childPath, "legal-advice/compliance conclusion wording detected; treat as guidance, not runtime blocker", { value: child });
     }
-    walk(child, errors, childPath);
+    walk(child, errors, warnings, childPath);
   }
 }
 function nonEmptyString(value) { return typeof value === "string" && value.trim().length > 0; }
@@ -47,11 +50,12 @@ function evidenceUrls(evidenceBuffer = []) { const urls = new Set(["N/A", "manua
 
 export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = [], threatMappingSupplied = false } = {}) {
   const errors = [];
+  const warnings = [];
   if (!review || typeof review !== "object" || Array.isArray(review)) {
     push(errors, "", "legal_stack_review must be an object");
-    return { ok: false, errors };
+    return { ok: false, errors, warnings };
   }
-  walk(review, errors, "");
+  walk(review, errors, warnings, "");
   const legalStack = Array.isArray(review.legal_stack) ? review.legal_stack : [];
   const admittedUrls = evidenceUrls(evidenceBuffer);
 
@@ -81,5 +85,5 @@ export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = []
     if (!REDLINE_TYPES.has(item.type)) push(errors, `${base}/type`, `invalid redline type: ${item.type}`, { type: item.type });
     for (const field of ["mismatch_id", "quote", "source", "feature_ref", "claim_type", "contradicts"]) if (!nonEmptyString(item[field])) push(errors, `${base}/${field}`, `${field} must be non-empty`);
   });
-  return { ok: errors.length === 0, errors };
+  return { ok: errors.length === 0, errors, warnings };
 }
