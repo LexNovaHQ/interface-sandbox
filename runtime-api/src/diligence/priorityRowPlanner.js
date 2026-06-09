@@ -15,6 +15,12 @@ function splitTokens(value) {
   return asText(value).split(/[|,;]/).map(asText).filter(Boolean);
 }
 
+const K_ID = "threat_id";
+const K_NAME = "threat_name";
+const K_FINAL = "final_status";
+const K_TRIGGER = "trigger_if_result";
+const K_EXCLUDE = "exclude_if_result";
+
 function rowId(row, index) {
   return asText(row?.Threat_ID || row?.threat_id || `ROW_${index + 1}`);
 }
@@ -36,7 +42,7 @@ function rowTriggerText(row) {
 }
 
 function isConditionalDocRow(row) {
-  return /terms|privacy|dpa|aup|sla|policy|contract|consent|notice|disclosure|processor|subprocessor|absence|missing|public|documentation|governance|control|exclude/i.test(rowTriggerText(row));
+  return /terms|privacy|dpa|aup|sla|policy|contract|consent|notice|disclosure|processor|subprocessor|absence|public|documentation|governance|control|exclude/i.test(rowTriggerText(row));
 }
 
 function activeSignals(profile = {}) {
@@ -68,6 +74,34 @@ function refsFor(row, active) {
   return [...refs];
 }
 
+function skippedStatus(row, active) {
+  const archetype = rowArchetype(row);
+  const surfaces = rowSurfaces(row);
+  const archetypeMismatch = archetype && archetype !== "UNI" && !active.archetypes.has(archetype);
+  const surfaceMismatch = surfaces.length > 0 && !surfaces.some((surface) => active.surfaces.has(surface));
+  return archetypeMismatch || surfaceMismatch ? "NOT_APPLICABLE" : "NOT_TRIGGERED";
+}
+
+function deterministicEntry(row, index, active, routeReason) {
+  const status = skippedStatus(row, active);
+  const refs = refsFor(row, active);
+  return {
+    entry_number: index + 1,
+    [K_ID]: rowId(row, index),
+    [K_NAME]: rowName(row),
+    archetype_gate: status === "NOT_APPLICABLE" ? "FAIL" : "PASS",
+    surface_gate: status === "NOT_APPLICABLE" ? "FAIL" : "PASS",
+    authority_relevance: "DETERMINISTIC_GATE",
+    conditions: [],
+    [K_TRIGGER]: false,
+    [K_EXCLUDE]: false,
+    [K_FINAL]: status,
+    feature_refs: refs.length ? refs : ["UNKNOWN"],
+    evidence_ref: "stage5_priority_gate",
+    reasoning_summary: `${routeReason}: row was resolved by deterministic Stage 5 priority gate.`
+  };
+}
+
 function chunkRows(rows, batchSize) {
   const out = [];
   for (let index = 0; index < rows.length; index += batchSize) out.push(rows.slice(index, index + batchSize));
@@ -96,34 +130,29 @@ export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, i
   const modelRows = [];
   const deterministicRows = [];
   const routeRecords = [];
-  for (const row of sourceRows) {
+  sourceRows.forEach((row, index) => {
     const reason = routeRow(row, active, includeConditional);
     const shouldRun = reason === "UNI_ALWAYS_RUN" || reason === "STAGE5_INT_TRIGGERED" || reason === "CONDITIONAL_DOC_REVIEW";
     const routeRecord = { threat_id: row.Threat_ID, threat_name: row.Threat_Name, archetype: rowArchetype(row), surfaces: rowSurfaces(row), route: shouldRun ? "RUN" : "SKIP", route_reason: reason, feature_refs: refsFor(row, active) };
     routeRecords.push(routeRecord);
     if (shouldRun) modelRows.push(row);
-    else deterministicRows.push(row);
-  }
+    else deterministicRows.push(deterministicEntry(row, index, active, reason));
+  });
   const batches = chunkRows(modelRows, batchSize);
-  return {
-    plan_version: "priority_row_plan_v1",
-    mode: "priority_first",
-    batch_size: batchSize,
-    active_archetypes: [...active.archetypes].sort(),
-    active_surfaces: [...active.surfaces].sort(),
-    model_rows: modelRows,
-    model_batches: batches,
-    deterministic_rows: deterministicRows,
-    route_records: routeRecords,
-    counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length },
-    routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {})
-  };
+  return { plan_version: "priority_row_plan_v1", mode: "priority_first", batch_size: batchSize, active_archetypes: [...active.archetypes].sort(), active_surfaces: [...active.surfaces].sort(), model_rows: modelRows, model_batches: batches, deterministic_rows: deterministicRows, route_records: routeRecords, counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length }, routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {}) };
 }
 
 export function mergePriorityRows({ modelRows = [], deterministicRows = [], sourceRows = [] } = {}) {
-  return [...asArray(modelRows), ...asArray(deterministicRows)];
+  const byId = new Map();
+  for (const entry of asArray(modelRows)) byId.set(asText(entry?.[K_ID]), entry);
+  for (const entry of asArray(deterministicRows)) if (!byId.has(asText(entry?.[K_ID]))) byId.set(asText(entry?.[K_ID]), entry);
+  return asArray(sourceRows).map((row, index) => ({ ...(byId.get(rowId(row, index)) || deterministicEntry(normalizeRow(row, index), index, activeSignals({}), "PLAN_FALLBACK")), entry_number: index + 1 }));
 }
 
 export function validatePriorityMerge({ mergedRows = [], sourceRows = [] } = {}) {
-  return { ok: asArray(mergedRows).length === asArray(sourceRows).length, expected_count: asArray(sourceRows).length, actual_count: asArray(mergedRows).length, missing: [], duplicate: [] };
+  const expected = asArray(sourceRows).map(rowId);
+  const emitted = asArray(mergedRows).map((entry) => asText(entry?.[K_ID]));
+  const missing = expected.filter((id) => !emitted.includes(id));
+  const duplicate = emitted.filter((id, index) => emitted.indexOf(id) !== index);
+  return { ok: mergedRows.length === expected.length && missing.length === 0 && duplicate.length === 0, expected_count: expected.length, actual_count: mergedRows.length, missing, duplicate: [...new Set(duplicate)] };
 }
