@@ -56,12 +56,7 @@ export function extractFirstPartyLinksFromHtml({ html, anchorUrl, registrableDom
     const url = normalizeCandidateUrl(resolved);
     if (!url || !isFirstPartyUrl(url, registrableDomain) || seen.has(url)) continue;
     seen.add(url);
-    out.push({
-      url,
-      anchor_url: normalizeCandidateUrl(anchorUrl),
-      link_text: stripTags(match[4] || "").slice(0, 180),
-      location_hint: locationHint(text, match.index)
-    });
+    out.push({ url, anchor_url: normalizeCandidateUrl(anchorUrl), link_text: stripTags(match[4] || "").slice(0, 180), location_hint: locationHint(text, match.index) });
     if (out.length >= limit) break;
   }
   return out;
@@ -74,17 +69,12 @@ export function mergeAnchorLinks(anchorResults = []) {
       const url = normalizeCandidateUrl(link.url);
       if (!url) continue;
       if (!seen.has(url)) {
-        seen.set(url, {
-          url,
-          anchors: [result.anchor_url].filter(Boolean),
-          location_hints: [link.location_hint].filter(Boolean),
-          link_texts: [link.link_text].filter(Boolean)
-        });
+        seen.set(url, { url, anchors: [result.anchor_url].filter(Boolean), location_hints: [link.location_hint].filter(Boolean), link_texts: [link.link_text].filter(Boolean) });
       } else {
         const existing = seen.get(url);
         if (result.anchor_url && !existing.anchors.includes(result.anchor_url)) existing.anchors.push(result.anchor_url);
         if (link.location_hint && !existing.location_hints.includes(link.location_hint)) existing.location_hints.push(link.location_hint);
-        if (link.link_text && !existing.link_texts.includes(link.link_text) && existing.link_texts.length < 3) existing.link_texts.push(link.link_text);
+        if (link.link_text && !existing.link_texts.includes(link.link_text) && existing.link_texts.length < 6) existing.link_texts.push(link.link_text);
       }
     }
   }
@@ -92,7 +82,7 @@ export function mergeAnchorLinks(anchorResults = []) {
 }
 
 export function buildAnchorClassificationPrompt({ familyPlan, links, identity, company_name = null }) {
-  const compactLinks = (links || []).slice(0, 160).map((link, index) => ({
+  const compactLinks = (links || []).map((link, index) => ({
     link_id: `L${String(index + 1).padStart(3, "0")}`,
     url: link.url,
     link_texts: link.link_texts || [],
@@ -115,7 +105,7 @@ Requested source family:
 - label: ${familyPlan.label}
 - mission: ${familyPlan.mission}
 - target_min: ${familyPlan.target_min}
-- target_max: ${familyPlan.target_max}
+- target_max_guidance: ${familyPlan.target_max}
 
 Page-family plan:
 ${(familyPlan.page_family_plan || []).map((item) => `- ${item}`).join("\n")}
@@ -136,7 +126,7 @@ Rules:
 - Do not invent URLs.
 - Only use URLs present in extracted first-party links.
 - Prefer deeper family-specific pages over homepage/about pages.
-- Admit only links that truly belong to ${familyPlan.source_family}.
+- Admit every link that truly belongs to ${familyPlan.source_family}; target_max is guidance, not a hard cap.
 `;
 }
 
@@ -146,17 +136,7 @@ export function extractAnchorClassifiedCandidates({ classifierJson, familyPlan, 
   for (const item of admitted) {
     const url = normalizeCandidateUrl(item?.url);
     if (!url || !isFirstPartyUrl(url, registrableDomain)) continue;
-    out.push({
-      url,
-      source_family: familyPlan.source_family,
-      discovery_method: "gemini_anchor_classification",
-      discovery_role: "primary",
-      retrieval_intent_id: "anchor_link_classification",
-      reason: item?.reason || "Gemini classified extracted anchor link into this source family.",
-      batch_id: `${familyPlan.source_family}:anchor_link_classification`,
-      anchor_url: normalizeCandidateUrl(item?.anchor_url) || null,
-      link_text: item?.link_text || ""
-    });
+    out.push({ url, source_family: familyPlan.source_family, discovery_method: "gemini_anchor_classification", discovery_role: "primary", retrieval_intent_id: "anchor_link_classification", reason: item?.reason || "Gemini classified extracted anchor link into this source family.", batch_id: `${familyPlan.source_family}:anchor_link_classification`, anchor_url: normalizeCandidateUrl(item?.anchor_url) || null, link_text: item?.link_text || "" });
   }
-  return out.slice(0, familyPlan.target_max || 6);
+  return out;
 }
