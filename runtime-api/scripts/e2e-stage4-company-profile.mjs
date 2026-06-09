@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
+import path from "node:path";
 import { buildEvidenceRefinerInput } from "../src/diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../src/diligence/evidenceJunction.js";
 
@@ -8,12 +10,18 @@ const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL ||
 const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
+const cachePath = process.env.STAGE4_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage4-company-profile.json");
 
 const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
 
 function fail(message, detail) {
   console.error(JSON.stringify({ ok: false, error: message, detail: detail || null }, null, 2));
   process.exit(1);
+}
+
+function writeJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
 }
 
 function normalizeBase(value) {
@@ -39,14 +47,14 @@ async function readJson(response) {
   catch { return { non_json_body: text.slice(0, 3000) }; }
 }
 
-async function postJson(base, path, body) {
-  const response = await fetch(`${base}${path}`, {
+async function postJson(base, routePath, body) {
+  const response = await fetch(`${base}${routePath}`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-runtime-access-token": token },
     body: JSON.stringify(body)
   });
   const json = await readJson(response);
-  if (!response.ok || json?.ok === false) fail(`Request failed: ${path}`, { status: response.status, body: json });
+  if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json });
   return json;
 }
 
@@ -158,6 +166,16 @@ if (!stageResult.ok) fail("Company Profile stage failed", stageResult);
 const profile = stageResult.company_profile;
 if (profile.company_profile_version !== "company_profile_v1") fail("Bad company profile version", { company_profile_version: profile.company_profile_version });
 
+writeJson(cachePath, {
+  cache_version: "stage4_company_profile_e2e_cache_v1",
+  generated_at: new Date().toISOString(),
+  target_input: targetInput,
+  source_bundle: sourceBundle,
+  evidence_junction: junction,
+  company_profile_stage_result: stageResult,
+  company_profile: profile
+});
+
 console.log(JSON.stringify({
   ok: true,
   phase: "stage_4_company_profile_e2e",
@@ -174,5 +192,7 @@ console.log(JSON.stringify({
   supporting_company_sources: profile.evidence?.supporting_company_sources?.length || 0,
   limitations: profile.limitations || [],
   validation_mode: stageResult.validation_mode,
+  cache_path: cachePath,
+  cache_written: true,
   model_metadata: stageResult.model_metadata || null
 }, null, 2));
