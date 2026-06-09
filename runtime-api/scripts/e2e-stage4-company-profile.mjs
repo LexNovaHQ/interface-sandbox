@@ -3,7 +3,8 @@
 import { buildEvidenceRefinerInput } from "../src/diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../src/diligence/evidenceJunction.js";
 
-const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL;
+const DEFAULT_RUNTIME_URL = "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app";
+const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL || DEFAULT_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
@@ -96,7 +97,6 @@ function companySourceRecords(sourceBundle) {
     }));
 }
 
-if (!runtimeUrl) fail("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required");
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 
 const base = normalizeBase(runtimeUrl);
