@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 
 import { buildEvidenceRefinerInput } from "../src/diligence/adapters/sourceBundleAdapter.js";
-import { buildEvidenceJunctionWithAdjudication } from "../src/diligence/evidenceJunctionPipeline.js";
-import { adjudicateEvidenceJunctionWorkItem } from "../src/diligence/evidenceJunctionGeminiAdjudicator.js";
+import { buildEvidenceJunction } from "../src/diligence/evidenceJunction.js";
 
 const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
-const enableGemini = process.env.STAGE3_ENABLE_GEMINI === "true";
 
 const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
 const FAMILIES = ["company_profile", "product_profile", "legal_profile", "governance_profile"];
@@ -92,7 +90,7 @@ if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = normalizeBase(runtimeUrl);
 const targetInput = { primary_url: primaryUrl, company_name: companyName, submitted_at: new Date().toISOString() };
 
-console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_3_evidence_junction_e2e", target: targetInput, runtime_url: base, gemini_enabled: enableGemini }, null, 2));
+console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_3_evidence_junction_e2e", target: targetInput, runtime_url: base, gemini_enabled: false, gemini_status: "parked" }, null, 2));
 
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: targetInput,
@@ -122,10 +120,9 @@ const sourceBundle = buildEvidenceRefinerInput({
   runId: `stage3_source_bundle_${Date.now()}`
 });
 
-const junction = await buildEvidenceJunctionWithAdjudication({
+const junction = buildEvidenceJunction({
   sourceBundle,
-  runId: `stage3_junction_${Date.now()}`,
-  adjudicateWorkItem: enableGemini ? (workItem) => adjudicateEvidenceJunctionWorkItem(workItem) : null
+  runId: `stage3_junction_${Date.now()}`
 });
 
 const packets = Object.fromEntries(STAGE_KEYS.map((key) => [key, junction.downstream_packets?.[key]?.source_count || 0]));
@@ -136,6 +133,7 @@ if (sourceBundle.source_bundle_version !== "source_bundle_v2_magna_carta") fail(
 if (junction.evidence_junction_version !== "evidence_junction_v1") fail("Bad evidence junction version", { version: junction.evidence_junction_version });
 if (missingPackets.length) fail("Missing downstream packets", { missingPackets });
 if (flags.source_text_summarized !== false || flags.source_text_compressed !== false || flags.source_text_truncated !== false) fail("Stage 3 violated no-loss policy", { processing_manifest: flags });
+if (flags.gemini_called !== false) fail("Stage 3 must not call Gemini", { processing_manifest: flags });
 
 console.log(JSON.stringify({
   ok: true,
@@ -147,12 +145,9 @@ console.log(JSON.stringify({
   populated_families: FAMILIES.filter((family) => Array.isArray(sourceBundle.scrape_meta?.coverage_summary?.by_family?.[family]) && sourceBundle.scrape_meta.coverage_summary.by_family[family].length > 0),
   downstream_packets: packets,
   dedupe_groups: junction.dedupe_groups?.length || 0,
-  adjudication_work_items: junction.adjudication_work_items?.length || 0,
-  adjudications: junction.adjudications?.length || 0,
-  adjudication_errors: junction.adjudication_errors || [],
-  gemini_enabled: enableGemini,
+  gemini_enabled: false,
+  gemini_status: "parked_for_stage_4_boundary_decision",
   gemini_called: flags.gemini_called === true,
-  deterministic_fallback_preserved: flags.deterministic_fallback_preserved !== false,
   source_archive_preserved: flags.source_archive_preserved === true,
   source_text_mutated: flags.source_text_mutated === true,
   source_text_summarized: flags.source_text_summarized === true,
