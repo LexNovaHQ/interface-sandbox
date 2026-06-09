@@ -11,7 +11,7 @@ const app = express();
 const runtime = readRuntimeEnv();
 
 app.use(helmet());
-app.use(express.json({ limit: "8mb" }));
+app.use(express.json({ limit: process.env.RUNTIME_JSON_LIMIT || "32mb" }));
 app.use(cors({ origin: runtime.allowed_origin }));
 
 function requireToken(req, res, next) {
@@ -41,7 +41,8 @@ function healthPayload() {
     runtime: {
       node_env: currentRuntime.node_env,
       allowed_origin: currentRuntime.allowed_origin,
-      access_token_configured: currentRuntime.runtime_access_token_configured
+      access_token_configured: currentRuntime.runtime_access_token_configured,
+      json_body_limit: process.env.RUNTIME_JSON_LIMIT || "32mb"
     },
     pools: currentRuntime.pools,
     env_status: envStatus,
