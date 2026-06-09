@@ -65,20 +65,22 @@ assert.equal(ok.target_feature_profile_input.input_budget.text_truncated, false)
 assert.equal(ok.target_feature_profile_input.adapter_policy.no_text_summary, true);
 assert.equal(ok.target_feature_profile_input.adapter_policy.no_text_compression, true);
 
-const partial = buildTargetFeatureProfileInput({
+const guidance = buildTargetFeatureProfileInput({
   evidenceJunction,
   budget: { max_input_chars: productText.length + 5, max_estimated_tokens: 32000, max_single_source_chars: 5000, prompt_overhead_tokens: 30000 }
 });
 
-assert.equal(partial.ok, true);
-assert.equal(partial.target_feature_profile_input.input_budget.budget_status, "PARTIAL_SOURCE_SELECTION");
-assert.equal(partial.target_feature_profile_input.source_bundle.evidence_buffer.length, 1);
-assert.equal(partial.target_feature_profile_input.source_bundle.evidence_buffer[0].clean_text_lossless, productText);
-assert.ok(partial.target_feature_profile_input.input_budget.excluded_sources.length >= 1);
+assert.equal(guidance.ok, true);
+assert.equal(guidance.target_feature_profile_input.input_budget.budget_status, "GUIDANCE_EXCEEDED_FULL_PACKET_INCLUDED");
+assert.equal(guidance.target_feature_profile_input.source_bundle.evidence_buffer.length, 3);
+assert.equal(guidance.target_feature_profile_input.source_bundle.evidence_buffer[0].clean_text_lossless, productText);
+assert.equal(guidance.target_feature_profile_input.input_budget.excluded_sources.length, 0);
+assert.ok(guidance.target_feature_profile_input.input_budget.budget_warnings.length >= 1);
+assert.equal(guidance.target_feature_profile_input.adapter_policy.budget_guidance_not_hard_cap_by_default, true);
 
 const fail = buildTargetFeatureProfileInput({
   evidenceJunction,
-  budget: { max_input_chars: 10000, max_estimated_tokens: 32000, max_single_source_chars: 10, prompt_overhead_tokens: 30000 }
+  budget: { max_input_chars: 10000, max_estimated_tokens: 32000, max_single_source_chars: 10, prompt_overhead_tokens: 30000, enforcement_mode: "hard" }
 });
 
 assert.equal(fail.ok, false);
@@ -90,7 +92,7 @@ console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileInputAdapter",
   full_packet: ok.target_feature_profile_input.input_budget.budget_status,
-  partial_packet: partial.target_feature_profile_input.input_budget.budget_status,
+  guidance_packet: guidance.target_feature_profile_input.input_budget.budget_status,
   estimated_total_prompt_tokens: ok.target_feature_profile_input.input_budget.estimated_total_prompt_tokens,
   budget_failure: fail.error_type
 }, null, 2));
