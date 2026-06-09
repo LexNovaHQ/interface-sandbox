@@ -190,3 +190,10 @@ jobs:
           RUNTIME_URL: ${{ steps.runtime.outputs.url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage4:company
+
+      - name: Run Stage 5 Target Feature Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run e2e:stage5:features
