@@ -3,6 +3,7 @@ import { getDiligenceStageConfig } from "./stageConfigs.js";
 import { loadDiligencePrompt } from "./stagePromptLoader.js";
 import { formatSchemaErrors, resolveSchemaEntry, validateDiligenceStageOutput } from "./stageSchemaValidator.js";
 import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
+import { validateLegalStackReviewGuardrails } from "./legalStackReviewGuardrails.js";
 
 function unwrapStageOutput(parsedJson, outputKey) {
   if (parsedJson && typeof parsedJson === "object" && !Array.isArray(parsedJson) && Object.prototype.hasOwnProperty.call(parsedJson, outputKey)) return { value: parsedJson[outputKey], unwrapped: true };
@@ -151,110 +152,28 @@ function normalizeStageOutputForSchema(value, schemaKey) {
   return { value: copy, repaired: repairNotes.length > 0, repair_notes: repairNotes };
 }
 
-function quoteNorm(value) {
-  return String(value || "").toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+function quoteNorm(value) { return String(value || "").toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim(); }
+function urlNorm(value) { try { const url = new URL(value); url.hash = ""; if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/"; return url.toString(); } catch { return String(value || "").trim(); } }
+function sourceText(record = {}) { return record.clean_text_lossless || record?.text?.clean_text_lossless || ""; }
+function tokenSet(value) { const stop = new Set(["the", "and", "for", "with", "that", "this", "from", "into", "your", "you", "our", "are", "can", "will", "api", "apis"]); return new Set(quoteNorm(value).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !stop.has(token))); }
+function overlapScore(needle, candidate) { const n = tokenSet(needle); const c = tokenSet(candidate); if (!n.size || !c.size) return 0; let hits = 0; for (const token of n) if (c.has(token)) hits += 1; return hits / Math.max(3, n.size); }
+function evidenceMatchesForUrl(evidenceBuffer = [], featureSourceUrl = "") { const wanted = urlNorm(featureSourceUrl); return evidenceBuffer.filter((record) => [record.source_url, record.final_url, record.url].map(urlNorm).includes(wanted)); }
+function candidateSnippets(text = "") { const cleaned = String(text || "").replace(/\s+/g, " ").trim(); if (!cleaned) return []; const sentenceLike = cleaned.split(/(?<=[.!?])\s+|\s+[|•]\s+|\n+/).map((item) => item.trim()).filter((item) => item.length >= 25 && item.length <= 360); const words = cleaned.split(/\s+/).filter(Boolean); const windows = []; for (let i = 0; i < words.length; i += 18) { const window = words.slice(i, i + 36).join(" ").trim(); if (window.length >= 25 && window.length <= 420) windows.push(window); } return [...new Set([...sentenceLike, ...windows])]; }
+function snapQuoteToEvidence(feature, evidenceBuffer = []) { if (!feature?.evidence_quote || !feature?.feature_source_url) return null; const matches = evidenceMatchesForUrl(evidenceBuffer, feature.feature_source_url); if (!matches.length) return null; const current = quoteNorm(feature.evidence_quote); for (const record of matches) if (quoteNorm(sourceText(record)).includes(current)) return feature.evidence_quote; let best = null; for (const record of matches) for (const candidate of candidateSnippets(sourceText(record))) { const score = overlapScore(feature.evidence_quote, candidate); if (!best || score > best.score) best = { quote: candidate, score }; } return best && best.score >= 0.38 ? best.quote : null; }
+function repairTargetFeatureProfileQuotes(value, input) { if (!value || typeof value !== "object" || !Array.isArray(value.product_feature_map)) return { value, repaired: false, repair_notes: [] }; const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : []; if (!evidenceBuffer.length) return { value, repaired: false, repair_notes: [] }; const copy = { ...value, product_feature_map: value.product_feature_map.map((feature) => ({ ...feature })) }; let repairedCount = 0; for (const feature of copy.product_feature_map) { const snapped = snapQuoteToEvidence(feature, evidenceBuffer); if (snapped && quoteNorm(snapped) !== quoteNorm(feature.evidence_quote)) { feature.evidence_quote = snapped; repairedCount += 1; } } return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`snapped_${repairedCount}_target_feature_evidence_quotes_to_admitted_source_text`] : [] }; }
+
+function buildPromptInput({ stageId, prompt, runtimeInstruction, input }) {
+  return [prompt.trim(), runtimeInstruction ? `\n\n---RUNTIME_STAGE_INSTRUCTION---\n${runtimeInstruction.trim()}` : "", "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.", "\n\n---INPUT_JSON---\n", JSON.stringify({ stage_id: stageId, input }, null, 2)].join("");
 }
 
-function urlNorm(value) {
-  try {
-    const url = new URL(value);
-    url.hash = "";
-    if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
-    return url.toString();
-  } catch { return String(value || "").trim(); }
-}
-
-function sourceText(record = {}) {
-  return record.clean_text_lossless || record?.text?.clean_text_lossless || "";
-}
-
-function tokenSet(value) {
-  const stop = new Set(["the", "and", "for", "with", "that", "this", "from", "into", "your", "you", "our", "are", "can", "will", "api", "apis"]);
-  return new Set(quoteNorm(value).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !stop.has(token)));
-}
-
-function overlapScore(needle, candidate) {
-  const n = tokenSet(needle);
-  const c = tokenSet(candidate);
-  if (!n.size || !c.size) return 0;
-  let hits = 0;
-  for (const token of n) if (c.has(token)) hits += 1;
-  return hits / Math.max(3, n.size);
-}
-
-function evidenceMatchesForUrl(evidenceBuffer = [], featureSourceUrl = "") {
-  const wanted = urlNorm(featureSourceUrl);
-  return evidenceBuffer.filter((record) => [record.source_url, record.final_url, record.url].map(urlNorm).includes(wanted));
-}
-
-function candidateSnippets(text = "") {
-  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
-  if (!cleaned) return [];
-  const sentenceLike = cleaned.split(/(?<=[.!?])\s+|\s+[|•]\s+|\n+/).map((item) => item.trim()).filter((item) => item.length >= 25 && item.length <= 360);
-  const words = cleaned.split(/\s+/).filter(Boolean);
-  const windows = [];
-  for (let i = 0; i < words.length; i += 18) {
-    const window = words.slice(i, i + 36).join(" ").trim();
-    if (window.length >= 25 && window.length <= 420) windows.push(window);
-  }
-  return [...new Set([...sentenceLike, ...windows])];
-}
-
-function snapQuoteToEvidence(feature, evidenceBuffer = []) {
-  if (!feature?.evidence_quote || !feature?.feature_source_url) return null;
-  const matches = evidenceMatchesForUrl(evidenceBuffer, feature.feature_source_url);
-  if (!matches.length) return null;
-  const current = quoteNorm(feature.evidence_quote);
-  for (const record of matches) {
-    if (quoteNorm(sourceText(record)).includes(current)) return feature.evidence_quote;
-  }
-  let best = null;
-  for (const record of matches) {
-    for (const candidate of candidateSnippets(sourceText(record))) {
-      const score = overlapScore(feature.evidence_quote, candidate);
-      if (!best || score > best.score) best = { quote: candidate, score };
-    }
-  }
-  return best && best.score >= 0.38 ? best.quote : null;
-}
-
-function repairTargetFeatureProfileQuotes(value, input) {
-  if (!value || typeof value !== "object" || !Array.isArray(value.product_feature_map)) return { value, repaired: false, repair_notes: [] };
-  const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : [];
-  if (!evidenceBuffer.length) return { value, repaired: false, repair_notes: [] };
-  const copy = { ...value, product_feature_map: value.product_feature_map.map((feature) => ({ ...feature })) };
-  let repairedCount = 0;
-  for (const feature of copy.product_feature_map) {
-    const snapped = snapQuoteToEvidence(feature, evidenceBuffer);
-    if (snapped && quoteNorm(snapped) !== quoteNorm(feature.evidence_quote)) {
-      feature.evidence_quote = snapped;
-      repairedCount += 1;
-    }
-  }
-  return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`snapped_${repairedCount}_target_feature_evidence_quotes_to_admitted_source_text`] : [] };
-}
-
-function buildPromptInput({ stageId, prompt, input }) {
-  return [prompt.trim(), "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.", "\n\n---INPUT_JSON---\n", JSON.stringify({ stage_id: stageId, input }, null, 2)].join("");
-}
-
-function publicModelMetadata(result, repair = {}) {
-  return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] };
-}
-
-function providerFailureStatus(result) {
-  if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503;
-  if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502;
-  if (result?.error_type === "TIMEOUT") return 504;
-  return 502;
-}
-
+function publicModelMetadata(result, repair = {}) { return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] }; }
+function providerFailureStatus(result) { if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503; if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502; if (result?.error_type === "TIMEOUT") return 504; return 502; }
 function guardrailResultFor(config, output, input) {
-  if (config.output_schema_key !== "targetFeatureProfile") return { ok: true, errors: [], validation_mode: null };
   const threatMappingSupplied = input?.threat_mapping_supplied === true || input?.source_bundle?.source_review?.threat_mapping_supplied === true;
   const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : [];
-  const result = validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied, evidenceBuffer });
-  return { ...result, validation_mode: "target_feature_profile_runtime_guardrails" };
+  if (config.output_schema_key === "targetFeatureProfile") return { ...validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "target_feature_profile_runtime_guardrails" };
+  if (config.output_schema_key === "legalStackReview") return { ...validateLegalStackReviewGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "legal_stack_review_runtime_guardrails" };
+  return { ok: true, errors: [], validation_mode: null };
 }
 
 export async function runDiligenceStage({ stageId, input, options = {}, env = process.env }) {
@@ -263,7 +182,7 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   if (!schemaEntry?.schema) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "SCHEMA_NOT_FOUND", error: `Output schema not found for ${config.output_schema_key}`, output_schema_key: config.output_schema_key };
 
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
-  const modelPrompt = buildPromptInput({ stageId: config.stage_id, prompt: promptBundle.combined_prompt, input });
+  const modelPrompt = buildPromptInput({ stageId: config.stage_id, prompt: promptBundle.combined_prompt, runtimeInstruction: config.runtime_instruction, input });
   const runResult = await runGeminiPool({ poolName: options.pool || config.pool, prompt: modelPrompt, env, options: { responseMimeType: "application/json", temperature: options.temperature ?? config.temperature, maxOutputTokens: options.maxOutputTokens ?? options.max_output_tokens ?? config.max_output_tokens, timeoutMs: options.timeoutMs ?? options.timeout_ms ?? config.timeout_ms, maxAttempts: options.maxAttempts ?? options.max_attempts } });
 
   if (!runResult.ok) return { ok: false, status: providerFailureStatus(runResult), stage_id: config.stage_id, error_type: runResult.error_type || "MODEL_STAGE_ERROR", error: runResult.error || "Diligence stage model run failed", model_metadata: publicModelMetadata(runResult) };
@@ -275,10 +194,10 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const repair = { repaired: schemaNormalizedOutput.repaired || quoteRepair.repaired, repair_notes: [...(schemaNormalizedOutput.repair_notes || []), ...(quoteRepair.repair_notes || [])] };
   const validation = validateDiligenceStageOutput(config.output_schema_key, finalOutput);
 
-  if (!validation.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, error_type: "SCHEMA_VALIDATION_ERROR", error: "Model output failed schema validation", validation_errors: validation.errors, error_summary: formatSchemaErrors(validation.errors), model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters } };
+  if (!validation.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, error_type: "SCHEMA_VALIDATION_ERROR", error: "Model output failed schema validation", validation_errors: validation.errors, error_summary: formatSchemaErrors(validation.errors), model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 
   const guardrails = guardrailResultFor(config, finalOutput, input);
-  if (!guardrails.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, error_type: "GUARDRAIL_VALIDATION_ERROR", error: "Model output failed Target Feature Profile guardrails", validation_errors: guardrails.errors, error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters } };
+  if (!guardrails.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, error_type: "GUARDRAIL_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} guardrails`, validation_errors: guardrails.errors, error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 
-  return { ok: true, status: 200, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, guardrail_validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, [config.output_key]: finalOutput, model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters } };
+  return { ok: true, status: 200, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, guardrail_validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, [config.output_key]: finalOutput, model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 }
