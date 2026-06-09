@@ -68,7 +68,9 @@ function overlapScore(needle, candidate) {
   return hits / Math.max(3, n.size);
 }
 
-function evidenceMatchesForUrl(evidenceBuffer = [], featureSourceUrl = "") {
+function evidenceMatchesForUrl(first = [], second = "") {
+  const evidenceBuffer = Array.isArray(first) ? first : (Array.isArray(second) ? second : []);
+  const featureSourceUrl = Array.isArray(first) ? second : first;
   const wanted = urlNorm(featureSourceUrl);
   return evidenceBuffer.filter((record) => [record.source_url, record.final_url, record.url].map(urlNorm).includes(wanted));
 }
@@ -88,7 +90,7 @@ function candidateSnippets(text = "") {
 
 function snapQuoteToEvidence(feature, evidenceBuffer = []) {
   if (!feature?.evidence_quote || !feature?.feature_source_url) return null;
-  const matches = evidenceMatchesForUrl(feature.feature_source_url, evidenceBuffer);
+  const matches = evidenceMatchesForUrl(evidenceBuffer, feature.feature_source_url);
   if (!matches.length) return null;
   const current = quoteNorm(feature.evidence_quote);
   for (const record of matches) if (quoteNorm(sourceText(record)).includes(current)) return feature.evidence_quote;
