@@ -7,6 +7,20 @@ on:
       - 'runtime-api/**'
       - '.github/workflows/runtime-api-deploy.yml'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - audit-existing-runtime
+      runtime_url:
+        description: 'Existing runtime URL for audit-existing-runtime mode'
+        required: false
+        default: 'https://lexnova-runtime-api-24qnalslaa-uc.a.run.app'
+        type: string
 
 jobs:
   check:
@@ -30,7 +44,7 @@ jobs:
 
   deploy:
     needs: check
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -113,6 +127,66 @@ jobs:
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run e2e:stage7:registry
+
+      - name: Upload runtime E2E cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-e2e-cache
+          path: runtime-api/.runtime-e2e-cache
+          if-no-files-found: warn
+
+  audit-existing-runtime:
+    needs: check
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'audit-existing-runtime'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install runtime deps
+        working-directory: runtime-api
+        run: npm ci
+
+      - name: Smoke existing runtime
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
+
+      - name: Run Stage 4 Company Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run e2e:stage4:company
+
+      - name: Run Stage 5 Target Feature Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run e2e:stage5:features
+
+      - name: Run Stage 6 Legal Stack Review E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run e2e:stage6:legal
+
+      - name: Run Stage 7 Registry Ledger E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage7:registry
 
