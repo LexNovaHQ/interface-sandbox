@@ -51,7 +51,7 @@ const ok = buildTargetFeatureProfileInput({
   sourceBundle: { run_id: "bundle", source_bundle_version: "source_bundle_v2_magna_carta", target_input: { primary_url: "https://example.ai" } },
   evidenceJunction,
   companyProfile: { company_profile_version: "company_profile_v1" },
-  budget: { max_input_chars: 10000, max_estimated_tokens: 2500, max_single_source_chars: 5000 }
+  budget: { max_input_chars: 10000, max_estimated_tokens: 32000, max_single_source_chars: 5000, prompt_overhead_tokens: 30000 }
 });
 
 assert.equal(ok.ok, true);
@@ -59,13 +59,15 @@ assert.equal(ok.target_feature_profile_input.source_bundle.evidence_buffer.lengt
 assert.equal(ok.target_feature_profile_input.source_bundle.evidence_buffer[0].source_family, "product_profile");
 assert.equal(ok.target_feature_profile_input.source_bundle.evidence_buffer[0].clean_text_lossless, productText);
 assert.equal(ok.target_feature_profile_input.input_budget.budget_status, "FULL_PACKET_INCLUDED");
+assert.equal(ok.target_feature_profile_input.input_budget.estimated_prompt_overhead_tokens, 30000);
+assert.ok(ok.target_feature_profile_input.input_budget.estimated_total_prompt_tokens >= 30000);
 assert.equal(ok.target_feature_profile_input.input_budget.text_truncated, false);
 assert.equal(ok.target_feature_profile_input.adapter_policy.no_text_summary, true);
 assert.equal(ok.target_feature_profile_input.adapter_policy.no_text_compression, true);
 
 const partial = buildTargetFeatureProfileInput({
   evidenceJunction,
-  budget: { max_input_chars: productText.length + 5, max_estimated_tokens: 1000, max_single_source_chars: 5000 }
+  budget: { max_input_chars: productText.length + 5, max_estimated_tokens: 32000, max_single_source_chars: 5000, prompt_overhead_tokens: 30000 }
 });
 
 assert.equal(partial.ok, true);
@@ -76,7 +78,7 @@ assert.ok(partial.target_feature_profile_input.input_budget.excluded_sources.len
 
 const fail = buildTargetFeatureProfileInput({
   evidenceJunction,
-  budget: { max_input_chars: 10000, max_estimated_tokens: 2500, max_single_source_chars: 10 }
+  budget: { max_input_chars: 10000, max_estimated_tokens: 32000, max_single_source_chars: 10, prompt_overhead_tokens: 30000 }
 });
 
 assert.equal(fail.ok, false);
@@ -89,5 +91,6 @@ console.log(JSON.stringify({
   test: "targetFeatureProfileInputAdapter",
   full_packet: ok.target_feature_profile_input.input_budget.budget_status,
   partial_packet: partial.target_feature_profile_input.input_budget.budget_status,
+  estimated_total_prompt_tokens: ok.target_feature_profile_input.input_budget.estimated_total_prompt_tokens,
   budget_failure: fail.error_type
 }, null, 2));
