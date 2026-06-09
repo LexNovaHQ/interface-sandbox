@@ -1,5 +1,6 @@
 export const SCHEMA_PATHS = {
   sourceBundle: "/data/schemas/sourceBundle.schema.json",
+  companyProfile: "/data/schemas/companyProfile.schema.json",
   targetFeatureProfile: "/data/schemas/targetFeatureProfile.schema.json",
   legalStackReview: "/data/schemas/legalStackReview.schema.json",
   registryLedger: "/data/schemas/registryLedger.schema.json",
@@ -17,6 +18,7 @@ export const SCHEMA_PATHS = {
 
 export const CANONICAL_SCHEMA_PATHS = {
   source_bundle: SCHEMA_PATHS.sourceBundle,
+  company_profile: SCHEMA_PATHS.companyProfile,
   target_feature_profile: SCHEMA_PATHS.targetFeatureProfile,
   legal_stack_review: SCHEMA_PATHS.legalStackReview,
   registry_evaluation_ledger: SCHEMA_PATHS.registryLedger,
