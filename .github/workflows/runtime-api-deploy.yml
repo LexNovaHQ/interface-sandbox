@@ -130,12 +130,21 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage7:registry
 
+      - name: Verify Stage 7 audit export
+        if: always()
+        run: |
+          ls -la runtime-api/.runtime-e2e-cache || true
+          test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
+
       - name: Upload runtime E2E cache
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: runtime-e2e-cache
-          path: runtime-api/.runtime-e2e-cache
+          path: |
+            runtime-api/.runtime-e2e-cache/**
+            runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json
+          include-hidden-files: true
           if-no-files-found: warn
 
   audit-existing-runtime:
@@ -190,10 +199,19 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage7:registry
 
+      - name: Verify Stage 7 audit export
+        if: always()
+        run: |
+          ls -la runtime-api/.runtime-e2e-cache || true
+          test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
+
       - name: Upload runtime E2E cache
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: runtime-e2e-cache
-          path: runtime-api/.runtime-e2e-cache
+          path: |
+            runtime-api/.runtime-e2e-cache/**
+            runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json
+          include-hidden-files: true
           if-no-files-found: warn
