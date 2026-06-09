@@ -1,5 +1,6 @@
 import { DILIGENCE_SCHEMA_BUNDLE } from "../../functions/_generated/diligenceSchemaBundle.js";
 import { validateGeneratedSchema } from "../../functions/_generated/diligenceValidatorBundle.js";
+import { validateCompanyProfile } from "./companyProfileValidator.js";
 
 function normalizeValidationError(error) {
   return {
@@ -24,6 +25,15 @@ export function formatSchemaErrors(errors = []) {
 }
 
 export function resolveSchemaEntry(schemaKey) {
+  if (schemaKey === "companyProfile") {
+    return {
+      schema_id: "companyProfile",
+      path: "/data/schemas/companyProfile.schema.json",
+      title: "Company Profile",
+      schema: { title: "Company Profile" }
+    };
+  }
+
   const direct = DILIGENCE_SCHEMA_BUNDLE.schemas?.[schemaKey];
   if (direct) return direct;
 
@@ -34,6 +44,18 @@ export function resolveSchemaEntry(schemaKey) {
 }
 
 export function validateDiligenceStageOutput(schemaKey, data) {
+  if (schemaKey === "companyProfile") {
+    const result = validateCompanyProfile(data);
+    return {
+      ok: result.ok,
+      schemaKey,
+      resolvedKey: "companyProfile",
+      schema_path: "/data/schemas/companyProfile.schema.json",
+      validation_mode: "strict_runtime_company_profile_validator",
+      errors: (result.errors || []).map(normalizeValidationError)
+    };
+  }
+
   const schemaEntry = resolveSchemaEntry(schemaKey);
 
   if (!schemaEntry?.schema) {
@@ -69,7 +91,7 @@ export function validateDiligenceStageOutput(schemaKey, data) {
 export function getSchemaBundleStatus() {
   return {
     generated_at: DILIGENCE_SCHEMA_BUNDLE.generated_at,
-    schema_count: Object.keys(DILIGENCE_SCHEMA_BUNDLE.schemas || {}).length,
-    schema_keys: Object.keys(DILIGENCE_SCHEMA_BUNDLE.schemas || {})
+    schema_count: Object.keys(DILIGENCE_SCHEMA_BUNDLE.schemas || {}).length + 1,
+    schema_keys: [...Object.keys(DILIGENCE_SCHEMA_BUNDLE.schemas || {}), "companyProfile"]
   };
 }
