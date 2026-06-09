@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 
 function sha256(value) {
