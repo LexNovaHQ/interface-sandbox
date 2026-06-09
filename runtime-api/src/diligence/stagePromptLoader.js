@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import { DILIGENCE_PROMPT_BUNDLE } from "../../../functions/_generated/diligencePromptBundle.js";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 
 function sha256(value) {
@@ -20,12 +20,15 @@ function getPrompt(promptId) {
 
 function getCompanyProfilePrompt() {
   const fileName = "02_COMPANY_PROFILE.prompt.md";
-  const path = "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md";
-  const text = readFileSync(resolve(process.cwd(), "..", path), "utf8");
+  const packagedPath = resolve(process.cwd(), "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md");
+  const repoRootPath = resolve(process.cwd(), "..", "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md");
+  let text;
+  try { text = readFileSync(packagedPath, "utf8"); }
+  catch { text = readFileSync(repoRootPath, "utf8"); }
   return {
     prompt_id: "company_profile",
     file_name: fileName,
-    path,
+    path: "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md",
     sha256: sha256(text),
     characters: text.length,
     text
