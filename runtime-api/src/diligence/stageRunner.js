@@ -120,18 +120,47 @@ function derivedRegistryStatus(entry = {}) { if (gateFailure(entry)) return "NOT
 function repairRegistryConditionBasis(condition = {}) {
   const basis = String(condition?.basis || "").trim();
   if (!basis) return false;
-  const replacements = [
+  const falseForcingReplacements = [
     [/^TRUE_INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:"],
     [/^INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:"],
     [/^TRUE_NOT_SATISFIED\s*:/i, "FALSE_NOT_SATISFIED:"],
     [/^TRUE_NOT_APPLICABLE\s*:/i, "FALSE_NOT_APPLICABLE:"]
   ];
-  for (const [pattern, replacement] of replacements) {
+  for (const [pattern, replacement] of falseForcingReplacements) {
     if (pattern.test(basis)) {
       condition.basis = basis.replace(pattern, replacement);
       condition.result = false;
       return true;
     }
+  }
+  const canonicalPrefixes = /^(TRUE_EVIDENCE|TRUE_ABSENCE|TRUE_FEATURE_MAP|TRUE_LEGAL_STACK|FALSE_NOT_SATISFIED|FALSE_NOT_APPLICABLE|FALSE_INSUFFICIENT)\s*:/i;
+  if (canonicalPrefixes.test(basis)) return false;
+  const legalStackTruePrefixes = /^TRUE_(EULA|TERMS|TOS|PRIVACY|DPA|AUP|SLA|CONTRACT|NOTICE|ANNEXURE|SCHEDULE|SUBPROCESSOR|PROCESSOR|CONTROL|CONSENT|RETENTION|DELETION|SECURITY|LIABILITY|WARRANTY|IP|OWNERSHIP|OUTPUT|POLICY)\s*:/i;
+  const featureMapTruePrefixes = /^TRUE_(FEATURE|PRODUCT|SURFACE|API|MODEL|PIPELINE|WORKFLOW|AGENT|ARCHETYPE|SYSTEM|CAPABILITY|DEPLOYMENT|INTEGRATION)\s*:/i;
+  if (legalStackTruePrefixes.test(basis)) {
+    condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "TRUE_LEGAL_STACK:");
+    condition.result = true;
+    return true;
+  }
+  if (featureMapTruePrefixes.test(basis)) {
+    condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "TRUE_FEATURE_MAP:");
+    condition.result = true;
+    return true;
+  }
+  if (/^TRUE_(ABSENCE|MISSING|NO|LACK|GAP)\s*:/i.test(basis)) {
+    condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "TRUE_ABSENCE:");
+    condition.result = true;
+    return true;
+  }
+  if (/^TRUE_[A-Z0-9_]+\s*:/i.test(basis)) {
+    condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "TRUE_EVIDENCE:");
+    condition.result = true;
+    return true;
+  }
+  if (/^FALSE_[A-Z0-9_]+\s*:/i.test(basis)) {
+    condition.basis = basis.replace(/^FALSE_[A-Z0-9_]+\s*:/i, "FALSE_NOT_SATISFIED:");
+    condition.result = false;
+    return true;
   }
   return false;
 }
