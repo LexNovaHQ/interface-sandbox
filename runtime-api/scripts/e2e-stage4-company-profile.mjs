@@ -2,7 +2,6 @@
 
 import { buildEvidenceRefinerInput } from "../src/diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../src/diligence/evidenceJunction.js";
-import { runDiligenceStage } from "../src/diligence/stageRunner.js";
 
 const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
@@ -103,7 +102,7 @@ if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = normalizeBase(runtimeUrl);
 const targetInput = { primary_url: primaryUrl, company_name: companyName, submitted_at: new Date().toISOString() };
 
-console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_4_company_profile_e2e", target: targetInput, runtime_url: base }, null, 2));
+console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_4_company_profile_e2e", target: targetInput, runtime_url: base, gemini_execution: "remote_runtime" }, null, 2));
 
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: targetInput,
@@ -145,15 +144,14 @@ const stageInput = {
   }
 };
 
-const stageResult = await runDiligenceStage({
-  stageId: "company_profile",
+const stageResult = await postJson(base, "/v1/diligence/stage", {
+  stage: "company_profile",
   input: stageInput,
   options: {
     pool: process.env.STAGE4_COMPANY_POOL || process.env.STAGE4_POOL || "reasoning",
     maxOutputTokens: Number(process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 4096),
     timeoutMs: Number(process.env.STAGE4_COMPANY_TIMEOUT_MS || 60000)
-  },
-  env: process.env
+  }
 });
 
 if (!stageResult.ok) fail("Company Profile stage failed", stageResult);
@@ -163,6 +161,7 @@ if (profile.company_profile_version !== "company_profile_v1") fail("Bad company 
 console.log(JSON.stringify({
   ok: true,
   phase: "stage_4_company_profile_e2e",
+  gemini_execution: "remote_runtime",
   source_bundle_version: sourceBundle.source_bundle_version,
   evidence_junction_version: junction.evidence_junction_version,
   company_profile_version: profile.company_profile_version,
