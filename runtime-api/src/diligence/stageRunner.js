@@ -121,27 +121,17 @@ function repairRegistryConditionBasis(condition = {}) {
   const basis = String(condition?.basis || "").trim();
   if (!basis) return false;
   const replacements = [
-    [/^TRUE_INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:", false],
-    [/^INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:", false],
-    [/^TRUE_NOT_SATISFIED\s*:/i, "FALSE_NOT_SATISFIED:", false],
-    [/^TRUE_NOT_APPLICABLE\s*:/i, "FALSE_NOT_APPLICABLE:", false]
+    [/^TRUE_INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:"],
+    [/^INSUFFICIENT\s*:/i, "FALSE_INSUFFICIENT:"],
+    [/^TRUE_NOT_SATISFIED\s*:/i, "FALSE_NOT_SATISFIED:"],
+    [/^TRUE_NOT_APPLICABLE\s*:/i, "FALSE_NOT_APPLICABLE:"]
   ];
-  for (const [pattern, replacement, resultValue] of replacements) {
+  for (const [pattern, replacement] of replacements) {
     if (pattern.test(basis)) {
       condition.basis = basis.replace(pattern, replacement);
-      condition.result = resultValue;
+      condition.result = false;
       return true;
     }
-  }
-  if (/^TRUE_[A-Z0-9_]+\s*:/i.test(basis) && !/^TRUE_SATISFIED\s*:/i.test(basis)) {
-    condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "TRUE_SATISFIED:");
-    condition.result = true;
-    return true;
-  }
-  if (/^FALSE_[A-Z0-9_]+\s*:/i.test(basis) && !/^(FALSE_NOT_SATISFIED|FALSE_INSUFFICIENT|FALSE_NOT_APPLICABLE)\s*:/i.test(basis)) {
-    condition.basis = basis.replace(/^FALSE_[A-Z0-9_]+\s*:/i, "FALSE_NOT_SATISFIED:");
-    condition.result = false;
-    return true;
   }
   return false;
 }
@@ -178,21 +168,18 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const schemaEntry = resolveSchemaEntry(config.output_schema_key);
   if (!schemaEntry?.schema) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "SCHEMA_NOT_FOUND", error: `Output schema not found for ${config.output_schema_key}`, output_schema_key: config.output_schema_key };
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
-  if (!promptBundle.ok) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "PROMPT_NOT_FOUND", error: promptBundle.error, prompt_path: promptBundle.path };
-  const runtimeInstruction = typeof config.runtime_instruction === "function" ? config.runtime_instruction(input) : config.runtime_instruction;
-  const prompt = buildPromptInput({ stageId: config.stage_id, prompt: promptBundle.prompt, runtimeInstruction, input });
-  const pool = options.pool || config.pool || "json";
-  const result = await runGeminiPool({ pool, prompt, responseSchema: schemaEntry.schema, maxOutputTokens: options.maxOutputTokens || config.max_output_tokens || 8192, timeoutMs: options.timeoutMs || config.timeout_ms || 90000, env, jsonMode: true, searchGrounding: options.searchGrounding === true });
-  if (!result.ok) return { ok: false, status: providerFailureStatus(result), stage_id: config.stage_id, error_type: result.error_type || "MODEL_PROVIDER_ERROR", error: result.error || "Model provider failed", model_metadata: publicModelMetadata(result), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_sha256, stage_sha256: promptBundle.stage_sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(runtimeInstruction) } };
-  const unwrapped = unwrapStageOutput(result.parsed_json, config.output_key);
-  const schemaRepair = normalizeStageOutputForSchema(unwrapped.value, config.output_schema_key);
-  const featureQuoteRepair = config.output_schema_key === "targetFeatureProfile" ? repairTargetFeatureProfileQuotes(schemaRepair.value, input) : { value: schemaRepair.value, repaired: false, repair_notes: [] };
-  const registryStatusRepair = config.output_schema_key === "registryLedger" ? repairRegistryLedgerFinalStatuses(featureQuoteRepair.value) : { value: featureQuoteRepair.value, repaired: false, repair_notes: [] };
-  const stageOutput = registryStatusRepair.value;
-  const repairNotes = [...(schemaRepair.repair_notes || []), ...(featureQuoteRepair.repair_notes || []), ...(registryStatusRepair.repair_notes || [])];
-  const schemaValidation = validateDiligenceStageOutput(config.output_schema_key, stageOutput);
-  if (!schemaValidation.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: schemaEntry.path, output_unwrapped: unwrapped.unwrapped, output_repaired: schemaRepair.repaired === true || featureQuoteRepair.repaired === true || registryStatusRepair.repaired === true, output_repair_notes: repairNotes, error_type: "SCHEMA_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} schema validation`, validation_errors: schemaValidation.errors, error_summary: formatSchemaErrors(schemaValidation.errors), model_metadata: publicModelMetadata(result, { repaired: schemaRepair.repaired || featureQuoteRepair.repaired || registryStatusRepair.repaired, repair_notes: repairNotes }), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_sha256, stage_sha256: promptBundle.stage_sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(runtimeInstruction) } };
-  const guardrails = guardrailResultFor(config, stageOutput, input);
-  if (!guardrails.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: schemaEntry.path, validation_schema_key: config.output_schema_key, validation_mode: guardrails.validation_mode, output_unwrapped: unwrapped.unwrapped, output_repaired: schemaRepair.repaired === true || featureQuoteRepair.repaired === true || registryStatusRepair.repaired === true, output_repair_notes: repairNotes, error_type: "GUARDRAIL_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} guardrails`, validation_errors: guardrails.errors, validation_warnings: guardrails.warnings || [], error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(result, { repaired: schemaRepair.repaired || featureQuoteRepair.repaired || registryStatusRepair.repaired, repair_notes: repairNotes }), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_sha256, stage_sha256: promptBundle.stage_sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(runtimeInstruction) } };
-  return { ok: true, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: schemaEntry.path, validation_schema_key: config.output_schema_key, validation_mode: guardrails.validation_mode, output_unwrapped: unwrapped.unwrapped, output_repaired: schemaRepair.repaired === true || featureQuoteRepair.repaired === true || registryStatusRepair.repaired === true, output_repair_notes: repairNotes, validation_warnings: guardrails.warnings || [], [config.output_key]: stageOutput, model_metadata: publicModelMetadata(result, { repaired: schemaRepair.repaired || featureQuoteRepair.repaired || registryStatusRepair.repaired, repair_notes: repairNotes }), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_sha256, stage_sha256: promptBundle.stage_sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(runtimeInstruction) } };
+  const modelPrompt = buildPromptInput({ stageId: config.stage_id, prompt: promptBundle.combined_prompt, runtimeInstruction: config.runtime_instruction, input });
+  const runResult = await runGeminiPool({ poolName: options.pool || config.pool, prompt: modelPrompt, env, options: { responseMimeType: "application/json", temperature: options.temperature ?? config.temperature, maxOutputTokens: options.maxOutputTokens ?? options.max_output_tokens ?? config.max_output_tokens, timeoutMs: options.timeoutMs ?? options.timeout_ms ?? config.timeout_ms, maxAttempts: options.maxAttempts ?? options.max_attempts } });
+  if (!runResult.ok) return { ok: false, status: providerFailureStatus(runResult), stage_id: config.stage_id, error_type: runResult.error_type || "MODEL_STAGE_ERROR", error: runResult.error || "Diligence stage model run failed", model_metadata: publicModelMetadata(runResult) };
+  const normalizedOutput = unwrapStageOutput(runResult.json, config.output_key);
+  const schemaNormalizedOutput = normalizeStageOutputForSchema(normalizedOutput.value, config.output_schema_key);
+  const quoteRepair = config.output_schema_key === "targetFeatureProfile" ? repairTargetFeatureProfileQuotes(schemaNormalizedOutput.value, input) : { value: schemaNormalizedOutput.value, repaired: false, repair_notes: [] };
+  const registryRepair = config.output_schema_key === "registryLedger" ? repairRegistryLedgerFinalStatuses(quoteRepair.value) : { value: quoteRepair.value, repaired: false, repair_notes: [] };
+  const finalOutput = registryRepair.value;
+  const repair = { repaired: schemaNormalizedOutput.repaired || quoteRepair.repaired || registryRepair.repaired, repair_notes: [...(schemaNormalizedOutput.repair_notes || []), ...(quoteRepair.repair_notes || []), ...(registryRepair.repair_notes || [])] };
+  const validation = validateDiligenceStageOutput(config.output_schema_key, finalOutput);
+  if (!validation.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, error_type: "SCHEMA_VALIDATION_ERROR", error: "Model output failed schema validation", validation_errors: validation.errors, error_summary: formatSchemaErrors(validation.errors), model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
+  const guardrails = guardrailResultFor(config, finalOutput, input);
+  if (!guardrails.ok) return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, error_type: "GUARDRAIL_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} guardrails`, validation_errors: guardrails.errors, error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
+  return { ok: true, status: 200, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, guardrail_validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: repair.repaired, output_repair_notes: repair.repair_notes, [config.output_key]: finalOutput, model_metadata: publicModelMetadata(runResult, repair), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 }
