@@ -19,6 +19,16 @@ const STAGE_CONFIGS = Object.freeze({
     timeout_ms: 45000,
     temperature: 0
   },
+  company_profile: {
+    stage_id: "company_profile",
+    prompt_stage_id: "company_profile",
+    output_key: "company_profile",
+    output_schema_key: "companyProfile",
+    pool: "reasoning",
+    max_output_tokens: 4096,
+    timeout_ms: 45000,
+    temperature: 0
+  },
   target_feature_profile: {
     stage_id: "target_feature_profile",
     prompt_stage_id: "target_feature_profile",
