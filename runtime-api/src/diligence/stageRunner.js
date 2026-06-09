@@ -20,48 +20,159 @@ function stringifyLimitation(item) {
   try { return JSON.stringify(item); } catch { return String(item); }
 }
 
-function objectReadableFields(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
-  const preferredKeys = ["summary", "value", "category", "primary", "sub_sector", "sector", "industry", "description", "signal", "name", "type", "model", "mechanism", "status", "confidence"];
-  return [...new Set(preferredKeys.map((key) => value[key]).filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim()))];
-}
-function asString(value, fallback = "unknown") { if (typeof value === "string" && value.trim()) return value.trim(); if (Array.isArray(value)) return value.map((item) => asString(item, "")).filter(Boolean).join(", ") || fallback; if (value == null) return fallback; if (typeof value === "object") { const fields = objectReadableFields(value); return fields.length ? fields.join(" — ") : fallback; } return String(value).trim() || fallback; }
-function asStringArray(value) { if (Array.isArray(value)) return value.map((item) => asString(item, "")).map((item) => item.trim()).filter(Boolean); if (typeof value === "string" && value.trim()) return [value.trim()]; return []; }
-function confidence(value) { const normalized = String(value || "").trim().toLowerCase(); return ["high", "medium", "low", "unknown"].includes(normalized) ? normalized : "unknown"; }
-function domainFrom(value) { try { const url = new URL(/^https?:\/\//i.test(String(value || "")) ? value : `https://${value}`); return url.hostname.replace(/^www\./i, "") || "unknown"; } catch { return "unknown"; } }
-function confidenceFromLabels(labels, key) { if (!labels || typeof labels !== "object") return "unknown"; return confidence(labels[key] || labels[`${key}_confidence`] || labels.confidence); }
-function normalizeEvidenceSource(item, index) { if (!item || typeof item !== "object" || Array.isArray(item)) return { evidence_source_id: `company_profile_evidence_${index + 1}`, source_url: "unknown", claim_supported: asString(item, "unknown"), confidence: "unknown" }; return { evidence_source_id: asString(item.evidence_source_id || item.source_id || item.id, `company_profile_evidence_${index + 1}`), source_url: asString(item.source_url || item.url || item.final_url, "unknown"), claim_supported: asString(item.claim_supported || item.claim || item.supports || item.summary, "unknown"), confidence: confidence(item.confidence) }; }
-function normalizeEvidence(value) { if (Array.isArray(value)) return { primary_company_sources: value.map(normalizeEvidenceSource).slice(0, 3), supporting_company_sources: value.map(normalizeEvidenceSource).slice(3), evidence_notes: [], unresolved_questions: [] }; const evidence = value && typeof value === "object" ? value : {}; return { primary_company_sources: asStringArray(evidence.primary_company_sources).length ? asStringArray(evidence.primary_company_sources).map((item, index) => normalizeEvidenceSource({ claim_supported: item }, index)) : (Array.isArray(evidence.primary_company_sources) ? evidence.primary_company_sources.map(normalizeEvidenceSource) : []), supporting_company_sources: asStringArray(evidence.supporting_company_sources).length ? asStringArray(evidence.supporting_company_sources).map((item, index) => normalizeEvidenceSource({ claim_supported: item }, index)) : (Array.isArray(evidence.supporting_company_sources) ? evidence.supporting_company_sources.map(normalizeEvidenceSource) : []), evidence_notes: asStringArray(evidence.evidence_notes || evidence.notes), unresolved_questions: asStringArray(evidence.unresolved_questions || evidence.open_questions) }; }
-
-function normalizeCompanyProfileOutput(value) {
+function normalizeStageOutputForSchema(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return { value, repaired: false, repair_notes: [] };
-  const src = { ...value };
-  const identitySrc = src.company_identity && typeof src.company_identity === "object" ? src.company_identity : {};
-  const businessSrc = src.business_model && typeof src.business_model === "object" ? src.business_model : {};
-  const marketSrc = src.market_context && typeof src.market_context === "object" ? src.market_context : {};
-  const operatingSrc = src.operating_profile && typeof src.operating_profile === "object" ? src.operating_profile : {};
-  const assumptionsSrc = src.downstream_assumptions && typeof src.downstream_assumptions === "object" ? src.downstream_assumptions : {};
-  const website = asString(identitySrc.website || src.website, "unknown");
-  return { value: { company_profile_version: "company_profile_v1", company_identity: { brand_name: asString(identitySrc.brand_name || identitySrc.name || src.brand_name || src.company_name, "unknown"), legal_or_corporate_name: asString(identitySrc.legal_or_corporate_name || identitySrc.legal_name || identitySrc.corporate_name, "unknown"), website, domain: asString(identitySrc.domain, domainFrom(website)), headquarters_or_origin_signal: asString(identitySrc.headquarters_or_origin_signal || identitySrc.headquarters || identitySrc.origin, "unknown"), corporate_status_signal: asString(identitySrc.corporate_status_signal || identitySrc.funding_status || identitySrc.corporate_status, "unknown"), identity_confidence: confidence(identitySrc.identity_confidence || confidenceFromLabels(identitySrc.confidence_labels, "identity")) }, business_model: { company_type: asString(businessSrc.company_type || businessSrc.type, "unknown"), primary_customer_type: asString(businessSrc.primary_customer_type || businessSrc.customers || businessSrc.customer_type, "unknown"), sales_motion: asString(businessSrc.sales_motion, "unknown"), revenue_model_signal: asString(businessSrc.revenue_model_signal || businessSrc.revenue_model, "unknown"), enterprise_or_self_serve_signal: asString(businessSrc.enterprise_or_self_serve_signal || businessSrc.enterprise_self_serve, "unknown"), business_model_confidence: confidence(businessSrc.business_model_confidence || confidenceFromLabels(businessSrc.confidence_labels, "business_model")) }, market_context: { industry: asString(marketSrc.industry, "unknown"), target_geographies: asStringArray(marketSrc.target_geographies || marketSrc.geographies), target_languages: asStringArray(marketSrc.target_languages || marketSrc.languages), regulated_sector_exposure: asStringArray(marketSrc.regulated_sector_exposure || marketSrc.regulated_sectors), public_sector_or_enterprise_signal: asString(marketSrc.public_sector_or_enterprise_signal || marketSrc.public_sector_enterprise_signal, "unknown"), market_context_confidence: confidence(marketSrc.market_context_confidence || confidenceFromLabels(marketSrc.confidence_labels, "market_context")) }, operating_profile: { high_level_offering: asString(operatingSrc.high_level_offering || operatingSrc.offering, "unknown"), ai_system_type: asString(operatingSrc.ai_system_type || operatingSrc.system_type, "unknown"), deployment_model_signal: asString(operatingSrc.deployment_model_signal || operatingSrc.deployment_model, "unknown"), user_data_touchpoints: asStringArray(operatingSrc.user_data_touchpoints || operatingSrc.user_customer_data_touchpoints), customer_data_touchpoints: asStringArray(operatingSrc.customer_data_touchpoints || operatingSrc.user_customer_data_touchpoints), operating_profile_confidence: confidence(operatingSrc.operating_profile_confidence || confidenceFromLabels(operatingSrc.confidence_labels, "operating_profile")) }, downstream_assumptions: { for_product_profile: asStringArray(assumptionsSrc.for_product_profile || assumptionsSrc.product_profile), for_legal_review: asStringArray(assumptionsSrc.for_legal_review || assumptionsSrc.legal_review || assumptionsSrc.compliance_requirements), for_registry_matching: asStringArray(assumptionsSrc.for_registry_matching || assumptionsSrc.registry_matching || assumptionsSrc.regulatory_implications), assumption_warnings: asStringArray(assumptionsSrc.assumption_warnings || assumptionsSrc.warnings) }, evidence: normalizeEvidence(src.evidence), limitations: asStringArray(src.limitations) }, repaired: true, repair_notes: ["normalized_company_profile_aliases_to_schema"] };
+  const copy = { ...value };
+  const repairNotes = [];
+  if (Array.isArray(copy.limitations)) {
+    const normalized = copy.limitations.map(stringifyLimitation).map((item) => String(item || "").trim()).filter(Boolean);
+    const changed = normalized.length !== copy.limitations.length || copy.limitations.some((item, index) => item !== normalized[index]);
+    if (changed) {
+      copy.limitations = normalized;
+      repairNotes.push("normalized_limitations_to_string_array");
+    }
+  }
+  return { value: copy, repaired: repairNotes.length > 0, repair_notes: repairNotes };
 }
-function normalizeStageOutputForSchema(value, schemaKey) { if (schemaKey === "companyProfile") return normalizeCompanyProfileOutput(value); if (!value || typeof value !== "object" || Array.isArray(value)) return { value, repaired: false, repair_notes: [] }; const copy = { ...value }; const repairNotes = []; if (Array.isArray(copy.limitations)) { const normalized = copy.limitations.map(stringifyLimitation).map((item) => String(item || "").trim()).filter(Boolean); const changed = normalized.length !== copy.limitations.length || copy.limitations.some((item, index) => item !== normalized[index]); if (changed) { copy.limitations = normalized; repairNotes.push("normalized_limitations_to_string_array"); } } return { value: copy, repaired: repairNotes.length > 0, repair_notes: repairNotes }; }
 
-function quoteNorm(value) { return String(value || "").toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim(); }
-function urlNorm(value) { try { const url = new URL(value); url.hash = ""; if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/"; return url.toString(); } catch { return String(value || "").trim(); } }
-function sourceText(record = {}) { return record.clean_text_lossless || record?.text?.clean_text_lossless || ""; }
-function tokenSet(value) { const stop = new Set(["the", "and", "for", "with", "that", "this", "from", "into", "your", "you", "our", "are", "can", "will", "api", "apis"]); return new Set(quoteNorm(value).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !stop.has(token))); }
-function overlapScore(needle, candidate) { const n = tokenSet(needle); const c = tokenSet(candidate); if (!n.size || !c.size) return 0; let hits = 0; for (const token of n) if (c.has(token)) hits += 1; return hits / Math.max(3, n.size); }
-function evidenceMatchesForUrl(evidenceBuffer = [], featureSourceUrl = "") { const wanted = urlNorm(featureSourceUrl); return evidenceBuffer.filter((record) => [record.source_url, record.final_url, record.url].map(urlNorm).includes(wanted)); }
-function candidateSnippets(text = "") { const cleaned = String(text || "").replace(/\s+/g, " ").trim(); if (!cleaned) return []; const sentenceLike = cleaned.split(/(?<=[.!?])\s+|\s+[|•]\s+|\n+/).map((item) => item.trim()).filter((item) => item.length >= 25 && item.length <= 360); const words = cleaned.split(/\s+/).filter(Boolean); const windows = []; for (let i = 0; i < words.length; i += 18) { const window = words.slice(i, i + 36).join(" ").trim(); if (window.length >= 25 && window.length <= 420) windows.push(window); } return [...new Set([...sentenceLike, ...windows])]; }
-function snapQuoteToEvidence(feature, evidenceBuffer = []) { if (!feature?.evidence_quote || !feature?.feature_source_url) return null; const matches = evidenceMatchesForUrl(evidenceBuffer, feature.feature_source_url); if (!matches.length) return null; const current = quoteNorm(feature.evidence_quote); for (const record of matches) if (quoteNorm(sourceText(record)).includes(current)) return feature.evidence_quote; let best = null; for (const record of matches) for (const candidate of candidateSnippets(sourceText(record))) { const score = overlapScore(feature.evidence_quote, candidate); if (!best || score > best.score) best = { quote: candidate, score }; } return best && best.score >= 0.38 ? best.quote : null; }
-function repairTargetFeatureProfileQuotes(value, input) { if (!value || typeof value !== "object" || !Array.isArray(value.product_feature_map)) return { value, repaired: false, repair_notes: [] }; const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : []; if (!evidenceBuffer.length) return { value, repaired: false, repair_notes: [] }; const copy = { ...value, product_feature_map: value.product_feature_map.map((feature) => ({ ...feature })) }; let repairedCount = 0; for (const feature of copy.product_feature_map) { const snapped = snapQuoteToEvidence(feature, evidenceBuffer); if (snapped && quoteNorm(snapped) !== quoteNorm(feature.evidence_quote)) { feature.evidence_quote = snapped; repairedCount += 1; } } return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`snapped_${repairedCount}_target_feature_evidence_quotes_to_admitted_source_text`] : [] }; }
-function derivedRegistryStatus(entry) { if (entry?.trigger_if_result === true && entry?.exclude_if_result === true) return "CONTROLLED"; if (entry?.trigger_if_result === true && entry?.exclude_if_result === false) return "TRIGGERED"; if (entry?.trigger_if_result === false && ["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED"].includes(entry?.final_status)) return "NOT_TRIGGERED"; return entry?.final_status; }
-function repairRegistryLedgerFinalStatuses(value) { if (!value || typeof value !== "object" || !Array.isArray(value.registry_evaluation_ledger)) return { value, repaired: false, repair_notes: [] }; const copy = { ...value, registry_evaluation_ledger: value.registry_evaluation_ledger.map((entry) => ({ ...entry })) }; let repairedCount = 0; for (const entry of copy.registry_evaluation_ledger) { const derived = derivedRegistryStatus(entry); if (derived && derived !== entry.final_status) { entry.final_status = derived; repairedCount += 1; } } return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`normalized_${repairedCount}_registry_final_statuses_from_trigger_exclude_truth_table`] : [] }; }
+function quoteNorm(value) {
+  return String(value || "").toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, "\"").replace(/\s+/g, " ").trim();
+}
 
-function buildPromptInput({ stageId, prompt, runtimeInstruction, input }) { return [prompt.trim(), runtimeInstruction ? `\n\n---RUNTIME_STAGE_INSTRUCTION---\n${runtimeInstruction.trim()}` : "", "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.", "\n\n---INPUT_JSON---\n", JSON.stringify({ stage_id: stageId, input }, null, 2)].join(""); }
-function publicModelMetadata(result, repair = {}) { return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] }; }
-function providerFailureStatus(result) { if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503; if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502; if (result?.error_type === "TIMEOUT") return 504; return 502; }
-function guardrailResultFor(config, output, input) { const threatMappingSupplied = input?.threat_mapping_supplied === true || input?.source_bundle?.source_review?.threat_mapping_supplied === true; const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : []; if (config.output_schema_key === "targetFeatureProfile") return { ...validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "target_feature_profile_runtime_guardrails" }; if (config.output_schema_key === "legalStackReview") return { ...validateLegalStackReviewGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "legal_stack_review_runtime_guardrails" }; if (config.output_schema_key === "registryLedger") return { ...validateRegistryLedgerGuardrails(output, { input }), validation_mode: "registry_ledger_runtime_guardrails" }; return { ok: true, errors: [], validation_mode: null }; }
+function urlNorm(value) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString();
+  } catch {
+    return String(value || "").trim();
+  }
+}
+
+function sourceText(record = {}) {
+  return record.clean_text_lossless || record?.text?.clean_text_lossless || "";
+}
+
+function tokenSet(value) {
+  const stop = new Set(["the", "and", "for", "with", "that", "this", "from", "into", "your", "you", "our", "are", "can", "will", "api", "apis"]);
+  return new Set(quoteNorm(value).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !stop.has(token)));
+}
+
+function overlapScore(needle, candidate) {
+  const n = tokenSet(needle);
+  const c = tokenSet(candidate);
+  if (!n.size || !c.size) return 0;
+  let hits = 0;
+  for (const token of n) if (c.has(token)) hits += 1;
+  return hits / Math.max(3, n.size);
+}
+
+function evidenceMatchesForUrl(evidenceBuffer = [], featureSourceUrl = "") {
+  const wanted = urlNorm(featureSourceUrl);
+  return evidenceBuffer.filter((record) => [record.source_url, record.final_url, record.url].map(urlNorm).includes(wanted));
+}
+
+function candidateSnippets(text = "") {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return [];
+  const sentenceLike = cleaned.split(/(?<=[.!?])\s+|\s+[|•]\s+|\n+/).map((item) => item.trim()).filter((item) => item.length >= 25 && item.length <= 360);
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  const windows = [];
+  for (let i = 0; i < words.length; i += 18) {
+    const window = words.slice(i, i + 36).join(" ").trim();
+    if (window.length >= 25 && window.length <= 420) windows.push(window);
+  }
+  return [...new Set([...sentenceLike, ...windows])];
+}
+
+function snapQuoteToEvidence(feature, evidenceBuffer = []) {
+  if (!feature?.evidence_quote || !feature?.feature_source_url) return null;
+  const matches = evidenceMatchesForUrl(feature.feature_source_url, evidenceBuffer);
+  if (!matches.length) return null;
+  const current = quoteNorm(feature.evidence_quote);
+  for (const record of matches) if (quoteNorm(sourceText(record)).includes(current)) return feature.evidence_quote;
+  let best = null;
+  for (const record of matches) {
+    for (const candidate of candidateSnippets(sourceText(record))) {
+      const score = overlapScore(feature.evidence_quote, candidate);
+      if (!best || score > best.score) best = { quote: candidate, score };
+    }
+  }
+  return best && best.score >= 0.38 ? best.quote : null;
+}
+
+function repairTargetFeatureProfileQuotes(value, input) {
+  if (!value || typeof value !== "object" || !Array.isArray(value.product_feature_map)) return { value, repaired: false, repair_notes: [] };
+  const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : [];
+  if (!evidenceBuffer.length) return { value, repaired: false, repair_notes: [] };
+  const copy = { ...value, product_feature_map: value.product_feature_map.map((feature) => ({ ...feature })) };
+  let repairedCount = 0;
+  for (const feature of copy.product_feature_map) {
+    const snapped = snapQuoteToEvidence(feature, evidenceBuffer);
+    if (snapped && quoteNorm(snapped) !== quoteNorm(feature.evidence_quote)) {
+      feature.evidence_quote = snapped;
+      repairedCount += 1;
+    }
+  }
+  return { value: copy, repaired: repairedCount > 0, repair_notes: repairedCount > 0 ? [`snapped_${repairedCount}_target_feature_evidence_quotes_to_admitted_source_text`] : [] };
+}
+
+function gateFailure(entry = {}) {
+  return entry.archetype_gate === "FAIL" || entry.surface_gate === "FAIL";
+}
+
+function derivedRegistryStatus(entry = {}) {
+  if (gateFailure(entry)) return "NOT_APPLICABLE";
+  if (entry.final_status === "NOT_APPLICABLE" || entry.final_status === "INSUFFICIENT_EVIDENCE") return entry.final_status;
+  if (entry.trigger_if_result === true && entry.exclude_if_result === true) return "CONTROLLED";
+  if (entry.trigger_if_result === true && entry.exclude_if_result === false) return "TRIGGERED";
+  if (entry.trigger_if_result === false && ["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED"].includes(entry.final_status)) return "NOT_TRIGGERED";
+  return entry.final_status;
+}
+
+function repairRegistryLedgerFinalStatuses(value) {
+  if (!value || typeof value !== "object" || !Array.isArray(value.registry_evaluation_ledger)) return { value, repaired: false, repair_notes: [] };
+  const copy = { ...value, registry_evaluation_ledger: value.registry_evaluation_ledger.map((entry) => ({ ...entry })) };
+  let repairedCount = 0;
+  let gateRepairCount = 0;
+  for (const entry of copy.registry_evaluation_ledger) {
+    const derived = derivedRegistryStatus(entry);
+    if (derived && derived !== entry.final_status) {
+      entry.final_status = derived;
+      repairedCount += 1;
+      if (derived === "NOT_APPLICABLE" && gateFailure(entry)) gateRepairCount += 1;
+    }
+  }
+  const notes = [];
+  if (repairedCount > 0) notes.push(`normalized_${repairedCount}_registry_final_statuses_without_overriding_not_applicable_or_insufficient`);
+  if (gateRepairCount > 0) notes.push(`forced_${gateRepairCount}_gate_fail_rows_to_not_applicable`);
+  return { value: copy, repaired: repairedCount > 0, repair_notes: notes };
+}
+
+function buildPromptInput({ stageId, prompt, runtimeInstruction, input }) {
+  return [prompt.trim(), runtimeInstruction ? `\n\n---RUNTIME_STAGE_INSTRUCTION---\n${runtimeInstruction.trim()}` : "", "\n\n---\n\nReturn valid JSON only. Do not include Markdown fences or commentary outside JSON.", "\n\n---INPUT_JSON---\n", JSON.stringify({ stage_id: stageId, input }, null, 2)].join("");
+}
+
+function publicModelMetadata(result, repair = {}) {
+  return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] };
+}
+
+function providerFailureStatus(result) {
+  if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503;
+  if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502;
+  if (result?.error_type === "TIMEOUT") return 504;
+  return 502;
+}
+
+function guardrailResultFor(config, output, input) {
+  const threatMappingSupplied = input?.threat_mapping_supplied === true || input?.source_bundle?.source_review?.threat_mapping_supplied === true;
+  const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : [];
+  if (config.output_schema_key === "targetFeatureProfile") return { ...validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "target_feature_profile_runtime_guardrails" };
+  if (config.output_schema_key === "legalStackReview") return { ...validateLegalStackReviewGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "legal_stack_review_runtime_guardrails" };
+  if (config.output_schema_key === "registryLedger") return { ...validateRegistryLedgerGuardrails(output, { input }), validation_mode: "registry_ledger_runtime_guardrails" };
+  return { ok: true, errors: [], validation_mode: null };
+}
 
 export async function runDiligenceStage({ stageId, input, options = {}, env = process.env }) {
   const config = getDiligenceStageConfig(stageId);
