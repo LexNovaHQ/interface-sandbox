@@ -21,6 +21,41 @@ const K_FINAL = "final_status";
 const K_TRIGGER = "trigger_if_result";
 const K_EXCLUDE = "exclude_if_result";
 
+const STRICT_CONDITIONAL_ARTIFACT_PATTERNS = [
+  /\bdpa\b/i,
+  /\bdata processing agreement\b/i,
+  /\bdata processing addendum\b/i,
+  /\bdata protection addendum\b/i,
+  /\bprocessor terms\b/i,
+  /\bgdpr addendum\b/i,
+  /\baup\b/i,
+  /\bacceptable use policy\b/i,
+  /\bprohibited use policy\b/i,
+  /\busage restrictions?\b/i,
+  /\bsla\b/i,
+  /\bservice level agreement\b/i,
+  /\bservice level terms\b/i,
+  /\buptime commitment\b/i,
+  /\bavailability commitment\b/i,
+  /\bservice credits?\b/i,
+  /\bsupport response commitment\b/i,
+  /\bterms of service\b/i,
+  /\bterms of use\b/i,
+  /\bcustomer terms\b/i,
+  /\bservice terms\b/i,
+  /\bprivacy policy\b/i,
+  /\bprivacy notice\b/i,
+  /\bprivacy statement\b/i,
+  /\bsubprocessor(?:s)?(?: list| disclosure| page| terms)?\b/i,
+  /\bretention schedule\b/i,
+  /\bdata retention policy\b/i,
+  /\bdeletion policy\b/i,
+  /\bdeletion route\b/i,
+  /\bbiometric policy\b/i,
+  /\bbiometric retention\b/i,
+  /\bbiometric deletion\b/i
+];
+
 function rowId(row, index) {
   return asText(row?.Threat_ID || row?.threat_id || `ROW_${index + 1}`);
 }
@@ -30,7 +65,7 @@ function rowName(row) {
 }
 
 function rowArchetype(row) {
-  return asUpper(row?.Archetype || row?.archetype?.code || row?.archetype || row?.archetype_code || row?.Helper_Archetype || row?.helper_archetype || "");
+  return asUpper(row?.Threat_ID || row?.threat_id || "").split("_")[0] || asUpper(row?.Archetype || row?.archetype?.code || row?.archetype || row?.archetype_code || row?.Helper_Archetype || row?.helper_archetype || "");
 }
 
 function rowSurfaces(row) {
@@ -46,13 +81,18 @@ function hunterTriggerParts(row = {}) {
     ...conditions,
     trigger.trigger_if,
     trigger.exclude_if,
-    row?.hunter_trigger,
     row?.Trigger,
     row?.trigger,
     row?.Trigger_If,
     row?.trigger_if,
     row?.Exclude_If,
-    row?.exclude_if
+    row?.exclude_if,
+    row?.Legal_Pain,
+    row?.legal_pain,
+    row?.Lex_Nova_Fix,
+    row?.fix_route,
+    row?.fp_mechanism,
+    row?.fp_impact
   ];
 }
 
@@ -61,7 +101,8 @@ function rowTriggerText(row) {
 }
 
 function isConditionalDocRow(row) {
-  return /terms|privacy|dpa|aup|sla|policy|contract|consent|notice|disclosure|processor|subprocessor|absence|public|documentation|governance|control|exclude/i.test(rowTriggerText(row));
+  const text = rowTriggerText(row);
+  return STRICT_CONDITIONAL_ARTIFACT_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 function activeSignals(profile = {}) {
