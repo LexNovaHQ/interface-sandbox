@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderLegalExposureReport } from "../src/report-renderer/legalExposureReportRenderer.js";
+import { renderLegalExposureReport } from "../src/report-renderer/legalExposureReportRendererV2.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +31,7 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -127,5 +127,5 @@ console.log(JSON.stringify({
 }, null, 2));
 
 if (!validation.ok) {
-  process.exitCode = 1;
+  process.exit(1);
 }
