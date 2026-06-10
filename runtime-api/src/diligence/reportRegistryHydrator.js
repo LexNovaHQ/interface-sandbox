@@ -13,6 +13,7 @@ import {
   commercialImpactText,
   exposureMechanismText,
   legalSignificanceText,
+  rawRegistryPayload,
   remediationPathText,
   sanitizeVisibleText,
   toExposureCategoryLabel,
@@ -131,19 +132,19 @@ function clientQuestionsFor(item) {
 }
 
 function exposureMechanism(row) {
-  return exposureMechanismText(row?.fp_mechanism || row?.FP_Mechanism);
+  return exposureMechanismText(row);
 }
 
 function legalSignificance(row) {
-  return legalSignificanceText(row?.legal_pain || row?.Legal_Pain);
+  return legalSignificanceText(row);
 }
 
 function commercialImpact(row) {
-  return commercialImpactText(row?.fp_impact || row?.FP_Impact);
+  return commercialImpactText(row);
 }
 
 function remediationPath(row) {
-  return remediationPathText(row?.fix_route || row?.Lex_Nova_Fix);
+  return remediationPathText(row);
 }
 
 function applicabilityTest(row, entry) {
@@ -204,6 +205,7 @@ function buildHydratedRow({ entry, row, index, schema }) {
     clarification_points: [],
     counsel_review_note: "Qualified counsel should verify jurisdiction-specific treatment and whether internal controls not visible in the reviewed evidence change this assessment.",
     registry_basis: sanitizeVisibleText(row?.provenance || row?.Provenance || "Registry basis not specified."),
+    raw_registry_payload: rawRegistryPayload(row),
     registry_payload_available: Boolean(row)
   };
   item.clarification_points = clientQuestionsFor(item);
