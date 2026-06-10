@@ -115,9 +115,9 @@ export function buildPlatformLegalDiligence({
       visible_label: element.label,
       review_lens: element.label,
       detected_signals: {
-        product_features: elementFeatures.slice(0, 8).map(featureSignal),
-        legal_documents: elementDocs.slice(0, 8).map(legalDocumentSignal),
-        registry_items: elementRows.slice(0, 12).map(registrySignal),
+        product_features: elementFeatures.map(featureSignal),
+        legal_documents: elementDocs.map(legalDocumentSignal),
+        registry_items: elementRows.map(registrySignal),
         evidence_categories: categories
       },
       activation_summary: elementRows.length || elementFeatures.length || elementDocs.length
