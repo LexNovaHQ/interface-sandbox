@@ -26,6 +26,12 @@ function rowThreatId(row, index) { return String(row?.Threat_ID || row?.threat_i
 function rowArchetype(row) { return String(row?.Threat_ID || row?.threat_id || "").split("_")[0] || String(row?.Archetype || row?.archetype?.code || row?.archetype || "").trim(); }
 function nonEmpty(value) { return typeof value === "string" && value.trim().length > 0; }
 function featureIds(input = {}) { return new Set((input?.target_feature_profile?.product_feature_map || []).map((feature) => feature?.feature_id).filter(Boolean)); }
+function normalizeConditionBasisPrefix(condition = {}) {
+  if (typeof condition.result !== "boolean" || !nonEmpty(condition.basis)) return;
+  const basis = String(condition.basis || "");
+  if (condition.result === false && /^TRUE_[A-Z0-9_]+\s*:/i.test(basis)) condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "FALSE_NOT_SATISFIED:");
+  if (condition.result === true && /^FALSE_[A-Z0-9_]+\s*:/i.test(basis)) condition.basis = basis.replace(/^FALSE_[A-Z0-9_]+\s*:/i, "TRUE_EVIDENCE:");
+}
 
 export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
   const errors = [];
@@ -62,6 +68,7 @@ export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
       if (!nonEmpty(condition.condition_id)) push(errors, `${cBase}/condition_id`, "condition_id must be non-empty");
       if (typeof condition.result !== "boolean") push(errors, `${cBase}/result`, "condition.result must be boolean");
       if (!nonEmpty(condition.basis)) push(errors, `${cBase}/basis`, "condition.basis must be non-empty");
+      normalizeConditionBasisPrefix(condition);
       const basis = String(condition.basis || "");
       const goodPrefix = condition.result ? TRUE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix)) : FALSE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix));
       if (!goodPrefix) push(errors, `${cBase}/basis`, "condition.basis must start with the required TRUE_/FALSE_ diagnostic prefix", { basis });
