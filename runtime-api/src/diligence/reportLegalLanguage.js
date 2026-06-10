@@ -98,7 +98,12 @@ const SALES_LANGUAGE_REPLACEMENTS = [
   [/\bthe fix\b/gi, "the remediation route"],
   [/\bdisaster\b/gi, "material exposure"],
   [/\bnightmare\b/gi, "material issue"],
-  [/\bcompany're\b/gi, "company may be"]
+  [/\bcompany're\b/gi, "company may be"],
+  [/\bmodule(s)?\b/gi, "control area$1"],
+  [/\bCircuit Breaker\b/gi, "control safeguard"],
+  [/\bBartz-aware\b/gi, "case-law aware"],
+  [/\bPLD-ready\b/gi, "product-liability aware"],
+  [/\bNate-aware\b/gi, "case-law aware"]
 ];
 
 const RAW_LOGIC_REPLACEMENTS = [
