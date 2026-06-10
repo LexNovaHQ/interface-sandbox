@@ -39,6 +39,9 @@ function buildPreview(result, validation) {
     vault_prefill_counts: countPrefillGroups(handoff.vault_prefill_suggestions),
     vault_confirmation_question_count: asArray(handoff.vault_confirmation_questions).length,
     assembly_route_keys: Object.keys(handoff.assembly_route_recommendation || {}),
+    remediation_roadmap_count: asArray(handoff.assembly_route_recommendation?.remediation_roadmap).length,
+    document_route_count: asArray(handoff.assembly_route_recommendation?.document_routes).length,
+    control_route_count: asArray(handoff.assembly_route_recommendation?.control_routes).length,
     persistence_plan: result.persistence_plan,
     validation_errors: validation.errors,
     validation_warnings: validation.warnings
@@ -65,7 +68,7 @@ console.log(JSON.stringify({
 
 const stage9ReportData = await readJson(stage9Path);
 const result = assembleStage10VaultHandoff(stage9ReportData);
-const validation = validateReviewReadyHandoff(result);
+const validation = validateReviewReadyHandoff(result, stage9ReportData);
 const preview = buildPreview(result, validation);
 
 await writeJson(handoffPath, result);
@@ -79,7 +82,11 @@ console.log(JSON.stringify({
   preview_path: previewPath,
   validation_path: validationPath,
   handoff_id: result.handoff_envelope?.handoff_id,
+  target_profile: result.assembly_handoff?.target_profile,
+  feature_count: asArray(result.assembly_handoff?.feature_map).length,
   threat_finding_count: asArray(result.assembly_handoff?.threat_findings).length,
+  document_stack_count: asArray(result.assembly_handoff?.document_stack_status).length,
+  remediation_roadmap_count: asArray(result.assembly_handoff?.assembly_route_recommendation?.remediation_roadmap).length,
   vault_prefill_counts: countPrefillGroups(result.assembly_handoff?.vault_prefill_suggestions),
   vault_confirmation_question_count: asArray(result.assembly_handoff?.vault_confirmation_questions).length,
   errors: validation.errors,
