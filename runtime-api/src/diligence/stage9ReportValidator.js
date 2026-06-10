@@ -64,8 +64,11 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
   const registryRows = asArray(registryRuntime?.threats);
   const registryIds = registryRows.map((row, index) => asText(row?.threat_id || row?.Threat_ID || `ROW_${index + 1}`));
 
-  const findingSchedule = asArray(reportData?.exposure_findings?.schedule);
-  const findingCards = asArray(reportData?.exposure_findings?.detail_cards);
+  const exposureFindings = reportData?.exposure_findings || {};
+  const consolidatedFindings = asArray(exposureFindings.consolidated_findings);
+  const supportingRows = asArray(exposureFindings.supporting_registry_rows || exposureFindings.schedule);
+  const findingSchedule = asArray(exposureFindings.schedule || exposureFindings.supporting_registry_rows);
+  const findingCards = asArray(exposureFindings.detail_cards);
   const clarificationItems = asArray(reportData?.evidence_gaps_clarification_points?.clarification_required_items);
   const forensicLedger = asArray(reportData?.forensic_ledger_appendix?.forensic_ledger);
   const reviewedSources = asArray(reportData?.evidence_reviewed?.reviewed_sources);
@@ -78,8 +81,25 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
     errors.push(`evidence_reviewed.reviewed_sources contains ${reviewedSourceRowsWithoutIdentity.length} row(s) without source_url or title`);
   }
 
+  if ((ledgerCounts.TRIGGERED || 0) > 0 && !consolidatedFindings.length) {
+    errors.push("identified exposures exist but consolidated_exposure_findings is empty");
+  }
+  if (consolidatedFindings.length > (ledgerCounts.TRIGGERED || 0)) {
+    errors.push(`consolidated exposure findings exceed identified registry exposure items: consolidated=${consolidatedFindings.length}, triggered=${ledgerCounts.TRIGGERED || 0}`);
+  }
+
+  const consolidatedCoveredRefs = new Set(consolidatedFindings.flatMap((finding) => asArray(finding.supporting_registry_references).map(asText).filter(Boolean)));
+  const triggeredIds = ledger.filter((entry) => asText(entry?.final_status) === "TRIGGERED").map(threatId).filter(Boolean);
+  const missingFromConsolidated = triggeredIds.filter((id) => !consolidatedCoveredRefs.has(id));
+  if (missingFromConsolidated.length) {
+    errors.push(`consolidated findings missing triggered registry reference(s): ${missingFromConsolidated.join(", ")}`);
+  }
+
   if (findingSchedule.length !== (ledgerCounts.TRIGGERED || 0)) {
     errors.push(`identified exposure schedule count mismatch: expected ${ledgerCounts.TRIGGERED || 0}, received ${findingSchedule.length}`);
+  }
+  if (supportingRows.length !== (ledgerCounts.TRIGGERED || 0)) {
+    errors.push(`supporting registry row count mismatch: expected ${ledgerCounts.TRIGGERED || 0}, received ${supportingRows.length}`);
   }
   if (findingCards.length !== (ledgerCounts.TRIGGERED || 0)) {
     errors.push(`finding detail card count mismatch: expected ${ledgerCounts.TRIGGERED || 0}, received ${findingCards.length}`);
@@ -125,7 +145,9 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
     warnings,
     counts: {
       ledger: ledgerCounts,
+      consolidated_findings: consolidatedFindings.length,
       finding_schedule: findingSchedule.length,
+      supporting_registry_rows: supportingRows.length,
       finding_cards: findingCards.length,
       clarification_items: clarificationItems.length,
       forensic_ledger: forensicLedger.length,
@@ -140,6 +162,8 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
       missing_from_forensic: missingFromForensic,
       unexpected_forensic: unexpectedForensic,
       duplicate_forensic: duplicateForensic,
+      consolidated_covered_triggered_refs: [...consolidatedCoveredRefs],
+      missing_from_consolidated: missingFromConsolidated,
       visible_language_violations: languageViolations
     }
   };
