@@ -90,6 +90,11 @@ export const BANNED_VISIBLE_TERMS = Object.freeze([
   "trigger_if_result",
   "exclude_if_result",
   "final_status",
+  "TRIGGERED",
+  "CONTROLLED",
+  "INSUFFICIENT_EVIDENCE",
+  "NOT_TRIGGERED",
+  "NOT_APPLICABLE",
   "Operator Challenge",
   "Vault",
   "Node 5B"
