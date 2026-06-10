@@ -67,6 +67,15 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
   const findingCards = asArray(reportData?.exposure_findings?.detail_cards);
   const clarificationItems = asArray(reportData?.evidence_gaps_clarification_points?.clarification_required_items);
   const forensicLedger = asArray(reportData?.forensic_ledger_appendix?.forensic_ledger);
+  const reviewedSources = asArray(reportData?.evidence_reviewed?.reviewed_sources);
+
+  if (!reviewedSources.length) {
+    errors.push("evidence_reviewed.reviewed_sources is empty");
+  }
+  const reviewedSourceRowsWithoutIdentity = reviewedSources.filter((source) => !asText(source?.source_url) && !asText(source?.title));
+  if (reviewedSourceRowsWithoutIdentity.length) {
+    errors.push(`evidence_reviewed.reviewed_sources contains ${reviewedSourceRowsWithoutIdentity.length} row(s) without source_url or title`);
+  }
 
   if (findingSchedule.length !== (ledgerCounts.TRIGGERED || 0)) {
     errors.push(`identified exposure schedule count mismatch: expected ${ledgerCounts.TRIGGERED || 0}, received ${findingSchedule.length}`);
@@ -116,11 +125,13 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
       finding_cards: findingCards.length,
       clarification_items: clarificationItems.length,
       forensic_ledger: forensicLedger.length,
+      reviewed_sources: reviewedSources.length,
       registry_count: registryIds.length
     },
     coverage: {
       ledger_count: ledgerIds.length,
       forensic_count: forensicIds.length,
+      reviewed_sources_count: reviewedSources.length,
       missing_from_forensic: missingFromForensic,
       unexpected_forensic: unexpectedForensic,
       duplicate_forensic: duplicateForensic
