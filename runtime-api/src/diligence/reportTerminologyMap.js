@@ -1,3 +1,5 @@
+import { toExposureCategoryLabel, toSeverityLabel } from "./reportLegalLanguage.js";
+
 export const REPORT_TITLE = "Legal Exposure Diligence Report";
 
 export const REPORT_SUBTITLE = "Matter Evidence Review";
@@ -22,11 +24,11 @@ export const STATUS_SORT_ORDER = Object.freeze({
 });
 
 export const PAIN_TIER_LABELS = Object.freeze({
-  T1: "T1 — Existential",
-  T2: "T2 — Uncapped Money",
+  T1: "T1 — Material Business Risk",
+  T2: "T2 — Financial Exposure",
   T3: "T3 — Deal / Customer Approval Risk",
-  T4: "T4 — Regulatory Heat",
-  T5: "T5 — Friction"
+  T4: "T4 — Regulatory Scrutiny",
+  T5: "T5 — Operational / Contracting Friction"
 });
 
 export const VELOCITY_LABELS = Object.freeze({
@@ -104,6 +106,17 @@ export const BANNED_VISIBLE_TERMS = Object.freeze([
   "FALSE_NOT_SATISFIED",
   "FALSE_NOT_APPLICABLE",
   "FALSE_INSUFFICIENT",
+  "DOC_",
+  "The Translator",
+  "The Doer",
+  "The Orchestrator",
+  "The Creator",
+  "The Reader",
+  "The Judge",
+  "The Companion",
+  "The Shield",
+  "The Optimizer",
+  "The Mover",
   "Operator Challenge",
   "Vault",
   "Node 5B"
@@ -115,9 +128,9 @@ export function displayStatus(status) {
 
 export function displayPainTier(tier, category) {
   const normalizedTier = String(tier || "").trim();
+  const normalizedCategory = toExposureCategoryLabel(String(category || "").trim());
   if (PAIN_TIER_LABELS[normalizedTier]) return PAIN_TIER_LABELS[normalizedTier];
-  const normalizedCategory = String(category || "").trim();
-  return [normalizedTier, normalizedCategory].filter(Boolean).join(" — ") || "Severity Not Specified";
+  return toSeverityLabel(normalizedTier, normalizedCategory);
 }
 
 export function displayVelocity(velocity) {
