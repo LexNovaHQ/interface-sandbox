@@ -19,7 +19,7 @@ const ARCHETYPE_TO_PREFILL = Object.freeze({
 });
 
 const SURFACE_PREFILL_RULES = Object.freeze([
-  { pattern: /personal data|privacy|data processing|data protection|subprocessor/i, path: "compliance.processes_pii", value: "yes" },
+  { pattern: /personal data|privacy|data processing|data protection|subprocessor|PII/i, path: "compliance.processes_pii", value: "yes" },
   { pattern: /EU|GDPR|European/i, path: "compliance.eu_users", value: true },
   { pattern: /California|CCPA|CPRA/i, path: "compliance.ca_users", value: true },
   { pattern: /health|medical|patient/i, path: "compliance.sens_health", value: true },
@@ -49,6 +49,12 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function getStage9ReportData(stage9ReportData) {
+  return stage9ReportData?.report?.report_data
+    || stage9ReportData?.report_data
+    || stage9ReportData;
+}
+
 function text(value) {
   if (value === undefined || value === null) return "";
   if (typeof value === "string") return value;
@@ -60,6 +66,7 @@ function text(value) {
 }
 
 function joinSignalText(stage9ReportData) {
+  const reportData = getStage9ReportData(stage9ReportData);
   const parts = [];
   const add = (value) => {
     if (value === undefined || value === null) return;
@@ -68,38 +75,46 @@ function joinSignalText(stage9ReportData) {
     else parts.push(String(value));
   };
 
-  add(stage9ReportData?.matter_overview);
-  add(stage9ReportData?.product_activity_profile);
-  add(stage9ReportData?.legal_risk_surface_map);
-  add(stage9ReportData?.platform_legal_diligence);
-  add(stage9ReportData?.exposure_findings?.consolidated_findings);
-  add(stage9ReportData?.forensic_ledger_appendix?.rows);
+  add(reportData?.matter_overview);
+  add(reportData?.product_activity_profile);
+  add(reportData?.legal_risk_surface_map);
+  add(reportData?.legal_stack_control_review);
+  add(reportData?.platform_legal_diligence);
+  add(reportData?.exposure_findings?.consolidated_findings);
+  add(reportData?.exposure_findings?.supporting_registry_rows);
+  add(reportData?.forensic_ledger_appendix?.full_registry_ledger);
 
   return parts.join("\n");
 }
 
 function getRunRefs(stage9ReportData) {
-  const rows = asArray(stage9ReportData?.exposure_findings?.supporting_registry_rows);
+  const reportData = getStage9ReportData(stage9ReportData);
+  const rows = asArray(reportData?.exposure_findings?.supporting_registry_rows);
   return rows.map((row) => row.registry_reference || row.threat_id || row.id).filter(Boolean).map(String);
 }
 
 function collectArchetypeCodes(stage9ReportData) {
+  const reportData = getStage9ReportData(stage9ReportData);
   const codes = new Set();
   const push = (value) => {
     const code = String(value || "").trim().toUpperCase();
     if (/^[A-Z]{3}$/.test(code)) codes.add(code);
   };
 
-  asArray(stage9ReportData?.product_activity_profile?.active_functional_profiles).forEach((item) => {
+  asArray(reportData?.product_activity_profile?.active_functional_profiles).forEach((item) => {
     push(item.code || item.profile || item.functional_profile || item);
   });
 
-  asArray(stage9ReportData?.exposure_findings?.supporting_registry_rows).forEach((row) => {
+  asArray(reportData?.product_activity_profile?.product_feature_map).forEach((feature) => {
+    String(feature.functional_profile || "").split(/[,/|;]/).forEach(push);
+  });
+
+  asArray(reportData?.exposure_findings?.supporting_registry_rows).forEach((row) => {
     push(row.functional_profile);
     push(String(row.registry_reference || row.threat_id || "").split("_")[0]);
   });
 
-  asArray(stage9ReportData?.forensic_ledger_appendix?.rows).forEach((row) => {
+  asArray(reportData?.forensic_ledger_appendix?.full_registry_ledger).forEach((row) => {
     push(row.functional_profile);
     push(String(row.registry_reference || row.threat_id || "").split("_")[0]);
   });
@@ -114,20 +129,33 @@ function setIfPresent(prefill, fieldPath, value, basis, confidence, refs, warnin
 }
 
 function deriveBaseline(stage9ReportData, prefill, warnings) {
+  const reportData = getStage9ReportData(stage9ReportData);
   const refs = ["matter_overview", "product_activity_profile"];
-  const matter = stage9ReportData?.matter_overview || {};
-  const product = stage9ReportData?.product_activity_profile || {};
+  const matter = reportData?.matter_overview || {};
+  const reportIdentity = matter.report_identity || {};
+  const product = reportData?.product_activity_profile || {};
   const profile = product.product_profile || product.target_profile || product;
 
-  const company = matter.target || matter.company_name || profile.company_name || profile.company || stage9ReportData?.target_profile?.company_name;
+  const company = reportIdentity.target_or_client
+    || matter.target_or_client
+    || matter.target
+    || profile.company_name
+    || profile.company
+    || reportData?.target_profile?.company_name;
   setIfPresent(prefill, "baseline.company", company, "Derived from Stage 9 matter overview / target profile.", "high", refs, warnings);
 
-  const productName = matter.product || profile.product_name || profile.name || product.product_name;
+  const productName = reportIdentity.product_or_matter
+    || matter.product_or_matter
+    || matter.product
+    || profile.product_name
+    || profile.name
+    || product.primary_product
+    || product.product_name;
   if (productName) {
     setIfPresent(prefill, "baseline.products", [productName], "Derived from Stage 9 product activity profile.", "high", refs, warnings);
   }
 
-  const jurisdiction = matter.jurisdictions || matter.jurisdiction || profile.jurisdiction || profile.hq_jurisdiction || {};
+  const jurisdiction = reportIdentity.jurisdictions || matter.jurisdictions || matter.jurisdiction || profile.jurisdiction || profile.hq_jurisdiction || {};
   if (typeof jurisdiction === "string") {
     setIfPresent(prefill, "baseline.jurisdiction.country", jurisdiction, "Derived from Stage 9 matter jurisdiction signal; founder should confirm exact legal jurisdiction.", "medium", refs, warnings);
   } else if (jurisdiction && typeof jurisdiction === "object") {
@@ -138,7 +166,7 @@ function deriveBaseline(stage9ReportData, prefill, warnings) {
   const market = profile.market || matter.market || product.market;
   setIfPresent(prefill, "baseline.market", market, "Derived from Stage 9 product / market profile.", "medium", refs, warnings);
 
-  const signals = joinSignalText(stage9ReportData);
+  const signals = joinSignalText(reportData);
   if (/app|dashboard|interface|browser|web app|platform/i.test(signals)) {
     setIfPresent(prefill, "baseline.delivery.app", true, "Derived from public product activity indicating application/platform delivery.", "medium", refs, warnings);
   }
@@ -151,14 +179,15 @@ function deriveBaseline(stage9ReportData, prefill, warnings) {
 
   INTEGRATION_PREFILL_RULES.forEach((rule) => {
     if (rule.pattern.test(signals)) {
-      setIfPresent(prefill, rule.path, true, `Derived from Stage 9 public integration signal matching ${rule.pattern}.`, "medium", getRunRefs(stage9ReportData), warnings);
+      setIfPresent(prefill, rule.path, true, `Derived from Stage 9 public integration signal matching ${rule.pattern}.`, "medium", getRunRefs(reportData), warnings);
     }
   });
 }
 
 function deriveArchitecture(stage9ReportData, prefill, warnings) {
-  const signals = joinSignalText(stage9ReportData);
-  const refs = getRunRefs(stage9ReportData);
+  const reportData = getStage9ReportData(stage9ReportData);
+  const signals = joinSignalText(reportData);
+  const refs = getRunRefs(reportData);
 
   PROVIDER_PREFILL_RULES.forEach((rule) => {
     if (rule.pattern.test(signals)) {
@@ -191,8 +220,9 @@ function deriveArchetypes(stage9ReportData, prefill, warnings) {
 }
 
 function deriveCompliance(stage9ReportData, prefill, warnings) {
-  const signals = joinSignalText(stage9ReportData);
-  const refs = getRunRefs(stage9ReportData);
+  const reportData = getStage9ReportData(stage9ReportData);
+  const signals = joinSignalText(reportData);
+  const refs = getRunRefs(reportData);
 
   SURFACE_PREFILL_RULES.forEach((rule) => {
     if (rule.pattern.test(signals)) {
@@ -207,11 +237,12 @@ function deriveCompliance(stage9ReportData, prefill, warnings) {
 
 export function deriveVaultPrefillFromStage9(stage9ReportData, warnings = []) {
   const prefill = createEmptyVaultPrefill();
+  const reportData = getStage9ReportData(stage9ReportData);
 
-  deriveBaseline(stage9ReportData, prefill, warnings);
-  deriveArchitecture(stage9ReportData, prefill, warnings);
-  deriveArchetypes(stage9ReportData, prefill, warnings);
-  deriveCompliance(stage9ReportData, prefill, warnings);
+  deriveBaseline(reportData, prefill, warnings);
+  deriveArchitecture(reportData, prefill, warnings);
+  deriveArchetypes(reportData, prefill, warnings);
+  deriveCompliance(reportData, prefill, warnings);
 
   return prefill;
 }
