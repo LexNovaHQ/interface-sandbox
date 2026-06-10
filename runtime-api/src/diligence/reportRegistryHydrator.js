@@ -177,8 +177,7 @@ function buildHydratedRow({ entry, row, index, schema }) {
     suggested_remediation_path: remediationPath(row),
     reviewed_evidence: {
       evidence_reference: asText(entry?.evidence_ref, "No evidence reference supplied by evaluation layer."),
-      feature_references: asArray(entry?.feature_refs).map((ref) => asText(ref)).filter(Boolean),
-      reasoning_summary: asText(entry?.reasoning_summary)
+      feature_references: asArray(entry?.feature_refs).map((ref) => asText(ref)).filter(Boolean)
     },
     applicability_test: applicabilityTest(row, entry),
     control_position: displayControlOutcome(entry?.exclude_if_result),
