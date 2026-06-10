@@ -118,7 +118,7 @@ function buildLegalStackControlReview(legalStackReview = {}, hydratedRows) {
   }));
 
   return {
-    legal_stack,
+    legal_stack: legalStack,
     document_stack_redline: asArray(legalStackReview.document_stack_redline),
     document_stack_synthesis: legalStackReview.document_stack_synthesis || null,
     legal_stack_assessment: asArray(legalStackReview.legal_stack_assessment),
