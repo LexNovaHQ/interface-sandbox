@@ -14,7 +14,7 @@ const FUNCTIONAL_PROFILE_LABELS = Object.freeze({
   "The Doer": "Autonomous Action Function",
   "The Orchestrator": "Workflow Orchestration Function",
   "The Creator": "Content Generation Function",
-  "The Reader": "Document / Data Inestion Function",
+  "The Reader": "Document / Data Ingestion Function",
   "The Judge": "Decision-Support Function",
   "The Companion": "User Interaction / Companion Function",
   "The Shield": "Security / Risk-Control Function",
