@@ -56,6 +56,13 @@ const FAMILY_MAP = {
     description:
       "Exposure items in this family relate to decision-support, automated review, human oversight, appeals, or outcome-reliance controls."
   },
+  FIN: {
+    order: 35,
+    title: "Agentic Financial / Transaction Authority Exposure",
+    category: "Transaction authority and approval-gate controls",
+    description:
+      "Exposure items in this family relate to autonomous or AI-assisted financial, payment, transaction, approval, commitment, or authority-bearing activity."
+  },
   FRD: {
     order: 40,
     title: "AI Misrepresentation / Fraud Reliance Exposure",
@@ -98,6 +105,13 @@ const FAMILY_MAP = {
     description:
       "Exposure items in this family relate to personal data, processors, subprocessors, model providers, data transfers, deletion, training use, or processing transparency."
   },
+  SHD: {
+    order: 95,
+    title: "Security & Operational Control Exposure",
+    category: "Security and operational control posture",
+    description:
+      "Exposure items in this family relate to security commitments, incident response, service availability, audit logs, breach language, or risk-control limitations."
+  },
   TRD: {
     order: 100,
     title: "Transparency / Disclosure Exposure",
@@ -109,10 +123,10 @@ const FAMILY_MAP = {
 
 const DEFAULT_FAMILY = {
   order: 999,
-  title: "General Legal Exposure Items",
-  category: "General exposure controls",
+  title: "Platform Legal Control Exposure",
+  category: "Platform legal controls",
   description:
-    "Exposure items in this family are grouped because they were identified by the Legal Exposure Registry but do not fall into a more specific visible issue family."
+    "Exposure items in this family were identified by the Legal Exposure Registry and require review against the relevant product, policy, contract, governance, and customer-facing control documents."
 };
 
 function familyCodeFromReference(reference = "") {
@@ -146,7 +160,7 @@ function buildGroupSummary({ family, items }) {
   const surfaces = unique(items.flatMap((item) => item.legal_risk_surfaces || []));
   const profiles = unique(items.map((item) => item.functional_profile?.label));
   const severity = highestPriority(items)?.severity?.label || "Severity not specified";
-  return `${family.description} The group includes ${items.length} supporting registry exposure item(s), with highest recorded severity of ${severity}. Active surface(s): ${surfaces.slice(0, 4).join(", ") || "not specified"}. Functional profile(s): ${profiles.slice(0, 4).join(", ") || "not specified"}.`;
+  return `${family.description} The group includes ${items.length} supporting registry exposure item(s), with highest recorded severity of ${severity}. Active surface(s): ${surfaces.join(", ") || "not specified"}. Functional profile(s): ${profiles.join(", ") || "not specified"}.`;
 }
 
 function buildGroupImpact({ items }) {
@@ -170,18 +184,16 @@ function buildGroupImpact({ items }) {
     }
     return matches;
   }));
-  return `This family should be reviewed for ${categories.slice(0, 3).join(", ") || "legal exposure"}. Suggested remediation review should focus on ${priorityDocs.slice(0, 5).join(", ") || "the relevant policy, contract, governance, and customer-facing control documents"}.`;
+  return `This family should be reviewed for ${categories.join(", ") || "legal exposure"}. Suggested remediation review should focus on ${priorityDocs.join(", ") || "the relevant policy, contract, governance, and customer-facing control documents"}.`;
 }
 
 export function groupIdentifiedExposures(items = []) {
   const groups = new Map();
   for (const item of asArray(items)) {
-    const familyCode = familyCodeFromReference(item.registry_reference);
-    const family = FAMILY_MAP[familyCode] || DEFAULT_FAMILY;
-    if (!groups.has(familyCode)) {
-      groups.set(familyCode, { familyCode, family, items: [] });
-    }
-    groups.get(familyCode).items.push(item);
+    const code = familyCodeFromReference(item.registry_reference);
+    const family = FAMILY_MAP[code] || DEFAULT_FAMILY;
+    if (!groups.has(code)) groups.set(code, { familyCode: code, family, items: [] });
+    groups.get(code).items.push(item);
   }
 
   return [...groups.values()]
@@ -193,6 +205,18 @@ export function groupIdentifiedExposures(items = []) {
       const surfaces = unique(items.flatMap((item) => item.legal_risk_surfaces || []));
       const profiles = unique(items.map((item) => item.functional_profile?.label));
       const refs = unique(items.map((item) => item.registry_reference));
+      const rowSummaries = items.map((item) => ({
+        registry_reference: item.registry_reference,
+        exposure_title: item.exposure_title,
+        severity: item.severity?.label,
+        timing_urgency: item.timing_urgency?.label,
+        legal_risk_surfaces: item.legal_risk_surfaces,
+        reviewed_evidence: item.reviewed_evidence,
+        control_position: item.control_position,
+        legal_significance: item.legal_significance,
+        commercial_deal_impact: item.commercial_deal_impact,
+        suggested_remediation_path: item.suggested_remediation_path
+      }));
       return {
         consolidated_finding_id: `CF-${String(group.family.order).padStart(3, "0")}`,
         exposure_family_code: group.familyCode,
@@ -211,22 +235,8 @@ export function groupIdentifiedExposures(items = []) {
         consolidated_summary: buildGroupSummary({ family: group.family, items }),
         commercial_deal_impact: buildGroupImpact({ items }),
         suggested_remediation_path: buildGroupImpact({ items }),
-        representative_items: items.slice(0, 5).map((item) => ({
-          registry_reference: item.registry_reference,
-          exposure_title: item.exposure_title,
-          severity: item.severity?.label,
-          timing_urgency: item.timing_urgency?.label,
-          control_position: item.control_position
-        })),
-        supporting_registry_rows: items.map((item) => ({
-          registry_reference: item.registry_reference,
-          exposure_title: item.exposure_title,
-          severity: item.severity?.label,
-          timing_urgency: item.timing_urgency?.label,
-          legal_risk_surfaces: item.legal_risk_surfaces,
-          control_position: item.control_position,
-          suggested_remediation_path: item.suggested_remediation_path
-        }))
+        representative_items: rowSummaries,
+        supporting_registry_rows: rowSummaries
       };
     })
     .sort((a, b) => {
@@ -235,8 +245,5 @@ export function groupIdentifiedExposures(items = []) {
       if (aKey !== bKey) return aKey - bKey;
       return a.exposure_title.localeCompare(b.exposure_title);
     })
-    .map((group, index) => ({
-      ...group,
-      consolidated_finding_id: `CF-${String(index + 1).padStart(3, "0")}`
-    }));
+    .map((group, index) => ({ ...group, consolidated_finding_id: `CF-${String(index + 1).padStart(3, "0")}` }));
 }
