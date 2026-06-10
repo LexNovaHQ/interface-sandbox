@@ -11,6 +11,29 @@ function unique(values = []) {
   return [...new Set(values.map((value) => asText(value)).filter(Boolean))];
 }
 
+const DEFAULT_SEVERITY = {
+  tier: "T5",
+  label: "Severity not specified",
+  category: "Unspecified exposure category"
+};
+
+const DEFAULT_TIMING_URGENCY = {
+  raw: "WATCH",
+  label: "Timing not specified"
+};
+
+function normalizeSeverity(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...DEFAULT_SEVERITY, ...value }
+    : { ...DEFAULT_SEVERITY };
+}
+
+function normalizeTimingUrgency(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...DEFAULT_TIMING_URGENCY, ...value }
+    : { ...DEFAULT_TIMING_URGENCY };
+}
+
 const FAMILY_MAP = {
   BIO: {
     order: 10,
@@ -165,8 +188,8 @@ export function groupIdentifiedExposures(items = []) {
     .map((group) => {
       const items = [...group.items].sort((a, b) => severitySortKey(a) - severitySortKey(b));
       const lead = highestPriority(items);
-      const highestSeverity = lead?.severity || null;
-      const highestTimingUrgency = lead?.timing_urgency || null;
+      const highestSeverity = normalizeSeverity(lead?.severity);
+      const highestTimingUrgency = normalizeTimingUrgency(lead?.timing_urgency);
       const surfaces = unique(items.flatMap((item) => item.legal_risk_surfaces || []));
       const profiles = unique(items.map((item) => item.functional_profile?.label));
       const refs = unique(items.map((item) => item.registry_reference));
@@ -207,8 +230,8 @@ export function groupIdentifiedExposures(items = []) {
       };
     })
     .sort((a, b) => {
-      const aKey = (a.highest_severity?.tier ? severitySortKey({ severity: a.highest_severity, timing_urgency: a.highest_timing_urgency }) : 9999);
-      const bKey = (b.highest_severity?.tier ? severitySortKey({ severity: b.highest_severity, timing_urgency: b.highest_timing_urgency }) : 9999);
+      const aKey = severitySortKey({ severity: a.highest_severity, timing_urgency: a.highest_timing_urgency });
+      const bKey = severitySortKey({ severity: b.highest_severity, timing_urgency: b.highest_timing_urgency });
       if (aKey !== bKey) return aKey - bKey;
       return a.exposure_title.localeCompare(b.exposure_title);
     })
