@@ -38,25 +38,81 @@ function getPrimaryProduct(targetFeatureProfile = {}) {
   return safeObject(primary);
 }
 
-function sourceInventory(sourceBundle = {}) {
-  const evidenceBuffer = asArray(sourceBundle.evidence_buffer);
-  const artifacts = asArray(sourceBundle.artifact_inventory);
-  const sourceReview = sourceBundle.source_review || {};
-  const fromEvidence = evidenceBuffer.map((record, index) => ({
-    source_id: asText(record.source_id || record.id, `SRC-${String(index + 1).padStart(3, "0")}`),
-    source_url: asText(record.source_url || record.url),
-    source_type: asText(record.source_type || record.artifact_class || record.document_type || "Reviewed source"),
-    title: asText(record.title || record.document_type || record.source_url || record.url || `Reviewed source ${index + 1}`),
-    evidence_mode: asText(record.evidence_mode || record.capture_mode || "Admitted evidence")
+function normalizeUrl(value) {
+  return asText(value).replace(/#.*$/, "").replace(/\/$/, "");
+}
+
+function addReviewedSource(map, candidate = {}) {
+  const sourceUrl = asText(candidate.source_url || candidate.url || candidate.final_url || candidate.feature_source_url || candidate.document_url);
+  const title = asText(candidate.title || candidate.document_type || candidate.source_type || sourceUrl);
+  if (!sourceUrl && !title) return;
+  const key = normalizeUrl(sourceUrl) || title.toLowerCase();
+  if (!key) return;
+  const existing = map.get(key) || {};
+  map.set(key, {
+    source_id: asText(existing.source_id || candidate.source_id || candidate.evidence_source_id || candidate.evidence_route_id || candidate.id, `SRC-${String(map.size + 1).padStart(3, "0")}`),
+    title: asText(existing.title || title, `Reviewed source ${map.size + 1}`),
+    source_url: asText(existing.source_url || sourceUrl),
+    source_type: asText(existing.source_type || candidate.source_type || candidate.source_family || candidate.artifact_class || candidate.document_type || "Reviewed evidence"),
+    evidence_mode: asText(existing.evidence_mode || candidate.evidence_mode || candidate.coverage_status || candidate.capture_mode || "Reviewed evidence"),
+    status: asText(existing.status || candidate.status || candidate.admission_status),
+    word_count: candidate.word_count ?? existing.word_count ?? null,
+    evidence_hash: asText(existing.evidence_hash || candidate.clean_text_sha256 || candidate.source_hash)
+  });
+}
+
+function sourceInventory({ sourceBundle = {}, evidenceJunction = {}, targetFeatureProfile = {}, legalStackReview = {}, stage7Artifact = {}, stage8Ledger = {} } = {}) {
+  const sources = new Map();
+
+  for (const record of asArray(sourceBundle.evidence_buffer)) addReviewedSource(sources, record);
+  for (const artifact of asArray(sourceBundle.artifact_inventory)) addReviewedSource(sources, artifact);
+  for (const source of asArray(sourceBundle.source_review?.sources_reviewed || sourceBundle.source_review?.reviewed_sources)) addReviewedSource(sources, source);
+  for (const source of asArray(sourceBundle.source_discovery?.flattened_sources)) addReviewedSource(sources, {
+    ...source,
+    source_url: source.final_url || source.url,
+    source_type: source.source_family,
+    evidence_mode: source.admission_status || source.source_bucket || "Discovered and reviewed source"
+  });
+  for (const source of asArray(evidenceJunction.source_registry)) addReviewedSource(sources, {
+    ...source,
+    source_url: source.final_url || source.url,
+    source_type: source.source_family,
+    evidence_mode: source.coverage_status || "Full visible text captured"
+  });
+  for (const source of asArray(evidenceJunction.routed_evidence)) addReviewedSource(sources, {
+    ...source,
+    source_url: source.final_url || source.url,
+    source_type: source.source_family,
+    evidence_mode: "Routed evidence"
+  });
+  for (const feature of asArray(targetFeatureProfile.product_feature_map)) addReviewedSource(sources, {
+    source_id: feature.feature_id,
+    title: feature.feature_name,
+    source_url: feature.feature_source_url,
+    source_type: "Product / activity evidence",
+    evidence_mode: "Feature evidence"
+  });
+  for (const doc of asArray(legalStackReview.legal_stack)) addReviewedSource(sources, {
+    title: doc.document_type,
+    document_type: doc.document_type,
+    source_url: doc.document_url || doc.url,
+    source_type: "Legal stack document",
+    evidence_mode: doc.evidence_status || "Legal-stack evidence"
+  });
+  for (const url of [
+    sourceBundle.target_input?.primary_url,
+    sourceBundle.target_url,
+    evidenceJunction.target_input?.primary_url,
+    stage7Artifact.target_url,
+    stage8Ledger.target_url
+  ]) {
+    if (url) addReviewedSource(sources, { title: "Primary target URL", source_url: url, source_type: "Target input", evidence_mode: "Target input" });
+  }
+
+  return [...sources.values()].map((record, index) => ({
+    ...record,
+    source_id: asText(record.source_id, `SRC-${String(index + 1).padStart(3, "0")}`)
   }));
-  if (fromEvidence.length) return fromEvidence;
-  return artifacts.map((artifact, index) => ({
-    source_id: asText(artifact.source_id || artifact.id, `SRC-${String(index + 1).padStart(3, "0")}`),
-    source_url: asText(artifact.source_url || artifact.url),
-    source_type: asText(artifact.artifact_class || artifact.source_type || "Reviewed artifact"),
-    title: asText(artifact.title || artifact.source_url || artifact.url || `Reviewed artifact ${index + 1}`),
-    evidence_mode: asText(artifact.evidence_mode || "Admitted evidence")
-  })).concat(asArray(sourceReview.sources_reviewed || sourceReview.reviewed_sources));
 }
 
 function activeSurfaceMap(hydratedRows) {
@@ -142,6 +198,24 @@ function findingSchedule(items) {
   }));
 }
 
+function publicApplicabilitySummary(item) {
+  const satisfied = asArray(item.applicability_test?.criteria?.satisfied).length;
+  const notSatisfied = asArray(item.applicability_test?.criteria?.not_satisfied).length;
+  return {
+    criteria_satisfied: satisfied,
+    criteria_not_satisfied: notSatisfied,
+    finding_threshold_outcome: item.applicability_test.finding_threshold_outcome,
+    control_test_outcome: item.applicability_test.control_test_outcome,
+    review_note: item.assessment_status === "TRIGGERED"
+      ? "The finding threshold was met and no sufficient control was evidenced in the reviewed material."
+      : item.assessment_status === "CONTROLLED"
+        ? "The item was reviewed and a sufficient control was evidenced in the reviewed material."
+        : item.assessment_status === "INSUFFICIENT_EVIDENCE"
+          ? "The reviewed material did not provide enough evidence to determine the item conclusively."
+          : "No open exposure is recorded for this item on the reviewed evidence."
+  };
+}
+
 function findingCards(items) {
   return items.map((item, index) => ({
     finding_id: `FIND-${String(index + 1).padStart(3, "0")}`,
@@ -164,14 +238,7 @@ function findingCards(items) {
     suggested_remediation_path: item.suggested_remediation_path,
     counsel_review_note: item.counsel_review_note,
     registry_basis: item.registry_basis,
-    applicability_summary: {
-      satisfied_criteria: item.applicability_test.criteria.satisfied,
-      not_satisfied_criteria: item.applicability_test.criteria.not_satisfied,
-      finding_threshold: item.applicability_test.finding_threshold,
-      finding_threshold_outcome: item.applicability_test.finding_threshold_outcome,
-      control_exclusion_test: item.applicability_test.control_exclusion_test,
-      control_test_outcome: item.applicability_test.control_test_outcome
-    }
+    applicability_summary: publicApplicabilitySummary(item)
   }));
 }
 
@@ -236,12 +303,14 @@ function buildForensicLedger(hydratedRows) {
     finding_threshold_outcome: item.applicability_test.finding_threshold_outcome,
     control_test_outcome: item.applicability_test.control_test_outcome,
     evidence_reference: item.reviewed_evidence.evidence_reference,
+    applicability_test: item.applicability_test,
     registry_basis: item.registry_basis
   }));
 }
 
 export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, registryRuntime }) {
   const sourceBundle = stage6Cache?.source_bundle || {};
+  const evidenceJunction = stage6Cache?.evidence_junction || {};
   const companyProfile = stage6Cache?.company_profile || {};
   const targetFeatureProfile = stage6Cache?.target_feature_profile || {};
   const legalStackReview = stage6Cache?.legal_stack_review || {};
@@ -249,6 +318,7 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
   const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger });
   const surfaces = activeSurfaceMap(hydratedRows);
   const primaryProduct = getPrimaryProduct(targetFeatureProfile);
+  const reviewedSources = sourceInventory({ sourceBundle, evidenceJunction, targetFeatureProfile, legalStackReview, stage7Artifact, stage8Ledger });
   const report = makeReportShell();
 
   report.report_data.matter_overview = makeSection("matter_overview", {
@@ -264,7 +334,7 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
   report.report_data.executive_exposure_summary = makeSection("executive_exposure_summary", buildExecutiveSummary({ hydratedRows, surfaceMap: surfaces }));
 
   report.report_data.evidence_reviewed = makeSection("evidence_reviewed", {
-    reviewed_sources: sourceInventory(sourceBundle),
+    reviewed_sources: reviewedSources,
     evidence_not_reviewed: [
       "Internal controls, workflows, and policies not included in the admitted evidence set.",
       "Customer contracts, security questionnaires, and deployment matrices unless expressly present in the admitted evidence set.",
