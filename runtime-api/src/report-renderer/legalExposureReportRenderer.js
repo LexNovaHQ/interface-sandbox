@@ -140,7 +140,7 @@ function renderMatterOverview(report) {
 function renderExecutiveSummary(report) {
   const summary = report.executive_exposure_summary || {};
   const counts = summary.status_counts || {};
-  const topFlags = safeArray(summary.top_red_flags).slice(0, 8);
+  const topFlags = safeArray(summary.top_red_flags).slice(0, 7);
   const controls = safeArray(summary.controls_already_found).slice(0, 6);
   const unknowns = safeArray(summary.evidence_gaps_or_unknowns).slice(0, 6);
   const body = `
@@ -151,11 +151,14 @@ function renderExecutiveSummary(report) {
         <p>${escapeHtml(text(summary.recommended_next_step, "Review identified exposures, control-evidenced items, and clarification points with qualified counsel."))}</p>
       </div>
       <div class="metric-grid">
+        ${metricCard("Consolidated Findings", summary.consolidated_exposure_findings || 0, "Client-facing exposure families")}
+        ${metricCard("Registry Exposure Items", summary.identified_registry_exposure_items || 0, "Supporting identified registry rows")}
+        ${metricCard("Rows Assessed", summary.registry_rows_assessed || 0, "Total Legal Exposure Registry rows")}
         ${Object.entries(counts).map(([label, value]) => metricCard(label, value, "", statusTone(label))).join("")}
       </div>
     </div>
     <div class="three-col">
-      <article class="card-shell"><h3>Priority Exposure Items</h3>${asList(topFlags.map((item) => `${item.registry_reference || ""} — ${item.exposure_title || "Exposure item"} (${item.severity || "Severity not specified"})`))}</article>
+      <article class="card-shell"><h3>Priority Exposure Families</h3>${asList(topFlags.map((item) => `${item.consolidated_finding_id || ""} — ${item.exposure_title || "Exposure family"} (${item.supporting_registry_item_count || 0} supporting item(s))`))}</article>
       <article class="card-shell"><h3>Controls Evidenced</h3>${asList(controls.map((item) => `${item.registry_reference || ""} — ${item.exposure_title || "Control-evidenced item"}`))}</article>
       <article class="card-shell"><h3>Clarification Points</h3>${asList(unknowns.map((item) => `${item.registry_reference || ""} — ${item.exposure_title || "Clarification item"}`))}</article>
     </div>
@@ -232,20 +235,54 @@ function renderLegalStack(report) {
   return section("legal-stack", "04", "Legal Stack & Control Review", body);
 }
 
+function renderConsolidatedFindingCards(consolidated) {
+  return consolidated.map((finding, index) => `
+    <details class="finding-card consolidated-card" ${index < 2 ? "open" : ""}>
+      <summary>
+        <span class="finding-index">${escapeHtml(text(finding.consolidated_finding_id || `CF-${index + 1}`))}</span>
+        <span class="finding-title">${escapeHtml(text(finding.exposure_title))}</span>
+        <span class="severity-pill">${escapeHtml(text(finding.highest_severity?.label || "Severity not specified"))}</span>
+      </summary>
+      <div class="finding-body">
+        <div class="finding-grid">
+          <div><h4>Consolidated Assessment</h4><p>${escapeHtml(text(finding.consolidated_summary))}</p></div>
+          <div><h4>Commercial / Deal Impact</h4><p>${escapeHtml(text(finding.commercial_deal_impact))}</p></div>
+          <div><h4>Remediation Focus</h4><p>${escapeHtml(text(finding.suggested_remediation_path))}</p></div>
+          <div><h4>Supporting Registry Items</h4><p>${escapeHtml(text(finding.supporting_registry_references))}</p></div>
+        </div>
+        <h4>Representative Supporting Items</h4>
+        ${table([
+          { label: "Registry Reference", key: "registry_reference" },
+          { label: "Exposure Item", key: "exposure_title" },
+          { label: "Severity", key: "severity" },
+          { label: "Timing", key: "timing_urgency" },
+        ], safeArray(finding.representative_items))}
+      </div>
+    </details>
+  `).join("");
+}
+
 function renderFindings(report) {
   const findings = report.exposure_findings || {};
-  const schedule = safeArray(findings.schedule);
-  const cards = safeArray(findings.detail_cards);
-  const scheduleTable = table([
-    { label: "Finding", render: (row) => `<strong>${escapeHtml(text(row.finding_id))}</strong><div class="muted small">${escapeHtml(text(row.registry_reference))}</div>` },
-    { label: "Exposure Title", render: (row) => escapeHtml(text(row.exposure_title)) },
+  const consolidated = safeArray(findings.consolidated_findings);
+  const supportingRows = safeArray(findings.supporting_registry_rows || findings.schedule);
+  const rowCards = safeArray(findings.detail_cards);
+  const consolidatedTable = table([
+    { label: "Finding", render: (row) => `<strong>${escapeHtml(text(row.consolidated_finding_id))}</strong><div class="muted small">${escapeHtml(text(row.supporting_registry_item_count))} supporting item(s)</div>` },
+    { label: "Exposure Family", render: (row) => escapeHtml(text(row.exposure_title)) },
+    { label: "Highest Severity", render: (row) => escapeHtml(text(row.highest_severity?.label)) },
+    { label: "Surfaces", render: (row) => escapeHtml(text(row.legal_risk_surfaces)) },
+    { label: "Supporting References", render: (row) => escapeHtml(text(row.supporting_registry_references)).slice(0, 180) + (String(text(row.supporting_registry_references, "")).length > 180 ? "…" : "") },
+  ], consolidated);
+  const supportingTable = table([
+    { label: "Registry Item", render: (row) => `<strong>${escapeHtml(text(row.registry_reference))}</strong><div class="muted small">${escapeHtml(text(row.finding_id))}</div>` },
+    { label: "Exposure Item", render: (row) => escapeHtml(text(row.exposure_title)) },
     { label: "Severity", render: (row) => escapeHtml(text(row.severity)) },
     { label: "Timing", render: (row) => escapeHtml(text(row.timing_urgency)) },
     { label: "Control Position", render: (row) => escapeHtml(text(row.control_position)) },
-    { label: "Remediation", render: (row) => escapeHtml(text(row.suggested_remediation_path)).slice(0, 220) + (String(row.suggested_remediation_path || "").length > 220 ? "…" : "") },
-  ], schedule);
-  const cardHtml = cards.map((card, index) => `
-    <details class="finding-card" ${index < 3 ? "open" : ""}>
+  ], supportingRows);
+  const rowDetails = rowCards.map((card, index) => `
+    <details class="finding-card row-card">
       <summary>
         <span class="finding-index">${escapeHtml(text(card.finding_id || `FIND-${index + 1}`))}</span>
         <span class="finding-title">${escapeHtml(text(card.exposure_title))}</span>
@@ -264,8 +301,10 @@ function renderFindings(report) {
     </details>
   `).join("");
   const body = `
-    <article class="card-shell"><h3>Exposure Findings Schedule</h3>${scheduleTable}</article>
-    <article class="card-shell"><h3>Finding Detail Cards</h3>${cardHtml || `<p class="muted">No identified exposure findings recorded.</p>`}</article>
+    <article class="card-shell"><h3>Consolidated Exposure Findings</h3><p class="muted">Identified registry exposure rows are consolidated into client-facing exposure families below. Row-level registry items remain available as supporting detail and in the forensic appendix.</p>${consolidatedTable}</article>
+    <article class="card-shell"><h3>Consolidated Finding Detail</h3>${renderConsolidatedFindingCards(consolidated) || `<p class="muted">No consolidated exposure findings recorded.</p>`}</article>
+    <article class="card-shell"><h3>Supporting Registry Exposure Items</h3><details class="ledger-details"><summary>Open supporting registry row schedule (${supportingRows.length} item(s))</summary>${supportingTable}</details></article>
+    <article class="card-shell"><h3>Row-Level Detail Cards</h3><details class="ledger-details"><summary>Open row-level detail cards (${rowCards.length} item(s))</summary>${rowDetails || `<p class="muted">No identified exposure rows recorded.</p>`}</details></article>
   `;
   return section("findings", "05", "Exposure Findings", body);
 }
@@ -281,11 +320,11 @@ function renderRemediation(report) {
       <p class="lead small-lead">${escapeHtml(text(implications.matter_sensitivity, "Matter sensitivity not classified."))}</p>
       ${priorityMap.map((bucket) => `
         <details class="priority-bucket" open>
-          <summary>${escapeHtml(text(bucket.priority))} <span>${safeArray(bucket.actions).length} item(s)</span></summary>
+          <summary>${escapeHtml(text(bucket.priority))} <span>${safeArray(bucket.actions).length} consolidated finding(s)</span></summary>
           ${table([
-            { label: "Registry Reference", key: "registry_reference" },
-            { label: "Exposure Title", key: "exposure_title" },
-            { label: "Timing", key: "timing_urgency" },
+            { label: "Finding", key: "consolidated_finding_id" },
+            { label: "Exposure Family", key: "exposure_title" },
+            { label: "Supporting Items", key: "supporting_registry_item_count" },
             { label: "Suggested Path", render: (row) => escapeHtml(text(row.suggested_remediation_path)) },
           ], safeArray(bucket.actions))}
         </details>
@@ -379,72 +418,44 @@ function styles() {
     .table-wrap { overflow:auto; border:1px solid rgba(255,255,255,.08); border-radius:16px; }
     table { width:100%; border-collapse:collapse; min-width:760px; background:rgba(255,255,255,.02); } th,td { text-align:left; vertical-align:top; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.08); } th { color:var(--gold); font-size:12px; text-transform:uppercase; letter-spacing:.08em; background:rgba(197,160,89,.06); } td { color:#e9e1d0; font-size:14px; }
     .finding-card, .priority-bucket, .ledger-details { border:1px solid rgba(197,160,89,.25); border-radius:18px; margin:12px 0; background:rgba(255,255,255,.025); overflow:hidden; }
+    .consolidated-card { border-color: rgba(225,193,120,.42); background:rgba(197,160,89,.045); }
+    .row-card { opacity:.92; }
     summary { cursor:pointer; padding:16px 18px; color:#fff8e6; display:flex; gap:12px; align-items:center; justify-content:space-between; }
-    .finding-index { color:var(--gold); font-size:12px; letter-spacing:.08em; } .finding-title { flex:1; font-family:Georgia,serif; font-size:19px; }
-    .severity-pill { border:1px solid var(--line); color:var(--gold2); border-radius:999px; padding:5px 10px; font-size:12px; white-space:nowrap; }
-    .finding-body { padding:0 18px 18px; } .finding-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
-    .question-card { border-left:3px solid var(--gold); padding:14px 16px; background:rgba(197,160,89,.07); border-radius:14px; margin:12px 0; } .question-title { color:#fff8e6; font-weight:700; }
-    .light-panel { background:linear-gradient(180deg, #f6f0e4, #e8ddca); color:var(--ink); } .light-panel h3, .light-panel h4 { color:#271d12; } .light-panel .muted { color:#6a6258; }
-    footer { border-top:1px solid var(--line); padding:24px 28px; color:var(--muted); text-align:center; }
-    @media (max-width: 1080px) { .layout { grid-template-columns:1fr; } .review-rail { display:none; } .hero-grid, .summary-band, .split-grid, .three-col, .finding-grid { grid-template-columns:1fr; } .nav-links { display:none; } }
-    @media print { body { background:#fff; color:#111; } .top-nav,.review-rail { display:none; } .layout { display:block; max-width:none; padding:0; } .card-shell,.metric-card,.document-panel,.posture-card { box-shadow:none; break-inside:avoid; } a { color:#111; } }
+    .finding-index { color:var(--gold); font-family:Georgia,serif; min-width:66px; } .finding-title { flex:1; } .severity-pill { border:1px solid var(--line); border-radius:999px; padding:4px 10px; color:#f2dfb3; font-size:12px; }
+    .finding-body { padding:0 18px 18px; } .finding-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
+    .question-card { border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:16px; margin:12px 0; background:rgba(255,255,255,.025); } .question-title { color:var(--gold2); font-family:Georgia,serif; font-size:18px; margin-bottom:8px; }
+    .light-panel { background:var(--paper); color:var(--ink); } .light-panel h3,.light-panel h4 { color:#271b0a; } .light-panel .bullet-list li,.light-panel p { color:#302819; }
+    @media (max-width: 980px) { .layout { grid-template-columns:1fr; padding:22px 16px 60px; } .review-rail { position:relative; top:0; display:none; } .hero-grid,.summary-band,.three-col,.split-grid,.finding-grid { grid-template-columns:1fr; } .top-nav { align-items:flex-start; gap:12px; flex-direction:column; } table { min-width:680px; } }
+    @media print { body { background:#fff; color:#111; } .top-nav,.review-rail { display:none; } .layout { display:block; max-width:none; padding:0; } .card-shell,.metric-card,.document-panel,.posture-card { background:#fff; color:#111; border-color:#ccc; box-shadow:none; break-inside:avoid; } h1,h2,h3,h4, .posture-value { color:#111; } .muted,td,dd,.lead { color:#333; } a { color:#111; } }
   `;
 }
 
-function scripts() {
-  return `
-    document.querySelectorAll('a[href^="#"]').forEach((link) => {
-      link.addEventListener('click', () => {
-        document.querySelectorAll('.rail-item').forEach((item) => item.classList.remove('active'));
-        if (link.classList.contains('rail-item')) link.classList.add('active');
-      });
-    });
+export function renderLegalExposureReport(stage9ReportData) {
+  const report = stage9ReportData?.report?.report_data || stage9ReportData?.report_data || {};
+  const title = report.matter_overview?.target_or_client || "Legal Exposure Diligence Report";
+  const body = `
+    ${renderTopNav()}
+    <div class="layout">
+      ${renderRail()}
+      <main class="report-main">
+        ${renderMatterOverview(report)}
+        ${renderExecutiveSummary(report)}
+        ${renderEvidenceAndProfile(report)}
+        ${renderLegalStack(report)}
+        ${renderFindings(report)}
+        ${renderRemediation(report)}
+        ${renderAppendix(report)}
+      </main>
+    </div>
   `;
-}
-
-export function renderLegalExposureReportHtml(stage9Artifact) {
-  const reportEnvelope = stage9Artifact?.report || stage9Artifact;
-  const report = reportEnvelope?.report_data || reportEnvelope?.report?.report_data || {};
-  const title = reportEnvelope?.report_title || "Legal Exposure Diligence Report";
-  const subtitle = reportEnvelope?.report_subtitle || "Matter Evidence Review";
-  const generatedAt = reportEnvelope?.generated_at || stage9Artifact?.generated_at || new Date().toISOString();
-
-  const html = `<!doctype html>
+  return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)}</title>
+  <title>${escapeHtml(title)} — Legal Exposure Diligence Report</title>
   <style>${styles()}</style>
 </head>
-<body>
-  ${renderTopNav()}
-  <div class="layout">
-    ${renderRail()}
-    <main class="report-main">
-      ${renderMatterOverview(report)}
-      ${renderExecutiveSummary(report)}
-      ${renderEvidenceAndProfile(report)}
-      ${renderLegalStack(report)}
-      ${renderFindings(report)}
-      ${renderRemediation(report)}
-      ${renderAppendix(report)}
-    </main>
-  </div>
-  <footer>${escapeHtml(subtitle)} · Generated ${escapeHtml(generatedAt)} · Review-Ready Draft — Counsel Review Required</footer>
-  <script>${scripts()}</script>
-</body>
+<body>${body}</body>
 </html>`;
-  return html;
-}
-
-export function validateRenderedHtml(html) {
-  const errors = [];
-  if (!html || typeof html !== "string") errors.push("rendered HTML is empty");
-  for (const [id, label] of REPORT_SECTIONS) {
-    if (!html.includes(`id="${id}"`)) errors.push(`missing rendered section: ${label}`);
-  }
-  if (!html.includes("Legal Exposure Diligence Report")) errors.push("missing report title");
-  if (!html.includes("Review-Ready Draft")) errors.push("missing Review-Ready status");
-  return { ok: errors.length === 0, errors, section_count: REPORT_SECTIONS.length, html_bytes: Buffer.byteLength(html || "", "utf8") };
 }
