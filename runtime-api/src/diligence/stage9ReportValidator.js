@@ -1,5 +1,6 @@
 import { BANNED_VISIBLE_TERMS, REVIEW_READY_DISCLAIMER } from "./reportTerminologyMap.js";
 import { REPORT_SECTION_KEYS } from "./reportSectionContract.js";
+import { visibleLanguageViolations } from "./reportLegalLanguage.js";
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -105,6 +106,9 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
   const leaks = reportData ? visibleTermLeaks(reportData) : [];
   if (leaks.length) errors.push(`internal terminology leaked into visible report sections: ${leaks.join(", ")}`);
 
+  const languageViolations = reportData ? visibleLanguageViolations({ ...reportData, forensic_ledger_appendix: undefined }) : [];
+  if (languageViolations.length) errors.push(`non-legal visible language detected: ${languageViolations.join(", ")}`);
+
   const reportText = JSON.stringify(report || {});
   if (!reportText.includes(REVIEW_READY_DISCLAIMER)) errors.push("Review-Ready / counsel review disclaimer missing");
 
@@ -126,7 +130,8 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
       clarification_items: clarificationItems.length,
       forensic_ledger: forensicLedger.length,
       reviewed_sources: reviewedSources.length,
-      registry_count: registryIds.length
+      registry_count: registryIds.length,
+      visible_language_violations: languageViolations.length
     },
     coverage: {
       ledger_count: ledgerIds.length,
@@ -134,7 +139,8 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
       reviewed_sources_count: reviewedSources.length,
       missing_from_forensic: missingFromForensic,
       unexpected_forensic: unexpectedForensic,
-      duplicate_forensic: duplicateForensic
+      duplicate_forensic: duplicateForensic,
+      visible_language_violations: languageViolations
     }
   };
 }
