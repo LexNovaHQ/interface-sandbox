@@ -46,6 +46,43 @@ const EXPOSURE_CATEGORY_LABELS = Object.freeze({
   Existential: "Material Business Risk"
 });
 
+const EXPOSURE_TITLE_EXACT_ALIASES = Object.freeze({
+  "Runaway-Agent Financial Liability": "Autonomous Agent Financial Liability Exposure",
+  "Agentic Hallucination → Action": "Agent Output-to-Action Reliance Exposure",
+  "Agentic Hallucination -> Action": "Agent Output-to-Action Reliance Exposure",
+  "Shadow-AI Data Leakage": "Unapproved AI Data Use / Leakage Exposure",
+  "Bot Accountability for Promises": "AI Agent Statement Accountability Exposure",
+  "The False Negative Breach": "Security Tool False-Negative Liability Exposure",
+  "The Wasted Costs Loophole": "Unrecoverable Customer Cost Exposure"
+});
+
+const EXPOSURE_TITLE_REPLACEMENTS = [
+  [/^The\s+/i, ""],
+  [/\bRunaway[- ]Agent\b/gi, "Autonomous Agent"],
+  [/\bAgentic Hallucination\s*(?:→|->)\s*Action\b/gi, "Agent Output-to-Action Reliance Exposure"],
+  [/\bShadow[- ]AI\b/gi, "Unapproved AI Use"],
+  [/\bBot Accountability\b/gi, "AI Agent Statement Accountability"],
+  [/\bFalse Negative Breach\b/gi, "Security Tool False-Negative Liability Exposure"],
+  [/\bWasted Costs Loophole\b/gi, "Unrecoverable Customer Cost Exposure"],
+  [/\bTrap\b/gi, "Exposure"],
+  [/\bLoophole\b/gi, "Gap"],
+  [/\bCircuit Breaker\b/gi, "Control Safeguard"],
+  [/\bBartz-aware\b/gi, "Case-Law-Aware"],
+  [/\bPLD-ready\b/gi, "Product-Liability-Aware"],
+  [/\bNate-aware\b/gi, "Case-Law-Aware"]
+];
+
+const PUNCHY_TITLE_PATTERNS = [
+  { code: "title_runaway_agent", pattern: /\bRunaway[- ]Agent\b/i },
+  { code: "title_agentic_hallucination_action", pattern: /\bAgentic Hallucination\s*(?:→|->)\s*Action\b/i },
+  { code: "title_shadow_ai", pattern: /\bShadow[- ]AI\b/i },
+  { code: "title_bot_accountability", pattern: /\bBot Accountability\b/i },
+  { code: "title_false_negative_breach", pattern: /\bThe False Negative Breach\b/i },
+  { code: "title_wasted_costs_loophole", pattern: /\bThe Wasted Costs Loophole\b/i },
+  { code: "title_trap", pattern: /\bTrap\b/i },
+  { code: "title_loophole", pattern: /\bLoophole\b/i }
+];
+
 const CONTROL_THEME_RULES = [
   { label: "consent and notice", pattern: /consent|notice|permission|opt[- ]?in|opt[- ]?out|withdraw/i },
   { label: "retention and deletion", pattern: /retention|delete|deletion|erase|erasure|return|destroy|DSR|data subject/i },
@@ -246,6 +283,18 @@ export function sanitizeVisibleText(value) {
   return stripExcessWhitespace(text);
 }
 
+export function exposureTitleDisplay(value) {
+  const raw = asText(value, "Untitled Exposure");
+  const exact = EXPOSURE_TITLE_EXACT_ALIASES[raw];
+  let title = exact || raw;
+  for (const [pattern, replacement] of EXPOSURE_TITLE_REPLACEMENTS) title = title.replace(pattern, replacement);
+  title = sanitizeVisibleText(title);
+  if (!/\b(exposure|risk|issue|gap|liability|accountability|review item)\b/i.test(title)) {
+    title = `${title} Exposure`;
+  }
+  return stripExcessWhitespace(title);
+}
+
 export function legalSignificanceText(rowOrText) {
   const themes = detectLabels(rowOrText, CONTROL_THEME_RULES, "matter-specific legal and operational controls");
   const authority = authorityText(rowOrText);
@@ -277,6 +326,7 @@ export function clarificationQuestionText({ criterionText, registryReference, co
 
 export function rawRegistryPayload(row = {}) {
   return {
+    exposure_title: asText(row.threat_name || row.Threat_Name),
     legal_pain: asText(row.legal_pain || row.Legal_Pain),
     exposure_mechanism: asText(row.fp_mechanism || row.FP_Mechanism),
     commercial_impact: asText(row.fp_impact || row.FP_Impact),
@@ -314,7 +364,8 @@ export function visibleLanguageViolations(reportData) {
     { code: "raw_archetype_companion", pattern: /\bThe Companion\b/ },
     { code: "raw_archetype_shield", pattern: /\bThe Shield\b/ },
     { code: "raw_archetype_optimizer", pattern: /\bThe Optimizer\b/ },
-    { code: "raw_archetype_mover", pattern: /\bThe Mover\b/ }
+    { code: "raw_archetype_mover", pattern: /\bThe Mover\b/ },
+    ...PUNCHY_TITLE_PATTERNS
   ];
   return checks.filter(({ pattern }) => pattern.test(visible)).map(({ code }) => code);
 }
