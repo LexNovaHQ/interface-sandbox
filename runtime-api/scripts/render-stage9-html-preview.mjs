@@ -26,6 +26,19 @@ const REQUIRED_SECTION_MARKERS = [
   "Forensic Ledger Appendix",
 ];
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function htmlIncludesMarker(html, marker) {
+  return String(html || "").includes(marker) || String(html || "").includes(escapeHtml(marker));
+}
+
 function readJson(filePath) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`Required input not found: ${filePath}`);
@@ -57,7 +70,7 @@ function validateRenderedHtml(html) {
     errors.push("Rendered output is missing <!doctype html>.");
   }
   for (const marker of REQUIRED_SECTION_MARKERS) {
-    if (!html.includes(marker)) {
+    if (!htmlIncludesMarker(html, marker)) {
       errors.push(`Rendered output is missing locked report section marker: ${marker}`);
     }
   }
