@@ -12,6 +12,7 @@ import {
   clarificationQuestionText,
   commercialImpactText,
   exposureMechanismText,
+  exposureTitleDisplay,
   legalSignificanceText,
   rawRegistryPayload,
   remediationPathText,
@@ -43,8 +44,12 @@ function registryThreatId(row, index) {
   return asText(row?.threat_id || row?.Threat_ID, `ROW_${index + 1}`);
 }
 
+function rawRegistryThreatName(row, fallback = "Untitled exposure") {
+  return asText(row?.threat_name || row?.Threat_Name, fallback);
+}
+
 function registryThreatName(row, fallback = "Untitled exposure") {
-  return sanitizeVisibleText(asText(row?.threat_name || row?.Threat_Name, fallback));
+  return exposureTitleDisplay(rawRegistryThreatName(row, fallback));
 }
 
 function surfaceTokens(row) {
