@@ -1,6 +1,21 @@
 import { makeReportShell, makeSection } from "./reportSectionContract.js";
 import { REVIEW_READY_DISCLAIMER, displayStatus } from "./reportTerminologyMap.js";
 import { hydrateRegistryReportRows, statusCounts } from "./reportRegistryHydrator.js";
+import { sanitizeVisibleText } from "./reportLegalLanguage.js";
+
+const RAW_VALUE_KEYS = new Set([
+  "source_url",
+  "document_url",
+  "url",
+  "evidence_hash",
+  "source_hash",
+  "source_id",
+  "registry_reference",
+  "finding_id",
+  "feature_id",
+  "raw",
+  "code"
+]);
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -17,6 +32,28 @@ function safeObject(value) {
 
 function unique(values = []) {
   return [...new Set(values.map((value) => asText(value)).filter(Boolean))];
+}
+
+function sanitizeVisibleValue(value, key = "") {
+  if (value == null) return value;
+  if (typeof value === "string") return RAW_VALUE_KEYS.has(key) ? value : sanitizeVisibleText(value);
+  if (Array.isArray(value)) return value.map((item) => sanitizeVisibleValue(item, key));
+  if (typeof value === "object") {
+    const out = {};
+    for (const [childKey, childValue] of Object.entries(value)) {
+      out[childKey] = sanitizeVisibleValue(childValue, childKey);
+    }
+    return out;
+  }
+  return value;
+}
+
+function sanitizeVisibleReportData(reportData = {}) {
+  const out = {};
+  for (const [key, value] of Object.entries(reportData)) {
+    out[key] = key === "forensic_ledger_appendix" ? value : sanitizeVisibleValue(value, key);
+  }
+  return out;
 }
 
 function getTargetName({ companyProfile, targetFeatureProfile, sourceBundle }) {
@@ -51,11 +88,11 @@ function addReviewedSource(map, candidate = {}) {
   const existing = map.get(key) || {};
   map.set(key, {
     source_id: asText(existing.source_id || candidate.source_id || candidate.evidence_source_id || candidate.evidence_route_id || candidate.id, `SRC-${String(map.size + 1).padStart(3, "0")}`),
-    title: asText(existing.title || title, `Reviewed source ${map.size + 1}`),
+    title: sanitizeVisibleText(asText(existing.title || title, `Reviewed source ${map.size + 1}`)),
     source_url: asText(existing.source_url || sourceUrl),
-    source_type: asText(existing.source_type || candidate.source_type || candidate.source_family || candidate.artifact_class || candidate.document_type || "Reviewed evidence"),
-    evidence_mode: asText(existing.evidence_mode || candidate.evidence_mode || candidate.coverage_status || candidate.capture_mode || "Reviewed evidence"),
-    status: asText(existing.status || candidate.status || candidate.admission_status),
+    source_type: sanitizeVisibleText(asText(existing.source_type || candidate.source_type || candidate.source_family || candidate.artifact_class || candidate.document_type || "Reviewed evidence")),
+    evidence_mode: sanitizeVisibleText(asText(existing.evidence_mode || candidate.evidence_mode || candidate.coverage_status || candidate.capture_mode || "Reviewed evidence")),
+    status: sanitizeVisibleText(asText(existing.status || candidate.status || candidate.admission_status)),
     word_count: candidate.word_count ?? existing.word_count ?? null,
     evidence_hash: asText(existing.evidence_hash || candidate.clean_text_sha256 || candidate.source_hash)
   });
@@ -156,13 +193,13 @@ function activeSurfaceMap(hydratedRows) {
 
 function buildLegalStackControlReview(legalStackReview = {}, hydratedRows) {
   const legalStack = asArray(legalStackReview.legal_stack).map((doc) => ({
-    document_type: asText(doc.document_type || doc.type || "Legal document"),
+    document_type: sanitizeVisibleText(doc.document_type || doc.type || "Legal document"),
     exists: doc.exists === true,
-    evidence_status: asText(doc.evidence_status || "Not specified"),
+    evidence_status: sanitizeVisibleText(doc.evidence_status || "Not specified"),
     document_url: asText(doc.document_url || doc.url),
-    controls_found: asArray(doc.covers).map((item) => asText(item)).filter(Boolean),
-    gaps_noted: asArray(doc.misses).map((item) => asText(item)).filter(Boolean),
-    review_note: asText(doc.review_note || doc.summary || doc.notes)
+    controls_found: asArray(doc.covers).map((item) => sanitizeVisibleText(item)).filter(Boolean),
+    gaps_noted: asArray(doc.misses).map((item) => sanitizeVisibleText(item)).filter(Boolean),
+    review_note: sanitizeVisibleText(doc.review_note || doc.summary || doc.notes)
   }));
 
   const controlledByDocument = hydratedRows.control_evidenced_items.slice(0, 12).map((item) => ({
@@ -175,9 +212,9 @@ function buildLegalStackControlReview(legalStackReview = {}, hydratedRows) {
 
   return {
     legal_stack: legalStack,
-    document_stack_redline: asArray(legalStackReview.document_stack_redline),
-    document_stack_synthesis: legalStackReview.document_stack_synthesis || null,
-    legal_stack_assessment: asArray(legalStackReview.legal_stack_assessment),
+    document_stack_redline: sanitizeVisibleValue(asArray(legalStackReview.document_stack_redline), "document_stack_redline"),
+    document_stack_synthesis: sanitizeVisibleValue(legalStackReview.document_stack_synthesis || null, "document_stack_synthesis"),
+    legal_stack_assessment: sanitizeVisibleValue(asArray(legalStackReview.legal_stack_assessment), "legal_stack_assessment"),
     control_evidenced_items: controlledByDocument
   };
 }
@@ -285,9 +322,9 @@ function buildExecutiveSummary({ hydratedRows, surfaceMap }) {
 }
 
 function matterMode({ hydratedRows }) {
-  const hasDealDeath = hydratedRows.identified_exposures.some((item) => item.severity.category === "Deal Death");
+  const hasDealApprovalRisk = hydratedRows.identified_exposures.some((item) => item.severity.category === "Deal / Customer Approval Risk");
   const hasEnterprise = hydratedRows.rows.some((item) => item.legal_risk_surfaces.includes("Enterprise-Private"));
-  if (hasDealDeath || hasEnterprise) return "Transaction / Customer Approval Sensitive";
+  if (hasDealApprovalRisk || hasEnterprise) return "Transaction / Customer Approval Sensitive";
   return "Product / Policy Review Sensitive";
 }
 
@@ -340,13 +377,13 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
       "Customer contracts, security questionnaires, and deployment matrices unless expressly present in the admitted evidence set.",
       "Jurisdiction-specific counsel conclusions beyond the registry references and reviewed evidence."
     ],
-    source_limitations: asArray(sourceBundle.limitations).concat(asArray(legalStackReview.limitations)).map((item) => asText(item)).filter(Boolean)
+    source_limitations: asArray(sourceBundle.limitations).concat(asArray(legalStackReview.limitations)).map((item) => sanitizeVisibleText(item)).filter(Boolean)
   });
 
   report.report_data.product_activity_profile = makeSection("product_activity_profile", {
-    target_profile: targetFeatureProfile.target_profile || {},
-    primary_product: primaryProduct,
-    product_feature_map: asArray(targetFeatureProfile.product_feature_map),
+    target_profile: sanitizeVisibleValue(targetFeatureProfile.target_profile || {}, "target_profile"),
+    primary_product: sanitizeVisibleValue(primaryProduct, "primary_product"),
+    product_feature_map: sanitizeVisibleValue(asArray(targetFeatureProfile.product_feature_map), "product_feature_map"),
     active_functional_profiles: unique(hydratedRows.rows.map((item) => item.functional_profile.label)),
     active_legal_risk_surfaces: surfaces.map((surface) => surface.legal_risk_surface)
   });
@@ -409,6 +446,8 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
     source_stage8_operator_gate: stage8Ledger?.operator_challenge_gate || null,
     forensic_ledger: buildForensicLedger(hydratedRows)
   });
+
+  report.report_data = sanitizeVisibleReportData(report.report_data);
 
   return {
     artifact_type: "stage9_legal_exposure_report_data",
