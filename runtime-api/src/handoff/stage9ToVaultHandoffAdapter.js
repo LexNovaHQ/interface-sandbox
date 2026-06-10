@@ -16,32 +16,82 @@ function createId(prefix) {
   return `${prefix}_${randomPart}`;
 }
 
+function getStage9ReportData(stage9ReportData) {
+  return stage9ReportData?.report?.report_data
+    || stage9ReportData?.report_data
+    || stage9ReportData;
+}
+
 function getRunId(stage9ReportData) {
+  const reportData = getStage9ReportData(stage9ReportData);
   return stage9ReportData?.run_id
-    || stage9ReportData?.matter_overview?.run_id
+    || stage9ReportData?.report?.run_id
+    || reportData?.matter_overview?.run_id
     || stage9ReportData?.report_meta?.run_id
     || `run-${Date.now()}`;
 }
 
 function getTargetProfile(stage9ReportData) {
-  const matter = stage9ReportData?.matter_overview || {};
-  const product = stage9ReportData?.product_activity_profile || {};
+  const reportData = getStage9ReportData(stage9ReportData);
+  const matter = reportData?.matter_overview || {};
+  const reportIdentity = matter.report_identity || {};
+  const product = reportData?.product_activity_profile || {};
   const productProfile = product.product_profile || product.target_profile || product;
 
   return {
-    company_name: matter.target || productProfile.company_name || productProfile.company || stage9ReportData?.target_profile?.company_name || "Unknown target",
-    primary_url: matter.primary_url || matter.url || stage9ReportData?.target_input?.primary_url || stage9ReportData?.primary_url || "",
-    product_name: matter.product || productProfile.product_name || productProfile.name || product.product_name || "Primary product not established from reviewed evidence",
-    jurisdictions: matter.jurisdictions || matter.jurisdiction || productProfile.jurisdiction || productProfile.hq_jurisdiction || "Not established from reviewed public evidence",
-    review_mode: matter.review_mode || "Public-footprint legal exposure diligence",
-    evidence_cutoff: matter.evidence_cutoff || stage9ReportData?.report_meta?.evidence_cutoff || new Date().toISOString()
+    company_name: reportIdentity.target_or_client
+      || matter.target_or_client
+      || matter.target
+      || productProfile.company_name
+      || productProfile.company
+      || reportData?.target_profile?.company_name
+      || "Unknown target",
+    primary_url: reportIdentity.primary_url
+      || matter.primary_url
+      || matter.url
+      || stage9ReportData?.target_input?.primary_url
+      || stage9ReportData?.primary_url
+      || "",
+    product_name: reportIdentity.product_or_matter
+      || matter.product_or_matter
+      || matter.product
+      || productProfile.product_name
+      || productProfile.name
+      || product.primary_product
+      || product.product_name
+      || "Primary product not established from reviewed evidence",
+    jurisdictions: reportIdentity.jurisdictions
+      || matter.jurisdictions
+      || matter.jurisdiction
+      || productProfile.jurisdiction
+      || productProfile.hq_jurisdiction
+      || "Not established from reviewed public evidence",
+    review_mode: reportIdentity.review_mode
+      || matter.review_mode
+      || "Public-footprint legal exposure diligence",
+    evidence_cutoff: matter.evidence_cut_off?.generated_at
+      || matter.evidence_cut_off?.evidence_cutoff
+      || matter.evidence_cutoff
+      || stage9ReportData?.report?.generated_at
+      || stage9ReportData?.generated_at
+      || new Date().toISOString()
   };
 }
 
 function getFeatureMap(stage9ReportData) {
-  const product = stage9ReportData?.product_activity_profile || {};
+  const reportData = getStage9ReportData(stage9ReportData);
+  const product = reportData?.product_activity_profile || {};
   const features = product.feature_map || product.features || product.product_feature_map;
-  if (Array.isArray(features)) return features;
+  if (Array.isArray(features)) {
+    return features.map((feature, index) => ({
+      feature_id: feature.feature_id || `stage9-feature-${index + 1}`,
+      feature_name: feature.feature_name || feature.name || `Feature ${index + 1}`,
+      feature_role: feature.feature_role || feature.role || "Derived from Stage 9 product activity profile",
+      functional_profile: feature.functional_profile || feature.functional_profiles || feature.profile || "Not established from reviewed evidence",
+      risk_surfaces: feature.risk_surfaces || feature.legal_risk_surfaces || "Not established from reviewed evidence",
+      evidence_source: feature.evidence_source || feature.feature_source_url || feature.source_url || ""
+    }));
+  }
 
   return asArray(product.active_functional_profiles).map((profile, index) => ({
     feature_id: `stage9-profile-${index + 1}`,
@@ -59,24 +109,38 @@ function normalizeFindingSeverity(finding) {
     || "UNSPECIFIED";
 }
 
-function getRegistryItems(finding) {
-  return asArray(finding?.supporting_registry_items || finding?.supporting_registry_rows || finding?.supporting_items);
+function getRegistryRefs(finding) {
+  const explicitRefs = asArray(finding?.supporting_registry_references)
+    .filter(Boolean)
+    .map(String);
+  if (explicitRefs.length) return explicitRefs;
+
+  return asArray(finding?.supporting_registry_items || finding?.supporting_registry_rows || finding?.supporting_items)
+    .map((item) => item.registry_reference || item.threat_id || item.id || item)
+    .filter(Boolean)
+    .map(String);
 }
 
 function deriveThreatFindings(stage9ReportData) {
-  const consolidated = asArray(stage9ReportData?.exposure_findings?.consolidated_findings);
-  const supportingRows = asArray(stage9ReportData?.exposure_findings?.supporting_registry_rows);
+  const reportData = getStage9ReportData(stage9ReportData);
+  const exposureFindings = reportData?.exposure_findings || {};
+  const consolidated = asArray(exposureFindings.consolidated_findings);
+  const supportingRows = asArray(exposureFindings.supporting_registry_rows);
 
   if (consolidated.length) {
     return consolidated.map((finding, index) => {
-      const supporting = getRegistryItems(finding);
-      const supportingRefs = supporting.map((item) => item.registry_reference || item.threat_id || item.id || item).filter(Boolean).map(String);
-      const documentRoutes = asArray(finding.affected_documents || finding.document_routes || finding.remediation_documents);
+      const supportingRefs = getRegistryRefs(finding);
+      const documentRoutes = asArray(
+        finding.affected_documents
+          || finding.document_routes
+          || finding.remediation_documents
+          || finding.affected_documents_controls
+      );
 
       return {
-        finding_id: finding.finding_id || finding.id || `CF-${String(index + 1).padStart(3, "0")}`,
-        threat_id: supportingRefs[0] || finding.finding_id || `CF-${String(index + 1).padStart(3, "0")}`,
-        threat_name: finding.title || finding.finding_title || finding.exposure_family || "Consolidated exposure finding",
+        finding_id: finding.consolidated_finding_id || finding.finding_id || finding.id || `CF-${String(index + 1).padStart(3, "0")}`,
+        threat_id: supportingRefs[0] || finding.consolidated_finding_id || finding.finding_id || `CF-${String(index + 1).padStart(3, "0")}`,
+        threat_name: finding.exposure_title || finding.title || finding.finding_title || finding.exposure_family || "Consolidated exposure finding",
         linked_feature_ids: asArray(finding.linked_feature_ids),
         document_routes: documentRoutes,
         vault_dependencies: asArray(finding.vault_dependencies),
@@ -84,28 +148,39 @@ function deriveThreatFindings(stage9ReportData) {
         status: "TRIGGERED",
         consolidated: true,
         supporting_registry_refs: supportingRefs,
-        review_ready_summary: finding.finding_statement || finding.assessment || finding.summary || "Derived from Stage 9 consolidated exposure finding."
+        review_ready_summary: finding.finding_statement
+          || finding.consolidated_summary
+          || finding.assessment
+          || finding.summary
+          || "Derived from Stage 9 consolidated exposure finding.",
+        commercial_deal_impact: finding.commercial_deal_impact || "",
+        suggested_remediation_path: finding.suggested_remediation_path || "",
+        legal_risk_surfaces: asArray(finding.legal_risk_surfaces),
+        functional_profiles: asArray(finding.functional_profiles)
       };
     });
   }
 
   return supportingRows.map((row, index) => ({
-    finding_id: row.registry_reference || row.threat_id || `ROW-${index + 1}`,
+    finding_id: row.finding_id || row.registry_reference || row.threat_id || `ROW-${index + 1}`,
     threat_id: row.registry_reference || row.threat_id || row.id || `ROW-${index + 1}`,
     threat_name: row.exposure_title || row.title || row.threat_name || "Registry exposure item",
     linked_feature_ids: asArray(row.linked_feature_ids),
     document_routes: asArray(row.document_routes || row.affected_documents),
     vault_dependencies: asArray(row.vault_dependencies),
     severity: normalizeFindingSeverity(row),
-    status: row.status || "TRIGGERED",
+    status: row.status || row.assessment_outcome || "TRIGGERED",
     consolidated: false,
     supporting_registry_refs: [row.registry_reference || row.threat_id || row.id].filter(Boolean).map(String),
-    review_ready_summary: row.status_explanation || row.exposure_mechanism || row.summary || "Derived from Stage 9 supporting registry item."
+    review_ready_summary: row.status_explanation || row.exposure_mechanism || row.summary || "Derived from Stage 9 supporting registry item.",
+    commercial_deal_impact: row.commercial_deal_impact || "",
+    suggested_remediation_path: row.suggested_remediation_path || ""
   }));
 }
 
 function deriveDocumentStackStatus(stage9ReportData) {
-  const stack = stage9ReportData?.legal_stack_control_review || {};
+  const reportData = getStage9ReportData(stage9ReportData);
+  const stack = reportData?.legal_stack_control_review || {};
   const inventory = asArray(stack.document_inventory || stack.legal_stack || stack.documents);
   const coverage = asArray(stack.document_coverage_matrix);
 
@@ -114,14 +189,16 @@ function deriveDocumentStackStatus(stage9ReportData) {
   return coverage.map((item, index) => ({
     document_id: item.document_id || item.document_type || `doc-${index + 1}`,
     document_type: item.document_type || item.label || "Legal document/control area",
-    status: item.status || item.coverage_status || "review_required",
-    controls: asArray(item.controls || item.covered_controls),
-    gaps: asArray(item.gaps || item.control_gaps)
+    status: item.status || item.coverage_status || item.evidence_status || "review_required",
+    controls: asArray(item.controls || item.controls_found || item.covered_controls),
+    gaps: asArray(item.gaps || item.gaps_noted || item.control_gaps),
+    linked_consolidated_findings: asArray(item.linked_consolidated_findings)
   }));
 }
 
 function deriveAssemblyRoute(stage9ReportData) {
-  const remediation = stage9ReportData?.implications_remediation_path || {};
+  const reportData = getStage9ReportData(stage9ReportData);
+  const remediation = reportData?.implications_remediation_path || {};
   const roadmap = asArray(remediation.remediation_roadmap);
   const documentRoutes = asArray(remediation.document_route || remediation.document_routes);
   const controlRoutes = asArray(remediation.control_route || remediation.control_routes);
@@ -132,6 +209,7 @@ function deriveAssemblyRoute(stage9ReportData) {
     document_routes: documentRoutes,
     control_routes: controlRoutes,
     remediation_roadmap: roadmap,
+    remediation_priority_map: asArray(remediation.remediation_priority_map),
     review_priority: asArray(remediation.review_priority),
     review_ready_handoff_bridge: asArray(remediation.review_ready_handoff_bridge),
     local_counsel_review_required: true
