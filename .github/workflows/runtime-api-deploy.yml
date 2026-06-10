@@ -226,7 +226,11 @@ jobs:
         working-directory: runtime-api
         run: npm run e2e:stage9:report
 
-      - name: Verify Stage 7/8/9 audit exports
+      - name: Render Stage 9 HTML report
+        working-directory: runtime-api
+        run: npm run render:stage9:html
+
+      - name: Verify Stage 7/8/9 report exports
         if: always()
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
@@ -236,6 +240,8 @@ jobs:
           test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
           test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
           test -f runtime-api/.runtime-e2e-cache/stage9-report-validation.json && echo "stage9 report validation found" || echo "stage9 report validation missing"
+          test -f runtime-api/.runtime-e2e-cache/legal-exposure-diligence-report.html && echo "stage9 HTML report found" || echo "stage9 HTML report missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-html-render-validation.json && echo "stage9 HTML validation found" || echo "stage9 HTML validation missing"
 
       - name: Upload runtime E2E cache
         if: always()
@@ -326,7 +332,11 @@ jobs:
         working-directory: runtime-api
         run: npm run e2e:stage9:report
 
-      - name: Verify Stage 7/8/9 audit exports
+      - name: Render Stage 9 HTML report
+        working-directory: runtime-api
+        run: npm run render:stage9:html
+
+      - name: Verify Stage 7/8/9 report exports
         if: always()
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
@@ -336,6 +346,8 @@ jobs:
           test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
           test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
           test -f runtime-api/.runtime-e2e-cache/stage9-report-validation.json && echo "stage9 report validation found" || echo "stage9 report validation missing"
+          test -f runtime-api/.runtime-e2e-cache/legal-exposure-diligence-report.html && echo "stage9 HTML report found" || echo "stage9 HTML report missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-html-render-validation.json && echo "stage9 HTML validation found" || echo "stage9 HTML validation missing"
 
       - name: Upload runtime E2E cache
         if: always()
