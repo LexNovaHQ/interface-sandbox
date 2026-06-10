@@ -22,6 +22,7 @@ const FAMILY_DOCUMENT_ROUTES = {
   INF: ["IP / Output Ownership Terms", "Terms of Service", "AI / Agent Governance Terms"],
   LIA: ["Terms of Service", "Service Level Agreement", "AI / Agent Governance Terms"],
   PRV: ["Privacy Policy", "Data Processing Addendum", "Data Protection Impact Assessment"],
+  SHD: ["Service Level Agreement", "Data Processing Addendum", "Internal Governance SOP"],
   TRD: ["Terms of Service", "Privacy Policy", "AI / Agent Governance Terms"]
 };
 
@@ -36,6 +37,7 @@ const FAMILY_CONTROL_ROUTES = {
   INF: ["input/output ownership review", "training-data use control", "third-party content review"],
   LIA: ["warranty/disclaimer review", "liability allocation review", "customer reliance control"],
   PRV: ["subprocessor disclosure", "deletion/DSR workflow", "training-use and transfer control"],
+  SHD: ["security commitment review", "incident/breach process", "availability/support control"],
   TRD: ["public disclosure review", "traceability/provenance control", "customer notice control"]
 };
 
@@ -84,6 +86,7 @@ function controlRouteFor(item = {}) {
 function ownerFor(route = []) {
   const text = route.join(" ").toLowerCase();
   if (text.includes("data") || text.includes("privacy") || text.includes("subprocessor")) return "Privacy / product counsel";
+  if (text.includes("security") || text.includes("incident") || text.includes("availability")) return "Security / operations / counsel";
   if (text.includes("service level") || text.includes("liability") || text.includes("terms")) return "Commercial / product counsel";
   if (text.includes("human review") || text.includes("sop") || text.includes("governance")) return "Product operations / counsel";
   if (text.includes("ip") || text.includes("output")) return "IP / product counsel";
@@ -101,7 +104,7 @@ function actionFor(item = {}) {
     supporting_registry_references: item.supporting_registry_references,
     document_route: docs,
     control_route: controls,
-    specific_action: `Review ${docs.slice(0, 3).join(", ") || "the relevant legal stack"} and confirm ${controls.slice(0, 2).join(" / ")} for this exposure family.`,
+    specific_action: `Review ${docs.join(", ") || "the relevant legal stack"} and confirm ${controls.join(" / ")} for this exposure family.`,
     owner: ownerFor(docs.concat(controls)),
     counsel_review_point: `Qualified counsel should verify whether the current legal stack and operational controls adequately address ${item.exposure_title}.`,
     timing: priorityFor(item).replace(/^Priority \d+ — /, ""),
@@ -124,7 +127,7 @@ export function buildImplicationsRemediationPath({ consolidatedFindings = [], co
     remediation_priority_map: [...buckets.entries()].map(([priority, bucketActions]) => ({ priority, actions: bucketActions })),
     document_route: unique(actions.flatMap((action) => action.document_route)),
     control_route: unique(actions.flatMap((action) => action.control_route)),
-    review_priority: actions.slice(0, 5).map((action) => ({
+    review_priority: actions.map((action) => ({
       consolidated_finding_id: action.consolidated_finding_id,
       exposure_title: action.exposure_title,
       priority: action.priority,
