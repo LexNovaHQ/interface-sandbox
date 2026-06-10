@@ -26,12 +26,40 @@ const REQUIRED_ENVELOPE_FIELDS = Object.freeze([
   "warnings"
 ]);
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 function isObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function isIsoDate(value) {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
+}
+
+function getStage9ReportData(stage9ReportData) {
+  return stage9ReportData?.report?.report_data
+    || stage9ReportData?.report_data
+    || stage9ReportData;
+}
+
+function sourceMetrics(stage9ReportData) {
+  const reportData = getStage9ReportData(stage9ReportData || {});
+  return {
+    feature_count: asArray(reportData?.product_activity_profile?.product_feature_map).length,
+    consolidated_finding_count: asArray(reportData?.exposure_findings?.consolidated_findings).length,
+    supporting_registry_row_count: asArray(reportData?.exposure_findings?.supporting_registry_rows).length,
+    document_count: asArray(reportData?.legal_stack_control_review?.document_inventory || reportData?.legal_stack_control_review?.legal_stack).length,
+    open_information_request_count: asArray(reportData?.evidence_gaps_clarification_points?.open_information_request_list || reportData?.evidence_gaps_clarification_points?.open_information_requests).length,
+    remediation_roadmap_count: asArray(reportData?.implications_remediation_path?.remediation_roadmap).length,
+    document_route_count: asArray(reportData?.implications_remediation_path?.document_route).length,
+    control_route_count: asArray(reportData?.implications_remediation_path?.control_route).length
+  };
+}
+
+function countPrefillFields(prefill) {
+  return Object.values(prefill || {}).reduce((sum, group) => sum + Object.keys(group || {}).length, 0);
 }
 
 function validatePrefill(prefill, errors) {
@@ -106,6 +134,9 @@ function validateAssemblyHandoff(assemblyHandoff, errors) {
   if (!isIsoDate(meta.created_at)) errors.push("assembly_handoff.handoff_meta.created_at must be an ISO timestamp.");
 
   if (!isObject(assemblyHandoff.target_profile)) errors.push("assembly_handoff.target_profile must be an object.");
+  if (assemblyHandoff.target_profile?.company_name === "Unknown target") errors.push("assembly_handoff.target_profile.company_name must be populated from Stage 9.");
+  if (!assemblyHandoff.target_profile?.primary_url) errors.push("assembly_handoff.target_profile.primary_url must be populated from Stage 9.");
+
   if (!Array.isArray(assemblyHandoff.feature_map)) errors.push("assembly_handoff.feature_map must be an array.");
   if (!Array.isArray(assemblyHandoff.threat_findings)) errors.push("assembly_handoff.threat_findings must be an array.");
   if (!Array.isArray(assemblyHandoff.document_stack_status)) errors.push("assembly_handoff.document_stack_status must be an array.");
@@ -114,6 +145,39 @@ function validateAssemblyHandoff(assemblyHandoff, errors) {
 
   validatePrefill(assemblyHandoff.vault_prefill_suggestions, errors);
   validateQuestions(assemblyHandoff.vault_confirmation_questions, errors);
+}
+
+function validateAgainstSourceReport(result, stage9ReportData, errors) {
+  if (!stage9ReportData) return;
+
+  const metrics = sourceMetrics(stage9ReportData);
+  const handoff = result.assembly_handoff || {};
+  const route = handoff.assembly_route_recommendation || {};
+
+  if (metrics.feature_count > 0 && asArray(handoff.feature_map).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 product feature map: source=${metrics.feature_count}, handoff=0.`);
+  }
+  if (metrics.consolidated_finding_count > 0 && asArray(handoff.threat_findings).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 consolidated findings: source=${metrics.consolidated_finding_count}, handoff=0.`);
+  }
+  if (metrics.document_count > 0 && asArray(handoff.document_stack_status).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 legal-stack document inventory: source=${metrics.document_count}, handoff=0.`);
+  }
+  if (metrics.open_information_request_count > 0 && asArray(handoff.vault_confirmation_questions).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 open information requests: source=${metrics.open_information_request_count}, handoff questions=0.`);
+  }
+  if (metrics.remediation_roadmap_count > 0 && asArray(route.remediation_roadmap).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 remediation roadmap: source=${metrics.remediation_roadmap_count}, handoff=0.`);
+  }
+  if (metrics.document_route_count > 0 && asArray(route.document_routes).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 document routes: source=${metrics.document_route_count}, handoff=0.`);
+  }
+  if (metrics.control_route_count > 0 && asArray(route.control_routes).length === 0) {
+    errors.push(`Stage 10 lost Stage 9 control routes: source=${metrics.control_route_count}, handoff=0.`);
+  }
+  if (metrics.consolidated_finding_count > 0 && countPrefillFields(handoff.vault_prefill_suggestions) === 0) {
+    errors.push("Stage 10 derived no Vault prefill fields despite populated Stage 9 findings.");
+  }
 }
 
 function validateEnvelope(envelope, errors) {
@@ -135,7 +199,7 @@ function validateEnvelope(envelope, errors) {
   if (!Array.isArray(envelope.warnings)) errors.push("handoff_envelope.warnings must be an array.");
 }
 
-export function validateReviewReadyHandoff(result) {
+export function validateReviewReadyHandoff(result, stage9ReportData = null) {
   const errors = [];
   const warnings = [];
 
@@ -149,6 +213,7 @@ export function validateReviewReadyHandoff(result) {
 
   validateAssemblyHandoff(result.assembly_handoff, errors);
   validateEnvelope(result.handoff_envelope, errors);
+  validateAgainstSourceReport(result, stage9ReportData, errors);
 
   if (!isObject(result.persistence_plan)) errors.push("persistence_plan must be an object.");
   else {
