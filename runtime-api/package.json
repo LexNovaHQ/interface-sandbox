@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.33.0",
-    "cors": "^4.22.1",
+    "cors": "^2.8.5",
     "express": "^4.22.1",
     "helmet": "^8.1.0"
   }
