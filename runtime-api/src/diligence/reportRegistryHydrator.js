@@ -8,6 +8,16 @@ import {
   severityRank,
   urgencyRank
 } from "./reportTerminologyMap.js";
+import {
+  clarificationQuestionText,
+  commercialImpactText,
+  exposureMechanismText,
+  legalSignificanceText,
+  remediationPathText,
+  sanitizeVisibleText,
+  toExposureCategoryLabel,
+  toFunctionalProfileLabel
+} from "./reportLegalLanguage.js";
 
 const VALID_STATUSES = new Set(["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"]);
 
@@ -33,31 +43,32 @@ function registryThreatId(row, index) {
 }
 
 function registryThreatName(row, fallback = "Untitled exposure") {
-  return asText(row?.threat_name || row?.Threat_Name, fallback);
+  return sanitizeVisibleText(asText(row?.threat_name || row?.Threat_Name, fallback));
 }
 
 function surfaceTokens(row) {
   const surface = row?.surface || row?.Surface;
-  if (Array.isArray(surface?.tokens)) return surface.tokens.map((token) => asText(token)).filter(Boolean);
-  if (Array.isArray(surface)) return surface.map((token) => asText(token)).filter(Boolean);
+  if (Array.isArray(surface?.tokens)) return surface.tokens.map((token) => sanitizeVisibleText(token)).filter(Boolean);
+  if (Array.isArray(surface)) return surface.map((token) => sanitizeVisibleText(token)).filter(Boolean);
   const raw = asText(surface?.raw || surface);
-  return raw ? raw.split("|").map((token) => token.trim()).filter(Boolean) : [];
+  return raw ? raw.split("|").map((token) => sanitizeVisibleText(token)).filter(Boolean) : [];
 }
 
 function authority(row) {
   const source = row?.authority || {};
   return {
-    IN: asText(source.IN || row?.Authority_IN),
-    EU: asText(source.EU || row?.Authority_EU),
-    US: asText(source.US || row?.Authority_US)
+    IN: sanitizeVisibleText(source.IN || row?.Authority_IN),
+    EU: sanitizeVisibleText(source.EU || row?.Authority_EU),
+    US: sanitizeVisibleText(source.US || row?.Authority_US)
   };
 }
 
 function pain(row, schema = {}) {
   const source = row?.pain || {};
   const tier = asText(source.tier || row?.Pain_Tier);
-  const category = asText(source.category || row?.Pain_Category || schema?.pain_tier_to_category?.[tier], "UNKNOWN");
-  const depth = asText(source.depth || row?.Pain_Depth, "Not specified in registry");
+  const rawCategory = asText(source.category || row?.Pain_Category || schema?.pain_tier_to_category?.[tier], "UNKNOWN");
+  const category = toExposureCategoryLabel(rawCategory);
+  const depth = sanitizeVisibleText(source.depth || row?.Pain_Depth || "Not specified in registry");
   return {
     tier,
     category,
@@ -69,13 +80,14 @@ function pain(row, schema = {}) {
 function functionalProfile(row) {
   const archetype = row?.archetype || row?.Archetype;
   if (archetype && typeof archetype === "object") {
+    const code = asText(archetype.code || archetype.from_id);
     return {
-      code: asText(archetype.code || archetype.from_id),
-      label: asText(archetype.label || archetype.code || archetype.from_id, "Functional profile not specified")
+      code,
+      label: toFunctionalProfileLabel(archetype.label || archetype.code || archetype.from_id)
     };
   }
   const code = asText(archetype);
-  return { code, label: code || "Functional profile not specified" };
+  return { code, label: toFunctionalProfileLabel(code || "Functional profile not specified") };
 }
 
 function buildRegistryIndex(registryRuntime = {}) {
@@ -86,10 +98,10 @@ function buildRegistryIndex(registryRuntime = {}) {
 function conditionOutcomes(entry) {
   return asArray(entry?.conditions).map((condition) => ({
     criterion_id: asText(condition?.condition_id || condition?.id),
-    criterion_text: asText(condition?.condition_text || condition?.text),
+    criterion_text: sanitizeVisibleText(condition?.condition_text || condition?.text),
     outcome: displayBoolean(condition?.result),
     result: condition?.result === true,
-    evidentiary_basis: asText(condition?.basis || condition?.reasoning || condition?.evidence_basis, "No evidentiary basis supplied by evaluation layer.")
+    evidentiary_basis: sanitizeVisibleText(condition?.basis || condition?.reasoning || condition?.evidence_basis || "No evidentiary basis supplied by evaluation layer.")
   }));
 }
 
@@ -106,32 +118,32 @@ function clientQuestionsFor(item) {
   const questions = [];
   const failed = item.applicability_test?.criteria?.not_satisfied || [];
   for (const criterion of failed.slice(0, 3)) {
-    questions.push(`Please confirm whether the following applicability criterion is met in the matter evidence or internal controls: ${criterion.criterion_text || criterion.criterion_id}.`);
+    questions.push(clarificationQuestionText({ criterionText: criterion.criterion_text, registryReference: item.registry_reference }));
   }
   const controlTest = item.applicability_test?.control_exclusion_test;
   if (controlTest) {
-    questions.push(`Please provide any policy, clause, workflow, log, approval record, or operational evidence relevant to the control position: ${controlTest}.`);
+    questions.push(clarificationQuestionText({ controlTest, registryReference: item.registry_reference }));
   }
   if (!questions.length) {
-    questions.push(`Please provide the internal documents, customer terms, control evidence, or operational records needed to confirm the assessment for ${item.registry_reference}.`);
+    questions.push(clarificationQuestionText({ registryReference: item.registry_reference }));
   }
-  return [...new Set(questions)].slice(0, 4);
+  return [...new Set(questions.map((question) => sanitizeVisibleText(question)).filter(Boolean))].slice(0, 4);
 }
 
 function exposureMechanism(row) {
-  return asText(row?.fp_mechanism || row?.FP_Mechanism, "The reviewed evidence activated this registry item, but the registry mechanism text is not specified.");
+  return exposureMechanismText(row?.fp_mechanism || row?.FP_Mechanism);
 }
 
 function legalSignificance(row) {
-  return asText(row?.legal_pain || row?.Legal_Pain, "Legal significance is not specified in the registry row.");
+  return legalSignificanceText(row?.legal_pain || row?.Legal_Pain);
 }
 
 function commercialImpact(row) {
-  return asText(row?.fp_impact || row?.FP_Impact, "Commercial or deal impact is not specified in the registry row.");
+  return commercialImpactText(row?.fp_impact || row?.FP_Impact);
 }
 
 function remediationPath(row) {
-  return asText(row?.fix_route || row?.Lex_Nova_Fix, "Suggested remediation path is not specified in the registry row.");
+  return remediationPathText(row?.fix_route || row?.Lex_Nova_Fix);
 }
 
 function applicabilityTest(row, entry) {
@@ -139,9 +151,9 @@ function applicabilityTest(row, entry) {
   const groups = conditionGroups(entry);
   return {
     criteria: groups,
-    finding_threshold: asText(hunter.trigger_if || entry?.trigger_if || "Registry finding threshold not supplied."),
+    finding_threshold: sanitizeVisibleText(hunter.trigger_if || entry?.trigger_if || "Registry finding threshold not supplied."),
     finding_threshold_outcome: displayBoolean(entry?.trigger_if_result),
-    control_exclusion_test: asText(hunter.exclude_if || entry?.exclude_if || "Registry control / exclusion test not supplied."),
+    control_exclusion_test: sanitizeVisibleText(hunter.exclude_if || entry?.exclude_if || "Registry control / exclusion test not supplied."),
     control_test_outcome: displayControlOutcome(entry?.exclude_if_result),
     raw_registry_test: asText(hunter.raw || row?.Hunter_Trigger)
   };
@@ -169,15 +181,15 @@ function buildHydratedRow({ entry, row, index, schema }) {
       label: displayVelocity(row?.velocity || row?.Velocity)
     },
     severity: registryPain,
-    registry_status: asText(row?.status || row?.Status, "Not specified in registry"),
-    effective_review_date: asText(row?.effective_date || row?.Effective_Date, "Not specified in registry"),
+    registry_status: sanitizeVisibleText(row?.status || row?.Status || "Not specified in registry"),
+    effective_review_date: sanitizeVisibleText(row?.effective_date || row?.Effective_Date || "Not specified in registry"),
     legal_significance: legalSignificance(row),
     exposure_mechanism: exposureMechanism(row),
     commercial_deal_impact: commercialImpact(row),
     suggested_remediation_path: remediationPath(row),
     reviewed_evidence: {
-      evidence_reference: asText(entry?.evidence_ref, "No evidence reference supplied by evaluation layer."),
-      feature_references: asArray(entry?.feature_refs).map((ref) => asText(ref)).filter(Boolean)
+      evidence_reference: sanitizeVisibleText(entry?.evidence_ref || "No evidence reference supplied by evaluation layer."),
+      feature_references: asArray(entry?.feature_refs).map((ref) => sanitizeVisibleText(ref)).filter(Boolean)
     },
     applicability_test: applicabilityTest(row, entry),
     control_position: displayControlOutcome(entry?.exclude_if_result),
@@ -191,7 +203,7 @@ function buildHydratedRow({ entry, row, index, schema }) {
             : "No open exposure is recorded for this item on the reviewed evidence.",
     clarification_points: [],
     counsel_review_note: "Qualified counsel should verify jurisdiction-specific treatment and whether internal controls not visible in the reviewed evidence change this assessment.",
-    registry_basis: asText(row?.provenance || row?.Provenance, "Registry basis not specified."),
+    registry_basis: sanitizeVisibleText(row?.provenance || row?.Provenance || "Registry basis not specified."),
     registry_payload_available: Boolean(row)
   };
   item.clarification_points = clientQuestionsFor(item);
