@@ -165,6 +165,8 @@ export function groupIdentifiedExposures(items = []) {
     .map((group) => {
       const items = [...group.items].sort((a, b) => severitySortKey(a) - severitySortKey(b));
       const lead = highestPriority(items);
+      const highestSeverity = lead?.severity || null;
+      const highestTimingUrgency = lead?.timing_urgency || null;
       const surfaces = unique(items.flatMap((item) => item.legal_risk_surfaces || []));
       const profiles = unique(items.map((item) => item.functional_profile?.label));
       const refs = unique(items.map((item) => item.registry_reference));
@@ -176,8 +178,10 @@ export function groupIdentifiedExposures(items = []) {
         assessment_outcome: "Identified Exposure Family",
         supporting_registry_item_count: items.length,
         supporting_registry_references: refs,
-        highest_severity: lead?.severity || null,
-        highest_timing_urgency: lead?.timing_urgency || null,
+        highest_severity: highestSeverity,
+        highest_timing_urgency: highestTimingUrgency,
+        severity: highestSeverity,
+        timing_urgency: highestTimingUrgency,
         legal_risk_surfaces: surfaces,
         functional_profiles: profiles,
         jurisdictional_references: mergedAuthorities(items),
