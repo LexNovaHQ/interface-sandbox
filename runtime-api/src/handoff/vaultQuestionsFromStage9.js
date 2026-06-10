@@ -4,6 +4,12 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function getStage9ReportData(stage9ReportData) {
+  return stage9ReportData?.report?.report_data
+    || stage9ReportData?.report_data
+    || stage9ReportData;
+}
+
 function safeText(value, fallback = "") {
   if (value === undefined || value === null) return fallback;
   const text = String(value).trim();
@@ -11,6 +17,9 @@ function safeText(value, fallback = "") {
 }
 
 function registryRefsFromFinding(finding) {
+  const explicitRefs = asArray(finding?.supporting_registry_references).filter(Boolean).map(String);
+  if (explicitRefs.length) return explicitRefs;
+
   return asArray(finding?.supporting_registry_items || finding?.supporting_registry_rows || finding?.supporting_items)
     .map((item) => item.registry_reference || item.threat_id || item.id || item)
     .filter(Boolean)
@@ -40,9 +49,12 @@ function addQuestion(questions, input) {
 }
 
 function addMissingDocumentQuestions(stage9ReportData, questions) {
-  const missingDocs = asArray(stage9ReportData?.evidence_gaps_clarification_points?.missing_documents);
-  const stackGaps = asArray(stage9ReportData?.legal_stack_control_review?.control_gaps);
-  const combinedText = [...missingDocs, ...stackGaps].map((item) => JSON.stringify(item)).join("\n");
+  const reportData = getStage9ReportData(stage9ReportData);
+  const gaps = reportData?.evidence_gaps_clarification_points || {};
+  const missingDocs = asArray(gaps.missing_documents);
+  const openItems = asArray(gaps.open_information_request_list || gaps.open_information_requests);
+  const stackGaps = asArray(reportData?.legal_stack_control_review?.control_gaps);
+  const combinedText = [...missingDocs, ...openItems, ...stackGaps].map((item) => JSON.stringify(item)).join("\n");
 
   if (/DPA|data processing|subprocessor/i.test(combinedText)) {
     addQuestion(questions, {
@@ -76,8 +88,9 @@ function addMissingDocumentQuestions(stage9ReportData, questions) {
 }
 
 function addFindingDrivenQuestions(stage9ReportData, questions) {
-  asArray(stage9ReportData?.exposure_findings?.consolidated_findings).forEach((finding) => {
-    const title = safeText(finding.title || finding.finding_title || finding.exposure_family, "consolidated finding");
+  const reportData = getStage9ReportData(stage9ReportData);
+  asArray(reportData?.exposure_findings?.consolidated_findings).forEach((finding) => {
+    const title = safeText(finding.exposure_title || finding.title || finding.finding_title || finding.exposure_family, "consolidated finding");
     const refs = registryRefsFromFinding(finding);
     const sourceContext = refs.length
       ? `Supporting registry references: ${refs.join(", ")}`
@@ -144,7 +157,8 @@ function addFindingDrivenQuestions(stage9ReportData, questions) {
 }
 
 function addOpenItemQuestions(stage9ReportData, questions) {
-  asArray(stage9ReportData?.evidence_gaps_clarification_points?.open_information_requests).forEach((item) => {
+  const reportData = getStage9ReportData(stage9ReportData);
+  asArray(reportData?.evidence_gaps_clarification_points?.open_information_request_list || reportData?.evidence_gaps_clarification_points?.open_information_requests).forEach((item) => {
     const text = JSON.stringify(item);
     const sourceContext = safeText(item.source_context || item.evidence_basis || item.why_it_matters, "Stage 9 open information request.");
 
@@ -171,11 +185,12 @@ function addOpenItemQuestions(stage9ReportData, questions) {
 }
 
 export function deriveVaultQuestionsFromStage9(stage9ReportData) {
+  const reportData = getStage9ReportData(stage9ReportData);
   const questions = [];
 
-  addMissingDocumentQuestions(stage9ReportData, questions);
-  addFindingDrivenQuestions(stage9ReportData, questions);
-  addOpenItemQuestions(stage9ReportData, questions);
+  addMissingDocumentQuestions(reportData, questions);
+  addFindingDrivenQuestions(reportData, questions);
+  addOpenItemQuestions(reportData, questions);
 
   return questions;
 }
