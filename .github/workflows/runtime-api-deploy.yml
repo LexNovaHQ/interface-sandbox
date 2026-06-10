@@ -222,13 +222,20 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage8:operator
 
-      - name: Verify Stage 7/8 audit exports
+      - name: Run Stage 9 Report Assembler E2E
+        working-directory: runtime-api
+        run: npm run e2e:stage9:report
+
+      - name: Verify Stage 7/8/9 audit exports
         if: always()
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
           test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
           test -f runtime-api/.runtime-e2e-cache/stage8-operator-challenge.json && echo "stage8 audit export found" || echo "stage8 audit export missing"
           test -f runtime-api/.runtime-e2e-cache/stage8-corrected-ledger.json && echo "stage8 corrected ledger found" || echo "stage8 corrected ledger missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-report-validation.json && echo "stage9 report validation found" || echo "stage9 report validation missing"
 
       - name: Upload runtime E2E cache
         if: always()
@@ -315,13 +322,20 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage8:operator
 
-      - name: Verify Stage 7/8 audit exports
+      - name: Run Stage 9 Report Assembler E2E
+        working-directory: runtime-api
+        run: npm run e2e:stage9:report
+
+      - name: Verify Stage 7/8/9 audit exports
         if: always()
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
           test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
           test -f runtime-api/.runtime-e2e-cache/stage8-operator-challenge.json && echo "stage8 audit export found" || echo "stage8 audit export missing"
           test -f runtime-api/.runtime-e2e-cache/stage8-corrected-ledger.json && echo "stage8 corrected ledger found" || echo "stage8 corrected ledger missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
+          test -f runtime-api/.runtime-e2e-cache/stage9-report-validation.json && echo "stage9 report validation found" || echo "stage9 report validation missing"
 
       - name: Upload runtime E2E cache
         if: always()
