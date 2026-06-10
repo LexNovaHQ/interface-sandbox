@@ -44,6 +44,7 @@ function statusCounts(rows = []) {
 function buildPreview(stage9Report, validation) {
   const report = stage9Report.report;
   const reportData = report.report_data;
+  const exposureFindings = reportData.exposure_findings || {};
   return {
     artifact_type: "stage9_report_preview",
     generated_at: new Date().toISOString(),
@@ -53,8 +54,10 @@ function buildPreview(stage9Report, validation) {
     executive_exposure_summary: reportData.executive_exposure_summary,
     matter_overview: reportData.matter_overview,
     exposure_findings_preview: {
-      count: reportData.exposure_findings?.count || 0,
-      first_five: asArray(reportData.exposure_findings?.schedule).slice(0, 5)
+      consolidated_count: exposureFindings.consolidated_count || 0,
+      supporting_registry_row_count: exposureFindings.supporting_registry_row_count || exposureFindings.count || 0,
+      first_five_consolidated_findings: asArray(exposureFindings.consolidated_findings).slice(0, 5),
+      first_five_supporting_registry_rows: asArray(exposureFindings.supporting_registry_rows).slice(0, 5)
     },
     legal_stack_preview: {
       legal_stack_count: asArray(reportData.legal_stack_control_review?.legal_stack).length,
@@ -108,28 +111,16 @@ writeJson(reportPreviewPath, buildPreview(stage9Report, validation));
 if (!validation.ok) {
   fail("Stage 9 report validation failed", {
     validation,
-    report_data_path: reportDataPath,
-    report_validation_path: reportValidationPath,
-    report_preview_path: reportPreviewPath
+    reportDataPath,
+    reportValidationPath
   });
 }
 
 console.log(JSON.stringify({
   ok: true,
-  step: "stage9_report_exports_written",
-  report_data_path: reportDataPath,
-  report_preview_path: reportPreviewPath,
-  report_validation_path: reportValidationPath,
-  validation
-}, null, 2));
-
-console.log(JSON.stringify({
-  ok: true,
   phase: "stage_9_report_assembler_complete",
-  report_title: stage9Report.report.report_title,
-  report_status: stage9Report.report.report_status,
-  status_counts: validation.counts.ledger,
-  finding_schedule_count: validation.counts.finding_schedule,
-  clarification_required_count: validation.counts.clarification_items,
-  forensic_ledger_count: validation.counts.forensic_ledger
+  report_data_path: reportDataPath,
+  report_validation_path: reportValidationPath,
+  report_preview_path: reportPreviewPath,
+  validation
 }, null, 2));
