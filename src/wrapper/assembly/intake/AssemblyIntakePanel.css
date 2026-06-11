@@ -60,7 +60,8 @@
 
 .assembly-json-input,
 .assembly-json-output,
-.assembly-field-row textarea {
+.assembly-field-row textarea,
+.vault-review-input {
   width: 100%;
   border: 1px solid rgba(221, 205, 176, 0.14);
   border-radius: 8px;
@@ -71,7 +72,8 @@
 }
 
 .assembly-json-input:focus,
-.assembly-field-row textarea:focus {
+.assembly-field-row textarea:focus,
+.vault-review-input:focus {
   border-color: rgba(241, 211, 155, 0.6);
 }
 
@@ -157,6 +159,115 @@
   resize: vertical;
 }
 
+.vault-review-modules,
+.vault-review-module,
+.vault-review-field-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.vault-review-module {
+  padding: 1rem;
+  border: 1px solid rgba(221, 205, 176, 0.12);
+  border-radius: 12px;
+  background: rgba(8, 8, 7, 0.2);
+}
+
+.vault-review-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(221, 205, 176, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.026);
+}
+
+.vault-review-field-meta {
+  display: grid;
+  gap: 0.34rem;
+  align-content: start;
+}
+
+.vault-review-field-meta small,
+.vault-review-field-meta p {
+  margin: 0;
+  color: #bdb3a2;
+  line-height: 1.45;
+}
+
+.vault-review-field-meta small {
+  font-size: 0.75rem;
+}
+
+.vault-review-input {
+  padding: 0.75rem;
+  min-height: 2.75rem;
+}
+
+textarea.vault-review-input {
+  resize: vertical;
+}
+
+select.vault-review-input {
+  color: #f4efe7;
+}
+
+.vault-review-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(221, 205, 176, 0.14);
+  border-radius: 8px;
+  color: #f4efe7;
+  background: rgba(8, 8, 7, 0.44);
+}
+
+.vault-review-checkbox input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #c9a867;
+}
+
+.vault-integrated-questions,
+.vault-supplementary-block {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.vault-integrated-question,
+.vault-supplementary-question {
+  padding: 0.65rem;
+  border: 1px solid rgba(241, 211, 155, 0.18);
+  border-left: 3px solid rgba(241, 211, 155, 0.46);
+  border-radius: 8px;
+  background: rgba(241, 211, 155, 0.045);
+}
+
+.vault-integrated-question strong,
+.vault-supplementary-question strong {
+  color: #f1d39b;
+}
+
+.vault-integrated-question p,
+.vault-integrated-question small,
+.vault-supplementary-question p,
+.vault-supplementary-question small {
+  display: block;
+  margin: 0.25rem 0 0;
+  color: #bdb3a2;
+}
+
+.vault-supplementary-question {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 0.8rem;
+}
+
 .assembly-save-result {
   padding: 0.85rem 1rem;
   border: 1px solid rgba(122, 184, 138, 0.28);
@@ -177,7 +288,9 @@
   .assembly-operating-grid,
   .assembly-workbench-grid,
   .assembly-review-header,
-  .assembly-field-row {
+  .assembly-field-row,
+  .vault-review-field-row,
+  .vault-supplementary-question {
     grid-template-columns: 1fr;
   }
 
@@ -193,7 +306,9 @@
   .assembly-operating-grid,
   .assembly-workbench-grid,
   .assembly-review-header,
-  .assembly-field-row {
+  .assembly-field-row,
+  .vault-review-field-row,
+  .vault-supplementary-question {
     grid-template-columns: 1fr;
   }
 }
