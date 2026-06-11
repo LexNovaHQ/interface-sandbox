@@ -3,6 +3,7 @@ import DiligenceStageRail from "./DiligenceStageRail.jsx";
 import HandoffPreview from "./HandoffPreview.jsx";
 import LiveReportViewer from "./LiveReportViewer.jsx";
 import { downloadTextFile, prettyJson, runLiveDiligence } from "./diligenceLiveClient.js";
+import { pushLiveResultToAssembly } from "../wrapper/os/assemblyHandoffStore.js";
 
 function safeFilenamePart(value) {
   return String(value || "live-diligence")
@@ -25,13 +26,15 @@ function metricsFromResult(result) {
   ];
 }
 
-export default function DiligenceLiveConsole() {
+export default function DiligenceLiveConsole({ onNavigate }) {
   const [targetUrl, setTargetUrl] = useState("");
   const [documentText, setDocumentText] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [assemblyPush, setAssemblyPush] = useState(null);
+  const [assemblyPushError, setAssemblyPushError] = useState(null);
 
   const canRun = useMemo(() => {
     return Boolean(targetUrl.trim() || documentText.trim()) && !running;
@@ -49,11 +52,29 @@ export default function DiligenceLiveConsole() {
 
     setRunning(true);
     setError(null);
+    setAssemblyPush(null);
+    setAssemblyPushError(null);
     setResult({ stage_status: [{ stage: "live_run", status: "running", at: new Date().toISOString() }] });
 
     try {
       const liveResult = await runLiveDiligence({ targetUrl, documentText, companyName });
       setResult(liveResult);
+
+      try {
+        const pushResult = await pushLiveResultToAssembly(liveResult, {
+          target_url: targetUrl.trim() || null,
+          company_name: companyName.trim() || null,
+          document_text_supplied: Boolean(documentText.trim()),
+          pushed_at: new Date().toISOString()
+        });
+        setAssemblyPush(pushResult);
+
+        if (typeof onNavigate === "function") {
+          window.setTimeout(() => onNavigate("/assembly"), 200);
+        }
+      } catch (pushError) {
+        setAssemblyPushError(pushError?.message || "Diligence completed, but Assembly auto-push failed.");
+      }
     } catch (err) {
       setError(err?.message || "Live diligence run failed.");
       setResult((previous) => ({
@@ -92,7 +113,7 @@ export default function DiligenceLiveConsole() {
           <h1>Run a live Legal Exposure Diligence review.</h1>
           <p className="live-hero-copy">
             Provide a public URL, document text, or both. The engine runs fresh source review, registry evaluation,
-            a Legal Exposure Diligence Report, and a Review-Ready Remediation Handoff. No cached demo artifacts.
+            a Legal Exposure Diligence Report, and a Review-Ready Remediation Handoff. On completion, the Stage 10 handoff is pushed directly into Assembly.
           </p>
         </div>
         <div className="live-guardrail-box">
@@ -149,8 +170,25 @@ export default function DiligenceLiveConsole() {
         <button className="primary-action" type="button" disabled={!canRun} onClick={handleRun}>
           {running ? "Running live diligence..." : "Run Live Diligence"}
         </button>
-        <span className="live-action-note">At least one input is required. One active run per browser tab.</span>
+        <span className="live-action-note">At least one input is required. On completion, Assembly Review opens automatically.</span>
       </section>
+
+      {assemblyPush && (
+        <section className="card-shell assembly-save-result">
+          <strong>Auto-pushed to Assembly</strong>
+          <p>
+            Matter <strong>{assemblyPush.pending?.matter_id}</strong> is ready for Vault Review.
+            {typeof onNavigate === "function" ? " Redirecting to Assembly Engine…" : " Open Assembly Engine from the navigation."}
+          </p>
+        </section>
+      )}
+
+      {assemblyPushError && (
+        <section className="live-error card-shell">
+          <strong>Assembly push failed</strong>
+          <p>{assemblyPushError}</p>
+        </section>
+      )}
 
       {error && (
         <section className="live-error card-shell">
