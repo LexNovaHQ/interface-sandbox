@@ -1,8 +1,13 @@
 import crypto from "crypto";
 import dns from "node:dns/promises";
 import net from "node:net";
+import { createRequire } from "node:module";
 
+const require = createRequire(import.meta.url);
 const BLOCKED_HOSTNAMES = new Set(["localhost", "metadata.google.internal", "metadata", "169.254.169.254"]);
+const PDF_CONTENT_RE = /application\/(pdf|octet-stream)|binary\/octet-stream/i;
+const HTML_CONTENT_RE = /text\/html|application\/xhtml\+xml|application\/xml|text\/plain|application\/json/i;
+const DEFAULT_MAX_FETCH_BYTES = 15 * 1024 * 1024;
 
 class BlockedCaptureUrlError extends Error {
   constructor(reason, url) {
@@ -14,7 +19,7 @@ class BlockedCaptureUrlError extends Error {
 }
 
 function sha256(value) {
-  return crypto.createHash("sha256").update(String(value || ""), "utf8").digest("hex");
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
 
 function nowIso() {
@@ -219,20 +224,23 @@ function buildChunks({ cleanText, sourceUrl, chunkSize = 6000, chunkOverlap = 30
   return chunks;
 }
 
-async function fetchHtml(url, timeoutMs) {
+async function fetchContent(url, timeoutMs, maxBytes) {
   let currentUrl = await validateCaptureUrl(url);
   const maxRedirects = 5;
   for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(currentUrl, { method: "GET", redirect: "manual", signal: controller.signal, headers: { "user-agent": "LexNovaHQ-SourceCapture/0.3C", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.5" } });
+      const response = await fetch(currentUrl, { method: "GET", redirect: "manual", signal: controller.signal, headers: { "user-agent": "LexNovaHQ-SourceCapture/0.3D", accept: "text/html,application/xhtml+xml,application/xml,application/json,application/pdf,*/*;q=0.5" } });
       if (response.status >= 300 && response.status < 400 && response.headers.get("location")) {
         currentUrl = await validateCaptureUrl(new URL(response.headers.get("location"), currentUrl).toString());
         continue;
       }
-      const rawHtml = await response.text();
-      return { ok: response.ok, http_status: response.status, final_url: normalizeUrl(response.url) || currentUrl, content_type: response.headers.get("content-type") || "", raw_html: rawHtml };
+      const contentLength = Number(response.headers.get("content-length") || 0);
+      if (contentLength && contentLength > maxBytes) throw new Error(`fetch_too_large:${contentLength}`);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length > maxBytes) throw new Error(`fetch_too_large:${buffer.length}`);
+      return { ok: response.ok, http_status: response.status, final_url: normalizeUrl(response.url) || currentUrl, content_type: response.headers.get("content-type") || "", buffer };
     } finally {
       clearTimeout(timer);
     }
@@ -240,11 +248,28 @@ async function fetchHtml(url, timeoutMs) {
   throw new BlockedCaptureUrlError("redirect_limit_exceeded", currentUrl);
 }
 
+async function extractPdfText(buffer) {
+  const pdfParse = require("pdf-parse");
+  const parsed = await pdfParse(buffer);
+  return String(parsed?.text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/[ \t\f\v]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function pdfTitleFromUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const last = decodeURIComponent((parsed.pathname || "").split("/").filter(Boolean).pop() || "PDF Legal Document");
+    return last.replace(/\.pdf$/i, "");
+  } catch {
+    return "PDF Legal Document";
+  }
+}
+
 export async function captureOneSource(source, options = {}) {
   const sourceUrl = normalizeUrl(source?.url || source);
   const sourceFamily = source?.source_family || null;
   const discovery = buildSourceDiscoveryProvenance(source || {});
   const timeoutMs = Number(options.timeoutMs || options.timeout_ms || 15000);
+  const maxBytes = Number(options.max_bytes || options.max_fetch_bytes || process.env.SOURCE_CAPTURE_MAX_BYTES || DEFAULT_MAX_FETCH_BYTES);
   const includeRawHtml = options.include_raw_html === true;
   const includeCleanText = options.include_clean_text !== false;
 
@@ -253,15 +278,45 @@ export async function captureOneSource(source, options = {}) {
   }
 
   try {
-    const fetched = await fetchHtml(sourceUrl, timeoutMs);
-    const rawHtml = fetched.raw_html || "";
-    const cleanText = stripTagsPreserveVisibleText(rawHtml);
-    const headings = extractHeadings(rawHtml);
-    const links = extractLinks(rawHtml, fetched.final_url || sourceUrl);
-    const sections = buildSectionIndex(cleanText, headings);
+    const fetched = await fetchContent(sourceUrl, timeoutMs, maxBytes);
+    const contentType = fetched.content_type || "";
+    const isPdf = PDF_CONTENT_RE.test(contentType) || /\.pdf(?:$|[?#])/i.test(fetched.final_url || sourceUrl);
+    const isHtmlLike = HTML_CONTENT_RE.test(contentType) || !contentType;
+    let rawHtml = "";
+    let cleanText = "";
+    let headings = [];
+    let links = [];
+    let sections = [];
+    let title = "";
+    let metaDescription = "";
+    let extractionMode = "lossless_visible_text";
+    let coverageStatus = "html_fetch_insufficient";
+
+    if (isPdf) {
+      cleanText = await extractPdfText(fetched.buffer);
+      title = pdfTitleFromUrl(fetched.final_url || sourceUrl);
+      extractionMode = "pdf_text_extraction";
+      coverageStatus = cleanText.length > 0 ? "pdf_text_extracted" : "pdf_text_extraction_empty";
+    } else if (isHtmlLike) {
+      rawHtml = fetched.buffer.toString("utf8");
+      cleanText = stripTagsPreserveVisibleText(rawHtml);
+      headings = extractHeadings(rawHtml);
+      links = extractLinks(rawHtml, fetched.final_url || sourceUrl);
+      sections = buildSectionIndex(cleanText, headings);
+      title = extractTitle(rawHtml);
+      metaDescription = extractMetaDescription(rawHtml);
+      extractionMode = "lossless_visible_text";
+      coverageStatus = cleanText.length > 0 ? "full_visible_text_captured" : "html_fetch_insufficient";
+    } else {
+      cleanText = fetched.buffer.toString("utf8").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]+/g, " ").replace(/\s+/g, " ").trim();
+      title = pdfTitleFromUrl(fetched.final_url || sourceUrl);
+      extractionMode = "plain_or_binary_text_best_effort";
+      coverageStatus = cleanText.length > 0 ? "best_effort_text_extracted" : "unsupported_content_type";
+    }
+
     const chunks = buildChunks({ cleanText, sourceUrl: fetched.final_url || sourceUrl, chunkSize: options.chunk_size || 6000, chunkOverlap: options.chunk_overlap || 300 });
     const wordCount = countWords(cleanText);
-    const record = { url: sourceUrl, source_family: sourceFamily, discovery, fetch: { ok: fetched.ok, http_status: fetched.http_status, final_url: fetched.final_url, content_type: fetched.content_type, fetched_at: nowIso() }, raw: { raw_html_length: rawHtml.length, raw_html_sha256: sha256(rawHtml) }, text: { extraction_mode: "lossless_visible_text", clean_text_length: cleanText.length, clean_text_sha256: sha256(cleanText), word_count: wordCount, truncated_in_storage: false, truncated_in_response: false }, structure: { title: extractTitle(rawHtml), meta_description: extractMetaDescription(rawHtml), headings, section_index: sections, links }, chunks, quality: { empty_page: cleanText.length === 0, likely_js_rendered: rawHtml.length > 0 && cleanText.length < 200, word_count: wordCount, coverage_status: cleanText.length > 0 ? "full_visible_text_captured" : "html_fetch_insufficient" } };
+    const record = { url: sourceUrl, source_family: sourceFamily, discovery, fetch: { ok: fetched.ok, http_status: fetched.http_status, final_url: fetched.final_url, content_type: fetched.content_type, fetched_at: nowIso() }, raw: { raw_html_length: rawHtml.length, raw_html_sha256: sha256(rawHtml), raw_binary_length: fetched.buffer.length, raw_binary_sha256: sha256(fetched.buffer) }, text: { extraction_mode: extractionMode, clean_text_length: cleanText.length, clean_text_sha256: sha256(cleanText), word_count: wordCount, truncated_in_storage: false, truncated_in_response: false }, structure: { title, meta_description: metaDescription, headings, section_index: sections, links }, chunks, quality: { empty_page: cleanText.length === 0, likely_js_rendered: rawHtml.length > 0 && cleanText.length < 200, word_count: wordCount, coverage_status: coverageStatus } };
     if (includeRawHtml) record.raw.raw_html = rawHtml;
     if (includeCleanText) record.text.clean_text_lossless = cleanText;
     return record;
