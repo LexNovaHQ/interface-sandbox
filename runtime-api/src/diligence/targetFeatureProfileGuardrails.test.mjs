@@ -11,6 +11,18 @@ const evidenceBuffer = [
   }
 ];
 
+const dataProvenance = {
+  data_origin: "customer_provided",
+  data_subject: "user",
+  data_category: "audio",
+  processing_context: "Developers submit uploaded audio for transcription.",
+  storage_or_retention_signal: "not visible in admitted evidence",
+  training_or_finetuning_signal: "not visible in admitted evidence",
+  source_url: "https://example.ai/products/speech",
+  evidence_quote: "Speech-to-text API converts uploaded audio into text.",
+  confidence: "high"
+};
+
 const feature = {
   feature_id: "F001",
   feature_name: "Speech-to-text transcription",
@@ -30,19 +42,7 @@ const feature = {
     api: "true",
     web: "unknown"
   },
-  data_provenance: [
-    {
-      data_origin: "customer_provided",
-      data_subject: "user",
-      data_category: "audio",
-      processing_context: "Developers submit uploaded audio for transcription.",
-      storage_or_retention_signal: "not visible in admitted evidence",
-      training_or_finetuning_signal: "not visible in admitted evidence",
-      source_url: "https://example.ai/products/speech",
-      evidence_quote: "Speech-to-text API converts uploaded audio into text.",
-      confidence: "high"
-    }
-  ],
+  data_provenance: [dataProvenance],
   archetype_codes: ["TRN", "CRT"],
   archetype_labels: ["The Translator", "The Creator"],
   archetype_provenance: [
@@ -91,7 +91,13 @@ const valid = {
   },
   feature_inventory: [feature],
   product_feature_map: [],
-  data_provenance_map: [],
+  data_provenance_map: [
+    {
+      provenance_id: "DP001",
+      feature_id: "F001",
+      ...dataProvenance
+    }
+  ],
   regulated_surface_map: [
     {
       surface_id: "RS001",
@@ -131,11 +137,20 @@ const valid = {
 const validResult = validateTargetFeatureProfileGuardrails(valid, { evidenceBuffer });
 assert.equal(validResult.ok, true, JSON.stringify(validResult.errors, null, 2));
 
-const legacyAliasIsNonBlocking = structuredClone(valid);
-legacyAliasIsNonBlocking.product_feature_map = [{ feature_id: "legacy_1", name: "legacy shape" }];
-legacyAliasIsNonBlocking.data_provenance_map = [{ feature_id: "F001", compact_note: "legacy support map" }];
-const aliasResult = validateTargetFeatureProfileGuardrails(legacyAliasIsNonBlocking, { evidenceBuffer });
-assert.equal(aliasResult.ok, true, JSON.stringify(aliasResult.errors, null, 2));
+const legacyAliasIsBlocking = structuredClone(valid);
+legacyAliasIsBlocking.product_feature_map = [{ feature_id: "legacy_1", name: "legacy shape" }];
+legacyAliasIsBlocking.data_provenance_map = [{ feature_id: "F001", compact_note: "legacy support map" }];
+const aliasResult = validateTargetFeatureProfileGuardrails(legacyAliasIsBlocking, { evidenceBuffer });
+assert.equal(aliasResult.ok, false, JSON.stringify(aliasResult.errors, null, 2));
+assert.ok(aliasResult.errors.some((error) => String(error.message).includes("product_feature_map")));
+assert.ok(aliasResult.errors.some((error) => String(error.message).includes("data provenance requires")));
+
+const missingFeatureDataProvenance = structuredClone(valid);
+missingFeatureDataProvenance.feature_inventory[0].data_provenance = [];
+missingFeatureDataProvenance.data_provenance_map = [];
+const missingDataResult = validateTargetFeatureProfileGuardrails(missingFeatureDataProvenance, { evidenceBuffer });
+assert.equal(missingDataResult.ok, false);
+assert.ok(missingDataResult.errors.some((error) => String(error.message).includes("at least one data provenance")));
 
 const missingQuote = structuredClone(valid);
 missingQuote.feature_inventory[0].evidence_quote = "This fabricated quote is not in the admitted source.";
@@ -175,7 +190,8 @@ console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
   valid_ok: validResult.ok,
-  alias_nonblocking_ok: aliasResult.ok,
+  alias_blocking_ok: aliasResult.ok,
+  missing_data_error_count: missingDataResult.errors.length,
   missing_quote_error_count: missingQuoteResult.errors.length,
   missing_source_error_count: missingSourceResult.errors.length,
   missing_archetype_error_count: missingArchetypeResult.errors.length,
