@@ -15,7 +15,7 @@ function publicError(error) {
 export function createLiveDiligenceRouter() {
   const router = express.Router();
 
-  router.post("/run", async (req, res) => {
+  router.post("/", async (req, res) => {
     try {
       const body = req.body || {};
       const input = body.input || body.target_input || body;
