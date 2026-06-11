@@ -8,64 +8,38 @@ function splitCsv(value) {
 const POOL_CONFIG = {
   search: { keys_env: "GEMINI_SEARCH_API_KEYS", models_env: "GEMINI_SEARCH_MODEL_SEQUENCE", alias_prefix: "search_key", enable_search_grounding: true },
   json: { keys_env: "GEMINI_JSON_API_KEYS", models_env: "GEMINI_JSON_MODEL_SEQUENCE", alias_prefix: "json_key", enable_search_grounding: false },
-  registry: { keys_env: "GEMINI_REGISTRY_API_KEYS", models_env: "GEMINI_REGISTRY_MODEL_SEQUENCE", alias_prefix: "registry_key", enable_search_grounding: false, fallback_pool: "json", priority_env: "GEMINI_REGISTRY_MODEL_PRIORITY", deprioritize_env: "GEMINI_REGISTRY_MODEL_DEPRIORITIZE" },
-  reasoning: { keys_env: "GEMINI_REASONING_API_KEYS", models_env: "GEMINI_REASONING_MODEL_SEQUENCE", alias_prefix: "reasoning_key", enable_search_grounding: false, priority_env: "GEMINI_REASONING_MODEL_PRIORITY", deprioritize_env: "GEMINI_REASONING_MODEL_DEPRIORITIZE" },
-  final: { keys_env: "GEMINI_REASONING_API_KEYS", models_env: "GEMINI_FINAL_MODEL_SEQUENCE", alias_prefix: "reasoning_key", enable_search_grounding: false, priority_env: "GEMINI_FINAL_MODEL_PRIORITY", deprioritize_env: "GEMINI_FINAL_MODEL_DEPRIORITIZE" }
+  registry: { keys_env: "GEMINI_REGISTRY_API_KEYS", models_env: "GEMINI_REGISTRY_MODEL_SEQUENCE", alias_prefix: "registry_key", enable_search_grounding: false, fallback_pool: "json" },
+  reasoning: { keys_env: "GEMINI_REASONING_API_KEYS", models_env: "GEMINI_REASONING_MODEL_SEQUENCE", alias_prefix: "reasoning_key", enable_search_grounding: false },
+  final: { keys_env: "GEMINI_REASONING_API_KEYS", models_env: "GEMINI_FINAL_MODEL_SEQUENCE", alias_prefix: "reasoning_key", enable_search_grounding: false }
 };
 
-const STABLE_MODEL_PRIORITY = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"];
-const DEFAULT_MODEL_PRIORITIES = {
-  registry: STABLE_MODEL_PRIORITY,
-  reasoning: STABLE_MODEL_PRIORITY,
-  final: STABLE_MODEL_PRIORITY,
-  json: STABLE_MODEL_PRIORITY,
-  search: []
-};
-const DEFAULT_MODEL_DEPRIORITIZE = { registry: ["gemini-3.5-flash"], reasoning: ["gemini-3.5-flash"], final: ["gemini-3.5-flash"], json: ["gemini-3.5-flash"], search: [] };
-const DEFAULT_MODEL_EXCLUDE = ["gemini-3-flash"];
+// FOUNDER-LOCKED MODEL POLICY — DO NOT CHANGE WITHOUT EXPLICIT USER APPROVAL.
+// All non-search pools must use this exact sequence.
+const LOCKED_NON_SEARCH_MODEL_SEQUENCE = ["gemini-3.1-flash-lite", "gemini-3-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash"];
+// Search pool must use this exact sequence.
+const LOCKED_SEARCH_MODEL_SEQUENCE = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
 
 export function getGeminiPoolNames() { return Object.keys(POOL_CONFIG); }
 export function getPoolConfig(poolName) { const config = POOL_CONFIG[poolName]; if (!config) throw new Error(`Unknown Gemini pool: ${poolName}`); return config; }
 
-function modelMatches(model, pattern) {
-  const m = String(model || "").toLowerCase();
-  const p = String(pattern || "").toLowerCase();
-  return Boolean(m && p && (m === p || m.includes(p)));
+function lockedSequenceForPool(poolName) {
+  return poolName === "search" ? LOCKED_SEARCH_MODEL_SEQUENCE : LOCKED_NON_SEARCH_MODEL_SEQUENCE;
 }
 
-function modelRank(model, preferred = [], deprioritized = []) {
-  const preferredIndex = preferred.findIndex((pattern) => modelMatches(model, pattern));
-  if (preferredIndex >= 0) return preferredIndex;
-  const deprioritizedIndex = deprioritized.findIndex((pattern) => modelMatches(model, pattern));
-  if (deprioritizedIndex >= 0) return 1000 + deprioritizedIndex;
-  return 500;
-}
-
-function excludedModels(env = process.env) {
-  return [...DEFAULT_MODEL_EXCLUDE, ...splitCsv(env.GEMINI_MODEL_EXCLUDE || env.GEMINI_MODEL_BLOCKLIST || "")];
-}
-
-function orderedModelsForPool(poolName, rawModels = [], env = process.env) {
-  const config = getPoolConfig(poolName);
-  const preferred = splitCsv(config.priority_env ? env[config.priority_env] : "");
-  const deprioritized = splitCsv(config.deprioritize_env ? env[config.deprioritize_env] : "");
-  const effectivePreferred = preferred.length ? preferred : (DEFAULT_MODEL_PRIORITIES[poolName] || []);
-  const effectiveDeprioritized = deprioritized.length ? deprioritized : (DEFAULT_MODEL_DEPRIORITIZE[poolName] || []);
-  const excludes = excludedModels(env);
-  return [...rawModels]
-    .filter((model) => !excludes.some((pattern) => modelMatches(model, pattern)))
-    .map((model, index) => ({ model, index, rank: modelRank(model, effectivePreferred, effectiveDeprioritized) }))
-    .sort((a, b) => (a.rank - b.rank) || (a.index - b.index))
-    .map((item) => item.model);
+function orderedModelsForPool(poolName, rawModels = []) {
+  const configured = new Set(splitCsv(rawModels.join(",")));
+  const locked = lockedSequenceForPool(poolName);
+  const allowedConfigured = locked.filter((model) => configured.size === 0 || configured.has(model));
+  return allowedConfigured.length ? allowedConfigured : locked;
 }
 
 export function getPoolSnapshot(poolName, env = process.env) {
   const config = getPoolConfig(poolName);
   const keys = splitCsv(env[config.keys_env]);
   const configuredModels = splitCsv(env[config.models_env]);
-  const models = orderedModelsForPool(poolName, configuredModels, env);
-  const excluded = configuredModels.filter((model) => !models.includes(model));
-  return { pool: poolName, configured: keys.length > 0 && models.length > 0, keys_env: config.keys_env, models_env: config.models_env, key_count: keys.length, key_aliases: keys.map((_, index) => `${config.alias_prefix}_${index + 1}`), model_count: models.length, configured_models: configuredModels, excluded_models: excluded, models, model_ordering: configuredModels.join("|") === models.join("|") ? "configured" : "runtime_prioritized", alias_prefix: config.alias_prefix, fallback_pool: config.fallback_pool || null, enable_search_grounding: config.enable_search_grounding === true };
+  const models = orderedModelsForPool(poolName, configuredModels);
+  const blockedConfigured = configuredModels.filter((model) => !lockedSequenceForPool(poolName).includes(model));
+  return { pool: poolName, configured: keys.length > 0 && models.length > 0, keys_env: config.keys_env, models_env: config.models_env, key_count: keys.length, key_aliases: keys.map((_, index) => `${config.alias_prefix}_${index + 1}`), model_count: models.length, configured_models: configuredModels, excluded_models: blockedConfigured, models, model_ordering: "founder_locked", alias_prefix: config.alias_prefix, fallback_pool: config.fallback_pool || null, enable_search_grounding: config.enable_search_grounding === true };
 }
 export function getAllPoolSnapshots(env = process.env) { return Object.fromEntries(getGeminiPoolNames().map((poolName) => [poolName, getPoolSnapshot(poolName, env)])); }
 
@@ -98,9 +72,9 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
   const config = getPoolConfig(poolName);
   const keys = splitCsv(env[config.keys_env]);
   const configuredModels = splitCsv(env[config.models_env]);
-  const models = orderedModelsForPool(poolName, configuredModels, env);
+  const models = orderedModelsForPool(poolName, configuredModels);
   if (!keys.length) return { ok: false, error_type: "POOL_KEYS_NOT_CONFIGURED", error: `${config.keys_env} is empty.`, attempts: [] };
-  if (!models.length) return { ok: false, error_type: "POOL_MODELS_NOT_CONFIGURED", error: `${config.models_env} has no usable models after exclusion/filtering.`, attempts: [] };
+  if (!models.length) return { ok: false, error_type: "POOL_MODELS_NOT_CONFIGURED", error: `${config.models_env} has no usable founder-locked models.`, attempts: [] };
   const attempts = [];
   const timeoutMs = Number(options.timeoutMs || 45000);
   const maxOutputTokens = Number(options.maxOutputTokens || 1024);
@@ -108,7 +82,7 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
   const responseMimeType = options.responseMimeType || "application/json";
   const enableSearchGrounding = options.enableSearchGrounding ?? config.enable_search_grounding;
   const maxAttempts = Number(options.maxAttempts || models.length * keys.length);
-  const model_ordering = configuredModels.join("|") === models.join("|") ? "configured" : "runtime_prioritized";
+  const model_ordering = "founder_locked";
 
   modelLoop: for (const model of models) {
     for (let keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
