@@ -24,6 +24,7 @@ const LEGAL_ADVICE_GUIDANCE_PHRASES = [
   /\billegal\b/i,
   /\bunenforceable\b/i
 ];
+const UNADMITTED_DOCUMENT_NOTE = "Model referenced a legal document URL that was not part of the admitted evidence buffer; document not treated as reviewed evidence.";
 
 function push(errors, instancePath, message, params = {}) {
   errors.push({ keyword: "legal_stack_review_guardrail", instancePath, schemaPath: "#/legalStackReviewGuardrails", message, params });
@@ -47,6 +48,16 @@ function walk(value, errors, warnings, path = "") {
 function nonEmptyString(value) { return typeof value === "string" && value.trim().length > 0; }
 function normalizeUrl(value) { try { const url = new URL(value); url.hash = ""; if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/"; return url.toString(); } catch { return String(value || "").trim(); } }
 function evidenceUrls(evidenceBuffer = []) { const urls = new Set(["N/A", "manual_text"]); for (const record of Array.isArray(evidenceBuffer) ? evidenceBuffer : []) { for (const value of [record?.source_url, record?.final_url, record?.url]) { if (typeof value === "string" && value.trim()) { urls.add(value.trim()); urls.add(normalizeUrl(value)); } } } return urls; }
+function legalDocumentUrlIsAdmitted(documentUrl, admittedUrls) { return admittedUrls.has(documentUrl) || admittedUrls.has(normalizeUrl(documentUrl)); }
+function downgradeUnadmittedLegalDocument(doc, warnings, base) {
+  const emittedUrl = String(doc?.document_url || "").trim();
+  doc.exists = false;
+  doc.document_url = "N/A";
+  doc.evidence_status = "INSUFFICIENT";
+  doc.covers = null;
+  doc.misses = [...new Set([...(Array.isArray(doc.misses) ? doc.misses : []), UNADMITTED_DOCUMENT_NOTE])];
+  warn(warnings, `${base}/document_url`, "legal document URL was not admitted as evidence; downgraded document to insufficient evidence", { document_url: emittedUrl });
+}
 
 export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = [], threatMappingSupplied = false } = {}) {
   const errors = [];
@@ -69,9 +80,12 @@ export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = []
     if (typeof doc.exists !== "boolean") push(errors, `${base}/exists`, "exists must be boolean");
     if (!EVIDENCE_STATUSES.has(doc.evidence_status)) push(errors, `${base}/evidence_status`, `invalid evidence_status: ${doc.evidence_status}`, { evidence_status: doc.evidence_status });
     if (doc.exists === true) {
-      if (!nonEmptyString(doc.document_url)) push(errors, `${base}/document_url`, "existing document_url must be non-empty");
-      if (!admittedUrls.has(doc.document_url) && !admittedUrls.has(normalizeUrl(doc.document_url))) push(errors, `${base}/document_url`, "existing document_url must match admitted evidence_buffer source URL", { document_url: doc.document_url });
-      if (!Array.isArray(doc.covers)) push(errors, `${base}/covers`, "existing document covers must be an array");
+      if (!nonEmptyString(doc.document_url)) {
+        push(errors, `${base}/document_url`, "existing document_url must be non-empty");
+      } else if (!legalDocumentUrlIsAdmitted(doc.document_url, admittedUrls)) {
+        downgradeUnadmittedLegalDocument(doc, warnings, base);
+      }
+      if (doc.exists === true && !Array.isArray(doc.covers)) push(errors, `${base}/covers`, "existing document covers must be an array");
     }
     if (!Array.isArray(doc.misses)) push(errors, `${base}/misses`, "misses must be an array");
     const threats = Array.isArray(doc.linked_threat_ids) ? doc.linked_threat_ids : [];
@@ -83,7 +97,7 @@ export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = []
     const base = `/document_stack_redline/${index}`;
     if (!item || typeof item !== "object" || Array.isArray(item)) { push(errors, base, "document_stack_redline item must be an object"); return; }
     if (!REDLINE_TYPES.has(item.type)) push(errors, `${base}/type`, `invalid redline type: ${item.type}`, { type: item.type });
-    for (const field of ["mismatch_id", "quote", "source", "feature_ref", "claim_type", "contradicts"]) if (!nonEmptyString(item[field])) push(errors, `${base}/${field}`, `${field} must be non-empty`);
+    for (const field of ["mismatch_id", "type", "quote", "source", "feature_ref", "claim_type", "contradicts"]) if (!nonEmptyString(item[field])) push(errors, `${base}/${field}`, `${field} must be non-empty`);
   });
   return { ok: errors.length === 0, errors, warnings };
 }
