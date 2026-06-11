@@ -164,7 +164,14 @@ const stageResult = await postJson(base, "/v1/diligence/stage", {
 
 if (!stageResult.ok) fail("Company Profile stage failed", stageResult);
 const profile = stageResult.company_profile;
-if (profile.company_profile_version !== "company_profile_v1") fail("Bad company profile version", { company_profile_version: profile.company_profile_version });
+if (!profile || typeof profile !== "object") fail("Company Profile stage returned no profile object", stageResult);
+if (profile.target_profile_version !== "target_profile_v2") {
+  fail("Bad target profile version", {
+    target_profile_version: profile.target_profile_version || null,
+    legacy_company_profile_version: profile.company_profile_version || null,
+    top_level_keys: Object.keys(profile || {})
+  });
+}
 
 writeJson(cachePath, {
   cache_version: "stage4_company_profile_e2e_cache_v1",
@@ -173,7 +180,8 @@ writeJson(cachePath, {
   source_bundle: sourceBundle,
   evidence_junction: junction,
   company_profile_stage_result: stageResult,
-  company_profile: profile
+  company_profile: profile,
+  target_profile_v2: profile
 });
 
 console.log(JSON.stringify({
@@ -182,14 +190,22 @@ console.log(JSON.stringify({
   gemini_execution: "remote_runtime",
   source_bundle_version: sourceBundle.source_bundle_version,
   evidence_junction_version: junction.evidence_junction_version,
-  company_profile_version: profile.company_profile_version,
+  target_profile_version: profile.target_profile_version,
   company_sources: companySources.length,
-  brand_name: profile.company_identity?.brand_name || null,
-  company_type: profile.business_model?.company_type || null,
+  brand_name: profile.identity?.brand_name || null,
+  legal_name: profile.identity?.legal_name || null,
+  entity_type: profile.identity?.entity_type || null,
+  entity_type_family: profile.identity?.entity_type_family || null,
+  registered_or_notice_country: profile.jurisdiction?.registered_or_notice_country || null,
+  registered_or_notice_state: profile.jurisdiction?.registered_or_notice_state || null,
+  market_type_candidate: profile.business_model?.market_type_candidate || null,
   industry: profile.market_context?.industry || null,
-  high_level_offering: profile.operating_profile?.high_level_offering || null,
-  primary_company_sources: profile.evidence?.primary_company_sources?.length || 0,
-  supporting_company_sources: profile.evidence?.supporting_company_sources?.length || 0,
+  high_level_offering: profile.product_baseline?.high_level_offering || null,
+  product_count: Array.isArray(profile.product_baseline?.products) ? profile.product_baseline.products.length : 0,
+  data_touchpoint_count: Array.isArray(profile.data_touchpoint_map) ? profile.data_touchpoint_map.length : 0,
+  vault_baseline_candidate_keys: Object.keys(profile.vault_baseline_candidates || {}),
+  field_evidence_refs: profile.evidence?.field_evidence_refs?.length || 0,
+  unresolved_questions: profile.evidence?.unresolved_questions?.length || 0,
   limitations: profile.limitations || [],
   validation_mode: stageResult.validation_mode,
   cache_path: cachePath,
