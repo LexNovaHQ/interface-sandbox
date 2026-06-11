@@ -120,7 +120,13 @@ The `target_feature_profile` object must contain exactly these top-level fields:
 }
 ```
 
-`product_feature_map[]` is a temporary compatibility alias for downstream code that still expects the old key. It must mirror `feature_inventory[]` by `feature_id`. The canonical term is `feature_inventory[]`.
+## Critical compatibility rule
+
+`feature_inventory[]` is the **only canonical feature map**.
+
+`product_feature_map[]` is a legacy compatibility field. In this stage, set it to an empty array `[]`. Do not hand-author a second copy of the features there. Downstream code will generate any required legacy alias deterministically from `feature_inventory[]`.
+
+`data_provenance_map[]` is a flattened support view. Canonical data provenance lives inside each `feature_inventory[].data_provenance[]`. If you cannot flatten it exactly, set `data_provenance_map` to `[]`. Do not allow this support array to distract from the canonical feature-level provenance.
 
 Do not output the old body:
 
@@ -275,7 +281,7 @@ Rules:
 
 # 8. Feature Inventory Shape
 
-Each final feature must use this shape:
+Each final feature must use this exact shape:
 
 ```json
 {
@@ -289,13 +295,13 @@ Each final feature must use this shape:
   "input_data": [],
   "system_action": "",
   "output_or_result": "",
-  "autonomy_level": "none | draft | recommend | execute | unknown",
-  "human_review_signal": "required | optional | not_visible | unknown",
-  "external_action_signal": "true | false | unknown",
+  "autonomy_level": "none",
+  "human_review_signal": "not_visible",
+  "external_action_signal": "false",
   "delivery_channels": {
-    "app": "true | false | unknown",
-    "api": "true | false | unknown",
-    "web": "true | false | unknown"
+    "app": "unknown",
+    "api": "unknown",
+    "web": "unknown"
   },
   "data_provenance": [],
   "archetype_codes": [],
@@ -303,12 +309,23 @@ Each final feature must use this shape:
   "archetype_provenance": [],
   "surface_tokens": [],
   "surface_provenance": [],
-  "confidence": "high | medium | low | unknown",
+  "confidence": "high",
   "evidence_quote": "",
   "feature_source_url": "",
   "evidence_refs": [],
   "linked_threat_ids": []
 }
+```
+
+Allowed enum values:
+
+```text
+feature_role: CORE | SECONDARY
+autonomy_level: none | draft | recommend | execute | unknown
+human_review_signal: required | optional | not_visible | unknown
+external_action_signal: true | false | unknown
+delivery_channels.*: true | false | unknown
+confidence: high | medium | low | unknown
 ```
 
 `linked_threat_ids[]` must remain empty in Stage 5 unless the runtime explicitly supplies threat mapping context. Registry row linking belongs downstream.
@@ -336,21 +353,30 @@ Each item in `feature_inventory[].data_provenance[]` must use:
 
 ```json
 {
-  "data_origin": "user_provided | customer_provided | third_party_source | public_web | system_generated | unknown",
-  "data_subject": "user | customer | employee | consumer | developer | child | business_entity | unknown",
-  "data_category": "prompt | account | contact | uploaded_file | generated_output | audio | payment | usage_log | support | sensitive | unknown",
+  "data_origin": "customer_provided",
+  "data_subject": "developer",
+  "data_category": "audio",
   "processing_context": "",
-  "storage_or_retention_signal": "",
-  "training_or_finetuning_signal": "",
+  "storage_or_retention_signal": "not visible in admitted evidence",
+  "training_or_finetuning_signal": "not visible in admitted evidence",
   "source_url": "",
   "evidence_quote": "",
-  "confidence": "high | medium | low | unknown"
+  "confidence": "high"
 }
 ```
 
-Also flatten the same provenance into `data_provenance_map[]` with `provenance_id` and `feature_id`.
+Allowed enum values:
+
+```text
+data_origin: user_provided | customer_provided | third_party_source | public_web | system_generated | unknown
+data_subject: user | customer | employee | consumer | developer | child | business_entity | unknown
+data_category: prompt | account | contact | uploaded_file | generated_output | audio | payment | usage_log | support | sensitive | unknown
+confidence: high | medium | low | unknown
+```
 
 If evidence does not show storage, retention, training, or fine-tuning, say `not visible in admitted evidence`; do not infer.
+
+Set top-level `data_provenance_map` to `[]` unless you can flatten the exact same entries with `provenance_id` and `feature_id` without changing the schema of the feature-level provenance.
 
 ---
 
@@ -381,7 +407,7 @@ Every `archetype_codes[]` entry must have a matching `archetype_provenance[]` ob
   "matched_feature_behavior": "",
   "evidence_quote": "",
   "source_url": "",
-  "confidence": "high | medium | low | unknown"
+  "confidence": "high"
 }
 ```
 
@@ -395,7 +421,7 @@ Guardrails:
 DOE: autonomous actions on a user's behalf without per-action approval. API availability alone is not DOE.
 JDG: consequential decision/score/ranking about a human that gates access to employment, healthcare, credit, housing, education, legal services, or similar outcomes. Generic analytics is not JDG.
 CMP: ongoing emotional/relational companion function. Chat UI alone is not CMP.
-CRT: generates new text, code, media, synthetic content, or other copyrightable output. Hosting models alone is not CRT.
+CRT: generates new text, code, media, synthetic content, or other output. Hosting models alone is not CRT.
 RDR: ingests third-party/external/public/customer-provided source material as functional input. Do not use RDR merely because the model reads the user's prompt.
 ORC: dynamic routing across multiple models, agents, subprocessors, or tools. One model API is not ORC.
 TRN: audio/voice/biometric signal processing. Raw audio alone is not biometric unless identity, speaker separation, voiceprint, faceprint, or sensitive inference is visible.
@@ -433,7 +459,7 @@ Every `surface_tokens[]` entry must have a matching `surface_provenance[]` objec
   "matched_data_or_context": "",
   "evidence_quote": "",
   "source_url": "",
-  "confidence": "high | medium | low | unknown"
+  "confidence": "high"
 }
 ```
 
@@ -457,7 +483,7 @@ Forbidden surface inflation:
 
 # 12. Regulated Surface Map
 
-Populate `regulated_surface_map[]` from the feature-level surface analysis.
+Populate `regulated_surface_map[]` from the feature-level surface analysis only when you can produce the full required object.
 
 Shape:
 
@@ -466,11 +492,18 @@ Shape:
   "surface_id": "RS001",
   "feature_id": "F001",
   "surface_token": "",
-  "int_ext_classification": "internal | external | both | unknown",
+  "int_ext_classification": "internal",
   "basis": "",
-  "confidence": "high | medium | low | unknown",
+  "confidence": "high",
   "evidence_refs": []
 }
+```
+
+Allowed enum values:
+
+```text
+int_ext_classification: internal | external | both | unknown
+confidence: high | medium | low | unknown
 ```
 
 Stage 5 may classify whether a surface is internal, external, both, or unknown as a feature-level evidence fact.
@@ -489,13 +522,21 @@ Shape:
 {
   "hint_id": "AH001",
   "feature_id": "F001",
-  "hint_type": "memory | model_provider | cloud_host | vector_db | subprocessor | integration | unknown",
+  "hint_type": "integration",
   "hint_value": "",
-  "disposition": "prefill_candidate | confirmation_only | ignore",
+  "disposition": "confirmation_only",
   "source_url": "",
   "evidence_quote": "",
-  "confidence": "high | medium | low | unknown"
+  "confidence": "high"
 }
+```
+
+Allowed enum values:
+
+```text
+hint_type: memory | model_provider | cloud_host | vector_db | subprocessor | integration | unknown
+disposition: prefill_candidate | confirmation_only | ignore
+confidence: high | medium | low | unknown
 ```
 
 Stage 5 must not directly emit Vault architecture fields.
@@ -553,6 +594,19 @@ Populate:
 ```
 
 Use `field_evidence_refs[]` for material feature fields, archetype decisions, surface decisions, data provenance decisions, and architecture hints.
+
+Recommended `field_evidence_refs[]` shape:
+
+```json
+{
+  "field_path": "feature_inventory[0].feature_description",
+  "evidence_refs": ["SRC_001"],
+  "basis": "",
+  "confidence": "high"
+}
+```
+
+If you instead use compact evidence objects with `evidence_source_id`, `source_url`, `claim_supported`, or `evidence_quote`, keep them factual and source-bounded.
 
 Use `unresolved_questions[]` for material feature questions that the public footprint does not answer.
 
