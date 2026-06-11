@@ -1,17 +1,6 @@
 name: Runtime API Deploy
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'runtime-api/**'
-      - 'functions/_prompts/**'
-      - 'functions/_schemas/**'
-      - 'data/schemas/**'
-      - 'docs/contracts/**'
-      - 'scripts/generate-diligence-*.mjs'
-      - 'scripts/audit-runtime-bundles.mjs'
-      - '.github/workflows/runtime-api-deploy.yml'
   workflow_dispatch:
     inputs:
       mode:
