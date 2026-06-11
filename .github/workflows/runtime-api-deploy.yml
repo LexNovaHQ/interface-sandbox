@@ -142,7 +142,8 @@ jobs:
         run: npm run smoke:runtime
 
       - name: Print deployed runtime URL
-        run: echo "Deployed runtime URL: ${{ steps.runtime.outputs.url }}"
+        run: |
+          echo "Deployed runtime URL: ${{ steps.runtime.outputs.url }}"
 
   stage4-stage5-audit:
     name: Stage 4 + Stage 5 runtime audit
