@@ -209,6 +209,9 @@ jobs:
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "14000"
+          STAGE5_FEATURE_TIMEOUT_MS: "120000"
+          GEMINI_MODEL_EXCLUDE: "gemini-3-flash"
         run: npm run e2e:stage5:features
 
       - name: Verify Stage 4/5 audit exports
