@@ -61,7 +61,68 @@ export function buildTargetFeatureProfileInput({ sourceBundle = {}, evidenceJunc
   if (excluded.length) limitations.push("Some admitted target-feature sources were excluded because hard budget enforcement was explicitly enabled. They remain preserved in the Stage 3 evidence archive.");
   if (budgetWarnings.length && !hardMode) limitations.push("Stage 5 source budget was exceeded in guidance mode; all non-empty target-feature sources were still included to prevent silent under-reading.");
   if (hardFailure) limitations.push("No non-empty target-feature source could fit inside the configured Stage 5 input budget without truncation.");
-  const adapterOutput = { target_feature_profile_input_version: "target_feature_profile_input_v1", run_id: runId || `target_feature_profile_input_${Date.now()}`, generated_at: generatedAt, source_bundle: { run_id: sourceBundle.run_id || null, source_mode: sourceBundle.source_mode || "runtime_discovery_capture", target_input: sourceBundle.target_input || evidenceJunction.target_input || {}, source_review: { source_bundle_version: sourceBundle.source_bundle_version || null, evidence_junction_version: evidenceJunction.evidence_junction_version || null, source_bundle_sha256: evidenceJunction.source_bundle_sha256 || sourceBundle?.scrape_meta?.hashes?.raw_footprint_sha256 || null, packet_id: packet?.packet_id || null, downstream_stage: PRODUCT_STAGE_KEY, packet_source_count: packetRecords.length, included_source_count: included.length, excluded_source_count: excluded.length, packet_policy: packet?.packet_policy || {}, dedupe_groups: packet?.dedupe_groups || [], routed_evidence: packet?.routed_evidence || [] }, artifact_inventory: included.map(artifactFromRecord), evidence_buffer: included.map(evidenceFromRecord), limitations: [...(Array.isArray(sourceBundle?.source_discovery?.coverage_gaps) ? sourceBundle.source_discovery.coverage_gaps.map((gap) => typeof gap === "string" ? gap : JSON.stringify(gap)) : []), ...limitations] }, company_profile_v1: companyProfile || null, input_budget: { budget_status: hardFailure ? "TOKEN_BUDGET_EXCEEDED" : (excluded.length ? "PARTIAL_SOURCE_SELECTION" : (budgetWarnings.length ? "GUIDANCE_EXCEEDED_FULL_PACKET_INCLUDED" : "FULL_PACKET_INCLUDED")), enforcement_mode: hardMode ? "hard" : "guidance", max_input_chars: maxInputChars, max_estimated_tokens: maxEstimatedTokens, max_single_source_chars: maxSingleSourceChars, prompt_overhead_tokens: promptOverheadTokens, source_token_estimation_ratio_chars_per_token: ESTIMATED_CHARS_PER_TOKEN, estimated_input_chars: usedChars, estimated_source_tokens: estimatedSourceTokens, estimated_prompt_overhead_tokens: promptOverheadTokens, estimated_total_prompt_tokens: estimatedTotalPromptTokens, estimated_input_tokens: estimatedTotalPromptTokens, total_packet_sources: packetRecords.length, included_sources: included.map(artifactFromRecord), excluded_sources: excluded, budget_warnings: budgetWarnings, fail_loud_if_no_source_fits: hardMode, text_truncated: false, text_summarized: false, text_compressed: false }, adapter_policy: { prompt_compatibility_mode: "legacy_source_bundle_fields", full_stage_3_archive_preserved_upstream: true, model_input_uses_source_level_selection_only: true, budget_guidance_not_hard_cap_by_default: true, no_text_truncation: true, no_text_summary: true, no_text_compression: true, company_profile_context_only: true, final_features_require_evidence_buffer_quote: true } };
+  const adapterOutput = {
+    target_feature_profile_input_version: "target_feature_profile_input_v2",
+    run_id: runId || `target_feature_profile_input_${Date.now()}`,
+    generated_at: generatedAt,
+    source_bundle: {
+      run_id: sourceBundle.run_id || null,
+      source_mode: sourceBundle.source_mode || "runtime_discovery_capture",
+      target_input: sourceBundle.target_input || evidenceJunction.target_input || {},
+      source_review: {
+        source_bundle_version: sourceBundle.source_bundle_version || null,
+        evidence_junction_version: evidenceJunction.evidence_junction_version || null,
+        source_bundle_sha256: evidenceJunction.source_bundle_sha256 || sourceBundle?.scrape_meta?.hashes?.raw_footprint_sha256 || null,
+        packet_id: packet?.packet_id || null,
+        downstream_stage: PRODUCT_STAGE_KEY,
+        packet_source_count: packetRecords.length,
+        included_source_count: included.length,
+        excluded_source_count: excluded.length,
+        packet_policy: packet?.packet_policy || {},
+        dedupe_groups: packet?.dedupe_groups || [],
+        routed_evidence: packet?.routed_evidence || []
+      },
+      artifact_inventory: included.map(artifactFromRecord),
+      evidence_buffer: included.map(evidenceFromRecord),
+      limitations: [...(Array.isArray(sourceBundle?.source_discovery?.coverage_gaps) ? sourceBundle.source_discovery.coverage_gaps.map((gap) => typeof gap === "string" ? gap : JSON.stringify(gap)) : []), ...limitations]
+    },
+    target_profile_v2: companyProfile || null,
+    input_budget: {
+      budget_status: hardFailure ? "TOKEN_BUDGET_EXCEEDED" : (excluded.length ? "PARTIAL_SOURCE_SELECTION" : (budgetWarnings.length ? "GUIDANCE_EXCEEDED_FULL_PACKET_INCLUDED" : "FULL_PACKET_INCLUDED")),
+      enforcement_mode: hardMode ? "hard" : "guidance",
+      max_input_chars: maxInputChars,
+      max_estimated_tokens: maxEstimatedTokens,
+      max_single_source_chars: maxSingleSourceChars,
+      prompt_overhead_tokens: promptOverheadTokens,
+      source_token_estimation_ratio_chars_per_token: ESTIMATED_CHARS_PER_TOKEN,
+      estimated_input_chars: usedChars,
+      estimated_source_tokens: estimatedSourceTokens,
+      estimated_prompt_overhead_tokens: promptOverheadTokens,
+      estimated_total_prompt_tokens: estimatedTotalPromptTokens,
+      estimated_input_tokens: estimatedTotalPromptTokens,
+      total_packet_sources: packetRecords.length,
+      included_sources: included.map(artifactFromRecord),
+      excluded_sources: excluded,
+      budget_warnings: budgetWarnings,
+      fail_loud_if_no_source_fits: hardMode,
+      text_truncated: false,
+      text_summarized: false,
+      text_compressed: false
+    },
+    adapter_policy: {
+      prompt_compatibility_mode: "target_profile_v2_context",
+      full_stage_3_archive_preserved_upstream: true,
+      model_input_uses_source_level_selection_only: true,
+      budget_guidance_not_hard_cap_by_default: true,
+      no_text_truncation: true,
+      no_text_summary: true,
+      no_text_compression: true,
+      target_profile_context_only: true,
+      stage_5_cannot_rewrite_stage_4_identity: true,
+      final_features_require_evidence_buffer_quote: true,
+      feature_inventory_is_atomic_unit: true
+    }
+  };
   if (hardFailure) return { ok: false, status: 413, error_type: "TOKEN_BUDGET_EXCEEDED", error: "No target-feature source could fit inside the configured Stage 5 input budget without truncation.", input_budget: adapterOutput.input_budget, target_feature_profile_input: adapterOutput };
   return { ok: true, status: 200, target_feature_profile_input: adapterOutput };
 }
