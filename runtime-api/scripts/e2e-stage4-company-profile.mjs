@@ -87,12 +87,12 @@ function collectBucket(discovery, bucket) {
 }
 
 function collectSources(discovery) {
-  const limit = Number(process.env.STAGE4_CAPTURE_LIMIT || process.env.STAGE3_CAPTURE_LIMIT || 16);
+  const limit = Number(process.env.STAGE4_CAPTURE_LIMIT || process.env.STAGE3_CAPTURE_LIMIT || 8);
   const quotas = [
-    ["company_profile_sources", Number(process.env.STAGE4_COMPANY_CAPTURE_LIMIT || 4)],
-    ["legal_profile_sources", Number(process.env.STAGE4_LEGAL_CAPTURE_LIMIT || 3)],
-    ["governance_profile_sources", Number(process.env.STAGE4_GOVERNANCE_CAPTURE_LIMIT || 3)],
-    ["product_profile_sources", Number(process.env.STAGE4_PRODUCT_CAPTURE_LIMIT || 8)]
+    ["company_profile_sources", Number(process.env.STAGE4_COMPANY_CAPTURE_LIMIT || 3)],
+    ["legal_profile_sources", Number(process.env.STAGE4_LEGAL_CAPTURE_LIMIT || 2)],
+    ["governance_profile_sources", Number(process.env.STAGE4_GOVERNANCE_CAPTURE_LIMIT || 1)],
+    ["product_profile_sources", Number(process.env.STAGE4_PRODUCT_CAPTURE_LIMIT || 2)]
   ];
   const pools = Object.fromEntries(BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
   const selected = [];
@@ -177,8 +177,8 @@ const stageResult = await postJson(base, "/v1/diligence/stage", {
   input: stageInput,
   options: {
     pool: process.env.STAGE4_COMPANY_POOL || process.env.STAGE4_POOL || "reasoning",
-    maxOutputTokens: Number(process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 4096),
-    timeoutMs: Number(process.env.STAGE4_COMPANY_TIMEOUT_MS || 60000)
+    maxOutputTokens: Number(process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 12000),
+    timeoutMs: Number(process.env.STAGE4_COMPANY_TIMEOUT_MS || 90000)
   }
 });
 
