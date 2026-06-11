@@ -90,22 +90,8 @@ const valid = {
     domain: "example.ai"
   },
   feature_inventory: [feature],
-  product_feature_map: [structuredClone(feature)],
-  data_provenance_map: [
-    {
-      provenance_id: "DP001",
-      feature_id: "F001",
-      data_origin: "customer_provided",
-      data_subject: "user",
-      data_category: "audio",
-      processing_context: "Developers submit uploaded audio for transcription.",
-      storage_or_retention_signal: "not visible in admitted evidence",
-      training_or_finetuning_signal: "not visible in admitted evidence",
-      source_url: "https://example.ai/products/speech",
-      evidence_quote: "Speech-to-text API converts uploaded audio into text.",
-      confidence: "high"
-    }
-  ],
+  product_feature_map: [],
+  data_provenance_map: [],
   regulated_surface_map: [
     {
       surface_id: "RS001",
@@ -145,23 +131,26 @@ const valid = {
 const validResult = validateTargetFeatureProfileGuardrails(valid, { evidenceBuffer });
 assert.equal(validResult.ok, true, JSON.stringify(validResult.errors, null, 2));
 
+const legacyAliasIsNonBlocking = structuredClone(valid);
+legacyAliasIsNonBlocking.product_feature_map = [{ feature_id: "legacy_1", name: "legacy shape" }];
+legacyAliasIsNonBlocking.data_provenance_map = [{ feature_id: "F001", compact_note: "legacy support map" }];
+const aliasResult = validateTargetFeatureProfileGuardrails(legacyAliasIsNonBlocking, { evidenceBuffer });
+assert.equal(aliasResult.ok, true, JSON.stringify(aliasResult.errors, null, 2));
+
 const missingQuote = structuredClone(valid);
 missingQuote.feature_inventory[0].evidence_quote = "This fabricated quote is not in the admitted source.";
-missingQuote.product_feature_map[0].evidence_quote = "This fabricated quote is not in the admitted source.";
 const missingQuoteResult = validateTargetFeatureProfileGuardrails(missingQuote, { evidenceBuffer });
 assert.equal(missingQuoteResult.ok, false);
 assert.ok(missingQuoteResult.errors.some((error) => String(error.message).includes("evidence_quote must appear")));
 
 const missingSource = structuredClone(valid);
 missingSource.feature_inventory[0].feature_source_url = "https://example.ai/products/unknown";
-missingSource.product_feature_map[0].feature_source_url = "https://example.ai/products/unknown";
 const missingSourceResult = validateTargetFeatureProfileGuardrails(missingSource, { evidenceBuffer });
 assert.equal(missingSourceResult.ok, false);
 assert.ok(missingSourceResult.errors.some((error) => String(error.message).includes("feature_source_url must match")));
 
 const missingArchetypeProvenance = structuredClone(valid);
 missingArchetypeProvenance.feature_inventory[0].archetype_provenance = missingArchetypeProvenance.feature_inventory[0].archetype_provenance.filter((entry) => entry.archetype_code !== "TRN");
-missingArchetypeProvenance.product_feature_map[0].archetype_provenance = structuredClone(missingArchetypeProvenance.feature_inventory[0].archetype_provenance);
 const missingArchetypeResult = validateTargetFeatureProfileGuardrails(missingArchetypeProvenance, { evidenceBuffer });
 assert.equal(missingArchetypeResult.ok, false);
 assert.ok(missingArchetypeResult.errors.some((error) => String(error.message).includes("missing archetype provenance")));
@@ -172,7 +161,6 @@ invalid.feature_inventory[0].archetype_labels = ["Trainer"];
 invalid.feature_inventory[0].surface_tokens = ["Compliance"];
 invalid.feature_inventory[0].evidence_quote = "";
 invalid.feature_inventory[0].linked_threat_ids = ["AI-001"];
-invalid.product_feature_map[0].feature_id = "WRONG";
 invalid.legal_stack_review = {};
 
 const invalidResult = validateTargetFeatureProfileGuardrails(invalid, { evidenceBuffer });
@@ -182,12 +170,12 @@ assert.ok(invalidResult.errors.some((error) => String(error.message).includes("i
 assert.ok(invalidResult.errors.some((error) => String(error.message).includes("evidence_quote")));
 assert.ok(invalidResult.errors.some((error) => String(error.message).includes("linked_threat_ids")));
 assert.ok(invalidResult.errors.some((error) => String(error.message).includes("forbidden key")));
-assert.ok(invalidResult.errors.some((error) => String(error.message).includes("compatibility alias")));
 
 console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
   valid_ok: validResult.ok,
+  alias_nonblocking_ok: aliasResult.ok,
   missing_quote_error_count: missingQuoteResult.errors.length,
   missing_source_error_count: missingSourceResult.errors.length,
   missing_archetype_error_count: missingArchetypeResult.errors.length,
