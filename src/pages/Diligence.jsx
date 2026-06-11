@@ -1,9 +1,9 @@
 import DiligenceLiveConsole from "../diligence-live/DiligenceLiveConsole.jsx";
 
-export default function Diligence() {
+export default function Diligence({ onNavigate }) {
   return (
     <div className="page-stack">
-      <DiligenceLiveConsole />
+      <DiligenceLiveConsole onNavigate={onNavigate} />
     </div>
   );
 }
