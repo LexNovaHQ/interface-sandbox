@@ -14,10 +14,18 @@ const POOL_CONFIG = {
 };
 
 // FOUNDER-LOCKED MODEL POLICY — DO NOT CHANGE WITHOUT EXPLICIT USER APPROVAL.
-// All non-search pools must use this exact sequence.
-const LOCKED_NON_SEARCH_MODEL_SEQUENCE = ["gemini-3.1-flash-lite", "gemini-3-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash"];
-// Search pool must use this exact sequence.
-const LOCKED_SEARCH_MODEL_SEQUENCE = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash", "gemini-3.1-flash-lite"];
+// All non-search pools must use this exact priority sequence:
+// 1. Gemini 3.1 Flash Lite
+// 2. Gemini 2.5 Flash Lite
+// 3. Gemini 2.5 Flash
+// 4. Gemini 3 Flash
+const LOCKED_NON_SEARCH_MODEL_SEQUENCE = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash"];
+// Search pool must use this exact priority sequence:
+// 1. Gemini 2.5 Flash Lite
+// 2. Gemini 2.5 Flash
+// 3. Gemini 3.1 Flash Lite
+// 4. Gemini 3 Flash
+const LOCKED_SEARCH_MODEL_SEQUENCE = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-3-flash"];
 
 export function getGeminiPoolNames() { return Object.keys(POOL_CONFIG); }
 export function getPoolConfig(poolName) { const config = POOL_CONFIG[poolName]; if (!config) throw new Error(`Unknown Gemini pool: ${poolName}`); return config; }
