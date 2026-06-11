@@ -170,17 +170,22 @@
       }
     },
     "dataProvenanceMapEntry": {
-      "allOf": [
-        { "$ref": "#/$defs/dataProvenance" },
-        {
-          "type": "object",
-          "required": ["provenance_id", "feature_id"],
-          "properties": {
-            "provenance_id": { "type": "string" },
-            "feature_id": { "type": "string" }
-          }
-        }
-      ]
+      "type": "object",
+      "required": ["provenance_id", "feature_id", "data_origin", "data_subject", "data_category", "processing_context", "storage_or_retention_signal", "training_or_finetuning_signal", "source_url", "evidence_quote", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "provenance_id": { "type": "string" },
+        "feature_id": { "type": "string" },
+        "data_origin": { "type": "string", "enum": ["user_provided", "customer_provided", "third_party_source", "public_web", "system_generated", "unknown"] },
+        "data_subject": { "type": "string", "enum": ["user", "customer", "employee", "consumer", "developer", "child", "business_entity", "unknown"] },
+        "data_category": { "type": "string", "enum": ["prompt", "account", "contact", "uploaded_file", "generated_output", "audio", "payment", "usage_log", "support", "sensitive", "unknown"] },
+        "processing_context": { "type": "string" },
+        "storage_or_retention_signal": { "type": "string" },
+        "training_or_finetuning_signal": { "type": "string" },
+        "source_url": { "type": "string" },
+        "evidence_quote": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
     },
     "archetypeProvenance": {
       "type": "object",
