@@ -195,6 +195,13 @@ jobs:
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE4_CAPTURE_LIMIT: "8"
+          STAGE4_COMPANY_CAPTURE_LIMIT: "3"
+          STAGE4_LEGAL_CAPTURE_LIMIT: "2"
+          STAGE4_GOVERNANCE_CAPTURE_LIMIT: "1"
+          STAGE4_PRODUCT_CAPTURE_LIMIT: "2"
+          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "12000"
+          STAGE4_COMPANY_TIMEOUT_MS: "90000"
         run: npm run e2e:stage4:company
 
       - name: Run Stage 5 Target Feature Profile E2E
