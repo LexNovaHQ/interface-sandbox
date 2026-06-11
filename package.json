@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run build:runtime && vite build",
-    "build:runtime": "npm run build:prompts && npm run build:schemas && npm run build:validators && npm run audit:runtime-bundles",
+    "build:runtime": "npm run build:prompts && npm run build:schemas && npm run build:validators && npm run audit:runtime-bundles && npm run package:runtime-registry",
     "build:prompts": "node scripts/generate-diligence-prompt-bundle.mjs",
     "build:schemas": "node scripts/generate-diligence-schema-bundle.mjs",
     "build:validators": "node scripts/generate-diligence-validator-bundle.mjs",
     "audit:runtime-bundles": "node scripts/audit-runtime-bundles.mjs",
+    "package:runtime-registry": "node scripts/package-runtime-registry.mjs",
     "preview": "vite preview",
     "validate:schemas": "node scripts/validate-schemas-smoke.mjs",
     "test:e2e:dry-run": "node scripts/diligence-e2e-dry-run.mjs"
