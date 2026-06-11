@@ -37,7 +37,7 @@ function healthPayload() {
   return {
     ok: envStatus.required_missing.length === 0,
     service: "lexnova-runtime-api",
-    version: "0.5.0",
+    version: "0.5.1",
     phase: "phase_5_live_diligence_review",
     runtime: {
       node_env: currentRuntime.node_env,
@@ -48,8 +48,9 @@ function healthPayload() {
     pools: currentRuntime.pools,
     env_status: envStatus,
     architecture: {
-      cloudflare_role: "static_react_host_and_secret_proxy",
-      runtime_role: "cloud_run_intelligence_runtime",
+      cloudflare_role: "static_react_host_only_for_live_review",
+      runtime_role: "cloud_run_intelligence_runtime_and_live_execution_backend",
+      live_transport: "direct_cloud_run_request_from_sandbox_origin",
       artificial_evidence_limits: false,
       automatic_batch_continuation_required: true,
       live_diligence_review_enabled: true
@@ -70,6 +71,7 @@ app.use("/v1/pool", requireToken, createPoolRouter());
 app.use("/v1/source-discovery", requireToken, createSourceDiscoveryRouter());
 app.use("/v1/source-capture", requireToken, createSourceCaptureRouter());
 app.use("/v1/diligence/stage", requireToken, createDiligenceStageRouter());
+app.use("/v1/diligence/public-live-run", createLiveDiligenceRouter());
 app.use("/v1/diligence/live-run", requireToken, createLiveDiligenceRouter());
 
 app.use((req, res) => {
