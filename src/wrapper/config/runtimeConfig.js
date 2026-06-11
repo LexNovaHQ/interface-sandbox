@@ -9,14 +9,14 @@ function readBooleanEnv(value, fallback) {
 
 export const APP_NAME = "The Interface";
 export const APP_SUBTITLE =
-  "Law \u00d7 Technology \u00b7 AI Governance \u00b7 Privacy \u00b7 Systems";
+  "Law × Technology · AI Governance · Privacy · Systems";
 export const GLOBAL_DISCLAIMER =
   "Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information. Outputs are demo artifacts requiring qualified legal review before use.";
 
 export const APP_MODE = viteEnv.VITE_INTERFACE_APP_MODE || "sandbox";
 export const DEMO_MODE = readBooleanEnv(viteEnv.VITE_INTERFACE_DEMO_MODE, true);
 export const RUNTIME_VERSION =
-  viteEnv.VITE_INTERFACE_RUNTIME_VERSION || "wrapper-batch-1";
+  viteEnv.VITE_INTERFACE_RUNTIME_VERSION || "diligence-live-review-v1";
 
 export const WRAPPER_NAME = "Interface Wrapper";
 export const OPERATIONAL_UNITS = Object.freeze([
