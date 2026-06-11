@@ -22,6 +22,7 @@ const DEFAULT_MODEL_PRIORITIES = {
   search: []
 };
 const DEFAULT_MODEL_DEPRIORITIZE = { registry: ["gemini-3.5-flash"], reasoning: ["gemini-3.5-flash"], final: ["gemini-3.5-flash"], json: ["gemini-3.5-flash"], search: [] };
+const DEFAULT_MODEL_EXCLUDE = ["gemini-3-flash"];
 
 export function getGeminiPoolNames() { return Object.keys(POOL_CONFIG); }
 export function getPoolConfig(poolName) { const config = POOL_CONFIG[poolName]; if (!config) throw new Error(`Unknown Gemini pool: ${poolName}`); return config; }
@@ -40,13 +41,22 @@ function modelRank(model, preferred = [], deprioritized = []) {
   return 500;
 }
 
+function excludedModels(env = process.env) {
+  return [...DEFAULT_MODEL_EXCLUDE, ...splitCsv(env.GEMINI_MODEL_EXCLUDE || env.GEMINI_MODEL_BLOCKLIST || "")];
+}
+
 function orderedModelsForPool(poolName, rawModels = [], env = process.env) {
   const config = getPoolConfig(poolName);
   const preferred = splitCsv(config.priority_env ? env[config.priority_env] : "");
   const deprioritized = splitCsv(config.deprioritize_env ? env[config.deprioritize_env] : "");
   const effectivePreferred = preferred.length ? preferred : (DEFAULT_MODEL_PRIORITIES[poolName] || []);
   const effectiveDeprioritized = deprioritized.length ? deprioritized : (DEFAULT_MODEL_DEPRIORITIZE[poolName] || []);
-  return [...rawModels].map((model, index) => ({ model, index, rank: modelRank(model, effectivePreferred, effectiveDeprioritized) })).sort((a, b) => (a.rank - b.rank) || (a.index - b.index)).map((item) => item.model);
+  const excludes = excludedModels(env);
+  return [...rawModels]
+    .filter((model) => !excludes.some((pattern) => modelMatches(model, pattern)))
+    .map((model, index) => ({ model, index, rank: modelRank(model, effectivePreferred, effectiveDeprioritized) }))
+    .sort((a, b) => (a.rank - b.rank) || (a.index - b.index))
+    .map((item) => item.model);
 }
 
 export function getPoolSnapshot(poolName, env = process.env) {
@@ -54,7 +64,8 @@ export function getPoolSnapshot(poolName, env = process.env) {
   const keys = splitCsv(env[config.keys_env]);
   const configuredModels = splitCsv(env[config.models_env]);
   const models = orderedModelsForPool(poolName, configuredModels, env);
-  return { pool: poolName, configured: keys.length > 0 && models.length > 0, keys_env: config.keys_env, models_env: config.models_env, key_count: keys.length, key_aliases: keys.map((_, index) => `${config.alias_prefix}_${index + 1}`), model_count: models.length, configured_models: configuredModels, models, model_ordering: configuredModels.join("|") === models.join("|") ? "configured" : "runtime_prioritized", alias_prefix: config.alias_prefix, fallback_pool: config.fallback_pool || null, enable_search_grounding: config.enable_search_grounding === true };
+  const excluded = configuredModels.filter((model) => !models.includes(model));
+  return { pool: poolName, configured: keys.length > 0 && models.length > 0, keys_env: config.keys_env, models_env: config.models_env, key_count: keys.length, key_aliases: keys.map((_, index) => `${config.alias_prefix}_${index + 1}`), model_count: models.length, configured_models: configuredModels, excluded_models: excluded, models, model_ordering: configuredModels.join("|") === models.join("|") ? "configured" : "runtime_prioritized", alias_prefix: config.alias_prefix, fallback_pool: config.fallback_pool || null, enable_search_grounding: config.enable_search_grounding === true };
 }
 export function getAllPoolSnapshots(env = process.env) { return Object.fromEntries(getGeminiPoolNames().map((poolName) => [poolName, getPoolSnapshot(poolName, env)])); }
 
@@ -89,7 +100,7 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
   const configuredModels = splitCsv(env[config.models_env]);
   const models = orderedModelsForPool(poolName, configuredModels, env);
   if (!keys.length) return { ok: false, error_type: "POOL_KEYS_NOT_CONFIGURED", error: `${config.keys_env} is empty.`, attempts: [] };
-  if (!models.length) return { ok: false, error_type: "POOL_MODELS_NOT_CONFIGURED", error: `${config.models_env} is empty.`, attempts: [] };
+  if (!models.length) return { ok: false, error_type: "POOL_MODELS_NOT_CONFIGURED", error: `${config.models_env} has no usable models after exclusion/filtering.`, attempts: [] };
   const attempts = [];
   const timeoutMs = Number(options.timeoutMs || 45000);
   const maxOutputTokens = Number(options.maxOutputTokens || 1024);
@@ -108,7 +119,7 @@ async function runPoolOnce({ poolName, prompt, options = {}, env = process.env }
         const body = buildGenerateContentBody({ prompt, responseMimeType, maxOutputTokens, temperature, enableSearchGrounding });
         const provider_payload = await callGeminiRest({ apiKey: keys[keyIndex], model, body, timeoutMs });
         const parsed = parseGeminiJsonPayload(provider_payload);
-        const attempt = { ok: parsed.ok, model_meta, finish_reason: parsed.finish_reason, usage_metadata: parsed.usage_metadata, decision: parsed.ok ? "success" : null };
+        const attempt = { ok: parsed.ok, model_meta, finish_reason: parsed.finish_reason, usage_metadata: parsed.usage_metadata, decision: parsed.ok ? "success" : null, repaired: parsed.repaired === true };
         attempts.push(attempt);
         if (!parsed.ok) {
           const classification = parseFailureClassification(parsed);
