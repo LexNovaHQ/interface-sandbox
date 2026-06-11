@@ -28,51 +28,112 @@ if (!prompts.company_profile?.text) fail("company_profile prompt missing from ge
 if (!schemas.companyProfile?.schema) fail("companyProfile schema missing from generated bundle", { schema_keys: Object.keys(schemas) });
 if (typeof validatorBundle.validateGeneratedSchema !== "function") fail("validateGeneratedSchema export missing");
 
+function candidate(value, status = "UNKNOWN", basis = "runtime bundle audit fixture", confidence = "unknown") {
+  return {
+    value,
+    status,
+    basis,
+    confidence,
+    evidence_refs: []
+  };
+}
+
 const fixture = {
-  company_profile_version: "company_profile_v1",
-  company_identity: {
+  target_profile_version: "target_profile_v2",
+  identity: {
     brand_name: "FixtureCo",
-    legal_or_corporate_name: "unknown",
+    legal_name: "unknown",
+    trade_names: [],
     website: "https://example.com",
     domain: "example.com",
-    headquarters_or_origin_signal: "unknown",
+    entity_type: "unknown",
+    entity_type_family: "unknown",
     corporate_status_signal: "unknown",
+    operator_or_controller_signal: "unknown",
     identity_confidence: "unknown"
   },
+  jurisdiction: {
+    registered_or_notice_country: "unknown",
+    registered_or_notice_state: "unknown",
+    city: "unknown",
+    full_address: "unknown",
+    governing_law_country: "unknown",
+    governing_law_state: "unknown",
+    courts_or_venue: "unknown",
+    source_basis: "unknown",
+    confidence: "unknown"
+  },
   business_model: {
-    company_type: "unknown",
+    business_category: "unknown",
     primary_customer_type: "unknown",
+    market_type_candidate: "unknown",
     sales_motion: "unknown",
     revenue_model_signal: "unknown",
     enterprise_or_self_serve_signal: "unknown",
+    public_sector_signal: "unknown",
     business_model_confidence: "unknown"
   },
   market_context: {
     industry: "unknown",
     target_geographies: [],
     target_languages: [],
-    regulated_sector_exposure: [],
-    public_sector_or_enterprise_signal: "unknown",
+    regulated_sector_hints: [],
     market_context_confidence: "unknown"
   },
-  operating_profile: {
+  product_baseline: {
     high_level_offering: "unknown",
-    ai_system_type: "unknown",
-    deployment_model_signal: "unknown",
-    user_data_touchpoints: [],
-    customer_data_touchpoints: [],
-    operating_profile_confidence: "unknown"
+    primary_claim: "unknown",
+    products: [],
+    delivery_app_candidate: "unknown",
+    delivery_api_candidate: "unknown",
+    beta_or_preview_signal: "unknown",
+    integration_candidates: []
   },
-  downstream_assumptions: {
-    for_product_profile: [],
-    for_legal_review: [],
+  data_touchpoint_map: [],
+  vault_baseline_candidates: {
+    baseline: {
+      company: candidate("FixtureCo"),
+      entity_type: candidate("unknown"),
+      address: candidate("unknown"),
+      legal_email: candidate("unknown"),
+      privacy_email: candidate("unknown"),
+      products: candidate([]),
+      jurisdiction: {
+        country: candidate("unknown"),
+        state: candidate("unknown")
+      },
+      market: candidate("unknown"),
+      delivery: {
+        app: candidate("unknown"),
+        api: candidate("unknown")
+      },
+      revenue_model: candidate("unknown"),
+      has_beta: candidate("unknown"),
+      integrations: {
+        slack: candidate(false),
+        crm: candidate(false),
+        stripe: candidate(false),
+        github: candidate(false),
+        webhooks: candidate(false),
+        none: candidate(true)
+      }
+    },
+    compliance: {
+      processes_pii: candidate("unknown"),
+      eu_users: candidate("unknown"),
+      ca_users: candidate("unknown"),
+      other_regions: candidate([])
+    }
+  },
+  pipeline_assumptions: {
+    for_feature_map: [],
+    for_legal_stack: [],
     for_registry_matching: [],
+    for_vault: [],
     assumption_warnings: []
   },
   evidence: {
-    primary_company_sources: [],
-    supporting_company_sources: [],
-    evidence_notes: [],
+    field_evidence_refs: [],
     unresolved_questions: []
   },
   limitations: []
