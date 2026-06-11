@@ -1,6 +1,9 @@
+const RUNTIME_LIVE_RUN_URL = "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app/v1/diligence/public-live-run";
+
 export async function runLiveDiligence({ targetUrl = "", documentText = "", companyName = "" } = {}) {
-  const response = await fetch("/api/diligence/live-run", {
+  const response = await fetch(RUNTIME_LIVE_RUN_URL, {
     method: "POST",
+    mode: "cors",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       input: {
