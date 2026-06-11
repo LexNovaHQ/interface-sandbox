@@ -1,0 +1,32 @@
+name: Runtime API Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Choose what to run"
+        required: true
+        default: "deploy"
+        type: choice
+        options:
+          - deploy
+          - stage4-stage5-audit
+      runtime_url:
+        description: "Existing Cloud Run runtime URL for audit mode"
+        required: false
+        default: "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  manual-control-check:
+    name: Manual control check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm manual dispatch is wired
+        run: |
+          echo "Runtime API Deploy manual workflow is active."
+          echo "Selected mode: ${{ inputs.mode }}"
+          echo "Runtime URL: ${{ inputs.runtime_url }}"
