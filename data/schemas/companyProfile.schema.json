@@ -293,8 +293,8 @@
       "properties": {
         "touchpoint_id": { "type": "string" },
         "actor": { "type": "string", "enum": ["end_user", "customer_admin", "enterprise_customer", "developer", "third_party", "unknown"] },
-        "data_subject": { "type": "string", "enum": ["user", "customer", "employee", "consumer", "developer", "child", "unknown"] },
-        "data_category": { "type": "string", "enum": ["account", "contact", "prompt", "uploaded_file", "generated_output", "usage_log", "payment", "support", "sensitive", "unknown"] },
+        "data_subject": { "type": "string", "enum": ["user", "customer", "employee", "consumer", "developer", "child", "business_entity", "unknown"] },
+        "data_category": { "type": "string", "enum": ["account", "contact", "prompt", "uploaded_file", "generated_output", "audio", "text", "document", "image", "video", "code", "api_payload", "usage_log", "payment", "support", "sensitive", "unknown"] },
         "collection_or_processing_context": { "type": "string" },
         "source_url": { "type": "string" },
         "evidence_quote": { "type": "string" },
