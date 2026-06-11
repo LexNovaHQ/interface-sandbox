@@ -156,10 +156,44 @@ function buildEvidenceIndex(evidenceBuffer = []) {
   return { byUrl, all };
 }
 
+function quoteFragments(quote) {
+  const normalized = normalizeText(quote);
+  if (!normalized) return [];
+  return normalized
+    .split(/(?<=[.!?;:])\s+|\s+-\s+|\s+•\s+/u)
+    .map((fragment) => fragment.replace(/^[\s,.;:!?()"']+|[\s,.;:!?()"']+$/g, "").trim())
+    .filter((fragment) => {
+      if (fragment.length >= 18) return true;
+      return fragment.split(/\s+/).filter(Boolean).length >= 2 && fragment.length >= 8;
+    });
+}
+
+function quoteAppearsInLocalEvidenceWindow(quote, record) {
+  const fragments = quoteFragments(quote);
+  if (fragments.length < 2) return false;
+
+  const positions = [];
+  let coveredChars = 0;
+  for (const fragment of fragments) {
+    const index = record.normalized_text.indexOf(fragment);
+    if (index === -1) return false;
+    positions.push(index);
+    coveredChars += fragment.length;
+  }
+
+  const min = Math.min(...positions);
+  const max = Math.max(...positions);
+  const windowLength = max - min;
+  const quoteLength = normalizeText(quote).length || 1;
+  const coverage = coveredChars / quoteLength;
+
+  return coverage >= 0.72 && windowLength <= 700;
+}
+
 function quoteAppearsInSource(quote, sourceRecords = []) {
   const normalizedQuote = normalizeText(quote);
   if (!normalizedQuote) return false;
-  return sourceRecords.some((record) => record.normalized_text.includes(normalizedQuote));
+  return sourceRecords.some((record) => record.normalized_text.includes(normalizedQuote) || quoteAppearsInLocalEvidenceWindow(quote, record));
 }
 
 function matchingEvidenceRecords(sourceUrl, evidenceIndex) {
