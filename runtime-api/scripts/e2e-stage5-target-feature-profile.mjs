@@ -13,7 +13,7 @@ const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
 const stage4CachePath = process.env.STAGE4_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage4-company-profile.json");
 const stage5CachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
-const failurePath = path.join(path.dirname(stage5CachePath), "stage5-target-feature-profile.failure.json");
+const stage5FailureCachePath = process.env.STAGE5_E2E_FAILURE_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.failure.json");
 
 const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
 
@@ -22,24 +22,17 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
 }
 
-function writeFailureCache(message, detail) {
+function fail(message, detail) {
+  const payload = { ok: false, error: message, detail: detail || null };
   try {
-    writeJson(failurePath, {
+    writeJson(stage5FailureCachePath, {
       cache_version: "stage5_target_feature_profile_e2e_failure_v1",
       generated_at: new Date().toISOString(),
-      target: { primary_url: primaryUrl, company_name: companyName },
-      stage4_cache_path: stage4CachePath,
-      error: message,
-      detail: detail || null
+      error: payload
     });
-  } catch {
-    // Never mask the original failure.
-  }
-}
-
-function fail(message, detail) {
-  writeFailureCache(message, detail);
-  console.error(JSON.stringify({ ok: false, error: message, detail: detail || null, failure_cache_path: failurePath }, null, 2));
+    payload.failure_cache_path = stage5FailureCachePath;
+  } catch {}
+  console.error(JSON.stringify(payload, null, 2));
   process.exit(1);
 }
 
@@ -163,8 +156,8 @@ async function buildStandaloneInputs(base, targetInput) {
       source_bundle_version: sourceBundle.source_bundle_version,
       source_bundle_sha256: junction.source_bundle_sha256 || null,
       evidence_junction_version: junction.evidence_junction_version,
-      company_profile_sources: (sourceBundle.raw_footprint?.source_records || [])
-        .filter((record) => record.source_family === "company_profile")
+      target_profile_sources: (sourceBundle.raw_footprint?.source_records || [])
+        .filter((record) => ["company_profile", "product_profile", "legal_profile", "governance_profile"].includes(record.source_family))
         .map((record) => ({
           evidence_source_id: record.evidence_source_id,
           source_family: record.source_family,
@@ -174,9 +167,9 @@ async function buildStandaloneInputs(base, targetInput) {
           word_count: record.text?.word_count || 0,
           clean_text_lossless: record.text?.clean_text_lossless || ""
         })),
-      input_policy: { company_family_only: true, product_feature_mapping_forbidden: true, legal_review_forbidden: true, outside_browsing_forbidden: true }
+      input_policy: { company_family_only: false, product_feature_mapping_forbidden: true, legal_review_forbidden: true, outside_browsing_forbidden: true }
     },
-    options: { pool: process.env.STAGE5_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_COMPANY_MAX_OUTPUT_TOKENS || 4096), timeoutMs: Number(process.env.STAGE5_COMPANY_TIMEOUT_MS || 60000) }
+    options: { pool: process.env.STAGE5_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_COMPANY_MAX_OUTPUT_TOKENS || process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 12000), timeoutMs: Number(process.env.STAGE5_COMPANY_TIMEOUT_MS || process.env.STAGE4_COMPANY_TIMEOUT_MS || 90000) }
   });
 
   return { sourceBundle, junction, companyProfile: companyProfileStage.company_profile, cacheMode: "standalone_full_chain" };
@@ -223,7 +216,7 @@ console.log(JSON.stringify({ ok: true, step: "stage5_adapter_complete", cache_mo
 const featureStage = await postJson(base, "/v1/diligence/stage", {
   stage: "target_feature_profile",
   input: stage5Input,
-  options: { pool: process.env.STAGE5_FEATURE_POOL || process.env.STAGE5_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.STAGE5_FEATURE_TIMEOUT_MS || 90000) }
+  options: { pool: process.env.STAGE5_FEATURE_POOL || process.env.STAGE5_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_FEATURE_MAX_OUTPUT_TOKENS || 14000), timeoutMs: Number(process.env.STAGE5_FEATURE_TIMEOUT_MS || 120000) }
 });
 
 const profile = featureStage.target_feature_profile;
