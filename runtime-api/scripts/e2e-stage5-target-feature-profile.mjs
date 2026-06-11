@@ -32,8 +32,9 @@ function readCache(filePath) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
     if (parsed?.cache_version !== "stage4_company_profile_e2e_cache_v1") return null;
-    if (!parsed.source_bundle || !parsed.evidence_junction || !parsed.company_profile) return null;
-    return parsed;
+    const targetProfile = parsed.target_profile_v2 || parsed.company_profile;
+    if (!parsed.source_bundle || !parsed.evidence_junction || !targetProfile) return null;
+    return { ...parsed, company_profile: targetProfile, target_profile_v2: targetProfile };
   } catch {
     return null;
   }
@@ -179,9 +180,9 @@ let cacheMode;
 if (cache) {
   sourceBundle = cache.source_bundle;
   junction = cache.evidence_junction;
-  companyProfile = cache.company_profile;
+  companyProfile = cache.target_profile_v2 || cache.company_profile;
   cacheMode = "reused_stage4_cache";
-  console.log(JSON.stringify({ ok: true, step: "stage5_reused_stage4_cache", cache_path: stage4CachePath, source_bundle_version: sourceBundle.source_bundle_version, evidence_junction_version: junction.evidence_junction_version, company_profile_version: companyProfile.company_profile_version }, null, 2));
+  console.log(JSON.stringify({ ok: true, step: "stage5_reused_stage4_cache", cache_path: stage4CachePath, source_bundle_version: sourceBundle.source_bundle_version, evidence_junction_version: junction.evidence_junction_version, target_profile_version: companyProfile.target_profile_version || null }, null, 2));
 } else {
   const built = await buildStandaloneInputs(base, targetInput);
   sourceBundle = built.sourceBundle;
@@ -200,7 +201,7 @@ const adapterResult = buildTargetFeatureProfileInput({
 
 if (!adapterResult.ok) fail("Target Feature Profile input adapter failed", adapterResult);
 const stage5Input = adapterResult.target_feature_profile_input;
-console.log(JSON.stringify({ ok: true, step: "stage5_adapter_complete", cache_mode: cacheMode, budget_status: stage5Input.input_budget.budget_status, estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens, estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens, estimated_total_prompt_tokens: stage5Input.input_budget.estimated_total_prompt_tokens, included_sources: stage5Input.input_budget.included_sources.length, excluded_sources: stage5Input.input_budget.excluded_sources.length }, null, 2));
+console.log(JSON.stringify({ ok: true, step: "stage5_adapter_complete", cache_mode: cacheMode, target_profile_version: stage5Input.target_profile_v2?.target_profile_version || null, adapter_version: stage5Input.target_feature_profile_input_version, budget_status: stage5Input.input_budget.budget_status, estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens, estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens, estimated_total_prompt_tokens: stage5Input.input_budget.estimated_total_prompt_tokens, included_sources: stage5Input.input_budget.included_sources.length, excluded_sources: stage5Input.input_budget.excluded_sources.length }, null, 2));
 
 const featureStage = await postJson(base, "/v1/diligence/stage", {
   stage: "target_feature_profile",
@@ -210,7 +211,15 @@ const featureStage = await postJson(base, "/v1/diligence/stage", {
 
 const profile = featureStage.target_feature_profile;
 if (!profile) fail("Target Feature Profile stage returned no profile", featureStage);
-if (!Array.isArray(profile.product_feature_map)) fail("Target Feature Profile product_feature_map missing", profile);
+if (profile.feature_profile_version !== "feature_profile_v2") {
+  fail("Bad feature profile version", {
+    feature_profile_version: profile.feature_profile_version || null,
+    legacy_target_feature_profile_version: profile.target_feature_profile_version || null,
+    top_level_keys: Object.keys(profile || {})
+  });
+}
+if (!Array.isArray(profile.feature_inventory)) fail("Target Feature Profile feature_inventory missing", { top_level_keys: Object.keys(profile || {}) });
+if (!Array.isArray(profile.product_feature_map)) fail("Target Feature Profile compatibility product_feature_map missing", { top_level_keys: Object.keys(profile || {}) });
 
 writeJson(stage5CachePath, {
   cache_version: "stage5_target_feature_profile_e2e_cache_v1",
@@ -219,10 +228,41 @@ writeJson(stage5CachePath, {
   source_bundle: sourceBundle,
   evidence_junction: junction,
   company_profile: companyProfile,
+  target_profile_v2: companyProfile,
   target_feature_profile_stage_result: featureStage,
-  target_feature_profile: profile
+  target_feature_profile: profile,
+  feature_profile_v2: profile
 });
 
 const actualPromptTokens = featureStage.model_metadata?.usage_metadata?.promptTokenCount || null;
 const estimatedTotalPromptTokens = stage5Input.input_budget.estimated_total_prompt_tokens;
-console.log(JSON.stringify({ ok: true, phase: "stage_5_target_feature_profile_e2e", cache_mode: cacheMode, cache_path: stage5CachePath, cache_written: true, source_bundle_version: sourceBundle.source_bundle_version, evidence_junction_version: junction.evidence_junction_version, adapter_version: stage5Input.target_feature_profile_input_version, budget_status: stage5Input.input_budget.budget_status, estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens, estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens, estimated_total_prompt_tokens: estimatedTotalPromptTokens, actual_prompt_tokens: actualPromptTokens, token_estimate_drift_ratio: tokenDrift(actualPromptTokens, estimatedTotalPromptTokens), included_sources: stage5Input.input_budget.included_sources.length, excluded_sources: stage5Input.input_budget.excluded_sources.length, target_company_name: profile.target_profile?.company_name || null, primary_product: profile.primary_product?.product_name || null, feature_count: profile.product_feature_map.length, raw_candidate_count: profile.raw_feature_candidates?.length || 0, scratchpad_count: profile.feature_map_scratchpad?.length || 0, limitation_count: profile.limitations?.length || 0, validation_mode: featureStage.validation_mode, guardrail_validation_mode: featureStage.guardrail_validation_mode, model_metadata: featureStage.model_metadata || null }, null, 2));
+console.log(JSON.stringify({
+  ok: true,
+  phase: "stage_5_target_feature_profile_e2e",
+  cache_mode: cacheMode,
+  cache_path: stage5CachePath,
+  cache_written: true,
+  source_bundle_version: sourceBundle.source_bundle_version,
+  evidence_junction_version: junction.evidence_junction_version,
+  adapter_version: stage5Input.target_feature_profile_input_version,
+  budget_status: stage5Input.input_budget.budget_status,
+  estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens,
+  estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens,
+  estimated_total_prompt_tokens: estimatedTotalPromptTokens,
+  actual_prompt_tokens: actualPromptTokens,
+  token_estimate_drift_ratio: tokenDrift(actualPromptTokens, estimatedTotalPromptTokens),
+  included_sources: stage5Input.input_budget.included_sources.length,
+  excluded_sources: stage5Input.input_budget.excluded_sources.length,
+  target_brand_name: profile.target_profile_ref?.brand_name || null,
+  target_legal_name: profile.target_profile_ref?.legal_name || null,
+  feature_profile_version: profile.feature_profile_version,
+  feature_count: profile.feature_inventory.length,
+  compatibility_product_feature_count: profile.product_feature_map.length,
+  data_provenance_count: profile.data_provenance_map?.length || 0,
+  regulated_surface_count: profile.regulated_surface_map?.length || 0,
+  architecture_hint_count: profile.architecture_hints?.length || 0,
+  limitation_count: profile.limitations?.length || 0,
+  validation_mode: featureStage.validation_mode,
+  guardrail_validation_mode: featureStage.guardrail_validation_mode,
+  model_metadata: featureStage.model_metadata || null
+}, null, 2));
