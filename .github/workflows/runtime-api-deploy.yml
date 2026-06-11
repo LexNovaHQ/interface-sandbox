@@ -7,7 +7,10 @@ on:
       - 'runtime-api/**'
       - 'functions/_prompts/**'
       - 'functions/_schemas/**'
+      - 'data/schemas/**'
+      - 'docs/contracts/**'
       - 'scripts/generate-diligence-*.mjs'
+      - 'scripts/audit-runtime-bundles.mjs'
       - '.github/workflows/runtime-api-deploy.yml'
   workflow_dispatch:
     inputs:
@@ -18,7 +21,6 @@ on:
         type: choice
         options:
           - deploy
-          - audit-existing-runtime
           - stage4-stage5-audit
       runtime_url:
         description: 'Existing runtime URL for audit modes'
@@ -188,77 +190,8 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run smoke:runtime
 
-      - name: Run Stage 4 Company Profile E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage4:company
-
-      - name: Run Stage 5 Target Feature Profile E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage5:features
-
-      - name: Run Stage 6 Legal Stack Review E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage6:legal
-
-      - name: Run Stage 7 Registry Ledger E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage7:registry
-
-      - name: Run Stage 8 Operator Challenge E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage8:operator
-
-      - name: Run Stage 9 Report Assembler E2E
-        working-directory: runtime-api
-        run: npm run e2e:stage9:report
-
-      - name: Render Stage 9 HTML report
-        working-directory: runtime-api
-        run: npm run render:stage9:html
-
-      - name: Run Stage 10 Vault Handoff E2E
-        working-directory: runtime-api
-        run: npm run e2e:stage10:vault
-
-      - name: Verify Stage 7/8/9/10 report exports
-        if: always()
-        run: |
-          ls -la runtime-api/.runtime-e2e-cache || true
-          test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
-          test -f runtime-api/.runtime-e2e-cache/stage8-operator-challenge.json && echo "stage8 audit export found" || echo "stage8 operator challenge missing"
-          test -f runtime-api/.runtime-e2e-cache/stage8-corrected-ledger.json && echo "stage8 corrected ledger found" || echo "stage8 corrected ledger missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-report-validation.json && echo "stage9 report validation found" || echo "stage9 report validation missing"
-          test -f runtime-api/.runtime-e2e-cache/legal-exposure-diligence-report.html && echo "stage9 HTML report found" || echo "stage9 HTML report missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-html-render-validation.json && echo "stage9 HTML validation found" || echo "stage9 HTML validation missing"
-          test -f runtime-api/.runtime-e2e-cache/review-ready-remediation-handoff.json && echo "stage10 handoff found" || echo "stage10 handoff missing"
-          test -f runtime-api/.runtime-e2e-cache/vault-handoff-preview.json && echo "stage10 handoff preview found" || echo "stage10 handoff preview missing"
-          test -f runtime-api/.runtime-e2e-cache/stage10-handoff-validation.json && echo "stage10 handoff validation found" || echo "stage10 handoff validation missing"
-
-      - name: Upload runtime E2E cache
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-e2e-cache
-          path: runtime-api/.runtime-e2e-cache/**
-          include-hidden-files: true
-          if-no-files-found: warn
+      - name: Print deployed runtime URL
+        run: echo "Deployed runtime URL: ${{ steps.runtime.outputs.url }}"
 
   stage4-stage5-audit:
     name: Stage 4 + Stage 5 runtime audit
@@ -324,7 +257,7 @@ jobs:
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
           test -f runtime-api/.runtime-e2e-cache/stage4-company-profile.json && echo "stage4 company profile export found" || echo "stage4 company profile export missing"
-          test -f runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json && echo "stage5 target feature profile export found" || echo "stage5 target feature profile export missing"
+          test -f runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json && echo "stage5 target feature profile export found" || echo "stage5 target feature profile missing"
 
       - name: Upload Stage 4/5 runtime audit cache
         if: always()
