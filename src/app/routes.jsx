@@ -1,6 +1,6 @@
 import Home from "../pages/Home.jsx";
 import Diligence from "../pages/Diligence.jsx";
-import Assembly from "../pages/Assembly.jsx";
+import Assembly from "../pages/AssemblyAuto.jsx";
 import Delivery from "../pages/Delivery.jsx";
 import Horizon from "../pages/Horizon.jsx";
 
