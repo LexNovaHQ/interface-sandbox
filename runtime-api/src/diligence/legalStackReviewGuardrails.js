@@ -24,7 +24,7 @@ const LEGAL_ADVICE_GUIDANCE_PHRASES = [
   /\billegal\b/i,
   /\bunenforceable\b/i
 ];
-const UNADMITTED_DOCUMENT_NOTE = "Model referenced a legal document URL that was not part of the admitted evidence buffer; document not treated as reviewed evidence.";
+const UNADMITTED_DOCUMENT_NOTE = "Model referenced a legal document URL that was not part of the admitted evidence buffer; document not treated as reviewed evidence until deterministic reconciliation fetches and extracts it.";
 
 function push(errors, instancePath, message, params = {}) {
   errors.push({ keyword: "legal_stack_review_guardrail", instancePath, schemaPath: "#/legalStackReviewGuardrails", message, params });
@@ -51,12 +51,15 @@ function evidenceUrls(evidenceBuffer = []) { const urls = new Set(["N/A", "manua
 function legalDocumentUrlIsAdmitted(documentUrl, admittedUrls) { return admittedUrls.has(documentUrl) || admittedUrls.has(normalizeUrl(documentUrl)); }
 function downgradeUnadmittedLegalDocument(doc, warnings, base) {
   const emittedUrl = String(doc?.document_url || "").trim();
+  const existingCandidates = Array.isArray(doc.unadmitted_document_url_candidates) ? doc.unadmitted_document_url_candidates : [];
+  doc.unadmitted_document_url = emittedUrl || null;
+  doc.unadmitted_document_url_candidates = [...new Set([...existingCandidates, emittedUrl].filter(Boolean))];
   doc.exists = false;
   doc.document_url = "N/A";
   doc.evidence_status = "INSUFFICIENT";
   doc.covers = null;
-  doc.misses = [...new Set([...(Array.isArray(doc.misses) ? doc.misses : []), UNADMITTED_DOCUMENT_NOTE])];
-  warn(warnings, `${base}/document_url`, "legal document URL was not admitted as evidence; downgraded document to insufficient evidence", { document_url: emittedUrl });
+  doc.misses = [...new Set([...(Array.isArray(doc.misses) ? doc.misses : []), UNADMITTED_DOCUMENT_NOTE, emittedUrl ? `Unadmitted legal document URL candidate: ${emittedUrl}` : ""])].filter(Boolean);
+  warn(warnings, `${base}/document_url`, "legal document URL was not admitted as evidence; preserved candidate for deterministic reconciliation and downgraded document pending fetch/extraction", { document_url: emittedUrl });
 }
 
 export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = [], threatMappingSupplied = false } = {}) {
