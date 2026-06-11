@@ -8,14 +8,15 @@ const promptRoot = resolve(repoRoot, "functions/_prompts/diligence-v2");
 const outputPath = resolve(repoRoot, "functions/_generated/diligencePromptBundle.js");
 
 const PROMPT_FILES = Object.freeze({
-  shared_system_preamble: "00_SHARED_SYSTEM_PREAMBLE.prompt.md",
-  evidence_refiner: "01_EVIDENCE_REFINER.prompt.md",
-  company_profile: "02_COMPANY_PROFILE.prompt.md",
-  target_feature_profile: "02_TARGET_FEATURE_PROFILE.prompt.md",
-  legal_stack_review: "03_LEGAL_STACK_REVIEW.prompt.md",
-  registry_ledger_evaluation: "04_REGISTRY_LEDGER_EVALUATION.prompt.md",
-  operator_challenge: "05_OPERATOR_CHALLENGE.prompt.md",
-  final_compiler: "06_FINAL_COMPILER.prompt.md"
+  shared_system_preamble: { root: promptRoot, file: "00_SHARED_SYSTEM_PREAMBLE.prompt.md", path: "functions/_prompts/diligence-v2/00_SHARED_SYSTEM_PREAMBLE.prompt.md" },
+  evidence_refiner: { root: promptRoot, file: "01_EVIDENCE_REFINER.prompt.md", path: "functions/_prompts/diligence-v2/01_EVIDENCE_REFINER.prompt.md" },
+  company_profile: { root: promptRoot, file: "02_COMPANY_PROFILE.prompt.md", path: "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md" },
+  target_feature_profile: { root: promptRoot, file: "02_TARGET_FEATURE_PROFILE.prompt.md", path: "functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md" },
+  legal_stack_review: { root: promptRoot, file: "03_LEGAL_STACK_REVIEW.prompt.md", path: "functions/_prompts/diligence-v2/03_LEGAL_STACK_REVIEW.prompt.md" },
+  registry_ledger_evaluation: { root: promptRoot, file: "04_REGISTRY_LEDGER_EVALUATION.prompt.md", path: "functions/_prompts/diligence-v2/04_REGISTRY_LEDGER_EVALUATION.prompt.md" },
+  operator_challenge: { root: promptRoot, file: "05_OPERATOR_CHALLENGE.prompt.md", path: "functions/_prompts/diligence-v2/05_OPERATOR_CHALLENGE.prompt.md" },
+  final_compiler: { root: promptRoot, file: "06_FINAL_COMPILER.prompt.md", path: "functions/_prompts/diligence-v2/06_FINAL_COMPILER.prompt.md" },
+  stage4_stage5_field_dictionary: { root: repoRoot, file: "docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md", path: "docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md" }
 });
 
 const STAGE_PROMPT_IDS = Object.freeze({
@@ -32,14 +33,14 @@ function sha256(value) {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-async function readPrompt(promptId, fileName) {
-  const path = resolve(promptRoot, fileName);
+async function readPrompt(promptId, spec) {
+  const path = resolve(spec.root, spec.file);
   const text = await readFile(path, "utf8");
 
   return {
     prompt_id: promptId,
-    file_name: fileName,
-    path: `functions/_prompts/diligence-v2/${fileName}`,
+    file_name: spec.file.split("/").pop(),
+    path: spec.path,
     sha256: sha256(text),
     characters: text.length,
     text
@@ -49,8 +50,8 @@ async function readPrompt(promptId, fileName) {
 async function main() {
   const prompts = {};
 
-  for (const [promptId, fileName] of Object.entries(PROMPT_FILES)) {
-    prompts[promptId] = await readPrompt(promptId, fileName);
+  for (const [promptId, spec] of Object.entries(PROMPT_FILES)) {
+    prompts[promptId] = await readPrompt(promptId, spec);
   }
 
   const bundle = {
@@ -58,6 +59,7 @@ async function main() {
     prompt_root: "functions/_prompts/diligence-v2",
     shared_prompt_id: "shared_system_preamble",
     stage_prompt_ids: STAGE_PROMPT_IDS,
+    stage4_stage5_field_dictionary_prompt_id: "stage4_stage5_field_dictionary",
     prompts
   };
 
