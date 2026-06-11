@@ -79,10 +79,21 @@ function getPrompt(promptId) {
   return prompt;
 }
 
+function stage4Stage5FieldDictionaryAppendix(stageId) {
+  if (stageId !== "company_profile" && stageId !== "target_feature_profile") return "";
+  const promptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+  const dictionary = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
+  if (!dictionary?.text) return "";
+  return `\n\n---STAGE_4_5_CANON_FIELD_DICTIONARY---\n\n${dictionary.text.trim()}`;
+}
+
 function runtimePromptAppendixFor(stageId) {
-  if (stageId === "legal_stack_review") return LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES;
-  if (stageId === "registry_ledger_evaluation") return REGISTRY_HUNTER_ENGINE_RULES;
-  return "";
+  const parts = [];
+  const fieldDictionary = stage4Stage5FieldDictionaryAppendix(stageId);
+  if (fieldDictionary) parts.push(fieldDictionary);
+  if (stageId === "legal_stack_review") parts.push(LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES);
+  if (stageId === "registry_ledger_evaluation") parts.push(REGISTRY_HUNTER_ENGINE_RULES);
+  return parts.join("");
 }
 
 export function loadDiligencePrompt(stageId) {
@@ -129,6 +140,19 @@ export function loadDiligencePrompt(stageId) {
       sha256: stagePrompt.sha256,
       characters: stagePrompt.characters
     },
+    stage4_stage5_field_dictionary: normalizedStageId === "company_profile" || normalizedStageId === "target_feature_profile"
+      ? (() => {
+          const promptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+          const dictionary = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
+          return dictionary ? {
+            prompt_id: dictionary.prompt_id,
+            file_name: dictionary.file_name,
+            path: dictionary.path,
+            sha256: dictionary.sha256,
+            characters: dictionary.characters
+          } : null;
+        })()
+      : null,
     combined_prompt: combinedPrompt,
     combined_characters: combinedPrompt.length
   };
@@ -146,6 +170,9 @@ export function assertDiligencePromptBundleReady() {
     const prompt = promptId ? DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId] : null;
     if (!prompt?.text) missing.push(`stage:${stageId}`);
   }
+
+  const dictionaryPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+  if (!DILIGENCE_PROMPT_BUNDLE.prompts?.[dictionaryPromptId]?.text) missing.push("stage4_stage5_field_dictionary");
 
   return missing.length ? { ok: false, missing } : {
     ok: true,
