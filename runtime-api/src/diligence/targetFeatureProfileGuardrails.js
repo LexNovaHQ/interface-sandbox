@@ -99,9 +99,17 @@ function nonEmptyString(value) {
 
 function normalizeText(value) {
   return String(value || "")
+    .normalize("NFKC")
     .toLowerCase()
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\bdigitisation\b/g, "digitization")
+    .replace(/\bdigitise\b/g, "digitize")
+    .replace(/\bdigitised\b/g, "digitized")
+    .replace(/\bdigitising\b/g, "digitizing")
+    .replace(/\bdiarisation\b/g, "diarization")
+    .replace(/\borganisation\b/g, "organization")
+    .replace(/\borganisational\b/g, "organizational")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -129,7 +137,6 @@ function evidenceUrlKeys(record = {}) {
 function buildEvidenceIndex(evidenceBuffer = []) {
   const byUrl = new Map();
   const all = [];
-
   for (const record of Array.isArray(evidenceBuffer) ? evidenceBuffer : []) {
     const text = record?.clean_text_lossless || record?.text?.clean_text_lossless || record?.evidence_text || "";
     const indexed = {
@@ -146,7 +153,6 @@ function buildEvidenceIndex(evidenceBuffer = []) {
       byUrl.get(key).push(indexed);
     }
   }
-
   return { byUrl, all };
 }
 
@@ -179,10 +185,7 @@ function verifyQuoteSource({ quote, sourceUrl, base, quoteKey = "evidence_quote"
     return;
   }
   if (!quoteAppearsInSource(quote, sourceMatches)) {
-    push(errors, `${base}/${quoteKey}`, `${quoteKey} must appear in admitted clean_text_lossless for ${sourceKey}`, {
-      source_url: sourceUrl,
-      evidence_quote: quote
-    });
+    push(errors, `${base}/${quoteKey}`, `${quoteKey} must appear in admitted clean_text_lossless for ${sourceKey}`, { source_url: sourceUrl, evidence_quote: quote });
   }
 }
 
@@ -232,7 +235,6 @@ function validateFeature(feature, index, { errors, evidenceIndex, seenIds, threa
     push(errors, base, "feature must be an object");
     return;
   }
-
   if (!nonEmptyString(feature.feature_id)) {
     push(errors, `${base}/feature_id`, "feature_id must be non-empty");
   } else if (seenIds.has(feature.feature_id)) {
@@ -240,13 +242,11 @@ function validateFeature(feature, index, { errors, evidenceIndex, seenIds, threa
   } else {
     seenIds.add(feature.feature_id);
   }
-
   if (!["CORE", "SECONDARY"].includes(feature.feature_role)) push(errors, `${base}/feature_role`, "feature_role must be CORE or SECONDARY", { feature_role: feature.feature_role });
   if (feature.autonomy_level) validateEnum(feature.autonomy_level, ALLOWED_AUTONOMY_LEVELS, errors, `${base}/autonomy_level`, "autonomy_level");
   if (feature.human_review_signal) validateEnum(feature.human_review_signal, ALLOWED_HUMAN_REVIEW_SIGNALS, errors, `${base}/human_review_signal`, "human_review_signal");
   if (feature.external_action_signal) validateEnum(feature.external_action_signal, ALLOWED_TRI_STATE, errors, `${base}/external_action_signal`, "external_action_signal");
   if (feature.confidence) validateEnum(feature.confidence, ALLOWED_CONFIDENCE, errors, `${base}/confidence`, "feature confidence");
-
   if (!nonEmptyString(feature.feature_name)) push(errors, `${base}/feature_name`, "feature_name must be non-empty");
   if (!nonEmptyString(feature.commercial_function)) push(errors, `${base}/commercial_function`, "commercial_function must be non-empty");
   if (!nonEmptyString(feature.feature_description)) push(errors, `${base}/feature_description`, "feature_description must be non-empty");
@@ -254,13 +254,10 @@ function validateFeature(feature, index, { errors, evidenceIndex, seenIds, threa
   if (!nonEmptyString(feature.output_or_result)) push(errors, `${base}/output_or_result`, "output_or_result must be non-empty");
   if (!nonEmptyString(feature.evidence_quote)) push(errors, `${base}/evidence_quote`, "evidence_quote must be non-empty for every final feature");
   if (!nonEmptyString(feature.feature_source_url)) push(errors, `${base}/feature_source_url`, "feature_source_url must be non-empty for every final feature");
-
   verifyQuoteSource({ quote: feature.evidence_quote, sourceUrl: feature.feature_source_url, base, sourceKey: "feature_source_url" }, errors, evidenceIndex);
 
   const channels = feature.delivery_channels || {};
-  for (const channel of ["app", "api", "web"]) {
-    validateEnum(channels[channel], ALLOWED_TRI_STATE, errors, `${base}/delivery_channels/${channel}`, `delivery_channels.${channel}`);
-  }
+  for (const channel of ["app", "api", "web"]) validateEnum(channels[channel], ALLOWED_TRI_STATE, errors, `${base}/delivery_channels/${channel}`, `delivery_channels.${channel}`);
 
   const dataProvenance = Array.isArray(feature.data_provenance) ? feature.data_provenance : [];
   if (dataProvenance.length === 0) push(errors, `${base}/data_provenance`, "every emitted feature requires at least one data provenance entry");
@@ -275,13 +272,11 @@ function validateFeature(feature, index, { errors, evidenceIndex, seenIds, threa
     if (!provenanceCodes.has(code)) push(errors, `${base}/archetype_provenance`, `missing archetype provenance for code: ${code}`, { code });
   }
   for (const entry of archetypeProvenance) {
-    if (entry?.archetype_code && !codes.includes(entry.archetype_code)) {
-      push(errors, `${base}/archetype_provenance`, `archetype provenance emitted without matching archetype code: ${entry.archetype_code}`, { code: entry.archetype_code });
-    }
+    if (entry?.archetype_code && !codes.includes(entry.archetype_code)) push(errors, `${base}/archetype_provenance`, `archetype provenance emitted without matching archetype code: ${entry.archetype_code}`, { code: entry.archetype_code });
   }
-  const expectedLabels = codes.filter((code) => ALLOWED_ARCHETYPE_CODES.has(code)).map((code) => ARCHETYPE_LABELS[code]);
-  for (const expected of expectedLabels) {
-    if (!labels.includes(expected)) push(errors, `${base}/archetype_labels`, `missing archetype label for code: ${expected}`, { expected });
+  for (const code of codes.filter((item) => ALLOWED_ARCHETYPE_CODES.has(item))) {
+    const expected = ARCHETYPE_LABELS[code];
+    if (!labels.includes(expected)) push(errors, `${base}/archetype_labels`, `missing archetype label for code: ${code}`, { expected });
   }
   validateProvenanceQuoteList(archetypeProvenance, { errors, evidenceIndex, base: `${base}/archetype_provenance`, kind: "archetype" });
 
@@ -293,25 +288,19 @@ function validateFeature(feature, index, { errors, evidenceIndex, seenIds, threa
     if (!provenanceSurfaces.has(token)) push(errors, `${base}/surface_provenance`, `missing surface provenance for token: ${token}`, { token });
   }
   for (const entry of surfaceProvenance) {
-    if (entry?.surface_token && !surfaces.includes(entry.surface_token)) {
-      push(errors, `${base}/surface_provenance`, `surface provenance emitted without matching surface token: ${entry.surface_token}`, { token: entry.surface_token });
-    }
+    if (entry?.surface_token && !surfaces.includes(entry.surface_token)) push(errors, `${base}/surface_provenance`, `surface provenance emitted without matching surface token: ${entry.surface_token}`, { token: entry.surface_token });
   }
   validateProvenanceQuoteList(surfaceProvenance, { errors, evidenceIndex, base: `${base}/surface_provenance`, kind: "surface" });
 
   const threats = Array.isArray(feature.linked_threat_ids) ? feature.linked_threat_ids : [];
-  if (!threatMappingSupplied && threats.length > 0) {
-    push(errors, `${base}/linked_threat_ids`, "linked_threat_ids must be empty unless explicit threat mapping context was supplied", { linked_threat_ids: threats });
-  }
+  if (!threatMappingSupplied && threats.length > 0) push(errors, `${base}/linked_threat_ids`, "linked_threat_ids must be empty unless explicit threat mapping context was supplied", { linked_threat_ids: threats });
 }
 
 function validateTopLevelMaps(profile, { errors, evidenceIndex, featureIds }) {
   const dataMap = Array.isArray(profile.data_provenance_map) ? profile.data_provenance_map : [];
   dataMap.forEach((entry, index) => {
     const base = `/data_provenance_map/${index}`;
-    if (!entry?.feature_id || !featureIds.has(entry.feature_id)) {
-      push(errors, `${base}/feature_id`, "data provenance feature_id must reference feature_inventory", { feature_id: entry?.feature_id });
-    }
+    if (!entry?.feature_id || !featureIds.has(entry.feature_id)) push(errors, `${base}/feature_id`, "data provenance feature_id must reference feature_inventory", { feature_id: entry?.feature_id });
     if (!nonEmptyString(entry?.provenance_id)) push(errors, `${base}/provenance_id`, "data_provenance_map entry requires provenance_id");
     validateDataProvenanceEntry(entry, { errors, evidenceIndex, base });
   });
@@ -335,16 +324,12 @@ function validateTopLevelMaps(profile, { errors, evidenceIndex, featureIds }) {
     verifyQuoteSource({ quote: entry?.evidence_quote, sourceUrl: entry?.source_url, base }, errors, evidenceIndex);
   });
 
-  if (profile?.vault_feature_candidates && Object.prototype.hasOwnProperty.call(profile.vault_feature_candidates, "architecture")) {
-    push(errors, "/vault_feature_candidates/architecture", "Stage 5 must not emit architecture Vault candidates");
-  }
+  if (profile?.vault_feature_candidates && Object.prototype.hasOwnProperty.call(profile.vault_feature_candidates, "architecture")) push(errors, "/vault_feature_candidates/architecture", "Stage 5 must not emit architecture Vault candidates");
 }
 
 function validateCompatibilityAlias(profile, errors) {
   const alias = Array.isArray(profile.product_feature_map) ? profile.product_feature_map : [];
-  if (alias.length) {
-    push(errors, "/product_feature_map", "product_feature_map is a deterministic legacy alias and must be empty in Stage 5 model output", { count: alias.length });
-  }
+  if (alias.length) push(errors, "/product_feature_map", "product_feature_map is a deterministic legacy alias and must be empty in Stage 5 model output", { count: alias.length });
 }
 
 export function validateTargetFeatureProfileGuardrails(profile, { threatMappingSupplied = false, evidenceBuffer = [] } = {}) {
@@ -353,21 +338,14 @@ export function validateTargetFeatureProfileGuardrails(profile, { threatMappingS
     push(errors, "", "target_feature_profile must be an object");
     return { ok: false, errors };
   }
-
   const evidenceIndex = buildEvidenceIndex(evidenceBuffer);
   walkKeys(profile, errors, "");
-
-  if (profile.feature_profile_version !== "feature_profile_v2") {
-    push(errors, "/feature_profile_version", "feature_profile_version must be feature_profile_v2", { value: profile.feature_profile_version });
-  }
-
+  if (profile.feature_profile_version !== "feature_profile_v2") push(errors, "/feature_profile_version", "feature_profile_version must be feature_profile_v2", { value: profile.feature_profile_version });
   const features = Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [];
   const seenIds = new Set();
   features.forEach((feature, index) => validateFeature(feature, index, { errors, evidenceIndex, seenIds, threatMappingSupplied }));
-
   const featureIds = collectFeatureIds(features);
   validateCompatibilityAlias(profile, errors);
   validateTopLevelMaps(profile, { errors, evidenceIndex, featureIds });
-
   return { ok: errors.length === 0, errors };
 }
