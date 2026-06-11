@@ -32,7 +32,9 @@
       }
     },
     "feature_inventory": {
+      "description": "Canonical atomic feature/function inventory. Stage 5 must emit at least one evidence-supported feature when this stage is run against a public product/service target. Do not use product_feature_map as the canonical feature list.",
       "type": "array",
+      "minItems": 1,
       "items": { "$ref": "#/$defs/feature" }
     },
     "product_feature_map": {
