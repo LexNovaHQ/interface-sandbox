@@ -11,17 +11,33 @@ const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
 const cachePath = process.env.STAGE4_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage4-company-profile.json");
+const failurePath = path.join(path.dirname(cachePath), "stage4-company-profile.failure.json");
 
 const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
-
-function fail(message, detail) {
-  console.error(JSON.stringify({ ok: false, error: message, detail: detail || null }, null, 2));
-  process.exit(1);
-}
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function writeFailureCache(message, detail) {
+  try {
+    writeJson(failurePath, {
+      cache_version: "stage4_company_profile_e2e_failure_v1",
+      generated_at: new Date().toISOString(),
+      target: { primary_url: primaryUrl, company_name: companyName },
+      error: message,
+      detail: detail || null
+    });
+  } catch {
+    // Never mask the original failure.
+  }
+}
+
+function fail(message, detail) {
+  writeFailureCache(message, detail);
+  console.error(JSON.stringify({ ok: false, error: message, detail: detail || null, failure_cache_path: failurePath }, null, 2));
+  process.exit(1);
 }
 
 function normalizeBase(value) {
@@ -54,7 +70,7 @@ async function postJson(base, routePath, body) {
     body: JSON.stringify(body)
   });
   const json = await readJson(response);
-  if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json });
+  if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json, request_body: body });
   return json;
 }
 
