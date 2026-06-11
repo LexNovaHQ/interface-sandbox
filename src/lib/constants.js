@@ -7,17 +7,17 @@ import {
 
 export { APP_NAME, APP_SUBTITLE, GLOBAL_DISCLAIMER };
 
-export const APP_ID = "interface-sandbox";
+export const APP_ID = "legal-diligence-assembly-os";
 export const PHASE = RUNTIME_VERSION;
 
-export const STATUS_TEXT = "Diligence Engine live review activation in progress.";
+export const STATUS_TEXT = "Legal Diligence & Assembly OS activation in progress.";
 
 export const OPERATIONAL_CHAIN = [
-  "Public Source",
+  "Review Target",
   "Diligence Engine",
-  "Assembly Layer",
-  "Delivery Portal",
-  "Maintenance Monitor"
+  "Assembly Engine",
+  "Delivery",
+  "Maintenance Radar"
 ];
 
 export const UNIT_PANELS = [
@@ -26,27 +26,27 @@ export const UNIT_PANELS = [
     title: "Diligence Engine",
     unit: "DILIGENCE",
     summary:
-      "Live public-footprint and document-led diligence engine producing a Legal Exposure Diligence Report and Review-Ready Remediation Handoff."
+      "Live public-footprint and document-led diligence engine producing a Legal Exposure Diligence Report and Stage 10 handoff."
   },
   {
     path: "/assembly",
-    title: "Assembly Layer",
+    title: "Assembly Engine",
     unit: "ASSEMBLY",
     summary:
-      "Future handoff intake, canonical profile construction, document assembly routing, human review, and Delivery handoff."
+      "Stage 10 handoff intake, internal Vault Review, canonical profile construction, and document assembly routing."
   },
   {
     path: "/delivery",
-    title: "Delivery Portal",
+    title: "Delivery",
     unit: "DELIVERY",
     summary:
-      "Future delivered draft packages, human review state, client package trail, and maintenance status."
+      "Review package readiness, artifacts, internal delivery state, and monitoring transition."
   },
   {
     path: "/horizon",
-    title: "Horizon Scanner",
+    title: "Horizon Radar",
     unit: "HORIZON",
     summary:
-      "Future fixed regulatory source list, extraction, classification, storage, and Maintenance feed."
+      "Regulatory update intake, classification, matter matching, and maintenance feed."
   }
 ];
