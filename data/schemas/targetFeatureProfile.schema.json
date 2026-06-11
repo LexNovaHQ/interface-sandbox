@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://interface-sandbox.local/schemas/targetFeatureProfile.schema.json",
   "title": "Feature Profile",
-  "description": "Stage 5 canonical feature_profile_v2. Runtime compatibility keeps the outer output key as target_feature_profile, but the canonical object is function-first: atomic feature inventory, data provenance, archetype provenance, surface provenance, regulated surface map, architecture hints, commercial scan, and Vault feature candidates. Identity is copied only by reference from Stage 4 target_profile_v2 and must not be re-extracted here.",
+  "description": "Stage 5 canonical feature_profile_v2. Runtime compatibility keeps the outer output key as target_feature_profile, but the canonical object is function-first: atomic feature inventory, feature-level data provenance, archetype provenance, surface provenance, regulated surface map, architecture hints, commercial scan, and Vault feature candidates. Identity is copied only by reference from Stage 4 target_profile_v2 and must not be re-extracted here. Compatibility/support arrays are intentionally noncanonical and must not be allowed to fail the canonical feature_inventory output.",
   "type": "object",
   "required": [
     "feature_profile_version",
@@ -36,13 +36,20 @@
       "items": { "$ref": "#/$defs/feature" }
     },
     "product_feature_map": {
-      "description": "Temporary compatibility alias for downstream code that still reads product_feature_map. It must mirror feature_inventory by feature_id until downstream stages are migrated.",
+      "description": "Temporary compatibility alias for downstream code that still reads product_feature_map. Canonical data lives in feature_inventory. This alias is noncanonical and may be empty or legacy-shaped; downstream code should derive a clean alias deterministically from feature_inventory.",
       "type": "array",
-      "items": { "$ref": "#/$defs/feature" }
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
     },
     "data_provenance_map": {
+      "description": "Optional flattened support view of feature-level data provenance. Canonical data provenance lives in feature_inventory[].data_provenance. This support array is intentionally permissive so it cannot fail otherwise valid canonical feature output.",
       "type": "array",
-      "items": { "$ref": "#/$defs/dataProvenanceMapEntry" }
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
     },
     "regulated_surface_map": {
       "type": "array",
@@ -169,24 +176,6 @@
         "confidence": { "$ref": "#/$defs/confidence" }
       }
     },
-    "dataProvenanceMapEntry": {
-      "type": "object",
-      "required": ["provenance_id", "feature_id", "data_origin", "data_subject", "data_category", "processing_context", "storage_or_retention_signal", "training_or_finetuning_signal", "source_url", "evidence_quote", "confidence"],
-      "additionalProperties": false,
-      "properties": {
-        "provenance_id": { "type": "string" },
-        "feature_id": { "type": "string" },
-        "data_origin": { "type": "string", "enum": ["user_provided", "customer_provided", "third_party_source", "public_web", "system_generated", "unknown"] },
-        "data_subject": { "type": "string", "enum": ["user", "customer", "employee", "consumer", "developer", "child", "business_entity", "unknown"] },
-        "data_category": { "type": "string", "enum": ["prompt", "account", "contact", "uploaded_file", "generated_output", "audio", "payment", "usage_log", "support", "sensitive", "unknown"] },
-        "processing_context": { "type": "string" },
-        "storage_or_retention_signal": { "type": "string" },
-        "training_or_finetuning_signal": { "type": "string" },
-        "source_url": { "type": "string" },
-        "evidence_quote": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
-      }
-    },
     "archetypeProvenance": {
       "type": "object",
       "required": ["archetype_code", "registry_key_detection_logic", "matched_feature_behavior", "evidence_quote", "source_url", "confidence"],
@@ -243,14 +232,18 @@
       }
     },
     "fieldEvidenceRef": {
+      "description": "Permissive audit evidence object. The canonical feature-level evidence is enforced inside feature_inventory; this top-level audit array may contain compact or legacy evidence notes from the model.",
       "type": "object",
-      "required": ["field_path", "evidence_refs", "basis", "confidence"],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "field_path": { "type": "string" },
         "evidence_refs": { "type": "array", "items": { "type": "string" } },
         "basis": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence_source_id": { "type": "string" },
+        "source_url": { "type": "string" },
+        "claim_supported": { "type": "string" },
+        "evidence_quote": { "type": "string" }
       }
     }
   }
