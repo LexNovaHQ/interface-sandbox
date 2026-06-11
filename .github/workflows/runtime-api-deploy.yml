@@ -19,8 +19,9 @@ on:
         options:
           - deploy
           - audit-existing-runtime
+          - stage4-stage5-audit
       runtime_url:
-        description: 'Existing runtime URL for audit-existing-runtime mode'
+        description: 'Existing runtime URL for audit modes'
         required: false
         default: 'https://lexnova-runtime-api-24qnalslaa-uc.a.run.app'
         type: string
@@ -239,7 +240,7 @@ jobs:
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
           test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
-          test -f runtime-api/.runtime-e2e-cache/stage8-operator-challenge.json && echo "stage8 audit export found" || echo "stage8 audit export missing"
+          test -f runtime-api/.runtime-e2e-cache/stage8-operator-challenge.json && echo "stage8 audit export found" || echo "stage8 operator challenge missing"
           test -f runtime-api/.runtime-e2e-cache/stage8-corrected-ledger.json && echo "stage8 corrected ledger found" || echo "stage8 corrected ledger missing"
           test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
           test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
@@ -259,9 +260,10 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
 
-  audit-existing-runtime:
+  stage4-stage5-audit:
+    name: Stage 4 + Stage 5 runtime audit
     needs: check
-    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'audit-existing-runtime'
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'stage4-stage5-audit'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -293,6 +295,9 @@ jobs:
         working-directory: runtime-api
         run: npm install
 
+      - name: Clear runtime E2E cache
+        run: rm -rf runtime-api/.runtime-e2e-cache && mkdir -p runtime-api/.runtime-e2e-cache
+
       - name: Smoke existing runtime
         working-directory: runtime-api
         env:
@@ -314,60 +319,18 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run e2e:stage5:features
 
-      - name: Run Stage 6 Legal Stack Review E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage6:legal
-
-      - name: Run Stage 7 Registry Ledger E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage7:registry
-
-      - name: Run Stage 8 Operator Challenge E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run e2e:stage8:operator
-
-      - name: Run Stage 9 Report Assembler E2E
-        working-directory: runtime-api
-        run: npm run e2e:stage9:report
-
-      - name: Render Stage 9 HTML report
-        working-directory: runtime-api
-        run: npm run render:stage9:html
-
-      - name: Run Stage 10 Vault Handoff E2E
-        working-directory: runtime-api
-        run: npm run e2e:stage10:vault
-
-      - name: Verify Stage 7/8/9/10 report exports
+      - name: Verify Stage 4/5 audit exports
         if: always()
         run: |
           ls -la runtime-api/.runtime-e2e-cache || true
-          test -f runtime-api/.runtime-e2e-cache/stage7-priority-ledger.json && echo "stage7 audit export found" || echo "stage7 audit export missing"
-          test -f runtime-api/.runtime-e2e-cache/stage8-operator-challenge.json && echo "stage8 audit export found" || echo "stage8 audit export missing"
-          test -f runtime-api/.runtime-e2e-cache/stage8-corrected-ledger.json && echo "stage8 corrected ledger found" || echo "stage8 corrected ledger missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-report-data.json && echo "stage9 report data found" || echo "stage9 report data missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-report-preview.json && echo "stage9 report preview found" || echo "stage9 report preview missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-report-validation.json && echo "stage9 report validation found" || echo "stage9 report validation missing"
-          test -f runtime-api/.runtime-e2e-cache/legal-exposure-diligence-report.html && echo "stage9 HTML report found" || echo "stage9 HTML report missing"
-          test -f runtime-api/.runtime-e2e-cache/stage9-html-render-validation.json && echo "stage9 HTML validation found" || echo "stage9 HTML validation missing"
-          test -f runtime-api/.runtime-e2e-cache/review-ready-remediation-handoff.json && echo "stage10 handoff found" || echo "stage10 handoff missing"
-          test -f runtime-api/.runtime-e2e-cache/vault-handoff-preview.json && echo "stage10 handoff preview found" || echo "stage10 handoff preview missing"
-          test -f runtime-api/.runtime-e2e-cache/stage10-handoff-validation.json && echo "stage10 handoff validation found" || echo "stage10 handoff validation missing"
+          test -f runtime-api/.runtime-e2e-cache/stage4-company-profile.json && echo "stage4 company profile export found" || echo "stage4 company profile export missing"
+          test -f runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json && echo "stage5 target feature profile export found" || echo "stage5 target feature profile export missing"
 
-      - name: Upload runtime E2E cache
+      - name: Upload Stage 4/5 runtime audit cache
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: runtime-e2e-cache
+          name: runtime-stage4-stage5-audit-cache
           path: runtime-api/.runtime-e2e-cache/**
           include-hidden-files: true
           if-no-files-found: warn
