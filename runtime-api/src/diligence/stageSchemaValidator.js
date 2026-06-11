@@ -18,6 +18,8 @@ const TARGET_PROFILE_V2_TOP_LEVEL_KEYS = [
 ];
 const CONFIDENCE_VALUES = new Set(["high", "medium", "low", "unknown"]);
 const CANDIDATE_STATUSES = new Set(["PREFILL_READY", "CONFIRM", "UNKNOWN"]);
+const TRI_STATE_VALUES = new Set(["true", "false", "unknown"]);
+const ABSENCE_MARKERS = new Set(["", "unknown", "not_visible", "not published", "not_published", "not found", "not_found", "not stated", "not_stated", "not available", "not_available", "none", "n/a", "na", "unclear"]);
 
 function normalizeRegistryEvidenceRefValue(value) {
   if (typeof value === "string" && value.trim()) return value.trim();
@@ -97,6 +99,66 @@ function assertConfidence(value, path, errors) {
   if (!CONFIDENCE_VALUES.has(value)) errors.push(error(path, "must be one of high, medium, low, unknown", "enum"));
 }
 
+function normalizeTriStateValue(value) {
+  if (value === true) return "true";
+  if (value === false) return "false";
+  if (value === null || value === undefined) return "unknown";
+  if (typeof value === "number") {
+    if (value === 1) return "true";
+    if (value === 0) return "false";
+  }
+  if (typeof value !== "string") return value;
+  const normalized = value.trim().toLowerCase();
+  if (TRI_STATE_VALUES.has(normalized)) return normalized;
+  if (["yes", "y", "present", "available", "published", "supported", "has", "included"].includes(normalized)) return "true";
+  if (["no", "n", "absent", "unavailable", "unsupported", "does not have", "not included"].includes(normalized)) return "false";
+  if (ABSENCE_MARKERS.has(normalized)) return "unknown";
+  return value;
+}
+
+function normalizeConfidenceValue(value) {
+  if (value === null || value === undefined) return "unknown";
+  if (typeof value !== "string") return value;
+  const normalized = value.trim().toLowerCase();
+  if (CONFIDENCE_VALUES.has(normalized)) return normalized;
+  if (["not_published", "not published", "not_visible", "not visible", "unclear", "not found", "not_found"].includes(normalized)) return "unknown";
+  return value;
+}
+
+function normalizeEnumRepresentations(value) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => normalizeEnumRepresentations(item));
+    return value;
+  }
+  if (!isObject(value)) return value;
+  for (const [key, child] of Object.entries(value)) {
+    if (["delivery_app_candidate", "delivery_api_candidate", "external_action_signal", "app", "api", "web"].includes(key)) {
+      value[key] = normalizeTriStateValue(child);
+      continue;
+    }
+    if (key === "confidence" || key.endsWith("_confidence")) {
+      value[key] = normalizeConfidenceValue(child);
+      continue;
+    }
+    normalizeEnumRepresentations(child);
+  }
+  return value;
+}
+
+function normalizeTargetProfileV2ForValidation(data) {
+  return normalizeEnumRepresentations(data);
+}
+
+function normalizeTargetFeatureProfileForValidation(data) {
+  return normalizeEnumRepresentations(data);
+}
+
+function normalizeOutputForSchema(schemaKey, data) {
+  if (schemaKey === "targetProfileV2") return normalizeTargetProfileV2ForValidation(data);
+  if (schemaKey === "targetFeatureProfile") return normalizeTargetFeatureProfileForValidation(data);
+  return normalizeRegistryLedgerForSchema(schemaKey, data);
+}
+
 function validateCandidate(value, path, errors) {
   if (!isObject(value)) {
     errors.push(error(path, "must be object", "type"));
@@ -123,62 +185,63 @@ function validateCandidateTree(value, path, errors) {
 
 function validateTargetProfileV2(data) {
   const errors = [];
-  if (!isObject(data)) return { ok: false, errors: [error("/", "must be object", "type")] };
+  const normalizedData = normalizeTargetProfileV2ForValidation(data);
+  if (!isObject(normalizedData)) return { ok: false, errors: [error("/", "must be object", "type")] };
 
-  hasOnlyKeys(data, TARGET_PROFILE_V2_TOP_LEVEL_KEYS, "", errors);
-  if (data.target_profile_version !== "target_profile_v2") errors.push(error("/target_profile_version", "must be target_profile_v2", "const"));
+  hasOnlyKeys(normalizedData, TARGET_PROFILE_V2_TOP_LEVEL_KEYS, "", errors);
+  if (normalizedData.target_profile_version !== "target_profile_v2") errors.push(error("/target_profile_version", "must be target_profile_v2", "const"));
 
   for (const legacy of ["company_profile_version", "company_identity", "operating_profile", "downstream_assumptions"]) {
-    if (Object.prototype.hasOwnProperty.call(data, legacy)) errors.push(error(`/${legacy}`, "legacy Stage 4 key is forbidden in target_profile_v2", "forbidden"));
+    if (Object.prototype.hasOwnProperty.call(normalizedData, legacy)) errors.push(error(`/${legacy}`, "legacy Stage 4 key is forbidden in target_profile_v2", "forbidden"));
   }
 
-  if (isObject(data.identity)) {
-    hasOnlyKeys(data.identity, ["brand_name", "legal_name", "trade_names", "website", "domain", "entity_type", "entity_type_family", "corporate_status_signal", "operator_or_controller_signal", "identity_confidence"], "/identity", errors);
-    ["brand_name", "legal_name", "website", "domain", "entity_type", "corporate_status_signal", "operator_or_controller_signal"].forEach((key) => assertString(data.identity[key], `/identity/${key}`, errors));
-    assertArray(data.identity.trade_names, "/identity/trade_names", errors);
-    if (!["india", "us", "eu_uk", "other", "unknown"].includes(data.identity.entity_type_family)) errors.push(error("/identity/entity_type_family", "must be india, us, eu_uk, other, or unknown", "enum"));
-    assertConfidence(data.identity.identity_confidence, "/identity/identity_confidence", errors);
+  if (isObject(normalizedData.identity)) {
+    hasOnlyKeys(normalizedData.identity, ["brand_name", "legal_name", "trade_names", "website", "domain", "entity_type", "entity_type_family", "corporate_status_signal", "operator_or_controller_signal", "identity_confidence"], "/identity", errors);
+    ["brand_name", "legal_name", "website", "domain", "entity_type", "corporate_status_signal", "operator_or_controller_signal"].forEach((key) => assertString(normalizedData.identity[key], `/identity/${key}`, errors));
+    assertArray(normalizedData.identity.trade_names, "/identity/trade_names", errors);
+    if (!["india", "us", "eu_uk", "other", "unknown"].includes(normalizedData.identity.entity_type_family)) errors.push(error("/identity/entity_type_family", "must be india, us, eu_uk, other, or unknown", "enum"));
+    assertConfidence(normalizedData.identity.identity_confidence, "/identity/identity_confidence", errors);
   }
 
-  if (isObject(data.jurisdiction)) {
-    hasOnlyKeys(data.jurisdiction, ["registered_or_notice_country", "registered_or_notice_state", "city", "full_address", "governing_law_country", "governing_law_state", "courts_or_venue", "source_basis", "confidence"], "/jurisdiction", errors);
-    ["registered_or_notice_country", "registered_or_notice_state", "city", "full_address", "governing_law_country", "governing_law_state", "courts_or_venue", "source_basis"].forEach((key) => assertString(data.jurisdiction[key], `/jurisdiction/${key}`, errors));
-    assertConfidence(data.jurisdiction.confidence, "/jurisdiction/confidence", errors);
+  if (isObject(normalizedData.jurisdiction)) {
+    hasOnlyKeys(normalizedData.jurisdiction, ["registered_or_notice_country", "registered_or_notice_state", "city", "full_address", "governing_law_country", "governing_law_state", "courts_or_venue", "source_basis", "confidence"], "/jurisdiction", errors);
+    ["registered_or_notice_country", "registered_or_notice_state", "city", "full_address", "governing_law_country", "governing_law_state", "courts_or_venue", "source_basis"].forEach((key) => assertString(normalizedData.jurisdiction[key], `/jurisdiction/${key}`, errors));
+    assertConfidence(normalizedData.jurisdiction.confidence, "/jurisdiction/confidence", errors);
   }
 
-  if (isObject(data.business_model)) {
-    hasOnlyKeys(data.business_model, ["business_category", "primary_customer_type", "market_type_candidate", "sales_motion", "revenue_model_signal", "enterprise_or_self_serve_signal", "public_sector_signal", "business_model_confidence"], "/business_model", errors);
-    ["business_category", "primary_customer_type", "sales_motion", "revenue_model_signal", "enterprise_or_self_serve_signal", "public_sector_signal"].forEach((key) => assertString(data.business_model[key], `/business_model/${key}`, errors));
-    if (!["b2b", "b2c", "hybrid", "unknown"].includes(data.business_model.market_type_candidate)) errors.push(error("/business_model/market_type_candidate", "must be b2b, b2c, hybrid, or unknown", "enum"));
-    assertConfidence(data.business_model.business_model_confidence, "/business_model/business_model_confidence", errors);
+  if (isObject(normalizedData.business_model)) {
+    hasOnlyKeys(normalizedData.business_model, ["business_category", "primary_customer_type", "market_type_candidate", "sales_motion", "revenue_model_signal", "enterprise_or_self_serve_signal", "public_sector_signal", "business_model_confidence"], "/business_model", errors);
+    ["business_category", "primary_customer_type", "sales_motion", "revenue_model_signal", "enterprise_or_self_serve_signal", "public_sector_signal"].forEach((key) => assertString(normalizedData.business_model[key], `/business_model/${key}`, errors));
+    if (!["b2b", "b2c", "hybrid", "unknown"].includes(normalizedData.business_model.market_type_candidate)) errors.push(error("/business_model/market_type_candidate", "must be b2b, b2c, hybrid, or unknown", "enum"));
+    assertConfidence(normalizedData.business_model.business_model_confidence, "/business_model/business_model_confidence", errors);
   }
 
-  if (isObject(data.market_context)) {
-    hasOnlyKeys(data.market_context, ["industry", "target_geographies", "target_languages", "regulated_sector_hints", "market_context_confidence"], "/market_context", errors);
-    assertString(data.market_context.industry, "/market_context/industry", errors);
-    assertArray(data.market_context.target_geographies, "/market_context/target_geographies", errors);
-    assertArray(data.market_context.target_languages, "/market_context/target_languages", errors);
-    assertArray(data.market_context.regulated_sector_hints, "/market_context/regulated_sector_hints", errors);
-    assertConfidence(data.market_context.market_context_confidence, "/market_context/market_context_confidence", errors);
+  if (isObject(normalizedData.market_context)) {
+    hasOnlyKeys(normalizedData.market_context, ["industry", "target_geographies", "target_languages", "regulated_sector_hints", "market_context_confidence"], "/market_context", errors);
+    assertString(normalizedData.market_context.industry, "/market_context/industry", errors);
+    assertArray(normalizedData.market_context.target_geographies, "/market_context/target_geographies", errors);
+    assertArray(normalizedData.market_context.target_languages, "/market_context/target_languages", errors);
+    assertArray(normalizedData.market_context.regulated_sector_hints, "/market_context/regulated_sector_hints", errors);
+    assertConfidence(normalizedData.market_context.market_context_confidence, "/market_context/market_context_confidence", errors);
   }
 
-  if (isObject(data.product_baseline)) {
-    hasOnlyKeys(data.product_baseline, ["high_level_offering", "primary_claim", "products", "delivery_app_candidate", "delivery_api_candidate", "beta_or_preview_signal", "integration_candidates"], "/product_baseline", errors);
-    ["high_level_offering", "primary_claim", "beta_or_preview_signal"].forEach((key) => assertString(data.product_baseline[key], `/product_baseline/${key}`, errors));
-    assertArray(data.product_baseline.products, "/product_baseline/products", errors);
-    assertArray(data.product_baseline.integration_candidates, "/product_baseline/integration_candidates", errors);
-    if (!["true", "false", "unknown"].includes(data.product_baseline.delivery_app_candidate)) errors.push(error("/product_baseline/delivery_app_candidate", "must be true, false, or unknown", "enum"));
-    if (!["true", "false", "unknown"].includes(data.product_baseline.delivery_api_candidate)) errors.push(error("/product_baseline/delivery_api_candidate", "must be true, false, or unknown", "enum"));
+  if (isObject(normalizedData.product_baseline)) {
+    hasOnlyKeys(normalizedData.product_baseline, ["high_level_offering", "primary_claim", "products", "delivery_app_candidate", "delivery_api_candidate", "beta_or_preview_signal", "integration_candidates"], "/product_baseline", errors);
+    ["high_level_offering", "primary_claim", "beta_or_preview_signal"].forEach((key) => assertString(normalizedData.product_baseline[key], `/product_baseline/${key}`, errors));
+    assertArray(normalizedData.product_baseline.products, "/product_baseline/products", errors);
+    assertArray(normalizedData.product_baseline.integration_candidates, "/product_baseline/integration_candidates", errors);
+    if (!TRI_STATE_VALUES.has(normalizedData.product_baseline.delivery_app_candidate)) errors.push(error("/product_baseline/delivery_app_candidate", "must be true, false, or unknown", "enum"));
+    if (!TRI_STATE_VALUES.has(normalizedData.product_baseline.delivery_api_candidate)) errors.push(error("/product_baseline/delivery_api_candidate", "must be true, false, or unknown", "enum"));
   }
 
-  assertArray(data.data_touchpoint_map, "/data_touchpoint_map", errors);
-  if (isObject(data.vault_baseline_candidates)) validateCandidateTree(data.vault_baseline_candidates, "/vault_baseline_candidates", errors);
-  if (isObject(data.evidence)) {
-    hasOnlyKeys(data.evidence, ["field_evidence_refs", "unresolved_questions"], "/evidence", errors);
-    assertArray(data.evidence.field_evidence_refs, "/evidence/field_evidence_refs", errors);
-    assertArray(data.evidence.unresolved_questions, "/evidence/unresolved_questions", errors);
+  assertArray(normalizedData.data_touchpoint_map, "/data_touchpoint_map", errors);
+  if (isObject(normalizedData.vault_baseline_candidates)) validateCandidateTree(normalizedData.vault_baseline_candidates, "/vault_baseline_candidates", errors);
+  if (isObject(normalizedData.evidence)) {
+    hasOnlyKeys(normalizedData.evidence, ["field_evidence_refs", "unresolved_questions"], "/evidence", errors);
+    assertArray(normalizedData.evidence.field_evidence_refs, "/evidence/field_evidence_refs", errors);
+    assertArray(normalizedData.evidence.unresolved_questions, "/evidence/unresolved_questions", errors);
   }
-  assertArray(data.limitations, "/limitations", errors);
+  assertArray(normalizedData.limitations, "/limitations", errors);
 
   return { ok: errors.length === 0, errors };
 }
@@ -246,7 +309,7 @@ export function validateDiligenceStageOutput(schemaKey, data) {
     };
   }
 
-  const dataForValidation = normalizeRegistryLedgerForSchema(schemaKey, data);
+  const dataForValidation = normalizeOutputForSchema(schemaKey, data);
   const result = validateGeneratedSchema(schemaKey, dataForValidation);
 
   return {
