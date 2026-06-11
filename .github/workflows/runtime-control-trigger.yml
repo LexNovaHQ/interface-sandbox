@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - '.github/runtime-control/request.json'
+      - 'runtime-control-request.json'
+      - '.github/workflows/runtime-control-trigger.yml'
 
 jobs:
   read-control:
@@ -24,7 +25,9 @@ jobs:
           set -euo pipefail
           node <<'NODE' >> "$GITHUB_OUTPUT"
           const fs = require('fs');
-          const file = '.github/runtime-control/request.json';
+          const candidates = ['runtime-control-request.json', '.github/runtime-control/request.json'];
+          const file = candidates.find((candidate) => fs.existsSync(candidate));
+          if (!file) throw new Error(`No runtime control request found. Checked: ${candidates.join(', ')}`);
           const request = JSON.parse(fs.readFileSync(file, 'utf8'));
           const mode = String(request.mode || '').trim();
           const allowed = new Set(['deploy', 'stage4-stage5-audit']);
