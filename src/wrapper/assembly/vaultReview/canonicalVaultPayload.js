@@ -20,13 +20,14 @@ function readSuggestionValue(suggestion) {
 
 function toInputString(value) {
   if (value === null || value === undefined) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (["string", "number", "boolean"].includes(typeof value)) return String(value);
   return JSON.stringify(value, null, 2);
 }
 
 function parseValue(raw, originalValue) {
   if (raw === "") return "";
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "number") return raw;
   if (typeof originalValue === "boolean") return String(raw).toLowerCase() === "true";
   if (typeof originalValue === "number") {
     const next = Number(raw);
@@ -42,6 +43,10 @@ function parseValue(raw, originalValue) {
   if (String(raw).toLowerCase() === "true") return true;
   if (String(raw).toLowerCase() === "false") return false;
   return raw;
+}
+
+function isCanonicalVaultPath(fieldPath) {
+  return VAULT_GROUPS.some((group) => fieldPath === group || String(fieldPath || "").startsWith(`${group}.`));
 }
 
 function setDeepValue(target, dottedPath, value) {
@@ -103,17 +108,28 @@ export function buildCanonicalVaultPayload({
     compliance: {}
   };
 
+  const originalValuesByPath = new Map();
+
   flattenVaultSuggestions(vaultPrefill).forEach((suggestion) => {
+    originalValuesByPath.set(suggestion.field_path, suggestion.value);
     const raw = Object.prototype.hasOwnProperty.call(fieldValues, suggestion.field_path)
       ? fieldValues[suggestion.field_path]
       : suggestion.input_value;
-    setDeepValue(payload, suggestion.field_path, parseValue(raw, suggestion.value));
+    if (raw !== undefined && raw !== null && raw !== "") {
+      setDeepValue(payload, suggestion.field_path, parseValue(raw, suggestion.value));
+    }
+  });
+
+  Object.entries(fieldValues || {}).forEach(([fieldPath, raw]) => {
+    if (!fieldPath || !isCanonicalVaultPath(fieldPath)) return;
+    if (raw === undefined || raw === null || raw === "") return;
+    setDeepValue(payload, fieldPath, parseValue(raw, originalValuesByPath.get(fieldPath)));
   });
 
   Object.entries(confirmationAnswers || {}).forEach(([fieldPath, answer]) => {
     if (!fieldPath || answer === undefined || answer === null || answer === "") return;
-    if (!VAULT_GROUPS.some((group) => fieldPath === group || fieldPath.startsWith(`${group}.`))) return;
-    setDeepValue(payload, fieldPath, parseValue(answer, null));
+    if (!isCanonicalVaultPath(fieldPath)) return;
+    setDeepValue(payload, fieldPath, parseValue(answer, originalValuesByPath.get(fieldPath)));
   });
 
   return payload;
