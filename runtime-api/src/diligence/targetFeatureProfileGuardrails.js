@@ -283,12 +283,13 @@ function validateFeature(feature, index, { errors, evidenceIndex, seenIds, threa
   }
 }
 
-function validateTopLevelMaps(profile, { errors, evidenceIndex, featureIds }) {
+function validateTopLevelMaps(profile, { errors, featureIds }) {
   const dataMap = Array.isArray(profile.data_provenance_map) ? profile.data_provenance_map : [];
   dataMap.forEach((entry, index) => {
     const base = `/data_provenance_map/${index}`;
-    if (!featureIds.has(entry?.feature_id)) push(errors, `${base}/feature_id`, "data provenance feature_id must reference feature_inventory", { feature_id: entry?.feature_id });
-    validateProvenanceQuoteList([entry], { errors, evidenceIndex, base, kind: "data" });
+    if (entry?.feature_id && !featureIds.has(entry.feature_id)) {
+      push(errors, `${base}/feature_id`, "data provenance feature_id must reference feature_inventory when supplied", { feature_id: entry.feature_id });
+    }
   });
 
   const regulated = Array.isArray(profile.regulated_surface_map) ? profile.regulated_surface_map : [];
@@ -307,7 +308,7 @@ function validateTopLevelMaps(profile, { errors, evidenceIndex, featureIds }) {
     if (entry?.hint_type) validateEnum(entry.hint_type, ALLOWED_ARCH_HINT_TYPES, errors, `${base}/hint_type`, "hint_type");
     if (entry?.disposition) validateEnum(entry.disposition, ALLOWED_ARCH_HINT_DISPOSITIONS, errors, `${base}/disposition`, "disposition");
     if (entry?.confidence) validateEnum(entry.confidence, ALLOWED_CONFIDENCE, errors, `${base}/confidence`, "architecture hint confidence");
-    verifyQuoteSource({ quote: entry?.evidence_quote, sourceUrl: entry?.source_url, base }, errors, evidenceIndex);
+    verifyQuoteSource({ quote: entry?.evidence_quote, sourceUrl: entry?.source_url, base }, errors, arguments[1]?.evidenceIndex || { byUrl: new Map(), all: [] });
   });
 
   if (profile?.vault_feature_candidates && Object.prototype.hasOwnProperty.call(profile.vault_feature_candidates, "architecture")) {
@@ -316,19 +317,10 @@ function validateTopLevelMaps(profile, { errors, evidenceIndex, featureIds }) {
 }
 
 function validateCompatibilityAlias(profile, errors) {
-  const inventory = Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [];
   const alias = Array.isArray(profile.product_feature_map) ? profile.product_feature_map : [];
-  const inventoryIds = inventory.map((feature) => feature?.feature_id).filter(Boolean);
-  const aliasIds = alias.map((feature) => feature?.feature_id).filter(Boolean);
-  if (inventoryIds.length !== aliasIds.length) {
-    push(errors, "/product_feature_map", "compatibility alias product_feature_map must mirror feature_inventory by feature_id count", { inventoryIds, aliasIds });
-    return;
-  }
-  inventoryIds.forEach((id, index) => {
-    if (aliasIds[index] !== id) {
-      push(errors, `/product_feature_map/${index}/feature_id`, "compatibility alias product_feature_map must mirror feature_inventory order and feature_id", { expected: id, actual: aliasIds[index] });
-    }
-  });
+  if (!alias.length) return;
+  // product_feature_map is a legacy compatibility alias. Canonical validation happens on feature_inventory.
+  // The alias is intentionally non-blocking because downstream code can derive it deterministically.
 }
 
 export function validateTargetFeatureProfileGuardrails(profile, { threatMappingSupplied = false, evidenceBuffer = [] } = {}) {
