@@ -10,11 +10,11 @@ export { APP_NAME, APP_SUBTITLE, GLOBAL_DISCLAIMER };
 export const APP_ID = "interface-sandbox";
 export const PHASE = RUNTIME_VERSION;
 
-export const STATUS_TEXT = "Runtime implementation pending.";
+export const STATUS_TEXT = "Diligence Engine live review activation in progress.";
 
 export const OPERATIONAL_CHAIN = [
   "Public Source",
-  "Diligence Layer",
+  "Diligence Engine",
   "Assembly Layer",
   "Delivery Portal",
   "Maintenance Monitor"
@@ -23,10 +23,10 @@ export const OPERATIONAL_CHAIN = [
 export const UNIT_PANELS = [
   {
     path: "/diligence",
-    title: "Diligence Layer",
+    title: "Diligence Engine",
     unit: "DILIGENCE",
     summary:
-      "Future public evidence intake, source collection, feature classification, threat registry evaluation, diligence report, and Assembly handoff."
+      "Live public-footprint and document-led diligence engine producing a Legal Exposure Diligence Report and Review-Ready Remediation Handoff."
   },
   {
     path: "/assembly",
