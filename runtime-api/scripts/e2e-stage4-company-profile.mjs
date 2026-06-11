@@ -107,9 +107,9 @@ function collectSources(discovery) {
   return selected;
 }
 
-function companySourceRecords(sourceBundle) {
+function stage4SourceRecords(sourceBundle, familyFilter = null) {
   return (sourceBundle.raw_footprint?.source_records || [])
-    .filter((record) => record.source_family === "company_profile")
+    .filter((record) => !familyFilter || record.source_family === familyFilter)
     .map((record) => ({
       evidence_source_id: record.evidence_source_id,
       source_family: record.source_family,
@@ -151,19 +151,23 @@ const captureResponse = await postJson(base, "/v1/source-capture", {
 
 const sourceBundle = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `stage4_source_bundle_${Date.now()}` });
 const junction = buildEvidenceJunction({ sourceBundle, runId: `stage4_junction_${Date.now()}` });
-const companySources = companySourceRecords(sourceBundle);
-if (!companySources.length) fail("No company_profile source records available", { source_counts: sourceBundle.scrape_meta?.coverage_summary?.source_counts || {} });
+const targetProfileSources = stage4SourceRecords(sourceBundle);
+const companyProfileSources = stage4SourceRecords(sourceBundle, "company_profile");
+if (!targetProfileSources.length) fail("No Stage 4 target profile source records available", { source_counts: sourceBundle.scrape_meta?.coverage_summary?.source_counts || {} });
 
 const stageInput = {
   target_input: targetInput,
   source_bundle_version: sourceBundle.source_bundle_version,
   source_bundle_sha256: junction.source_bundle_sha256 || null,
   evidence_junction_version: junction.evidence_junction_version,
-  company_profile_sources: companySources,
+  target_profile_sources: targetProfileSources,
+  company_profile_sources: companyProfileSources,
   input_policy: {
-    company_family_only: true,
+    target_profile_source_packet: true,
+    company_family_only: false,
     product_feature_mapping_forbidden: true,
     legal_review_forbidden: true,
+    registry_evaluation_forbidden: true,
     outside_browsing_forbidden: true
   }
 };
@@ -207,7 +211,8 @@ console.log(JSON.stringify({
   source_bundle_version: sourceBundle.source_bundle_version,
   evidence_junction_version: junction.evidence_junction_version,
   target_profile_version: profile.target_profile_version,
-  company_sources: companySources.length,
+  target_profile_sources: targetProfileSources.length,
+  company_sources: companyProfileSources.length,
   brand_name: profile.identity?.brand_name || null,
   legal_name: profile.identity?.legal_name || null,
   entity_type: profile.identity?.entity_type || null,
