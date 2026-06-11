@@ -7,6 +7,7 @@ import { createPoolRouter } from "./src/routes/poolRoutes.js";
 import { createSourceDiscoveryRouter } from "./src/routes/sourceDiscoveryRoute.js";
 import { createSourceCaptureRouter } from "./src/routes/sourceCaptureRoute.js";
 import { createDiligenceStageRouter } from "./src/routes/diligenceStageRoutes.js";
+import { createLiveDiligenceRouter } from "./src/routes/liveDiligenceRoutes.js";
 const app = express();
 const runtime = readRuntimeEnv();
 
@@ -36,8 +37,8 @@ function healthPayload() {
   return {
     ok: envStatus.required_missing.length === 0,
     service: "lexnova-runtime-api",
-    version: "0.4.0",
-    phase: "phase_4_runtime_stage_runner",
+    version: "0.5.0",
+    phase: "phase_5_live_diligence_review",
     runtime: {
       node_env: currentRuntime.node_env,
       allowed_origin: currentRuntime.allowed_origin,
@@ -47,10 +48,11 @@ function healthPayload() {
     pools: currentRuntime.pools,
     env_status: envStatus,
     architecture: {
-      cloudflare_role: "static_react_host_only",
+      cloudflare_role: "static_react_host_and_secret_proxy",
       runtime_role: "cloud_run_intelligence_runtime",
       artificial_evidence_limits: false,
-      automatic_batch_continuation_required: true
+      automatic_batch_continuation_required: true,
+      live_diligence_review_enabled: true
     }
   };
 }
@@ -68,6 +70,7 @@ app.use("/v1/pool", requireToken, createPoolRouter());
 app.use("/v1/source-discovery", requireToken, createSourceDiscoveryRouter());
 app.use("/v1/source-capture", requireToken, createSourceCaptureRouter());
 app.use("/v1/diligence/stage", requireToken, createDiligenceStageRouter());
+app.use("/v1/diligence/live-run", requireToken, createLiveDiligenceRouter());
 
 app.use((req, res) => {
   res.status(404).json({ ok: false, service: "lexnova-runtime-api", error_type: "NOT_FOUND" });
