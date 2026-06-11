@@ -94,22 +94,13 @@ export function flattenVaultSuggestions(vaultPrefill = {}) {
 export function buildCanonicalVaultPayload({
   vaultPrefill = {},
   fieldValues = {},
-  confirmationAnswers = {},
-  matterMeta = {}
+  confirmationAnswers = {}
 } = {}) {
   const payload = {
     baseline: {},
     architecture: {},
     archetypes: {},
-    compliance: {},
-    assembly_review: {
-      status: "vault_confirmed",
-      confirmed_at: new Date().toISOString(),
-      source: "stage10_node5b_handoff_plus_reviewer_confirmation",
-      matter_id: matterMeta.matter_id || null,
-      run_id: matterMeta.run_id || null,
-      review_target: matterMeta.review_target || null
-    }
+    compliance: {}
   };
 
   flattenVaultSuggestions(vaultPrefill).forEach((suggestion) => {
