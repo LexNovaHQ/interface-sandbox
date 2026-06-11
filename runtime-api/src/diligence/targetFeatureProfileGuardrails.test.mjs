@@ -7,7 +7,7 @@ const evidenceBuffer = [
     source_family: "product_profile",
     source_url: "https://example.ai/products/speech",
     final_url: "https://example.ai/products/speech",
-    clean_text_lossless: "Example Speech API provides a Speech-to-text API converts uploaded audio into text. Developers can use the transcript in their applications."
+    clean_text_lossless: "Example Speech API provides a Speech-to-text API converts uploaded audio into text. Developers can use the transcript in their applications. Check balances. Update records. Schedule appointments. Process payments. Samvaad connects to your systems and gets the work done."
   }
 ];
 
@@ -137,6 +137,11 @@ const valid = {
 const validResult = validateTargetFeatureProfileGuardrails(valid, { evidenceBuffer });
 assert.equal(validResult.ok, true, JSON.stringify(validResult.errors, null, 2));
 
+const reorderedLocalEvidenceQuote = structuredClone(valid);
+reorderedLocalEvidenceQuote.feature_inventory[0].archetype_provenance[0].evidence_quote = "Samvaad connects to your systems and gets the work done. Check balances. Update records. Schedule appointments. Process payments.";
+const reorderedQuoteResult = validateTargetFeatureProfileGuardrails(reorderedLocalEvidenceQuote, { evidenceBuffer });
+assert.equal(reorderedQuoteResult.ok, true, JSON.stringify(reorderedQuoteResult.errors, null, 2));
+
 const legacyAliasIsBlocking = structuredClone(valid);
 legacyAliasIsBlocking.product_feature_map = [{ feature_id: "legacy_1", name: "legacy shape" }];
 legacyAliasIsBlocking.data_provenance_map = [{ feature_id: "F001", compact_note: "legacy support map" }];
@@ -190,6 +195,7 @@ console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
   valid_ok: validResult.ok,
+  reordered_quote_ok: reorderedQuoteResult.ok,
   alias_blocking_ok: aliasResult.ok,
   missing_data_error_count: missingDataResult.errors.length,
   missing_quote_error_count: missingQuoteResult.errors.length,
