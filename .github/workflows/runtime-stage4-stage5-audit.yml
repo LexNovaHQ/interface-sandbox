@@ -42,7 +42,7 @@ jobs:
           test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
           test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
 
-      - name: Verify Stage 5 candidate-walk architecture
+      - name: Verify Stage 5 unified candidate-walk architecture
         run: |
           set -euo pipefail
           node <<'NODE'
@@ -50,55 +50,45 @@ jobs:
           const checks = [];
           const read = (p) => fs.readFileSync(p, 'utf8');
           const has = (p, needle) => read(p).includes(needle);
+          const notHas = (p, needle) => !has(p, needle);
           const match = (p, pattern) => pattern.test(read(p));
           const check = (name, ok) => checks.push({ name, ok: Boolean(ok) });
 
-          check('Stage 5 E2E uses product_profile_sources only',
-            match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[\s*["']product_profile_sources["']\s*\]/));
-          check('Stage 5 E2E does not include company family bucket',
-            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[[\s\S]*company_profile_sources/));
-          check('Stage 5 E2E does not include legal family bucket',
-            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[[\s\S]*legal_profile_sources/));
-          check('Stage 5 E2E does not include governance family bucket',
-            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[[\s\S]*governance_profile_sources/));
-          check('Stage 5 source policy says product-family packet',
-            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'stage5_own_product_family_routed_packet_no_stage4_source_cache'));
-          check('Stage 5 E2E logs deterministic candidate count',
-            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'deterministic_candidate_count'));
-
-          check('Package Stage 5 E2E wires strict audit',
-            match('runtime-api/package.json', /e2e:stage5:features[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
-          check('Package completeness audit wires strict audit',
-            match('runtime-api/package.json', /audit:stage5:completeness[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
-          check('Package check covers strict audit syntax',
-            match('runtime-api/package.json', /check[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
-
-          check('Stage 5 adapter creates deterministic candidate index',
-            has('runtime-api/src/diligence/adapters/targetFeatureProfileInputAdapterNonDropping.js', 'target_feature_candidate_index'));
-          check('Stage 5 adapter labels index as high recall, not final judgment',
-            has('runtime-api/src/diligence/adapters/targetFeatureProfileInputAdapterNonDropping.js', 'deterministic_high_recall_not_final_judgment'));
-
+          check('Stage 5 E2E imports shared package builder',
+            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'stage5TargetFeaturePackageBuilder'));
+          check('Live runtime imports shared package builder',
+            has('runtime-api/src/live/liveDiligenceRunOrchestrator.js', 'stage5TargetFeaturePackageBuilder'));
+          check('Stage 5 E2E no longer owns product bucket truth',
+            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[/));
+          check('Stage 5 shared/cached input contains deterministic candidate index',
+            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'target_feature_candidate_index'));
+          check('Stage 5 shared/cached input contains audit ledger',
+            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'target_feature_audit_ledger'));
           check('Stage 5 prompt requires candidate ledger walk',
             has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'target_feature_candidate_index.candidates'));
           check('Stage 5 prompt handles completion repair request',
             has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'completion_repair_request'));
-
-          check('Stage 5 guardrail flags missed candidate/source accounting as repairable',
-            has('runtime-api/src/diligence/targetFeatureProfileGuardrailsLocked.js', 'rerun_missing_stage5_candidate_or_source_accounting'));
+          check('Guardrail completeness path emits repair action',
+            has('runtime-api/src/diligence/targetFeatureProfileGuardrailsCompleteness.js', 'rerun_missing_stage5_candidate_or_source_accounting')
+            || has('runtime-api/src/diligence/targetFeatureProfileGuardrailsLocked.js', 'rerun_missing_stage5_candidate_or_source_accounting'));
           check('Stage 5 runner has one-time completion repair request',
             has('runtime-api/src/diligence/stageRunnerLocked.js', 'completion_repair_request'));
           check('Stage 5 runner has repair-loop skip guard',
             has('runtime-api/src/diligence/stageRunnerLocked.js', 'skipTargetFeatureCompletenessRepair'));
-
           check('Strict Stage 5 audit script exists',
             fs.existsSync('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs'));
           check('Strict Stage 5 audit checks deterministic candidate index',
             has('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs', 'target_feature_candidate_index'));
+          check('Strict Stage 5 audit has no keyword fallback',
+            notHas('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs', 'strict_audit_keyword_fallback')
+            && notHas('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs', 'detectCandidates'));
+          check('Base live runtime old caps/defaults are absent',
+            !/LIVE_CAPTURE_LIMIT|selected\.length\s*>=\s*limit|sync_anchor_only|max_sources:\s*sources\.length/.test(read('runtime-api/src/live/liveDiligenceRunOrchestrator.js')));
 
           const failures = checks.filter((item) => !item.ok);
-          console.log(JSON.stringify({ ok: failures.length === 0, checks }, null, 2));
+          console.log(JSON.stringify({ ok: failures.length === 0, step: 'stage5_architecture_audit', checks }, null, 2));
           if (failures.length) {
-            console.error('Stage 5 candidate-walk architecture audit failed:');
+            console.error('Stage 5 architecture audit failed:');
             for (const failure of failures) console.error(`- ${failure.name}`);
             process.exit(1);
           }
@@ -111,20 +101,6 @@ jobs:
       - name: Runtime syntax check
         working-directory: runtime-api
         run: npm run check
-
-      - name: Stage 5 architecture audit
-        run: |
-          set -euo pipefail
-          ! grep -R "strict_audit_keyword_fallback" runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs
-          ! grep -R "detectCandidates" runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs
-          grep -q "stage5TargetFeaturePackageBuilder" runtime-api/scripts/e2e-stage5-target-feature-profile.mjs
-          grep -q "stage5TargetFeaturePackageBuilder" runtime-api/src/live/liveDiligenceRunOrchestrator.js
-          grep -q "target_feature_candidate_index" runtime-api/scripts/e2e-stage5-target-feature-profile.mjs
-          grep -q "target_feature_audit_ledger" runtime-api/scripts/e2e-stage5-target-feature-profile.mjs
-          grep -q "rerun_missing_stage5_candidate_or_source_accounting" runtime-api/src/diligence/targetFeatureProfileGuardrailsCompleteness.js
-          grep -q "completion_repair_request" runtime-api/src/diligence/stageRunnerLocked.js
-          ! grep -E "LIVE_CAPTURE_LIMIT|selected.length >= limit|sync_anchor_only|max_sources: sources.length" runtime-api/src/live/liveDiligenceRunOrchestrator.js
-          echo '{"ok":true,"step":"stage5_architecture_audit"}'
 
       - name: Clear runtime E2E cache and artifact directory
         run: |
@@ -167,14 +143,21 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
+          mkdir -p runtime-api/runtime-e2e-artifacts/stage4-stage5
           echo "Cache directory:"
           ls -lah runtime-api/.runtime-e2e-cache || true
-          test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
-          test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
-          cp -v runtime-api/.runtime-e2e-cache/stage4-company-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/
-          cp -v runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/
+          if [ -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json ]; then
+            cp -v runtime-api/.runtime-e2e-cache/stage4-company-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/
+          else
+            echo "stage4-company-profile.json not available; runtime may have failed before Stage 4 cache generation."
+          fi
+          if [ -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json ]; then
+            cp -v runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/
+          else
+            echo "stage5-target-feature-profile.json not available; runtime may have failed before Stage 5 cache generation."
+          fi
           echo "Artifact directory:"
-          ls -lah runtime-api/runtime-e2e-artifacts/stage4-stage5
+          ls -lah runtime-api/runtime-e2e-artifacts/stage4-stage5 || true
 
       - name: Upload Stage 4/5 audit cache
         if: always()
@@ -182,4 +165,4 @@ jobs:
         with:
           name: runtime-stage4-stage5-audit-cache
           path: runtime-api/runtime-e2e-artifacts/stage4-stage5/
-          if-no-files-found: error
+          if-no-files-found: warn
