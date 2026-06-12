@@ -145,7 +145,7 @@ const extraSourceCoverage = coverageSourceIds.filter((id) => expectedSourceIds.l
 const invalidCoverage = coverage.filter((row) => !row || typeof row !== "object" || !COVERAGE_STATUSES.has(row.coverage_status));
 const mappedCoverage = coverage.filter((row) => row && MAPPED_LIKE.has(row.coverage_status));
 const mappedRatio = coverage.length ? mappedCoverage.length / coverage.length : 0;
-const missingMappedFeatureIds = coverage.filter((row) => row && MAPPED_LIKE.has(row.coverage_status) && (!Array.isArray(row.mapped_feature_ids) || row.mapped_feature_ids.length === 0));
+const missingMappedFeatureIds = coverage.filter((row) => row && row.coverage_status === "mapped" && (!Array.isArray(row.mapped_feature_ids) || row.mapped_feature_ids.length === 0));
 const missingCandidateLedger = candidates.filter((candidate) => !candidateLedger.has(candidate.candidate_id));
 const unresolvedCandidates = candidates.filter((candidate) => {
   const row = candidateLedger.get(candidate.candidate_id);
@@ -174,8 +174,8 @@ if (missingSourceCoverage.length && !allowPartial) failures.push(`source_coverag
 else if (missingSourceCoverage.length) warnings.push(`source_coverage/audit ledger missing Stage 5 source IDs under allow_partial=true: ${missingSourceCoverage.join(", ")}`);
 if (extraSourceCoverage.length) warnings.push(`source_coverage contains source IDs not in Stage 5 primary packet: ${extraSourceCoverage.join(", ")}`);
 if (invalidCoverage.length) failures.push(`source_coverage has invalid rows/statuses (${invalidCoverage.length})`);
-if (missingMappedFeatureIds.length && !allowPartial) failures.push(`mapped/supporting/duplicate source_coverage rows lack mapped_feature_ids (${missingMappedFeatureIds.length})`);
-else if (missingMappedFeatureIds.length) warnings.push(`mapped/supporting/duplicate source_coverage rows lack mapped_feature_ids under allow_partial=true (${missingMappedFeatureIds.length})`);
+if (missingMappedFeatureIds.length && !allowPartial) failures.push(`mapped source_coverage rows lack mapped_feature_ids (${missingMappedFeatureIds.length})`);
+else if (missingMappedFeatureIds.length) warnings.push(`mapped source_coverage rows lack mapped_feature_ids under allow_partial=true (${missingMappedFeatureIds.length})`);
 if (missingCandidateLedger.length) failures.push(`audit ledger missing candidate IDs: ${missingCandidateLedger.map((candidate) => candidate.candidate_id).join(", ")}`);
 if (unresolvedCandidates.length && !allowPartial) failures.push(`indexed candidates not resolved in audit ledger: ${unresolvedCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
 else if (unresolvedCandidates.length) warnings.push(`indexed candidates unresolved under allow_partial=true: ${unresolvedCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
