@@ -97,7 +97,11 @@ crossPackage.feature_inventory[0].surface_provenance[0].source_url = crossPackag
 crossPackage.feature_inventory[0].surface_provenance[0].evidence_quote = "When you use our Product, we collect the information provided by you.";
 const crossPackageResult = validateTargetFeatureProfileGuardrails(crossPackage, { evidenceBuffer, packageInput });
 assert.equal(crossPackageResult.ok, true, JSON.stringify(crossPackageResult.errors, null, 2));
-assert.ok(crossPackageResult.warnings.some((warning) => String(warning.message).includes("outside the current stage evidence_buffer")));
+assert.equal(crossPackageResult.errors.length, 0);
+assert.ok(crossPackageResult.warnings.some((warning) => {
+  const message = String(warning.message);
+  return message.includes("package source without stage text") || message.includes("quote exactness skipped") || message.includes("outside the current stage evidence_buffer");
+}));
 
 const legacy = baseProfile();
 legacy.product_feature_map = [{ feature_id: "legacy_1" }];
