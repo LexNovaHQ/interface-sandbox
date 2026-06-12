@@ -112,6 +112,20 @@ jobs:
         working-directory: runtime-api
         run: npm run check
 
+      - name: Stage 5 architecture audit
+        run: |
+          set -euo pipefail
+          ! grep -R "strict_audit_keyword_fallback" runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs
+          ! grep -R "detectCandidates" runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs
+          grep -q "stage5TargetFeaturePackageBuilder" runtime-api/scripts/e2e-stage5-target-feature-profile.mjs
+          grep -q "stage5TargetFeaturePackageBuilder" runtime-api/src/live/liveDiligenceRunOrchestrator.js
+          grep -q "target_feature_candidate_index" runtime-api/scripts/e2e-stage5-target-feature-profile.mjs
+          grep -q "target_feature_audit_ledger" runtime-api/scripts/e2e-stage5-target-feature-profile.mjs
+          grep -q "rerun_missing_stage5_candidate_or_source_accounting" runtime-api/src/diligence/targetFeatureProfileGuardrailsCompleteness.js
+          grep -q "completion_repair_request" runtime-api/src/diligence/stageRunnerLocked.js
+          ! grep -E "LIVE_CAPTURE_LIMIT|selected.length >= limit|sync_anchor_only|max_sources: sources.length" runtime-api/src/live/liveDiligenceRunOrchestrator.js
+          echo '{"ok":true,"step":"stage5_architecture_audit"}'
+
       - name: Clear runtime E2E cache and artifact directory
         run: |
           set -euo pipefail

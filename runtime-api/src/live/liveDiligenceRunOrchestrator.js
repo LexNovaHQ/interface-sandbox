@@ -7,7 +7,7 @@ import { runGeminiPool } from "../gemini/geminiPool.js";
 import { runDiligenceStage } from "../diligence/stageRunner.js";
 import { buildEvidenceRefinerInput } from "../diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../diligence/evidenceJunction.js";
-import { buildTargetFeatureProfileInput } from "../diligence/adapters/targetFeatureProfileInputAdapter.js";
+import { buildStage5TargetFeaturePackage } from "../diligence/stage5TargetFeaturePackageBuilder.js";
 import { buildLegalStackReviewInput } from "../diligence/adapters/legalStackReviewInputAdapter.js";
 import { buildRegistryLedgerInput } from "../diligence/adapters/registryLedgerInputAdapter.js";
 import { buildPriorityRowPlan, mergePriorityRows, validatePriorityMerge } from "../diligence/priorityRowPlanner.js";
@@ -84,24 +84,21 @@ function collectBucket(discovery, bucket) {
   return out;
 }
 
-function collectSources(discovery, options = {}) {
-  const limit = Number(options.capture_limit || options.max_sources || process.env.LIVE_CAPTURE_LIMIT || process.env.STAGE4_CAPTURE_LIMIT || 16);
-  const quotas = [
-    ["product_profile_sources", Number(options.product_capture_limit || process.env.LIVE_PRODUCT_CAPTURE_LIMIT || 10)],
-    ["company_profile_sources", Number(options.company_capture_limit || process.env.LIVE_COMPANY_CAPTURE_LIMIT || 4)],
-    ["legal_profile_sources", Number(options.legal_capture_limit || process.env.LIVE_LEGAL_CAPTURE_LIMIT || 4)],
-    ["governance_profile_sources", Number(options.governance_capture_limit || process.env.LIVE_GOVERNANCE_CAPTURE_LIMIT || 3)]
-  ];
+function collectSources(discovery) {
   const pools = Object.fromEntries(SOURCE_BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
   const selected = [];
   const seen = new Set();
+
   const add = (record) => {
-    if (!record?.url || seen.has(record.url) || selected.length >= limit) return;
+    if (!record?.url || seen.has(record.url)) return;
     seen.add(record.url);
     selected.push(record);
   };
-  for (const [bucket, quota] of quotas) for (const record of (pools[bucket] || []).slice(0, quota)) add(record);
-  for (const bucket of SOURCE_BUCKETS) for (const record of pools[bucket] || []) add(record);
+
+  for (const bucket of SOURCE_BUCKETS) {
+    for (const record of pools[bucket] || []) add(record);
+  }
+
   return selected;
 }
 
@@ -348,10 +345,10 @@ async function buildUrlEvidence({ targetInput, options, logs, runId, documentTex
     identity,
     company_name: targetInput.company_name,
     options: {
-      sourceDiscoveryMode: options.sourceDiscoveryMode || process.env.LIVE_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
-      runFreeFirstPartySearch: options.runFreeFirstPartySearch === true || process.env.LIVE_RUN_FREE_SEARCH === "true",
-      anchorFetchMaxAnchors: Number(options.anchorFetchMaxAnchors || process.env.LIVE_ANCHOR_FETCH_MAX || 32),
-      anchorLinkLimit: Number(options.anchorLinkLimit || process.env.LIVE_ANCHOR_LINK_LIMIT || 120),
+      sourceDiscoveryMode: options.sourceDiscoveryMode || process.env.LIVE_SOURCE_DISCOVERY_MODE || "sync_with_free_search",
+      runFreeFirstPartySearch: options.runFreeFirstPartySearch === false ? false : process.env.LIVE_RUN_FREE_SEARCH === "false" ? false : true,
+      anchorFetchMaxAnchors: Number(options.anchorFetchMaxAnchors || process.env.LIVE_ANCHOR_FETCH_MAX || 60),
+      anchorLinkLimit: Number(options.anchorLinkLimit || process.env.LIVE_ANCHOR_LINK_LIMIT || Number.MAX_SAFE_INTEGER),
       anchorClassifyMaxOutputTokens: Number(options.anchorClassifyMaxOutputTokens || process.env.LIVE_ANCHOR_CLASSIFY_TOKENS || 8192),
       probe_timeout_ms: Number(options.probe_timeout_ms || process.env.LIVE_PROBE_TIMEOUT_MS || 8000)
     },
@@ -363,7 +360,10 @@ async function buildUrlEvidence({ targetInput, options, logs, runId, documentTex
   if (!sources.length) throw new Error("Source discovery returned no capturable public sources.");
 
   logStage(logs, "source_capture", "running", { source_count: sources.length });
-  const capture = await captureSources(sources, { timeout_ms: Number(options.capture_timeout_ms || process.env.LIVE_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length });
+  const capture = await captureSources(sources, {
+    timeout_ms: Number(options.capture_timeout_ms || process.env.LIVE_CAPTURE_TIMEOUT_MS || 24000),
+    max_fetch_bytes: Number(options.capture_max_bytes || process.env.LIVE_CAPTURE_MAX_BYTES || process.env.SOURCE_CAPTURE_MAX_BYTES || 30 * 1024 * 1024)
+  });
   const captureResponse = { ok: true, capture };
   let sourceBundle = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `${runId}_source_bundle`, sourceMode: "live_review_url_capture" });
 
@@ -406,7 +406,7 @@ async function buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode
   logStage(logs, "company_profile", "complete", { company_name: companyProfile?.company_identity?.brand_name || null });
 
   logStage(logs, "target_feature_profile", "running");
-  const adapterResult = buildTargetFeatureProfileInput({
+  const adapterResult = buildStage5TargetFeaturePackage({
     sourceBundle,
     evidenceJunction,
     companyProfile,
@@ -426,7 +426,7 @@ async function buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode
   }
   const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
   const targetFeatureProfile = featureStage.target_feature_profile;
-  logStage(logs, "target_feature_profile", "complete", { feature_count: targetFeatureProfile?.product_feature_map?.length || 0 });
+  logStage(logs, "target_feature_profile", "complete", { feature_count: targetFeatureProfile?.feature_inventory?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
   return { companyProfile, targetFeatureProfile };
 }
 

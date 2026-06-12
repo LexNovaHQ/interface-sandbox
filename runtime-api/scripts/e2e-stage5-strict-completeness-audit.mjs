@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const cachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
+const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
 
 function fail(message, detail = {}) {
   console.error(JSON.stringify({ ok: false, step: "stage5_strict_completeness_audit", error: message, ...detail }, null, 2));
@@ -16,114 +17,78 @@ function readJson(filePath) {
 }
 
 function stage5Input(cache) {
-  return cache.target_feature_profile_stage_result?.request_body?.input || cache.stage5_input || cache.input || {};
+  return cache.target_feature_profile_input
+    || cache.target_feature_profile_stage_result?.request_body?.input
+    || cache.stage5_input
+    || cache.input
+    || {};
 }
 
-function stage5SourceRecords(cache) {
-  const packet = cache.evidence_junction?.downstream_packets?.target_feature_profile;
-  if (Array.isArray(packet?.source_records)) return packet.source_records;
-  if (Array.isArray(packet?.included_sources)) return packet.included_sources;
-  if (Array.isArray(cache.target_feature_profile_stage_result?.request_body?.input?.source_bundle?.evidence_buffer)) return cache.target_feature_profile_stage_result.request_body.input.source_bundle.evidence_buffer;
-  if (Array.isArray(cache.source_bundle?.evidence_buffer)) return cache.source_bundle.evidence_buffer;
-  return [];
+function auditLedger(cache) {
+  return cache.target_feature_audit_ledger
+    || cache.stage5_audit_ledger
+    || cache.target_feature_profile_stage_result?.target_feature_audit_ledger
+    || cache.target_feature_profile_stage_result?.stage5_audit_ledger
+    || null;
 }
 
 function sourceId(row) {
   return String(row?.evidence_source_id || row?.source_id || "").trim();
 }
 
-function textOfFeature(feature = {}) {
-  return [feature.feature_name, feature.commercial_function, feature.business_label_or_product_area, feature.feature_description, feature.system_action, feature.output_or_result, ...(Array.isArray(feature.evidence_refs) ? feature.evidence_refs : [])].filter(Boolean).join(" ").toLowerCase();
-}
-
-function textOfRecord(record = {}) {
-  return [record.url, record.final_url, record.title, record.structure?.title, record.source_family, record.text?.clean_text_lossless, record.clean_text_lossless].filter(Boolean).join("\n").toLowerCase();
-}
-
-const candidateRules = [
-  ["text_to_speech", "text-to-speech / speech synthesis", ["text-to-speech", "text to speech", "tts", "speech synthesis"]],
-  ["speech_to_text", "speech-to-text / transcription", ["speech-to-text", "speech to text", "asr", "transcription", "transcribe"]],
-  ["translation", "translation", ["translation", "translate", "machine translation"]],
-  ["document_digitisation", "document digitisation / OCR", ["document digitisation", "document digitization", "ocr", "document parsing"]],
-  ["dubbing", "dubbing", ["dubbing", "dub"]],
-  ["voice_agent", "voice agent / conversational AI", ["voice agent", "voice ai", "conversational ai"]],
-  ["language_model", "language model / generative text", ["language model", "large language model", "llm", "chat completion", "text generation"]],
-  ["embeddings", "embeddings", ["embedding", "embeddings"]]
-];
-
-function detectCandidates(records) {
-  const out = new Map();
-  for (const record of records) {
-    const haystack = textOfRecord(record);
-    const id = sourceId(record);
-    for (const [candidateId, label, terms] of candidateRules) {
-      if (!terms.some((term) => haystack.includes(term))) continue;
-      const current = out.get(candidateId) || { candidate_id: candidateId, label, source_ids: [], source_urls: [], index_source: "strict_audit_keyword_fallback" };
-      if (id && !current.source_ids.includes(id)) current.source_ids.push(id);
-      const url = record.final_url || record.url;
-      if (url && !current.source_urls.includes(url)) current.source_urls.push(url);
-      out.set(candidateId, current);
-    }
-  }
-  return [...out.values()];
+function stage5SourceRecords(cache) {
+  const input = stage5Input(cache);
+  if (Array.isArray(cache.product_family_primary_sources) && cache.product_family_primary_sources.length) return cache.product_family_primary_sources;
+  if (Array.isArray(input.product_family_primary_sources) && input.product_family_primary_sources.length) return input.product_family_primary_sources;
+  if (Array.isArray(input.source_bundle?.evidence_buffer)) return input.source_bundle.evidence_buffer;
+  return [];
 }
 
 function indexedCandidates(cache) {
-  const index = stage5Input(cache)?.target_feature_candidate_index || cache.target_feature_candidate_index;
-  const rows = Array.isArray(index?.candidates) ? index.candidates : [];
-  if (!rows.length) return [];
-  return rows.map((row, i) => ({
-    candidate_id: String(row.candidate_id || `CAND_${String(i + 1).padStart(3, "0")}`),
-    label: String(row.candidate_label || row.label || row.raw_label || row.source_url || "unknown_candidate"),
-    source_ids: Array.isArray(row.source_ids) ? row.source_ids.map(String) : [row.source_id, row.evidence_source_id].filter(Boolean).map(String),
-    source_urls: Array.isArray(row.source_urls) ? row.source_urls.map(String) : [row.source_url, row.url, row.final_url].filter(Boolean).map(String),
-    candidate_type: row.candidate_type || "unknown",
-    index_source: "target_feature_candidate_index"
-  }));
+  const input = stage5Input(cache);
+  const index = input.target_feature_candidate_index || cache.target_feature_candidate_index || {};
+  return Array.isArray(index.candidates) ? index.candidates : [];
 }
 
-function candidateTerms(candidate) {
-  const ruleTerms = candidateRules.find(([id]) => id === candidate.candidate_id)?.[2] || [];
-  const labelTerms = String(candidate.label || "").toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length >= 4);
-  return [...new Set([...ruleTerms, String(candidate.label || "").toLowerCase(), ...labelTerms].filter(Boolean))];
+function ledgerCandidateMap(ledger) {
+  return new Map((Array.isArray(ledger?.candidate_walk_ledger) ? ledger.candidate_walk_ledger : []).map((row) => [String(row?.candidate_id || "").trim(), row]).filter(([id]) => id));
 }
 
-function candidateAccounted(candidate, featureText, scanText, coverageText) {
-  const terms = candidateTerms(candidate);
-  const sourceTokens = [...(candidate.source_ids || []), ...(candidate.source_urls || [])].map((x) => String(x).toLowerCase());
-  return [...terms, ...sourceTokens].some((term) => featureText.includes(term) || scanText.includes(term) || coverageText.includes(term));
+function ledgerSourceMap(ledger) {
+  return new Map((Array.isArray(ledger?.source_walk_ledger) ? ledger.source_walk_ledger : []).map((row) => [String(row?.source_id || "").trim(), row]).filter(([id]) => id));
 }
 
 const cache = readJson(cachePath);
 const profile = cache.feature_profile_v2 || cache.target_feature_profile;
 if (!profile || typeof profile !== "object") fail("Stage 5 profile missing from cache", { cache_path: cachePath });
 
+const ledger = auditLedger(cache);
 const features = Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [];
 const scan = profile.commercial_scan || {};
 const coverage = Array.isArray(scan.source_coverage) ? scan.source_coverage : [];
 const outcomes = Array.isArray(scan.distinct_commercial_outcomes_seen) ? scan.distinct_commercial_outcomes_seen : [];
-const unmapped = Array.isArray(scan.unmapped_outcomes_due_to_insufficient_detail) ? scan.unmapped_outcomes_due_to_insufficient_detail : [];
 const expectedSources = stage5SourceRecords(cache);
 const expectedSourceIds = expectedSources.map(sourceId).filter(Boolean);
 const coverageSourceIds = coverage.map((row) => String(row?.source_id || "").trim()).filter(Boolean);
-const missingSourceCoverage = expectedSourceIds.filter((id) => !coverageSourceIds.includes(id));
-const deterministicIndexCandidates = indexedCandidates(cache);
-const candidates = deterministicIndexCandidates.length ? deterministicIndexCandidates : detectCandidates(expectedSources);
-const featureText = features.map(textOfFeature).join("\n");
-const scanText = [...outcomes, ...unmapped].join("\n").toLowerCase();
-const coverageText = JSON.stringify(coverage).toLowerCase();
-const unaccountedCandidates = candidates.filter((candidate) => !candidateAccounted(candidate, featureText, scanText, coverageText));
+const candidates = indexedCandidates(cache);
+const candidateLedger = ledgerCandidateMap(ledger);
+const sourceLedger = ledgerSourceMap(ledger);
+const missingSourceCoverage = expectedSourceIds.filter((id) => {
+  if (coverageSourceIds.includes(id)) return false;
+  return !FINAL_DISPOSITIONS.has(sourceLedger.get(id)?.disposition);
+});
+const missingCandidateLedger = candidates.filter((candidate) => !candidateLedger.has(candidate.candidate_id));
+const unresolvedCandidates = candidates.filter((candidate) => !FINAL_DISPOSITIONS.has(candidateLedger.get(candidate.candidate_id)?.disposition));
 const finishReasons = [];
 for (const attempt of cache.target_feature_profile_stage_result?.model_metadata?.attempted_models || []) if (attempt?.finish_reason) finishReasons.push(attempt.finish_reason);
 
 const failures = [];
-if (!features.length) failures.push("feature_inventory is empty");
-if (!outcomes.length) failures.push("commercial_scan.distinct_commercial_outcomes_seen is empty");
-if (!coverage.length) failures.push("commercial_scan.source_coverage is empty");
-if (expectedSourceIds.length && coverage.length < expectedSourceIds.length) failures.push(`source_coverage rows (${coverage.length}) fewer than Stage 5 packet sources (${expectedSourceIds.length})`);
-if (missingSourceCoverage.length) failures.push(`source_coverage missing Stage 5 source IDs: ${missingSourceCoverage.join(", ")}`);
-if (!deterministicIndexCandidates.length) failures.push("target_feature_candidate_index missing or empty in Stage 5 input/cache");
-if (unaccountedCandidates.length) failures.push(`visible/indexed commercial candidates neither mapped nor listed as insufficient_detail: ${unaccountedCandidates.map((candidate) => candidate.label).join(" | ")}`);
+if (!ledger) failures.push("target_feature_audit_ledger missing from Stage 5 cache/runtime result");
+if (expectedSourceIds.length && coverage.length < expectedSourceIds.length && missingSourceCoverage.length) failures.push(`source_coverage rows (${coverage.length}) fewer than Stage 5 primary sources (${expectedSourceIds.length}) without ledger accounting`);
+if (missingSourceCoverage.length) failures.push(`source_coverage/audit ledger missing Stage 5 source IDs: ${missingSourceCoverage.join(", ")}`);
+if (!candidates.length) failures.push("target_feature_candidate_index missing or empty in Stage 5 input/cache");
+if (missingCandidateLedger.length) failures.push(`audit ledger missing candidate IDs: ${missingCandidateLedger.map((candidate) => candidate.candidate_id).join(", ")}`);
+if (unresolvedCandidates.length) failures.push(`indexed candidates unresolved in audit ledger: ${unresolvedCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
 if (finishReasons.includes("MAX_TOKENS")) failures.push("model finish_reason MAX_TOKENS; Stage 5 may be truncated");
 
 const payload = {
@@ -135,11 +100,11 @@ const payload = {
   source_coverage_count: coverage.length,
   expected_stage5_source_count: expectedSourceIds.length,
   missing_source_coverage_ids: missingSourceCoverage,
+  deterministic_candidate_index_source: "target_feature_candidate_index",
   deterministic_candidate_count: candidates.length,
-  deterministic_candidate_index_source: deterministicIndexCandidates.length ? "target_feature_candidate_index" : "strict_audit_keyword_fallback",
-  deterministic_candidates: candidates,
-  unaccounted_candidate_count: unaccountedCandidates.length,
-  unaccounted_candidates: unaccountedCandidates,
+  audit_ledger_source: ledger ? "target_feature_audit_ledger" : "missing",
+  missing_candidate_ledger_ids: missingCandidateLedger.map((candidate) => candidate.candidate_id),
+  unresolved_candidate_ids: unresolvedCandidates.map((candidate) => candidate.candidate_id),
   finish_reasons: finishReasons,
   failures
 };

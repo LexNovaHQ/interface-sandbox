@@ -88,17 +88,25 @@ function deterministicCandidateIndex(records = []) {
   const add = ({ record, candidateKey, label, candidateType, reason, confidence = "medium", rawSignal = "" }) => {
     const sourceId = record.evidence_source_id || null;
     const sourceUrl = record.final_url || record.url || "";
+    const normalizedLabel = normalizeCandidateLabel(label).toLowerCase();
     const key = `${sourceId || sourceUrl}:${candidateKey}:${label}`.toLowerCase();
     if (!sourceId || seen.has(key)) return;
     seen.add(key);
     candidates.push({
       candidate_id: `CAND_${String(candidates.length + 1).padStart(3, "0")}`,
       candidate_key: candidateKey,
+      normalized_label: normalizedLabel,
+      raw_label: label,
       source_id: sourceId,
       source_url: sourceUrl,
       source_family: record.source_family || "unknown",
       candidate_label: label,
       candidate_type: candidateType,
+      source_surface: sourceCandidateLabel(record),
+      evidence_locator: candidateEvidenceRefs(record)[0] || sourceUrl || sourceId,
+      duplicate_cluster_id: record.dedupe_group_id || null,
+      duplicate_of: record.duplicate_of || null,
+      index_reason: reason,
       raw_signal: rawSignal || label,
       reason_for_indexing: reason,
       confidence,

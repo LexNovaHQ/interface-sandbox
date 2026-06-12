@@ -16,6 +16,24 @@ const evidenceBuffer = [{
 }];
 
 const packageInput = {
+  target_feature_candidate_index: {
+    index_version: "stage5_feature_candidate_index_v1",
+    indexing_policy: "deterministic_high_recall_not_final_judgment",
+    candidate_count: 1,
+    candidates: [{
+      candidate_id: "CAND_001",
+      normalized_label: "speech transcription",
+      raw_label: "Speech transcription",
+      source_id: "SRC_001",
+      source_url: sourceUrl,
+      candidate_type: "commercial_function",
+      evidence_locator: featureRef,
+      duplicate_cluster_id: null,
+      duplicate_of: null,
+      index_reason: "fixture candidate"
+    }]
+  },
+  product_family_primary_sources: [{ source_id: "SRC_001", source_url: sourceUrl, source_family: "product_profile" }],
   source_bundle: {
     target_input: { primary_url: "https://example.ai" },
     evidence_buffer: evidenceBuffer,
@@ -73,7 +91,7 @@ function baseProfile() {
     data_provenance_map: [{ provenance_id: "DP001", feature_id: "F001", ...data }],
     regulated_surface_map: [{ surface_id: "RS001", feature_id: "F001", surface_token: "Content&IP", int_ext_classification: "external", basis: "transcript text", confidence: "medium", evidence_refs: [featureRef] }],
     architecture_hints: [{ hint_id: "AH001", feature_id: "F001", hint_type: "integration", hint_value: "API", disposition: "prefill_candidate", source_url: sourceUrl, evidence_refs: [featureRef], confidence: "medium" }],
-    commercial_scan: { distinct_commercial_outcomes_seen: [], mapped_core_feature_ids: ["F001"], unmapped_outcomes_due_to_insufficient_detail: [] },
+    commercial_scan: { distinct_commercial_outcomes_seen: ["Speech transcription"], mapped_core_feature_ids: ["F001"], source_coverage: [{ source_id: "SRC_001", source_url: sourceUrl, source_family: "product_profile", coverage_status: "mapped", mapped_feature_ids: ["F001"], unmapped_reason: "", evidence_refs: [featureRef] }], unmapped_outcomes_due_to_insufficient_detail: [], completeness_status: "COMPLETE", completeness_warnings: [] },
     vault_feature_candidates: { baseline: {}, archetypes: {}, compliance: {} },
     evidence: { field_evidence_refs: [{ field_path: "/feature_inventory/0", evidence_refs: [featureRef], basis: "speech API evidence", confidence: "high" }], unresolved_questions: [] },
     limitations: []

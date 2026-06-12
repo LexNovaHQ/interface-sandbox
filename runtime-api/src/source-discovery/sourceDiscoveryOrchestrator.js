@@ -128,7 +128,7 @@ async function fetchAnchor({ record, identity, options }) {
       html,
       anchorUrl: url,
       registrableDomain: identity.registrable_domain,
-      limit: Number(options.anchorLinkLimit || 200)
+      limit: Number(options.anchorLinkLimit || Number.MAX_SAFE_INTEGER)
     });
     return { ok: true, anchor_url: url, source_family: record.source_family, status: response.status, content_type: contentType, link_count: links.length, links };
   } catch (error) {
@@ -140,7 +140,7 @@ async function fetchAnchor({ record, identity, options }) {
 
 async function fetchAnchors({ plans, identity, options }) {
   const anchorRecords = dedupeRecords(plans.flatMap((plan) => (plan.anchor_urls || []).map((url) => anchorRecordFor(plan, url))));
-  const limit = Math.max(1, Number(options.anchorFetchMaxAnchors || 48));
+  const limit = Math.max(1, Number(options.anchorFetchMaxAnchors || 60));
   const selected = anchorRecords.slice(0, limit);
   const concurrency = Math.max(1, Number(options.anchorFetchConcurrency || 4));
   const results = [];

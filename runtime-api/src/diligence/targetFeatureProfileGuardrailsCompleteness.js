@@ -1,130 +1,226 @@
 import { validateTargetFeatureProfileGuardrails as validateBaseGuardrails } from "./targetFeatureProfileGuardrailsLocked.js";
 
-const COVERAGE_STATUS = new Set(["mapped", "supporting", "duplicate", "insufficient_detail", "non_feature_context"]);
+const COVERAGE_TO_DISPOSITION = {
+  mapped: "mapped_feature",
+  supporting: "supporting_only",
+  duplicate: "duplicate_of",
+  insufficient_detail: "insufficient_detail",
+  non_feature_context: "non_feature_context"
+};
+const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
 const COMPLETE_STATUS = new Set(["COMPLETE", "PARTIAL", "THIN"]);
+const REPAIR_ACTION = "rerun_missing_stage5_candidate_or_source_accounting";
 
-function issue(instancePath, message, params = {}) {
-  return { keyword: "target_feature_profile_completeness_warning", severity: "WARNING", instancePath, schemaPath: "#/targetFeatureProfileCompletenessGuardrails", message, params };
+function issue(keyword, severity, instancePath, message, params = {}) {
+  return { keyword, severity, instancePath, schemaPath: "#/targetFeatureProfileCompletenessGuardrails", message, params };
 }
+
 function repair(instancePath, message, params = {}) {
-  return { keyword: "target_feature_profile_completeness_repair", severity: "REPAIRABLE", instancePath, schemaPath: "#/targetFeatureProfileCompletenessGuardrails", message, params, action: "rerun_missing_stage5_candidate_or_source_accounting" };
+  return { ...issue("target_feature_profile_completeness_repair", "REPAIRABLE", instancePath, message, params), action: REPAIR_ACTION };
 }
-function writeLimitation(profile, warning) {
+
+function blocking(instancePath, message, params = {}) {
+  return issue("target_feature_profile_completeness_blocking", "BLOCKING", instancePath, message, params);
+}
+
+function warning(instancePath, message, params = {}) {
+  return issue("target_feature_profile_completeness_warning", "WARNING", instancePath, message, params);
+}
+
+function writeLimitation(profile, item, label = "COMPLETENESS_WARNING") {
   if (!profile || typeof profile !== "object") return;
   if (!Array.isArray(profile.limitations)) profile.limitations = [];
-  const line = `COMPLETENESS_WARNING ${warning.instancePath || "/"}: ${warning.message} ${JSON.stringify(warning.params || {})}`;
+  const line = `${label} ${item.instancePath || "/"}: ${item.message} ${JSON.stringify(item.params || {})}`;
   if (!profile.limitations.includes(line)) profile.limitations.push(line);
 }
+
 function addWarning(profile, warnings, instancePath, message, params = {}) {
-  const warning = issue(instancePath, message, params);
-  warnings.push(warning);
-  writeLimitation(profile, warning);
+  const item = warning(instancePath, message, params);
+  warnings.push(item);
+  writeLimitation(profile, item);
 }
+
 function addRepair(profile, repairs, instancePath, message, params = {}) {
   const item = repair(instancePath, message, params);
   repairs.push(item);
-  writeLimitation(profile, item);
+  writeLimitation(profile, item, "COMPLETENESS_REPAIR");
 }
-function nonEmptyString(value) { return typeof value === "string" && value.trim().length > 0; }
-function sourceId(row) { return String(row?.evidence_source_id || row?.source_id || "").trim(); }
+
+function addBlocking(errors, instancePath, message, params = {}) {
+  errors.push(blocking(instancePath, message, params));
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function nonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function sourceId(row) {
+  return String(row?.evidence_source_id || row?.source_id || "").trim();
+}
+
+function sourceUrl(row) {
+  return row?.source_url || row?.final_url || row?.url || "";
+}
+
 function expectedStage5Sources(packageInput = {}) {
+  const primary = asArray(packageInput.product_family_primary_sources);
+  const evidence = asArray(packageInput.source_bundle?.evidence_buffer);
+  const inventory = asArray(packageInput.source_bundle?.artifact_inventory);
+  const included = asArray(packageInput.input_budget?.included_sources);
+  const rows = primary.length ? primary : (evidence.length ? evidence : (included.length ? included : inventory));
   const out = [];
   const seen = new Set();
-  const add = (row) => {
+  for (const row of rows) {
     const id = sourceId(row);
-    if (!id || seen.has(id)) return;
+    if (!id || seen.has(id)) continue;
     seen.add(id);
-    out.push({ source_id: id, source_url: row?.source_url || row?.final_url || row?.url || "", source_family: row?.source_family || "unknown" });
-  };
-  for (const row of packageInput?.source_bundle?.evidence_buffer || []) add(row);
-  for (const row of packageInput?.source_bundle?.artifact_inventory || []) add(row);
-  for (const row of packageInput?.input_budget?.included_sources || []) add(row);
+    out.push({ source_id: id, source_url: sourceUrl(row), source_family: row?.source_family || "unknown", duplicate_cluster_id: row?.duplicate_cluster_id || row?.dedupe_group_id || null });
+  }
   return out;
 }
+
 function expectedStage5Candidates(packageInput = {}) {
   const rows = packageInput?.target_feature_candidate_index?.candidates;
-  return Array.isArray(rows) ? rows.filter((row) => row && typeof row === "object") : [];
+  return Array.isArray(rows) ? rows.filter((row) => row && typeof row === "object" && nonEmptyString(row.candidate_id)) : [];
 }
-function featureText(profile = {}) {
-  return (Array.isArray(profile?.feature_inventory) ? profile.feature_inventory : []).map((feature) => [feature?.feature_name, feature?.commercial_function, feature?.business_label_or_product_area, feature?.feature_description, feature?.system_action, feature?.output_or_result].filter(Boolean).join(" ")).join(" ").toLowerCase();
+
+function mappedFeatureIds(profile = {}) {
+  return new Set(asArray(profile.feature_inventory).map((feature) => feature?.feature_id).filter(nonEmptyString));
 }
-function candidateTerms(candidate = {}) {
-  return [candidate.candidate_label, candidate.raw_signal, candidate.candidate_key, candidate.reason_for_indexing]
-    .map((value) => String(value || "").toLowerCase().trim())
-    .filter((value) => value && value.length > 2);
+
+function coverageBySource(scan = {}) {
+  const out = new Map();
+  for (const row of asArray(scan.source_coverage)) {
+    const id = String(row?.source_id || "").trim();
+    if (id && !out.has(id)) out.set(id, row);
+  }
+  return out;
 }
-function candidateAccounted(candidate, profile, scan, coverage = []) {
-  const terms = candidateTerms(candidate);
-  const mappedText = featureText(profile);
-  const scanText = [
-    ...(Array.isArray(scan?.distinct_commercial_outcomes_seen) ? scan.distinct_commercial_outcomes_seen : []),
-    ...(Array.isArray(scan?.unmapped_outcomes_due_to_insufficient_detail) ? scan.unmapped_outcomes_due_to_insufficient_detail : []),
-    ...(Array.isArray(scan?.completeness_warnings) ? scan.completeness_warnings : [])
-  ].join(" ").toLowerCase();
-  const coverageText = coverage.map((row) => [row?.source_id, row?.source_url, row?.coverage_status, row?.unmapped_reason, ...(Array.isArray(row?.mapped_feature_ids) ? row.mapped_feature_ids : [])].filter(Boolean).join(" ")).join(" ").toLowerCase();
-  const candidateSourceId = String(candidate.source_id || "").trim().toLowerCase();
-  if (candidateSourceId && coverageText.includes(candidateSourceId)) return true;
-  return terms.some((term) => mappedText.includes(term) || scanText.includes(term) || coverageText.includes(term));
+
+function dispositionFromCoverage(row) {
+  return COVERAGE_TO_DISPOSITION[row?.coverage_status] || "missed";
 }
-function outcomeLooksMapped(outcome, profile, unmapped = []) {
-  const value = String(outcome || "").toLowerCase();
-  if (!value) return true;
-  if (unmapped.some((x) => String(x || "").toLowerCase().includes(value) || value.includes(String(x || "").toLowerCase()))) return true;
-  const mappedText = featureText(profile);
-  const groups = [
-    [/text[- ]?to[- ]?speech|tts/, ["text-to-speech", "text to speech", "tts"]],
-    [/speech[- ]?to[- ]?text|asr|transcription/, ["speech-to-text", "speech to text", "asr", "transcription", "transcribes"]],
-    [/document.*digit|digit.*document|ocr/, ["document digit", "digitisation", "digitization", "ocr"]],
-    [/translation|translate/, ["translation", "translate"]],
-    [/dubbing|dub/, ["dubbing", "dub"]],
-    [/conversational|agent|voice ai/, ["conversational", "agent", "voice"]]
-  ];
-  for (const [pattern, terms] of groups) if (pattern.test(value)) return terms.some((term) => mappedText.includes(term));
-  return mappedText.includes(value);
+
+function buildAuditLedger(profile = {}, options = {}) {
+  const packageInput = options.packageInput || {};
+  const scan = profile?.commercial_scan || {};
+  const coverageMap = coverageBySource(scan);
+  const candidates = expectedStage5Candidates(packageInput);
+  const expectedSources = expectedStage5Sources(packageInput);
+  const features = mappedFeatureIds(profile);
+  const candidateRows = candidates.map((candidate) => {
+    const coverage = coverageMap.get(String(candidate.source_id || "").trim()) || null;
+    const disposition = dispositionFromCoverage(coverage);
+    const mappedIds = asArray(coverage?.mapped_feature_ids).filter(nonEmptyString);
+    const mappedFeatureId = mappedIds.find((id) => features.has(id)) || mappedIds[0] || null;
+    return {
+      candidate_id: candidate.candidate_id,
+      normalized_label: candidate.normalized_label || null,
+      raw_label: candidate.raw_label || candidate.candidate_label || null,
+      source_id: candidate.source_id || null,
+      source_url: candidate.source_url || null,
+      candidate_type: candidate.candidate_type || null,
+      evidence_locator: candidate.evidence_locator || candidate.source_surface || null,
+      duplicate_cluster_id: candidate.duplicate_cluster_id || null,
+      duplicate_of: candidate.duplicate_of || coverage?.duplicate_of || null,
+      disposition,
+      mapped_feature_id: mappedFeatureId,
+      reason: coverage?.unmapped_reason || coverage?.coverage_status || (coverage ? "accounted by commercial_scan.source_coverage" : "missing source coverage")
+    };
+  });
+  const sourceRows = expectedSources.map((source) => {
+    const coverage = coverageMap.get(source.source_id) || null;
+    return {
+      source_id: source.source_id,
+      source_url: source.source_url,
+      source_family: source.source_family,
+      duplicate_cluster_id: source.duplicate_cluster_id || null,
+      disposition: dispositionFromCoverage(coverage),
+      mapped_feature_ids: asArray(coverage?.mapped_feature_ids).filter(nonEmptyString),
+      reason: coverage?.unmapped_reason || coverage?.coverage_status || "missing source coverage"
+    };
+  });
+  return {
+    ledger_version: "stage5_target_feature_audit_ledger_v1",
+    ledger_scope: "runtime_internal_not_canonical_schema",
+    generated_at: new Date().toISOString(),
+    candidate_index_version: packageInput?.target_feature_candidate_index?.index_version || null,
+    expected_candidate_count: candidates.length,
+    expected_primary_source_count: expectedSources.length,
+    source_review: packageInput?.source_bundle?.source_review || null,
+    candidate_walk_ledger: candidateRows,
+    source_walk_ledger: sourceRows,
+    duplicate_supporting_sources: asArray(packageInput.product_family_duplicate_sources),
+    canonical_schema_mutated: false
+  };
 }
-function validateCompleteness(profile, warnings, repairs, options = {}) {
-  const scan = profile?.commercial_scan;
-  if (!scan || typeof scan !== "object" || Array.isArray(scan)) {
-    addRepair(profile, repairs, "/commercial_scan", "commercial_scan missing; Stage 5 source/outcome completeness cannot be verified");
+
+function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
+  const rawScan = profile?.commercial_scan;
+  const scan = rawScan || {};
+  const candidateRows = asArray(ledger.candidate_walk_ledger);
+  const sourceRows = asArray(ledger.source_walk_ledger);
+  const missingCandidateIds = candidateRows.filter((row) => !FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_id).filter(Boolean);
+  const missingSourceIds = sourceRows.filter((row) => !FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.source_id).filter(Boolean);
+  const invalidStatusRows = asArray(scan.source_coverage).filter((row) => !COVERAGE_TO_DISPOSITION[row?.coverage_status]);
+  return {
+    missingCandidateIds,
+    missingSourceIds,
+    invalidCoverageStatusCount: invalidStatusRows.length,
+    missingCommercialScan: !rawScan || typeof rawScan !== "object" || Array.isArray(rawScan),
+    missingCoverage: !asArray(scan.source_coverage).length,
+    emptyOutcomes: !asArray(scan.distinct_commercial_outcomes_seen).length,
+    missingIndex: !asArray(options.packageInput?.target_feature_candidate_index?.candidates).length
+  };
+}
+
+function validateCompleteness(profile, result, options = {}) {
+  const warnings = result.warnings || (result.warnings = []);
+  const repairs = result.repairs || (result.repairs = []);
+  const errors = result.errors || (result.errors = []);
+  const afterRepair = Boolean(options.packageInput?.completion_repair_request);
+  const ledger = buildAuditLedger(profile, options);
+  result.target_feature_audit_ledger = ledger;
+  result.stage5_audit_ledger = ledger;
+  const unresolved = unresolvedCompleteness(profile, ledger, options);
+  const features = asArray(profile.feature_inventory);
+  const scan = profile?.commercial_scan || {};
+
+  if (!features.length) addWarning(profile, warnings, "/feature_inventory", "feature_inventory is empty or thin; low feature count is advisory when candidate/source accounting is complete");
+  if (!COMPLETE_STATUS.has(scan.completeness_status)) addWarning(profile, warnings, "/commercial_scan/completeness_status", "completeness_status missing or invalid; passed as advisory unless accounting is missing", { completeness_status: scan.completeness_status || null });
+  else if (scan.completeness_status !== "COMPLETE") addWarning(profile, warnings, "/commercial_scan/completeness_status", "Stage 5 completeness is not complete", { completeness_status: scan.completeness_status });
+  if (asArray(profile.commercial_scan?.unmapped_outcomes_due_to_insufficient_detail).length) addWarning(profile, warnings, "/commercial_scan/unmapped_outcomes_due_to_insufficient_detail", "Stage 5 has properly accounted unmapped commercial outcomes", { count: profile.commercial_scan.unmapped_outcomes_due_to_insufficient_detail.length });
+
+  if (unresolved.missingIndex) {
+    addBlocking(errors, "/target_feature_candidate_index", "deterministic target_feature_candidate_index missing or empty", { required: true });
     return;
   }
-  const features = new Set((Array.isArray(profile.feature_inventory) ? profile.feature_inventory : []).map((feature) => feature?.feature_id).filter(nonEmptyString));
-  const coverage = Array.isArray(scan.source_coverage) ? scan.source_coverage : [];
-  const outcomes = Array.isArray(scan.distinct_commercial_outcomes_seen) ? scan.distinct_commercial_outcomes_seen : [];
-  const unmapped = Array.isArray(scan.unmapped_outcomes_due_to_insufficient_detail) ? scan.unmapped_outcomes_due_to_insufficient_detail : [];
-  const expected = expectedStage5Sources(options.packageInput || {});
-  const expectedIds = expected.map((row) => row.source_id);
-  const coverageIds = coverage.map((row) => String(row?.source_id || "").trim()).filter(Boolean);
-  const missingCoverage = expectedIds.filter((id) => !coverageIds.includes(id));
-  const extraCoverage = coverageIds.filter((id) => expectedIds.length && !expectedIds.includes(id));
-  const candidates = expectedStage5Candidates(options.packageInput || {});
-  const unaccountedCandidates = candidates.filter((candidate) => !candidateAccounted(candidate, profile, scan, coverage));
-  if (!outcomes.length) addRepair(profile, repairs, "/commercial_scan/distinct_commercial_outcomes_seen", "distinct_commercial_outcomes_seen is empty; Stage 5 outcome completeness is thin");
-  if (!coverage.length) addRepair(profile, repairs, "/commercial_scan/source_coverage", "source_coverage missing or empty; Stage 5 source completeness cannot be verified");
-  if (missingCoverage.length) addRepair(profile, repairs, "/commercial_scan/source_coverage", "source_coverage does not account for all Stage 5 packet sources", { missing_source_ids: missingCoverage, expected_source_count: expectedIds.length, actual_source_coverage_count: coverageIds.length });
-  if (unaccountedCandidates.length) addRepair(profile, repairs, "/commercial_scan", "deterministic Stage 5 feature candidates were not explicitly walked", { missing_candidate_ids: unaccountedCandidates.map((row) => row.candidate_id || row.candidate_key).filter(Boolean), missing_candidate_labels: unaccountedCandidates.map((row) => row.candidate_label).filter(Boolean).slice(0, 50) });
-  if (extraCoverage.length) addWarning(profile, warnings, "/commercial_scan/source_coverage", "source_coverage contains source IDs not present in Stage 5 packet", { extra_source_ids: extraCoverage });
-  coverage.forEach((row, index) => {
-    const base = `/commercial_scan/source_coverage/${index}`;
-    if (!row || typeof row !== "object" || Array.isArray(row)) { addWarning(profile, warnings, base, "source_coverage row is not an object; passed with warning"); return; }
-    if (!COVERAGE_STATUS.has(row.coverage_status)) addRepair(profile, repairs, `${base}/coverage_status`, "source_coverage coverage_status is invalid", { coverage_status: row.coverage_status || null });
-    const mapped = Array.isArray(row.mapped_feature_ids) ? row.mapped_feature_ids : [];
-    const mappedLike = ["mapped", "supporting", "duplicate"].includes(row.coverage_status);
-    if (mappedLike && !mapped.length) addRepair(profile, repairs, `${base}/mapped_feature_ids`, "source_coverage row is mapped/supporting/duplicate but has no mapped_feature_ids");
-    const unknown = mapped.filter((id) => !features.has(id));
-    if (unknown.length) addRepair(profile, repairs, `${base}/mapped_feature_ids`, "source_coverage references feature IDs not present in feature_inventory", { unknown_feature_ids: unknown });
-    if (["insufficient_detail", "non_feature_context"].includes(row.coverage_status) && !nonEmptyString(row.unmapped_reason)) addRepair(profile, repairs, `${base}/unmapped_reason`, "source_coverage row should explain unmapped/non-feature status");
-    if (!Array.isArray(row.evidence_refs) || !row.evidence_refs.length) addWarning(profile, warnings, `${base}/evidence_refs`, "source_coverage row lacks evidence_refs; deterministic coverage audit is weak");
-  });
-  const unresolvedOutcomes = outcomes.filter((outcome) => !outcomeLooksMapped(outcome, profile, unmapped));
-  if (unresolvedOutcomes.length) addRepair(profile, repairs, "/commercial_scan/distinct_commercial_outcomes_seen", "commercial outcomes are neither mapped into feature_inventory nor listed as unmapped", { unresolved_outcomes: unresolvedOutcomes });
-  if (!COMPLETE_STATUS.has(scan.completeness_status)) addRepair(profile, repairs, "/commercial_scan/completeness_status", "completeness_status missing or invalid", { completeness_status: scan.completeness_status || null });
-  else if (scan.completeness_status !== "COMPLETE") addWarning(profile, warnings, "/commercial_scan/completeness_status", "Stage 5 completeness is not complete", { completeness_status: scan.completeness_status });
-  if (unmapped.length) addWarning(profile, warnings, "/commercial_scan/unmapped_outcomes_due_to_insufficient_detail", "Stage 5 has unmapped commercial outcomes due to insufficient detail", { count: unmapped.length });
+
+  const missing = {
+    missing_candidate_ids: unresolved.missingCandidateIds,
+    missing_primary_source_ids: unresolved.missingSourceIds,
+    invalid_coverage_status_count: unresolved.invalidCoverageStatusCount,
+    missing_commercial_scan: unresolved.missingCommercialScan,
+    missing_source_coverage: unresolved.missingCoverage,
+    empty_outcomes: unresolved.emptyOutcomes
+  };
+  const hasCriticalGap = missing.missing_candidate_ids.length || missing.missing_primary_source_ids.length || missing.invalid_coverage_status_count || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
+  if (!hasCriticalGap) return;
+
+  if (afterRepair) {
+    addBlocking(errors, "/target_feature_audit_ledger", "Stage 5 candidate/source accounting remains incomplete after repair rerun", missing);
+    return;
+  }
+  addRepair(profile, repairs, "/target_feature_audit_ledger", "Stage 5 candidate/source accounting is incomplete and should be repaired with one focused rerun", missing);
 }
+
 export function validateTargetFeatureProfileGuardrails(profile, options = {}) {
   const result = validateBaseGuardrails(profile, options);
-  validateCompleteness(profile, result.warnings || (result.warnings = []), result.repairs || (result.repairs = []), options);
+  validateCompleteness(profile, result, options);
   result.ok = Array.isArray(result.errors) ? result.errors.length === 0 : result.ok;
   return result;
 }

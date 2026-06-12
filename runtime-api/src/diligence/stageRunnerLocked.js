@@ -112,7 +112,8 @@ function targetFeatureCompletenessRepairItems(payload = {}) {
 function successPayload({ config, validation, guardrails, normalizedOutput, repair, finalOutput, runResult, promptBundle, reconciliation = null }) {
   const combined = combinedRepairMetadata(repair, guardrails);
   const guardrailWarnings = [...(guardrails.warnings || []), ...stageOutputWarnings(config, finalOutput)];
-  return { ok: true, status: 200, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, guardrail_validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: combined.repaired, output_repair_notes: combined.repair_notes, guardrail_warnings: guardrailWarnings, guardrail_repairs: guardrails.repairs || [], guardrail_warning_count: guardrailWarnings.length, guardrail_repair_count: (guardrails.repairs || []).length, [config.output_key]: finalOutput, legal_document_reconciliation: reconciliation, model_metadata: publicModelMetadata(runResult, combined), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
+  const ledgerPayload = guardrails.target_feature_audit_ledger ? { target_feature_audit_ledger: guardrails.target_feature_audit_ledger, stage5_audit_ledger: guardrails.stage5_audit_ledger || guardrails.target_feature_audit_ledger } : {};
+  return { ok: true, status: 200, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path, validation_schema_key: validation.resolvedKey, validation_mode: validation.validation_mode, guardrail_validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: combined.repaired, output_repair_notes: combined.repair_notes, guardrail_warnings: guardrailWarnings, guardrail_repairs: guardrails.repairs || [], guardrail_warning_count: guardrailWarnings.length, guardrail_repair_count: (guardrails.repairs || []).length, ...ledgerPayload, [config.output_key]: finalOutput, legal_document_reconciliation: reconciliation, model_metadata: publicModelMetadata(runResult, combined), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 }
 
 function validationFailurePayload({ config, schemaEntry, validation, normalizedOutput, repair, runResult, promptBundle }) {
@@ -121,7 +122,8 @@ function validationFailurePayload({ config, schemaEntry, validation, normalizedO
 
 function guardrailFailurePayload({ config, schemaEntry, validation, guardrails, normalizedOutput, repair, runResult, promptBundle }) {
   const combined = combinedRepairMetadata(repair, guardrails);
-  return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: combined.repaired, output_repair_notes: combined.repair_notes, guardrail_warnings: guardrails.warnings || [], guardrail_repairs: guardrails.repairs || [], guardrail_warning_count: (guardrails.warnings || []).length, guardrail_repair_count: (guardrails.repairs || []).length, error_type: "GUARDRAIL_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} guardrails`, validation_errors: guardrails.errors, error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(runResult, combined), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
+  const ledgerPayload = guardrails.target_feature_audit_ledger ? { target_feature_audit_ledger: guardrails.target_feature_audit_ledger, stage5_audit_ledger: guardrails.stage5_audit_ledger || guardrails.target_feature_audit_ledger } : {};
+  return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: combined.repaired, output_repair_notes: combined.repair_notes, guardrail_warnings: guardrails.warnings || [], guardrail_repairs: guardrails.repairs || [], guardrail_warning_count: (guardrails.warnings || []).length, guardrail_repair_count: (guardrails.repairs || []).length, ...ledgerPayload, error_type: "GUARDRAIL_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} guardrails`, validation_errors: guardrails.errors, error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(runResult, combined), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 }
 
 async function executeStageOnce({ config, schemaEntry, promptBundle, stageId, input, options, env }) {
@@ -161,10 +163,30 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
     if (!rerun.ok) {
       return {
         ...first.payload,
+        ok: false,
+        status: rerun.payload?.status || 422,
+        error_type: "TARGET_FEATURE_COMPLETENESS_REPAIR_FAILED",
+        error: "Stage 5 completeness repair rerun failed",
         target_feature_completeness_repair: {
           rerun_failed: true,
           rerun_error: rerun.payload?.error || rerun.payload?.error_type || "rerun_failed",
           first_guardrail_repairs: targetFeatureRepairItems
+        }
+      };
+    }
+    const remainingRepairItems = targetFeatureCompletenessRepairItems(rerun.payload);
+    if (remainingRepairItems.length) {
+      return {
+        ...rerun.payload,
+        ok: false,
+        status: 422,
+        error_type: "TARGET_FEATURE_COMPLETENESS_REPAIR_INCOMPLETE",
+        error: "Stage 5 completeness repair rerun did not resolve missing candidate/source accounting",
+        target_feature_completeness_repair: {
+          rerun_failed: true,
+          rerun_error: "repair_rerun_incomplete",
+          first_guardrail_repairs: targetFeatureRepairItems,
+          rerun_guardrail_repairs: remainingRepairItems
         }
       };
     }

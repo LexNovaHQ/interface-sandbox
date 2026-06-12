@@ -225,6 +225,8 @@ feature_inventory[].evidence_refs[]
 limitations[] where material
 ```
 
+Runtime will maintain a separate `target_feature_audit_ledger` beside the canonical schema from this accounting. Do not add audit-ledger-only fields to `feature_profile_v2`; keep the canonical output schema clean and make the accounting visible through the allowed fields above.
+
 If several candidates are duplicates of the same feature, map the strongest one and mark the related source rows as `supporting` or `duplicate` in `commercial_scan.source_coverage[]` with `mapped_feature_ids[]` pointing to the mapped feature.
 
 After walking indexed candidates, scan the remaining full text in `source_bundle.evidence_buffer[]` and add any product/function outcome that the deterministic index missed. If nothing remains, every source must still receive a `source_coverage[]` row explaining mapped/supporting/duplicate/insufficient/non-feature status.
