@@ -18,15 +18,16 @@ function applyLockedRuntimeEnv() {
   setDefaultEnv("LIVE_COMPANY_CAPTURE_LIMIT", NO_SOURCE_CAP);
   setDefaultEnv("LIVE_LEGAL_CAPTURE_LIMIT", NO_SOURCE_CAP);
   setDefaultEnv("LIVE_GOVERNANCE_CAPTURE_LIMIT", NO_SOURCE_CAP);
-  setDefaultEnv("LIVE_CAPTURE_TIMEOUT_MS", 12000);
+  setDefaultEnv("LIVE_CAPTURE_TIMEOUT_MS", 24000);
   setDefaultEnv("SOURCE_CAPTURE_MAX_BYTES", 30 * 1024 * 1024);
-  setDefaultEnv("LIVE_COMPANY_MAX_OUTPUT_TOKENS", 8192);
+  setDefaultEnv("LIVE_COMPANY_MAX_OUTPUT_TOKENS", 24000);
   setDefaultEnv("STAGE4_COMPANY_MAX_OUTPUT_TOKENS", 24000);
   setDefaultEnv("STAGE5_MAX_INPUT_CHARS", 240000);
   setDefaultEnv("STAGE5_MAX_ESTIMATED_TOKENS", 120000);
   setDefaultEnv("STAGE5_MAX_SINGLE_SOURCE_CHARS", NO_SOURCE_CAP);
-  setDefaultEnv("LIVE_FEATURE_MAX_OUTPUT_TOKENS", 16384);
+  setDefaultEnv("LIVE_FEATURE_MAX_OUTPUT_TOKENS", 28000);
   setDefaultEnv("STAGE5_FEATURE_MAX_OUTPUT_TOKENS", 28000);
+  setDefaultEnv("STAGE7_BUDGET_ENFORCEMENT_MODE", "guidance");
 }
 
 function lockedOptions(options = {}) {
@@ -44,7 +45,7 @@ function lockedOptions(options = {}) {
     company_capture_limit: Number(options.company_capture_limit || NO_SOURCE_CAP),
     legal_capture_limit: Number(options.legal_capture_limit || NO_SOURCE_CAP),
     governance_capture_limit: Number(options.governance_capture_limit || NO_SOURCE_CAP),
-    capture_timeout_ms: Number(options.capture_timeout_ms || 12000)
+    capture_timeout_ms: Number(options.capture_timeout_ms || 24000)
   };
 }
 
