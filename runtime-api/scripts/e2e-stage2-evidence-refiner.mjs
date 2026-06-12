@@ -87,26 +87,14 @@ function collectBucket(discovery = {}, bucket) {
 }
 
 function collectSources(discovery = {}) {
-  const limit = Number(process.env.STAGE2_CAPTURE_LIMIT || 16);
-  const priorityBuckets = [
-    ["legal_profile_sources", Number(process.env.STAGE2_LEGAL_CAPTURE_LIMIT || 3)],
-    ["governance_profile_sources", Number(process.env.STAGE2_GOVERNANCE_CAPTURE_LIMIT || 3)],
-    ["product_profile_sources", Number(process.env.STAGE2_PRODUCT_CAPTURE_LIMIT || 8)],
-    ["company_profile_sources", Number(process.env.STAGE2_COMPANY_CAPTURE_LIMIT || 2)]
-  ];
-
   const pools = Object.fromEntries(MAGNA_CARTA_BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
   const selected = [];
   const seen = new Set();
 
   function add(record) {
-    if (!record?.url || seen.has(record.url) || selected.length >= limit) return;
+    if (!record?.url || seen.has(record.url)) return;
     seen.add(record.url);
     selected.push(record);
-  }
-
-  for (const [bucket, quota] of priorityBuckets) {
-    for (const record of (pools[bucket] || []).slice(0, quota)) add(record);
   }
 
   for (const bucket of MAGNA_CARTA_BUCKETS) {
@@ -132,19 +120,19 @@ const targetInput = { primary_url: primaryUrl, company_name: companyName, submit
 console.log(JSON.stringify({
   ok: true,
   step: "start",
-  phase: "stage_2_source_bundle_packager_e2e_magna_carta",
+  phase: "stage_2_source_bundle_packager_e2e_magna_carta_full_sweep",
   target: targetInput,
   runtime_url: base,
-  capture_limit: Number(process.env.STAGE2_CAPTURE_LIMIT || 16)
+  stage_source_policy: "stage2_full_sweep_no_source_caps"
 }, null, 2));
 
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: targetInput,
   options: {
-    sourceDiscoveryMode: process.env.STAGE2_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
-    runFreeFirstPartySearch: process.env.STAGE2_RUN_FREE_SEARCH === "true",
-    anchorFetchMaxAnchors: Number(process.env.STAGE2_ANCHOR_FETCH_MAX || 32),
-    anchorLinkLimit: Number(process.env.STAGE2_ANCHOR_LINK_LIMIT || 120),
+    sourceDiscoveryMode: process.env.STAGE2_SOURCE_DISCOVERY_MODE || "sync_with_free_search",
+    runFreeFirstPartySearch: process.env.STAGE2_RUN_FREE_SEARCH === "false" ? false : true,
+    anchorFetchMaxAnchors: Number(process.env.STAGE2_ANCHOR_FETCH_MAX || 60),
+    anchorLinkLimit: Number(process.env.STAGE2_ANCHOR_LINK_LIMIT || 100000),
     anchorClassifyMaxOutputTokens: Number(process.env.STAGE2_ANCHOR_CLASSIFY_TOKENS || 8192),
     probe_timeout_ms: Number(process.env.STAGE2_PROBE_TIMEOUT_MS || 8000)
   }
@@ -160,7 +148,7 @@ if (sources.length === 0) {
 
 console.log(JSON.stringify({
   ok: true,
-  step: "source_discovery_complete",
+  step: "source_discovery_complete_full_sweep",
   source_count: sources.length,
   discovery_counts: discoveryResponse.discovery?.counts || null,
   coverage_gaps: discoveryResponse.discovery?.coverage_gaps || []
@@ -168,7 +156,7 @@ console.log(JSON.stringify({
 
 const captureResponse = await postJson(base, "/v1/source-capture", {
   input: { sources },
-  options: { timeout_ms: Number(process.env.STAGE2_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length }
+  options: { timeout_ms: Number(process.env.STAGE2_CAPTURE_TIMEOUT_MS || 24000), max_fetch_bytes: Number(process.env.STAGE2_CAPTURE_MAX_BYTES || 30 * 1024 * 1024), include_clean_text: true }
 });
 
 const bundleInput = buildEvidenceRefinerInput({
@@ -210,7 +198,7 @@ if (missingLossless.length > 0) {
 console.log(JSON.stringify({
   ok: true,
   service: "lexnova-runtime-api",
-  phase: "stage_2_source_bundle_packager_e2e_magna_carta",
+  phase: "stage_2_source_bundle_packager_e2e_magna_carta_full_sweep",
   target: targetInput,
   run_id: bundleInput.run_id,
   source_bundle_version: bundleInput.source_bundle_version,
@@ -222,5 +210,6 @@ console.log(JSON.stringify({
   coverage_gaps: bundleInput.scrape_meta.coverage_summary.coverage_gaps,
   raw_footprint_sha256: bundleInput.scrape_meta.hashes.raw_footprint_sha256,
   deterministic_only: true,
-  gemini_called: false
+  gemini_called: false,
+  stage_source_policy: "stage2_full_sweep_no_source_caps"
 }, null, 2));
