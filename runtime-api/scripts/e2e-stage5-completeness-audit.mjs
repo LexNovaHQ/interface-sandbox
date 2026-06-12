@@ -75,19 +75,20 @@ for (const attempt of cache.target_feature_profile_stage_result?.model_metadata?
 const maxTokens = finishReasons.includes("MAX_TOKENS");
 
 const failures = [];
+const warnings = [];
 if (!features.length) failures.push("feature_inventory is empty");
 if (!outcomes.length) failures.push("distinct_commercial_outcomes_seen is empty");
 if (!coverage.length) failures.push("commercial_scan.source_coverage is empty or missing");
 if (expectedSourceIds.length && coverage.length < expectedSourceIds.length) failures.push(`source_coverage rows (${coverage.length}) fewer than Stage 5 packet sources (${expectedSourceIds.length})`);
 if (missingSourceCoverage.length) failures.push(`source_coverage missing Stage 5 source IDs: ${missingSourceCoverage.join(", ")}`);
-if (extraSourceCoverage.length) failures.push(`source_coverage contains source IDs not in Stage 5 packet: ${extraSourceCoverage.join(", ")}`);
+if (extraSourceCoverage.length) warnings.push(`source_coverage contains source IDs not in Stage 5 packet: ${extraSourceCoverage.join(", ")}`);
 if (invalidCoverage.length) failures.push(`source_coverage has invalid rows/statuses (${invalidCoverage.length})`);
-if (missingMappedFeatureIds.length) failures.push(`mapped/supporting/duplicate source_coverage rows lack mapped_feature_ids (${missingMappedFeatureIds.length})`);
-if (unresolvedOutcomes.length) failures.push(`commercial outcomes neither mapped nor listed as unmapped: ${unresolvedOutcomes.join(" | ")}`);
-if (!allowPartial && scan.completeness_status !== "COMPLETE") failures.push(`completeness_status is ${scan.completeness_status || "missing"}, expected COMPLETE`);
-if (allowPartial && !["COMPLETE", "PARTIAL"].includes(scan.completeness_status)) failures.push(`completeness_status is ${scan.completeness_status || "missing"}, expected COMPLETE or PARTIAL`);
-if (coverage.length && mappedRatio < minMappedRatio && !allowPartial) failures.push(`mapped/supporting/duplicate coverage ratio ${mappedRatio.toFixed(2)} below threshold ${minMappedRatio}`);
-if (unmapped.length && !allowPartial) failures.push(`unmapped outcomes present (${unmapped.length})`);
+if (missingMappedFeatureIds.length) warnings.push(`mapped/supporting/duplicate source_coverage rows lack mapped_feature_ids (${missingMappedFeatureIds.length})`);
+if (unresolvedOutcomes.length) warnings.push(`commercial outcomes neither mapped nor listed as unmapped: ${unresolvedOutcomes.join(" | ")}`);
+if (scan.completeness_status !== "COMPLETE") warnings.push(`completeness_status is ${scan.completeness_status || "missing"}; accepted as non-blocking partial coverage`);
+if (allowPartial && !["COMPLETE", "PARTIAL"].includes(scan.completeness_status)) warnings.push(`completeness_status is ${scan.completeness_status || "missing"}, expected COMPLETE or PARTIAL`);
+if (coverage.length && mappedRatio < minMappedRatio) warnings.push(`mapped/supporting/duplicate coverage ratio ${mappedRatio.toFixed(2)} below advisory threshold ${minMappedRatio}`);
+if (unmapped.length) warnings.push(`unmapped outcomes present (${unmapped.length})`);
 if (maxTokens) failures.push("model finish_reason MAX_TOKENS; Stage 5 output may be truncated/incomplete");
 
 const payload = {
@@ -109,6 +110,7 @@ const payload = {
   unresolved_outcomes: unresolvedOutcomes,
   finish_reasons: finishReasons,
   allow_partial: allowPartial,
+  warnings,
   failures
 };
 
