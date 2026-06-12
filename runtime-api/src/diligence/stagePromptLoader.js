@@ -5,7 +5,7 @@ const LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES = `
 
 ---MANDATORY_LEGAL_STACK_CONTROL_SIGNAL_MAP_RULES---
 
-These rules are supreme runtime rules for legal_stack_review. Apply them before writing legal_stack[], document_stack_redline[], document_stack_synthesis, legal_stack_assessment[], or limitations[].
+These rules are supreme runtime rules for legal_stack_review. Apply them before writing legal_stack[], document_stack_redline[], legal_stack_assessment[], or limitations[].
 
 This stage must not run registry evaluation and must not assign registry final_status values. Its job is to review the public legal stack and prepare compact control evidence for later Hunter EXCLUDE_IF review.
 
@@ -69,13 +69,25 @@ Mandatory evaluation order for each row:
 Do not treat generic legal-stack existence as control. Do not ignore first-party controls that directly satisfy the row-specific EXCLUDE_IF. Do not trigger from surface alone.
 `;
 
+const STAGE5_COMPLETENESS_SUPREMACY_RULES = `
+
+---STAGE_5_COMPLETENESS_AND_CITATION_SUPREMACY_RULES---
+
+These rules supersede any older Stage 4/5 dictionary language that still asks the model to copy evidence_quote text.
+
+1. Full clean_text_lossless remains available in the packet. Do not summarize, compress, or truncate source text.
+2. Model proof must use evidence_refs[] citation IDs such as SRC_003#C002. evidence_quote is optional legacy/runtime-resolved text only.
+3. Do not silently omit any admitted Stage 5 source. For every Stage 5 source, create one commercial_scan.source_coverage[] row.
+4. Every source_coverage row must use one coverage_status: mapped, supporting, duplicate, insufficient_detail, or non_feature_context.
+5. List every visible commercial function/outcome in commercial_scan.distinct_commercial_outcomes_seen[].
+6. If a visible outcome/source cannot be mapped into feature_inventory[], list it in unmapped_outcomes_due_to_insufficient_detail[] and mark the relevant source_coverage row insufficient_detail.
+7. Set completeness_status to COMPLETE only when all Stage 5 sources/outcomes are accounted for and no unmapped outcome remains. Otherwise use PARTIAL or THIN with completeness_warnings[].
+8. Completeness gaps are nonblocking runtime warnings, but they are quality/audit failures before deploy.
+`;
+
 function getPrompt(promptId) {
   const prompt = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
-
-  if (!prompt?.text) {
-    throw new Error(`Diligence prompt "${promptId}" is missing from generated prompt bundle.`);
-  }
-
+  if (!prompt?.text) throw new Error(`Diligence prompt "${promptId}" is missing from generated prompt bundle.`);
   return prompt;
 }
 
@@ -91,6 +103,7 @@ function runtimePromptAppendixFor(stageId) {
   const parts = [];
   const fieldDictionary = stage4Stage5FieldDictionaryAppendix(stageId);
   if (fieldDictionary) parts.push(fieldDictionary);
+  if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES);
   if (stageId === "legal_stack_review") parts.push(LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES);
   if (stageId === "registry_ledger_evaluation") parts.push(REGISTRY_HUNTER_ENGINE_RULES);
   return parts.join("");
@@ -98,61 +111,28 @@ function runtimePromptAppendixFor(stageId) {
 
 export function loadDiligencePrompt(stageId) {
   const normalizedStageId = String(stageId || "").trim();
-
-  if (!getDiligenceStageIds().includes(normalizedStageId)) {
-    throw new Error(`Unknown Diligence prompt stage "${stageId}".`);
-  }
-
+  if (!getDiligenceStageIds().includes(normalizedStageId)) throw new Error(`Unknown Diligence prompt stage "${stageId}".`);
   const sharedPromptId = DILIGENCE_PROMPT_BUNDLE.shared_prompt_id;
   const stagePromptId = DILIGENCE_PROMPT_BUNDLE.stage_prompt_ids?.[normalizedStageId];
   const stageConfig = getDiligenceStageConfig(normalizedStageId);
-
   const sharedPrompt = getPrompt(sharedPromptId);
   const stagePrompt = getPrompt(stagePromptId);
   const promptParts = [sharedPrompt.text.trim(), "\n\n---\n\n", stagePrompt.text.trim()];
   const runtimeAppendix = runtimePromptAppendixFor(normalizedStageId);
-
-  if (runtimeAppendix) {
-    promptParts.push(runtimeAppendix);
-  }
-
-  if (stageConfig.runtime_instruction) {
-    promptParts.push("\n\n---STAGE_CONTEXT---\n\n", stageConfig.runtime_instruction.trim());
-  }
-
+  if (runtimeAppendix) promptParts.push(runtimeAppendix);
+  if (stageConfig.runtime_instruction) promptParts.push("\n\n---STAGE_CONTEXT---\n\n", stageConfig.runtime_instruction.trim());
   const combinedPrompt = promptParts.join("");
-
   return {
     stage_id: normalizedStageId,
     prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
     bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
-    shared_prompt: {
-      prompt_id: sharedPrompt.prompt_id,
-      file_name: sharedPrompt.file_name,
-      path: sharedPrompt.path,
-      sha256: sharedPrompt.sha256,
-      characters: sharedPrompt.characters
-    },
-    stage_prompt: {
-      prompt_id: stagePrompt.prompt_id,
-      file_name: stagePrompt.file_name,
-      path: stagePrompt.path,
-      sha256: stagePrompt.sha256,
-      characters: stagePrompt.characters
-    },
-    stage4_stage5_field_dictionary: normalizedStageId === "company_profile" || normalizedStageId === "target_feature_profile"
-      ? (() => {
-          const promptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
-          const dictionary = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
-          return dictionary ? {
-            prompt_id: dictionary.prompt_id,
-            file_name: dictionary.file_name,
-            path: dictionary.path,
-            sha256: dictionary.sha256,
-            characters: dictionary.characters
-          } : null;
-        })()
-      : null,
+    shared_prompt: { prompt_id: sharedPrompt.prompt_id, file_name: sharedPrompt.file_name, path: sharedPrompt.path, sha256: sharedPrompt.sha256, characters: sharedPrompt.characters },
+    stage_prompt: { prompt_id: stagePrompt.prompt_id, file_name: stagePrompt.file_name, path: stagePrompt.path, sha256: stagePrompt.sha256, characters: stagePrompt.characters },
+    stage4_stage5_field_dictionary: normalizedStageId === "company_profile" || normalizedStageId === "target_feature_profile" ? (() => {
+      const promptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+      const dictionary = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
+      return dictionary ? { prompt_id: dictionary.prompt_id, file_name: dictionary.file_name, path: dictionary.path, sha256: dictionary.sha256, characters: dictionary.characters } : null;
+    })() : null,
     combined_prompt: combinedPrompt,
     combined_characters: combinedPrompt.length
   };
@@ -160,24 +140,15 @@ export function loadDiligencePrompt(stageId) {
 
 export function assertDiligencePromptBundleReady() {
   const missing = [];
-
   if (!DILIGENCE_PROMPT_BUNDLE?.prompts) missing.push("prompts");
   if (!DILIGENCE_PROMPT_BUNDLE?.stage_prompt_ids) missing.push("stage_prompt_ids");
   if (!DILIGENCE_PROMPT_BUNDLE?.shared_prompt_id) missing.push("shared_system_preamble");
-
   for (const stageId of getDiligenceStageIds()) {
     const promptId = DILIGENCE_PROMPT_BUNDLE.stage_prompt_ids?.[stageId];
     const prompt = promptId ? DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId] : null;
     if (!prompt?.text) missing.push(`stage:${stageId}`);
   }
-
   const dictionaryPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
   if (!DILIGENCE_PROMPT_BUNDLE.prompts?.[dictionaryPromptId]?.text) missing.push("stage4_stage5_field_dictionary");
-
-  return missing.length ? { ok: false, missing } : {
-    ok: true,
-    prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
-    generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
-    stage_count: getDiligenceStageIds().length
-  };
+  return missing.length ? { ok: false, missing } : { ok: true, prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root, generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at };
 }
