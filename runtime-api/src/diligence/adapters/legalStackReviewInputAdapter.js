@@ -139,7 +139,18 @@ function sortSources(records = []) { return [...records].sort((a, b) => { const 
 function artifactFromRecord(record = {}) { const text = cleanText(record); return { evidence_source_id: record.evidence_source_id || null, source_family: record.source_family || "unknown", source_url: record.url || null, final_url: record.final_url || null, title: titleOf(record), word_count: record?.text?.word_count || 0, clean_text_sha256: record?.text?.clean_text_sha256 || sha256(text), clean_text_length: text.length, estimated_source_tokens: estimateSourceTokens(text.length), coverage_status: record?.quality?.coverage_status || "unknown", full_text_in_evidence_buffer: true }; }
 function evidenceFromRecord(record = {}) { const text = cleanText(record); return { evidence_source_id: record.evidence_source_id || null, source_family: record.source_family || "unknown", source_url: record.url || null, final_url: record.final_url || null, title: titleOf(record), clean_text_sha256: record?.text?.clean_text_sha256 || sha256(text), word_count: record?.text?.word_count || 0, estimated_source_tokens: estimateSourceTokens(text.length), clean_text_lossless: text, evidence_policy: { admitted_source: true, discovery_only: false, full_text_lossless: true, summarized: false, compressed: false, truncated_by_stage_6_adapter: false } }; }
 function extractPacket(evidenceJunction = {}) { return evidenceJunction?.downstream_packets?.[LEGAL_STAGE_KEY] || null; }
-function compactTargetFeatureProfile(profile = {}) { return { target_profile: profile.target_profile || {}, primary_product: profile.primary_product || {}, product_feature_map: Array.isArray(profile.product_feature_map) ? profile.product_feature_map : [], limitations: Array.isArray(profile.limitations) ? profile.limitations : [] }; }
+function compactTargetFeatureProfile(profile = {}) {
+  return {
+    feature_profile_version: profile.feature_profile_version || "feature_profile_v2",
+    target_profile_ref: profile.target_profile_ref || {},
+    feature_inventory: Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [],
+    data_provenance_map: Array.isArray(profile.data_provenance_map) ? profile.data_provenance_map : [],
+    regulated_surface_map: Array.isArray(profile.regulated_surface_map) ? profile.regulated_surface_map : [],
+    architecture_hints: Array.isArray(profile.architecture_hints) ? profile.architecture_hints : [],
+    commercial_scan: profile.commercial_scan && typeof profile.commercial_scan === "object" && !Array.isArray(profile.commercial_scan) ? profile.commercial_scan : {},
+    limitations: Array.isArray(profile.limitations) ? profile.limitations : []
+  };
+}
 function exclusionBase(record = {}) { const text = cleanText(record); return { evidence_source_id: record.evidence_source_id || null, source_family: record.source_family || "unknown", source_url: record.url || null, final_url: record.final_url || null, title: titleOf(record), clean_text_length: text.length, estimated_source_tokens: estimateSourceTokens(text.length), clean_text_sha256: record?.text?.clean_text_sha256 || sha256(text) }; }
 function compactText(value = "") { return String(value || "").replace(/\s+/g, " ").trim(); }
 function clip(value = "", max = MAX_SIGNAL_SNIPPET_CHARS) { const text = compactText(value); return text.length <= max ? text : `${text.slice(0, max - 1).trim()}…`; }
@@ -286,7 +297,7 @@ export function buildLegalStackReviewInput({ sourceBundle = {}, evidenceJunction
       text_compressed: false
     },
     adapter_policy: {
-      prompt_compatibility_mode: "legacy_source_bundle_fields",
+      prompt_compatibility_mode: "feature_profile_v2_canonical_fields",
       deterministic_legal_control_signal_map_built_from_full_text: true,
       full_stage_3_archive_preserved_upstream: true,
       model_input_uses_source_level_selection_only: true,

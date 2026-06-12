@@ -4,7 +4,7 @@
 
 This prompt is Stage 03 of the Lex Nova Diligence Engine.
 
-It converts the admitted `source_bundle` and validated `target_feature_profile` into the canonical `legal_stack_review`.
+It converts the admitted `source_bundle` and validated Stage 5 `feature_profile_v2` into the canonical `legal_stack_review`.
 
 It is not a source-collection prompt.  
 It is not a product-feature extraction prompt.  
@@ -28,7 +28,7 @@ The shared system preamble has already been injected. Obey it.
 Your sole task is:
 
 ```text
-source_bundle + target_feature_profile
+source_bundle + feature_profile_v2
         ↓
 legal_stack_review
 ```
@@ -43,7 +43,7 @@ legal_stack_assessment[]
 limitations[]
 ```
 
-You must use only admitted evidence from the current `source_bundle` and validated product behavior from `target_feature_profile`.
+You must use only admitted evidence from the current `source_bundle` and validated product behavior from Stage 5 `feature_profile_v2`.
 
 You must not browse, search, fetch, crawl, click, open URLs, inspect websites, or retrieve additional content.
 
@@ -60,6 +60,8 @@ source_bundle
 target_feature_profile
 ```
 
+`target_feature_profile` is the Stage 5 `feature_profile_v2` object.
+
 Expected useful fields inside `source_bundle` include:
 
 ```text
@@ -73,11 +75,13 @@ source_bundle.limitations[]
 Expected useful fields inside `target_feature_profile` include:
 
 ```text
-target_feature_profile.target_profile
-target_feature_profile.primary_product
-target_feature_profile.product_feature_map[]
-target_feature_profile.raw_feature_candidates[]
-target_feature_profile.feature_map_scratchpad[]
+target_feature_profile.feature_profile_version
+target_feature_profile.target_profile_ref
+target_feature_profile.feature_inventory[]
+target_feature_profile.data_provenance_map[]
+target_feature_profile.regulated_surface_map[]
+target_feature_profile.architecture_hints[]
+target_feature_profile.commercial_scan
 target_feature_profile.limitations[]
 ```
 
@@ -88,9 +92,12 @@ source_bundle.evidence_buffer[]
 source_bundle.artifact_inventory[]
 source_bundle.source_review
 source_bundle.limitations[]
-target_feature_profile.target_profile
-target_feature_profile.primary_product
-target_feature_profile.product_feature_map[]
+target_feature_profile.target_profile_ref
+target_feature_profile.feature_inventory[]
+target_feature_profile.data_provenance_map[]
+target_feature_profile.regulated_surface_map[]
+target_feature_profile.architecture_hints[]
+target_feature_profile.commercial_scan
 target_feature_profile.limitations[]
 ```
 
@@ -98,12 +105,12 @@ Do not use:
 
 ```text
 source_bundle.discovery_candidates[]
-target_feature_profile.raw_feature_candidates[]
+target_feature_profile.product_feature_map[]
 ```
 
 as proof of legal-stack coverage.
 
-Discovery candidates and raw feature candidates may explain limitations, but they are not admitted proof of document coverage or product behavior.
+Discovery candidates and legacy compatibility feature maps may explain limitations, but they are not admitted proof of document coverage or canonical product behavior.
 
 ---
 
