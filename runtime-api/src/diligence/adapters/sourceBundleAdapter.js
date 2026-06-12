@@ -68,9 +68,14 @@ function familyFromBucket(bucketName = "") {
   return String(bucketName || "").replace(/_sources$/, "");
 }
 
+function hardDataProvenanceGovernanceSignal(haystack = "") {
+  return /(^|[\/\s_-])(data-provenance|data provenance|privacy-policy|privacy|dpa|data-processing|data processing|data-protection|data protection|data-retention|data retention|retention|sub[-_ ]?processors?|cookie-policy|cookie policy|data-security|data security|data-residency|data residency|gdpr|dpdp|ccpa|cpra|personal-data|personal data|processor|controller)([\/\s_-]|$)/i.test(haystack)
+    || /privacy policy|data processing addendum|sub[- ]?processor|data provenance|data retention|data residency|personal data|processor|controller/i.test(haystack);
+}
+
 function hardLegalSignal(haystack = "") {
-  return /(^|[\/\s_-])(terms-of-service|terms|privacy-policy|privacy|legal|dpa|data-processing|data processing|sub[-_ ]?processors?|acceptable-use|acceptable use|aup|eula|sla|service-level|service level|cookie-policy|data-protection|data protection)([\/\s_-]|$)/i.test(haystack)
-    || /terms of service|privacy policy|data processing addendum|service level agreement|end user license|acceptable use policy|sub[- ]?processor/i.test(haystack);
+  return /(^|[\/\s_-])(terms-of-service|terms|legal|acceptable-use|acceptable use|aup|eula|sla|service-level|service level)([\/\s_-]|$)/i.test(haystack)
+    || /terms of service|service level agreement|end user license|acceptable use policy/i.test(haystack);
 }
 
 function hardGovernanceSignal(haystack = "") {
@@ -94,8 +99,9 @@ export function normalizeSourceFamily(value, record = {}) {
   const label = String(record.label || record.title || record.source_label || record.reason || record.link_text || "").toLowerCase();
   const haystack = `${raw} ${url} ${label}`;
 
+  if (["governance_profile", "data_provenance", "data_provenance_profile", "privacy_profile", "data_profile"].includes(raw) || hardDataProvenanceGovernanceSignal(haystack)) return "governance_profile";
   if (raw === "legal_profile" || raw === "legal_governance" || hardLegalSignal(haystack)) return "legal_profile";
-  if (raw === "governance_profile" || hardGovernanceSignal(haystack)) return "governance_profile";
+  if (hardGovernanceSignal(haystack)) return "governance_profile";
   if (raw === "product_profile" || raw === "docs_developer" || hardProductSignal(haystack)) return "product_profile";
   if (raw === "company_profile" || raw === "commercial" || raw === "update" || raw === "updates" || hardCompanySignal(haystack)) return "company_profile";
   return raw || "unknown";
@@ -122,7 +128,8 @@ function flattenDiscoverySources(discovery = {}) {
     "company_profile_sources",
     "product_profile_sources",
     "legal_profile_sources",
-    "governance_profile_sources"
+    "governance_profile_sources",
+    "data_provenance_sources"
   ];
   const byUrl = new Map();
 
