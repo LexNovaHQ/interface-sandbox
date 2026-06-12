@@ -195,9 +195,11 @@ Stage 5 must not directly emit Vault architecture fields.
 
 Forbidden: `architecture.memory`, `architecture.models`, `architecture.sub_processors`, `architecture.cloud_host`, `architecture.vector_db`.
 
-## Commercial scan
+## Commercial scan and completeness audit
 
 Before finalizing `feature_inventory[]`, perform a commercial scan based only on admitted first-party evidence.
+
+The scan is a completeness control, not a marketing summary. Do not silently omit any Stage 5 source or any distinct commercial outcome visible in admitted evidence.
 
 Populate:
 
@@ -205,16 +207,53 @@ Populate:
 "commercial_scan": {
   "distinct_commercial_outcomes_seen": [],
   "mapped_core_feature_ids": [],
-  "unmapped_outcomes_due_to_insufficient_detail": []
+  "source_coverage": [],
+  "unmapped_outcomes_due_to_insufficient_detail": [],
+  "completeness_status": "COMPLETE | PARTIAL | THIN",
+  "completeness_warnings": []
 }
 ```
 
-Count distinct outcomes the target appears to sell. Map every outcome with concrete evidence as a CORE feature. If a visible product/application/solution lacks enough capability detail, list it under unmapped outcomes. Do not map menu labels unless the evidence contains concrete functional detail.
+`distinct_commercial_outcomes_seen[]` must list every distinct function/outcome the target appears to sell or expose in the Stage 5 packet, using function language rather than product-label language.
+
+Every source in `source_bundle.evidence_buffer[]` / `source_bundle.source_citation_manifest[]` must have a matching row in `commercial_scan.source_coverage[]`:
+
+```json
+{
+  "source_id": "SRC_003",
+  "source_url": "https://example.ai/product",
+  "source_family": "product_profile",
+  "coverage_status": "mapped | supporting | duplicate | insufficient_detail | non_feature_context",
+  "mapped_feature_ids": ["F001"],
+  "unmapped_reason": "",
+  "evidence_refs": ["SRC_003#C002"]
+}
+```
+
+Coverage status rules:
+
+```text
+mapped: this source directly supports one or more feature_inventory[] entries.
+supporting: this source supports an already-mapped feature but is not the primary evidence.
+duplicate: this source is duplicate/supporting evidence already represented elsewhere.
+insufficient_detail: this source names a product/outcome but lacks enough functional detail to map safely.
+non_feature_context: this source is first-party but does not describe a Stage 5 product/function outcome.
+```
+
+`completeness_status` rules:
+
+```text
+COMPLETE: every Stage 5 source and commercial outcome is mapped, supporting, duplicate, or non-feature context; no unmapped outcome remains.
+PARTIAL: at least one visible outcome/source is insufficient_detail or otherwise not fully mapped.
+THIN: source_coverage is missing/empty, feature_inventory is empty/thin, or the packet cannot support a reliable completeness assessment.
+```
+
+If a visible product/application/solution lacks enough capability detail, list it under `unmapped_outcomes_due_to_insufficient_detail[]` and mark the relevant source as `insufficient_detail`. Do not map menu labels unless the evidence contains concrete functional detail.
 
 ## Final JSON shape
 
 Return only the canonical `target_feature_profile.feature_profile_v2` structure required by schema.
 
-For features, data provenance, archetype provenance, surface provenance, architecture hints, regulated surface map, and field evidence refs, cite `evidence_refs[]`; do not copy long quotes.
+For features, data provenance, archetype provenance, surface provenance, architecture hints, regulated surface map, field evidence refs, and source coverage rows, cite `evidence_refs[]`; do not copy long quotes.
 
 JSON only. No markdown. No commentary. No code fences.
