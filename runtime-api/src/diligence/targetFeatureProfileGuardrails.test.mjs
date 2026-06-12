@@ -141,6 +141,38 @@ const missingDataResult = validateTargetFeatureProfileGuardrails(missingData, { 
 assert.equal(missingDataResult.ok, true, JSON.stringify(missingDataResult.errors, null, 2));
 assert.ok(missingDataResult.repairs.some((repair) => repair.action === "runtime_filled_missing_data_provenance"));
 
+const incompatiblePackageInput = {
+  ...packageInput,
+  target_feature_candidate_index: {
+    ...packageInput.target_feature_candidate_index,
+    candidates: [{
+      ...packageInput.target_feature_candidate_index.candidates[0],
+      candidate_id: "CAND_TRANSLATION_001",
+      candidate_cluster: "translation",
+      normalized_label: "translation",
+      raw_label: "Translation",
+      candidate_type: "commercial_function",
+      index_reason: "fixture incompatible mapping"
+    }]
+  }
+};
+const incompatible = baseProfile();
+incompatible.commercial_scan.source_coverage[0].mapped_feature_ids = ["F001"];
+const incompatibleResult = validateTargetFeatureProfileGuardrails(incompatible, { evidenceBuffer, packageInput: incompatiblePackageInput });
+assert.equal(incompatibleResult.ok, true, JSON.stringify(incompatibleResult.errors, null, 2));
+assert.ok(incompatibleResult.repairs.some((repair) => repair.action === "rerun_missing_stage5_candidate_or_source_accounting"));
+assert.equal(incompatibleResult.target_feature_audit_ledger.candidate_walk_ledger[0].compatibility_status, "incompatible");
+
+const incompatibleAfterRepairResult = validateTargetFeatureProfileGuardrails(incompatible, { evidenceBuffer, packageInput: { ...incompatiblePackageInput, completion_repair_request: { repair_version: "test" } } });
+assert.equal(incompatibleAfterRepairResult.ok, false);
+assert.ok(incompatibleAfterRepairResult.errors.some((error) => String(error.message).includes("after repair rerun")));
+
+const invalidCoverage = baseProfile();
+invalidCoverage.commercial_scan.source_coverage[0].mapped_feature_ids = [];
+const invalidCoverageResult = validateTargetFeatureProfileGuardrails(invalidCoverage, { evidenceBuffer, packageInput });
+assert.equal(invalidCoverageResult.ok, true, JSON.stringify(invalidCoverageResult.errors, null, 2));
+assert.ok(invalidCoverageResult.repairs.some((repair) => repair.action === "rerun_missing_stage5_candidate_or_source_accounting"));
+
 console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
@@ -150,5 +182,7 @@ console.log(JSON.stringify({
   missing_refs_warning_count: missingRefsResult.warnings.length,
   wrong_source_error_count: wrongSourceResult.errors.length,
   linked_threat_repair_count: linkedThreatResult.repairs.length,
-  missing_data_repair_count: missingDataResult.repairs.length
+  missing_data_repair_count: missingDataResult.repairs.length,
+  incompatible_candidate_repair_count: incompatibleResult.repairs.length,
+  invalid_coverage_repair_count: invalidCoverageResult.repairs.length
 }, null, 2));

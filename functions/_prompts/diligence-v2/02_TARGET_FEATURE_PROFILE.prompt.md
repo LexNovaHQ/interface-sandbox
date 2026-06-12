@@ -62,7 +62,7 @@ Discovery candidates are not evidence. A URL string alone is not evidence of pag
 
 `target_feature_candidate_index.candidates[]` is a deterministic completeness ledger. It is high-recall and may include duplicates, menu labels, API/documentation surfaces, and weak candidates. Treat it as a mandatory worklist, not as final truth.
 
-If input.completion_repair_request is present, prioritize those missing candidate/source accounting items before finalizing. The repair request does not authorize browsing or new evidence. Use the same admitted source_bundle and target_feature_candidate_index only.
+If input.completion_repair_request is present, prioritize only the listed missing candidate IDs, incompatible candidate mappings, invalid source coverage rows, and missing primary source coverage rows before finalizing. The repair request does not authorize browsing or new evidence. Use the same admitted source_bundle and target_feature_candidate_index only. Do not drop prior valid features.
 
 ## Evidence citation discipline — token economy rule
 
@@ -214,6 +214,8 @@ non_feature_context: candidate is product-family context but does not describe a
 ```
 
 You cannot silently skip indexed candidates.
+
+Do not collapse incompatible functions. Translation, speech-to-text/transcription, text-to-speech/speech synthesis, dubbing, document digitisation/OCR, embeddings, voice agents, and language models are distinct Stage 5 functions unless admitted evidence shows one is merely duplicate/supporting context for another mapped feature. If a candidate is duplicate/supporting/non-feature/insufficient-detail, reflect that status consistently in `commercial_scan.source_coverage[]`, `commercial_scan.unmapped_outcomes_due_to_insufficient_detail[]`, `feature_inventory[].evidence_refs[]`, and `limitations[]` where material. Do not invent audit-only fields inside `feature_profile_v2`.
 
 Because the output schema does not contain a separate candidate ledger field, candidate accounting must be reflected through:
 

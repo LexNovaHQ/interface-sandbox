@@ -426,7 +426,7 @@ async function buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode
   }
   const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
   const targetFeatureProfile = featureStage.target_feature_profile;
-  logStage(logs, "target_feature_profile", "complete", { feature_count: targetFeatureProfile?.feature_inventory?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+  logStage(logs, "target_feature_profile", "complete", { feature_count: targetFeatureProfile?.feature_inventory?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
   return { companyProfile, targetFeatureProfile };
 }
 

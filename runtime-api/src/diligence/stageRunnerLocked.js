@@ -155,7 +155,7 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
       ...input,
       completion_repair_request: {
         repair_version: "stage5_candidate_source_accounting_repair_v1",
-        required_action: "Redo only the missing Stage 5 candidate/source accounting, then return the complete final feature_profile_v2 JSON. Do not drop prior valid features. Do not browse. Use the same admitted evidence only.",
+        required_action: "Redo only the listed missing or incompatible Stage 5 candidate/source accounting, including missing candidate IDs, incompatible candidate mappings, invalid source coverage rows, and missing primary source coverage rows. Return the complete final feature_profile_v2 JSON. Do not drop prior valid features. Do not browse. Use the same admitted evidence only.",
         repairable_guardrail_items: targetFeatureRepairItems
       }
     };

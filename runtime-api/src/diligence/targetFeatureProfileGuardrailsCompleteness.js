@@ -1,4 +1,5 @@
 import { validateTargetFeatureProfileGuardrails as validateBaseGuardrails } from "./targetFeatureProfileGuardrailsLocked.js";
+import { canonicalCandidateCluster, evaluateCandidateFeatureCompatibility } from "./stage5TargetFeaturePackageBuilder.js";
 
 const COVERAGE_TO_DISPOSITION = {
   mapped: "mapped_feature",
@@ -78,7 +79,15 @@ function expectedStage5Sources(packageInput = {}) {
     const id = sourceId(row);
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    out.push({ source_id: id, source_url: sourceUrl(row), source_family: row?.source_family || "unknown", duplicate_cluster_id: row?.duplicate_cluster_id || row?.dedupe_group_id || null });
+    out.push({
+      source_id: id,
+      source_url: sourceUrl(row),
+      source_family: row?.source_family || "unknown",
+      source_role: row?.source_role || row?.stage5_source_role || "primary_function_source",
+      candidate_cluster: row?.candidate_cluster || null,
+      duplicate_cluster_id: row?.duplicate_cluster_id || row?.dedupe_group_id || null,
+      duplicate_of: row?.duplicate_of || null
+    });
   }
   return out;
 }
@@ -88,8 +97,8 @@ function expectedStage5Candidates(packageInput = {}) {
   return Array.isArray(rows) ? rows.filter((row) => row && typeof row === "object" && nonEmptyString(row.candidate_id)) : [];
 }
 
-function mappedFeatureIds(profile = {}) {
-  return new Set(asArray(profile.feature_inventory).map((feature) => feature?.feature_id).filter(nonEmptyString));
+function featureMap(profile = {}) {
+  return new Map(asArray(profile.feature_inventory).filter((feature) => nonEmptyString(feature?.feature_id)).map((feature) => [feature.feature_id, feature]));
 }
 
 function coverageBySource(scan = {}) {
@@ -101,8 +110,69 @@ function coverageBySource(scan = {}) {
   return out;
 }
 
-function dispositionFromCoverage(row) {
-  return COVERAGE_TO_DISPOSITION[row?.coverage_status] || "missed";
+function duplicateSourceMap(packageInput = {}) {
+  const rows = [...asArray(packageInput.product_family_duplicate_sources), ...asArray(packageInput.stage5_audit_ledger?.duplicate_supporting_sources)];
+  return new Map(rows.map((row) => [sourceId(row), row]).filter(([id]) => id));
+}
+
+function sourceMetaMap(packageInput = {}) {
+  const rows = [
+    ...asArray(packageInput.product_family_primary_sources),
+    ...asArray(packageInput.product_family_supporting_sources),
+    ...asArray(packageInput.product_family_duplicate_sources),
+    ...asArray(packageInput.product_family_non_feature_context_sources)
+  ];
+  return new Map(rows.map((row) => [sourceId(row), row]).filter(([id]) => id));
+}
+
+function dispositionFromCoverage(candidate = {}, coverage = null, duplicateMap = new Map()) {
+  if (coverage?.coverage_status) return COVERAGE_TO_DISPOSITION[coverage.coverage_status] || "missed";
+  if (candidate.duplicate_of || duplicateMap.has(String(candidate.source_id || "").trim())) return "duplicate_of";
+  return "missed";
+}
+
+function mappedIds(row = {}) {
+  return asArray(row.mapped_feature_ids).map((id) => String(id || "").trim()).filter(Boolean);
+}
+
+function hasReason(row = {}) {
+  return nonEmptyString(row.unmapped_reason) || nonEmptyString(row.reason) || nonEmptyString(row.coverage_reason);
+}
+
+function evidenceRefs(row = {}) {
+  return asArray(row.evidence_refs).map(String).filter(Boolean);
+}
+
+function validateSourceCoverageRows(profile = {}, packageInput = {}) {
+  const scan = profile?.commercial_scan || {};
+  const features = featureMap(profile);
+  const duplicates = duplicateSourceMap(packageInput);
+  const sourceMeta = sourceMetaMap(packageInput);
+  const invalid = [];
+  asArray(scan.source_coverage).forEach((row, index) => {
+    const path = `/commercial_scan/source_coverage/${index}`;
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      invalid.push({ path, reason: "source_coverage row is not an object" });
+      return;
+    }
+    const status = row.coverage_status;
+    const ids = mappedIds(row);
+    const unknownFeatureIds = ids.filter((id) => !features.has(id));
+    const source = sourceMeta.get(String(row.source_id || "").trim()) || {};
+    if (!COVERAGE_TO_DISPOSITION[status]) invalid.push({ path: `${path}/coverage_status`, source_id: row.source_id || null, reason: "invalid coverage_status", coverage_status: status || null });
+    if (status === "mapped" && !ids.length) invalid.push({ path: `${path}/mapped_feature_ids`, source_id: row.source_id || null, reason: "mapped source coverage requires mapped_feature_ids" });
+    if (unknownFeatureIds.length) invalid.push({ path: `${path}/mapped_feature_ids`, source_id: row.source_id || null, reason: "mapped_feature_ids reference missing feature_inventory ids", unknown_feature_ids: unknownFeatureIds });
+    if (status === "supporting" && !ids.length && !hasReason(row)) invalid.push({ path, source_id: row.source_id || null, reason: "supporting source coverage requires mapped_feature_ids or reason" });
+    if (status === "duplicate" && !row.duplicate_of && !duplicates.has(String(row.source_id || "").trim())) invalid.push({ path, source_id: row.source_id || null, reason: "duplicate source coverage requires duplicate_of or duplicate metadata relation" });
+    if (status === "insufficient_detail" && !hasReason(row)) invalid.push({ path, source_id: row.source_id || null, reason: "insufficient_detail source coverage requires reason" });
+    if (status === "non_feature_context" && source.source_role === "primary_function_source" && !hasReason(row)) invalid.push({ path, source_id: row.source_id || null, reason: "primary source cannot be non_feature_context without reason" });
+    if (status === "mapped" && ids.length) {
+      const rowRefs = evidenceRefs(row);
+      const featureHasRefs = ids.some((id) => evidenceRefs(features.get(id)).length);
+      if (!rowRefs.length && !featureHasRefs) invalid.push({ path: `${path}/evidence_refs`, source_id: row.source_id || null, reason: "mapped source should cite evidence_refs or map to a feature with evidence_refs" });
+    }
+  });
+  return invalid;
 }
 
 function buildAuditLedger(profile = {}, options = {}) {
@@ -111,25 +181,32 @@ function buildAuditLedger(profile = {}, options = {}) {
   const coverageMap = coverageBySource(scan);
   const candidates = expectedStage5Candidates(packageInput);
   const expectedSources = expectedStage5Sources(packageInput);
-  const features = mappedFeatureIds(profile);
+  const features = featureMap(profile);
+  const duplicates = duplicateSourceMap(packageInput);
   const candidateRows = candidates.map((candidate) => {
     const coverage = coverageMap.get(String(candidate.source_id || "").trim()) || null;
-    const disposition = dispositionFromCoverage(coverage);
-    const mappedIds = asArray(coverage?.mapped_feature_ids).filter(nonEmptyString);
-    const mappedFeatureId = mappedIds.find((id) => features.has(id)) || mappedIds[0] || null;
+    const disposition = dispositionFromCoverage(candidate, coverage, duplicates);
+    const ids = mappedIds(coverage);
+    const mappedFeatureId = ids.find((id) => features.has(id)) || ids[0] || null;
+    const feature = mappedFeatureId ? features.get(mappedFeatureId) : null;
+    const compatibility = disposition === "mapped_feature" && feature
+      ? evaluateCandidateFeatureCompatibility(candidate, feature)
+      : { compatibility_status: disposition === "mapped_feature" ? "unknown" : "not_applicable", compatible: disposition !== "mapped_feature", candidate_cluster: canonicalCandidateCluster(candidate), matched_terms: [] };
+    const duplicateRow = duplicates.get(String(candidate.source_id || "").trim());
     return {
       candidate_id: candidate.candidate_id,
-      normalized_label: candidate.normalized_label || null,
-      raw_label: candidate.raw_label || candidate.candidate_label || null,
+      candidate_cluster: candidate.candidate_cluster || compatibility.candidate_cluster || canonicalCandidateCluster(candidate),
       source_id: candidate.source_id || null,
       source_url: candidate.source_url || null,
-      candidate_type: candidate.candidate_type || null,
-      evidence_locator: candidate.evidence_locator || candidate.source_surface || null,
-      duplicate_cluster_id: candidate.duplicate_cluster_id || null,
-      duplicate_of: candidate.duplicate_of || coverage?.duplicate_of || null,
+      raw_label: candidate.raw_label || candidate.candidate_label || null,
+      normalized_label: candidate.normalized_label || null,
       disposition,
-      mapped_feature_id: mappedFeatureId,
-      reason: coverage?.unmapped_reason || coverage?.coverage_status || (coverage ? "accounted by commercial_scan.source_coverage" : "missing source coverage")
+      mapped_feature_id: mappedFeatureId || null,
+      compatibility_status: compatibility.compatibility_status || "unknown",
+      reason: coverage?.unmapped_reason || coverage?.coverage_status || duplicateRow?.disposition || (coverage ? "accounted by commercial_scan.source_coverage" : "missing candidate/source accounting"),
+      evidence_refs: evidenceRefs(candidate).length ? evidenceRefs(candidate) : evidenceRefs(coverage),
+      duplicate_of: candidate.duplicate_of || duplicateRow?.duplicate_of || coverage?.duplicate_of || null,
+      matched_compatibility_terms: compatibility.matched_terms || []
     };
   });
   const sourceRows = expectedSources.map((source) => {
@@ -138,20 +215,24 @@ function buildAuditLedger(profile = {}, options = {}) {
       source_id: source.source_id,
       source_url: source.source_url,
       source_family: source.source_family,
+      source_role: source.source_role || "primary_function_source",
+      candidate_cluster: source.candidate_cluster || null,
       duplicate_cluster_id: source.duplicate_cluster_id || null,
-      disposition: dispositionFromCoverage(coverage),
-      mapped_feature_ids: asArray(coverage?.mapped_feature_ids).filter(nonEmptyString),
+      duplicate_of: source.duplicate_of || coverage?.duplicate_of || null,
+      disposition: dispositionFromCoverage(source, coverage, duplicates),
+      mapped_feature_ids: mappedIds(coverage),
       reason: coverage?.unmapped_reason || coverage?.coverage_status || "missing source coverage"
     };
   });
   return {
-    ledger_version: "stage5_target_feature_audit_ledger_v1",
+    ledger_version: "stage5_target_feature_audit_ledger_v2",
     ledger_scope: "runtime_internal_not_canonical_schema",
     generated_at: new Date().toISOString(),
     candidate_index_version: packageInput?.target_feature_candidate_index?.index_version || null,
     expected_candidate_count: candidates.length,
     expected_primary_source_count: expectedSources.length,
     source_review: packageInput?.source_bundle?.source_review || null,
+    candidate_clusters: asArray(packageInput.stage5_candidate_clusters || packageInput.target_feature_candidate_index?.candidate_clusters || packageInput.stage5_audit_ledger?.candidate_clusters),
     candidate_walk_ledger: candidateRows,
     source_walk_ledger: sourceRows,
     duplicate_supporting_sources: asArray(packageInput.product_family_duplicate_sources),
@@ -165,12 +246,16 @@ function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
   const candidateRows = asArray(ledger.candidate_walk_ledger);
   const sourceRows = asArray(ledger.source_walk_ledger);
   const missingCandidateIds = candidateRows.filter((row) => !FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_id).filter(Boolean);
+  const incompatibleCandidateMappings = candidateRows
+    .filter((row) => row.disposition === "mapped_feature" && row.compatibility_status === "incompatible")
+    .map((row) => ({ candidate_id: row.candidate_id, candidate_cluster: row.candidate_cluster, mapped_feature_id: row.mapped_feature_id }));
   const missingSourceIds = sourceRows.filter((row) => !FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.source_id).filter(Boolean);
-  const invalidStatusRows = asArray(scan.source_coverage).filter((row) => !COVERAGE_TO_DISPOSITION[row?.coverage_status]);
+  const invalidCoverageRows = validateSourceCoverageRows(profile, options.packageInput || {});
   return {
     missingCandidateIds,
+    incompatibleCandidateMappings,
     missingSourceIds,
-    invalidCoverageStatusCount: invalidStatusRows.length,
+    invalidCoverageRows,
     missingCommercialScan: !rawScan || typeof rawScan !== "object" || Array.isArray(rawScan),
     missingCoverage: !asArray(scan.source_coverage).length,
     emptyOutcomes: !asArray(scan.distinct_commercial_outcomes_seen).length,
@@ -202,20 +287,21 @@ function validateCompleteness(profile, result, options = {}) {
 
   const missing = {
     missing_candidate_ids: unresolved.missingCandidateIds,
+    incompatible_candidate_mappings: unresolved.incompatibleCandidateMappings,
+    invalid_source_coverage_rows: unresolved.invalidCoverageRows,
     missing_primary_source_ids: unresolved.missingSourceIds,
-    invalid_coverage_status_count: unresolved.invalidCoverageStatusCount,
     missing_commercial_scan: unresolved.missingCommercialScan,
     missing_source_coverage: unresolved.missingCoverage,
     empty_outcomes: unresolved.emptyOutcomes
   };
-  const hasCriticalGap = missing.missing_candidate_ids.length || missing.missing_primary_source_ids.length || missing.invalid_coverage_status_count || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
+  const hasCriticalGap = missing.missing_candidate_ids.length || missing.incompatible_candidate_mappings.length || missing.invalid_source_coverage_rows.length || missing.missing_primary_source_ids.length || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
   if (!hasCriticalGap) return;
 
   if (afterRepair) {
-    addBlocking(errors, "/target_feature_audit_ledger", "Stage 5 candidate/source accounting remains incomplete after repair rerun", missing);
+    addBlocking(errors, "/target_feature_audit_ledger", "Stage 5 candidate/source semantic accounting remains incomplete after repair rerun", missing);
     return;
   }
-  addRepair(profile, repairs, "/target_feature_audit_ledger", "Stage 5 candidate/source accounting is incomplete and should be repaired with one focused rerun", missing);
+  addRepair(profile, repairs, "/target_feature_audit_ledger", "Stage 5 candidate/source semantic accounting is incomplete and should be repaired with one focused rerun", missing);
 }
 
 export function validateTargetFeatureProfileGuardrails(profile, options = {}) {

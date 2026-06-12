@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { evaluateCandidateFeatureCompatibility } from "../src/diligence/stage5TargetFeaturePackageBuilder.js";
 
 const cachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
 const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
+const COVERAGE_STATUSES = new Set(["mapped", "supporting", "duplicate", "insufficient_detail", "non_feature_context"]);
 
 function fail(message, detail = {}) {
   console.error(JSON.stringify({ ok: false, step: "stage5_strict_completeness_audit", error: message, ...detail }, null, 2));
@@ -58,6 +60,37 @@ function ledgerSourceMap(ledger) {
   return new Map((Array.isArray(ledger?.source_walk_ledger) ? ledger.source_walk_ledger : []).map((row) => [String(row?.source_id || "").trim(), row]).filter(([id]) => id));
 }
 
+function mappedFeatureMap(profile = {}) {
+  return new Map((Array.isArray(profile.feature_inventory) ? profile.feature_inventory : []).map((feature) => [String(feature?.feature_id || "").trim(), feature]).filter(([id]) => id));
+}
+
+function mappedIds(row = {}) {
+  return Array.isArray(row.mapped_feature_ids) ? row.mapped_feature_ids.map((id) => String(id || "").trim()).filter(Boolean) : [];
+}
+
+function hasReason(row = {}) {
+  return Boolean(String(row?.unmapped_reason || row?.reason || row?.coverage_reason || "").trim());
+}
+
+function sourceCoverageInvariantFailures(coverage, featureById, sourceLedger) {
+  const failures = [];
+  for (let index = 0; index < coverage.length; index += 1) {
+    const row = coverage[index];
+    const path = `/commercial_scan/source_coverage/${index}`;
+    if (!row || typeof row !== "object") { failures.push(`${path}: row is not an object`); continue; }
+    const ids = mappedIds(row);
+    const sourceLedgerRow = sourceLedger.get(String(row.source_id || "").trim()) || {};
+    if (!COVERAGE_STATUSES.has(row.coverage_status)) failures.push(`${path}: invalid coverage_status ${row.coverage_status || "missing"}`);
+    if (row.coverage_status === "mapped" && !ids.length) failures.push(`${path}: mapped requires mapped_feature_ids`);
+    for (const id of ids) if (!featureById.has(id)) failures.push(`${path}: mapped_feature_id ${id} missing from feature_inventory`);
+    if (row.coverage_status === "supporting" && !ids.length && !hasReason(row)) failures.push(`${path}: supporting requires mapped_feature_ids or reason`);
+    if (row.coverage_status === "duplicate" && !row.duplicate_of && sourceLedgerRow.disposition !== "duplicate_of" && !sourceLedgerRow.duplicate_of) failures.push(`${path}: duplicate requires duplicate_of or duplicate ledger relation`);
+    if (row.coverage_status === "insufficient_detail" && !hasReason(row)) failures.push(`${path}: insufficient_detail requires reason`);
+    if (row.coverage_status === "non_feature_context" && sourceLedgerRow.source_role === "primary_function_source" && !hasReason(row)) failures.push(`${path}: primary source cannot be non_feature_context without reason`);
+  }
+  return failures;
+}
+
 const cache = readJson(cachePath);
 const profile = cache.feature_profile_v2 || cache.target_feature_profile;
 if (!profile || typeof profile !== "object") fail("Stage 5 profile missing from cache", { cache_path: cachePath });
@@ -73,12 +106,21 @@ const coverageSourceIds = coverage.map((row) => String(row?.source_id || "").tri
 const candidates = indexedCandidates(cache);
 const candidateLedger = ledgerCandidateMap(ledger);
 const sourceLedger = ledgerSourceMap(ledger);
+const featureById = mappedFeatureMap(profile);
 const missingSourceCoverage = expectedSourceIds.filter((id) => {
   if (coverageSourceIds.includes(id)) return false;
   return !FINAL_DISPOSITIONS.has(sourceLedger.get(id)?.disposition);
 });
 const missingCandidateLedger = candidates.filter((candidate) => !candidateLedger.has(candidate.candidate_id));
 const unresolvedCandidates = candidates.filter((candidate) => !FINAL_DISPOSITIONS.has(candidateLedger.get(candidate.candidate_id)?.disposition));
+const incompatibleCandidates = candidates.filter((candidate) => {
+  const ledgerRow = candidateLedger.get(candidate.candidate_id);
+  if (ledgerRow?.disposition !== "mapped_feature" || !ledgerRow?.mapped_feature_id) return false;
+  const feature = featureById.get(String(ledgerRow.mapped_feature_id));
+  if (!feature) return false;
+  return evaluateCandidateFeatureCompatibility({ ...candidate, candidate_cluster: ledgerRow.candidate_cluster || candidate.candidate_cluster }, feature).compatible === false;
+});
+const invariantFailures = sourceCoverageInvariantFailures(coverage, featureById, sourceLedger);
 const finishReasons = [];
 for (const attempt of cache.target_feature_profile_stage_result?.model_metadata?.attempted_models || []) if (attempt?.finish_reason) finishReasons.push(attempt.finish_reason);
 
@@ -89,6 +131,8 @@ if (missingSourceCoverage.length) failures.push(`source_coverage/audit ledger mi
 if (!candidates.length) failures.push("target_feature_candidate_index missing or empty in Stage 5 input/cache");
 if (missingCandidateLedger.length) failures.push(`audit ledger missing candidate IDs: ${missingCandidateLedger.map((candidate) => candidate.candidate_id).join(", ")}`);
 if (unresolvedCandidates.length) failures.push(`indexed candidates unresolved in audit ledger: ${unresolvedCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
+if (incompatibleCandidates.length) failures.push(`mapped candidates semantically incompatible with mapped features: ${incompatibleCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
+if (invariantFailures.length) failures.push(`source coverage invariants failed: ${invariantFailures.join(" | ")}`);
 if (finishReasons.includes("MAX_TOKENS")) failures.push("model finish_reason MAX_TOKENS; Stage 5 may be truncated");
 
 const payload = {
@@ -105,6 +149,8 @@ const payload = {
   audit_ledger_source: ledger ? "target_feature_audit_ledger" : "missing",
   missing_candidate_ledger_ids: missingCandidateLedger.map((candidate) => candidate.candidate_id),
   unresolved_candidate_ids: unresolvedCandidates.map((candidate) => candidate.candidate_id),
+  incompatible_candidate_ids: incompatibleCandidates.map((candidate) => candidate.candidate_id),
+  source_coverage_invariant_failures: invariantFailures,
   finish_reasons: finishReasons,
   failures
 };
