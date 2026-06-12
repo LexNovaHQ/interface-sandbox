@@ -1,1 +1,1 @@
-export * from "./targetFeatureProfileGuardrailsLocked.js";
+export { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrailsCompleteness.js";
