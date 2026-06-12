@@ -8,7 +8,7 @@ const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
 
-const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
+const BUCKETS = ["legal_profile_sources", "governance_profile_sources", "product_profile_sources", "company_profile_sources"];
 const FAMILIES = ["company_profile", "product_profile", "legal_profile", "governance_profile"];
 const STAGE_KEYS = ["target_feature_profile", "legal_stack_review", "governance_review", "registry_matching", "final_report_compiler"];
 
@@ -64,23 +64,18 @@ function collectBucket(discovery, bucket) {
 }
 
 function collectSources(discovery) {
-  const limit = Number(process.env.STAGE3_CAPTURE_LIMIT || process.env.STAGE2_CAPTURE_LIMIT || 16);
-  const quotas = [
-    ["legal_profile_sources", Number(process.env.STAGE3_LEGAL_CAPTURE_LIMIT || 3)],
-    ["governance_profile_sources", Number(process.env.STAGE3_GOVERNANCE_CAPTURE_LIMIT || 3)],
-    ["product_profile_sources", Number(process.env.STAGE3_PRODUCT_CAPTURE_LIMIT || 8)],
-    ["company_profile_sources", Number(process.env.STAGE3_COMPANY_CAPTURE_LIMIT || 2)]
-  ];
   const pools = Object.fromEntries(BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
   const selected = [];
   const seen = new Set();
+
   const add = (record) => {
-    if (!record?.url || seen.has(record.url) || selected.length >= limit) return;
+    if (!record?.url || seen.has(record.url)) return;
     seen.add(record.url);
     selected.push(record);
   };
-  for (const [bucket, quota] of quotas) for (const record of (pools[bucket] || []).slice(0, quota)) add(record);
+
   for (const bucket of BUCKETS) for (const record of pools[bucket] || []) add(record);
+
   return selected;
 }
 
@@ -95,10 +90,10 @@ console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_3_evidence_j
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: targetInput,
   options: {
-    sourceDiscoveryMode: process.env.STAGE3_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
-    runFreeFirstPartySearch: process.env.STAGE3_RUN_FREE_SEARCH === "true",
-    anchorFetchMaxAnchors: Number(process.env.STAGE3_ANCHOR_FETCH_MAX || 32),
-    anchorLinkLimit: Number(process.env.STAGE3_ANCHOR_LINK_LIMIT || 120),
+    sourceDiscoveryMode: process.env.STAGE3_SOURCE_DISCOVERY_MODE || "sync_with_free_search",
+    runFreeFirstPartySearch: process.env.STAGE3_RUN_FREE_SEARCH === "false" ? false : true,
+    anchorFetchMaxAnchors: Number(process.env.STAGE3_ANCHOR_FETCH_MAX || 60),
+    anchorLinkLimit: Number(process.env.STAGE3_ANCHOR_LINK_LIMIT || 100000),
     anchorClassifyMaxOutputTokens: Number(process.env.STAGE3_ANCHOR_CLASSIFY_TOKENS || 8192),
     probe_timeout_ms: Number(process.env.STAGE3_PROBE_TIMEOUT_MS || 8000)
   }
@@ -110,7 +105,11 @@ console.log(JSON.stringify({ ok: true, step: "source_discovery_complete", source
 
 const captureResponse = await postJson(base, "/v1/source-capture", {
   input: { sources },
-  options: { timeout_ms: Number(process.env.STAGE3_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length }
+  options: {
+    timeout_ms: Number(process.env.STAGE3_CAPTURE_TIMEOUT_MS || 24000),
+    max_fetch_bytes: Number(process.env.STAGE3_CAPTURE_MAX_BYTES || 30 * 1024 * 1024),
+    include_clean_text: true
+  }
 });
 
 const sourceBundle = buildEvidenceRefinerInput({
