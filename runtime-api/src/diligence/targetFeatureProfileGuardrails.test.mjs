@@ -167,6 +167,24 @@ const incompatibleAfterRepairResult = validateTargetFeatureProfileGuardrails(inc
 assert.equal(incompatibleAfterRepairResult.ok, false);
 assert.ok(incompatibleAfterRepairResult.errors.some((error) => String(error.message).includes("after repair rerun")));
 
+const multiCandidatePackageInput = {
+  ...packageInput,
+  target_feature_candidate_index: {
+    ...packageInput.target_feature_candidate_index,
+    candidate_count: 2,
+    candidates: [
+      { ...packageInput.target_feature_candidate_index.candidates[0], candidate_id: "CAND_SPEECH_001", candidate_cluster: "speech_to_text" },
+      { ...packageInput.target_feature_candidate_index.candidates[0], candidate_id: "CAND_TRANSLATION_002", candidate_cluster: "translation", normalized_label: "translation", raw_label: "Translation" }
+    ]
+  }
+};
+const multiCandidate = baseProfile();
+const multiCandidateResult = validateTargetFeatureProfileGuardrails(multiCandidate, { evidenceBuffer, packageInput: multiCandidatePackageInput });
+assert.equal(multiCandidateResult.ok, true, JSON.stringify(multiCandidateResult.errors, null, 2));
+assert.equal(multiCandidateResult.repairs.some((repair) => repair.action === "rerun_missing_stage5_candidate_or_source_accounting"), false);
+assert.equal(multiCandidateResult.target_feature_audit_ledger.candidate_walk_ledger[0].disposition, "mapped_feature");
+assert.equal(multiCandidateResult.target_feature_audit_ledger.candidate_walk_ledger[1].disposition, "supporting_only");
+
 const invalidCoverage = baseProfile();
 invalidCoverage.commercial_scan.source_coverage[0].mapped_feature_ids = [];
 const invalidCoverageResult = validateTargetFeatureProfileGuardrails(invalidCoverage, { evidenceBuffer, packageInput });

@@ -131,6 +131,15 @@ function dispositionFromCoverage(candidate = {}, coverage = null, duplicateMap =
   return "missed";
 }
 
+function candidateDisposition({ candidate = {}, coverage = null, duplicateMap = new Map(), feature = null, compatibility = null, candidateCountForSource = 1 }) {
+  const disposition = dispositionFromCoverage(candidate, coverage, duplicateMap);
+  if (disposition !== "mapped_feature") return disposition;
+  if (!feature || compatibility?.compatible !== false) return disposition;
+  if (candidateCountForSource <= 1) return disposition;
+  if (candidate.duplicate_of || duplicateMap.has(String(candidate.source_id || "").trim())) return "duplicate_of";
+  return "supporting_only";
+}
+
 function mappedIds(row = {}) {
   return asArray(row.mapped_feature_ids).map((id) => String(id || "").trim()).filter(Boolean);
 }
@@ -183,16 +192,23 @@ function buildAuditLedger(profile = {}, options = {}) {
   const expectedSources = expectedStage5Sources(packageInput);
   const features = featureMap(profile);
   const duplicates = duplicateSourceMap(packageInput);
+  const candidateCountBySource = new Map();
+  for (const candidate of candidates) {
+    const id = String(candidate.source_id || "").trim();
+    if (id) candidateCountBySource.set(id, (candidateCountBySource.get(id) || 0) + 1);
+  }
   const candidateRows = candidates.map((candidate) => {
-    const coverage = coverageMap.get(String(candidate.source_id || "").trim()) || null;
-    const disposition = dispositionFromCoverage(candidate, coverage, duplicates);
+    const candidateSourceId = String(candidate.source_id || "").trim();
+    const coverage = coverageMap.get(candidateSourceId) || null;
     const ids = mappedIds(coverage);
     const mappedFeatureId = ids.find((id) => features.has(id)) || ids[0] || null;
     const feature = mappedFeatureId ? features.get(mappedFeatureId) : null;
-    const compatibility = disposition === "mapped_feature" && feature
+    const sourceDisposition = dispositionFromCoverage(candidate, coverage, duplicates);
+    const compatibility = sourceDisposition === "mapped_feature" && feature
       ? evaluateCandidateFeatureCompatibility(candidate, feature)
-      : { compatibility_status: disposition === "mapped_feature" ? "unknown" : "not_applicable", compatible: disposition !== "mapped_feature", candidate_cluster: canonicalCandidateCluster(candidate), matched_terms: [] };
-    const duplicateRow = duplicates.get(String(candidate.source_id || "").trim());
+      : { compatibility_status: sourceDisposition === "mapped_feature" ? "unknown" : "not_applicable", compatible: sourceDisposition !== "mapped_feature", candidate_cluster: canonicalCandidateCluster(candidate), matched_terms: [] };
+    const disposition = candidateDisposition({ candidate, coverage, duplicateMap: duplicates, feature, compatibility, candidateCountForSource: candidateCountBySource.get(candidateSourceId) || 1 });
+    const duplicateRow = duplicates.get(candidateSourceId);
     return {
       candidate_id: candidate.candidate_id,
       candidate_cluster: candidate.candidate_cluster || compatibility.candidate_cluster || canonicalCandidateCluster(candidate),
@@ -202,8 +218,10 @@ function buildAuditLedger(profile = {}, options = {}) {
       normalized_label: candidate.normalized_label || null,
       disposition,
       mapped_feature_id: mappedFeatureId || null,
-      compatibility_status: compatibility.compatibility_status || "unknown",
-      reason: coverage?.unmapped_reason || coverage?.coverage_status || duplicateRow?.disposition || (coverage ? "accounted by commercial_scan.source_coverage" : "missing candidate/source accounting"),
+      compatibility_status: disposition === "mapped_feature" ? (compatibility.compatibility_status || "unknown") : (compatibility.compatibility_status === "incompatible" ? "not_applicable" : (compatibility.compatibility_status || "not_applicable")),
+      reason: disposition !== sourceDisposition && compatibility.compatibility_status === "incompatible"
+        ? "source coverage mapped the source, but this candidate is semantically distinct and accounted as supporting-only"
+        : (coverage?.unmapped_reason || coverage?.coverage_status || duplicateRow?.disposition || (coverage ? "accounted by commercial_scan.source_coverage" : "missing candidate/source accounting")),
       evidence_refs: evidenceRefs(candidate).length ? evidenceRefs(candidate) : evidenceRefs(coverage),
       duplicate_of: candidate.duplicate_of || duplicateRow?.duplicate_of || coverage?.duplicate_of || null,
       matched_compatibility_terms: compatibility.matched_terms || []
