@@ -99,6 +99,8 @@ Rules:
 
 ```text
 - Put supporting citation IDs in evidence_refs[].
+- Never put URLs in evidence_refs[]; URLs belong only in URL-specific fields such as feature_source_url, source_url, final_url, or source coverage URL fields.
+- Valid evidence_refs[] examples include SRC_001, SRC_001#C001, and SRC_001#chunk_0001.
 - Do not spend output tokens copying long quotes.
 - evidence_quote is optional legacy/runtime-resolved. Leave it empty or very short if present.
 - No evidence_refs = no feature.

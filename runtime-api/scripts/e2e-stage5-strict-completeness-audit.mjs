@@ -48,6 +48,8 @@ function stage5SourceRecords(cache) {
   const input = stage5Input(cache);
   if (Array.isArray(cache.product_family_discovery_sources) && cache.product_family_discovery_sources.length) return cache.product_family_discovery_sources;
   if (Array.isArray(input.product_family_discovery_sources) && input.product_family_discovery_sources.length) return input.product_family_discovery_sources;
+  if (Array.isArray(cache.product_family_secondary_sources) && cache.product_family_secondary_sources.length) return [...(cache.product_family_primary_sources || []), ...cache.product_family_secondary_sources, ...(cache.product_family_supporting_sources || [])];
+  if (Array.isArray(input.product_family_secondary_sources) && input.product_family_secondary_sources.length) return [...(input.product_family_primary_sources || []), ...input.product_family_secondary_sources, ...(input.product_family_supporting_sources || [])];
   if (Array.isArray(cache.product_family_primary_sources) && cache.product_family_primary_sources.length) return cache.product_family_primary_sources;
   if (Array.isArray(input.product_family_primary_sources) && input.product_family_primary_sources.length) return input.product_family_primary_sources;
   if (Array.isArray(input.source_bundle?.evidence_buffer)) return input.source_bundle.evidence_buffer;
@@ -78,6 +80,19 @@ function mappedIds(row = {}) {
 
 function hasReason(row = {}) {
   return Boolean(String(row?.unmapped_reason || row?.reason || row?.coverage_reason || "").trim());
+}
+
+function evidenceRefUrlOffenders(value, path = "") {
+  const out = [];
+  if (!value || typeof value !== "object") return out;
+  if (!Array.isArray(value) && Array.isArray(value.evidence_refs)) {
+    value.evidence_refs.forEach((ref, index) => {
+      if (/^https?:\/\//i.test(String(ref || "").trim())) out.push({ path: `${path}/evidence_refs/${index}`, ref });
+    });
+  }
+  const entries = Array.isArray(value) ? value.entries() : Object.entries(value);
+  for (const [key, child] of entries) out.push(...evidenceRefUrlOffenders(child, `${path}/${key}`));
+  return out;
 }
 
 function sourceCoverageInvariantFailures(coverage, featureById, sourceLedger) {
@@ -129,6 +144,7 @@ const incompatibleCandidates = candidates.filter((candidate) => {
   return evaluateCandidateFeatureCompatibility({ ...candidate, candidate_cluster: ledgerRow.candidate_cluster || candidate.candidate_cluster }, feature).compatible === false;
 });
 const invariantFailures = sourceCoverageInvariantFailures(coverage, featureById, sourceLedger);
+const evidenceRefUrlPollution = evidenceRefUrlOffenders(profile);
 const finishReasons = [];
 for (const attempt of cache.target_feature_profile_stage_result?.model_metadata?.attempted_models || []) if (attempt?.finish_reason) finishReasons.push(attempt.finish_reason);
 
@@ -141,6 +157,7 @@ if (missingCandidateLedger.length) failures.push(`audit ledger missing candidate
 if (unresolvedCandidates.length) failures.push(`indexed candidates unresolved in audit ledger: ${unresolvedCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
 if (incompatibleCandidates.length) failures.push(`mapped candidates semantically incompatible with mapped features: ${incompatibleCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
 if (invariantFailures.length) failures.push(`source coverage invariants failed: ${invariantFailures.join(" | ")}`);
+if (evidenceRefUrlPollution.length) failures.push(`URL values remain in evidence_refs (${evidenceRefUrlPollution.length})`);
 if (finishReasons.includes("MAX_TOKENS")) failures.push("model finish_reason MAX_TOKENS; Stage 5 may be truncated");
 
 const payload = {
@@ -159,6 +176,8 @@ const payload = {
   unresolved_candidate_ids: unresolvedCandidates.map((candidate) => candidate.candidate_id),
   incompatible_candidate_ids: incompatibleCandidates.map((candidate) => candidate.candidate_id),
   source_coverage_invariant_failures: invariantFailures,
+  evidence_refs_url_pollution_count: evidenceRefUrlPollution.length,
+  evidence_refs_url_pollution: evidenceRefUrlPollution,
   finish_reasons: finishReasons,
   failures
 };

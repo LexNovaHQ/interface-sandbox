@@ -62,9 +62,14 @@ jobs:
             !has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', obsoleteBucketNeedle));
           check('Shared builder has source role classification',
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'primary_function_source') &&
+            has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'secondary_technical_source') &&
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'supporting_commercial_source') &&
+            has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'supporting_context_source') &&
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'duplicate_source') &&
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'non_feature_context'));
+          check('Shared builder enforces product-primary hierarchy',
+            has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'productPrimary') &&
+            has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'product_family_secondary_sources'));
           check('Shared builder has duplicate cluster logic',
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'candidate_clusters') &&
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'primary_source_id') &&
@@ -105,6 +110,9 @@ jobs:
             has('runtime-api/src/diligence/targetFeatureProfileGuardrailsCompleteness.js', 'invalid_source_coverage_rows'));
           check('Stage 5 guardrail flags missed/incompatible accounting as repairable',
             has('runtime-api/src/diligence/targetFeatureProfileGuardrailsCompleteness.js', 'rerun_missing_stage5_candidate_or_source_accounting'));
+          check('Stage 5 guardrail normalizes URL evidence refs',
+            has('runtime-api/src/diligence/targetFeatureProfileGuardrailsLocked.js', 'normalized_url_evidence_refs') &&
+            has('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs', 'evidence_refs_url_pollution_count'));
           check('Stage 5 runner has one-time completion repair request',
             has('runtime-api/src/diligence/stageRunnerLocked.js', 'completion_repair_request'));
           check('Stage 5 runner runs discovery before canonicalization',

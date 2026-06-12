@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
+import { buildStage5TargetFeaturePackage } from "./stage5TargetFeaturePackageBuilder.js";
 
 const sourceUrl = "https://example.ai/products/speech";
 const crossPackageUrl = "https://example.ai/privacy-policy";
@@ -215,6 +216,63 @@ const missedDiscoveryResult = validateTargetFeatureProfileGuardrails(missedDisco
 assert.equal(missedDiscoveryResult.ok, true, JSON.stringify(missedDiscoveryResult.errors, null, 2));
 assert.ok(missedDiscoveryResult.repairs.some((repair) => repair.action === "rerun_missing_stage5_candidate_or_source_accounting"));
 
+const urlRefs = baseProfile();
+urlRefs.feature_inventory[0].evidence_refs = [sourceUrl];
+urlRefs.feature_inventory[0].data_provenance[0].evidence_refs = [sourceUrl];
+urlRefs.feature_inventory[0].archetype_provenance[0].evidence_refs = [sourceUrl];
+urlRefs.feature_inventory[0].surface_provenance[0].evidence_refs = [sourceUrl];
+urlRefs.architecture_hints[0].evidence_refs = [sourceUrl];
+urlRefs.commercial_scan.source_coverage[0].evidence_refs = [sourceUrl];
+const urlRefsResult = validateTargetFeatureProfileGuardrails(urlRefs, { evidenceBuffer, packageInput });
+assert.equal(urlRefsResult.ok, true, JSON.stringify(urlRefsResult.errors, null, 2));
+assert.ok(urlRefsResult.repairs.some((repair) => repair.action === "normalized_url_evidence_refs"));
+assert.deepEqual(urlRefs.feature_inventory[0].evidence_refs, [featureRef]);
+assert.deepEqual(urlRefs.feature_inventory[0].data_provenance[0].evidence_refs, [featureRef]);
+assert.deepEqual(urlRefs.feature_inventory[0].archetype_provenance[0].evidence_refs, [featureRef]);
+assert.deepEqual(urlRefs.feature_inventory[0].surface_provenance[0].evidence_refs, [featureRef]);
+assert.deepEqual(urlRefs.architecture_hints[0].evidence_refs, [featureRef]);
+assert.deepEqual(urlRefs.commercial_scan.source_coverage[0].evidence_refs, [featureRef]);
+
+const hierarchyRecords = [
+  {
+    evidence_source_id: "SRC_101",
+    source_family: "product_profile",
+    url: "https://example.ai/products/translation",
+    final_url: "https://example.ai/products/translation",
+    structure: { title: "Translation Product" },
+    text: { clean_text_lossless: "Translation product converts text between languages for customers.", word_count: 8 },
+    chunk_index: [{ evidence_ref_id: "SRC_101#C001", chunk_id: "C001", start_char: 0, end_char: 50, text_sha256: "h1" }]
+  },
+  {
+    evidence_source_id: "SRC_102",
+    source_family: "product_profile",
+    url: "https://example.ai/apis/translation",
+    final_url: "https://example.ai/apis/translation",
+    structure: { title: "Translation API" },
+    text: { clean_text_lossless: "Translation API endpoint translates text between languages.", word_count: 7 },
+    chunk_index: [{ evidence_ref_id: "SRC_102#C001", chunk_id: "C001", start_char: 0, end_char: 50, text_sha256: "h2" }]
+  },
+  {
+    evidence_source_id: "SRC_103",
+    source_family: "product_profile",
+    url: "https://example.ai/api-pricing",
+    final_url: "https://example.ai/api-pricing",
+    structure: { title: "API Pricing" },
+    text: { clean_text_lossless: "API pricing for translation, speech to text, and text to speech plans.", word_count: 12 },
+    chunk_index: [{ evidence_ref_id: "SRC_103#C001", chunk_id: "C001", start_char: 0, end_char: 50, text_sha256: "h3" }]
+  }
+];
+const hierarchyPackage = buildStage5TargetFeaturePackage({
+  sourceBundle: { run_id: "test", target_input: { primary_url: "https://example.ai" }, raw_footprint: { source_records: hierarchyRecords } },
+  evidenceJunction: { downstream_packets: { target_feature_profile: { packet_id: "PKT", source_records: hierarchyRecords } } },
+  generatedAt: "2026-01-01T00:00:00.000Z"
+});
+assert.equal(hierarchyPackage.ok, true, JSON.stringify(hierarchyPackage, null, 2));
+assert.ok(hierarchyPackage.product_family_primary_sources.some((row) => row.source_id === "SRC_101"));
+assert.equal(hierarchyPackage.product_family_primary_sources.some((row) => row.source_id === "SRC_103"), false);
+assert.ok(hierarchyPackage.product_family_secondary_sources.some((row) => row.source_id === "SRC_102"));
+assert.ok(hierarchyPackage.product_family_supporting_sources.some((row) => row.source_id === "SRC_103"));
+
 console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
@@ -227,5 +285,9 @@ console.log(JSON.stringify({
   missing_data_repair_count: missingDataResult.repairs.length,
   incompatible_candidate_repair_count: incompatibleResult.repairs.length,
   invalid_coverage_repair_count: invalidCoverageResult.repairs.length,
-  missed_discovery_repair_count: missedDiscoveryResult.repairs.length
+  missed_discovery_repair_count: missedDiscoveryResult.repairs.length,
+  url_evidence_ref_repair_count: urlRefsResult.repairs.filter((repair) => repair.action === "normalized_url_evidence_refs").length,
+  hierarchy_primary_sources: hierarchyPackage.product_family_primary_sources.map((row) => row.source_id),
+  hierarchy_secondary_sources: hierarchyPackage.product_family_secondary_sources.map((row) => row.source_id),
+  hierarchy_supporting_sources: hierarchyPackage.product_family_supporting_sources.map((row) => row.source_id)
 }, null, 2));

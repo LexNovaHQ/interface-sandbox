@@ -74,14 +74,15 @@ function pageKind(record = {}) {
   const url = urlPath(record);
   const title = String(titleOf(record)).toLowerCase();
   const combined = `${url} ${title}`;
-  if (/\/(apis?|docs?|developers?|reference|sdk)(\/|$)|\b(api|docs?|developer|reference|sdk)\b/.test(combined)) return "api_docs_reference";
+  if (/\/(api-pricing|pricing|plans)(\/|$)|\b(api pricing|pricing|plans?)\b/.test(combined)) return "pricing";
+  if (/\/(contact|contact-us)(\/|$)|\bcontact\b/.test(combined)) return "contact";
+  if (/\/(careers?|jobs?)(\/|$)|\b(careers?|jobs?)\b/.test(combined)) return "careers";
+  if (/\/(blog|stories|case-studies|news|press|resources?)(\/|$)|\b(blog|stories|case studies|news|press)\b/.test(combined)) return "blog";
+  if (/\/(about|company)(\/|$)|\b(about|company)\b/.test(combined)) return "company";
   if (/\/(products?|features?|solutions?)(\/|$)|\b(product|feature|solution)\b/.test(combined)) return "product";
+  if (/\/(apis?|docs?|developers?|reference|sdk)(\/|$)|\b(api|docs?|developer|reference|sdk)\b/.test(combined)) return "api_docs_reference";
   if (/\/(models?|model-catalog)(\/|$)|\b(model|model catalog|llm)\b/.test(combined)) return "model_capability";
   if (/\/(integrations?|connectors?)(\/|$)|\b(integration|connector)\b/.test(combined)) return "integration";
-  if (/\/pricing(\/|$)|\bpricing\b/.test(combined)) return "pricing";
-  if (/\/(careers?|jobs?)(\/|$)|\b(careers?|jobs?)\b/.test(combined)) return "careers";
-  if (/\/(blog|news|press|resources?)(\/|$)|\b(blog|news|press)\b/.test(combined)) return "blog";
-  if (/\/(about|company)(\/|$)|\b(about|company)\b/.test(combined)) return "company";
   return "other";
 }
 
@@ -135,9 +136,10 @@ function sourceRole(record = {}, route = {}) {
   const score = productSignalScore(record, route);
   const concrete = CONCRETE_FUNCTION_SIGNAL.test(textOf(record));
   if (!score || !canonicalFunctionClusters(record, route).length) return "excluded_from_stage5";
-  if (["careers", "blog", "company"].includes(kind) && !concrete) return "non_feature_context";
-  if (kind === "pricing") return concrete ? "supporting_commercial_source" : "non_feature_context";
-  if (["api_docs_reference", "product", "model_capability", "integration"].includes(kind) && concrete) return "primary_function_source";
+  if (["careers", "blog", "company", "contact"].includes(kind) && !concrete) return "non_feature_context";
+  if (["pricing", "contact", "careers", "blog", "company"].includes(kind)) return concrete ? "supporting_context_source" : "non_feature_context";
+  if (kind === "product" && concrete) return "primary_function_source";
+  if (["api_docs_reference", "model_capability", "integration"].includes(kind) && concrete) return "secondary_technical_source";
   if (record.source_family === COMPANY_FAMILY && concrete && score >= 18) return "supporting_commercial_source";
   if (concrete) return "supporting_commercial_source";
   return "non_feature_context";
@@ -150,11 +152,12 @@ function shouldRouteToStage5(record = {}, route = {}) {
 function sourceSpecificity(record = {}, route = {}) {
   const kind = pageKind(record);
   const priority = {
-    api_docs_reference: 100,
-    product: 82,
+    product: 120,
+    api_docs_reference: 82,
     model_capability: 76,
-    integration: 70,
+    integration: 72,
     pricing: 28,
+    contact: 8,
     company: 14,
     blog: 12,
     careers: 2,
@@ -162,9 +165,11 @@ function sourceSpecificity(record = {}, route = {}) {
   }[kind] || 0;
   let score = priority + productSignalScore(record, route);
   score += Math.min(Number(record.text?.word_count || record.word_count || 0), 5000) / 500;
-  if (sourceRole(record, route) === "primary_function_source") score += 12;
-  if (sourceRole(record, route) === "supporting_commercial_source") score -= 6;
-  if (["careers", "blog", "company"].includes(kind)) score -= 10;
+  const role = sourceRole(record, route);
+  if (role === "primary_function_source") score += 20;
+  if (role === "secondary_technical_source") score += 4;
+  if (["supporting_commercial_source", "supporting_context_source"].includes(role)) score -= 10;
+  if (["pricing", "contact", "careers", "blog", "company"].includes(kind)) score -= 18;
   return score;
 }
 
@@ -209,6 +214,7 @@ function selectProductFamilySources(sourceBundle = {}, evidenceJunction = {}) {
   const packetRecords = collectPacketRecords(sourceBundle, evidenceJunction);
   const clusterCandidates = buildClusterCandidates(packetRecords, routes);
   const selected = [];
+  const secondary = [];
   const supporting = [];
   const duplicates = [];
   const nonFeature = [];
@@ -229,14 +235,16 @@ function selectProductFamilySources(sourceBundle = {}, evidenceJunction = {}) {
     const routed = entries.filter(({ record, route }) => shouldRouteToStage5(record, route));
     if (!routed.length) continue;
     const ranked = routed.sort((a, b) => sourceSpecificity(b.record, b.route) - sourceSpecificity(a.record, a.route));
-    const firstPrimary = ranked.find((entry) => entry.role === "primary_function_source");
-    const primary = firstPrimary || ranked[0];
-    const primaryId = sourceId(primary.record);
+    const productPrimary = ranked.find((entry) => entry.role === "primary_function_source" && pageKind(entry.record) === "product");
+    const firstPrimary = productPrimary || ranked.find((entry) => entry.role === "primary_function_source");
+    const firstSecondary = ranked.find((entry) => entry.role === "secondary_technical_source");
+    const primary = firstPrimary || firstSecondary || null;
+    const primaryId = primary ? sourceId(primary.record) : null;
     const clusterId = `STAGE5_FUNC_${String(clusterIndex++).padStart(3, "0")}_${cluster.toUpperCase()}`;
     const supportingIds = [];
     const duplicateIds = [];
-    const primaryRecord = { ...primary.record, stage5_source_role: "primary_function_source", candidate_cluster: cluster, dedupe_group_id: clusterId, dedupe_role: "primary" };
-    if (primaryId && !selectedIds.has(primaryId)) {
+    if (primary && primaryId && !selectedIds.has(primaryId)) {
+      const primaryRecord = { ...primary.record, stage5_source_role: "primary_function_source", candidate_cluster: cluster, dedupe_group_id: clusterId, dedupe_role: "primary" };
       selectedIds.add(primaryId);
       selected.push(primaryRecord);
     }
@@ -247,7 +255,9 @@ function selectProductFamilySources(sourceBundle = {}, evidenceJunction = {}) {
     for (const entry of ranked) {
       const id = sourceId(entry.record);
       if (!id || id === primaryId) continue;
-      const role = entry.role === "supporting_commercial_source" ? "supporting_commercial_source" : "duplicate_source";
+      const role = entry.role === "secondary_technical_source"
+        ? "secondary_technical_source"
+        : (["supporting_commercial_source", "supporting_context_source"].includes(entry.role) ? entry.role : "duplicate_source");
       const row = {
         ...entry.record,
         stage5_source_role: role,
@@ -257,7 +267,8 @@ function selectProductFamilySources(sourceBundle = {}, evidenceJunction = {}) {
         duplicate_of: primaryId,
         duplicate_policy: "supporting_metadata_not_primary_stage5_walk"
       };
-      if (role === "supporting_commercial_source") { supporting.push(row); supportingIds.push(id); }
+      if (role === "secondary_technical_source") { secondary.push(row); supportingIds.push(id); }
+      else if (["supporting_commercial_source", "supporting_context_source"].includes(role)) { supporting.push(row); supportingIds.push(id); }
       else { duplicates.push(row); duplicateIds.push(id); }
       if (!sourceClusters.has(id)) sourceClusters.set(id, []);
       sourceClusters.get(id).push(cluster);
@@ -274,14 +285,15 @@ function selectProductFamilySources(sourceBundle = {}, evidenceJunction = {}) {
 
   return {
     selected,
+    secondary: uniqueBySourceId(secondary),
     supporting: uniqueBySourceId(supporting),
     duplicates: uniqueBySourceId(duplicates),
     nonFeature: uniqueBySourceId(nonFeature),
     excluded: uniqueBySourceId(excluded),
-    discovery: uniqueBySourceId([...selected, ...supporting, ...duplicates]),
+    discovery: uniqueBySourceId([...selected, ...secondary, ...supporting, ...duplicates]),
     sourceClusters,
     clusterMap,
-    eligible_count: uniqueBySourceId([...selected, ...supporting, ...duplicates]).length,
+    eligible_count: uniqueBySourceId([...selected, ...secondary, ...supporting, ...duplicates]).length,
     packet_source_count: packetRecords.length
   };
 }
@@ -291,7 +303,7 @@ function buildStage5EvidenceJunction(evidenceJunction = {}, selection) {
   const packet = copy.downstream_packets?.[PRODUCT_STAGE_KEY] || {};
   const selected = selection.selected || [];
   const discoveryRecords = selection.discovery?.length ? selection.discovery : selected;
-  const supportingRecords = [...(selection.supporting || []), ...(selection.duplicates || []), ...(selection.nonFeature || [])];
+  const supportingRecords = [...(selection.secondary || []), ...(selection.supporting || []), ...(selection.duplicates || []), ...(selection.nonFeature || [])];
   const supportingRoutes = supportingRecords.map((record) => ({
     evidence_source_id: sourceId(record),
     source_family: record.source_family || "unknown",
@@ -317,10 +329,12 @@ function buildStage5EvidenceJunction(evidenceJunction = {}, selection) {
       source_records: discoveryRecords,
       stage5_feature_discovery_source_ids: discoveryRecords.map(sourceId).filter(Boolean),
       product_family_primary_sources: selected.map(sourceId).filter(Boolean),
+      product_family_secondary_sources: selection.secondary.map(sourceId).filter(Boolean),
       product_family_supporting_sources: selection.supporting.map(sourceId).filter(Boolean),
       product_family_duplicate_sources: selection.duplicates.map(sourceId).filter(Boolean),
       product_family_non_feature_sources: selection.nonFeature.map(sourceId).filter(Boolean),
-      duplicate_supporting_records: [...selection.supporting, ...selection.duplicates],
+      secondary_technical_records: selection.secondary,
+      duplicate_supporting_records: [...selection.secondary, ...selection.supporting, ...selection.duplicates],
       non_feature_context_records: selection.nonFeature,
       stage5_candidate_clusters: [...selection.clusterMap.values()],
       routed_evidence: [
@@ -350,11 +364,18 @@ function enrichCandidateIndex(stage5Input, selection) {
   const index = stage5Input.target_feature_candidate_index || {};
   const candidates = Array.isArray(index.candidates) ? index.candidates : [];
   const sourceCluster = (sourceIdValue) => selection.sourceClusters.get(sourceIdValue) || [];
+  const roleBySourceId = new Map([
+    ...selection.selected.map((record) => [sourceId(record), "primary_function_source"]),
+    ...selection.secondary.map((record) => [sourceId(record), "secondary_technical_source"]),
+    ...selection.supporting.map((record) => [sourceId(record), record.stage5_source_role || "supporting_commercial_source"]),
+    ...selection.duplicates.map((record) => [sourceId(record), "duplicate_source"]),
+    ...selection.nonFeature.map((record) => [sourceId(record), "non_feature_context"])
+  ].filter(([id]) => id));
   const enriched = candidates.map((candidate) => {
     const cluster = canonicalCandidateCluster(candidate);
     const fallbackCluster = STAGE5_COMPATIBILITY_TERMS[cluster] ? cluster : (sourceCluster(candidate.source_id)[0] || cluster);
     const candidateCluster = STAGE5_COMPATIBILITY_TERMS[fallbackCluster] ? fallbackCluster : "api_platform";
-    const sourceRoleValue = selection.selected.some((record) => sourceId(record) === candidate.source_id) ? "primary_function_source" : "supporting_commercial_source";
+    const sourceRoleValue = roleBySourceId.get(String(candidate.source_id || "").trim()) || "supporting_commercial_source";
     return {
       ...candidate,
       candidate_cluster: candidateCluster,
@@ -391,6 +412,15 @@ function auditLedgerSeed({ stage5Input = {}, selection, sourceReview = {}, gener
       source_url: sourceUrl(record),
       source_family: record.source_family || "unknown",
       source_role: "supporting_commercial_source",
+      candidate_cluster: record.candidate_cluster || null,
+      duplicate_cluster_id: record.dedupe_group_id || null,
+      disposition: "supporting_only"
+    })),
+    secondary_technical_sources: selection.secondary.map((record) => ({
+      source_id: sourceId(record),
+      source_url: sourceUrl(record),
+      source_family: record.source_family || "unknown",
+      source_role: "secondary_technical_source",
       candidate_cluster: record.candidate_cluster || null,
       duplicate_cluster_id: record.dedupe_group_id || null,
       disposition: "supporting_only"
@@ -436,7 +466,8 @@ function sourceMeta(record = {}) {
     source_role: record.stage5_source_role || null,
     candidate_cluster: record.candidate_cluster || null,
     duplicate_cluster_id: record.dedupe_group_id || null,
-    duplicate_of: record.duplicate_of || null
+    duplicate_of: record.duplicate_of || null,
+    page_kind: pageKind(record)
   };
 }
 
@@ -477,11 +508,12 @@ export function buildStage5TargetFeaturePackage({ sourceBundle = {}, evidenceJun
     packet_source_count_before_stage5_filter: selection.packet_source_count,
     product_family_eligible_source_count: selection.eligible_count,
     product_family_primary_source_count: selection.selected.length,
+    product_family_secondary_source_count: selection.secondary.length,
     product_family_supporting_source_count: selection.supporting.length,
     product_family_duplicate_source_count: selection.duplicates.length,
     product_family_discovery_source_count: selection.discovery.length,
     product_family_non_feature_context_count: selection.nonFeature.length,
-    source_role_classification: ["primary_function_source", "supporting_commercial_source", "duplicate_source", "non_feature_context", "excluded_from_stage5"],
+    source_role_classification: ["primary_function_source", "secondary_technical_source", "supporting_commercial_source", "supporting_context_source", "duplicate_source", "non_feature_context", "excluded_from_stage5"],
     duplicate_sources_preserved_as_metadata: true,
     broad_feature_discovery_evidence_preserved: true,
     function_cluster_primary_selection: true,
@@ -490,6 +522,7 @@ export function buildStage5TargetFeaturePackage({ sourceBundle = {}, evidenceJun
   };
   stage5Input.source_bundle.source_review = sourceReview;
   stage5Input.product_family_primary_sources = selection.selected.map(sourceMeta);
+  stage5Input.product_family_secondary_sources = selection.secondary.map(sourceMeta);
   stage5Input.product_family_supporting_sources = selection.supporting.map(sourceMeta);
   stage5Input.product_family_duplicate_sources = selection.duplicates.map(sourceMeta);
   stage5Input.product_family_discovery_sources = selection.discovery.map(sourceMeta);
@@ -505,6 +538,7 @@ export function buildStage5TargetFeaturePackage({ sourceBundle = {}, evidenceJun
     target_feature_audit_ledger: stage5Input.stage5_audit_ledger,
     source_review: sourceReview,
     product_family_primary_sources: stage5Input.product_family_primary_sources,
+    product_family_secondary_sources: stage5Input.product_family_secondary_sources,
     product_family_supporting_sources: stage5Input.product_family_supporting_sources,
     product_family_duplicate_sources: stage5Input.product_family_duplicate_sources,
     product_family_discovery_sources: stage5Input.product_family_discovery_sources,

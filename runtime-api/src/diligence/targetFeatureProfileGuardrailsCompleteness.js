@@ -120,6 +120,7 @@ function sourceMetaMap(packageInput = {}) {
   const rows = [
     ...asArray(packageInput.product_family_primary_sources),
     ...asArray(packageInput.product_family_discovery_sources),
+    ...asArray(packageInput.product_family_secondary_sources),
     ...asArray(packageInput.product_family_supporting_sources),
     ...asArray(packageInput.product_family_duplicate_sources),
     ...asArray(packageInput.product_family_non_feature_context_sources)
@@ -337,12 +338,17 @@ function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
   const missedDiscoveryFeatures = discoveryFeatures(options.packageInput || {})
     .filter((feature) => !discoveryFeatureAccounted(feature, profile))
     .map((feature) => ({ discovery_id: feature.discovery_id || null, feature_label: feature.feature_label || null, source_ids: asArray(feature.source_ids), evidence_refs: evidenceRefs(feature) }));
+  const accountedClusters = new Set(candidateRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_cluster).filter(Boolean));
+  const missingVisibleClusters = asArray(ledger.candidate_clusters)
+    .filter((row) => row?.canonical_function_cluster && !accountedClusters.has(row.canonical_function_cluster))
+    .map((row) => ({ cluster_id: row.cluster_id || null, canonical_function_cluster: row.canonical_function_cluster, primary_source_id: row.primary_source_id || null }));
   return {
     missingCandidateIds,
     incompatibleCandidateMappings,
     missingSourceIds,
     invalidCoverageRows,
     missedDiscoveryFeatures,
+    missingVisibleClusters,
     missingCommercialScan: !rawScan || typeof rawScan !== "object" || Array.isArray(rawScan),
     missingCoverage: !asArray(scan.source_coverage).length,
     emptyOutcomes: !asArray(scan.distinct_commercial_outcomes_seen).length,
@@ -377,13 +383,19 @@ function validateCompleteness(profile, result, options = {}) {
     incompatible_candidate_mappings: unresolved.incompatibleCandidateMappings,
     invalid_source_coverage_rows: unresolved.invalidCoverageRows,
     missed_discovered_features: unresolved.missedDiscoveryFeatures,
+    missing_visible_clusters: unresolved.missingVisibleClusters,
     missing_primary_source_ids: unresolved.missingSourceIds,
     missing_commercial_scan: unresolved.missingCommercialScan,
     missing_source_coverage: unresolved.missingCoverage,
     empty_outcomes: unresolved.emptyOutcomes
   };
-  const hasCriticalGap = missing.missing_candidate_ids.length || missing.incompatible_candidate_mappings.length || missing.invalid_source_coverage_rows.length || missing.missed_discovered_features.length || missing.missing_primary_source_ids.length || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
+  const hasCriticalGap = missing.missing_candidate_ids.length || missing.incompatible_candidate_mappings.length || missing.invalid_source_coverage_rows.length || missing.missed_discovered_features.length || missing.missing_visible_clusters.length || missing.missing_primary_source_ids.length || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
   if (!hasCriticalGap) return;
+
+  if (scan && scan.completeness_status === "COMPLETE") {
+    scan.completeness_status = "PARTIAL";
+    addWarning(profile, warnings, "/commercial_scan/completeness_status", "completeness_status changed from COMPLETE to PARTIAL because visible Stage 5 candidate/source accounting is incomplete", missing);
+  }
 
   if (afterRepair) {
     addBlocking(errors, "/target_feature_audit_ledger", "Stage 5 candidate/source semantic accounting remains incomplete after repair rerun", missing);

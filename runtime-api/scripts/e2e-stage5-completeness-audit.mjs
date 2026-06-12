@@ -51,6 +51,8 @@ function stage5SourceRecords(cache) {
   const input = stage5Input(cache);
   if (Array.isArray(cache.product_family_discovery_sources) && cache.product_family_discovery_sources.length) return cache.product_family_discovery_sources;
   if (Array.isArray(input.product_family_discovery_sources) && input.product_family_discovery_sources.length) return input.product_family_discovery_sources;
+  if (Array.isArray(cache.product_family_secondary_sources) && cache.product_family_secondary_sources.length) return [...(cache.product_family_primary_sources || []), ...cache.product_family_secondary_sources, ...(cache.product_family_supporting_sources || [])];
+  if (Array.isArray(input.product_family_secondary_sources) && input.product_family_secondary_sources.length) return [...(input.product_family_primary_sources || []), ...input.product_family_secondary_sources, ...(input.product_family_supporting_sources || [])];
   if (Array.isArray(cache.product_family_primary_sources) && cache.product_family_primary_sources.length) return cache.product_family_primary_sources;
   if (Array.isArray(input.product_family_primary_sources) && input.product_family_primary_sources.length) return input.product_family_primary_sources;
   if (Array.isArray(input.source_bundle?.evidence_buffer)) return input.source_bundle.evidence_buffer;
@@ -87,6 +89,19 @@ function mappedIds(row = {}) {
 
 function hasReason(row = {}) {
   return Boolean(String(row?.unmapped_reason || row?.reason || row?.coverage_reason || "").trim());
+}
+
+function evidenceRefUrlOffenders(value, path = "") {
+  const out = [];
+  if (!value || typeof value !== "object") return out;
+  if (!Array.isArray(value) && Array.isArray(value.evidence_refs)) {
+    value.evidence_refs.forEach((ref, index) => {
+      if (/^https?:\/\//i.test(String(ref || "").trim())) out.push({ path: `${path}/evidence_refs/${index}`, ref });
+    });
+  }
+  const entries = Array.isArray(value) ? value.entries() : Object.entries(value);
+  for (const [key, child] of entries) out.push(...evidenceRefUrlOffenders(child, `${path}/${key}`));
+  return out;
 }
 
 function sourceCoverageInvariantFailures(coverage, featureById, sourceLedger) {
@@ -144,6 +159,7 @@ const incompatibleCandidates = candidates.filter((candidate) => {
   return evaluateCandidateFeatureCompatibility({ ...candidate, candidate_cluster: ledgerRow.candidate_cluster || candidate.candidate_cluster }, feature).compatible === false;
 });
 const invariantFailures = sourceCoverageInvariantFailures(coverage, featureById, sourceLedger);
+const evidenceRefUrlPollution = evidenceRefUrlOffenders(profile);
 const finishReasons = [];
 for (const attempt of cache.target_feature_profile_stage_result?.model_metadata?.attempted_models || []) if (attempt?.finish_reason) finishReasons.push(attempt.finish_reason);
 const maxTokens = finishReasons.includes("MAX_TOKENS");
@@ -166,6 +182,7 @@ else if (unresolvedCandidates.length) warnings.push(`indexed candidates unresolv
 if (incompatibleCandidates.length) failures.push(`mapped candidates semantically incompatible with mapped features: ${incompatibleCandidates.map((candidate) => candidate.candidate_id).join(", ")}`);
 if (invariantFailures.length && !allowPartial) failures.push(`source coverage invariants failed: ${invariantFailures.join(" | ")}`);
 else if (invariantFailures.length) warnings.push(`source coverage invariant warnings under allow_partial=true: ${invariantFailures.join(" | ")}`);
+if (evidenceRefUrlPollution.length) failures.push(`URL values remain in evidence_refs (${evidenceRefUrlPollution.length})`);
 if (scan.completeness_status !== "COMPLETE") warnings.push(`completeness_status is ${scan.completeness_status || "missing"}; accepted only when ledger accounts all sources/candidates`);
 if (coverage.length && mappedRatio < minMappedRatio) warnings.push(`mapped/supporting/duplicate coverage ratio ${mappedRatio.toFixed(2)} below advisory threshold ${minMappedRatio}`);
 if (unmapped.length) warnings.push(`unmapped outcomes present (${unmapped.length})`);
@@ -187,6 +204,8 @@ const payload = {
   unresolved_candidate_ids: unresolvedCandidates.map((candidate) => candidate.candidate_id),
   incompatible_candidate_ids: incompatibleCandidates.map((candidate) => candidate.candidate_id),
   source_coverage_invariant_failures: invariantFailures,
+  evidence_refs_url_pollution_count: evidenceRefUrlPollution.length,
+  evidence_refs_url_pollution: evidenceRefUrlPollution,
   mapped_coverage_count: mappedCoverage.length,
   mapped_coverage_ratio: Number(mappedRatio.toFixed(3)),
   completeness_status: scan.completeness_status || null,
