@@ -13,7 +13,7 @@
     "audit:runtime-bundles": "node scripts/audit-runtime-bundles.mjs",
     "package:runtime-registry": "node scripts/package-runtime-registry.mjs",
     "preview": "vite preview",
-    "validate:schemas": "node scripts/validate-schemas-smoke.mjs",
+    "validate:schemas": "node scripts/validate-schemas-smoke-canon.mjs",
     "test:e2e:dry-run": "node scripts/diligence-e2e-dry-run.mjs"
   },
   "dependencies": {
