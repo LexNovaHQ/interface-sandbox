@@ -10,7 +10,6 @@ const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL ||
 const token = process.env.RUNTIME_ACCESS_TOKEN;
 const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
-const stage4CachePath = process.env.STAGE4_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage4-company-profile.json");
 const stage5CachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
 const failurePath = process.env.STAGE5_E2E_FAILURE_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.failure.json");
 const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
@@ -22,18 +21,6 @@ function normalizeUrl(value) { try { const url = new URL(value); url.hash = ""; 
 function tokenDrift(actual, estimated) { const a = Number(actual || 0); const e = Number(estimated || 0); return a && e ? Number((a / e).toFixed(3)) : null; }
 async function readJson(response) { const text = await response.text(); try { return JSON.parse(text); } catch { return { non_json_body: text.slice(0, 3000) }; } }
 async function postJson(base, routePath, body) { const response = await fetch(`${base}${routePath}`, { method: "POST", headers: { "content-type": "application/json", "x-runtime-access-token": token }, body: JSON.stringify(body) }); const json = await readJson(response); if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json, request_body: body }); return json; }
-
-function readStage4Cache() {
-  if (process.env.STAGE5_IGNORE_STAGE4_CACHE === "true") return null;
-  if (!fs.existsSync(stage4CachePath)) return null;
-  try {
-    const parsed = JSON.parse(fs.readFileSync(stage4CachePath, "utf8"));
-    if (parsed?.cache_version !== "stage4_company_profile_e2e_cache_v1") return null;
-    const targetProfile = parsed.target_profile_v2 || parsed.company_profile;
-    if (!parsed.source_bundle || !parsed.evidence_junction || !targetProfile) return null;
-    return { ...parsed, company_profile: targetProfile, target_profile_v2: targetProfile };
-  } catch { return null; }
-}
 
 function collectBucket(discovery, bucket) {
   const out = [];
@@ -74,7 +61,7 @@ async function buildStandaloneInputs(base, targetInput) {
   const sources = collectSources(discoveryResponse.discovery);
   if (!sources.length) fail("Source discovery returned no capturable sources", { counts: discoveryResponse.discovery?.counts || null, rejected_sources: discoveryResponse.discovery?.rejected_sources || [] });
   console.log(JSON.stringify({ ok: true, step: "source_discovery_complete_full_sweep", source_count: sources.length, counts: discoveryResponse.discovery?.counts || null, rejected_source_count: discoveryResponse.discovery?.rejected_sources?.length || 0 }, null, 2));
-  const captureResponse = await postJson(base, "/v1/source-capture", { input: { sources }, options: { timeout_ms: Number(process.env.STAGE5_CAPTURE_TIMEOUT_MS || 12000), max_fetch_bytes: Number(process.env.STAGE5_CAPTURE_MAX_BYTES || 30 * 1024 * 1024) } });
+  const captureResponse = await postJson(base, "/v1/source-capture", { input: { sources }, options: { timeout_ms: Number(process.env.STAGE5_CAPTURE_TIMEOUT_MS || 24000), max_fetch_bytes: Number(process.env.STAGE5_CAPTURE_MAX_BYTES || 30 * 1024 * 1024) } });
   const sourceBundle = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `stage5_source_bundle_${Date.now()}` });
   const junction = buildEvidenceJunction({ sourceBundle, runId: `stage5_junction_${Date.now()}` });
   const companyProfileStage = await postJson(base, "/v1/diligence/stage", { stage: "company_profile", input: { target_input: targetInput, source_bundle_version: sourceBundle.source_bundle_version, source_bundle_sha256: junction.source_bundle_sha256 || null, evidence_junction_version: junction.evidence_junction_version, target_profile_sources: (sourceBundle.raw_footprint?.source_records || []).map((record) => ({ evidence_source_id: record.evidence_source_id, source_family: record.source_family, url: record.url, final_url: record.final_url, title: record.structure?.title || record.title || "", word_count: record.text?.word_count || 0, clean_text_lossless: record.text?.clean_text_lossless || "" })), input_policy: { company_family_only: false, product_feature_mapping_forbidden: true, legal_review_forbidden: true, outside_browsing_forbidden: true } }, options: { pool: process.env.STAGE5_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_COMPANY_MAX_OUTPUT_TOKENS || process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 24000), timeoutMs: Number(process.env.STAGE5_COMPANY_TIMEOUT_MS || process.env.STAGE4_COMPANY_TIMEOUT_MS || 90000) } });
@@ -84,11 +71,13 @@ async function buildStandaloneInputs(base, targetInput) {
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = normalizeBase(runtimeUrl);
 const targetInput = { primary_url: primaryUrl, company_name: companyName, submitted_at: new Date().toISOString() };
-console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_5_target_feature_profile_e2e_full_sweep", target: targetInput, runtime_url: base }, null, 2));
-const cache = readStage4Cache();
-let sourceBundle, junction, companyProfile, cacheMode;
-if (cache) { sourceBundle = cache.source_bundle; junction = cache.evidence_junction; companyProfile = cache.target_profile_v2 || cache.company_profile; cacheMode = "reused_stage4_cache"; }
-else { const built = await buildStandaloneInputs(base, targetInput); sourceBundle = built.sourceBundle; junction = built.junction; companyProfile = built.companyProfile; cacheMode = built.cacheMode; }
+console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_5_target_feature_profile_e2e_full_sweep", target: targetInput, runtime_url: base, stage_source_policy: "stage5_own_routed_packet_no_stage4_source_cache" }, null, 2));
+
+const built = await buildStandaloneInputs(base, targetInput);
+const sourceBundle = built.sourceBundle;
+const junction = built.junction;
+const companyProfile = built.companyProfile;
+const cacheMode = built.cacheMode;
 
 const adapterResult = buildTargetFeatureProfileInput({ sourceBundle, evidenceJunction: junction, companyProfile, runId: `stage5_target_feature_profile_input_${Date.now()}`, budget: { max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 240000), max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 120000), prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000) } });
 if (!adapterResult.ok) fail("Target Feature Profile input adapter failed", adapterResult);
