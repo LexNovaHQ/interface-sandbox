@@ -7,7 +7,7 @@ import { buildTargetFeatureAuditLedger } from "../src/diligence/targetFeaturePro
 const cachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
 const allowPartial = process.env.STAGE5_ALLOW_PARTIAL_COMPLETENESS === "true";
 const minMappedRatio = Number(process.env.STAGE5_COMPLETENESS_MIN_MAPPED_RATIO || 0.8);
-const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
+const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context", "superseded_by_primary_product_source", "mapped_to_existing_feature_via_secondary_source", "intentionally_unmapped_with_evidence_reason"]);
 const MAPPED_LIKE = new Set(["mapped", "supporting", "duplicate"]);
 const COVERAGE_STATUSES = new Set(["mapped", "supporting", "duplicate", "insufficient_detail", "non_feature_context"]);
 

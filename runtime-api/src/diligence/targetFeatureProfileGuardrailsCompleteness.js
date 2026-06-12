@@ -8,7 +8,16 @@ const COVERAGE_TO_DISPOSITION = {
   insufficient_detail: "insufficient_detail",
   non_feature_context: "non_feature_context"
 };
-const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
+const FINAL_DISPOSITIONS = new Set([
+  "mapped_feature",
+  "duplicate_of",
+  "supporting_only",
+  "insufficient_detail",
+  "non_feature_context",
+  "superseded_by_primary_product_source",
+  "mapped_to_existing_feature_via_secondary_source",
+  "intentionally_unmapped_with_evidence_reason"
+]);
 const COMPLETE_STATUS = new Set(["COMPLETE", "PARTIAL", "THIN"]);
 const REPAIR_ACTION = "rerun_missing_stage5_candidate_or_source_accounting";
 
@@ -136,7 +145,10 @@ function dispositionFromCoverage(candidate = {}, coverage = null, duplicateMap =
 
 function candidateDisposition({ candidate = {}, coverage = null, duplicateMap = new Map(), feature = null, compatibility = null, candidateCountForSource = 1 }) {
   const disposition = dispositionFromCoverage(candidate, coverage, duplicateMap);
+  const sourceRole = String(candidate.source_role || coverage?.source_role || "").trim();
   if (disposition !== "mapped_feature") return disposition;
+  if (sourceRole === "secondary_technical_source" && feature) return "mapped_to_existing_feature_via_secondary_source";
+  if (sourceRole === "supporting_context_source" && feature) return "supporting_only";
   if (!feature || compatibility?.compatible !== false) return disposition;
   if (candidateCountForSource <= 1) return disposition;
   if (candidate.duplicate_of || duplicateMap.has(String(candidate.source_id || "").trim())) return "duplicate_of";
@@ -299,7 +311,9 @@ function buildAuditLedger(profile = {}, options = {}) {
       candidate_cluster: source.candidate_cluster || null,
       duplicate_cluster_id: source.duplicate_cluster_id || null,
       duplicate_of: source.duplicate_of || coverage?.duplicate_of || null,
-      disposition: dispositionFromCoverage(source, coverage, duplicates),
+      disposition: source.source_role === "secondary_technical_source" && coverage?.coverage_status === "mapped"
+        ? "mapped_to_existing_feature_via_secondary_source"
+        : (source.source_role === "supporting_context_source" && coverage?.coverage_status === "mapped" ? "supporting_only" : dispositionFromCoverage(source, coverage, duplicates)),
       mapped_feature_ids: mappedIds(coverage),
       reason: coverage?.unmapped_reason || coverage?.coverage_status || "missing source coverage"
     };
@@ -338,7 +352,10 @@ function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
   const missedDiscoveryFeatures = discoveryFeatures(options.packageInput || {})
     .filter((feature) => !discoveryFeatureAccounted(feature, profile))
     .map((feature) => ({ discovery_id: feature.discovery_id || null, feature_label: feature.feature_label || null, source_ids: asArray(feature.source_ids), evidence_refs: evidenceRefs(feature) }));
-  const accountedClusters = new Set(candidateRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_cluster).filter(Boolean));
+  const accountedClusters = new Set([
+    ...candidateRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_cluster).filter(Boolean),
+    ...sourceRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_cluster).filter(Boolean)
+  ]);
   const missingVisibleClusters = asArray(ledger.candidate_clusters)
     .filter((row) => row?.canonical_function_cluster && !accountedClusters.has(row.canonical_function_cluster))
     .map((row) => ({ cluster_id: row.cluster_id || null, canonical_function_cluster: row.canonical_function_cluster, primary_source_id: row.primary_source_id || null }));

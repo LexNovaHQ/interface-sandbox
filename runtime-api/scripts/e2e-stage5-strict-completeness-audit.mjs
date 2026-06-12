@@ -5,7 +5,7 @@ import { evaluateCandidateFeatureCompatibility } from "../src/diligence/stage5Ta
 import { buildTargetFeatureAuditLedger } from "../src/diligence/targetFeatureProfileGuardrailsCompleteness.js";
 
 const cachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
-const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
+const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context", "superseded_by_primary_product_source", "mapped_to_existing_feature_via_secondary_source", "intentionally_unmapped_with_evidence_reason"]);
 const COVERAGE_STATUSES = new Set(["mapped", "supporting", "duplicate", "insufficient_detail", "non_feature_context"]);
 
 function fail(message, detail = {}) {
