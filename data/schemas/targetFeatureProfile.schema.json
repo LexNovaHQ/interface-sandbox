@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://interface-sandbox.local/schemas/targetFeatureProfile.schema.json",
   "title": "Feature Profile",
-  "description": "Stage 5 canonical feature_profile_v2. Full clean_text_lossless remains in the stage packet. Model proof uses compact evidence_refs citations; evidence_quote is optional legacy/runtime-resolved text only.",
+  "description": "Stage 5 canonical feature_profile_v2. Full clean_text_lossless remains in the stage packet. Model proof uses compact evidence_refs citations; evidence_quote is optional legacy/runtime-resolved text only. Completeness is source-coverage based and nonblocking at runtime.",
   "type": "object",
   "required": ["feature_profile_version", "target_profile_ref", "feature_inventory", "product_feature_map", "data_provenance_map", "regulated_surface_map", "architecture_hints", "commercial_scan", "vault_feature_candidates", "evidence", "limitations"],
   "additionalProperties": false,
@@ -14,7 +14,19 @@
     "data_provenance_map": { "type": "array", "items": { "$ref": "#/$defs/flatDataProvenance" } },
     "regulated_surface_map": { "type": "array", "items": { "$ref": "#/$defs/regulatedSurface" } },
     "architecture_hints": { "type": "array", "items": { "$ref": "#/$defs/architectureHint" } },
-    "commercial_scan": { "type": "object", "required": ["distinct_commercial_outcomes_seen", "mapped_core_feature_ids", "unmapped_outcomes_due_to_insufficient_detail"], "additionalProperties": false, "properties": { "distinct_commercial_outcomes_seen": { "type": "array", "items": { "type": "string" } }, "mapped_core_feature_ids": { "type": "array", "items": { "type": "string" } }, "unmapped_outcomes_due_to_insufficient_detail": { "type": "array", "items": { "type": "string" } } } },
+    "commercial_scan": {
+      "type": "object",
+      "required": ["distinct_commercial_outcomes_seen", "mapped_core_feature_ids", "source_coverage", "unmapped_outcomes_due_to_insufficient_detail", "completeness_status", "completeness_warnings"],
+      "additionalProperties": false,
+      "properties": {
+        "distinct_commercial_outcomes_seen": { "type": "array", "items": { "type": "string" } },
+        "mapped_core_feature_ids": { "type": "array", "items": { "type": "string" } },
+        "source_coverage": { "type": "array", "items": { "$ref": "#/$defs/sourceCoverage" } },
+        "unmapped_outcomes_due_to_insufficient_detail": { "type": "array", "items": { "type": "string" } },
+        "completeness_status": { "type": "string", "enum": ["COMPLETE", "PARTIAL", "THIN"] },
+        "completeness_warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "vault_feature_candidates": { "type": "object", "required": ["baseline", "archetypes", "compliance"], "additionalProperties": false, "properties": { "baseline": { "type": "object", "additionalProperties": true }, "archetypes": { "type": "object", "additionalProperties": true }, "compliance": { "type": "object", "additionalProperties": true } } },
     "evidence": { "type": "object", "required": ["field_evidence_refs", "unresolved_questions"], "additionalProperties": false, "properties": { "field_evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/fieldEvidenceRef" } }, "unresolved_questions": { "type": "array", "items": { "type": "string" } } } },
     "limitations": { "type": "array", "items": { "type": "string" } }
@@ -32,6 +44,7 @@
     "surfaceProvenance": { "type": "object", "required": ["surface_token", "registry_key_surface_meaning", "matched_data_or_context", "source_url", "evidence_refs", "confidence"], "additionalProperties": false, "properties": { "surface_token": { "type": "string" }, "registry_key_surface_meaning": { "type": "string" }, "matched_data_or_context": { "type": "string" }, "source_url": { "type": "string" }, "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }, "evidence_quote": { "$ref": "#/$defs/optionalQuote" }, "confidence": { "$ref": "#/$defs/confidence" } } },
     "regulatedSurface": { "type": "object", "required": ["surface_id", "feature_id", "surface_token", "int_ext_classification", "basis", "confidence", "evidence_refs"], "additionalProperties": false, "properties": { "surface_id": { "type": "string" }, "feature_id": { "type": "string" }, "surface_token": { "type": "string" }, "int_ext_classification": { "type": "string", "enum": ["internal", "external", "both", "unknown"] }, "basis": { "type": "string" }, "confidence": { "$ref": "#/$defs/confidence" }, "evidence_refs": { "$ref": "#/$defs/evidenceRefs" } } },
     "architectureHint": { "type": "object", "required": ["hint_id", "feature_id", "hint_type", "hint_value", "disposition", "source_url", "evidence_refs", "confidence"], "additionalProperties": false, "properties": { "hint_id": { "type": "string" }, "feature_id": { "type": "string" }, "hint_type": { "type": "string", "enum": ["memory", "model_provider", "cloud_host", "vector_db", "subprocessor", "integration", "unknown"] }, "hint_value": { "type": "string" }, "disposition": { "type": "string", "enum": ["prefill_candidate", "confirmation_only", "ignore"] }, "source_url": { "type": "string" }, "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }, "evidence_quote": { "$ref": "#/$defs/optionalQuote" }, "confidence": { "$ref": "#/$defs/confidence" } } },
+    "sourceCoverage": { "type": "object", "required": ["source_id", "source_url", "source_family", "coverage_status", "mapped_feature_ids", "unmapped_reason", "evidence_refs"], "additionalProperties": false, "properties": { "source_id": { "type": "string" }, "source_url": { "type": "string" }, "source_family": { "type": "string" }, "coverage_status": { "type": "string", "enum": ["mapped", "supporting", "duplicate", "insufficient_detail", "non_feature_context"] }, "mapped_feature_ids": { "type": "array", "items": { "type": "string" } }, "unmapped_reason": { "type": "string" }, "evidence_refs": { "$ref": "#/$defs/evidenceRefs" } } },
     "fieldEvidenceRef": { "type": "object", "required": ["field_path", "evidence_refs", "basis", "confidence"], "additionalProperties": false, "properties": { "field_path": { "type": "string" }, "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }, "basis": { "type": "string" }, "confidence": { "$ref": "#/$defs/confidence" } } }
   }
 }
