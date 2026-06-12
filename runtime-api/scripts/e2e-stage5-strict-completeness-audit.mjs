@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { evaluateCandidateFeatureCompatibility } from "../src/diligence/stage5TargetFeaturePackageBuilder.js";
+import { buildTargetFeatureAuditLedger } from "../src/diligence/targetFeatureProfileGuardrailsCompleteness.js";
 
 const cachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
 const FINAL_DISPOSITIONS = new Set(["mapped_feature", "duplicate_of", "supporting_only", "insufficient_detail", "non_feature_context"]);
@@ -26,7 +27,12 @@ function stage5Input(cache) {
     || {};
 }
 
-function auditLedger(cache) {
+function auditLedger(cache, profile) {
+  const input = stage5Input(cache);
+  const candidates = input.target_feature_candidate_index?.candidates || cache.target_feature_candidate_index?.candidates || [];
+  if (profile && typeof profile === "object" && Array.isArray(candidates) && candidates.length) {
+    return buildTargetFeatureAuditLedger(profile, input);
+  }
   return cache.target_feature_audit_ledger
     || cache.stage5_audit_ledger
     || cache.target_feature_profile_stage_result?.target_feature_audit_ledger
@@ -95,7 +101,7 @@ const cache = readJson(cachePath);
 const profile = cache.feature_profile_v2 || cache.target_feature_profile;
 if (!profile || typeof profile !== "object") fail("Stage 5 profile missing from cache", { cache_path: cachePath });
 
-const ledger = auditLedger(cache);
+const ledger = auditLedger(cache, profile);
 const features = Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [];
 const scan = profile.commercial_scan || {};
 const coverage = Array.isArray(scan.source_coverage) ? scan.source_coverage : [];

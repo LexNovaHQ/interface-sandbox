@@ -258,6 +258,10 @@ function buildAuditLedger(profile = {}, options = {}) {
   };
 }
 
+export function buildTargetFeatureAuditLedger(profile = {}, packageInput = {}) {
+  return buildAuditLedger(profile, { packageInput });
+}
+
 function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
   const rawScan = profile?.commercial_scan;
   const scan = rawScan || {};
