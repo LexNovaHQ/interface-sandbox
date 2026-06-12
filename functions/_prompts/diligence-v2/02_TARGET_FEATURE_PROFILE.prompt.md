@@ -19,7 +19,7 @@ If this prompt and the dictionary conflict, the dictionary controls.
 ## Stage role
 
 ```text
-source_bundle + target_profile_v2 + registry_key vocabulary
+source_bundle + target_profile_v2 + registry_key vocabulary + target_feature_candidate_index
         ↓
 target_feature_profile.feature_profile_v2
 ```
@@ -52,12 +52,15 @@ source_bundle.source_citation_manifest[]     // compact evidence refs for citati
 source_bundle.evidence_ref_manifest[]        // alias if provided
 source_bundle.artifact_inventory[]
 source_bundle.source_review
+target_feature_candidate_index.candidates[]  // deterministic high-recall candidate ledger, not final judgment
 source_bundle.limitations[]
 target_profile_v2 identity reference fields
 registry_key archetype and surface vocabulary meanings
 ```
 
 Discovery candidates are not evidence. A URL string alone is not evidence of page contents.
+
+`target_feature_candidate_index.candidates[]` is a deterministic completeness ledger. It is high-recall and may include duplicates, menu labels, API/documentation surfaces, and weak candidates. Treat it as a mandatory worklist, not as final truth.
 
 ## Evidence citation discipline — token economy rule
 
@@ -195,11 +198,40 @@ Stage 5 must not directly emit Vault architecture fields.
 
 Forbidden: `architecture.memory`, `architecture.models`, `architecture.sub_processors`, `architecture.cloud_host`, `architecture.vector_db`.
 
+## Deterministic candidate walk discipline
+
+Before finalizing `feature_inventory[]`, walk every row in `target_feature_candidate_index.candidates[]`.
+
+For every candidate, decide one of the following based only on admitted evidence:
+
+```text
+mapped_feature: candidate becomes or supports a feature_inventory[] entry.
+duplicate_support: candidate is duplicate/supporting evidence for another mapped feature.
+insufficient_detail: candidate names a product/function but lacks enough functional detail to map safely.
+non_feature_context: candidate is product-family context but does not describe a concrete Stage 5 function.
+```
+
+You cannot silently skip indexed candidates.
+
+Because the output schema does not contain a separate candidate ledger field, candidate accounting must be reflected through:
+
+```text
+commercial_scan.distinct_commercial_outcomes_seen[]
+commercial_scan.unmapped_outcomes_due_to_insufficient_detail[]
+commercial_scan.source_coverage[]
+feature_inventory[].evidence_refs[]
+limitations[] where material
+```
+
+If several candidates are duplicates of the same feature, map the strongest one and mark the related source rows as `supporting` or `duplicate` in `commercial_scan.source_coverage[]` with `mapped_feature_ids[]` pointing to the mapped feature.
+
+After walking indexed candidates, scan the remaining full text in `source_bundle.evidence_buffer[]` and add any product/function outcome that the deterministic index missed. If nothing remains, every source must still receive a `source_coverage[]` row explaining mapped/supporting/duplicate/insufficient/non-feature status.
+
 ## Commercial scan and completeness audit
 
 Before finalizing `feature_inventory[]`, perform a commercial scan based only on admitted first-party evidence.
 
-The scan is a completeness control, not a marketing summary. Do not silently omit any Stage 5 source or any distinct commercial outcome visible in admitted evidence.
+The scan is a completeness control, not a marketing summary. Do not silently omit any Stage 5 source, any indexed candidate, or any distinct commercial outcome visible in admitted evidence.
 
 Populate:
 
@@ -243,9 +275,9 @@ non_feature_context: this source is first-party but does not describe a Stage 5 
 `completeness_status` rules:
 
 ```text
-COMPLETE: every Stage 5 source and commercial outcome is mapped, supporting, duplicate, or non-feature context; no unmapped outcome remains.
-PARTIAL: at least one visible outcome/source is insufficient_detail or otherwise not fully mapped.
-THIN: source_coverage is missing/empty, feature_inventory is empty/thin, or the packet cannot support a reliable completeness assessment.
+COMPLETE: every Stage 5 source, indexed candidate, and commercial outcome is mapped, supporting, duplicate, or non-feature context; no unmapped outcome remains.
+PARTIAL: at least one visible outcome/source/candidate is insufficient_detail or otherwise not fully mapped.
+THIN: source_coverage is missing/empty, feature_inventory is empty/thin, candidate accounting is incomplete, or the packet cannot support a reliable completeness assessment.
 ```
 
 If a visible product/application/solution lacks enough capability detail, list it under `unmapped_outcomes_due_to_insufficient_detail[]` and mark the relevant source as `insufficient_detail`. Do not map menu labels unless the evidence contains concrete functional detail.
