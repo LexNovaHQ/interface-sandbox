@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import fs from "node:fs";
 import path from "node:path";
 import { buildEvidenceRefinerInput } from "../src/diligence/adapters/sourceBundleAdapter.js";
@@ -13,82 +12,27 @@ const primaryUrl = process.env.TEST_PRIMARY_URL || "https://sarvam.ai";
 const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
 const stage4CachePath = process.env.STAGE4_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage4-company-profile.json");
 const stage5CachePath = process.env.STAGE5_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.json");
-const stage5FailureCachePath = process.env.STAGE5_E2E_FAILURE_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.failure.json");
-
+const failurePath = process.env.STAGE5_E2E_FAILURE_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage5-target-feature-profile.failure.json");
 const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
 
-function writeJson(filePath, value) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
-}
+function writeJson(filePath, value) { fs.mkdirSync(path.dirname(filePath), { recursive: true }); fs.writeFileSync(filePath, JSON.stringify(value, null, 2)); }
+function fail(message, detail = null) { const payload = { ok: false, error: message, detail }; try { writeJson(failurePath, { cache_version: "stage5_target_feature_profile_e2e_failure_v1", generated_at: new Date().toISOString(), error: payload }); payload.failure_cache_path = failurePath; } catch {} console.error(JSON.stringify(payload, null, 2)); process.exit(1); }
+function normalizeBase(value) { const raw = String(value || "").trim(); const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`; try { return new URL(withScheme).toString().replace(/\/+$/, ""); } catch (error) { fail("RUNTIME_URL must be valid", { received: raw, error: error.message }); } }
+function normalizeUrl(value) { try { const url = new URL(value); url.hash = ""; if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/"; return url.toString(); } catch { return null; } }
+function tokenDrift(actual, estimated) { const a = Number(actual || 0); const e = Number(estimated || 0); return a && e ? Number((a / e).toFixed(3)) : null; }
+async function readJson(response) { const text = await response.text(); try { return JSON.parse(text); } catch { return { non_json_body: text.slice(0, 3000) }; } }
+async function postJson(base, routePath, body) { const response = await fetch(`${base}${routePath}`, { method: "POST", headers: { "content-type": "application/json", "x-runtime-access-token": token }, body: JSON.stringify(body) }); const json = await readJson(response); if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json, request_body: body }); return json; }
 
-function fail(message, detail) {
-  const payload = { ok: false, error: message, detail: detail || null };
-  try {
-    writeJson(stage5FailureCachePath, {
-      cache_version: "stage5_target_feature_profile_e2e_failure_v1",
-      generated_at: new Date().toISOString(),
-      error: payload
-    });
-    payload.failure_cache_path = stage5FailureCachePath;
-  } catch {}
-  console.error(JSON.stringify(payload, null, 2));
-  process.exit(1);
-}
-
-function readCache(filePath) {
+function readStage4Cache() {
   if (process.env.STAGE5_IGNORE_STAGE4_CACHE === "true") return null;
-  if (!fs.existsSync(filePath)) return null;
+  if (!fs.existsSync(stage4CachePath)) return null;
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const parsed = JSON.parse(fs.readFileSync(stage4CachePath, "utf8"));
     if (parsed?.cache_version !== "stage4_company_profile_e2e_cache_v1") return null;
     const targetProfile = parsed.target_profile_v2 || parsed.company_profile;
     if (!parsed.source_bundle || !parsed.evidence_junction || !targetProfile) return null;
     return { ...parsed, company_profile: targetProfile, target_profile_v2: targetProfile };
-  } catch {
-    return null;
-  }
-}
-
-function normalizeBase(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  try { return new URL(withScheme).toString().replace(/\/+$/, ""); }
-  catch (error) { fail("RUNTIME_URL must be valid", { received: raw, error: error.message }); }
-}
-
-function normalizeUrl(value) {
-  try {
-    const url = new URL(value);
-    url.hash = "";
-    if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
-    return url.toString();
   } catch { return null; }
-}
-
-function tokenDrift(actual, estimated) {
-  const a = Number(actual || 0);
-  const e = Number(estimated || 0);
-  if (!a || !e) return null;
-  return Number((a / e).toFixed(3));
-}
-
-async function readJson(response) {
-  const text = await response.text();
-  try { return JSON.parse(text); }
-  catch { return { non_json_body: text.slice(0, 3000) }; }
-}
-
-async function postJson(base, routePath, body) {
-  const response = await fetch(`${base}${routePath}`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-runtime-access-token": token },
-    body: JSON.stringify(body)
-  });
-  const json = await readJson(response);
-  if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json, request_body: body });
-  return json;
 }
 
 function collectBucket(discovery, bucket) {
@@ -104,23 +48,15 @@ function collectBucket(discovery, bucket) {
 }
 
 function collectSources(discovery) {
-  const limit = Number(process.env.STAGE5_CAPTURE_LIMIT || process.env.STAGE4_CAPTURE_LIMIT || 16);
-  const quotas = [
-    ["product_profile_sources", Number(process.env.STAGE5_PRODUCT_CAPTURE_LIMIT || 10)],
-    ["company_profile_sources", Number(process.env.STAGE5_COMPANY_CAPTURE_LIMIT || 3)],
-    ["governance_profile_sources", Number(process.env.STAGE5_GOVERNANCE_CAPTURE_LIMIT || 2)],
-    ["legal_profile_sources", Number(process.env.STAGE5_LEGAL_CAPTURE_LIMIT || 2)]
-  ];
-  const pools = Object.fromEntries(BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
-  const selected = [];
   const seen = new Set();
-  const add = (record) => {
-    if (!record?.url || seen.has(record.url) || selected.length >= limit) return;
-    seen.add(record.url);
-    selected.push(record);
-  };
-  for (const [bucket, quota] of quotas) for (const record of (pools[bucket] || []).slice(0, quota)) add(record);
-  for (const bucket of BUCKETS) for (const record of pools[bucket] || []) add(record);
+  const selected = [];
+  for (const bucket of BUCKETS) {
+    for (const record of collectBucket(discovery, bucket)) {
+      if (!record?.url || seen.has(record.url)) continue;
+      seen.add(record.url);
+      selected.push(record);
+    }
+  }
   return selected;
 }
 
@@ -128,151 +64,45 @@ async function buildStandaloneInputs(base, targetInput) {
   const discoveryResponse = await postJson(base, "/v1/source-discovery", {
     input: targetInput,
     options: {
-      sourceDiscoveryMode: process.env.STAGE5_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
-      runFreeFirstPartySearch: process.env.STAGE5_RUN_FREE_SEARCH === "true",
-      anchorFetchMaxAnchors: Number(process.env.STAGE5_ANCHOR_FETCH_MAX || 32),
-      anchorLinkLimit: Number(process.env.STAGE5_ANCHOR_LINK_LIMIT || 120),
+      sourceDiscoveryMode: process.env.STAGE5_SOURCE_DISCOVERY_MODE || "sync_with_free_search",
+      runFreeFirstPartySearch: process.env.STAGE5_RUN_FREE_SEARCH === "false" ? false : true,
+      anchorFetchMaxAnchors: Number(process.env.STAGE5_ANCHOR_FETCH_MAX || 60),
       anchorClassifyMaxOutputTokens: Number(process.env.STAGE5_ANCHOR_CLASSIFY_TOKENS || 8192),
       probe_timeout_ms: Number(process.env.STAGE5_PROBE_TIMEOUT_MS || 8000)
     }
   });
-
   const sources = collectSources(discoveryResponse.discovery);
-  if (!sources.length) fail("Source discovery returned no capturable sources", { counts: discoveryResponse.discovery?.counts || null });
-  console.log(JSON.stringify({ ok: true, step: "source_discovery_complete", source_count: sources.length, counts: discoveryResponse.discovery?.counts || null, cache_mode: "standalone_full_chain" }, null, 2));
-
-  const captureResponse = await postJson(base, "/v1/source-capture", {
-    input: { sources },
-    options: { timeout_ms: Number(process.env.STAGE5_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length }
-  });
-
+  if (!sources.length) fail("Source discovery returned no capturable sources", { counts: discoveryResponse.discovery?.counts || null, rejected_sources: discoveryResponse.discovery?.rejected_sources || [] });
+  console.log(JSON.stringify({ ok: true, step: "source_discovery_complete_full_sweep", source_count: sources.length, counts: discoveryResponse.discovery?.counts || null, rejected_source_count: discoveryResponse.discovery?.rejected_sources?.length || 0 }, null, 2));
+  const captureResponse = await postJson(base, "/v1/source-capture", { input: { sources }, options: { timeout_ms: Number(process.env.STAGE5_CAPTURE_TIMEOUT_MS || 12000), max_fetch_bytes: Number(process.env.STAGE5_CAPTURE_MAX_BYTES || 30 * 1024 * 1024) } });
   const sourceBundle = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `stage5_source_bundle_${Date.now()}` });
   const junction = buildEvidenceJunction({ sourceBundle, runId: `stage5_junction_${Date.now()}` });
-
-  const companyProfileStage = await postJson(base, "/v1/diligence/stage", {
-    stage: "company_profile",
-    input: {
-      target_input: targetInput,
-      source_bundle_version: sourceBundle.source_bundle_version,
-      source_bundle_sha256: junction.source_bundle_sha256 || null,
-      evidence_junction_version: junction.evidence_junction_version,
-      target_profile_sources: (sourceBundle.raw_footprint?.source_records || [])
-        .filter((record) => ["company_profile", "product_profile", "legal_profile", "governance_profile"].includes(record.source_family))
-        .map((record) => ({
-          evidence_source_id: record.evidence_source_id,
-          source_family: record.source_family,
-          url: record.url,
-          final_url: record.final_url,
-          title: record.structure?.title || record.title || "",
-          word_count: record.text?.word_count || 0,
-          clean_text_lossless: record.text?.clean_text_lossless || ""
-        })),
-      input_policy: { company_family_only: false, product_feature_mapping_forbidden: true, legal_review_forbidden: true, outside_browsing_forbidden: true }
-    },
-    options: { pool: process.env.STAGE5_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_COMPANY_MAX_OUTPUT_TOKENS || process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 12000), timeoutMs: Number(process.env.STAGE5_COMPANY_TIMEOUT_MS || process.env.STAGE4_COMPANY_TIMEOUT_MS || 90000) }
-  });
-
-  return { sourceBundle, junction, companyProfile: companyProfileStage.company_profile, cacheMode: "standalone_full_chain" };
+  const companyProfileStage = await postJson(base, "/v1/diligence/stage", { stage: "company_profile", input: { target_input: targetInput, source_bundle_version: sourceBundle.source_bundle_version, source_bundle_sha256: junction.source_bundle_sha256 || null, evidence_junction_version: junction.evidence_junction_version, target_profile_sources: (sourceBundle.raw_footprint?.source_records || []).map((record) => ({ evidence_source_id: record.evidence_source_id, source_family: record.source_family, url: record.url, final_url: record.final_url, title: record.structure?.title || record.title || "", word_count: record.text?.word_count || 0, clean_text_lossless: record.text?.clean_text_lossless || "" })), input_policy: { company_family_only: false, product_feature_mapping_forbidden: true, legal_review_forbidden: true, outside_browsing_forbidden: true } }, options: { pool: process.env.STAGE5_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_COMPANY_MAX_OUTPUT_TOKENS || process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 24000), timeoutMs: Number(process.env.STAGE5_COMPANY_TIMEOUT_MS || process.env.STAGE4_COMPANY_TIMEOUT_MS || 90000) } });
+  return { sourceBundle, junction, companyProfile: companyProfileStage.company_profile, cacheMode: "standalone_full_sweep" };
 }
 
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
-
 const base = normalizeBase(runtimeUrl);
 const targetInput = { primary_url: primaryUrl, company_name: companyName, submitted_at: new Date().toISOString() };
-console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_5_target_feature_profile_e2e", target: targetInput, runtime_url: base, gemini_execution: "remote_runtime" }, null, 2));
+console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_5_target_feature_profile_e2e_full_sweep", target: targetInput, runtime_url: base }, null, 2));
+const cache = readStage4Cache();
+let sourceBundle, junction, companyProfile, cacheMode;
+if (cache) { sourceBundle = cache.source_bundle; junction = cache.evidence_junction; companyProfile = cache.target_profile_v2 || cache.company_profile; cacheMode = "reused_stage4_cache"; }
+else { const built = await buildStandaloneInputs(base, targetInput); sourceBundle = built.sourceBundle; junction = built.junction; companyProfile = built.companyProfile; cacheMode = built.cacheMode; }
 
-const cache = readCache(stage4CachePath);
-let sourceBundle;
-let junction;
-let companyProfile;
-let cacheMode;
-
-if (cache) {
-  sourceBundle = cache.source_bundle;
-  junction = cache.evidence_junction;
-  companyProfile = cache.target_profile_v2 || cache.company_profile;
-  cacheMode = "reused_stage4_cache";
-  console.log(JSON.stringify({ ok: true, step: "stage5_reused_stage4_cache", cache_path: stage4CachePath, source_bundle_version: sourceBundle.source_bundle_version, evidence_junction_version: junction.evidence_junction_version, target_profile_version: companyProfile.target_profile_version || null }, null, 2));
-} else {
-  const built = await buildStandaloneInputs(base, targetInput);
-  sourceBundle = built.sourceBundle;
-  junction = built.junction;
-  companyProfile = built.companyProfile;
-  cacheMode = built.cacheMode;
-}
-
-const adapterResult = buildTargetFeatureProfileInput({
-  sourceBundle,
-  evidenceJunction: junction,
-  companyProfile,
-  runId: `stage5_target_feature_profile_input_${Date.now()}`,
-  budget: { max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 120000), max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 60000), max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000), prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000) }
-});
-
+const adapterResult = buildTargetFeatureProfileInput({ sourceBundle, evidenceJunction: junction, companyProfile, runId: `stage5_target_feature_profile_input_${Date.now()}`, budget: { max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 240000), max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 120000), prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000) } });
 if (!adapterResult.ok) fail("Target Feature Profile input adapter failed", adapterResult);
 const stage5Input = adapterResult.target_feature_profile_input;
-console.log(JSON.stringify({ ok: true, step: "stage5_adapter_complete", cache_mode: cacheMode, target_profile_version: stage5Input.target_profile_v2?.target_profile_version || null, adapter_version: stage5Input.target_feature_profile_input_version, budget_status: stage5Input.input_budget.budget_status, estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens, estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens, estimated_total_prompt_tokens: stage5Input.input_budget.estimated_total_prompt_tokens, included_sources: stage5Input.input_budget.included_sources.length, excluded_sources: stage5Input.input_budget.excluded_sources.length }, null, 2));
+console.log(JSON.stringify({ ok: true, step: "stage5_adapter_complete", cache_mode: cacheMode, budget_status: stage5Input.input_budget.budget_status, included_sources: stage5Input.input_budget.included_sources.length, excluded_sources: stage5Input.input_budget.excluded_sources.length, estimated_total_prompt_tokens: stage5Input.input_budget.estimated_total_prompt_tokens }, null, 2));
 
-const featureStage = await postJson(base, "/v1/diligence/stage", {
-  stage: "target_feature_profile",
-  input: stage5Input,
-  options: { pool: process.env.STAGE5_FEATURE_POOL || process.env.STAGE5_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_FEATURE_MAX_OUTPUT_TOKENS || 14000), timeoutMs: Number(process.env.STAGE5_FEATURE_TIMEOUT_MS || 120000) }
-});
-
+const featureStage = await postJson(base, "/v1/diligence/stage", { stage: "target_feature_profile", input: stage5Input, options: { pool: process.env.STAGE5_FEATURE_POOL || process.env.STAGE5_POOL || "reasoning", maxOutputTokens: Number(process.env.STAGE5_FEATURE_MAX_OUTPUT_TOKENS || 28000), timeoutMs: Number(process.env.STAGE5_FEATURE_TIMEOUT_MS || 120000) } });
 const profile = featureStage.target_feature_profile;
 if (!profile) fail("Target Feature Profile stage returned no profile", featureStage);
-if (profile.feature_profile_version !== "feature_profile_v2") {
-  fail("Bad feature profile version", {
-    feature_profile_version: profile.feature_profile_version || null,
-    legacy_target_feature_profile_version: profile.target_feature_profile_version || null,
-    top_level_keys: Object.keys(profile || {})
-  });
-}
+if (profile.feature_profile_version !== "feature_profile_v2") fail("Bad feature profile version", { feature_profile_version: profile.feature_profile_version || null, top_level_keys: Object.keys(profile || {}) });
 if (!Array.isArray(profile.feature_inventory)) fail("Target Feature Profile feature_inventory missing", { top_level_keys: Object.keys(profile || {}) });
 if (!Array.isArray(profile.product_feature_map)) fail("Target Feature Profile compatibility product_feature_map missing", { top_level_keys: Object.keys(profile || {}) });
 
-writeJson(stage5CachePath, {
-  cache_version: "stage5_target_feature_profile_e2e_cache_v1",
-  generated_at: new Date().toISOString(),
-  target_input: targetInput,
-  source_bundle: sourceBundle,
-  evidence_junction: junction,
-  company_profile: companyProfile,
-  target_profile_v2: companyProfile,
-  target_feature_profile_stage_result: featureStage,
-  target_feature_profile: profile,
-  feature_profile_v2: profile
-});
-
+writeJson(stage5CachePath, { cache_version: "stage5_target_feature_profile_e2e_cache_v1", generated_at: new Date().toISOString(), target_input: targetInput, source_bundle: sourceBundle, evidence_junction: junction, company_profile: companyProfile, target_profile_v2: companyProfile, target_feature_profile_input: stage5Input, target_feature_profile_stage_result: featureStage, target_feature_profile: profile, feature_profile_v2: profile });
 const actualPromptTokens = featureStage.model_metadata?.usage_metadata?.promptTokenCount || null;
 const estimatedTotalPromptTokens = stage5Input.input_budget.estimated_total_prompt_tokens;
-console.log(JSON.stringify({
-  ok: true,
-  phase: "stage_5_target_feature_profile_e2e",
-  cache_mode: cacheMode,
-  cache_path: stage5CachePath,
-  cache_written: true,
-  source_bundle_version: sourceBundle.source_bundle_version,
-  evidence_junction_version: junction.evidence_junction_version,
-  adapter_version: stage5Input.target_feature_profile_input_version,
-  budget_status: stage5Input.input_budget.budget_status,
-  estimated_source_tokens: stage5Input.input_budget.estimated_source_tokens,
-  estimated_prompt_overhead_tokens: stage5Input.input_budget.estimated_prompt_overhead_tokens,
-  estimated_total_prompt_tokens: estimatedTotalPromptTokens,
-  actual_prompt_tokens: actualPromptTokens,
-  token_estimate_drift_ratio: tokenDrift(actualPromptTokens, estimatedTotalPromptTokens),
-  included_sources: stage5Input.input_budget.included_sources.length,
-  excluded_sources: stage5Input.input_budget.excluded_sources.length,
-  target_brand_name: profile.target_profile_ref?.brand_name || null,
-  target_legal_name: profile.target_profile_ref?.legal_name || null,
-  feature_profile_version: profile.feature_profile_version,
-  feature_count: profile.feature_inventory.length,
-  compatibility_product_feature_count: profile.product_feature_map.length,
-  data_provenance_count: profile.data_provenance_map?.length || 0,
-  regulated_surface_count: profile.regulated_surface_map?.length || 0,
-  architecture_hint_count: profile.architecture_hints?.length || 0,
-  limitation_count: profile.limitations?.length || 0,
-  validation_mode: featureStage.validation_mode,
-  guardrail_validation_mode: featureStage.guardrail_validation_mode,
-  model_metadata: featureStage.model_metadata || null
-}, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage_5_target_feature_profile_e2e", cache_mode: cacheMode, cache_path: stage5CachePath, source_bundle_version: sourceBundle.source_bundle_version, evidence_junction_version: junction.evidence_junction_version, adapter_version: stage5Input.target_feature_profile_input_version, budget_status: stage5Input.input_budget.budget_status, estimated_total_prompt_tokens: estimatedTotalPromptTokens, actual_prompt_tokens: actualPromptTokens, token_estimate_drift_ratio: tokenDrift(actualPromptTokens, estimatedTotalPromptTokens), included_sources: stage5Input.input_budget.included_sources.length, excluded_sources: stage5Input.input_budget.excluded_sources.length, feature_count: profile.feature_inventory.length, completeness_status: profile.commercial_scan?.completeness_status || null, validation_mode: featureStage.validation_mode, guardrail_validation_mode: featureStage.guardrail_validation_mode, model_metadata: featureStage.model_metadata || null }, null, 2));
