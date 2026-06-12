@@ -6,6 +6,7 @@ import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGu
 import { validateLegalStackReviewGuardrails } from "./legalStackReviewGuardrails.js";
 import { validateRegistryLedgerGuardrails } from "./registryLedgerGuardrails.js";
 import { hasUnadmittedLegalDocumentCandidates, reconcileStage6LegalDocumentInput } from "./stage6LegalDocumentInputReconciler.js";
+import { repairTargetFeatureProfileForSchema } from "./targetFeatureProfileSchemaRepair.js";
 
 function unwrapStageOutput(parsedJson, outputKey) {
   if (parsedJson && typeof parsedJson === "object" && !Array.isArray(parsedJson) && Object.prototype.hasOwnProperty.call(parsedJson, outputKey)) return { value: parsedJson[outputKey], unwrapped: true };
@@ -32,12 +33,16 @@ function normalizeStageOutputForSchema(value, schemaKey) {
       notes.push("normalized_limitations_to_string_array");
     }
   }
-  if (schemaKey === "targetFeatureProfile" && Array.isArray(copy.product_feature_map) && copy.product_feature_map.length > 0) {
-    copy.product_feature_map = [];
-    if (!Array.isArray(copy.limitations)) copy.limitations = [];
-    const warning = "GUARDRAIL_WARNING /product_feature_map: product_feature_map is legacy and was cleared before schema validation";
-    if (!copy.limitations.includes(warning)) copy.limitations.push(warning);
-    notes.push("cleared_legacy_product_feature_map_before_schema_validation");
+  if (schemaKey === "targetFeatureProfile") {
+    const enumRepair = repairTargetFeatureProfileForSchema(copy);
+    if (enumRepair.repaired) notes.push(...enumRepair.repair_notes);
+    if (Array.isArray(copy.product_feature_map) && copy.product_feature_map.length > 0) {
+      copy.product_feature_map = [];
+      if (!Array.isArray(copy.limitations)) copy.limitations = [];
+      const warning = "GUARDRAIL_WARNING /product_feature_map: product_feature_map is legacy and was cleared before schema validation";
+      if (!copy.limitations.includes(warning)) copy.limitations.push(warning);
+      notes.push("cleared_legacy_product_feature_map_before_schema_validation");
+    }
   }
   return { value: copy, repaired: notes.length > 0, repair_notes: notes };
 }
