@@ -2,13 +2,13 @@
 
 ## Status
 
-This index governs the seven-stage Diligence Engine prompt chain under:
+This index governs the Diligence Engine prompt chain under:
 
 ```text
 functions/_prompts/diligence-v2/
 ```
 
-The v2 chain replaces the older Groq-stage prompt index for the Gemini-primary Interface Diligence Engine.
+The v2 chain uses Gemini-primary runtime prompts and deterministic backend assembly.
 
 ## Governing documents
 
@@ -16,41 +16,53 @@ Read these before editing any stage prompt:
 
 ```text
 docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md
+docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md
-docs/reference/01_DILIGENCE_RUNTIME_GPT_v1.md
-docs/runtimes/02_DILIGENCE_RUNTIME_GROQ_SANDBOX_v1.md
+docs/contracts/NODE_5B_DETERMINISTIC_ASSEMBLER_CONTRACT_v1.md
 data/runtime/registry_key.runtime.json
 data/runtime/registry.runtime.json
 ```
 
-If a prompt conflicts with the Contract Spine or Vault.js Canonical Map, the contract controls.
+For Stage 4 and Stage 5, the locked canon is:
+
+```text
+Stage 4 = target_profile_v2
+Stage 5 = feature_profile_v2
+Stage 5 canonical features = feature_inventory[]
+product_feature_map[] = legacy compatibility only
+primary_product = legacy language only
+```
+
+If any older prompt/doc/schema conflicts with `STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md`, the Stage 4/5 dictionary controls.
 
 ## Pipeline ownership
 
 ```text
-0.   Source Collector                    client / browser / Jina
-0.5  Evidence Refiner                    Gemini / Pages Function
-1.   Target + Feature Map                Gemini / Pages Function
-2.   Legal Stack + Redline               Gemini / Pages Function
-3.   Registry Ledger                     Gemini / Pages Function, batched
-4.   Operator Challenge                  Gemini / Pages Function, merged ledger only
-5.   Final Compiler                      Gemini / Pages Function
-5B.  Deterministic Backend Assembler      backend only, no model
+0.   Source Collector                         client / browser / source runtime
+0.5  Evidence Refiner                         Gemini / runtime API
+4.   Canonical Target Profile                 Gemini / runtime API
+5.   Product Function / Feature Inventory      Gemini / runtime API
+6.   Legal Stack + Redline                    Gemini / runtime API
+7.   Registry Ledger                          Gemini / runtime API, batched
+8.   Operator Challenge                       Gemini / runtime API, merged ledger only
+9.   Final Compiler                           Gemini / runtime API
+5B.  Deterministic Backend Assembler           backend only, no model
 ```
 
-Only Node 0 runs in the browser without a model key. Every Gemini stage runs server-side through Pages Functions.
+Only collection runs without a model key. Every Gemini stage runs server-side.
 
 ## Prompt files
 
 | Stage | File | Job | Primary output |
 |---|---|---|---|
-| 00 | `00_SHARED_SYSTEM_PREAMBLE.prompt.md` | Shared doctrine, source firewall, legal-advice boundary, output discipline | Injected system preamble |
+| 00 | `00_SHARED_SYSTEM_PREAMBLE.prompt.md` | Shared doctrine, source firewall, no-legal-advice boundary, JSON output discipline | Injected system preamble |
 | 01 | `01_EVIDENCE_REFINER.prompt.md` | Convert collected public material into admitted evidence | `source_bundle` |
-| 02 | `02_TARGET_FEATURE_PROFILE.prompt.md` | Identify target, product, features, archetypes, and surfaces | `target_feature_profile` |
-| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Review visible public legal/governance stack against product behavior | `legal_stack_review` |
-| 04 | `04_REGISTRY_LEDGER_EVALUATION.prompt.md` | Evaluate every supplied registry row under Hunter Logic Gate | `registry_evaluation_ledger[]`, `batch_warnings[]` |
-| 05 | `05_OPERATOR_CHALLENGE.prompt.md` | Challenge the completed merged ledger for false negatives and bad exclusions | `operator_challenge_gate`, `corrected_ledger_entries[]` |
-| 06 | `06_FINAL_COMPILER.prompt.md` | Compile post-challenge ledger into report/compiler output | `compiler_output` |
+| 02A | `02_COMPANY_PROFILE.prompt.md` | Canonical identity, jurisdiction, market, baseline Vault candidates | `company_profile` wrapper containing `target_profile_v2` |
+| 02B | `02_TARGET_FEATURE_PROFILE.prompt.md` | Atomic feature/function inventory, data provenance, archetype/surface provenance | `target_feature_profile` wrapper containing `feature_profile_v2` |
+| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Review visible public legal/governance stack against Stage 4/5 canon | `legal_stack_review` |
+| 04 | `04_REGISTRY_LEDGER_EVALUATION.prompt.md` | Evaluate supplied registry rows under Hunter Logic Gate | `registry_evaluation_ledger[]`, `batch_warnings[]` |
+| 05 | `05_OPERATOR_CHALLENGE.prompt.md` | Challenge merged ledger for false negatives and bad exclusions | `operator_challenge_gate`, `corrected_ledger_entries[]` |
+| 06 | `06_FINAL_COMPILER.prompt.md` | Compile post-challenge ledger into compiler output | `compiler_output` |
 
 ## Stage 00 — Shared System Preamble
 
@@ -59,8 +71,6 @@ Purpose:
 ```text
 Give every Gemini stage the same source firewall, public-footprint discipline, no-legal-advice boundary, and JSON-only output discipline.
 ```
-
-Must not output final stage data directly.
 
 ## Stage 01 — Evidence Refiner
 
@@ -81,35 +91,60 @@ Core rules:
 ```text
 - admit only first-party, target-controlled, hosted-governance-qualified, or user-provided public material
 - keep discovery-only material out of evidence_buffer[]
-- record artifact inventory and limitations
+- preserve artifact inventory and limitations
 - do not browse/search/fetch
 ```
 
-## Stage 02 — Target Feature Profile
+## Stage 02A — Canonical Target Profile
 
 Input:
 
 ```text
-source_bundle
+source_bundle + target metadata
 ```
 
 Output:
 
 ```text
-target_feature_profile
+company_profile wrapper containing target_profile_v2
 ```
 
 Core rules:
 
 ```text
-- extract target_profile and primary_product from admitted evidence only
-- map product_feature_map[] with evidence quotes and source URLs
-- use registry-locked archetype vocabulary
-- TRN = The Translator, not Trainer
-- MOV = physical-world mover, not digital/data movement
-- no legal-stack review
-- no registry evaluation
-- no Vault output
+- output target_profile_v2, not company_profile_v1
+- own identity, jurisdiction, entity type, market, product baseline, data touchpoints, Vault baseline candidates
+- use all admitted docs only for identity/profile/contact/baseline extraction
+- do not do feature mapping, legal-stack adequacy, registry evaluation, or Vault handoff
+```
+
+## Stage 02B — Product Function / Feature Inventory
+
+Input:
+
+```text
+source_bundle + target_profile_v2 + registry_key vocabulary
+```
+
+Output:
+
+```text
+target_feature_profile wrapper containing feature_profile_v2
+```
+
+Core rules:
+
+```text
+- atomic feature/function is the unit
+- feature_inventory[] is canonical
+- product_feature_map[] must be empty in model output
+- multiple CORE features are allowed
+- every feature has feature-level data_provenance[]
+- every archetype_code has matching archetype_provenance[]
+- every surface_token has matching surface_provenance[]
+- use registry key vocabulary, not threat rows/Hunter Trigger
+- do not rewrite Stage 4 identity
+- do not emit legal-stack review, registry statuses, Vault prefill, or handoff fields
 ```
 
 ## Stage 03 — Legal Stack Review
@@ -117,7 +152,7 @@ Core rules:
 Input:
 
 ```text
-source_bundle + target_feature_profile
+source_bundle + target_profile_v2 + feature_profile_v2
 ```
 
 Output:
@@ -129,11 +164,10 @@ legal_stack_review
 Core rules:
 
 ```text
-- legal_stack[] must contain exactly ToS, Privacy Policy, DPA, AUP, SLA
+- legal_stack[] must contain ToS, Privacy Policy, DPA, AUP, SLA
 - absent docs use public-footprint absence language
-- use False Belief Formula without making legal conclusions
+- review public document stack against product behavior without legal advice
 - no registry status assignment
-- no legal advice
 ```
 
 ## Stage 04 — Registry Ledger Evaluation
@@ -141,7 +175,7 @@ Core rules:
 Input:
 
 ```text
-source_bundle + target_feature_profile + legal_stack_review + registry_rows[] + registry_key
+source_bundle + target_profile_v2 + feature_profile_v2 + legal_stack_review + registry_rows[] + registry_key
 ```
 
 Output:
@@ -155,14 +189,12 @@ batch_warnings[]
 Core rules:
 
 ```text
-- evaluate every supplied row in the current invocation
-- no hardcoded 98
-- when batched, ledger length equals supplied batch row count
+- evaluate every supplied row in the invocation
+- ledger length equals supplied batch row count
 - backend later merges batches into the full ledger
 - batch_warnings[] are strings only
-- EXCLUDE_IF defaults false under HER_001
-- do not skip Pending / Watch / Upcoming rows if supplied
-- Lane is a scope signal, not a skip permission
+- UNI rows are never skipped merely because of archetype mismatch
+- final status is deterministic from gate/trigger/exclude logic
 ```
 
 ## Stage 05 — Operator Challenge
@@ -170,7 +202,7 @@ Core rules:
 Input:
 
 ```text
-merged registry_evaluation_ledger[] + source_bundle + target_feature_profile + legal_stack_review
+merged registry_evaluation_ledger[] + source_bundle + target_profile_v2 + feature_profile_v2 + legal_stack_review
 ```
 
 Output:
@@ -185,9 +217,7 @@ Core rules:
 ```text
 - requires explicit merged-ledger proof unless test_run is true
 - does not re-run registry evaluation from scratch
-- reopens only rows that can be safely corrected from supplied material
-- does not invent missing Hunter logic
-- if safe correction is impossible, return FAIL_RETRY_REQUIRED
+- reopens only rows safely correctable from supplied material
 ```
 
 ## Stage 06 — Final Compiler
@@ -197,7 +227,10 @@ Input:
 ```text
 post-challenge registry_evaluation_ledger[]
 + operator_challenge_gate
-+ source_bundle / target_feature_profile / legal_stack_review
++ source_bundle
++ target_profile_v2
++ feature_profile_v2
++ legal_stack_review
 + registry row payload fields
 ```
 
@@ -206,9 +239,8 @@ Output:
 ```text
 diligence_run
 source_bundle_summary
-target_profile
-primary_product
-product_feature_map
+target_profile_v2
+feature_profile_v2
 legal_stack
 document_stack_redline
 threat_registry_summary
@@ -231,9 +263,8 @@ Core rules:
 - controlled_rows[] = every CONTROLLED row
 - insufficient_evidence_rows[] = every INSUFFICIENT_EVIDENCE row
 - no top-N, no sampling, no truncation
-- report_data is structured JSON; React renders it
-- model emits vault_confirmation_questions[] only
-- model does not emit vault_prefill_suggestions, assembly_handoff, or handoff_envelope
+- compiler emits vault_confirmation_questions[] only
+- compiler does not emit vault_prefill_suggestions, assembly_handoff, or handoff_envelope
 ```
 
 ## Node 5B — Deterministic Backend Assembler
@@ -276,25 +307,13 @@ No `meta` group. No `human_review` Vault field. `integrations` belongs under `ba
 | Output | Schema |
 |---|---|
 | Stage 01 | `data/schemas/sourceBundle.schema.json` |
-| Stage 02 | `data/schemas/targetFeatureProfile.schema.json` |
+| Stage 02A | `data/schemas/companyProfile.schema.json` |
+| Stage 02B | `data/schemas/targetFeatureProfile.schema.json` |
 | Stage 03 | `data/schemas/legalStackReview.schema.json` |
 | Stage 04 | `data/schemas/registryLedger.schema.json` |
 | Stage 05 | `data/schemas/operatorChallenge.schema.json` |
 | Stage 06 | `data/schemas/compilerOutput.schema.json` |
 | Final post-Node-5B object | `data/schemas/diligenceReport.schema.json` or successor final report schema |
-
-`diligenceReport.schema.json` may include post-Node-5B fields. Stage 06 must validate against `compilerOutput.schema.json`, not against a schema that requires backend-owned handoff fields.
-
-## Non-negotiable no-cap invariant
-
-```text
-findings.length === count(TRIGGERED)
-controlled_rows.length === count(CONTROLLED)
-insufficient_evidence_rows.length === count(INSUFFICIENT_EVIDENCE)
-technical_audit_log covers every ledger row
-```
-
-The executive report may highlight material findings, but full arrays are never capped.
 
 ## Mandatory disclaimer
 
@@ -302,47 +321,6 @@ Every report and payload must preserve this exact disclaimer:
 
 ```text
 Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information. Outputs are demo artifacts requiring qualified legal review before use.
-```
-
-## Forbidden legacy keys
-
-No v2 prompt output may contain:
-
-```text
-sales_viability
-signal_context
-ghost_protection_profile
-true_gaps
-prospect_meta
-```
-
-## Forbidden Vault drift
-
-No v2 model prompt may emit:
-
-```text
-vault_prefill_suggestions
-meta
-human_review
-architecture.integrations
-architecture.output_ownership
-architecture.agent_limits
-product_identity
-ai_architecture
-data_output
-commercial_controls
-```
-
-## Change discipline
-
-Do not edit a stage prompt without checking:
-
-```text
-1. Contract Spine
-2. Vault.js Canonical Map
-3. Relevant live schema
-4. Registry key/runtime if the stage touches archetypes, surfaces, lanes, statuses, or threat IDs
-5. The previous and next stage boundaries
 ```
 
 End of Diligence v2 Prompt Chain Index.
