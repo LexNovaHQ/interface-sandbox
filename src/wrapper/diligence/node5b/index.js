@@ -1,7 +1,7 @@
 export {
   assembleNode5B,
   assertNode5BAssembled
-} from "./node5bAssembler.js";
+} from "./node5bAssemblerLocked.js";
 
 export {
   FORBIDDEN_NODE5B_INPUT_FIELDS,
