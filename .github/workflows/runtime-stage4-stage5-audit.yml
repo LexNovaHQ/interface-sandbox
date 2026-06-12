@@ -1,0 +1,109 @@
+name: Runtime Stage 4 and Stage 5 Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_url:
+        description: "Existing runtime URL for audit mode"
+        required: false
+        default: "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  stage4-stage5-audit:
+    name: Stage 4 + Stage 5 runtime audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build runtime bundles
+        run: npm run build:runtime
+
+      - name: Package generated bundles for runtime-api
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Install runtime dependencies
+        working-directory: runtime-api
+        run: npm install
+
+      - name: Runtime syntax check
+        working-directory: runtime-api
+        run: npm run check
+
+      - name: Clear runtime E2E cache and artifact directory
+        run: |
+          set -euo pipefail
+          rm -rf runtime-api/.runtime-e2e-cache runtime-api/runtime-e2e-artifacts
+          mkdir -p runtime-api/.runtime-e2e-cache runtime-api/runtime-e2e-artifacts/stage4-stage5
+
+      - name: Smoke existing runtime
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
+
+      - name: Run Stage 4 Company Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "24000"
+          STAGE4_COMPANY_TIMEOUT_MS: "90000"
+        run: npm run e2e:stage4:company
+
+      - name: Run Stage 5 Target Feature Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE5_SOURCE_DISCOVERY_MODE: "sync_with_free_search"
+          STAGE5_RUN_FREE_SEARCH: "true"
+          STAGE5_ANCHOR_FETCH_MAX: "60"
+          STAGE5_ANCHOR_LINK_LIMIT: "100000"
+          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "28000"
+          STAGE5_FEATURE_TIMEOUT_MS: "120000"
+          STAGE5_MAX_INPUT_CHARS: "240000"
+          STAGE5_MAX_ESTIMATED_TOKENS: "120000"
+        run: npm run e2e:stage5:features
+
+      - name: Prepare Stage 4/5 audit artifact
+        if: always()
+        run: |
+          set -euo pipefail
+          echo "Cache directory:"
+          ls -lah runtime-api/.runtime-e2e-cache || true
+          test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
+          cp -v runtime-api/.runtime-e2e-cache/stage4-company-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/
+          cp -v runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/
+          echo "Artifact directory:"
+          ls -lah runtime-api/runtime-e2e-artifacts/stage4-stage5
+
+      - name: Upload Stage 4/5 audit cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-stage4-stage5-audit-cache
+          path: runtime-api/runtime-e2e-artifacts/stage4-stage5/
+          if-no-files-found: error
