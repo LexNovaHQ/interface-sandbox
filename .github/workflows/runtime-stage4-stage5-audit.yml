@@ -42,6 +42,68 @@ jobs:
           test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
           test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
 
+      - name: Verify Stage 5 candidate-walk architecture
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const checks = [];
+          const read = (p) => fs.readFileSync(p, 'utf8');
+          const has = (p, needle) => read(p).includes(needle);
+          const match = (p, pattern) => pattern.test(read(p));
+          const check = (name, ok) => checks.push({ name, ok: Boolean(ok) });
+
+          check('Stage 5 E2E uses product_profile_sources only',
+            match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[\s*["']product_profile_sources["']\s*\]/));
+          check('Stage 5 E2E does not include company family bucket',
+            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[[\s\S]*company_profile_sources/));
+          check('Stage 5 E2E does not include legal family bucket',
+            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[[\s\S]*legal_profile_sources/));
+          check('Stage 5 E2E does not include governance family bucket',
+            !match('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', /const\s+BUCKETS\s*=\s*\[[\s\S]*governance_profile_sources/));
+          check('Stage 5 source policy says product-family packet',
+            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'stage5_own_product_family_routed_packet_no_stage4_source_cache'));
+          check('Stage 5 E2E logs deterministic candidate count',
+            has('runtime-api/scripts/e2e-stage5-target-feature-profile.mjs', 'deterministic_candidate_count'));
+
+          check('Package Stage 5 E2E wires strict audit',
+            match('runtime-api/package.json', /e2e:stage5:features[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
+          check('Package completeness audit wires strict audit',
+            match('runtime-api/package.json', /audit:stage5:completeness[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
+          check('Package check covers strict audit syntax',
+            match('runtime-api/package.json', /check[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
+
+          check('Stage 5 adapter creates deterministic candidate index',
+            has('runtime-api/src/diligence/adapters/targetFeatureProfileInputAdapterNonDropping.js', 'target_feature_candidate_index'));
+          check('Stage 5 adapter labels index as high recall, not final judgment',
+            has('runtime-api/src/diligence/adapters/targetFeatureProfileInputAdapterNonDropping.js', 'deterministic_high_recall_not_final_judgment'));
+
+          check('Stage 5 prompt requires candidate ledger walk',
+            has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'target_feature_candidate_index.candidates'));
+          check('Stage 5 prompt handles completion repair request',
+            has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'completion_repair_request'));
+
+          check('Stage 5 guardrail flags missed candidate/source accounting as repairable',
+            has('runtime-api/src/diligence/targetFeatureProfileGuardrailsLocked.js', 'rerun_missing_stage5_candidate_or_source_accounting'));
+          check('Stage 5 runner has one-time completion repair request',
+            has('runtime-api/src/diligence/stageRunnerLocked.js', 'completion_repair_request'));
+          check('Stage 5 runner has repair-loop skip guard',
+            has('runtime-api/src/diligence/stageRunnerLocked.js', 'skipTargetFeatureCompletenessRepair'));
+
+          check('Strict Stage 5 audit script exists',
+            fs.existsSync('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs'));
+          check('Strict Stage 5 audit checks deterministic candidate index',
+            has('runtime-api/scripts/e2e-stage5-strict-completeness-audit.mjs', 'target_feature_candidate_index'));
+
+          const failures = checks.filter((item) => !item.ok);
+          console.log(JSON.stringify({ ok: failures.length === 0, checks }, null, 2));
+          if (failures.length) {
+            console.error('Stage 5 candidate-walk architecture audit failed:');
+            for (const failure of failures) console.error(`- ${failure.name}`);
+            process.exit(1);
+          }
+          NODE
+
       - name: Install runtime dependencies
         working-directory: runtime-api
         run: npm install
