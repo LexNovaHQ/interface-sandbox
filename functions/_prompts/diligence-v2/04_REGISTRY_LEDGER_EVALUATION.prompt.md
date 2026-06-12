@@ -46,7 +46,7 @@ You must evaluate every supplied registry row against:
 
 ```text
 admitted source evidence
-validated product feature map
+validated feature_profile_v2 feature inventory
 visible legal-stack review
 registry key vocabulary
 registry row Hunter_Trigger logic
@@ -95,10 +95,13 @@ source_bundle.limitations[]
 Expected useful fields inside `target_feature_profile` include:
 
 ```text
-target_feature_profile.target_profile
-target_feature_profile.primary_product
-target_feature_profile.product_feature_map[]
-target_feature_profile.feature_map_scratchpad[]
+target_feature_profile.feature_profile_version
+target_feature_profile.target_profile_ref
+target_feature_profile.feature_inventory[]
+target_feature_profile.data_provenance_map[]
+target_feature_profile.regulated_surface_map[]
+target_feature_profile.architecture_hints[]
+target_feature_profile.commercial_scan
 target_feature_profile.limitations[]
 ```
 
@@ -519,9 +522,10 @@ The archetype gate determines whether the row's archetype can apply to the targe
 Use:
 
 ```text
-target_feature_profile.product_feature_map[].archetype_codes[]
-target_feature_profile.product_feature_map[].feature_description
-target_feature_profile.primary_product
+target_feature_profile.feature_inventory[].archetype_codes[]
+target_feature_profile.feature_inventory[].feature_description
+target_feature_profile.feature_inventory[].commercial_function
+target_feature_profile.feature_inventory[].system_action
 source_bundle.evidence_buffer[]
 ```
 
@@ -568,7 +572,7 @@ If the row's archetype clearly does not appear and admitted evidence does not su
 archetype_gate = "FAIL"
 ```
 
-If the feature map is too thin or ambiguous to decide:
+If the feature inventory is too thin or ambiguous to decide:
 
 ```text
 archetype_gate = "INSUFFICIENT"
@@ -589,11 +593,13 @@ The surface gate determines whether the row's surface can apply to the target's 
 Use:
 
 ```text
-target_feature_profile.product_feature_map[].surface_tokens[]
-target_feature_profile.primary_product.user
-target_feature_profile.primary_product.function
-target_feature_profile.primary_product.mechanism
-target_feature_profile.target_profile
+target_feature_profile.feature_inventory[].surface_tokens[]
+target_feature_profile.feature_inventory[].actor_or_user
+target_feature_profile.feature_inventory[].commercial_function
+target_feature_profile.feature_inventory[].system_action
+target_feature_profile.target_profile_ref
+target_feature_profile.data_provenance_map[]
+target_feature_profile.regulated_surface_map[]
 legal_stack_review.legal_stack[]
 legal_stack_review.document_stack_redline[]
 source_bundle.evidence_buffer[]
@@ -610,7 +616,7 @@ INSUFFICIENT
 
 ## 10.1 Surface matching
 
-If the row's surface token is visibly present in the feature map or admitted evidence:
+If the row's surface token is visibly present in the feature inventory or admitted evidence:
 
 ```text
 surface_gate = "PASS"
@@ -826,7 +832,7 @@ A condition may be true based on:
 
 ```text
 admitted evidence quote
-feature map entry
+feature inventory entry
 legal-stack public absence
 document-stack redline
 explicit admitted source limitation
@@ -1091,7 +1097,7 @@ Use `INSUFFICIENT_EVIDENCE` when the row cannot be evaluated cleanly because:
 ```text
 Hunter_Trigger is missing or unparseable
 source coverage is too thin
-feature map is too ambiguous
+feature inventory is too ambiguous
 legal-stack evidence is unavailable
 necessary public-footprint evidence was not collected
 row fields are malformed and block evaluation
@@ -1204,7 +1210,7 @@ UNKNOWN
 Rules:
 
 ```text
-Use exact feature IDs when the row maps to one or more specific product_feature_map[] entries.
+Use exact feature IDs when the row maps to one or more specific feature_inventory[] entries.
 
 Use GLOBAL for company-wide legal stack, privacy, security, consent, document, jurisdiction, or footprint-wide rows.
 
@@ -1219,7 +1225,7 @@ Do not invent new feature IDs.
 
 Do not reference raw feature candidates as final feature refs.
 
-If the feature map appears incomplete, add a batch warning but do not mutate it.
+If the feature inventory appears incomplete, add a batch warning but do not mutate it.
 
 ---
 
@@ -1285,7 +1291,7 @@ why final_status was assigned
 Good:
 
 ```text
-Lane A, archetype, and surface gates pass through feature F002. CONDITION_1 is true because the feature map shows candidate scoring for hiring, but EXCLUDE_IF is false because no public human-review or appeal control is visible in admitted evidence; final_status is TRIGGERED.
+Lane A, archetype, and surface gates pass through feature F002. CONDITION_1 is true because the feature inventory shows candidate scoring for hiring, but EXCLUDE_IF is false because no public human-review or appeal control is visible in admitted evidence; final_status is TRIGGERED.
 ```
 
 Good:
@@ -1354,7 +1360,7 @@ unknown archetype code
 unknown surface token
 row evaluated with insufficient evidence
 source coverage too thin
-feature map appears incomplete but cannot be mutated
+feature inventory appears incomplete but cannot be mutated
 legal_stack_review missing or malformed
 no deterministic threat-ID mapping supplied
 malformed Authority fields

@@ -110,7 +110,7 @@ function activeSignals(profile = {}) {
   const surfaces = new Set();
   const refsByArchetype = new Map();
   const refsBySurface = new Map();
-  for (const feature of asArray(profile.product_feature_map)) {
+  for (const feature of asArray(profile.feature_inventory)) {
     const featureId = asText(feature?.feature_id) || "UNKNOWN";
     for (const code of asArray(feature?.archetype_codes).map(asUpper).filter(Boolean)) {
       archetypes.add(code);

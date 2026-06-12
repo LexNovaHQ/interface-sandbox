@@ -58,22 +58,37 @@ function sanitizeVisibleReportData(reportData = {}) {
 }
 
 function getTargetName({ companyProfile, targetFeatureProfile, sourceBundle }) {
+  const identity = safeObject(companyProfile?.identity);
+  const targetRef = safeObject(targetFeatureProfile?.target_profile_ref);
   return asText(
-    companyProfile?.company_name ||
-      companyProfile?.target_name ||
-      companyProfile?.target?.name ||
-      targetFeatureProfile?.target_profile?.target_name ||
-      targetFeatureProfile?.target_profile?.company_name ||
+    identity.brand_name ||
+      identity.legal_name ||
+      targetRef.brand_name ||
+      targetRef.legal_name ||
       sourceBundle?.target_url ||
       sourceBundle?.target_domain,
     "Target not specified"
   );
 }
 
-function getPrimaryProduct(targetFeatureProfile = {}) {
-  const primary = targetFeatureProfile.primary_product || targetFeatureProfile.target_profile?.primary_product || {};
-  if (typeof primary === "string") return { name: primary };
-  return safeObject(primary);
+function getPrimaryProduct({ companyProfile = {}, targetFeatureProfile = {} } = {}) {
+  const products = asArray(companyProfile?.product_baseline?.products).map((product) => typeof product === "string" ? { name: product } : safeObject(product));
+  const features = asArray(targetFeatureProfile.feature_inventory);
+  const productName = asText(
+    products[0]?.name ||
+      products[0]?.product_name ||
+      features[0]?.business_label_or_product_area ||
+      features[0]?.feature_name,
+    "Product / matter not specified"
+  );
+  return {
+    name: productName,
+    product_name: productName,
+    function: unique(features.map((feature) => feature.commercial_function)).join(", "),
+    mechanism: unique(features.map((feature) => feature.system_action)).join(", "),
+    user: unique(features.map((feature) => feature.actor_or_user)).join(", "),
+    source: "target_profile_v2.product_baseline and feature_profile_v2.feature_inventory"
+  };
 }
 
 function getPrimaryUrl({ sourceBundle = {}, evidenceJunction = {}, stage7Artifact = {}, stage8Ledger = {} } = {}) {
@@ -133,7 +148,7 @@ function sourceInventory({ sourceBundle = {}, evidenceJunction = {}, targetFeatu
     source_type: source.source_family,
     evidence_mode: "Routed evidence"
   });
-  for (const feature of asArray(targetFeatureProfile.product_feature_map)) addReviewedSource(sources, {
+  for (const feature of asArray(targetFeatureProfile.feature_inventory)) addReviewedSource(sources, {
     source_id: feature.feature_id,
     title: feature.feature_name,
     source_url: feature.feature_source_url,
@@ -213,7 +228,7 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
   const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger });
   const consolidatedFindings = groupIdentifiedExposures(hydratedRows.sorted_identified_exposures);
   const surfaces = activeSurfaceMap(hydratedRows);
-  const primaryProduct = getPrimaryProduct(targetFeatureProfile);
+  const primaryProduct = getPrimaryProduct({ companyProfile, targetFeatureProfile });
   const primaryUrl = getPrimaryUrl({ sourceBundle, evidenceJunction, stage7Artifact, stage8Ledger });
   const reviewedSources = sourceInventory({ sourceBundle, evidenceJunction, targetFeatureProfile, legalStackReview, stage7Artifact, stage8Ledger });
   const report = makeReportShell({ generated_at: generatedAt });
@@ -238,6 +253,8 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
   for (const key of REPORT_SECTION_KEYS) {
     report.report_data[key] = makeSection(key, sections[key]);
   }
+  report.report_data.target_profile_v2 = companyProfile;
+  report.report_data.feature_profile_v2 = targetFeatureProfile;
   report.report_data.platform_legal_diligence = sections.platform_legal_diligence;
   report.report_data = sanitizeVisibleReportData(report.report_data);
 

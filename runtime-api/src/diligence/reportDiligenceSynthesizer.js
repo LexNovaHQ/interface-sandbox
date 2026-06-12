@@ -231,8 +231,8 @@ function elementBlock(platformLegalDiligence, key) {
 }
 
 function buildProductActivityProfile({ targetFeatureProfile, primaryProduct, platformLegalDiligence, hydratedRows }) {
-  const targetProfile = safeObject(targetFeatureProfile.target_profile);
-  const features = asArray(targetFeatureProfile.product_feature_map);
+  const targetProfileRef = safeObject(targetFeatureProfile.target_profile_ref);
+  const features = asArray(targetFeatureProfile.feature_inventory);
   return withContract("product_activity_profile", {
     product_activity_thesis: `Based on the reviewed evidence, the target appears to operate a product/platform footprint involving ${unique(asArray(hydratedRows.rows).map((item) => item.functional_profile?.label)).join(", ") || "functional profiles not fully established"}. The legal review therefore focuses on product functionality, user-facing claims, data-processing indicators, automated-system reliance, provider dependencies, content/IP position, security/operational controls, and customer-contracting posture.`,
     platform_product_architecture: elementBlock(platformLegalDiligence, "platform_product_architecture"),
@@ -243,9 +243,13 @@ function buildProductActivityProfile({ targetFeatureProfile, primaryProduct, pla
     user_facing_claims_product_reliance: elementBlock(platformLegalDiligence, "user_facing_claims_product_reliance"),
     communications_user_interaction_flows: elementBlock(platformLegalDiligence, "communications_user_interaction_flows"),
     customer_contracting_reliance_position: elementBlock(platformLegalDiligence, "customer_contracting_reliance_position"),
-    target_profile: targetProfile,
-    primary_product: primaryProduct,
-    product_feature_map: features,
+    target_profile_ref: targetProfileRef,
+    product_summary: primaryProduct,
+    feature_inventory: features,
+    data_provenance_map: asArray(targetFeatureProfile.data_provenance_map),
+    regulated_surface_map: asArray(targetFeatureProfile.regulated_surface_map),
+    architecture_hints: asArray(targetFeatureProfile.architecture_hints),
+    commercial_scan: safeObject(targetFeatureProfile.commercial_scan),
     active_functional_profiles: unique(asArray(hydratedRows.rows).map((item) => item.functional_profile?.label)),
     active_legal_risk_surfaces: unique(asArray(hydratedRows.rows).flatMap((item) => item.legal_risk_surfaces || []))
   });

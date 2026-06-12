@@ -25,7 +25,7 @@ function walk(value, errors, warnings, path = "") {
 function rowThreatId(row, index) { return String(row?.Threat_ID || row?.threat_id || `MISSING_THREAT_ID_ROW_${index + 1}`).trim(); }
 function rowArchetype(row) { return String(row?.Threat_ID || row?.threat_id || "").split("_")[0] || String(row?.Archetype || row?.archetype?.code || row?.archetype || "").trim(); }
 function nonEmpty(value) { return typeof value === "string" && value.trim().length > 0; }
-function featureIds(input = {}) { return new Set((input?.target_feature_profile?.product_feature_map || []).map((feature) => feature?.feature_id).filter(Boolean)); }
+function featureIds(input = {}) { return new Set((input?.target_feature_profile?.feature_inventory || []).map((feature) => feature?.feature_id).filter(Boolean)); }
 function normalizeConditionBasisPrefix(condition = {}) {
   if (typeof condition.result !== "boolean" || !nonEmpty(condition.basis)) return;
   const basis = String(condition.basis || "");

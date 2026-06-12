@@ -105,7 +105,7 @@ Do not use:
 
 ```text
 source_bundle.discovery_candidates[]
-target_feature_profile.product_feature_map[]
+legacy compatibility feature-map array
 ```
 
 as proof of legal-stack coverage.
@@ -627,7 +627,7 @@ Do not turn it into a legal conclusion.
 Correct:
 
 ```text
-The ToS does not visibly cover AI-generated customer-support promises — a founder reading generic limitation-of-liability language could think all product-output issues are handled, but the feature map shows the product drafts user-facing responses that may be perceived as company statements.
+The ToS does not visibly cover AI-generated customer-support promises — a founder reading generic limitation-of-liability language could think all product-output issues are handled, but the feature inventory shows the product drafts user-facing responses that may be perceived as company statements.
 ```
 
 Incorrect:
@@ -639,7 +639,7 @@ The company is liable because its ToS does not cover chatbot promises.
 Correct:
 
 ```text
-The Privacy Policy does not visibly identify subprocessors — a founder reading a general privacy notice could think processor/vendor disclosure is handled, but the product feature map shows data ingestion and AI processing that may require clearer public vendor-processing architecture.
+The Privacy Policy does not visibly identify subprocessors — a founder reading a general privacy notice could think processor/vendor disclosure is handled, but the feature inventory shows data ingestion and AI processing that may require clearer public vendor-processing architecture.
 ```
 
 Incorrect:
@@ -797,7 +797,7 @@ Use `contradicts` to state the mismatch in public-footprint language.
 Good:
 
 ```text
-The product feature map shows AI-generated customer-facing responses, but the reviewed ToS does not visibly address reliance on AI-generated output.
+The feature inventory shows AI-generated customer-facing responses, but the reviewed ToS does not visibly address reliance on AI-generated output.
 ```
 
 Bad:
@@ -1003,7 +1003,7 @@ It must not say the company is illegal, non-compliant, liable, or unprotected.
 Good synthesis:
 
 ```text
-The admitted public footprint shows a visible Privacy Policy and ToS, but no public DPA, AUP, or SLA in the reviewed source bundle. The visible documents address general website/account terms and privacy notice themes, but they do not visibly map to the product's AI-generated customer-facing output and data-processing workflow. The main mismatch is that a founder could read generic ToS/privacy language as sufficient coverage while the feature map shows AI-mediated output and data handling that would usually require more specific public governance architecture. This is a public-footprint observation only and requires qualified legal review.
+The admitted public footprint shows a visible Privacy Policy and ToS, but no public DPA, AUP, or SLA in the reviewed source bundle. The visible documents address general website/account terms and privacy notice themes, but they do not visibly map to the product's AI-generated customer-facing output and data-processing workflow. The main mismatch is that a founder could read generic ToS/privacy language as sufficient coverage while the feature inventory shows AI-mediated output and data handling that would usually require more specific public governance architecture. This is a public-footprint observation only and requires qualified legal review.
 ```
 
 Bad synthesis:

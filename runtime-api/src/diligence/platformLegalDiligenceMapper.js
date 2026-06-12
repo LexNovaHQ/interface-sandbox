@@ -96,7 +96,7 @@ export function buildPlatformLegalDiligence({
   hydratedRows = {},
   reviewedSources = []
 } = {}) {
-  const features = asArray(targetFeatureProfile.product_feature_map);
+  const features = asArray(targetFeatureProfile.feature_inventory);
   const legalStack = asArray(legalStackControlReview.legal_stack);
   const rows = asArray(hydratedRows.rows);
   const identifiedRows = asArray(hydratedRows.identified_exposures);

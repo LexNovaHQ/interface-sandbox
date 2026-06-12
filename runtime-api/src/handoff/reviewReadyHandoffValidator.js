@@ -47,7 +47,7 @@ function getStage9ReportData(stage9ReportData) {
 function sourceMetrics(stage9ReportData) {
   const reportData = getStage9ReportData(stage9ReportData || {});
   return {
-    feature_count: asArray(reportData?.product_activity_profile?.product_feature_map).length,
+    feature_count: asArray(reportData?.feature_profile_v2?.feature_inventory || reportData?.product_activity_profile?.feature_inventory).length,
     consolidated_finding_count: asArray(reportData?.exposure_findings?.consolidated_findings).length,
     supporting_registry_row_count: asArray(reportData?.exposure_findings?.supporting_registry_rows).length,
     document_count: asArray(reportData?.legal_stack_control_review?.document_inventory || reportData?.legal_stack_control_review?.legal_stack).length,
@@ -155,7 +155,7 @@ function validateAgainstSourceReport(result, stage9ReportData, errors) {
   const route = handoff.assembly_route_recommendation || {};
 
   if (metrics.feature_count > 0 && asArray(handoff.feature_map).length === 0) {
-    errors.push(`Stage 10 lost Stage 9 product feature map: source=${metrics.feature_count}, handoff=0.`);
+    errors.push(`Stage 10 lost Stage 9 feature_inventory: source=${metrics.feature_count}, handoff=0.`);
   }
   if (metrics.consolidated_finding_count > 0 && asArray(handoff.threat_findings).length === 0) {
     errors.push(`Stage 10 lost Stage 9 consolidated findings: source=${metrics.consolidated_finding_count}, handoff=0.`);

@@ -182,10 +182,10 @@ function renderEvidenceAndProfile(report) {
   const evidence = report.evidence_reviewed || {};
   const profile = report.product_activity_profile || {};
   const surfaceMap = report.legal_risk_surface_map || {};
-  const target = profile.target_profile || {};
-  const primary = profile.primary_product || {};
+  const target = profile.target_profile_ref || {};
+  const primary = profile.product_summary || {};
   const sources = safeArray(evidence.reviewed_sources);
-  const features = safeArray(profile.product_feature_map).slice(0, 10);
+  const features = safeArray(report.feature_profile_v2?.feature_inventory || profile.feature_inventory).slice(0, 10);
   const surfaces = safeArray(surfaceMap.surfaces);
   const evidenceBlock = table([
     { label: "Source", render: (row) => escapeHtml(text(row.title || row.source_type)) },
@@ -194,14 +194,14 @@ function renderEvidenceAndProfile(report) {
   ], sources, { limit: 16 }) + (sources.length > 16 ? `<p class="muted small">Showing first 16 of ${sources.length} reviewed sources. Full source inventory remains in the Stage 9 JSON.</p>` : "");
   const profileBlock = `
     <dl class="matter-dl compact">
-      <div><dt>Company</dt><dd>${escapeHtml(text(target.company_name))}</dd></div>
-      <div><dt>Website</dt><dd>${target.website ? `<a href="${escapeHtml(target.website)}">${escapeHtml(target.website)}</a>` : "—"}</dd></div>
-      <div><dt>Legal Entity</dt><dd>${escapeHtml(text(target.legal_entity))}</dd></div>
-      <div><dt>Primary Product</dt><dd>${escapeHtml(text(primary.product_name || primary.name))}</dd></div>
+      <div><dt>Company</dt><dd>${escapeHtml(text(target.brand_name || target.legal_name))}</dd></div>
+      <div><dt>Website</dt><dd>${target.domain ? `<a href="${escapeHtml(target.domain)}">${escapeHtml(target.domain)}</a>` : "—"}</dd></div>
+      <div><dt>Legal Entity</dt><dd>${escapeHtml(text(target.legal_name))}</dd></div>
+      <div><dt>Product Summary</dt><dd>${escapeHtml(text(primary.product_name || primary.name))}</dd></div>
       <div><dt>Function</dt><dd>${escapeHtml(text(primary.function))}</dd></div>
       <div><dt>Mechanism</dt><dd>${escapeHtml(text(primary.mechanism))}</dd></div>
     </dl>
-    <details class="subtle-details"><summary>Open product feature map (${features.length} item(s) shown)</summary>
+    <details class="subtle-details"><summary>Open feature inventory (${features.length} item(s) shown)</summary>
       ${table([
         { label: "Feature", render: (row) => `<strong>${escapeHtml(text(row.feature_name))}</strong><div class="muted small">${escapeHtml(text(row.feature_description))}</div>` },
         { label: "Role", render: (row) => escapeHtml(text(row.feature_role)) },

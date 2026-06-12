@@ -36,35 +36,45 @@ function getTargetProfile(stage9ReportData) {
   const matter = reportData?.matter_overview || {};
   const reportIdentity = matter.report_identity || {};
   const product = reportData?.product_activity_profile || {};
-  const productProfile = product.product_profile || product.target_profile || product;
+  const targetProfileV2 = reportData?.target_profile_v2 || {};
+  const identity = targetProfileV2.identity || {};
+  const targetProfileRef = product.target_profile_ref || reportData?.feature_profile_v2?.target_profile_ref || {};
+  const productSummary = product.product_summary || {};
+  const firstFeature = asArray(product.feature_inventory || reportData?.feature_profile_v2?.feature_inventory)[0] || {};
+  const firstProduct = asArray(targetProfileV2?.product_baseline?.products)[0] || {};
 
   return {
     company_name: reportIdentity.target_or_client
       || matter.target_or_client
       || matter.target
-      || productProfile.company_name
-      || productProfile.company
-      || reportData?.target_profile?.company_name
+      || identity.legal_name
+      || identity.brand_name
+      || targetProfileRef.legal_name
+      || targetProfileRef.brand_name
       || "Unknown target",
     primary_url: reportIdentity.primary_url
       || matter.primary_url
       || matter.url
+      || identity.website
+      || identity.domain
       || stage9ReportData?.target_input?.primary_url
       || stage9ReportData?.primary_url
       || "",
     product_name: reportIdentity.product_or_matter
       || matter.product_or_matter
       || matter.product
-      || productProfile.product_name
-      || productProfile.name
-      || product.primary_product
-      || product.product_name
+      || productSummary.product_name
+      || productSummary.name
+      || firstProduct.product_name
+      || firstProduct.name
+      || firstFeature.business_label_or_product_area
+      || firstFeature.feature_name
       || "Primary product not established from reviewed evidence",
     jurisdictions: reportIdentity.jurisdictions
       || matter.jurisdictions
       || matter.jurisdiction
-      || productProfile.jurisdiction
-      || productProfile.hq_jurisdiction
+      || targetProfileV2.jurisdiction?.headquarters
+      || targetProfileV2.jurisdiction?.operating_markets
       || "Not established from reviewed public evidence",
     review_mode: reportIdentity.review_mode
       || matter.review_mode
@@ -81,14 +91,14 @@ function getTargetProfile(stage9ReportData) {
 function getFeatureMap(stage9ReportData) {
   const reportData = getStage9ReportData(stage9ReportData);
   const product = reportData?.product_activity_profile || {};
-  const features = product.feature_map || product.features || product.product_feature_map;
+  const features = reportData?.feature_profile_v2?.feature_inventory || product.feature_inventory || product.feature_map || product.features;
   if (Array.isArray(features)) {
     return features.map((feature, index) => ({
       feature_id: feature.feature_id || `stage9-feature-${index + 1}`,
       feature_name: feature.feature_name || feature.name || `Feature ${index + 1}`,
       feature_role: feature.feature_role || feature.role || "Derived from Stage 9 product activity profile",
-      functional_profile: feature.functional_profile || feature.functional_profiles || feature.profile || "Not established from reviewed evidence",
-      risk_surfaces: feature.risk_surfaces || feature.legal_risk_surfaces || "Not established from reviewed evidence",
+      functional_profile: feature.functional_profile || feature.functional_profiles || feature.profile || feature.archetype_codes || "Not established from reviewed evidence",
+      risk_surfaces: feature.risk_surfaces || feature.legal_risk_surfaces || feature.surface_tokens || "Not established from reviewed evidence",
       evidence_source: feature.evidence_source || feature.feature_source_url || feature.source_url || ""
     }));
   }

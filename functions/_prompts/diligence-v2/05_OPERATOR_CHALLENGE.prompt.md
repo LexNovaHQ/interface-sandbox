@@ -138,10 +138,13 @@ source_bundle.limitations[]
 Expected useful fields inside `target_feature_profile` include:
 
 ```text
-target_feature_profile.target_profile
-target_feature_profile.primary_product
-target_feature_profile.product_feature_map[]
-target_feature_profile.feature_map_scratchpad[]
+target_feature_profile.feature_profile_version
+target_feature_profile.target_profile_ref
+target_feature_profile.feature_inventory[]
+target_feature_profile.data_provenance_map[]
+target_feature_profile.regulated_surface_map[]
+target_feature_profile.architecture_hints[]
+target_feature_profile.commercial_scan
 target_feature_profile.limitations[]
 ```
 
@@ -538,7 +541,7 @@ If a row appears undercounted but safe correction is impossible because original
 
 # 8. Lethality Mandate
 
-For a B2B enterprise AI product, especially where the feature map shows AI output, automated action, data ingestion, security monitoring, decision-support, or regulated-use surfaces, missing visible governance artifacts are high-risk public-footprint signals.
+For a B2B enterprise AI product, especially where the feature inventory shows AI output, automated action, data ingestion, security monitoring, decision-support, or regulated-use surfaces, missing visible governance artifacts are high-risk public-footprint signals.
 
 Stage 05 must check whether Stage 04 seriously tested relevant universal governance rows, including rows involving:
 
@@ -661,7 +664,7 @@ conditions[] are missing or generic
 threat_id starts with UNI_ and NOT_APPLICABLE was based only on archetype mismatch
 archetype_gate = PASS but final_status = NOT_APPLICABLE without clear surface/lane/categorical mismatch
 surface_gate = PASS but final_status = NOT_APPLICABLE without clear archetype/lane/categorical mismatch
-product_feature_map contains matching archetype or surface
+feature_inventory contains matching archetype or surface
 feature_refs[] contains a specific feature ID but reasoning says no relevant feature exists
 legal_stack_review shows public governance absence but row was dismissed as NOT_APPLICABLE without testing absence
 ```
@@ -712,7 +715,7 @@ trigger_if_result is false but condition booleans actually satisfy TRIGGER_IF
 trigger_if_result is false because evidence was "not visible" for an absence-based condition that should fire on public-footprint absence
 trigger_if_result is false but legal_stack_review shows the required document/control is ABSENT, ACCESS_FAILED, or INSUFFICIENT
 trigger_if_result is false but reasoning gives benefit of doubt to private contracts, internal controls, or non-public implementation
-trigger_if_result is false but feature map shows matching high-risk archetype/surface and absence basis exists
+trigger_if_result is false but feature inventory shows matching high-risk archetype/surface and absence basis exists
 ```
 
 Possible corrected statuses:
@@ -760,7 +763,7 @@ Reopen rows where safe correction is possible and:
 
 ```text
 the ledger says evidence is insufficient but legal_stack_review clearly marks the required document/control as absent
-the ledger says evidence is insufficient but product_feature_map clearly shows matching archetype/surface
+the ledger says evidence is insufficient but feature_inventory clearly shows matching archetype/surface
 the ledger says evidence is insufficient but the row is clearly categorically mismatched
 the ledger gives no useful explanation of what was insufficient
 ```

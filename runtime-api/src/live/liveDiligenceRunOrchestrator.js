@@ -118,18 +118,21 @@ function stage4SourceRecords(sourceBundle, familyFilter = null) {
 
 function minimalCompanyProfile(targetInput = {}, mode = "document_text_only") {
   return {
-    company_profile_version: "company_profile_v1",
-    generated_at: nowIso(),
-    company_identity: {
+    target_profile_version: "target_profile_v2",
+    identity: {
       brand_name: targetInput.company_name || "Document review target",
       legal_name: null,
-      website: targetInput.primary_url || null,
-      headquarters: null
+      domain: targetInput.primary_url || null,
+      website: targetInput.primary_url || null
     },
+    jurisdiction: { headquarters: null, operating_markets: [], data_sovereignty_signature: "Not established from reviewed public evidence" },
     business_model: { company_type: "Not established from reviewed public evidence", revenue_model: null },
     market_context: { industry: "Not established from reviewed public evidence", customer_segments: [] },
-    operating_profile: { high_level_offering: mode === "document_text_only" ? "Reviewer-supplied document text review" : "Live diligence review" },
-    evidence: { primary_company_sources: [], supporting_company_sources: [] },
+    product_baseline: { products: [targetInput.company_name || "Reviewer-supplied document review"], high_level_offering: mode === "document_text_only" ? "Reviewer-supplied document text review" : "Live diligence review" },
+    data_touchpoint_map: [],
+    vault_baseline_candidates: { baseline: {} },
+    pipeline_assumptions: [],
+    evidence: [],
     limitations: ["Company profile was minimized because no public target URL was supplied for this live review."],
     live_review_mode: mode
   };
@@ -137,20 +140,13 @@ function minimalCompanyProfile(targetInput = {}, mode = "document_text_only") {
 
 function minimalTargetFeatureProfile(targetInput = {}, mode = "document_text_only") {
   return {
-    target_feature_profile_version: "target_feature_profile_v1",
-    generated_at: nowIso(),
-    target_profile: {
-      company_name: targetInput.company_name || "Document review target",
-      primary_url: targetInput.primary_url || null,
-      review_basis: mode === "document_text_only" ? "reviewer_supplied_document_text" : "live_review"
-    },
-    primary_product: {
-      product_name: targetInput.company_name || "Reviewer-supplied document review",
-      product_description: mode === "document_text_only" ? "No public product URL was supplied. Product/activity signals are limited to the reviewer-supplied document text." : "Live diligence review target."
-    },
-    product_feature_map: [],
-    raw_feature_candidates: [],
-    feature_map_scratchpad: [],
+    feature_profile_version: "feature_profile_v2",
+    target_profile_ref: { target_profile_version: "target_profile_v2", brand_name: targetInput.company_name || "Document review target", legal_name: null, domain: targetInput.primary_url || null },
+    feature_inventory: [],
+    data_provenance_map: [],
+    regulated_surface_map: [],
+    architecture_hints: [],
+    commercial_scan: {},
     limitations: ["Product/activity classification was minimized because no public target URL was supplied. Registry routing will run universal and conditional document rows only."],
     live_review_mode: mode
   };
