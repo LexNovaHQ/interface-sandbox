@@ -356,8 +356,14 @@ function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
     ...candidateRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_cluster).filter(Boolean),
     ...sourceRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.candidate_cluster).filter(Boolean)
   ]);
+  const accountedSourceIds = new Set([
+    ...candidateRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.source_id).filter(Boolean),
+    ...sourceRows.filter((row) => FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.source_id).filter(Boolean)
+  ]);
   const missingVisibleClusters = asArray(ledger.candidate_clusters)
-    .filter((row) => row?.canonical_function_cluster && !accountedClusters.has(row.canonical_function_cluster))
+    .filter((row) => row?.canonical_function_cluster
+      && !accountedClusters.has(row.canonical_function_cluster)
+      && !accountedSourceIds.has(row.primary_source_id))
     .map((row) => ({ cluster_id: row.cluster_id || null, canonical_function_cluster: row.canonical_function_cluster, primary_source_id: row.primary_source_id || null }));
   return {
     missingCandidateIds,
