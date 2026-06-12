@@ -46,6 +46,8 @@ function sourceId(row) {
 
 function stage5SourceRecords(cache) {
   const input = stage5Input(cache);
+  if (Array.isArray(cache.product_family_discovery_sources) && cache.product_family_discovery_sources.length) return cache.product_family_discovery_sources;
+  if (Array.isArray(input.product_family_discovery_sources) && input.product_family_discovery_sources.length) return input.product_family_discovery_sources;
   if (Array.isArray(cache.product_family_primary_sources) && cache.product_family_primary_sources.length) return cache.product_family_primary_sources;
   if (Array.isArray(input.product_family_primary_sources) && input.product_family_primary_sources.length) return input.product_family_primary_sources;
   if (Array.isArray(input.source_bundle?.evidence_buffer)) return input.source_bundle.evidence_buffer;

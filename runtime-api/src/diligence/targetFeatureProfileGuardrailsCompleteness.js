@@ -68,11 +68,12 @@ function sourceUrl(row) {
 }
 
 function expectedStage5Sources(packageInput = {}) {
+  const discovery = asArray(packageInput.product_family_discovery_sources);
   const primary = asArray(packageInput.product_family_primary_sources);
   const evidence = asArray(packageInput.source_bundle?.evidence_buffer);
   const inventory = asArray(packageInput.source_bundle?.artifact_inventory);
   const included = asArray(packageInput.input_budget?.included_sources);
-  const rows = primary.length ? primary : (evidence.length ? evidence : (included.length ? included : inventory));
+  const rows = discovery.length ? discovery : (primary.length ? primary : (evidence.length ? evidence : (included.length ? included : inventory)));
   const out = [];
   const seen = new Set();
   for (const row of rows) {
@@ -118,6 +119,7 @@ function duplicateSourceMap(packageInput = {}) {
 function sourceMetaMap(packageInput = {}) {
   const rows = [
     ...asArray(packageInput.product_family_primary_sources),
+    ...asArray(packageInput.product_family_discovery_sources),
     ...asArray(packageInput.product_family_supporting_sources),
     ...asArray(packageInput.product_family_duplicate_sources),
     ...asArray(packageInput.product_family_non_feature_context_sources)
@@ -150,6 +152,65 @@ function hasReason(row = {}) {
 
 function evidenceRefs(row = {}) {
   return asArray(row.evidence_refs).map(String).filter(Boolean);
+}
+
+const DISCOVERY_ACCOUNTING_STOPWORDS = new Set([
+  "data",
+  "feature",
+  "from",
+  "input",
+  "into",
+  "output",
+  "product",
+  "signal",
+  "source",
+  "system",
+  "text",
+  "that",
+  "this",
+  "visible",
+  "with"
+]);
+
+function textTokens(value = "") {
+  return String(value || "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 4 && !DISCOVERY_ACCOUNTING_STOPWORDS.has(token));
+}
+
+function featureAccountText(feature = {}) {
+  return [
+    feature.feature_id,
+    feature.feature_name,
+    feature.commercial_function,
+    feature.business_label_or_product_area,
+    feature.feature_description,
+    feature.system_action,
+    feature.output_or_result
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function discoveryFeatures(packageInput = {}) {
+  return asArray(packageInput.stage5_feature_discovery?.discovered_features)
+    .filter((feature) => feature && typeof feature === "object" && (evidenceRefs(feature).length || asArray(feature.source_ids).length));
+}
+
+function discoveryFeatureAccounted(discovery = {}, profile = {}) {
+  const refs = new Set(evidenceRefs(discovery));
+  const sourceIds = new Set(asArray(discovery.source_ids).map(String).filter(Boolean));
+  const tokens = textTokens([discovery.feature_label, discovery.function_summary, discovery.system_action, discovery.output_signal].filter(Boolean).join(" "));
+  const features = asArray(profile.feature_inventory);
+  for (const feature of features) {
+    const featureRefs = new Set(evidenceRefs(feature));
+    const refOverlap = [...refs].some((ref) => featureRefs.has(ref));
+    const sourceOverlap = sourceIds.has(String(feature?.evidence_source_id || "").trim());
+    const text = featureAccountText(feature);
+    const textMatch = tokens.length ? tokens.some((token) => text.includes(token)) : true;
+    if ((refOverlap || sourceOverlap || !refs.size) && textMatch) return true;
+  }
+  const scanText = JSON.stringify(profile.commercial_scan || {}).toLowerCase();
+  return tokens.length ? tokens.some((token) => scanText.includes(token)) : false;
 }
 
 function validateSourceCoverageRows(profile = {}, packageInput = {}) {
@@ -273,11 +334,15 @@ function unresolvedCompleteness(profile = {}, ledger = {}, options = {}) {
     .map((row) => ({ candidate_id: row.candidate_id, candidate_cluster: row.candidate_cluster, mapped_feature_id: row.mapped_feature_id }));
   const missingSourceIds = sourceRows.filter((row) => !FINAL_DISPOSITIONS.has(row.disposition)).map((row) => row.source_id).filter(Boolean);
   const invalidCoverageRows = validateSourceCoverageRows(profile, options.packageInput || {});
+  const missedDiscoveryFeatures = discoveryFeatures(options.packageInput || {})
+    .filter((feature) => !discoveryFeatureAccounted(feature, profile))
+    .map((feature) => ({ discovery_id: feature.discovery_id || null, feature_label: feature.feature_label || null, source_ids: asArray(feature.source_ids), evidence_refs: evidenceRefs(feature) }));
   return {
     missingCandidateIds,
     incompatibleCandidateMappings,
     missingSourceIds,
     invalidCoverageRows,
+    missedDiscoveryFeatures,
     missingCommercialScan: !rawScan || typeof rawScan !== "object" || Array.isArray(rawScan),
     missingCoverage: !asArray(scan.source_coverage).length,
     emptyOutcomes: !asArray(scan.distinct_commercial_outcomes_seen).length,
@@ -311,12 +376,13 @@ function validateCompleteness(profile, result, options = {}) {
     missing_candidate_ids: unresolved.missingCandidateIds,
     incompatible_candidate_mappings: unresolved.incompatibleCandidateMappings,
     invalid_source_coverage_rows: unresolved.invalidCoverageRows,
+    missed_discovered_features: unresolved.missedDiscoveryFeatures,
     missing_primary_source_ids: unresolved.missingSourceIds,
     missing_commercial_scan: unresolved.missingCommercialScan,
     missing_source_coverage: unresolved.missingCoverage,
     empty_outcomes: unresolved.emptyOutcomes
   };
-  const hasCriticalGap = missing.missing_candidate_ids.length || missing.incompatible_candidate_mappings.length || missing.invalid_source_coverage_rows.length || missing.missing_primary_source_ids.length || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
+  const hasCriticalGap = missing.missing_candidate_ids.length || missing.incompatible_candidate_mappings.length || missing.invalid_source_coverage_rows.length || missing.missed_discovered_features.length || missing.missing_primary_source_ids.length || missing.missing_commercial_scan || missing.missing_source_coverage || missing.empty_outcomes;
   if (!hasCriticalGap) return;
 
   if (afterRepair) {

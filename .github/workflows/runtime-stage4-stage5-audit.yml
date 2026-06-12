@@ -42,7 +42,7 @@ jobs:
           test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
           test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
 
-      - name: Verify Stage 5 candidate-ledger architecture
+      - name: Verify Stage 5 discovery-first architecture
         run: |
           set -euo pipefail
           node <<'NODE'
@@ -75,6 +75,9 @@ jobs:
           check('Shared builder emits internal audit ledgers',
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'target_feature_audit_ledger') &&
             has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'stage5_audit_ledger'));
+          check('Shared builder preserves broad discovery evidence',
+            has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'product_family_discovery_sources') &&
+            has('runtime-api/src/diligence/stage5TargetFeaturePackageBuilder.js', 'stage5_feature_discovery_full_product_packet'));
 
           check('Package Stage 5 E2E wires strict audit',
             match('runtime-api/package.json', /e2e:stage5:features[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
@@ -83,8 +86,12 @@ jobs:
           check('Package check covers strict audit syntax',
             match('runtime-api/package.json', /check[\s\S]*e2e-stage5-strict-completeness-audit\.mjs/));
 
-          check('Stage 5 prompt requires candidate ledger walk',
-            has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'target_feature_candidate_index.candidates'));
+          check('Stage 5 prompt is discovery-first',
+            has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'Stage 5A Feature Discovery') &&
+            has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'Stage 5B Feature Canonicalization') &&
+            has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'post-discovery completeness checklist'));
+          check('Stage 5 prompt does not make candidate index discovery driver',
+            !has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'mandatory worklist'));
           check('Stage 5 prompt handles completion repair request',
             has('functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md', 'completion_repair_request'));
           check('Stage 5 prompt forbids incompatible function collapse',
@@ -100,6 +107,9 @@ jobs:
             has('runtime-api/src/diligence/targetFeatureProfileGuardrailsCompleteness.js', 'rerun_missing_stage5_candidate_or_source_accounting'));
           check('Stage 5 runner has one-time completion repair request',
             has('runtime-api/src/diligence/stageRunnerLocked.js', 'completion_repair_request'));
+          check('Stage 5 runner runs discovery before canonicalization',
+            has('runtime-api/src/diligence/stageRunnerLocked.js', 'runStage5FeatureDiscovery') &&
+            has('runtime-api/src/diligence/stageRunnerLocked.js', 'stage5b_canonicalization_from_stage5a_discovery'));
           check('Stage 5 runner has repair-loop skip guard',
             has('runtime-api/src/diligence/stageRunnerLocked.js', 'skipTargetFeatureCompletenessRepair'));
 
@@ -123,7 +133,7 @@ jobs:
           const failures = checks.filter((item) => !item.ok);
           console.log(JSON.stringify({ ok: failures.length === 0, checks }, null, 2));
           if (failures.length) {
-            console.error('Stage 5 candidate-ledger architecture audit failed:');
+            console.error('Stage 5 discovery-first architecture audit failed:');
             for (const failure of failures) console.error(`- ${failure.name}`);
             process.exit(1);
           }

@@ -191,6 +191,30 @@ const invalidCoverageResult = validateTargetFeatureProfileGuardrails(invalidCove
 assert.equal(invalidCoverageResult.ok, true, JSON.stringify(invalidCoverageResult.errors, null, 2));
 assert.ok(invalidCoverageResult.repairs.some((repair) => repair.action === "rerun_missing_stage5_candidate_or_source_accounting"));
 
+const missedDiscoveryPackageInput = {
+  ...packageInput,
+  stage5_feature_discovery: {
+    discovery_version: "stage5_feature_discovery_v1",
+    discovered_features: [{
+      discovery_id: "FD002",
+      feature_label: "Machine translation",
+      function_summary: "Translates text from one language into another.",
+      input_signal: "text",
+      system_action: "translates text",
+      output_signal: "translated text",
+      source_ids: ["SRC_001"],
+      evidence_refs: [featureRef],
+      confidence: "high"
+    }],
+    visible_but_unmapped: [],
+    limitations: []
+  }
+};
+const missedDiscovery = baseProfile();
+const missedDiscoveryResult = validateTargetFeatureProfileGuardrails(missedDiscovery, { evidenceBuffer, packageInput: missedDiscoveryPackageInput });
+assert.equal(missedDiscoveryResult.ok, true, JSON.stringify(missedDiscoveryResult.errors, null, 2));
+assert.ok(missedDiscoveryResult.repairs.some((repair) => repair.action === "rerun_missing_stage5_candidate_or_source_accounting"));
+
 console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
@@ -202,5 +226,6 @@ console.log(JSON.stringify({
   linked_threat_repair_count: linkedThreatResult.repairs.length,
   missing_data_repair_count: missingDataResult.repairs.length,
   incompatible_candidate_repair_count: incompatibleResult.repairs.length,
-  invalid_coverage_repair_count: invalidCoverageResult.repairs.length
+  invalid_coverage_repair_count: invalidCoverageResult.repairs.length,
+  missed_discovery_repair_count: missedDiscoveryResult.repairs.length
 }, null, 2));

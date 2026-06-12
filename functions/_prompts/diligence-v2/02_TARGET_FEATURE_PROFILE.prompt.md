@@ -19,12 +19,21 @@ If this prompt and the dictionary conflict, the dictionary controls.
 ## Stage role
 
 ```text
-source_bundle + target_profile_v2 + registry_key vocabulary + target_feature_candidate_index
+source_bundle + target_profile_v2 + registry_key vocabulary + stage5_feature_discovery + target_feature_candidate_index
         ↓
 target_feature_profile.feature_profile_v2
 ```
 
 The core unit is not the product, brand, platform, or marketing phrase. The core unit is the atomic feature/function.
+
+Stage 5 is split into two internal jobs:
+
+```text
+Stage 5A Feature Discovery: discover concrete evidence-backed product functions.
+Stage 5B Feature Canonicalization: convert discovered functions into clean feature_profile_v2.
+```
+
+If `stage5_feature_discovery.discovered_features[]` is present, treat it as the Stage 5A discovery output and perform Stage 5B canonicalization. Do not restart discovery from the candidate index. You may still scan admitted evidence to avoid losing evidence-backed functions, but the candidate index is only a post-discovery checklist.
 
 A valid feature answers:
 
@@ -53,6 +62,7 @@ source_bundle.evidence_ref_manifest[]        // alias if provided
 source_bundle.artifact_inventory[]
 source_bundle.source_review
 target_feature_candidate_index.candidates[]  // deterministic high-recall candidate ledger, not final judgment
+stage5_feature_discovery.discovered_features[] // internal discovery-first feature list when present
 source_bundle.limitations[]
 target_profile_v2 identity reference fields
 registry_key archetype and surface vocabulary meanings
@@ -60,9 +70,9 @@ registry_key archetype and surface vocabulary meanings
 
 Discovery candidates are not evidence. A URL string alone is not evidence of page contents.
 
-`target_feature_candidate_index.candidates[]` is a deterministic completeness ledger. It is high-recall and may include duplicates, menu labels, API/documentation surfaces, and weak candidates. Treat it as a mandatory worklist, not as final truth.
+`target_feature_candidate_index.candidates[]` is a deterministic completeness checklist. It is high-recall and may include duplicates, menu labels, API/documentation surfaces, and weak candidates. It is not final truth and must not drive feature discovery.
 
-If input.completion_repair_request is present, prioritize only the listed missing candidate IDs, incompatible candidate mappings, invalid source coverage rows, and missing primary source coverage rows before finalizing. The repair request does not authorize browsing or new evidence. Use the same admitted source_bundle and target_feature_candidate_index only. Do not drop prior valid features.
+If input.completion_repair_request is present, use it after feature discovery to check the listed missing candidate IDs, incompatible candidate mappings, invalid source coverage rows, and missing source coverage rows before finalizing. The repair request does not authorize browsing or new evidence. Use the same admitted source_bundle, stage5_feature_discovery, and target_feature_candidate_index only. Do not drop prior valid features.
 
 ## Evidence citation discipline — token economy rule
 
@@ -200,22 +210,34 @@ Stage 5 must not directly emit Vault architecture fields.
 
 Forbidden: `architecture.memory`, `architecture.models`, `architecture.sub_processors`, `architecture.cloud_host`, `architecture.vector_db`.
 
-## Deterministic candidate walk discipline
+## Discovery-first canonicalization discipline
 
-Before finalizing `feature_inventory[]`, walk every row in `target_feature_candidate_index.candidates[]`.
+First identify concrete product functions from admitted evidence or from `stage5_feature_discovery.discovered_features[]` when the runtime has already performed Stage 5A.
+
+Do not start by walking `target_feature_candidate_index.candidates[]`. Candidate rows are a post-discovery completeness checklist only.
+
+For each discovered function, decide whether it is evidence-backed enough to become one canonical `feature_inventory[]` entry. One discovered function may become one canonical feature. Do not merge distinct functions unless admitted evidence proves they are the same commercial function.
+
+Do not collapse incompatible functions. Translation, speech-to-text/transcription, text-to-speech/speech synthesis, dubbing, document digitisation/OCR, embeddings, voice agents, studio/workflow/app surfaces, document-intelligence products, assistant/model products, language-model APIs, and developer/API integration layers are distinct Stage 5 functions unless admitted evidence shows one is merely duplicate/supporting context for another mapped feature.
+
+Every populated canonical field must be supported by admitted evidence. If evidence is missing, use unknown/not visible/empty arrays as schema allows. Do not invent data provenance, architecture, surface, model, subprocessors, hosting, retention, training, or integration details.
+
+No minimum feature count. No maximum feature count. If no evidence supports a feature, do not emit it.
+
+After feature discovery and canonicalization, use `target_feature_candidate_index.candidates[]` as a secondary checklist.
 
 For every candidate, decide one of the following based only on admitted evidence:
 
 ```text
-mapped_feature: candidate becomes or supports a feature_inventory[] entry.
+mapped_feature: candidate corresponds to or supports a discovered/canonical feature_inventory[] entry.
 duplicate_support: candidate is duplicate/supporting evidence for another mapped feature.
 insufficient_detail: candidate names a product/function but lacks enough functional detail to map safely.
 non_feature_context: candidate is product-family context but does not describe a concrete Stage 5 function.
 ```
 
-You cannot silently skip indexed candidates.
+You cannot silently skip indexed candidates in the audit metadata, but candidate rows must not force you to create, merge, or rename features against admitted evidence.
 
-Do not collapse incompatible functions. Translation, speech-to-text/transcription, text-to-speech/speech synthesis, dubbing, document digitisation/OCR, embeddings, voice agents, and language models are distinct Stage 5 functions unless admitted evidence shows one is merely duplicate/supporting context for another mapped feature. If a candidate is duplicate/supporting/non-feature/insufficient-detail, reflect that status consistently in `commercial_scan.source_coverage[]`, `commercial_scan.unmapped_outcomes_due_to_insufficient_detail[]`, `feature_inventory[].evidence_refs[]`, and `limitations[]` where material. Do not invent audit-only fields inside `feature_profile_v2`.
+If a candidate is duplicate/supporting/non-feature/insufficient-detail, reflect that status consistently in `commercial_scan.source_coverage[]`, `commercial_scan.unmapped_outcomes_due_to_insufficient_detail[]`, `feature_inventory[].evidence_refs[]`, and `limitations[]` where material. Do not invent audit-only fields inside `feature_profile_v2`.
 
 Because the output schema does not contain a separate candidate ledger field, candidate accounting must be reflected through:
 
@@ -231,7 +253,7 @@ Runtime will maintain a separate `target_feature_audit_ledger` beside the canoni
 
 If several candidates are duplicates of the same feature, map the strongest one and mark the related source rows as `supporting` or `duplicate` in `commercial_scan.source_coverage[]` with `mapped_feature_ids[]` pointing to the mapped feature.
 
-After walking indexed candidates, scan the remaining full text in `source_bundle.evidence_buffer[]` and add any product/function outcome that the deterministic index missed. If nothing remains, every source must still receive a `source_coverage[]` row explaining mapped/supporting/duplicate/insufficient/non-feature status.
+After canonicalizing discovered features, scan the remaining full text in `source_bundle.evidence_buffer[]` and add any evidence-backed product/function outcome that Stage 5A missed. If nothing remains, every source must still receive a `source_coverage[]` row explaining mapped/supporting/duplicate/insufficient/non-feature status.
 
 ## Commercial scan and completeness audit
 

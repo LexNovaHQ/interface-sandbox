@@ -71,6 +71,65 @@ function publicModelMetadata(result, repair = {}) {
   return { pool: result?.model_meta?.pool || null, model: result?.model_meta?.selected_model || null, selected_model: result?.model_meta?.selected_model || null, selected_key_alias: result?.model_meta?.selected_key_alias || null, attempted_models: result?.attempts || [], fallback_used: result?.fallback_used === true, primary_error: result?.primary_error || null, usage_metadata: result?.usage_metadata || null, grounding_metadata: result?.grounding_metadata || null, repaired: result?.repaired === true || repair?.repaired === true, repair_notes: repair?.repair_notes || [] };
 }
 
+function buildStage5FeatureDiscoveryPrompt(input) {
+  return [
+    "You are Stage 5A Feature Discovery for the Diligence Engine.",
+    "",
+    "Return valid JSON only with this shape:",
+    '{"stage5_feature_discovery":{"discovery_version":"stage5_feature_discovery_v1","discovered_features":[],"visible_but_unmapped":[],"limitations":[]}}',
+    "",
+    "Your job is discovery only. Read admitted Stage 5 evidence and find every concrete product/commercial function visible in evidence.",
+    "Keep distinct functions separate. Do not legal-review. Do not registry-evaluate. Do not fill canonical schema fields. Do not browse or use external knowledge.",
+    "The deterministic target_feature_candidate_index is a secondary checklist only after you independently scan the admitted evidence. It is not final truth and must not drive discovery.",
+    "For each discovered feature include: discovery_id, feature_label, function_summary, input_signal, system_action, output_signal, source_ids, evidence_refs, confidence.",
+    "Every discovered feature must cite admitted source_ids/evidence_refs. If evidence is missing, do not emit the feature; use visible_but_unmapped or limitations.",
+    "No minimum feature count. No maximum feature count. If zero evidence-backed features exist, return zero discovered_features with limitations.",
+    "",
+    "---INPUT_JSON---",
+    JSON.stringify({ stage_id: "target_feature_profile_discovery", input }, null, 2)
+  ].join("\n");
+}
+
+function normalizeStage5FeatureDiscovery(json = {}) {
+  const value = json?.stage5_feature_discovery || json;
+  const discovery = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const discovered = Array.isArray(discovery.discovered_features) ? discovery.discovered_features : [];
+  return {
+    discovery_version: discovery.discovery_version || "stage5_feature_discovery_v1",
+    discovered_features: discovered.map((feature, index) => ({
+      discovery_id: feature?.discovery_id || `FD${String(index + 1).padStart(3, "0")}`,
+      feature_label: feature?.feature_label || feature?.label || "",
+      function_summary: feature?.function_summary || feature?.summary || "",
+      input_signal: feature?.input_signal || "",
+      system_action: feature?.system_action || "",
+      output_signal: feature?.output_signal || "",
+      source_ids: Array.isArray(feature?.source_ids) ? feature.source_ids : [],
+      evidence_refs: Array.isArray(feature?.evidence_refs) ? feature.evidence_refs : [],
+      confidence: feature?.confidence || "unknown"
+    })),
+    visible_but_unmapped: Array.isArray(discovery.visible_but_unmapped) ? discovery.visible_but_unmapped : [],
+    limitations: Array.isArray(discovery.limitations) ? discovery.limitations : []
+  };
+}
+
+async function runStage5FeatureDiscovery({ config, input, options, env }) {
+  const prompt = buildStage5FeatureDiscoveryPrompt(input);
+  const runResult = await runGeminiPool({
+    poolName: options.discoveryPool || options.pool || config.pool,
+    prompt,
+    env,
+    options: {
+      responseMimeType: "application/json",
+      temperature: options.discoveryTemperature ?? options.temperature ?? config.temperature,
+      maxOutputTokens: Number(options.discoveryMaxOutputTokens || env.STAGE5_DISCOVERY_MAX_OUTPUT_TOKENS || 12000),
+      timeoutMs: Number(options.discoveryTimeoutMs || env.STAGE5_DISCOVERY_TIMEOUT_MS || options.timeoutMs || options.timeout_ms || config.timeout_ms),
+      maxAttempts: options.discoveryMaxAttempts ?? options.maxAttempts ?? options.max_attempts
+    }
+  });
+  if (!runResult.ok) return { ok: false, runResult };
+  return { ok: true, discovery: normalizeStage5FeatureDiscovery(runResult.json), runResult };
+}
+
 function providerFailureStatus(result) {
   if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503;
   if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502;
@@ -107,6 +166,15 @@ function stageOutputWarnings(config, finalOutput) {
 
 function targetFeatureCompletenessRepairItems(payload = {}) {
   return (payload.guardrail_repairs || []).filter((item) => item?.action === "rerun_missing_stage5_candidate_or_source_accounting");
+}
+
+function withStage5DiscoveryPayload(payload = {}, discoveryResult = null) {
+  if (!discoveryResult?.discovery) return payload;
+  return {
+    ...payload,
+    stage5_feature_discovery: discoveryResult.discovery,
+    stage5_feature_discovery_metadata: publicModelMetadata(discoveryResult.runResult)
+  };
 }
 
 function successPayload({ config, validation, guardrails, normalizedOutput, repair, finalOutput, runResult, promptBundle, reconciliation = null }) {
@@ -147,21 +215,34 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const schemaEntry = resolveSchemaEntry(config.output_schema_key);
   if (!schemaEntry?.schema) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "SCHEMA_NOT_FOUND", error: `Output schema not found for ${config.output_schema_key}`, output_schema_key: config.output_schema_key };
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
-  const first = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input, options, env });
-  if (!first.ok) return first.payload;
+  let stageInput = input;
+  let discoveryResult = null;
+  if (config.output_schema_key === "targetFeatureProfile" && options.skipStage5FeatureDiscovery !== true && !input?.stage5_feature_discovery) {
+    discoveryResult = await runStage5FeatureDiscovery({ config, input, options, env });
+    if (!discoveryResult.ok) {
+      return { ok: false, status: providerFailureStatus(discoveryResult.runResult), stage_id: config.stage_id, error_type: discoveryResult.runResult?.error_type || "STAGE5_DISCOVERY_ERROR", error: discoveryResult.runResult?.error || "Stage 5 feature discovery failed", model_metadata: publicModelMetadata(discoveryResult.runResult) };
+    }
+    stageInput = {
+      ...input,
+      stage5_execution_mode: "stage5b_canonicalization_from_stage5a_discovery",
+      stage5_feature_discovery: discoveryResult.discovery
+    };
+  }
+  const first = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input: stageInput, options, env });
+  if (!first.ok) return withStage5DiscoveryPayload(first.payload, discoveryResult);
   const targetFeatureRepairItems = targetFeatureCompletenessRepairItems(first.payload);
   if (config.output_schema_key === "targetFeatureProfile" && options.skipTargetFeatureCompletenessRepair !== true && targetFeatureRepairItems.length > 0) {
     const repairInput = {
-      ...input,
+      ...stageInput,
       completion_repair_request: {
         repair_version: "stage5_candidate_source_accounting_repair_v1",
-        required_action: "Redo only the listed missing or incompatible Stage 5 candidate/source accounting, including missing candidate IDs, incompatible candidate mappings, invalid source coverage rows, and missing primary source coverage rows. Return the complete final feature_profile_v2 JSON. Do not drop prior valid features. Do not browse. Use the same admitted evidence only.",
+        required_action: "After Stage 5A discovery, check the listed candidate/source accounting items. If an item points to an evidence-backed function that Stage 5B missed, map it. Otherwise mark it insufficient_detail, duplicate/supporting, or non_feature_context. Return the complete final feature_profile_v2 JSON. Do not drop prior valid features. Do not browse. Use the same admitted evidence only.",
         repairable_guardrail_items: targetFeatureRepairItems
       }
     };
-    const rerun = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input: repairInput, options: { ...options, skipTargetFeatureCompletenessRepair: true }, env });
+    const rerun = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input: repairInput, options: { ...options, skipTargetFeatureCompletenessRepair: true, skipStage5FeatureDiscovery: true }, env });
     if (!rerun.ok) {
-      return {
+      return withStage5DiscoveryPayload({
         ...first.payload,
         ok: false,
         status: rerun.payload?.status || 422,
@@ -172,11 +253,11 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
           rerun_error: rerun.payload?.error || rerun.payload?.error_type || "rerun_failed",
           first_guardrail_repairs: targetFeatureRepairItems
         }
-      };
+      }, discoveryResult);
     }
     const remainingRepairItems = targetFeatureCompletenessRepairItems(rerun.payload);
     if (remainingRepairItems.length) {
-      return {
+      return withStage5DiscoveryPayload({
         ...rerun.payload,
         ok: false,
         status: 422,
@@ -188,17 +269,17 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
           first_guardrail_repairs: targetFeatureRepairItems,
           rerun_guardrail_repairs: remainingRepairItems
         }
-      };
+      }, discoveryResult);
     }
-    return {
+    return withStage5DiscoveryPayload({
       ...rerun.payload,
       target_feature_completeness_repair: {
         rerun_applied: true,
         first_guardrail_repairs: targetFeatureRepairItems
       }
-    };
+    }, discoveryResult);
   }
-  if (config.output_schema_key !== "legalStackReview" || options.skipLegalDocumentReconciliation === true || !hasUnadmittedLegalDocumentCandidates(first.finalOutput)) return first.payload;
+  if (config.output_schema_key !== "legalStackReview" || options.skipLegalDocumentReconciliation === true || !hasUnadmittedLegalDocumentCandidates(first.finalOutput)) return withStage5DiscoveryPayload(first.payload, discoveryResult);
   const reconciliation = await reconcileStage6LegalDocumentInput({ legalStackReview: first.finalOutput, legalStackReviewInput: input, timeoutMs: Number(options.legalDocumentTimeoutMs || env.STAGE6_LEGAL_DOCUMENT_TIMEOUT_MS || 15000), maxBytes: Number(options.legalDocumentMaxBytes || env.STAGE6_LEGAL_DOCUMENT_MAX_BYTES || 15 * 1024 * 1024) });
   if (!reconciliation.resolved_count) return { ...first.payload, legal_document_reconciliation: reconciliation };
   const rerun = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input: reconciliation.legal_stack_review_input, options: { ...options, skipLegalDocumentReconciliation: true }, env });

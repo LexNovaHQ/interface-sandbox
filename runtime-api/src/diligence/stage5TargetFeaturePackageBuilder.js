@@ -175,6 +175,19 @@ function collectPacketRecords(sourceBundle = {}, evidenceJunction = {}) {
   return [];
 }
 
+function uniqueBySourceId(records = []) {
+  const out = [];
+  const seen = new Set();
+  for (const record of records) {
+    const id = sourceId(record);
+    const key = id || sourceUrl(record);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(record);
+  }
+  return out;
+}
+
 function buildClusterCandidates(packetRecords, routes) {
   const out = new Map();
   for (const source of packetRecords) {
@@ -261,13 +274,14 @@ function selectProductFamilySources(sourceBundle = {}, evidenceJunction = {}) {
 
   return {
     selected,
-    supporting,
-    duplicates,
-    nonFeature,
-    excluded,
+    supporting: uniqueBySourceId(supporting),
+    duplicates: uniqueBySourceId(duplicates),
+    nonFeature: uniqueBySourceId(nonFeature),
+    excluded: uniqueBySourceId(excluded),
+    discovery: uniqueBySourceId([...selected, ...supporting, ...duplicates]),
     sourceClusters,
     clusterMap,
-    eligible_count: selected.length + supporting.length + duplicates.length,
+    eligible_count: uniqueBySourceId([...selected, ...supporting, ...duplicates]).length,
     packet_source_count: packetRecords.length
   };
 }
@@ -276,6 +290,7 @@ function buildStage5EvidenceJunction(evidenceJunction = {}, selection) {
   const copy = clone(evidenceJunction);
   const packet = copy.downstream_packets?.[PRODUCT_STAGE_KEY] || {};
   const selected = selection.selected || [];
+  const discoveryRecords = selection.discovery?.length ? selection.discovery : selected;
   const supportingRecords = [...(selection.supporting || []), ...(selection.duplicates || []), ...(selection.nonFeature || [])];
   const supportingRoutes = supportingRecords.map((record) => ({
     evidence_source_id: sourceId(record),
@@ -297,9 +312,10 @@ function buildStage5EvidenceJunction(evidenceJunction = {}, selection) {
       ...packet,
       packet_id: packet.packet_id || "PKT_TARGET_FEATURE_PROFILE",
       downstream_stage: PRODUCT_STAGE_KEY,
-      source_count: selected.length,
-      source_ids: selected.map(sourceId).filter(Boolean),
-      source_records: selected,
+      source_count: discoveryRecords.length,
+      source_ids: discoveryRecords.map(sourceId).filter(Boolean),
+      source_records: discoveryRecords,
+      stage5_feature_discovery_source_ids: discoveryRecords.map(sourceId).filter(Boolean),
       product_family_primary_sources: selected.map(sourceId).filter(Boolean),
       product_family_supporting_sources: selection.supporting.map(sourceId).filter(Boolean),
       product_family_duplicate_sources: selection.duplicates.map(sourceId).filter(Boolean),
@@ -314,6 +330,7 @@ function buildStage5EvidenceJunction(evidenceJunction = {}, selection) {
       packet_policy: {
         ...(packet.packet_policy || {}),
         stage5_product_family_primary_packet: true,
+        stage5_feature_discovery_full_product_packet: true,
         duplicate_product_sources_preserved_as_supporting_metadata: true,
         source_roles_required: true,
         function_cluster_primary_selection: true,
@@ -462,9 +479,11 @@ export function buildStage5TargetFeaturePackage({ sourceBundle = {}, evidenceJun
     product_family_primary_source_count: selection.selected.length,
     product_family_supporting_source_count: selection.supporting.length,
     product_family_duplicate_source_count: selection.duplicates.length,
+    product_family_discovery_source_count: selection.discovery.length,
     product_family_non_feature_context_count: selection.nonFeature.length,
     source_role_classification: ["primary_function_source", "supporting_commercial_source", "duplicate_source", "non_feature_context", "excluded_from_stage5"],
     duplicate_sources_preserved_as_metadata: true,
+    broad_feature_discovery_evidence_preserved: true,
     function_cluster_primary_selection: true,
     no_source_caps: true,
     no_candidate_caps: true
@@ -473,6 +492,7 @@ export function buildStage5TargetFeaturePackage({ sourceBundle = {}, evidenceJun
   stage5Input.product_family_primary_sources = selection.selected.map(sourceMeta);
   stage5Input.product_family_supporting_sources = selection.supporting.map(sourceMeta);
   stage5Input.product_family_duplicate_sources = selection.duplicates.map(sourceMeta);
+  stage5Input.product_family_discovery_sources = selection.discovery.map(sourceMeta);
   stage5Input.product_family_non_feature_context_sources = selection.nonFeature.map(sourceMeta);
   stage5Input.stage5_candidate_clusters = [...selection.clusterMap.values()];
   stage5Input.stage5_audit_ledger = auditLedgerSeed({ stage5Input, selection, sourceReview, generatedAt });
@@ -487,6 +507,7 @@ export function buildStage5TargetFeaturePackage({ sourceBundle = {}, evidenceJun
     product_family_primary_sources: stage5Input.product_family_primary_sources,
     product_family_supporting_sources: stage5Input.product_family_supporting_sources,
     product_family_duplicate_sources: stage5Input.product_family_duplicate_sources,
+    product_family_discovery_sources: stage5Input.product_family_discovery_sources,
     product_family_non_feature_context_sources: stage5Input.product_family_non_feature_context_sources,
     stage5_candidate_clusters: stage5Input.stage5_candidate_clusters,
     evidence_junction: stage5EvidenceJunction
