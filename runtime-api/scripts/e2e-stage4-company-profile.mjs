@@ -13,7 +13,12 @@ const companyName = process.env.TEST_COMPANY_NAME || "Sarvam AI";
 const cachePath = process.env.STAGE4_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage4-company-profile.json");
 const failurePath = path.join(path.dirname(cachePath), "stage4-company-profile.failure.json");
 
-const BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
+const SOURCE_BUCKETS = [
+  "company_profile_sources",
+  "product_profile_sources",
+  "legal_profile_sources",
+  "governance_profile_sources"
+];
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -23,7 +28,7 @@ function writeJson(filePath, value) {
 function writeFailureCache(message, detail) {
   try {
     writeJson(failurePath, {
-      cache_version: "stage4_company_profile_e2e_failure_v1",
+      cache_version: "stage4_company_profile_e2e_failure_v2",
       generated_at: new Date().toISOString(),
       target: { primary_url: primaryUrl, company_name: companyName },
       error: message,
@@ -44,8 +49,11 @@ function normalizeBase(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  try { return new URL(withScheme).toString().replace(/\/+$/, ""); }
-  catch (error) { fail("RUNTIME_URL must be valid", { received: raw, error: error.message }); }
+  try {
+    return new URL(withScheme).toString().replace(/\/+$/, "");
+  } catch (error) {
+    fail("RUNTIME_URL must be valid", { received: raw, error: error.message });
+  }
 }
 
 function normalizeUrl(value) {
@@ -54,13 +62,18 @@ function normalizeUrl(value) {
     url.hash = "";
     if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
     return url.toString();
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function readJson(response) {
   const text = await response.text();
-  try { return JSON.parse(text); }
-  catch { return { non_json_body: text.slice(0, 3000) }; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { non_json_body: text.slice(0, 3000) };
+  }
 }
 
 async function postJson(base, routePath, body) {
@@ -70,40 +83,23 @@ async function postJson(base, routePath, body) {
     body: JSON.stringify(body)
   });
   const json = await readJson(response);
-  if (!response.ok || json?.ok === false) fail(`Request failed: ${routePath}`, { status: response.status, body: json, request_body: body });
+  if (!response.ok || json?.ok === false) {
+    fail(`Request failed: ${routePath}`, { status: response.status, body: json, request_body: body });
+  }
   return json;
 }
 
-function collectBucket(discovery, bucket) {
-  const out = [];
-  const seen = new Set();
-  for (const record of Array.isArray(discovery?.[bucket]) ? discovery[bucket] : []) {
-    const url = normalizeUrl(record?.url || record?.final_url);
-    if (!url || seen.has(url)) continue;
-    seen.add(url);
-    out.push({ ...record, url, source_bucket: bucket });
-  }
-  return out;
-}
-
 function collectSources(discovery) {
-  const limit = Number(process.env.STAGE4_CAPTURE_LIMIT || process.env.STAGE3_CAPTURE_LIMIT || 8);
-  const quotas = [
-    ["company_profile_sources", Number(process.env.STAGE4_COMPANY_CAPTURE_LIMIT || 3)],
-    ["legal_profile_sources", Number(process.env.STAGE4_LEGAL_CAPTURE_LIMIT || 2)],
-    ["governance_profile_sources", Number(process.env.STAGE4_GOVERNANCE_CAPTURE_LIMIT || 1)],
-    ["product_profile_sources", Number(process.env.STAGE4_PRODUCT_CAPTURE_LIMIT || 2)]
-  ];
-  const pools = Object.fromEntries(BUCKETS.map((bucket) => [bucket, collectBucket(discovery, bucket)]));
   const selected = [];
   const seen = new Set();
-  const add = (record) => {
-    if (!record?.url || seen.has(record.url) || selected.length >= limit) return;
-    seen.add(record.url);
-    selected.push(record);
-  };
-  for (const [bucket, quota] of quotas) for (const record of (pools[bucket] || []).slice(0, quota)) add(record);
-  for (const bucket of BUCKETS) for (const record of pools[bucket] || []) add(record);
+  for (const bucket of SOURCE_BUCKETS) {
+    for (const record of Array.isArray(discovery?.[bucket]) ? discovery[bucket] : []) {
+      const url = normalizeUrl(record?.url || record?.final_url);
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      selected.push({ ...record, url, source_bucket: bucket });
+    }
+  }
   return selected;
 }
 
@@ -126,15 +122,23 @@ if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = normalizeBase(runtimeUrl);
 const targetInput = { primary_url: primaryUrl, company_name: companyName, submitted_at: new Date().toISOString() };
 
-console.log(JSON.stringify({ ok: true, step: "start", phase: "stage_4_company_profile_e2e", target: targetInput, runtime_url: base, gemini_execution: "remote_runtime" }, null, 2));
+console.log(JSON.stringify({
+  ok: true,
+  step: "start",
+  phase: "stage_4_company_profile_e2e_full_sweep",
+  target: targetInput,
+  runtime_url: base,
+  gemini_execution: "remote_runtime",
+  stage_source_policy: "stage4_full_profile_all_routed_families_no_source_caps"
+}, null, 2));
 
 const discoveryResponse = await postJson(base, "/v1/source-discovery", {
   input: targetInput,
   options: {
-    sourceDiscoveryMode: process.env.STAGE4_SOURCE_DISCOVERY_MODE || "sync_anchor_only",
-    runFreeFirstPartySearch: process.env.STAGE4_RUN_FREE_SEARCH === "true",
-    anchorFetchMaxAnchors: Number(process.env.STAGE4_ANCHOR_FETCH_MAX || 32),
-    anchorLinkLimit: Number(process.env.STAGE4_ANCHOR_LINK_LIMIT || 120),
+    sourceDiscoveryMode: process.env.STAGE4_SOURCE_DISCOVERY_MODE || "sync_with_free_search",
+    runFreeFirstPartySearch: process.env.STAGE4_RUN_FREE_SEARCH === "false" ? false : true,
+    anchorFetchMaxAnchors: Number(process.env.STAGE4_ANCHOR_FETCH_MAX || 60),
+    anchorLinkLimit: Number(process.env.STAGE4_ANCHOR_LINK_LIMIT || 100000),
     anchorClassifyMaxOutputTokens: Number(process.env.STAGE4_ANCHOR_CLASSIFY_TOKENS || 8192),
     probe_timeout_ms: Number(process.env.STAGE4_PROBE_TIMEOUT_MS || 8000)
   }
@@ -142,11 +146,15 @@ const discoveryResponse = await postJson(base, "/v1/source-discovery", {
 
 const sources = collectSources(discoveryResponse.discovery);
 if (!sources.length) fail("Source discovery returned no capturable sources", { counts: discoveryResponse.discovery?.counts || null });
-console.log(JSON.stringify({ ok: true, step: "source_discovery_complete", source_count: sources.length, counts: discoveryResponse.discovery?.counts || null }, null, 2));
+console.log(JSON.stringify({ ok: true, step: "source_discovery_complete_full_sweep", source_count: sources.length, counts: discoveryResponse.discovery?.counts || null }, null, 2));
 
 const captureResponse = await postJson(base, "/v1/source-capture", {
   input: { sources },
-  options: { timeout_ms: Number(process.env.STAGE4_CAPTURE_TIMEOUT_MS || 12000), max_sources: sources.length }
+  options: {
+    timeout_ms: Number(process.env.STAGE4_CAPTURE_TIMEOUT_MS || 24000),
+    max_fetch_bytes: Number(process.env.STAGE4_CAPTURE_MAX_BYTES || 30 * 1024 * 1024),
+    include_clean_text: true
+  }
 });
 
 const sourceBundle = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `stage4_source_bundle_${Date.now()}` });
@@ -177,7 +185,7 @@ const stageResult = await postJson(base, "/v1/diligence/stage", {
   input: stageInput,
   options: {
     pool: process.env.STAGE4_COMPANY_POOL || process.env.STAGE4_POOL || "reasoning",
-    maxOutputTokens: Number(process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 12000),
+    maxOutputTokens: Number(process.env.STAGE4_COMPANY_MAX_OUTPUT_TOKENS || 24000),
     timeoutMs: Number(process.env.STAGE4_COMPANY_TIMEOUT_MS || 90000)
   }
 });
@@ -194,9 +202,10 @@ if (profile.target_profile_version !== "target_profile_v2") {
 }
 
 writeJson(cachePath, {
-  cache_version: "stage4_company_profile_e2e_cache_v1",
+  cache_version: "stage4_company_profile_e2e_cache_v2_full_sweep",
   generated_at: new Date().toISOString(),
   target_input: targetInput,
+  stage_source_policy: "stage4_full_profile_all_routed_families_no_source_caps",
   source_bundle: sourceBundle,
   evidence_junction: junction,
   company_profile_stage_result: stageResult,
@@ -206,8 +215,9 @@ writeJson(cachePath, {
 
 console.log(JSON.stringify({
   ok: true,
-  phase: "stage_4_company_profile_e2e",
+  phase: "stage_4_company_profile_e2e_full_sweep",
   gemini_execution: "remote_runtime",
+  stage_source_policy: "stage4_full_profile_all_routed_families_no_source_caps",
   source_bundle_version: sourceBundle.source_bundle_version,
   evidence_junction_version: junction.evidence_junction_version,
   target_profile_version: profile.target_profile_version,
