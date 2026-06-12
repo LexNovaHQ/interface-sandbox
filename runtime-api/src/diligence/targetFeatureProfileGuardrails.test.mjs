@@ -3,25 +3,28 @@ import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGu
 
 const sourceUrl = "https://example.ai/products/speech";
 const crossPackageUrl = "https://example.ai/privacy-policy";
+const featureRef = "SRC_001#C001";
+const privacyRef = "SRC_009#C001";
+
 const evidenceBuffer = [{
   evidence_source_id: "SRC_001",
   source_family: "product_profile",
   source_url: sourceUrl,
   final_url: sourceUrl,
-  clean_text_lossless: "Speech-to-text API converts uploaded audio into text. Developers can use the transcript in their applications. Check balances. Update records. Schedule appointments. Process payments. Samvaad connects to your systems and gets the work done."
+  clean_text_lossless: "Speech-to-text API converts uploaded audio into text. Developers can use the transcript in their applications.",
+  source_citation_manifest: [{ evidence_ref_id: featureRef, evidence_source_id: "SRC_001", chunk_id: "C001", source_url: sourceUrl, start_char: 0, end_char: 88, text_sha256: "fixture" }]
 }];
 
 const packageInput = {
   source_bundle: {
     target_input: { primary_url: "https://example.ai" },
-    evidence_buffer: evidenceBuffer
+    evidence_buffer: evidenceBuffer,
+    source_citation_manifest: [{ evidence_ref_id: featureRef, evidence_source_id: "SRC_001", chunk_id: "C001", source_url: sourceUrl, start_char: 0, end_char: 88, text_sha256: "fixture" }],
+    evidence_ref_manifest: [{ evidence_ref_id: featureRef, evidence_source_id: "SRC_001", chunk_id: "C001", source_url: sourceUrl, start_char: 0, end_char: 88, text_sha256: "fixture" }]
   },
   target_profile_v2: {
     identity: { domain: "example.ai", website: "https://example.ai" },
-    data_touchpoint_map: [{
-      source_url: crossPackageUrl,
-      evidence_quote: "We collect the information provided by you including inputs, file uploads, and outputs."
-    }]
+    data_touchpoint_map: [{ source_url: crossPackageUrl, evidence_refs: [privacyRef] }]
   }
 };
 
@@ -33,8 +36,8 @@ function baseProfile() {
     processing_context: "Uploaded audio is processed into transcript text.",
     storage_or_retention_signal: "not visible in admitted evidence",
     training_or_finetuning_signal: "not visible in admitted evidence",
-    evidence_quote: "Speech-to-text API converts uploaded audio into text.",
     source_url: sourceUrl,
+    evidence_refs: [featureRef],
     confidence: "high"
   };
   return {
@@ -45,7 +48,10 @@ function baseProfile() {
       feature_name: "Speech transcription",
       feature_role: "CORE",
       commercial_function: "Convert uploaded audio into transcript text.",
+      business_label_or_product_area: "Speech API",
       feature_description: "Developers send audio and receive transcript text.",
+      actor_or_user: "developer",
+      input_data: ["audio"],
       system_action: "processes uploaded audio into text",
       output_or_result: "transcript text",
       autonomy_level: "none",
@@ -55,28 +61,21 @@ function baseProfile() {
       data_provenance: [{ ...data }],
       archetype_codes: ["TRN"],
       archetype_labels: ["The Translator"],
-      archetype_provenance: [{ archetype_code: "TRN", evidence_quote: "Speech-to-text API converts uploaded audio into text.", source_url: sourceUrl, confidence: "high" }],
+      archetype_provenance: [{ archetype_code: "TRN", registry_key_detection_logic: "Transforms speech to text", matched_feature_behavior: "speech transcription", source_url: sourceUrl, evidence_refs: [featureRef], confidence: "high" }],
       surface_tokens: ["Content&IP"],
-      surface_provenance: [{ surface_token: "Content&IP", evidence_quote: "Developers can use the transcript in their applications.", source_url: sourceUrl, confidence: "medium" }],
+      surface_provenance: [{ surface_token: "Content&IP", registry_key_surface_meaning: "content output", matched_data_or_context: "transcript text", source_url: sourceUrl, evidence_refs: [featureRef], confidence: "medium" }],
       confidence: "high",
-      evidence_quote: "Speech-to-text API converts uploaded audio into text.",
       feature_source_url: sourceUrl,
+      evidence_refs: [featureRef],
       linked_threat_ids: []
     }],
     product_feature_map: [],
     data_provenance_map: [{ provenance_id: "DP001", feature_id: "F001", ...data }],
-    regulated_surface_map: [{ surface_id: "RS001", feature_id: "F001", surface_token: "Content&IP", int_ext_classification: "external", confidence: "medium" }],
-    architecture_hints: [{
-      feature_id: "F001",
-      hint_type: "integration",
-      disposition: "prefill_candidate",
-      evidence_quote: "Developers can use the transcript in their applications.",
-      source_url: sourceUrl,
-      confidence: "medium"
-    }],
+    regulated_surface_map: [{ surface_id: "RS001", feature_id: "F001", surface_token: "Content&IP", int_ext_classification: "external", basis: "transcript text", confidence: "medium", evidence_refs: [featureRef] }],
+    architecture_hints: [{ hint_id: "AH001", feature_id: "F001", hint_type: "integration", hint_value: "API", disposition: "prefill_candidate", source_url: sourceUrl, evidence_refs: [featureRef], confidence: "medium" }],
     commercial_scan: { distinct_commercial_outcomes_seen: [], mapped_core_feature_ids: ["F001"], unmapped_outcomes_due_to_insufficient_detail: [] },
     vault_feature_candidates: { baseline: {}, archetypes: {}, compliance: {} },
-    evidence: { field_evidence_refs: [], unresolved_questions: [] },
+    evidence: { field_evidence_refs: [{ field_path: "/feature_inventory/0", evidence_refs: [featureRef], basis: "speech API evidence", confidence: "high" }], unresolved_questions: [] },
     limitations: []
   };
 }
@@ -85,23 +84,12 @@ const valid = baseProfile();
 const validResult = validateTargetFeatureProfileGuardrails(valid, { evidenceBuffer, packageInput });
 assert.equal(validResult.ok, true, JSON.stringify(validResult.errors, null, 2));
 
-const reordered = baseProfile();
-reordered.feature_inventory[0].archetype_provenance[0].evidence_quote = "Samvaad connects to your systems and gets the work done. Check balances. Update records. Schedule appointments. Process payments.";
-const reorderedResult = validateTargetFeatureProfileGuardrails(reordered, { evidenceBuffer, packageInput });
-assert.equal(reorderedResult.ok, true, JSON.stringify(reorderedResult.errors, null, 2));
-assert.ok(reorderedResult.repairs.length >= 1);
-assert.ok(reorderedResult.repairs.every((repair) => repair.severity === "REPAIRABLE"));
-
 const crossPackage = baseProfile();
 crossPackage.feature_inventory[0].surface_provenance[0].source_url = crossPackageUrl;
-crossPackage.feature_inventory[0].surface_provenance[0].evidence_quote = "When you use our Product, we collect the information provided by you.";
+crossPackage.feature_inventory[0].surface_provenance[0].evidence_refs = [privacyRef];
 const crossPackageResult = validateTargetFeatureProfileGuardrails(crossPackage, { evidenceBuffer, packageInput });
 assert.equal(crossPackageResult.ok, true, JSON.stringify(crossPackageResult.errors, null, 2));
 assert.equal(crossPackageResult.errors.length, 0);
-assert.ok(crossPackageResult.warnings.some((warning) => {
-  const message = String(warning.message);
-  return message.includes("package source without stage text") || message.includes("quote exactness skipped") || message.includes("outside the current stage evidence_buffer");
-}));
 
 const legacy = baseProfile();
 legacy.product_feature_map = [{ feature_id: "legacy_1" }];
@@ -110,12 +98,11 @@ assert.equal(legacyResult.ok, true, JSON.stringify(legacyResult.errors, null, 2)
 assert.equal(legacy.product_feature_map.length, 0);
 assert.ok(legacyResult.repairs.some((repair) => repair.action === "cleared_legacy_product_feature_map"));
 
-const weakQuote = baseProfile();
-weakQuote.feature_inventory[0].evidence_quote = "Loose quote that does not exactly appear in the admitted source.";
-const weakQuoteResult = validateTargetFeatureProfileGuardrails(weakQuote, { evidenceBuffer, packageInput });
-assert.equal(weakQuoteResult.ok, true, JSON.stringify(weakQuoteResult.errors, null, 2));
-assert.ok(weakQuoteResult.warnings.some((warning) => String(warning.message).includes("passed with warning")));
-assert.ok(weakQuote.limitations.some((limitation) => String(limitation).includes("GUARDRAIL_WARNING")));
+const missingRefs = baseProfile();
+missingRefs.feature_inventory[0].evidence_refs = [];
+const missingRefsResult = validateTargetFeatureProfileGuardrails(missingRefs, { evidenceBuffer, packageInput });
+assert.equal(missingRefsResult.ok, true, JSON.stringify(missingRefsResult.errors, null, 2));
+assert.ok(missingRefsResult.warnings.some((warning) => String(warning.message).includes("deterministic quote resolution unavailable")));
 
 const wrongSource = baseProfile();
 wrongSource.feature_inventory[0].feature_source_url = "https://attacker.example/products/unknown";
@@ -140,10 +127,9 @@ console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileGuardrails",
   valid_ok: validResult.ok,
-  reordered_quote_ok: reorderedResult.ok,
-  cross_package_source_warning_count: crossPackageResult.warnings.length,
+  cross_package_ok: crossPackageResult.ok,
   legacy_alias_ok: legacyResult.ok,
-  weak_quote_warning_count: weakQuoteResult.warnings.length,
+  missing_refs_warning_count: missingRefsResult.warnings.length,
   wrong_source_error_count: wrongSourceResult.errors.length,
   linked_threat_repair_count: linkedThreatResult.repairs.length,
   missing_data_repair_count: missingDataResult.repairs.length
