@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node --check server.js && node --check src/env.js && node --check src/routes/diligenceStageRoutes.js && node --check src/routes/liveDiligenceRoutes.js && node --check src/live/liveDiligenceRunOrchestrator.js && node --check src/diligence/stageRunner.js && node --check src/diligence/stageRunnerLocked.js && node --check src/diligence/targetFeatureProfileSchemaRepair.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageSchemaValidatorLocked.js && node --check src/diligence/legalStackReviewGuardrails.js && node --check src/diligence/registryLedgerGuardrails.js && node --check src/diligence/stage9ReportAssembler.js && node --check src/handoff/stage9ToVaultHandoffAdapter.js && node --check src/report-renderer/legalExposureReportRenderer.js && npm run test:stage4-stage5-guardrails",
+    "check": "node --check server.js && node --check src/env.js && node --check src/routes/diligenceStageRoutes.js && node --check src/routes/liveDiligenceRoutes.js && node --check src/live/liveDiligenceRunOrchestrator.js && node --check src/diligence/stageRunner.js && node --check src/diligence/stageRunnerLocked.js && node --check src/diligence/adapters/sourceBundleAdapterLocked.js && node --check src/diligence/evidenceJunctionLocked.js && node --check src/diligence/adapters/targetFeatureProfileInputAdapter.js && node --check src/diligence/targetFeatureProfileSchemaRepair.js && node --check src/diligence/targetFeatureProfileGuardrailsLocked.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageSchemaValidatorLocked.js && node --check src/diligence/legalStackReviewGuardrails.js && node --check src/diligence/registryLedgerGuardrails.js && node --check src/diligence/stage9ReportAssembler.js && node --check src/handoff/stage9ToVaultHandoffAdapter.js && node --check src/report-renderer/legalExposureReportRenderer.js && npm run test:stage4-stage5-guardrails",
     "test:stage4-stage5-guardrails": "node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
@@ -26,9 +26,7 @@
     "e2e:stage4": "node scripts/e2e-stage4-target-legal-v3.mjs",
     "audit:product-sources": "node scripts/audit-product-source-discovery.mjs"
   },
-  "engines": {
-    "node": ">=20.0.0"
-  },
+  "engines": { "node": ">=20.0.0" },
   "dependencies": {
     "@google/genai": "^1.33.0",
     "cors": "^2.8.5",
