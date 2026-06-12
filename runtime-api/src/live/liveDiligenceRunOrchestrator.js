@@ -102,11 +102,10 @@ function collectSources(discovery) {
   return selected;
 }
 
-function companySourceRecords(sourceBundle) {
-  const records = asArray(sourceBundle.raw_footprint?.source_records);
-  const companyRecords = records.filter((record) => record.source_family === "company_profile");
-  const fallback = companyRecords.length ? companyRecords : records.slice(0, 2);
-  return fallback.map((record) => ({
+function stage4SourceRecords(sourceBundle, familyFilter = null) {
+  return asArray(sourceBundle.raw_footprint?.source_records)
+    .filter((record) => !familyFilter || record.source_family === familyFilter)
+    .map((record) => ({
     evidence_source_id: record.evidence_source_id,
     source_family: record.source_family,
     url: record.url,
@@ -394,16 +393,27 @@ async function buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode
   }
 
   logStage(logs, "company_profile", "running");
+  const targetProfileSources = stage4SourceRecords(sourceBundle);
+  const companyProfileSources = stage4SourceRecords(sourceBundle, "company_profile");
+  if (!targetProfileSources.length) throw new Error("No Stage 4 target profile source records available.");
   const companyStage = await runStage("company_profile", {
     target_input: targetInput,
     source_bundle_version: sourceBundle.source_bundle_version,
     source_bundle_sha256: evidenceJunction.source_bundle_sha256 || null,
     evidence_junction_version: evidenceJunction.evidence_junction_version,
-    company_profile_sources: companySourceRecords(sourceBundle),
-    input_policy: { company_family_only: true, product_feature_mapping_forbidden: true, legal_review_forbidden: true, outside_browsing_forbidden: true }
+    target_profile_sources: targetProfileSources,
+    company_profile_sources: companyProfileSources,
+    input_policy: {
+      target_profile_source_packet: true,
+      company_family_only: false,
+      product_feature_mapping_forbidden: true,
+      legal_review_forbidden: true,
+      registry_evaluation_forbidden: true,
+      outside_browsing_forbidden: true
+    }
   }, { pool: process.env.LIVE_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_COMPANY_MAX_OUTPUT_TOKENS || 4096), timeoutMs: Number(process.env.LIVE_COMPANY_TIMEOUT_MS || 60000) });
   const companyProfile = companyStage.company_profile;
-  logStage(logs, "company_profile", "complete", { company_name: companyProfile?.company_identity?.brand_name || null });
+  logStage(logs, "company_profile", "complete", { company_name: companyProfile?.identity?.brand_name || null, target_profile_sources: targetProfileSources.length, company_sources: companyProfileSources.length });
 
   logStage(logs, "target_feature_profile", "running");
   const adapterResult = buildStage5TargetFeaturePackage({
