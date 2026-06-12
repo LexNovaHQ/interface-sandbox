@@ -1,50 +1,38 @@
 export const SOURCE_DISCOVERY_MAGNA_CARTA_VERSION = "source_discovery_magna_carta_v1";
 
+const NO_SOURCE_CAP = Number.MAX_SAFE_INTEGER;
+
 export const SOURCE_DISCOVERY_FAMILIES = [
   {
     source_family: "company_profile",
     priority: 1,
     target_min: 1,
-    target_max: 5,
+    target_max: NO_SOURCE_CAP,
     label: "Company Profile",
-    mission: "Find first-party pages that establish company identity, public positioning, geography/entity clues, market posture, and broad marketing claims.",
-    page_family_plan: [
-      "Start with homepage and core company/about anchors.",
-      "Expand to first-party about, company, team, mission, customer, and case-study pages only if they reveal company identity, market posture, or product/company substance.",
-      "Reject pure contact, demo, sales, signup, auth, or generic pricing pages unless they reveal substantive company/product information."
-    ],
+    mission: "Find first-party company identity, market, customer, team, mission, and company-substance pages.",
+    page_family_plan: ["Inspect homepage/about anchors first.", "Return every first-party company-substance page found; anchors are not limits."],
     common_route_hints: ["/", "/about", "/about-us", "/company", "/team", "/mission", "/customers", "/customer-stories", "/case-studies"],
-    query_terms: ["about", "about us", "company", "team", "mission", "customers", "customer stories", "case studies", "company profile", "market", "platform"]
+    query_terms: ["about", "about us", "company", "team", "mission", "customers", "case studies", "company profile", "market", "platform"]
   },
   {
     source_family: "product_profile",
     priority: 1,
     target_min: 4,
-    target_max: 15,
+    target_max: NO_SOURCE_CAP,
     label: "Product Profile",
-    mission: "Find first-party pages that explain products, product features, models, APIs, workflows, agents, inputs, outputs, deployment modes, integrations, docs, or product capabilities.",
-    page_family_plan: [
-      "Start with product/platform/model/API/docs anchors and every first-party link those anchors lead to.",
-      "Find named products, named models, named agents, feature pages, API/reference pages, deployment pages, integration pages, and capability pages.",
-      "Prefer concrete pages that reveal features, mechanics, inputs/outputs, endpoints, workflows, deployment options, integrations, or feature tiers.",
-      "Blog, news, release, customer, case-study, pricing, and plan pages survive only if they reveal product features, product movement, feature tiers, or usage mechanics."
-    ],
+    mission: "Find first-party product, feature, model, API, docs, workflow, deployment, integration, and capability pages.",
+    page_family_plan: ["Inspect product/platform/model/API/docs anchors first.", "Return every first-party product/API/capability page found; anchors and target_max are not caps."],
     common_route_hints: ["/", "/products", "/product", "/platform", "/features", "/solutions", "/use-cases", "/models", "/agents", "/studio", "/apis", "/api", "/developers", "/developer", "/docs", "/documentation", "/reference", "/sdk", "/quickstart", "/guides", "/integrations", "/playground", "/blog", "/changelog", "/release-notes", "/updates", "/news", "/announcements", "/releases", "/customers", "/customer-stories", "/case-studies", "/pricing", "/plans"],
-    query_terms: ["product", "products", "features", "platform", "solutions", "use cases", "models", "agents", "studio", "API", "docs", "developer", "documentation", "reference", "SDK", "quickstart", "integrations", "voice", "speech", "text to speech", "speech to text", "transcription", "translation", "dubbing", "document intelligence", "OCR", "vision", "workflow agents", "deployment", "private cloud", "on prem", "VPC"]
+    query_terms: ["product", "products", "features", "platform", "solutions", "use cases", "models", "agents", "studio", "API", "docs", "developer", "documentation", "reference", "SDK", "quickstart", "integrations", "voice", "speech", "text to speech", "speech to text", "transcription", "translation", "dubbing", "document intelligence", "OCR", "workflow agents", "deployment"]
   },
   {
     source_family: "legal_profile",
     priority: 1,
     target_min: 1,
-    target_max: 12,
+    target_max: NO_SOURCE_CAP,
     label: "Legal Profile",
-    mission: "Find first-party binding legal terms and customer/user/data obligations, including Terms, Privacy, DPA, SLA, EULA, AUP, subprocessors, cookie policy, and data protection terms. Embedded legal artifacts count; if a DPA or SLA is inside Terms, return the containing Terms URL.",
-    page_family_plan: [
-      "Start with legal/footer anchors and every first-party legal link those anchors lead to.",
-      "Find Terms, Privacy, Cookie Policy, DPA, data processing, subprocessors, AUP, EULA, SLA, and legal center pages.",
-      "If legal artifacts are embedded in a containing page, return the containing first-party URL and identify the embedded artifact in the reason field.",
-      "Do not classify trust/security/compliance pages here unless they contain binding legal/customer obligations."
-    ],
+    mission: "Find first-party legal terms, privacy, DPA, SLA, EULA, AUP, subprocessors, cookies, and data-protection pages.",
+    page_family_plan: ["Inspect legal/footer anchors first.", "Return every first-party legal/customer obligation page found; embedded legal artifacts count."],
     common_route_hints: ["/legal", "/terms", "/terms-of-service", "/terms-and-conditions", "/privacy", "/privacy-policy", "/cookie-policy", "/data-protection", "/dpa", "/data-processing-addendum", "/subprocessors", "/acceptable-use", "/acceptable-use-policy", "/aup", "/eula", "/sla"],
     query_terms: ["legal", "terms", "terms of service", "terms and conditions", "privacy", "privacy policy", "cookie policy", "data protection", "DPA", "data processing addendum", "subprocessors", "acceptable use", "AUP", "EULA", "SLA"]
   },
@@ -52,49 +40,31 @@ export const SOURCE_DISCOVERY_FAMILIES = [
     source_family: "governance_profile",
     priority: 1,
     target_min: 0,
-    target_max: 12,
+    target_max: NO_SOURCE_CAP,
     label: "Governance Profile",
-    mission: "Find first-party trust, security, compliance, responsible AI, safety, governance, certifications, auditability, model/data controls, and status/incident posture pages.",
-    page_family_plan: [
-      "Start with trust, security, compliance, status, responsible-AI, governance, and safety anchors.",
-      "Find first-party pages that explain data security, enterprise security, certifications, model safety, responsible AI, governance controls, status, or auditability.",
-      "Classify subprocessor governance here only if framed as trust/security/compliance rather than legal terms.",
-      "Do not classify generic product or legal pages here unless they contain governance/security/compliance posture."
-    ],
+    mission: "Find first-party trust, security, compliance, responsible AI, safety, governance, certifications, status, and model/data-control pages.",
+    page_family_plan: ["Inspect trust/security/compliance anchors first.", "Return every first-party governance/security/compliance page found."],
     common_route_hints: ["/trust", "/trust-center", "/security", "/compliance", "/status", "/responsible-ai", "/ai-policy", "/governance", "/safety", "/model-safety", "/data-security", "/certifications", "/enterprise-security"],
     query_terms: ["trust", "trust center", "security", "compliance", "status", "responsible AI", "AI policy", "governance", "safety", "model safety", "data security", "certifications", "enterprise security", "SOC 2", "ISO"]
   }
 ];
 
-function quoteTerm(term) {
-  return term.includes(" ") ? `"${term}"` : term;
-}
-
-function routeHintQuery(domain, family) {
-  const hints = Array.isArray(family.common_route_hints) ? family.common_route_hints : [];
-  return hints.map((hint) => `site:${domain}${hint}`).join(" OR ");
-}
-
+function quoteTerm(term) { return term.includes(" ") ? `"${term}"` : term; }
+function routeHintQuery(domain, family) { return (family.common_route_hints || []).map((hint) => `site:${domain}${hint}`).join(" OR "); }
 function anchorUrlsForFamily({ normalized_origin, family }) {
   const origin = String(normalized_origin || "").replace(/\/+$/, "");
-  const hints = Array.isArray(family.common_route_hints) ? family.common_route_hints : [];
-  const anchors = [origin || null, ...hints.map((hint) => `${origin}${hint.startsWith("/") ? hint : "/" + hint}`)];
-  return [...new Set(anchors.filter(Boolean))];
+  return [...new Set([origin || null, ...(family.common_route_hints || []).map((hint) => `${origin}${hint.startsWith("/") ? hint : "/" + hint}`)].filter(Boolean))];
 }
-
-function compactTerms(terms = [], limit = 12) {
-  return terms.slice(0, limit).map(quoteTerm).join(" OR ");
-}
-
+function compactTerms(terms = [], limit = 12) { return terms.slice(0, limit).map(quoteTerm).join(" OR "); }
 function buildRetrievalIntents({ domain, companyHint, family }) {
   const routeHints = routeHintQuery(domain, family);
   const focusedTerms = compactTerms(family.query_terms, 12);
   const broadTerms = family.query_terms.map(quoteTerm).join(" OR ");
   const nameClause = companyHint ? ` OR ${companyHint}` : "";
   return [
-    { intent_id: "family_anchor_minimum", label: "Inspect minimum family anchors first", query: routeHints || `site:${domain} (${focusedTerms}${nameClause})`, instruction: "The anchor URLs are the minimum surfaces that must be inspected first. They are not limits. Everything first-party that the anchors lead to must be considered for classification." },
-    { intent_id: "family_feature_or_artifact_expansion", label: "Expand from anchors into linked first-party detail pages", query: `site:${domain} (${focusedTerms}${nameClause})`, instruction: "Find deeper first-party pages reached from the anchors or public search results. Prefer feature, product, legal, governance, or company-substance pages over generic pages." },
-    { intent_id: "free_first_party_search", label: "Free first-party search for anything missed", query: `site:${domain} (${broadTerms}${nameClause})`, instruction: "Run a compact free first-party search to catch anything not reached through anchors. Do not include third-party pages. Do not include low-value pages unless they reveal substance for the requested family." }
+    { intent_id: "family_anchor_minimum", label: "Inspect minimum family anchors first", query: routeHints || `site:${domain} (${focusedTerms}${nameClause})`, instruction: "Anchors are minimum surfaces, not limits. Consider every linked first-party page in the requested family." },
+    { intent_id: "family_feature_or_artifact_expansion", label: "Expand from anchors", query: `site:${domain} (${focusedTerms}${nameClause})`, instruction: "Find deeper first-party pages in this family." },
+    { intent_id: "free_first_party_search", label: "Free first-party search", query: `site:${domain} (${broadTerms}${nameClause})`, instruction: "Catch first-party pages not reached through anchors." }
   ];
 }
 
@@ -113,23 +83,12 @@ export function buildFamilySearchQueries({ registrable_domain, company_name = nu
   });
 }
 
-function lines(items = []) {
-  return (items || []).map((item) => `- ${item}`).join("\n");
-}
+function lines(items = []) { return (items || []).map((item) => `- ${item}`).join("\n"); }
 
 export function buildBoundedGeminiUrlDiscoveryPrompt({ primary_url, normalized_origin, registrable_domain, company_name = null, family_plan, retrieval_intent = null }) {
-  const activeIntent = retrieval_intent || { intent_id: "family_anchor_minimum", label: "Inspect minimum family anchors first", query: family_plan.query, instruction: "Inspect the family anchors and return first-party URLs for this family." };
+  const activeIntent = retrieval_intent || { intent_id: "family_anchor_minimum", label: "Inspect minimum family anchors first", query: family_plan.query, instruction: "Inspect anchors and return matching first-party URLs." };
   const attemptedQuery = String(activeIntent.query || family_plan.query).replace(/"/g, String.fromCharCode(39));
-  return `You are the Source Discovery engine for Lex Nova HQ legal architecture diligence.
-
-MAGNA CARTA SOURCE DISCOVERY RULES
-- Gemini discovers and classifies.
-- Deterministic code fetches, extracts, normalizes, deduplicates, verifies first-party status, and prepares source text.
-- Provenance reports history. Provenance never blocks a URL before classification.
-- Only four final families exist: company_profile, product_profile, legal_profile, governance_profile.
-- The anchor URLs are minimum surfaces to inspect first. They are not limits.
-- Everything first-party that an anchor leads to must be considered for classification.
-- After anchor coverage, use a compact free first-party search to catch anything missed.
+  return `You are the Source Discovery engine for Lex Nova HQ diligence.
 
 TARGET
 - primary_url: ${primary_url}
@@ -137,56 +96,49 @@ TARGET
 - registrable_domain: ${registrable_domain}
 - company_name: ${company_name || "unknown"}
 
-BOUNDARIES
+RULES
 - Return first-party URLs only.
-- Include same-domain and first-party subdomain URLs.
-- Do not include LinkedIn, Crunchbase, GitHub, app stores, news sites, social media, third-party URLs, images, CSS, JS, font files, tracking URLs, ad URLs, login-only URLs, unsafe protocols, or malformed URLs.
 - Do not invent URLs.
-- Do not summarize page contents.
-- Do not return full text.
+- Do not return non-web assets or login-only URLs.
+- Anchor URLs are minimum starting points, not limits.
+- Return every first-party URL that fits the requested source family and retrieval intent.
 
 SOURCE FAMILY
 - source_family: ${family_plan.source_family}
 - label: ${family_plan.label}
 - mission: ${family_plan.mission}
 - target_min: ${family_plan.target_min}
-- target_max_guidance: ${family_plan.target_max}
+- target_max_guidance: no artificial cap
 
 PAGE-FAMILY PLAN
 ${lines(family_plan.page_family_plan)}
 
-MINIMUM FAMILY ANCHOR URLS TO INSPECT FIRST
+ANCHORS
 ${lines(family_plan.anchor_urls)}
 
-KNOWN/COMMON ROUTE HINTS
+ROUTE HINTS
 ${lines(family_plan.common_route_hints)}
-
-ANCHOR RULE
-- The listed anchors are the minimum starting points.
-- They are not limits.
-- If a first-party anchor leads to deeper first-party pages that belong to this family, those deeper pages must be returned.
-- Do not stop at homepage/about pages when deeper product, legal, governance, or company-substance pages are visible.
 
 RETRIEVAL INTENT
 - intent_id: ${activeIntent.intent_id}
 - label: ${activeIntent.label}
 - instruction: ${activeIntent.instruction}
 
-SEARCH QUERY / RETRIEVAL HINT
+QUERY
 ${activeIntent.query}
 
-Return only valid JSON in this exact shape:
+Return only valid JSON:
 {
   "source_discovery_version": "${SOURCE_DISCOVERY_MAGNA_CARTA_VERSION}",
   "source_family": "${family_plan.source_family}",
   "retrieval_intent_id": "${activeIntent.intent_id}",
   "urls": [
-    { "url": "https://example.com/path", "reason": "short reason explaining why this URL belongs to this source family and retrieval intent", "discovery_method": "gemini_search" }
+    { "url": "https://example.com/path", "reason": "why this first-party URL belongs to this source family", "discovery_method": "gemini_search" }
   ],
   "coverage_gap": null
 }
 
-If no source is publicly found, return:
+If none are found, return:
 {
   "source_discovery_version": "${SOURCE_DISCOVERY_MAGNA_CARTA_VERSION}",
   "source_family": "${family_plan.source_family}",
