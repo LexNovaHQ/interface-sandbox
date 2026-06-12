@@ -62,8 +62,12 @@ assert.equal(ok.target_feature_profile_input.input_budget.budget_status, "FULL_P
 assert.equal(ok.target_feature_profile_input.input_budget.estimated_prompt_overhead_tokens, 30000);
 assert.ok(ok.target_feature_profile_input.input_budget.estimated_total_prompt_tokens >= 30000);
 assert.equal(ok.target_feature_profile_input.input_budget.text_truncated, false);
+assert.equal(ok.target_feature_profile_input.input_budget.source_dropping_for_budget_forbidden, true);
+assert.equal(ok.target_feature_profile_input.input_budget.max_single_source_chars, null);
 assert.equal(ok.target_feature_profile_input.adapter_policy.no_text_summary, true);
 assert.equal(ok.target_feature_profile_input.adapter_policy.no_text_compression, true);
+assert.equal(ok.target_feature_profile_input.adapter_policy.budget_guidance_not_source_selection, true);
+assert.equal(ok.target_feature_profile_input.adapter_policy.hard_budget_source_dropping_disabled, true);
 
 const guidance = buildTargetFeatureProfileInput({
   evidenceJunction,
@@ -76,23 +80,26 @@ assert.equal(guidance.target_feature_profile_input.source_bundle.evidence_buffer
 assert.equal(guidance.target_feature_profile_input.source_bundle.evidence_buffer[0].clean_text_lossless, productText);
 assert.equal(guidance.target_feature_profile_input.input_budget.excluded_sources.length, 0);
 assert.ok(guidance.target_feature_profile_input.input_budget.budget_warnings.length >= 1);
-assert.equal(guidance.target_feature_profile_input.adapter_policy.budget_guidance_not_hard_cap_by_default, true);
+assert.equal(guidance.target_feature_profile_input.adapter_policy.budget_guidance_not_source_selection, true);
 
-const fail = buildTargetFeatureProfileInput({
+const hard = buildTargetFeatureProfileInput({
   evidenceJunction,
   budget: { max_input_chars: 10000, max_estimated_tokens: 32000, max_single_source_chars: 10, prompt_overhead_tokens: 30000, enforcement_mode: "hard" }
 });
 
-assert.equal(fail.ok, false);
-assert.equal(fail.status, 413);
-assert.equal(fail.error_type, "TOKEN_BUDGET_EXCEEDED");
-assert.equal(fail.input_budget.text_truncated, false);
+assert.equal(hard.ok, true);
+assert.equal(hard.status, 200);
+assert.equal(hard.target_feature_profile_input.input_budget.enforcement_mode, "non_dropping");
+assert.equal(hard.target_feature_profile_input.input_budget.excluded_sources.length, 0);
+assert.equal(hard.target_feature_profile_input.source_bundle.evidence_buffer.length, 3);
+assert.equal(hard.target_feature_profile_input.adapter_policy.hard_budget_source_dropping_disabled, true);
 
 console.log(JSON.stringify({
   ok: true,
   test: "targetFeatureProfileInputAdapter",
   full_packet: ok.target_feature_profile_input.input_budget.budget_status,
   guidance_packet: guidance.target_feature_profile_input.input_budget.budget_status,
+  hard_packet: hard.target_feature_profile_input.input_budget.budget_status,
   estimated_total_prompt_tokens: ok.target_feature_profile_input.input_budget.estimated_total_prompt_tokens,
-  budget_failure: fail.error_type
+  source_dropping_forbidden: hard.target_feature_profile_input.input_budget.source_dropping_for_budget_forbidden
 }, null, 2));
