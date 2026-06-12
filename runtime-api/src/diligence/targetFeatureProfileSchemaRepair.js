@@ -1,191 +1,35 @@
-const CONFIDENCE = new Set(["high", "medium", "low", "unknown"]);
-const TRI_STATE = new Set(["true", "false", "unknown"]);
-const DATA_ORIGINS = new Set(["user_provided", "customer_provided", "third_party_source", "public_web", "system_generated", "unknown"]);
-const DATA_SUBJECTS = new Set(["user", "customer", "employee", "consumer", "developer", "child", "business_entity", "unknown"]);
-const DATA_CATEGORIES = new Set(["prompt", "account", "contact", "uploaded_file", "generated_output", "audio", "text", "document", "image", "video", "code", "api_payload", "payment", "usage_log", "support", "sensitive", "unknown"]);
-const AUTONOMY = new Set(["none", "draft", "recommend", "execute", "unknown"]);
-const HUMAN_REVIEW = new Set(["required", "optional", "not_visible", "unknown"]);
-const INT_EXT = new Set(["internal", "external", "both", "unknown"]);
-const HINT_TYPE = new Set(["memory", "model_provider", "cloud_host", "vector_db", "subprocessor", "integration", "unknown"]);
-const HINT_DISPOSITION = new Set(["prefill_candidate", "confirmation_only", "ignore"]);
-const SURFACES = new Set(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
-
-function norm(value) {
-  return String(value ?? "").trim().toLowerCase().replace(/[_\s-]+/g, " ");
-}
-
-function addLimitation(profile, path, reason, original, repaired) {
-  if (!profile || typeof profile !== "object") return;
-  if (!Array.isArray(profile.limitations)) profile.limitations = [];
-  const warning = `GUARDRAIL_WARNING ${path}: schema enum drift repaired before AJV {"reason":"${reason}","original":${JSON.stringify(original)},"repaired":${JSON.stringify(repaired)}}`;
-  if (!profile.limitations.includes(warning)) profile.limitations.push(warning);
-}
-
-function note(notes, profile, path, reason, original, repaired) {
-  if (original === repaired) return;
-  notes.push(`${reason}:${path}:${JSON.stringify(original)}=>${JSON.stringify(repaired)}`);
-  addLimitation(profile, path, reason, original, repaired);
-}
-
-function fromSet(value, allowed, fallback = "unknown") {
-  if (allowed.has(value)) return value;
-  const lowered = norm(value);
-  for (const item of allowed) if (norm(item) === lowered) return item;
-  return fallback;
-}
-
-function confidence(value) {
-  if (CONFIDENCE.has(value)) return value;
-  const lowered = norm(value);
-  if (lowered.includes("high")) return "high";
-  if (lowered.includes("medium")) return "medium";
-  if (lowered.includes("low")) return "low";
-  return "unknown";
-}
-
-function triState(value) {
-  if (TRI_STATE.has(value)) return value;
-  if (value === true || /^(yes|true|present|available|supported)$/i.test(String(value || "").trim())) return "true";
-  if (value === false || /^(no|false|absent|unavailable|unsupported)$/i.test(String(value || "").trim())) return "false";
-  return "unknown";
-}
-
-function dataSubject(value) {
-  if (DATA_SUBJECTS.has(value)) return value;
-  const lowered = norm(value);
-  if (lowered.includes("employee") || lowered.includes("worker") || lowered.includes("staff")) return "employee";
-  if (lowered.includes("developer")) return "developer";
-  if (lowered.includes("child") || lowered.includes("minor")) return "child";
-  if (lowered.includes("business") || lowered.includes("company") || lowered.includes("enterprise") || lowered.includes("merchant")) return "business_entity";
-  if (lowered.includes("customer") || lowered.includes("client")) return "customer";
-  if (lowered.includes("consumer")) return "consumer";
-  if (lowered.includes("end user") || lowered.includes("enduser") || lowered.includes("user")) return "user";
-  return "unknown";
-}
-
-function dataOrigin(value) {
-  if (DATA_ORIGINS.has(value)) return value;
-  const lowered = norm(value);
-  if (lowered.includes("customer") || lowered.includes("enterprise")) return "customer_provided";
-  if (lowered.includes("user")) return "user_provided";
-  if (lowered.includes("third party") || lowered.includes("external")) return "third_party_source";
-  if (lowered.includes("public") || lowered.includes("web")) return "public_web";
-  if (lowered.includes("system") || lowered.includes("generated")) return "system_generated";
-  return "unknown";
-}
-
-function dataCategory(value) {
-  if (DATA_CATEGORIES.has(value)) return value;
-  const lowered = norm(value);
-  if (lowered.includes("audio") || lowered.includes("voice") || lowered.includes("speech")) return "audio";
-  if (lowered.includes("prompt") || lowered.includes("input")) return "prompt";
-  if (lowered.includes("account")) return "account";
-  if (lowered.includes("contact") || lowered.includes("email") || lowered.includes("phone")) return "contact";
-  if (lowered.includes("upload") || lowered.includes("file")) return "uploaded_file";
-  if (lowered.includes("output") || lowered.includes("transcript") || lowered.includes("generated")) return "generated_output";
-  if (lowered.includes("document") || lowered.includes("pdf") || lowered.includes("ocr")) return "document";
-  if (lowered.includes("image") || lowered.includes("vision")) return "image";
-  if (lowered.includes("video")) return "video";
-  if (lowered.includes("code") || lowered.includes("sdk")) return "code";
-  if (lowered.includes("api") || lowered.includes("payload")) return "api_payload";
-  if (lowered.includes("payment") || lowered.includes("billing")) return "payment";
-  if (lowered.includes("usage") || lowered.includes("log") || lowered.includes("analytics")) return "usage_log";
-  if (lowered.includes("support") || lowered.includes("ticket")) return "support";
-  if (lowered.includes("sensitive") || lowered.includes("pii") || lowered.includes("biometric")) return "sensitive";
-  if (lowered.includes("text")) return "text";
-  return "unknown";
-}
-
-function surfaceToken(value) {
-  if (SURFACES.has(value)) return value;
-  const lowered = norm(value);
-  if (lowered.includes("consumer") || lowered.includes("public")) return "Consumer-Public";
-  if (lowered.includes("enterprise") || lowered.includes("private")) return "Enterprise-Private";
-  if (lowered.includes("pii") || lowered.includes("personal")) return "PII";
-  if (lowered.includes("employment") || lowered.includes("employee")) return "Employment";
-  if (lowered.includes("sensitive") || lowered.includes("biometric")) return "Sensitive/Biometric";
-  if (lowered.includes("financial") || lowered.includes("payment") || lowered.includes("loan") || lowered.includes("bank")) return "Financial";
-  if (lowered.includes("content") || lowered.includes("ip") || lowered.includes("copyright")) return "Content&IP";
-  if (lowered.includes("safety") || lowered.includes("physical")) return "Safety&Physical";
-  if (lowered.includes("infra") || lowered.includes("security")) return "Infrastructure";
-  if (lowered.includes("minor") || lowered.includes("child")) return "Minors";
-  return null;
-}
-
-function repairField(obj, key, base, notes, profile, fn, reason) {
-  if (!obj || typeof obj !== "object" || obj[key] == null) return;
-  const original = obj[key];
-  const repaired = fn(original);
-  obj[key] = repaired;
-  note(notes, profile, `${base}/${key}`, reason, original, repaired);
-}
-
-function repairDataEntry(entry, base, notes, profile) {
-  repairField(entry, "data_origin", base, notes, profile, dataOrigin, "repaired_data_origin_enum");
-  repairField(entry, "data_subject", base, notes, profile, dataSubject, "repaired_data_subject_enum");
-  repairField(entry, "data_category", base, notes, profile, dataCategory, "repaired_data_category_enum");
-  repairField(entry, "confidence", base, notes, profile, confidence, "repaired_confidence_enum");
-}
-
-export function repairTargetFeatureProfileForSchema(profile) {
-  const notes = [];
-  if (!profile || typeof profile !== "object" || Array.isArray(profile)) return { repaired: false, repair_notes: notes };
-
-  if (profile.feature_profile_version && profile.feature_profile_version !== "feature_profile_v2") {
-    const original = profile.feature_profile_version;
-    profile.feature_profile_version = "feature_profile_v2";
-    note(notes, profile, "/feature_profile_version", "repaired_feature_profile_version", original, profile.feature_profile_version);
-  }
-
-  const features = Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [];
-  features.forEach((feature, featureIndex) => {
-    if (!feature || typeof feature !== "object") return;
-    const base = `/feature_inventory/${featureIndex}`;
-    repairField(feature, "feature_role", base, notes, profile, (value) => String(value || "").toLowerCase().includes("secondary") ? "SECONDARY" : "CORE", "repaired_feature_role_enum");
-    repairField(feature, "autonomy_level", base, notes, profile, (value) => fromSet(value, AUTONOMY), "repaired_autonomy_level_enum");
-    repairField(feature, "human_review_signal", base, notes, profile, (value) => fromSet(value, HUMAN_REVIEW), "repaired_human_review_signal_enum");
-    repairField(feature, "external_action_signal", base, notes, profile, triState, "repaired_external_action_signal_enum");
-    repairField(feature, "confidence", base, notes, profile, confidence, "repaired_confidence_enum");
-
-    if (feature.delivery_channels && typeof feature.delivery_channels === "object") {
-      for (const channel of ["app", "api", "web"]) repairField(feature.delivery_channels, channel, `${base}/delivery_channels`, notes, profile, triState, `repaired_delivery_${channel}_enum`);
-    }
-
-    if (Array.isArray(feature.data_provenance)) feature.data_provenance.forEach((entry, index) => repairDataEntry(entry, `${base}/data_provenance/${index}`, notes, profile));
-    for (const listKey of ["archetype_provenance", "surface_provenance"]) {
-      if (Array.isArray(feature[listKey])) feature[listKey].forEach((entry, index) => repairField(entry, "confidence", `${base}/${listKey}/${index}`, notes, profile, confidence, "repaired_confidence_enum"));
-    }
-
-    if (Array.isArray(feature.surface_tokens)) {
-      feature.surface_tokens = feature.surface_tokens.map((token, index) => {
-        const repaired = surfaceToken(token) || token;
-        note(notes, profile, `${base}/surface_tokens/${index}`, "repaired_surface_token_enum", token, repaired);
-        return repaired;
-      }).filter((token) => SURFACES.has(token));
-    }
-  });
-
-  if (Array.isArray(profile.data_provenance_map)) profile.data_provenance_map.forEach((entry, index) => repairDataEntry(entry, `/data_provenance_map/${index}`, notes, profile));
-  if (Array.isArray(profile.regulated_surface_map)) profile.regulated_surface_map.forEach((entry, index) => {
-    const base = `/regulated_surface_map/${index}`;
-    repairField(entry, "surface_token", base, notes, profile, (value) => surfaceToken(value) || "PII", "repaired_surface_token_enum");
-    repairField(entry, "int_ext_classification", base, notes, profile, (value) => fromSet(value, INT_EXT), "repaired_int_ext_classification_enum");
-    repairField(entry, "confidence", base, notes, profile, confidence, "repaired_confidence_enum");
-  });
-  if (Array.isArray(profile.architecture_hints)) profile.architecture_hints.forEach((entry, index) => {
-    const base = `/architecture_hints/${index}`;
-    repairField(entry, "hint_type", base, notes, profile, (value) => fromSet(value, HINT_TYPE), "repaired_hint_type_enum");
-    repairField(entry, "disposition", base, notes, profile, (value) => fromSet(value, HINT_DISPOSITION, "confirmation_only"), "repaired_disposition_enum");
-    repairField(entry, "confidence", base, notes, profile, confidence, "repaired_confidence_enum");
-  });
-
-  if (profile.vault_feature_candidates && typeof profile.vault_feature_candidates === "object" && Object.prototype.hasOwnProperty.call(profile.vault_feature_candidates, "architecture")) {
-    delete profile.vault_feature_candidates.architecture;
-    if (!Array.isArray(profile.limitations)) profile.limitations = [];
-    const warning = "GUARDRAIL_WARNING /vault_feature_candidates/architecture: architecture candidates are not emitted by Stage 5 and were stripped before AJV";
-    if (!profile.limitations.includes(warning)) profile.limitations.push(warning);
-    notes.push("stripped_vault_architecture_candidates_before_schema_validation");
-  }
-
-  return { repaired: notes.length > 0, repair_notes: notes };
-}
+const CONF = new Set(["high","medium","low","unknown"]);
+const TRI = new Set(["true","false","unknown"]);
+const DATA_SUBJECTS = new Set(["user","customer","employee","consumer","developer","child","business_entity","unknown"]);
+const DATA_ORIGINS = new Set(["user_provided","customer_provided","third_party_source","public_web","system_generated","unknown"]);
+const DATA_CATEGORIES = new Set(["prompt","account","contact","uploaded_file","generated_output","audio","text","document","image","video","code","api_payload","payment","usage_log","support","sensitive","unknown"]);
+const SURFACES = new Set(["Consumer-Public","Enterprise-Private","PII","Employment","Sensitive/Biometric","Financial","Content&IP","Safety&Physical","Infrastructure","Minors"]);
+const TOP = new Set(["feature_profile_version","target_profile_ref","feature_inventory","product_feature_map","data_provenance_map","regulated_surface_map","architecture_hints","commercial_scan","vault_feature_candidates","evidence","limitations"]);
+const FEATURE = new Set(["feature_id","feature_name","feature_role","commercial_function","business_label_or_product_area","feature_description","actor_or_user","input_data","system_action","output_or_result","autonomy_level","human_review_signal","external_action_signal","delivery_channels","data_provenance","archetype_codes","archetype_labels","archetype_provenance","surface_tokens","surface_provenance","confidence","evidence_quote","feature_source_url","evidence_refs","linked_threat_ids"]);
+const DATA = new Set(["data_origin","data_subject","data_category","processing_context","storage_or_retention_signal","training_or_finetuning_signal","source_url","evidence_quote","confidence"]);
+const ARCH = new Set(["archetype_code","registry_key_detection_logic","matched_feature_behavior","evidence_quote","source_url","confidence"]);
+const SURF = new Set(["surface_token","registry_key_surface_meaning","matched_data_or_context","evidence_quote","source_url","confidence"]);
+const HINT = new Set(["hint_id","feature_id","hint_type","hint_value","disposition","source_url","evidence_quote","confidence"]);
+const FIELD_REF = new Set(["field_path","evidence_refs","basis","confidence"]);
+const obj = (v) => v && typeof v === "object" && !Array.isArray(v);
+const norm = (v) => String(v ?? "").trim().toLowerCase().replace(/[_\s-]+/g, " ");
+const str = (v, fallback = "not visible in admitted evidence") => { if (typeof v === "string" && v.trim()) return v.trim(); if (v == null || v === "") return fallback; if (typeof v === "number" || typeof v === "boolean") return String(v); try { const s = JSON.stringify(v); return s && s !== "{}" && s !== "[]" ? s : fallback; } catch { return fallback; } };
+const arr = (v) => Array.isArray(v) ? v.map((x) => str(x, "")).filter(Boolean) : (str(v, "") ? [str(v, "")] : []);
+const first = (...xs) => xs.flat().find((x) => typeof x === "string" && x.trim())?.trim() || "";
+function warn(profile, notes, path, reason, original, repaired) { if (JSON.stringify(original) === JSON.stringify(repaired)) return; notes.push(`${reason}:${path}`); if (!Array.isArray(profile.limitations)) profile.limitations = []; const line = `GUARDRAIL_WARNING ${path}: Stage 5 schema canonicalizer repaired non-critical issue before AJV ${JSON.stringify({ reason, original, repaired })}`; if (!profile.limitations.includes(line)) profile.limitations.push(line); }
+function strip(o, allowed, path, profile, notes) { if (!obj(o)) return; for (const k of Object.keys(o)) if (!allowed.has(k)) { const old = o[k]; delete o[k]; warn(profile, notes, `${path}/${k}`, "stripped_additional_property", old, null); } }
+function conf(v) { if (CONF.has(v)) return v; const x = norm(v); if (x.includes("high")) return "high"; if (x.includes("medium")) return "medium"; if (x.includes("low")) return "low"; return "unknown"; }
+function tri(v) { if (TRI.has(v)) return v; const x = norm(v); if (v === true || /yes|true|present|available|supported|enabled|live/.test(x)) return "true"; if (v === false || /no|false|absent|unavailable|unsupported|disabled/.test(x)) return "false"; return "unknown"; }
+function fromSet(v, set, fallback = "unknown") { if (set.has(v)) return v; const x = norm(v); for (const item of set) if (norm(item) === x) return item; return fallback; }
+function dataSubject(v) { if (DATA_SUBJECTS.has(v)) return v; const x = norm(v); if (/employee|worker|staff/.test(x)) return "employee"; if (/developer/.test(x)) return "developer"; if (/child|minor/.test(x)) return "child"; if (/business|company|enterprise|merchant/.test(x)) return "business_entity"; if (/customer|client/.test(x)) return "customer"; if (/consumer/.test(x)) return "consumer"; if (/end user|enduser|user/.test(x)) return "user"; return "unknown"; }
+function dataOrigin(v) { if (DATA_ORIGINS.has(v)) return v; const x = norm(v); if (/customer|enterprise|client/.test(x)) return "customer_provided"; if (/user/.test(x)) return "user_provided"; if (/third party|external/.test(x)) return "third_party_source"; if (/public|web/.test(x)) return "public_web"; if (/system|generated|model/.test(x)) return "system_generated"; return "unknown"; }
+function dataCategory(v) { if (DATA_CATEGORIES.has(v)) return v; const x = norm(v); if (/audio|voice|speech/.test(x)) return "audio"; if (/prompt|input/.test(x)) return "prompt"; if (/account/.test(x)) return "account"; if (/contact|email|phone/.test(x)) return "contact"; if (/upload|file/.test(x)) return "uploaded_file"; if (/output|transcript|generated/.test(x)) return "generated_output"; if (/document|pdf|ocr/.test(x)) return "document"; if (/image|vision/.test(x)) return "image"; if (/video/.test(x)) return "video"; if (/code|sdk/.test(x)) return "code"; if (/api|payload/.test(x)) return "api_payload"; if (/payment|billing/.test(x)) return "payment"; if (/usage|log|analytics/.test(x)) return "usage_log"; if (/support|ticket/.test(x)) return "support"; if (/sensitive|pii|biometric/.test(x)) return "sensitive"; if (/text|content|message/.test(x)) return "text"; return "unknown"; }
+function surface(v) { if (SURFACES.has(v)) return v; const x = norm(v); if (/consumer|public/.test(x)) return "Consumer-Public"; if (/enterprise|private/.test(x)) return "Enterprise-Private"; if (/pii|personal|user data/.test(x)) return "PII"; if (/employment|employee/.test(x)) return "Employment"; if (/sensitive|biometric|voiceprint/.test(x)) return "Sensitive/Biometric"; if (/financial|payment|loan|bank|credit/.test(x)) return "Financial"; if (/content|ip|copyright|transcript|document/.test(x)) return "Content&IP"; if (/safety|physical/.test(x)) return "Safety&Physical"; if (/infra|security|api|integration|system/.test(x)) return "Infrastructure"; if (/minor|child/.test(x)) return "Minors"; return null; }
+function inferSurfaces(f) { const x = norm([f.feature_name, f.commercial_function, f.feature_description, f.input_data, f.system_action, f.output_or_result].flat().join(" ")); const out = []; if (/payment|loan|bank|credit|financial/.test(x)) out.push("Financial"); if (/voice|audio|biometric|sensitive/.test(x)) out.push("Sensitive/Biometric"); if (/document|content|transcript|text|generated|output|media/.test(x)) out.push("Content&IP"); if (/api|integration|system|crm|workflow|automation/.test(x)) out.push("Infrastructure"); if (/customer|user|personal|account|contact/.test(x)) out.push("PII"); return [...new Set(out.length ? out : ["PII"])]; }
+function sourceOf(f) { return first(f.feature_source_url, (f.data_provenance || []).map((x) => x?.source_url), (f.archetype_provenance || []).map((x) => x?.source_url), (f.surface_provenance || []).map((x) => x?.source_url)); }
+function quoteOf(f) { return first(f.evidence_quote, (f.data_provenance || []).map((x) => x?.evidence_quote), (f.archetype_provenance || []).map((x) => x?.evidence_quote), (f.surface_provenance || []).map((x) => x?.evidence_quote)); }
+function fixData(e, f, profile, notes, path) { const old = obj(e) ? { ...e } : e; const d = obj(e) ? { ...e } : {}; strip(d, DATA, path, profile, notes); d.data_origin = dataOrigin(d.data_origin); d.data_subject = dataSubject(d.data_subject); d.data_category = dataCategory(d.data_category || f.input_data || f.feature_name); d.processing_context = str(d.processing_context, f.system_action || f.commercial_function); d.storage_or_retention_signal = str(d.storage_or_retention_signal); d.training_or_finetuning_signal = str(d.training_or_finetuning_signal); d.source_url = str(d.source_url || f.feature_source_url || sourceOf(f), ""); d.evidence_quote = str(d.evidence_quote || f.evidence_quote || quoteOf(f)); d.confidence = conf(d.confidence); warn(profile, notes, path, "canonicalized_data_provenance", old, d); return d; }
+function fixProv(e, keys, profile, notes, path, f, kind) { const old = obj(e) ? { ...e } : e; const p = obj(e) ? { ...e } : {}; strip(p, keys, path, profile, notes); if (kind === "archetype") { p.archetype_code = str(p.archetype_code || f.archetype_codes?.[0], "UNI"); p.registry_key_detection_logic = str(p.registry_key_detection_logic, "runtime-filled from feature behavior"); p.matched_feature_behavior = str(p.matched_feature_behavior, f.system_action || f.commercial_function); } else { p.surface_token = surface(p.surface_token) || f.surface_tokens?.[0] || "PII"; p.registry_key_surface_meaning = str(p.registry_key_surface_meaning, "runtime-filled from feature surface"); p.matched_data_or_context = str(p.matched_data_or_context, f.input_data?.join(", ") || f.commercial_function); } p.evidence_quote = str(p.evidence_quote || f.evidence_quote || quoteOf(f)); p.source_url = str(p.source_url || f.feature_source_url || sourceOf(f), ""); p.confidence = conf(p.confidence); warn(profile, notes, path, `canonicalized_${kind}_provenance`, old, p); return p; }
+function fixFeature(f, i, profile, notes) { const old = { ...f }; const x = { ...f }; strip(x, FEATURE, `/feature_inventory/${i}`, profile, notes); x.feature_id = str(x.feature_id, `F${String(i + 1).padStart(3, "0")}`); x.feature_name = str(x.feature_name || x.business_label_or_product_area || x.commercial_function, `Runtime feature ${i + 1}`); x.feature_role = norm(x.feature_role).includes("secondary") || i > 0 ? "SECONDARY" : "CORE"; x.commercial_function = str(x.commercial_function, x.feature_name); x.business_label_or_product_area = str(x.business_label_or_product_area, x.feature_name); x.feature_description = str(x.feature_description, x.commercial_function); x.actor_or_user = str(x.actor_or_user, "user"); x.input_data = arr(x.input_data); x.system_action = str(x.system_action, x.commercial_function); x.output_or_result = str(x.output_or_result); x.autonomy_level = fromSet(x.autonomy_level, new Set(["none","draft","recommend","execute","unknown"])); x.human_review_signal = fromSet(x.human_review_signal, new Set(["required","optional","not_visible","unknown"])); x.external_action_signal = tri(x.external_action_signal); x.delivery_channels = obj(x.delivery_channels) ? x.delivery_channels : {}; for (const k of Object.keys(x.delivery_channels)) if (!["app","api","web"].includes(k)) delete x.delivery_channels[k]; x.delivery_channels = { app: tri(x.delivery_channels.app), api: tri(x.delivery_channels.api), web: tri(x.delivery_channels.web) }; x.evidence_quote = str(x.evidence_quote || quoteOf(x)); x.feature_source_url = str(x.feature_source_url || sourceOf(x), ""); x.confidence = conf(x.confidence); x.evidence_refs = arr(x.evidence_refs); x.linked_threat_ids = []; const data = Array.isArray(x.data_provenance) ? x.data_provenance.filter(obj) : []; x.data_provenance = (data.length ? data : [{ source_url: x.feature_source_url, evidence_quote: x.evidence_quote }]).map((e, j) => fixData(e, x, profile, notes, `/feature_inventory/${i}/data_provenance/${j}`)); x.archetype_codes = arr(x.archetype_codes); x.archetype_labels = arr(x.archetype_labels); x.archetype_provenance = (Array.isArray(x.archetype_provenance) ? x.archetype_provenance.filter(obj) : []).map((e, j) => fixProv(e, ARCH, profile, notes, `/feature_inventory/${i}/archetype_provenance/${j}`, x, "archetype")); x.surface_tokens = [...new Set(arr(x.surface_tokens).map(surface).filter(Boolean))]; if (!x.surface_tokens.length) x.surface_tokens = inferSurfaces(x); x.surface_provenance = (Array.isArray(x.surface_provenance) ? x.surface_provenance.filter(obj) : []).map((e, j) => fixProv(e, SURF, profile, notes, `/feature_inventory/${i}/surface_provenance/${j}`, x, "surface")); warn(profile, notes, `/feature_inventory/${i}`, "canonicalized_feature", old, x); return x; }
+function fixFieldRef(e, i, profile, notes) { const old = obj(e) ? { ...e } : e; const r = obj(e) ? { ...e } : {}; strip(r, FIELD_REF, `/evidence/field_evidence_refs/${i}`, profile, notes); const refs = arr(r.evidence_refs); for (const c of [e?.evidence_source_id, e?.claim_supported, e?.source_url, e?.url]) if (typeof c === "string" && c.trim() && !refs.includes(c.trim())) refs.push(c.trim()); r.field_path = str(r.field_path, `unknown_${i + 1}`); r.evidence_refs = refs; r.basis = str(r.basis || e?.claim_supported || e?.evidence_quote, "weak/fallback evidence reference preserved as warning"); r.confidence = conf(r.confidence); warn(profile, notes, `/evidence/field_evidence_refs/${i}`, "canonicalized_field_evidence_ref", old, r); return r; }
+export function repairTargetFeatureProfileForSchema(profile) { const notes = []; if (!obj(profile)) return { repaired: false, repair_notes: notes }; if (!Array.isArray(profile.limitations)) profile.limitations = arr(profile.limitations); strip(profile, TOP, "", profile, notes); const oldVersion = profile.feature_profile_version; profile.feature_profile_version = "feature_profile_v2"; warn(profile, notes, "/feature_profile_version", "repaired_feature_profile_version", oldVersion, profile.feature_profile_version); const ref = obj(profile.target_profile_ref) ? profile.target_profile_ref : {}; profile.target_profile_ref = { target_profile_version: str(ref.target_profile_version, "target_profile_v2"), brand_name: str(ref.brand_name, "unknown"), legal_name: str(ref.legal_name, "unknown"), domain: str(ref.domain, "unknown") }; const raw = Array.isArray(profile.feature_inventory) && profile.feature_inventory.length ? profile.feature_inventory : (Array.isArray(profile.product_feature_map) ? profile.product_feature_map : []); profile.feature_inventory = raw.filter(obj).map((f, i) => fixFeature(f, i, profile, notes)); const ids = new Set(); profile.feature_inventory.forEach((f, i) => { const old = f.feature_id; if (ids.has(f.feature_id)) f.feature_id = `${f.feature_id}_${i + 1}`; ids.add(f.feature_id); warn(profile, notes, `/feature_inventory/${i}/feature_id`, "deduplicated_feature_id", old, f.feature_id); }); const aliasCount = Array.isArray(profile.product_feature_map) ? profile.product_feature_map.length : 0; profile.product_feature_map = []; if (aliasCount) warn(profile, notes, "/product_feature_map", "cleared_legacy_product_feature_map", aliasCount, 0); profile.data_provenance_map = []; profile.feature_inventory.forEach((f, i) => f.data_provenance.forEach((d, j) => profile.data_provenance_map.push({ provenance_id: `DP${String(i + 1).padStart(3, "0")}_${j + 1}`, feature_id: f.feature_id, ...fixData(d, f, profile, notes, `/data_provenance_map/${profile.data_provenance_map.length}`) }))); profile.regulated_surface_map = []; profile.feature_inventory.forEach((f) => f.surface_tokens.forEach((t) => profile.regulated_surface_map.push({ surface_id: `RS${String(profile.regulated_surface_map.length + 1).padStart(3, "0")}`, feature_id: f.feature_id, surface_token: t, int_ext_classification: "unknown", basis: "runtime-derived from canonical feature surface tokens", confidence: f.confidence || "unknown", evidence_refs: arr(f.evidence_refs) }))); profile.architecture_hints = (Array.isArray(profile.architecture_hints) ? profile.architecture_hints.filter(obj) : []).map((h, i) => { const old = { ...h }, f = profile.feature_inventory[0] || {}; strip(h, HINT, `/architecture_hints/${i}`, profile, notes); h.hint_id = str(h.hint_id, `AH${String(i + 1).padStart(3, "0")}`); h.feature_id = str(h.feature_id, f.feature_id || ""); h.hint_type = fromSet(h.hint_type, new Set(["memory","model_provider","cloud_host","vector_db","subprocessor","integration","unknown"])); h.hint_value = str(h.hint_value); h.disposition = fromSet(h.disposition, new Set(["prefill_candidate","confirmation_only","ignore"]), "confirmation_only"); h.source_url = str(h.source_url || f.feature_source_url || sourceOf(f), ""); h.evidence_quote = str(h.evidence_quote || f.evidence_quote || quoteOf(f)); h.confidence = conf(h.confidence); warn(profile, notes, `/architecture_hints/${i}`, "canonicalized_architecture_hint", old, h); return h; }); const scan = obj(profile.commercial_scan) ? profile.commercial_scan : {}; profile.commercial_scan = { distinct_commercial_outcomes_seen: arr(scan.distinct_commercial_outcomes_seen), mapped_core_feature_ids: arr(scan.mapped_core_feature_ids).filter((id) => ids.has(id)), unmapped_outcomes_due_to_insufficient_detail: arr(scan.unmapped_outcomes_due_to_insufficient_detail) }; if (!profile.commercial_scan.mapped_core_feature_ids.length) profile.commercial_scan.mapped_core_feature_ids = profile.feature_inventory.filter((f) => f.feature_role === "CORE").map((f) => f.feature_id); const vault = obj(profile.vault_feature_candidates) ? { ...profile.vault_feature_candidates } : {}; delete vault.architecture; profile.vault_feature_candidates = { baseline: obj(vault.baseline) ? vault.baseline : {}, archetypes: obj(vault.archetypes) ? vault.archetypes : {}, compliance: obj(vault.compliance) ? vault.compliance : {} }; const ev = obj(profile.evidence) ? profile.evidence : {}; profile.evidence = { field_evidence_refs: (Array.isArray(ev.field_evidence_refs) ? ev.field_evidence_refs.filter(obj) : []).map((e, i) => fixFieldRef(e, i, profile, notes)), unresolved_questions: arr(ev.unresolved_questions) }; profile.limitations = arr(profile.limitations); return { repaired: notes.length > 0, repair_notes: notes }; }
