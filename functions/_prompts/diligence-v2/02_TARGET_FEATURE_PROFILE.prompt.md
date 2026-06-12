@@ -62,6 +62,8 @@ Discovery candidates are not evidence. A URL string alone is not evidence of pag
 
 `target_feature_candidate_index.candidates[]` is a deterministic completeness ledger. It is high-recall and may include duplicates, menu labels, API/documentation surfaces, and weak candidates. Treat it as a mandatory worklist, not as final truth.
 
+If input.completion_repair_request is present, prioritize those missing candidate/source accounting items before finalizing. The repair request does not authorize browsing or new evidence. Use the same admitted source_bundle and target_feature_candidate_index only.
+
 ## Evidence citation discipline — token economy rule
 
 Full `clean_text_lossless` remains in the packet. Do not summarize, compress, or truncate it.

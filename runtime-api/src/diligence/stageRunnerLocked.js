@@ -105,6 +105,10 @@ function stageOutputWarnings(config, finalOutput) {
   return warnings;
 }
 
+function targetFeatureCompletenessRepairItems(payload = {}) {
+  return (payload.guardrail_repairs || []).filter((item) => item?.action === "rerun_missing_stage5_candidate_or_source_accounting");
+}
+
 function successPayload({ config, validation, guardrails, normalizedOutput, repair, finalOutput, runResult, promptBundle, reconciliation = null }) {
   const combined = combinedRepairMetadata(repair, guardrails);
   const guardrailWarnings = [...(guardrails.warnings || []), ...stageOutputWarnings(config, finalOutput)];
@@ -143,6 +147,35 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
   const first = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input, options, env });
   if (!first.ok) return first.payload;
+  const targetFeatureRepairItems = targetFeatureCompletenessRepairItems(first.payload);
+  if (config.output_schema_key === "targetFeatureProfile" && options.skipTargetFeatureCompletenessRepair !== true && targetFeatureRepairItems.length > 0) {
+    const repairInput = {
+      ...input,
+      completion_repair_request: {
+        repair_version: "stage5_candidate_source_accounting_repair_v1",
+        required_action: "Redo only the missing Stage 5 candidate/source accounting, then return the complete final feature_profile_v2 JSON. Do not drop prior valid features. Do not browse. Use the same admitted evidence only.",
+        repairable_guardrail_items: targetFeatureRepairItems
+      }
+    };
+    const rerun = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input: repairInput, options: { ...options, skipTargetFeatureCompletenessRepair: true }, env });
+    if (!rerun.ok) {
+      return {
+        ...first.payload,
+        target_feature_completeness_repair: {
+          rerun_failed: true,
+          rerun_error: rerun.payload?.error || rerun.payload?.error_type || "rerun_failed",
+          first_guardrail_repairs: targetFeatureRepairItems
+        }
+      };
+    }
+    return {
+      ...rerun.payload,
+      target_feature_completeness_repair: {
+        rerun_applied: true,
+        first_guardrail_repairs: targetFeatureRepairItems
+      }
+    };
+  }
   if (config.output_schema_key !== "legalStackReview" || options.skipLegalDocumentReconciliation === true || !hasUnadmittedLegalDocumentCandidates(first.finalOutput)) return first.payload;
   const reconciliation = await reconcileStage6LegalDocumentInput({ legalStackReview: first.finalOutput, legalStackReviewInput: input, timeoutMs: Number(options.legalDocumentTimeoutMs || env.STAGE6_LEGAL_DOCUMENT_TIMEOUT_MS || 15000), maxBytes: Number(options.legalDocumentMaxBytes || env.STAGE6_LEGAL_DOCUMENT_MAX_BYTES || 15 * 1024 * 1024) });
   if (!reconciliation.resolved_count) return { ...first.payload, legal_document_reconciliation: reconciliation };
