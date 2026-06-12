@@ -1,1 +1,38 @@
-{"name":"lexnova-runtime-api","version":"0.1.0","private":true,"type":"module","description":"Lex Nova HQ Cloud Run runtime API for server-side model execution.","scripts":{"start":"node server.js","dev":"node server.js","check":"node --check server.js && node --check src/env.js && node --check src/routes/diligenceStageRoutes.js && node --check src/routes/liveDiligenceRoutes.js && node --check src/live/liveDiligenceRunOrchestrator.js && node --check src/diligence/stageRunner.js && node --check src/diligence/stageRunnerLocked.js && node --check src/diligence/targetFeatureProfileSchemaRepair.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/legalStackReviewGuardrails.js && node --check src/diligence/registryLedgerGuardrails.js && node --check src/diligence/stage9ReportAssembler.js && node --check src/handoff/stage9ToVaultHandoffAdapter.js && node --check src/report-renderer/legalExposureReportRenderer.js && npm run test:stage4-stage5-guardrails","test:stage4-stage5-guardrails":"node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs","smoke:runtime":"node scripts/smoke-runtime.mjs","e2e:stage2":"node scripts/e2e-stage2-evidence-refiner.mjs","test:stage3":"node src/diligence/evidenceJunction.test.mjs","e2e:stage3":"node scripts/e2e-stage3-evidence-junction.mjs","e2e:stage4:company":"node scripts/e2e-stage4-company-profile.mjs","e2e:stage5:features":"node scripts/e2e-stage5-target-feature-profile.mjs","e2e:stage6:legal":"node scripts/e2e-stage6-legal-stack-review.mjs","e2e:stage7:registry":"node scripts/e2e-stage7-priority-runtime.mjs","e2e:stage7:registry:sample":"node scripts/e2e-stage7-registry-ledger.mjs","e2e:stage7:registry:priority":"node scripts/e2e-stage7-priority-runtime.mjs","e2e:stage8:operator":"node scripts/e2e-stage8-operator-challenge.mjs","e2e:stage9:report":"node scripts/e2e-stage9-report-assembler.mjs","render:stage9:html":"node scripts/render-stage9-html-preview.mjs","e2e:stage10:vault":"node scripts/e2e-stage10-vault-handoff.mjs","e2e:stage4":"node scripts/e2e-stage4-target-legal-v3.mjs","audit:product-sources":"node scripts/audit-product-source-discovery.mjs"},"engines":{"node":">=20.0.0"},"dependencies":{"@google/genai":"^1.33.0","cors":"^2.8.5","express":"^4.21.2","helmet":"^8.1.0"}}
+{
+  "name": "lexnova-runtime-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lex Nova HQ Cloud Run runtime API for server-side model execution.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js && node --check src/env.js && node --check src/routes/diligenceStageRoutes.js && node --check src/routes/liveDiligenceRoutes.js && node --check src/live/liveDiligenceRunOrchestrator.js && node --check src/diligence/stageRunner.js && node --check src/diligence/stageRunnerLocked.js && node --check src/diligence/targetFeatureProfileSchemaRepair.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageSchemaValidatorLocked.js && node --check src/diligence/legalStackReviewGuardrails.js && node --check src/diligence/registryLedgerGuardrails.js && node --check src/diligence/stage9ReportAssembler.js && node --check src/handoff/stage9ToVaultHandoffAdapter.js && node --check src/report-renderer/legalExposureReportRenderer.js && npm run test:stage4-stage5-guardrails",
+    "test:stage4-stage5-guardrails": "node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs",
+    "smoke:runtime": "node scripts/smoke-runtime.mjs",
+    "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
+    "test:stage3": "node src/diligence/evidenceJunction.test.mjs",
+    "e2e:stage3": "node scripts/e2e-stage3-evidence-junction.mjs",
+    "e2e:stage4:company": "node scripts/e2e-stage4-company-profile.mjs",
+    "e2e:stage5:features": "node scripts/e2e-stage5-target-feature-profile.mjs",
+    "e2e:stage6:legal": "node scripts/e2e-stage6-legal-stack-review.mjs",
+    "e2e:stage7:registry": "node scripts/e2e-stage7-priority-runtime.mjs",
+    "e2e:stage7:registry:sample": "node scripts/e2e-stage7-registry-ledger.mjs",
+    "e2e:stage7:registry:priority": "node scripts/e2e-stage7-priority-runtime.mjs",
+    "e2e:stage8:operator": "node scripts/e2e-stage8-operator-challenge.mjs",
+    "e2e:stage9:report": "node scripts/e2e-stage9-report-assembler.mjs",
+    "render:stage9:html": "node scripts/render-stage9-html-preview.mjs",
+    "e2e:stage10:vault": "node scripts/e2e-stage10-vault-handoff.mjs",
+    "e2e:stage4": "node scripts/e2e-stage4-target-legal-v3.mjs",
+    "audit:product-sources": "node scripts/audit-product-source-discovery.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@google/genai": "^1.33.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0"
+  }
+}
