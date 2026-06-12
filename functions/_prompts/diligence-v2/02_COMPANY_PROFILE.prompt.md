@@ -10,9 +10,7 @@ It is not a marketing summary. It is not a legal opinion. It is not feature mapp
 
 ## Controlling field dictionary
 
-The runtime appends `STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1` after this prompt.
-
-That dictionary controls every Stage 4 field definition, allowed derivation source, negative control, confidence rule, and absence-handling rule.
+The runtime appends `STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1` after this prompt. That dictionary controls every Stage 4 field definition, allowed derivation source, negative control, confidence rule, and absence-handling rule.
 
 If this prompt and the dictionary conflict, the dictionary controls.
 
@@ -29,28 +27,41 @@ company_profile_sources[]
 
 Treat these as the Stage 4 admitted-source packet. They may include company, product, legal, governance, trust, privacy, terms, contact, and notice material.
 
-You may use legal/governance artifacts only for identity/profile/contact/baseline extraction, including:
-
-```text
-legal name
-operator/controller identity
-entity type
-corporate status signal
-registered or notice address
-governing law / venue
-legal email
-privacy email
-contact page
-terms/privacy/subprocessor page URLs
-public product baseline
-market model
-data touchpoints
-Vault baseline candidates
-```
+You may use legal/governance artifacts only for identity/profile/contact/baseline extraction.
 
 You must not browse, search, fetch, crawl, click, open URLs, inspect web pages, use prior memory, or use outside facts.
 
 You must not use discovery-only material as proof. A URL string alone is not evidence of page contents.
+
+## Evidence citation discipline — token economy rule
+
+Full `clean_text_lossless` remains in the packet. Do not summarize, compress, or truncate it.
+
+But your output must not copy long verbatim evidence quotes.
+
+Use compact citation refs instead:
+
+```text
+SRC_001#C001
+SRC_004#C003
+```
+
+Those refs point to deterministic source/chunk positions in the source citation manifest where available.
+
+The deterministic runtime resolves exact quote text later from:
+
+```text
+evidence_ref_id → evidence_source_id + chunk_id / char range → clean_text_lossless
+```
+
+Rules:
+
+```text
+- Put supporting citation IDs in evidence_refs[].
+- Do not spend output tokens copying long quotes.
+- evidence_quote is optional legacy/runtime-resolved. Leave it empty or very short if present.
+- No evidence_refs = no PREFILL_READY candidate.
+```
 
 ## Output boundary
 
@@ -59,9 +70,7 @@ Return JSON only. Do not wrap JSON in Markdown fences. Do not add commentary bef
 The only top-level key must be:
 
 ```json
-{
-  "company_profile": {}
-}
+{ "company_profile": {} }
 ```
 
 The object inside `company_profile` must be `target_profile_v2` and must match the `companyProfile` schema exactly.
@@ -90,16 +99,7 @@ Do not add extra top-level fields.
 
 ## Required-field absence discipline
 
-Do not omit required fields.
-
-If a required fact is not visible in admitted evidence:
-
-```text
-- use the dictionary's unknown / not-visible / empty-array rule;
-- add unresolved question or limitation where material;
-- do not hallucinate a positive value;
-- do not promote weak evidence to PREFILL_READY.
-```
+Do not omit required fields. If a required fact is not visible in admitted evidence, use unknown/not-visible/empty-array rules, add unresolved questions or limitations where material, and do not promote weak evidence to PREFILL_READY.
 
 ## Vault candidate discipline
 
@@ -117,7 +117,7 @@ Every candidate leaf must include:
 }
 ```
 
-Use `PREFILL_READY` only where admitted evidence clearly supports the exact Vault field.
+Use `PREFILL_READY` only where admitted evidence clearly supports the exact Vault field and supporting citation refs are present.
 
 Use `CONFIRM` where the source suggests a plausible value but reviewer verification is required.
 
@@ -163,111 +163,8 @@ private architecture guessing
 
 ## Final JSON shape
 
-Return only:
+Return only the canonical `company_profile.target_profile_v2` structure required by schema.
 
-```json
-{
-  "company_profile": {
-    "target_profile_version": "target_profile_v2",
-    "identity": {
-      "brand_name": "",
-      "legal_name": "",
-      "trade_names": [],
-      "website": "",
-      "domain": "",
-      "entity_type": "",
-      "entity_type_family": "unknown",
-      "corporate_status_signal": "not visible in admitted evidence",
-      "operator_or_controller_signal": "not visible in admitted evidence",
-      "identity_confidence": "unknown"
-    },
-    "jurisdiction": {
-      "registered_or_notice_country": "",
-      "registered_or_notice_state": "",
-      "city": "",
-      "full_address": "",
-      "governing_law_country": "",
-      "governing_law_state": "",
-      "courts_or_venue": "",
-      "source_basis": "not visible in admitted evidence",
-      "confidence": "unknown"
-    },
-    "business_model": {
-      "business_category": "",
-      "primary_customer_type": "unknown",
-      "market_type_candidate": "unknown",
-      "sales_motion": "not visible in admitted evidence",
-      "revenue_model_signal": "not visible in admitted evidence",
-      "enterprise_or_self_serve_signal": "unknown",
-      "public_sector_signal": "not visible in admitted evidence",
-      "business_model_confidence": "unknown"
-    },
-    "market_context": {
-      "industry": "",
-      "target_geographies": [],
-      "target_languages": [],
-      "regulated_sector_hints": [],
-      "market_context_confidence": "unknown"
-    },
-    "product_baseline": {
-      "high_level_offering": "",
-      "primary_claim": "",
-      "products": [],
-      "delivery_app_candidate": "unknown",
-      "delivery_api_candidate": "unknown",
-      "beta_or_preview_signal": "not visible in admitted evidence",
-      "integration_candidates": []
-    },
-    "data_touchpoint_map": [],
-    "vault_baseline_candidates": {
-      "baseline": {
-        "company": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "entity_type": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "address": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "legal_email": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "privacy_email": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "products": { "value": [], "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "jurisdiction": {
-          "country": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "state": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] }
-        },
-        "market": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "delivery": {
-          "app": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "api": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] }
-        },
-        "revenue_model": { "value": "", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "has_beta": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "integrations": {
-          "slack": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "crm": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "stripe": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "github": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "webhooks": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-          "none": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] }
-        }
-      },
-      "compliance": {
-        "processes_pii": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "eu_users": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "ca_users": { "value": "unknown", "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] },
-        "other_regions": { "value": [], "status": "UNKNOWN", "basis": "", "confidence": "unknown", "evidence_refs": [] }
-      }
-    },
-    "pipeline_assumptions": {
-      "for_feature_map": [],
-      "for_legal_stack": [],
-      "for_registry_matching": [],
-      "for_vault": [],
-      "assumption_warnings": []
-    },
-    "evidence": {
-      "field_evidence_refs": [],
-      "unresolved_questions": []
-    },
-    "limitations": []
-  }
-}
-```
+For `product_baseline.products[]`, `integration_candidates[]`, `data_touchpoint_map[]`, and `evidence.field_evidence_refs[]`, cite `evidence_refs[]`; do not copy long quotes.
 
 JSON only. No markdown. No commentary. No code fences.
