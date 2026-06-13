@@ -104,10 +104,11 @@ Audit status:
 - Builder still leaves control/mismatch/relationship maps empty pending the controlled classification overlay layer.
 - Runtime behavior is intentionally unchanged.
 
-## 6A.R4 — Deterministic control signal helper
+## 6A.R3.5 — Deterministic control signal seed
 
 Goal:
-- Add a separate helper for deriving `document_control_signal_map[]` and `control_family_index[]` from deterministic section rows.
+- Add a separate helper for deriving seed `document_control_signal_map[]` and `control_family_index[]` from deterministic section rows.
+- Treat this helper as a deterministic seed/fallback only, not as the final model intelligence layer.
 - Keep the helper isolated until the merge/wiring layer.
 - Do not change runtime behavior yet.
 
@@ -123,6 +124,7 @@ Audit status:
 - Helper derives one controlled signal row per section/control-family pair.
 - Helper groups control signals into `control_family_index[]`.
 - Helper does not rely on model prose or evidence quotes.
+- This is deterministic seeding, not model intelligence.
 - Runtime behavior is intentionally unchanged.
 
 ## 6A.R5 — Canonical Stage 6A merge helper
@@ -143,8 +145,33 @@ Audit status:
 - Merge helper returns canonical 6A output without legacy fields and without 6B fields.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R4.1 — Intelligence input packet builder
+
+Goal:
+- Add a bounded model-overlay input packet builder.
+- Give the model deterministic document/section/source seeds plus short text windows.
+- Do not let the model create documents, sections, source refs, or locators.
+- Do not wire model execution into runtime yet.
+- Do not touch adapters, Stage 7, guardrails, or deployment.
+
+Commits in this layer:
+- `b524e76ce8179ecb0b34e0bbe5fe437e4cc641a7` — added `runtime-api/src/diligence/stage6aModelOverlayPacketBuilder.js`.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aModelOverlayPacketBuilder.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static packet-builder audit passed.
+- Packet builder exports `buildStage6AModelOverlayPacket()`.
+- Packet uses deterministic canonical 6A seeds from `buildStage6ACartography()`.
+- Packet includes `allowed_enums` for model classification boundaries.
+- Packet includes bounded `nearby_text_window` for classification only; output remains quote-free later.
+- Packet explicitly marks that the model may not create documents, sections, source refs, locators, quotes, or prose analysis.
+- Runtime behavior is intentionally unchanged.
+
 Blocked/remaining:
-- Attempted to add a builder audit script, but the GitHub write tool blocked the file creation twice. No runtime/audit wiring was committed for that script.
+- The previous attempt to add a builder audit script was blocked by the GitHub write tool. No runtime/audit wiring was committed for that script.
 
 Next layer:
-- 6A.R6 — Add a smaller audit/wiring path that the GitHub tool accepts, then wire 6A into active runtime only after source-level audit passes.
+- 6A.R4.2 — Add the bounded Stage 6A model overlay schema.
