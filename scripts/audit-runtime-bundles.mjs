@@ -1,8 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 async function readModuleObject(path, exportName) {
-  const mod = await import(`${resolve(path)}?audit=${Date.now()}`);
+  const url = pathToFileURL(resolve(path));
+  url.searchParams.set("audit", String(Date.now()));
+  const mod = await import(url.href);
   return mod[exportName];
 }
 
@@ -17,7 +20,9 @@ const validatorBundlePath = "functions/_generated/diligenceValidatorBundle.js";
 
 const promptBundle = await readModuleObject(promptBundlePath, "DILIGENCE_PROMPT_BUNDLE");
 const schemaBundle = await readModuleObject(schemaBundlePath, "DILIGENCE_SCHEMA_BUNDLE");
-const validatorBundle = await import(`${resolve(validatorBundlePath)}?audit=${Date.now()}`);
+const validatorBundleUrl = pathToFileURL(resolve(validatorBundlePath));
+validatorBundleUrl.searchParams.set("audit", String(Date.now()));
+const validatorBundle = await import(validatorBundleUrl.href);
 
 const stagePromptIds = promptBundle?.stage_prompt_ids || {};
 const prompts = promptBundle?.prompts || {};
