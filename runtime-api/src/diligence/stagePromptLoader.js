@@ -85,23 +85,67 @@ These rules supersede any older Stage 4/5 dictionary language that still asks th
 8. Completeness gaps are nonblocking runtime warnings, but they are quality/audit failures before deploy.
 `;
 
+const CANON_BLOCKS_BY_STAGE = Object.freeze({
+  company_profile: ["UNIVERSAL", "STAGE4"],
+  target_feature_profile: ["UNIVERSAL", "STAGE5"],
+  legal_stack_review: ["UNIVERSAL", "STAGE6"],
+  registry_ledger_evaluation: ["UNIVERSAL", "STAGE7_NAVIGATION"]
+});
+
 function getPrompt(promptId) {
   const prompt = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
   if (!prompt?.text) throw new Error(`Diligence prompt "${promptId}" is missing from generated prompt bundle.`);
   return prompt;
 }
 
-function stage4Stage5FieldDictionaryAppendix(stageId) {
-  if (stageId !== "company_profile" && stageId !== "target_feature_profile") return "";
-  const promptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
-  const dictionary = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
+function getPromptIfAvailable(promptId) {
+  if (!promptId) return null;
+  const prompt = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
+  return prompt?.text ? prompt : null;
+}
+
+function extractCanonBlock(dictionaryText, blockName) {
+  const start = `<!-- CANON:${blockName}:START -->`;
+  const end = `<!-- CANON:${blockName}:END -->`;
+  const startIndex = dictionaryText.indexOf(start);
+  const endIndex = dictionaryText.indexOf(end);
+  if (startIndex < 0 || endIndex < 0 || endIndex <= startIndex) return "";
+  return dictionaryText.slice(startIndex + start.length, endIndex).trim();
+}
+
+function getCanonDictionaryPrompt() {
+  const canonicalPromptId = DILIGENCE_PROMPT_BUNDLE.diligence_canon_field_dictionary_prompt_id || "diligence_canon_field_dictionary";
+  const canonical = getPromptIfAvailable(canonicalPromptId);
+  if (canonical) return { prompt: canonical, mode: "canonical" };
+
+  const legacyPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+  const legacy = getPromptIfAvailable(legacyPromptId);
+  if (legacy) return { prompt: legacy, mode: "legacy_stage4_stage5" };
+
+  return { prompt: null, mode: "missing" };
+}
+
+function canonFieldDictionaryAppendix(stageId) {
+  const blockNames = CANON_BLOCKS_BY_STAGE[stageId];
+  if (!blockNames?.length) return "";
+
+  const { prompt: dictionary, mode } = getCanonDictionaryPrompt();
   if (!dictionary?.text) return "";
-  return `\n\n---STAGE_4_5_CANON_FIELD_DICTIONARY---\n\n${dictionary.text.trim()}`;
+
+  if (mode === "legacy_stage4_stage5") {
+    if (stageId !== "company_profile" && stageId !== "target_feature_profile") return "";
+    return `\n\n---LEGACY_STAGE_4_5_CANON_FIELD_DICTIONARY_FALLBACK---\n\n${dictionary.text.trim()}`;
+  }
+
+  const sections = blockNames.map((blockName) => extractCanonBlock(dictionary.text, blockName)).filter(Boolean);
+  if (!sections.length) return "";
+
+  return `\n\n---DILIGENCE_CANON_FIELD_DICTIONARY---\n\n${sections.join("\n\n---\n\n")}`;
 }
 
 function runtimePromptAppendixFor(stageId) {
   const parts = [];
-  const fieldDictionary = stage4Stage5FieldDictionaryAppendix(stageId);
+  const fieldDictionary = canonFieldDictionaryAppendix(stageId);
   if (fieldDictionary) parts.push(fieldDictionary);
   if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES);
   if (stageId === "legal_stack_review") parts.push(LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES);
@@ -122,17 +166,18 @@ export function loadDiligencePrompt(stageId) {
   if (runtimeAppendix) promptParts.push(runtimeAppendix);
   if (stageConfig.runtime_instruction) promptParts.push("\n\n---STAGE_CONTEXT---\n\n", stageConfig.runtime_instruction.trim());
   const combinedPrompt = promptParts.join("");
+  const canonicalPromptId = DILIGENCE_PROMPT_BUNDLE.diligence_canon_field_dictionary_prompt_id || "diligence_canon_field_dictionary";
+  const canonicalDictionary = getPromptIfAvailable(canonicalPromptId);
+  const legacyPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+  const legacyDictionary = getPromptIfAvailable(legacyPromptId);
   return {
     stage_id: normalizedStageId,
     prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
     bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
     shared_prompt: { prompt_id: sharedPrompt.prompt_id, file_name: sharedPrompt.file_name, path: sharedPrompt.path, sha256: sharedPrompt.sha256, characters: sharedPrompt.characters },
     stage_prompt: { prompt_id: stagePrompt.prompt_id, file_name: stagePrompt.file_name, path: stagePrompt.path, sha256: stagePrompt.sha256, characters: stagePrompt.characters },
-    stage4_stage5_field_dictionary: normalizedStageId === "company_profile" || normalizedStageId === "target_feature_profile" ? (() => {
-      const promptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
-      const dictionary = DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId];
-      return dictionary ? { prompt_id: dictionary.prompt_id, file_name: dictionary.file_name, path: dictionary.path, sha256: dictionary.sha256, characters: dictionary.characters } : null;
-    })() : null,
+    canon_field_dictionary: canonicalDictionary ? { prompt_id: canonicalDictionary.prompt_id, file_name: canonicalDictionary.file_name, path: canonicalDictionary.path, sha256: canonicalDictionary.sha256, characters: canonicalDictionary.characters } : null,
+    legacy_stage4_stage5_field_dictionary: legacyDictionary ? { prompt_id: legacyDictionary.prompt_id, file_name: legacyDictionary.file_name, path: legacyDictionary.path, sha256: legacyDictionary.sha256, characters: legacyDictionary.characters } : null,
     combined_prompt: combinedPrompt,
     combined_characters: combinedPrompt.length
   };
@@ -148,7 +193,10 @@ export function assertDiligencePromptBundleReady() {
     const prompt = promptId ? DILIGENCE_PROMPT_BUNDLE.prompts?.[promptId] : null;
     if (!prompt?.text) missing.push(`stage:${stageId}`);
   }
-  const dictionaryPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
-  if (!DILIGENCE_PROMPT_BUNDLE.prompts?.[dictionaryPromptId]?.text) missing.push("stage4_stage5_field_dictionary");
-  return missing.length ? { ok: false, missing } : { ok: true, prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root, generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at };
+  const canonicalPromptId = DILIGENCE_PROMPT_BUNDLE.diligence_canon_field_dictionary_prompt_id || "diligence_canon_field_dictionary";
+  const legacyPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
+  const hasCanonicalDictionary = Boolean(DILIGENCE_PROMPT_BUNDLE.prompts?.[canonicalPromptId]?.text);
+  const hasLegacyDictionary = Boolean(DILIGENCE_PROMPT_BUNDLE.prompts?.[legacyPromptId]?.text);
+  if (!hasCanonicalDictionary && !hasLegacyDictionary) missing.push("diligence_canon_field_dictionary_or_legacy_stage4_stage5_field_dictionary");
+  return missing.length ? { ok: false, missing } : { ok: true, prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root, generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at, canon_dictionary: hasCanonicalDictionary ? canonicalPromptId : legacyPromptId };
 }
