@@ -16,6 +16,7 @@ const PROMPT_FILES = Object.freeze({
   registry_ledger_evaluation: { root: promptRoot, file: "04_REGISTRY_LEDGER_EVALUATION.prompt.md", path: "functions/_prompts/diligence-v2/04_REGISTRY_LEDGER_EVALUATION.prompt.md" },
   operator_challenge: { root: promptRoot, file: "05_OPERATOR_CHALLENGE.prompt.md", path: "functions/_prompts/diligence-v2/05_OPERATOR_CHALLENGE.prompt.md" },
   final_compiler: { root: promptRoot, file: "06_FINAL_COMPILER.prompt.md", path: "functions/_prompts/diligence-v2/06_FINAL_COMPILER.prompt.md" },
+  diligence_canon_field_dictionary: { root: repoRoot, file: "docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md", path: "docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md" },
   stage4_stage5_field_dictionary: { root: repoRoot, file: "docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md", path: "docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md" }
 });
 
@@ -59,6 +60,7 @@ async function main() {
     prompt_root: "functions/_prompts/diligence-v2",
     shared_prompt_id: "shared_system_preamble",
     stage_prompt_ids: STAGE_PROMPT_IDS,
+    diligence_canon_field_dictionary_prompt_id: "diligence_canon_field_dictionary",
     stage4_stage5_field_dictionary_prompt_id: "stage4_stage5_field_dictionary",
     prompts
   };
