@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
 import { buildStage6AModelOverlayPacket } from "./stage6aModelOverlayPacketBuilder.js";
@@ -12,6 +13,8 @@ const DEFAULT_OVERLAY_PROMPT_PATH = resolve(
 );
 
 async function readDefaultOverlayPrompt(promptPath = DEFAULT_OVERLAY_PROMPT_PATH) {
+  const bundledPrompt = DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_model_overlay?.text;
+  if (bundledPrompt) return bundledPrompt;
   return readFile(promptPath, "utf8");
 }
 
