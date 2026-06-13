@@ -2,15 +2,21 @@
 
 ## Binding update
 
-This spine now incorporates the locked Stage 4 / Stage 5 canon.
+This spine now incorporates the locked Diligence Canon Field Dictionary.
 
-For Stage 4 and Stage 5, the controlling field dictionary is:
+The controlling runtime dictionary is:
+
+```text
+docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
+```
+
+The previous Stage 4 / Stage 5 dictionary is retained as migration history and compatibility fallback:
 
 ```text
 docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md
 ```
 
-The supremacy addendum is:
+The supremacy addendum remains:
 
 ```text
 docs/contracts/STAGE4_STAGE5_CANON_SUPERSEDES_SPINE_v1.md
@@ -18,20 +24,22 @@ docs/contracts/STAGE4_STAGE5_CANON_SUPERSEDES_SPINE_v1.md
 
 If any older spine language, runtime note, archive, prompt, schema bundle, or fixture treats `target_profile`, `primary_product`, or `product_feature_map[]` as canonical, it is superseded.
 
+If any older Stage 6 language treats legal-stack review as only a five-document prose/redline report, it is superseded by the Stage 6 block in the Diligence Canon Field Dictionary.
+
 ---
 
 ## Canonical pipeline
 
 ```text
 0.   Source Collector
-0.5  Evidence Refiner                      → source_bundle
-4.   Canonical Target Profile              → company_profile wrapper containing target_profile_v2
-5.   Product Function / Feature Inventory   → target_feature_profile wrapper containing feature_profile_v2
-6.   Legal Stack Review                    → legal_stack_review
-7.   Registry Ledger                       → registry_evaluation_ledger[]
-8.   Operator Challenge                    → operator_challenge_gate + corrected_ledger_entries[]
-9.   Final Compiler                        → compiler_output
-5B.  Deterministic Backend Assembler        → vault_prefill_suggestions + assembly_handoff + handoff_envelope
+0.5  Evidence Refiner                                      → source_bundle
+4.   Canonical Target Profile                              → company_profile wrapper containing target_profile_v2
+5.   Product Function / Feature Inventory                  → target_feature_profile wrapper containing feature_profile_v2
+6.   Legal Stack + Data Provenance Navigation Layer        → legal_stack_review wrapper containing legal_stack_review_v2
+7.   Registry Ledger                                       → registry_evaluation_ledger[]
+8.   Operator Challenge                                    → operator_challenge_gate + corrected_ledger_entries[]
+9.   Final Compiler                                        → compiler_output
+5B.  Deterministic Backend Assembler                       → vault_prefill_suggestions + assembly_handoff + handoff_envelope
 ```
 
 ---
@@ -111,6 +119,93 @@ Stage 5 must not rewrite Stage 4 identity or evaluate registry threat rows.
 
 ---
 
+## Stage 6 canon
+
+Runtime output key remains `legal_stack_review` for compatibility.
+
+Canonical internal version:
+
+```text
+legal_stack_review_v2
+```
+
+Stage 6 role:
+
+```text
+Legal Stack + Data Provenance Navigation Layer
+```
+
+Stage 6 owns:
+
+```text
+legal_document_cartography
+  legal_document_inventory[]
+  legal_document_index[]
+  document_relationship_map[]
+  document_control_signal_map[]
+  document_mismatch_signal_map[]
+  legal_stack_summary_signals
+  legal_stack_limitations[]
+
+data_provenance_profile
+  data_flow_profile[]
+  profile_summary_signals
+  data_profile_limitations[]
+
+stage7_navigation_index
+  feature_to_data_flow_index[]
+  feature_to_document_section_index[]
+  control_family_index[]
+  data_signal_index[]
+  document_source_locator_index[]
+  absence_unknown_index[]
+  fallback_source_packet[]
+```
+
+Stage 6 helps Stage 7 navigate. It does not decide Stage 7.
+
+Stage 6 must not emit:
+
+```text
+threat_status
+triggered_threat_ids
+Hunter Trigger decisions
+registry final_status values
+candidate control gaps
+recommended controls
+missing required clauses
+DPDP/GDPR/CCPA compliance verdicts
+Vault prefill
+Vault handoff
+legal advice
+```
+
+Stage 7 still reads the underlying source/document text line-by-line when applying Hunter Trigger logic.
+
+---
+
+## Stage 7 boundary
+
+Stage 7 receives Stage 6 maps as navigation handles only.
+
+Allowed Stage 7 use:
+
+```text
+Use Stage 6 refs to find relevant source/document text faster.
+Then apply the supplied registry row's Hunter Trigger logic line-by-line against the underlying source bundle.
+```
+
+Forbidden Stage 7 shortcut:
+
+```text
+Stage 6 says not_visible -> automatically TRIGGERED
+Stage 6 says visible -> automatically CONTROLLED
+Stage 6 data profile has personal_data_visible -> automatically PRV threat triggered
+Stage 6 legal stack has DPA visible -> automatically PRV threat controlled
+```
+
+---
+
 ## Blocking policy
 
 Only critical unrecoverable errors block runtime.
@@ -123,6 +218,8 @@ For Stage 5, blockers are limited to:
 3. Third-party / invented / malformed / non-package / non-first-party source contamination.
 4. Output is too structurally corrupt to canonicalize.
 ```
+
+For Stage 6, the Layer 0 contract does not change runtime blocking. Stage 6 schema/guardrail updates happen only in later layers.
 
 Everything else is REPAIRABLE or WARNING.
 
@@ -144,6 +241,8 @@ vault_confirmation_questions
 ```
 
 Node 5B must not scrape broad report prose, registry boilerplate, case-law examples, or private architecture guesses to create Vault facts.
+
+Stage 6 canonical maps may become a later approved input to post-Stage-7 synthesis, but Layer 0 does not authorize Vault prefill from Stage 6.
 
 ---
 
