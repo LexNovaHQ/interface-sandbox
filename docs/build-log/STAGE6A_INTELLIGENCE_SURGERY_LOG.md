@@ -91,6 +91,20 @@ Audit:
 - Runner returns packet/model/cartography summaries for later audit.
 - Runner is isolated and not wired into active Stage 6 route, adapter, guardrail, Stage 7, deploy, or live runtime.
 
+## 6A.R6 — Static intelligence path audit
+
+Commits:
+- `7e3177ca57e7b3923020d8ff465211b457409002` — `runtime-api/scripts/audit-stage6a-intelligence-path.mjs`
+- `0e768abd32b1104a4c26f64174e621b1b6c3a55f` — added `audit:stage6a:intelligence` script name.
+- `5ccf8517c6c5b04d57e3e86dd7a15342fe527b6f` — repaired accidental dependency drift so only the script addition remains.
+
+Audit:
+- Static file audit pass.
+- Script exercises deterministic packet builder, overlay normalizer, and canonical merge with synthetic source/feature input.
+- Script asserts inventory, section index, control map, feature-section index, control-family index, and locator index are populated.
+- Script asserts legacy Stage 6 fields and 6B fields do not leak into canonical 6A.
+- Script is local/CI only and does not call Gemini.
+
 ## Current active-runtime status
 
 - Active Stage 6 runtime behavior is intentionally unchanged.
@@ -101,4 +115,4 @@ Audit:
 
 ## Next layer
 
-6A.R6 — Add a small local/CI audit script that exercises deterministic spine + synthetic normalized overlay without needing live model keys. This should prove the merge/normalizer path before any runtime wiring.
+6A.R6.1 — Run/verify the static intelligence audit in CI/local context if possible, then 6A.R7 can wire the isolated 6A path into a dedicated audit route/script before any live Stage 6 replacement.
