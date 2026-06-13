@@ -16,6 +16,7 @@ Read these before editing any stage prompt:
 
 ```text
 docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md
+docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md
 docs/contracts/NODE_5B_DETERMINISTIC_ASSEMBLER_CONTRACT_v1.md
@@ -23,30 +24,51 @@ data/runtime/registry_key.runtime.json
 data/runtime/registry.runtime.json
 ```
 
-For Stage 4 and Stage 5, the locked canon is:
+The controlling active dictionary is:
+
+```text
+docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
+```
+
+The older Stage 4/5 dictionary is retained as migration history and compatibility fallback. If any older prompt/doc/schema conflicts with the active Diligence Canon Field Dictionary, the active dictionary controls.
+
+## Locked stage canon
 
 ```text
 Stage 4 = target_profile_v2
 Stage 5 = feature_profile_v2
 Stage 5 canonical features = feature_inventory[]
+Stage 6 = legal_stack_review wrapper containing legal_stack_review_v2
+Stage 6 role = Legal Stack + Data Provenance Navigation Layer
 product_feature_map[] = legacy compatibility only
 primary_product = legacy language only
 ```
 
-If any older prompt/doc/schema conflicts with `STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md`, the Stage 4/5 dictionary controls.
+## Runtime dictionary slicing
+
+The runtime prompt loader must append only the relevant dictionary blocks:
+
+```text
+company_profile              -> UNIVERSAL + STAGE4
+target_feature_profile       -> UNIVERSAL + STAGE5
+legal_stack_review           -> UNIVERSAL + STAGE6
+registry_ledger_evaluation   -> UNIVERSAL + STAGE7_NAVIGATION
+```
+
+Do not append the full dictionary to every prompt.
 
 ## Pipeline ownership
 
 ```text
-0.   Source Collector                         client / browser / source runtime
-0.5  Evidence Refiner                         Gemini / runtime API
-4.   Canonical Target Profile                 Gemini / runtime API
-5.   Product Function / Feature Inventory      Gemini / runtime API
-6.   Legal Stack + Redline                    Gemini / runtime API
-7.   Registry Ledger                          Gemini / runtime API, batched
-8.   Operator Challenge                       Gemini / runtime API, merged ledger only
-9.   Final Compiler                           Gemini / runtime API
-5B.  Deterministic Backend Assembler           backend only, no model
+0.   Source Collector                                      client / browser / source runtime
+0.5  Evidence Refiner                                      Gemini / runtime API
+4.   Canonical Target Profile                              Gemini / runtime API
+5.   Product Function / Feature Inventory                  Gemini / runtime API
+6.   Legal Stack + Data Provenance Navigation Layer        Gemini / runtime API
+7.   Registry Ledger                                       Gemini / runtime API, batched
+8.   Operator Challenge                                    Gemini / runtime API, merged ledger only
+9.   Final Compiler                                        Gemini / runtime API
+5B.  Deterministic Backend Assembler                       backend only, no model
 ```
 
 Only collection runs without a model key. Every Gemini stage runs server-side.
@@ -59,7 +81,7 @@ Only collection runs without a model key. Every Gemini stage runs server-side.
 | 01 | `01_EVIDENCE_REFINER.prompt.md` | Convert collected public material into admitted evidence | `source_bundle` |
 | 02A | `02_COMPANY_PROFILE.prompt.md` | Canonical identity, jurisdiction, market, baseline Vault candidates | `company_profile` wrapper containing `target_profile_v2` |
 | 02B | `02_TARGET_FEATURE_PROFILE.prompt.md` | Atomic feature/function inventory, data provenance, archetype/surface provenance | `target_feature_profile` wrapper containing `feature_profile_v2` |
-| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Review visible public legal/governance stack against Stage 4/5 canon | `legal_stack_review` |
+| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Legal document cartography + data provenance navigation layer | `legal_stack_review` wrapper containing `legal_stack_review_v2` |
 | 04 | `04_REGISTRY_LEDGER_EVALUATION.prompt.md` | Evaluate supplied registry rows under Hunter Logic Gate | `registry_evaluation_ledger[]`, `batch_warnings[]` |
 | 05 | `05_OPERATOR_CHALLENGE.prompt.md` | Challenge merged ledger for false negatives and bad exclusions | `operator_challenge_gate`, `corrected_ledger_entries[]` |
 | 06 | `06_FINAL_COMPILER.prompt.md` | Compile post-challenge ledger into compiler output | `compiler_output` |
@@ -147,7 +169,7 @@ Core rules:
 - do not emit legal-stack review, registry statuses, Vault prefill, or handoff fields
 ```
 
-## Stage 03 — Legal Stack Review
+## Stage 03 — Legal Stack + Data Provenance Navigation Layer
 
 Input:
 
@@ -158,16 +180,30 @@ source_bundle + target_profile_v2 + feature_profile_v2
 Output:
 
 ```text
-legal_stack_review
+legal_stack_review wrapper containing legal_stack_review_v2
+```
+
+Canonical zones:
+
+```text
+6A legal_document_cartography
+6B data_provenance_profile
+stage7_navigation_index
 ```
 
 Core rules:
 
 ```text
-- legal_stack[] must contain ToS, Privacy Policy, DPA, AUP, SLA
-- absent docs use public-footprint absence language
-- review public document stack against product behavior without legal advice
-- no registry status assignment
+- Stage 6 is a navigation/indexing layer for Stage 7
+- 6A maps legal/control documents, sections, headings, annexures, schedules, relationships, controls, mismatches, and limitations
+- 6B maps one row per data flow using machine-readable data/privacy/control signals
+- canonical 6A and 6B are quote-free
+- use refs/IDs/source locators, not prose quotes
+- do not emit candidate control gaps
+- do not emit Hunter Trigger decisions
+- do not emit registry final_status values
+- do not emit DPDP/GDPR/CCPA compliance verdicts
+- do not emit Vault prefill or handoff fields
 ```
 
 ## Stage 04 — Registry Ledger Evaluation
@@ -195,6 +231,17 @@ Core rules:
 - batch_warnings[] are strings only
 - UNI rows are never skipped merely because of archetype mismatch
 - final status is deterministic from gate/trigger/exclude logic
+- Stage 6 maps are navigation handles only
+- Stage 7 still reads the underlying source/document text line-by-line before applying Hunter Trigger logic
+```
+
+Forbidden Stage 7 shortcut:
+
+```text
+Stage 6 says not_visible -> automatically TRIGGERED
+Stage 6 says visible -> automatically CONTROLLED
+Stage 6 data profile has personal_data_visible -> automatically PRV threat triggered
+Stage 6 legal stack has DPA visible -> automatically PRV threat controlled
 ```
 
 ## Stage 05 — Operator Challenge
