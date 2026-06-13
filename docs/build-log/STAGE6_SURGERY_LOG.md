@@ -170,8 +170,31 @@ Audit status:
 - Packet explicitly marks that the model may not create documents, sections, source refs, locators, quotes, or prose analysis.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R4.2 — Bounded model overlay schema
+
+Goal:
+- Add an intermediate schema for the model overlay only.
+- Keep it separate from final Stage 6A output schema.
+- Force the model overlay into controlled rows that reference existing deterministic IDs.
+- Do not wire it into runtime yet.
+
+Commits in this layer:
+- `58ac47456490d21f0d6816f907993b804b90c4d0` — added `data/schemas/stage6aModelOverlay.schema.json`.
+
+Files changed:
+- `data/schemas/stage6aModelOverlay.schema.json`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static overlay-schema audit passed.
+- Schema requires `stage6a_model_overlay_version`, section classification, document relationship, document control, document mismatch, feature-section overlay, and overlay limitations arrays.
+- Schema uses `additionalProperties: false` at root and item levels.
+- Schema contains enums for section functions, control families, relationship types, mismatch types, reference types, basis codes, signals, and confidence.
+- Schema has no quote/prose/legal-conclusion fields.
+- Runtime behavior is intentionally unchanged.
+
 Blocked/remaining:
 - The previous attempt to add a builder audit script was blocked by the GitHub write tool. No runtime/audit wiring was committed for that script.
 
 Next layer:
-- 6A.R4.2 — Add the bounded Stage 6A model overlay schema.
+- 6A.R4.3 — Add the bounded Stage 6A model overlay prompt.
