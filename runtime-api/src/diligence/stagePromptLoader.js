@@ -1,4 +1,4 @@
-import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 
 const LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES = `

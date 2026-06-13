@@ -23,6 +23,10 @@ Do not append the full dictionary to every prompt. Stage slices prevent token wa
 
 # UNIVERSAL CANON
 
+## Canonical object
+
+A canonical object is the structured stage-owned JSON object emitted under the runtime output key for that stage. Canonical objects use stable refs, IDs, enums, short labels, and short phrases instead of long prose where possible.
+
 ## Universal derivation rules
 
 | Rule | Requirement |
@@ -64,6 +68,7 @@ Canonical outputs should use handles rather than repeating source text where pos
 
 ```text
 source_record_ref
+source_url
 doc_id
 section_id
 section_path
@@ -73,7 +78,7 @@ flow_id
 control_signal_id
 ```
 
-Stage 6 canonical outputs are quote-free. Quotes remain in source/evidence artifacts or later report rendering, not in Stage 6 canonical maps.
+Evidence quotes/excerpts belong in source/evidence artifacts, not Stage 6 canon. Stage 6 canonical outputs are quote-free. Quotes remain in source/evidence artifacts or later report rendering, not in Stage 6 canonical maps.
 
 <!-- CANON:UNIVERSAL:END -->
 
@@ -260,8 +265,11 @@ candidate control gaps
 recommended controls
 missing required clauses
 DPDP/GDPR/CCPA compliance verdicts
+compliance verdicts
+Vault questions
 Vault prefill
 Vault handoff
+HTML/report narrative
 legal advice
 ```
 
