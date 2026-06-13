@@ -59,5 +59,28 @@ Audit status:
 - The Stage 6A prompt contract explicitly forbids legacy fields and 6B fields.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R2 — Deterministic source inventory builder
+
+Goal:
+- Add a pure deterministic builder for Stage 6A document/source inventory.
+- Do not wire it into runtime yet.
+- Do not touch adapters.
+- Preserve current active Stage 6 behavior while creating the deterministic spine module.
+
+Commits in this layer:
+- `e4dd0d727b5139dbc2c0a47e7417960c46f200fb` — added `runtime-api/src/diligence/stage6aLegalCartographyBuilder.js`.
+- `59741f716a0d3ac992a50bb262b764310f4b1d23` — fixed status page classification in the builder.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aLegalCartographyBuilder.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static source audit passed.
+- Builder reads source records from raw source bundle, evidence junction packet, or Stage 6 adapter evidence/artifact inventories.
+- Builder deterministically classifies admitted legal/governance sources into `legal_document_inventory[]`.
+- Builder creates canonical `doc_id`, `doc_type`, `doc_family`, `source_record_ref`, `source_url`, and visibility/access statuses without model judgment.
+- Builder does not modify active adapters or runtime execution.
+
 Next layer:
-- 6A.R2 — Add deterministic Stage 6A source inventory builder.
+- 6A.R3 — Add deterministic Stage 6A section index and source locator builder.
