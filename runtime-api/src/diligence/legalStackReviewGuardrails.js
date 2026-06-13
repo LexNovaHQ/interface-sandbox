@@ -2,7 +2,35 @@ const DOCUMENT_ORDER = ["ToS", "Privacy Policy", "DPA", "AUP", "SLA"];
 const DOCUMENT_TYPES = new Set(DOCUMENT_ORDER);
 const EVIDENCE_STATUSES = new Set(["INGESTED", "ABSENT", "ACCESS_FAILED", "INSUFFICIENT"]);
 const REDLINE_TYPES = new Set(["QUOTE_VS_QUOTE", "CLAIM_VS_ABSENCE", "STACK_VS_REALITY"]);
+const STAGE6A_REQUIRED_CARTOGRAPHY_ARRAYS = [
+  "legal_document_inventory",
+  "legal_document_index",
+  "document_relationship_map",
+  "document_control_signal_map",
+  "document_mismatch_signal_map",
+  "legal_stack_limitations"
+];
+const STAGE6A_REQUIRED_NAVIGATION_ARRAYS = [
+  "feature_to_document_section_index",
+  "control_family_index",
+  "document_source_locator_index",
+  "absence_unknown_index",
+  "fallback_source_packet"
+];
+const FORBIDDEN_CANONICAL_CARTOGRAPHY_KEYS = new Set([
+  "quote",
+  "evidence_quote",
+  "excerpt_text",
+  "excerpt",
+  "contradicts",
+  "false_belief_note",
+  "coverage_note",
+  "narrative",
+  "explanation",
+  "analysis"
+]);
 const FORBIDDEN_KEYS = new Set([
+  "data_provenance_profile",
   "registry_ledger",
   "registry_evaluation",
   "final_status",
@@ -15,6 +43,8 @@ const FORBIDDEN_KEYS = new Set([
   "vault_confirmation_questions",
   "vault_prefill_suggestions",
   "vault_payload",
+  "feature_to_data_flow_index",
+  "data_signal_index",
   "html"
 ]);
 const FORBIDDEN_STATUSES = new Set(["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"]);
@@ -46,6 +76,7 @@ function walk(value, errors, warnings, path = "") {
   }
 }
 function nonEmptyString(value) { return typeof value === "string" && value.trim().length > 0; }
+function isObject(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
 function normalizeUrl(value) { try { const url = new URL(value); url.hash = ""; if ((url.pathname || "") !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/"; return url.toString(); } catch { return String(value || "").trim(); } }
 function evidenceUrls(evidenceBuffer = []) { const urls = new Set(["N/A", "manual_text"]); for (const record of Array.isArray(evidenceBuffer) ? evidenceBuffer : []) { for (const value of [record?.source_url, record?.final_url, record?.url]) { if (typeof value === "string" && value.trim()) { urls.add(value.trim()); urls.add(normalizeUrl(value)); } } } return urls; }
 function legalDocumentUrlIsAdmitted(documentUrl, admittedUrls) { return admittedUrls.has(documentUrl) || admittedUrls.has(normalizeUrl(documentUrl)); }
@@ -61,6 +92,74 @@ function downgradeUnadmittedLegalDocument(doc, warnings, base) {
   doc.misses = [...new Set([...(Array.isArray(doc.misses) ? doc.misses : []), UNADMITTED_DOCUMENT_NOTE, emittedUrl ? `Unadmitted legal document URL candidate: ${emittedUrl}` : ""])].filter(Boolean);
   warn(warnings, `${base}/document_url`, "legal document URL was not admitted as evidence; preserved candidate for deterministic reconciliation and downgraded document pending fetch/extraction", { document_url: emittedUrl });
 }
+function requireArray(value, errors, instancePath, label) {
+  if (!Array.isArray(value)) {
+    push(errors, instancePath, `${label} must be an array`);
+    return false;
+  }
+  return true;
+}
+function requireObject(value, errors, instancePath, label) {
+  if (!isObject(value)) {
+    push(errors, instancePath, `${label} must be an object`);
+    return false;
+  }
+  return true;
+}
+function walkCartography(value, errors, path = "/legal_document_cartography") {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => walkCartography(item, errors, `${path}/${index}`));
+    return;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    const childPath = `${path}/${key}`;
+    if (FORBIDDEN_CANONICAL_CARTOGRAPHY_KEYS.has(key)) {
+      push(errors, childPath, `forbidden quote/prose key inside legal_document_cartography: ${key}`, { key });
+    }
+    walkCartography(child, errors, childPath);
+  }
+}
+function validateLegalDocumentCartography(review, errors) {
+  if (review.legal_stack_review_version !== "legal_stack_review_v2") {
+    push(errors, "/legal_stack_review_version", "legal_stack_review_version must equal legal_stack_review_v2", { value: review.legal_stack_review_version });
+  }
+  if (review.stage_role !== "stage7_navigation_index") {
+    push(errors, "/stage_role", "stage_role must equal stage7_navigation_index", { value: review.stage_role });
+  }
+
+  const cartography = review.legal_document_cartography;
+  if (!requireObject(cartography, errors, "/legal_document_cartography", "legal_document_cartography")) return;
+  for (const key of STAGE6A_REQUIRED_CARTOGRAPHY_ARRAYS) {
+    requireArray(cartography[key], errors, `/legal_document_cartography/${key}`, `legal_document_cartography.${key}`);
+  }
+  requireObject(cartography.legal_stack_summary_signals, errors, "/legal_document_cartography/legal_stack_summary_signals", "legal_stack_summary_signals");
+  walkCartography(cartography, errors);
+
+  const mismatches = Array.isArray(cartography.document_mismatch_signal_map) ? cartography.document_mismatch_signal_map : [];
+  mismatches.forEach((item, index) => {
+    if (!isObject(item)) {
+      push(errors, `/legal_document_cartography/document_mismatch_signal_map/${index}`, "document_mismatch_signal_map item must be an object");
+      return;
+    }
+    for (const key of Object.keys(item)) {
+      if (FORBIDDEN_CANONICAL_CARTOGRAPHY_KEYS.has(key)) {
+        push(errors, `/legal_document_cartography/document_mismatch_signal_map/${index}/${key}`, `forbidden quote/prose key inside document_mismatch_signal_map: ${key}`, { key });
+      }
+    }
+  });
+
+  const nav = review.stage7_navigation_index;
+  if (!requireObject(nav, errors, "/stage7_navigation_index", "stage7_navigation_index")) return;
+  for (const key of STAGE6A_REQUIRED_NAVIGATION_ARRAYS) {
+    requireArray(nav[key], errors, `/stage7_navigation_index/${key}`, `stage7_navigation_index.${key}`);
+  }
+  for (const forbiddenKey of ["feature_to_data_flow_index", "data_signal_index"]) {
+    if (Object.prototype.hasOwnProperty.call(nav, forbiddenKey)) {
+      push(errors, `/stage7_navigation_index/${forbiddenKey}`, `${forbiddenKey} belongs to a later 6B/Stage 7 pass-through patch and must not be emitted in Stage 6A`, { key: forbiddenKey });
+    }
+  }
+}
 
 export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = [], threatMappingSupplied = false } = {}) {
   const errors = [];
@@ -70,6 +169,7 @@ export function validateLegalStackReviewGuardrails(review, { evidenceBuffer = []
     return { ok: false, errors, warnings };
   }
   walk(review, errors, warnings, "");
+  validateLegalDocumentCartography(review, errors);
   const legalStack = Array.isArray(review.legal_stack) ? review.legal_stack : [];
   const admittedUrls = evidenceUrls(evidenceBuffer);
 
