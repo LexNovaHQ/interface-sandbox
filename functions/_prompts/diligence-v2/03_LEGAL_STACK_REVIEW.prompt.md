@@ -866,6 +866,8 @@ It must contain:
 }
 ```
 
+For `document_hierarchy_signal` and `legal_stack_coverage_signal`, use exactly one of: `visible`, `not_visible`, `partial`, `conflicting`, `not_applicable`, `unknown`.
+
 ## 12.1 Inventory
 
 `legal_document_inventory[]` includes one row for each core or supplemental public legal/control artifact that is material to Stage 7 navigation.

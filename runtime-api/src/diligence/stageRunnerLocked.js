@@ -22,6 +22,38 @@ function stringifyLimitation(item) {
   try { return JSON.stringify(item); } catch { return String(item); }
 }
 
+const STAGE6A_SIGNAL_VALUES = new Set(["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"]);
+
+function normalizeStage6ASignal(value) {
+  if (typeof value !== "string") return value;
+  const raw = value.trim();
+  if (STAGE6A_SIGNAL_VALUES.has(raw)) return raw;
+  const normalized = raw.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if (STAGE6A_SIGNAL_VALUES.has(normalized)) return normalized;
+  if (!normalized) return value;
+  if (normalized.includes("conflict") || normalized.includes("contradict")) return "conflicting";
+  if (normalized.includes("partial") || normalized.includes("limited") || normalized.includes("mixed") || normalized.includes("some")) return "partial";
+  if (normalized === "na" || normalized === "n_a" || normalized.includes("not_applicable")) return "not_applicable";
+  if (normalized.includes("not_visible") || normalized.includes("not_found") || normalized.includes("missing") || normalized.includes("absent") || normalized.includes("unavailable")) return "not_visible";
+  if (normalized.includes("visible") || normalized.includes("present") || normalized.includes("available") || normalized.includes("covered")) return "visible";
+  return "unknown";
+}
+
+function repairLegalStackReviewForSchema(value) {
+  const signals = value?.legal_document_cartography?.legal_stack_summary_signals;
+  if (!signals || typeof signals !== "object" || Array.isArray(signals)) return { repaired: false, repair_notes: [] };
+  const notes = [];
+  for (const key of ["document_hierarchy_signal", "legal_stack_coverage_signal"]) {
+    if (typeof signals[key] !== "string") continue;
+    const repaired = normalizeStage6ASignal(signals[key]);
+    if (repaired !== signals[key]) {
+      signals[key] = repaired;
+      notes.push(`normalized_stage6a_${key}`);
+    }
+  }
+  return { repaired: notes.length > 0, repair_notes: notes };
+}
+
 function normalizeStageOutputForSchema(value, schemaKey) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return { value, repaired: false, repair_notes: [] };
   const copy = { ...value };
@@ -43,6 +75,16 @@ function normalizeStageOutputForSchema(value, schemaKey) {
       if (!copy.limitations.includes(warning)) copy.limitations.push(warning);
       notes.push("cleared_legacy_product_feature_map_before_schema_validation");
     }
+  }
+  if (schemaKey === "legalStackReview") {
+    if (copy.legal_document_cartography && typeof copy.legal_document_cartography === "object" && !Array.isArray(copy.legal_document_cartography)) {
+      copy.legal_document_cartography = { ...copy.legal_document_cartography };
+      if (copy.legal_document_cartography.legal_stack_summary_signals && typeof copy.legal_document_cartography.legal_stack_summary_signals === "object" && !Array.isArray(copy.legal_document_cartography.legal_stack_summary_signals)) {
+        copy.legal_document_cartography.legal_stack_summary_signals = { ...copy.legal_document_cartography.legal_stack_summary_signals };
+      }
+    }
+    const legalRepair = repairLegalStackReviewForSchema(copy);
+    if (legalRepair.repaired) notes.push(...legalRepair.repair_notes);
   }
   return { value: copy, repaired: notes.length > 0, repair_notes: notes };
 }
