@@ -31,9 +31,12 @@
     "e2e:stage4": "node scripts/e2e-stage4-target-legal-v3.mjs",
     "audit:product-sources": "node scripts/audit-product-source-discovery.mjs"
   },
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@google/genai": "^1.33.0",
+    "ajv": "^8.20.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "helmet": "^8.1.1",
