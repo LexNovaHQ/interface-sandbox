@@ -11,11 +11,15 @@ on:
         options:
           - deploy
           - stage4-stage5-audit
+          - stage6-audit
       runtime_url:
         description: "Existing runtime URL for audit mode"
         required: false
         default: "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app"
         type: string
+  push:
+    branches:
+      - stage6a-wip
 
 permissions:
   contents: read
@@ -293,4 +297,209 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-stage4-stage5-audit-cache
+          path: runtime-api/.runtime-e2e-cache/
+
+  stage6-audit:
+    name: Stage 6A deploy + runtime audit
+    needs: check
+    if: github.event_name == 'push' || inputs.mode == 'stage6-audit'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build runtime bundles
+        run: npm run build:runtime
+
+      - name: Package generated bundles for runtime-api
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy source to Cloud Run
+        working-directory: runtime-api
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_REGISTRY_API_KEYS: ${{ secrets.GEMINI_REGISTRY_API_KEYS }}
+          GEMINI_SEARCH_MODEL_SEQUENCE: ${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
+          GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          def quote_yaml(value):
+              value = "" if value is None else str(value)
+              return "'" + value.replace("'", "''") + "'"
+
+          env = {
+              "RUNTIME_ACCESS_TOKEN": os.environ.get("RUNTIME_ACCESS_TOKEN", ""),
+              "GEMINI_SEARCH_API_KEYS": os.environ.get("GEMINI_SEARCH_API_KEYS", ""),
+              "GEMINI_JSON_API_KEYS": os.environ.get("GEMINI_JSON_API_KEYS", ""),
+              "GEMINI_REASONING_API_KEYS": os.environ.get("GEMINI_REASONING_API_KEYS", ""),
+              "GEMINI_REGISTRY_API_KEYS": os.environ.get("GEMINI_REGISTRY_API_KEYS", ""),
+              "GEMINI_SEARCH_MODEL_SEQUENCE": os.environ.get("GEMINI_SEARCH_MODEL_SEQUENCE", ""),
+              "GEMINI_JSON_MODEL_SEQUENCE": os.environ.get("GEMINI_JSON_MODEL_SEQUENCE", ""),
+              "GEMINI_REASONING_MODEL_SEQUENCE": os.environ.get("GEMINI_REASONING_MODEL_SEQUENCE", ""),
+              "GEMINI_REGISTRY_MODEL_SEQUENCE": os.environ.get("GEMINI_REGISTRY_MODEL_SEQUENCE", ""),
+              "GEMINI_FINAL_MODEL_SEQUENCE": os.environ.get("GEMINI_FINAL_MODEL_SEQUENCE", ""),
+              "LIVE_SOURCE_DISCOVERY_MODE": "sync_with_free_search",
+              "LIVE_RUN_FREE_SEARCH": "true",
+              "LIVE_ANCHOR_FETCH_MAX": "60",
+              "LIVE_ANCHOR_LINK_LIMIT": "100000",
+              "LIVE_ANCHOR_CLASSIFY_TOKENS": "8192",
+              "LIVE_PROBE_TIMEOUT_MS": "8000",
+              "LIVE_CAPTURE_LIMIT": "100000",
+              "LIVE_PRODUCT_CAPTURE_LIMIT": "100000",
+              "LIVE_COMPANY_CAPTURE_LIMIT": "100000",
+              "LIVE_LEGAL_CAPTURE_LIMIT": "100000",
+              "LIVE_GOVERNANCE_CAPTURE_LIMIT": "100000",
+              "LIVE_CAPTURE_TIMEOUT_MS": "24000",
+              "SOURCE_CAPTURE_MAX_BYTES": "31457280",
+              "LIVE_COMPANY_MAX_OUTPUT_TOKENS": "24000",
+              "STAGE4_COMPANY_MAX_OUTPUT_TOKENS": "24000",
+              "LIVE_FEATURE_MAX_OUTPUT_TOKENS": "28000",
+              "STAGE5_FEATURE_MAX_OUTPUT_TOKENS": "28000",
+              "STAGE5_MAX_INPUT_CHARS": "240000",
+              "STAGE5_MAX_ESTIMATED_TOKENS": "120000",
+              "STAGE5_MAX_SINGLE_SOURCE_CHARS": "10000000",
+              "STAGE5_PROMPT_OVERHEAD_TOKENS": "30000",
+              "STAGE6_MAX_INPUT_CHARS": "240000",
+              "STAGE6_MAX_ESTIMATED_TOKENS": "120000",
+              "STAGE6_MAX_SINGLE_SOURCE_CHARS": "10000000",
+              "STAGE7_BUDGET_ENFORCEMENT_MODE": "guidance",
+          }
+
+          missing = [key for key, value in env.items() if key.startswith("GEMINI_") and key.endswith("API_KEYS") and not value]
+          missing += ["RUNTIME_ACCESS_TOKEN"] if not env["RUNTIME_ACCESS_TOKEN"] else []
+          if missing:
+              raise SystemExit("Missing required deploy secret(s): " + ", ".join(missing))
+
+          path = Path("/tmp/lexnova-runtime-env.yaml")
+          path.write_text("\n".join(f"{key}: {quote_yaml(value)}" for key, value in env.items()) + "\n", encoding="utf-8")
+          PY
+
+          gcloud run deploy "$GCP_CLOUD_RUN_SERVICE" \
+            --source . \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --allow-unauthenticated \
+            --env-vars-file /tmp/lexnova-runtime-env.yaml
+
+      - name: Resolve runtime URL
+        id: runtime
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          URL=$(gcloud run services describe "$GCP_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format="value(status.url)")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Install runtime dependencies
+        working-directory: runtime-api
+        run: npm install
+
+      - name: Clear runtime E2E cache
+        run: rm -rf runtime-api/.runtime-e2e-cache && mkdir -p runtime-api/.runtime-e2e-cache
+
+      - name: Smoke deployed runtime
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
+
+      - name: Run Stage 4 Company Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "24000"
+          STAGE4_COMPANY_TIMEOUT_MS: "90000"
+        run: npm run e2e:stage4:company
+
+      - name: Run Stage 5 Target Feature Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE5_SOURCE_DISCOVERY_MODE: "sync_with_free_search"
+          STAGE5_RUN_FREE_SEARCH: "true"
+          STAGE5_ANCHOR_FETCH_MAX: "60"
+          STAGE5_ANCHOR_LINK_LIMIT: "100000"
+          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "28000"
+          STAGE5_FEATURE_TIMEOUT_MS: "120000"
+          STAGE5_MAX_INPUT_CHARS: "240000"
+          STAGE5_MAX_ESTIMATED_TOKENS: "120000"
+        run: npm run e2e:stage5:features
+
+      - name: Run Stage 6A Legal Stack Review E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ steps.runtime.outputs.url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE6_POOL: "reasoning"
+          STAGE6_MAX_OUTPUT_TOKENS: "8192"
+          STAGE6_TIMEOUT_MS: "90000"
+          STAGE6_MAX_INPUT_CHARS: "240000"
+          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
+          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
+        run: npm run e2e:stage6:legal
+
+      - name: Verify Stage 6A audit exports
+        if: always()
+        run: |
+          set -euo pipefail
+          ls -lah runtime-api/.runtime-e2e-cache || true
+          test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json
+
+      - name: Upload Stage 6A audit cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-stage6a-audit-cache
           path: runtime-api/.runtime-e2e-cache/
