@@ -218,8 +218,31 @@ Audit status:
 - Prompt requires existing IDs and controlled enum values only.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R4.4 — Overlay normalizer
+
+Goal:
+- Add deterministic normalization and repair for model overlay rows.
+- Enforce enum boundaries and existing-ID boundaries after model output.
+- Strip/reject forbidden quote/prose/legal-conclusion fields.
+- Do not wire it into runtime yet.
+
+Commits in this layer:
+- `36ca2208712dddc6d0ad3c6804ae5f699272a6d9` — added `runtime-api/src/diligence/stage6aModelOverlayNormalizer.js`.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aModelOverlayNormalizer.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static normalizer audit passed.
+- Normalizer reconstructs overlay objects field-by-field, so extra/prose keys cannot survive into normalized output.
+- Normalizer drops rows that reference unknown sections, documents, features, source records, or control signals.
+- Normalizer replaces invalid enum values with `unknown` or filters invalid enum arrays.
+- Normalizer records repairs for forbidden keys and dropped rows.
+- Runtime behavior is intentionally unchanged.
+
 Blocked/remaining:
 - The previous attempt to add a builder audit script was blocked by the GitHub write tool. No runtime/audit wiring was committed for that script.
 
 Next layer:
-- 6A.R4.4 — Add overlay normalizer.
+- 6A.R4.5 — Merge normalized model overlay into canonical 6A output.
