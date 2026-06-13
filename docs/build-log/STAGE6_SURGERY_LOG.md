@@ -82,5 +82,27 @@ Audit status:
 - Builder creates canonical `doc_id`, `doc_type`, `doc_family`, `source_record_ref`, `source_url`, and visibility/access statuses without model judgment.
 - Builder does not modify active adapters or runtime execution.
 
+## 6A.R3 — Deterministic section index and locator builder
+
+Goal:
+- Extend the pure deterministic builder to create section index rows and source locator rows from admitted source headings.
+- Do not wire it into runtime yet.
+- Do not touch adapters.
+
+Commits in this layer:
+- `8fbeea95d5b00c61d3dcf06dc217188f8cf57636` — added heading-derived `legal_document_index[]` and `document_source_locator_index[]` builders.
+- `343668e7c3d63feeb1a44cc89cbf8b1305edf78c` — preserved source URLs in locator rows.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aLegalCartographyBuilder.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static section-index audit passed.
+- Section rows are deterministic from admitted source headings when headings are present.
+- Source locator rows now retain source URLs from inventory.
+- Builder still leaves control/mismatch/relationship maps empty pending the controlled classification overlay layer.
+- Runtime behavior is intentionally unchanged.
+
 Next layer:
-- 6A.R3 — Add deterministic Stage 6A section index and source locator builder.
+- 6A.R4 — Add controlled deterministic control signal and relationship map derivation.
