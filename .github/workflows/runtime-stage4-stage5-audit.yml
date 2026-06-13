@@ -193,6 +193,7 @@ jobs:
         run: npm run e2e:stage5:features
 
       - name: Run Stage 6A Legal Cartography E2E
+        if: always()
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
