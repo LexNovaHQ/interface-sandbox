@@ -73,12 +73,10 @@ function classifyDocType(record = {}) {
   if (/terms-of-service|terms of service|\btos\b|terms and conditions/.test(combined)) return "tos";
   if (/privacy-policy|privacy policy|privacy notice/.test(combined)) return "privacy_policy";
   if (/\beula\b|end user license/.test(combined)) return "eula";
+  if (/status\.|system status|status page|status\.sarvam/.test(combined)) return "status_page";
   if (/data-processing|data processing agreement|data processing addendum|\bdpa\b/.test(combined)) return "dpa";
   if (/acceptable-use|acceptable use|prohibited use|usage restrictions|\baup\b/.test(combined)) return "aup";
-  if (/service-level|service level agreement|\bsla\b|uptime|status page/.test(combined)) {
-    if (/status\.sarvam|status page|system status/.test(combined)) return "status_page";
-    return "sla";
-  }
+  if (/service-level|service level agreement|\bsla\b|uptime/.test(combined)) return "sla";
   if (/trust-center|trust center|security posture|security/.test(combined)) return /trust/.test(combined) ? "trust_center" : "security_page";
   if (/subprocessor|sub-processor|service provider list/.test(combined)) return "subprocessor_page";
   if (/cookie policy|cookies/.test(combined)) return "cookie_policy";
