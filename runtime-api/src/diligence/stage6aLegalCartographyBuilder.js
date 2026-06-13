@@ -160,11 +160,16 @@ export function buildStage6ALegalSourceInventory(input = {}) {
 function inventoryBySourceRef(inventory = []) { return new Map(inventory.map((item) => [item.source_record_ref, item])); }
 function inventoryByDocumentId(inventory = []) { return new Map(inventory.map((item) => [item.document_id, item])); }
 
+const MACRO_LEGAL_UNIT_PATTERN = /annex|schedule|exhibit|policy|terms|privacy|security|subprocessor|acceptable use|prohibited use|\bdpa\b|\bsla\b|data processing|rights|deletion|retention|liability|warranty|dispute|\bai\b|artificial intelligence|model|service|license|eligibility|payment|subscription|billing|fees|indemnity|intellectual property|\bip\b|governing law|jurisdiction|arbitration|breach|incident|safeguard|transfer|cookies?/;
+const STRUCTURED_LEGAL_HEADING_PATTERN = /^(article|section|chapter|part|clause|schedule|annex|annexure|exhibit)\b|^\d+(?:\.\d+)*[\).:-]?\s+\S+/;
+
 function isMacroHeading(heading = {}) {
   const text = lower(heading.text || "");
   const level = Number(heading.level || 1);
-  if (Number.isFinite(level) && level <= 2) return true;
-  return /annex|schedule|exhibit|policy|terms|privacy|security|subprocessor|acceptable use|prohibited use|\bdpa\b|\bsla\b|data processing|rights|deletion|retention|liability|warranty|dispute|\bai\b|artificial intelligence|model/.test(text);
+  if (!text || /^(faq|question|answer|note|example|learn more|read more|contact us|last updated|table of contents)$/i.test(text)) return false;
+  if (MACRO_LEGAL_UNIT_PATTERN.test(text)) return true;
+  if (STRUCTURED_LEGAL_HEADING_PATTERN.test(text)) return true;
+  return Number.isFinite(level) && level <= 1 && text.split(/\s+/).length >= 2;
 }
 
 function legalUnitPathFor(headings = [], index = 0) {
@@ -318,7 +323,7 @@ export function buildStage6AFallbackSourcePacket(input = {}, inventory = buildSt
   return packet;
 }
 
-export function buildStage6ALegalStackSummarySignals(inventory = []) {
+export function buildStage6ALegalDocumentSummarySignals(inventory = []) {
   const hasDocumentType = (documentType) => inventory.some((item) => item.document_type === documentType && ["visible", "embedded", "linked"].includes(item.document_status));
   return {
     core_stack_status: {
@@ -330,7 +335,7 @@ export function buildStage6ALegalStackSummarySignals(inventory = []) {
     },
     supplemental_artifacts_detected: inventory.filter((item) => item.document_family === "supplemental").map((item) => item.document_id),
     document_hierarchy_signal: inventory.length > 1 ? "partial" : (inventory.length === 1 ? "unknown" : "not_visible"),
-    legal_stack_coverage_signal: inventory.some((item) => item.document_family === "core") ? "partial" : "unknown",
+    legal_document_coverage_signal: inventory.some((item) => item.document_family === "core") ? "partial" : "unknown",
     major_unknowns: []
   };
 }
@@ -355,8 +360,8 @@ export function buildStage6ALegalCartographySkeleton(input = {}) {
       document_relationship_map: [],
       document_control_signal_map: [],
       document_mismatch_signal_map: [],
-      legal_stack_summary_signals: buildStage6ALegalStackSummarySignals(legalDocumentInventory),
-      legal_stack_limitations: []
+      legal_document_summary_signals: buildStage6ALegalDocumentSummarySignals(legalDocumentInventory),
+      legal_document_limitations: []
     },
     stage7_navigation_index: {
       feature_to_data_flow_index: [],

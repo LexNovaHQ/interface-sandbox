@@ -13,4 +13,4 @@ runtime-api/src/diligence/stage6CanonicalVocabulary.js
 data/schemas/stage6Review.schema.json
 ```
 
-The retired overlay dialect included `stage6a_model_overlay_version`, `section_classification_overlay`, `feature_section_overlay`, `source_text_classification`, and `stage6_section_ref`. These values may be repaired during migration but must not pass through as canonical Stage 6 output.
+The retired overlay dialect included `stage6a_model_overlay_version`, `section_classification_overlay`, `feature_section_overlay`, `source_text_classification`, and `stage6_section_ref`. These values must not be repaired into or passed through as canonical Stage 6 output.

@@ -71,8 +71,8 @@ legal_document_cartography
   document_relationship_map[]
   document_control_signal_map[]
   document_mismatch_signal_map[]
-  legal_stack_summary_signals
-  legal_stack_limitations[]
+  legal_document_summary_signals
+  legal_document_limitations[]
 ```
 
 ### Document Inventory
@@ -225,7 +225,7 @@ model_overlay
 heading_classification
 ```
 
-During migration only, runtime may deterministically map the banned values to canonical basis codes. New canonical output must not pass them through.
+Runtime must not pass through or repair these values as canonical Stage 6 output.
 
 ## Disabled Until Rebuilt
 

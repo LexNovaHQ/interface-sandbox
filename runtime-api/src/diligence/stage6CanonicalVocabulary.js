@@ -151,16 +151,6 @@ export const STAGE6_BASIS_CODES = Object.freeze([
   "unknown"
 ]);
 
-export const STAGE6_BASIS_MIGRATION_MAP = Object.freeze({
-  source_text_classification: ["direct_policy_signal"],
-  stage6_section_ref: ["stage6_legal_unit_ref"],
-  stage6_legal_section_ref: ["stage6_legal_unit_ref"],
-  document_relationship_signal: ["indirect_policy_signal"],
-  feature_control_alignment: ["stage5_feature_ref", "stage6_control_signal_ref"],
-  model_overlay: ["model_semantic_classification"],
-  heading_classification: ["macro_heading_classification"]
-});
-
 export const STAGE6_SOURCE_TYPES = Object.freeze([
   "legal_document",
   "privacy_document",
@@ -206,8 +196,7 @@ export function normalizeStage6BasisCodes(values = []) {
   const allowed = new Set(STAGE6_BASIS_CODES);
   const normalized = [];
   for (const value of uniqueStage6Values(values)) {
-    const mapped = STAGE6_BASIS_MIGRATION_MAP[value] || [value];
-    for (const code of mapped) if (allowed.has(code)) normalized.push(code);
+    if (allowed.has(value)) normalized.push(value);
   }
   return uniqueStage6Values(normalized.length ? normalized : ["unknown"]);
 }

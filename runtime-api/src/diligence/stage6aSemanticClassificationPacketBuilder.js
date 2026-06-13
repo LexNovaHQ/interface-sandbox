@@ -52,7 +52,7 @@ function featureRefs(targetFeatureProfile = {}) {
   }));
 }
 
-export function buildStage6AModelOverlayPacket(input = {}, options = {}) {
+export function buildStage6ASemanticClassificationPacket(input = {}, options = {}) {
   const canonical = buildStage6ACartography(input);
   const maxLegalUnits = Number(options.maxSections || options.maxLegalUnits || 160);
   const textWindowChars = Number(options.textWindowChars || 1200);
@@ -96,7 +96,7 @@ export function buildStage6AModelOverlayPacket(input = {}, options = {}) {
   };
 }
 
-export const stage6aModelOverlayPacketBuilderInternals = {
+export const stage6aSemanticClassificationPacketBuilderInternals = {
   STAGE6_BASIS_CODES,
   STAGE6_CONTROL_FAMILIES,
   STAGE6_CONTROL_SIGNALS,

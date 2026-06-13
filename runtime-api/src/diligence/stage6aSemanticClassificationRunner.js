@@ -1,8 +1,8 @@
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
-import { buildStage6AModelOverlayPacket } from "./stage6aModelOverlayPacketBuilder.js";
-import { normalizeStage6AModelOverlay } from "./stage6aModelOverlayNormalizer.js";
+import { buildStage6ASemanticClassificationPacket } from "./stage6aSemanticClassificationPacketBuilder.js";
+import { normalizeStage6ASemanticClassification } from "./stage6aSemanticClassificationNormalizer.js";
 
 function readDefaultSemanticPrompt() {
   return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_legal_document_cartography?.text || "";
@@ -47,12 +47,12 @@ function stage6Summary(stage6Review = {}) {
   };
 }
 
-export async function runStage6AModelOverlay({ input = {}, promptText = "", env = process.env, options = {} } = {}) {
+export async function runStage6ASemanticClassification({ input = {}, promptText = "", env = process.env, options = {} } = {}) {
   const semanticPromptText = String(promptText || readDefaultSemanticPrompt() || "").trim();
   if (!semanticPromptText) {
     return { ok: false, error_type: "STAGE6_SEMANTIC_PROMPT_MISSING", error: "Stage 6 semantic prompt text is required." };
   }
-  const packet = buildStage6AModelOverlayPacket(input, {
+  const packet = buildStage6ASemanticClassificationPacket(input, {
     maxLegalUnits: options.maxLegalUnits || options.maxSections,
     textWindowChars: options.textWindowChars
   });
@@ -83,15 +83,15 @@ export async function runStage6AModelOverlay({ input = {}, promptText = "", env 
       model_metadata: publicModelMetadata(runResult)
     };
   }
-  const rawOverlay = runResult.json?.stage6_semantic_overlay || runResult.json?.stage6a_model_overlay || runResult.json;
-  const normalized = normalizeStage6AModelOverlay(rawOverlay, packet);
-  const stage6Review = buildStage6ACartography(input, { normalized_overlay: normalized.overlay });
+  const rawClassification = runResult.json?.stage6_semantic_classification || runResult.json;
+  const normalized = normalizeStage6ASemanticClassification(rawClassification, packet);
+  const stage6Review = buildStage6ACartography(input, { normalized_semantic_classification: normalized.classification });
   return {
     ok: true,
     semantic_packet_version: packet.semantic_packet_version,
-    raw_overlay_version: rawOverlay?.semantic_overlay_version || rawOverlay?.stage6a_model_overlay_version || null,
-    normalized_overlay: normalized.overlay,
-    overlay_repairs: normalized.repairs,
+    raw_semantic_classification_version: rawClassification?.semantic_classification_version || null,
+    normalized_semantic_classification: normalized.classification,
+    semantic_classification_repairs: normalized.repairs,
     stage6_review: stage6Review,
     packet_summary: {
       document_inventory_seed_count: packet.document_inventory_seed.length,
@@ -122,14 +122,14 @@ export async function runStage6ALegalCartography({
     evidence_junction
   };
   const options = runtime_options || {};
-  if (options.disableModelOverlay === true || env.STAGE6_DISABLE_SEMANTIC_MODEL === "true") {
+  if (options.disableSemanticClassification === true || env.STAGE6_DISABLE_SEMANTIC_MODEL === "true") {
     const stage6Review = buildStage6ACartography(input);
     return {
       ok: true,
       semantic_model_attempted: false,
       semantic_model_disabled: true,
-      normalized_overlay: null,
-      overlay_repairs: [],
+      normalized_semantic_classification: null,
+      semantic_classification_repairs: [],
       stage6_review: stage6Review,
       packet_summary: {
         document_inventory_seed_count: stage6Review.legal_document_cartography?.legal_document_inventory?.length || 0,
@@ -141,7 +141,7 @@ export async function runStage6ALegalCartography({
       model_metadata: null
     };
   }
-  const result = await runStage6AModelOverlay({
+  const result = await runStage6ASemanticClassification({
     input,
     promptText,
     env,
@@ -153,4 +153,4 @@ export async function runStage6ALegalCartography({
   };
 }
 
-export const stage6aModelOverlayRunnerInternals = { buildSemanticPrompt, publicModelMetadata };
+export const stage6aSemanticClassificationRunnerInternals = { buildSemanticPrompt, publicModelMetadata };

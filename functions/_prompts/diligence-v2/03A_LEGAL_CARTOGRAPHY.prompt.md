@@ -42,14 +42,14 @@ Return valid JSON only:
 
 ```json
 {
-  "semantic_overlay_version": "stage6_semantic_overlay_v1",
+  "semantic_classification_version": "stage6_semantic_classification_v1",
   "stage6_component": "stage6a_legal_document_cartography",
-  "legal_unit_classification_overlay": [],
-  "document_relationship_overlay": [],
-  "document_control_overlay": [],
-  "document_mismatch_overlay": [],
-  "feature_legal_unit_overlay": [],
-  "overlay_limitations": []
+  "legal_unit_classification": [],
+  "document_relationship_classification": [],
+  "document_control_classification": [],
+  "document_mismatch_classification": [],
+  "feature_legal_unit_classification": [],
+  "classification_limitations": []
 }
 ```
 

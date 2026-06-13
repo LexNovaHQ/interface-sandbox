@@ -174,8 +174,8 @@
         "document_relationship_map",
         "document_control_signal_map",
         "document_mismatch_signal_map",
-        "legal_stack_summary_signals",
-        "legal_stack_limitations"
+        "legal_document_summary_signals",
+        "legal_document_limitations"
       ],
       "additionalProperties": false,
       "properties": {
@@ -184,8 +184,8 @@
         "document_relationship_map": { "type": "array", "items": { "$ref": "#/$defs/documentRelationshipItem" } },
         "document_control_signal_map": { "type": "array", "items": { "$ref": "#/$defs/documentControlSignalItem" } },
         "document_mismatch_signal_map": { "type": "array", "items": { "$ref": "#/$defs/documentMismatchSignalItem" } },
-        "legal_stack_summary_signals": { "$ref": "#/$defs/legalStackSummarySignals" },
-        "legal_stack_limitations": { "type": "array", "items": { "$ref": "#/$defs/stage6Limitation" } }
+        "legal_document_summary_signals": { "$ref": "#/$defs/legalDocumentSummarySignals" },
+        "legal_document_limitations": { "type": "array", "items": { "$ref": "#/$defs/stage6Limitation" } }
       }
     },
     "legalDocumentInventoryItem": {
@@ -312,9 +312,9 @@
         "confidence": { "$ref": "#/$defs/confidence" }
       }
     },
-    "legalStackSummarySignals": {
+    "legalDocumentSummarySignals": {
       "type": "object",
-      "required": ["core_stack_status", "supplemental_artifacts_detected", "document_hierarchy_signal", "legal_stack_coverage_signal", "major_unknowns"],
+      "required": ["core_stack_status", "supplemental_artifacts_detected", "document_hierarchy_signal", "legal_document_coverage_signal", "major_unknowns"],
       "additionalProperties": false,
       "properties": {
         "core_stack_status": {
@@ -331,7 +331,7 @@
         },
         "supplemental_artifacts_detected": { "$ref": "#/$defs/stringArray" },
         "document_hierarchy_signal": { "$ref": "#/$defs/standardSignal" },
-        "legal_stack_coverage_signal": { "$ref": "#/$defs/standardSignal" },
+        "legal_document_coverage_signal": { "$ref": "#/$defs/standardSignal" },
         "major_unknowns": { "$ref": "#/$defs/stringArray" }
       }
     },

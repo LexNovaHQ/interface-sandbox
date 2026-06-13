@@ -4,7 +4,7 @@ import { loadDiligencePrompt } from "./stagePromptLoader.js";
 import { formatSchemaErrors, resolveSchemaEntry, validateDiligenceStageOutput } from "./stageSchemaValidator.js";
 import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
 import { validateRegistryLedgerGuardrails } from "./registryLedgerGuardrails.js";
-import { runStage6ALegalCartography } from "./stage6aModelOverlayRunner.js";
+import { runStage6ALegalCartography } from "./stage6aSemanticClassificationRunner.js";
 import { repairTargetFeatureProfileForSchema } from "./targetFeatureProfileSchemaRepair.js";
 
 function unwrapStageOutput(parsedJson, outputKey) {
@@ -219,7 +219,7 @@ async function runStage6ALegalCartographyStage({ config, schemaEntry, input, opt
       error_type: runResult.error_type || "STAGE6A_LEGAL_CARTOGRAPHY_FAILED",
       error: runResult.error || "Stage 6A Legal Cartography failed.",
       packet_summary: runResult.packet_summary || null,
-      model_overlay_attempted: runResult.model_overlay_attempted === true,
+      semantic_model_attempted: runResult.semantic_model_attempted === true,
       model_metadata: runResult.model_metadata || null
     };
   }
@@ -259,8 +259,8 @@ async function runStage6ALegalCartographyStage({ config, schemaEntry, input, opt
     stage6_review: finalOutput,
     packet_summary: runResult.packet_summary || null,
     stage6_summary: runResult.stage6_summary || null,
-    normalized_overlay: runResult.normalized_overlay || null,
-    overlay_repairs: runResult.overlay_repairs || [],
+    normalized_semantic_classification: runResult.normalized_semantic_classification || null,
+    semantic_classification_repairs: runResult.semantic_classification_repairs || [],
     semantic_model_attempted: runResult.semantic_model_attempted === true,
     model_metadata: runResult.model_metadata || null,
     prompt_metadata: {

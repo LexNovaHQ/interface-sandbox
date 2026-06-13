@@ -12,7 +12,7 @@ import {
   uniqueStage6Values
 } from "./stage6CanonicalVocabulary.js";
 
-const FORBIDDEN_MODEL_OVERLAY_KEYS = new Set([
+const FORBIDDEN_SEMANTIC_CLASSIFICATION_KEYS = new Set([
   "quote",
   "evidence_quote",
   "excerpt",
@@ -51,7 +51,7 @@ function findForbiddenKeys(value, path = "root", hits = []) {
     return hits;
   }
   for (const key of Object.keys(value)) {
-    if (FORBIDDEN_MODEL_OVERLAY_KEYS.has(key)) hits.push({ path: `${path}.${key}`, key });
+    if (FORBIDDEN_SEMANTIC_CLASSIFICATION_KEYS.has(key)) hits.push({ path: `${path}.${key}`, key });
     findForbiddenKeys(value[key], `${path}.${key}`, hits);
   }
   return hits;
@@ -69,16 +69,16 @@ function packetRefs(packet = {}) {
 function normalizeLegalUnitRows(rows, refs, repairs) {
   const output = [];
   for (const [index, row] of asArray(rows).entries()) {
-    const legalUnitId = compact(row?.legal_unit_id || row?.section_id);
+    const legalUnitId = compact(row?.legal_unit_id);
     if (!refs.legalUnitIds.has(legalUnitId)) {
       issue(repairs, "drop_semantic_legal_unit_unknown_ref", { index, legal_unit_id: legalUnitId || "missing" });
       continue;
     }
     output.push({
       legal_unit_id: legalUnitId,
-      legal_unit_type: normalizeStage6Enum(row?.legal_unit_type || row?.structural_zone, STAGE6_LEGAL_UNIT_TYPES),
+      legal_unit_type: normalizeStage6Enum(row?.legal_unit_type, STAGE6_LEGAL_UNIT_TYPES),
       section_function: normalizeStage6Enum(row?.section_function, STAGE6_SECTION_FUNCTIONS),
-      control_families_detected: uniqueStage6Values(row?.control_families_detected || row?.control_families || row?.control_topics_detected).map((value) => normalizeStage6Enum(value, STAGE6_CONTROL_FAMILIES)).filter((value) => value !== "unknown"),
+      control_families_detected: uniqueStage6Values(row?.control_families_detected).map((value) => normalizeStage6Enum(value, STAGE6_CONTROL_FAMILIES)).filter((value) => value !== "unknown"),
       basis_codes: normalizeStage6BasisCodes(row?.basis_codes || []),
       confidence: normalizeStage6Enum(row?.confidence, STAGE6_CONFIDENCE_VALUES)
     });
@@ -89,8 +89,8 @@ function normalizeLegalUnitRows(rows, refs, repairs) {
 function normalizeRelationshipRows(rows, refs, repairs) {
   const output = [];
   for (const [index, row] of asArray(rows).entries()) {
-    const fromRef = compact(row?.from_ref || row?.from_section_id || row?.from_doc_id);
-    const toRef = compact(row?.to_ref || row?.to_section_id || row?.to_doc_id);
+    const fromRef = compact(row?.from_ref);
+    const toRef = compact(row?.to_ref);
     if (!fromRef || !toRef) {
       issue(repairs, "drop_relationship_missing_ref", { index });
       continue;
@@ -100,7 +100,7 @@ function normalizeRelationshipRows(rows, refs, repairs) {
       from_ref: fromRef,
       to_ref: toRef,
       relationship_type: normalizeStage6Enum(row?.relationship_type, STAGE6_RELATIONSHIP_TYPES),
-      basis_codes: normalizeStage6BasisCodes(row?.basis_codes || ["document_relationship_signal"]),
+      basis_codes: normalizeStage6BasisCodes(row?.basis_codes || ["indirect_policy_signal"]),
       confidence: normalizeStage6Enum(row?.confidence, STAGE6_CONFIDENCE_VALUES)
     });
   }
@@ -110,7 +110,7 @@ function normalizeRelationshipRows(rows, refs, repairs) {
 function normalizeControlRows(rows, refs, repairs) {
   const output = [];
   for (const [index, row] of asArray(rows).entries()) {
-    const legalUnitId = compact(row?.legal_unit_id || row?.section_id);
+    const legalUnitId = compact(row?.legal_unit_id);
     if (!refs.legalUnitIds.has(legalUnitId)) {
       issue(repairs, "drop_control_unknown_legal_unit_id", { index, legal_unit_id: legalUnitId || "missing" });
       continue;
@@ -149,7 +149,7 @@ function normalizeFeatureLegalUnitRows(rows, refs, repairs) {
       issue(repairs, "drop_feature_legal_unit_unknown_feature_id", { index, feature_id: featureId || "missing" });
       continue;
     }
-    const legalUnitIds = uniqueStage6Values(row?.legal_unit_ids || row?.section_ids).filter((legalUnitId) => refs.legalUnitIds.has(legalUnitId));
+    const legalUnitIds = uniqueStage6Values(row?.legal_unit_ids).filter((legalUnitId) => refs.legalUnitIds.has(legalUnitId));
     if (!legalUnitIds.length) {
       issue(repairs, "drop_feature_legal_unit_no_valid_units", { index, feature_id: featureId });
       continue;
@@ -165,25 +165,25 @@ function normalizeFeatureLegalUnitRows(rows, refs, repairs) {
   return output;
 }
 
-export function normalizeStage6AModelOverlay(rawOverlay = {}, packet = {}) {
+export function normalizeStage6ASemanticClassification(rawClassification = {}, packet = {}) {
   const repairs = [];
-  for (const hit of findForbiddenKeys(rawOverlay)) issue(repairs, "forbidden_key_removed_from_semantic_overlay", hit);
+  for (const hit of findForbiddenKeys(rawClassification)) issue(repairs, "forbidden_key_removed_from_semantic_classification", hit);
   const refs = packetRefs(packet);
   const normalized = {
-    semantic_overlay_version: "stage6_semantic_overlay_v1",
+    semantic_classification_version: "stage6_semantic_classification_v1",
     stage6_component: "stage6a_legal_document_cartography",
-    legal_unit_classification_overlay: normalizeLegalUnitRows(rawOverlay?.legal_unit_classification_overlay || rawOverlay?.section_classification_overlay, refs, repairs),
-    document_relationship_overlay: normalizeRelationshipRows(rawOverlay?.document_relationship_overlay, refs, repairs),
-    document_control_overlay: normalizeControlRows(rawOverlay?.document_control_overlay, refs, repairs),
-    document_mismatch_overlay: normalizeMismatchRows(rawOverlay?.document_mismatch_overlay, refs, repairs),
-    feature_legal_unit_overlay: normalizeFeatureLegalUnitRows(rawOverlay?.feature_legal_unit_overlay || rawOverlay?.feature_section_overlay, refs, repairs),
-    overlay_limitations: []
+    legal_unit_classification: normalizeLegalUnitRows(rawClassification?.legal_unit_classification, refs, repairs),
+    document_relationship_classification: normalizeRelationshipRows(rawClassification?.document_relationship_classification, refs, repairs),
+    document_control_classification: normalizeControlRows(rawClassification?.document_control_classification, refs, repairs),
+    document_mismatch_classification: normalizeMismatchRows(rawClassification?.document_mismatch_classification, refs, repairs),
+    feature_legal_unit_classification: normalizeFeatureLegalUnitRows(rawClassification?.feature_legal_unit_classification, refs, repairs),
+    classification_limitations: []
   };
-  return { overlay: normalized, repairs };
+  return { classification: normalized, repairs };
 }
 
-export const stage6aModelOverlayNormalizerInternals = {
-  FORBIDDEN_MODEL_OVERLAY_KEYS,
+export const stage6aSemanticClassificationNormalizerInternals = {
+  FORBIDDEN_SEMANTIC_CLASSIFICATION_KEYS,
   findForbiddenKeys,
   packetRefs
 };

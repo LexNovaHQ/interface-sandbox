@@ -162,12 +162,12 @@ legal_document_cartography
   document_relationship_map[]
   document_control_signal_map[]
   document_mismatch_signal_map[]
-  legal_stack_summary_signals
-  legal_stack_limitations[]
+  legal_document_summary_signals
+  legal_document_limitations[]
 
 data_provenance_profile
   data_flow_profile[]
-  profile_summary_signals
+  data_profile_summary_signals
   data_profile_limitations[]
 
 stage7_navigation_index
