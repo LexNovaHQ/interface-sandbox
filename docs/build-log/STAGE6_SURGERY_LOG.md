@@ -33,8 +33,31 @@ Files changed:
 - `docs/build-log/STAGE6_SURGERY_LOG.md`
 
 Audit status:
-- Static audit only. This layer intentionally does not change runtime behavior.
+- Static audit passed. This layer intentionally does not change runtime behavior.
 - New wrappers call the existing Stage 6 runtime audit with separate `STAGE6_AUDIT_MODE` and cache paths.
 
+## 6A.R1 — Canonical 6A output contract
+
+Goal:
+- Add an isolated canonical Stage 6A schema and prompt contract.
+- Do not wire it into runtime yet.
+- Do not modify active Stage 6 schema, active Stage 6 prompt, guardrail, adapter, Stage 7, or deployment.
+
+Commits in this layer:
+- `bd0cc143fea16efb5d7f6947689fe2bb2df9e347` — added `data/schemas/stage6aLegalCartography.schema.json`.
+- `38b800320857c0bc5873de7510e320b3c6736f74` — added `functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md`.
+
+Files changed:
+- `data/schemas/stage6aLegalCartography.schema.json`
+- `functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static contract audit passed.
+- The Stage 6A schema has no active legacy fields: no `legal_stack`, `document_stack_redline`, `document_stack_synthesis`, `legal_stack_assessment`, or `limitations`.
+- The Stage 6A schema has no 6B fields: no `data_provenance_profile`, `feature_to_data_flow_index`, or `data_signal_index`.
+- The Stage 6A prompt contract explicitly forbids legacy fields and 6B fields.
+- Runtime behavior is intentionally unchanged.
+
 Next layer:
-- 6A.R1 — Contract Stage 6A output to canonical legal cartography only.
+- 6A.R2 — Add deterministic Stage 6A source inventory builder.
