@@ -1,35 +1,42 @@
 import { buildStage6ALegalCartographySkeleton } from "./stage6aLegalCartographyBuilder.js";
 import { buildStage6AControlFamilyIndex, buildStage6ADocumentControlSignalMap } from "./stage6aLegalControlSignalBuilder.js";
+import {
+  STAGE6_CONTROL_FAMILIES,
+  STAGE6_CONTROL_SIGNALS,
+  STAGE6_LEGAL_UNIT_TYPES,
+  STAGE6_SECTION_FUNCTIONS,
+  normalizeStage6BasisCodes,
+  normalizeStage6Enum,
+  uniqueStage6Values
+} from "./stage6CanonicalVocabulary.js";
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function unique(values = []) {
-  return [...new Set(asArray(values).filter((value) => value !== undefined && value !== null && String(value).trim()).map(String))];
+function byLegalUnitId(indexRows = []) {
+  return new Map(indexRows.map((row) => [row.legal_unit_id, row]));
 }
 
-function bySectionId(indexRows = []) {
-  return new Map(indexRows.map((row) => [row.section_id, row]));
-}
-
-function applySectionOverlay(indexRows = [], overlayRows = []) {
+function applyLegalUnitOverlay(indexRows = [], overlayRows = []) {
   if (!asArray(overlayRows).length) return indexRows;
-  const overlayBySection = new Map(overlayRows.map((row) => [row.section_id, row]));
+  const overlayByUnit = new Map(overlayRows.map((row) => [row.legal_unit_id, row]));
   return indexRows.map((row) => {
-    const overlay = overlayBySection.get(row.section_id);
+    const overlay = overlayByUnit.get(row.legal_unit_id);
     if (!overlay) return row;
     return {
       ...row,
-      section_function: overlay.section_function || row.section_function,
-      control_topics_detected: asArray(overlay.control_families).length ? overlay.control_families : row.control_topics_detected,
+      legal_unit_type: normalizeStage6Enum(overlay.legal_unit_type || row.legal_unit_type, STAGE6_LEGAL_UNIT_TYPES),
+      section_function: normalizeStage6Enum(overlay.section_function || row.section_function, STAGE6_SECTION_FUNCTIONS),
+      control_families_detected: asArray(overlay.control_families_detected).length ? overlay.control_families_detected : row.control_families_detected,
+      basis_codes: normalizeStage6BasisCodes([...(row.basis_codes || []), ...(overlay.basis_codes || [])]),
       confidence: overlay.confidence || row.confidence
     };
   });
 }
 
-function signalKey(sectionId, controlFamily) {
-  return `${sectionId}::${controlFamily}`;
+function signalKey(legalUnitId, controlFamily) {
+  return `${legalUnitId}::${controlFamily}`;
 }
 
 function pushSignal(signalMap, key, signal) {
@@ -41,120 +48,122 @@ function pushSignal(signalMap, key, signal) {
   signalMap.set(key, {
     ...existing,
     ...signal,
-    feature_refs: unique([...(existing.feature_refs || []), ...(signal.feature_refs || [])]),
-    data_flow_refs: unique([...(existing.data_flow_refs || []), ...(signal.data_flow_refs || [])]),
-    basis_codes: unique([...(existing.basis_codes || []), ...(signal.basis_codes || [])])
+    source_refs: uniqueStage6Values([...(existing.source_refs || []), ...(signal.source_refs || [])]),
+    feature_refs: uniqueStage6Values([...(existing.feature_refs || []), ...(signal.feature_refs || [])]),
+    data_flow_refs: uniqueStage6Values([...(existing.data_flow_refs || []), ...(signal.data_flow_refs || [])]),
+    basis_codes: normalizeStage6BasisCodes([...(existing.basis_codes || []), ...(signal.basis_codes || [])])
   });
 }
 
 function buildControlSignalsFromOverlay(indexRows = [], deterministicSignals = [], overlay = {}) {
-  const sections = bySectionId(indexRows);
+  const legalUnits = byLegalUnitId(indexRows);
   const signalMap = new Map();
   for (const signal of deterministicSignals) {
-    pushSignal(signalMap, signalKey(signal.section_id, signal.control_family), { ...signal });
+    pushSignal(signalMap, signalKey(signal.legal_unit_id, signal.control_family), { ...signal });
   }
-  for (const row of asArray(overlay.section_classification_overlay)) {
-    const section = sections.get(row.section_id);
-    if (!section) continue;
-    for (const controlFamily of asArray(row.control_families)) {
-      pushSignal(signalMap, signalKey(row.section_id, controlFamily), {
-        doc_id: section.doc_id,
-        section_id: row.section_id,
-        control_family: controlFamily,
-        coverage_signal: row.coverage_signal || "unknown",
+  for (const row of asArray(overlay.legal_unit_classification_overlay)) {
+    const legalUnit = legalUnits.get(row.legal_unit_id);
+    if (!legalUnit) continue;
+    for (const controlFamily of asArray(row.control_families_detected)) {
+      pushSignal(signalMap, signalKey(row.legal_unit_id, controlFamily), {
+        document_id: legalUnit.document_id,
+        legal_unit_id: row.legal_unit_id,
+        control_family: normalizeStage6Enum(controlFamily, STAGE6_CONTROL_FAMILIES),
+        control_signal: "visible",
+        basis_codes: normalizeStage6BasisCodes(row.basis_codes || []),
+        source_refs: uniqueStage6Values([legalUnit.source_record_ref, legalUnit.legal_unit_id]),
         feature_refs: [],
         data_flow_refs: [],
-        basis_codes: row.basis_codes || [],
-        source_record_ref: section.source_record_ref,
         confidence: row.confidence || "unknown"
       });
     }
   }
   for (const row of asArray(overlay.document_control_overlay)) {
-    const section = sections.get(row.section_id);
-    if (!section) continue;
-    pushSignal(signalMap, signalKey(row.section_id, row.control_family), {
-      doc_id: section.doc_id,
-      section_id: row.section_id,
-      control_family: row.control_family,
-      coverage_signal: row.coverage_signal || "unknown",
+    const legalUnit = legalUnits.get(row.legal_unit_id);
+    if (!legalUnit) continue;
+    pushSignal(signalMap, signalKey(row.legal_unit_id, row.control_family), {
+      document_id: legalUnit.document_id,
+      legal_unit_id: row.legal_unit_id,
+      control_family: normalizeStage6Enum(row.control_family, STAGE6_CONTROL_FAMILIES),
+      control_signal: normalizeStage6Enum(row.control_signal, STAGE6_CONTROL_SIGNALS),
+      basis_codes: normalizeStage6BasisCodes(row.basis_codes || []),
+      source_refs: uniqueStage6Values([legalUnit.source_record_ref, legalUnit.legal_unit_id]),
       feature_refs: row.feature_refs || [],
       data_flow_refs: row.data_flow_refs || [],
-      basis_codes: row.basis_codes || [],
-      source_record_ref: section.source_record_ref,
       confidence: row.confidence || "unknown"
     });
   }
   return [...signalMap.values()].map((signal, index) => ({
     control_signal_id: `CTRL_${String(index + 1).padStart(3, "0")}`,
-    doc_id: signal.doc_id,
-    section_id: signal.section_id,
-    control_family: signal.control_family || "unknown",
-    coverage_signal: signal.coverage_signal || "unknown",
-    feature_refs: unique(signal.feature_refs || []),
-    data_flow_refs: unique(signal.data_flow_refs || []),
-    basis_codes: unique(signal.basis_codes || []),
-    source_record_ref: signal.source_record_ref || "unknown",
+    document_id: signal.document_id,
+    legal_unit_id: signal.legal_unit_id,
+    control_family: normalizeStage6Enum(signal.control_family, STAGE6_CONTROL_FAMILIES),
+    control_signal: normalizeStage6Enum(signal.control_signal, STAGE6_CONTROL_SIGNALS),
+    basis_codes: normalizeStage6BasisCodes(signal.basis_codes || []),
+    source_refs: uniqueStage6Values(signal.source_refs || []),
+    feature_refs: uniqueStage6Values(signal.feature_refs || []),
+    data_flow_refs: uniqueStage6Values(signal.data_flow_refs || []),
     confidence: signal.confidence || "unknown"
   }));
 }
 
-function buildRelationshipsFromOverlay(indexRows = [], overlayRows = []) {
-  const sections = bySectionId(indexRows);
-  return asArray(overlayRows).map((row, index) => {
-    const sourceSection = sections.get(row.from_section_id) || sections.get(row.to_section_id);
+function buildRelationshipsFromOverlay(overlayRows = []) {
+  return asArray(overlayRows).map((row, index) => ({
+    relationship_id: row.relationship_id || `REL_${String(index + 1).padStart(3, "0")}`,
+    from_ref: row.from_ref || "unknown",
+    to_ref: row.to_ref || "unknown",
+    relationship_type: row.relationship_type || "unknown",
+    basis_codes: normalizeStage6BasisCodes(row.basis_codes || []),
+    confidence: row.confidence || "unknown"
+  }));
+}
+
+function buildMismatchesFromOverlay(overlayRows = []) {
+  return asArray(overlayRows).map((row, index) => ({
+    mismatch_id: row.mismatch_id || `MM_${String(index + 1).padStart(3, "0")}`,
+    mismatch_type: row.mismatch_type || "unknown",
+    mismatch_signal: row.mismatch_signal || "unknown",
+    expected_ref: row.expected_ref || "unknown",
+    actual_ref: row.actual_ref || null,
+    control_family: normalizeStage6Enum(row.control_family, STAGE6_CONTROL_FAMILIES),
+    basis_codes: normalizeStage6BasisCodes(row.basis_codes || []),
+    confidence: row.confidence || "unknown"
+  }));
+}
+
+function buildFeatureToLegalUnitIndex(overlayRows = [], indexRows = []) {
+  const legalUnits = byLegalUnitId(indexRows);
+  return asArray(overlayRows).map((row) => {
+    const legalUnitIds = uniqueStage6Values(row.legal_unit_ids || []);
     return {
-      relationship_id: row.relationship_id || `REL_${String(index + 1).padStart(3, "0")}`,
-      from_doc_id: row.from_doc_id,
-      to_doc_id: row.to_doc_id,
-      from_section_id: row.from_section_id,
-      to_section_id: row.to_section_id,
-      relationship_type: row.relationship_type || "unknown",
-      relationship_signal: row.relationship_signal || "unknown",
-      section_refs: unique(row.section_refs || []),
-      source_record_ref: sourceSection?.source_record_ref || "unknown",
-      confidence: row.confidence || "unknown"
+      feature_id: row.feature_id,
+      document_ids: uniqueStage6Values(legalUnitIds.map((legalUnitId) => legalUnits.get(legalUnitId)?.document_id).filter(Boolean)),
+      legal_unit_ids: legalUnitIds,
+      control_families: uniqueStage6Values(row.control_families || []).map((value) => normalizeStage6Enum(value, STAGE6_CONTROL_FAMILIES)).filter((value) => value !== "unknown")
     };
   });
-}
-
-function buildFeatureToDocumentSectionIndex(overlayRows = []) {
-  return asArray(overlayRows).map((row) => ({
-    feature_id: row.feature_id,
-    doc_ids: [],
-    section_ids: unique(row.section_ids || []),
-    control_families: unique(row.control_families || [])
-  }));
-}
-
-function hydrateFeatureIndexDocIds(featureRows = [], indexRows = []) {
-  const sections = bySectionId(indexRows);
-  return featureRows.map((row) => ({
-    ...row,
-    doc_ids: unique(asArray(row.section_ids).map((sectionId) => sections.get(sectionId)?.doc_id).filter(Boolean))
-  }));
 }
 
 export function mergeStage6AModelOverlay(canonical = {}, normalizedOverlay = {}) {
   const output = structuredClone(canonical);
   const currentIndex = output.legal_document_cartography?.legal_document_index || [];
-  const updatedIndex = applySectionOverlay(currentIndex, normalizedOverlay.section_classification_overlay || []);
+  const updatedIndex = applyLegalUnitOverlay(currentIndex, normalizedOverlay.legal_unit_classification_overlay || []);
   output.legal_document_cartography.legal_document_index = updatedIndex;
 
   const deterministicSignals = buildStage6ADocumentControlSignalMap(updatedIndex);
   const signals = buildControlSignalsFromOverlay(updatedIndex, deterministicSignals, normalizedOverlay);
   output.legal_document_cartography.document_control_signal_map = signals;
-  output.legal_document_cartography.document_relationship_map = buildRelationshipsFromOverlay(updatedIndex, normalizedOverlay.document_relationship_overlay || []);
-  output.legal_document_cartography.document_mismatch_signal_map = asArray(normalizedOverlay.document_mismatch_overlay);
+  output.legal_document_cartography.document_relationship_map = buildRelationshipsFromOverlay(normalizedOverlay.document_relationship_overlay || []);
+  output.legal_document_cartography.document_mismatch_signal_map = buildMismatchesFromOverlay(normalizedOverlay.document_mismatch_overlay || []);
   output.stage7_navigation_index.control_family_index = buildStage6AControlFamilyIndex(signals);
-  output.stage7_navigation_index.feature_to_document_section_index = hydrateFeatureIndexDocIds(buildFeatureToDocumentSectionIndex(normalizedOverlay.feature_section_overlay || []), updatedIndex);
+  output.stage7_navigation_index.feature_to_legal_unit_index = buildFeatureToLegalUnitIndex(normalizedOverlay.feature_legal_unit_overlay || [], updatedIndex);
   return output;
 }
 
 export function buildStage6ACartography(input = {}, options = {}) {
   const output = buildStage6ALegalCartographySkeleton(input);
-  const sections = output.legal_document_cartography.legal_document_index || [];
-  const signals = buildStage6ADocumentControlSignalMap(sections);
+  const legalUnits = output.legal_document_cartography.legal_document_index || [];
+  const signals = buildStage6ADocumentControlSignalMap(legalUnits);
   output.legal_document_cartography.document_control_signal_map = signals;
   output.stage7_navigation_index.control_family_index = buildStage6AControlFamilyIndex(signals);
   if (options.normalized_overlay) return mergeStage6AModelOverlay(output, options.normalized_overlay);

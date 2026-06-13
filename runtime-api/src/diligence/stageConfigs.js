@@ -29,21 +29,11 @@ const STAGE_CONFIGS = Object.freeze({
     timeout_ms: 60000,
     temperature: 0
   },
-  legal_stack_review: {
-    stage_id: "legal_stack_review",
-    prompt_stage_id: "legal_stack_review",
-    output_key: "legal_stack_review",
-    output_schema_key: "legalStackReview",
-    pool: "reasoning",
-    max_output_tokens: 8192,
-    timeout_ms: 60000,
-    temperature: 0
-  },
-  stage6a_legal_cartography: {
-    stage_id: "stage6a_legal_cartography",
-    prompt_stage_id: "stage6a_legal_cartography",
-    output_key: "legal_stack_review",
-    output_schema_key: "stage6aLegalCartography",
+  stage6a_legal_document_cartography: {
+    stage_id: "stage6a_legal_document_cartography",
+    prompt_stage_id: "stage6a_legal_document_cartography",
+    output_key: "stage6_review",
+    output_schema_key: "stage6Review",
     pool: "reasoning",
     max_output_tokens: 24000,
     timeout_ms: 60000,

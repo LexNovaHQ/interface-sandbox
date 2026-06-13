@@ -12,12 +12,11 @@ const PROMPT_FILES = Object.freeze({
   evidence_refiner: { root: promptRoot, file: "01_EVIDENCE_REFINER.prompt.md", path: "functions/_prompts/diligence-v2/01_EVIDENCE_REFINER.prompt.md" },
   company_profile: { root: promptRoot, file: "02_COMPANY_PROFILE.prompt.md", path: "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md" },
   target_feature_profile: { root: promptRoot, file: "02_TARGET_FEATURE_PROFILE.prompt.md", path: "functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md" },
-  legal_stack_review: { root: promptRoot, file: "03_LEGAL_STACK_REVIEW.prompt.md", path: "functions/_prompts/diligence-v2/03_LEGAL_STACK_REVIEW.prompt.md" },
-  stage6a_legal_cartography: { root: promptRoot, file: "03A_LEGAL_CARTOGRAPHY.prompt.md", path: "functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md" },
-  stage6a_model_overlay: { root: promptRoot, file: "03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md", path: "functions/_prompts/diligence-v2/03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md" },
+  stage6a_legal_document_cartography: { root: promptRoot, file: "03A_LEGAL_CARTOGRAPHY.prompt.md", path: "functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md" },
   registry_ledger_evaluation: { root: promptRoot, file: "04_REGISTRY_LEDGER_EVALUATION.prompt.md", path: "functions/_prompts/diligence-v2/04_REGISTRY_LEDGER_EVALUATION.prompt.md" },
   operator_challenge: { root: promptRoot, file: "05_OPERATOR_CHALLENGE.prompt.md", path: "functions/_prompts/diligence-v2/05_OPERATOR_CHALLENGE.prompt.md" },
   final_compiler: { root: promptRoot, file: "06_FINAL_COMPILER.prompt.md", path: "functions/_prompts/diligence-v2/06_FINAL_COMPILER.prompt.md" },
+  stage6_canonical_spine: { root: repoRoot, file: "docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md", path: "docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md" },
   diligence_canon_field_dictionary: { root: repoRoot, file: "docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md", path: "docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md" },
   stage4_stage5_field_dictionary: { root: repoRoot, file: "docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md", path: "docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md" }
 });
@@ -26,8 +25,7 @@ const STAGE_PROMPT_IDS = Object.freeze({
   evidence_refiner: "evidence_refiner",
   company_profile: "company_profile",
   target_feature_profile: "target_feature_profile",
-  legal_stack_review: "legal_stack_review",
-  stage6a_legal_cartography: "stage6a_legal_cartography",
+  stage6a_legal_document_cartography: "stage6a_legal_document_cartography",
   registry_ledger_evaluation: "registry_ledger_evaluation",
   operator_challenge: "operator_challenge",
   final_compiler: "final_compiler"

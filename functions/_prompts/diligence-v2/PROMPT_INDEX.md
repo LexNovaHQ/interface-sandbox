@@ -16,6 +16,7 @@ Read these before editing any stage prompt:
 
 ```text
 docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md
+docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md
 docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md
@@ -24,13 +25,19 @@ data/runtime/registry_key.runtime.json
 data/runtime/registry.runtime.json
 ```
 
-The controlling active dictionary is:
+The controlling active Stage 6 spine is:
+
+```text
+docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md
+```
+
+The controlling active dictionary for non-Stage-6 field slices is:
 
 ```text
 docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
 ```
 
-The older Stage 4/5 dictionary is retained as migration history and compatibility fallback. If any older prompt/doc/schema conflicts with the active Diligence Canon Field Dictionary, the active dictionary controls.
+The older Stage 4/5 dictionary is retained as migration history and compatibility fallback. If any older prompt/doc/schema conflicts with the active Stage 6 spine for Stage 6, the Stage 6 spine controls.
 
 ## Locked stage canon
 
@@ -38,8 +45,8 @@ The older Stage 4/5 dictionary is retained as migration history and compatibilit
 Stage 4 = target_profile_v2
 Stage 5 = feature_profile_v2
 Stage 5 canonical features = feature_inventory[]
-Stage 6 = legal_stack_review wrapper containing legal_stack_review_v2
-Stage 6A = Legal Cartography
+Stage 6 = stage6_review_v1
+Stage 6A = Legal Document Cartography
 Stage 6B = Data Provenance
 Stage 6I = Integrated Stage 6 handoff to Stage 7
 Stage 6 role = Legal Stack + Data Provenance Navigation Layer
@@ -54,7 +61,7 @@ The runtime prompt loader must append only the relevant dictionary blocks:
 ```text
 company_profile              -> UNIVERSAL + STAGE4
 target_feature_profile       -> UNIVERSAL + STAGE5
-legal_stack_review           -> UNIVERSAL + STAGE6
+stage6a_legal_document_cartography -> DILIGENCE_CANONICAL_SPINE_v1
 registry_ledger_evaluation   -> UNIVERSAL + STAGE7_NAVIGATION
 ```
 
@@ -86,9 +93,9 @@ Only collection runs without a model key. Every Gemini stage runs server-side.
 | 01 | `01_EVIDENCE_REFINER.prompt.md` | Convert collected public material into admitted evidence | `source_bundle` |
 | 02A | `02_COMPANY_PROFILE.prompt.md` | Canonical identity, jurisdiction, market, baseline Vault candidates | `company_profile` wrapper containing `target_profile_v2` |
 | 02B | `02_TARGET_FEATURE_PROFILE.prompt.md` | Atomic feature/function inventory, data provenance, archetype/surface provenance | `target_feature_profile` wrapper containing `feature_profile_v2` |
-| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Legacy active Stage 6 wrapper until 6A/6B surgery is wired | `legal_stack_review` wrapper containing `legal_stack_review_v2` |
-| 03A | `03A_LEGAL_CARTOGRAPHY.prompt.md` | Canonical Stage 6A final output contract; isolated until runtime wiring | `legal_document_cartography`, 6A navigation index |
-| 03A-OVERLAY | `03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md` | Bounded model overlay for existing deterministic Stage 6A seeds | `stage6a_model_overlay_v1` |
+| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Retired legacy path marker, not active runtime authority | Retired |
+| 03A | `03A_LEGAL_CARTOGRAPHY.prompt.md` | Canonical Stage 6A semantic classification over deterministic macro legal-unit seeds | `stage6_review` containing `stage6_review_v1` |
+| 03A-OVERLAY | `03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md` | Retired independent overlay dialect marker, not active runtime authority | Retired |
 | 04 | `04_REGISTRY_LEDGER_EVALUATION.prompt.md` | Evaluate supplied registry rows under Hunter Logic Gate | `registry_evaluation_ledger[]`, `batch_warnings[]` |
 | 05 | `05_OPERATOR_CHALLENGE.prompt.md` | Challenge merged ledger for false negatives and bad exclusions | `operator_challenge_gate`, `corrected_ledger_entries[]` |
 | 06 | `06_FINAL_COMPILER.prompt.md` | Compile post-challenge ledger into compiler output | `compiler_output` |

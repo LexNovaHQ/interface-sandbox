@@ -2,9 +2,15 @@
 
 ## Binding update
 
-This spine now incorporates the locked Diligence Canon Field Dictionary.
+This spine now incorporates the locked Diligence Canon Field Dictionary for non-Stage-6 slices and the Stage 6 Canonical Spine for Stage 6.
 
-The controlling runtime dictionary is:
+The controlling Stage 6 spine is:
+
+```text
+docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md
+```
+
+The controlling runtime dictionary for non-Stage-6 slices is:
 
 ```text
 docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
@@ -24,7 +30,7 @@ docs/contracts/STAGE4_STAGE5_CANON_SUPERSEDES_SPINE_v1.md
 
 If any older spine language, runtime note, archive, prompt, schema bundle, or fixture treats `target_profile`, `primary_product`, or `product_feature_map[]` as canonical, it is superseded.
 
-If any older Stage 6 language treats legal-stack review as only a five-document prose/redline report, it is superseded by the Stage 6 block in the Diligence Canon Field Dictionary.
+If any older Stage 6 language treats legal-stack review, Stage 6A, or model overlay as independent schema/vocabulary authority, it is superseded by `docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md`.
 
 ---
 
@@ -35,7 +41,7 @@ If any older Stage 6 language treats legal-stack review as only a five-document 
 0.5  Evidence Refiner                                      → source_bundle
 4.   Canonical Target Profile                              → company_profile wrapper containing target_profile_v2
 5.   Product Function / Feature Inventory                  → target_feature_profile wrapper containing feature_profile_v2
-6.   Legal Stack + Data Provenance Navigation Layer        → legal_stack_review wrapper containing legal_stack_review_v2
+6.   Legal Stack + Data Provenance Navigation Layer        -> stage6_review wrapper containing stage6_review_v1
 7.   Registry Ledger                                       → registry_evaluation_ledger[]
 8.   Operator Challenge                                    → operator_challenge_gate + corrected_ledger_entries[]
 9.   Final Compiler                                        → compiler_output
@@ -121,12 +127,24 @@ Stage 5 must not rewrite Stage 4 identity or evaluate registry threat rows.
 
 ## Stage 6 canon
 
-Runtime output key remains `legal_stack_review` for compatibility.
+Runtime output key is:
+
+```text
+stage6_review
+```
 
 Canonical internal version:
 
 ```text
-legal_stack_review_v2
+stage6_review_v1
+```
+
+This section is a summary only. The binding Stage 6 source of truth is:
+
+```text
+docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md
+runtime-api/src/diligence/stage6CanonicalVocabulary.js
+data/schemas/stage6Review.schema.json
 ```
 
 Stage 6 role:
@@ -154,10 +172,10 @@ data_provenance_profile
 
 stage7_navigation_index
   feature_to_data_flow_index[]
-  feature_to_document_section_index[]
+  feature_to_legal_unit_index[]
   control_family_index[]
   data_signal_index[]
-  document_source_locator_index[]
+  legal_unit_source_locator_index[]
   absence_unknown_index[]
   fallback_source_packet[]
 ```

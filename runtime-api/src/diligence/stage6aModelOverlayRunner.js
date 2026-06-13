@@ -1,31 +1,21 @@
-import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
 import { buildStage6AModelOverlayPacket } from "./stage6aModelOverlayPacketBuilder.js";
 import { normalizeStage6AModelOverlay } from "./stage6aModelOverlayNormalizer.js";
 
-const DEFAULT_OVERLAY_PROMPT_PATH = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../functions/_prompts/diligence-v2/03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md"
-);
-
-async function readDefaultOverlayPrompt(promptPath = DEFAULT_OVERLAY_PROMPT_PATH) {
-  const bundledPrompt = DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_model_overlay?.text;
-  if (bundledPrompt) return bundledPrompt;
-  return readFile(promptPath, "utf8");
+function readDefaultSemanticPrompt() {
+  return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_legal_document_cartography?.text || "";
 }
 
-function buildOverlayPrompt(promptText, packet) {
+function buildSemanticPrompt(promptText, packet) {
   return [
     String(promptText || "").trim(),
     "",
-    "---INPUT_JSON---",
+    "---CANONICAL_STAGE_6_SEMANTIC_PACKET---",
     JSON.stringify(packet, null, 2),
     "",
-    "Return valid JSON only. Do not include Markdown fences or commentary outside JSON."
+    "Return valid JSON only. Do not include Markdown fences, legal conclusions, quotes, report prose, or commentary outside JSON."
   ].join("\n");
 }
 
@@ -44,15 +34,29 @@ function publicModelMetadata(result = {}) {
   };
 }
 
+function stage6Summary(stage6Review = {}) {
+  return {
+    legal_document_inventory_count: stage6Review.legal_document_cartography?.legal_document_inventory?.length || 0,
+    legal_document_index_count: stage6Review.legal_document_cartography?.legal_document_index?.length || 0,
+    document_control_signal_map_count: stage6Review.legal_document_cartography?.document_control_signal_map?.length || 0,
+    document_relationship_map_count: stage6Review.legal_document_cartography?.document_relationship_map?.length || 0,
+    document_mismatch_signal_map_count: stage6Review.legal_document_cartography?.document_mismatch_signal_map?.length || 0,
+    feature_to_legal_unit_index_count: stage6Review.stage7_navigation_index?.feature_to_legal_unit_index?.length || 0,
+    control_family_index_count: stage6Review.stage7_navigation_index?.control_family_index?.length || 0,
+    legal_unit_source_locator_index_count: stage6Review.stage7_navigation_index?.legal_unit_source_locator_index?.length || 0
+  };
+}
+
 export async function runStage6AModelOverlay({ input = {}, promptText = "", env = process.env, options = {} } = {}) {
-  if (!String(promptText || "").trim()) {
-    return { ok: false, error_type: "STAGE6A_OVERLAY_PROMPT_MISSING", error: "Stage 6A model overlay prompt text is required." };
+  const semanticPromptText = String(promptText || readDefaultSemanticPrompt() || "").trim();
+  if (!semanticPromptText) {
+    return { ok: false, error_type: "STAGE6_SEMANTIC_PROMPT_MISSING", error: "Stage 6 semantic prompt text is required." };
   }
   const packet = buildStage6AModelOverlayPacket(input, {
-    maxSections: options.maxSections,
+    maxLegalUnits: options.maxLegalUnits || options.maxSections,
     textWindowChars: options.textWindowChars
   });
-  const prompt = buildOverlayPrompt(promptText, packet);
+  const prompt = buildSemanticPrompt(semanticPromptText, packet);
   const runResult = await runGeminiPool({
     poolName: options.pool || "reasoning",
     prompt,
@@ -60,51 +64,42 @@ export async function runStage6AModelOverlay({ input = {}, promptText = "", env 
     options: {
       responseMimeType: "application/json",
       temperature: options.temperature ?? 0.05,
-      maxOutputTokens: Number(options.maxOutputTokens || env.STAGE6A_OVERLAY_MAX_OUTPUT_TOKENS || 24000),
-      timeoutMs: Number(options.timeoutMs || env.STAGE6A_OVERLAY_TIMEOUT_MS || 60000),
+      maxOutputTokens: Number(options.maxOutputTokens || env.STAGE6_SEMANTIC_MAX_OUTPUT_TOKENS || 24000),
+      timeoutMs: Number(options.timeoutMs || env.STAGE6_SEMANTIC_TIMEOUT_MS || 60000),
       maxAttempts: options.maxAttempts
     }
   });
   if (!runResult.ok) {
     return {
       ok: false,
-      error_type: runResult.error_type || "STAGE6A_OVERLAY_MODEL_FAILED",
-      error: runResult.error || "Stage 6A overlay model call failed.",
+      error_type: runResult.error_type || "STAGE6_SEMANTIC_MODEL_FAILED",
+      error: runResult.error || "Stage 6 semantic model call failed.",
       packet_summary: {
         document_inventory_seed_count: packet.document_inventory_seed.length,
-        section_index_seed_count: packet.section_index_seed.length,
+        legal_unit_seed_count: packet.legal_unit_seed.length,
         deterministic_control_seed_count: packet.deterministic_control_seed.length,
         feature_ref_count: packet.feature_refs.length
       },
       model_metadata: publicModelMetadata(runResult)
     };
   }
-  const rawOverlay = runResult.json?.stage6a_model_overlay || runResult.json;
+  const rawOverlay = runResult.json?.stage6_semantic_overlay || runResult.json?.stage6a_model_overlay || runResult.json;
   const normalized = normalizeStage6AModelOverlay(rawOverlay, packet);
-  const cartography = buildStage6ACartography(input, { normalized_overlay: normalized.overlay });
+  const stage6Review = buildStage6ACartography(input, { normalized_overlay: normalized.overlay });
   return {
     ok: true,
-    overlay_packet_version: packet.overlay_packet_version,
-    raw_overlay_version: rawOverlay?.stage6a_model_overlay_version || null,
+    semantic_packet_version: packet.semantic_packet_version,
+    raw_overlay_version: rawOverlay?.semantic_overlay_version || rawOverlay?.stage6a_model_overlay_version || null,
     normalized_overlay: normalized.overlay,
     overlay_repairs: normalized.repairs,
-    cartography,
+    stage6_review: stage6Review,
     packet_summary: {
       document_inventory_seed_count: packet.document_inventory_seed.length,
-      section_index_seed_count: packet.section_index_seed.length,
+      legal_unit_seed_count: packet.legal_unit_seed.length,
       deterministic_control_seed_count: packet.deterministic_control_seed.length,
       feature_ref_count: packet.feature_refs.length
     },
-    cartography_summary: {
-      legal_document_inventory_count: cartography.legal_document_cartography?.legal_document_inventory?.length || 0,
-      legal_document_index_count: cartography.legal_document_cartography?.legal_document_index?.length || 0,
-      document_control_signal_map_count: cartography.legal_document_cartography?.document_control_signal_map?.length || 0,
-      document_relationship_map_count: cartography.legal_document_cartography?.document_relationship_map?.length || 0,
-      document_mismatch_signal_map_count: cartography.legal_document_cartography?.document_mismatch_signal_map?.length || 0,
-      feature_to_document_section_index_count: cartography.stage7_navigation_index?.feature_to_document_section_index?.length || 0,
-      control_family_index_count: cartography.stage7_navigation_index?.control_family_index?.length || 0,
-      source_locator_index_count: cartography.stage7_navigation_index?.document_source_locator_index?.length || 0
-    },
+    stage6_summary: stage6Summary(stage6Review),
     model_metadata: publicModelMetadata(runResult)
   };
 }
@@ -127,45 +122,35 @@ export async function runStage6ALegalCartography({
     evidence_junction
   };
   const options = runtime_options || {};
-  if (options.disableModelOverlay === true || env.STAGE6A_DISABLE_MODEL_OVERLAY === "true") {
-    const cartography = buildStage6ACartography(input);
+  if (options.disableModelOverlay === true || env.STAGE6_DISABLE_SEMANTIC_MODEL === "true") {
+    const stage6Review = buildStage6ACartography(input);
     return {
       ok: true,
-      model_overlay_attempted: false,
-      overlay_disabled: true,
+      semantic_model_attempted: false,
+      semantic_model_disabled: true,
       normalized_overlay: null,
       overlay_repairs: [],
-      cartography,
+      stage6_review: stage6Review,
       packet_summary: {
-        document_inventory_seed_count: cartography.legal_document_cartography?.legal_document_inventory?.length || 0,
-        section_index_seed_count: cartography.legal_document_cartography?.legal_document_index?.length || 0,
-        deterministic_control_seed_count: cartography.legal_document_cartography?.document_control_signal_map?.length || 0,
+        document_inventory_seed_count: stage6Review.legal_document_cartography?.legal_document_inventory?.length || 0,
+        legal_unit_seed_count: stage6Review.legal_document_cartography?.legal_document_index?.length || 0,
+        deterministic_control_seed_count: stage6Review.legal_document_cartography?.document_control_signal_map?.length || 0,
         feature_ref_count: target_feature_profile?.feature_inventory?.length || 0
       },
-      cartography_summary: {
-        legal_document_inventory_count: cartography.legal_document_cartography?.legal_document_inventory?.length || 0,
-        legal_document_index_count: cartography.legal_document_cartography?.legal_document_index?.length || 0,
-        document_control_signal_map_count: cartography.legal_document_cartography?.document_control_signal_map?.length || 0,
-        document_relationship_map_count: cartography.legal_document_cartography?.document_relationship_map?.length || 0,
-        document_mismatch_signal_map_count: cartography.legal_document_cartography?.document_mismatch_signal_map?.length || 0,
-        feature_to_document_section_index_count: cartography.stage7_navigation_index?.feature_to_document_section_index?.length || 0,
-        control_family_index_count: cartography.stage7_navigation_index?.control_family_index?.length || 0,
-        source_locator_index_count: cartography.stage7_navigation_index?.document_source_locator_index?.length || 0
-      },
+      stage6_summary: stage6Summary(stage6Review),
       model_metadata: null
     };
   }
-  const overlayPromptText = promptText || await readDefaultOverlayPrompt(options.overlayPromptPath);
   const result = await runStage6AModelOverlay({
     input,
-    promptText: overlayPromptText,
+    promptText,
     env,
     options
   });
   return {
     ...result,
-    model_overlay_attempted: true
+    semantic_model_attempted: true
   };
 }
 
-export const stage6aModelOverlayRunnerInternals = { buildOverlayPrompt, publicModelMetadata };
+export const stage6aModelOverlayRunnerInternals = { buildSemanticPrompt, publicModelMetadata };

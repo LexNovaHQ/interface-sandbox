@@ -3,9 +3,7 @@ import { getDiligenceStageConfig } from "./stageConfigs.js";
 import { loadDiligencePrompt } from "./stagePromptLoader.js";
 import { formatSchemaErrors, resolveSchemaEntry, validateDiligenceStageOutput } from "./stageSchemaValidator.js";
 import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
-import { validateLegalStackReviewGuardrails } from "./legalStackReviewGuardrails.js";
 import { validateRegistryLedgerGuardrails } from "./registryLedgerGuardrails.js";
-import { hasUnadmittedLegalDocumentCandidates, reconcileStage6LegalDocumentInput } from "./stage6LegalDocumentInputReconciler.js";
 import { runStage6ALegalCartography } from "./stage6aModelOverlayRunner.js";
 import { repairTargetFeatureProfileForSchema } from "./targetFeatureProfileSchemaRepair.js";
 
@@ -21,38 +19,6 @@ function stringifyLimitation(item) {
   const fields = [item.limitation, item.summary, item.reason, item.message, item.description, item.note, item.value].filter((value) => typeof value === "string" && value.trim());
   if (fields.length) return fields.join(" — ");
   try { return JSON.stringify(item); } catch { return String(item); }
-}
-
-const STAGE6A_SIGNAL_VALUES = new Set(["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"]);
-
-function normalizeStage6ASignal(value) {
-  if (typeof value !== "string") return value;
-  const raw = value.trim();
-  if (STAGE6A_SIGNAL_VALUES.has(raw)) return raw;
-  const normalized = raw.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-  if (STAGE6A_SIGNAL_VALUES.has(normalized)) return normalized;
-  if (!normalized) return value;
-  if (normalized.includes("conflict") || normalized.includes("contradict")) return "conflicting";
-  if (normalized.includes("partial") || normalized.includes("limited") || normalized.includes("mixed") || normalized.includes("some")) return "partial";
-  if (normalized === "na" || normalized === "n_a" || normalized.includes("not_applicable")) return "not_applicable";
-  if (normalized.includes("not_visible") || normalized.includes("not_found") || normalized.includes("missing") || normalized.includes("absent") || normalized.includes("unavailable")) return "not_visible";
-  if (normalized.includes("visible") || normalized.includes("present") || normalized.includes("available") || normalized.includes("covered")) return "visible";
-  return "unknown";
-}
-
-function repairLegalStackReviewForSchema(value) {
-  const signals = value?.legal_document_cartography?.legal_stack_summary_signals;
-  if (!signals || typeof signals !== "object" || Array.isArray(signals)) return { repaired: false, repair_notes: [] };
-  const notes = [];
-  for (const key of ["document_hierarchy_signal", "legal_stack_coverage_signal"]) {
-    if (typeof signals[key] !== "string") continue;
-    const repaired = normalizeStage6ASignal(signals[key]);
-    if (repaired !== signals[key]) {
-      signals[key] = repaired;
-      notes.push(`normalized_stage6a_${key}`);
-    }
-  }
-  return { repaired: notes.length > 0, repair_notes: notes };
 }
 
 function normalizeStageOutputForSchema(value, schemaKey) {
@@ -76,16 +42,6 @@ function normalizeStageOutputForSchema(value, schemaKey) {
       if (!copy.limitations.includes(warning)) copy.limitations.push(warning);
       notes.push("cleared_legacy_product_feature_map_before_schema_validation");
     }
-  }
-  if (schemaKey === "legalStackReview") {
-    if (copy.legal_document_cartography && typeof copy.legal_document_cartography === "object" && !Array.isArray(copy.legal_document_cartography)) {
-      copy.legal_document_cartography = { ...copy.legal_document_cartography };
-      if (copy.legal_document_cartography.legal_stack_summary_signals && typeof copy.legal_document_cartography.legal_stack_summary_signals === "object" && !Array.isArray(copy.legal_document_cartography.legal_stack_summary_signals)) {
-        copy.legal_document_cartography.legal_stack_summary_signals = { ...copy.legal_document_cartography.legal_stack_summary_signals };
-      }
-    }
-    const legalRepair = repairLegalStackReviewForSchema(copy);
-    if (legalRepair.repaired) notes.push(...legalRepair.repair_notes);
   }
   return { value: copy, repaired: notes.length > 0, repair_notes: notes };
 }
@@ -184,7 +140,6 @@ function guardrailResultFor(config, output, input) {
   const threatMappingSupplied = input?.threat_mapping_supplied === true || input?.source_bundle?.source_review?.threat_mapping_supplied === true;
   const evidenceBuffer = Array.isArray(input?.source_bundle?.evidence_buffer) ? input.source_bundle.evidence_buffer : [];
   if (config.output_schema_key === "targetFeatureProfile") return { ...validateTargetFeatureProfileGuardrails(output, { threatMappingSupplied, evidenceBuffer, packageInput: input }), validation_mode: "target_feature_profile_runtime_guardrails" };
-  if (config.output_schema_key === "legalStackReview") return { ...validateLegalStackReviewGuardrails(output, { threatMappingSupplied, evidenceBuffer }), validation_mode: "legal_stack_review_runtime_guardrails" };
   if (config.output_schema_key === "registryLedger") return { ...validateRegistryLedgerGuardrails(output, { input }), validation_mode: "registry_ledger_runtime_guardrails" };
   return { ok: true, errors: [], warnings: [], repairs: [], validation_mode: null };
 }
@@ -268,7 +223,7 @@ async function runStage6ALegalCartographyStage({ config, schemaEntry, input, opt
       model_metadata: runResult.model_metadata || null
     };
   }
-  const finalOutput = runResult.cartography;
+  const finalOutput = runResult.stage6_review;
   const validation = validateDiligenceStageOutput(config.output_schema_key, finalOutput);
   if (!validation.ok) {
     return {
@@ -284,8 +239,8 @@ async function runStage6ALegalCartographyStage({ config, schemaEntry, input, opt
       validation_errors: validation.errors,
       error_summary: formatSchemaErrors(validation.errors),
       packet_summary: runResult.packet_summary || null,
-      cartography_summary: runResult.cartography_summary || null,
-      model_overlay_attempted: runResult.model_overlay_attempted === true,
+      stage6_summary: runResult.stage6_summary || null,
+      semantic_model_attempted: runResult.semantic_model_attempted === true,
       model_metadata: runResult.model_metadata || null
     };
   }
@@ -301,15 +256,15 @@ async function runStage6ALegalCartographyStage({ config, schemaEntry, input, opt
     output_unwrapped: false,
     output_repaired: false,
     output_repair_notes: [],
-    legal_stack_review: finalOutput,
+    stage6_review: finalOutput,
     packet_summary: runResult.packet_summary || null,
-    cartography_summary: runResult.cartography_summary || null,
+    stage6_summary: runResult.stage6_summary || null,
     normalized_overlay: runResult.normalized_overlay || null,
     overlay_repairs: runResult.overlay_repairs || [],
-    model_overlay_attempted: runResult.model_overlay_attempted === true,
+    semantic_model_attempted: runResult.semantic_model_attempted === true,
     model_metadata: runResult.model_metadata || null,
     prompt_metadata: {
-      stage_prompt: "03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md",
+      stage_prompt: "03A_LEGAL_CARTOGRAPHY.prompt.md",
       runtime_instruction_configured: false
     }
   };
@@ -335,7 +290,7 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const config = getDiligenceStageConfig(stageId);
   const schemaEntry = resolveSchemaEntry(config.output_schema_key);
   if (!schemaEntry?.schema) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "SCHEMA_NOT_FOUND", error: `Output schema not found for ${config.output_schema_key}`, output_schema_key: config.output_schema_key };
-  if (config.output_schema_key === "stage6aLegalCartography") {
+  if (config.output_schema_key === "stage6Review") {
     return runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env });
   }
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
@@ -403,10 +358,5 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
       }
     }, discoveryResult);
   }
-  if (config.output_schema_key !== "legalStackReview" || options.skipLegalDocumentReconciliation === true || !hasUnadmittedLegalDocumentCandidates(first.finalOutput)) return withStage5DiscoveryPayload(first.payload, discoveryResult);
-  const reconciliation = await reconcileStage6LegalDocumentInput({ legalStackReview: first.finalOutput, legalStackReviewInput: input, timeoutMs: Number(options.legalDocumentTimeoutMs || env.STAGE6_LEGAL_DOCUMENT_TIMEOUT_MS || 15000), maxBytes: Number(options.legalDocumentMaxBytes || env.STAGE6_LEGAL_DOCUMENT_MAX_BYTES || 15 * 1024 * 1024) });
-  if (!reconciliation.resolved_count) return { ...first.payload, legal_document_reconciliation: reconciliation };
-  const rerun = await executeStageOnce({ config, schemaEntry, promptBundle, stageId, input: reconciliation.legal_stack_review_input, options: { ...options, skipLegalDocumentReconciliation: true }, env });
-  if (!rerun.ok) return { ...first.payload, legal_document_reconciliation: { ...reconciliation, rerun_failed: true, rerun_error: rerun.payload?.error || "rerun_failed" } };
-  return { ...rerun.payload, legal_document_reconciliation: { ...reconciliation, rerun_applied: true } };
+  return withStage5DiscoveryPayload(first.payload, discoveryResult);
 }

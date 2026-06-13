@@ -192,48 +192,21 @@ jobs:
           STAGE5_MAX_ESTIMATED_TOKENS: "120000"
         run: npm run e2e:stage5:features
 
-      - name: Run Stage 6A Legal Cartography E2E
-        if: always()
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          STAGE6A_AUDIT_TARGET: "remote"
-          STAGE6A_MAX_OUTPUT_TOKENS: "24000"
-          STAGE6A_TIMEOUT_MS: "120000"
-          STAGE6A_MAX_SECTIONS: "240"
-          STAGE6A_TEXT_WINDOW_CHARS: "1800"
-        run: npm run e2e:stage6a:legal-cartography
-
-      - name: Run Stage 6 Legal Stack Review E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          STAGE6_MAX_OUTPUT_TOKENS: "12000"
-          STAGE6_TIMEOUT_MS: "120000"
-          STAGE6_MAX_INPUT_CHARS: "240000"
-          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
-          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
-        run: npm run e2e:stage6:legal
-
       - name: Prepare Stage 4/5 audit artifact
         if: always()
         run: |
           set -euo pipefail
           rm -rf runtime-api/runtime-e2e-artifacts/stage4-stage5
-          mkdir -p runtime-api/runtime-e2e-artifacts/stage4-stage5/stage4 runtime-api/runtime-e2e-artifacts/stage4-stage5/stage5 runtime-api/runtime-e2e-artifacts/stage4-stage5/stage6a runtime-api/runtime-e2e-artifacts/stage4-stage5/stage6
+          mkdir -p runtime-api/runtime-e2e-artifacts/stage4-stage5/stage4 runtime-api/runtime-e2e-artifacts/stage4-stage5/stage5
           echo "Cache directory:"
           ls -lah runtime-api/.runtime-e2e-cache || true
           cp -v runtime-api/.runtime-e2e-cache/stage4-company-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage4/ 2>/dev/null || true
           cp -v runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage5/ 2>/dev/null || true
-          cp -v runtime-api/.runtime-e2e-cache/stage6a-legal-cartography.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage6a/ 2>/dev/null || true
-          cp -v runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage6/ 2>/dev/null || true
-          echo "{\"generated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"stage4_cache_present\":$(test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json && echo true || echo false),\"stage5_cache_present\":$(test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json && echo true || echo false),\"stage6a_cache_present\":$(test -s runtime-api/.runtime-e2e-cache/stage6a-legal-cartography.json && echo true || echo false),\"stage6_cache_present\":$(test -s runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json && echo true || echo false)}" > runtime-api/runtime-e2e-artifacts/stage4-stage5/artifact-manifest.json
+          echo "{\"generated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"stage4_cache_present\":$(test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json && echo true || echo false),\"stage5_cache_present\":$(test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json && echo true || echo false),\"stage6_audits_disabled_pending_canonical_rebuild\":true}" > runtime-api/runtime-e2e-artifacts/stage4-stage5/artifact-manifest.json
           echo "Artifact directory:"
           find runtime-api/runtime-e2e-artifacts/stage4-stage5 -maxdepth 2 -type f -print
 
-      - name: Upload Stage 4/5/6 audit cache
+      - name: Upload Stage 4/5 audit cache
         if: always()
         uses: actions/upload-artifact@v4
         with:

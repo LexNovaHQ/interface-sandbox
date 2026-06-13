@@ -1,49 +1,6 @@
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 
-const LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES = `
-
----MANDATORY_LEGAL_STACK_CONTROL_SIGNAL_MAP_RULES---
-
-These rules are supreme runtime rules for legal_stack_review. Apply them before writing legal_stack[], document_stack_redline[], legal_stack_assessment[], or limitations[].
-
-This stage must not run registry evaluation and must not assign registry final_status values. Its job is to review the public legal stack and prepare compact control evidence for later Hunter EXCLUDE_IF review.
-
-Use the deterministic legal_control_signal_map:
-The input may include legal_control_signal_map. It is built deterministically from admitted full legal/governance text before this model call. Treat it as a reading aid, not a legal conclusion. The full admitted text in source_bundle.evidence_buffer remains the authority.
-
-No exhaustive control inventory:
-Do not create a long legal_control_index. Do not repeat every signal. legal_stack_assessment[] should stay compact and material.
-
-Output budget rule:
-Create at most 8 legal_stack_assessment[] entries total unless a document is impossible to assess without more. Prefer the highest-value entries for later Stage 7 EXCLUDE_IF review.
-
-Priority controls to mention if visible in legal_control_signal_map or full text:
-1. subprocessor disclosure / change notice / objection;
-2. model training or fine-tuning opt-in or opt-out;
-3. consent withdrawal, deletion, or data-subject rights;
-4. biometric, voice, deepfake, or impersonation controls;
-5. AUP or prohibited-use restrictions;
-6. AI output reliance/accuracy disclaimer;
-7. output ownership or generated-content allocation;
-8. DPA roles / processing instructions;
-9. security or breach controls;
-10. SLA remedies / service credits;
-11. liability or warranty limits.
-
-Embedded artifact handling:
-If legal_control_signal_map flags an embedded artifact such as an annexure, schedule, notice, table, subprocessor list, AUP section, DPA section, SLA section, or support terms, check the corresponding full text before declaring related coverage absent. Do not add embedded artifacts as sixth legal_stack[] document types.
-
-No contradicted misses rule:
-Before writing a miss such as "No visible subprocessor disclosure", "No visible consent withdrawal", "No visible deletion process", "No visible model-training restriction", "No visible biometric/voice control", "No visible AUP", or "No visible SLA remedy", first check legal_control_signal_map and the full admitted source text. If a signal exists, either record it as coverage/control or explain the exact mismatch in one compact limitation.
-
-Compact entry rule:
-If you create legal_stack_assessment[] entries for controls or embedded artifacts, keep coverage_note under 25 words and evidence_quote under 25 words. Do not duplicate the same control family across documents unless the second document adds materially different control evidence.
-
-Stage 7 handoff rule:
-The output should help registry_ledger_evaluation later decide row-specific EXCLUDE_IF. Do not decide EXCLUDE_IF here. Do not output CONTROLLED, TRIGGERED, NOT_TRIGGERED, NOT_APPLICABLE, or INSUFFICIENT_EVIDENCE as threat classifications.
-`;
-
 const REGISTRY_HUNTER_ENGINE_RULES = `
 
 ---MANDATORY_HUNTER_ENGINE_RULES---
@@ -88,7 +45,7 @@ These rules supersede any older Stage 4/5 dictionary language that still asks th
 const CANON_BLOCKS_BY_STAGE = Object.freeze({
   company_profile: ["UNIVERSAL", "STAGE4"],
   target_feature_profile: ["UNIVERSAL", "STAGE5"],
-  legal_stack_review: ["UNIVERSAL", "STAGE6"],
+  stage6a_legal_document_cartography: [],
   registry_ledger_evaluation: ["UNIVERSAL", "STAGE7_NAVIGATION"]
 });
 
@@ -147,8 +104,9 @@ function runtimePromptAppendixFor(stageId) {
   const parts = [];
   const fieldDictionary = canonFieldDictionaryAppendix(stageId);
   if (fieldDictionary) parts.push(fieldDictionary);
+  const stage6Spine = getPromptIfAvailable("stage6_canonical_spine");
+  if (stageId === "stage6a_legal_document_cartography" && stage6Spine?.text) parts.push(`\n\n---DILIGENCE_STAGE_6_CANONICAL_SPINE---\n\n${stage6Spine.text.trim()}`);
   if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES);
-  if (stageId === "legal_stack_review") parts.push(LEGAL_STACK_EMBEDDED_CONTROL_REVIEW_RULES);
   if (stageId === "registry_ledger_evaluation") parts.push(REGISTRY_HUNTER_ENGINE_RULES);
   return parts.join("");
 }

@@ -303,3 +303,44 @@ Not touched:
 
 Restore command:
 - `git reset --hard 7f1f089c810bdceec83e289bbd392274fd7d41f5`
+
+## 6.CANON.R1 - Canonical Stage 6 spine/schema reset
+
+Base HEAD before patch:
+- `233fe9f687c94c6c1201dec4ebd3c6b8a66b565e`
+
+Summary:
+- Created the single human-readable Stage 6 spine at `docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md`.
+- Created the single machine-readable Stage 6 vocabulary at `runtime-api/src/diligence/stage6CanonicalVocabulary.js`.
+- Created the single Stage 6 schema at `data/schemas/stage6Review.schema.json`.
+- Removed the old active schema authorities: `legalStackReview.schema.json`, `stage6aLegalCartography.schema.json`, and `stage6aModelOverlay.schema.json`.
+- Rewired Stage 6A runtime to emit `stage6_review_v1` with component `stage6a_legal_document_cartography`.
+- Rebuilt Stage 6A indexing around macro legal units: `document_id`, `legal_unit_id`, `legal_unit_type`, `feature_to_legal_unit_index`, and `legal_unit_source_locator_index`.
+- Disabled old Stage 6A/6B/legacy Stage 6 audits and workflow Stage 6 steps until canonical audits are rebuilt from the new spine/schema.
+
+Validation:
+- `npm.cmd install --prefix runtime-api`: pass.
+- `npm.cmd run build:runtime`: pass; prompt count 11, schema count 15, validator count 15.
+- Deterministic Stage 6 schema smoke against `stage6Review`: pass; micro heading fixture dropped from macro legal-unit output.
+- `npm.cmd run check` in `runtime-api`: pass after temporary local copy of generated bundles to match deploy/workflow layout.
+
+Intentionally disabled:
+- `runtime-api/scripts/audit-stage6a-intelligence-path.mjs`.
+- `runtime-api/scripts/e2e-stage6a-legal-cartography.mjs`.
+- `runtime-api/scripts/e2e-stage6b-data-provenance.mjs`.
+- `runtime-api/scripts/e2e-stage6-legal-stack-review.mjs`.
+- Stage 6 steps in `.github/workflows/runtime-stage4-stage5-audit.yml`.
+- Legacy `legalStackReviewGuardrails.js` authority.
+
+Not touched:
+- Stage 4 business logic.
+- Stage 5 business logic.
+- Stage 7 registry logic.
+- Stage 9/10.
+- Vault.
+- UI/product pages.
+- Registry CSV/data.
+- Planner logic.
+
+Restore command:
+- `git reset --hard 233fe9f687c94c6c1201dec4ebd3c6b8a66b565e`

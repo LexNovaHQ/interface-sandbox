@@ -1,11 +1,7 @@
-#!/usr/bin/env node
-
 console.error(JSON.stringify({
   ok: false,
   phase: "stage6b_data_provenance_e2e",
-  error_type: "STAGE6B_AUDIT_NOT_YET_CANONICAL",
-  error: "Stage 6B Data Provenance audit is intentionally separated from Stage 6A and no longer imports the legacy integrated Stage 6 audit. Build the canonical 6B runtime/audit path before using this script as proof.",
-  legacy_compatibility_script: "npm run e2e:stage6:legacy"
+  disabled: true,
+  reason: "Stage 6B remains disabled during canonical Stage 6 spine/schema reset. Rebuild this E2E against stage6_review_v1 before using it as proof."
 }, null, 2));
-
 process.exit(1);

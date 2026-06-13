@@ -194,3 +194,29 @@ Deployment/live audit:
 
 Restore command:
 - `git reset --hard 7f1f089c810bdceec83e289bbd392274fd7d41f5`
+
+## 6.CANON.R1 - Stage 6A absorbed into canonical Stage 6
+
+Base HEAD before patch:
+- `233fe9f687c94c6c1201dec4ebd3c6b8a66b565e`
+
+Status:
+- Stage 6A no longer has an independent schema authority.
+- The old model overlay schema/prompt dialect is retired as an independent authority.
+- Stage 6A now emits through the single `stage6Review` schema with `stage6_component: "stage6a_legal_document_cartography"`.
+- Stage 6A semantic classification uses canonical vocabulary from `stage6CanonicalVocabulary.js`.
+- Legacy Stage 6A audit scripts are disabled until rebuilt from `DILIGENCE_CANONICAL_SPINE_v1.md` and `stage6Review.schema.json`.
+
+Validation:
+- `npm.cmd run build:runtime`: pass.
+- Deterministic Stage 6A schema smoke: pass against generated `stage6Review` validator.
+- `npm.cmd run check` in `runtime-api`: pass after temporary local generated-bundle copy.
+
+Disabled until rebuild:
+- Static Stage 6A intelligence audit.
+- Stage 6A live E2E audit.
+- Stage 6B placeholder E2E.
+- Legacy Stage 6 legal-stack E2E.
+
+Restore command:
+- `git reset --hard 233fe9f687c94c6c1201dec4ebd3c6b8a66b565e`

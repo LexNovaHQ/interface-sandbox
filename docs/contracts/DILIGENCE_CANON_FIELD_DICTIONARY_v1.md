@@ -2,9 +2,11 @@
 
 ## Status
 
-This is the single canonical field-definition dictionary for the Diligence Engine runtime prompt chain.
+This is the canonical field-definition dictionary for the non-Stage-6 Diligence Engine runtime prompt chain.
 
-It governs the meaning of canonical stage objects, navigation handles, controlled values, and stage boundaries. Schemas enforce structure; prompts derive values from this dictionary; runtime code must not invent parallel definitions in another file.
+Its Stage 6 block is retired as active authority. Stage 6 now derives from `docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md`, `runtime-api/src/diligence/stage6CanonicalVocabulary.js`, and `data/schemas/stage6Review.schema.json`.
+
+For non-Stage-6 slices, this dictionary governs the meaning of canonical stage objects, navigation handles, controlled values, and stage boundaries. Schemas enforce structure; prompts derive values from this dictionary; runtime code must not invent parallel definitions in another file.
 
 ## Runtime slicing
 
@@ -13,7 +15,7 @@ The runtime prompt loader must append only the blocks relevant to the active sta
 ```text
 company_profile              -> UNIVERSAL + STAGE4
 target_feature_profile       -> UNIVERSAL + STAGE5
-legal_stack_review           -> UNIVERSAL + STAGE6
+stage6a_legal_document_cartography -> DILIGENCE_CANONICAL_SPINE_v1
 registry_ledger_evaluation   -> UNIVERSAL + STAGE7_NAVIGATION
 ```
 
@@ -224,7 +226,19 @@ evidence_refs[]
 
 <!-- CANON:STAGE6:START -->
 
-# STAGE 6 CANON — `legal_stack_review_v2`
+# STAGE 6 CANON - RETIRED BY `DILIGENCE_CANONICAL_SPINE_v1.md`
+
+This block is retained as migration history only. It is not active Stage 6 authority after the canonical reset.
+
+Active Stage 6 authority:
+
+```text
+docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md
+runtime-api/src/diligence/stage6CanonicalVocabulary.js
+data/schemas/stage6Review.schema.json
+```
+
+Legacy names in this block such as `legal_stack_review_v2`, `doc_id`, `section_id`, `feature_to_document_section_index`, and `document_source_locator_index` are retired for active Stage 6 runtime/schema authority.
 
 ## Role
 
