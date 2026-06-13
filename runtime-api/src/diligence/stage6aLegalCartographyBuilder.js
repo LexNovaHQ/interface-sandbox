@@ -111,9 +111,8 @@ export function buildStage6ALegalSourceInventory(input = {}) {
   });
 }
 
-function inventoryBySourceRef(inventory = []) {
-  return new Map(inventory.map((item) => [item.source_record_ref, item]));
-}
+function inventoryBySourceRef(inventory = []) { return new Map(inventory.map((item) => [item.source_record_ref, item])); }
+function inventoryByDocId(inventory = []) { return new Map(inventory.map((item) => [item.doc_id, item])); }
 
 function sectionPathFor(headings = [], index = 0) {
   const stack = [];
@@ -209,10 +208,7 @@ export function buildStage6ALegalDocumentIndex(input = {}, inventory = buildStag
         feature_refs: [],
         data_flow_refs: [],
         source_record_ref: ref,
-        source_locator: {
-          locator_type: "heading_path",
-          locator_value: sectionPathFor(headings, headingIndex)
-        },
+        source_locator: { locator_type: "heading_path", locator_value: sectionPathFor(headings, headingIndex) },
         confidence: "high"
       });
     });
@@ -220,15 +216,19 @@ export function buildStage6ALegalDocumentIndex(input = {}, inventory = buildStag
   return rows;
 }
 
-export function buildStage6ADocumentSourceLocatorIndex(indexRows = []) {
-  return indexRows.map((row) => ({
-    doc_id: row.doc_id,
-    section_id: row.section_id,
-    source_record_ref: row.source_record_ref,
-    source_url: "unknown",
-    locator_type: row.source_locator?.locator_type || "heading_path",
-    locator_value: row.source_locator?.locator_value || row.section_path || row.section_id
-  }));
+export function buildStage6ADocumentSourceLocatorIndex(indexRows = [], inventory = []) {
+  const byDocId = inventoryByDocId(inventory);
+  return indexRows.map((row) => {
+    const doc = byDocId.get(row.doc_id);
+    return {
+      doc_id: row.doc_id,
+      section_id: row.section_id,
+      source_record_ref: row.source_record_ref,
+      source_url: doc?.source_url || "unknown",
+      locator_type: row.source_locator?.locator_type || "heading_path",
+      locator_value: row.source_locator?.locator_value || row.section_path || row.section_id
+    };
+  });
 }
 
 export function buildStage6AFallbackSourcePacket(input = {}, inventory = buildStage6ALegalSourceInventory(input), indexRows = []) {
@@ -270,7 +270,7 @@ export function buildStage6ALegalStackSummarySignals(inventory = []) {
 export function buildStage6ALegalCartographySkeleton(input = {}) {
   const inventory = buildStage6ALegalSourceInventory(input);
   const legalDocumentIndex = buildStage6ALegalDocumentIndex(input, inventory);
-  const documentSourceLocatorIndex = buildStage6ADocumentSourceLocatorIndex(legalDocumentIndex);
+  const documentSourceLocatorIndex = buildStage6ADocumentSourceLocatorIndex(legalDocumentIndex, inventory);
   const fallbackPacket = buildStage6AFallbackSourcePacket(input, inventory, legalDocumentIndex);
   return {
     legal_stack_review_version: "legal_stack_review_v2",
