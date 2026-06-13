@@ -17,6 +17,7 @@
     "e2e:stage5:features": "node scripts/e2e-stage5-target-feature-profile.mjs && node scripts/e2e-stage5-completeness-audit.mjs && node scripts/e2e-stage5-strict-completeness-audit.mjs",
     "audit:stage5:completeness": "node scripts/e2e-stage5-completeness-audit.mjs && node scripts/e2e-stage5-strict-completeness-audit.mjs",
     "e2e:stage6:legal": "node scripts/e2e-stage6-legal-stack-review.mjs",
+    "e2e:stage6:legacy": "node scripts/e2e-stage6-legal-stack-review.mjs",
     "e2e:stage6a:legal-cartography": "node scripts/e2e-stage6a-legal-cartography.mjs",
     "e2e:stage6b:data-provenance": "node scripts/e2e-stage6b-data-provenance.mjs",
     "audit:stage6a:intelligence": "node scripts/audit-stage6a-intelligence-path.mjs",

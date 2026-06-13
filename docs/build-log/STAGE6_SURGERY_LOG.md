@@ -269,3 +269,37 @@ Blocked/remaining:
 
 Next layer:
 - 6A.R4.6 — Add isolated model overlay runner/executor path, still not wired into active Stage 6 route.
+
+## 6A.R7 - Canonical runtime wiring and live audit separation
+
+Base HEAD before patch:
+- `7f1f089c810bdceec83e289bbd392274fd7d41f5`
+
+Layer:
+- `6A.R7 - Canonical runtime wiring and live audit separation`
+
+Summary:
+- Stage 6A Legal Cartography is now a first-class runtime stage under `stage6a_legal_cartography`.
+- Runtime and audit both call the same canonical `runStage6ALegalCartography(...)` function path.
+- Stage 6A audit no longer imports the legacy integrated Stage 6 audit.
+- Stage 6B audit is separated and explicitly not-yet-canonical instead of reusing Stage 6A or legacy Stage 6 as proof.
+- Legacy Stage 6 remains available through `e2e:stage6:legal` and `e2e:stage6:legacy`.
+- Live runtime audit workflow now runs `npm run e2e:stage6a:legal-cartography` after Stage 5.
+
+Validation:
+- `npm run build:runtime`: pass.
+- `npm run audit:stage6a:intelligence`: pass.
+- `npm run check` in `runtime-api`: pass after local copy of generated bundles to match workflow layout.
+- Stage 4/5/6A remote E2E local run: blocked by missing `RUNTIME_ACCESS_TOKEN`; live GitHub audit is the required post-push proof.
+
+Not touched:
+- Stage 4/5 logic.
+- Stage 7.
+- Stage 9/10.
+- Vault.
+- UI/product pages.
+- `legalStackReviewInputAdapter.js`.
+- `registryLedgerInputAdapter.js`.
+
+Restore command:
+- `git reset --hard 7f1f089c810bdceec83e289bbd392274fd7d41f5`

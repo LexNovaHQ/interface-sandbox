@@ -6,6 +6,7 @@ import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGu
 import { validateLegalStackReviewGuardrails } from "./legalStackReviewGuardrails.js";
 import { validateRegistryLedgerGuardrails } from "./registryLedgerGuardrails.js";
 import { hasUnadmittedLegalDocumentCandidates, reconcileStage6LegalDocumentInput } from "./stage6LegalDocumentInputReconciler.js";
+import { runStage6ALegalCartography } from "./stage6aModelOverlayRunner.js";
 import { repairTargetFeatureProfileForSchema } from "./targetFeatureProfileSchemaRepair.js";
 
 function unwrapStageOutput(parsedJson, outputKey) {
@@ -236,6 +237,84 @@ function guardrailFailurePayload({ config, schemaEntry, validation, guardrails, 
   return { ok: false, status: 422, stage_id: config.stage_id, output_schema_key: config.output_schema_key, output_schema_path: validation.schema_path || schemaEntry.path, validation_schema_key: validation.resolvedKey, validation_mode: guardrails.validation_mode, output_unwrapped: normalizedOutput.unwrapped, output_repaired: combined.repaired, output_repair_notes: combined.repair_notes, guardrail_warnings: guardrails.warnings || [], guardrail_repairs: guardrails.repairs || [], guardrail_warning_count: (guardrails.warnings || []).length, guardrail_repair_count: (guardrails.repairs || []).length, ...ledgerPayload, error_type: "GUARDRAIL_VALIDATION_ERROR", error: `Model output failed ${config.stage_id} guardrails`, validation_errors: guardrails.errors, error_summary: formatSchemaErrors(guardrails.errors), model_metadata: publicModelMetadata(runResult, combined), prompt_metadata: { prompt_root: promptBundle.prompt_root, shared_sha256: promptBundle.shared_prompt.sha256, stage_sha256: promptBundle.stage_prompt.sha256, combined_characters: promptBundle.combined_characters, runtime_instruction_configured: Boolean(config.runtime_instruction) } };
 }
 
+function stage6ALegalCartographyFailureStatus(result = {}) {
+  if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503;
+  if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502;
+  if (result?.error_type === "TIMEOUT") return 504;
+  return 502;
+}
+
+async function runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env }) {
+  const runResult = await runStage6ALegalCartography({
+    source_bundle: input?.source_bundle,
+    target_profile: input?.target_profile,
+    company_profile: input?.company_profile,
+    target_feature_profile: input?.target_feature_profile,
+    evidence_junction: input?.evidence_junction,
+    runtime_options: options,
+    env
+  });
+  if (!runResult.ok) {
+    return {
+      ok: false,
+      status: stage6ALegalCartographyFailureStatus(runResult),
+      stage_id: config.stage_id,
+      output_schema_key: config.output_schema_key,
+      output_schema_path: schemaEntry.path,
+      error_type: runResult.error_type || "STAGE6A_LEGAL_CARTOGRAPHY_FAILED",
+      error: runResult.error || "Stage 6A Legal Cartography failed.",
+      packet_summary: runResult.packet_summary || null,
+      model_overlay_attempted: runResult.model_overlay_attempted === true,
+      model_metadata: runResult.model_metadata || null
+    };
+  }
+  const finalOutput = runResult.cartography;
+  const validation = validateDiligenceStageOutput(config.output_schema_key, finalOutput);
+  if (!validation.ok) {
+    return {
+      ok: false,
+      status: 422,
+      stage_id: config.stage_id,
+      output_schema_key: config.output_schema_key,
+      output_schema_path: validation.schema_path || schemaEntry.path,
+      validation_schema_key: validation.resolvedKey,
+      validation_mode: validation.validation_mode,
+      error_type: "SCHEMA_VALIDATION_ERROR",
+      error: "Stage 6A Legal Cartography output failed schema validation",
+      validation_errors: validation.errors,
+      error_summary: formatSchemaErrors(validation.errors),
+      packet_summary: runResult.packet_summary || null,
+      cartography_summary: runResult.cartography_summary || null,
+      model_overlay_attempted: runResult.model_overlay_attempted === true,
+      model_metadata: runResult.model_metadata || null
+    };
+  }
+  return {
+    ok: true,
+    status: 200,
+    stage_id: config.stage_id,
+    output_schema_key: config.output_schema_key,
+    output_schema_path: validation.schema_path || schemaEntry.path,
+    validation_schema_key: validation.resolvedKey,
+    validation_mode: validation.validation_mode,
+    guardrail_validation_mode: null,
+    output_unwrapped: false,
+    output_repaired: false,
+    output_repair_notes: [],
+    legal_stack_review: finalOutput,
+    packet_summary: runResult.packet_summary || null,
+    cartography_summary: runResult.cartography_summary || null,
+    normalized_overlay: runResult.normalized_overlay || null,
+    overlay_repairs: runResult.overlay_repairs || [],
+    model_overlay_attempted: runResult.model_overlay_attempted === true,
+    model_metadata: runResult.model_metadata || null,
+    prompt_metadata: {
+      stage_prompt: "03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md",
+      runtime_instruction_configured: false
+    }
+  };
+}
+
 async function executeStageOnce({ config, schemaEntry, promptBundle, stageId, input, options, env }) {
   const modelPrompt = buildPromptInput({ stageId: config.stage_id, prompt: promptBundle.combined_prompt, runtimeInstruction: config.runtime_instruction, input });
   const runResult = await runGeminiPool({ poolName: options.pool || config.pool, prompt: modelPrompt, env, options: { responseMimeType: "application/json", temperature: options.temperature ?? config.temperature, maxOutputTokens: options.maxOutputTokens ?? options.max_output_tokens ?? config.max_output_tokens, timeoutMs: options.timeoutMs ?? options.timeout_ms ?? config.timeout_ms, maxAttempts: options.maxAttempts ?? options.max_attempts } });
@@ -256,6 +335,9 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const config = getDiligenceStageConfig(stageId);
   const schemaEntry = resolveSchemaEntry(config.output_schema_key);
   if (!schemaEntry?.schema) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "SCHEMA_NOT_FOUND", error: `Output schema not found for ${config.output_schema_key}`, output_schema_key: config.output_schema_key };
+  if (config.output_schema_key === "stage6aLegalCartography") {
+    return runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env });
+  }
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
   let stageInput = input;
   let discoveryResult = null;

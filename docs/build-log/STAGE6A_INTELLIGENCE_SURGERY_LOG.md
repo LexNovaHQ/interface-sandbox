@@ -116,3 +116,81 @@ Audit:
 ## Next layer
 
 6A.R6.1 — Run/verify the static intelligence audit in CI/local context if possible, then 6A.R7 can wire the isolated 6A path into a dedicated audit route/script before any live Stage 6 replacement.
+
+## 6A.R7 - Canonical runtime wiring and live audit separation
+
+Base HEAD before patch:
+- `7f1f089c810bdceec83e289bbd392274fd7d41f5` (`Track Stage 6A intelligence static audit layer`)
+
+Scope:
+- Expose `runStage6ALegalCartography(...)` as the canonical Stage 6A runtime function.
+- Add first-class runtime stage ID `stage6a_legal_cartography`.
+- Replace the fake Stage 6A wrapper audit with a real Stage 6A audit that calls the canonical runtime path locally or the deployed runtime route in live mode.
+- Separate Stage 6B from Stage 6A by making the 6B audit explicit/not-yet-canonical instead of importing the integrated legacy Stage 6 audit.
+- Preserve legacy Stage 6 under `e2e:stage6:legal` and add `e2e:stage6:legacy`.
+- Add Stage 6A to the live runtime audit workflow after Stage 5 cache generation.
+
+Files changed:
+- `.github/workflows/runtime-stage4-stage5-audit.yml`
+- `functions/_generated/diligencePromptBundle.js`
+- `functions/_generated/diligenceSchemaBundle.js`
+- `functions/_generated/diligenceValidatorBundle.js`
+- `runtime-api/package.json`
+- `runtime-api/scripts/e2e-stage6a-legal-cartography.mjs`
+- `runtime-api/scripts/e2e-stage6b-data-provenance.mjs`
+- `runtime-api/src/diligence/stage6aModelOverlayRunner.js`
+- `runtime-api/src/diligence/stageConfigs.js`
+- `runtime-api/src/diligence/stageRunnerLocked.js`
+- `scripts/generate-diligence-prompt-bundle.mjs`
+- `scripts/generate-diligence-validator-bundle.mjs`
+- `src/lib/schemas.js`
+- `docs/build-log/STAGE6A_INTELLIGENCE_SURGERY_LOG.md`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+What changed:
+- Runtime dispatcher now accepts `stage6a_legal_cartography` and validates against `stage6aLegalCartography`.
+- The dispatcher uses the same canonical function as the audit path; Stage 6A no longer proves itself by importing legacy Stage 6.
+- The Stage 6A audit writes `.runtime-e2e-cache/stage6a-legal-cartography.json`.
+- Stage 6A audit fails on legacy fields, 6B fields, report/Vault/registry/conclusion fields, missing source locators, missing control signals, and missing feature-to-section rows when Stage 5 features exist.
+- Stage 6A audit prints legal cartography counts, model overlay row counts, and normalizer repair/drop counts.
+- Stage 6B audit no longer imports Stage 6A or old integrated Stage 6; it fails explicitly until canonical 6B exists.
+- Prompt/schema/validator bundles were regenerated so the runtime can resolve Stage 6A schema and prompt metadata.
+- Validator generator gained an ESM `createRequire` shim because the added Stage 6A schemas cause AJV standalone output to emit helper `require(...)` calls under the repo's ESM package mode.
+
+Intentionally not touched:
+- Stage 4 logic.
+- Stage 5 logic.
+- Stage 7 prompt/schema/adapter/planner.
+- Stage 9/10.
+- Vault.
+- UI/product pages.
+- `legalStackReviewInputAdapter.js`.
+- `registryLedgerInputAdapter.js`.
+
+Validation:
+- `npm run build:runtime` from repo root: pass.
+- `npm run audit:stage6a:intelligence` from `runtime-api`: pass.
+- `npm run check` from `runtime-api`: pass after copying generated bundles into `runtime-api/functions/_generated`, matching the GitHub workflow layout.
+- `runDiligenceStage({ stageId: "stage6a_legal_cartography", options: { disableModelOverlay: true } })`: pass; validates against generated `stage6aLegalCartography` schema.
+- `npm run e2e:stage4:company` from `runtime-api`: blocked locally because `RUNTIME_ACCESS_TOKEN` was not present in this shell.
+- `npm run e2e:stage5:features`: not run locally because Stage 4 cache could not be generated without `RUNTIME_ACCESS_TOKEN`.
+- `npm run e2e:stage6a:legal-cartography`: not run locally because Stage 5 cache could not be generated without `RUNTIME_ACCESS_TOKEN`; the GitHub live audit workflow now runs it against deployed runtime after Stage 5.
+
+Static Stage 6A audit counts:
+- `document_inventory_seed_count`: 2
+- `section_index_seed_count`: 6
+- `deterministic_control_seed_count`: 13
+- `feature_ref_count`: 1
+- `legal_document_inventory_count`: 2
+- `legal_document_index_count`: 6
+- `document_control_signal_map_count`: 13
+- `feature_to_document_section_index_count`: 1
+- `control_family_index_count`: 7
+- `document_source_locator_index_count`: 6
+- `normalizer repair_count`: 1
+
+Deployment/live audit:
+- Pending post-push. Live proof is the updated GitHub workflow `Runtime Stage 4 and Stage 5 Audit`, which now runs `npm run e2e:stage6a:legal-cartography` with `STAGE6A_AUDIT_TARGET=remote`.
+
+Restore command:
+- `git reset --hard 7f1f089c810bdceec83e289bbd392274fd7d41f5`

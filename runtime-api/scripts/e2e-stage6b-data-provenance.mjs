@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-import path from "node:path";
+console.error(JSON.stringify({
+  ok: false,
+  phase: "stage6b_data_provenance_e2e",
+  error_type: "STAGE6B_AUDIT_NOT_YET_CANONICAL",
+  error: "Stage 6B Data Provenance audit is intentionally separated from Stage 6A and no longer imports the legacy integrated Stage 6 audit. Build the canonical 6B runtime/audit path before using this script as proof.",
+  legacy_compatibility_script: "npm run e2e:stage6:legacy"
+}, null, 2));
 
-const defaultCachePath = path.join(process.cwd(), ".runtime-e2e-cache", "stage6b-data-provenance.json");
-process.env.STAGE6_AUDIT_MODE = "stage6b_data_provenance";
-process.env.STAGE6_E2E_CACHE_PATH = process.env.STAGE6B_E2E_CACHE_PATH || process.env.STAGE6_E2E_CACHE_PATH || defaultCachePath;
-
-await import("./e2e-stage6-legal-stack-review.mjs");
+process.exit(1);

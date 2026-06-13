@@ -1,7 +1,19 @@
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
 import { buildStage6AModelOverlayPacket } from "./stage6aModelOverlayPacketBuilder.js";
 import { normalizeStage6AModelOverlay } from "./stage6aModelOverlayNormalizer.js";
+
+const DEFAULT_OVERLAY_PROMPT_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../functions/_prompts/diligence-v2/03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md"
+);
+
+async function readDefaultOverlayPrompt(promptPath = DEFAULT_OVERLAY_PROMPT_PATH) {
+  return readFile(promptPath, "utf8");
+}
 
 function buildOverlayPrompt(promptText, packet) {
   return [
@@ -91,6 +103,65 @@ export async function runStage6AModelOverlay({ input = {}, promptText = "", env 
       source_locator_index_count: cartography.stage7_navigation_index?.document_source_locator_index?.length || 0
     },
     model_metadata: publicModelMetadata(runResult)
+  };
+}
+
+export async function runStage6ALegalCartography({
+  source_bundle,
+  target_profile,
+  company_profile,
+  target_feature_profile,
+  evidence_junction,
+  runtime_options = {},
+  promptText = "",
+  env = process.env
+} = {}) {
+  const input = {
+    source_bundle,
+    target_profile: target_profile || company_profile,
+    company_profile: company_profile || target_profile,
+    target_feature_profile,
+    evidence_junction
+  };
+  const options = runtime_options || {};
+  if (options.disableModelOverlay === true || env.STAGE6A_DISABLE_MODEL_OVERLAY === "true") {
+    const cartography = buildStage6ACartography(input);
+    return {
+      ok: true,
+      model_overlay_attempted: false,
+      overlay_disabled: true,
+      normalized_overlay: null,
+      overlay_repairs: [],
+      cartography,
+      packet_summary: {
+        document_inventory_seed_count: cartography.legal_document_cartography?.legal_document_inventory?.length || 0,
+        section_index_seed_count: cartography.legal_document_cartography?.legal_document_index?.length || 0,
+        deterministic_control_seed_count: cartography.legal_document_cartography?.document_control_signal_map?.length || 0,
+        feature_ref_count: target_feature_profile?.feature_inventory?.length || 0
+      },
+      cartography_summary: {
+        legal_document_inventory_count: cartography.legal_document_cartography?.legal_document_inventory?.length || 0,
+        legal_document_index_count: cartography.legal_document_cartography?.legal_document_index?.length || 0,
+        document_control_signal_map_count: cartography.legal_document_cartography?.document_control_signal_map?.length || 0,
+        document_relationship_map_count: cartography.legal_document_cartography?.document_relationship_map?.length || 0,
+        document_mismatch_signal_map_count: cartography.legal_document_cartography?.document_mismatch_signal_map?.length || 0,
+        feature_to_document_section_index_count: cartography.stage7_navigation_index?.feature_to_document_section_index?.length || 0,
+        control_family_index_count: cartography.stage7_navigation_index?.control_family_index?.length || 0,
+        source_locator_index_count: cartography.stage7_navigation_index?.document_source_locator_index?.length || 0
+      },
+      model_metadata: null
+    };
+  }
+  const overlayPromptText = promptText || await readDefaultOverlayPrompt(options.overlayPromptPath);
+  const result = await runStage6AModelOverlay({
+    input,
+    promptText: overlayPromptText,
+    env,
+    options
+  });
+  return {
+    ...result,
+    model_overlay_attempted: true
   };
 }
 
