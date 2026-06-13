@@ -104,5 +104,26 @@ Audit status:
 - Builder still leaves control/mismatch/relationship maps empty pending the controlled classification overlay layer.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R4 — Deterministic control signal helper
+
+Goal:
+- Add a separate helper for deriving `document_control_signal_map[]` and `control_family_index[]` from deterministic section rows.
+- Keep the helper isolated until the merge/wiring layer.
+- Do not change runtime behavior yet.
+
+Commits in this layer:
+- `d00b5a06e1ad6d5ab9ba04fec918ba7cc464a9a8` — added `runtime-api/src/diligence/stage6aLegalControlSignalBuilder.js`.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aLegalControlSignalBuilder.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static helper audit passed.
+- Helper derives one controlled signal row per section/control-family pair.
+- Helper groups control signals into `control_family_index[]`.
+- Helper does not rely on model prose or evidence quotes.
+- Runtime behavior is intentionally unchanged.
+
 Next layer:
-- 6A.R4 — Add controlled deterministic control signal and relationship map derivation.
+- 6A.R5 — Merge deterministic 6A skeleton and control helper into a canonical Stage 6A artifact generator.
