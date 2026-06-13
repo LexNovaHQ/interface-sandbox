@@ -125,5 +125,26 @@ Audit status:
 - Helper does not rely on model prose or evidence quotes.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R5 — Canonical Stage 6A merge helper
+
+Goal:
+- Add a canonical helper that merges the deterministic source/section spine with deterministic control signal grouping.
+- Keep the helper isolated until active runtime wiring.
+
+Commits in this layer:
+- `533f5434d65f57eb943ab4569779698c6ea1e297` — added `runtime-api/src/diligence/stage6aLegalCartographyMerge.js`.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aLegalCartographyMerge.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static merge audit passed.
+- Merge helper returns canonical 6A output without legacy fields and without 6B fields.
+- Runtime behavior is intentionally unchanged.
+
+Blocked/remaining:
+- Attempted to add a builder audit script, but the GitHub write tool blocked the file creation twice. No runtime/audit wiring was committed for that script.
+
 Next layer:
-- 6A.R5 — Merge deterministic 6A skeleton and control helper into a canonical Stage 6A artifact generator.
+- 6A.R6 — Add a smaller audit/wiring path that the GitHub tool accepts, then wire 6A into active runtime only after source-level audit passes.
