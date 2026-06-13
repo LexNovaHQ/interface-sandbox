@@ -241,8 +241,31 @@ Audit status:
 - Normalizer records repairs for forbidden keys and dropped rows.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R4.5 — Merge normalized model overlay into canonical 6A
+
+Goal:
+- Extend the canonical merge helper so normalized model overlay rows can enrich deterministic cartography.
+- Keep deterministic spine as the source of truth for document, section, locator, and source refs.
+- Keep deterministic control seed as fallback when no overlay is supplied.
+- Do not wire model execution into runtime yet.
+
+Commits in this layer:
+- `19b79f29064c91f288321123b2ec7c3256441fc4` — updated `runtime-api/src/diligence/stage6aLegalCartographyMerge.js`.
+
+Files changed:
+- `runtime-api/src/diligence/stage6aLegalCartographyMerge.js`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static overlay-merge audit passed.
+- Merge applies section classification overlay to existing section rows only.
+- Merge builds control signals from deterministic seed plus normalized overlay rows.
+- Merge creates relationship, mismatch, feature-section, and control-family indexes from normalized overlay rows.
+- Merge still returns canonical 6A without legacy fields and without 6B fields.
+- Runtime behavior is intentionally unchanged.
+
 Blocked/remaining:
 - The previous attempt to add a builder audit script was blocked by the GitHub write tool. No runtime/audit wiring was committed for that script.
 
 Next layer:
-- 6A.R4.5 — Merge normalized model overlay into canonical 6A output.
+- 6A.R4.6 — Add isolated model overlay runner/executor path, still not wired into active Stage 6 route.
