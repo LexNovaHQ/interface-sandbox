@@ -280,6 +280,18 @@ jobs:
           STAGE5_MAX_ESTIMATED_TOKENS: "120000"
         run: npm run e2e:stage5:features
 
+      - name: Run Stage 6A Legal Stack Review E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE6_MAX_OUTPUT_TOKENS: "12000"
+          STAGE6_TIMEOUT_MS: "120000"
+          STAGE6_MAX_INPUT_CHARS: "240000"
+          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
+          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
+        run: npm run e2e:stage6:legal
+
       - name: Verify Stage 4/5 audit exports
         if: always()
         run: |
@@ -287,6 +299,7 @@ jobs:
           ls -lah runtime-api/.runtime-e2e-cache || true
           test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
           test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json
 
       - name: Upload Stage 4/5 audit cache
         if: always()
