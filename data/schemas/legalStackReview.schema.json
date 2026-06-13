@@ -2,89 +2,235 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://interface-sandbox.local/schemas/legalStackReview.schema.json",
   "title": "Legal Stack Review",
-  "description": "Stage 6 legal_stack_review with legacy compatibility fields plus additive 6A legal-document cartography canon.",
+  "description": "Stage 6 legal_stack_review with legacy compatibility fields plus additive 6A legal-document cartography and 6B data provenance profile canon.",
   "type": "object",
-  "required": ["legal_stack", "document_stack_redline", "document_stack_synthesis", "legal_stack_assessment", "limitations"],
+  "required": [
+    "legal_stack_review_version",
+    "stage_role",
+    "legal_stack",
+    "document_stack_redline",
+    "document_stack_synthesis",
+    "legal_stack_assessment",
+    "limitations",
+    "legal_document_cartography",
+    "data_provenance_profile",
+    "stage7_navigation_index",
+    "stage6_limitations"
+  ],
   "additionalProperties": false,
   "properties": {
-    "legal_stack_review_version": { "const": "legal_stack_review_v2" },
-    "stage_role": { "const": "stage7_navigation_index" },
+    "legal_stack_review_version": {
+      "const": "legal_stack_review_v2"
+    },
+    "stage_role": {
+      "const": "stage7_navigation_index"
+    },
     "input_refs": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "target_profile_version": { "type": "string" },
-        "feature_profile_version": { "type": "string" },
-        "source_bundle_version": { "type": "string" },
-        "target_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true },
-        "feature_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true }
+        "target_profile_version": {
+          "type": "string"
+        },
+        "feature_profile_version": {
+          "type": "string"
+        },
+        "source_bundle_version": {
+          "type": "string"
+        },
+        "target_profile_ref": {
+          "type": [
+            "string",
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        },
+        "feature_profile_ref": {
+          "type": [
+            "string",
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        }
       }
     },
     "legal_stack": {
       "type": "array",
       "minItems": 5,
       "maxItems": 5,
-      "items": { "$ref": "#/$defs/legalDocument" }
+      "items": {
+        "$ref": "#/$defs/legalDocument"
+      }
     },
     "document_stack_redline": {
       "type": "array",
-      "items": { "$ref": "#/$defs/redline" }
+      "items": {
+        "$ref": "#/$defs/redline"
+      }
     },
-    "document_stack_synthesis": { "type": "string" },
+    "document_stack_synthesis": {
+      "type": "string"
+    },
     "legal_stack_assessment": {
       "type": "array",
-      "items": { "type": "object", "additionalProperties": true }
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
     },
-    "limitations": { "type": "array", "items": { "type": "string" } },
-    "legal_document_cartography": { "$ref": "#/$defs/legalDocumentCartography" },
-    "stage7_navigation_index": { "$ref": "#/$defs/stage7NavigationIndex" },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "legal_document_cartography": {
+      "$ref": "#/$defs/legalDocumentCartography"
+    },
+    "stage7_navigation_index": {
+      "$ref": "#/$defs/stage7NavigationIndex"
+    },
     "stage6_limitations": {
       "type": "array",
       "items": {
         "anyOf": [
-          { "type": "string" },
-          { "$ref": "#/$defs/stage6Limitation" }
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/$defs/stage6Limitation"
+          }
         ]
       }
+    },
+    "data_provenance_profile": {
+      "$ref": "#/$defs/dataProvenanceProfile"
     }
   },
   "$defs": {
     "signal": {
       "type": "string",
-      "enum": ["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"]
+      "enum": [
+        "visible",
+        "not_visible",
+        "partial",
+        "conflicting",
+        "not_applicable",
+        "unknown"
+      ]
     },
     "documentStatus": {
       "type": "string",
-      "enum": ["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown", "ingested", "absent", "access_failed", "insufficient"]
+      "enum": [
+        "visible",
+        "not_visible",
+        "partial",
+        "conflicting",
+        "not_applicable",
+        "unknown",
+        "ingested",
+        "absent",
+        "access_failed",
+        "insufficient"
+      ]
     },
     "confidence": {
       "type": "string",
-      "enum": ["high", "medium", "low", "unknown"]
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ]
     },
     "stringArray": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "legalDocument": {
       "type": "object",
-      "required": ["document_type", "exists", "document_url", "covers", "misses", "evidence_status", "linked_threat_ids"],
+      "required": [
+        "document_type",
+        "exists",
+        "document_url",
+        "covers",
+        "misses",
+        "evidence_status",
+        "linked_threat_ids"
+      ],
       "additionalProperties": false,
       "properties": {
-        "document_type": { "type": "string", "enum": ["ToS", "Privacy Policy", "DPA", "AUP", "SLA"] },
-        "exists": { "type": "boolean" },
-        "document_url": { "type": "string" },
-        "covers": { "type": ["array", "null"], "items": { "type": "string" } },
-        "misses": { "type": "array", "items": { "type": "string" } },
-        "evidence_status": { "type": "string", "enum": ["INGESTED", "ABSENT", "ACCESS_FAILED", "INSUFFICIENT"] },
-        "linked_threat_ids": { "type": "array", "items": { "type": "string" } }
+        "document_type": {
+          "type": "string",
+          "enum": [
+            "ToS",
+            "Privacy Policy",
+            "DPA",
+            "AUP",
+            "SLA"
+          ]
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "document_url": {
+          "type": "string"
+        },
+        "covers": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "misses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_status": {
+          "type": "string",
+          "enum": [
+            "INGESTED",
+            "ABSENT",
+            "ACCESS_FAILED",
+            "INSUFFICIENT"
+          ]
+        },
+        "linked_threat_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "exists": { "const": false } }, "required": ["exists"] },
+          "if": {
+            "properties": {
+              "exists": {
+                "const": false
+              }
+            },
+            "required": [
+              "exists"
+            ]
+          },
           "then": {
             "properties": {
-              "document_url": { "const": "N/A" },
-              "covers": { "type": "null" }
+              "document_url": {
+                "const": "N/A"
+              },
+              "covers": {
+                "type": "null"
+              }
             }
           }
         }
@@ -92,16 +238,43 @@
     },
     "redline": {
       "type": "object",
-      "required": ["mismatch_id", "type", "quote", "source", "feature_ref", "claim_type", "contradicts"],
+      "required": [
+        "mismatch_id",
+        "type",
+        "quote",
+        "source",
+        "feature_ref",
+        "claim_type",
+        "contradicts"
+      ],
       "additionalProperties": false,
       "properties": {
-        "mismatch_id": { "type": "string" },
-        "type": { "type": "string", "enum": ["QUOTE_VS_QUOTE", "CLAIM_VS_ABSENCE", "STACK_VS_REALITY"] },
-        "quote": { "type": "string" },
-        "source": { "type": "string" },
-        "feature_ref": { "type": "string" },
-        "claim_type": { "type": "string" },
-        "contradicts": { "type": "string" }
+        "mismatch_id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "QUOTE_VS_QUOTE",
+            "CLAIM_VS_ABSENCE",
+            "STACK_VS_REALITY"
+          ]
+        },
+        "quote": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "feature_ref": {
+          "type": "string"
+        },
+        "claim_type": {
+          "type": "string"
+        },
+        "contradicts": {
+          "type": "string"
+        }
       }
     },
     "legalDocumentCartography": {
@@ -119,28 +292,42 @@
       "properties": {
         "legal_document_inventory": {
           "type": "array",
-          "items": { "$ref": "#/$defs/legalDocumentInventoryItem" }
+          "items": {
+            "$ref": "#/$defs/legalDocumentInventoryItem"
+          }
         },
         "legal_document_index": {
           "type": "array",
-          "items": { "$ref": "#/$defs/legalDocumentIndexItem" }
+          "items": {
+            "$ref": "#/$defs/legalDocumentIndexItem"
+          }
         },
         "document_relationship_map": {
           "type": "array",
-          "items": { "$ref": "#/$defs/documentRelationshipItem" }
+          "items": {
+            "$ref": "#/$defs/documentRelationshipItem"
+          }
         },
         "document_control_signal_map": {
           "type": "array",
-          "items": { "$ref": "#/$defs/documentControlSignalItem" }
+          "items": {
+            "$ref": "#/$defs/documentControlSignalItem"
+          }
         },
         "document_mismatch_signal_map": {
           "type": "array",
-          "items": { "$ref": "#/$defs/documentMismatchSignalItem" }
+          "items": {
+            "$ref": "#/$defs/documentMismatchSignalItem"
+          }
         },
-        "legal_stack_summary_signals": { "$ref": "#/$defs/legalStackSummarySignals" },
+        "legal_stack_summary_signals": {
+          "$ref": "#/$defs/legalStackSummarySignals"
+        },
         "legal_stack_limitations": {
           "type": "array",
-          "items": { "$ref": "#/$defs/legalStackLimitationItem" }
+          "items": {
+            "$ref": "#/$defs/legalStackLimitationItem"
+          }
         }
       }
     },
@@ -159,7 +346,9 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "doc_id": { "type": "string" },
+        "doc_id": {
+          "type": "string"
+        },
         "doc_type": {
           "type": "string",
           "enum": [
@@ -188,19 +377,55 @@
             "unknown"
           ]
         },
-        "doc_family": { "type": "string", "enum": ["core", "supplemental", "unknown"] },
-        "doc_title": { "type": "string" },
-        "document_status": { "$ref": "#/$defs/documentStatus" },
-        "access_status": { "$ref": "#/$defs/documentStatus" },
-        "source_record_ref": { "type": "string" },
-        "source_url": { "type": "string" },
-        "canonical_or_supplemental": { "type": "string", "enum": ["canonical", "supplemental", "unknown"] },
-        "effective_date": { "type": "string" },
-        "last_updated": { "type": "string" },
-        "version": { "type": "string" },
-        "jurisdiction_scope": { "$ref": "#/$defs/stringArray" },
-        "language": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "doc_family": {
+          "type": "string",
+          "enum": [
+            "core",
+            "supplemental",
+            "unknown"
+          ]
+        },
+        "doc_title": {
+          "type": "string"
+        },
+        "document_status": {
+          "$ref": "#/$defs/documentStatus"
+        },
+        "access_status": {
+          "$ref": "#/$defs/documentStatus"
+        },
+        "source_record_ref": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "canonical_or_supplemental": {
+          "type": "string",
+          "enum": [
+            "canonical",
+            "supplemental",
+            "unknown"
+          ]
+        },
+        "effective_date": {
+          "type": "string"
+        },
+        "last_updated": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "jurisdiction_scope": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "language": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "legalDocumentIndexItem": {
@@ -223,15 +448,44 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "index_id": { "type": "string" },
-        "doc_id": { "type": "string" },
-        "section_id": { "type": "string" },
-        "section_path": { "type": "string" },
-        "heading_level": { "type": ["integer", "string"], "minimum": 0 },
-        "heading_text": { "type": "string" },
+        "index_id": {
+          "type": "string"
+        },
+        "doc_id": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        },
+        "section_path": {
+          "type": "string"
+        },
+        "heading_level": {
+          "type": [
+            "integer",
+            "string"
+          ],
+          "minimum": 0
+        },
+        "heading_text": {
+          "type": "string"
+        },
         "structural_zone": {
           "type": "string",
-          "enum": ["main_body", "annexure", "schedule", "exhibit", "table", "appendix", "linked_policy", "footer_notice", "banner_notice", "modal_notice", "faq", "unknown"]
+          "enum": [
+            "main_body",
+            "annexure",
+            "schedule",
+            "exhibit",
+            "table",
+            "appendix",
+            "linked_policy",
+            "footer_notice",
+            "banner_notice",
+            "modal_notice",
+            "faq",
+            "unknown"
+          ]
         },
         "section_function": {
           "type": "string",
@@ -259,21 +513,40 @@
             "unknown"
           ]
         },
-        "control_topics_detected": { "$ref": "#/$defs/stringArray" },
-        "feature_refs": { "$ref": "#/$defs/stringArray" },
-        "data_flow_refs": { "$ref": "#/$defs/stringArray" },
-        "source_record_ref": { "type": "string" },
-        "source_locator": { "$ref": "#/$defs/sourceLocator" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "control_topics_detected": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "feature_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "data_flow_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "source_record_ref": {
+          "type": "string"
+        },
+        "source_locator": {
+          "$ref": "#/$defs/sourceLocator"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "sourceLocator": {
       "type": "object",
-      "required": ["locator_type", "locator_value"],
+      "required": [
+        "locator_type",
+        "locator_value"
+      ],
       "additionalProperties": false,
       "properties": {
-        "locator_type": { "type": "string" },
-        "locator_value": { "type": "string" }
+        "locator_type": {
+          "$ref": "#/$defs/locatorType"
+        },
+        "locator_value": {
+          "type": "string"
+        }
       }
     },
     "documentRelationshipItem": {
@@ -292,19 +565,46 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "relationship_id": { "type": "string" },
-        "from_doc_id": { "type": "string" },
-        "to_doc_id": { "type": "string" },
-        "from_section_id": { "type": "string" },
-        "to_section_id": { "type": "string" },
+        "relationship_id": {
+          "type": "string"
+        },
+        "from_doc_id": {
+          "type": "string"
+        },
+        "to_doc_id": {
+          "type": "string"
+        },
+        "from_section_id": {
+          "type": "string"
+        },
+        "to_section_id": {
+          "type": "string"
+        },
         "relationship_type": {
           "type": "string",
-          "enum": ["incorporates_by_reference", "supplements", "controls_on_conflict", "linked_from", "defines_terms_for", "activates_when", "supersedes_for_subject_matter", "unknown"]
+          "enum": [
+            "incorporates_by_reference",
+            "supplements",
+            "controls_on_conflict",
+            "linked_from",
+            "defines_terms_for",
+            "activates_when",
+            "supersedes_for_subject_matter",
+            "unknown"
+          ]
         },
-        "relationship_signal": { "$ref": "#/$defs/signal" },
-        "section_refs": { "$ref": "#/$defs/stringArray" },
-        "source_record_ref": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "relationship_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "section_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "source_record_ref": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "documentControlSignalItem": {
@@ -323,16 +623,39 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "control_signal_id": { "type": "string" },
-        "doc_id": { "type": "string" },
-        "section_id": { "type": "string" },
-        "control_family": { "$ref": "#/$defs/controlFamily" },
-        "coverage_signal": { "$ref": "#/$defs/signal" },
-        "feature_refs": { "$ref": "#/$defs/stringArray" },
-        "data_flow_refs": { "$ref": "#/$defs/stringArray" },
-        "basis_codes": { "$ref": "#/$defs/stringArray" },
-        "source_record_ref": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "control_signal_id": {
+          "type": "string"
+        },
+        "doc_id": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        },
+        "control_family": {
+          "$ref": "#/$defs/controlFamily"
+        },
+        "coverage_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "feature_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "data_flow_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "basis_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/basisCode"
+          }
+        },
+        "source_record_ref": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "controlFamily": {
@@ -381,16 +704,47 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "mismatch_id": { "type": "string" },
-        "mismatch_type": { "type": "string", "enum": ["feature_vs_document", "data_flow_vs_document", "document_vs_document", "claim_vs_absence", "stack_vs_reality", "unknown"] },
-        "left_ref_type": { "type": "string" },
-        "left_ref": { "type": "string" },
-        "right_ref_type": { "type": "string" },
-        "right_ref": { "type": "string" },
-        "control_family": { "$ref": "#/$defs/controlFamily" },
-        "mismatch_signal": { "$ref": "#/$defs/signal" },
-        "basis_codes": { "$ref": "#/$defs/stringArray" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "mismatch_id": {
+          "type": "string"
+        },
+        "mismatch_type": {
+          "type": "string",
+          "enum": [
+            "feature_vs_document",
+            "data_flow_vs_document",
+            "document_vs_document",
+            "claim_vs_absence",
+            "stack_vs_reality",
+            "unknown"
+          ]
+        },
+        "left_ref_type": {
+          "type": "string"
+        },
+        "left_ref": {
+          "type": "string"
+        },
+        "right_ref_type": {
+          "type": "string"
+        },
+        "right_ref": {
+          "type": "string"
+        },
+        "control_family": {
+          "$ref": "#/$defs/controlFamily"
+        },
+        "mismatch_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "basis_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/basisCode"
+          }
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "legalStackSummarySignals": {
@@ -406,41 +760,89 @@
       "properties": {
         "core_stack_status": {
           "type": "object",
-          "required": ["tos", "privacy_policy", "dpa", "aup", "sla"],
+          "required": [
+            "tos",
+            "privacy_policy",
+            "dpa",
+            "aup",
+            "sla"
+          ],
           "additionalProperties": false,
           "properties": {
-            "tos": { "$ref": "#/$defs/signal" },
-            "privacy_policy": { "$ref": "#/$defs/signal" },
-            "dpa": { "$ref": "#/$defs/signal" },
-            "aup": { "$ref": "#/$defs/signal" },
-            "sla": { "$ref": "#/$defs/signal" }
+            "tos": {
+              "$ref": "#/$defs/signal"
+            },
+            "privacy_policy": {
+              "$ref": "#/$defs/signal"
+            },
+            "dpa": {
+              "$ref": "#/$defs/signal"
+            },
+            "aup": {
+              "$ref": "#/$defs/signal"
+            },
+            "sla": {
+              "$ref": "#/$defs/signal"
+            }
           }
         },
-        "supplemental_artifacts_detected": { "$ref": "#/$defs/stringArray" },
-        "document_hierarchy_signal": { "$ref": "#/$defs/signal" },
-        "legal_stack_coverage_signal": { "$ref": "#/$defs/signal" },
-        "major_unknowns": { "$ref": "#/$defs/stringArray" }
+        "supplemental_artifacts_detected": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "document_hierarchy_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "legal_stack_coverage_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "major_unknowns": {
+          "$ref": "#/$defs/stringArray"
+        }
       }
     },
     "legalStackLimitationItem": {
       "type": "object",
-      "required": ["limitation_id", "scope", "doc_id", "section_id", "reason_code", "impact_code", "confidence"],
+      "required": [
+        "limitation_id",
+        "scope",
+        "doc_id",
+        "section_id",
+        "reason_code",
+        "impact_code",
+        "confidence"
+      ],
       "additionalProperties": false,
       "properties": {
-        "limitation_id": { "type": "string" },
-        "scope": { "type": "string" },
-        "doc_id": { "type": "string" },
-        "section_id": { "type": "string" },
-        "reason_code": { "type": "string" },
-        "impact_code": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "limitation_id": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "doc_id": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "impact_code": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "stage7NavigationIndex": {
       "type": "object",
       "required": [
+        "feature_to_data_flow_index",
         "feature_to_document_section_index",
         "control_family_index",
+        "data_signal_index",
         "document_source_locator_index",
         "absence_unknown_index",
         "fallback_source_packet"
@@ -449,99 +851,1367 @@
       "properties": {
         "feature_to_document_section_index": {
           "type": "array",
-          "items": { "$ref": "#/$defs/featureDocumentSectionIndexItem" }
+          "items": {
+            "$ref": "#/$defs/featureDocumentSectionIndexItem"
+          }
         },
         "control_family_index": {
           "type": "array",
-          "items": { "$ref": "#/$defs/controlFamilyIndexItem" }
+          "items": {
+            "$ref": "#/$defs/controlFamilyIndexItem"
+          }
         },
         "document_source_locator_index": {
           "type": "array",
-          "items": { "$ref": "#/$defs/documentSourceLocatorIndexItem" }
+          "items": {
+            "$ref": "#/$defs/documentSourceLocatorIndexItem"
+          }
         },
         "absence_unknown_index": {
           "type": "array",
-          "items": { "$ref": "#/$defs/absenceUnknownIndexItem" }
+          "items": {
+            "$ref": "#/$defs/absenceUnknownIndexItem"
+          }
         },
         "fallback_source_packet": {
           "type": "array",
-          "items": { "$ref": "#/$defs/fallbackSourcePacketItem" }
+          "items": {
+            "$ref": "#/$defs/fallbackSourcePacketItem"
+          }
+        },
+        "feature_to_data_flow_index": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/featureDataFlowIndexItem"
+          }
+        },
+        "data_signal_index": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataSignalIndexItem"
+          }
         }
       }
     },
     "featureDocumentSectionIndexItem": {
       "type": "object",
-      "required": ["feature_id", "doc_ids", "section_ids", "control_families"],
+      "required": [
+        "feature_id",
+        "doc_ids",
+        "section_ids",
+        "control_families"
+      ],
       "additionalProperties": false,
       "properties": {
-        "feature_id": { "type": "string" },
-        "doc_ids": { "$ref": "#/$defs/stringArray" },
-        "section_ids": { "$ref": "#/$defs/stringArray" },
+        "feature_id": {
+          "type": "string"
+        },
+        "doc_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "section_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
         "control_families": {
           "type": "array",
-          "items": { "$ref": "#/$defs/controlFamily" }
+          "items": {
+            "$ref": "#/$defs/controlFamily"
+          }
         }
       }
     },
     "controlFamilyIndexItem": {
       "type": "object",
-      "required": ["control_family", "coverage_signal", "control_signal_ids", "doc_ids", "section_ids"],
+      "required": [
+        "control_family",
+        "coverage_signal",
+        "control_signal_ids",
+        "doc_ids",
+        "section_ids"
+      ],
       "additionalProperties": false,
       "properties": {
-        "control_family": { "$ref": "#/$defs/controlFamily" },
-        "coverage_signal": { "$ref": "#/$defs/signal" },
-        "control_signal_ids": { "$ref": "#/$defs/stringArray" },
-        "doc_ids": { "$ref": "#/$defs/stringArray" },
-        "section_ids": { "$ref": "#/$defs/stringArray" }
+        "control_family": {
+          "$ref": "#/$defs/controlFamily"
+        },
+        "coverage_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "control_signal_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "doc_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "section_ids": {
+          "$ref": "#/$defs/stringArray"
+        }
       }
     },
     "documentSourceLocatorIndexItem": {
       "type": "object",
-      "required": ["doc_id", "section_id", "source_record_ref", "source_url", "locator_type", "locator_value"],
+      "required": [
+        "doc_id",
+        "section_id",
+        "source_record_ref",
+        "source_url",
+        "locator_type",
+        "locator_value"
+      ],
       "additionalProperties": false,
       "properties": {
-        "doc_id": { "type": "string" },
-        "section_id": { "type": "string" },
-        "source_record_ref": { "type": "string" },
-        "source_url": { "type": "string" },
-        "locator_type": { "type": "string" },
-        "locator_value": { "type": "string" }
+        "doc_id": {
+          "type": "string"
+        },
+        "section_id": {
+          "type": "string"
+        },
+        "source_record_ref": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "locator_type": {
+          "type": "string"
+        },
+        "locator_value": {
+          "type": "string"
+        }
       }
     },
     "absenceUnknownIndexItem": {
       "type": "object",
-      "required": ["signal_type", "object_ref", "search_scope", "absence_basis", "confidence"],
+      "required": [
+        "signal_type",
+        "object_ref",
+        "search_scope",
+        "absence_basis",
+        "confidence"
+      ],
       "additionalProperties": false,
       "properties": {
-        "signal_type": { "type": "string" },
-        "object_ref": { "type": "string" },
-        "search_scope": { "type": "string" },
-        "absence_basis": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "signal_type": {
+          "$ref": "#/$defs/signalType"
+        },
+        "object_ref": {
+          "type": "string"
+        },
+        "search_scope": {
+          "type": "string"
+        },
+        "absence_basis": {
+          "$ref": "#/$defs/absenceBasis"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
     },
     "fallbackSourcePacketItem": {
       "type": "object",
-      "required": ["source_record_ref", "source_url", "source_type", "reason_for_fallback"],
+      "required": [
+        "source_record_ref",
+        "source_url",
+        "source_type",
+        "reason_for_fallback"
+      ],
       "additionalProperties": false,
       "properties": {
-        "source_record_ref": { "type": "string" },
-        "source_url": { "type": "string" },
-        "source_type": { "type": "string" },
-        "reason_for_fallback": { "type": "string" }
+        "source_record_ref": {
+          "type": "string"
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "source_type": {
+          "$ref": "#/$defs/sourceType"
+        },
+        "reason_for_fallback": {
+          "$ref": "#/$defs/reasonForFallback"
+        }
       }
     },
     "stage6Limitation": {
       "type": "object",
-      "required": ["limitation_id", "scope", "reason_code", "impact_code", "confidence"],
+      "required": [
+        "limitation_id",
+        "scope",
+        "reason_code",
+        "impact_code",
+        "confidence"
+      ],
       "additionalProperties": false,
       "properties": {
-        "limitation_id": { "type": "string" },
-        "scope": { "type": "string" },
-        "reason_code": { "type": "string" },
-        "impact_code": { "type": "string" },
-        "confidence": { "$ref": "#/$defs/confidence" }
+        "limitation_id": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "impact_code": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
       }
+    },
+    "flowRole": {
+      "type": "string",
+      "enum": [
+        "primary_input",
+        "secondary_input",
+        "system_metadata",
+        "generated_output",
+        "stored_record",
+        "third_party_transfer",
+        "derived_data",
+        "unknown"
+      ]
+    },
+    "subjectType": {
+      "type": "string",
+      "enum": [
+        "website_visitor",
+        "registered_user",
+        "customer_admin",
+        "customer_end_user",
+        "developer",
+        "employee",
+        "contractor",
+        "candidate",
+        "patient",
+        "child_or_minor",
+        "business_contact",
+        "unknown"
+      ]
+    },
+    "dataCategory": {
+      "type": "string",
+      "enum": [
+        "account_identity",
+        "contact_data",
+        "authentication_data",
+        "prompt_text",
+        "uploaded_file",
+        "audio",
+        "image_video",
+        "generated_output",
+        "usage_logs",
+        "device_network_data",
+        "payment_billing",
+        "support_communications",
+        "employment_hr",
+        "financial",
+        "health",
+        "biometric_identifier",
+        "child_data",
+        "location",
+        "public_web_data",
+        "third_party_dataset",
+        "unknown"
+      ]
+    },
+    "dataOrigin": {
+      "type": "string",
+      "enum": [
+        "data_principal_provided",
+        "customer_provided",
+        "third_party_provided",
+        "public_web",
+        "system_generated",
+        "inferred",
+        "unknown"
+      ]
+    },
+    "collectionContext": {
+      "type": "string",
+      "enum": [
+        "website",
+        "account_signup",
+        "service_input",
+        "api_input",
+        "uploaded_document",
+        "support",
+        "billing",
+        "telemetry",
+        "third_party_import",
+        "employee_workflow",
+        "unknown"
+      ]
+    },
+    "processingAction": {
+      "type": "string",
+      "enum": [
+        "collect",
+        "receive",
+        "store",
+        "embed",
+        "retrieve",
+        "infer",
+        "generate",
+        "summarize",
+        "translate",
+        "classify",
+        "score",
+        "rank",
+        "recommend",
+        "route",
+        "share",
+        "transfer",
+        "delete",
+        "log",
+        "monitor",
+        "train_or_finetune",
+        "unknown"
+      ]
+    },
+    "purposeCategory": {
+      "type": "string",
+      "enum": [
+        "service_delivery",
+        "account_management",
+        "security",
+        "billing",
+        "analytics",
+        "support",
+        "model_improvement",
+        "legal_compliance",
+        "marketing",
+        "unknown"
+      ]
+    },
+    "outputCategory": {
+      "type": "string",
+      "enum": [
+        "generated_output",
+        "classification_score",
+        "summary",
+        "recommendation",
+        "route_decision",
+        "stored_record",
+        "audit_log",
+        "notification",
+        "unknown"
+      ]
+    },
+    "dpdpCompanyRole": {
+      "type": "string",
+      "enum": [
+        "data_fiduciary",
+        "data_processor",
+        "both",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "gdprCompanyRole": {
+      "type": "string",
+      "enum": [
+        "controller",
+        "processor",
+        "joint_controller",
+        "subprocessor",
+        "both",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "usCompanyRole": {
+      "type": "string",
+      "enum": [
+        "business",
+        "service_provider",
+        "contractor",
+        "third_party",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "customerRole": {
+      "type": "string",
+      "enum": [
+        "controller_or_data_fiduciary",
+        "processor",
+        "business",
+        "service_provider",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "thirdPartyRole": {
+      "type": "string",
+      "enum": [
+        "processor",
+        "subprocessor",
+        "service_provider",
+        "contractor",
+        "third_party",
+        "model_provider",
+        "cloud_provider",
+        "analytics_provider",
+        "payment_provider",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "basisTag": {
+      "type": "string",
+      "enum": [
+        "india_entity",
+        "india_users",
+        "eu_users",
+        "uk_users",
+        "california_users",
+        "global_users",
+        "privacy_policy_mentions_regime",
+        "terms_mentions_regime",
+        "no_regime_signal",
+        "unknown"
+      ]
+    },
+    "gdprLawfulBasisSignal": {
+      "type": "string",
+      "enum": [
+        "consent",
+        "contract",
+        "legal_obligation",
+        "vital_interests",
+        "public_task",
+        "legitimate_interests",
+        "not_visible",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "dpdpBasisSignal": {
+      "type": "string",
+      "enum": [
+        "consent",
+        "legitimate_use",
+        "not_visible",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "rightsChannelType": {
+      "type": "string",
+      "enum": [
+        "email",
+        "web_form",
+        "dashboard",
+        "mailing_address",
+        "consent_manager",
+        "not_visible",
+        "unknown"
+      ]
+    },
+    "recipientCategory": {
+      "type": "string",
+      "enum": [
+        "ai_model_provider",
+        "cloud_host",
+        "vector_database",
+        "analytics_provider",
+        "payment_processor",
+        "email_provider",
+        "authentication_provider",
+        "support_tool",
+        "customer_system",
+        "government_or_legal",
+        "unknown"
+      ]
+    },
+    "regionSignal": {
+      "type": "string",
+      "enum": [
+        "india",
+        "eu_eea",
+        "uk",
+        "us",
+        "canada",
+        "global",
+        "unknown",
+        "not_applicable"
+      ]
+    },
+    "evidenceStrength": {
+      "type": "string",
+      "enum": [
+        "direct",
+        "indirect",
+        "inferred_from_feature",
+        "absence_after_search",
+        "conflicting",
+        "unknown"
+      ]
+    },
+    "basisCode": {
+      "type": "string",
+      "enum": [
+        "stage5_feature_ref",
+        "stage5_data_provenance",
+        "stage5_regulated_surface",
+        "stage5_architecture_hint",
+        "stage6_legal_section_ref",
+        "stage6_control_signal_ref",
+        "source_bundle_record_ref",
+        "absence_after_search",
+        "direct_policy_signal",
+        "indirect_policy_signal",
+        "unknown"
+      ]
+    },
+    "signalType": {
+      "type": "string",
+      "enum": [
+        "personal_data",
+        "sensitive_data",
+        "children_data",
+        "biometric_data",
+        "financial_data",
+        "health_data",
+        "employment_data",
+        "cross_border_transfer",
+        "processor_chain",
+        "subprocessor",
+        "model_provider",
+        "cloud_provider",
+        "analytics_provider",
+        "payment_provider",
+        "training_or_finetuning",
+        "rag",
+        "embedding",
+        "vector_store",
+        "deletion",
+        "retention",
+        "notice",
+        "consent",
+        "withdrawal",
+        "rights_channel",
+        "security",
+        "breach_notice",
+        "automated_decision",
+        "unknown"
+      ]
+    },
+    "sourceType": {
+      "type": "string",
+      "enum": [
+        "legal_document",
+        "privacy_document",
+        "terms_document",
+        "security_document",
+        "trust_document",
+        "feature_source",
+        "public_page",
+        "api_doc",
+        "help_doc",
+        "source_bundle_record",
+        "unknown"
+      ]
+    },
+    "reasonForFallback": {
+      "type": "string",
+      "enum": [
+        "direct_source_verification_required",
+        "stage6_signal_unknown",
+        "stage6_signal_conflicting",
+        "missing_document_section_ref",
+        "hunter_trigger_requires_line_read",
+        "source_locator_available",
+        "source_scope_incomplete",
+        "unknown"
+      ]
+    },
+    "absenceBasis": {
+      "type": "string",
+      "enum": [
+        "searched_legal_docs",
+        "searched_privacy_docs",
+        "searched_security_docs",
+        "searched_trust_docs",
+        "searched_public_sources",
+        "source_not_available",
+        "access_failed",
+        "not_enough_context",
+        "unknown"
+      ]
+    },
+    "locatorType": {
+      "type": "string",
+      "enum": [
+        "heading_path",
+        "url_fragment",
+        "text_anchor",
+        "source_record",
+        "page_url",
+        "unknown"
+      ]
+    },
+    "dpdpLabel": {
+      "type": "string",
+      "enum": [
+        "data_principal",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "gdprLabel": {
+      "type": "string",
+      "enum": [
+        "data_subject",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "usLabel": {
+      "type": "string",
+      "enum": [
+        "consumer",
+        "employee",
+        "business_contact",
+        "not_applicable",
+        "unknown"
+      ]
+    },
+    "dataProfileLimitationReason": {
+      "type": "string",
+      "enum": [
+        "source_missing",
+        "source_conflicting",
+        "source_access_failed",
+        "legal_doc_absent",
+        "stage5_signal_unknown",
+        "section_ref_missing",
+        "low_confidence_inference",
+        "unknown"
+      ]
+    },
+    "dataProfileLimitationImpact": {
+      "type": "string",
+      "enum": [
+        "no_stage7_block",
+        "requires_source_line_read",
+        "reduces_confidence",
+        "partial_navigation_only",
+        "unknown"
+      ]
+    },
+    "dataSubjectBlock": {
+      "type": "object",
+      "required": [
+        "subject_type",
+        "dpdp_label",
+        "gdpr_label",
+        "us_label",
+        "minor_signal"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "subject_type": {
+          "$ref": "#/$defs/subjectType"
+        },
+        "dpdp_label": {
+          "$ref": "#/$defs/dpdpLabel"
+        },
+        "gdpr_label": {
+          "$ref": "#/$defs/gdprLabel"
+        },
+        "us_label": {
+          "$ref": "#/$defs/usLabel"
+        },
+        "minor_signal": {
+          "$ref": "#/$defs/signal"
+        }
+      }
+    },
+    "dataCategoryBlock": {
+      "type": "object",
+      "required": [
+        "category",
+        "personal_data_signal",
+        "sensitive_signal_gdpr",
+        "sensitive_signal_us",
+        "sensitive_signal_dpdp",
+        "biometric_signal"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/dataCategory"
+        },
+        "personal_data_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "sensitive_signal_gdpr": {
+          "$ref": "#/$defs/signal"
+        },
+        "sensitive_signal_us": {
+          "$ref": "#/$defs/signal"
+        },
+        "sensitive_signal_dpdp": {
+          "$ref": "#/$defs/signal"
+        },
+        "biometric_signal": {
+          "$ref": "#/$defs/signal"
+        }
+      }
+    },
+    "processingBlock": {
+      "type": "object",
+      "required": [
+        "data_origin",
+        "collection_context",
+        "processing_actions",
+        "purpose_category",
+        "output_category"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "data_origin": {
+          "$ref": "#/$defs/dataOrigin"
+        },
+        "collection_context": {
+          "$ref": "#/$defs/collectionContext"
+        },
+        "processing_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/processingAction"
+          }
+        },
+        "purpose_category": {
+          "$ref": "#/$defs/purposeCategory"
+        },
+        "output_category": {
+          "$ref": "#/$defs/outputCategory"
+        }
+      }
+    },
+    "roleAllocationBlock": {
+      "type": "object",
+      "required": [
+        "dpdp_company_role",
+        "gdpr_company_role",
+        "us_company_role",
+        "customer_role",
+        "third_party_role",
+        "role_confidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "dpdp_company_role": {
+          "$ref": "#/$defs/dpdpCompanyRole"
+        },
+        "gdpr_company_role": {
+          "$ref": "#/$defs/gdprCompanyRole"
+        },
+        "us_company_role": {
+          "$ref": "#/$defs/usCompanyRole"
+        },
+        "customer_role": {
+          "$ref": "#/$defs/customerRole"
+        },
+        "third_party_role": {
+          "$ref": "#/$defs/thirdPartyRole"
+        },
+        "role_confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "regimeRelevanceBlock": {
+      "type": "object",
+      "required": [
+        "dpdp",
+        "gdpr",
+        "uk_gdpr",
+        "ccpa_cpra",
+        "us_state_privacy",
+        "basis_tags"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "dpdp": {
+          "$ref": "#/$defs/signal"
+        },
+        "gdpr": {
+          "$ref": "#/$defs/signal"
+        },
+        "uk_gdpr": {
+          "$ref": "#/$defs/signal"
+        },
+        "ccpa_cpra": {
+          "$ref": "#/$defs/signal"
+        },
+        "us_state_privacy": {
+          "$ref": "#/$defs/signal"
+        },
+        "basis_tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/basisTag"
+          }
+        }
+      }
+    },
+    "noticeBlock": {
+      "type": "object",
+      "required": [
+        "notice_signal",
+        "purpose_notice_signal",
+        "data_category_notice_signal",
+        "ai_processing_notice_signal",
+        "model_provider_notice_signal",
+        "notice_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "notice_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "purpose_notice_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "data_category_notice_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "ai_processing_notice_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "model_provider_notice_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "notice_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "consentBasisBlock": {
+      "type": "object",
+      "required": [
+        "gdpr_lawful_basis_signal",
+        "dpdp_basis_signal",
+        "consent_collection_signal",
+        "withdrawal_signal",
+        "consent_manager_signal",
+        "basis_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "gdpr_lawful_basis_signal": {
+          "$ref": "#/$defs/gdprLawfulBasisSignal"
+        },
+        "dpdp_basis_signal": {
+          "$ref": "#/$defs/dpdpBasisSignal"
+        },
+        "consent_collection_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "withdrawal_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "consent_manager_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "basis_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "rightsBlock": {
+      "type": "object",
+      "required": [
+        "access_signal",
+        "correction_signal",
+        "deletion_erasure_signal",
+        "withdrawal_signal",
+        "portability_signal",
+        "objection_optout_signal",
+        "grievance_signal",
+        "nomination_signal_dpdp",
+        "rights_channel_type",
+        "rights_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "access_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "correction_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "deletion_erasure_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "withdrawal_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "portability_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "objection_optout_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "grievance_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "nomination_signal_dpdp": {
+          "$ref": "#/$defs/signal"
+        },
+        "rights_channel_type": {
+          "$ref": "#/$defs/rightsChannelType"
+        },
+        "rights_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "processorChainBlock": {
+      "type": "object",
+      "required": [
+        "processor_signal",
+        "subprocessor_signal",
+        "model_provider_signal",
+        "cloud_provider_signal",
+        "analytics_provider_signal",
+        "payment_provider_signal",
+        "recipient_categories",
+        "processor_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "processor_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "subprocessor_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "model_provider_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "cloud_provider_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "analytics_provider_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "payment_provider_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "recipient_categories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recipientCategory"
+          }
+        },
+        "processor_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "transferLocationBlock": {
+      "type": "object",
+      "required": [
+        "origin_region_signal",
+        "destination_region_signal",
+        "cross_border_transfer_signal",
+        "transfer_basis_signal_gdpr",
+        "transfer_restriction_signal_dpdp",
+        "location_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "origin_region_signal": {
+          "$ref": "#/$defs/regionSignal"
+        },
+        "destination_region_signal": {
+          "$ref": "#/$defs/regionSignal"
+        },
+        "cross_border_transfer_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "transfer_basis_signal_gdpr": {
+          "$ref": "#/$defs/signal"
+        },
+        "transfer_restriction_signal_dpdp": {
+          "$ref": "#/$defs/signal"
+        },
+        "location_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "retentionDeletionAiBlock": {
+      "type": "object",
+      "required": [
+        "retention_period_signal",
+        "deletion_mechanism_signal",
+        "embedding_signal",
+        "vector_store_signal",
+        "rag_signal",
+        "fine_tuning_signal",
+        "training_use_signal",
+        "model_weight_risk_signal",
+        "ai_architecture_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "retention_period_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "deletion_mechanism_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "embedding_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "vector_store_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "rag_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "fine_tuning_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "training_use_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "model_weight_risk_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "ai_architecture_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "securityAccountabilityBlock": {
+      "type": "object",
+      "required": [
+        "security_safeguard_signal",
+        "encryption_signal",
+        "access_control_signal",
+        "audit_log_signal",
+        "breach_notice_signal",
+        "grievance_officer_signal",
+        "dpo_signal",
+        "security_section_refs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "security_safeguard_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "encryption_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "access_control_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "audit_log_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "breach_notice_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "grievance_officer_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "dpo_signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "security_section_refs": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "sourceTraceBlock": {
+      "type": "object",
+      "required": [
+        "feature_refs",
+        "provenance_refs",
+        "source_record_refs",
+        "document_refs",
+        "section_refs",
+        "evidence_strength"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "feature_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "provenance_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "source_record_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "document_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "section_refs": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "evidence_strength": {
+          "$ref": "#/$defs/evidenceStrength"
+        }
+      }
+    },
+    "dataFlowProfileItem": {
+      "type": "object",
+      "required": [
+        "flow_id",
+        "feature_id",
+        "provenance_id",
+        "feature_role",
+        "flow_role",
+        "data_subject",
+        "data_category",
+        "processing",
+        "role_allocation",
+        "regime_relevance",
+        "notice",
+        "consent_basis",
+        "rights",
+        "processor_chain",
+        "transfer_location",
+        "retention_deletion_ai",
+        "security_accountability",
+        "source_trace",
+        "confidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "flow_id": {
+          "type": "string"
+        },
+        "feature_id": {
+          "type": "string"
+        },
+        "provenance_id": {
+          "type": "string"
+        },
+        "feature_role": {
+          "$ref": "#/$defs/featureRole"
+        },
+        "flow_role": {
+          "$ref": "#/$defs/flowRole"
+        },
+        "data_subject": {
+          "$ref": "#/$defs/dataSubjectBlock"
+        },
+        "data_category": {
+          "$ref": "#/$defs/dataCategoryBlock"
+        },
+        "processing": {
+          "$ref": "#/$defs/processingBlock"
+        },
+        "role_allocation": {
+          "$ref": "#/$defs/roleAllocationBlock"
+        },
+        "regime_relevance": {
+          "$ref": "#/$defs/regimeRelevanceBlock"
+        },
+        "notice": {
+          "$ref": "#/$defs/noticeBlock"
+        },
+        "consent_basis": {
+          "$ref": "#/$defs/consentBasisBlock"
+        },
+        "rights": {
+          "$ref": "#/$defs/rightsBlock"
+        },
+        "processor_chain": {
+          "$ref": "#/$defs/processorChainBlock"
+        },
+        "transfer_location": {
+          "$ref": "#/$defs/transferLocationBlock"
+        },
+        "retention_deletion_ai": {
+          "$ref": "#/$defs/retentionDeletionAiBlock"
+        },
+        "security_accountability": {
+          "$ref": "#/$defs/securityAccountabilityBlock"
+        },
+        "source_trace": {
+          "$ref": "#/$defs/sourceTraceBlock"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "profileSummarySignals": {
+      "type": "object",
+      "required": [
+        "personal_data_visible",
+        "sensitive_data_visible",
+        "children_data_visible",
+        "cross_border_visible",
+        "subprocessor_visible",
+        "training_or_finetuning_visible",
+        "deletion_channel_visible",
+        "automated_decision_visible"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "personal_data_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "sensitive_data_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "children_data_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "cross_border_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "subprocessor_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "training_or_finetuning_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "deletion_channel_visible": {
+          "$ref": "#/$defs/signal"
+        },
+        "automated_decision_visible": {
+          "$ref": "#/$defs/signal"
+        }
+      }
+    },
+    "dataProfileLimitationItem": {
+      "type": "object",
+      "required": [
+        "limitation_id",
+        "scope",
+        "reason_code",
+        "impact_code",
+        "confidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "limitation_id": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/dataProfileLimitationReason"
+        },
+        "impact_code": {
+          "$ref": "#/$defs/dataProfileLimitationImpact"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "dataProvenanceProfile": {
+      "type": "object",
+      "required": [
+        "data_provenance_profile_version",
+        "data_flow_profile",
+        "profile_summary_signals",
+        "data_profile_limitations"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "data_provenance_profile_version": {
+          "const": "data_provenance_profile_v1"
+        },
+        "data_flow_profile": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataFlowProfileItem"
+          }
+        },
+        "profile_summary_signals": {
+          "$ref": "#/$defs/profileSummarySignals"
+        },
+        "data_profile_limitations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataProfileLimitationItem"
+          }
+        }
+      }
+    },
+    "featureDataFlowIndexItem": {
+      "type": "object",
+      "required": [
+        "feature_id",
+        "flow_ids",
+        "provenance_ids",
+        "data_categories",
+        "surface_tokens"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "feature_id": {
+          "type": "string"
+        },
+        "flow_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "provenance_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "data_categories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataCategory"
+          }
+        },
+        "surface_tokens": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "dataSignalIndexItem": {
+      "type": "object",
+      "required": [
+        "signal_type",
+        "signal_value",
+        "flow_ids",
+        "feature_ids",
+        "section_ids"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "signal_type": {
+          "$ref": "#/$defs/signalType"
+        },
+        "signal_value": {
+          "type": "string"
+        },
+        "flow_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "feature_ids": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "section_ids": {
+          "$ref": "#/$defs/stringArray"
+        }
+      }
+    },
+    "featureRole": {
+      "type": "string",
+      "enum": [
+        "core",
+        "supporting",
+        "contextual",
+        "unknown"
+      ]
     }
   }
 }

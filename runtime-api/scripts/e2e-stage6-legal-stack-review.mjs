@@ -25,7 +25,8 @@ function embeddedArtifactGuard(input, review) { const text = (input.source_bundl
 function isObject(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
 function assertArray(value, label) { if (!Array.isArray(value)) fail(`${label} must be an array`, { value }); }
 function assertObject(value, label) { if (!isObject(value)) fail(`${label} must be an object`, { value }); }
-function assertAbsent(value, label) { if (value !== undefined) fail(`${label} must not be emitted in Stage 6A`, { value }); }
+function assertEnum(value, allowed, label) { if (!allowed.has(value)) fail(`${label} must use a controlled value`, { value, allowed: [...allowed] }); }
+function assertEnumArray(value, allowed, label) { assertArray(value, label); value.forEach((item, index) => assertEnum(item, allowed, `${label}/${index}`)); }
 function assertNoForbiddenKeys(value, forbiddenKeys, basePath = "") {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
@@ -39,8 +40,78 @@ function assertNoForbiddenKeys(value, forbiddenKeys, basePath = "") {
   }
 }
 function assertNoRegistryVaultReportLeakage(review) {
-  const forbidden = new Set(["registry_ledger", "registry_evaluation", "final_status", "controlled_rows", "insufficient_evidence_rows", "operator_challenge", "report_data", "technical_audit_log", "assembly_route", "vault_confirmation_questions", "vault_prefill_suggestions", "vault_payload", "html"]);
+  const forbidden = new Set(["registry_ledger", "registry_evaluation", "final_status", "controlled_rows", "insufficient_evidence_rows", "operator_challenge", "report_data", "technical_audit_log", "assembly_route", "vault_confirmation_questions", "vault_prefill_suggestions", "vault_payload", "html", "legal_conclusion", "compliance_verdict", "recommendation", "control_gap", "threat_status", "triggered_threat_ids", "hunter_status"]);
   assertNoForbiddenKeys(review, forbidden, "");
+}
+const SIGNALS = new Set(["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"]);
+const CONFIDENCE = new Set(["high", "medium", "low", "unknown"]);
+const FEATURE_ROLES = new Set(["core", "supporting", "contextual", "unknown"]);
+const FLOW_ROLES = new Set(["primary_input", "secondary_input", "system_metadata", "generated_output", "stored_record", "third_party_transfer", "derived_data", "unknown"]);
+const SUBJECT_TYPES = new Set(["website_visitor", "registered_user", "customer_admin", "customer_end_user", "developer", "employee", "contractor", "candidate", "patient", "child_or_minor", "business_contact", "unknown"]);
+const DATA_CATEGORIES = new Set(["account_identity", "contact_data", "authentication_data", "prompt_text", "uploaded_file", "audio", "image_video", "generated_output", "usage_logs", "device_network_data", "payment_billing", "support_communications", "employment_hr", "financial", "health", "biometric_identifier", "child_data", "location", "public_web_data", "third_party_dataset", "unknown"]);
+const DATA_ORIGINS = new Set(["data_principal_provided", "customer_provided", "third_party_provided", "public_web", "system_generated", "inferred", "unknown"]);
+const COLLECTION_CONTEXTS = new Set(["website", "account_signup", "service_input", "api_input", "uploaded_document", "support", "billing", "telemetry", "third_party_import", "employee_workflow", "unknown"]);
+const PROCESSING_ACTIONS = new Set(["collect", "receive", "store", "embed", "retrieve", "infer", "generate", "summarize", "translate", "classify", "score", "rank", "recommend", "route", "share", "transfer", "delete", "log", "monitor", "train_or_finetune", "unknown"]);
+const PURPOSE_CATEGORIES = new Set(["service_delivery", "account_management", "security", "billing", "analytics", "support", "model_improvement", "legal_compliance", "marketing", "unknown"]);
+const OUTPUT_CATEGORIES = new Set(["generated_output", "classification_score", "summary", "recommendation", "route_decision", "stored_record", "audit_log", "notification", "unknown"]);
+const DPDP_ROLES = new Set(["data_fiduciary", "data_processor", "both", "not_applicable", "unknown"]);
+const GDPR_ROLES = new Set(["controller", "processor", "joint_controller", "subprocessor", "both", "not_applicable", "unknown"]);
+const US_ROLES = new Set(["business", "service_provider", "contractor", "third_party", "not_applicable", "unknown"]);
+const CUSTOMER_ROLES = new Set(["controller_or_data_fiduciary", "processor", "business", "service_provider", "not_applicable", "unknown"]);
+const THIRD_PARTY_ROLES = new Set(["processor", "subprocessor", "service_provider", "contractor", "third_party", "model_provider", "cloud_provider", "analytics_provider", "payment_provider", "not_applicable", "unknown"]);
+const BASIS_TAGS = new Set(["india_entity", "india_users", "eu_users", "uk_users", "california_users", "global_users", "privacy_policy_mentions_regime", "terms_mentions_regime", "no_regime_signal", "unknown"]);
+const GDPR_BASIS = new Set(["consent", "contract", "legal_obligation", "vital_interests", "public_task", "legitimate_interests", "not_visible", "not_applicable", "unknown"]);
+const DPDP_BASIS = new Set(["consent", "legitimate_use", "not_visible", "not_applicable", "unknown"]);
+const RIGHTS_CHANNELS = new Set(["email", "web_form", "dashboard", "mailing_address", "consent_manager", "not_visible", "unknown"]);
+const RECIPIENT_CATEGORIES = new Set(["ai_model_provider", "cloud_host", "vector_database", "analytics_provider", "payment_processor", "email_provider", "authentication_provider", "support_tool", "customer_system", "government_or_legal", "unknown"]);
+const REGIONS = new Set(["india", "eu_eea", "uk", "us", "canada", "global", "unknown", "not_applicable"]);
+const EVIDENCE_STRENGTH = new Set(["direct", "indirect", "inferred_from_feature", "absence_after_search", "conflicting", "unknown"]);
+const SIGNAL_TYPES = new Set(["personal_data", "sensitive_data", "children_data", "biometric_data", "financial_data", "health_data", "employment_data", "cross_border_transfer", "processor_chain", "subprocessor", "model_provider", "cloud_provider", "analytics_provider", "payment_provider", "training_or_finetuning", "rag", "embedding", "vector_store", "deletion", "retention", "notice", "consent", "withdrawal", "rights_channel", "security", "breach_notice", "automated_decision", "unknown"]);
+function assertDataFlow(row, index) {
+  const base = `data_provenance_profile.data_flow_profile/${index}`;
+  assertObject(row, base);
+  for (const key of ["flow_id", "feature_id", "provenance_id", "feature_role", "flow_role", "data_subject", "data_category", "processing", "role_allocation", "regime_relevance", "notice", "consent_basis", "rights", "processor_chain", "transfer_location", "retention_deletion_ai", "security_accountability", "source_trace", "confidence"]) {
+    if (row[key] === undefined) fail(`${base}.${key} is required`, { row });
+  }
+  assertEnum(row.feature_role, FEATURE_ROLES, `${base}.feature_role`);
+  assertEnum(row.flow_role, FLOW_ROLES, `${base}.flow_role`);
+  assertEnum(row.confidence, CONFIDENCE, `${base}.confidence`);
+  assertEnum(row.data_subject?.subject_type, SUBJECT_TYPES, `${base}.data_subject.subject_type`);
+  assertEnum(row.data_subject?.minor_signal, SIGNALS, `${base}.data_subject.minor_signal`);
+  assertEnum(row.data_category?.category, DATA_CATEGORIES, `${base}.data_category.category`);
+  for (const key of ["personal_data_signal", "sensitive_signal_gdpr", "sensitive_signal_us", "sensitive_signal_dpdp", "biometric_signal"]) assertEnum(row.data_category?.[key], SIGNALS, `${base}.data_category.${key}`);
+  assertEnum(row.processing?.data_origin, DATA_ORIGINS, `${base}.processing.data_origin`);
+  assertEnum(row.processing?.collection_context, COLLECTION_CONTEXTS, `${base}.processing.collection_context`);
+  assertEnumArray(row.processing?.processing_actions, PROCESSING_ACTIONS, `${base}.processing.processing_actions`);
+  assertEnum(row.processing?.purpose_category, PURPOSE_CATEGORIES, `${base}.processing.purpose_category`);
+  assertEnum(row.processing?.output_category, OUTPUT_CATEGORIES, `${base}.processing.output_category`);
+  assertEnum(row.role_allocation?.dpdp_company_role, DPDP_ROLES, `${base}.role_allocation.dpdp_company_role`);
+  assertEnum(row.role_allocation?.gdpr_company_role, GDPR_ROLES, `${base}.role_allocation.gdpr_company_role`);
+  assertEnum(row.role_allocation?.us_company_role, US_ROLES, `${base}.role_allocation.us_company_role`);
+  assertEnum(row.role_allocation?.customer_role, CUSTOMER_ROLES, `${base}.role_allocation.customer_role`);
+  assertEnum(row.role_allocation?.third_party_role, THIRD_PARTY_ROLES, `${base}.role_allocation.third_party_role`);
+  assertEnum(row.role_allocation?.role_confidence, CONFIDENCE, `${base}.role_allocation.role_confidence`);
+  for (const key of ["dpdp", "gdpr", "uk_gdpr", "ccpa_cpra", "us_state_privacy"]) assertEnum(row.regime_relevance?.[key], SIGNALS, `${base}.regime_relevance.${key}`);
+  assertEnumArray(row.regime_relevance?.basis_tags, BASIS_TAGS, `${base}.regime_relevance.basis_tags`);
+  assertEnum(row.consent_basis?.gdpr_lawful_basis_signal, GDPR_BASIS, `${base}.consent_basis.gdpr_lawful_basis_signal`);
+  assertEnum(row.consent_basis?.dpdp_basis_signal, DPDP_BASIS, `${base}.consent_basis.dpdp_basis_signal`);
+  assertEnum(row.rights?.rights_channel_type, RIGHTS_CHANNELS, `${base}.rights.rights_channel_type`);
+  assertEnumArray(row.processor_chain?.recipient_categories, RECIPIENT_CATEGORIES, `${base}.processor_chain.recipient_categories`);
+  assertEnum(row.transfer_location?.origin_region_signal, REGIONS, `${base}.transfer_location.origin_region_signal`);
+  assertEnum(row.transfer_location?.destination_region_signal, REGIONS, `${base}.transfer_location.destination_region_signal`);
+  assertEnum(row.source_trace?.evidence_strength, EVIDENCE_STRENGTH, `${base}.source_trace.evidence_strength`);
+}
+function assertStage6BCanon(review) {
+  const profile = review.data_provenance_profile;
+  assertObject(profile, "data_provenance_profile");
+  if (profile.data_provenance_profile_version !== "data_provenance_profile_v1") fail("data_provenance_profile_version must equal data_provenance_profile_v1", { value: profile.data_provenance_profile_version });
+  assertArray(profile.data_flow_profile, "data_provenance_profile.data_flow_profile");
+  assertObject(profile.profile_summary_signals, "data_provenance_profile.profile_summary_signals");
+  assertArray(profile.data_profile_limitations, "data_provenance_profile.data_profile_limitations");
+  assertNoForbiddenKeys(profile, new Set(["quote", "evidence_quote", "excerpt_text", "excerpt", "contradicts", "narrative", "explanation", "analysis", "legal_conclusion", "compliance_verdict", "recommendation", "control_gap", "threat_status", "triggered_threat_ids", "hunter_status", "final_status"]), "/data_provenance_profile");
+  assertNoForbiddenKeys(profile, new Set(["heading_text", "section_path", "section_function", "structural_zone", "document_status", "doc_title", "document_relationship_map", "legal_document_index", "legal_document_inventory", "document_control_signal_map"]), "/data_provenance_profile");
+  profile.data_flow_profile.forEach(assertDataFlow);
+  for (const key of ["personal_data_visible", "sensitive_data_visible", "children_data_visible", "cross_border_visible", "subprocessor_visible", "training_or_finetuning_visible", "deletion_channel_visible", "automated_decision_visible"]) assertEnum(profile.profile_summary_signals[key], SIGNALS, `data_provenance_profile.profile_summary_signals.${key}`);
 }
 function assertStage6ACanon(review) {
   assertArray(review.legal_stack, "legacy legal_stack");
@@ -50,7 +121,6 @@ function assertStage6ACanon(review) {
   assertArray(review.limitations, "legacy limitations");
   if (review.legal_stack_review_version !== "legal_stack_review_v2") fail("legal_stack_review_version must equal legal_stack_review_v2", { value: review.legal_stack_review_version });
   if (review.stage_role !== "stage7_navigation_index") fail("stage_role must equal stage7_navigation_index", { value: review.stage_role });
-  assertAbsent(review.data_provenance_profile, "data_provenance_profile");
 
   const cartography = review.legal_document_cartography;
   assertObject(cartography, "legal_document_cartography");
@@ -70,8 +140,9 @@ function assertStage6ACanon(review) {
   assertArray(navigation.document_source_locator_index, "stage7_navigation_index.document_source_locator_index");
   assertArray(navigation.absence_unknown_index, "stage7_navigation_index.absence_unknown_index");
   assertArray(navigation.fallback_source_packet, "stage7_navigation_index.fallback_source_packet");
-  assertAbsent(navigation.feature_to_data_flow_index, "stage7_navigation_index.feature_to_data_flow_index");
-  assertAbsent(navigation.data_signal_index, "stage7_navigation_index.data_signal_index");
+  assertArray(navigation.feature_to_data_flow_index, "stage7_navigation_index.feature_to_data_flow_index");
+  assertArray(navigation.data_signal_index, "stage7_navigation_index.data_signal_index");
+  navigation.data_signal_index.forEach((item, index) => assertEnum(item?.signal_type, SIGNAL_TYPES, `stage7_navigation_index.data_signal_index/${index}.signal_type`));
   assertNoRegistryVaultReportLeakage(review);
 }
 
@@ -90,9 +161,10 @@ const review = legalStage.legal_stack_review;
 if (!review) fail("Legal Stack Review stage returned no review", legalStage);
 if (!Array.isArray(review.legal_stack) || review.legal_stack.length !== 5) fail("Legal Stack Review legal_stack must contain five entries", review);
 assertStage6ACanon(review);
+assertStage6BCanon(review);
 
 writeJson(stage6CachePath, { cache_version: "stage6_legal_stack_review_e2e_cache_v1", generated_at: new Date().toISOString(), source_bundle: cache.source_bundle, evidence_junction: cache.evidence_junction, company_profile: cache.company_profile, target_feature_profile: cache.target_feature_profile, legal_stack_review_stage_result: legalStage, legal_stack_review: review });
 
 const actualPromptTokens = legalStage.model_metadata?.usage_metadata?.promptTokenCount || null;
 const guard = embeddedArtifactGuard(stage6Input, review);
-console.log(JSON.stringify({ ok: true, phase: "stage_6_legal_stack_review_e2e", cache_path: stage6CachePath, cache_written: true, adapter_version: stage6Input.legal_stack_review_input_version, budget_status: stage6Input.input_budget.budget_status, estimated_total_prompt_tokens: stage6Input.input_budget.estimated_total_prompt_tokens, actual_prompt_tokens: actualPromptTokens, token_estimate_drift_ratio: tokenDrift(actualPromptTokens, stage6Input.input_budget.estimated_total_prompt_tokens), included_sources: stage6Input.input_budget.included_sources.length, excluded_sources: stage6Input.input_budget.excluded_sources.length, legal_stack_review_version: review.legal_stack_review_version, stage_role: review.stage_role, legal_stack_count: review.legal_stack.length, legal_stack_statuses: Object.fromEntries(review.legal_stack.map((doc) => [doc.document_type, { exists: doc.exists, evidence_status: doc.evidence_status, document_url: doc.document_url }])), redline_count: review.document_stack_redline?.length || 0, assessment_count: review.legal_stack_assessment?.length || 0, limitation_count: review.limitations?.length || 0, legal_document_inventory_count: review.legal_document_cartography?.legal_document_inventory?.length || 0, legal_document_index_count: review.legal_document_cartography?.legal_document_index?.length || 0, document_relationship_count: review.legal_document_cartography?.document_relationship_map?.length || 0, document_control_signal_count: review.legal_document_cartography?.document_control_signal_map?.length || 0, document_mismatch_signal_count: review.legal_document_cartography?.document_mismatch_signal_map?.length || 0, stage7_document_locator_count: review.stage7_navigation_index?.document_source_locator_index?.length || 0, embedded_artifact_guard: guard, validation_mode: legalStage.validation_mode, guardrail_validation_mode: legalStage.guardrail_validation_mode, runtime_instruction_configured: legalStage.prompt_metadata?.runtime_instruction_configured === true, model_metadata: legalStage.model_metadata || null }, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage_6_legal_stack_review_e2e", cache_path: stage6CachePath, cache_written: true, adapter_version: stage6Input.legal_stack_review_input_version, budget_status: stage6Input.input_budget.budget_status, estimated_total_prompt_tokens: stage6Input.input_budget.estimated_total_prompt_tokens, actual_prompt_tokens: actualPromptTokens, token_estimate_drift_ratio: tokenDrift(actualPromptTokens, stage6Input.input_budget.estimated_total_prompt_tokens), included_sources: stage6Input.input_budget.included_sources.length, excluded_sources: stage6Input.input_budget.excluded_sources.length, legal_stack_review_version: review.legal_stack_review_version, stage_role: review.stage_role, legal_stack_count: review.legal_stack.length, legal_stack_statuses: Object.fromEntries(review.legal_stack.map((doc) => [doc.document_type, { exists: doc.exists, evidence_status: doc.evidence_status, document_url: doc.document_url }])), redline_count: review.document_stack_redline?.length || 0, assessment_count: review.legal_stack_assessment?.length || 0, limitation_count: review.limitations?.length || 0, legal_document_inventory_count: review.legal_document_cartography?.legal_document_inventory?.length || 0, legal_document_index_count: review.legal_document_cartography?.legal_document_index?.length || 0, document_relationship_count: review.legal_document_cartography?.document_relationship_map?.length || 0, document_control_signal_count: review.legal_document_cartography?.document_control_signal_map?.length || 0, document_mismatch_signal_count: review.legal_document_cartography?.document_mismatch_signal_map?.length || 0, data_flow_profile_count: review.data_provenance_profile?.data_flow_profile?.length || 0, data_profile_limitation_count: review.data_provenance_profile?.data_profile_limitations?.length || 0, stage7_data_flow_index_count: review.stage7_navigation_index?.feature_to_data_flow_index?.length || 0, stage7_data_signal_index_count: review.stage7_navigation_index?.data_signal_index?.length || 0, stage7_document_locator_count: review.stage7_navigation_index?.document_source_locator_index?.length || 0, embedded_artifact_guard: guard, validation_mode: legalStage.validation_mode, guardrail_validation_mode: legalStage.guardrail_validation_mode, runtime_instruction_configured: legalStage.prompt_metadata?.runtime_instruction_configured === true, model_metadata: legalStage.model_metadata || null }, null, 2));

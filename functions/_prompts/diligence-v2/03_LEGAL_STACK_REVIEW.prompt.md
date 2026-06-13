@@ -42,6 +42,7 @@ document_stack_synthesis
 legal_stack_assessment[]
 limitations[]
 legal_document_cartography
+data_provenance_profile
 stage7_navigation_index
 stage6_limitations[]
 ```
@@ -150,6 +151,7 @@ The `legal_stack_review` object must contain these top-level fields:
   "legal_stack_assessment": [],
   "limitations": [],
   "legal_document_cartography": {},
+  "data_provenance_profile": {},
   "stage7_navigation_index": {},
   "stage6_limitations": []
 }
@@ -960,19 +962,188 @@ Do not include `quote`, `evidence_quote`, `excerpt_text`, `excerpt`, `source`, `
 
 ## 12.5 Stage 7 navigation index
 
-Emit only the 6A-relevant Stage 7 navigation indexes in this patch:
+Emit the full Stage 6 navigation index. The 6A indexes point to legal/control documents and sections. The 6B indexes point to data flows and controlled data signals. All indexes are navigation only and do not decide Hunter Trigger status:
 
 ```json
 {
+  "feature_to_data_flow_index": [],
   "feature_to_document_section_index": [],
   "control_family_index": [],
+  "data_signal_index": [],
   "document_source_locator_index": [],
   "absence_unknown_index": [],
   "fallback_source_packet": []
 }
 ```
 
-Do not emit `feature_to_data_flow_index[]`, `data_signal_index[]`, or `data_provenance_profile` in this 6A patch.
+`feature_to_data_flow_index[]` and `data_signal_index[]` are enabled by 6B. They must contain only cross-links and controlled signal values. They must not contain threat decisions, control-gap conclusions, recommendations, report prose, or Vault fields.
+
+---
+
+# 13. Canonical 6B Data Provenance Profile
+
+Build `data_provenance_profile` separately from `legal_document_cartography`.
+
+6A and 6B must remain functionally separate:
+
+```text
+6A = document inventory, document sections, headings, legal/control section signals, document relationships, and document mismatch signal map.
+6B = controlled-value data-flow topology: data subjects, data categories, processing actions, roles, notice/basis/rights/processor/transfer/retention/security signals per flow.
+```
+
+6B may reference 6A using section refs only. Do not duplicate 6A document cartography inside 6B. Do not place `heading_text`, `section_path`, `section_function`, `structural_zone`, `document_status`, `doc_title`, `legal_document_inventory`, `legal_document_index`, `document_relationship_map`, or `document_control_signal_map` inside `data_provenance_profile`.
+
+One `data_flow_profile[]` row equals one data flow. Do not collapse multiple data flows into one row.
+
+Use Stage 5 `data_provenance_map[]` as the starting point. Use `feature_inventory[]` to attach feature context. Use `regulated_surface_map[]` and `architecture_hints[]` only as supporting navigation signals.
+
+Use only controlled values for interpreted fields. Do not emit uncontrolled semantic strings. Source/ref strings are allowed only for IDs, URLs, section refs, source refs, and locator refs.
+
+Use `unknown` instead of inventing.
+
+Do not include quotes, `evidence_quote`, `excerpt_text`, prose explanations, legal conclusions, compliance verdicts, control gaps, recommendations, Hunter Trigger status, Vault fields, report fields, or HTML in 6B.
+
+`data_provenance_profile` must use this structure:
+
+```json
+{
+  "data_provenance_profile_version": "data_provenance_profile_v1",
+  "data_flow_profile": [
+    {
+      "flow_id": "DF001",
+      "feature_id": "F001",
+      "provenance_id": "DP001",
+      "feature_role": "core",
+      "flow_role": "primary_input",
+      "data_subject": {
+        "subject_type": "customer_end_user",
+        "dpdp_label": "data_principal",
+        "gdpr_label": "data_subject",
+        "us_label": "consumer",
+        "minor_signal": "unknown"
+      },
+      "data_category": {
+        "category": "prompt_text",
+        "personal_data_signal": "visible",
+        "sensitive_signal_gdpr": "unknown",
+        "sensitive_signal_us": "unknown",
+        "sensitive_signal_dpdp": "unknown",
+        "biometric_signal": "not_visible"
+      },
+      "processing": {
+        "data_origin": "customer_provided",
+        "collection_context": "service_input",
+        "processing_actions": ["receive", "infer", "generate"],
+        "purpose_category": "service_delivery",
+        "output_category": "generated_output"
+      },
+      "role_allocation": {
+        "dpdp_company_role": "data_processor",
+        "gdpr_company_role": "processor",
+        "us_company_role": "service_provider",
+        "customer_role": "controller_or_data_fiduciary",
+        "third_party_role": "unknown",
+        "role_confidence": "medium"
+      },
+      "regime_relevance": {
+        "dpdp": "unknown",
+        "gdpr": "unknown",
+        "uk_gdpr": "unknown",
+        "ccpa_cpra": "unknown",
+        "us_state_privacy": "unknown",
+        "basis_tags": ["unknown"]
+      },
+      "notice": {
+        "notice_signal": "unknown",
+        "purpose_notice_signal": "unknown",
+        "data_category_notice_signal": "unknown",
+        "ai_processing_notice_signal": "unknown",
+        "model_provider_notice_signal": "unknown",
+        "notice_section_refs": []
+      },
+      "consent_basis": {
+        "gdpr_lawful_basis_signal": "unknown",
+        "dpdp_basis_signal": "unknown",
+        "consent_collection_signal": "unknown",
+        "withdrawal_signal": "unknown",
+        "consent_manager_signal": "unknown",
+        "basis_section_refs": []
+      },
+      "rights": {
+        "access_signal": "unknown",
+        "correction_signal": "unknown",
+        "deletion_erasure_signal": "unknown",
+        "withdrawal_signal": "unknown",
+        "portability_signal": "unknown",
+        "objection_optout_signal": "unknown",
+        "grievance_signal": "unknown",
+        "nomination_signal_dpdp": "unknown",
+        "rights_channel_type": "unknown",
+        "rights_section_refs": []
+      },
+      "processor_chain": {
+        "processor_signal": "unknown",
+        "subprocessor_signal": "unknown",
+        "model_provider_signal": "unknown",
+        "cloud_provider_signal": "unknown",
+        "analytics_provider_signal": "unknown",
+        "payment_provider_signal": "not_applicable",
+        "recipient_categories": ["unknown"],
+        "processor_section_refs": []
+      },
+      "transfer_location": {
+        "origin_region_signal": "unknown",
+        "destination_region_signal": "unknown",
+        "cross_border_transfer_signal": "unknown",
+        "transfer_basis_signal_gdpr": "unknown",
+        "transfer_restriction_signal_dpdp": "unknown",
+        "location_section_refs": []
+      },
+      "retention_deletion_ai": {
+        "retention_period_signal": "unknown",
+        "deletion_mechanism_signal": "unknown",
+        "embedding_signal": "unknown",
+        "vector_store_signal": "unknown",
+        "rag_signal": "unknown",
+        "fine_tuning_signal": "unknown",
+        "training_use_signal": "unknown",
+        "model_weight_risk_signal": "unknown",
+        "ai_architecture_section_refs": []
+      },
+      "security_accountability": {
+        "security_safeguard_signal": "unknown",
+        "encryption_signal": "unknown",
+        "access_control_signal": "unknown",
+        "audit_log_signal": "unknown",
+        "breach_notice_signal": "unknown",
+        "grievance_officer_signal": "unknown",
+        "dpo_signal": "unknown",
+        "security_section_refs": []
+      },
+      "source_trace": {
+        "feature_refs": ["F001"],
+        "provenance_refs": ["DP001"],
+        "source_record_refs": [],
+        "document_refs": [],
+        "section_refs": [],
+        "evidence_strength": "inferred_from_feature"
+      },
+      "confidence": "medium"
+    }
+  ],
+  "profile_summary_signals": {
+    "personal_data_visible": "unknown",
+    "sensitive_data_visible": "unknown",
+    "children_data_visible": "unknown",
+    "cross_border_visible": "unknown",
+    "subprocessor_visible": "unknown",
+    "training_or_finetuning_visible": "unknown",
+    "deletion_channel_visible": "unknown",
+    "automated_decision_visible": "unknown"
+  },
+  "data_profile_limitations": []
+}
+```
 
 ---
 
@@ -1385,9 +1556,26 @@ The final object must be:
       },
       "legal_stack_limitations": []
     },
+    "data_provenance_profile": {
+      "data_provenance_profile_version": "data_provenance_profile_v1",
+      "data_flow_profile": [],
+      "profile_summary_signals": {
+        "personal_data_visible": "unknown",
+        "sensitive_data_visible": "unknown",
+        "children_data_visible": "unknown",
+        "cross_border_visible": "unknown",
+        "subprocessor_visible": "unknown",
+        "training_or_finetuning_visible": "unknown",
+        "deletion_channel_visible": "unknown",
+        "automated_decision_visible": "unknown"
+      },
+      "data_profile_limitations": []
+    },
     "stage7_navigation_index": {
+      "feature_to_data_flow_index": [],
       "feature_to_document_section_index": [],
       "control_family_index": [],
+      "data_signal_index": [],
       "document_source_locator_index": [],
       "absence_unknown_index": [],
       "fallback_source_packet": []
@@ -1420,27 +1608,30 @@ Before returning JSON, verify:
 3. `legal_stack_review_version` is `legal_stack_review_v2`.
 4. `stage_role` is `stage7_navigation_index`.
 5. `legal_document_cartography` exists and is quote-free.
-6. `stage7_navigation_index` exists with only 6A indexes.
-7. `legal_stack[]` contains exactly five entries.
-8. The five `document_type` values are exactly `ToS`, `Privacy Policy`, `DPA`, `AUP`, and `SLA`.
-9. No sixth document type appears in `legal_stack[]`.
-10. Every legal-stack item has `document_type`, `exists`, `document_url`, `covers`, `misses`, `evidence_status`, and `linked_threat_ids`.
-11. Every `evidence_status` is one of `INGESTED`, `ABSENT`, `ACCESS_FAILED`, or `INSUFFICIENT`.
-12. If `exists` is false, `document_url` is `"N/A"` and `covers` is `null`.
-13. If `exists` is true, `document_url` is a source URL or `manual_text`, and `covers` is an array.
-14. `linked_threat_ids[]` is empty unless explicit deterministic threat-ID mapping was supplied.
-15. `document_stack_redline[]` may be empty; if non-empty, it uses only `QUOTE_VS_QUOTE`, `CLAIM_VS_ABSENCE`, or `STACK_VS_REALITY`.
-16. `document_mismatch_signal_map[]` has no quote/prose keys.
-17. No `data_provenance_profile`, `feature_to_data_flow_index`, or `data_signal_index` appears in this 6A patch.
-18. False Belief Formula notes are framed as founder-assumption mismatch, not liability conclusions.
-19. No fresh search or browsing appears.
-20. No registry classification appears.
-21. No final findings appear.
-22. No Vault field appears.
-23. No HTML appears.
-24. No legal advice appears.
-25. No compliance certification appears.
-26. No liability or enforceability conclusion appears.
-27. Limitations are explicit where source coverage, document status, absence basis, or product-document mapping is thin or unclear.
+6. `data_provenance_profile` exists and is quote-free/prose-free.
+7. `stage7_navigation_index` exists with 6A and 6B navigation indexes.
+8. `legal_stack[]` contains exactly five entries.
+9. The five `document_type` values are exactly `ToS`, `Privacy Policy`, `DPA`, `AUP`, and `SLA`.
+10. No sixth document type appears in `legal_stack[]`.
+11. Every legal-stack item has `document_type`, `exists`, `document_url`, `covers`, `misses`, `evidence_status`, and `linked_threat_ids`.
+12. Every `evidence_status` is one of `INGESTED`, `ABSENT`, `ACCESS_FAILED`, or `INSUFFICIENT`.
+13. If `exists` is false, `document_url` is `"N/A"` and `covers` is `null`.
+14. If `exists` is true, `document_url` is a source URL or `manual_text`, and `covers` is an array.
+15. `linked_threat_ids[]` is empty unless explicit deterministic threat-ID mapping was supplied.
+16. `document_stack_redline[]` may be empty; if non-empty, it uses only `QUOTE_VS_QUOTE`, `CLAIM_VS_ABSENCE`, or `STACK_VS_REALITY`.
+17. `document_mismatch_signal_map[]` has no quote/prose keys.
+18. `data_flow_profile[]` uses one row per data flow and controlled values only for interpreted fields.
+19. `feature_to_data_flow_index[]` and `data_signal_index[]` are navigation only and contain no Hunter Trigger decision.
+20. False Belief Formula notes are framed as founder-assumption mismatch, not liability conclusions.
+21. No fresh search or browsing appears.
+22. No registry classification appears.
+23. No control-gap conclusion appears.
+24. No final findings appear.
+25. No Vault field appears.
+26. No HTML appears.
+27. No legal advice appears.
+28. No compliance certification appears.
+29. No liability or enforceability conclusion appears.
+30. Limitations are explicit where source coverage, document status, absence basis, data provenance, or product-document mapping is thin or unclear.
 
 If a required field cannot be supported from admitted evidence, include the field with the safest schema-valid limitation-bearing value and record the limitation clearly.

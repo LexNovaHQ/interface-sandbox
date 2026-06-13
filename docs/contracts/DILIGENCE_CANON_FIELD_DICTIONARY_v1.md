@@ -605,6 +605,15 @@ flow_role
 confidence
 ```
 
+`feature_role` values:
+
+```text
+core
+supporting
+contextual
+unknown
+```
+
 `flow_role` values:
 
 ```text
@@ -716,6 +725,34 @@ purpose_category
 output_category
 ```
 
+`data_origin` values:
+
+```text
+data_principal_provided
+customer_provided
+third_party_provided
+public_web
+system_generated
+inferred
+unknown
+```
+
+`collection_context` values:
+
+```text
+website
+account_signup
+service_input
+api_input
+uploaded_document
+support
+billing
+telemetry
+third_party_import
+employee_workflow
+unknown
+```
+
 `processing_actions[]` values:
 
 ```text
@@ -739,6 +776,35 @@ delete
 log
 monitor
 train_or_finetune
+unknown
+```
+
+`purpose_category` values:
+
+```text
+service_delivery
+account_management
+security
+billing
+analytics
+support
+model_improvement
+legal_compliance
+marketing
+unknown
+```
+
+`output_category` values:
+
+```text
+generated_output
+classification_score
+summary
+recommendation
+route_decision
+stored_record
+audit_log
+notification
 unknown
 ```
 
@@ -1004,6 +1070,144 @@ indirect
 inferred_from_feature
 absence_after_search
 conflicting
+unknown
+```
+
+`basis_codes[]` values:
+
+```text
+stage5_feature_ref
+stage5_data_provenance
+stage5_regulated_surface
+stage5_architecture_hint
+stage6_legal_section_ref
+stage6_control_signal_ref
+source_bundle_record_ref
+absence_after_search
+direct_policy_signal
+indirect_policy_signal
+unknown
+```
+
+`signal_type` values:
+
+```text
+personal_data
+sensitive_data
+children_data
+biometric_data
+financial_data
+health_data
+employment_data
+cross_border_transfer
+processor_chain
+subprocessor
+model_provider
+cloud_provider
+analytics_provider
+payment_provider
+training_or_finetuning
+rag
+embedding
+vector_store
+deletion
+retention
+notice
+consent
+withdrawal
+rights_channel
+security
+breach_notice
+automated_decision
+unknown
+```
+
+`source_type` values:
+
+```text
+legal_document
+privacy_document
+terms_document
+security_document
+trust_document
+feature_source
+public_page
+api_doc
+help_doc
+source_bundle_record
+unknown
+```
+
+`reason_for_fallback` values:
+
+```text
+direct_source_verification_required
+stage6_signal_unknown
+stage6_signal_conflicting
+missing_document_section_ref
+hunter_trigger_requires_line_read
+source_locator_available
+source_scope_incomplete
+unknown
+```
+
+`absence_basis` values:
+
+```text
+searched_legal_docs
+searched_privacy_docs
+searched_security_docs
+searched_trust_docs
+searched_public_sources
+source_not_available
+access_failed
+not_enough_context
+unknown
+```
+
+`locator_type` values:
+
+```text
+heading_path
+url_fragment
+text_anchor
+source_record
+page_url
+unknown
+```
+
+## `data_profile_limitations[]`
+
+Required fields:
+
+```text
+limitation_id
+scope
+reason_code
+impact_code
+confidence
+```
+
+`reason_code` values:
+
+```text
+source_missing
+source_conflicting
+source_access_failed
+legal_doc_absent
+stage5_signal_unknown
+section_ref_missing
+low_confidence_inference
+unknown
+```
+
+`impact_code` values:
+
+```text
+no_stage7_block
+requires_source_line_read
+reduces_confidence
+partial_navigation_only
 unknown
 ```
 
