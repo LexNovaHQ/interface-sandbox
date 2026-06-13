@@ -193,8 +193,33 @@ Audit status:
 - Schema has no quote/prose/legal-conclusion fields.
 - Runtime behavior is intentionally unchanged.
 
+## 6A.R4.3 — Bounded model overlay prompt
+
+Goal:
+- Add a separate model prompt for Stage 6A overlay classification.
+- Update the prompt index without changing the active Stage 6 prompt.
+- Keep this prompt isolated until runtime overlay wiring.
+
+Commits in this layer:
+- `e33ac346606dcf3ce968e431854a8684fc25ad74` — added `functions/_prompts/diligence-v2/03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md`.
+- `0f66535238ae462aa436d8c1b0306e81c882a602` — indexed the overlay prompt in `PROMPT_INDEX.md`.
+
+Files changed:
+- `functions/_prompts/diligence-v2/03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md`
+- `functions/_prompts/diligence-v2/PROMPT_INDEX.md`
+- `docs/build-log/STAGE6_SURGERY_LOG.md`
+
+Audit status:
+- Static overlay-prompt audit passed.
+- Prompt states the model is only classifying deterministic Stage 6A seeds.
+- Prompt forbids creating documents, sections, source records, source locators, registry threat evaluation, and legal advice.
+- Prompt output is limited to `stage6a_model_overlay_v1` overlay arrays.
+- Prompt forbids quote/prose/legal-conclusion/report fields.
+- Prompt requires existing IDs and controlled enum values only.
+- Runtime behavior is intentionally unchanged.
+
 Blocked/remaining:
 - The previous attempt to add a builder audit script was blocked by the GitHub write tool. No runtime/audit wiring was committed for that script.
 
 Next layer:
-- 6A.R4.3 — Add the bounded Stage 6A model overlay prompt.
+- 6A.R4.4 — Add overlay normalizer.
