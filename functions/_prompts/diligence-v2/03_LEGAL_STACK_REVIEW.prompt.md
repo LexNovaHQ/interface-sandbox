@@ -41,6 +41,9 @@ document_stack_redline[]
 document_stack_synthesis
 legal_stack_assessment[]
 limitations[]
+legal_document_cartography
+stage7_navigation_index
+stage6_limitations[]
 ```
 
 You must use only admitted evidence from the current `source_bundle` and validated product behavior from Stage 5 `feature_profile_v2`.
@@ -132,19 +135,37 @@ The only top-level key must be:
 }
 ```
 
-The `legal_stack_review` object must contain exactly these top-level fields:
+The `legal_stack_review` object must preserve legacy compatibility fields and also emit the new quote-free Stage 6A legal-document cartography fields.
+
+The `legal_stack_review` object must contain these top-level fields:
 
 ```json
 {
+  "legal_stack_review_version": "legal_stack_review_v2",
+  "stage_role": "stage7_navigation_index",
+  "input_refs": {},
   "legal_stack": [],
   "document_stack_redline": [],
   "document_stack_synthesis": "",
   "legal_stack_assessment": [],
-  "limitations": []
+  "limitations": [],
+  "legal_document_cartography": {},
+  "stage7_navigation_index": {},
+  "stage6_limitations": []
 }
 ```
 
 Do not add extra top-level keys.
+
+`legal_stack[]` remains the legacy five-core-document inventory only. Supplemental public legal/control artifacts must not be added as sixth `legal_stack[]` entries. Put supplemental artifacts in `legal_document_cartography.legal_document_inventory[]`.
+
+`document_stack_redline[]` is legacy compatibility and may be empty. The canonical mismatch map is `legal_document_cartography.document_mismatch_signal_map[]`.
+
+`legal_document_cartography` is quote-free. Do not place `evidence_quote`, `quote`, `excerpt_text`, `excerpt`, `contradicts`, `coverage_note`, `false_belief_note`, `narrative`, `explanation`, or `analysis` fields inside `legal_document_cartography`.
+
+Use `source_record_ref`, `source_url`, `doc_id`, `section_id`, `section_path`, and `source_locator` for 6A navigation.
+
+Stage 6A helps Stage 7 navigate. It does not decide Hunter Trigger status, registry final status, control gaps, recommendations, Vault questions, report prose, HTML, or compliance verdicts.
 
 Do not output `source_bundle`.
 
@@ -197,9 +218,12 @@ But these supporting surfaces must not become new `legal_stack[]` document types
 They may be referenced in:
 
 ```text
-document_stack_redline[]
 legal_stack_assessment[]
 limitations[]
+legal_document_cartography.legal_document_inventory[]
+legal_document_cartography.legal_document_index[]
+legal_document_cartography.document_control_signal_map[]
+legal_document_cartography.document_mismatch_signal_map[]
 ```
 
 The legal_stack array must always include one object for each of:
@@ -674,7 +698,9 @@ does not exist
 
 # 11. Document Stack Redline Rules
 
-Use `document_stack_redline[]` to capture concrete mismatches between:
+`document_stack_redline[]` is legacy compatibility and may be empty.
+
+If used, `document_stack_redline[]` captures concrete mismatches between:
 
 ```text
 public product claims
@@ -810,7 +836,145 @@ Do not include legal conclusions.
 
 ---
 
-# 12. Legal Stack Assessment Rules
+# 12. Canonical 6A Legal-Document Cartography
+
+Build `legal_document_cartography` as the quote-free Stage 6A canonical object.
+
+It must contain:
+
+```json
+{
+  "legal_document_inventory": [],
+  "legal_document_index": [],
+  "document_relationship_map": [],
+  "document_control_signal_map": [],
+  "document_mismatch_signal_map": [],
+  "legal_stack_summary_signals": {
+    "core_stack_status": {
+      "tos": "unknown",
+      "privacy_policy": "unknown",
+      "dpa": "unknown",
+      "aup": "unknown",
+      "sla": "unknown"
+    },
+    "supplemental_artifacts_detected": [],
+    "document_hierarchy_signal": "unknown",
+    "legal_stack_coverage_signal": "unknown",
+    "major_unknowns": []
+  },
+  "legal_stack_limitations": []
+}
+```
+
+## 12.1 Inventory
+
+`legal_document_inventory[]` includes one row for each core or supplemental public legal/control artifact that is material to Stage 7 navigation.
+
+Use core `doc_type` values only for the five legacy documents:
+
+```text
+tos
+privacy_policy
+dpa
+aup
+sla
+```
+
+Use supplemental `doc_type` values for security pages, trust centers, AI policies, subprocessor pages, developer/API terms, DSR/deletion pages, and similar artifacts.
+
+Each row should use refs and short fields:
+
+```json
+{
+  "doc_id": "DOC_TOS_001",
+  "doc_type": "tos",
+  "doc_family": "core",
+  "doc_title": "Terms of Service",
+  "document_status": "visible",
+  "access_status": "ingested",
+  "source_record_ref": "SRC_001",
+  "source_url": "https://example.com/terms",
+  "canonical_or_supplemental": "canonical",
+  "confidence": "high"
+}
+```
+
+## 12.2 Document index
+
+`legal_document_index[]` indexes relevant sections, headings, annexures, schedules, tables, appendices, linked policies, footer notices, banners, modals, FAQs, and equivalent document units.
+
+Use:
+
+```json
+{
+  "index_id": "IDX_001",
+  "doc_id": "DOC_TOS_001",
+  "section_id": "SEC_TOS_008",
+  "section_path": "Terms > Acceptable Use",
+  "heading_level": 2,
+  "heading_text": "Acceptable Use",
+  "structural_zone": "main_body",
+  "section_function": "acceptable_use_rules",
+  "control_topics_detected": ["prohibited_use"],
+  "feature_refs": ["F001"],
+  "data_flow_refs": [],
+  "source_record_ref": "SRC_001",
+  "source_locator": {
+    "locator_type": "heading",
+    "locator_value": "Acceptable Use"
+  },
+  "confidence": "high"
+}
+```
+
+## 12.3 Relationship and control maps
+
+`document_relationship_map[]` maps document-to-document or section-to-section relationships using controlled `relationship_type` values.
+
+`document_control_signal_map[]` maps visible, not-visible, partial, conflicting, not-applicable, or unknown control signals by control family. This map is only navigation. Do not decide whether a control defeats a registry row.
+
+## 12.4 Canonical mismatch map
+
+`document_mismatch_signal_map[]` is the canonical quote-free mismatch map.
+
+Use:
+
+```json
+{
+  "mismatch_id": "MM001",
+  "mismatch_type": "stack_vs_reality",
+  "left_ref_type": "feature",
+  "left_ref": "F001",
+  "right_ref_type": "document_section",
+  "right_ref": "DOC_TOS_001:SEC_TOS_008",
+  "control_family": "hallucination_disclaimer",
+  "mismatch_signal": "not_visible",
+  "basis_codes": ["feature_requires_control", "no_matching_control_section"],
+  "confidence": "medium"
+}
+```
+
+Do not include `quote`, `evidence_quote`, `excerpt_text`, `excerpt`, `source`, `contradicts`, `coverage_note`, `false_belief_note`, `narrative`, `explanation`, or `analysis` inside `document_mismatch_signal_map[]`.
+
+## 12.5 Stage 7 navigation index
+
+Emit only the 6A-relevant Stage 7 navigation indexes in this patch:
+
+```json
+{
+  "feature_to_document_section_index": [],
+  "control_family_index": [],
+  "document_source_locator_index": [],
+  "absence_unknown_index": [],
+  "fallback_source_packet": []
+}
+```
+
+Do not emit `feature_to_data_flow_index[]`, `data_signal_index[]`, or `data_provenance_profile` in this 6A patch.
+
+---
+
+# 13. Legal Stack Assessment Rules
 
 Use `legal_stack_assessment[]` as the visible audit trail.
 
@@ -895,7 +1059,7 @@ Example:
 
 ---
 
-# 13. Absence and Insufficient Evidence Rules
+# 14. Absence and Insufficient Evidence Rules
 
 Absence can matter, but only with a valid basis.
 
@@ -977,7 +1141,7 @@ The Privacy Policy is non-compliant.
 
 ---
 
-# 14. Document Stack Synthesis Rules
+# 15. Document Stack Synthesis Rules
 
 `document_stack_synthesis` must summarize the visible public legal/governance stack.
 
@@ -1016,7 +1180,7 @@ Keep synthesis concise but specific.
 
 ---
 
-# 15. Limitations Rules
+# 16. Limitations Rules
 
 Use `limitations[]` aggressively.
 
@@ -1066,7 +1230,7 @@ The ToS is defective.
 
 ---
 
-# 16. Forbidden Behaviors
+# 17. Forbidden Behaviors
 
 You must not:
 
@@ -1121,7 +1285,7 @@ You may mention forbidden terms only as negative instructions or when quoting ad
 
 ---
 
-# 17. JSON Output Requirements
+# 18. JSON Output Requirements
 
 Return valid JSON only.
 
@@ -1138,6 +1302,15 @@ The final object must be:
 ```json
 {
   "legal_stack_review": {
+    "legal_stack_review_version": "legal_stack_review_v2",
+    "stage_role": "stage7_navigation_index",
+    "input_refs": {
+      "target_profile_version": "",
+      "feature_profile_version": "feature_profile_v2",
+      "source_bundle_version": "",
+      "target_profile_ref": "",
+      "feature_profile_ref": ""
+    },
     "legal_stack": [
       {
         "document_type": "ToS",
@@ -1185,20 +1358,39 @@ The final object must be:
         "linked_threat_ids": []
       }
     ],
-    "document_stack_redline": [
-      {
-        "mismatch_id": "",
-        "type": "STACK_VS_REALITY",
-        "quote": "",
-        "source": "",
-        "feature_ref": "",
-        "claim_type": "",
-        "contradicts": ""
-      }
-    ],
+    "document_stack_redline": [],
     "document_stack_synthesis": "",
     "legal_stack_assessment": [],
-    "limitations": []
+    "limitations": [],
+    "legal_document_cartography": {
+      "legal_document_inventory": [],
+      "legal_document_index": [],
+      "document_relationship_map": [],
+      "document_control_signal_map": [],
+      "document_mismatch_signal_map": [],
+      "legal_stack_summary_signals": {
+        "core_stack_status": {
+          "tos": "unknown",
+          "privacy_policy": "unknown",
+          "dpa": "unknown",
+          "aup": "unknown",
+          "sla": "unknown"
+        },
+        "supplemental_artifacts_detected": [],
+        "document_hierarchy_signal": "unknown",
+        "legal_stack_coverage_signal": "unknown",
+        "major_unknowns": []
+      },
+      "legal_stack_limitations": []
+    },
+    "stage7_navigation_index": {
+      "feature_to_document_section_index": [],
+      "control_family_index": [],
+      "document_source_locator_index": [],
+      "absence_unknown_index": [],
+      "fallback_source_packet": []
+    },
+    "stage6_limitations": []
   }
 }
 ```
@@ -1217,32 +1409,36 @@ Do not add fields not defined in the output contract unless the schema allows fl
 
 ---
 
-# 18. Final Self-Check Before Output
+# 19. Final Self-Check Before Output
 
 Before returning JSON, verify:
 
 1. The only top-level key is `legal_stack_review`.
-2. `legal_stack_review` contains `legal_stack`, `document_stack_redline`, `document_stack_synthesis`, `legal_stack_assessment`, and `limitations`.
-3. `legal_stack[]` contains exactly five entries.
-4. The five `document_type` values are exactly `ToS`, `Privacy Policy`, `DPA`, `AUP`, and `SLA`.
-5. No sixth document type appears in `legal_stack[]`.
-6. Every legal-stack item has `document_type`, `exists`, `document_url`, `covers`, `misses`, `evidence_status`, and `linked_threat_ids`.
-7. Every `evidence_status` is one of `INGESTED`, `ABSENT`, `ACCESS_FAILED`, or `INSUFFICIENT`.
-8. If `exists` is false, `document_url` is `"N/A"` and `covers` is `null`.
-9. If `exists` is true, `document_url` is a source URL or `manual_text`, and `covers` is an array.
-10. `linked_threat_ids[]` is empty unless explicit deterministic threat-ID mapping was supplied.
-11. `document_stack_redline[]` uses only `QUOTE_VS_QUOTE`, `CLAIM_VS_ABSENCE`, or `STACK_VS_REALITY`.
-12. Every redline item has `mismatch_id`, `type`, `quote`, `source`, `feature_ref`, `claim_type`, and `contradicts`.
-13. Redline items use public-footprint language, not legal conclusions.
-14. False Belief Formula notes are framed as founder-assumption mismatch, not liability conclusions.
-15. No fresh search or browsing appears.
-16. No registry classification appears.
-17. No final findings appear.
-18. No Vault field appears.
-19. No HTML appears.
-20. No legal advice appears.
-21. No compliance certification appears.
-22. No liability or enforceability conclusion appears.
-23. Limitations are explicit where source coverage, document status, absence basis, or product-document mapping is thin or unclear.
+2. `legal_stack_review` contains the legacy fields and the new 6A canonical fields.
+3. `legal_stack_review_version` is `legal_stack_review_v2`.
+4. `stage_role` is `stage7_navigation_index`.
+5. `legal_document_cartography` exists and is quote-free.
+6. `stage7_navigation_index` exists with only 6A indexes.
+7. `legal_stack[]` contains exactly five entries.
+8. The five `document_type` values are exactly `ToS`, `Privacy Policy`, `DPA`, `AUP`, and `SLA`.
+9. No sixth document type appears in `legal_stack[]`.
+10. Every legal-stack item has `document_type`, `exists`, `document_url`, `covers`, `misses`, `evidence_status`, and `linked_threat_ids`.
+11. Every `evidence_status` is one of `INGESTED`, `ABSENT`, `ACCESS_FAILED`, or `INSUFFICIENT`.
+12. If `exists` is false, `document_url` is `"N/A"` and `covers` is `null`.
+13. If `exists` is true, `document_url` is a source URL or `manual_text`, and `covers` is an array.
+14. `linked_threat_ids[]` is empty unless explicit deterministic threat-ID mapping was supplied.
+15. `document_stack_redline[]` may be empty; if non-empty, it uses only `QUOTE_VS_QUOTE`, `CLAIM_VS_ABSENCE`, or `STACK_VS_REALITY`.
+16. `document_mismatch_signal_map[]` has no quote/prose keys.
+17. No `data_provenance_profile`, `feature_to_data_flow_index`, or `data_signal_index` appears in this 6A patch.
+18. False Belief Formula notes are framed as founder-assumption mismatch, not liability conclusions.
+19. No fresh search or browsing appears.
+20. No registry classification appears.
+21. No final findings appear.
+22. No Vault field appears.
+23. No HTML appears.
+24. No legal advice appears.
+25. No compliance certification appears.
+26. No liability or enforceability conclusion appears.
+27. Limitations are explicit where source coverage, document status, absence basis, or product-document mapping is thin or unclear.
 
 If a required field cannot be supported from admitted evidence, include the field with the safest schema-valid limitation-bearing value and record the limitation clearly.

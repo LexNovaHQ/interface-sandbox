@@ -1,0 +1,190 @@
+name: Stage 6A Runtime Audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "data/schemas/legalStackReview.schema.json"
+      - "functions/_prompts/diligence-v2/03_LEGAL_STACK_REVIEW.prompt.md"
+      - "functions/_generated/diligencePromptBundle.js"
+      - "functions/_generated/diligenceSchemaBundle.js"
+      - "functions/_generated/diligenceValidatorBundle.js"
+      - "runtime-api/src/diligence/legalStackReviewGuardrails.js"
+      - "runtime-api/scripts/e2e-stage6-legal-stack-review.mjs"
+      - "scripts/audit-runtime-bundles.mjs"
+      - ".github/workflows/stage6a-runtime-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  stage6a-runtime-audit:
+    name: Run Stage 6A audit on GitHub runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build runtime bundles
+        run: npm run build:runtime
+
+      - name: Package generated bundles for runtime-api
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Install runtime dependencies
+        working-directory: runtime-api
+        run: npm install
+
+      - name: Runtime syntax check
+        working-directory: runtime-api
+        run: npm run check
+
+      - name: Clear runtime E2E cache
+        run: rm -rf runtime-api/.runtime-e2e-cache && mkdir -p runtime-api/.runtime-e2e-cache
+
+      - name: Start runtime locally on runner
+        working-directory: runtime-api
+        env:
+          NODE_ENV: test
+          PORT: "8787"
+          ALLOWED_ORIGIN: "https://sandbox.lexnovahq.com"
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_REGISTRY_API_KEYS: ${{ secrets.GEMINI_REGISTRY_API_KEYS }}
+          GEMINI_SEARCH_MODEL_SEQUENCE: ${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
+          GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
+          LIVE_SOURCE_DISCOVERY_MODE: sync_with_free_search
+          LIVE_RUN_FREE_SEARCH: "true"
+          LIVE_ANCHOR_FETCH_MAX: "60"
+          LIVE_ANCHOR_LINK_LIMIT: "100000"
+          LIVE_ANCHOR_CLASSIFY_TOKENS: "8192"
+          LIVE_PROBE_TIMEOUT_MS: "8000"
+          LIVE_CAPTURE_LIMIT: "100000"
+          LIVE_PRODUCT_CAPTURE_LIMIT: "100000"
+          LIVE_COMPANY_CAPTURE_LIMIT: "100000"
+          LIVE_LEGAL_CAPTURE_LIMIT: "100000"
+          LIVE_GOVERNANCE_CAPTURE_LIMIT: "100000"
+          LIVE_CAPTURE_TIMEOUT_MS: "24000"
+          SOURCE_CAPTURE_MAX_BYTES: "31457280"
+          LIVE_COMPANY_MAX_OUTPUT_TOKENS: "24000"
+          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "24000"
+          LIVE_FEATURE_MAX_OUTPUT_TOKENS: "28000"
+          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "28000"
+          STAGE5_MAX_INPUT_CHARS: "240000"
+          STAGE5_MAX_ESTIMATED_TOKENS: "120000"
+          STAGE5_MAX_SINGLE_SOURCE_CHARS: "10000000"
+          STAGE5_PROMPT_OVERHEAD_TOKENS: "30000"
+          STAGE6_MAX_INPUT_CHARS: "240000"
+          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
+          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
+        run: |
+          set -euo pipefail
+          if [ -z "${RUNTIME_ACCESS_TOKEN:-}" ]; then
+            echo "Missing RUNTIME_ACCESS_TOKEN secret" >&2
+            exit 1
+          fi
+          nohup npm start > ../runtime-api-server.log 2>&1 &
+          echo $! > ../runtime-api-server.pid
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8787/health > /tmp/runtime-health.json; then
+              cat /tmp/runtime-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Runtime did not become healthy" >&2
+          cat ../runtime-api-server.log || true
+          exit 1
+
+      - name: Smoke local runtime
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: http://127.0.0.1:8787
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
+
+      - name: Run Stage 4 Company Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: http://127.0.0.1:8787
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "24000"
+          STAGE4_COMPANY_TIMEOUT_MS: "90000"
+        run: npm run e2e:stage4:company
+
+      - name: Run Stage 5 Target Feature Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: http://127.0.0.1:8787
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE5_SOURCE_DISCOVERY_MODE: sync_with_free_search
+          STAGE5_RUN_FREE_SEARCH: "true"
+          STAGE5_ANCHOR_FETCH_MAX: "60"
+          STAGE5_ANCHOR_LINK_LIMIT: "100000"
+          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "28000"
+          STAGE5_FEATURE_TIMEOUT_MS: "120000"
+          STAGE5_MAX_INPUT_CHARS: "240000"
+          STAGE5_MAX_ESTIMATED_TOKENS: "120000"
+        run: npm run e2e:stage5:features
+
+      - name: Run Stage 6A Legal Stack Review E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: http://127.0.0.1:8787
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE6_POOL: reasoning
+          STAGE6_MAX_OUTPUT_TOKENS: "8192"
+          STAGE6_TIMEOUT_MS: "90000"
+          STAGE6_MAX_INPUT_CHARS: "240000"
+          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
+          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
+        run: npm run e2e:stage6:legal
+
+      - name: Verify Stage 6A audit exports
+        run: |
+          set -euo pipefail
+          ls -lah runtime-api/.runtime-e2e-cache
+          test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json
+
+      - name: Stop local runtime
+        if: always()
+        run: |
+          if [ -f runtime-api-server.pid ]; then
+            kill "$(cat runtime-api-server.pid)" || true
+          fi
+
+      - name: Upload Stage 6A audit cache and runtime log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage6a-runtime-audit-cache
+          path: |
+            runtime-api/.runtime-e2e-cache/
+            runtime-api-server.log

@@ -11,6 +11,7 @@ on:
         options:
           - deploy
           - stage4-stage5-audit
+          - stage6-audit
       runtime_url:
         description: "Existing runtime URL for audit mode"
         required: false
@@ -293,4 +294,102 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runtime-stage4-stage5-audit-cache
+          path: runtime-api/.runtime-e2e-cache/
+
+  stage6-audit:
+    name: Stage 6A runtime audit
+    needs: check
+    if: inputs.mode == 'stage6-audit'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build runtime bundles
+        run: npm run build:runtime
+
+      - name: Package generated bundles for runtime-api
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Install runtime dependencies
+        working-directory: runtime-api
+        run: npm install
+
+      - name: Clear runtime E2E cache
+        run: rm -rf runtime-api/.runtime-e2e-cache && mkdir -p runtime-api/.runtime-e2e-cache
+
+      - name: Smoke existing runtime
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
+
+      - name: Run Stage 4 Company Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "24000"
+          STAGE4_COMPANY_TIMEOUT_MS: "90000"
+        run: npm run e2e:stage4:company
+
+      - name: Run Stage 5 Target Feature Profile E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE5_SOURCE_DISCOVERY_MODE: "sync_with_free_search"
+          STAGE5_RUN_FREE_SEARCH: "true"
+          STAGE5_ANCHOR_FETCH_MAX: "60"
+          STAGE5_ANCHOR_LINK_LIMIT: "100000"
+          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "28000"
+          STAGE5_FEATURE_TIMEOUT_MS: "120000"
+          STAGE5_MAX_INPUT_CHARS: "240000"
+          STAGE5_MAX_ESTIMATED_TOKENS: "120000"
+        run: npm run e2e:stage5:features
+
+      - name: Run Stage 6A Legal Stack Review E2E
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          STAGE6_POOL: "reasoning"
+          STAGE6_MAX_OUTPUT_TOKENS: "8192"
+          STAGE6_TIMEOUT_MS: "90000"
+          STAGE6_MAX_INPUT_CHARS: "240000"
+          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
+          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
+        run: npm run e2e:stage6:legal
+
+      - name: Verify Stage 6A audit exports
+        if: always()
+        run: |
+          set -euo pipefail
+          ls -lah runtime-api/.runtime-e2e-cache || true
+          test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
+          test -s runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json
+
+      - name: Upload Stage 6A audit cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-stage6a-audit-cache
           path: runtime-api/.runtime-e2e-cache/
