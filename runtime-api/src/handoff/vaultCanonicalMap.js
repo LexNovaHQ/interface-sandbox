@@ -15,7 +15,9 @@ export const VAULT_FIELD_PATHS = Object.freeze([
   "baseline.jurisdiction.country",
   "baseline.jurisdiction.state",
   "baseline.market",
+  "baseline.delivery.web",
   "baseline.delivery.app",
+  "baseline.delivery.mobile",
   "baseline.delivery.api",
   "baseline.revenue_model",
   "baseline.acv",
@@ -27,8 +29,22 @@ export const VAULT_FIELD_PATHS = Object.freeze([
   "baseline.integrations.stripe",
   "baseline.integrations.github",
   "baseline.integrations.webhooks",
+  "baseline.integrations.email",
+  "baseline.integrations.calendar",
+  "baseline.integrations.ticketing",
+  "baseline.integrations.hris",
+  "baseline.integrations.payment_billing",
+  "baseline.integrations.database",
+  "baseline.integrations.custom_api",
+  "baseline.integrations.other",
   "baseline.integrations.none",
   "baseline.reliance_threshold",
+  "architecture.ai_provider_stack.providers",
+  "architecture.ai_provider_stack.other_providers",
+  "architecture.ai_provider_stack.hosting_model",
+  "architecture.ai_provider_stack.sends_customer_data_to_model_provider",
+  "architecture.ai_provider_stack.fallback_provider",
+  "architecture.ai_provider_stack.public_provider_disclosure_url",
   "architecture.memory",
   "architecture.models",
   "architecture.sub_processors.openai",
@@ -36,10 +52,32 @@ export const VAULT_FIELD_PATHS = Object.freeze([
   "architecture.sub_processors.google",
   "architecture.sub_processors.cohere",
   "architecture.sub_processors.mistral",
+  "architecture.sub_processors.azure_openai",
+  "architecture.sub_processors.aws_bedrock",
+  "architecture.sub_processors.meta_llama",
+  "architecture.sub_processors.deepseek",
+  "architecture.sub_processors.xai",
   "architecture.sub_processors.other",
   "architecture.sub_processors.url",
   "architecture.cloud_host",
   "architecture.vector_db",
+  "architecture.hosting_regions",
+  "architecture.deployment_model",
+  "architecture.model_improvement.customer_inputs_used_for_training",
+  "architecture.model_improvement.customer_inputs_used_for_evaluation",
+  "architecture.model_improvement.product_improvement_use",
+  "architecture.model_improvement.opt_out_available",
+  "architecture.storage_logging.stores_prompts",
+  "architecture.storage_logging.stores_uploaded_files",
+  "architecture.storage_logging.stores_generated_outputs",
+  "architecture.storage_logging.conversation_history",
+  "architecture.storage_logging.audit_logs",
+  "architecture.security_controls.encryption_at_rest",
+  "architecture.security_controls.encryption_in_transit",
+  "architecture.security_controls.status_or_trust_url",
+  "architecture.api_developer_config.api_or_sdk_available",
+  "architecture.api_developer_config.rate_limits_or_usage_limits",
+  "architecture.api_developer_config.customer_configurable_tools",
   "archetypes.is_doer",
   "archetypes.is_orchestrator",
   "archetypes.agent_limits.session_cap",
@@ -81,6 +119,32 @@ export function createEmptyVaultPrefill() {
   };
 }
 
+export function createEmptyVaultPayload({ status = "needs_confirmation", submittedAt = new Date().toISOString() } = {}) {
+  return {
+    baseline: {
+      company: "",
+      products: [],
+      jurisdiction: { country: "", state: "" },
+      market: "unknown",
+      delivery: { web: false, app: false, mobile: false, api: false },
+      integrations: {}
+    },
+    architecture: {
+      ai_provider_stack: { providers: ["unknown"] },
+      sub_processors: {}
+    },
+    archetypes: {
+      agent_limits: {}
+    },
+    compliance: {
+      processes_pii: "unknown",
+      other_regions: []
+    },
+    status,
+    submittedAt
+  };
+}
+
 export function normalizeVaultFieldPath(fieldPath) {
   const value = String(fieldPath || "").trim();
   if (value.startsWith("architecture.integrations.")) {
@@ -98,16 +162,17 @@ export function isAllowedVaultPath(fieldPath) {
   return VAULT_FIELD_PATH_SET.has(normalizeVaultFieldPath(fieldPath));
 }
 
-export function createVaultSuggestion(value, basis, confidence = "medium", sourceFindingIds = []) {
+export function createVaultSuggestion(value, basis, confidence = "medium", sourceFindingIds = [], extra = {}) {
   const normalizedConfidence = ["high", "medium", "low"].includes(String(confidence))
     ? String(confidence)
     : "medium";
 
   return {
     value,
-    basis: String(basis || "Derived from Stage 9 diligence report data."),
+    basis: String(basis || "Derived from canonical Diligence Engine output."),
     confidence: normalizedConfidence,
-    source_finding_ids: Array.isArray(sourceFindingIds) ? sourceFindingIds.map(String).filter(Boolean) : []
+    source_finding_ids: Array.isArray(sourceFindingIds) ? sourceFindingIds.map(String).filter(Boolean) : [],
+    ...extra
   };
 }
 
