@@ -182,6 +182,29 @@ jobs:
             --allow-unauthenticated \
             --env-vars-file /tmp/lexnova-runtime-env.yaml
 
+      - name: Print Cloud Run revision logs on deploy failure
+        if: failure()
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          echo "Recent revisions:"
+          gcloud run revisions list \
+            --service "$GCP_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --sort-by="~metadata.creationTimestamp" \
+            --limit=5 \
+            --format="table(metadata.name,status.conditions[0].type,status.conditions[0].status,status.conditions[0].message,metadata.creationTimestamp)" || true
+          echo "Recent Cloud Run logs:"
+          gcloud logging read \
+            "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"$GCP_CLOUD_RUN_SERVICE\" AND timestamp>=\"$(date -u -d '20 minutes ago' +%Y-%m-%dT%H:%M:%SZ)\"" \
+            --project "$GCP_PROJECT_ID" \
+            --limit=80 \
+            --format="value(timestamp,severity,resource.labels.revision_name,textPayload,jsonPayload.message)" || true
+
       - name: Resolve runtime URL
         id: runtime
         env:
