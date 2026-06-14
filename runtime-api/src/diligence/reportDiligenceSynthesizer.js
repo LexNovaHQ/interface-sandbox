@@ -1,7 +1,6 @@
 import { REVIEW_READY_DISCLAIMER, displayStatus } from "./reportTerminologyMap.js";
 import { requiredBlocksForSection } from "./reportSectionContentContract.js";
-import { buildPlatformLegalDiligence, platformElementByKey } from "./platformLegalDiligenceMapper.js";
-import { buildImplicationsRemediationPath, controlRouteFor, documentRouteFor, priorityFor } from "./reportRemediationRouter.js";
+import { buildPlatformLegalDiligence } from "./platformLegalDiligenceMapper.js";
 import { buildForensicLedgerAppendix } from "./reportAppendixBuilder.js";
 
 function asArray(value) {
@@ -21,27 +20,6 @@ function unique(values = []) {
   return [...new Set(values.map((value) => asText(value)).filter(Boolean))];
 }
 
-const STANDARD_DOCUMENT_ROUTES = Object.freeze([
-  "Terms of Service",
-  "Privacy Policy",
-  "Data Processing Addendum",
-  "Acceptable Use Policy",
-  "Service Level Agreement",
-  "AI / Agent Governance Terms",
-  "IP / Output Ownership Terms",
-  "Internal Governance SOP",
-  "Human Review / Handover Protocol",
-  "Data Protection Impact Assessment"
-]);
-
-const STATUS_DEFINITIONS = Object.freeze([
-  { status: "Identified Exposure", meaning: "The reviewed evidence met the registry finding threshold and did not evidence a sufficient control for the item." },
-  { status: "Control Evidenced", meaning: "The item was reviewed and the admitted/public legal stack or evidence showed a control sufficient for the registry item." },
-  { status: "Clarification Required", meaning: "The reviewed evidence did not support a conclusive assessment and requires client or counsel clarification." },
-  { status: "No Finding on Reviewed Evidence", meaning: "The reviewed evidence did not satisfy the finding threshold for the registry item." },
-  { status: "Outside Current Review Scope", meaning: "The item was not applicable to the reviewed product/activity profile for this matter." }
-]);
-
 function withContract(sectionKey, body = {}) {
   return {
     content_contract: {
@@ -50,6 +28,103 @@ function withContract(sectionKey, body = {}) {
     },
     ...body
   };
+}
+
+const STATUS_DEFINITIONS = Object.freeze([
+  { status: "Identified Exposure", meaning: "The reviewed evidence met the issue-spotting threshold and no sufficient public or admitted control was evidenced for the item." },
+  { status: "Control Evidenced", meaning: "The item was reviewed and a public or admitted control position was evidenced." },
+  { status: "Clarification Required", meaning: "The reviewed evidence did not support a conclusive assessment and requires client or counsel clarification." },
+  { status: "No Finding on Reviewed Evidence", meaning: "The reviewed evidence did not satisfy the issue-spotting threshold for the item." },
+  { status: "Outside Current Review Scope", meaning: "The item was not applicable to the reviewed product/activity profile for this matter." }
+]);
+
+const CATEGORY_LABELS = Object.freeze({
+  PRV: "Privacy, Data Protection & User Rights",
+  BIO: "Biometric, Voice & Sensitive Data",
+  DEC: "Automated Decisioning, Human Review & Reliance",
+  INF: "IP, Content, Training Data & Infrastructure",
+  LIA: "Liability, Warranty & Allocation of Risk",
+  CNS: "Consent, Consumer Terms & User Notice",
+  HAL: "Output Reliability, Hallucination & False Claims",
+  FRD: "Misrepresentation, Fraud & AI-Washing",
+  HRM: "User Harm, Safety & Vulnerable Users",
+  TRD: "Trading, Pricing & Market Conduct",
+  SHD: "Security & Operational Controls",
+  FIN: "Financial, Billing & Commercial Terms Risk",
+  GEN: "Platform Legal Control Exposure"
+});
+
+const CATEGORY_DESCRIPTIONS = Object.freeze({
+  PRV: "Personal data, processors, subprocessors, model providers, transfers, deletion, training use, and processing transparency.",
+  BIO: "Voice, biometric, sensitive-data, consent, retention, deletion, and identity-related controls.",
+  DEC: "Automated review, decision-support, human oversight, appeals, and outcome-reliance controls.",
+  INF: "Content, copyright, training data, output ownership, third-party materials, and infrastructure controls.",
+  LIA: "Contractual responsibility, warranties, disclaimers, user reliance, damages allocation, and customer-facing commitments.",
+  CNS: "Consent, notice, user rights, cancellation, opt-out, and public-facing control disclosures.",
+  HAL: "Output reliability, hallucination, accuracy statements, reliance controls, and human review.",
+  FRD: "Public claims, user reliance, misrepresentation, impersonation, fraud-adjacent AI uses, and AI-washing.",
+  HRM: "Direct user harm, safety, minors, vulnerable users, healthcare-adjacent reliance, or workplace-impact controls.",
+  TRD: "Trading, pricing, market conduct, transaction authority, and market-impact controls.",
+  SHD: "Security commitments, incident response, service availability, audit logs, breach language, and operational controls.",
+  FIN: "Financial commitment, payment, billing, and authority-bearing activity.",
+  GEN: "Platform legal controls requiring review against product, policy, contract, governance, and customer-facing evidence."
+});
+
+const DOCUMENT_ROUTE_BY_CATEGORY = Object.freeze({
+  PRV: ["Privacy Policy", "Data Processing Addendum", "Data Protection Impact Assessment"],
+  BIO: ["Privacy Policy", "Data Processing Addendum", "Data Protection Impact Assessment"],
+  DEC: ["AI / Agent Governance Terms", "Human Review / Handover Protocol", "Internal Governance SOP"],
+  INF: ["IP / Output Ownership Terms", "Terms of Service", "AI / Agent Governance Terms"],
+  LIA: ["Terms of Service", "Service Level Agreement", "AI / Agent Governance Terms"],
+  CNS: ["Privacy Policy", "Terms of Service", "Acceptable Use Policy"],
+  HAL: ["AI / Agent Governance Terms", "Acceptable Use Policy", "Human Review / Handover Protocol"],
+  FRD: ["Terms of Service", "Acceptable Use Policy", "AI / Agent Governance Terms"],
+  HRM: ["Internal Governance SOP", "Human Review / Handover Protocol", "Privacy Policy"],
+  TRD: ["Terms of Service", "Privacy Policy", "AI / Agent Governance Terms"],
+  SHD: ["Service Level Agreement", "Data Processing Addendum", "Internal Governance SOP"],
+  FIN: ["AI / Agent Governance Terms", "Terms of Service", "Human Review / Handover Protocol"],
+  GEN: ["Terms of Service", "Privacy Policy", "AI / Agent Governance Terms"]
+});
+
+const CONTROL_ROUTE_BY_CATEGORY = Object.freeze({
+  PRV: ["subprocessor disclosure", "deletion/DSR workflow", "training-use and transfer control"],
+  BIO: ["capture consent check", "retention/deletion control", "sensitive-data handling review"],
+  DEC: ["human review gate", "appeals/escalation workflow", "decision-support limitation control"],
+  INF: ["input/output ownership review", "training-data use control", "third-party content review"],
+  LIA: ["warranty/disclaimer review", "liability allocation review", "customer reliance control"],
+  CNS: ["notice/consent review", "user rights workflow", "consumer-facing disclosure review"],
+  HAL: ["human review protocol", "output limitation disclosure", "high-risk use restriction"],
+  FRD: ["claim substantiation review", "misrepresentation guardrail", "support/sales statement control"],
+  HRM: ["safety review", "review/escalation protocol", "vulnerable-user limitation"],
+  TRD: ["public disclosure review", "traceability/provenance control", "market-conduct review"],
+  SHD: ["security commitment review", "incident/breach process", "availability/support control"],
+  FIN: ["transaction authority limit", "approval gate", "audit log and exception review"],
+  GEN: ["policy/control review", "counsel validation", "client factual confirmation"]
+});
+
+function categoryCodeFromReference(reference = "") {
+  const parts = asText(reference).split("_").filter(Boolean);
+  return parts.length >= 2 ? parts[1].toUpperCase() : "GEN";
+}
+
+function categoryLabel(code = "GEN") {
+  return CATEGORY_LABELS[code] || CATEGORY_LABELS.GEN;
+}
+
+function severityRank(item = {}) {
+  const tier = asText(item?.severity?.tier || item?.highest_severity?.tier || "T5");
+  const tierRank = { T1: 1, T2: 2, T3: 3, T4: 4, T5: 5 }[tier] || 99;
+  const velocity = asText(item?.timing_urgency?.raw || item?.highest_velocity?.raw || "WATCH");
+  const velocityRank = { ACTIVE_NOW: 1, THIS_YEAR: 2, INCOMING: 3, WATCH: 4 }[velocity] || 99;
+  return tierRank * 100 + velocityRank;
+}
+
+function priorityForSeverity(severity = {}, velocity = {}) {
+  const tier = asText(severity.tier, "T5");
+  const rawVelocity = asText(velocity.raw, "WATCH");
+  if (["T1", "T2"].includes(tier) || rawVelocity === "ACTIVE_NOW") return "Priority 1 — Immediate / Pre-Signing / Pre-Launch";
+  if (["T3", "T4"].includes(tier) || rawVelocity === "THIS_YEAR") return "Priority 2 — Customer / Enterprise Readiness";
+  return "Priority 3 — Governance Maturity / Cleanup";
 }
 
 function sourceCategory(source = {}) {
@@ -78,447 +153,450 @@ function evidenceCategoryInventory(reviewedSources = []) {
   return [...categories.entries()].map(([category, sources]) => ({ category, source_count: sources.length, sources }));
 }
 
-function docKey(label = "") {
-  return asText(label).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function getTargetName({ companyProfile = {}, targetFeatureProfile = {}, sourceBundle = {} } = {}) {
+  const identity = safeObject(companyProfile.identity);
+  const targetRef = safeObject(targetFeatureProfile.target_profile_ref);
+  return asText(identity.brand_name || identity.legal_name || targetRef.brand_name || targetRef.legal_name || sourceBundle?.target_url || sourceBundle?.target_domain, "Target not specified");
 }
 
-function documentIndex(legalStack = []) {
-  const index = new Map();
-  for (const doc of asArray(legalStack)) {
-    index.set(docKey(doc.document_type || doc.type), doc);
-  }
-  return index;
-}
-
-function documentRouteStatus(documentType, legalStack = []) {
-  const index = documentIndex(legalStack);
-  const found = index.get(docKey(documentType));
-  if (found) return found;
-  return { document_type: documentType, exists: false, evidence_status: "Not evidenced in reviewed public/admitted evidence", controls_found: [], gaps_noted: [] };
-}
-
-function missingDocuments(legalStack = []) {
-  return STANDARD_DOCUMENT_ROUTES.map((docType) => documentRouteStatus(docType, legalStack))
-    .filter((doc) => doc.exists !== true)
-    .map((doc) => ({ document_type: doc.document_type, requested_evidence: `Provide the current ${doc.document_type} or confirm that no such document/control exists for the reviewed product.` }));
-}
-
-function buildMatterOverview({ targetName, primaryProduct, primaryUrl, sourceBundle, reviewedSources, registryRuntime, generatedAt }) {
+function buildMatterOverview({ targetName, primaryUrl, companyProfile, sourceBundle, reviewedSources, registryRuntime, generatedAt }) {
+  const identity = safeObject(companyProfile.identity);
+  const productBaseline = safeObject(companyProfile.product_baseline);
   return withContract("matter_overview", {
-    report_identity: {
-      report_title: "Legal Exposure Diligence Report",
-      target_or_client: targetName,
-      primary_url: primaryUrl,
-      product_or_matter: asText(primaryProduct.name || primaryProduct.product_name, "Product / matter not specified"),
+    matter_identity: {
+      target_name: targetName,
+      legal_name: asText(identity.legal_name),
+      website: asText(identity.website || primaryUrl),
+      domain: asText(identity.domain),
+      primary_product_or_service: asText(productBaseline.high_level_offering || productBaseline.primary_claim, "Product / matter not specified"),
       report_date: generatedAt,
-      report_version: "Stage 9 DD Contract v1",
-      review_mode: "Public-footprint and admitted evidence review"
+      report_status: "Review-Ready Draft — Counsel Review Required"
     },
     review_scope: {
-      reviewed_material: [
-        "Public product and website evidence admitted into the review workflow",
-        "Public or admitted legal-stack documents identified during review",
-        "User-facing product claims and feature descriptions captured in the evidence set",
-        "Product/activity, automated-system, data-processing, provider, security, content, and customer-contracting signals derived by the upstream review stages"
-      ],
+      source_mode: sourceBundle?.source_mode || sourceBundle?.evidence_mode || "Matter evidence review",
       reviewed_source_count: reviewedSources.length,
-      registry_version: registryRuntime?.version || "Registry version not specified",
-      source_mode: sourceBundle?.source_mode || sourceBundle?.evidence_mode || "Matter evidence review"
+      reviewed_source_families: unique(reviewedSources.map((source) => source.source_type)),
+      reviewed_material_summary: [
+        "Public product and website evidence admitted into the review workflow",
+        "Public or admitted legal, governance, privacy, security, product, developer, and commercial materials identified during review",
+        "Target profile, feature profile, data provenance, legal document cartography, post-challenge exposure findings, and evidence limitations from validated upstream stages"
+      ],
+      not_reviewed: [
+        "Private customer contracts, MSAs, order forms, customer-specific DPAs, negotiated enterprise terms, SOC reports, security questionnaires, source code, internal policies, deployment evidence, and data-room materials unless present in the admitted evidence set."
+      ]
     },
-    scope_limitations: [
-      "Private customer contracts, MSAs, order forms, security questionnaires, SOC reports, source code, internal policies, data-room materials, deployment matrices, and implementation evidence were not reviewed unless present in the admitted evidence set.",
-      "The report does not verify whether public legal-stack controls are operationally implemented.",
-      "Absence of reviewed evidence is not treated as proof that a control does not exist internally."
-    ],
-    reliance_disclaimer: REVIEW_READY_DISCLAIMER,
-    evidence_cut_off: {
+    evidence_cutoff: {
       generated_at: generatedAt,
-      evidence_basis: "Evidence available to the Stage 9 cache at report assembly time",
-      registry_version: registryRuntime?.version || null
+      registry_version: registryRuntime?.version || null,
+      source_bundle_version: sourceBundle?.source_bundle_version || sourceBundle?.schema_version || null
     },
-    target_or_client: targetName,
-    product_or_matter: asText(primaryProduct.name || primaryProduct.product_name, "Product / matter not specified"),
-    review_type: "Legal Exposure Diligence",
-    evidence_mode: sourceBundle?.source_mode || sourceBundle?.evidence_mode || "Matter evidence review",
-    report_status: "Review-Ready Draft — Counsel Review Required",
-    disclaimer: REVIEW_READY_DISCLAIMER
+    reliance_disclaimer: REVIEW_READY_DISCLAIMER,
+    local_counsel_review_required: true,
+    public_footprint_limitation: "This report is based on public or admitted evidence only and does not verify non-public implementation, private contracts, or operational effectiveness."
   });
 }
 
-function buildExecutiveSummary({ hydratedRows, consolidatedFindings, surfaces }) {
-  const statusCounts = hydratedRows.status_counts || {};
-  const highSeverity = asArray(hydratedRows.identified_exposures).filter((item) => ["T1", "T2"].includes(item.severity?.tier)).length;
-  const posture = highSeverity >= 3 || asArray(hydratedRows.identified_exposures).length >= 25
+function buildTargetProfileSection({ companyProfile }) {
+  return withContract("target_profile", {
+    identity: safeObject(companyProfile.identity),
+    jurisdiction: safeObject(companyProfile.jurisdiction),
+    business_model: safeObject(companyProfile.business_model),
+    market_context: safeObject(companyProfile.market_context),
+    product_baseline: safeObject(companyProfile.product_baseline),
+    data_touchpoint_summary: asArray(companyProfile.data_touchpoint_map),
+    evidence_basis: asArray(companyProfile.evidence?.field_evidence_refs),
+    limitations: asArray(companyProfile.limitations)
+  });
+}
+
+function buildProductActivityIpProfile({ targetFeatureProfile, companyProfile, hydratedRows }) {
+  const features = asArray(targetFeatureProfile.feature_inventory);
+  const activeArchetypes = unique(features.flatMap((feature) => asArray(feature.archetype_codes).concat(asArray(feature.archetype_labels))));
+  const activeSurfaces = unique(features.flatMap((feature) => asArray(feature.surface_tokens)));
+  const contentFeatures = features.filter((feature) => {
+    const text = `${asArray(feature.input_data).join(" ")} ${feature.output_or_result || ""} ${asArray(feature.surface_tokens).join(" ")} ${feature.feature_description || ""}`.toLowerCase();
+    return ["content", "ip", "output", "document", "image", "audio", "video", "code", "training"].some((term) => text.includes(term));
+  });
+  return withContract("product_activity_ip_profile", {
+    product_activity_thesis: `Based on the reviewed evidence, ${asText(companyProfile?.identity?.brand_name || companyProfile?.identity?.legal_name, "the target")} appears to operate a product/platform footprint involving ${features.length} identified feature(s). Review focuses on product functionality, user-facing claims, data-processing indicators, automated-system reliance, provider dependencies, content/IP position, security/operational controls, and customer-contracting posture.`,
+    feature_inventory_summary: {
+      total_features: features.length,
+      core_features: features.filter((feature) => feature.feature_role === "CORE").map((feature) => ({ feature_id: feature.feature_id, feature_name: feature.feature_name })),
+      secondary_features: features.filter((feature) => feature.feature_role !== "CORE").map((feature) => ({ feature_id: feature.feature_id, feature_name: feature.feature_name }))
+    },
+    feature_table: features.map((feature) => ({
+      feature_id: feature.feature_id,
+      feature_name: feature.feature_name,
+      commercial_function: feature.commercial_function,
+      business_label_or_product_area: feature.business_label_or_product_area,
+      actor_or_user: feature.actor_or_user,
+      input_data: asArray(feature.input_data),
+      system_action: feature.system_action,
+      output_or_result: feature.output_or_result,
+      autonomy_level: feature.autonomy_level,
+      human_review_signal: feature.human_review_signal,
+      external_action_signal: feature.external_action_signal,
+      delivery_channels: feature.delivery_channels,
+      evidence_refs: asArray(feature.evidence_refs)
+    })),
+    functional_profile: {
+      active_archetypes: activeArchetypes,
+      archetype_basis: asArray(features.flatMap((feature) => asArray(feature.archetype_provenance)))
+    },
+    risk_surface_profile: {
+      active_surfaces: activeSurfaces,
+      surface_basis: asArray(features.flatMap((feature) => asArray(feature.surface_provenance)))
+    },
+    ip_content_profile: {
+      content_or_output_features: contentFeatures.map((feature) => ({ feature_id: feature.feature_id, feature_name: feature.feature_name, output_or_result: feature.output_or_result })),
+      output_ownership_signals: unique(asArray(hydratedRows.rows).flatMap((row) => asArray(row.legal_risk_surfaces)).filter((surface) => /ip|content|output|training|copyright/i.test(surface))),
+      training_or_finetuning_signals: asArray(targetFeatureProfile.data_provenance_map).filter((item) => /training|fine/i.test(`${item.training_or_finetuning_signal || ""} ${item.processing_context || ""}`))
+    },
+    architecture_profile: {
+      model_provider_hints: asArray(targetFeatureProfile.architecture_hints).filter((hint) => hint.hint_type === "model_provider"),
+      subprocessor_hints: asArray(targetFeatureProfile.architecture_hints).filter((hint) => hint.hint_type === "subprocessor"),
+      architecture_hints: asArray(targetFeatureProfile.architecture_hints)
+    },
+    commercial_scan: safeObject(targetFeatureProfile.commercial_scan),
+    evidence_basis: asArray(targetFeatureProfile.evidence?.field_evidence_refs),
+    limitations: asArray(targetFeatureProfile.limitations)
+  });
+}
+
+function buildDataRiskProvenanceControls({ stage6Review, targetFeatureProfile, hydratedRows }) {
+  const dataProfile = safeObject(stage6Review.data_provenance_profile);
+  const flows = asArray(dataProfile.data_flow_profile);
+  const sensitiveFlows = flows.filter((flow) => /sensitive|biometric|health|financial|credential|child|minor/i.test(JSON.stringify(flow.data_category || {}) + JSON.stringify(flow.data_subject || {})));
+  const thirdPartyFlows = flows.filter((flow) => /subprocessor|third_party|model_provider|cloud_provider|transfer/i.test(JSON.stringify(flow.processor_chain || {}) + JSON.stringify(flow.role_allocation || {})));
+  return withContract("data_risk_provenance_controls", {
+    data_risk_thesis: `The data review identified ${flows.length} data-flow profile row(s), including ${sensitiveFlows.length} sensitive/high-risk signal(s) and ${thirdPartyFlows.length} third-party/provider signal(s) requiring TMT counsel review where relevant.`,
+    data_flow_summary: {
+      total_data_flows: flows.length,
+      personal_data_flows: flows.filter((flow) => /personal_data/.test(JSON.stringify(flow.data_category || {}))).length,
+      sensitive_or_high_risk_flows: sensitiveFlows.length,
+      third_party_or_processor_flows: thirdPartyFlows.length
+    },
+    data_flow_table: flows.map((flow) => ({
+      data_flow_id: flow.data_flow_id,
+      linked_feature_id: flow.feature_id,
+      data_subject: flow.data_subject,
+      data_category: flow.data_category,
+      processing_actions: flow.processing?.processing_actions || [],
+      processing_purpose: flow.processing?.processing_purpose || [],
+      role_allocation: flow.role_allocation,
+      regime_relevance: flow.regime_relevance,
+      notice_position: flow.notice,
+      consent_or_basis_position: flow.consent_basis,
+      rights_position: flow.rights,
+      processor_chain: flow.processor_chain,
+      transfer_location: flow.transfer_location,
+      retention_deletion_ai: flow.retention_deletion_ai,
+      security_accountability: flow.security_accountability,
+      confidence: flow.confidence
+    })),
+    control_review: {
+      privacy_notice_controls: controlsByFamily(stage6Review, ["privacy_notice", "data_collection", "data_use"]),
+      subprocessor_controls: controlsByFamily(stage6Review, ["subprocessor_disclosure", "model_provider_disclosure"]),
+      retention_deletion_controls: controlsByFamily(stage6Review, ["retention", "deletion", "data_subject_rights"]),
+      training_finetuning_controls: controlsByFamily(stage6Review, ["training_or_finetuning"]),
+      security_controls: controlsByFamily(stage6Review, ["security_safeguards", "breach_notice"])
+    },
+    data_gaps: asArray(dataProfile.data_profile_limitations).concat(asArray(hydratedRows.clarification_required_items).filter((item) => ["PRV", "BIO", "DEC"].includes(categoryCodeFromReference(item.registry_reference))).map((item) => item.exposure_title)),
+    evidence_basis: unique(flows.flatMap((flow) => asArray(flow.source_refs))),
+    limitations: asArray(dataProfile.data_profile_limitations).concat(asArray(targetFeatureProfile.limitations))
+  });
+}
+
+function controlsByFamily(stage6Review, families = []) {
+  const cartography = safeObject(stage6Review.legal_document_cartography);
+  return asArray(cartography.document_control_signal_map).filter((signal) => families.includes(signal.control_family)).map((signal) => ({
+    control_signal_id: signal.control_signal_id,
+    document_id: signal.document_id,
+    legal_unit_id: signal.legal_unit_id,
+    control_family: signal.control_family,
+    control_signal: signal.control_signal,
+    source_refs: asArray(signal.source_refs),
+    confidence: signal.confidence
+  }));
+}
+
+function buildLegalDocumentControlReview({ stage6Review, findingRows }) {
+  const cartography = safeObject(stage6Review.legal_document_cartography);
+  const documents = asArray(cartography.legal_document_inventory);
+  const legalUnits = asArray(cartography.legal_document_index);
+  const controls = asArray(cartography.document_control_signal_map);
+  const mismatches = asArray(cartography.document_mismatch_signal_map);
+  const summary = safeObject(cartography.legal_document_summary_signals);
+  return withContract("legal_document_control_review", {
+    legal_document_review_thesis: `The legal-document review identified ${documents.length} legal/control document(s), ${legalUnits.length} macro legal unit(s), ${controls.length} control signal(s), and ${mismatches.length} mismatch signal(s) for counsel review.`,
+    document_inventory_summary: {
+      total_documents_found: documents.length,
+      core_document_status: safeObject(summary.core_stack_status),
+      supplemental_artifacts_detected: asArray(summary.supplemental_artifacts_detected),
+      document_hierarchy_signal: summary.document_hierarchy_signal,
+      legal_document_coverage_signal: summary.legal_document_coverage_signal,
+      major_unknowns: asArray(summary.major_unknowns)
+    },
+    document_inventory: documents,
+    legal_unit_index: legalUnits,
+    document_relationships: asArray(cartography.document_relationship_map),
+    control_signal_matrix: controls,
+    document_mismatch_signals: mismatches,
+    counsel_review_points: findingRows.map((finding) => ({
+      finding_id: finding.finding_id,
+      category_label: finding.category_label,
+      counsel_review_point: `Review legal documents and controls linked to ${finding.finding_title}, with attention to ${finding.affected_documents_or_controls.join(", ") || "the relevant legal/control documents"}.`
+    })),
+    evidence_basis: unique(documents.flatMap((doc) => [doc.source_record_ref, doc.source_url, doc.final_url])),
+    limitations: asArray(cartography.legal_document_limitations).concat(asArray(stage6Review.stage6_limitations))
+  });
+}
+
+function featureMapById(targetFeatureProfile = {}) {
+  return new Map(asArray(targetFeatureProfile.feature_inventory).map((feature) => [feature.feature_id, feature]));
+}
+
+function findingRowsFromHydrated({ hydratedRows, targetFeatureProfile, stage6Review }) {
+  const featuresById = featureMapById(targetFeatureProfile);
+  const legalControls = asArray(stage6Review.legal_document_cartography?.document_control_signal_map);
+  return asArray(hydratedRows.sorted_identified_exposures).map((item, index) => {
+    const code = categoryCodeFromReference(item.registry_reference);
+    const featureRefs = asArray(item.reviewed_evidence?.feature_references);
+    const affectedFeatures = featureRefs.map((ref) => featuresById.get(ref)).filter(Boolean).map((feature) => ({ feature_id: feature.feature_id, feature_name: feature.feature_name }));
+    const docs = DOCUMENT_ROUTE_BY_CATEGORY[code] || DOCUMENT_ROUTE_BY_CATEGORY.GEN;
+    return {
+      finding_id: `FIND-${String(index + 1).padStart(3, "0")}`,
+      category_label: categoryLabel(code),
+      finding_title: item.exposure_title,
+      finding_statement: `${item.exposure_title}. ${item.residual_exposure || item.legal_significance || "The reviewed evidence indicates a counsel-review issue."}`,
+      hunter_signal_trigger: item.exposure_mechanism || item.applicability_test?.finding_threshold || "Issue-spotting signal based on reviewed evidence and post-challenge assessment.",
+      status: item.assessment_outcome,
+      severity: item.severity,
+      velocity: item.timing_urgency?.label,
+      legal_pain: item.legal_significance,
+      business_pain: item.commercial_deal_impact,
+      mechanism: item.exposure_mechanism,
+      affected_feature_refs: featureRefs,
+      affected_features: affectedFeatures,
+      affected_data_flow_refs: dataFlowRefsForFeatures(stage6Review, featureRefs),
+      affected_legal_unit_refs: legalUnitRefsForFeatures(stage6Review, featureRefs),
+      affected_documents_or_controls: docs.concat(unique(legalControls.filter((signal) => featureRefs.some((ref) => asArray(signal.feature_refs).includes(ref))).map((signal) => signal.control_family))),
+      evidence_basis: {
+        evidence_reference: item.reviewed_evidence?.evidence_reference,
+        feature_references: featureRefs
+      },
+      control_position: item.control_position,
+      recommended_action: item.suggested_remediation_path || `Review ${docs.join(", ")} and confirm whether existing controls address this finding.`,
+      counsel_review_note: item.counsel_review_note || "Qualified counsel should verify jurisdiction-specific treatment and whether non-public controls change this assessment.",
+      appendix_refs: [`APP-${String((item.entry_number || index + 1)).padStart(3, "0")}`],
+      _category_code: code
+    };
+  }).sort((a, b) => severityRank({ severity: a.severity }) - severityRank({ severity: b.severity }));
+}
+
+function dataFlowRefsForFeatures(stage6Review, featureRefs = []) {
+  const indexRows = asArray(stage6Review.stage7_navigation_index?.feature_to_data_flow_index);
+  return unique(indexRows.filter((row) => featureRefs.includes(row.feature_id)).flatMap((row) => asArray(row.data_flow_refs || row.data_flow_ids || row.to_refs)));
+}
+
+function legalUnitRefsForFeatures(stage6Review, featureRefs = []) {
+  const indexRows = asArray(stage6Review.stage7_navigation_index?.feature_to_legal_unit_index);
+  return unique(indexRows.filter((row) => featureRefs.includes(row.feature_id)).flatMap((row) => asArray(row.legal_unit_refs || row.legal_unit_ids || row.to_refs)));
+}
+
+function categoryGroupsFromFindings(findingRows = []) {
+  const groups = new Map();
+  for (const finding of findingRows) {
+    const code = finding._category_code || "GEN";
+    if (!groups.has(code)) groups.set(code, []);
+    groups.get(code).push(finding);
+  }
+  return [...groups.entries()].map(([code, findings], index) => {
+    const highest = [...findings].sort((a, b) => severityRank({ severity: a.severity }) - severityRank({ severity: b.severity }))[0] || {};
+    return {
+      category_id: `CAT-${String(index + 1).padStart(3, "0")}`,
+      category_label: categoryLabel(code),
+      category_description: CATEGORY_DESCRIPTIONS[code] || CATEGORY_DESCRIPTIONS.GEN,
+      finding_count: findings.length,
+      highest_severity: highest.severity || {},
+      highest_velocity: highest.velocity || "Timing not specified",
+      affected_features: unique(findings.flatMap((finding) => finding.affected_features.map((feature) => feature.feature_name))),
+      affected_data_flows: unique(findings.flatMap((finding) => finding.affected_data_flow_refs)),
+      affected_legal_documents: unique(findings.flatMap((finding) => finding.affected_documents_or_controls)),
+      summary_for_counsel: `${categoryLabel(code)} contains ${findings.length} identified finding(s). Highest severity: ${highest.severity?.label || "not specified"}.`,
+      findings: findings.map(({ _category_code, ...finding }) => finding)
+    };
+  });
+}
+
+function buildExposureFindings({ findingRows }) {
+  const publicRows = findingRows.map(({ _category_code, ...finding }) => finding);
+  const groups = categoryGroupsFromFindings(findingRows);
+  return withContract("exposure_findings", {
+    exposure_category_groups: groups,
+    finding_rows: publicRows,
+    severity_summary: {
+      critical_or_high_findings: publicRows.filter((finding) => ["T1", "T2"].includes(finding.severity?.tier)).length,
+      total_identified_findings: publicRows.length,
+      by_category: groups.map((group) => ({ category_label: group.category_label, finding_count: group.finding_count, highest_severity: group.highest_severity?.label }))
+    },
+    control_position_summary: publicRows.map((finding) => ({ finding_id: finding.finding_id, control_position: finding.control_position })),
+    evidence_basis_summary: publicRows.map((finding) => ({ finding_id: finding.finding_id, evidence_basis: finding.evidence_basis })),
+    appendix_crosswalk: publicRows.map((finding) => ({ finding_id: finding.finding_id, appendix_refs: finding.appendix_refs })),
+    consolidated_findings: groups,
+    consolidated_count: groups.length,
+    count: publicRows.length
+  });
+}
+
+function buildExecutiveSummary({ companyProfile, targetFeatureProfile, stage6Review, findingRows, reviewedSources, hydratedRows }) {
+  const dataFlows = asArray(stage6Review.data_provenance_profile?.data_flow_profile);
+  const documents = asArray(stage6Review.legal_document_cartography?.legal_document_inventory);
+  const controls = asArray(stage6Review.legal_document_cartography?.document_control_signal_map);
+  const high = findingRows.filter((finding) => ["T1", "T2"].includes(finding.severity?.tier));
+  const posture = high.length >= 3 || findingRows.length >= 10
     ? "High review priority"
-    : highSeverity >= 1 || asArray(hydratedRows.identified_exposures).length >= 8
+    : high.length || findingRows.length >= 4
       ? "Moderate-high review priority"
-      : asArray(hydratedRows.identified_exposures).length
+      : findingRows.length
         ? "Moderate review priority"
         : "Low exposure on reviewed evidence";
-  const topThemes = asArray(consolidatedFindings).map((finding) => ({
-    consolidated_finding_id: finding.consolidated_finding_id,
-    exposure_title: finding.exposure_title,
-    supporting_registry_item_count: finding.supporting_registry_item_count,
-    severity: finding.highest_severity?.label,
-    timing_urgency: finding.highest_timing_urgency?.label,
-    affected_documents: documentRouteFor(finding)
-  }));
-  const immediatePriorities = asArray(consolidatedFindings).map((finding) => ({
-    consolidated_finding_id: finding.consolidated_finding_id,
-    exposure_title: finding.exposure_title,
-    priority: priorityFor(finding),
-    counsel_review_point: `Review ${documentRouteFor(finding).join(", ")} and confirm whether the current legal stack addresses ${finding.exposure_title}.`
-  }));
-  return withContract("executive_exposure_summary", {
+  return withContract("executive_summary", {
     executive_posture: {
-      posture,
-      judgment: `${posture}. The reviewed footprint produced ${asArray(consolidatedFindings).length} consolidated exposure finding(s), ${asArray(hydratedRows.identified_exposures).length} identified registry exposure item(s), ${asArray(hydratedRows.control_evidenced_items).length} control-evidenced item(s), and ${asArray(hydratedRows.clarification_required_items).length} clarification-required item(s).`
+      overall_review_priority: posture,
+      summary: `${posture}. The review identified ${findingRows.length} lawyer-readable exposure finding(s), ${dataFlows.length} data-flow row(s), ${documents.length} legal/control document(s), and ${controls.length} legal-document control signal(s) from ${reviewedSources.length} reviewed source(s).`
     },
-    key_numbers: {
-      registry_rows_assessed: asArray(hydratedRows.rows).length,
-      identified_registry_exposure_items: asArray(hydratedRows.identified_exposures).length,
-      consolidated_exposure_findings: asArray(consolidatedFindings).length,
-      control_evidenced_items: asArray(hydratedRows.control_evidenced_items).length,
-      clarification_required_items: asArray(hydratedRows.clarification_required_items).length,
-      outside_scope_items: statusCounts.NOT_APPLICABLE || 0,
-      status_counts: Object.fromEntries(Object.entries(statusCounts).map(([status, count]) => [displayStatus(status), count]))
+    target_snapshot: {
+      identity: safeObject(companyProfile.identity),
+      business_model: safeObject(companyProfile.business_model),
+      market_context: safeObject(companyProfile.market_context)
     },
-    top_exposure_themes: topThemes,
-    control_position: {
-      summary: asArray(hydratedRows.control_evidenced_items).length
-        ? "The reviewed legal stack or admitted evidence shows some control positions, but identified exposure families still require counsel review against the full contract and policy stack."
-        : "The reviewed material did not evidence sufficient controls for the identified exposure families.",
-      control_evidenced_items: asArray(hydratedRows.control_evidenced_items).map((item) => ({ registry_reference: item.registry_reference, exposure_title: item.exposure_title, control_position: item.control_position }))
+    product_activity_snapshot: {
+      core_features_count: asArray(targetFeatureProfile.feature_inventory).filter((feature) => feature.feature_role === "CORE").length,
+      total_features_count: asArray(targetFeatureProfile.feature_inventory).length,
+      active_archetypes: unique(asArray(targetFeatureProfile.feature_inventory).flatMap((feature) => asArray(feature.archetype_codes))),
+      active_surfaces: unique(asArray(targetFeatureProfile.feature_inventory).flatMap((feature) => asArray(feature.surface_tokens))),
+      ip_content_signals: findingRows.filter((finding) => finding.category_label.includes("IP") || finding.category_label.includes("Content")).map((finding) => finding.finding_title)
     },
-    immediate_review_priorities: immediatePriorities,
-    executive_conclusion: asArray(consolidatedFindings).length
-      ? "Proceed to counsel-led review of the consolidated findings, request missing evidence for clarification items, and route remediation through the document/control paths identified in this report."
-      : "Review the evidence set, methodology, and forensic ledger with qualified counsel before relying on the absence of identified exposures.",
-    active_legal_risk_surfaces: asArray(surfaces).map((surface) => surface.legal_risk_surface),
-    overall_exposure_posture: posture,
-    registry_rows_assessed: asArray(hydratedRows.rows).length,
-    identified_registry_exposure_items: asArray(hydratedRows.identified_exposures).length,
-    consolidated_exposure_findings: asArray(consolidatedFindings).length,
-    status_counts: Object.fromEntries(Object.entries(statusCounts).map(([status, count]) => [displayStatus(status), count])),
-    recommended_next_step: "Review consolidated exposure findings, open information requests, and remediation routes with qualified counsel."
-  });
-}
-
-function buildEvidenceReviewed({ reviewedSources, sourceBundle, legalStackReview }) {
-  return withContract("evidence_reviewed", {
-    evidence_inventory: {
-      reviewed_source_count: reviewedSources.length,
-      reviewed_sources: reviewedSources
+    data_posture: {
+      data_flow_count: dataFlows.length,
+      high_sensitivity_signals: dataFlows.filter((flow) => /sensitive|biometric|health|financial|credential|child|minor/i.test(JSON.stringify(flow))).map((flow) => flow.data_flow_id),
+      third_party_or_subprocessor_signals: dataFlows.filter((flow) => /subprocessor|third_party|model_provider|cloud_provider|transfer/i.test(JSON.stringify(flow))).map((flow) => flow.data_flow_id)
     },
-    evidence_categories: evidenceCategoryInventory(reviewedSources),
-    evidence_not_reviewed: [
-      "Private customer contracts, MSAs, order forms, customer-specific DPAs, and negotiated enterprise terms unless present in the admitted evidence set.",
-      "Source code, model cards, model evaluation records, implementation logs, SOC reports, penetration-test reports, and data-room materials unless present in the admitted evidence set.",
-      "Internal policies, employee guidance, sales enablement controls, security questionnaires, incident records, and vendor contracts unless present in the admitted evidence set."
-    ],
-    evidence_limitations: unique(asArray(sourceBundle.limitations).concat(asArray(legalStackReview.limitations))).concat([
-      "Public-footprint review cannot confirm non-public implementation or operational effectiveness of legal controls.",
-      "Reviewed source inventory reflects materials admitted into the workflow, not a representation that every public source on the internet was captured."
-    ]),
-    reviewed_sources: reviewedSources,
-    source_limitations: unique(asArray(sourceBundle.limitations).concat(asArray(legalStackReview.limitations)))
+    legal_document_posture: {
+      documents_found_count: documents.length,
+      core_document_status: safeObject(stage6Review.legal_document_cartography?.legal_document_summary_signals?.core_stack_status),
+      control_gaps_summary: asArray(stage6Review.legal_document_cartography?.document_mismatch_signal_map).map((mismatch) => ({ mismatch_id: mismatch.mismatch_id, control_family: mismatch.control_family, mismatch_signal: mismatch.mismatch_signal }))
+    },
+    exposure_posture: {
+      critical_or_high_findings_count: high.length,
+      finding_category_count: categoryGroupsFromFindings(findingRows).length,
+      top_categories: categoryGroupsFromFindings(findingRows).slice(0, 5).map((group) => ({ category_label: group.category_label, finding_count: group.finding_count, highest_severity: group.highest_severity?.label }))
+    },
+    evidence_posture: {
+      reviewed_sources_count: reviewedSources.length,
+      major_evidence_gaps_count: asArray(hydratedRows.clarification_required_items).length + asArray(companyProfile.evidence?.unresolved_questions).length + asArray(targetFeatureProfile.evidence?.unresolved_questions).length
+    },
+    counsel_review_priorities: findingRows.slice(0, 7).map((finding) => ({
+      finding_id: finding.finding_id,
+      priority: priorityForSeverity(finding.severity, { raw: finding.velocity }),
+      counsel_review_point: `Review ${finding.category_label}: ${finding.finding_title}.`
+    }))
   });
 }
 
-function elementBlock(platformLegalDiligence, key) {
-  const element = platformElementByKey(platformLegalDiligence, key);
-  return element || { visible_label: key, activation_summary: "No specific signal was established from reviewed evidence.", detected_signals: {}, linked_identified_exposures: [], document_routes: [] };
-}
-
-function buildProductActivityProfile({ targetFeatureProfile, primaryProduct, platformLegalDiligence, hydratedRows }) {
-  const targetProfileRef = safeObject(targetFeatureProfile.target_profile_ref);
-  const features = asArray(targetFeatureProfile.feature_inventory);
-  return withContract("product_activity_profile", {
-    product_activity_thesis: `Based on the reviewed evidence, the target appears to operate a product/platform footprint involving ${unique(asArray(hydratedRows.rows).map((item) => item.functional_profile?.label)).join(", ") || "functional profiles not fully established"}. The legal review therefore focuses on product functionality, user-facing claims, data-processing indicators, automated-system reliance, provider dependencies, content/IP position, security/operational controls, and customer-contracting posture.`,
-    platform_product_architecture: elementBlock(platformLegalDiligence, "platform_product_architecture"),
-    data_processing_user_information_flows: elementBlock(platformLegalDiligence, "data_processing_user_information_flows"),
-    automated_systems_output_reliance: elementBlock(platformLegalDiligence, "automated_systems_output_reliance"),
-    content_output_ip_position: elementBlock(platformLegalDiligence, "content_output_ip_position"),
-    third_party_infrastructure_dependencies: elementBlock(platformLegalDiligence, "third_party_provider_infrastructure_dependencies"),
-    user_facing_claims_product_reliance: elementBlock(platformLegalDiligence, "user_facing_claims_product_reliance"),
-    communications_user_interaction_flows: elementBlock(platformLegalDiligence, "communications_user_interaction_flows"),
-    customer_contracting_reliance_position: elementBlock(platformLegalDiligence, "customer_contracting_reliance_position"),
-    target_profile_ref: targetProfileRef,
-    product_summary: primaryProduct,
-    feature_inventory: features,
-    data_provenance_map: asArray(targetFeatureProfile.data_provenance_map),
-    regulated_surface_map: asArray(targetFeatureProfile.regulated_surface_map),
-    architecture_hints: asArray(targetFeatureProfile.architecture_hints),
-    commercial_scan: safeObject(targetFeatureProfile.commercial_scan),
-    active_functional_profiles: unique(asArray(hydratedRows.rows).map((item) => item.functional_profile?.label)),
-    active_legal_risk_surfaces: unique(asArray(hydratedRows.rows).flatMap((item) => item.legal_risk_surfaces || []))
-  });
-}
-
-function surfaceCategory(surfaceName = "") {
-  const lower = asText(surfaceName).toLowerCase();
-  if (lower.includes("privacy") || lower.includes("data") || lower.includes("processor")) return "Data Processing";
-  if (lower.includes("agent") || lower.includes("automated") || lower.includes("decision") || lower.includes("output") || lower.includes("ai")) return "Automated Systems";
-  if (lower.includes("ip") || lower.includes("content") || lower.includes("training") || lower.includes("copyright")) return "Content / IP";
-  if (lower.includes("security") || lower.includes("breach") || lower.includes("incident") || lower.includes("uptime")) return "Security / Operational Controls";
-  if (lower.includes("provider") || lower.includes("vendor") || lower.includes("subprocessor") || lower.includes("cloud")) return "Third-Party Dependencies";
-  if (lower.includes("claim") || lower.includes("consumer") || lower.includes("notice") || lower.includes("reliance")) return "User-Facing Claims";
-  return "Customer Contracting";
-}
-
-function buildLegalRiskSurfaceMap({ surfaces, consolidatedFindings, hydratedRows }) {
-  const controlRows = asArray(hydratedRows.control_evidenced_items);
-  const activeSurfaces = asArray(surfaces).map((surface) => {
-    const linkedFindings = asArray(consolidatedFindings).filter((finding) => asArray(finding.legal_risk_surfaces).includes(surface.legal_risk_surface));
-    const linkedControls = controlRows.filter((item) => asArray(item.legal_risk_surfaces).includes(surface.legal_risk_surface));
-    const category = surfaceCategory(surface.legal_risk_surface);
-    return {
-      ...surface,
-      surface_category: category,
-      why_surface_is_active: `${surface.legal_risk_surface} is active because reviewed product/activity or legal-stack evidence links this surface to ${surface.identified_exposures || 0} identified registry exposure item(s), ${surface.control_evidenced_items || 0} control-evidenced item(s), and ${surface.clarification_required_items || 0} clarification-required item(s).`,
-      legal_consequence_category: category,
-      linked_findings: linkedFindings.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, exposure_title: finding.exposure_title })),
-      linked_controls: linkedControls.map((item) => ({ registry_reference: item.registry_reference, exposure_title: item.exposure_title, control_position: item.control_position }))
-    };
-  });
-  return withContract("legal_risk_surface_map", {
-    active_legal_surfaces: activeSurfaces,
-    surface_activation_basis: activeSurfaces.map((surface) => ({ legal_risk_surface: surface.legal_risk_surface, why_surface_is_active: surface.why_surface_is_active })),
-    legal_consequence_categories: unique(activeSurfaces.map((surface) => surface.legal_consequence_category)),
-    linked_findings: activeSurfaces.flatMap((surface) => surface.linked_findings.map((finding) => ({ legal_risk_surface: surface.legal_risk_surface, ...finding }))),
-    linked_controls: activeSurfaces.flatMap((surface) => surface.linked_controls.map((control) => ({ legal_risk_surface: surface.legal_risk_surface, ...control }))),
-    surfaces: activeSurfaces
-  });
-}
-
-function buildLegalStackControlReview({ legalStackReview, hydratedRows, consolidatedFindings }) {
-  const legalStack = asArray(legalStackReview.legal_stack).map((doc) => ({
-    document_type: asText(doc.document_type || doc.type, "Legal document"),
-    exists: doc.exists === true,
-    evidence_status: asText(doc.evidence_status, doc.exists === true ? "Evidenced" : "Not evidenced"),
-    document_url: asText(doc.document_url || doc.url),
-    controls_found: asArray(doc.controls_found || doc.covers),
-    gaps_noted: asArray(doc.gaps_noted || doc.misses),
-    review_note: asText(doc.review_note || doc.summary || doc.notes)
+function buildImplicationsRemediationPath({ findingRows, stage6Review }) {
+  const actions = findingRows.map((finding) => ({
+    finding_id: finding.finding_id,
+    category_label: finding.category_label,
+    finding_title: finding.finding_title,
+    priority: priorityForSeverity(finding.severity, { raw: finding.velocity }),
+    action: finding.recommended_action,
+    why_it_matters: finding.legal_pain || finding.business_pain,
+    affected_report_sections: ["Product, Activity & IP Profile", "Data Risk, Provenance & Controls", "Legal Document & Control Review", "Exposure Findings"]
   }));
-  const matrix = STANDARD_DOCUMENT_ROUTES.map((docType) => {
-    const doc = documentRouteStatus(docType, legalStack);
-    const linkedFindings = consolidatedFindings.filter((finding) => documentRouteFor(finding).includes(docType));
-    return {
-      document_type: docType,
-      evidenced: doc.exists === true,
-      evidence_status: doc.evidence_status,
-      document_url: doc.document_url || "",
-      coverage_purpose: `${docType} should be reviewed against exposure families linked to ${docType}.`,
-      controls_found: asArray(doc.controls_found),
-      gaps_noted: asArray(doc.gaps_noted),
-      linked_consolidated_findings: linkedFindings.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, exposure_title: finding.exposure_title }))
-    };
-  });
-  const controlEvidencedItems = asArray(hydratedRows.control_evidenced_items).map((item) => ({
-    registry_reference: item.registry_reference,
-    exposure_title: item.exposure_title,
-    control_position: item.control_position,
-    residual_watchpoint: item.residual_exposure,
-    suggested_remediation_path: item.suggested_remediation_path
-  }));
-  const controlGaps = matrix.filter((row) => !row.evidenced || row.gaps_noted.length || row.linked_consolidated_findings.length).map((row) => ({
-    document_type: row.document_type,
-    gap: row.evidenced ? "Review document adequacy against linked exposure findings." : "Document/control not evidenced in reviewed material.",
-    linked_consolidated_findings: row.linked_consolidated_findings
-  }));
-  const counselReviewPoints = consolidatedFindings.map((finding) => ({
-    consolidated_finding_id: finding.consolidated_finding_id,
-    exposure_title: finding.exposure_title,
-    affected_documents: documentRouteFor(finding),
-    counsel_review_point: `Review ${documentRouteFor(finding).join(", ")} for ${finding.exposure_title}.`
-  }));
-  return withContract("legal_stack_control_review", {
-    document_inventory: legalStack.length ? legalStack : STANDARD_DOCUMENT_ROUTES.map((docType) => documentRouteStatus(docType, legalStack)),
-    document_coverage_matrix: matrix,
-    control_evidenced_items: controlEvidencedItems,
-    control_gaps: controlGaps,
-    counsel_review_points: counselReviewPoints,
-    legal_stack_synthesis: {
-      summary: `The legal stack review identified ${legalStack.filter((doc) => doc.exists).length} evidenced legal/control document(s) and ${controlEvidencedItems.length} control-evidenced registry item(s). Remaining identified exposure families should be reviewed against the document coverage matrix and counsel review points.`,
-      document_stack_synthesis: legalStackReview.document_stack_synthesis || null,
-      document_stack_redline: legalStackReview.document_stack_redline || [],
-      legal_stack_assessment: legalStackReview.legal_stack_assessment || []
-    },
-    legal_stack: legalStack,
-    document_stack_redline: legalStackReview.document_stack_redline || [],
-    document_stack_synthesis: legalStackReview.document_stack_synthesis || null,
-    legal_stack_assessment: legalStackReview.legal_stack_assessment || []
-  });
-}
-
-function enrichConsolidatedFinding(finding) {
-  const docs = documentRouteFor(finding);
-  const controls = controlRouteFor(finding);
-  return {
-    ...finding,
-    finding_statement: `The reviewed evidence indicates ${finding.exposure_title} across ${finding.supporting_registry_item_count} supporting registry exposure item(s).`,
-    evidence_basis: {
-      supporting_registry_references: finding.supporting_registry_references,
-      supporting_registry_items: finding.supporting_registry_rows,
-      reviewed_evidence_references: unique(asArray(finding.supporting_registry_rows).map((row) => row.reviewed_evidence?.evidence_reference).filter(Boolean))
-    },
-    legal_significance: finding.consolidated_summary,
-    control_position: `Review the affected documents and controls for ${finding.exposure_title}. Public/admitted controls are not treated as sufficient unless reflected in the control-evidenced items or legal-stack matrix.`,
-    affected_documents_controls: {
-      affected_documents: docs,
-      affected_controls: controls
-    },
-    recommended_remediation: {
-      priority: priorityFor(finding),
-      document_route: docs,
-      control_route: controls,
-      action: `Review and update ${docs.join(", ")} and confirm ${controls.join(", ")} for ${finding.exposure_title}.`,
-      counsel_review_point: `Qualified counsel should verify whether the current legal stack and operational controls adequately address ${finding.exposure_title}.`
+  return withContract("implications_remediation_path", {
+    remediation_thesis: actions.length
+      ? "Remediation should be routed through the affected documents, data controls, operational controls, and counsel-review priorities identified below."
+      : "No open remediation route was generated from identified exposure findings on the reviewed evidence.",
+    priority_actions: actions,
+    document_route: unique(findingRows.flatMap((finding) => finding.affected_documents_or_controls)).map((document_or_control) => ({ document_or_control, required_review: `Review ${document_or_control} against linked findings and evidence gaps.` })),
+    data_control_route: asArray(stage6Review.data_provenance_profile?.data_flow_profile).map((flow) => ({
+      data_flow_id: flow.data_flow_id,
+      control_area: unique([...(flow.notice ? ["notice"] : []), ...(flow.consent_basis ? ["consent/basis"] : []), ...(flow.rights ? ["rights"] : []), ...(flow.processor_chain ? ["processor chain"] : []), ...(flow.transfer_location ? ["transfer"] : []), ...(flow.retention_deletion_ai ? ["retention/deletion"] : []), ...(flow.security_accountability ? ["security/accountability"] : [])]).join(", ") || "data control review"
+    })),
+    operational_control_route: unique(findingRows.flatMap((finding) => CONTROL_ROUTE_BY_CATEGORY[finding._category_code] || CONTROL_ROUTE_BY_CATEGORY.GEN)).map((control) => ({ control, required_review: `Confirm ${control} with product, operations, and counsel.` })),
+    local_counsel_review_queue: actions.slice(0, 10).map((action) => ({ finding_id: action.finding_id, priority: action.priority, review_point: action.action })),
+    quick_wins: actions.filter((action) => /policy|notice|disclaimer|terms|privacy|aup/i.test(action.action)).slice(0, 8),
+    blocked_until_clarified: findingRows.filter((finding) => /clarification|insufficient|unclear|not visible/i.test(`${finding.control_position} ${finding.finding_statement}`)).map((finding) => ({ finding_id: finding.finding_id, issue: finding.finding_title })),
+    review_ready_handoff_bridge: {
+      summary: "Use this report to prepare counsel review, document remediation, and client clarification requests. Do not treat it as legal advice or a finalized legal determination.",
+      local_counsel_review_required: true
     }
-  };
-}
-
-function buildExposureFindings({ consolidatedFindings, hydratedRows }) {
-  const enriched = asArray(consolidatedFindings).map(enrichConsolidatedFinding);
-  const supportingRows = asArray(hydratedRows.sorted_identified_exposures).map((item, index) => ({
-    finding_id: `FIND-${String(index + 1).padStart(3, "0")}`,
-    registry_reference: item.registry_reference,
-    exposure_title: item.exposure_title,
-    assessment_outcome: item.assessment_outcome,
-    severity: item.severity.label,
-    timing_urgency: item.timing_urgency.label,
-    legal_risk_surfaces: item.legal_risk_surfaces,
-    evidence_reference: item.reviewed_evidence.evidence_reference,
-    control_position: item.control_position,
-    commercial_deal_impact: item.commercial_deal_impact,
-    suggested_remediation_path: item.suggested_remediation_path
-  }));
-  const detailCards = asArray(hydratedRows.sorted_identified_exposures).map((item, index) => ({
-    finding_id: `FIND-${String(index + 1).padStart(3, "0")}`,
-    exposure_title: item.exposure_title,
-    registry_reference: item.registry_reference,
-    assessment_outcome: item.assessment_outcome,
-    severity: item.severity,
-    timing_urgency: item.timing_urgency,
-    use_context: item.use_context,
-    functional_profile: item.functional_profile,
-    legal_risk_surfaces: item.legal_risk_surfaces,
-    jurisdictional_references: item.jurisdictional_references,
-    why_this_applies: item.exposure_mechanism,
-    reviewed_evidence: item.reviewed_evidence,
-    control_position: item.control_position,
-    residual_exposure: item.residual_exposure,
-    legal_significance: item.legal_significance,
-    commercial_deal_impact: item.commercial_deal_impact,
-    clarification_points: item.clarification_points,
-    suggested_remediation_path: item.suggested_remediation_path,
-    counsel_review_note: item.counsel_review_note,
-    registry_basis: item.registry_basis
-  }));
-  return withContract("exposure_findings", {
-    consolidated_findings_schedule: enriched.map((finding) => ({
-      consolidated_finding_id: finding.consolidated_finding_id,
-      exposure_title: finding.exposure_title,
-      supporting_registry_item_count: finding.supporting_registry_item_count,
-      highest_severity: finding.highest_severity,
-      priority: finding.recommended_remediation.priority,
-      affected_documents: finding.affected_documents_controls.affected_documents
-    })),
-    finding_statements: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, finding_statement: finding.finding_statement })),
-    evidence_basis: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, evidence_basis: finding.evidence_basis })),
-    legal_significance: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, legal_significance: finding.legal_significance })),
-    control_position: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, control_position: finding.control_position })),
-    affected_documents_controls: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, ...finding.affected_documents_controls })),
-    commercial_deal_impact: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, commercial_deal_impact: finding.commercial_deal_impact })),
-    recommended_remediation: enriched.map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, ...finding.recommended_remediation })),
-    supporting_registry_items: supportingRows,
-    consolidated_findings: enriched,
-    consolidated_count: enriched.length,
-    supporting_registry_rows: supportingRows,
-    supporting_registry_row_count: supportingRows.length,
-    detail_cards: detailCards,
-    count: supportingRows.length
   });
 }
 
-function buildEvidenceGaps({ hydratedRows, legalStackControlReview, consolidatedFindings }) {
-  const missingDocs = missingDocuments(asArray(legalStackControlReview.document_inventory || legalStackControlReview.legal_stack));
+function buildEvidenceGaps({ companyProfile, targetFeatureProfile, stage6Review, hydratedRows }) {
+  const cartography = safeObject(stage6Review.legal_document_cartography);
+  const dataProfile = safeObject(stage6Review.data_provenance_profile);
+  const documents = asArray(cartography.legal_document_inventory);
+  const knownDocTypes = new Set(documents.map((doc) => doc.document_type));
+  const expectedDocTypes = ["tos", "privacy_policy", "dpa", "aup", "sla"];
+  const missingDocuments = expectedDocTypes.filter((docType) => !knownDocTypes.has(docType)).map((docType) => ({
+    document_type: docType,
+    reason_needed: "Core public/customer-facing document or control area should be confirmed before counsel sign-off."
+  }));
   const clarificationRows = asArray(hydratedRows.clarification_required_items);
-  const informationRequests = clarificationRows.map((item) => ({
-    request_id: `IR-${item.registry_reference}`,
-    question: asArray(item.clarification_points)[0] || `Clarify the factual and control position for ${item.exposure_title}.`,
-    why_it_matters: item.legal_significance,
-    evidence_requested: item.residual_exposure,
-    priority: item.severity?.label || "Clarification priority not specified",
-    consequence_if_unresolved: item.commercial_deal_impact,
-    linked_registry_reference: item.registry_reference
-  })).concat(missingDocs.map((doc, index) => ({
-    request_id: `IR-DOC-${String(index + 1).padStart(2, "0")}`,
-    question: `Provide or confirm the status of ${doc.document_type}.`,
-    why_it_matters: `${doc.document_type} may be required to confirm control position for one or more exposure findings.`,
-    evidence_requested: doc.requested_evidence,
-    priority: "Document/control confirmation",
-    consequence_if_unresolved: "The report cannot confirm whether the legal stack adequately addresses the related exposure families without this document/control evidence.",
-    linked_registry_reference: "Document evidence request"
-  })));
   return withContract("evidence_gaps_clarification_points", {
-    open_information_request_list: informationRequests,
-    missing_documents: missingDocs,
-    missing_factual_confirmations: clarificationRows.map((item) => ({ registry_reference: item.registry_reference, exposure_title: item.exposure_title, clarification_points: item.clarification_points })),
-    consequence_if_unresolved: informationRequests.map((item) => ({ request_id: item.request_id, consequence_if_unresolved: item.consequence_if_unresolved })),
-    clarification_required_items: clarificationRows.map((item) => ({
-      registry_reference: item.registry_reference,
-      exposure_title: item.exposure_title,
-      why_it_matters: item.legal_significance,
-      evidence_missing_or_unclear: item.residual_exposure,
-      clarification_points: item.clarification_points,
-      potential_consequence: item.commercial_deal_impact
+    open_information_requests: clarificationRows.map((item, index) => ({
+      request_id: `IR-${String(index + 1).padStart(3, "0")}`,
+      question: asArray(item.clarification_points)[0] || `Clarify whether reviewed evidence for ${item.exposure_title} is complete.`,
+      why_needed: item.residual_exposure || "Reviewed evidence did not support a conclusive assessment.",
+      affected_section: categoryLabel(categoryCodeFromReference(item.registry_reference)),
+      related_finding_ids: []
     })),
-    consolidated_findings_requiring_confirmation: consolidatedFindings.filter((finding) => documentRouteFor(finding).some((doc) => missingDocs.map((entry) => entry.document_type).includes(doc))).map((finding) => ({ consolidated_finding_id: finding.consolidated_finding_id, exposure_title: finding.exposure_title }))
+    missing_documents: missingDocuments,
+    missing_factual_confirmations: unique(asArray(companyProfile.evidence?.unresolved_questions).concat(asArray(targetFeatureProfile.evidence?.unresolved_questions))).map((question, index) => ({ confirmation_id: `FC-${String(index + 1).padStart(3, "0")}`, question })),
+    unclear_data_flows: asArray(dataProfile.data_flow_profile).filter((flow) => ["low", "unknown"].includes(flow.confidence) || JSON.stringify(flow).includes("unknown")).map((flow) => ({ data_flow_id: flow.data_flow_id, confidence: flow.confidence })),
+    unclear_provider_dependencies: asArray(targetFeatureProfile.architecture_hints).filter((hint) => ["model_provider", "subprocessor", "cloud_host", "integration"].includes(hint.hint_type) && ["low", "unknown"].includes(hint.confidence)).map((hint) => ({ hint_id: hint.hint_id, hint_type: hint.hint_type, hint_value: hint.hint_value, confidence: hint.confidence })),
+    evidence_limitations: unique(asArray(companyProfile.limitations).concat(asArray(targetFeatureProfile.limitations), asArray(stage6Review.stage6_limitations), asArray(dataProfile.data_profile_limitations), asArray(cartography.legal_document_limitations))),
+    consequence_if_unresolved: [
+      "Counsel may need to qualify advice or request additional documents before sign-off.",
+      "Document and control remediation may remain provisional until private contracts, internal controls, or client factual confirmations are reviewed."
+    ],
+    client_confirmation_questions: clarificationRows.flatMap((item) => asArray(item.clarification_points)).slice(0, 25)
   });
 }
 
 function buildMethodology({ registryRuntime }) {
   return withContract("methodology_limitations_review_notes", {
     methodology: [
-      "Reviewed admitted public and legal-stack evidence captured by the prior review workflow.",
-      "Mapped the company/product profile, product activity, legal stack, and registry assessment into the locked diligence report structure.",
-      "Grouped identified registry exposure items into client-facing exposure findings while preserving row-level proof in the forensic appendix.",
-      "Assembled Stage 9 deterministically from upstream outputs; no new model inference is used to write the report."
+      "Reviewed public or admitted evidence and upstream validated profile outputs.",
+      "Compiled target, product, data, legal-document, and exposure findings into a lawyer-readable review pack.",
+      "Converted row-level issue-spotting outcomes into human-facing categories and preserved row-level detail only in the forensic appendix."
     ],
     stage_roles: [
-      "Company/profile stage: establishes target and public-footprint context.",
-      "Product/activity stage: classifies platform functionality, surfaces, and feature evidence.",
-      "Legal-stack stage: reviews public/admitted legal documents and control signals.",
-      "Registry evaluation stage: evaluates applicable registry rows against the evidence set.",
-      "Challenge review stage: checks the registry ledger before report assembly.",
-      "Report assembly stage: deterministically assembles the diligence report, remediation route, and forensic appendix."
+      { stage: "Target Profile", role: "Identifies business, jurisdiction, market, product baseline, and source-backed profile facts." },
+      { stage: "Feature Profile", role: "Identifies product functions, data provenance, architecture hints, archetypes, surfaces, commercial outcomes, evidence, and limitations." },
+      { stage: "Data Provenance", role: "Maps data flows and data-control signals for review." },
+      { stage: "Legal Document Cartography", role: "Maps public/admitted legal documents, macro legal units, control signals, mismatches, and limitations." },
+      { stage: "Registry Evaluation", role: "Applies issue-spotting logic to validated evidence and produces row-level assessment outcomes." },
+      { stage: "Operator Challenge", role: "Checks and corrects ledger outcomes before final compilation." }
     ],
     status_definitions: STATUS_DEFINITIONS,
     legal_limitations: [
       REVIEW_READY_DISCLAIMER,
-      "This report is a legal architecture and diligence-support output, not a legal opinion.",
-      "Jurisdiction-specific legal conclusions, negotiation positions, enforceability views, and filing/implementation decisions require qualified counsel review."
+      "This output is a legal architecture and diligence-support artifact. It is not a law-firm opinion, filing, advice memorandum, or jurisdiction-specific legal determination.",
+      "Qualified counsel must review the report before reliance, negotiation, implementation, filing, or client delivery."
     ],
     evidence_limitations: [
-      "No source code, private customer contracts, data room, SOC reports, implementation evidence, internal policies, or security questionnaires were reviewed unless admitted into the evidence set.",
-      "Absence of evidence in public/admitted sources does not prove absence of an internal control.",
-      "The forensic ledger is an issue-spotting and traceability appendix for counsel review."
+      "Private contracts, internal controls, implementation records, source code, and operational evidence were not reviewed unless included in the admitted evidence set.",
+      "Absence of public evidence is not proof that a non-public control does not exist."
     ],
-    registry_version: registryRuntime?.version || "Registry version not specified",
-    counsel_review_note: REVIEW_READY_DISCLAIMER,
-    limitations: [
-      "This report is based only on admitted evidence available to the review workflow.",
-      "Absence of public or admitted evidence does not prove absence of internal controls.",
-      "Registry references are issue-spotting anchors and do not replace jurisdiction-specific legal advice.",
-      "Qualified counsel must review before reliance, negotiation, filing, implementation, or client delivery."
-    ],
-    review_method: [
-      "Reviewed admitted matter evidence and public/legal sources captured by the prior review workflow.",
-      "Mapped product/activity profile and legal risk surfaces against the Legal Exposure Registry.",
-      "Consolidated identified registry exposure items into client-facing exposure families for report readability.",
-      "Preserved a forensic ledger for counsel review."
+    registry_use_note: `An internal issue-spotting registry${registryRuntime?.version ? ` (${registryRuntime.version})` : ""} was used to structure review logic. Row-level details are preserved only in the Forensic Ledger Appendix.`,
+    reviewer_notes: [
+      "Use the main report for partner/reviewer triage and the appendix for auditability.",
+      "Use evidence gaps and clarification points to prepare follow-up requests before final legal review."
     ]
   });
 }
@@ -526,45 +604,33 @@ function buildMethodology({ registryRuntime }) {
 export function synthesizeDiligenceReportSections({
   targetName,
   primaryUrl,
-  primaryProduct,
   sourceBundle = {},
+  companyProfile = {},
   targetFeatureProfile = {},
-  legalStackReview = {},
+  stage6Review = {},
   hydratedRows = {},
-  consolidatedFindings = [],
-  surfaces = [],
   reviewedSources = [],
   stage7Artifact = {},
   stage8Ledger = {},
   registryRuntime = {},
   generatedAt = new Date().toISOString()
 } = {}) {
-  const platformLegalDiligence = buildPlatformLegalDiligence({
-    targetFeatureProfile,
-    legalStackControlReview: legalStackReview,
-    hydratedRows,
-    reviewedSources
-  });
-  const legalStackControlReview = buildLegalStackControlReview({ legalStackReview, hydratedRows, consolidatedFindings });
-  const enrichedFindings = buildExposureFindings({ consolidatedFindings, hydratedRows });
-  const remediationPath = withContract("implications_remediation_path", buildImplicationsRemediationPath({
-    consolidatedFindings: enrichedFindings.consolidated_findings,
-    controlEvidencedItems: hydratedRows.control_evidenced_items,
-    matterSensitivity: asArray(hydratedRows.identified_exposures).some((item) => item.severity?.category === "Deal / Customer Approval Risk") ? "Transaction / Customer Approval Sensitive" : "Product / Policy Review Sensitive"
-  }));
+  const findingRows = findingRowsFromHydrated({ hydratedRows, targetFeatureProfile, stage6Review });
+  const platformDiligenceObject = buildPlatformLegalDiligence({ targetFeatureProfile, stage6Review, hydratedRows, reviewedSources });
+  const forensicLedgerAppendix = withContract("forensic_ledger_appendix", buildForensicLedgerAppendix({ hydratedRows, stage7Artifact, stage8Ledger }));
 
   return {
-    matter_overview: buildMatterOverview({ targetName, primaryProduct, primaryUrl, sourceBundle, reviewedSources, registryRuntime, generatedAt }),
-    executive_exposure_summary: buildExecutiveSummary({ hydratedRows, consolidatedFindings: enrichedFindings.consolidated_findings, surfaces }),
-    evidence_reviewed: buildEvidenceReviewed({ reviewedSources, sourceBundle, legalStackReview }),
-    product_activity_profile: buildProductActivityProfile({ targetFeatureProfile, primaryProduct, platformLegalDiligence, hydratedRows }),
-    legal_risk_surface_map: buildLegalRiskSurfaceMap({ surfaces, consolidatedFindings: enrichedFindings.consolidated_findings, hydratedRows }),
-    legal_stack_control_review: legalStackControlReview,
-    exposure_findings: enrichedFindings,
-    evidence_gaps_clarification_points: buildEvidenceGaps({ hydratedRows, legalStackControlReview, consolidatedFindings: enrichedFindings.consolidated_findings }),
-    implications_remediation_path: remediationPath,
+    matter_overview: buildMatterOverview({ targetName, primaryUrl, companyProfile, sourceBundle, reviewedSources, registryRuntime, generatedAt }),
+    executive_summary: buildExecutiveSummary({ companyProfile, targetFeatureProfile, stage6Review, findingRows, reviewedSources, hydratedRows }),
+    target_profile: buildTargetProfileSection({ companyProfile }),
+    product_activity_ip_profile: buildProductActivityIpProfile({ targetFeatureProfile, companyProfile, hydratedRows }),
+    data_risk_provenance_controls: buildDataRiskProvenanceControls({ stage6Review, targetFeatureProfile, hydratedRows }),
+    legal_document_control_review: buildLegalDocumentControlReview({ stage6Review, findingRows }),
+    exposure_findings: buildExposureFindings({ findingRows }),
+    implications_remediation_path: buildImplicationsRemediationPath({ findingRows, stage6Review }),
+    evidence_gaps_clarification_points: buildEvidenceGaps({ companyProfile, targetFeatureProfile, stage6Review, hydratedRows }),
     methodology_limitations_review_notes: buildMethodology({ registryRuntime }),
-    forensic_ledger_appendix: withContract("forensic_ledger_appendix", buildForensicLedgerAppendix({ hydratedRows, stage7Artifact, stage8Ledger })),
-    platform_legal_diligence: platformLegalDiligence
+    forensic_ledger_appendix: forensicLedgerAppendix,
+    platform_diligence_object: platformDiligenceObject
   };
 }
