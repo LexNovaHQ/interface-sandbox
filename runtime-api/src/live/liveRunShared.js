@@ -111,6 +111,47 @@ export function coverage(expectedIds = [], emittedIds = []) {
   return { ok: missing.length === 0 && unexpected.length === 0 && duplicate.length === 0 && expectedIds.length === emittedIds.length, expected_count: expectedIds.length, emitted_count: emittedIds.length, missing, unexpected, duplicate: [...new Set(duplicate)] };
 }
 
+
+function sourceRecordSummary(record = {}, index = 0) {
+  const text = record?.text || {};
+  return {
+    evidence_source_id: record.evidence_source_id || record.source_record_ref || record.source_id || `SRC_${String(index + 1).padStart(3, "0")}`,
+    source_family: record.source_family || record.profile_family || record.family || "unknown",
+    url: record.url || record.source_url || null,
+    final_url: record.final_url || record.url || record.source_url || null,
+    title: record.structure?.title || record.title || record.meta_title || "",
+    word_count: text.word_count || record.word_count || 0,
+    clean_text_sha256: text.clean_text_sha256 || record.clean_text_sha256 || null,
+    coverage_status: record.quality?.coverage_status || record.coverage_status || record.status || "unknown"
+  };
+}
+
+function compactArtifactInventory(sourceBundle = {}) {
+  const explicit = asArray(sourceBundle.artifact_inventory);
+  if (explicit.length) return explicit.map(sourceRecordSummary);
+  return asArray(sourceBundle.raw_footprint?.source_records).map(sourceRecordSummary);
+}
+
+export function compactSourceBundleForOperatorChallenge(sourceBundle = {}) {
+  const records = asArray(sourceBundle.raw_footprint?.source_records);
+  return {
+    run_id: sourceBundle.run_id || null,
+    source_mode: sourceBundle.source_mode || sourceBundle.source_review?.source_mode || "runtime_discovery_capture",
+    target_input: sourceBundle.target_input || {},
+    source_review: sourceBundle.source_review || {
+      source_bundle_version: sourceBundle.source_bundle_version || null,
+      admitted_source_count: records.length,
+      full_text_available_upstream: true,
+      operator_challenge_text_policy: "full_text_stripped_stage8_uses_stage7_ledger_and_stage6_canonical_indexes"
+    },
+    artifact_inventory: compactArtifactInventory(sourceBundle),
+    evidence_buffer: records.map(sourceRecordSummary),
+    limitations: [
+      ...asArray(sourceBundle.limitations),
+      "Stage 8 receives source identity metadata only; full admitted text remains upstream in Stage 6 and Stage 7 artifacts to avoid quota exhaustion."
+    ]
+  };
+}
 export function compactRegistryLogicReference(registryRows) {
   return registryRows.map((row, index) => ({
     entry_number: index + 1,

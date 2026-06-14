@@ -16,6 +16,7 @@ import { renderLegalExposureReport } from "../report-renderer/legalExposureRepor
 import { assembleStage10VaultHandoff } from "../handoff/stage9ToVaultHandoffAdapter.js";
 import { validateReviewReadyHandoff } from "../handoff/reviewReadyHandoffValidator.js";
 import { appendReviewerDocumentSource, buildDocumentOnlySourceBundle, hasReviewerDocumentText } from "./reviewerDocumentSourceAdapter.js";
+import { compactSourceBundleForOperatorChallenge } from "./liveRunShared.js";
 
 const SOURCE_BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
 const VALID_STATUSES = new Set(["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"]);
@@ -542,7 +543,7 @@ async function runStage8({ stage6Cache, stage7Artifact, registryRuntime, logs, r
     registry_count_evaluated: mergedLedger.length,
     registry_evaluation_ledger: mergedLedger,
     registry_batch_meta: { run_id: stage7Artifact.run_id || runId, batch_id: "MERGED", is_merged_ledger: true, test_run: false, registry_count_loaded: registryTotal, registry_total_count: registryTotal, registry_count_evaluated: mergedLedger.length, stage7_artifact_type: stage7Artifact.artifact_type || null },
-    source_bundle: stage6Cache.source_bundle,
+    source_bundle: compactSourceBundleForOperatorChallenge(stage6Cache.source_bundle),
     target_profile: stage6Cache.company_profile,
     target_feature_profile: stage6Cache.target_feature_profile,
     stage6_review: stage6Cache.stage6_review,

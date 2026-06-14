@@ -4,7 +4,21 @@ import { buildPriorityRowPlan, mergePriorityRows, validatePriorityMerge } from "
 import { validateStage6ReviewGuardrail } from "../diligence/guardrails/stage6ReviewGuardrail.js";
 import { buildStage6IntegratedHandoffArtifact } from "../diligence/stage6IntegratedHandoffBuilder.js";
 import { validateDiligenceStageOutput } from "../diligence/stageSchemaValidator.js";
-import { applyCorrections, asArray, compactRegistryLogicReference, countsByStatus, coverage, logStage, makeBatch, normalizeRegistryRow, nowIso, registryThreatId, threatId, validateChallengeOutput } from "./liveRunShared.js";
+import {
+  applyCorrections,
+  asArray,
+  compactRegistryLogicReference,
+  compactSourceBundleForOperatorChallenge,
+  countsByStatus,
+  coverage,
+  logStage,
+  makeBatch,
+  normalizeRegistryRow,
+  nowIso,
+  registryThreatId,
+  threatId,
+  validateChallengeOutput
+} from "./liveRunShared.js";
 
 export async function runStage(stageId, input, options = {}) {
   const result = await runDiligenceStage({ stageId, input, options, env: process.env });
@@ -115,7 +129,22 @@ export async function runStage8({ stage6Cache, stage7Artifact, registryRuntime, 
   const registryRows = asArray(registryRuntime?.threats);
   const expectedIds = registryRows.length ? registryRows.map(registryThreatId) : mergedLedger.map(threatId);
   const registryTotal = expectedIds.length || Number(stage7Artifact.source_row_count || mergedLedger.length);
-  const stage8Input = { run_id: runId, registry_count_loaded: registryTotal, registry_total_count: registryTotal, registry_count_evaluated: mergedLedger.length, registry_evaluation_ledger: mergedLedger, registry_batch_meta: { run_id: stage7Artifact.run_id || runId, batch_id: "MERGED", is_merged_ledger: true, test_run: false, registry_count_loaded: registryTotal, registry_total_count: registryTotal, registry_count_evaluated: mergedLedger.length, stage7_artifact_type: stage7Artifact.artifact_type || null }, source_bundle: stage6Cache.source_bundle, target_profile: stage6Cache.company_profile, target_feature_profile: stage6Cache.target_feature_profile, stage6_review: stage6Cache.stage6_review, stage6_to_stage7_adapter: stage6Cache.stage6_to_stage7_adapter, registry_logic_reference: compactRegistryLogicReference(registryRows), prior_stage_summaries: { stage7_summary: stage7Artifact.summary || null, active_archetypes: stage7Artifact.active_archetypes || [], active_surfaces: stage7Artifact.active_surfaces || [] }, test_run: false };
+  const stage8Input = {
+    run_id: runId,
+    registry_count_loaded: registryTotal,
+    registry_total_count: registryTotal,
+    registry_count_evaluated: mergedLedger.length,
+    registry_evaluation_ledger: mergedLedger,
+    registry_batch_meta: { run_id: stage7Artifact.run_id || runId, batch_id: "MERGED", is_merged_ledger: true, test_run: false, registry_count_loaded: registryTotal, registry_total_count: registryTotal, registry_count_evaluated: mergedLedger.length, stage7_artifact_type: stage7Artifact.artifact_type || null },
+    source_bundle: compactSourceBundleForOperatorChallenge(stage6Cache.source_bundle),
+    target_profile: stage6Cache.company_profile,
+    target_feature_profile: stage6Cache.target_feature_profile,
+    stage6_review: stage6Cache.stage6_review,
+    stage6_to_stage7_adapter: stage6Cache.stage6_to_stage7_adapter,
+    registry_logic_reference: compactRegistryLogicReference(registryRows),
+    prior_stage_summaries: { stage7_summary: stage7Artifact.summary || null, active_archetypes: stage7Artifact.active_archetypes || [], active_surfaces: stage7Artifact.active_surfaces || [], stage8_input_policy: "compact_source_metadata_stage6_canonical_indexes_full_ledger" },
+    test_run: false
+  };
   const result = await runStage("operator_challenge", stage8Input, { pool: process.env.LIVE_STAGE8_POOL || process.env.STAGE8_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_STAGE8_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_STAGE8_TIMEOUT_MS || 120000) });
   const challengeOutput = result.operator_challenge;
   if (!challengeOutput) throw new Error("Stage 8 returned no operator_challenge output.");

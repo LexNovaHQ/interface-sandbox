@@ -62,6 +62,8 @@ corrected_ledger_entries[]
 
 You must inspect whether Stage 7 correctly applied the Hunter Logic Gate.
 
+At Stage 8, `source_bundle` is a compact source-identity bundle. It may include source review, artifact inventory, evidence-buffer metadata, hashes, titles, URLs, and limitations, but it must not be treated as a full-text source corpus. Full admitted source text remains upstream. Use the merged Stage 7 ledger, Stage 6 canonical review indexes, the Stage 6 to Stage 7 adapter, target profiles, and compact source identity metadata only.
+
 You must not browse, search, fetch, crawl, click, open URLs, inspect websites, or retrieve additional content.
 
 You must not use prior model memory, third-party summaries, investor descriptions, press material, search snippets, or assumptions from company category.
@@ -138,6 +140,8 @@ source_bundle.artifact_inventory[]
 source_bundle.evidence_buffer[]
 source_bundle.limitations[]
 ```
+
+`source_bundle.evidence_buffer[]` and `source_bundle.artifact_inventory[]` are identity and provenance metadata at this stage. Do not expect full clean text, page bodies, extracted terms, or source-record payloads inside Stage 8 input. If a correction cannot be safely produced from the merged Stage 7 ledger plus Stage 6 canonical indexes and compact source metadata, fail safely with `FAIL_RETRY_REQUIRED` instead of inventing evidence.
 
 Expected useful fields inside `target_feature_profile` include:
 
