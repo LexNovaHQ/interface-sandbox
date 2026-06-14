@@ -95,8 +95,10 @@ export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
       if (legacyStage6BasisRepaired) warn(warnings, `${cBase}/basis`, "legacy Stage 6 basis prefix repaired to TRUE_STAGE6_REVIEW", { repaired_from: "legacy_stage6_review_prefix" });
       if (String(condition.basis || "").startsWith(LEGACY_STAGE6_REVIEW_PREFIX)) push(errors, `${cBase}/basis`, "legacy Stage 6 basis prefix remained after deterministic repair");
       const basis = String(condition.basis || "");
-      const goodPrefix = condition.result ? TRUE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix)) : FALSE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix));
-      if (!goodPrefix) push(errors, `${cBase}/basis`, "condition.basis must start with the required TRUE_/FALSE_ diagnostic prefix", { basis });
+      const canonicalPrefix = condition.result ? TRUE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix)) : FALSE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix));
+      const directionalPrefix = condition.result ? /^TRUE_[A-Z0-9_]+\s*:/i.test(basis) : /^FALSE_[A-Z0-9_]+\s*:/i.test(basis);
+      if (!canonicalPrefix && directionalPrefix) warn(warnings, `${cBase}/basis`, "noncanonical diagnostic prefix passed as warning because TRUE/FALSE direction matches condition.result", { basis });
+      if (!canonicalPrefix && !directionalPrefix) push(errors, `${cBase}/basis`, "condition.basis must start with the required TRUE_/FALSE_ diagnostic prefix", { basis });
     });
     if (typeof entry.trigger_if_result !== "boolean") push(errors, `${base}/trigger_if_result`, "trigger_if_result must be boolean");
     if (typeof entry.exclude_if_result !== "boolean") push(errors, `${base}/exclude_if_result`, "exclude_if_result must be boolean");
