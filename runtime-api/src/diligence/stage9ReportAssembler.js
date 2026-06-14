@@ -7,6 +7,45 @@ const asText = (value, fallback = "") => String(value ?? "").trim() || fallback;
 const safeObject = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : {};
 const unique = (values = []) => [...new Set(values.map((value) => asText(value)).filter(Boolean))];
 
+const VISIBLE_INTERNAL_KEY_REWRITES = Object.freeze({
+  threat_id: "appendix_row_reference",
+  Threat_ID: "appendix_row_reference",
+  registry_reference: "appendix_row_reference",
+  entry_number: "appendix_row_number",
+  trigger_if_result: "finding_threshold_outcome",
+  exclude_if_result: "control_exclusion_outcome",
+  condition_trigger_basis: "condition_basis",
+  raw_registry_payload: "appendix_only_detail"
+});
+
+const VISIBLE_INTERNAL_TEXT_REPLACEMENTS = Object.freeze([
+  [/\bthreat_id\b/g, "appendix row reference"],
+  [/\bThreat_ID\b/g, "appendix row reference"],
+  [/\bregistry_reference\b/g, "appendix row reference"],
+  [/\bentry_number\b/g, "appendix row number"],
+  [/\btrigger_if_result\b/g, "finding threshold outcome"],
+  [/\bexclude_if_result\b/g, "control exclusion outcome"],
+  [/\bcondition_trigger_basis\b/g, "condition basis"],
+  [/\braw_registry_payload\b/g, "appendix-only detail"]
+]);
+
+function scrubVisibleText(value) {
+  let text = String(value ?? "");
+  for (const [pattern, replacement] of VISIBLE_INTERNAL_TEXT_REPLACEMENTS) text = text.replace(pattern, replacement);
+  return text;
+}
+
+function scrubVisibleSection(value) {
+  if (Array.isArray(value)) return value.map((item) => scrubVisibleSection(item));
+  if (!value || typeof value !== "object") return typeof value === "string" ? scrubVisibleText(value) : value;
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    const safeKey = VISIBLE_INTERNAL_KEY_REWRITES[key] || key;
+    out[safeKey] = scrubVisibleSection(child);
+  }
+  return out;
+}
+
 function targetName({ companyProfile = {}, targetFeatureProfile = {}, sourceBundle = {} }) {
   const identity = safeObject(companyProfile.identity);
   const targetRef = safeObject(targetFeatureProfile.target_profile_ref);
@@ -74,7 +113,10 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
     registryRuntime,
     generatedAt
   });
-  for (const key of REPORT_SECTION_KEYS) report.report_data[key] = makeSection(key, sections[key]);
+  for (const key of REPORT_SECTION_KEYS) {
+    const sectionBody = key === "forensic_ledger_appendix" ? sections[key] : scrubVisibleSection(sections[key]);
+    report.report_data[key] = makeSection(key, sectionBody);
+  }
   return {
     artifact_type: "stage9_legal_exposure_report_data_v2",
     stage9_report_version: "stage9_report_v2",
