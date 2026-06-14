@@ -1,6 +1,27 @@
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 
+const STAGE7_ROUTE_CONTRACT_RULES = `
+
+---STAGE_7_DETERMINISTIC_ROUTE_CONTRACT_RULES---
+
+Runtime-applicable rows are rows whose route_reason is UNI_ALWAYS_RUN, STAGE5_INT_TRIGGERED, or CONDITIONAL_DOC_REVIEW.
+
+Runtime-applicable rows must not receive NOT_APPLICABLE.
+
+For runtime-applicable rows, the only allowed final_status values are CONTROLLED, TRIGGERED, NOT_TRIGGERED, and INSUFFICIENT_EVIDENCE.
+
+Only deterministic skipped rows whose route_reason is INT_NOT_TRIGGERED may receive NOT_APPLICABLE.
+
+The model must not decide whether an archetype applies. Applicability is decided by Stage 5 and the deterministic Stage 7 planner before the model runs.
+
+CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route.
+
+If evidence is thin for a runtime-applicable row, use INSUFFICIENT_EVIDENCE, not NOT_APPLICABLE.
+
+If a runtime-applicable row does not trigger after Hunter_Trigger evaluation, use NOT_TRIGGERED, not NOT_APPLICABLE.
+`;
+
 const REGISTRY_HUNTER_ENGINE_RULES = `
 
 ---MANDATORY_HUNTER_ENGINE_RULES---
@@ -17,11 +38,11 @@ HER_002 — Controlled Evidence Output Rule
 Evaluate CONDITION_N and TRIGGER_IF first, then apply EXCLUDE_IF. If EXCLUDE_IF evidence is present in first-party materials, output CONTROLLED when TRIGGER_IF is true and EXCLUDE_IF is true. Output NOT_TRIGGERED when TRIGGER_IF is false. Do not output TRIGGERED merely because a risk surface exists. Do not output a TRUE_GAP-style basis where first-party control evidence defeats the row-specific trigger.
 
 Mandatory evaluation order for each row:
-1. Evaluate lane, archetype, and surface gates.
+1. Read the supplied stage7_route_contract for the row. Do not decide applicability yourself.
 2. Evaluate each CONDITION_N from the row's Hunter_Trigger.
 3. Evaluate TRIGGER_IF from the condition booleans.
 4. Evaluate EXCLUDE_IF using HER_001 and HER_001B.
-5. Assign final_status using HER_002 and the five-state contract.
+5. Assign final_status using HER_002 and the STAGE_7_DETERMINISTIC_ROUTE_CONTRACT_RULES above.
 
 Do not treat generic legal-stack existence as control. Do not ignore first-party controls that directly satisfy the row-specific EXCLUDE_IF. Do not trigger from surface alone.
 `;
@@ -107,7 +128,7 @@ function runtimePromptAppendixFor(stageId) {
   const stage6Spine = getPromptIfAvailable("stage6_canonical_spine");
   if (stageId === "stage6a_legal_document_cartography" && stage6Spine?.text) parts.push(`\n\n---DILIGENCE_STAGE_6_CANONICAL_SPINE---\n\n${stage6Spine.text.trim()}`);
   if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES);
-  if (stageId === "registry_ledger_evaluation") parts.push(REGISTRY_HUNTER_ENGINE_RULES);
+  if (stageId === "registry_ledger_evaluation") parts.push(STAGE7_ROUTE_CONTRACT_RULES, REGISTRY_HUNTER_ENGINE_RULES);
   return parts.join("");
 }
 
@@ -128,17 +149,7 @@ export function loadDiligencePrompt(stageId) {
   const canonicalDictionary = getPromptIfAvailable(canonicalPromptId);
   const legacyPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
   const legacyDictionary = getPromptIfAvailable(legacyPromptId);
-  return {
-    stage_id: normalizedStageId,
-    prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
-    bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
-    shared_prompt: { prompt_id: sharedPrompt.prompt_id, file_name: sharedPrompt.file_name, path: sharedPrompt.path, sha256: sharedPrompt.sha256, characters: sharedPrompt.characters },
-    stage_prompt: { prompt_id: stagePrompt.prompt_id, file_name: stagePrompt.file_name, path: stagePrompt.path, sha256: stagePrompt.sha256, characters: stagePrompt.characters },
-    canon_field_dictionary: canonicalDictionary ? { prompt_id: canonicalDictionary.prompt_id, file_name: canonicalDictionary.file_name, path: canonicalDictionary.path, sha256: canonicalDictionary.sha256, characters: canonicalDictionary.characters } : null,
-    legacy_stage4_stage5_field_dictionary: legacyDictionary ? { prompt_id: legacyDictionary.prompt_id, file_name: legacyDictionary.file_name, path: legacyDictionary.path, sha256: legacyDictionary.sha256, characters: legacyDictionary.characters } : null,
-    combined_prompt: combinedPrompt,
-    combined_characters: combinedPrompt.length
-  };
+  return { stage_id: normalizedStageId, prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root, bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at, shared_prompt: { prompt_id: sharedPrompt.prompt_id, file_name: sharedPrompt.file_name, path: sharedPrompt.path, sha256: sharedPrompt.sha256, characters: sharedPrompt.characters }, stage_prompt: { prompt_id: stagePrompt.prompt_id, file_name: stagePrompt.file_name, path: stagePrompt.path, sha256: stagePrompt.sha256, characters: stagePrompt.characters }, canon_field_dictionary: canonicalDictionary ? { prompt_id: canonicalDictionary.prompt_id, file_name: canonicalDictionary.file_name, path: canonicalDictionary.path, sha256: canonicalDictionary.sha256, characters: canonicalDictionary.characters } : null, legacy_stage4_stage5_field_dictionary: legacyDictionary ? { prompt_id: legacyDictionary.prompt_id, file_name: legacyDictionary.file_name, path: legacyDictionary.path, sha256: legacyDictionary.sha256, characters: legacyDictionary.characters } : null, combined_prompt: combinedPrompt, combined_characters: combinedPrompt.length };
 }
 
 export function assertDiligencePromptBundleReady() {
