@@ -1,0 +1,2 @@
+Stage 6 live audit recommit marker.
+Semantic model must remain active for 6A and 6B audits.
