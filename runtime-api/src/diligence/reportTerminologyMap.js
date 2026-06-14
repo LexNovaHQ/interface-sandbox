@@ -24,11 +24,11 @@ export const STATUS_SORT_ORDER = Object.freeze({
 });
 
 export const PAIN_TIER_LABELS = Object.freeze({
-  T1: "T1 — Material Business Risk",
-  T2: "T2 — Financial Exposure",
-  T3: "T3 — Deal / Customer Approval Risk",
-  T4: "T4 — Regulatory Scrutiny",
-  T5: "T5 — Operational / Contracting Friction"
+  T1: "Critical business-continuity / prohibited-risk issue",
+  T2: "Material financial or customer-approval risk",
+  T3: "Deal-blocking / customer approval risk",
+  T4: "Regulatory remediation / enforcement attention",
+  T5: "Governance friction / monitoring item"
 });
 
 export const VELOCITY_LABELS = Object.freeze({
@@ -46,19 +46,19 @@ export const LANE_LABELS = Object.freeze({
 });
 
 export const COLUMN_LABELS = Object.freeze({
-  Threat_ID: "Registry Reference",
+  Threat_ID: "Registry Row ID",
   Threat_Name: "Exposure Title",
   Lane: "Use Context",
-  Archetype: "Functional Profile",
+  Archetype: "Triggering AI Function",
   Surface: "Legal Risk Surface",
   Authority_IN: "India Jurisdictional Reference",
   Authority_EU: "EU / UK Jurisdictional Reference",
   Authority_US: "US Jurisdictional Reference",
   Velocity: "Timing / Urgency",
-  Pain_Tier: "Severity Tier",
+  Pain_Tier: "Raw Severity Tier",
   Pain_Category: "Exposure Category",
   Pain_Depth: "Exposure Depth",
-  Status: "Registry Status",
+  Status: "Raw Registry Status",
   Effective_Date: "Effective / Review Date",
   Legal_Pain: "Legal Significance",
   FP_Mechanism: "Exposure Mechanism",
