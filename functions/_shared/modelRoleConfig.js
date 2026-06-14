@@ -9,7 +9,7 @@ const STAGE_ROLE_MAP = Object.freeze({
   ai_smoke_test: MODEL_ROLES.JSON,
   evidence_refiner: MODEL_ROLES.JSON,
   target_feature_profile: MODEL_ROLES.JSON,
-  legal_stack_review: MODEL_ROLES.JSON,
+  stage6_integrated_handoff: MODEL_ROLES.JSON,
   registry_ledger: MODEL_ROLES.JSON,
   registry_ledger_evaluation: MODEL_ROLES.JSON,
   operator_challenge: MODEL_ROLES.REASONING,

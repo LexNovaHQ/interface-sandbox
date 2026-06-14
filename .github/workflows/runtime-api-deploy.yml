@@ -10,7 +10,6 @@ on:
         type: choice
         options:
           - deploy
-          - stage4-stage5-audit
       runtime_url:
         description: "Existing runtime URL for audit mode"
         required: false
@@ -261,48 +260,3 @@ jobs:
       - name: Print deployed runtime URL
         run: |
           echo "Deployed runtime URL: ${{ steps.runtime.outputs.url }}"
-
-  stage4-stage5-audit:
-    name: Stage 4 + Stage 5 runtime audit
-    needs: check
-    if: inputs.mode == 'stage4-stage5-audit'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Build runtime bundles
-        run: npm run build:runtime
-
-      - name: Package generated bundles for runtime-api
-        run: |
-          set -euo pipefail
-          mkdir -p runtime-api/functions/_generated
-          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
-          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
-          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
-          test -s runtime-api/functions/_generated/diligencePromptBundle.js
-          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
-          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
-
-      - name: Install runtime dependencies
-        working-directory: runtime-api
-        run: npm install
-
-      - name: Clear runtime E2E cache
-        run: rm -rf runtime-api/.runtime-e2e-cache && mkdir -p runtime-api/.runtime-e2e-cache
-
-      - name: Smoke existing runtime
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-        run: npm run smoke:runtime

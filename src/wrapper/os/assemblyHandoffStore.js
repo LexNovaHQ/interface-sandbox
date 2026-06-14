@@ -137,10 +137,10 @@ export async function pushLiveResultToAssembly(liveResult = {}, inputContext = {
     stage9_report_data: pending.stage9_report_data,
     html_report: pending.html_report,
     vault_payload: null,
-    document_stack: {
+    legal_documents: {
       status: "PENDING_VAULT_CONFIRMATION",
       route: pending.assembly_handoff?.assembly_route_recommendation || {},
-      document_stack_status: pending.assembly_handoff?.document_stack_status || []
+      legal_document_status: pending.assembly_handoff?.legal_document_status || pending.assembly_handoff?.document_stack_status || []
     },
     delivery: {
       status: "NOT_READY"

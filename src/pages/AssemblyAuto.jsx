@@ -57,7 +57,7 @@ const VAULT_FIELD_GROUPS = [
   {
     key: "archetypes",
     title: "Module 3 — AI Archetypes",
-    sub: "Product behavior flags that route to legal issue families and document-stack controls.",
+    sub: "Product behavior flags that route to legal issue families and legal document controls.",
     fields: [
       { path: "archetypes.is_doer", label: "The Doer — takes autonomous action", type: "checkbox" },
       { path: "archetypes.is_orchestrator", label: "The Orchestrator — manages agents", type: "checkbox" },
@@ -376,7 +376,7 @@ function AssemblyReview({ pending }) {
         html_report: pending?.html_report || "",
         vault_payload: vaultPayload,
         reviewer_supplementary_answers: supplementaryAnswers,
-        document_stack: { status: "PENDING_DOCUMENT_ASSEMBLY", route: assemblyHandoff?.assembly_route_recommendation || {}, document_stack_status: assemblyHandoff?.document_stack_status || [] },
+        legal_documents: { status: "PENDING_DOCUMENT_ASSEMBLY", route: assemblyHandoff?.assembly_route_recommendation || {}, legal_document_status: assemblyHandoff?.legal_document_status || assemblyHandoff?.document_stack_status || [] },
         delivery: { status: "NOT_READY" },
         maintenance: { status: "NOT_STARTED" },
         pending_handoff_id: pending?.pending_handoff_id || null

@@ -211,10 +211,10 @@ function VaultReviewWorkbench({ handoffEnvelope, assemblyHandoff }) {
         handoff_envelope: handoffEnvelope,
         assembly_handoff: assemblyHandoff,
         vault_payload: payload,
-        document_stack: {
+        legal_documents: {
           status: "PENDING_DOCUMENT_ASSEMBLY",
           route: assemblyHandoff?.assembly_route_recommendation || {},
-          document_stack_status: assemblyHandoff?.document_stack_status || []
+          legal_document_status: assemblyHandoff?.legal_document_status || assemblyHandoff?.document_stack_status || []
         },
         delivery: {
           status: "NOT_READY"
