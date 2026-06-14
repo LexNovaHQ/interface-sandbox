@@ -1,6 +1,7 @@
 import { makeReportShell, makeSection, REPORT_SECTION_KEYS } from "./reportSectionContract.js";
 import { hydrateRegistryReportRows, statusCounts } from "./reportRegistryHydrator.js";
 import { synthesizeDiligenceReportSections } from "./reportDiligenceSynthesizer.js";
+import { applyLockedStage9ReportArchitecture } from "./stage9LockedReportMapper.js";
 
 const asArray = (value) => Array.isArray(value) ? value : [];
 const asText = (value, fallback = "") => String(value ?? "").trim() || fallback;
@@ -26,7 +27,10 @@ const VISIBLE_INTERNAL_TEXT_REPLACEMENTS = Object.freeze([
   [/\btrigger_if_result\b/g, "finding threshold outcome"],
   [/\bexclude_if_result\b/g, "control exclusion outcome"],
   [/\bcondition_trigger_basis\b/g, "condition basis"],
-  [/\braw_registry_payload\b/g, "appendix-only detail"]
+  [/\braw_registry_payload\b/g, "appendix-only detail"],
+  [/\bRegistry Evaluation\b/g, "Issue-Spotting Review"],
+  [/\bOperator Challenge\b/g, "Quality Review"],
+  [/\bHunter Trigger\b/g, "Applicability Basis"]
 ]);
 
 function scrubVisibleText(value) {
@@ -88,7 +92,7 @@ function reviewedSources({ sourceBundle = {}, targetFeatureProfile = {}, stage6R
   });
 }
 
-export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, registryRuntime }) {
+export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, stage8Export = {}, registryRuntime }) {
   const generatedAt = new Date().toISOString();
   const sourceBundle = stage6Cache?.source_bundle || {};
   const evidenceJunction = stage6Cache?.evidence_junction || {};
@@ -99,7 +103,7 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
   const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger });
   const reviewed = reviewedSources({ sourceBundle, targetFeatureProfile, stage6Review });
   const report = makeReportShell({ generated_at: generatedAt });
-  const sections = synthesizeDiligenceReportSections({
+  const synthesizedSections = synthesizeDiligenceReportSections({
     targetName: targetName({ companyProfile, targetFeatureProfile, sourceBundle }),
     primaryUrl: primaryUrl({ sourceBundle, evidenceJunction, stage7Artifact, stage8Ledger }),
     sourceBundle,
@@ -112,6 +116,16 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
     stage8Ledger,
     registryRuntime,
     generatedAt
+  });
+  const sections = applyLockedStage9ReportArchitecture({
+    sections: synthesizedSections,
+    stage6Cache,
+    stage7Artifact,
+    stage8Ledger,
+    stage8Export,
+    registryRuntime,
+    hydratedRows,
+    reviewedSources: reviewed
   });
   for (const key of REPORT_SECTION_KEYS) {
     const sectionBody = key === "forensic_ledger_appendix" ? sections[key] : scrubVisibleSection(sections[key]);
@@ -127,6 +141,7 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
     source_meta: {
       stage7_artifact_type: stage7Artifact?.artifact_type || null,
       stage8_artifact_type: stage8Ledger?.artifact_type || null,
+      stage8_export_artifact_type: stage8Export?.artifact_type || null,
       registry_version: registryRuntime?.version || null,
       source_bundle_version: sourceBundle?.source_bundle_version || sourceBundle?.schema_version || null,
       stage6_review_version: stage6Review?.stage6_review_version || null,
@@ -142,7 +157,15 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
       legal_documents: asArray(stage6Review.legal_document_cartography?.legal_document_inventory).length,
       data_flows: asArray(stage6Review.data_provenance_profile?.data_flow_profile).length,
       feature_count: asArray(targetFeatureProfile.feature_inventory).length,
-      reviewed_source_families: unique(reviewed.map((source) => source.source_type))
+      reviewed_source_families: unique(reviewed.map((source) => source.source_type)),
+      appendices: {
+        evidence_source_index: report.report_data.forensic_ledger_appendix?.appendix_a_evidence_source_index?.length || 0,
+        feature_ledger: report.report_data.forensic_ledger_appendix?.appendix_b_feature_ledger?.length || 0,
+        data_provenance_ledger: report.report_data.forensic_ledger_appendix?.appendix_c_data_provenance_ledger?.length || 0,
+        legal_control_ledger: report.report_data.forensic_ledger_appendix?.appendix_d_legal_control_ledger?.length || 0,
+        exposure_forensic_ledger: report.report_data.forensic_ledger_appendix?.appendix_e_exposure_forensic_ledger?.length || 0,
+        quality_review_trace: report.report_data.forensic_ledger_appendix?.appendix_f_quality_review_trace?.length || 0
+      }
     }
   };
 }
