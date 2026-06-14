@@ -4,65 +4,22 @@ import { buildPriorityRowPlan, mergePriorityRows, validatePriorityMerge } from "
 import { validateStage6ReviewGuardrail } from "../diligence/guardrails/stage6ReviewGuardrail.js";
 import { buildStage6IntegratedHandoffArtifact } from "../diligence/stage6IntegratedHandoffBuilder.js";
 import { validateDiligenceStageOutput } from "../diligence/stageSchemaValidator.js";
-import {
-  applyCorrections,
-  asArray,
-  compactRegistryLogicReference,
-  countsByStatus,
-  coverage,
-  logStage,
-  makeBatch,
-  normalizeRegistryRow,
-  nowIso,
-  registryThreatId,
-  threatId,
-  validateChallengeOutput
-} from "./liveRunShared.js";
+import { applyCorrections, asArray, compactRegistryLogicReference, countsByStatus, coverage, logStage, makeBatch, normalizeRegistryRow, nowIso, registryThreatId, threatId, validateChallengeOutput } from "./liveRunShared.js";
 
 export async function runStage(stageId, input, options = {}) {
   const result = await runDiligenceStage({ stageId, input, options, env: process.env });
-  if (!result.ok) {
-    const error = new Error(result.error || `${stageId} failed`);
-    error.result = result;
-    error.status = result.status || 500;
-    throw error;
-  }
+  if (!result.ok) { const error = new Error(result.error || `${stageId} failed`); error.result = result; error.status = result.status || 500; throw error; }
   return result;
 }
-
-function buildStage6Input({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, runId }) {
-  return {
-    stage6_input_version: "stage6_live_input_v1",
-    run_id: `${runId}_stage6_input`,
-    source_bundle: sourceBundle,
-    evidence_junction: evidenceJunction,
-    company_profile: companyProfile,
-    target_profile: companyProfile,
-    target_feature_profile: targetFeatureProfile
-  };
-}
-
-function compactValidationErrors(errors = []) {
-  return asArray(errors).map((error) => `${error?.instancePath || "/"}: ${error?.message || error?.code || error?.keyword || "validation error"}`).join("; ");
-}
-
-function throwStage6IntegratedValidationError({ message, result }) {
-  const error = new Error(message);
-  error.status = 422;
-  error.result = result;
-  throw error;
-}
-
+function buildStage6Input({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, runId }) { return { stage6_input_version: "stage6_live_input_v1", run_id: `${runId}_stage6_input`, source_bundle: sourceBundle, evidence_junction: evidenceJunction, company_profile: companyProfile, target_profile: companyProfile, target_feature_profile: targetFeatureProfile }; }
+function compactValidationErrors(errors = []) { return asArray(errors).map((error) => `${error?.instancePath || "/"}: ${error?.message || error?.code || error?.keyword || "validation error"}`).join("; "); }
+function throwStage6IntegratedValidationError({ message, result }) { const error = new Error(message); error.status = 422; error.result = result; throw error; }
 function validateStage6IntegratedArtifact({ stage6IntegratedArtifact, stage6Input, stage6aStageResult, stage6bStageResult }) {
   const stage6Review = stage6IntegratedArtifact?.stage6_review;
   const schemaValidation = validateDiligenceStageOutput("stage6Review", stage6Review);
-  if (!schemaValidation.ok) {
-    throwStage6IntegratedValidationError({ message: `Stage 6 integrated handoff failed schema validation: ${compactValidationErrors(schemaValidation.errors)}`, result: { ok: false, status: 422, stage_id: "stage6_integrated_handoff", error_type: "STAGE6_INTEGRATED_SCHEMA_VALIDATION_ERROR", validation: schemaValidation, stage6_review: stage6Review || null } });
-  }
+  if (!schemaValidation.ok) throwStage6IntegratedValidationError({ message: `Stage 6 integrated handoff failed schema validation: ${compactValidationErrors(schemaValidation.errors)}`, result: { ok: false, status: 422, stage_id: "stage6_integrated_handoff", error_type: "STAGE6_INTEGRATED_SCHEMA_VALIDATION_ERROR", validation: schemaValidation, stage6_review: stage6Review || null } });
   const guardrail = validateStage6ReviewGuardrail(stage6Review, { input: stage6Input, stageId: "stage6_integrated_handoff", semanticModelAttempted: stage6aStageResult?.semantic_model_attempted === true || stage6bStageResult?.semantic_model_attempted === true });
-  if (!guardrail.ok) {
-    throwStage6IntegratedValidationError({ message: `Stage 6 integrated handoff failed canonical guardrail validation: ${compactValidationErrors(guardrail.critical || guardrail.errors)}`, result: { ok: false, status: 422, stage_id: "stage6_integrated_handoff", error_type: "STAGE6_INTEGRATED_GUARDRAIL_VALIDATION_ERROR", validation: schemaValidation, stage6_guardrail: guardrail, stage6_review: stage6Review } });
-  }
+  if (!guardrail.ok) throwStage6IntegratedValidationError({ message: `Stage 6 integrated handoff failed canonical guardrail validation: ${compactValidationErrors(guardrail.critical || guardrail.errors)}`, result: { ok: false, status: 422, stage_id: "stage6_integrated_handoff", error_type: "STAGE6_INTEGRATED_GUARDRAIL_VALIDATION_ERROR", validation: schemaValidation, stage6_guardrail: guardrail, stage6_review: stage6Review } });
   return { schemaValidation, guardrail };
 }
 
@@ -80,9 +37,39 @@ export async function runStage6Live({ sourceBundle, evidenceJunction, companyPro
   logStage(logs, "stage6_integrated_handoff", "complete", { feature_to_data_flow_index_count: stage6IntegratedArtifact.stage6_review?.stage7_navigation_index?.feature_to_data_flow_index?.length || 0, feature_to_legal_unit_index_count: stage6IntegratedArtifact.stage6_review?.stage7_navigation_index?.feature_to_legal_unit_index?.length || 0, validation_mode: integratedValidation.schemaValidation.validation_mode, guardrail_validation_mode: integratedValidation.guardrail.validation_mode, guardrail_warning_count: integratedValidation.guardrail.warnings?.length || 0, guardrail_repair_count: integratedValidation.guardrail.repairs?.length || 0 });
   return { stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact, stage6IntegratedValidation: integratedValidation };
 }
+export function buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact, stage6IntegratedValidation = null }) { return { cache_version: "stage6_integrated_handoff_live_cache_v1", generated_at: nowIso(), source_bundle: sourceBundle, evidence_junction: evidenceJunction, company_profile: companyProfile, target_feature_profile: targetFeatureProfile, stage6a_stage_result: stage6aStageResult, stage6b_stage_result: stage6bStageResult, stage6_integrated_artifact: stage6IntegratedArtifact, stage6_integrated_validation: stage6IntegratedValidation, stage6_review: stage6IntegratedArtifact.stage6_review, stage6_to_stage7_adapter: stage6IntegratedArtifact.stage6_to_stage7_adapter }; }
 
-export function buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact, stage6IntegratedValidation = null }) {
-  return { cache_version: "stage6_integrated_handoff_live_cache_v1", generated_at: nowIso(), source_bundle: sourceBundle, evidence_junction: evidenceJunction, company_profile: companyProfile, target_feature_profile: targetFeatureProfile, stage6a_stage_result: stage6aStageResult, stage6b_stage_result: stage6bStageResult, stage6_integrated_artifact: stage6IntegratedArtifact, stage6_integrated_validation: stage6IntegratedValidation, stage6_review: stage6IntegratedArtifact.stage6_review, stage6_to_stage7_adapter: stage6IntegratedArtifact.stage6_to_stage7_adapter };
+function reinvestigationIds(result = {}) { return [...new Set(asArray(result.guardrail_repairs).filter((item) => item?.action === "row_reinvestigation_required").map((item) => item?.params?.threat_id).filter(Boolean))]; }
+function replaceEntry(rows, replacement) { return rows.map((entry) => threatId(entry) === threatId(replacement) ? replacement : entry); }
+function fallbackReinvestigationEntry(row, prior, reason) { return { ...(prior || {}), threat_id: row.Threat_ID, threat_name: row.Threat_Name, entry_number: prior?.entry_number || row._registry_position || 1, conditions: asArray(prior?.conditions), trigger_if_result: false, exclude_if_result: false, final_status: "INSUFFICIENT_EVIDENCE", feature_refs: asArray(prior?.feature_refs).length ? prior.feature_refs : ["UNKNOWN"], evidence_ref: "ROW_REINVESTIGATION_UNRESOLVED", reasoning_summary: `STAGE7_ROW_REINVESTIGATION_EXHAUSTED: ${reason || "row still lacked sufficient condition-level provenance after two attempts"}` }; }
+async function reinvestigateRows({ result, ledger, rowBatch, batch, rows, stage6Cache, registryKey, runId, logs }) {
+  const ids = reinvestigationIds(result);
+  if (!ids.length) return { ledger, warnings: [] };
+  let current = [...ledger.registry_evaluation_ledger];
+  const warnings = [];
+  for (const id of ids) {
+    const row = rowBatch.find((item) => item.Threat_ID === id);
+    if (!row) continue;
+    let accepted = null;
+    let lastReason = "unresolved";
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const singleBatch = makeBatch({ rows: [row], batchNumber: batch.batch_number, batchCount: batch.batch_count, totalRows: rows.length, runId });
+        singleBatch.reinvestigation_request = { request_type: "stage7_row_reinvestigation", threat_id: id, attempt, max_attempts: 2, required_action: "Reinvestigate this one runtime-applicable row only. Parse Hunter_Trigger condition by condition. Do not use NOT_APPLICABLE. Return one ledger entry with provenance." };
+        const adapter = buildRegistryLedgerInput({ sourceBundle: stage6Cache.source_bundle, evidenceJunction: stage6Cache.evidence_junction, targetProfile: stage6Cache.company_profile, targetFeatureProfile: stage6Cache.target_feature_profile, stage6Review: stage6Cache.stage6_review, stage6ToStage7Adapter: stage6Cache.stage6_to_stage7_adapter, registryBatch: singleBatch, registryKey, runId, budget: { enforcement_mode: process.env.STAGE7_BUDGET_ENFORCEMENT_MODE || "guidance" } });
+        if (!adapter.ok) { lastReason = adapter.error || adapter.error_type || "adapter_failed"; continue; }
+        const rerun = await runStage("registry_ledger_evaluation", adapter.registry_ledger_input, { pool: process.env.LIVE_REGISTRY_POOL || process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.LIVE_REGISTRY_MAX_OUTPUT_TOKENS || 16384), timeoutMs: Number(process.env.LIVE_REGISTRY_TIMEOUT_MS || 120000) });
+        const candidate = rerun.registry_ledger?.registry_evaluation_ledger?.[0];
+        if (candidate && !reinvestigationIds(rerun).includes(id)) { accepted = candidate; break; }
+        lastReason = "row remained under-investigated";
+      } catch (error) { lastReason = error?.message || "rerun_failed"; }
+    }
+    const prior = current.find((entry) => threatId(entry) === id);
+    current = replaceEntry(current, accepted || fallbackReinvestigationEntry(row, prior, lastReason));
+    if (!accepted) warnings.push({ threat_id: id, warning: "STAGE7_ROW_REINVESTIGATION_EXHAUSTED", reason: lastReason });
+    logStage(logs, "registry_ledger_evaluation", accepted ? "row_reinvestigated" : "row_reinvestigation_exhausted", { threat_id: id, reason: lastReason });
+  }
+  return { ledger: { ...ledger, registry_evaluation_ledger: current, batch_warnings: [...asArray(ledger.batch_warnings), ...warnings.map((item) => `${item.warning}: ${item.threat_id} — ${item.reason}`)] }, warnings };
 }
 
 export async function runStage7({ stage6Cache, registryRuntime, registryKey, logs, runId }) {
@@ -100,14 +87,16 @@ export async function runStage7({ stage6Cache, registryRuntime, registryKey, log
     const adapter = buildRegistryLedgerInput({ sourceBundle: stage6Cache.source_bundle, evidenceJunction: stage6Cache.evidence_junction, targetProfile: stage6Cache.company_profile, targetFeatureProfile: stage6Cache.target_feature_profile, stage6Review: stage6Cache.stage6_review, stage6ToStage7Adapter: stage6Cache.stage6_to_stage7_adapter, registryBatch: batch, registryKey, runId, budget: { enforcement_mode: process.env.STAGE7_BUDGET_ENFORCEMENT_MODE || "guidance" } });
     if (!adapter.ok) { const error = new Error(adapter.error || "Stage 7 input adapter failed"); error.status = adapter.status || 500; error.result = adapter; throw error; }
     const result = await runStage("registry_ledger_evaluation", adapter.registry_ledger_input, { pool: process.env.LIVE_REGISTRY_POOL || process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.LIVE_REGISTRY_MAX_OUTPUT_TOKENS || 16384), timeoutMs: Number(process.env.LIVE_REGISTRY_TIMEOUT_MS || 120000) });
-    const ledger = result.registry_ledger;
+    let ledger = result.registry_ledger;
     if (!ledger || !Array.isArray(ledger.registry_evaluation_ledger)) throw new Error("Stage 7 returned no usable registry ledger.");
+    const reinvestigated = await reinvestigateRows({ result, ledger, rowBatch, batch, rows, stage6Cache, registryKey, runId, logs });
+    ledger = reinvestigated.ledger;
     const emittedIds = ledger.registry_evaluation_ledger.map((entry) => entry.threat_id);
     const batchCoverage = coverage(batch.expected_threat_ids, emittedIds);
     if (!batchCoverage.ok) { const error = new Error("Stage 7 batch coverage failed before merge."); error.result = { batch_number: batch.batch_number, coverage: batchCoverage }; throw error; }
     modelRows.push(...ledger.registry_evaluation_ledger);
-    batchSummaries.push({ batch_number: batch.batch_number, batch_count: batch.batch_count, expected_batch_size: batch.batch_size, ledger_count: ledger.registry_evaluation_ledger.length, expected_ids: batch.expected_threat_ids, emitted_ids: emittedIds, coverage: batchCoverage, final_status_counts: countsByStatus(ledger.registry_evaluation_ledger), model_metadata: result.model_metadata || null });
-    logStage(logs, "registry_ledger_evaluation", "batch_complete", { batch_number: batch.batch_number, batch_count: batch.batch_count, ledger_count: ledger.registry_evaluation_ledger.length });
+    batchSummaries.push({ batch_number: batch.batch_number, batch_count: batch.batch_count, expected_batch_size: batch.batch_size, ledger_count: ledger.registry_evaluation_ledger.length, expected_ids: batch.expected_threat_ids, emitted_ids: emittedIds, coverage: batchCoverage, final_status_counts: countsByStatus(ledger.registry_evaluation_ledger), reinvestigation_warnings: reinvestigated.warnings, model_metadata: result.model_metadata || null });
+    logStage(logs, "registry_ledger_evaluation", "batch_complete", { batch_number: batch.batch_number, batch_count: batch.batch_count, ledger_count: ledger.registry_evaluation_ledger.length, reinvestigation_warning_count: reinvestigated.warnings.length });
   }
   const modelCoverage = coverage(plan.model_rows.map((row) => row.Threat_ID), modelRows.map((entry) => entry.threat_id));
   if (!modelCoverage.ok) throw new Error(`Stage 7 model-row coverage failed: ${JSON.stringify(modelCoverage)}`);
