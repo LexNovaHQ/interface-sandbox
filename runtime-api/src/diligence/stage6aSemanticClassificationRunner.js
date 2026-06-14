@@ -1,10 +1,24 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
 import { buildStage6ASemanticClassificationPacket } from "./stage6aSemanticClassificationPacketBuilder.js";
 import { normalizeStage6ASemanticClassification } from "./stage6aSemanticClassificationNormalizer.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, "../../..");
+const ACTIVE_STAGE6A_PROMPT_PATH = path.resolve(REPO_ROOT, "functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md");
+
 function readDefaultSemanticPrompt() {
+  try {
+    const sourcePrompt = fs.readFileSync(ACTIVE_STAGE6A_PROMPT_PATH, "utf8").trim();
+    if (sourcePrompt) return sourcePrompt;
+  } catch {
+    // Fall back to generated bundle when source prompt files are unavailable in a deployed package.
+  }
   return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_legal_document_cartography?.text || "";
 }
 
@@ -141,16 +155,8 @@ export async function runStage6ALegalCartography({
       model_metadata: null
     };
   }
-  const result = await runStage6ASemanticClassification({
-    input,
-    promptText,
-    env,
-    options
-  });
-  return {
-    ...result,
-    semantic_model_attempted: true
-  };
+  const result = await runStage6ASemanticClassification({ input, promptText, env, options });
+  return { ...result, semantic_model_attempted: true };
 }
 
-export const stage6aSemanticClassificationRunnerInternals = { buildSemanticPrompt, publicModelMetadata };
+export const stage6aSemanticClassificationRunnerInternals = { buildSemanticPrompt, publicModelMetadata, ACTIVE_STAGE6A_PROMPT_PATH };
