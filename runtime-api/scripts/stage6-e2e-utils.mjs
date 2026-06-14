@@ -55,7 +55,8 @@ async function readResponseJson(response) {
 export async function runStage6Runtime({ stageId, input, options = {}, env = process.env } = {}) {
   const runtimeUrl = env.RUNTIME_URL || env.LEXNOVA_RUNTIME_URL;
   const token = env.RUNTIME_ACCESS_TOKEN;
-  if (runtimeUrl && token) {
+  const forceLocal = env.STAGE6_E2E_FORCE_LOCAL === "true" || env.STAGE6_AUDIT_TARGET === "local";
+  if (!forceLocal && runtimeUrl && token) {
     const base = normalizeBase(runtimeUrl || DEFAULT_RUNTIME_URL);
     const response = await fetch(`${base}/v1/diligence/stage`, {
       method: "POST",
