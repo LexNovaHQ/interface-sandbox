@@ -32,16 +32,57 @@ function sourceSpecificity(record = {}) {
 }
 
 function sortSources(records = []) { return [...records].sort((a, b) => sourceSpecificity(b) - sourceSpecificity(a)); }
-function allSourceRecords(sourceBundle = {}, evidenceJunction = {}) { const fromArchive = Array.isArray(sourceBundle?.raw_footprint?.source_records) ? sourceBundle.raw_footprint.source_records : []; if (fromArchive.length) return fromArchive; const packets = evidenceJunction?.downstream_packets || {}; const seen = new Set(); const out = []; for (const key of ["legal_stack_review", "governance_review", "registry_matching", "registry_ledger_evaluation"]) { for (const record of Array.isArray(packets?.[key]?.source_records) ? packets[key].source_records : []) { const id = record.evidence_source_id || `${record.source_family}|${record.url}|${record.final_url}`; if (seen.has(id)) continue; seen.add(id); out.push(record); } } return out; }
+function asObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+function asArray(value) { return Array.isArray(value) ? value : []; }
+function allSourceRecords(sourceBundle = {}, evidenceJunction = {}) {
+  const fromArchive = Array.isArray(sourceBundle?.raw_footprint?.source_records) ? sourceBundle.raw_footprint.source_records : [];
+  if (fromArchive.length) return fromArchive;
+  const packets = evidenceJunction?.downstream_packets || {};
+  const seen = new Set();
+  const out = [];
+  for (const key of ["stage6a_legal_document_cartography", "stage6b_data_provenance", "stage6_integrated_handoff", "governance_review", "registry_matching", "registry_ledger_evaluation"]) {
+    for (const record of Array.isArray(packets?.[key]?.source_records) ? packets[key].source_records : []) {
+      const id = record.evidence_source_id || `${record.source_family}|${record.url}|${record.final_url}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(record);
+    }
+  }
+  return out;
+}
 function legalGovernanceRecords(sourceBundle = {}, evidenceJunction = {}) { return allSourceRecords(sourceBundle, evidenceJunction).filter((record) => LEGAL_SOURCE_FAMILIES.has(record.source_family)); }
 function artifactFromRecord(record = {}) { const text = cleanText(record); return { evidence_source_id: record.evidence_source_id || null, source_family: record.source_family || "unknown", source_url: record.url || null, final_url: record.final_url || null, title: titleOf(record), word_count: record?.text?.word_count || record.word_count || 0, clean_text_sha256: record?.text?.clean_text_sha256 || record.clean_text_sha256 || sha256(text), clean_text_length: text.length, estimated_source_tokens: estimateSourceTokens(text.length), coverage_status: record?.quality?.coverage_status || record.coverage_status || "unknown", full_text_in_evidence_buffer: true }; }
 function evidenceFromRecord(record = {}) { const text = cleanText(record); return { evidence_source_id: record.evidence_source_id || null, source_family: record.source_family || "unknown", source_url: record.url || null, final_url: record.final_url || null, title: titleOf(record), clean_text_sha256: record?.text?.clean_text_sha256 || record.clean_text_sha256 || sha256(text), word_count: record?.text?.word_count || record.word_count || 0, estimated_source_tokens: estimateSourceTokens(text.length), clean_text_lossless: text, evidence_policy: { admitted_source: true, discovery_only: false, full_text_lossless: true, summarized: false, compressed: false, truncated_by_stage_7_adapter: false } }; }
 function compactTargetFeatureProfile(profile = {}) { return { feature_profile_version: profile.feature_profile_version || "feature_profile_v2", target_profile_ref: profile.target_profile_ref || {}, feature_inventory: Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [], data_provenance_map: Array.isArray(profile.data_provenance_map) ? profile.data_provenance_map : [], regulated_surface_map: Array.isArray(profile.regulated_surface_map) ? profile.regulated_surface_map : [], architecture_hints: Array.isArray(profile.architecture_hints) ? profile.architecture_hints : [], commercial_scan: profile.commercial_scan && typeof profile.commercial_scan === "object" && !Array.isArray(profile.commercial_scan) ? profile.commercial_scan : {}, limitations: Array.isArray(profile.limitations) ? profile.limitations : [] }; }
-function compactLegalStackReview(review = {}) { return { legal_stack: Array.isArray(review.legal_stack) ? review.legal_stack : [], document_stack_redline: Array.isArray(review.document_stack_redline) ? review.document_stack_redline : [], document_stack_synthesis: review.document_stack_synthesis || {}, legal_stack_assessment: Array.isArray(review.legal_stack_assessment) ? review.legal_stack_assessment : [], limitations: Array.isArray(review.limitations) ? review.limitations : [] }; }
+function compactStage6Review(review = {}) {
+  const object = asObject(review?.stage6_review || review);
+  return {
+    stage6_review_version: object.stage6_review_version || "stage6_review_v1",
+    stage6_component: object.stage6_component || "stage6_integrated_handoff",
+    stage_role: object.stage_role || "stage7_navigation_index",
+    input_refs: asObject(object.input_refs),
+    legal_document_cartography: asObject(object.legal_document_cartography),
+    data_provenance_profile: asObject(object.data_provenance_profile),
+    stage7_navigation_index: asObject(object.stage7_navigation_index),
+    stage6_limitations: asArray(object.stage6_limitations)
+  };
+}
+function compactStage6ToStage7Adapter(adapter = {}, stage6Review = {}) {
+  const object = asObject(adapter?.stage6_to_stage7_adapter || adapter);
+  const review = compactStage6Review(stage6Review);
+  return {
+    adapter_version: object.adapter_version || "stage6_to_stage7_adapter_v1",
+    source_component: object.source_component || "stage6_integrated_handoff",
+    stage6_review_version: object.stage6_review_version || review.stage6_review_version,
+    stage7_navigation_index: asObject(object.stage7_navigation_index || review.stage7_navigation_index),
+    legal_document_cartography: asObject(object.legal_document_cartography || review.legal_document_cartography),
+    data_provenance_profile: asObject(object.data_provenance_profile || review.data_provenance_profile)
+  };
+}
 function normalizeBatch(batch = {}) { const rows = Array.isArray(batch.registry_rows) ? batch.registry_rows : []; return { run_id: batch.run_id || "pending-run-id", batch_id: batch.batch_id || `registry_batch_${Date.now()}`, batch_number: batch.batch_number || 1, batch_count: batch.batch_count || 1, batch_size: rows.length, registry_count_loaded: rows.length, registry_total_count: batch.registry_total_count || batch.registry_count_loaded || rows.length, registry_range: batch.registry_range || { start_position: 1, end_position: rows.length }, expected_threat_ids: batch.expected_threat_ids || rows.map((row, index) => String(row.Threat_ID || row.threat_id || `MISSING_THREAT_ID_ROW_${index + 1}`)), registry_rows: rows }; }
 function exclusionBase(record = {}) { const text = cleanText(record); return { ...artifactFromRecord(record), clean_text_length: text.length }; }
 
-export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction = {}, targetFeatureProfile = null, legalStackReview = null, registryBatch = {}, registryKey = {}, runId = null, generatedAt = nowIso(), budget = {} } = {}) {
+export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction = {}, targetFeatureProfile = null, stage6Review = null, stage6ToStage7Adapter = null, registryBatch = {}, registryKey = {}, runId = null, generatedAt = nowIso(), budget = {} } = {}) {
   const batch = normalizeBatch(registryBatch);
   const sortedRecords = sortSources(legalGovernanceRecords(sourceBundle, evidenceJunction));
   const maxInputChars = normalizeLimit(budget.max_input_chars) || DEFAULT_MAX_INPUT_CHARS;
@@ -80,6 +121,9 @@ export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction =
   if (budgetWarnings.length && !hardMode) limitations.push("Stage 7 source budget was exceeded in guidance mode; all non-empty legal/governance sources were still included to prevent silent under-reading.");
   if (hardFailure) limitations.push("No non-empty legal/governance source could fit inside the configured Stage 7 input budget without truncation.");
 
+  const compactStage6 = compactStage6Review(stage6Review || {});
+  const compactStage6Adapter = compactStage6ToStage7Adapter(stage6ToStage7Adapter || {}, compactStage6);
+
   const adapterOutput = {
     registry_ledger_input_version: "registry_ledger_input_v1",
     run_id: runId || batch.run_id || `registry_ledger_input_${Date.now()}`,
@@ -98,9 +142,10 @@ export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction =
       limitations: [...(Array.isArray(sourceBundle?.source_discovery?.coverage_gaps) ? sourceBundle.source_discovery.coverage_gaps.map((gap) => typeof gap === "string" ? gap : JSON.stringify(gap)) : []), ...limitations]
     },
     target_feature_profile: compactTargetFeatureProfile(targetFeatureProfile || {}),
-    legal_stack_review: compactLegalStackReview(legalStackReview || {}),
+    stage6_review: compactStage6,
+    stage6_to_stage7_adapter: compactStage6Adapter,
     input_budget: { budget_status: hardFailure ? "TOKEN_BUDGET_EXCEEDED" : (excluded.length ? "PARTIAL_SOURCE_SELECTION" : (budgetWarnings.length ? "GUIDANCE_EXCEEDED_FULL_PACKET_INCLUDED" : "FULL_PACKET_INCLUDED")), enforcement_mode: hardMode ? "hard" : "guidance", max_input_chars: maxInputChars, max_estimated_tokens: maxEstimatedTokens, max_single_source_chars: maxSingleSourceChars, prompt_overhead_tokens: promptOverheadTokens, source_token_estimation_ratio_chars_per_token: ESTIMATED_CHARS_PER_TOKEN, estimated_input_chars: usedChars, estimated_source_tokens: estimatedSourceTokens, estimated_prompt_overhead_tokens: promptOverheadTokens, estimated_total_prompt_tokens: estimatedTotalPromptTokens, total_candidate_legal_governance_sources: sortedRecords.length, included_sources: included.map(artifactFromRecord), excluded_sources: excluded, budget_warnings: budgetWarnings, fail_loud_if_no_source_fits: hardMode, text_truncated: false, text_summarized: false, text_compressed: false },
-    adapter_policy: { prompt_compatibility_mode: "feature_profile_v2_canonical_fields", full_legal_profile_text_preserved: true, full_governance_profile_text_preserved: true, product_full_text_excluded_by_design: true, product_truth_from_target_feature_profile: true, legal_truth_from_legal_stack_review_plus_full_legal_governance_text: true, no_text_truncation: true, no_text_summary: true, no_text_compression: true, budget_guidance_not_hard_cap_by_default: true, batch_evaluation_required: true }
+    adapter_policy: { prompt_compatibility_mode: "feature_profile_v2_and_stage6_review_v1_canonical_fields", full_legal_profile_text_preserved: true, full_governance_profile_text_preserved: true, product_full_text_excluded_by_design: true, product_truth_from_target_feature_profile: true, stage6_truth_from_stage6_review_plus_full_legal_governance_text: true, no_legacy_legal_stack_review: true, no_text_truncation: true, no_text_summary: true, no_text_compression: true, budget_guidance_not_hard_cap_by_default: true, batch_evaluation_required: true }
   };
 
   if (hardFailure) return { ok: false, status: 413, error_type: "TOKEN_BUDGET_EXCEEDED", error: "No legal/governance source could fit inside the configured Stage 7 input budget without truncation.", input_budget: adapterOutput.input_budget, registry_ledger_input: adapterOutput };
