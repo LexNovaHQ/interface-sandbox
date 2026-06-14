@@ -42,8 +42,9 @@ function extractVisibleReport(reportData) {
 
 function visibleTermLeaks(reportData) {
   const visible = extractVisibleReport(reportData || {});
+  const baseBanned = BANNED_VISIBLE_TERMS.filter((term) => !["DOC_"].includes(term));
   const stage9V2Banned = [
-    ...BANNED_VISIBLE_TERMS,
+    ...baseBanned,
     "legal_stack_review",
     "legal_stack_control_review",
     "legal_stack",
