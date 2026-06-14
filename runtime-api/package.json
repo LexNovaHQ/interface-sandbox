@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "node --check server.js && node --check src/env.js && node --check src/routes/diligenceStageRoutes.js && node --check src/routes/liveDiligenceRoutes.js && node --check src/live/liveDiligenceRunOrchestrator.js && node --check src/live/liveDiligenceRunOrchestratorLocked.js && node --check src/diligence/stagePromptLoader.js && node --check src/diligence/stageRunner.js && node --check src/diligence/stageRunnerLocked.js && node --check src/diligence/stage6bDataProvenanceBuilder.js && node --check src/diligence/stage6bSemanticPacketBuilder.js && node --check src/diligence/stage6bDataProvenanceNormalizer.js && node --check src/diligence/stage6bDataProvenanceMerge.js && node --check src/diligence/stage6bDataProvenanceRunner.js && node --check src/diligence/adapters/sourceBundleAdapterLocked.js && node --check src/diligence/evidenceJunctionLocked.js && node --check src/diligence/stage5TargetFeaturePackageBuilder.js && node --check src/diligence/adapters/targetFeatureProfileInputAdapter.js && node --check src/diligence/adapters/targetFeatureProfileInputAdapterNonDropping.js && node --check src/diligence/targetFeatureProfileSchemaRepair.js && node --check src/diligence/targetFeatureProfileSchemaRepairCompleteness.js && node --check src/diligence/targetFeatureProfileGuardrailsLocked.js && node --check src/diligence/targetFeatureProfileGuardrailsCompleteness.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageSchemaValidatorLocked.js && node --check src/diligence/legalStackReviewGuardrails.js && node --check src/diligence/registryLedgerGuardrails.js && node --check src/diligence/stage9ReportAssembler.js && node --check src/handoff/stage9ToVaultHandoffAdapter.js && node --check src/report-renderer/legalExposureReportRenderer.js && node --check scripts/e2e-stage5-completeness-audit.mjs && node --check scripts/e2e-stage5-strict-completeness-audit.mjs && node --check scripts/audit-stage6-canon.mjs && node --check scripts/e2e-stage6b-data-provenance.mjs && npm run test:stage4-stage5-guardrails",
+    "check": "node --check server.js && node --check src/env.js && node --check src/routes/diligenceStageRoutes.js && node --check src/routes/liveDiligenceRoutes.js && node --check src/live/liveDiligenceRunOrchestrator.js && node --check src/live/liveDiligenceRunOrchestratorLocked.js && node --check src/diligence/stagePromptLoader.js && node --check src/diligence/stageRunner.js && node --check src/diligence/stageRunnerLocked.js && node --check src/diligence/guardrails/stage6ReviewGuardrail.js && node --check src/diligence/stage6aSemanticClassificationRunner.js && node --check src/diligence/stage6bDataProvenanceBuilder.js && node --check src/diligence/stage6bSemanticPacketBuilder.js && node --check src/diligence/stage6bDataProvenanceNormalizer.js && node --check src/diligence/stage6bDataProvenanceMerge.js && node --check src/diligence/stage6bDataProvenanceRunner.js && node --check src/diligence/adapters/sourceBundleAdapterLocked.js && node --check src/diligence/evidenceJunctionLocked.js && node --check src/diligence/stage5TargetFeaturePackageBuilder.js && node --check src/diligence/adapters/targetFeatureProfileInputAdapter.js && node --check src/diligence/adapters/targetFeatureProfileInputAdapterNonDropping.js && node --check src/diligence/targetFeatureProfileSchemaRepair.js && node --check src/diligence/targetFeatureProfileSchemaRepairCompleteness.js && node --check src/diligence/targetFeatureProfileGuardrailsLocked.js && node --check src/diligence/targetFeatureProfileGuardrailsCompleteness.js && node --check src/diligence/stageSchemaValidator.js && node --check src/diligence/stageSchemaValidatorLocked.js && node --check src/diligence/legalStackReviewGuardrails.js && node --check src/diligence/registryLedgerGuardrails.js && node --check src/diligence/stage9ReportAssembler.js && node --check src/handoff/stage9ToVaultHandoffAdapter.js && node --check src/report-renderer/legalExposureReportRenderer.js && node --check scripts/stage6-e2e-utils.mjs && node --check scripts/e2e-stage6a-legal-cartography.mjs && node --check scripts/e2e-stage6b-data-provenance.mjs && node --check scripts/e2e-stage6-integrated-handoff.mjs && node --check scripts/audit-stage6-canon.mjs && npm run test:stage4-stage5-guardrails",
     "test:stage4-stage5-guardrails": "node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
@@ -16,8 +16,10 @@
     "e2e:stage4:company": "node scripts/e2e-stage4-company-profile.mjs",
     "e2e:stage5:features": "node scripts/e2e-stage5-target-feature-profile.mjs && node scripts/e2e-stage5-completeness-audit.mjs && node scripts/e2e-stage5-strict-completeness-audit.mjs",
     "audit:stage5:completeness": "node scripts/e2e-stage5-completeness-audit.mjs && node scripts/e2e-stage5-strict-completeness-audit.mjs",
-    "e2e:stage6b:data-provenance": "node scripts/e2e-stage6b-data-provenance.mjs",
     "audit:stage6:canon": "node scripts/audit-stage6-canon.mjs",
+    "e2e:stage6a:legal-cartography": "node scripts/e2e-stage6a-legal-cartography.mjs",
+    "e2e:stage6b:data-provenance": "node scripts/e2e-stage6b-data-provenance.mjs",
+    "e2e:stage6:integrated-handoff": "node scripts/e2e-stage6-integrated-handoff.mjs",
     "e2e:stage7:registry": "node scripts/e2e-stage7-priority-runtime.mjs",
     "e2e:stage7:registry:sample": "node scripts/e2e-stage7-registry-ledger.mjs",
     "e2e:stage7:registry:priority": "node scripts/e2e-stage7-priority-runtime.mjs",
@@ -34,9 +36,9 @@
   "dependencies": {
     "@google/genai": "^1.33.0",
     "ajv": "^8.20.0",
-    "cors": "^2.8.5",
+    "cors": "^4.1.2",
     "express": "^4.21.2",
-    "helmet": "^8.1.1",
+    "helmet": "^8.1.5",
     "pdf-parse": "^1.1.1"
   }
 }
