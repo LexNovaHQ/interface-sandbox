@@ -50,8 +50,8 @@ export async function runLiveDiligenceReview(input = {}, options = {}) {
   let stage10Validation = null;
   if (options.run_handoff !== false) {
     logStage(logs, "stage10_handoff", "running");
-    stage10Handoff = assembleStage10VaultHandoff(stage9ReportData);
-    stage10Validation = validateReviewReadyHandoff(stage10Handoff, stage9ReportData);
+    stage10Handoff = assembleStage10VaultHandoff({ stage9ReportData, stage6Cache, stage7Artifact, stage8Ledger }, { runId });
+    stage10Validation = validateReviewReadyHandoff(stage10Handoff);
     if (!stage10Validation.ok) {
       const error = new Error("Stage 10 handoff validation failed.");
       error.result = stage10Validation;
