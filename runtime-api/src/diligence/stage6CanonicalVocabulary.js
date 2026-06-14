@@ -236,6 +236,20 @@ export const STAGE6_FALLBACK_REASONS = Object.freeze(["direct_source_verificatio
 
 export const STAGE6_DATA_FLOW_ROLES = Object.freeze(["primary_input", "secondary_input", "system_metadata", "generated_output", "stored_record", "third_party_transfer", "derived_data", "unknown"]);
 export const STAGE6_FEATURE_ROLES = Object.freeze(["core", "supporting", "contextual", "unknown"]);
+export const STAGE6_DATA_SUBJECT_TYPES = Object.freeze(["customer_user", "end_user", "employee", "contractor", "website_visitor", "developer_user", "child_or_minor", "business_contact", "unknown"]);
+export const STAGE6_DATA_CATEGORY_TYPES = Object.freeze(["account_data", "contact_data", "usage_data", "device_data", "network_data", "location_data", "prompt_input", "uploaded_file", "generated_output", "embedding_vector", "action_log", "payment_data", "support_ticket", "employee_hr_data", "creative_work_product", "source_code", "credential_or_secret", "client_confidential_data", "biometric_data", "health_data", "financial_data", "unknown"]);
+export const STAGE6_COLLECTION_CONTEXTS = Object.freeze(["user_provided", "customer_provided", "employee_provided", "automatically_collected", "third_party_imported", "system_generated", "derived_or_inferred", "unknown"]);
+export const STAGE6_PROCESSING_ACTIONS = Object.freeze(["collect", "store", "retrieve", "generate", "summarize", "classify", "embed", "rank", "route", "transmit", "log", "monitor", "delete", "anonymize", "aggregate", "fine_tune", "unknown"]);
+export const STAGE6_PROCESSING_PURPOSES = Object.freeze(["service_delivery", "ai_generation", "personalization", "analytics", "security", "billing", "support", "compliance", "product_improvement", "model_training", "fraud_prevention", "internal_governance", "unknown"]);
+export const STAGE6_OUTPUT_CATEGORIES = Object.freeze(["ai_output", "recommendation", "classification", "decision_support", "automated_action", "system_log", "analytics", "none", "unknown"]);
+export const STAGE6_ROLE_ALLOCATION_VALUES = Object.freeze(["controller", "processor", "subprocessor", "service_provider", "business", "third_party", "independent_controller", "principal", "agent", "platform_provider", "not_visible", "not_applicable", "unknown"]);
+export const STAGE6_REGIME_BASIS_TAGS = Object.freeze(["personal_data", "sensitive_data", "children_data", "employee_data", "automated_decision", "high_risk_ai", "cross_border_transfer", "processor_relationship", "subprocessor_relationship", "consumer_rights", "deletion_rights", "training_or_finetuning", "unknown"]);
+export const STAGE6_RECIPIENT_CATEGORIES = Object.freeze(["model_provider", "cloud_provider", "payment_provider", "analytics_provider", "support_provider", "security_provider", "workflow_provider", "storage_provider", "unknown"]);
+export const STAGE6_REGIONS = Object.freeze(["us", "eu", "uk", "india", "canada", "australia", "singapore", "global", "not_visible", "unknown"]);
+export const STAGE6_EVIDENCE_STRENGTH = Object.freeze(["direct_source", "inferred_from_stage5", "inferred_from_stage4", "model_classified", "unknown"]);
+export const STAGE6_AUDIT_SEVERITY = Object.freeze(["PASS", "WARNING", "REPAIR", "CRITICAL"]);
+export const STAGE6_LIMITATION_REASON_CODES = Object.freeze(["source_missing", "source_conflicting", "source_access_failed", "stage5_signal_unknown", "legal_unit_ref_missing", "low_confidence_inference", "model_skipped", "unknown"]);
+export const STAGE6_LIMITATION_IMPACT_CODES = Object.freeze(["no_stage7_block", "requires_source_line_read", "reduces_confidence", "partial_navigation_only", "unknown"]);
 
 function asArray(value) {
   if (Array.isArray(value)) return value;

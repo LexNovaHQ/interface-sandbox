@@ -64,6 +64,16 @@ const STAGE_CONFIGS = Object.freeze({
     timeout_ms: 60000,
     temperature: 0.05
   },
+  stage6b_data_provenance: {
+    stage_id: "stage6b_data_provenance",
+    prompt_stage_id: "stage6b_data_provenance",
+    output_key: "stage6_review",
+    output_schema_key: "stage6Review",
+    pool: "reasoning",
+    max_output_tokens: 24000,
+    timeout_ms: 90000,
+    temperature: 0.05
+  },
   registry_ledger_evaluation: {
     stage_id: "registry_ledger_evaluation",
     prompt_stage_id: "registry_ledger_evaluation",

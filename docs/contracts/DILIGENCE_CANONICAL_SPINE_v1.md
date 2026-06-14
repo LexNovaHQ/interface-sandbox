@@ -369,6 +369,85 @@ stage7_navigation_index
   fallback_source_packet[]
 ```
 
+Retired names include `feature_to_document_section_index[]` and `document_source_locator_index[]`.
+
+## Stage 6B Data Provenance
+
+Stage 6B uses the same Stage 6 object and schema. It owns `data_provenance_profile` only when `stage6_component` is `stage6b_data_provenance` or `stage6_integrated_handoff`.
+
+Stage 6A-only outputs must not contain 6B data fields.
+
+### Stage 6B Hybrid Architecture
+
+Stage 6B is hybrid in the same pattern as Stage 6A:
+
+```text
+1. Deterministic seed builder creates the canonical data-flow spine.
+2. Gemini receives a bounded semantic packet built from deterministic rows.
+3. Gemini returns only controlled semantic classifications.
+4. Deterministic normalizer validates and repairs model output against stage6CanonicalVocabulary.js.
+5. Deterministic merge/finalizer emits the final stage6_review_v1 object.
+6. Final output validates against data/schemas/stage6Review.schema.json.
+```
+
+Gemini must never author the final Stage 6 schema object directly.
+
+### Stage 6B Deterministic Source Of Truth
+
+Stage 6B row creation is deterministic from Stage 5:
+
+```text
+target_feature_profile.data_provenance_map[] -> data_provenance_profile.data_flow_profile[]
+```
+
+If Stage 5 has data-provenance rows, Stage 6B must preserve one canonical row per Stage 5 row. An empty `data_flow_profile[]` in that condition is a Critical failure.
+
+Canonical row identity fields:
+
+```text
+data_flow_id
+feature_id
+provenance_id
+feature_role
+flow_role
+source_refs
+basis_codes
+confidence
+```
+
+Canonical semantic blocks:
+
+```text
+data_subject
+data_category
+processing
+role_allocation
+regime_relevance
+notice
+consent_basis
+rights
+processor_chain
+transfer_location
+retention_deletion_ai
+security_accountability
+source_trace
+```
+
+Gemini may classify semantic fields inside those blocks only. It may not create, delete, reorder, rename, or mutate row identity, source references, legal-unit references, document references, basis codes, Stage 7 indexes, summary signals, final limitations, final JSON wrapper, or final schema structure.
+
+### Stage 6B Finalizer Derivations
+
+The deterministic finalizer derives:
+
+```text
+stage7_navigation_index.feature_to_data_flow_index[]
+stage7_navigation_index.data_signal_index[]
+data_provenance_profile.data_profile_summary_signals
+data_provenance_profile.data_profile_limitations[]
+```
+
+Model classifications for unknown `data_flow_id` values must be rejected. Model output may never create a new final row or delete a seeded row.
+
 ## Basis Codes
 
 Allowed basis codes:
@@ -429,6 +508,9 @@ stage6a_model_overlay_version
 section_classification_overlay
 feature_section_overlay
 document_section
+flow_id
+profile_summary_signals
+section_refs
 ```
 
 ## Audit Severity Model
@@ -456,10 +538,8 @@ The following are not canonical proof until rebuilt from this spine and the sing
 ```text
 runtime-api/scripts/audit-stage6a-intelligence-path.mjs
 runtime-api/scripts/e2e-stage6a-legal-cartography.mjs
-runtime-api/scripts/e2e-stage6b-data-provenance.mjs
 runtime-api/scripts/e2e-stage6-legal-stack-review.mjs
 runtime-api/src/diligence/legalStackReviewGuardrails.js
-Stage 6 workflow audit steps
 ```
 
 End of Diligence Canonical Spine v1.

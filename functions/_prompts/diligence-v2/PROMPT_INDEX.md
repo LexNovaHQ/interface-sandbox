@@ -61,6 +61,7 @@ The runtime prompt loader must append only the relevant dictionary blocks:
 company_profile                    -> UNIVERSAL + STAGE4
 target_feature_profile             -> UNIVERSAL + STAGE5
 stage6a_legal_document_cartography -> DILIGENCE_CANONICAL_SPINE_v1
+stage6b_data_provenance            -> DILIGENCE_CANONICAL_SPINE_v1
 registry_ledger_evaluation         -> UNIVERSAL + STAGE7_NAVIGATION
 ```
 
@@ -74,7 +75,7 @@ Do not append the full dictionary to every prompt.
 4.   Canonical Target Profile                              Gemini / runtime API
 5.   Product Function / Feature Inventory                  Gemini / runtime API
 6A.  Legal Document Cartography                            deterministic macro legal units + bounded semantic classification
-6B.  Data Provenance                                       disabled until rebuilt against Stage 6 canon
+6B.  Data Provenance                                       deterministic data-flow spine + bounded semantic classification
 6I.  Integrated Stage 6 handoff to Stage 7                 disabled until rebuilt against Stage 6 canon
 7.   Registry Ledger                                       Gemini / runtime API, batched
 8.   Operator Challenge                                    Gemini / runtime API, merged ledger only
@@ -93,6 +94,7 @@ Only collection runs without a model key. Every Gemini stage runs server-side.
 | 02A | `02_COMPANY_PROFILE.prompt.md` | Canonical identity, jurisdiction, market, baseline Vault candidates | `company_profile` wrapper containing `target_profile_v2` |
 | 02B | `02_TARGET_FEATURE_PROFILE.prompt.md` | Atomic feature/function inventory, data provenance, archetype/surface provenance | `target_feature_profile` wrapper containing `feature_profile_v2` |
 | 03A | `03A_LEGAL_CARTOGRAPHY.prompt.md` | Canonical Stage 6A semantic classification over deterministic macro legal-unit seeds | `stage6_review` containing `stage6_review_v1` |
+| 03B | `03B_DATA_PROVENANCE.prompt.md` | Canonical Stage 6B semantic classification over deterministic data-flow seeds | `stage6_review` containing `stage6_review_v1` |
 | 04 | `04_REGISTRY_LEDGER_EVALUATION.prompt.md` | Evaluate supplied registry rows under Hunter Logic Gate | `registry_evaluation_ledger[]`, `batch_warnings[]` |
 | 05 | `05_OPERATOR_CHALLENGE.prompt.md` | Challenge merged ledger for false negatives and bad exclusions | `operator_challenge_gate`, `corrected_ledger_entries[]` |
 | 06 | `06_FINAL_COMPILER.prompt.md` | Compile post-challenge ledger into compiler output | `compiler_output` |

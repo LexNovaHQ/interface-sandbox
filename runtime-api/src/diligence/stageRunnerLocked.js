@@ -5,6 +5,7 @@ import { formatSchemaErrors, resolveSchemaEntry, validateDiligenceStageOutput } 
 import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
 import { validateRegistryLedgerGuardrails } from "./registryLedgerGuardrails.js";
 import { runStage6ALegalCartography } from "./stage6aSemanticClassificationRunner.js";
+import { runStage6BDataProvenance } from "./stage6bDataProvenanceRunner.js";
 import { repairTargetFeatureProfileForSchema } from "./targetFeatureProfileSchemaRepair.js";
 
 function unwrapStageOutput(parsedJson, outputKey) {
@@ -199,6 +200,15 @@ function stage6ALegalCartographyFailureStatus(result = {}) {
   return 502;
 }
 
+function stage6FailureStatus(result = {}) {
+  if (result?.error_type === "POOL_KEYS_NOT_CONFIGURED" || result?.error_type === "POOL_MODELS_NOT_CONFIGURED") return 503;
+  if (result?.error_type === "ATTEMPT_BUDGET_EXHAUSTED" || result?.error_type === "POOL_EXHAUSTED") return 502;
+  if (result?.error_type === "TIMEOUT") return 504;
+  if (result?.error_type === "SCHEMA_VALIDATION_ERROR") return 422;
+  if (String(result?.error_type || "").includes("CRITICAL")) return 422;
+  return 502;
+}
+
 async function runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env }) {
   const runResult = await runStage6ALegalCartography({
     source_bundle: input?.source_bundle,
@@ -270,6 +280,80 @@ async function runStage6ALegalCartographyStage({ config, schemaEntry, input, opt
   };
 }
 
+async function runStage6BDataProvenanceStage({ config, schemaEntry, input, options, env }) {
+  const runResult = await runStage6BDataProvenance({
+    source_bundle: input?.source_bundle,
+    target_profile: input?.target_profile,
+    company_profile: input?.company_profile,
+    target_feature_profile: input?.target_feature_profile,
+    evidence_junction: input?.evidence_junction,
+    runtime_options: options,
+    env
+  });
+  if (!runResult.ok) {
+    return {
+      ok: false,
+      status: stage6FailureStatus(runResult),
+      stage_id: config.stage_id,
+      output_schema_key: config.output_schema_key,
+      output_schema_path: schemaEntry.path,
+      error_type: runResult.error_type || "STAGE6B_DATA_PROVENANCE_FAILED",
+      error: runResult.error || "Stage 6B Data Provenance failed.",
+      validation_errors: runResult.validation?.errors || runResult.validation_errors || [],
+      error_summary: runResult.error_summary || null,
+      packet_summary: runResult.packet_summary || null,
+      stage6_summary: runResult.stage6_summary || null,
+      semantic_model_attempted: runResult.semantic_model_attempted === true,
+      model_metadata: runResult.model_metadata || null
+    };
+  }
+  const finalOutput = runResult.stage6_review;
+  const validation = validateDiligenceStageOutput(config.output_schema_key, finalOutput);
+  if (!validation.ok) {
+    return {
+      ok: false,
+      status: 422,
+      stage_id: config.stage_id,
+      output_schema_key: config.output_schema_key,
+      output_schema_path: validation.schema_path || schemaEntry.path,
+      validation_schema_key: validation.resolvedKey,
+      validation_mode: validation.validation_mode,
+      error_type: "SCHEMA_VALIDATION_ERROR",
+      error: "Stage 6B Data Provenance output failed schema validation",
+      validation_errors: validation.errors,
+      error_summary: formatSchemaErrors(validation.errors),
+      packet_summary: runResult.packet_summary || null,
+      stage6_summary: runResult.stage6_summary || null,
+      semantic_model_attempted: runResult.semantic_model_attempted === true,
+      model_metadata: runResult.model_metadata || null
+    };
+  }
+  return {
+    ok: true,
+    status: 200,
+    stage_id: config.stage_id,
+    output_schema_key: config.output_schema_key,
+    output_schema_path: validation.schema_path || schemaEntry.path,
+    validation_schema_key: validation.resolvedKey,
+    validation_mode: validation.validation_mode,
+    guardrail_validation_mode: null,
+    output_unwrapped: false,
+    output_repaired: false,
+    output_repair_notes: [],
+    stage6_review: finalOutput,
+    packet_summary: runResult.packet_summary || null,
+    stage6_summary: runResult.stage6_summary || null,
+    normalized_semantic_classification: runResult.normalized_semantic_classification || null,
+    semantic_classification_repairs: runResult.semantic_classification_repairs || [],
+    semantic_model_attempted: runResult.semantic_model_attempted === true,
+    model_metadata: runResult.model_metadata || null,
+    prompt_metadata: {
+      stage_prompt: "03B_DATA_PROVENANCE.prompt.md",
+      runtime_instruction_configured: false
+    }
+  };
+}
+
 async function executeStageOnce({ config, schemaEntry, promptBundle, stageId, input, options, env }) {
   const modelPrompt = buildPromptInput({ stageId: config.stage_id, prompt: promptBundle.combined_prompt, runtimeInstruction: config.runtime_instruction, input });
   const runResult = await runGeminiPool({ poolName: options.pool || config.pool, prompt: modelPrompt, env, options: { responseMimeType: "application/json", temperature: options.temperature ?? config.temperature, maxOutputTokens: options.maxOutputTokens ?? options.max_output_tokens ?? config.max_output_tokens, timeoutMs: options.timeoutMs ?? options.timeout_ms ?? config.timeout_ms, maxAttempts: options.maxAttempts ?? options.max_attempts } });
@@ -291,7 +375,17 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   const schemaEntry = resolveSchemaEntry(config.output_schema_key);
   if (!schemaEntry?.schema) return { ok: false, status: 500, stage_id: config.stage_id, error_type: "SCHEMA_NOT_FOUND", error: `Output schema not found for ${config.output_schema_key}`, output_schema_key: config.output_schema_key };
   if (config.output_schema_key === "stage6Review") {
-    return runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env });
+    if (config.stage_id === "stage6a_legal_document_cartography") return runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env });
+    if (config.stage_id === "stage6b_data_provenance") return runStage6BDataProvenanceStage({ config, schemaEntry, input, options, env });
+    return {
+      ok: false,
+      status: 501,
+      stage_id: config.stage_id,
+      output_schema_key: config.output_schema_key,
+      output_schema_path: schemaEntry.path,
+      error_type: "STAGE6_COMPONENT_NOT_IMPLEMENTED",
+      error: `Stage 6 component is not implemented for ${config.stage_id}.`
+    };
   }
   const promptBundle = loadDiligencePrompt(config.prompt_stage_id);
   let stageInput = input;

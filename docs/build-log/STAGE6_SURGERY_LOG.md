@@ -344,3 +344,33 @@ Not touched:
 
 Restore command:
 - `git reset --hard 233fe9f687c94c6c1201dec4ebd3c6b8a66b565e`
+
+## 6B.CANON.R1 - Canonical Data Provenance Hybrid Build
+
+Base HEAD before patch:
+- `fd2dc0627df3b6fb619bc3be83a023e93b3ac718`
+
+Summary:
+- Built Stage 6B Data Provenance as the same hybrid architecture as Stage 6A: deterministic seed, bounded Gemini semantic packet, deterministic normalizer, deterministic merge/finalizer, final schema validation.
+- Locked row creation to Stage 5 `data_provenance_map[]`, with one canonical `data_flow_profile[]` row per Stage 5 provenance row.
+- Added controlled Stage 6B semantic prompt `03B_DATA_PROVENANCE.prompt.md`.
+- Wired `stage6b_data_provenance` into stage config, prompt bundle generation, runtime dispatch, canonical audit, and deterministic E2E proof.
+- Re-enabled the 6B workflow proof while leaving unrelated retired Stage 6 legacy paths disabled.
+
+Validation expected for this layer:
+- `npm.cmd run build:runtime`.
+- `npm run audit:stage6:canon` in `runtime-api`.
+- `npm run e2e:stage6b:data-provenance` in `runtime-api`.
+- `npm run check` in `runtime-api` after generated bundles are present.
+
+Not touched:
+- Stage 4 business logic.
+- Stage 5 business logic.
+- Stage 7 registry logic.
+- Stage 9/10.
+- Vault.
+- UI/product pages.
+- Registry CSV/data.
+
+Restore command:
+- `git reset --hard fd2dc0627df3b6fb619bc3be83a023e93b3ac718`

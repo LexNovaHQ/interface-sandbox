@@ -13,6 +13,7 @@ const PROMPT_FILES = Object.freeze({
   company_profile: { root: promptRoot, file: "02_COMPANY_PROFILE.prompt.md", path: "functions/_prompts/diligence-v2/02_COMPANY_PROFILE.prompt.md" },
   target_feature_profile: { root: promptRoot, file: "02_TARGET_FEATURE_PROFILE.prompt.md", path: "functions/_prompts/diligence-v2/02_TARGET_FEATURE_PROFILE.prompt.md" },
   stage6a_legal_document_cartography: { root: promptRoot, file: "03A_LEGAL_CARTOGRAPHY.prompt.md", path: "functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md" },
+  stage6b_data_provenance: { root: promptRoot, file: "03B_DATA_PROVENANCE.prompt.md", path: "functions/_prompts/diligence-v2/03B_DATA_PROVENANCE.prompt.md" },
   registry_ledger_evaluation: { root: promptRoot, file: "04_REGISTRY_LEDGER_EVALUATION.prompt.md", path: "functions/_prompts/diligence-v2/04_REGISTRY_LEDGER_EVALUATION.prompt.md" },
   operator_challenge: { root: promptRoot, file: "05_OPERATOR_CHALLENGE.prompt.md", path: "functions/_prompts/diligence-v2/05_OPERATOR_CHALLENGE.prompt.md" },
   final_compiler: { root: promptRoot, file: "06_FINAL_COMPILER.prompt.md", path: "functions/_prompts/diligence-v2/06_FINAL_COMPILER.prompt.md" },
@@ -26,6 +27,7 @@ const STAGE_PROMPT_IDS = Object.freeze({
   company_profile: "company_profile",
   target_feature_profile: "target_feature_profile",
   stage6a_legal_document_cartography: "stage6a_legal_document_cartography",
+  stage6b_data_provenance: "stage6b_data_provenance",
   registry_ledger_evaluation: "registry_ledger_evaluation",
   operator_challenge: "operator_challenge",
   final_compiler: "final_compiler"
