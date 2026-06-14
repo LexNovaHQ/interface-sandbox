@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { renderLegalExposureReport } from "../src/report-renderer/legalExposureReportRendererV2.js";
+import { renderLegalExposureReport, validateRenderedLegalExposureReportHtml } from "../src/report-renderer/legalExposureReportRendererV2.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,16 +14,22 @@ const validationPath = process.env.STAGE9_HTML_VALIDATION_PATH || path.join(cach
 
 const REQUIRED_SECTION_MARKERS = [
   "Matter Overview",
-  "Executive Exposure Summary",
-  "Evidence Reviewed",
-  "Product & Activity Profile",
-  "Legal Risk Surface Map",
-  "Legal Stack & Control Review",
+  "Executive Summary",
+  "Target Profile",
+  "Product / Activity / IP Profile",
+  "Data Risk, Provenance & Controls",
+  "Legal Document & Control Review",
   "Exposure Findings",
-  "Evidence Gaps & Clarification Points",
   "Implications & Remediation Path",
+  "Evidence Gaps & Clarification Points",
   "Methodology, Limitations & Review Notes",
-  "Forensic Ledger Appendix",
+  "Forensic Appendices",
+  "Appendix A — Evidence Source Index",
+  "Appendix B — Feature Ledger",
+  "Appendix C — Data Provenance Ledger",
+  "Appendix D — Legal / Control Ledger",
+  "Appendix E — Exposure Forensic Ledger",
+  "Appendix F — Quality Review / Correction Trace"
 ];
 
 function escapeHtml(value) {
@@ -61,25 +67,17 @@ function validateRenderedHtml(html) {
   const warnings = [];
   const renderedSections = countMatches(html, /class="report-section/g);
   const tables = countMatches(html, /<table/g);
-  const details = countMatches(html, /<details/g);
+  const rendererLanguageValidation = validateRenderedLegalExposureReportHtml(html);
 
-  if (!html || typeof html !== "string") {
-    errors.push("Renderer did not return an HTML string.");
-  }
-  if (!html.includes("<!doctype html>")) {
-    errors.push("Rendered output is missing <!doctype html>.");
-  }
+  if (!html || typeof html !== "string") errors.push("Renderer did not return an HTML string.");
+  if (!html.includes("<!doctype html>")) errors.push("Rendered output is missing <!doctype html>.");
   for (const marker of REQUIRED_SECTION_MARKERS) {
-    if (!htmlIncludesMarker(html, marker)) {
-      errors.push(`Rendered output is missing locked report section marker: ${marker}`);
-    }
+    if (!htmlIncludesMarker(html, marker)) errors.push(`Rendered output is missing locked report section marker: ${marker}`);
   }
-  if (renderedSections !== 7) {
-    errors.push(`Expected 7 visible navigation sections; found ${renderedSections}.`);
-  }
-  if (!html.includes("Review-Ready") && !html.includes("qualified counsel")) {
-    warnings.push("Rendered output may be missing explicit counsel-review / Review-Ready disclaimer language.");
-  }
+  if (renderedSections !== 11) errors.push(`Expected 11 locked report sections; found ${renderedSections}.`);
+  if (tables < 6) warnings.push(`Rendered output has only ${tables} table(s); locked appendices may be thin.`);
+  if (!html.includes("Review-Ready") && !html.includes("qualified counsel")) warnings.push("Rendered output may be missing explicit counsel-review / Review-Ready disclaimer language.");
+  if (!rendererLanguageValidation.ok) errors.push(`Visible HTML language violations: ${rendererLanguageValidation.visible_language_violations.join(", ")}`);
 
   return {
     ok: errors.length === 0,
@@ -88,18 +86,12 @@ function validateRenderedHtml(html) {
     html_bytes: Buffer.byteLength(html, "utf8"),
     rendered_sections: renderedSections,
     tables,
-    expandable_blocks: details,
-    required_section_markers: REQUIRED_SECTION_MARKERS,
+    visible_language_violations: rendererLanguageValidation.visible_language_violations,
+    required_section_markers: REQUIRED_SECTION_MARKERS
   };
 }
 
-console.log(JSON.stringify({
-  ok: true,
-  phase: "stage_9_html_renderer_start",
-  input_path: inputPath,
-  html_path: htmlPath,
-  validation_path: validationPath,
-}, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage_9_html_renderer_start", input_path: inputPath, html_path: htmlPath, validation_path: validationPath }, null, 2));
 
 const stage9Artifact = readJson(inputPath);
 const html = renderLegalExposureReport(stage9Artifact);
@@ -107,25 +99,8 @@ const validation = validateRenderedHtml(html);
 
 fs.mkdirSync(path.dirname(htmlPath), { recursive: true });
 fs.writeFileSync(htmlPath, html, "utf8");
-writeJson(validationPath, {
-  ...validation,
-  artifact_type: "stage9_html_render_validation",
-  input_path: inputPath,
-  html_path: htmlPath,
-  generated_at: new Date().toISOString(),
-});
+writeJson(validationPath, { ...validation, artifact_type: "stage9_html_render_validation", input_path: inputPath, html_path: htmlPath, generated_at: new Date().toISOString() });
 
-console.log(JSON.stringify({
-  ok: validation.ok,
-  phase: "stage_9_html_renderer_complete",
-  html_path: htmlPath,
-  validation_path: validationPath,
-  html_bytes: validation.html_bytes,
-  rendered_sections: validation.rendered_sections,
-  errors: validation.errors,
-  warnings: validation.warnings,
-}, null, 2));
+console.log(JSON.stringify({ ok: validation.ok, phase: "stage_9_html_renderer_complete", html_path: htmlPath, validation_path: validationPath, html_bytes: validation.html_bytes, rendered_sections: validation.rendered_sections, errors: validation.errors, warnings: validation.warnings }, null, 2));
 
-if (!validation.ok) {
-  process.exit(1);
-}
+if (!validation.ok) process.exit(1);
