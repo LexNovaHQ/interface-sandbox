@@ -17,17 +17,7 @@
     "stage6_review_version": { "const": "stage6_review_v1" },
     "stage6_component": { "$ref": "#/$defs/stage6Component" },
     "stage_role": { "const": "stage7_navigation_index" },
-    "input_refs": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "target_profile_version": { "type": "string" },
-        "feature_profile_version": { "type": "string" },
-        "source_bundle_version": { "type": "string" },
-        "target_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true },
-        "feature_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true }
-      }
-    },
+    "input_refs": { "$ref": "#/$defs/inputRefs" },
     "legal_document_cartography": { "$ref": "#/$defs/legalDocumentCartography" },
     "data_provenance_profile": { "$ref": "#/$defs/dataProvenanceProfile" },
     "stage7_navigation_index": { "$ref": "#/$defs/stage7NavigationIndex" },
@@ -54,25 +44,22 @@
     }
   ],
   "$defs": {
-    "stage6Component": {
-      "type": "string",
-      "enum": ["stage6a_legal_document_cartography", "stage6b_data_provenance", "stage6_integrated_handoff"]
-    },
-    "standardSignal": {
-      "type": "string",
-      "enum": ["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"]
-    },
-    "controlSignal": {
-      "type": "string",
-      "enum": ["visible", "partial", "absent_after_search", "unclear", "not_applicable", "unknown"]
-    },
-    "confidence": {
-      "type": "string",
-      "enum": ["high", "medium", "low", "unknown"]
-    },
-    "stringArray": {
-      "type": "array",
-      "items": { "type": "string" }
+    "stage6Component": { "type": "string", "enum": ["stage6a_legal_document_cartography", "stage6b_data_provenance", "stage6_integrated_handoff"] },
+    "standardSignal": { "type": "string", "enum": ["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"] },
+    "controlSignal": { "type": "string", "enum": ["visible", "partial", "absent_after_search", "unclear", "not_applicable", "unknown"] },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low", "unknown"] },
+    "stringArray": { "type": "array", "items": { "type": "string" } },
+    "nullableString": { "type": ["string", "null"] },
+    "inputRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target_profile_version": { "type": "string" },
+        "feature_profile_version": { "type": "string" },
+        "source_bundle_version": { "type": "string" },
+        "target_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true },
+        "feature_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true }
+      }
     },
     "basisCode": {
       "type": "string",
@@ -95,11 +82,7 @@
         "unknown"
       ]
     },
-    "basisCodes": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/basisCode" },
-      "uniqueItems": true
-    },
+    "basisCodes": { "type": "array", "items": { "$ref": "#/$defs/basisCode" }, "uniqueItems": true },
     "documentType": {
       "type": "string",
       "enum": [
@@ -126,6 +109,9 @@
         "baa",
         "hipaa_notice",
         "data_transfer_addendum",
+        "terms_page",
+        "pricing_terms",
+        "service_description_page",
         "other_valid_control_doc",
         "unknown"
       ]
@@ -166,17 +152,39 @@
         "unknown"
       ]
     },
+    "sectionFunction": {
+      "type": "string",
+      "enum": [
+        "definitions",
+        "service_description",
+        "ai_disclosure",
+        "privacy_notice",
+        "data_processing_terms",
+        "subprocessor_terms",
+        "acceptable_use_rules",
+        "prohibited_use_rules",
+        "security_terms",
+        "breach_terms",
+        "retention_deletion_terms",
+        "rights_request_terms",
+        "cross_border_transfer_terms",
+        "liability_terms",
+        "warranty_disclaimer",
+        "sla_terms",
+        "agentic_controls",
+        "commercial_terms",
+        "dispute_terms",
+        "ip_ownership_terms",
+        "minor_access_terms",
+        "automated_decision_terms",
+        "sensitive_data_terms",
+        "other",
+        "unknown"
+      ]
+    },
     "legalDocumentCartography": {
       "type": "object",
-      "required": [
-        "legal_document_inventory",
-        "legal_document_index",
-        "document_relationship_map",
-        "document_control_signal_map",
-        "document_mismatch_signal_map",
-        "legal_document_summary_signals",
-        "legal_document_limitations"
-      ],
+      "required": ["legal_document_inventory", "legal_document_index", "document_relationship_map", "document_control_signal_map", "document_mismatch_signal_map", "legal_document_summary_signals", "legal_document_limitations"],
       "additionalProperties": false,
       "properties": {
         "legal_document_inventory": { "type": "array", "items": { "$ref": "#/$defs/legalDocumentInventoryItem" } },
@@ -201,8 +209,8 @@
         "access_status": { "type": "string", "enum": ["ingested", "metadata_only", "fetch_failed", "blocked", "not_attempted", "unknown"] },
         "source_record_ref": { "type": "string" },
         "source_url": { "type": "string" },
-        "final_url": { "type": "string" },
-        "parent_document_id": { "type": "string" },
+        "final_url": { "$ref": "#/$defs/nullableString" },
+        "parent_document_id": { "$ref": "#/$defs/nullableString" },
         "effective_date": { "type": "string" },
         "last_updated": { "type": "string" },
         "version": { "type": "string" },
@@ -223,32 +231,7 @@
         "legal_unit_title": { "type": "string" },
         "legal_unit_path": { "type": "string" },
         "legal_unit_order": { "type": "integer", "minimum": 1 },
-        "section_function": {
-          "type": "string",
-          "enum": [
-            "definitions",
-            "service_description",
-            "ai_disclosure",
-            "privacy_notice",
-            "data_processing_terms",
-            "subprocessor_terms",
-            "acceptable_use_rules",
-            "prohibited_use_rules",
-            "security_terms",
-            "breach_terms",
-            "retention_deletion_terms",
-            "rights_request_terms",
-            "cross_border_transfer_terms",
-            "liability_terms",
-            "warranty_disclaimer",
-            "sla_terms",
-            "agentic_controls",
-            "commercial_terms",
-            "dispute_terms",
-            "other",
-            "unknown"
-          ]
-        },
+        "section_function": { "$ref": "#/$defs/sectionFunction" },
         "control_families_detected": { "type": "array", "items": { "$ref": "#/$defs/controlFamily" } },
         "feature_refs": { "$ref": "#/$defs/stringArray" },
         "data_flow_refs": { "$ref": "#/$defs/stringArray" },
@@ -385,6 +368,7 @@
     "recipientCategory": { "type": "string", "enum": ["model_provider", "cloud_provider", "payment_provider", "analytics_provider", "support_provider", "security_provider", "workflow_provider", "storage_provider", "unknown"] },
     "region": { "type": "string", "enum": ["us", "eu", "uk", "india", "canada", "australia", "singapore", "global", "not_visible", "unknown"] },
     "evidenceStrength": { "type": "string", "enum": ["direct_source", "inferred_from_stage5", "inferred_from_stage4", "model_classified", "unknown"] },
+    "dataSignalType": { "type": "string", "enum": ["personal_data", "sensitive_data", "children_data", "credential_or_secret", "client_confidential", "biometric_data", "financial_data", "health_data", "training_or_finetuning", "processor_chain", "cross_border_transfer", "deletion", "notice", "automated_decision", "unknown"] },
     "dataSubject": {
       "type": "object",
       "required": ["subject_type", "subject_labels", "minor_signal", "employee_signal", "customer_signal", "confidence"],
@@ -640,7 +624,7 @@
       "required": ["signal_type", "signal_value", "data_flow_ids", "feature_ids", "legal_unit_ids"],
       "additionalProperties": false,
       "properties": {
-        "signal_type": { "type": "string" },
+        "signal_type": { "$ref": "#/$defs/dataSignalType" },
         "signal_value": { "$ref": "#/$defs/standardSignal" },
         "data_flow_ids": { "$ref": "#/$defs/stringArray" },
         "feature_ids": { "$ref": "#/$defs/stringArray" },
@@ -665,7 +649,7 @@
       "required": ["signal_type", "object_ref", "search_scope", "absence_basis", "confidence"],
       "additionalProperties": false,
       "properties": {
-        "signal_type": { "type": "string" },
+        "signal_type": { "$ref": "#/$defs/dataSignalType" },
         "object_ref": { "type": "string" },
         "search_scope": { "type": "string" },
         "absence_basis": { "type": "string", "enum": ["searched_legal_docs", "searched_privacy_docs", "searched_security_docs", "searched_trust_docs", "searched_public_sources", "source_not_available", "access_failed", "not_enough_context", "unknown"] },
@@ -679,8 +663,8 @@
       "properties": {
         "source_record_ref": { "type": "string" },
         "source_url": { "type": "string" },
-        "source_type": { "type": "string", "enum": ["legal_document", "privacy_document", "terms_document", "security_document", "trust_document", "status_document", "feature_source", "public_page", "api_doc", "help_doc", "source_bundle_record", "unknown"] },
-        "reason_for_fallback": { "type": "string", "enum": ["direct_source_verification_required", "stage6_signal_unknown", "stage6_signal_conflicting", "missing_legal_unit_ref", "hunter_trigger_requires_line_read", "source_locator_available", "source_scope_incomplete", "unindexed_admitted_source", "unknown"] }
+        "source_type": { "$ref": "#/$defs/sourceType" },
+        "reason_for_fallback": { "$ref": "#/$defs/fallbackReason" }
       }
     },
     "stage6Limitation": {
@@ -690,22 +674,18 @@
       "properties": {
         "limitation_id": { "type": "string" },
         "scope": { "type": "string" },
-        "reason_code": { "type": "string", "enum": ["source_missing", "source_conflicting", "source_access_failed", "stage5_signal_unknown", "legal_unit_ref_missing", "low_confidence_inference", "model_skipped", "unknown"] },
-        "impact_code": { "type": "string", "enum": ["no_stage7_block", "requires_source_line_read", "reduces_confidence", "partial_navigation_only", "unknown"] },
+        "reason_code": { "$ref": "#/$defs/limitationReasonCode" },
+        "impact_code": { "$ref": "#/$defs/limitationImpactCode" },
         "confidence": { "$ref": "#/$defs/confidence" }
       }
     },
-    "mismatchType": {
-      "type": "string",
-      "enum": ["feature_vs_document", "data_flow_vs_document", "document_vs_document", "claim_vs_absence", "stack_vs_reality", "unknown"]
-    },
-    "mismatchSignal": {
-      "type": "string",
-      "enum": ["expected_signal_absent", "expected_signal_partial", "conflicting_signal", "source_absent", "source_unclear", "unknown"]
-    },
-    "locatorType": {
-      "type": "string",
-      "enum": ["heading_path", "url_fragment", "text_anchor", "source_record", "page_url", "chunk_index", "unknown"]
-    }
+    "mismatchType": { "type": "string", "enum": ["feature_vs_document", "data_flow_vs_document", "document_vs_document", "claim_vs_absence", "stack_vs_reality", "unknown"] },
+    "mismatchSignal": { "type": "string", "enum": ["expected_signal_absent", "expected_signal_partial", "conflicting_signal", "source_absent", "source_unclear", "unknown"] },
+    "locatorType": { "type": "string", "enum": ["heading_path", "url_fragment", "text_anchor", "source_record", "page_url", "chunk_index", "unknown"] },
+    "sourceType": { "type": "string", "enum": ["legal_document", "privacy_document", "terms_document", "security_document", "trust_document", "status_document", "feature_source", "public_page", "api_doc", "help_doc", "source_bundle_record", "unknown"] },
+    "absenceBasis": { "type": "string", "enum": ["searched_legal_docs", "searched_privacy_docs", "searched_security_docs", "searched_trust_docs", "searched_public_sources", "source_not_available", "access_failed", "not_enough_context", "unknown"] },
+    "fallbackReason": { "type": "string", "enum": ["direct_source_verification_required", "stage6_signal_unknown", "stage6_signal_conflicting", "missing_legal_unit_ref", "hunter_trigger_requires_line_read", "source_locator_available", "source_scope_incomplete", "unindexed_admitted_source", "unknown"] },
+    "limitationReasonCode": { "type": "string", "enum": ["source_missing", "source_conflicting", "source_access_failed", "stage5_signal_unknown", "legal_unit_ref_missing", "low_confidence_inference", "model_skipped", "unknown"] },
+    "limitationImpactCode": { "type": "string", "enum": ["no_stage7_block", "requires_source_line_read", "reduces_confidence", "partial_navigation_only", "unknown"] }
   }
 }
