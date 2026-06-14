@@ -7,8 +7,6 @@ import { validateDiligenceStageOutput } from "../diligence/stageSchemaValidator.
 import {
   applyCorrections,
   asArray,
-  compactRegistryLogicReference,
-  compactSourceBundleForOperatorChallenge,
   countsByStatus,
   coverage,
   logStage,
@@ -19,6 +17,13 @@ import {
   threatId,
   validateChallengeOutput
 } from "./liveRunShared.js";
+import {
+  buildDeterministicStage8Output,
+  buildStage8ChallengeInput,
+  buildStage8DeterministicScan,
+  chunkStage8ChallengeRows,
+  combineStage8ChallengeOutputs
+} from "./stage8OperatorChallengeScanner.js";
 
 export async function runStage(stageId, input, options = {}) {
   const result = await runDiligenceStage({ stageId, input, options, env: process.env });
@@ -129,31 +134,43 @@ export async function runStage8({ stage6Cache, stage7Artifact, registryRuntime, 
   const registryRows = asArray(registryRuntime?.threats);
   const expectedIds = registryRows.length ? registryRows.map(registryThreatId) : mergedLedger.map(threatId);
   const registryTotal = expectedIds.length || Number(stage7Artifact.source_row_count || mergedLedger.length);
-  const stage8Input = {
-    run_id: runId,
-    registry_count_loaded: registryTotal,
-    registry_total_count: registryTotal,
-    registry_count_evaluated: mergedLedger.length,
-    registry_evaluation_ledger: mergedLedger,
-    registry_batch_meta: { run_id: stage7Artifact.run_id || runId, batch_id: "MERGED", is_merged_ledger: true, test_run: false, registry_count_loaded: registryTotal, registry_total_count: registryTotal, registry_count_evaluated: mergedLedger.length, stage7_artifact_type: stage7Artifact.artifact_type || null },
-    source_bundle: compactSourceBundleForOperatorChallenge(stage6Cache.source_bundle),
-    target_profile: stage6Cache.company_profile,
-    target_feature_profile: stage6Cache.target_feature_profile,
-    stage6_review: stage6Cache.stage6_review,
-    stage6_to_stage7_adapter: stage6Cache.stage6_to_stage7_adapter,
-    registry_logic_reference: compactRegistryLogicReference(registryRows),
-    prior_stage_summaries: { stage7_summary: stage7Artifact.summary || null, active_archetypes: stage7Artifact.active_archetypes || [], active_surfaces: stage7Artifact.active_surfaces || [], stage8_input_policy: "compact_source_metadata_stage6_canonical_indexes_full_ledger" },
-    test_run: false
-  };
-  const result = await runStage("operator_challenge", stage8Input, { pool: process.env.LIVE_STAGE8_POOL || process.env.STAGE8_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_STAGE8_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_STAGE8_TIMEOUT_MS || 120000) });
-  const challengeOutput = result.operator_challenge;
-  if (!challengeOutput) throw new Error("Stage 8 returned no operator_challenge output.");
+  const scanner = buildStage8DeterministicScan({ mergedLedger, stage7Artifact, stage6Cache });
+  const chunks = chunkStage8ChallengeRows(scanner.challenge_rows, Number(process.env.LIVE_STAGE8_CHALLENGE_CHUNK_SIZE || process.env.STAGE8_CHALLENGE_CHUNK_SIZE || 12));
+  const challengeOutputs = [];
+  const modelMetadata = [];
+  const promptMetadata = [];
+  const modelWarnings = [];
+
+  for (let index = 0; index < chunks.length; index += 1) {
+    const stage8Input = buildStage8ChallengeInput({ runId, registryTotal, mergedLedger, challengeRows: chunks[index], chunkIndex: index, chunkCount: chunks.length, stage7Artifact, registryRows, stage6Cache, scanner });
+    try {
+      const result = await runStage("operator_challenge", stage8Input, { pool: process.env.LIVE_STAGE8_POOL || process.env.STAGE8_POOL || "operator", maxOutputTokens: Number(process.env.LIVE_STAGE8_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_STAGE8_TIMEOUT_MS || 120000), maxAttempts: Number(process.env.LIVE_STAGE8_MAX_ATTEMPTS || process.env.STAGE8_MAX_ATTEMPTS || 3) });
+      const output = result.operator_challenge;
+      if (!output) throw new Error("Stage 8 returned no operator_challenge output.");
+      const outputErrors = validateChallengeOutput(output, registryTotal);
+      if (outputErrors.length) throw new Error(`Stage 8 compact challenge output validation failed: ${outputErrors.join("; ")}`);
+      challengeOutputs.push(output);
+      modelMetadata.push(result.model_metadata || null);
+      promptMetadata.push(result.prompt_metadata || null);
+      logStage(logs, "operator_challenge", "compact_chunk_complete", { chunk_number: index + 1, chunk_count: chunks.length, challenge_rows: chunks[index].length, corrected_count: asArray(output.corrected_ledger_entries).length });
+    } catch (error) {
+      const warning = `Stage 8 compact model challenge chunk ${index + 1}/${chunks.length} failed: ${error?.message || String(error)}`;
+      modelWarnings.push(warning);
+      logStage(logs, "operator_challenge", "compact_chunk_warning", { chunk_number: index + 1, chunk_count: chunks.length, warning });
+    }
+  }
+
+  const challengeOutput = challengeOutputs.length
+    ? combineStage8ChallengeOutputs({ scanner, outputs: challengeOutputs, registryTotal, evaluatedCount: mergedLedger.length, modelWarnings })
+    : buildDeterministicStage8Output({ scanner, registryTotal, evaluatedCount: mergedLedger.length });
+  if (modelWarnings.length && !challengeOutputs.length) challengeOutput.operator_challenge_gate.notes.push(...modelWarnings);
   const outputErrors = validateChallengeOutput(challengeOutput, registryTotal);
   if (outputErrors.length) throw new Error(`Stage 8 output validation failed: ${outputErrors.join("; ")}`);
   const correctionResult = applyCorrections({ mergedLedger, challengeOutput, expectedIds });
   if (!correctionResult.ok) throw new Error(`Stage 8 correction merge validation failed: ${correctionResult.correction_errors.join("; ")}`);
-  const stage8Export = { artifact_type: "stage8_operator_challenge_live_export", generated_at: nowIso(), run_id: runId, operator_challenge: challengeOutput, correction_result: { ok: correctionResult.ok, corrected_count: correctionResult.corrected_count, correction_errors: correctionResult.correction_errors, correction_meta: correctionResult.correction_meta || null }, model_metadata: result.model_metadata || null, prompt_metadata: result.prompt_metadata || null, validation_mode: result.validation_mode || null, guardrail_validation_mode: result.guardrail_validation_mode || null, summary: { registry_total: registryTotal, pre_challenge_status_counts: countsByStatus(mergedLedger), post_challenge_status_counts: countsByStatus(correctionResult.post_challenge_ledger), corrected_count: correctionResult.corrected_count, operator_result: challengeOutput.operator_challenge_gate?.result || null, reopened_rows: challengeOutput.operator_challenge_gate?.reopened_rows || [] } };
+  const stage8InputSummary = { input_policy: "deterministic_scan_plus_compact_suspicious_row_challenge", deterministic_scan: { scan_version: scanner.scan_version, scanned_row_count: scanner.scanned_row_count, suspicious_row_count: scanner.suspicious_row_count, warnings: scanner.warnings, high_risk_checks: scanner.high_risk_checks }, model_challenge_chunk_count: chunks.length, model_challenge_row_count: scanner.challenge_rows.length };
+  const stage8Export = { artifact_type: "stage8_operator_challenge_live_export", generated_at: nowIso(), run_id: runId, operator_challenge: challengeOutput, correction_result: { ok: correctionResult.ok, corrected_count: correctionResult.corrected_count, correction_errors: correctionResult.correction_errors, correction_meta: correctionResult.correction_meta || null }, model_metadata: { compact_challenge_chunks: modelMetadata, model_warnings: modelWarnings }, prompt_metadata: promptMetadata.find(Boolean) || null, validation_mode: "stage8_compact_operator_challenge", guardrail_validation_mode: "deterministic_scan_plus_schema_merge_validation", summary: { registry_total: registryTotal, pre_challenge_status_counts: countsByStatus(mergedLedger), post_challenge_status_counts: countsByStatus(correctionResult.post_challenge_ledger), corrected_count: correctionResult.corrected_count, operator_result: challengeOutput.operator_challenge_gate?.result || null, reopened_rows: challengeOutput.operator_challenge_gate?.reopened_rows || [], deterministic_scan: stage8InputSummary.deterministic_scan } };
   const stage8Ledger = { artifact_type: "stage8_post_challenge_ledger", generated_at: nowIso(), run_id: runId, corrected_count: correctionResult.corrected_count, correction_meta: correctionResult.correction_meta || null, operator_challenge_gate: challengeOutput.operator_challenge_gate, post_challenge_ledger: correctionResult.post_challenge_ledger, final_status_counts: countsByStatus(correctionResult.post_challenge_ledger) };
-  logStage(logs, "operator_challenge", "complete", { corrected_count: correctionResult.corrected_count, post_status_counts: countsByStatus(correctionResult.post_challenge_ledger) });
-  return { stage8Export, stage8Ledger, stage8Input };
+  logStage(logs, "operator_challenge", "complete", { corrected_count: correctionResult.corrected_count, post_status_counts: countsByStatus(correctionResult.post_challenge_ledger), deterministic_suspicious_rows: scanner.suspicious_row_count, model_challenge_chunks: chunks.length, model_warning_count: modelWarnings.length });
+  return { stage8Export, stage8Ledger, stage8Input: stage8InputSummary };
 }
