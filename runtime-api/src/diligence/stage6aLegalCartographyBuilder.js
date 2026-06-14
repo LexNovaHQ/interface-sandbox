@@ -4,14 +4,17 @@ import {
   STAGE6_COMPONENTS,
   STAGE6_CONFIDENCE_VALUES,
   STAGE6_CONTROL_FAMILIES,
+  STAGE6_CORE_DOCUMENT_TYPES,
   STAGE6_DOCUMENT_FAMILIES,
   STAGE6_DOCUMENT_STATUSES,
+  STAGE6_DOCUMENT_TYPE_CODES,
   STAGE6_DOCUMENT_TYPES,
   STAGE6_FALLBACK_REASONS,
   STAGE6_LEGAL_UNIT_TYPES,
   STAGE6_LOCATOR_TYPES,
   STAGE6_REVIEW_VERSION,
   STAGE6_SECTION_FUNCTIONS,
+  STAGE6_SECTION_FUNCTION_TO_CONTROL_FAMILIES,
   STAGE6_STAGE_ROLE,
   normalizeStage6BasisCodes,
   normalizeStage6Enum,
@@ -19,35 +22,7 @@ import {
 } from "./stage6CanonicalVocabulary.js";
 
 const LEGAL_OR_GOVERNANCE_FAMILIES = new Set(["legal_profile", "governance_profile"]);
-const CORE_DOCUMENT_TYPES = new Set(["tos", "privacy_policy", "dpa", "aup", "sla"]);
-
-const DOCUMENT_TYPE_CODES = Object.freeze({
-  tos: "TOS",
-  privacy_policy: "PRIVACY",
-  dpa: "DPA",
-  aup: "AUP",
-  sla: "SLA",
-  eula: "EULA",
-  cookie_policy: "COOKIE",
-  subprocessor_page: "SUBPROCESSOR",
-  security_page: "SECURITY",
-  trust_center: "TRUST",
-  status_page: "STATUS",
-  ai_policy: "AI_POLICY",
-  responsible_ai_page: "RAI",
-  model_card: "MODEL_CARD",
-  developer_terms: "DEVTERMS",
-  api_terms: "APITERMS",
-  community_guidelines: "COMMUNITY",
-  data_deletion_page: "DELETION",
-  dsr_page: "DSR",
-  grievance_page: "GRIEVANCE",
-  baa: "BAA",
-  hipaa_notice: "HIPAA",
-  data_transfer_addendum: "DTA",
-  other_valid_control_doc: "OTHER",
-  unknown: "UNKNOWN"
-});
+const MAX_MACRO_LEGAL_UNITS_PER_DOCUMENT = 12;
 
 function compact(value = "") { return String(value || "").replace(/\s+/g, " ").trim(); }
 function lower(value = "") { return compact(value).toLowerCase(); }
@@ -64,6 +39,9 @@ function classifyDocumentType(record = {}) {
   if (/terms-of-service|terms of service|\btos\b|terms and conditions/.test(combined)) return "tos";
   if (/privacy-policy|privacy policy|privacy notice/.test(combined)) return "privacy_policy";
   if (/\beula\b|end user license/.test(combined)) return "eula";
+  if (/pricing terms|fees|billing terms|payment terms/.test(combined)) return "pricing_terms";
+  if (/service description|service-specific terms|product terms/.test(combined)) return "service_description_page";
+  if (/terms\b|terms page|legal terms/.test(combined)) return "terms_page";
   if (/status\.|system status|status page/.test(combined)) return "status_page";
   if (/data-processing|data processing agreement|data processing addendum|\bdpa\b/.test(combined)) return "dpa";
   if (/acceptable-use|acceptable use|prohibited use|usage restrictions|\baup\b/.test(combined)) return "aup";
@@ -111,26 +89,18 @@ function legalSourceEntries(input = {}) {
     .filter(({ record, document_type }) => shouldAdmitAsLegalSource(record) && document_type !== "unknown");
 }
 
-function documentStatusFor(record = {}) {
-  if (sourceText(record)) return "visible";
-  return sourceUrl(record) ? "linked" : "unknown";
-}
-
+function documentStatusFor(record = {}) { return sourceText(record) ? "visible" : (sourceUrl(record) ? "linked" : "unknown"); }
 function accessStatusFor(record = {}) {
   if (sourceText(record)) return "ingested";
   const status = lower(record.coverage_status || record.quality?.coverage_status || record.status || "");
   if (status.includes("fail") || status.includes("error") || status.includes("blocked")) return "fetch_failed";
   return sourceUrl(record) ? "metadata_only" : "unknown";
 }
-
 function documentIdFor(documentType, ordinal) {
-  const code = DOCUMENT_TYPE_CODES[documentType] || DOCUMENT_TYPE_CODES.unknown;
+  const code = STAGE6_DOCUMENT_TYPE_CODES[documentType] || STAGE6_DOCUMENT_TYPE_CODES.unknown;
   return `DOC_${code}_${String(ordinal).padStart(3, "0")}`;
 }
-
-function documentFamilyFor(documentType) {
-  return CORE_DOCUMENT_TYPES.has(documentType) ? "core" : "supplemental";
-}
+function documentFamilyFor(documentType) { return STAGE6_CORE_DOCUMENT_TYPES.includes(documentType) ? "core" : "supplemental"; }
 
 export function buildStage6ALegalSourceInventory(input = {}) {
   const counters = new Map();
@@ -160,31 +130,18 @@ export function buildStage6ALegalSourceInventory(input = {}) {
 function inventoryBySourceRef(inventory = []) { return new Map(inventory.map((item) => [item.source_record_ref, item])); }
 function inventoryByDocumentId(inventory = []) { return new Map(inventory.map((item) => [item.document_id, item])); }
 
-const MACRO_LEGAL_UNIT_PATTERN = /annex|schedule|exhibit|policy|terms|privacy|security|subprocessor|acceptable use|prohibited use|\bdpa\b|\bsla\b|data processing|rights|deletion|retention|liability|warranty|dispute|\bai\b|artificial intelligence|model|service|license|eligibility|payment|subscription|billing|fees|indemnity|intellectual property|\bip\b|governing law|jurisdiction|arbitration|breach|incident|safeguard|transfer|cookies?/;
-const STRUCTURED_LEGAL_HEADING_PATTERN = /^(article|section|chapter|part|clause|schedule|annex|annexure|exhibit)\b|^\d+(?:\.\d+)*[\).:-]?\s+\S+/;
+const MACRO_LEGAL_UNIT_PATTERN = /^(article|section|chapter|part|clause|schedule|annex|annexure|exhibit)\b|^\d+(?:\.\d+){0,1}[\).:-]?\s+\S+|\b(definitions|service|privacy|data processing|subprocessor|acceptable use|prohibited use|security|breach|incident|retention|deletion|rights|transfer|liability|warranty|sla|service level|agent|autonomous|fees|payment|billing|dispute|law|jurisdiction|arbitration|intellectual property|minor|children|automated decision|sensitive data|ai|artificial intelligence)\b/;
 
 function isMacroHeading(heading = {}) {
   const text = lower(heading.text || "");
   const level = Number(heading.level || 1);
-  if (!text || /^(faq|question|answer|note|example|learn more|read more|contact us|last updated|table of contents)$/i.test(text)) return false;
-  if (MACRO_LEGAL_UNIT_PATTERN.test(text)) return true;
-  if (STRUCTURED_LEGAL_HEADING_PATTERN.test(text)) return true;
-  return Number.isFinite(level) && level <= 1 && text.split(/\s+/).length >= 2;
+  if (!text) return false;
+  if (/^(faq|question|answer|note|example|learn more|read more|contact us|last updated|table of contents)$/i.test(text)) return false;
+  if (Number.isFinite(level) && level > 2 && !/schedule|annex|annexure|exhibit/i.test(text)) return false;
+  return MACRO_LEGAL_UNIT_PATTERN.test(text) || (Number.isFinite(level) && level <= 1 && text.split(/\s+/).length >= 2);
 }
 
-function legalUnitPathFor(headings = [], index = 0) {
-  const stack = [];
-  for (let i = 0; i <= index; i += 1) {
-    const heading = headings[i] || {};
-    const level = Number(heading.level || 1);
-    const text = compact(heading.text || "");
-    if (!text) continue;
-    while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
-    stack.push({ level, text });
-  }
-  return stack.map((item) => item.text).join(" > ") || compact(headings[index]?.text || "root");
-}
-
+function legalUnitPathFor(heading = {}, fallback = "Document") { return compact(heading.text || fallback) || fallback; }
 function classifyLegalUnitType(heading = {}) {
   const text = lower(heading.text || "");
   if (/annexure|annex/.test(text)) return "annexure";
@@ -192,10 +149,9 @@ function classifyLegalUnitType(heading = {}) {
   if (/exhibit/.test(text)) return "exhibit";
   if (/linked policy|incorporated policy/.test(text)) return "linked_policy";
   if (/table|subprocessor list|recipient list/.test(text)) return "material_table";
-  if (/notice|banner|modal|footer/.test(text)) return "control_notice";
+  if (/notice/.test(text)) return "control_notice";
   return "main_section";
 }
-
 function classifySectionFunction(heading = {}) {
   const text = lower(heading.text || "");
   if (/definition|definitions/.test(text)) return "definitions";
@@ -217,35 +173,21 @@ function classifySectionFunction(heading = {}) {
   if (/agent|autonomous|action log|circuit breaker/.test(text)) return "agentic_controls";
   if (/fees|payment|subscription|commercial|billing/.test(text)) return "commercial_terms";
   if (/dispute|law|jurisdiction|venue|arbitration/.test(text)) return "dispute_terms";
+  if (/intellectual property|\bip\b|ownership/.test(text)) return "ip_ownership_terms";
+  if (/minor|child|children|under 18/.test(text)) return "minor_access_terms";
+  if (/automated decision|profiling/.test(text)) return "automated_decision_terms";
+  if (/sensitive data|special category|biometric|health/.test(text)) return "sensitive_data_terms";
   return "unknown";
 }
-
 function controlFamiliesForSectionFunction(sectionFunction) {
-  const map = {
-    ai_disclosure: ["ai_disclosure", "hallucination_disclaimer"],
-    privacy_notice: ["privacy_notice", "data_collection", "data_use", "data_sharing"],
-    data_processing_terms: ["data_collection", "data_use", "data_subject_rights"],
-    subprocessor_terms: ["subprocessor_disclosure"],
-    acceptable_use_rules: ["acceptable_use"],
-    prohibited_use_rules: ["prohibited_use"],
-    security_terms: ["security_safeguards"],
-    breach_terms: ["breach_notice"],
-    retention_deletion_terms: ["retention", "deletion"],
-    rights_request_terms: ["data_subject_rights", "consent_withdrawal", "grievance_channel"],
-    cross_border_transfer_terms: ["cross_border_transfer"],
-    liability_terms: ["liability_cap"],
-    warranty_disclaimer: ["warranty_disclaimer"],
-    sla_terms: ["sla_performance"],
-    agentic_controls: ["agentic_controls"],
-    commercial_terms: ["commercial_terms"],
-    dispute_terms: ["dispute_terms"]
-  };
-  return uniqueStage6Values(map[sectionFunction] || []).map((value) => normalizeStage6Enum(value, STAGE6_CONTROL_FAMILIES)).filter((value) => value !== "unknown");
+  return uniqueStage6Values(STAGE6_SECTION_FUNCTION_TO_CONTROL_FAMILIES[sectionFunction] || [])
+    .map((value) => normalizeStage6Enum(value, STAGE6_CONTROL_FAMILIES))
+    .filter((value) => value !== "unknown");
 }
-
-function fallbackRootHeading(record = {}) {
-  const title = sourceTitle(record) || "Document";
-  return [{ level: 1, text: title }];
+function fallbackRootHeading(record = {}) { return [{ level: 1, text: sourceTitle(record) || "Document" }]; }
+function macroHeadingsForRecord(record = {}) {
+  const headings = sourceHeadings(record).filter(isMacroHeading).slice(0, MAX_MACRO_LEGAL_UNITS_PER_DOCUMENT);
+  return headings.length ? headings : fallbackRootHeading(record);
 }
 
 export function buildStage6ALegalDocumentIndex(input = {}, inventory = buildStage6ALegalSourceInventory(input)) {
@@ -255,22 +197,19 @@ export function buildStage6ALegalDocumentIndex(input = {}, inventory = buildStag
     const source_record_ref = sourceRecordRef(record, index);
     const document = bySource.get(source_record_ref);
     if (!document) continue;
-    const sourceHeadingsList = sourceHeadings(record);
-    const headings = sourceHeadingsList.length ? sourceHeadingsList : fallbackRootHeading(record);
-    let legalUnitOrder = 0;
+    const headings = macroHeadingsForRecord(record);
     headings.forEach((heading, headingIndex) => {
       const title = compact(heading.text || "");
-      if (!title || !isMacroHeading(heading)) return;
-      legalUnitOrder += 1;
+      const legalUnitOrder = headingIndex + 1;
       const sectionFunction = normalizeStage6Enum(classifySectionFunction(heading), STAGE6_SECTION_FUNCTIONS);
       const legalUnitType = normalizeStage6Enum(classifyLegalUnitType(heading), STAGE6_LEGAL_UNIT_TYPES);
-      const legalUnitPath = legalUnitPathFor(headings, headingIndex);
+      const legalUnitPath = legalUnitPathFor(heading, document.document_title);
       rows.push({
         index_id: `IDX_${document.document_id}_${String(legalUnitOrder).padStart(3, "0")}`,
         document_id: document.document_id,
         legal_unit_id: `${document.document_id}:LU${String(legalUnitOrder).padStart(3, "0")}`,
         legal_unit_type: legalUnitType,
-        legal_unit_title: title,
+        legal_unit_title: title || document.document_title,
         legal_unit_path: legalUnitPath,
         legal_unit_order: legalUnitOrder,
         section_function: sectionFunction,
@@ -278,10 +217,7 @@ export function buildStage6ALegalDocumentIndex(input = {}, inventory = buildStag
         feature_refs: [],
         data_flow_refs: [],
         source_record_ref,
-        source_locator: {
-          locator_type: normalizeStage6Enum("heading_path", STAGE6_LOCATOR_TYPES),
-          locator_value: legalUnitPath
-        },
+        source_locator: { locator_type: normalizeStage6Enum("heading_path", STAGE6_LOCATOR_TYPES), locator_value: legalUnitPath },
         basis_codes: normalizeStage6BasisCodes(["macro_heading_classification", "source_bundle_record_ref", "deterministic_seed"]),
         confidence: "high"
       });
@@ -382,6 +318,7 @@ export const stage6aLegalCartographyBuilderInternals = {
   classifyDocumentType,
   classifySectionFunction,
   classifyLegalUnitType,
+  macroHeadingsForRecord,
   normalizeSourceRecords,
   sourceHeadings,
   shouldAdmitAsLegalSource
