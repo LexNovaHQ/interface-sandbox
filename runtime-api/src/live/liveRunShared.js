@@ -160,37 +160,67 @@ function validateLedgerEntry(entry) {
 
 export function validateChallengeOutput(output, expectedTotal) {
   const errors = [];
+  const warnings = [];
+  const repairs = [];
   const gate = output?.operator_challenge_gate;
   if (!gate || typeof gate !== "object") errors.push("operator_challenge_gate missing or invalid");
   else {
     if (typeof gate.completed !== "boolean") errors.push("operator_challenge_gate.completed must be boolean");
     if (!["PASS", "PASS_WITH_WARNINGS", "REOPENED", "FAIL_RETRY_REQUIRED"].includes(gate.result)) errors.push(`invalid operator challenge result: ${gate.result}`);
-    if (gate.result !== "FAIL_RETRY_REQUIRED" && expectedTotal && gate.registry_count_evaluated !== expectedTotal) errors.push(`operator_challenge_gate.registry_count_evaluated expected ${expectedTotal}, received ${gate.registry_count_evaluated}`);
+    if (gate.result !== "FAIL_RETRY_REQUIRED" && expectedTotal && gate.registry_count_evaluated !== expectedTotal) {
+      warnings.push(`operator_challenge_gate.registry_count_evaluated expected ${expectedTotal}, received ${gate.registry_count_evaluated}; final ledger coverage will be authoritative`);
+    }
   }
-  if (!Array.isArray(output?.corrected_ledger_entries)) errors.push("corrected_ledger_entries must be array");
+  if (!Array.isArray(output?.corrected_ledger_entries)) {
+    output.corrected_ledger_entries = [];
+    repairs.push("normalized missing corrected_ledger_entries to []");
+  }
+  if (warnings.length) output.operator_challenge_warnings = [...asArray(output.operator_challenge_warnings), ...warnings];
+  if (repairs.length) output.operator_challenge_repairs = [...asArray(output.operator_challenge_repairs), ...repairs];
   return errors;
 }
 
 export function applyCorrections({ mergedLedger, challengeOutput, expectedIds }) {
   const errors = [];
+  const warnings = [];
+  const repairs = [];
   const originalIds = mergedLedger.map(threatId).filter(Boolean);
   const preCompare = compareIds(expectedIds, originalIds);
   if (preCompare.missing.length) errors.push(`pre-correction ledger missing threat_id(s): ${preCompare.missing.join(", ")}`);
   if (preCompare.unexpected.length) errors.push(`pre-correction ledger has unexpected threat_id(s): ${preCompare.unexpected.join(", ")}`);
   if (preCompare.duplicate.length) errors.push(`pre-correction ledger has duplicate threat_id(s): ${preCompare.duplicate.join(", ")}`);
 
-  const correctedEntries = asArray(challengeOutput?.corrected_ledger_entries);
+  if (!Array.isArray(challengeOutput?.corrected_ledger_entries)) {
+    challengeOutput.corrected_ledger_entries = [];
+    repairs.push("normalized missing corrected_ledger_entries to []");
+  }
+
+  const correctedEntries = asArray(challengeOutput?.corrected_ledger_entries).filter((entry) => entry && typeof entry === "object");
   const correctedIds = correctedEntries.map(threatId).filter(Boolean);
   const duplicateCorrected = duplicateValues(correctedIds);
   const originalIdSet = new Set(originalIds);
   const unknownCorrected = correctedIds.filter((id) => !originalIdSet.has(id));
-  const correctedEntryErrors = correctedEntries.flatMap(validateLedgerEntry);
+  const missingCorrectedIds = correctedEntries.filter((entry) => !threatId(entry)).length;
+  if (missingCorrectedIds) errors.push(`corrected entry missing threat_id count: ${missingCorrectedIds}`);
   if (duplicateCorrected.length) errors.push(`duplicate corrected threat_id(s): ${duplicateCorrected.join(", ")}`);
   if (unknownCorrected.length) errors.push(`unknown corrected threat_id(s): ${unknownCorrected.join(", ")}`);
-  if (correctedEntryErrors.length) errors.push(...correctedEntryErrors);
-  if (errors.length) return { ok: false, correction_errors: errors, corrected_count: correctedEntries.length, post_challenge_ledger: mergedLedger };
+  if (errors.length) return { ok: false, correction_errors: errors, correction_warnings: warnings, correction_repairs: repairs, corrected_count: correctedEntries.length, post_challenge_ledger: mergedLedger };
 
-  const correctionMap = new Map(correctedEntries.map((entry) => [threatId(entry), entry]));
+  const originalMap = new Map(mergedLedger.map((entry) => [threatId(entry), entry]));
+  const correctionMap = new Map();
+  for (const patch of correctedEntries) {
+    const id = threatId(patch);
+    const original = originalMap.get(id);
+    const merged = { ...original, ...patch, threat_id: id };
+    const validationErrors = validateLedgerEntry(merged);
+    if (validationErrors.length) errors.push(...validationErrors.map((message) => `${id}: merged corrected entry invalid after repair: ${message}`));
+    else {
+      correctionMap.set(id, merged);
+      if (Object.keys(patch).length < 9) repairs.push(`merged partial corrected entry for ${id}`);
+    }
+  }
+  if (errors.length) return { ok: false, correction_errors: errors, correction_warnings: warnings, correction_repairs: repairs, corrected_count: correctedEntries.length, post_challenge_ledger: mergedLedger };
+
   const postChallengeLedger = mergedLedger.map((entry) => correctionMap.get(threatId(entry)) || entry);
   const postIds = postChallengeLedger.map(threatId).filter(Boolean);
   const postCompare = compareIds(expectedIds, postIds);
@@ -198,5 +228,5 @@ export function applyCorrections({ mergedLedger, challengeOutput, expectedIds })
   if (postCompare.missing.length) postErrors.push(`post-correction ledger missing threat_id(s): ${postCompare.missing.join(", ")}`);
   if (postCompare.unexpected.length) postErrors.push(`post-correction ledger has unexpected threat_id(s): ${postCompare.unexpected.join(", ")}`);
   if (postCompare.duplicate.length) postErrors.push(`post-correction ledger has duplicate threat_id(s): ${postCompare.duplicate.join(", ")}`);
-  return { ok: postErrors.length === 0, correction_errors: postErrors, corrected_count: correctedEntries.length, post_challenge_ledger: postChallengeLedger, correction_meta: { corrected_threat_ids: correctedIds, duplicate_corrected_threat_ids: duplicateCorrected, unknown_corrected_threat_ids: unknownCorrected, post_correction_missing_threat_ids: postCompare.missing, post_correction_unexpected_threat_ids: postCompare.unexpected, post_correction_duplicate_threat_ids: postCompare.duplicate } };
+  return { ok: postErrors.length === 0, correction_errors: postErrors, correction_warnings: warnings, correction_repairs: repairs, corrected_count: correctedEntries.length, post_challenge_ledger: postChallengeLedger, correction_meta: { corrected_threat_ids: correctedIds, duplicate_corrected_threat_ids: duplicateCorrected, unknown_corrected_threat_ids: unknownCorrected, post_correction_missing_threat_ids: postCompare.missing, post_correction_unexpected_threat_ids: postCompare.unexpected, post_correction_duplicate_threat_ids: postCompare.duplicate } };
 }
