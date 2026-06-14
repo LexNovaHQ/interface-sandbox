@@ -99,6 +99,8 @@ jobs:
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          GEMINI_REASONING_API_KEYS: ${{ secrets['GEMINI_REASONING_API_KEYS'] }}
+          STAGE6_E2E_FORCE_LOCAL: "true"
           STAGE6_DISABLE_SEMANTIC_MODEL: "false"
           STAGE6_MAX_LEGAL_UNITS: "40"
           STAGE6_TEXT_WINDOW_CHARS: "600"
@@ -112,6 +114,8 @@ jobs:
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          GEMINI_REASONING_API_KEYS: ${{ secrets['GEMINI_REASONING_API_KEYS'] }}
+          STAGE6_E2E_FORCE_LOCAL: "true"
           STAGE6_DISABLE_SEMANTIC_MODEL: "false"
           STAGE6_MAX_DATA_FLOWS: "40"
           STAGE6_TEXT_WINDOW_CHARS: "600"
