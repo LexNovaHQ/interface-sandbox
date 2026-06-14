@@ -63,6 +63,11 @@ function warn(code, path, message, params = {}) { return { keyword: code, code, 
 function walk(v, cb, p = "") { if (!v || typeof v !== "object") return; if (Array.isArray(v)) return v.forEach((x, i) => walk(x, cb, `${p}/${i}`)); for (const [k, x] of Object.entries(v)) { const next = `${p}/${k}`; cb(k, x, next); walk(x, cb, next); } }
 function ids(rows, key) { return new Set(arr(rows).map((r) => r?.[key]).filter(Boolean)); }
 function checkEnum(values, allowed, path, critical) { const set = new Set(allowed); arr(values).forEach((v, i) => { if (!set.has(v)) critical.push(err("STAGE6_SCHEMA_INVALID", `${path}/${i}`, `Non-canonical enum value: ${v}`, { value: v })); }); }
+function checkIdArrayRefs(values, allowedIds, path, critical, code, message) {
+  arr(values).forEach((value, index) => {
+    if (!allowedIds.has(value)) critical.push(err(code, `${path}/${index}`, message, { value }));
+  });
+}
 function stage5ProvenanceCount(input = {}) { const p = input?.target_feature_profile || input?.feature_profile_v2 || {}; if (Array.isArray(p.data_provenance_map)) return p.data_provenance_map.length; return arr(p.feature_inventory).reduce((n, f) => n + arr(f?.data_provenance).length, 0); }
 function stage5FeatureCount(input = {}) { const p = input?.target_feature_profile || input?.feature_profile_v2 || {}; return arr(p.feature_inventory).length; }
 function hasLegalSources(input = {}) { return arr(input?.source_bundle?.raw_footprint?.source_records).concat(arr(input?.source_bundle?.evidence_buffer)).some((r) => /legal|privacy|terms|policy|dpa|aup|sla|security|trust|subprocessor|status|eula/i.test([r?.source_family, r?.source_type, r?.title, r?.url, r?.final_url].filter(Boolean).join(" "))); }
@@ -120,8 +125,12 @@ export function validateStage6ReviewGuardrail(stage6Review = {}, { input = {}, s
     if (rows.length && arr(nav.feature_to_data_flow_index).length === 0) critical.push(err("STAGE6_MISSING_REQUIRED_INDEX", "/stage7_navigation_index/feature_to_data_flow_index", "Data flows exist but feature/data-flow index is empty."));
     if (rows.length && arr(nav.data_signal_index).length === 0) critical.push(err("STAGE6_MISSING_REQUIRED_INDEX", "/stage7_navigation_index/data_signal_index", "Data flows exist but data signal index is empty."));
     rows.forEach((r, i) => checkEnum(r?.basis_codes, STAGE6_BASIS_CODES, `/data_provenance_profile/data_flow_profile/${i}/basis_codes`, critical));
-    arr(nav.feature_to_data_flow_index).forEach((r, i) => { if (!flowIds.has(r?.data_flow_id)) critical.push(err("STAGE6_UNKNOWN_DATA_FLOW_REF", `/stage7_navigation_index/feature_to_data_flow_index/${i}/data_flow_id`, "Unknown data_flow_id ref.")); });
-    arr(nav.data_signal_index).forEach((r, i) => { if (!flowIds.has(r?.data_flow_id)) critical.push(err("STAGE6_UNKNOWN_DATA_FLOW_REF", `/stage7_navigation_index/data_signal_index/${i}/data_flow_id`, "Unknown data_flow_id ref.")); });
+    arr(nav.feature_to_data_flow_index).forEach((r, i) => {
+      checkIdArrayRefs(r?.data_flow_ids, flowIds, `/stage7_navigation_index/feature_to_data_flow_index/${i}/data_flow_ids`, critical, "STAGE6_UNKNOWN_DATA_FLOW_REF", "Unknown data_flow_id ref.");
+    });
+    arr(nav.data_signal_index).forEach((r, i) => {
+      checkIdArrayRefs(r?.data_flow_ids, flowIds, `/stage7_navigation_index/data_signal_index/${i}/data_flow_ids`, critical, "STAGE6_UNKNOWN_DATA_FLOW_REF", "Unknown data_flow_id ref.");
+    });
   }
 
   if (semanticModelAttempted === false) warnings.push(warn("STAGE6_SEMANTIC_MODEL_SKIPPED_WARNING", "/", "Semantic model was skipped; deterministic Stage 6 path passed only.", { stageId }));
