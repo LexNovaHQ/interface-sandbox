@@ -1,6 +1,9 @@
 name: Runtime Stage 4, Stage 5, and Stage 6 Audit
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       runtime_url:
