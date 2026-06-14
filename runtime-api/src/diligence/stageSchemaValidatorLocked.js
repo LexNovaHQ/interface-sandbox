@@ -52,27 +52,65 @@ function canonicalizeTargetProfileV2(data) {
   return data;
 }
 
+function bundledSchemaEntry(schemaKey, canonicalPath = null) {
+  const direct = DILIGENCE_SCHEMA_BUNDLE.schemas?.[schemaKey];
+  if (direct?.schema) return direct;
+
+  const mappedPath = DILIGENCE_SCHEMA_BUNDLE.canonical_schema_paths?.[schemaKey] || canonicalPath;
+  const basename = mappedPath ? path.basename(mappedPath) : null;
+  return Object.values(DILIGENCE_SCHEMA_BUNDLE.schemas || {}).find((entry) => {
+    if (!entry?.schema) return false;
+    if (mappedPath && entry.path === mappedPath) return true;
+    if (basename && String(entry.path || "").endsWith(`/${basename}`)) return true;
+    return false;
+  }) || null;
+}
+
 let stage6Validator = null;
+let stage6SchemaSource = null;
+
+function loadStage6Schema() {
+  const bundled = bundledSchemaEntry("stage6Review", STAGE6_REVIEW_PATH);
+  if (bundled?.schema) return { schema: bundled.schema, source: "generated_schema_bundle", path: bundled.path || STAGE6_REVIEW_PATH };
+
+  if (fs.existsSync(STAGE6_REVIEW_SCHEMA_PATH)) {
+    return { schema: JSON.parse(fs.readFileSync(STAGE6_REVIEW_SCHEMA_PATH, "utf8")), source: "source_schema_file", path: STAGE6_REVIEW_SCHEMA_PATH };
+  }
+
+  const error = new Error(`Stage 6 review schema not found in generated schema bundle or filesystem. Checked bundle key stage6Review and ${STAGE6_REVIEW_SCHEMA_PATH}.`);
+  error.code = "STAGE6_REVIEW_SCHEMA_MISSING";
+  throw error;
+}
+
 function getStage6Validator() {
   if (stage6Validator) return stage6Validator;
-  const schema = JSON.parse(fs.readFileSync(STAGE6_REVIEW_SCHEMA_PATH, "utf8"));
+  const loaded = loadStage6Schema();
   const ajv = new Ajv2020({ allErrors: true, strict: false });
-  stage6Validator = ajv.compile(schema);
+  stage6Validator = ajv.compile(loaded.schema);
+  stage6SchemaSource = loaded;
   return stage6Validator;
 }
 
 function validateStage6Review(data) {
-  const validate = getStage6Validator();
-  const ok = validate(data);
-  return { ok, errors: (validate.errors || []).map(normalizeError) };
+  try {
+    const validate = getStage6Validator();
+    const ok = validate(data);
+    return { ok, errors: (validate.errors || []).map(normalizeError), schema_source: stage6SchemaSource };
+  } catch (error) {
+    return {
+      ok: false,
+      errors: [normalizeError({ keyword: "schema_missing", message: error?.message || "Stage 6 review schema missing", params: { code: error?.code || null, checked_path: STAGE6_REVIEW_SCHEMA_PATH } })],
+      schema_source: null
+    };
+  }
 }
 
 export function formatSchemaErrors(errors = []) { if (!errors.length) return "No schema errors."; return errors.map((error) => `${error.instancePath || "/"}: ${error.message || "schema validation error"}`).join("\n"); }
-export function resolveSchemaEntry(schemaKey) { if (schemaKey === "targetProfileV2") return { schema_id: "targetProfileV2", path: TARGET_PROFILE_V2_PATH, schema: { title: "Canonical Target Profile" } }; if (schemaKey === "stage6Review") return { schema_id: "stage6Review", path: STAGE6_REVIEW_PATH, schema: { title: "Stage 6 Review" } }; const direct = DILIGENCE_SCHEMA_BUNDLE.schemas?.[schemaKey]; if (direct) return direct; const canonicalPath = DILIGENCE_SCHEMA_BUNDLE.canonical_schema_paths?.[schemaKey]; return canonicalPath ? Object.values(DILIGENCE_SCHEMA_BUNDLE.schemas || {}).find((entry) => entry.path === canonicalPath) || null : null; }
+export function resolveSchemaEntry(schemaKey) { if (schemaKey === "targetProfileV2") return { schema_id: "targetProfileV2", path: TARGET_PROFILE_V2_PATH, schema: { title: "Canonical Target Profile" } }; if (schemaKey === "stage6Review") return bundledSchemaEntry("stage6Review", STAGE6_REVIEW_PATH) || { schema_id: "stage6Review", path: STAGE6_REVIEW_PATH, schema: { title: "Stage 6 Review" } }; const direct = DILIGENCE_SCHEMA_BUNDLE.schemas?.[schemaKey]; if (direct) return direct; const canonicalPath = DILIGENCE_SCHEMA_BUNDLE.canonical_schema_paths?.[schemaKey]; return canonicalPath ? Object.values(DILIGENCE_SCHEMA_BUNDLE.schemas || {}).find((entry) => entry.path === canonicalPath) || null : null; }
 export function validateDiligenceStageOutput(schemaKey, data) {
   if (schemaKey === "targetProfileV2") { if (!isObject(data)) return { ok: false, schemaKey, resolvedKey: "targetProfileV2", schema_path: TARGET_PROFILE_V2_PATH, validation_mode: "stage4_target_profile_v2_type_guard", errors: [normalizeError({ keyword: "type", message: "must be object" })] }; canonicalizeTargetProfileV2(data); return { ok: true, schemaKey, resolvedKey: "targetProfileV2", schema_path: TARGET_PROFILE_V2_PATH, validation_mode: "stage4_target_profile_v2_canonicalized_nonblocking", errors: [] }; }
   if (schemaKey === "targetFeatureProfile") { if (isObject(data)) repairTargetFeatureProfileForSchema(data); const entry = resolveSchemaEntry(schemaKey); const result = entry?.schema ? validateGeneratedSchema(schemaKey, data) : { ok: false, errors: [] }; return { ok: true, schemaKey: result.schemaKey || schemaKey, resolvedKey: result.resolvedKey || entry?.schema_id || schemaKey, schema_path: entry?.path || "/data/schemas/targetFeatureProfile.schema.json", validation_mode: result.ok ? "stage5_feature_profile_v2_ajv_passed_after_canonicalization" : "stage5_feature_profile_v2_ajv_nonblocking_after_canonicalization", errors: [] }; }
-  if (schemaKey === "stage6Review") { const result = validateStage6Review(data); return { ok: result.ok, schemaKey, resolvedKey: "stage6Review", schema_path: STAGE6_REVIEW_PATH, validation_mode: "source_stage6_review_schema_ajv", errors: result.errors }; }
+  if (schemaKey === "stage6Review") { const result = validateStage6Review(data); return { ok: result.ok, schemaKey, resolvedKey: "stage6Review", schema_path: result.schema_source?.path || STAGE6_REVIEW_PATH, validation_mode: result.schema_source?.source === "generated_schema_bundle" ? "stage6_review_bundle_schema_ajv" : result.schema_source?.source === "source_schema_file" ? "stage6_review_source_file_schema_ajv" : "stage6_review_schema_missing", errors: result.errors }; }
   const entry = resolveSchemaEntry(schemaKey); if (!entry?.schema) return { ok: false, schemaKey, resolvedKey: schemaKey, validation_mode: "schema_bundle_missing", errors: [{ keyword: "schema_missing", instancePath: "", schemaPath: "", message: `Output schema not found for ${schemaKey}`, params: { schemaKey } }] };
   const result = validateGeneratedSchema(schemaKey, data); return { ok: result.ok, schemaKey: result.schemaKey || schemaKey, resolvedKey: result.resolvedKey || entry.schema_id || schemaKey, schema_path: entry.path, validation_mode: "build_time_ajv_standalone", errors: (result.errors || []).map(normalizeError) };
 }
