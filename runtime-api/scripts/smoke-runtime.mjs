@@ -40,7 +40,7 @@ for (const check of checks) {
   const body = await readJson(response);
   results.push({ name: check.name, status: response.status, ok: response.ok, body });
 
-  if (!response.ok || body?.service !== "lexnova-runtime-api") {
+  if (!response.ok || body?.service !== "lexnova-runtime-api" || body?.ok !== true) {
     fail(`Smoke check failed: ${check.name}`, { status: response.status, body });
   }
 }
