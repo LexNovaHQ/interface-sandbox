@@ -5,6 +5,9 @@ import path from "node:path";
 import crypto from "node:crypto";
 
 const DEFAULT_RUNTIME_URL = "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app";
+const LIVE_RUN_ENDPOINT = "/v1/diligence/public-live-run";
+const STATUS_ENDPOINT = "/v1/runtime-status";
+const FORBIDDEN_STAGE_ENDPOINT = "/v1/diligence/stage";
 const runtimeUrl = (process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL || DEFAULT_RUNTIME_URL).replace(/\/+$/, "");
 const token = process.env.RUNTIME_ACCESS_TOKEN;
 const targetUrl = process.env.AUDIT_TARGET_URL || process.env.TARGET_URL || "https://sarvam.ai";
@@ -188,6 +191,7 @@ function writeManifest(extra = {}) {
     audit_phase: "full_live_runtime_audit",
     generated_at: nowIso(),
     runtime_url: runtimeUrl,
+    live_endpoint: LIVE_RUN_ENDPOINT,
     target_url: targetUrl,
     company_name: companyName,
     run_id: runId,
@@ -217,6 +221,7 @@ function createSummaryMarkdown({ runtimeStatus, liveRunResult, leakageAudit, fai
   return `# Full Live Runtime Audit\n\n` +
     `- Audit phase: full_live_runtime_audit\n` +
     `- Runtime URL: ${runtimeUrl}\n` +
+    `- Live endpoint: ${LIVE_RUN_ENDPOINT}\n` +
     `- Target: ${companyName} (${targetUrl})\n` +
     `- Runtime status OK: ${runtimeStatus.ok === true || runtimeStatus.body?.ok === true}\n` +
     `- Live run OK: ${liveRunResult.ok === true}\n` +
@@ -235,7 +240,7 @@ function createSummaryMarkdown({ runtimeStatus, liveRunResult, leakageAudit, fai
 
 ensureDir(outputRoot);
 if (!runtimeUrl) fail("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required.");
-if (!token) fail("RUNTIME_ACCESS_TOKEN is required.");
+if (!token) fail("RUNTIME_ACCESS_TOKEN is required for runtime-status smoke check.");
 
 const authHeaders = { "x-runtime-access-token": token };
 const targetInput = {
@@ -262,19 +267,20 @@ writeJson("00-audit-request.json", {
   run_id: runId,
   runtime_url: runtimeUrl,
   target_input: targetInput,
-  endpoint_policy: "mirror_live_sandbox_run_only",
-  endpoint: "/v1/diligence/live-run",
-  forbidden_endpoint: "/v1/diligence/stage",
+  endpoint_policy: "mirror_public_live_sandbox_run_only",
+  endpoint: LIVE_RUN_ENDPOINT,
+  status_endpoint: STATUS_ENDPOINT,
+  forbidden_endpoint: FORBIDDEN_STAGE_ENDPOINT,
   options: liveRunRequest.options
 });
 
-const runtimeStatusResponse = await getJson(`${runtimeUrl}/v1/runtime-status`, authHeaders);
+const runtimeStatusResponse = await getJson(`${runtimeUrl}${STATUS_ENDPOINT}`, authHeaders);
 writeJson("00-runtime-status.json", { status: runtimeStatusResponse.status, ok: runtimeStatusResponse.ok, body: runtimeStatusResponse.body });
 if (!runtimeStatusResponse.ok || runtimeStatusResponse.body?.ok === false) {
   fail("Runtime status check failed.", { status: runtimeStatusResponse.status, body: runtimeStatusResponse.body });
 }
 
-const liveRunResponse = await postJson(`${runtimeUrl}/v1/diligence/live-run`, liveRunRequest, authHeaders);
+const liveRunResponse = await postJson(`${runtimeUrl}${LIVE_RUN_ENDPOINT}`, liveRunRequest);
 writeJson("01-live-run-result.full.json", liveRunResponse.body);
 
 const liveRunResult = liveRunResponse.body || {};
@@ -294,6 +300,9 @@ writeJson("01-live-run-result.summary.json", {
   has_stage9_report_data: Boolean(stage9ReportData),
   has_html_report: Boolean(htmlReport),
   has_stage10_handoff: Boolean(stage10Handoff),
+  has_internal_stage6_cache: Boolean(internal.stage6Cache),
+  has_internal_stage7_artifact: Boolean(internal.stage7Artifact),
+  has_internal_stage8_ledger: Boolean(internal.stage8Ledger),
   stage9_validation_ok: validation.stage9?.ok === true,
   stage10_validation_ok: validation.stage10?.ok === true,
   metrics: liveRunResult.metrics || null,
@@ -335,6 +344,9 @@ if (!stage10Handoff?.functional_intake_vault) failedChecks.push("missing_functio
 if (!stage10Handoff?.vault_payload) failedChecks.push("missing_vault_payload");
 if (!stage10Handoff?.assembly_handoff) failedChecks.push("missing_assembly_handoff");
 if (!Array.isArray(stage10Handoff?.assembly_handoff?.legal_document_status)) failedChecks.push("missing_legal_document_status");
+if (!internal.stage6Cache) failedChecks.push("missing_internal_stage6_cache");
+if (!internal.stage7Artifact) failedChecks.push("missing_internal_stage7_artifact");
+if (!internal.stage8Ledger) failedChecks.push("missing_internal_stage8_ledger");
 if (!leakageAudit.ok) failedChecks.push("legacy_leakage_detected");
 
 writeText("17-summary.md", createSummaryMarkdown({ runtimeStatus: runtimeStatusResponse, liveRunResult, leakageAudit, failedChecks }));
@@ -344,4 +356,4 @@ if (failedChecks.length) {
   fail("Full live runtime audit failed pass conditions.", { failed_checks: failedChecks, leakageAudit });
 }
 
-console.log(JSON.stringify({ ok: true, phase: "full_live_runtime_audit", runtime_url: runtimeUrl, target_url: targetUrl, company_name: companyName, run_id: liveRunResult.run_id || runId, metrics: liveRunResult.metrics, artifact_dir: outputRoot }, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "full_live_runtime_audit", runtime_url: runtimeUrl, live_endpoint: LIVE_RUN_ENDPOINT, target_url: targetUrl, company_name: companyName, run_id: liveRunResult.run_id || runId, metrics: liveRunResult.metrics, artifact_dir: outputRoot }, null, 2));
