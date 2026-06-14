@@ -1,0 +1,96 @@
+name: Runtime API Full Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_url:
+        description: "Existing deployed runtime URL"
+        required: true
+        default: "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app"
+        type: string
+      target_url:
+        description: "Target URL for full runtime audit"
+        required: true
+        default: "https://sarvam.ai"
+        type: string
+      company_name:
+        description: "Company name for full runtime audit"
+        required: true
+        default: "Sarvam AI"
+        type: string
+      artifact_retention_days:
+        description: "Audit artifact retention in days"
+        required: true
+        default: "30"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  full-runtime-audit:
+    name: Full live runtime audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Build runtime bundles
+        run: npm run build:runtime
+
+      - name: Package generated bundles for runtime-api
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-api/functions/_generated
+          cp functions/_generated/diligencePromptBundle.js runtime-api/functions/_generated/diligencePromptBundle.js
+          cp functions/_generated/diligenceSchemaBundle.js runtime-api/functions/_generated/diligenceSchemaBundle.js
+          cp functions/_generated/diligenceValidatorBundle.js runtime-api/functions/_generated/diligenceValidatorBundle.js
+          test -s runtime-api/functions/_generated/diligencePromptBundle.js
+          test -s runtime-api/functions/_generated/diligenceSchemaBundle.js
+          test -s runtime-api/functions/_generated/diligenceValidatorBundle.js
+
+      - name: Install runtime dependencies
+        working-directory: runtime-api
+        run: npm install
+
+      - name: Runtime syntax check
+        working-directory: runtime-api
+        run: npm run check
+
+      - name: Clear full runtime audit cache
+        run: rm -rf runtime-api/.runtime-e2e-cache/full-runtime-audit && mkdir -p runtime-api/.runtime-e2e-cache/full-runtime-audit
+
+      - name: Smoke existing runtime
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+        run: npm run smoke:runtime
+
+      - name: Run full live runtime audit
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          AUDIT_TARGET_URL: ${{ inputs.target_url }}
+          AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: npm run audit:full-live-runtime
+
+      - name: Upload full runtime audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-runtime-audit-${{ github.run_id }}
+          path: runtime-api/.runtime-e2e-cache/full-runtime-audit
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}
