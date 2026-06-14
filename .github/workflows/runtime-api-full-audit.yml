@@ -1,4 +1,4 @@
-name: Runtime API Staged Live Audit
+name: Runtime API Full Live Audit
 
 on:
   workflow_dispatch:
@@ -9,12 +9,12 @@ on:
         default: "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app"
         type: string
       target_url:
-        description: "Target URL for staged live runtime audit"
+        description: "Target URL for full live runtime audit"
         required: true
         default: "https://sarvam.ai"
         type: string
       company_name:
-        description: "Company name for staged live runtime audit"
+        description: "Company name for full live runtime audit"
         required: true
         default: "Sarvam AI"
         type: string
@@ -28,8 +28,8 @@ permissions:
   contents: read
 
 jobs:
-  staged-live-runtime-audit:
-    name: Staged live runtime audit
+  full-live-runtime-audit:
+    name: Full live runtime audit
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -66,7 +66,7 @@ jobs:
         working-directory: runtime-api
         run: npm run check
 
-      - name: Clear staged live audit artifacts
+      - name: Clear full live audit artifacts
         run: rm -rf runtime-api/.runtime-e2e-cache/full-runtime-audit && mkdir -p runtime-api/.runtime-e2e-cache/full-runtime-audit
 
       - name: Smoke existing runtime
@@ -76,7 +76,7 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run smoke:runtime
 
-      - name: Run staged live runtime audit
+      - name: Run full live runtime audit
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
@@ -84,13 +84,13 @@ jobs:
           AUDIT_TARGET_URL: ${{ inputs.target_url }}
           AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
-        run: npm run audit:staged-live-runtime
+        run: npm run audit:full-live-runtime
 
-      - name: Upload staged live audit artifact
+      - name: Upload full live audit artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: staged-live-runtime-audit-${{ github.run_id }}
+          name: full-live-runtime-audit-${{ github.run_id }}
           path: runtime-api/.runtime-e2e-cache/full-runtime-audit
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}
