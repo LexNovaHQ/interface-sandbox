@@ -3,9 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
-import { buildStage6ACartography } from "./stage6aLegalCartographyBuilder.js";
-import { buildStage6ASemanticClassificationPacket } from "./stage6aModelOverlayPacketBuilder.js";
-import { normalizeStage6ASemanticClassification } from "./stage6aModelOverlayNormalizer.js";
+import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
+import { buildStage6ASemanticClassificationPacket } from "./stage6aSemanticClassificationPacketBuilder.js";
+import { normalizeStage6ASemanticClassification } from "./stage6aSemanticClassificationNormalizer.js";
 import { validateStage6ReviewGuardrail } from "./guardrails/stage6ReviewGuardrail.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -138,17 +138,11 @@ export async function runStage6ALegalCartography({
   if (deterministicOnlyAllowed && options.disableSemanticClassification === true) {
     const stage6Review = buildStage6ACartography(input);
     const guardrail = validateStage6ReviewGuardrail(stage6Review, { input, stageId: "stage6a_legal_document_cartography", semanticModelAttempted: false });
-    const packetSummary = {
-      document_inventory_seed_count: stage6Review.legal_document_cartography?.legal_document_inventory?.length || 0,
-      legal_unit_seed_count: stage6Review.legal_document_cartography?.legal_document_index?.length || 0,
-      deterministic_control_seed_count: stage6Review.legal_document_cartography?.document_control_signal_map?.length || 0,
-      feature_ref_count: target_feature_profile?.feature_inventory?.length || 0
-    };
-    if (!guardrail.ok) return guardrailFailure(stage6Review, guardrail, packetSummary);
-    return { ok: true, semantic_model_attempted: false, semantic_model_disabled: true, normalized_semantic_classification: null, semantic_classification_repairs: [], stage6_review: stage6Review, stage6_guardrail: guardrail, packet_summary: packetSummary, stage6_summary: stage6Summary(stage6Review, guardrail), model_metadata: null };
+    if (!guardrail.ok) return guardrailFailure(stage6Review, guardrail, { deterministic_only: true });
+    return { ok: true, stage6_review: stage6Review, stage6_guardrail: guardrail, stage6_summary: stage6Summary(stage6Review, guardrail), semantic_model_attempted: false, model_metadata: { pool: null, model: null, attempted_models: [] } };
   }
-  const result = await runStage6ASemanticClassification({ input, promptText, env, options: { ...options, disableSemanticClassification: false } });
+  const result = await runStage6ASemanticClassification({ input, promptText, env, options });
   return { ...result, semantic_model_attempted: true };
 }
 
-export const stage6aSemanticClassificationRunnerInternals = { buildSemanticPrompt, publicModelMetadata, ACTIVE_STAGE6A_PROMPT_PATH };
+export default runStage6ALegalCartography;
