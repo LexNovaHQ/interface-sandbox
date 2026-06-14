@@ -1,8 +1,15 @@
-import { deriveVaultPrefillFromStage9 } from "./vaultPrefillFromStage9.js";
-import { deriveVaultQuestionsFromStage9 } from "./vaultQuestionsFromStage9.js";
+import { buildStage10SourcePacket } from "./stage10SourcePacketBuilder.js";
+import { deriveVaultPrefillFromStage10SourcePacket } from "./vaultPrefillFromStage9Locked.js";
+import { buildFunctionalSections, deriveVaultQuestionsFromStage10SourcePacket } from "./vaultQuestionsFromStage9.js";
+import { createEmptyVaultPayload, normalizeVaultFieldPath } from "./vaultCanonicalMap.js";
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function asText(value, fallback = "") {
+  const text = String(value ?? "").trim();
+  return text || fallback;
 }
 
 function nowIso() {
@@ -16,298 +23,124 @@ function createId(prefix) {
   return `${prefix}_${randomPart}`;
 }
 
-function getStage9ReportData(stage9ReportData) {
-  return stage9ReportData?.report?.report_data
-    || stage9ReportData?.report_data
-    || stage9ReportData;
-}
-
-function getRunId(stage9ReportData) {
-  const reportData = getStage9ReportData(stage9ReportData);
-  return stage9ReportData?.run_id
-    || stage9ReportData?.report?.run_id
-    || reportData?.matter_overview?.run_id
-    || stage9ReportData?.report_meta?.run_id
-    || `run-${Date.now()}`;
-}
-
-function getTargetProfile(stage9ReportData) {
-  const reportData = getStage9ReportData(stage9ReportData);
-  const matter = reportData?.matter_overview || {};
-  const reportIdentity = matter.report_identity || {};
-  const product = reportData?.product_activity_profile || {};
-  const targetProfileV2 = reportData?.target_profile_v2 || {};
-  const identity = targetProfileV2.identity || {};
-  const targetProfileRef = product.target_profile_ref || reportData?.feature_profile_v2?.target_profile_ref || {};
-  const productSummary = product.product_summary || {};
-  const firstFeature = asArray(product.feature_inventory || reportData?.feature_profile_v2?.feature_inventory)[0] || {};
-  const firstProduct = asArray(targetProfileV2?.product_baseline?.products)[0] || {};
-
-  return {
-    company_name: reportIdentity.target_or_client
-      || matter.target_or_client
-      || matter.target
-      || identity.legal_name
-      || identity.brand_name
-      || targetProfileRef.legal_name
-      || targetProfileRef.brand_name
-      || "Unknown target",
-    primary_url: reportIdentity.primary_url
-      || matter.primary_url
-      || matter.url
-      || identity.website
-      || identity.domain
-      || stage9ReportData?.target_input?.primary_url
-      || stage9ReportData?.primary_url
-      || "",
-    product_name: reportIdentity.product_or_matter
-      || matter.product_or_matter
-      || matter.product
-      || productSummary.product_name
-      || productSummary.name
-      || firstProduct.product_name
-      || firstProduct.name
-      || firstFeature.business_label_or_product_area
-      || firstFeature.feature_name
-      || "Primary product not established from reviewed evidence",
-    jurisdictions: reportIdentity.jurisdictions
-      || matter.jurisdictions
-      || matter.jurisdiction
-      || targetProfileV2.jurisdiction?.headquarters
-      || targetProfileV2.jurisdiction?.operating_markets
-      || "Not established from reviewed public evidence",
-    review_mode: reportIdentity.review_mode
-      || matter.review_mode
-      || "Public-footprint legal exposure diligence",
-    evidence_cutoff: matter.evidence_cut_off?.generated_at
-      || matter.evidence_cut_off?.evidence_cutoff
-      || matter.evidence_cutoff
-      || stage9ReportData?.report?.generated_at
-      || stage9ReportData?.generated_at
-      || new Date().toISOString()
-  };
-}
-
-function getFeatureMap(stage9ReportData) {
-  const reportData = getStage9ReportData(stage9ReportData);
-  const product = reportData?.product_activity_profile || {};
-  const features = reportData?.feature_profile_v2?.feature_inventory || product.feature_inventory || product.feature_map || product.features;
-  if (Array.isArray(features)) {
-    return features.map((feature, index) => ({
-      feature_id: feature.feature_id || `stage9-feature-${index + 1}`,
-      feature_name: feature.feature_name || feature.name || `Feature ${index + 1}`,
-      feature_role: feature.feature_role || feature.role || "Derived from Stage 9 product activity profile",
-      functional_profile: feature.functional_profile || feature.functional_profiles || feature.profile || feature.archetype_codes || "Not established from reviewed evidence",
-      risk_surfaces: feature.risk_surfaces || feature.legal_risk_surfaces || feature.surface_tokens || "Not established from reviewed evidence",
-      evidence_source: feature.evidence_source || feature.feature_source_url || feature.source_url || ""
-    }));
+function setDeep(target, dottedPath, value) {
+  const parts = String(dottedPath || "").split(".").filter(Boolean);
+  let cursor = target;
+  while (parts.length > 1) {
+    const key = parts.shift();
+    if (!cursor[key] || typeof cursor[key] !== "object" || Array.isArray(cursor[key])) cursor[key] = {};
+    cursor = cursor[key];
   }
-
-  return asArray(product.active_functional_profiles).map((profile, index) => ({
-    feature_id: `stage9-profile-${index + 1}`,
-    feature_name: profile.label || profile.profile || profile.code || `Profile ${index + 1}`,
-    archetype_code: profile.code || profile.functional_profile || "UNI",
-    summary: profile.summary || profile.description || "Derived from Stage 9 product activity profile."
-  }));
+  if (parts.length) cursor[parts[0]] = value;
 }
 
-function normalizeFindingSeverity(finding) {
-  return finding?.severity?.tier
-    || finding?.highest_severity?.tier
-    || finding?.severity
-    || finding?.highest_tier
-    || "UNSPECIFIED";
-}
-
-function getRegistryRefs(finding) {
-  const explicitRefs = asArray(finding?.supporting_registry_references)
-    .filter(Boolean)
-    .map(String);
-  if (explicitRefs.length) return explicitRefs;
-
-  return asArray(finding?.supporting_registry_items || finding?.supporting_registry_rows || finding?.supporting_items)
-    .map((item) => item.registry_reference || item.threat_id || item.id || item)
-    .filter(Boolean)
-    .map(String);
-}
-
-function deriveThreatFindings(stage9ReportData) {
-  const reportData = getStage9ReportData(stage9ReportData);
-  const exposureFindings = reportData?.exposure_findings || {};
-  const consolidated = asArray(exposureFindings.consolidated_findings);
-  const supportingRows = asArray(exposureFindings.supporting_registry_rows);
-
-  if (consolidated.length) {
-    return consolidated.map((finding, index) => {
-      const supportingRefs = getRegistryRefs(finding);
-      const documentRoutes = asArray(
-        finding.affected_documents
-          || finding.document_routes
-          || finding.remediation_documents
-          || finding.affected_documents_controls
-      );
-
-      return {
-        finding_id: finding.consolidated_finding_id || finding.finding_id || finding.id || `CF-${String(index + 1).padStart(3, "0")}`,
-        threat_id: supportingRefs[0] || finding.consolidated_finding_id || finding.finding_id || `CF-${String(index + 1).padStart(3, "0")}`,
-        threat_name: finding.exposure_title || finding.title || finding.finding_title || finding.exposure_family || "Consolidated exposure finding",
-        linked_feature_ids: asArray(finding.linked_feature_ids),
-        document_routes: documentRoutes,
-        vault_dependencies: asArray(finding.vault_dependencies),
-        severity: normalizeFindingSeverity(finding),
-        status: "TRIGGERED",
-        consolidated: true,
-        supporting_registry_refs: supportingRefs,
-        review_ready_summary: finding.finding_statement
-          || finding.consolidated_summary
-          || finding.assessment
-          || finding.summary
-          || "Derived from Stage 9 consolidated exposure finding.",
-        commercial_deal_impact: finding.commercial_deal_impact || "",
-        suggested_remediation_path: finding.suggested_remediation_path || "",
-        legal_risk_surfaces: asArray(finding.legal_risk_surfaces),
-        functional_profiles: asArray(finding.functional_profiles)
-      };
-    });
+function applyPrefillToPayload(vaultPayload, prefill = {}) {
+  for (const [group, entries] of Object.entries(prefill || {})) {
+    for (const [localPath, suggestion] of Object.entries(entries || {})) {
+      const fieldPath = normalizeVaultFieldPath(`${group}.${localPath}`);
+      setDeep(vaultPayload, fieldPath, suggestion?.value);
+    }
   }
-
-  return supportingRows.map((row, index) => ({
-    finding_id: row.finding_id || row.registry_reference || row.threat_id || `ROW-${index + 1}`,
-    threat_id: row.registry_reference || row.threat_id || row.id || `ROW-${index + 1}`,
-    threat_name: row.exposure_title || row.title || row.threat_name || "Registry exposure item",
-    linked_feature_ids: asArray(row.linked_feature_ids),
-    document_routes: asArray(row.document_routes || row.affected_documents),
-    vault_dependencies: asArray(row.vault_dependencies),
-    severity: normalizeFindingSeverity(row),
-    status: row.status || row.assessment_outcome || "TRIGGERED",
-    consolidated: false,
-    supporting_registry_refs: [row.registry_reference || row.threat_id || row.id].filter(Boolean).map(String),
-    review_ready_summary: row.status_explanation || row.exposure_mechanism || row.summary || "Derived from Stage 9 supporting registry item.",
-    commercial_deal_impact: row.commercial_deal_impact || "",
-    suggested_remediation_path: row.suggested_remediation_path || ""
-  }));
+  return vaultPayload;
 }
 
-function deriveDocumentStackStatus(stage9ReportData) {
-  const reportData = getStage9ReportData(stage9ReportData);
-  const stack = reportData?.legal_stack_control_review || {};
-  const inventory = asArray(stack.document_inventory || stack.legal_stack || stack.documents);
-  const coverage = asArray(stack.document_coverage_matrix);
-
-  if (inventory.length) return inventory;
-
-  return coverage.map((item, index) => ({
-    document_id: item.document_id || item.document_type || `doc-${index + 1}`,
-    document_type: item.document_type || item.label || "Legal document/control area",
-    status: item.status || item.coverage_status || item.evidence_status || "review_required",
-    controls: asArray(item.controls || item.controls_found || item.covered_controls),
-    gaps: asArray(item.gaps || item.gaps_noted || item.control_gaps),
-    linked_consolidated_findings: asArray(item.linked_consolidated_findings)
-  }));
+function documentRoutesFromFindings(packet = {}) {
+  const routes = new Set();
+  const text = JSON.stringify({ findings: packet.threat_findings, legal_document_status: packet.legal_document_status, remediation_path: packet.remediation_path, evidence_gaps: packet.evidence_gaps }).toLowerCase();
+  if (/terms|tos|liability|warranty|consumer|contract/.test(text)) routes.add("tos");
+  if (/privacy|personal data|pii|processor|deletion|retention|rights/.test(text)) routes.add("privacy_policy");
+  if (/dpa|processor|subprocessor|transfer|customer data/.test(text)) routes.add("dpa");
+  if (/acceptable use|prohibited|misuse|abuse|fraud/.test(text)) routes.add("aup");
+  if (/sla|uptime|availability|service credit|support/.test(text)) routes.add("sla");
+  if (/agent|autonomous|human review|workflow|tool/.test(text)) routes.add("ai_agent_terms");
+  if (/ip|output ownership|copyright|content|training data/.test(text)) routes.add("ip_output_terms");
+  if (/subprocessor/.test(text)) routes.add("subprocessor_schedule");
+  if (/decision|human review|handover|appeal/.test(text)) routes.add("human_review_protocol");
+  if (/security|incident|audit log|safeguard/.test(text)) routes.add("security_addendum");
+  if (/api|developer|sdk|rate limit/.test(text)) routes.add("api_terms");
+  if (!routes.size) ["tos", "privacy_policy", "counsel_issue_list"].forEach((route) => routes.add(route));
+  return [...routes];
 }
 
-function deriveAssemblyRoute(stage9ReportData) {
-  const reportData = getStage9ReportData(stage9ReportData);
-  const remediation = reportData?.implications_remediation_path || {};
-  const roadmap = asArray(remediation.remediation_roadmap);
-  const documentRoutes = asArray(remediation.document_route || remediation.document_routes);
-  const controlRoutes = asArray(remediation.control_route || remediation.control_routes);
+function hasAnyQuestion(questions, sectionKey) {
+  return questions.some((question) => question.section_key === sectionKey);
+}
 
+function selectedPackage(packet = {}) {
+  const docs = documentRoutesFromFindings(packet);
+  if (docs.includes("ai_agent_terms") || docs.includes("human_review_protocol")) return "full_ai_legal_architecture_pack";
+  if (docs.includes("dpa") || docs.includes("privacy_policy")) return "privacy_dpa_pack";
+  if (docs.includes("ip_output_terms") || docs.includes("api_terms")) return "ai_terms_pack";
+  return "full_ai_legal_architecture_pack";
+}
+
+function buildAssemblyHandoffIntake(packet = {}, questions = []) {
+  const gaps = asArray(packet.evidence_gaps?.open_information_requests || packet.evidence_gaps?.open_information_request_list);
+  const docs = documentRoutesFromFindings(packet);
+  const targetRegions = asArray(packet.target_profile_v2?.market_context?.target_geographies);
+  const primaryJurisdiction = asText(packet.target_profile_v2?.jurisdiction?.registered_or_notice_country || packet.target_profile_v2?.jurisdiction?.governing_law_country || packet.target_profile?.jurisdiction?.country, "unknown");
   return {
-    recommended_package: "Review-Ready Remediation Handoff",
-    route_basis: "Derived deterministically from Stage 9 Legal Exposure Diligence Report.",
-    document_routes: documentRoutes,
-    control_routes: controlRoutes,
-    remediation_roadmap: roadmap,
-    remediation_priority_map: asArray(remediation.remediation_priority_map),
-    review_priority: asArray(remediation.review_priority),
-    review_ready_handoff_bridge: asArray(remediation.review_ready_handoff_bridge),
-    local_counsel_review_required: true
+    package_selection: { selected_package: selectedPackage(packet), custom_package_description: "" },
+    document_routes: {
+      selected_documents: docs,
+      missing_document_policy: asArray(packet.legal_document_status).length ? "treat_as_drafting_target" : "ask_client_first",
+      existing_document_treatment: asArray(packet.legal_document_status).some((doc) => doc.document_status === "visible" || doc.access_status === "ingested") ? "hybrid" : "draft_fresh",
+      other_document_description: ""
+    },
+    drafting_preferences: {
+      style: packet.target_profile_v2?.business_model?.market_type_candidate === "b2c" ? "consumer" : "enterprise_saas",
+      risk_posture: asArray(packet.threat_findings).length ? "conservative_legal_review_heavy" : "balanced",
+      counsel_notes: true,
+      jurisdiction_placeholders: true,
+      preserve_brand_language: false,
+      bracket_unresolved_gaps: gaps.length > 0,
+      custom_notes: hasAnyQuestion(questions, "contracting_output_customer_commitments") ? "Confirm commercial and liability posture before final assembly." : ""
+    },
+    output_options: { review_ready_drafts: true, issue_list_for_counsel: true, counsel_checklist: true, executive_summary: true, machine_readable_exports: true },
+    localisation: { target_regions: targetRegions, primary_jurisdiction: primaryJurisdiction, governing_law_instruction: "counsel_to_decide", courts_or_venue_instruction: "", localisation_notes: "Review-Ready Drafts require local counsel review before use." },
+    local_counsel_review: { local_counsel_review_required: true, priority_points: asArray(packet.threat_findings).slice(0, 10).map((finding) => `${finding.finding_id}: ${finding.finding_title}`), counsel_templates_available: false, counsel_template_notes: "" },
+    operational_controls: { human_approval_required_for: [], audit_logging: "unknown", escalation_owner: "", incident_response_or_shutdown: "", customer_notice_for_ai_use: "unknown", fallback_or_shutdown_rules: "" },
+    source_materials: { client_templates_available: false, existing_docs_urls: asArray(packet.source_materials?.existing_docs_urls), template_notes: "" },
+    unresolved_gap_policy: { treatment: gaps.length ? "bracket_in_drafts" : "counsel_notes_only", notes: gaps.length ? `${gaps.length} open information request(s) should remain bracketed or confirmed before final use.` : "No open information requests were surfaced by Stage 9." },
+    assembly_warnings: asArray(packet.source_trace?.mapping_warnings)
   };
 }
 
 function createHandoffEnvelope({ runId, payloadRef, summary, warnings }) {
   const timestamp = nowIso();
-  return {
-    handoff_id: createId("handoff"),
-    run_id: runId,
-    source_engine: "diligence",
-    target_engine: "assembly",
-    payload_type: "assembly_handoff_payload",
-    status: "draft",
-    created_at: timestamp,
-    updated_at: timestamp,
-    payload_ref: payloadRef,
-    summary,
-    warnings: Array.isArray(warnings) ? warnings : [String(warnings)]
-  };
+  return { handoff_id: createId("handoff"), run_id: runId, source_engine: "diligence", target_engine: "assembly", payload_type: "functional_assembly_intake_vault", status: "draft", created_at: timestamp, updated_at: timestamp, payload_ref: payloadRef, summary, warnings: Array.isArray(warnings) ? warnings : [String(warnings)] };
 }
 
-function createSummary(targetProfile, threatFindings) {
-  return `Review-Ready remediation handoff for ${targetProfile.company_name} / ${targetProfile.product_name} (${threatFindings.length} finding route${threatFindings.length === 1 ? "" : "s"}).`;
+function createSummary(packet, questions) {
+  return `Functional Assembly Intake Vault for ${packet.target_profile?.company_name || "Unknown target"} / ${packet.target_profile?.product_name || "product"} (${questions.length} intake question${questions.length === 1 ? "" : "s"}).`;
 }
 
-export function assembleStage10VaultHandoff(stage9ReportData, options = {}) {
-  const warnings = [];
-  const runId = options.runId || getRunId(stage9ReportData);
-  const createdAt = options.createdAt || nowIso();
-  const targetProfile = getTargetProfile(stage9ReportData);
-  const featureMap = getFeatureMap(stage9ReportData);
-  const threatFindings = deriveThreatFindings(stage9ReportData);
-  const documentStackStatus = deriveDocumentStackStatus(stage9ReportData);
-  const vault_prefill_suggestions = deriveVaultPrefillFromStage9(stage9ReportData, warnings);
-  const vault_confirmation_questions = deriveVaultQuestionsFromStage9(stage9ReportData);
-  const assembly_route_recommendation = deriveAssemblyRoute(stage9ReportData);
-
-  const assembly_handoff = {
-    handoff_meta: {
-      run_id: runId,
-      created_at: createdAt,
-      source_engine: "diligence",
-      target_engine: "assembly",
-      compiler_schema: "stage9-report-data.json",
-      assembler_contract: "STAGE_10_STAGE9_TO_NODE_5B_COMPATIBLE_HANDOFF_v1",
-      canonical_output_shape: "assembly_handoff_payload"
-    },
-    target_profile: targetProfile,
-    feature_map: featureMap,
-    threat_findings: threatFindings,
-    document_stack_status: documentStackStatus,
-    vault_prefill_suggestions,
-    vault_confirmation_questions,
-    assembly_route_recommendation,
-    warnings
-  };
-
-  const pendingPayloadRef = options.payloadRef || "interface_handoff_payloads/pending";
-  const handoff_envelope = createHandoffEnvelope({
-    runId,
-    payloadRef: pendingPayloadRef,
-    summary: createSummary(targetProfile, threatFindings),
-    warnings
+export function assembleStage10VaultHandoff(stage9ReportDataOrInput, options = {}) {
+  const input = stage9ReportDataOrInput?.stage9ReportData || stage9ReportDataOrInput?.stage9_report_data || stage9ReportDataOrInput || {};
+  const stage10SourcePacket = stage9ReportDataOrInput?.stage10SourcePacket || options.stage10SourcePacket || buildStage10SourcePacket({
+    stage9ReportData: input,
+    stage6Cache: stage9ReportDataOrInput?.stage6Cache || options.stage6Cache || {},
+    stage7Artifact: stage9ReportDataOrInput?.stage7Artifact || options.stage7Artifact || {},
+    stage8Ledger: stage9ReportDataOrInput?.stage8Ledger || options.stage8Ledger || {},
+    runId: options.runId
   });
 
-  const payload_ref = pendingPayloadRef === "interface_handoff_payloads/pending"
-    ? `interface_handoff_payloads/${handoff_envelope.handoff_id}`
-    : pendingPayloadRef;
+  const warnings = asArray(stage10SourcePacket.source_trace?.mapping_warnings);
+  const runId = options.runId || stage10SourcePacket.run_id;
+  const createdAt = options.createdAt || nowIso();
+  const vault_prefill_suggestions = deriveVaultPrefillFromStage10SourcePacket(stage10SourcePacket, warnings);
+  const vault_confirmation_questions = deriveVaultQuestionsFromStage10SourcePacket(stage10SourcePacket);
+  const functional_sections = buildFunctionalSections(vault_confirmation_questions);
+  const vault_payload = applyPrefillToPayload(createEmptyVaultPayload({ status: "needs_confirmation", submittedAt: createdAt }), vault_prefill_suggestions);
+  vault_payload.status = vault_confirmation_questions.some((question) => ["needs_confirmation", "manual_only", "unknown"].includes(question.prefill_status)) ? "needs_confirmation" : "prefill_ready";
+  vault_payload.submittedAt = createdAt;
+  const assembly_handoff_intake = buildAssemblyHandoffIntake(stage10SourcePacket, vault_confirmation_questions);
 
-  return {
-    ok: true,
-    stage: "10",
-    node: "5B_COMPAT_RUNTIME",
-    run_id: runId,
-    vault_prefill_suggestions,
-    assembly_handoff,
-    handoff_envelope: {
-      ...handoff_envelope,
-      payload_ref
-    },
-    persistence_plan: {
-      payload_collection: "interface_handoff_payloads",
-      envelope_collection: "interface_handoffs",
-      stage_output_path: `interface_runs/${runId}/stage_outputs/stage_10_review_ready_handoff`,
-      payload_ref
-    },
-    warnings
-  };
+  const functional_intake_vault = { vault_schema_version: "functional_assembly_intake_vault_v1", intake_mode: "diligence_to_assembly", functional_sections, vault_payload, vault_prefill_suggestions, vault_confirmation_questions, assembly_handoff_intake, source_trace: { ...stage10SourcePacket.source_trace, mapping_warnings: warnings }, status: vault_payload.status, submittedAt: createdAt };
+  const assembly_handoff = { handoff_meta: { run_id: runId, created_at: createdAt, source_engine: "diligence", target_engine: "assembly", compiler_schema: "stage9_report_v2", assembler_contract: "STAGE10_FUNCTIONAL_ASSEMBLY_INTAKE_VAULT_v1", canonical_output_shape: "functional_assembly_intake_vault" }, stage10_source_packet: stage10SourcePacket, functional_intake_vault, vault_payload, target_profile: stage10SourcePacket.target_profile, feature_map: stage10SourcePacket.feature_map, threat_findings: stage10SourcePacket.threat_findings, legal_document_status: stage10SourcePacket.legal_document_status, vault_prefill_suggestions, vault_confirmation_questions, assembly_handoff_intake, warnings };
+  const pendingPayloadRef = options.payloadRef || "interface_handoff_payloads/pending";
+  const handoff_envelope = createHandoffEnvelope({ runId, payloadRef: pendingPayloadRef, summary: createSummary(stage10SourcePacket, vault_confirmation_questions), warnings });
+  const payload_ref = pendingPayloadRef === "interface_handoff_payloads/pending" ? `interface_handoff_payloads/${handoff_envelope.handoff_id}` : pendingPayloadRef;
+
+  return { ok: true, stage: "10", node: "node5b_deterministic_backend_assembler_v2", run_id: runId, stage10_source_packet: stage10SourcePacket, functional_intake_vault, vault_payload, vault_prefill_suggestions, vault_confirmation_questions, assembly_handoff, handoff_envelope: { ...handoff_envelope, payload_ref }, persistence_plan: { payload_collection: "interface_handoff_payloads", envelope_collection: "interface_handoffs", stage_output_path: `interface_runs/${runId}/stage_outputs/stage_10_functional_assembly_intake_vault`, payload_ref }, warnings };
 }
