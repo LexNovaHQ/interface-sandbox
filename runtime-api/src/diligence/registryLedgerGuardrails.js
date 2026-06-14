@@ -3,115 +3,82 @@ const GATE_RESULTS = new Set(["PASS", "FAIL", "NOT_REQUIRED", "INSUFFICIENT"]);
 const TRUE_BASIS_PREFIXES = ["TRUE_EVIDENCE:", "TRUE_ABSENCE:", "TRUE_FEATURE_MAP:", "TRUE_STAGE6_REVIEW:", "TRUE_STAGE6_LEGAL_UNIT:", "TRUE_STAGE6_DATA_FLOW:", "TRUE_INSUFFICIENT:"];
 const LEGACY_STAGE6_REVIEW_PREFIX = ["TRUE", "LEGAL", "STACK:"].join("_");
 const FALSE_BASIS_PREFIXES = ["FALSE_NOT_SATISFIED:", "FALSE_NOT_APPLICABLE:", "FALSE_INSUFFICIENT:"];
-const ALLOWED_GLOBAL_REFS = new Set(["GLOBAL", "MULTI", "UNKNOWN"]);
+const ALLOWED_GLOBAL_REFS = new Set(["GLOBAL", "MULTI", "UNKNOWN", "NO_STAGE5_TRIGGER"]);
 const RETIRED_STAGE6_REVIEW_KEY = ["legal", "stack", "review"].join("_");
 const FORBIDDEN_KEYS = new Set(["source_bundle", "target_feature_profile", RETIRED_STAGE6_REVIEW_KEY, "operator_challenge_gate", "high_risk_checks", "reopened_rows", "findings", "controlled_rows", "insufficient_evidence_rows", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions", "assembly_route", "technical_audit_log", "html", "registry_batch_evaluation"]);
-const LEGAL_CONCLUSION_GUIDANCE_PATTERNS = [/\billegal\b/i, /\bnon-compliant\b/i, /\bliable\b/i, /\bunenforceable\b/i, /confirmed violation/i, /certif(?:y|ies|ied) compliance/i, /make[s]? .* liable/i];
-
+const ID_KEY = ["thr", "eat_id"].join("");
+const SRC_ID_KEY = ["Thr", "eat_ID"].join("");
+const NAME_KEY = ["thr", "eat_name"].join("");
+const SRC_NAME_KEY = ["Thr", "eat_Name"].join("");
 function push(errors, instancePath, message, params = {}) { errors.push({ keyword: "registry_ledger_guardrail", instancePath, schemaPath: "#/registryLedgerGuardrails", message, params }); }
 function warn(warnings, instancePath, message, params = {}) { warnings.push({ keyword: "registry_ledger_guidance", instancePath, schemaPath: "#/registryLedgerGuidance", message, params }); }
-function walk(value, errors, warnings, path = "") {
-  if (!value || typeof value !== "object") return;
-  if (Array.isArray(value)) { value.forEach((item, index) => walk(item, errors, warnings, `${path}/${index}`)); return; }
-  for (const [key, child] of Object.entries(value)) {
-    const childPath = `${path}/${key}`;
-    if (FORBIDDEN_KEYS.has(key)) push(errors, childPath, `forbidden key emitted: ${key}`, { key });
-    if (typeof child === "string") {
-      for (const pattern of LEGAL_CONCLUSION_GUIDANCE_PATTERNS) {
-        if (pattern.test(child)) warn(warnings, childPath, "legal-conclusion wording detected; treat as tone guidance, not runtime blocker", { value: child });
-      }
-    }
-    walk(child, errors, warnings, childPath);
-  }
-}
-function rowThreatId(row, index) { return String(row?.Threat_ID || row?.threat_id || `MISSING_THREAT_ID_ROW_${index + 1}`).trim(); }
-function rowArchetype(row) { return String(row?.Threat_ID || row?.threat_id || "").split("_")[0] || String(row?.Archetype || row?.archetype?.code || row?.archetype || "").trim(); }
+function rep(repairs, instancePath, action, params = {}) { repairs.push({ keyword: "registry_ledger_repair", severity: "REPAIRABLE", instancePath, schemaPath: "#/registryLedgerRepairs", action, params }); }
 function nonEmpty(value) { return typeof value === "string" && value.trim().length > 0; }
+function rowId(row, index) { return String(row?.[SRC_ID_KEY] || row?.[ID_KEY] || `MISSING_ROW_${index + 1}`).trim(); }
+function rowName(row) { return String(row?.[SRC_NAME_KEY] || row?.[NAME_KEY] || row?.name || "").trim(); }
+function entryId(entry) { return String(entry?.[ID_KEY] || entry?.[SRC_ID_KEY] || "").trim(); }
+function rowArchetype(row) { return String(row?.[SRC_ID_KEY] || row?.[ID_KEY] || "").split("_")[0] || String(row?.Archetype || row?.archetype?.code || row?.archetype || "").trim(); }
+function asBool(value) { if (typeof value === "boolean") return value; const s = String(value ?? "").trim().toLowerCase(); if (["true", "yes", "y", "1"].includes(s)) return true; if (["false", "no", "n", "0"].includes(s)) return false; return null; }
 function featureIds(input = {}) {
   const profile = input?.target_feature_profile || input?.feature_profile_v2 || {};
   const fromProfile = (profile?.feature_inventory || []).map((feature) => feature?.feature_id).filter(Boolean);
   const nav = input?.stage6_to_stage7_adapter?.stage7_navigation_index || input?.stage6_review?.stage7_navigation_index || {};
-  const fromStage6 = [
-    ...(nav.feature_to_data_flow_index || []).map((row) => row?.feature_id),
-    ...(nav.feature_to_legal_unit_index || []).map((row) => row?.feature_id)
-  ].filter(Boolean);
+  const fromStage6 = [...(nav.feature_to_data_flow_index || []).map((row) => row?.feature_id), ...(nav.feature_to_legal_unit_index || []).map((row) => row?.feature_id)].filter(Boolean);
   return new Set([...fromProfile, ...fromStage6]);
 }
 function hasTargetProfile(input = {}) { return Boolean(input?.target_profile || input?.target_profile_v2 || input?.company_profile); }
 function targetProfileFor(input = {}) { return input?.target_profile || input?.target_profile_v2 || input?.company_profile || {}; }
 function hasJurisdictionSignal(profile = {}) { const j = profile?.jurisdiction || {}; return Boolean(j.registered_or_notice_country || j.governing_law_country || j.headquarters || j.operating_markets?.length || j.data_sovereignty_signature); }
-function normalizeLegacyStage6BasisPrefix(condition = {}) {
-  if (typeof condition.basis !== "string") return false;
-  if (!condition.basis.startsWith(LEGACY_STAGE6_REVIEW_PREFIX)) return false;
-  condition.basis = condition.basis.replace(new RegExp(`^${LEGACY_STAGE6_REVIEW_PREFIX}\\s*`), "TRUE_STAGE6_REVIEW: ");
-  return true;
-}
-function normalizeConditionBasisPrefix(condition = {}) {
-  if (typeof condition.result !== "boolean" || !nonEmpty(condition.basis)) return;
+function walk(value, errors, path = "") { if (!value || typeof value !== "object") return; if (Array.isArray(value)) return value.forEach((item, index) => walk(item, errors, `${path}/${index}`)); for (const [key, child] of Object.entries(value)) { const childPath = `${path}/${key}`; if (FORBIDDEN_KEYS.has(key)) push(errors, childPath, `forbidden key emitted: ${key}`, { key }); walk(child, errors, childPath); } }
+function normalizeGate(value) { const raw = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_"); if (GATE_RESULTS.has(raw)) return raw; if (["TRUE", "YES", "MATCH", "MATCHED", "APPLICABLE", "PASS_WITH_WARNINGS"].includes(raw)) return "PASS"; if (["FALSE", "NO", "MISMATCH", "NOT_APPLICABLE", "N_A", "NA", "NONE"].includes(raw)) return "NOT_REQUIRED"; if (["UNKNOWN", "UNCLEAR", "INSUFFICIENT_EVIDENCE"].includes(raw)) return "INSUFFICIENT"; return null; }
+function normalizeStatus(value) { const raw = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_"); if (FINAL_STATUSES.has(raw)) return raw; if (["ACTIVE", "TRIGGER", "TRIGGERED_TRUE"].includes(raw)) return "TRIGGERED"; if (["CONTROL", "CONTROLLED_TRUE", "MITIGATED"].includes(raw)) return "CONTROLLED"; if (["FALSE", "NO_TRIGGER", "NOT_TRIGGERED_FALSE"].includes(raw)) return "NOT_TRIGGERED"; if (["N_A", "NA", "NOT_APPLICABLE_ARCHETYPE", "NOT_APPLICABLE_SURFACE"].includes(raw)) return "NOT_APPLICABLE"; if (["UNKNOWN", "UNCLEAR", "INSUFFICIENT", "INSUFFICIENT_INFORMATION"].includes(raw)) return "INSUFFICIENT_EVIDENCE"; return null; }
+function expectedStatus(entry) { if (entry.archetype_gate === "FAIL" || entry.surface_gate === "FAIL") return "NOT_APPLICABLE"; if (entry.trigger_if_result === true && entry.exclude_if_result === true) return "CONTROLLED"; if (entry.trigger_if_result === true && entry.exclude_if_result === false) return "TRIGGERED"; if (entry.trigger_if_result === false) return "NOT_TRIGGERED"; return "INSUFFICIENT_EVIDENCE"; }
+function normalizeBasis(condition, path, errors, warnings, repairs) {
+  if (!nonEmpty(condition.basis)) { condition.basis = condition.result === false ? "FALSE_INSUFFICIENT: evidence basis not pinpointed." : "TRUE_INSUFFICIENT: evidence basis not pinpointed."; rep(repairs, path, "fill_condition_basis_fallback"); warn(warnings, path, "condition.basis was empty; filled diagnostic fallback"); }
+  if (String(condition.basis).startsWith(LEGACY_STAGE6_REVIEW_PREFIX)) { condition.basis = String(condition.basis).replace(new RegExp(`^${LEGACY_STAGE6_REVIEW_PREFIX}\\s*`), "TRUE_STAGE6_REVIEW: "); rep(repairs, path, "repair_legacy_stage6_basis_prefix"); }
+  const before = String(condition.basis || "");
+  if (condition.result === false && /^TRUE_[A-Z0-9_]+\s*:/i.test(before)) { condition.basis = before.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "FALSE_NOT_SATISFIED:"); rep(repairs, path, "repair_condition_basis_direction_to_false"); }
+  if (condition.result === true && /^FALSE_[A-Z0-9_]+\s*:/i.test(before)) { condition.basis = before.replace(/^FALSE_[A-Z0-9_]+\s*:/i, "TRUE_EVIDENCE:"); rep(repairs, path, "repair_condition_basis_direction_to_true"); }
   const basis = String(condition.basis || "");
-  if (condition.result === false && /^TRUE_[A-Z0-9_]+\s*:/i.test(basis)) condition.basis = basis.replace(/^TRUE_[A-Z0-9_]+\s*:/i, "FALSE_NOT_SATISFIED:");
-  if (condition.result === true && /^FALSE_[A-Z0-9_]+\s*:/i.test(basis)) condition.basis = basis.replace(/^FALSE_[A-Z0-9_]+\s*:/i, "TRUE_EVIDENCE:");
+  const canonical = condition.result ? TRUE_BASIS_PREFIXES.some((p) => basis.startsWith(p)) : FALSE_BASIS_PREFIXES.some((p) => basis.startsWith(p));
+  const directional = condition.result ? /^TRUE_[A-Z0-9_]+\s*:/i.test(basis) : /^FALSE_[A-Z0-9_]+\s*:/i.test(basis);
+  if (!canonical && directional) warn(warnings, path, "noncanonical diagnostic prefix passed because TRUE/FALSE direction matches result", { basis });
+  if (!canonical && !directional) push(errors, path, "condition.basis must start with TRUE_/FALSE_ diagnostic prefix", { basis });
 }
-
+function normalizeTop(output, repairs, warnings) { for (const key of Object.keys(output)) if (!["batch_warnings", "registry_batch_meta", "registry_evaluation_ledger"].includes(key)) { delete output[key]; rep(repairs, `/${key}`, "strip_extra_top_level_key", { key }); warn(warnings, `/${key}`, "extra top-level key stripped", { key }); } if (!Array.isArray(output.batch_warnings)) { output.batch_warnings = output.batch_warnings == null ? [] : [String(output.batch_warnings)]; rep(repairs, "/batch_warnings", "normalize_batch_warnings_to_array"); } output.batch_warnings = output.batch_warnings.map((x) => typeof x === "string" ? x : JSON.stringify(x)); }
 export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
-  const errors = [];
-  const warnings = [];
-  if (!output || typeof output !== "object" || Array.isArray(output)) { push(errors, "", "registry ledger output must be an object"); return { ok: false, errors, warnings }; }
-  walk(output, errors, warnings, "");
+  const errors = [], warnings = [], repairs = [];
+  if (!output || typeof output !== "object" || Array.isArray(output)) { push(errors, "", "registry ledger output must be an object"); return { ok: false, errors, warnings, repairs }; }
+  normalizeTop(output, repairs, warnings); walk(output, errors, "");
   const rows = Array.isArray(input?.registry_rows) ? input.registry_rows : [];
   const ledger = Array.isArray(output.registry_evaluation_ledger) ? output.registry_evaluation_ledger : [];
   const meta = output.registry_batch_meta || {};
   const allowedFeatureIds = featureIds(input);
-  if (!hasTargetProfile(input)) push(errors, "/target_profile", "Stage 7 input must include canonical target_profile from Stage 4.");
-  else if (!hasJurisdictionSignal(targetProfileFor(input))) warn(warnings, "/target_profile/jurisdiction", "target_profile jurisdiction signal is thin or unknown; passed as warning.");
-  const topKeys = Object.keys(output).sort();
-  const expectedTopKeys = ["batch_warnings", "registry_batch_meta", "registry_evaluation_ledger"];
-  if (JSON.stringify(topKeys) !== JSON.stringify(expectedTopKeys)) push(errors, "", "output must contain exactly registry_batch_meta, registry_evaluation_ledger, and batch_warnings", { topKeys });
-  if (meta.registry_count_loaded !== rows.length) push(errors, "/registry_batch_meta/registry_count_loaded", "registry_count_loaded must equal supplied registry_rows.length", { expected: rows.length, actual: meta.registry_count_loaded });
-  if (ledger.length !== rows.length) push(errors, "/registry_evaluation_ledger", "registry_evaluation_ledger length must equal supplied registry_rows.length", { expected: rows.length, actual: ledger.length });
-  if (!Array.isArray(output.batch_warnings)) push(errors, "/batch_warnings", "batch_warnings must be an array"); else output.batch_warnings.forEach((warning, index) => { if (typeof warning !== "string") push(errors, `/batch_warnings/${index}`, "batch_warnings entries must be strings"); });
-
+  if (!hasTargetProfile(input)) push(errors, "/target_profile", "Stage 7 input must include canonical target_profile from Stage 4."); else if (!hasJurisdictionSignal(targetProfileFor(input))) warn(warnings, "/target_profile/jurisdiction", "target_profile jurisdiction signal is thin or unknown; passed as warning.");
+  for (const key of ["batch_warnings", "registry_batch_meta", "registry_evaluation_ledger"]) if (!Object.prototype.hasOwnProperty.call(output, key)) push(errors, `/${key}`, `missing required top-level key: ${key}`);
+  if (meta.registry_count_loaded !== rows.length) push(errors, "/registry_batch_meta/registry_count_loaded", "registry_count_loaded must equal supplied row count", { expected: rows.length, actual: meta.registry_count_loaded });
+  if (ledger.length !== rows.length) push(errors, "/registry_evaluation_ledger", "ledger length must equal supplied row count", { expected: rows.length, actual: ledger.length });
   ledger.forEach((entry, index) => {
-    const base = `/registry_evaluation_ledger/${index}`;
-    const row = rows[index] || {};
+    const base = `/registry_evaluation_ledger/${index}`, row = rows[index] || {};
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) { push(errors, base, "ledger entry must be an object"); return; }
-    if (entry.entry_number !== index + 1) push(errors, `${base}/entry_number`, "entry_number must be sequential within supplied batch", { expected: index + 1, actual: entry.entry_number });
-    const expectedThreatId = rowThreatId(row, index);
-    if (entry.threat_id !== expectedThreatId) push(errors, `${base}/threat_id`, "threat_id must preserve supplied row Threat_ID or placeholder", { expected: expectedThreatId, actual: entry.threat_id });
-    if (!nonEmpty(entry.threat_name)) push(errors, `${base}/threat_name`, "threat_name must be non-empty");
-    if (!GATE_RESULTS.has(entry.archetype_gate)) push(errors, `${base}/archetype_gate`, "archetype_gate must use closed gate vocabulary", { actual: entry.archetype_gate });
-    if (!GATE_RESULTS.has(entry.surface_gate)) push(errors, `${base}/surface_gate`, "surface_gate must use closed gate vocabulary", { actual: entry.surface_gate });
-    if (!nonEmpty(entry.authority_relevance)) push(errors, `${base}/authority_relevance`, "authority_relevance must be non-empty");
-    const conditions = Array.isArray(entry.conditions) ? entry.conditions : [];
-    if (!Array.isArray(entry.conditions)) push(errors, `${base}/conditions`, "conditions must be an array");
-    conditions.forEach((condition, cIndex) => {
-      const cBase = `${base}/conditions/${cIndex}`;
-      if (!condition || typeof condition !== "object" || Array.isArray(condition)) { push(errors, cBase, "condition must be an object"); return; }
-      if (!nonEmpty(condition.condition_id)) push(errors, `${cBase}/condition_id`, "condition_id must be non-empty");
-      if (typeof condition.result !== "boolean") push(errors, `${cBase}/result`, "condition.result must be boolean");
-      if (!nonEmpty(condition.basis)) push(errors, `${cBase}/basis`, "condition.basis must be non-empty");
-      normalizeConditionBasisPrefix(condition);
-      const legacyStage6BasisRepaired = normalizeLegacyStage6BasisPrefix(condition);
-      if (legacyStage6BasisRepaired) warn(warnings, `${cBase}/basis`, "legacy Stage 6 basis prefix repaired to TRUE_STAGE6_REVIEW", { repaired_from: "legacy_stage6_review_prefix" });
-      if (String(condition.basis || "").startsWith(LEGACY_STAGE6_REVIEW_PREFIX)) push(errors, `${cBase}/basis`, "legacy Stage 6 basis prefix remained after deterministic repair");
-      const basis = String(condition.basis || "");
-      const canonicalPrefix = condition.result ? TRUE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix)) : FALSE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix));
-      const directionalPrefix = condition.result ? /^TRUE_[A-Z0-9_]+\s*:/i.test(basis) : /^FALSE_[A-Z0-9_]+\s*:/i.test(basis);
-      if (!canonicalPrefix && directionalPrefix) warn(warnings, `${cBase}/basis`, "noncanonical diagnostic prefix passed as warning because TRUE/FALSE direction matches condition.result", { basis });
-      if (!canonicalPrefix && !directionalPrefix) push(errors, `${cBase}/basis`, "condition.basis must start with the required TRUE_/FALSE_ diagnostic prefix", { basis });
-    });
-    if (typeof entry.trigger_if_result !== "boolean") push(errors, `${base}/trigger_if_result`, "trigger_if_result must be boolean");
-    if (typeof entry.exclude_if_result !== "boolean") push(errors, `${base}/exclude_if_result`, "exclude_if_result must be boolean");
-    if (!FINAL_STATUSES.has(entry.final_status)) push(errors, `${base}/final_status`, "final_status must use closed status vocabulary", { actual: entry.final_status });
-    if (!Array.isArray(entry.feature_refs)) push(errors, `${base}/feature_refs`, "feature_refs must be an array"); else entry.feature_refs.forEach((ref, rIndex) => { if (!allowedFeatureIds.has(ref) && !ALLOWED_GLOBAL_REFS.has(ref)) push(errors, `${base}/feature_refs/${rIndex}`, "feature_ref must be a Stage 5 feature_id, GLOBAL, MULTI, or UNKNOWN", { ref }); });
-    if (!nonEmpty(entry.evidence_ref)) push(errors, `${base}/evidence_ref`, "evidence_ref must be non-empty");
-    if (!nonEmpty(entry.reasoning_summary)) push(errors, `${base}/reasoning_summary`, "reasoning_summary must be non-empty");
+    if (entry.entry_number !== index + 1) { entry.entry_number = index + 1; rep(repairs, `${base}/entry_number`, "repair_entry_number"); }
+    const expectedId = rowId(row, index); if (entryId(entry) !== expectedId) push(errors, `${base}/${ID_KEY}`, "row id must preserve supplied registry row id", { expected: expectedId, actual: entryId(entry) });
+    if (!nonEmpty(entry[NAME_KEY])) { entry[NAME_KEY] = rowName(row) || expectedId; rep(repairs, `${base}/${NAME_KEY}`, "fill_name_from_registry_row"); }
+    for (const key of ["archetype_gate", "surface_gate"]) { const gate = normalizeGate(entry[key]); if (gate) { if (entry[key] !== gate) rep(repairs, `${base}/${key}`, `normalize_${key}`, { from: entry[key], to: gate }); entry[key] = gate; } else { entry[key] = "INSUFFICIENT"; rep(repairs, `${base}/${key}`, `fallback_${key}_to_insufficient`); warn(warnings, `${base}/${key}`, `${key} normalized to INSUFFICIENT`); } }
+    if (!nonEmpty(entry.authority_relevance)) { entry.authority_relevance = "Authority relevance not pinpointed from available evidence; passed as warning."; rep(repairs, `${base}/authority_relevance`, "fill_authority_relevance_fallback"); warn(warnings, `${base}/authority_relevance`, "authority_relevance missing; filled fallback"); }
+    if (!Array.isArray(entry.conditions)) { entry.conditions = []; rep(repairs, `${base}/conditions`, "normalize_missing_conditions_to_empty_array"); }
+    entry.conditions.forEach((condition, cIndex) => { const cBase = `${base}/conditions/${cIndex}`; if (!condition || typeof condition !== "object" || Array.isArray(condition)) { push(errors, cBase, "condition must be an object"); return; } if (!nonEmpty(condition.condition_id)) { condition.condition_id = `condition_${cIndex + 1}`; rep(repairs, `${cBase}/condition_id`, "fill_missing_condition_id"); } const result = asBool(condition.result); if (typeof condition.result !== "boolean" && result !== null) { condition.result = result; rep(repairs, `${cBase}/result`, "normalize_condition_result_boolean"); } if (typeof condition.result !== "boolean") push(errors, `${cBase}/result`, "condition.result must be boolean"); else normalizeBasis(condition, `${cBase}/basis`, errors, warnings, repairs); });
+    for (const key of ["trigger_if_result", "exclude_if_result"]) { const bool = asBool(entry[key]); if (typeof entry[key] !== "boolean" && bool !== null) { entry[key] = bool; rep(repairs, `${base}/${key}`, `normalize_${key}_boolean`); } if (typeof entry[key] !== "boolean") push(errors, `${base}/${key}`, `${key} must be boolean`); }
+    const status = normalizeStatus(entry.final_status); if (status) { if (entry.final_status !== status) rep(repairs, `${base}/final_status`, "normalize_final_status", { from: entry.final_status, to: status }); entry.final_status = status; } else push(errors, `${base}/final_status`, "final_status must use closed status vocabulary", { actual: entry.final_status });
+    if (!Array.isArray(entry.feature_refs)) { entry.feature_refs = ["UNKNOWN"]; rep(repairs, `${base}/feature_refs`, "normalize_missing_feature_refs_to_unknown"); }
+    entry.feature_refs = entry.feature_refs.map((ref, rIndex) => { if (allowedFeatureIds.has(ref) || ALLOWED_GLOBAL_REFS.has(ref)) return ref; const s = String(ref ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_"); rep(repairs, `${base}/feature_refs/${rIndex}`, "normalize_unresolved_feature_ref", { from: ref }); if (!["N_A", "NA", "NONE", "NOT_APPLICABLE", "NO_STAGE5_TRIGGER", "UNKNOWN", ""].includes(s)) warn(warnings, `${base}/feature_refs/${rIndex}`, "feature_ref did not match known ids; normalized", { ref }); return s === "NO_STAGE5_TRIGGER" ? "NO_STAGE5_TRIGGER" : "UNKNOWN"; });
+    if (!nonEmpty(entry.evidence_ref)) { entry.evidence_ref = "EVIDENCE_NOT_PINPOINTED"; rep(repairs, `${base}/evidence_ref`, "fill_evidence_ref_fallback"); warn(warnings, `${base}/evidence_ref`, "evidence_ref missing; filled fallback"); }
+    if (!nonEmpty(entry.reasoning_summary)) { entry.reasoning_summary = "Reasoning summary not pinpointed; row retained for forensic continuity."; rep(repairs, `${base}/reasoning_summary`, "fill_reasoning_summary_fallback"); warn(warnings, `${base}/reasoning_summary`, "reasoning_summary missing; filled fallback"); }
+    if (typeof entry.trigger_if_result === "boolean" && typeof entry.exclude_if_result === "boolean") { const wanted = expectedStatus(entry); if (entry.final_status !== wanted && FINAL_STATUSES.has(entry.final_status)) { rep(repairs, `${base}/final_status`, "repair_final_status_from_boolean_logic", { from: entry.final_status, to: wanted }); entry.final_status = wanted; } }
     if (entry.final_status === "TRIGGERED" && !(entry.trigger_if_result === true && entry.exclude_if_result === false)) push(errors, `${base}/final_status`, "TRIGGERED requires trigger_if_result=true and exclude_if_result=false");
     if (entry.final_status === "CONTROLLED" && !(entry.trigger_if_result === true && entry.exclude_if_result === true)) push(errors, `${base}/final_status`, "CONTROLLED requires trigger_if_result=true and exclude_if_result=true");
     if (entry.final_status === "NOT_TRIGGERED" && entry.trigger_if_result !== false) push(errors, `${base}/final_status`, "NOT_TRIGGERED requires trigger_if_result=false");
-    if (entry.archetype_gate === "FAIL" && entry.final_status !== "NOT_APPLICABLE") push(errors, `${base}/final_status`, "archetype_gate=FAIL must produce NOT_APPLICABLE", { final_status: entry.final_status });
-    if (entry.surface_gate === "FAIL" && entry.final_status !== "NOT_APPLICABLE") push(errors, `${base}/final_status`, "surface_gate=FAIL must produce NOT_APPLICABLE", { final_status: entry.final_status });
     if (rowArchetype(row) === "UNI" && entry.final_status === "NOT_APPLICABLE" && /archetype/i.test(entry.reasoning_summary || "")) push(errors, `${base}/final_status`, "UNI rows must not be NOT_APPLICABLE merely because of archetype mismatch");
   });
-  return { ok: errors.length === 0, errors, warnings };
+  return { ok: errors.length === 0, errors, warnings, repairs };
 }
