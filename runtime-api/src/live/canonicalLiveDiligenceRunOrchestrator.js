@@ -30,7 +30,7 @@ export async function runLiveDiligenceReview(input = {}, options = {}) {
   const { stage8Export, stage8Ledger, stage8Input } = await runStage8({ stage6Cache, stage7Artifact, registryRuntime, logs, runId: `${runId}_stage8` });
 
   logStage(logs, "stage9_report", "running");
-  const stage9ReportData = buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, registryRuntime });
+  const stage9ReportData = buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, stage8Export, registryRuntime });
   const stage9Validation = validateStage9Report({ stage9Report: stage9ReportData, postChallengeLedger: asArray(stage8Ledger.post_challenge_ledger), registryRuntime });
   if (!stage9Validation.ok) {
     const error = new Error("Stage 9 report validation failed.");
