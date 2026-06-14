@@ -1,6 +1,7 @@
 import { REVIEW_READY_DISCLAIMER } from "./reportTerminologyMap.js";
 import { REPORT_SECTION_KEYS } from "./reportSectionContract.js";
 import { requiredBlocksForSection } from "./reportSectionContentContract.js";
+import { visibleLanguageViolations } from "./reportLegalLanguage.js";
 
 const T = ["thr", "eat"].join("");
 const ID_KEY = `${T}_id`;
@@ -8,12 +9,43 @@ const SRC_ID_KEY = `${T[0].toUpperCase()}${T.slice(1)}_ID`;
 const asArray = (value) => Array.isArray(value) ? value : [];
 const asText = (value) => String(value ?? "").trim();
 const hasValue = (value) => Array.isArray(value) || (value && typeof value === "object" ? Object.keys(value).length > 0 : asText(value).length > 0);
-function rowId(entry) { return asText(entry?.[ID_KEY] || entry?.[SRC_ID_KEY] || entry?.registry_reference); }
+function rowId(entry) { return asText(entry?.[ID_KEY] || entry?.[SRC_ID_KEY] || entry?.registry_reference || entry?.registry_row_id); }
 function duplicateValues(values) { const seen = new Set(); const dup = new Set(); for (const value of values) { if (seen.has(value)) dup.add(value); seen.add(value); } return [...dup]; }
-function countsByStatus(rows = []) { return rows.reduce((acc, entry) => { const status = asText(entry?.final_status || entry?.assessment_status || "UNKNOWN"); acc[status] = (acc[status] || 0) + 1; return acc; }, {}); }
-function visibleBody(reportData = {}) { const clone = { ...reportData }; delete clone.forensic_ledger_appendix; return JSON.stringify(clone); }
-function hasVisibleLeak(reportData = {}) { const body = visibleBody(reportData); return ["legal_stack_review", "legal_stack_control_review", "document_stack_redline", "legal_stack_assessment", "registry_reference", ID_KEY, "entry_number", "trigger_if_result", "exclude_if_result", "condition_trigger_basis", "raw_registry_payload"].filter((term) => body.includes(term)); }
+function countsByStatus(rows = []) { return rows.reduce((acc, entry) => { const status = asText(entry?.final_status || entry?.assessment_status || entry?.raw_assessment_status || "UNKNOWN"); acc[status] = (acc[status] || 0) + 1; return acc; }, {}); }
+function visibleObject(reportData = {}) { const clone = { ...reportData }; delete clone.forensic_ledger_appendix; return clone; }
+function visibleBody(reportData = {}) { return JSON.stringify(visibleObject(reportData)); }
+function hasVisibleLeak(reportData = {}) {
+  const body = visibleBody(reportData);
+  const explicitTerms = ["legal_stack_review", "legal_stack_control_review", "document_stack_redline", "legal_stack_assessment", "registry_reference", ID_KEY, "entry_number", "trigger_if_result", "exclude_if_result", "condition_trigger_basis", "raw_registry_payload", "Hunter_Trigger", "TRIGGER_IF", "EXCLUDE_IF", "Operator Challenge", "Registry Evaluation"].filter((term) => body.includes(term));
+  const rawStatusTerms = ["TRIGGERED", "CONTROLLED", "INSUFFICIENT_EVIDENCE", "NOT_TRIGGERED", "NOT_APPLICABLE"].filter((term) => body.includes(`\"${term}\"`) || body.includes(`:${term}`));
+  const rawSeverityTerms = (body.match(/\bT[1-5]\s*[—-]/g) || []).map((term) => `raw_severity_${term}`);
+  const policyViolations = visibleLanguageViolations(visibleObject(reportData));
+  return [...new Set([...explicitTerms, ...rawStatusTerms, ...rawSeverityTerms, ...policyViolations])];
+}
 function validateRequiredBlocks(reportData, warnings) { for (const key of REPORT_SECTION_KEYS) { const section = reportData?.[key]; for (const block of requiredBlocksForSection(key)) if (!Object.prototype.hasOwnProperty.call(section || {}, block)) warnings.push(`missing noncritical Stage 9 v2 block: ${key}.${block}`); } }
+function validateLockedAppendices(reportData, ledger, errors, warnings) {
+  const appendix = reportData?.forensic_ledger_appendix || {};
+  const appendixChecks = [
+    ["appendix_a_evidence_source_index", "Evidence Source Index"],
+    ["appendix_b_feature_ledger", "Feature Ledger"],
+    ["appendix_c_data_provenance_ledger", "Data Provenance Ledger"],
+    ["appendix_d_legal_control_ledger", "Legal / Control Ledger"],
+    ["appendix_e_exposure_forensic_ledger", "Exposure Forensic Ledger"],
+    ["appendix_f_quality_review_trace", "Quality Review Trace"]
+  ];
+  for (const [key, label] of appendixChecks) {
+    if (!Array.isArray(appendix[key])) errors.push(`${label} appendix missing or not an array: forensic_ledger_appendix.${key}`);
+  }
+  const exposureLedger = asArray(appendix.appendix_e_exposure_forensic_ledger || appendix.full_registry_ledger || appendix.forensic_ledger);
+  if (exposureLedger.length !== ledger.length) errors.push(`Exposure Forensic Ledger row count mismatch: expected ${ledger.length}, received ${exposureLedger.length}`);
+  const matrix = asArray(reportData?.exposure_findings?.integrated_exposure_matrix || reportData?.exposure_findings?.finding_rows);
+  if ((countsByStatus(ledger).TRIGGERED || 0) > 0 && !matrix.length) errors.push("identified exposures exist but integrated exposure matrix is empty");
+  const matrixWithoutProvenance = matrix.filter((row) => !hasValue(row.appendix_provenance));
+  if (matrixWithoutProvenance.length) errors.push(`integrated exposure matrix row(s) missing appendix provenance: ${matrixWithoutProvenance.length}`);
+  const productRows = asArray(reportData?.product_activity_ip_profile?.product_function_matrix);
+  const featureLedger = asArray(appendix.appendix_b_feature_ledger);
+  if (featureLedger.length && productRows.length !== featureLedger.length) warnings.push(`product function matrix count differs from feature appendix count: matrix=${productRows.length}, appendix=${featureLedger.length}`);
+}
 function validateSectionSubstance(reportData, errors, warnings, ledgerCounts) {
   if (!hasValue(reportData?.matter_overview?.matter_identity)) errors.push("matter_overview.matter_identity is empty");
   if (!hasValue(reportData?.matter_overview?.review_scope)) errors.push("matter_overview.review_scope is empty");
@@ -50,10 +82,10 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
   const registryRows = asArray(registryRuntime?.threats);
   const registryIds = registryRows.map((row, index) => asText(row?.[ID_KEY] || row?.[SRC_ID_KEY] || `ROW_${index + 1}`));
   const exposureFindings = reportData?.exposure_findings || {};
-  const findingRows = asArray(exposureFindings.finding_rows);
+  const findingRows = asArray(exposureFindings.finding_rows || exposureFindings.integrated_exposure_matrix);
   const categoryGroups = asArray(exposureFindings.exposure_category_groups);
   const appendixRows = asArray(reportData?.forensic_ledger_appendix?.full_registry_ledger || reportData?.forensic_ledger_appendix?.forensic_ledger);
-  if (reportData) { validateRequiredBlocks(reportData, warnings); validateSectionSubstance(reportData, errors, warnings, ledgerCounts); }
+  if (reportData) { validateRequiredBlocks(reportData, warnings); validateSectionSubstance(reportData, errors, warnings, ledgerCounts); validateLockedAppendices(reportData, ledger, errors, warnings); }
   if (appendixRows.length !== ledger.length) errors.push(`forensic appendix row count mismatch: expected ${ledger.length}, received ${appendixRows.length}`);
   const appendixIds = appendixRows.map(rowId).filter(Boolean);
   const missingFromAppendix = ledgerIds.filter((id) => !appendixIds.includes(id));
