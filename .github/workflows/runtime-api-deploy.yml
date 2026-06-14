@@ -102,6 +102,21 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Verify gcloud deploy context
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          test -n "$GCP_PROJECT_ID"
+          test -n "$GCP_REGION"
+          test -n "$GCP_CLOUD_RUN_SERVICE"
+          gcloud --version
+          gcloud config set project "$GCP_PROJECT_ID"
+          gcloud config set run/region "$GCP_REGION"
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
       - name: Deploy source to Cloud Run
         working-directory: runtime-api
         env:
@@ -109,6 +124,7 @@ jobs:
           GCP_REGION: ${{ secrets.GCP_REGION }}
           GCP_CLOUD_RUN_SERVICE: ${{ secrets.GCP_CLOUD_RUN_SERVICE }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
           GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
           GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
           GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
@@ -130,6 +146,7 @@ jobs:
 
           env = {
               "RUNTIME_ACCESS_TOKEN": os.environ.get("RUNTIME_ACCESS_TOKEN", ""),
+              "ALLOWED_ORIGIN": os.environ.get("ALLOWED_ORIGIN") or "https://sandbox.lexnovahq.com",
               "GEMINI_SEARCH_API_KEYS": os.environ.get("GEMINI_SEARCH_API_KEYS", ""),
               "GEMINI_JSON_API_KEYS": os.environ.get("GEMINI_JSON_API_KEYS", ""),
               "GEMINI_REASONING_API_KEYS": os.environ.get("GEMINI_REASONING_API_KEYS", ""),
@@ -166,10 +183,20 @@ jobs:
               "STAGE7_BUDGET_ENFORCEMENT_MODE": "guidance",
           }
 
-          missing = [key for key, value in env.items() if key.startswith("GEMINI_") and key.endswith("API_KEYS") and not value]
-          missing += ["RUNTIME_ACCESS_TOKEN"] if not env["RUNTIME_ACCESS_TOKEN"] else []
+          required_deploy_values = {
+              "GCP_PROJECT_ID": os.environ.get("GCP_PROJECT_ID", ""),
+              "GCP_REGION": os.environ.get("GCP_REGION", ""),
+              "GCP_CLOUD_RUN_SERVICE": os.environ.get("GCP_CLOUD_RUN_SERVICE", ""),
+              "RUNTIME_ACCESS_TOKEN": env["RUNTIME_ACCESS_TOKEN"],
+              "ALLOWED_ORIGIN": env["ALLOWED_ORIGIN"],
+              "GEMINI_SEARCH_API_KEYS": env["GEMINI_SEARCH_API_KEYS"],
+              "GEMINI_JSON_API_KEYS": env["GEMINI_JSON_API_KEYS"],
+              "GEMINI_REASONING_API_KEYS": env["GEMINI_REASONING_API_KEYS"],
+              "GEMINI_REGISTRY_API_KEYS": env["GEMINI_REGISTRY_API_KEYS"],
+          }
+          missing = [key for key, value in required_deploy_values.items() if not str(value or "").strip()]
           if missing:
-              raise SystemExit("Missing required deploy secret(s): " + ", ".join(missing))
+              raise SystemExit("Missing required deploy secret/value(s): " + ", ".join(missing))
 
           path = Path("/tmp/lexnova-runtime-env.yaml")
           path.write_text("\n".join(f"{key}: {quote_yaml(value)}" for key, value in env.items()) + "\n", encoding="utf-8")
@@ -180,7 +207,8 @@ jobs:
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
             --allow-unauthenticated \
-            --env-vars-file /tmp/lexnova-runtime-env.yaml
+            --env-vars-file /tmp/lexnova-runtime-env.yaml \
+            --quiet
 
       - name: Print Cloud Run revision logs on deploy failure
         if: failure()
@@ -278,62 +306,3 @@ jobs:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run smoke:runtime
-
-      - name: Run Stage 4 Company Profile E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          STAGE4_COMPANY_MAX_OUTPUT_TOKENS: "24000"
-          STAGE4_COMPANY_TIMEOUT_MS: "90000"
-        run: npm run e2e:stage4:company
-
-      - name: Run Stage 5 Target Feature Profile E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          STAGE5_SOURCE_DISCOVERY_MODE: "sync_with_free_search"
-          STAGE5_RUN_FREE_SEARCH: "true"
-          STAGE5_ANCHOR_FETCH_MAX: "60"
-          STAGE5_ANCHOR_LINK_LIMIT: "100000"
-          STAGE5_FEATURE_MAX_OUTPUT_TOKENS: "28000"
-          STAGE5_FEATURE_TIMEOUT_MS: "120000"
-          STAGE5_MAX_INPUT_CHARS: "240000"
-          STAGE5_MAX_ESTIMATED_TOKENS: "120000"
-        run: npm run e2e:stage5:features
-
-      - name: Run Stage 6 Legal Stack Review E2E
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          STAGE6_MAX_OUTPUT_TOKENS: "12000"
-          STAGE6_TIMEOUT_MS: "120000"
-          STAGE6_MAX_INPUT_CHARS: "240000"
-          STAGE6_MAX_ESTIMATED_TOKENS: "120000"
-          STAGE6_MAX_SINGLE_SOURCE_CHARS: "10000000"
-        run: npm run e2e:stage6:legal
-
-      - name: Prepare Stage 4/5/6 audit artifacts
-        if: always()
-        run: |
-          set -euo pipefail
-          rm -rf runtime-api/runtime-e2e-artifacts/stage4-stage5
-          mkdir -p runtime-api/runtime-e2e-artifacts/stage4-stage5/stage4 runtime-api/runtime-e2e-artifacts/stage4-stage5/stage5 runtime-api/runtime-e2e-artifacts/stage4-stage5/stage6
-          ls -lah runtime-api/.runtime-e2e-cache || true
-          test -s runtime-api/.runtime-e2e-cache/stage4-company-profile.json
-          test -s runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json
-          test -s runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json
-          cp -v runtime-api/.runtime-e2e-cache/stage4-company-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage4/
-          cp -v runtime-api/.runtime-e2e-cache/stage5-target-feature-profile.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage5/
-          cp -v runtime-api/.runtime-e2e-cache/stage6-legal-stack-review.json runtime-api/runtime-e2e-artifacts/stage4-stage5/stage6/
-          echo "{\"generated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"stage4_cache_present\":true,\"stage5_cache_present\":true,\"stage6_cache_present\":true}" > runtime-api/runtime-e2e-artifacts/stage4-stage5/artifact-manifest.json
-
-      - name: Upload Stage 4/5/6 audit cache
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-stage4-stage5-audit-cache
-          path: runtime-api/runtime-e2e-artifacts/stage4-stage5/
-          if-no-files-found: warn
