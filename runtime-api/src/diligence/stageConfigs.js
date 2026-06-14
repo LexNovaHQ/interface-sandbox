@@ -77,7 +77,7 @@ const STAGE_CONFIGS = Object.freeze({
     prompt_stage_id: "operator_challenge",
     output_key: "operator_challenge",
     output_schema_key: "operatorChallenge",
-    pool: "reasoning",
+    pool: "operator",
     max_output_tokens: 8192,
     timeout_ms: 60000,
     temperature: 0
