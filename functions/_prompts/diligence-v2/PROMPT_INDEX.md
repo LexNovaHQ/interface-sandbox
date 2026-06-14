@@ -2,7 +2,7 @@
 
 ## Status
 
-This index governs the Diligence Engine prompt chain under:
+This index governs the active Diligence Engine prompt chain under:
 
 ```text
 functions/_prompts/diligence-v2/
@@ -17,7 +17,6 @@ Read these before editing any stage prompt:
 ```text
 docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md
 docs/contracts/DILIGENCE_CANONICAL_SPINE_v1.md
-docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/STAGE4_STAGE5_CANON_FIELD_DICTIONARY_v1.md
 docs/contracts/VAULT_JS_CANONICAL_MAP_v1.md
 docs/contracts/NODE_5B_DETERMINISTIC_ASSEMBLER_CONTRACT_v1.md
@@ -37,7 +36,7 @@ The controlling active dictionary for non-Stage-6 field slices is:
 docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
 ```
 
-The older Stage 4/5 dictionary is retained as migration history and compatibility fallback. If any older prompt/doc/schema conflicts with the active Stage 6 spine for Stage 6, the Stage 6 spine controls.
+If any older prompt/doc/schema conflicts with the active Stage 6 spine for Stage 6, the Stage 6 spine controls.
 
 ## Locked stage canon
 
@@ -49,7 +48,7 @@ Stage 6 = stage6_review_v1
 Stage 6A = Legal Document Cartography
 Stage 6B = Data Provenance
 Stage 6I = Integrated Stage 6 handoff to Stage 7
-Stage 6 role = Legal Stack + Data Provenance Navigation Layer
+Stage 6 role = stage7_navigation_index
 product_feature_map[] = legacy compatibility only
 primary_product = legacy language only
 ```
@@ -59,10 +58,10 @@ primary_product = legacy language only
 The runtime prompt loader must append only the relevant dictionary blocks:
 
 ```text
-company_profile              -> UNIVERSAL + STAGE4
-target_feature_profile       -> UNIVERSAL + STAGE5
+company_profile                    -> UNIVERSAL + STAGE4
+target_feature_profile             -> UNIVERSAL + STAGE5
 stage6a_legal_document_cartography -> DILIGENCE_CANONICAL_SPINE_v1
-registry_ledger_evaluation   -> UNIVERSAL + STAGE7_NAVIGATION
+registry_ledger_evaluation         -> UNIVERSAL + STAGE7_NAVIGATION
 ```
 
 Do not append the full dictionary to every prompt.
@@ -74,9 +73,9 @@ Do not append the full dictionary to every prompt.
 0.5  Evidence Refiner                                      Gemini / runtime API
 4.   Canonical Target Profile                              Gemini / runtime API
 5.   Product Function / Feature Inventory                  Gemini / runtime API
-6A.  Legal Cartography                                     deterministic spine + bounded Gemini overlay
-6B.  Data Provenance                                       deterministic spine + bounded Gemini overlay
-6I.  Integrated Stage 6 handoff to Stage 7                 backend only, no final threat decision
+6A.  Legal Document Cartography                            deterministic macro legal units + bounded semantic classification
+6B.  Data Provenance                                       disabled until rebuilt against Stage 6 canon
+6I.  Integrated Stage 6 handoff to Stage 7                 disabled until rebuilt against Stage 6 canon
 7.   Registry Ledger                                       Gemini / runtime API, batched
 8.   Operator Challenge                                    Gemini / runtime API, merged ledger only
 9.   Final Compiler                                        Gemini / runtime API
@@ -85,7 +84,7 @@ Do not append the full dictionary to every prompt.
 
 Only collection runs without a model key. Every Gemini stage runs server-side.
 
-## Prompt files
+## Active prompt files
 
 | Stage | File | Job | Primary output |
 |---|---|---|---|
@@ -93,12 +92,12 @@ Only collection runs without a model key. Every Gemini stage runs server-side.
 | 01 | `01_EVIDENCE_REFINER.prompt.md` | Convert collected public material into admitted evidence | `source_bundle` |
 | 02A | `02_COMPANY_PROFILE.prompt.md` | Canonical identity, jurisdiction, market, baseline Vault candidates | `company_profile` wrapper containing `target_profile_v2` |
 | 02B | `02_TARGET_FEATURE_PROFILE.prompt.md` | Atomic feature/function inventory, data provenance, archetype/surface provenance | `target_feature_profile` wrapper containing `feature_profile_v2` |
-| 03 | `03_LEGAL_STACK_REVIEW.prompt.md` | Retired legacy path marker, not active runtime authority | Retired |
 | 03A | `03A_LEGAL_CARTOGRAPHY.prompt.md` | Canonical Stage 6A semantic classification over deterministic macro legal-unit seeds | `stage6_review` containing `stage6_review_v1` |
-| 03A-OVERLAY | `03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md` | Retired independent overlay dialect marker, not active runtime authority | Retired |
 | 04 | `04_REGISTRY_LEDGER_EVALUATION.prompt.md` | Evaluate supplied registry rows under Hunter Logic Gate | `registry_evaluation_ledger[]`, `batch_warnings[]` |
 | 05 | `05_OPERATOR_CHALLENGE.prompt.md` | Challenge merged ledger for false negatives and bad exclusions | `operator_challenge_gate`, `corrected_ledger_entries[]` |
 | 06 | `06_FINAL_COMPILER.prompt.md` | Compile post-challenge ledger into compiler output | `compiler_output` |
+
+No retired Stage 6 prompt file is active prompt-chain authority.
 
 ## Stage 00 — Shared System Preamble
 
