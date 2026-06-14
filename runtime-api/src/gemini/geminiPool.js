@@ -7,6 +7,7 @@ function splitCsv(value) {
 
 const POOL_CONFIG = {
   search: { keys_env: "GEMINI_SEARCH_API_KEYS", models_env: "GEMINI_SEARCH_MODEL_SEQUENCE", alias_prefix: "search_key", enable_search_grounding: true },
+  operator: { keys_env: "GEMINI_SEARCH_API_KEYS", models_env: "GEMINI_SEARCH_MODEL_SEQUENCE", alias_prefix: "operator_search_key", enable_search_grounding: false, fallback_pool: "registry" },
   json: { keys_env: "GEMINI_JSON_API_KEYS", models_env: "GEMINI_JSON_MODEL_SEQUENCE", alias_prefix: "json_key", enable_search_grounding: false },
   registry: { keys_env: "GEMINI_REGISTRY_API_KEYS", models_env: "GEMINI_REGISTRY_MODEL_SEQUENCE", alias_prefix: "registry_key", enable_search_grounding: false, fallback_pool: "json" },
   reasoning: { keys_env: "GEMINI_REASONING_API_KEYS", models_env: "GEMINI_REASONING_MODEL_SEQUENCE", alias_prefix: "reasoning_key", enable_search_grounding: false },
@@ -20,7 +21,7 @@ const POOL_CONFIG = {
 // 3. Gemini 2.5 Flash
 // 4. Gemini 3 Flash
 const LOCKED_NON_SEARCH_MODEL_SEQUENCE = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash"];
-// Search pool must use this exact priority sequence:
+// Search-capacity pools must use this exact priority sequence:
 // 1. Gemini 2.5 Flash Lite
 // 2. Gemini 2.5 Flash
 // 3. Gemini 3.1 Flash Lite
@@ -31,7 +32,7 @@ export function getGeminiPoolNames() { return Object.keys(POOL_CONFIG); }
 export function getPoolConfig(poolName) { const config = POOL_CONFIG[poolName]; if (!config) throw new Error(`Unknown Gemini pool: ${poolName}`); return config; }
 
 function lockedSequenceForPool(poolName) {
-  return poolName === "search" ? LOCKED_SEARCH_MODEL_SEQUENCE : LOCKED_NON_SEARCH_MODEL_SEQUENCE;
+  return poolName === "search" || poolName === "operator" ? LOCKED_SEARCH_MODEL_SEQUENCE : LOCKED_NON_SEARCH_MODEL_SEQUENCE;
 }
 
 function orderedModelsForPool(poolName, rawModels = []) {
