@@ -205,12 +205,13 @@ export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, i
     else deterministicRows.push(deterministicEntry(row, index, active, reason));
   });
 
-  const batching = buildStage7ArchetypeBatches({ modelRows, routeRecords, minRows: 8, maxRows: Math.max(8, Math.min(15, Number(batchSize || 15))) });
+  const batching = buildStage7ArchetypeBatches({ modelRows, routeRecords, minRows: 8, maxRows: 15 });
   const batches = batching.batches;
   return {
     plan_version: "priority_row_plan_v2",
     mode: "priority_first_route_contract_batched",
     batch_size: { min: batching.min_rows, max: batching.max_rows },
+    legacy_requested_batch_size: Math.max(1, Number(batchSize || 8)),
     batching_strategy: batching.strategy,
     active_archetypes: activeArchetypes,
     active_surfaces: activeSurfaces,
