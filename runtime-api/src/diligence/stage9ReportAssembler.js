@@ -53,6 +53,8 @@ const VISIBLE_INTERNAL_TEXT_REPLACEMENTS = Object.freeze([
   [/\blinked_threat_ids\b/g, "appendix cross references"],
   [/\bfinding_id\b/g, "finding reference"],
   [/\bDOC_[A-Z0-9_]+\b/g, "document reference"],
+  [/\bCONDITION_\d+\b/g, "condition"],
+  [/\b(?:TRUE|FALSE)_[A-Z_]+\b/g, "raw condition outcome"],
   [/\bhunter_signal_trigger\b/g, "applicability basis"],
   [/\bactive_archetypes\b/g, "active functional profiles"],
   [/\bactive_surfaces\b/g, "active legal risk surfaces"],
