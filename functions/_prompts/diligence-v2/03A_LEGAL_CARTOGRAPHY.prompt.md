@@ -18,7 +18,7 @@ runtime-api/src/diligence/stage6CanonicalVocabulary.js
 data/schemas/stage6Review.schema.json
 ```
 
-Do not use older legal-stack, Stage 6A schema, or model-overlay schema dialects as authority.
+No prompt-local enum list is authority. The `allowed_vocabulary` object in the runtime packet is the machine-readable vocabulary for this call.
 
 ## Input
 
@@ -134,50 +134,6 @@ Map features to existing legal units:
 
 ## Forbidden
 
-Do not emit:
-
-```text
-legal_stack_review_version
-legal_stack_review
-legal_stack
-document_stack_redline
-document_stack_synthesis
-legal_stack_assessment
-limitations
-doc_id
-doc_type
-doc_family
-doc_title
-section_id
-section_path
-heading_text
-structural_zone
-control_topics_detected
-feature_to_document_section_index
-document_source_locator_index
-stage6a_model_overlay_version
-section_classification_overlay
-feature_section_overlay
-data_provenance_profile
-feature_to_data_flow_index
-data_signal_index
-quote
-evidence_quote
-excerpt
-excerpt_text
-narrative
-explanation
-analysis
-legal_conclusion
-compliance_verdict
-recommendation
-control_gap
-threat_status
-triggered_threat_ids
-hunter_status
-final_status
-html
-report
-```
+Do not emit any retired Stage 6 term, field, schema key, row shape, enum value, quote field, report field, legal conclusion, compliance verdict, recommendation, Hunter status, HTML, or prose analysis listed in `DILIGENCE_CANONICAL_SPINE_v1.md`.
 
 Use `unknown` when classification is unclear. Omit rows that cannot be tied to existing packet refs.
