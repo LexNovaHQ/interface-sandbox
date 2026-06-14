@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import { validateStage6ReviewGuardrail } from "../src/diligence/guardrails/stage6ReviewGuardrail.js";
+import { buildStage6IntegratedHandoff, buildStage6ToStage7Adapter } from "../src/diligence/stage6IntegratedHandoffBuilder.js";
 import { validateDiligenceStageOutput } from "../src/diligence/stageSchemaValidator.js";
 import { fail, loadStage5Input, readJson, stage6AuditArtifact, stage6OutputCounts, writeJson } from "./stage6-e2e-utils.mjs";
 
@@ -15,26 +16,11 @@ const stage6b = readJson(stage6bPath).stage6_review;
 if (!stage6a?.legal_document_cartography) fail(phase, "Stage 6A artifact missing legal_document_cartography.", { stage6aPath }, outputPath);
 if (!stage6b?.data_provenance_profile) fail(phase, "Stage 6B artifact missing data_provenance_profile.", { stage6bPath }, outputPath);
 
-const navA = stage6a.stage7_navigation_index || {};
-const navB = stage6b.stage7_navigation_index || {};
-const integrated = {
-  stage6_review_version: "stage6_review_v1",
-  stage6_component: "stage6_integrated_handoff",
-  stage_role: "stage7_navigation_index",
-  input_refs: { ...(stage6a.input_refs || {}), ...(stage6b.input_refs || {}) },
-  legal_document_cartography: stage6a.legal_document_cartography,
-  data_provenance_profile: stage6b.data_provenance_profile,
-  stage7_navigation_index: {
-    feature_to_data_flow_index: navB.feature_to_data_flow_index || [],
-    feature_to_legal_unit_index: navA.feature_to_legal_unit_index || [],
-    control_family_index: navA.control_family_index || [],
-    data_signal_index: navB.data_signal_index || [],
-    legal_unit_source_locator_index: navA.legal_unit_source_locator_index || [],
-    absence_unknown_index: [...(navA.absence_unknown_index || []), ...(navB.absence_unknown_index || [])],
-    fallback_source_packet: [...(navA.fallback_source_packet || []), ...(navB.fallback_source_packet || [])]
-  },
-  stage6_limitations: [...(stage6a.stage6_limitations || []), ...(stage6b.stage6_limitations || [])]
-};
+const integrated = buildStage6IntegratedHandoff({
+  stage6a_review: stage6a,
+  stage6b_review: stage6b
+});
+const stage6ToStage7Adapter = buildStage6ToStage7Adapter(integrated);
 
 const validation = validateDiligenceStageOutput("stage6Review", integrated);
 const guardrail = validation.ok ? validateStage6ReviewGuardrail(integrated, { input, stageId: "stage6_integrated_handoff", semanticModelAttempted: true }) : null;
@@ -53,7 +39,8 @@ const artifact = {
   warning_count: guardrail?.warnings?.length || 0,
   output_counts: stage6OutputCounts(integrated),
   stage6_guardrail: guardrail,
-  stage6_review: integrated
+  stage6_review: integrated,
+  stage6_to_stage7_adapter: stage6ToStage7Adapter
 };
 writeJson(outputPath, artifact);
 
