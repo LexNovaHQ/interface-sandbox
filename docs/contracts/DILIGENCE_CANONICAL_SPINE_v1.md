@@ -4,16 +4,6 @@
 
 This document is the sole human-readable Stage 6 spine for the Interface Diligence Engine.
 
-For Stage 6, this spine supersedes older Stage 6 language in:
-
-```text
-docs/contracts/DILIGENCE_CANON_FIELD_DICTIONARY_v1.md
-docs/contracts/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md
-functions/_prompts/diligence-v2/03_LEGAL_STACK_REVIEW.prompt.md
-functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md
-functions/_prompts/diligence-v2/03A_MODEL_LEGAL_CARTOGRAPHY_OVERLAY.prompt.md
-```
-
 The matching machine-readable source of truth is:
 
 ```text
@@ -26,7 +16,7 @@ The single Stage 6 schema is:
 data/schemas/stage6Review.schema.json
 ```
 
-No Stage 6A schema, model-overlay schema, prompt-local enum list, local `ALLOWED_ENUMS`, or legacy legal-stack schema is an independent authority.
+No Stage 6A schema, model-overlay schema, prompt-local enum list, local `ALLOWED_ENUMS`, generated bundle, disabled audit, legacy prompt, or legacy legal-stack schema is an independent authority.
 
 ## Stage 6 Role
 
@@ -36,8 +26,6 @@ Stage 6 organizes public legal/control documents and data-flow signals so Stage 
 
 ## Canonical Runtime Object
 
-Stage 6 emits one canonical object:
-
 ```json
 {
   "stage6_review_version": "stage6_review_v1",
@@ -45,12 +33,15 @@ Stage 6 emits one canonical object:
   "stage_role": "stage7_navigation_index",
   "input_refs": {},
   "legal_document_cartography": {},
+  "data_provenance_profile": {},
   "stage7_navigation_index": {},
   "stage6_limitations": []
 }
 ```
 
-The allowed `stage6_component` values are:
+`legal_document_cartography` is required for `stage6a_legal_document_cartography` and `stage6_integrated_handoff`. `data_provenance_profile` is required for `stage6b_data_provenance` and `stage6_integrated_handoff`. 6A-only output must not contain 6B data. 6B-only output must not contain 6A legal cartography.
+
+## Stage 6 Components
 
 ```text
 stage6a_legal_document_cartography
@@ -59,8 +50,6 @@ stage6_integrated_handoff
 ```
 
 ## Stage 6A Legal Document Cartography
-
-Stage 6A maps legal/control documents and macro legal units. It does not create a legal opinion or compliance assessment.
 
 Canonical object:
 
@@ -75,9 +64,7 @@ legal_document_cartography
   legal_document_limitations[]
 ```
 
-### Document Inventory
-
-Canonical document inventory rows use:
+## Document Inventory Row
 
 ```text
 document_id
@@ -98,9 +85,49 @@ language
 confidence
 ```
 
-Retired row keys include `doc_id`, `doc_type`, `doc_family`, and `doc_title`.
+## Document Types
 
-### Macro Legal Unit Index
+```text
+tos
+privacy_policy
+dpa
+aup
+sla
+eula
+cookie_policy
+subprocessor_page
+security_page
+trust_center
+status_page
+ai_policy
+responsible_ai_page
+model_card
+developer_terms
+api_terms
+community_guidelines
+data_deletion_page
+dsr_page
+grievance_page
+baa
+hipaa_notice
+data_transfer_addendum
+terms_page
+pricing_terms
+service_description_page
+other_valid_control_doc
+unknown
+```
+
+## Document Family / Status / Access
+
+```text
+document_family = core | supplemental | embedded | operational | unknown
+document_status = visible | embedded | linked | not_visible | unknown
+access_status = ingested | metadata_only | fetch_failed | blocked | not_attempted | unknown
+confidence = high | medium | low | unknown
+```
+
+## Macro Legal Unit Index
 
 Canonical legal unit rows use:
 
@@ -122,7 +149,7 @@ basis_codes[]
 confidence
 ```
 
-The index is macro-only. It must not emit every heading, page header, page footer, table-of-contents row, FAQ item, modal notice, banner notice, or arbitrary micro-section as a canonical legal unit.
+The index is macro-only. It must not emit every heading, subheading, page header, page footer, table-of-contents row, FAQ item, modal notice, banner notice, or arbitrary micro-section as a canonical legal unit.
 
 Allowed `legal_unit_type` values:
 
@@ -137,9 +164,62 @@ control_notice
 unknown
 ```
 
-### Control Signal Map
+## Section Function Values
 
-Canonical control rows use:
+```text
+definitions
+service_description
+ai_disclosure
+privacy_notice
+data_processing_terms
+subprocessor_terms
+acceptable_use_rules
+prohibited_use_rules
+security_terms
+breach_terms
+retention_deletion_terms
+rights_request_terms
+cross_border_transfer_terms
+liability_terms
+warranty_disclaimer
+sla_terms
+agentic_controls
+commercial_terms
+dispute_terms
+ip_ownership_terms
+minor_access_terms
+automated_decision_terms
+sensitive_data_terms
+other
+unknown
+```
+
+## Document Relationship Map
+
+```text
+relationship_id
+from_ref
+to_ref
+relationship_type
+basis_codes[]
+confidence
+```
+
+Allowed `relationship_type` values:
+
+```text
+incorporates_by_reference
+supplements
+controls_on_conflict
+linked_from
+defines_terms_for
+activates_when
+supersedes_for_subject_matter
+embedded_within
+unknown
+```
+
+## Document Control Signal Map
 
 ```text
 control_signal_id
@@ -165,11 +245,118 @@ not_applicable
 unknown
 ```
 
-Stage 6 control signals are navigation signals only. They are not registry outcomes.
+## Control Families
 
-### Stage 7 Navigation
+```text
+ai_disclosure
+hallucination_disclaimer
+hitl_mandate
+acceptable_use
+prohibited_use
+privacy_notice
+data_collection
+data_use
+data_sharing
+subprocessor_disclosure
+model_provider_disclosure
+training_or_finetuning
+retention
+deletion
+data_subject_rights
+consent_withdrawal
+grievance_channel
+security_safeguards
+breach_notice
+cross_border_transfer
+liability_cap
+warranty_disclaimer
+sla_performance
+agentic_controls
+commercial_terms
+dispute_terms
+ip_ownership
+minor_access
+automated_decision
+sensitive_data
+unknown
+```
 
-Stage 6A populates Stage 7 handles using canonical legal-unit names:
+## Document Mismatch Signal Map
+
+```text
+mismatch_id
+mismatch_type
+mismatch_signal
+expected_ref
+actual_ref
+control_family
+basis_codes[]
+confidence
+```
+
+Allowed `mismatch_type` values:
+
+```text
+feature_vs_document
+data_flow_vs_document
+document_vs_document
+claim_vs_absence
+stack_vs_reality
+unknown
+```
+
+Allowed `mismatch_signal` values:
+
+```text
+expected_signal_absent
+expected_signal_partial
+conflicting_signal
+source_absent
+source_unclear
+unknown
+```
+
+## Stage 6B Data Provenance
+
+Canonical object:
+
+```text
+data_provenance_profile
+  data_provenance_profile_version
+  data_flow_profile[]
+  data_profile_summary_signals
+  data_profile_limitations[]
+```
+
+Each `data_flow_profile[]` row must use only these canonical root fields:
+
+```text
+data_flow_id
+feature_id
+provenance_id
+feature_role
+flow_role
+data_subject
+data_category
+processing
+role_allocation
+regime_relevance
+notice
+consent_basis
+rights
+processor_chain
+transfer_location
+retention_deletion_ai
+security_accountability
+source_trace
+basis_codes[]
+source_refs[]
+confidence
+```
+
+No 6B object may allow arbitrary additional properties.
+
+## Stage 7 Navigation Index
 
 ```text
 stage7_navigation_index
@@ -181,14 +368,6 @@ stage7_navigation_index
   absence_unknown_index[]
   fallback_source_packet[]
 ```
-
-Retired names include `feature_to_document_section_index[]` and `document_source_locator_index[]`.
-
-## Stage 6B Data Provenance
-
-Stage 6B uses the same Stage 6 object and schema. It owns `data_provenance_profile` only when `stage6_component` is `stage6b_data_provenance` or `stage6_integrated_handoff`.
-
-Stage 6A-only outputs must not contain 6B data fields.
 
 ## Basis Codes
 
@@ -213,9 +392,31 @@ deterministic_seed
 unknown
 ```
 
-Banned Stage 6 dialect values include:
+## Retired Stage 6 Runtime Terms
+
+These terms are not active runtime/schema/prompt authority. They may appear here only as a retirement list:
 
 ```text
+legal_stack_review_version
+legal_stack_review_v2
+legal_stack_review
+legal_stack
+document_stack_redline
+document_stack_synthesis
+legal_stack_assessment
+limitations as Stage 6 root
+doc_id
+doc_type
+doc_family
+doc_title
+section_id
+section_path
+heading_text
+heading_level
+structural_zone
+control_topics_detected
+feature_to_document_section_index
+document_source_locator_index
 source_text_classification
 stage6_section_ref
 stage6_legal_section_ref
@@ -223,9 +424,30 @@ document_relationship_signal
 feature_control_alignment
 model_overlay
 heading_classification
+stage6a_model_overlay_v1
+stage6a_model_overlay_version
+section_classification_overlay
+feature_section_overlay
+document_section
 ```
 
-Runtime must not pass through or repair these values as canonical Stage 6 output.
+## Audit Severity Model
+
+Audits and guardrails are inactive until rebuilt against this spine and `stage6Review.schema.json`.
+
+When rebuilt:
+
+```text
+Critical = canon violated; hard fail; no deployment.
+Repair = deterministic migration mapping allowed only during an explicit migration window; after migration, hard fail.
+Warning = canon valid but quality/coverage is weak; pass with exact counts.
+```
+
+Critical examples: legacy root key appears; independent Stage 6 schema key active; local enum list used; micro-heading indexing active; 6B field appears in 6A-only output; old audit script used as canonical proof.
+
+Repair examples: `document_id` migration from older source refs only where deterministic; old section identifiers only where they map to approved macro legal units; old basis code migration only inside explicit migration code.
+
+Warning examples: too many `unknown` values; no relationship rows despite multiple documents; fallback packet absent when primary locators are incomplete.
 
 ## Disabled Until Rebuilt
 
@@ -237,7 +459,7 @@ runtime-api/scripts/e2e-stage6a-legal-cartography.mjs
 runtime-api/scripts/e2e-stage6b-data-provenance.mjs
 runtime-api/scripts/e2e-stage6-legal-stack-review.mjs
 runtime-api/src/diligence/legalStackReviewGuardrails.js
-.github/workflows/runtime-stage4-stage5-audit.yml Stage 6 steps
+Stage 6 workflow audit steps
 ```
 
 End of Diligence Canonical Spine v1.
