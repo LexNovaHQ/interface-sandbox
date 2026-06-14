@@ -1,16 +1,29 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
+import { validateStage6ReviewGuardrail } from "./guardrails/stage6ReviewGuardrail.js";
 import { formatSchemaErrors, validateDiligenceStageOutput } from "./stageSchemaValidator.js";
 import { buildStage6BDataProvenance } from "./stage6bDataProvenanceMerge.js";
 import { buildStage6BSemanticPacket } from "./stage6bSemanticPacketBuilder.js";
 import { normalizeStage5FeatureProfile } from "./stage6bDataProvenanceBuilder.js";
 import { normalizeStage6BDataProvenanceClassification } from "./stage6bDataProvenanceNormalizer.js";
 
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, "../../..");
+const ACTIVE_STAGE6B_PROMPT_PATH = path.resolve(REPO_ROOT, "functions/_prompts/diligence-v2/03B_DATA_PROVENANCE.prompt.md");
+
+function asArray(value) { return Array.isArray(value) ? value : []; }
 
 function readDefaultSemanticPrompt() {
+  try {
+    const sourcePrompt = fs.readFileSync(ACTIVE_STAGE6B_PROMPT_PATH, "utf8").trim();
+    if (sourcePrompt) return sourcePrompt;
+  } catch {
+    // Fall back to generated bundle when source prompts are unavailable in a deployed package.
+  }
   return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6b_data_provenance?.text || "";
 }
 
@@ -46,48 +59,45 @@ function publicModelMetadata(result = {}) {
   };
 }
 
-function stage6Summary(stage6Review = {}) {
+function stage6Summary(stage6Review = {}, guardrail = null) {
   const rows = stage6Review.data_provenance_profile?.data_flow_profile || [];
   return {
     data_flow_profile_count: rows.length,
     feature_to_data_flow_index_count: stage6Review.stage7_navigation_index?.feature_to_data_flow_index?.length || 0,
     data_signal_index_count: stage6Review.stage7_navigation_index?.data_signal_index?.length || 0,
-    data_profile_limitation_count: stage6Review.data_provenance_profile?.data_profile_limitations?.length || 0
+    data_profile_limitation_count: stage6Review.data_provenance_profile?.data_profile_limitations?.length || 0,
+    guardrail_ok: guardrail?.ok ?? null,
+    guardrail_critical_count: guardrail?.critical?.length || 0,
+    guardrail_repair_count: guardrail?.repairs?.length || 0,
+    guardrail_warning_count: guardrail?.warnings?.length || 0
   };
 }
 
-function validateFinalStage6B(stage6Review, input = {}) {
+function packetSummaryFromPacket(packet) {
+  return {
+    data_flow_seed_count: packet.data_flow_seed.length,
+    feature_ref_count: packet.feature_refs.length,
+    provenance_ref_count: packet.provenance_refs.length,
+    source_ref_count: packet.source_refs.length
+  };
+}
+
+function validateFinalStage6B(stage6Review, input = {}, semanticModelAttempted = null) {
   const stage5Rows = dataProvenanceCount(input);
   const stage6Rows = stage6Review?.data_provenance_profile?.data_flow_profile?.length || 0;
-  if (stage5Rows > 0 && stage6Rows === 0) {
-    return {
-      ok: false,
-      error_type: "STAGE6B_CRITICAL_EMPTY_DATA_FLOW_PROFILE",
-      error: "Stage 5 data_provenance_map rows exist but Stage 6B produced an empty data_flow_profile."
-    };
-  }
+  if (stage5Rows > 0 && stage6Rows === 0) return { ok: false, error_type: "STAGE6B_CRITICAL_EMPTY_DATA_FLOW_PROFILE", error: "Stage 5 data_provenance_map rows exist but Stage 6B produced an empty data_flow_profile." };
   const validation = validateDiligenceStageOutput("stage6Review", stage6Review);
-  if (!validation.ok) {
-    return {
-      ok: false,
-      error_type: "SCHEMA_VALIDATION_ERROR",
-      error: "Stage 6B Data Provenance output failed schema validation",
-      validation,
-      error_summary: formatSchemaErrors(validation.errors)
-    };
-  }
-  return { ok: true, validation };
+  if (!validation.ok) return { ok: false, error_type: "SCHEMA_VALIDATION_ERROR", error: "Stage 6B Data Provenance output failed schema validation", validation, error_summary: formatSchemaErrors(validation.errors) };
+  const guardrail = validateStage6ReviewGuardrail(stage6Review, { input, stageId: "stage6b_data_provenance", semanticModelAttempted });
+  if (!guardrail.ok) return { ok: false, error_type: "STAGE6_GUARDRAIL_VALIDATION_ERROR", error: "Stage 6B Data Provenance failed canonical Stage 6 guardrails.", validation, guardrail, error_summary: formatSchemaErrors(guardrail.errors) };
+  return { ok: true, validation, guardrail };
 }
 
 export async function runStage6BDataProvenanceClassification({ input = {}, promptText = "", env = process.env, options = {} } = {}) {
   const semanticPromptText = String(promptText || readDefaultSemanticPrompt() || "").trim();
-  if (!semanticPromptText) {
-    return { ok: false, error_type: "STAGE6B_SEMANTIC_PROMPT_MISSING", error: "Stage 6B semantic prompt text is required." };
-  }
-  const packet = buildStage6BSemanticPacket(input, {
-    maxDataFlows: options.maxDataFlows,
-    textWindowChars: options.textWindowChars
-  });
+  if (!semanticPromptText) return { ok: false, error_type: "STAGE6B_SEMANTIC_PROMPT_MISSING", error: "Stage 6B semantic prompt text is required." };
+  const packet = buildStage6BSemanticPacket(input, { maxDataFlows: options.maxDataFlows, textWindowChars: options.textWindowChars });
+  const packetSummary = packetSummaryFromPacket(packet);
   const prompt = buildSemanticPrompt(semanticPromptText, packet);
   const runResult = await runGeminiPool({
     poolName: options.pool || "reasoning",
@@ -101,39 +111,12 @@ export async function runStage6BDataProvenanceClassification({ input = {}, promp
       maxAttempts: options.maxAttempts
     }
   });
-  if (!runResult.ok) {
-    return {
-      ok: false,
-      error_type: runResult.error_type || "STAGE6B_SEMANTIC_MODEL_FAILED",
-      error: runResult.error || "Stage 6B semantic model call failed.",
-      packet_summary: {
-        data_flow_seed_count: packet.data_flow_seed.length,
-        feature_ref_count: packet.feature_refs.length,
-        provenance_ref_count: packet.provenance_refs.length,
-        source_ref_count: packet.source_refs.length
-      },
-      model_metadata: publicModelMetadata(runResult)
-    };
-  }
+  if (!runResult.ok) return { ok: false, error_type: runResult.error_type || "STAGE6B_SEMANTIC_MODEL_FAILED", error: runResult.error || "Stage 6B semantic model call failed.", packet_summary: packetSummary, model_metadata: publicModelMetadata(runResult) };
   const rawClassification = runResult.json?.stage6_semantic_classification || runResult.json;
   const normalized = normalizeStage6BDataProvenanceClassification(rawClassification, packet);
   const stage6Review = buildStage6BDataProvenance(input, { normalized_semantic_classification: normalized.classification });
-  const finalValidation = validateFinalStage6B(stage6Review, input);
-  if (!finalValidation.ok) {
-    return {
-      ok: false,
-      ...finalValidation,
-      packet_summary: {
-        data_flow_seed_count: packet.data_flow_seed.length,
-        feature_ref_count: packet.feature_refs.length,
-        provenance_ref_count: packet.provenance_refs.length,
-        source_ref_count: packet.source_refs.length
-      },
-      normalized_semantic_classification: normalized.classification,
-      semantic_classification_repairs: normalized.repairs,
-      model_metadata: publicModelMetadata(runResult)
-    };
-  }
+  const finalValidation = validateFinalStage6B(stage6Review, input, true);
+  if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail), packet_summary: packetSummary, normalized_semantic_classification: normalized.classification, semantic_classification_repairs: normalized.repairs, model_metadata: publicModelMetadata(runResult) };
   return {
     ok: true,
     semantic_packet_version: packet.semantic_packet_version,
@@ -141,40 +124,21 @@ export async function runStage6BDataProvenanceClassification({ input = {}, promp
     normalized_semantic_classification: normalized.classification,
     semantic_classification_repairs: normalized.repairs,
     stage6_review: stage6Review,
-    packet_summary: {
-      data_flow_seed_count: packet.data_flow_seed.length,
-      feature_ref_count: packet.feature_refs.length,
-      provenance_ref_count: packet.provenance_refs.length,
-      source_ref_count: packet.source_refs.length
-    },
-    stage6_summary: stage6Summary(stage6Review),
+    stage6_guardrail: finalValidation.guardrail,
+    packet_summary: packetSummary,
+    stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail),
     validation: finalValidation.validation,
     model_metadata: publicModelMetadata(runResult)
   };
 }
 
-export async function runStage6BDataProvenance({
-  source_bundle,
-  target_profile,
-  company_profile,
-  target_feature_profile,
-  evidence_junction,
-  runtime_options = {},
-  promptText = "",
-  env = process.env
-} = {}) {
-  const input = {
-    source_bundle,
-    target_profile: target_profile || company_profile,
-    company_profile: company_profile || target_profile,
-    target_feature_profile,
-    evidence_junction
-  };
+export async function runStage6BDataProvenance({ source_bundle, target_profile, company_profile, target_feature_profile, evidence_junction, runtime_options = {}, promptText = "", env = process.env } = {}) {
+  const input = { source_bundle, target_profile: target_profile || company_profile, company_profile: company_profile || target_profile, target_feature_profile, evidence_junction };
   const options = runtime_options || {};
   if (options.disableSemanticClassification === true || env.STAGE6_DISABLE_SEMANTIC_MODEL === "true") {
     const stage6Review = buildStage6BDataProvenance(input);
-    const finalValidation = validateFinalStage6B(stage6Review, input);
-    if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, stage6_summary: stage6Summary(stage6Review) };
+    const finalValidation = validateFinalStage6B(stage6Review, input, false);
+    if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail) };
     return {
       ok: true,
       semantic_model_attempted: false,
@@ -182,31 +146,15 @@ export async function runStage6BDataProvenance({
       normalized_semantic_classification: null,
       semantic_classification_repairs: [],
       stage6_review: stage6Review,
-      packet_summary: {
-        data_flow_seed_count: stage6Review.data_provenance_profile?.data_flow_profile?.length || 0,
-        feature_ref_count: target_feature_profile?.feature_inventory?.length || 0,
-        provenance_ref_count: dataProvenanceCount(input),
-        source_ref_count: 0
-      },
-      stage6_summary: stage6Summary(stage6Review),
+      stage6_guardrail: finalValidation.guardrail,
+      packet_summary: { data_flow_seed_count: stage6Review.data_provenance_profile?.data_flow_profile?.length || 0, feature_ref_count: target_feature_profile?.feature_inventory?.length || 0, provenance_ref_count: dataProvenanceCount(input), source_ref_count: 0 },
+      stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail),
       validation: finalValidation.validation,
       model_metadata: null
     };
   }
-  const result = await runStage6BDataProvenanceClassification({
-    input,
-    promptText,
-    env,
-    options
-  });
-  return {
-    ...result,
-    semantic_model_attempted: true
-  };
+  const result = await runStage6BDataProvenanceClassification({ input, promptText, env, options });
+  return { ...result, semantic_model_attempted: true };
 }
 
-export const stage6bDataProvenanceRunnerInternals = {
-  buildSemanticPrompt,
-  dataProvenanceCount,
-  validateFinalStage6B
-};
+export const stage6bDataProvenanceRunnerInternals = { buildSemanticPrompt, dataProvenanceCount, validateFinalStage6B, ACTIVE_STAGE6B_PROMPT_PATH };
