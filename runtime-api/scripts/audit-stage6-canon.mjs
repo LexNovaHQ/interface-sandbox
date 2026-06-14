@@ -10,6 +10,16 @@ function fail(message, detail = null) { console.error(JSON.stringify({ ok: false
 function assert(condition, message, detail = null) { if (!condition) fail(message, detail); }
 function parseJson(filePath) { try { return JSON.parse(read(filePath)); } catch (error) { fail(`Could not parse ${filePath}`, { error: error.message }); } }
 function countOccurrences(text, needle) { return text.split(needle).length - 1; }
+function resolveRef(schema, ref) {
+  if (!ref || typeof ref !== "string") return null;
+  if (!ref.startsWith("#/$defs/")) return null;
+  const defName = ref.slice("#/$defs/".length);
+  return schema.$defs?.[defName] || null;
+}
+function schemaProperty(schema, propertyName) {
+  const property = schema.properties?.[propertyName];
+  return property?.$ref ? resolveRef(schema, property.$ref) : property;
+}
 
 const requiredFiles = [
   "data/schemas/stage6Review.schema.json",
@@ -67,7 +77,8 @@ assert(schema.additionalProperties === false, "stage6Review schema must be close
 assert(schema.properties?.legal_document_cartography, "stage6Review schema missing 6A legal_document_cartography.");
 assert(schema.properties?.data_provenance_profile, "stage6Review schema missing 6B data_provenance_profile.");
 assert(schema.$defs?.dataFlowProfileItem?.additionalProperties === false, "dataFlowProfileItem must be closed.");
-assert(schema.properties?.stage7_navigation_index?.additionalProperties === false, "stage7_navigation_index must be closed.");
+const stage7NavigationIndexSchema = schemaProperty(schema, "stage7_navigation_index");
+assert(stage7NavigationIndexSchema?.additionalProperties === false, "stage7_navigation_index must be closed.", { resolved_ref: schema.properties?.stage7_navigation_index?.$ref || null });
 for (const retiredSchema of ["data/schemas/stage6aLegalCartography.schema.json", "data/schemas/stage6aModelOverlay.schema.json", "data/schemas/legalStackReview.schema.json"]) assert(!exists(retiredSchema), "Retired Stage 6 schema file must not exist.", { retiredSchema });
 for (const requiredFile of requiredFiles) assert(exists(requiredFile), "Required Stage 6 active file is missing.", { requiredFile });
 
@@ -95,4 +106,4 @@ for (const needle of ["Run Stage 6 Canon Audit", "Run Stage 6A Legal Cartography
 const hits = retiredHits();
 assert(hits.length === 0, "Retired Stage 6 dialect keys found in active files.", hits);
 
-console.log(JSON.stringify({ ok: true, phase: "stage6_canon_audit", checks: { single_schema_closed: true, retired_schema_files_absent: true, guardrail_present: true, stage6a_route_registered: true, stage6b_route_registered_once: true, audit_lanes_registered: true, workflow_lanes_registered: true, runtime_dependencies_match_lockfile: true, retired_dialect_hits: 0 } }, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage6_canon_audit", checks: { single_schema_closed: true, retired_schema_files_absent: true, guardrail_present: true, stage6a_route_registered: true, stage6b_route_registered_once: true, audit_lanes_registered: true, workflow_lanes_registered: true, runtime_dependencies_match_lockfile: true, stage7_navigation_index_closed: true, retired_dialect_hits: 0 } }, null, 2));
