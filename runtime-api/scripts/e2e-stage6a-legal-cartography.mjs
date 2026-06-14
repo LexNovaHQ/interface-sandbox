@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
-import { fail, loadStage5Input, runStage6Runtime, stage6AuditArtifact, writeJson } from "./stage6-e2e-utils.mjs";
+import { DEFAULT_RUNTIME_URL, fail, loadStage5Input, runStage6Runtime, stage6AuditArtifact, writeJson } from "./stage6-e2e-utils.mjs";
 
 const phase = "stage6a_legal_document_cartography_e2e";
 const outputPath = process.env.STAGE6A_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6a-legal-cartography.json");
@@ -17,13 +17,20 @@ const runtime = await runStage6Runtime({
     timeoutMs: Number(process.env.STAGE6_SEMANTIC_TIMEOUT_MS || 90000),
     maxAttempts: Number(process.env.STAGE6_SEMANTIC_MAX_ATTEMPTS || 3)
   },
-  env: { ...process.env, STAGE6_DISABLE_SEMANTIC_MODEL: "false" }
+  env: {
+    ...process.env,
+    RUNTIME_URL: process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL || DEFAULT_RUNTIME_URL,
+    STAGE6_E2E_FORCE_LOCAL: "false",
+    STAGE6_AUDIT_TARGET: "remote",
+    STAGE6_DISABLE_SEMANTIC_MODEL: "false"
+  }
 });
 
 const stage6Review = runtime.payload?.stage6_review;
 const artifact = stage6AuditArtifact({ phase, stageId: "stage6a_legal_document_cartography", cachePath, runtime, stage6Review });
 writeJson(outputPath, artifact);
 
+if (runtime.audit_target !== "remote") fail(phase, "Stage 6A audit did not hit the live runtime.", artifact, outputPath);
 if (!runtime.ok) fail(phase, "Stage 6A runtime failed.", runtime.payload, outputPath);
 if (!stage6Review) fail(phase, "Stage 6A returned no stage6_review.", runtime.payload, outputPath);
 if (stage6Review.stage6_component !== "stage6a_legal_document_cartography") fail(phase, "Stage 6A returned wrong stage6_component.", { stage6_component: stage6Review.stage6_component }, outputPath);
