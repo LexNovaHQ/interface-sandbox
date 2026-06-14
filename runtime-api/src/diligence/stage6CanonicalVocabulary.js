@@ -35,9 +35,45 @@ export const STAGE6_DOCUMENT_TYPES = Object.freeze([
   "baa",
   "hipaa_notice",
   "data_transfer_addendum",
+  "terms_page",
+  "pricing_terms",
+  "service_description_page",
   "other_valid_control_doc",
   "unknown"
 ]);
+
+export const STAGE6_CORE_DOCUMENT_TYPES = Object.freeze(["tos", "privacy_policy", "dpa", "aup", "sla"]);
+
+export const STAGE6_DOCUMENT_TYPE_CODES = Object.freeze({
+  tos: "TOS",
+  privacy_policy: "PRIVACY",
+  dpa: "DPA",
+  aup: "AUP",
+  sla: "SLA",
+  eula: "EULA",
+  cookie_policy: "COOKIE",
+  subprocessor_page: "SUBPROCESSOR",
+  security_page: "SECURITY",
+  trust_center: "TRUST",
+  status_page: "STATUS",
+  ai_policy: "AI_POLICY",
+  responsible_ai_page: "RAI",
+  model_card: "MODEL_CARD",
+  developer_terms: "DEVTERMS",
+  api_terms: "APITERMS",
+  community_guidelines: "COMMUNITY",
+  data_deletion_page: "DELETION",
+  dsr_page: "DSR",
+  grievance_page: "GRIEVANCE",
+  baa: "BAA",
+  hipaa_notice: "HIPAA",
+  data_transfer_addendum: "DTA",
+  terms_page: "TERMS",
+  pricing_terms: "PRICING",
+  service_description_page: "SERVICE",
+  other_valid_control_doc: "OTHER",
+  unknown: "UNKNOWN"
+});
 
 export const STAGE6_DOCUMENT_FAMILIES = Object.freeze(["core", "supplemental", "embedded", "operational", "unknown"]);
 export const STAGE6_DOCUMENT_STATUSES = Object.freeze(["visible", "embedded", "linked", "not_visible", "unknown"]);
@@ -64,6 +100,10 @@ export const STAGE6_SECTION_FUNCTIONS = Object.freeze([
   "agentic_controls",
   "commercial_terms",
   "dispute_terms",
+  "ip_ownership_terms",
+  "minor_access_terms",
+  "automated_decision_terms",
+  "sensitive_data_terms",
   "other",
   "unknown"
 ]);
@@ -101,6 +141,30 @@ export const STAGE6_CONTROL_FAMILIES = Object.freeze([
   "sensitive_data",
   "unknown"
 ]);
+
+export const STAGE6_SECTION_FUNCTION_TO_CONTROL_FAMILIES = Object.freeze({
+  ai_disclosure: ["ai_disclosure", "hallucination_disclaimer"],
+  privacy_notice: ["privacy_notice", "data_collection", "data_use", "data_sharing"],
+  data_processing_terms: ["data_collection", "data_use", "data_subject_rights"],
+  subprocessor_terms: ["subprocessor_disclosure"],
+  acceptable_use_rules: ["acceptable_use"],
+  prohibited_use_rules: ["prohibited_use"],
+  security_terms: ["security_safeguards"],
+  breach_terms: ["breach_notice"],
+  retention_deletion_terms: ["retention", "deletion"],
+  rights_request_terms: ["data_subject_rights", "consent_withdrawal", "grievance_channel"],
+  cross_border_transfer_terms: ["cross_border_transfer"],
+  liability_terms: ["liability_cap"],
+  warranty_disclaimer: ["warranty_disclaimer"],
+  sla_terms: ["sla_performance"],
+  agentic_controls: ["agentic_controls"],
+  commercial_terms: ["commercial_terms"],
+  dispute_terms: ["dispute_terms"],
+  ip_ownership_terms: ["ip_ownership"],
+  minor_access_terms: ["minor_access"],
+  automated_decision_terms: ["automated_decision"],
+  sensitive_data_terms: ["sensitive_data"]
+});
 
 export const STAGE6_RELATIONSHIP_TYPES = Object.freeze([
   "incorporates_by_reference",
@@ -168,7 +232,7 @@ export const STAGE6_SOURCE_TYPES = Object.freeze([
 
 export const STAGE6_LOCATOR_TYPES = Object.freeze(["heading_path", "url_fragment", "text_anchor", "source_record", "page_url", "chunk_index", "unknown"]);
 export const STAGE6_ABSENCE_BASIS = Object.freeze(["searched_legal_docs", "searched_privacy_docs", "searched_security_docs", "searched_trust_docs", "searched_public_sources", "source_not_available", "access_failed", "not_enough_context", "unknown"]);
-export const STAGE6_FALLBACK_REASONS = Object.freeze(["direct_source_verification_required", "stage6_signal_unknown", "stage6_signal_conflicting", "missing_document_section_ref", "hunter_trigger_requires_line_read", "source_locator_available", "source_scope_incomplete", "unindexed_admitted_source", "unknown"]);
+export const STAGE6_FALLBACK_REASONS = Object.freeze(["direct_source_verification_required", "stage6_signal_unknown", "stage6_signal_conflicting", "missing_legal_unit_ref", "hunter_trigger_requires_line_read", "source_locator_available", "source_scope_incomplete", "unindexed_admitted_source", "unknown"]);
 
 export const STAGE6_DATA_FLOW_ROLES = Object.freeze(["primary_input", "secondary_input", "system_metadata", "generated_output", "stored_record", "third_party_transfer", "derived_data", "unknown"]);
 export const STAGE6_FEATURE_ROLES = Object.freeze(["core", "supporting", "contextual", "unknown"]);
