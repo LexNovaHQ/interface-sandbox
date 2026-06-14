@@ -118,8 +118,8 @@ function runDeterministicStage(index, stage, fn, summarize = (value) => ({})) {
     failStage({ index, stage, startedAt, message: error?.message || `${stage} failed`, detail: { stack_preview: String(error?.stack || "").split("\n").slice(0, 8) } });
   }
 }
-async function runModelStage(index, stage, input, options, summarize = (body) => ({})) {
-  return runHttpStage(index, stage, () => postStage(stage, input, options), (body) => ({ stage_id: body.stage_id, validation_mode: body.validation_mode, guardrail_validation_mode: body.guardrail_validation_mode, guardrail_warning_count: body.guardrail_warning_count || 0, guardrail_repair_count: body.guardrail_repair_count || 0, ...summarize(body) }));
+async function runModelStage(index, stage, input, options, summarize = (body) => ({}), requestStage = stage) {
+  return runHttpStage(index, stage, () => postStage(requestStage, input, options), (body) => ({ request_stage: requestStage, stage_id: body.stage_id, validation_mode: body.validation_mode, guardrail_validation_mode: body.guardrail_validation_mode, guardrail_warning_count: body.guardrail_warning_count || 0, guardrail_repair_count: body.guardrail_repair_count || 0, ...summarize(body) }));
 }
 
 function collectBucket(discovery, bucket) {
@@ -267,7 +267,7 @@ for (let index = 0; index < stage7Plan.plan.model_batches.length; index += 1) {
   batch.batch_route_summary = rowBatch._batch_route_summary || null;
   const adapter = buildRegistryLedgerInput({ sourceBundle: stage6Cache.source_bundle, evidenceJunction: stage6Cache.evidence_junction, targetProfile: stage6Cache.company_profile, targetFeatureProfile: stage6Cache.target_feature_profile, stage6Review: stage6Cache.stage6_review, stage6ToStage7Adapter: stage6Cache.stage6_to_stage7_adapter, registryBatch: batch, registryKey, runId, budget: { enforcement_mode: process.env.STAGE7_BUDGET_ENFORCEMENT_MODE || "guidance" } });
   if (!adapter.ok) failStage({ index: 12 + index, stage: `stage7_batch_${index + 1}`, startedAt: Date.now(), message: adapter.error || "Stage 7 input adapter failed", detail: adapter });
-  const result = await runModelStage(12 + index, `stage7_batch_${index + 1}`, adapter.registry_ledger_input, { pool: process.env.LIVE_REGISTRY_POOL || process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.LIVE_REGISTRY_MAX_OUTPUT_TOKENS || 16384), timeoutMs: Number(process.env.LIVE_REGISTRY_TIMEOUT_MS || 120000) }, (body) => ({ batch_number: batch.batch_number, batch_count: batch.batch_count, expected_ids: batch.expected_threat_ids, ledger_count: body.registry_ledger?.registry_evaluation_ledger?.length || 0 }));
+  const result = await runModelStage(12 + index, `stage7_batch_${index + 1}`, adapter.registry_ledger_input, { pool: process.env.LIVE_REGISTRY_POOL || process.env.STAGE7_POOL || "registry", maxOutputTokens: Number(process.env.LIVE_REGISTRY_MAX_OUTPUT_TOKENS || 16384), timeoutMs: Number(process.env.LIVE_REGISTRY_TIMEOUT_MS || 120000) }, (body) => ({ batch_number: batch.batch_number, batch_count: batch.batch_count, expected_ids: batch.expected_threat_ids, ledger_count: body.registry_ledger?.registry_evaluation_ledger?.length || 0 }), "registry_ledger_evaluation");
   let ledger = result.registry_ledger;
   if (!ledger || !Array.isArray(ledger.registry_evaluation_ledger)) failStage({ index: 12 + index, stage: `stage7_batch_${index + 1}`, startedAt: Date.now(), message: "Stage 7 returned no usable registry ledger.", detail: result });
   const reinvestigated = await reinvestigateRows({ result, ledger, rowBatch, batch, rows: stage7Plan.rows, stage6Cache, registryKey });
