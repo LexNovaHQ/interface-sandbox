@@ -1,4 +1,4 @@
-import { runLiveDiligenceReview as runBaseLiveDiligenceReview } from "./liveDiligenceRunOrchestrator.js";
+import { runLiveDiligenceReview as runBaseLiveDiligenceReview } from "./canonicalLiveDiligenceRunOrchestrator.js";
 
 const NO_SOURCE_CAP = Number.MAX_SAFE_INTEGER;
 
