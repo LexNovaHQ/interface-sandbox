@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL;
+const DEFAULT_RUNTIME_URL = "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app";
+const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL || DEFAULT_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
 
 function fail(message, detail) {
@@ -34,7 +35,6 @@ const checks = [
 ];
 
 const results = [];
-
 for (const check of checks) {
   const response = await fetch(check.url, { method: "GET", headers: check.headers });
   const body = await readJson(response);
@@ -45,4 +45,4 @@ for (const check of checks) {
   }
 }
 
-console.log(JSON.stringify({ ok: true, service: "lexnova-runtime-api", checks: results }, null, 2));
+console.log(JSON.stringify({ ok: true, service: "lexnova-runtime-api", runtime_url: base, checks: results }, null, 2));
