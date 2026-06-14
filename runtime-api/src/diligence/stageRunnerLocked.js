@@ -377,6 +377,7 @@ export async function runDiligenceStage({ stageId, input, options = {}, env = pr
   if (config.output_schema_key === "stage6Review") {
     if (config.stage_id === "stage6a_legal_document_cartography") return runStage6ALegalCartographyStage({ config, schemaEntry, input, options, env });
     if (config.stage_id === "stage6b_data_provenance") return runStage6BDataProvenanceStage({ config, schemaEntry, input, options, env });
+    if (config.stage_id === "stage6_integrated_handoff") return runStage6IntegratedHandoffStage({ config, schemaEntry, input, options, env });
     return {
       ok: false,
       status: 501,

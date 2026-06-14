@@ -38,6 +38,12 @@ const artifact = {
   repair_count: guardrail?.repairs?.length || 0,
   warning_count: guardrail?.warnings?.length || 0,
   output_counts: stage6OutputCounts(integrated),
+  cache_version: "stage6_canonical_e2e_cache_v1",
+  source_bundle: input.source_bundle,
+  evidence_junction: input.evidence_junction,
+  company_profile: input.company_profile || input.target_profile || null,
+  target_profile_v2: input.target_profile || input.company_profile || null,
+  target_feature_profile: input.target_feature_profile || null,
   stage6_guardrail: guardrail,
   stage6_review: integrated,
   stage6_to_stage7_adapter: stage6ToStage7Adapter

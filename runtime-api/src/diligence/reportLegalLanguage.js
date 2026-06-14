@@ -150,7 +150,7 @@ const RAW_LOGIC_REPLACEMENTS = [
   [/\bTRUE_FEATURE_MAP:\s*/g, "Evidentiary basis: "],
   [/\bTRUE_EVIDENCE:\s*/g, "Evidentiary basis: "],
   [/\bTRUE_ABSENCE:\s*/g, "Absence basis: "],
-  [/\bTRUE_LEGAL_STACK:\s*/g, "Legal-stack basis: "],
+  [/\bTRUE_STAGE6_REVIEW:\s*/g, "Stage 6 review basis: "],
   [/\bTRUE_CONTROL:\s*/g, "Control basis: "],
   [/\bFALSE_NOT_SATISFIED:\s*/g, "Not satisfied: "],
   [/\bFALSE_NOT_APPLICABLE:\s*/g, "Not applicable: "],

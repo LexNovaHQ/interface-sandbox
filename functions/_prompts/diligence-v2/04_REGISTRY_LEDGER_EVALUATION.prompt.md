@@ -2,15 +2,15 @@
 
 ## Purpose
 
-This prompt is Stage 04 of the Lex Nova Diligence Engine.
+This prompt is Stage 7 of the Lex Nova Diligence Engine.
 
-It converts the admitted evidence, target feature profile, legal stack review, supplied registry rows, and registry key into the canonical registry evaluation ledger.
+It converts the admitted evidence, target profile, target feature profile, canonical Stage 6 integrated review, Stage 6 to Stage 7 navigation adapter, supplied registry rows, and registry key into the canonical registry evaluation ledger.
 
 It is the **Hunter Logic Gate** stage.
 
 It is not a source-collection prompt.  
 It is not a product-feature extraction prompt.  
-It is not a legal-stack review prompt.  
+It is not a Stage 6 integrated review prompt.
 It is not an Operator Challenge prompt.  
 It is not a final-report prompt.  
 It is not a Vault prompt.  
@@ -32,8 +32,10 @@ Your sole task is:
 
 ```text
 source_bundle
++ target_profile
 + target_feature_profile
-+ legal_stack_review
++ stage6_review
++ stage6_to_stage7_adapter
 + registry_rows
 + registry_key
         ↓
@@ -47,7 +49,7 @@ You must evaluate every supplied registry row against:
 ```text
 admitted source evidence
 validated feature_profile_v2 feature inventory
-visible legal-stack review
+visible Stage 6 integrated review
 registry key vocabulary
 registry row Hunter_Trigger logic
 ```
@@ -79,8 +81,10 @@ registry_batch_meta
 registry_rows[]
 registry_key
 source_bundle
+target_profile
 target_feature_profile
-legal_stack_review
+stage6_review
+stage6_to_stage7_adapter
 ```
 
 Expected useful fields inside `source_bundle` include:
@@ -105,14 +109,14 @@ target_feature_profile.commercial_scan
 target_feature_profile.limitations[]
 ```
 
-Expected useful fields inside `legal_stack_review` include:
+Expected useful fields inside `stage6_review` and `stage6_to_stage7_adapter` include:
 
 ```text
-legal_stack_review.legal_stack[]
-legal_stack_review.document_stack_redline[]
-legal_stack_review.document_stack_synthesis
-legal_stack_review.legal_stack_assessment[]
-legal_stack_review.limitations[]
+stage6_review.legal_document_cartography.legal_document_inventory[]
+stage6_review.legal_document_cartography.document_control_signal_map[]
+stage6_review.legal_document_cartography.document_relationship_map[]
+stage6_review.legal_document_cartography.legal_document_index[]
+stage6_review.stage6_limitations[]
 ```
 
 Expected registry row fields may include:
@@ -190,8 +194,10 @@ Do not output:
 
 ```text
 source_bundle
+target_profile
 target_feature_profile
-legal_stack_review
+stage6_review
+stage6_to_stage7_adapter
 operator_challenge_gate
 high_risk_checks
 reopened_rows
@@ -248,7 +254,7 @@ If the runtime also supplies the full registry total, preserve it as an addition
 Meaning:
 
 ```text
-registry_count_loaded = number of rows loaded into this Stage 04 invocation.
+registry_count_loaded = number of rows loaded into this Stage 7 invocation.
 registry_total_count = total registry rows across the full runtime, if supplied.
 ```
 
@@ -308,9 +314,9 @@ Upcoming
 Watch
 ```
 
-If the runtime wanted filtering, it would filter before Stage 04.
+If the runtime wanted filtering, it would filter before Stage 7.
 
-Stage 04 evaluates every row supplied in `registry_rows[]`.
+Stage 7 evaluates every row supplied in `registry_rows[]`.
 
 Every supplied row receives one final status:
 
@@ -560,7 +566,7 @@ NOT_APPLICABLE for a clear non-archetype categorical mismatch only
 
 ## 9.2 Non-UNI rows
 
-If the row's archetype appears in any final Stage 02 feature:
+If the row's archetype appears in any final Stage 5 feature:
 
 ```text
 archetype_gate = "PASS"
@@ -580,9 +586,9 @@ archetype_gate = "INSUFFICIENT"
 
 Do not assign archetypes from marketing labels alone.
 
-Do not mutate Stage 02 output.
+Do not mutate Stage 5 output.
 
-If admitted evidence strongly suggests an archetype that Stage 02 failed to map, evaluate cautiously, add a batch warning, and explain in `reasoning_summary`.
+If admitted evidence strongly suggests an archetype that Stage 5 failed to map, evaluate cautiously, add a batch warning, and explain in `reasoning_summary`.
 
 ---
 
@@ -600,8 +606,8 @@ target_feature_profile.feature_inventory[].system_action
 target_feature_profile.target_profile_ref
 target_feature_profile.data_provenance_map[]
 target_feature_profile.regulated_surface_map[]
-legal_stack_review.legal_stack[]
-legal_stack_review.document_stack_redline[]
+stage6_review.legal_document_cartography.legal_document_inventory[]
+stage6_review.legal_document_cartography.document_control_signal_map[]
 source_bundle.evidence_buffer[]
 ```
 
@@ -802,7 +808,7 @@ Every true condition basis should begin with one of:
 TRUE_EVIDENCE:
 TRUE_ABSENCE:
 TRUE_FEATURE_MAP:
-TRUE_LEGAL_STACK:
+TRUE_STAGE6_REVIEW:
 ```
 
 Every false condition basis should begin with one of:
@@ -819,8 +825,8 @@ Good basis examples:
 
 ```text
 TRUE_FEATURE_MAP: feature F002 shows candidate scoring for hiring.
-TRUE_ABSENCE: legal_stack_review marks DPA as ABSENT from admitted public evidence.
-TRUE_LEGAL_STACK: Privacy Policy exists but legal_stack_review.misses notes no visible subprocessor disclosure.
+TRUE_STAGE6_REVIEW: stage6_review.legal_document_cartography marks DPA as ABSENT from admitted public evidence.
+TRUE_STAGE6_REVIEW: Privacy Policy exists but stage6_review.stage7_navigation_index.absence_unknown_index notes no visible subprocessor disclosure.
 FALSE_NOT_APPLICABLE: row requires Minors, but no admitted evidence shows child, school, student, parental, or under-18 use.
 FALSE_NOT_SATISFIED: row requires biometric/audio processing, but no TRN or Sensitive/Biometric feature is visible.
 FALSE_INSUFFICIENT: product claims AI automation, but admitted evidence does not show action authority.
@@ -858,9 +864,9 @@ But absence must have a basis in:
 ```text
 source_bundle.artifact_inventory[]
 source_bundle.limitations[]
-legal_stack_review.legal_stack[]
-legal_stack_review.limitations[]
-legal_stack_review.document_stack_redline[]
+stage6_review.legal_document_cartography.legal_document_inventory[]
+stage6_review.stage6_limitations[]
+stage6_review.legal_document_cartography.document_control_signal_map[]
 ```
 
 Use public-footprint language.
@@ -868,7 +874,7 @@ Use public-footprint language.
 Correct:
 
 ```text
-TRUE_ABSENCE: legal_stack_review marks DPA as ABSENT from admitted public evidence.
+TRUE_STAGE6_REVIEW: stage6_review.legal_document_cartography marks DPA as ABSENT from admitted public evidence.
 ```
 
 Incorrect:
@@ -1061,8 +1067,8 @@ Priority order for the same fact:
 ```text
 1. The specific legal/governance artifact governing that issue.
 2. The specific product/docs/API/security/trust page proving the product behavior.
-3. The Stage 02 feature ID supported by admitted evidence.
-4. The Stage 03 legal_stack or document_stack_redline basis.
+3. The Stage 5 feature ID supported by admitted evidence.
+4. The Stage 6 legal_stack or document_stack_redline basis.
 5. Source limitation / absence basis when absence is the proof.
 ```
 
@@ -1196,7 +1202,7 @@ EXCLUDE_IF not proven
 
 # 19. Feature Reference Resolution
 
-Use `feature_refs[]` to connect the row to Stage 02 feature IDs.
+Use `feature_refs[]` to connect the row to Stage 5 feature IDs.
 
 Allowed values:
 
@@ -1255,7 +1261,7 @@ evidence_buffer:E014
 artifact:AUP:ACCESS_FAILED
 manual_text
 M003
-GLOBAL legal_stack_review
+GLOBAL stage6_review
 Privacy Policy
 ```
 
@@ -1361,7 +1367,7 @@ unknown surface token
 row evaluated with insufficient evidence
 source coverage too thin
 feature inventory appears incomplete but cannot be mutated
-legal_stack_review missing or malformed
+stage6_review missing or malformed
 no deterministic threat-ID mapping supplied
 malformed Authority fields
 duplicate Threat_ID
@@ -1643,7 +1649,7 @@ Before returning JSON, verify:
 15. Lane was considered without adding a non-schema lane field.
 16. Every ledger entry has `conditions[]`.
 17. Every condition has `condition_id`, boolean `result`, and `basis`.
-18. Every true condition basis begins with `TRUE_EVIDENCE:`, `TRUE_ABSENCE:`, `TRUE_FEATURE_MAP:`, or `TRUE_LEGAL_STACK:`.
+18. Every true condition basis begins with `TRUE_EVIDENCE:`, `TRUE_ABSENCE:`, `TRUE_FEATURE_MAP:`, or `TRUE_STAGE6_REVIEW:`.
 19. Every false condition basis begins with `FALSE_NOT_SATISFIED:`, `FALSE_NOT_APPLICABLE:`, or `FALSE_INSUFFICIENT:`.
 20. Parsed `hunter_trigger` fields were used when supplied.
 21. Any conflict between parsed `hunter_trigger` fields and raw `Hunter_Trigger` produced a warning.

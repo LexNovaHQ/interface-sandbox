@@ -9,7 +9,7 @@ const { buildPriorityRowPlan, mergePriorityRows, validatePriorityMerge } = await
 const DEFAULT_RUNTIME_URL = "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app";
 const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL || DEFAULT_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
-const cachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-legal-stack-review.json");
+const cachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-integrated-handoff.json");
 const rowsPath = process.env.REGISTRY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry.runtime.json");
 const keyPath = process.env.REGISTRY_KEY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry_key.runtime.json");
 const batchSize = Number(process.env.STAGE7_PRIORITY_BATCH_SIZE || process.env.STAGE7_BATCH_SIZE || 8);
@@ -95,6 +95,7 @@ function coverage(expectedIds = [], emittedIds = []) {
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = baseUrl(runtimeUrl);
 const cache = readJson(cachePath, "Stage 6 cache");
+if (!cache.stage6_review || !cache.stage6_to_stage7_adapter) fail("Stage 6 canonical cache incomplete", { keys: Object.keys(cache || {}) });
 const source = readJson(rowsPath, "Runtime rows");
 const key = readJson(keyPath, "Runtime key");
 const rows = Array.isArray(source?.threats) ? source.threats.map(normalizeRow) : [];
@@ -113,8 +114,10 @@ for (let index = 0; index < plan.model_batches.length; index += 1) {
   const adapter = buildInput({
     sourceBundle: cache.source_bundle,
     evidenceJunction: cache.evidence_junction,
+    targetProfile: cache.company_profile || cache.target_profile_v2 || cache.target_profile,
     targetFeatureProfile: cache.target_feature_profile,
-    legalStackReview: cache.legal_stack_review,
+    stage6Review: cache.stage6_review,
+    stage6ToStage7Adapter: cache.stage6_to_stage7_adapter,
     registryBatch: batch,
     registryKey: key,
     runId,

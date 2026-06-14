@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://interface-sandbox.local/schemas/operatorChallenge.schema.json",
   "title": "Operator Challenge Gate",
-  "description": "Canonical operator_challenge_gate produced by Stage 4 and used to verify or reopen registry ledger rows.",
+  "description": "Canonical operator_challenge_gate produced by Stage 8 and used to verify or reopen Stage 7 registry ledger rows.",
   "type": "object",
   "required": ["operator_challenge_gate", "corrected_ledger_entries"],
   "additionalProperties": false,

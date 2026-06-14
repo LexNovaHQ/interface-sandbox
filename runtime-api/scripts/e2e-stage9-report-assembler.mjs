@@ -6,7 +6,7 @@ import path from "node:path";
 import { buildStage9Report } from "../src/diligence/stage9ReportAssembler.js";
 import { validateStage9Report } from "../src/diligence/stage9ReportValidator.js";
 
-const stage6CachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-legal-stack-review.json");
+const stage6CachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-integrated-handoff.json");
 const stage7ArtifactPath = process.env.STAGE7_AUDIT_EXPORT_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage7-priority-ledger.json");
 const stage8CorrectedLedgerPath = process.env.STAGE8_CORRECTED_LEDGER_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage8-corrected-ledger.json");
 const registryPath = process.env.REGISTRY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry.runtime.json");

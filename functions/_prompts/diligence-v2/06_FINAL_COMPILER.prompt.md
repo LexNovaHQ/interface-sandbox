@@ -6,7 +6,7 @@ This prompt is Stage 9 / Node 5 of the Lex Nova Diligence Engine.
 
 It converts the post-challenge registry ledger and prior canonical stage outputs into the compiler-only output for the diligence report.
 
-It is not source collection, feature extraction, legal-stack review, registry evaluation, Operator Challenge, Vault prefill, backend handoff, rendering, or legal advice.
+It is not source collection, feature extraction, Stage 6 integrated review, registry evaluation, Operator Challenge, Vault prefill, backend handoff, rendering, or legal advice.
 
 ---
 
@@ -44,7 +44,9 @@ Compile only from supplied prior-stage outputs and admitted evidence:
 source_bundle / source_review
 + target_profile_v2
 + feature_profile_v2
-+ legal_stack_review
++ stage6_review.legal_document_cartography
++ stage6_review.data_provenance_profile
++ stage6_review.stage7_navigation_index
 + post-challenge registry_evaluation_ledger[]
 + operator_challenge_gate
 + registry row payloads
@@ -73,7 +75,7 @@ target_profile_v2
 company_profile        // wrapper-compatible Stage 4 object; treat as target_profile_v2 if supplied
 feature_profile_v2
 target_feature_profile // wrapper-compatible Stage 5 object; treat as feature_profile_v2 if supplied
-legal_stack_review
+stage6_review
 registry_rows[]
 registry_evaluation_ledger[]
 operator_challenge_gate

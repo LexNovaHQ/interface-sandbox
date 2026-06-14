@@ -57,7 +57,6 @@ const STAGE_CONFIGS = Object.freeze({
     output_key: "stage6_review",
     output_schema_key: "stage6Review",
     stage6_component: "stage6_integrated_handoff",
-    disabled_until: "stage6_integrated_runtime_adapter_rebuild",
     pool: "reasoning",
     max_output_tokens: 24000,
     timeout_ms: 90000,

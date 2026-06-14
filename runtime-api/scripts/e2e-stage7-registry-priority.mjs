@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildPriorityRowPlan, mergePriorityRows, validatePriorityMerge } from "../src/diligence/priorityRowPlanner.js";
 
-const stage6CachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-legal-stack-review.json");
+const stage6CachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-integrated-handoff.json");
 const registryPath = process.env.REGISTRY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry.runtime.json");
 const batchSize = Number(process.env.STAGE7_PRIORITY_BATCH_SIZE || process.env.STAGE7_BATCH_SIZE || 8);
 
@@ -31,6 +31,7 @@ function normalizeRow(row, index) {
 }
 
 const cache = readJsonFile(stage6CachePath, "Stage 6 cache");
+if (!cache.stage6_review || !cache.stage6_to_stage7_adapter) fail("Stage 6 canonical cache incomplete", { keys: Object.keys(cache || {}) });
 const registry = readJsonFile(registryPath, "Registry runtime");
 const rows = Array.isArray(registry?.threats) ? registry.threats.map(normalizeRow) : [];
 if (!rows.length) fail("Registry runtime contains no rows", { registryPath });

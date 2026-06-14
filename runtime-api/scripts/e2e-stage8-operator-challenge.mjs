@@ -6,7 +6,7 @@ import path from "node:path";
 const DEFAULT_RUNTIME_URL = "https://lexnova-runtime-api-24qnalslaa-uc.a.run.app";
 const runtimeUrl = process.env.RUNTIME_URL || process.env.LEXNOVA_RUNTIME_URL || DEFAULT_RUNTIME_URL;
 const token = process.env.RUNTIME_ACCESS_TOKEN;
-const stage6CachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-legal-stack-review.json");
+const stage6CachePath = process.env.STAGE6_E2E_CACHE_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage6-integrated-handoff.json");
 const stage7ArtifactPath = process.env.STAGE7_AUDIT_EXPORT_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage7-priority-ledger.json");
 const registryPath = process.env.REGISTRY_RUNTIME_PATH || path.join(process.cwd(), "..", "data", "runtime", "registry.runtime.json");
 const stage8ExportPath = process.env.STAGE8_AUDIT_EXPORT_PATH || path.join(process.cwd(), ".runtime-e2e-cache", "stage8-operator-challenge.json");
@@ -216,6 +216,7 @@ function compactRegistryLogicReference(registryRows) {
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required");
 const base = baseUrl(runtimeUrl);
 const stage6Cache = readJson(stage6CachePath, "Stage 6 cache");
+if (!stage6Cache.stage6_review || !stage6Cache.stage6_to_stage7_adapter) fail("Stage 6 canonical cache incomplete", { keys: Object.keys(stage6Cache || {}) });
 const stage7Artifact = readJson(stage7ArtifactPath, "Stage 7 audit export");
 const registryRuntime = readJson(registryPath, "Runtime registry");
 
@@ -248,8 +249,10 @@ const stage8Input = {
     stage7_runtime_url: stage7Artifact.runtime_url || null
   },
   source_bundle: stage6Cache.source_bundle,
+  target_profile: stage6Cache.company_profile || stage6Cache.target_profile_v2 || stage6Cache.target_profile,
   target_feature_profile: stage6Cache.target_feature_profile,
-  legal_stack_review: stage6Cache.legal_stack_review,
+  stage6_review: stage6Cache.stage6_review,
+  stage6_to_stage7_adapter: stage6Cache.stage6_to_stage7_adapter,
   registry_logic_reference: compactRegistryLogicReference(registryRows),
   prior_stage_summaries: {
     stage7_summary: stage7Artifact.summary || null,

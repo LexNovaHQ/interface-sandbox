@@ -1,9 +1,11 @@
 const FINAL_STATUSES = new Set(["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"]);
 const GATE_RESULTS = new Set(["PASS", "FAIL", "NOT_REQUIRED", "INSUFFICIENT"]);
-const TRUE_BASIS_PREFIXES = ["TRUE_EVIDENCE:", "TRUE_ABSENCE:", "TRUE_FEATURE_MAP:", "TRUE_LEGAL_STACK:"];
+const TRUE_BASIS_PREFIXES = ["TRUE_EVIDENCE:", "TRUE_ABSENCE:", "TRUE_FEATURE_MAP:", "TRUE_STAGE6_REVIEW:", "TRUE_STAGE6_LEGAL_UNIT:", "TRUE_STAGE6_DATA_FLOW:"];
+const LEGACY_STAGE6_REVIEW_PREFIX = ["TRUE", "LEGAL", "STACK:"].join("_");
 const FALSE_BASIS_PREFIXES = ["FALSE_NOT_SATISFIED:", "FALSE_NOT_APPLICABLE:", "FALSE_INSUFFICIENT:"];
 const ALLOWED_GLOBAL_REFS = new Set(["GLOBAL", "MULTI", "UNKNOWN"]);
-const FORBIDDEN_KEYS = new Set(["source_bundle", "target_feature_profile", "legal_stack_review", "operator_challenge_gate", "high_risk_checks", "reopened_rows", "findings", "controlled_rows", "insufficient_evidence_rows", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions", "assembly_route", "technical_audit_log", "html", "registry_batch_evaluation"]);
+const RETIRED_STAGE6_REVIEW_KEY = ["legal", "stack", "review"].join("_");
+const FORBIDDEN_KEYS = new Set(["source_bundle", "target_feature_profile", RETIRED_STAGE6_REVIEW_KEY, "operator_challenge_gate", "high_risk_checks", "reopened_rows", "findings", "controlled_rows", "insufficient_evidence_rows", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions", "assembly_route", "technical_audit_log", "html", "registry_batch_evaluation"]);
 const LEGAL_CONCLUSION_GUIDANCE_PATTERNS = [/\billegal\b/i, /\bnon-compliant\b/i, /\bliable\b/i, /\bunenforceable\b/i, /confirmed violation/i, /certif(?:y|ies|ied) compliance/i, /make[s]? .* liable/i];
 
 function push(errors, instancePath, message, params = {}) { errors.push({ keyword: "registry_ledger_guardrail", instancePath, schemaPath: "#/registryLedgerGuardrails", message, params }); }
@@ -25,7 +27,25 @@ function walk(value, errors, warnings, path = "") {
 function rowThreatId(row, index) { return String(row?.Threat_ID || row?.threat_id || `MISSING_THREAT_ID_ROW_${index + 1}`).trim(); }
 function rowArchetype(row) { return String(row?.Threat_ID || row?.threat_id || "").split("_")[0] || String(row?.Archetype || row?.archetype?.code || row?.archetype || "").trim(); }
 function nonEmpty(value) { return typeof value === "string" && value.trim().length > 0; }
-function featureIds(input = {}) { return new Set((input?.target_feature_profile?.feature_inventory || []).map((feature) => feature?.feature_id).filter(Boolean)); }
+function featureIds(input = {}) {
+  const profile = input?.target_feature_profile || input?.feature_profile_v2 || {};
+  const fromProfile = (profile?.feature_inventory || []).map((feature) => feature?.feature_id).filter(Boolean);
+  const nav = input?.stage6_to_stage7_adapter?.stage7_navigation_index || input?.stage6_review?.stage7_navigation_index || {};
+  const fromStage6 = [
+    ...(nav.feature_to_data_flow_index || []).map((row) => row?.feature_id),
+    ...(nav.feature_to_legal_unit_index || []).map((row) => row?.feature_id)
+  ].filter(Boolean);
+  return new Set([...fromProfile, ...fromStage6]);
+}
+function hasTargetProfile(input = {}) { return Boolean(input?.target_profile || input?.target_profile_v2 || input?.company_profile); }
+function targetProfileFor(input = {}) { return input?.target_profile || input?.target_profile_v2 || input?.company_profile || {}; }
+function hasJurisdictionSignal(profile = {}) { const j = profile?.jurisdiction || {}; return Boolean(j.registered_or_notice_country || j.governing_law_country || j.headquarters || j.operating_markets?.length || j.data_sovereignty_signature); }
+function normalizeLegacyStage6BasisPrefix(condition = {}) {
+  if (typeof condition.basis !== "string") return false;
+  if (!condition.basis.startsWith(LEGACY_STAGE6_REVIEW_PREFIX)) return false;
+  condition.basis = condition.basis.replace(new RegExp(`^${LEGACY_STAGE6_REVIEW_PREFIX}\\s*`), "TRUE_STAGE6_REVIEW: ");
+  return true;
+}
 function normalizeConditionBasisPrefix(condition = {}) {
   if (typeof condition.result !== "boolean" || !nonEmpty(condition.basis)) return;
   const basis = String(condition.basis || "");
@@ -42,6 +62,8 @@ export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
   const ledger = Array.isArray(output.registry_evaluation_ledger) ? output.registry_evaluation_ledger : [];
   const meta = output.registry_batch_meta || {};
   const allowedFeatureIds = featureIds(input);
+  if (!hasTargetProfile(input)) push(errors, "/target_profile", "Stage 7 input must include canonical target_profile from Stage 4.");
+  else if (!hasJurisdictionSignal(targetProfileFor(input))) warn(warnings, "/target_profile/jurisdiction", "target_profile jurisdiction signal is thin or unknown; passed as warning.");
   const topKeys = Object.keys(output).sort();
   const expectedTopKeys = ["batch_warnings", "registry_batch_meta", "registry_evaluation_ledger"];
   if (JSON.stringify(topKeys) !== JSON.stringify(expectedTopKeys)) push(errors, "", "output must contain exactly registry_batch_meta, registry_evaluation_ledger, and batch_warnings", { topKeys });
@@ -69,6 +91,9 @@ export function validateRegistryLedgerGuardrails(output, { input = {} } = {}) {
       if (typeof condition.result !== "boolean") push(errors, `${cBase}/result`, "condition.result must be boolean");
       if (!nonEmpty(condition.basis)) push(errors, `${cBase}/basis`, "condition.basis must be non-empty");
       normalizeConditionBasisPrefix(condition);
+      const legacyStage6BasisRepaired = normalizeLegacyStage6BasisPrefix(condition);
+      if (legacyStage6BasisRepaired) warn(warnings, `${cBase}/basis`, "legacy Stage 6 basis prefix repaired to TRUE_STAGE6_REVIEW", { repaired_from: "legacy_stage6_review_prefix" });
+      if (String(condition.basis || "").startsWith(LEGACY_STAGE6_REVIEW_PREFIX)) push(errors, `${cBase}/basis`, "legacy Stage 6 basis prefix remained after deterministic repair");
       const basis = String(condition.basis || "");
       const goodPrefix = condition.result ? TRUE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix)) : FALSE_BASIS_PREFIXES.some((prefix) => basis.startsWith(prefix));
       if (!goodPrefix) push(errors, `${cBase}/basis`, "condition.basis must start with the required TRUE_/FALSE_ diagnostic prefix", { basis });

@@ -124,6 +124,21 @@ function addReviewedSource(map, candidate = {}) {
   });
 }
 
+function legalReviewProjectionFromStage6(stage6Review = {}) {
+  const cartography = safeObject(stage6Review.legal_document_cartography);
+  return {
+    legal_stack: asArray(cartography.legal_document_inventory),
+    document_stack_redline: asArray(cartography.document_control_signal_map),
+    document_stack_synthesis: {
+      source_component: stage6Review.stage6_component || null,
+      stage6_review_version: stage6Review.stage6_review_version || null,
+      relationship_map: asArray(cartography.document_relationship_map)
+    },
+    legal_stack_assessment: asArray(cartography.legal_document_index),
+    limitations: asArray(stage6Review.stage6_limitations)
+  };
+}
+
 function sourceInventory({ sourceBundle = {}, evidenceJunction = {}, targetFeatureProfile = {}, legalStackReview = {}, stage7Artifact = {}, stage8Ledger = {} } = {}) {
   const sources = new Map();
 
@@ -221,9 +236,10 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, r
   const generatedAt = new Date().toISOString();
   const sourceBundle = stage6Cache?.source_bundle || {};
   const evidenceJunction = stage6Cache?.evidence_junction || {};
-  const companyProfile = stage6Cache?.company_profile || {};
+  const companyProfile = stage6Cache?.company_profile || stage6Cache?.target_profile_v2 || {};
   const targetFeatureProfile = stage6Cache?.target_feature_profile || {};
-  const legalStackReview = stage6Cache?.legal_stack_review || {};
+  const stage6Review = stage6Cache?.stage6_review || {};
+  const legalStackReview = legalReviewProjectionFromStage6(stage6Review);
   const postChallengeLedger = asArray(stage8Ledger?.post_challenge_ledger || stage7Artifact?.merged_ledger);
   const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger });
   const consolidatedFindings = groupIdentifiedExposures(hydratedRows.sorted_identified_exposures);

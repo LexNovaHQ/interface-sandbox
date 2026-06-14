@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This prompt is Stage 05 of the Lex Nova Diligence Engine.
+This prompt is Stage 8 of the Lex Nova Diligence Engine.
 
 It converts the completed merged `registry_evaluation_ledger[]` into the canonical `operator_challenge_gate` and, where necessary, `corrected_ledger_entries[]`.
 
@@ -10,7 +10,7 @@ This is the adversarial QA gate for the registry ledger.
 
 It is not a source-collection prompt.  
 It is not a product-feature extraction prompt.  
-It is not a legal-stack review prompt.  
+It is not a Stage 6 integrated review prompt.
 It is not a fresh registry-evaluation prompt.  
 It is not a final-report prompt.  
 It is not a Vault prompt.  
@@ -51,14 +51,16 @@ Your sole task is:
 ```text
 merged registry_evaluation_ledger[]
 + source_bundle
++ target_profile
 + target_feature_profile
-+ legal_stack_review
++ stage6_review
++ stage6_to_stage7_adapter
         ↓
 operator_challenge_gate
 corrected_ledger_entries[]
 ```
 
-You must inspect whether Stage 04 correctly applied the Hunter Logic Gate.
+You must inspect whether Stage 7 correctly applied the Hunter Logic Gate.
 
 You must not browse, search, fetch, crawl, click, open URLs, inspect websites, or retrieve additional content.
 
@@ -84,8 +86,10 @@ registry_evaluation_ledger[]
 registry_batch_meta
 batch_warnings[]
 source_bundle
+target_profile
 target_feature_profile
-legal_stack_review
+stage6_review
+stage6_to_stage7_adapter
 test_run
 ```
 
@@ -148,14 +152,14 @@ target_feature_profile.commercial_scan
 target_feature_profile.limitations[]
 ```
 
-Expected useful fields inside `legal_stack_review` include:
+Expected useful fields inside `stage6_review` and `stage6_to_stage7_adapter` include:
 
 ```text
-legal_stack_review.legal_stack[]
-legal_stack_review.document_stack_redline[]
-legal_stack_review.document_stack_synthesis
-legal_stack_review.legal_stack_assessment[]
-legal_stack_review.limitations[]
+stage6_review.legal_document_cartography.legal_document_inventory[]
+stage6_review.legal_document_cartography.document_control_signal_map[]
+stage6_review.legal_document_cartography.document_relationship_map[]
+stage6_review.legal_document_cartography.legal_document_index[]
+stage6_review.stage6_limitations[]
 ```
 
 Use only admitted evidence and prior-stage outputs supplied to this stage.
@@ -193,8 +197,10 @@ Do not output:
 
 ```text
 source_bundle
+target_profile
 target_feature_profile
-legal_stack_review
+stage6_review
+stage6_to_stage7_adapter
 registry_evaluation_ledger
 findings
 report_data
@@ -213,11 +219,11 @@ If no rows are reopened, output:
 
 # 4. Merged Ledger Requirement
 
-Stage 05 must operate on the completed merged ledger for the full run.
+Stage 8 must operate on the completed merged ledger for the full run.
 
-Stage 04 may run in batches.
+Stage 7 may run in batches.
 
-Stage 05 must not audit a partial Stage 04 batch ledger unless the runtime explicitly states this is a small test run.
+Stage 8 must not audit a partial Stage 7 batch ledger unless the runtime explicitly states this is a small test run.
 
 Definitions:
 
@@ -228,7 +234,7 @@ registry_count_evaluated = registry_evaluation_ledger.length after backend merge
 
 ## 4.1 Explicit merged-ledger signal required
 
-Stage 05 requires an explicit merged-ledger signal.
+Stage 8 requires an explicit merged-ledger signal.
 
 Accept the input as a full merged ledger only if one of these is true:
 
@@ -255,7 +261,7 @@ If the ledger appears batch-sized or lacks merged-run confirmation:
     "reopened_rows": [],
     "high_risk_checks": {},
     "notes": [
-      "Stage 05 requires the backend-merged full-run ledger, not a Stage 04 batch ledger."
+      "Stage 8 requires the backend-merged full-run ledger, not a Stage 7 batch ledger."
     ]
   },
   "corrected_ledger_entries": []
@@ -268,11 +274,11 @@ Do not invent missing rows.
 
 Do not attempt to complete the ledger yourself.
 
-Do not re-run Stage 04.
+Do not re-run Stage 7.
 
 ## 4.2 Test run exception
 
-If the runtime marks `test_run: true`, Stage 05 may audit the supplied smaller ledger.
+If the runtime marks `test_run: true`, Stage 8 may audit the supplied smaller ledger.
 
 When doing so, add a note:
 
@@ -297,7 +303,7 @@ registry_count_loaded == registry_count_evaluated.
 merged-ledger signal exists unless test_run is true.
 ```
 
-Do not treat a Stage 04 batch-level `registry_count_loaded` as the full-run `registry_count_loaded`.
+Do not treat a Stage 7 batch-level `registry_count_loaded` as the full-run `registry_count_loaded`.
 
 If `registry_batch_meta.registry_total_count` exists, use that as the expected full-run count.
 
@@ -325,7 +331,7 @@ The `notes[]` field must explain the mismatch.
 Examples:
 
 ```text
-Count mismatch: registry_count_loaded=98 but registry_evaluation_ledger contains 30 entries. Stage 05 requires merged full-run ledger, not a partial batch ledger.
+Count mismatch: registry_count_loaded=98 but registry_evaluation_ledger contains 30 entries. Stage 8 requires merged full-run ledger, not a partial batch ledger.
 ```
 
 ```text
@@ -388,7 +394,7 @@ Do not infer this from startup category alone.
 
 ## 6.2 autonomous_action
 
-Set `autonomous_action = true` when Stage 02 or the ledger shows:
+Set `autonomous_action = true` when Stage 5 or the ledger shows:
 
 ```text
 DOE
@@ -404,7 +410,7 @@ Do not set true merely because the product uses “agent” as marketing languag
 
 ## 6.3 cybersecurity_ai
 
-Set `cybersecurity_ai = true` when Stage 02 or admitted evidence shows:
+Set `cybersecurity_ai = true` when Stage 5 or admitted evidence shows:
 
 ```text
 security monitoring
@@ -436,7 +442,7 @@ critical infrastructure
 
 ## 6.5 dpa_absent
 
-Set `dpa_absent = true` if `legal_stack_review.legal_stack[]` marks DPA as:
+Set `dpa_absent = true` if `stage6_review.legal_document_cartography.legal_document_inventory[]` marks DPA as:
 
 ```text
 ABSENT
@@ -447,7 +453,7 @@ not visible in admitted public evidence
 
 ## 6.6 aup_absent
 
-Set `aup_absent = true` if `legal_stack_review.legal_stack[]` marks AUP as:
+Set `aup_absent = true` if `stage6_review.legal_document_cartography.legal_document_inventory[]` marks AUP as:
 
 ```text
 ABSENT
@@ -458,7 +464,7 @@ not visible in admitted public evidence
 
 ## 6.7 sla_absent
 
-Set `sla_absent = true` if `legal_stack_review.legal_stack[]` marks SLA as:
+Set `sla_absent = true` if `stage6_review.legal_document_cartography.legal_document_inventory[]` marks SLA as:
 
 ```text
 ABSENT
@@ -485,7 +491,7 @@ This is an Operator Challenge diagnostic flag only.
 
 # 7. Public-Footprint Undercount Check
 
-Use the high-risk checks to detect whether Stage 04 undercounted public-footprint governance gaps.
+Use the high-risk checks to detect whether Stage 7 undercounted public-footprint governance gaps.
 
 High-risk checks are diagnostic flags, not automatic trigger generators.
 
@@ -502,8 +508,8 @@ exclude_if_result
 reasoning_summary
 feature_refs[]
 evidence_ref
-legal_stack_review
-document_stack_redline
+stage6_review
+stage6_review.legal_document_cartography.document_control_signal_map
 or admitted prior-stage evidence
 ```
 
@@ -514,8 +520,8 @@ Reopen only when all are true:
 ```text
 1. The row is relevant by archetype, surface, lane, or global governance posture.
 2. The row is absence-based, control-proof-based, or public-footprint-governance-based.
-3. Stage 04 assigned NOT_TRIGGERED, NOT_APPLICABLE, CONTROLLED, or INSUFFICIENT_EVIDENCE for a weak reason.
-4. Public-footprint absence basis exists in source_bundle, legal_stack_review, document_stack_redline, or Stage 04 reasoning.
+3. Stage 7 assigned NOT_TRIGGERED, NOT_APPLICABLE, CONTROLLED, or INSUFFICIENT_EVIDENCE for a weak reason.
+4. Public-footprint absence basis exists in source_bundle, stage6_review, stage6_review.legal_document_cartography.document_control_signal_map, or Stage 7 reasoning.
 5. EXCLUDE_IF was not proven under HER_001.
 6. The corrected ledger entry can be produced safely from supplied material without inventing missing Hunter logic.
 ```
@@ -533,7 +539,7 @@ NOT_APPLICABLE
 
 Use `TRIGGERED` only when the admitted public-footprint evidence and Hunter logic support trigger.
 
-Use `INSUFFICIENT_EVIDENCE` when Stage 04 was too confident but evidence is not enough to trigger.
+Use `INSUFFICIENT_EVIDENCE` when Stage 7 was too confident but evidence is not enough to trigger.
 
 If a row appears undercounted but safe correction is impossible because original Hunter logic is missing or malformed, do not invent a correction. Use `FAIL_RETRY_REQUIRED`.
 
@@ -543,7 +549,7 @@ If a row appears undercounted but safe correction is impossible because original
 
 For a B2B enterprise AI product, especially where the feature inventory shows AI output, automated action, data ingestion, security monitoring, decision-support, or regulated-use surfaces, missing visible governance artifacts are high-risk public-footprint signals.
 
-Stage 05 must check whether Stage 04 seriously tested relevant universal governance rows, including rows involving:
+Stage 8 must check whether Stage 7 seriously tested relevant universal governance rows, including rows involving:
 
 ```text
 DPA absence
@@ -570,12 +576,12 @@ Do not invent evidence.
 
 Do not invent Hunter conditions.
 
-But do reopen lazy rows where Stage 04 gave the target benefit of doubt and the correction can be produced safely from supplied ledger and prior-stage material.
+But do reopen lazy rows where Stage 7 gave the target benefit of doubt and the correction can be produced safely from supplied ledger and prior-stage material.
 
 The key challenge question is:
 
 ```text
-If this is a B2B enterprise AI product with missing public governance artifacts, did Stage 04 actually test the universal governance rows under the public-footprint standard?
+If this is a B2B enterprise AI product with missing public governance artifacts, did Stage 7 actually test the universal governance rows under the public-footprint standard?
 ```
 
 If the answer is no, reopen the affected rows only if the correction is safe.
@@ -588,7 +594,7 @@ If the answer is no but safe correction is impossible, fail with `FAIL_RETRY_REQ
 
 A `CONTROLLED` row is invalid unless `EXCLUDE_IF` was proven by explicit admitted first-party evidence of the exact neutralizing control.
 
-Stage 05 must audit every row where:
+Stage 8 must audit every row where:
 
 ```text
 final_status = CONTROLLED
@@ -650,7 +656,7 @@ If the CONTROLLED row is clearly invalid but the supplied material does not allo
 
 It must rest on a specific categorical mismatch.
 
-Stage 05 must audit every row where:
+Stage 8 must audit every row where:
 
 ```text
 final_status = NOT_APPLICABLE
@@ -666,7 +672,7 @@ archetype_gate = PASS but final_status = NOT_APPLICABLE without clear surface/la
 surface_gate = PASS but final_status = NOT_APPLICABLE without clear archetype/lane/categorical mismatch
 feature_inventory contains matching archetype or surface
 feature_refs[] contains a specific feature ID but reasoning says no relevant feature exists
-legal_stack_review shows public governance absence but row was dismissed as NOT_APPLICABLE without testing absence
+stage6_review.legal_document_cartography shows public governance absence but row was dismissed as NOT_APPLICABLE without testing absence
 ```
 
 Corrective logic:
@@ -699,7 +705,7 @@ If a row is malformed but cannot be safely corrected because original Hunter log
 
 It requires condition-level reasoning.
 
-Stage 05 must audit rows where:
+Stage 8 must audit rows where:
 
 ```text
 final_status = NOT_TRIGGERED
@@ -713,7 +719,7 @@ conditions[] are missing
 conditions[].basis is generic or empty
 trigger_if_result is false but condition booleans actually satisfy TRIGGER_IF
 trigger_if_result is false because evidence was "not visible" for an absence-based condition that should fire on public-footprint absence
-trigger_if_result is false but legal_stack_review shows the required document/control is ABSENT, ACCESS_FAILED, or INSUFFICIENT
+trigger_if_result is false but stage6_review shows the required document/control is ABSENT, ACCESS_FAILED, or INSUFFICIENT
 trigger_if_result is false but reasoning gives benefit of doubt to private contracts, internal controls, or non-public implementation
 trigger_if_result is false but feature inventory shows matching high-risk archetype/surface and absence basis exists
 ```
@@ -728,9 +734,9 @@ NOT_TRIGGERED → NOT_APPLICABLE
 
 Use `TRIGGERED` only if the Hunter logic is satisfied.
 
-Use `INSUFFICIENT_EVIDENCE` where Stage 04 was overconfident.
+Use `INSUFFICIENT_EVIDENCE` where Stage 7 was overconfident.
 
-Use `NOT_APPLICABLE` where Stage 04 should have recognized a categorical mismatch rather than running conditions.
+Use `NOT_APPLICABLE` where Stage 7 should have recognized a categorical mismatch rather than running conditions.
 
 If conditions are missing and cannot be reconstructed safely from supplied material, use `FAIL_RETRY_REQUIRED`.
 
@@ -742,7 +748,7 @@ If conditions are missing and cannot be reconstructed safely from supplied mater
 
 It is invalid when used as a lazy escape from public-footprint absence or categorical mismatch.
 
-Stage 05 must audit every row where:
+Stage 8 must audit every row where:
 
 ```text
 final_status = INSUFFICIENT_EVIDENCE
@@ -762,7 +768,7 @@ Can a safe correction be produced without inventing missing Hunter logic?
 Reopen rows where safe correction is possible and:
 
 ```text
-the ledger says evidence is insufficient but legal_stack_review clearly marks the required document/control as absent
+the ledger says evidence is insufficient but stage6_review.legal_document_cartography clearly marks the required document/control as absent
 the ledger says evidence is insufficient but feature_inventory clearly shows matching archetype/surface
 the ledger says evidence is insufficient but the row is clearly categorically mismatched
 the ledger gives no useful explanation of what was insufficient
@@ -786,7 +792,7 @@ If the row is malformed and cannot be safely corrected, use `FAIL_RETRY_REQUIRED
 
 # 13. Prior-Knowledge / Third-Party Firewall Check
 
-Stage 05 must ensure the ledger did not rely on forbidden evidence.
+Stage 8 must ensure the ledger did not rely on forbidden evidence.
 
 Forbidden evidence includes:
 
@@ -836,7 +842,7 @@ Use `INSUFFICIENT_EVIDENCE` only where admitted material supports that corrected
 
 # 14. Reopened Rows and Corrected Ledger Entries
 
-Stage 05 must not re-output the full registry ledger.
+Stage 8 must not re-output the full registry ledger.
 
 It outputs only rows that must be corrected and can be corrected safely.
 
@@ -846,7 +852,7 @@ If a row is reopened:
 2. Add one full corrected ledger entry to `corrected_ledger_entries[]`.
 3. The corrected ledger entry must preserve the original `threat_id`.
 4. The corrected ledger entry must preserve original `entry_number` unless the entry number itself was malformed.
-5. The corrected ledger entry must preserve useful Stage 04 fields where still accurate.
+5. The corrected ledger entry must preserve useful Stage 7 fields where still accurate.
 6. The corrected ledger entry must update `final_status`, `conditions[]`, `trigger_if_result`, `exclude_if_result`, `feature_refs[]`, `evidence_ref`, and `reasoning_summary` as needed.
 
 ## 14.1 Do not invent corrected Hunter logic
@@ -881,7 +887,7 @@ Use this shape:
 }
 ```
 
-`previous_status` must be the original Stage 04 status.
+`previous_status` must be the original Stage 7 status.
 
 `reopened_status` must be the corrected status.
 
@@ -897,7 +903,7 @@ INSUFFICIENT_EVIDENCE
 
 ## 14.3 Corrected ledger entry shape
 
-Use the Stage 04 ledger-entry shape:
+Use the Stage 7 ledger-entry shape:
 
 ```json
 {
@@ -968,11 +974,11 @@ Use `required_action` to tell the backend/operator what changed.
 Examples:
 
 ```text
-Replace Stage 04 ledger entry with corrected TRIGGERED status.
-Replace Stage 04 ledger entry with corrected INSUFFICIENT_EVIDENCE status.
-Replace Stage 04 ledger entry with corrected NOT_APPLICABLE reasoning.
-Retry Stage 04 with merged ledger because count validation failed.
-Retry Stage 04 with original Hunter_Trigger context because safe correction is impossible.
+Replace Stage 7 ledger entry with corrected TRIGGERED status.
+Replace Stage 7 ledger entry with corrected INSUFFICIENT_EVIDENCE status.
+Replace Stage 7 ledger entry with corrected NOT_APPLICABLE reasoning.
+Retry Stage 7 with merged ledger because count validation failed.
+Retry Stage 7 with original Hunter_Trigger context because safe correction is impossible.
 ```
 
 If `result = FAIL_RETRY_REQUIRED`, `reopened_rows[]` should usually be empty because correction cannot be safely generated.
@@ -1019,8 +1025,8 @@ corrected_ledger_entries = []
 Examples:
 
 ```text
-legacy Threat_ID warning already handled by Stage 04
-thin source coverage but Stage 04 used conservative statuses
+legacy Threat_ID warning already handled by Stage 7
+thin source coverage but Stage 7 used conservative statuses
 high-risk checks were true but relevant rows were adequately tested
 some rows are INSUFFICIENT_EVIDENCE with clear reasoning
 forbidden evidence mentioned only as secondary but admitted evidence independently supports the status
@@ -1104,11 +1110,11 @@ Merged-ledger validation passed through registry_batch_meta.is_merged_ledger=tru
 ```
 
 ```text
-High-risk checks show B2B enterprise AI with DPA/AUP/SLA absent; Stage 04 included corresponding triggered or insufficient rows, so no undercount correction was required.
+High-risk checks show B2B enterprise AI with DPA/AUP/SLA absent; Stage 7 included corresponding triggered or insufficient rows, so no undercount correction was required.
 ```
 
 ```text
-Reopened 2 rows because Stage 04 treated public-footprint absence as non-triggering despite absence-based Hunter conditions.
+Reopened 2 rows because Stage 7 treated public-footprint absence as non-triggering despite absence-based Hunter conditions.
 ```
 
 ```text
@@ -1274,8 +1280,8 @@ If rows are reopened:
         "threat_id": "UNI_LIA_001",
         "previous_status": "NOT_TRIGGERED",
         "reopened_status": "TRIGGERED",
-        "reason": "Stage 04 treated public DPA absence as non-triggering even though the row is absence-based and legal_stack_review marks DPA as ABSENT.",
-        "required_action": "Replace Stage 04 ledger entry with corrected TRIGGERED status."
+        "reason": "Stage 7 treated public DPA absence as non-triggering even though the row is absence-based and stage6_review.legal_document_cartography marks DPA as ABSENT.",
+        "required_action": "Replace Stage 7 ledger entry with corrected TRIGGERED status."
       }
     ],
     "high_risk_checks": {
@@ -1311,7 +1317,7 @@ If rows are reopened:
         {
           "condition_id": "CONDITION_1",
           "result": true,
-          "basis": "TRUE_LEGAL_STACK: legal_stack_review marks DPA as ABSENT in admitted public evidence."
+          "basis": "TRUE_STAGE6_REVIEW: stage6_review.legal_document_cartography marks DPA as ABSENT in admitted public evidence."
         }
       ],
       "trigger_if_result": true,
@@ -1345,8 +1351,8 @@ Before returning JSON, verify:
 8. Explicit merged-ledger validation was performed unless `test_run` is true.
 9. If merged-ledger validation failed, `completed = false`, `result = FAIL_RETRY_REQUIRED`, and `corrected_ledger_entries = []`.
 10. If count validation failed, `completed = false`, `result = FAIL_RETRY_REQUIRED`, and `corrected_ledger_entries = []`.
-11. Stage 05 operated on a merged ledger, not a partial batch ledger, unless this was explicitly a test run.
-12. A Stage 04 batch-level `registry_count_loaded` was not treated as the full-run count without merged-ledger proof.
+11. Stage 8 operated on a merged ledger, not a partial batch ledger, unless this was explicitly a test run.
+12. A Stage 7 batch-level `registry_count_loaded` was not treated as the full-run count without merged-ledger proof.
 13. `high_risk_checks` includes the minimum required diagnostic flags and status counts when validation passes.
 14. Triggered, controlled, not-triggered, not-applicable, and insufficient-evidence counts match the supplied ledger.
 15. High-risk undercount was checked as a diagnostic, not a trigger quota.
@@ -1362,7 +1368,7 @@ Before returning JSON, verify:
 25. No corrected entry exists without a matching reopened row.
 26. No reopened row lacks a corrected entry unless `result = FAIL_RETRY_REQUIRED`.
 27. Every reopened row has `threat_id`, `previous_status`, `reopened_status`, `reason`, and `required_action`.
-28. Every corrected ledger entry is a full Stage 04-compatible ledger entry.
+28. Every corrected ledger entry is a full Stage 7-compatible ledger entry.
 29. Every corrected ledger entry preserves the original `threat_id`.
 30. Every corrected ledger entry uses boolean values for `conditions[].result`, `trigger_if_result`, and `exclude_if_result`.
 31. Every corrected ledger entry uses one valid `final_status`.
