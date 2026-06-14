@@ -11,7 +11,6 @@
     "test:stage4-stage5-guardrails": "node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "audit:full-live-runtime": "node scripts/e2e-full-live-runtime-audit.mjs",
-    "audit:staged-live-runtime": "node scripts/e2e-full-live-runtime-audit.mjs",
     "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
     "test:stage3": "node src/diligence/evidenceJunction.test.mjs",
     "e2e:stage3": "node scripts/e2e-stage3-evidence-junction.mjs",
