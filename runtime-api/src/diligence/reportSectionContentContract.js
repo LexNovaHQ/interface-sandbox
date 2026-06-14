@@ -2,97 +2,118 @@ export const STAGE9_DD_SECTION_CONTENT_CONTRACT = Object.freeze({
   matter_overview: {
     heading: "Matter Overview",
     required_blocks: [
-      "report_identity",
+      "matter_identity",
       "review_scope",
-      "scope_limitations",
+      "evidence_cutoff",
       "reliance_disclaimer",
-      "evidence_cut_off"
+      "local_counsel_review_required",
+      "public_footprint_limitation"
     ]
   },
-  executive_exposure_summary: {
-    heading: "Executive Exposure Summary",
+  executive_summary: {
+    heading: "Executive Summary",
     required_blocks: [
       "executive_posture",
-      "key_numbers",
-      "top_exposure_themes",
-      "control_position",
-      "immediate_review_priorities",
-      "executive_conclusion"
+      "target_snapshot",
+      "product_activity_snapshot",
+      "data_posture",
+      "legal_document_posture",
+      "exposure_posture",
+      "evidence_posture",
+      "counsel_review_priorities"
     ]
   },
-  evidence_reviewed: {
-    heading: "Evidence Reviewed",
+  target_profile: {
+    heading: "Target Profile",
     required_blocks: [
-      "evidence_inventory",
-      "evidence_categories",
-      "evidence_not_reviewed",
-      "evidence_limitations"
+      "identity",
+      "jurisdiction",
+      "business_model",
+      "market_context",
+      "product_baseline",
+      "data_touchpoint_summary",
+      "evidence_basis",
+      "limitations"
     ]
   },
-  product_activity_profile: {
-    heading: "Product & Activity Profile",
+  product_activity_ip_profile: {
+    heading: "Product, Activity & IP Profile",
     required_blocks: [
       "product_activity_thesis",
-      "platform_product_architecture",
-      "data_processing_user_information_flows",
-      "automated_systems_output_reliance",
-      "content_output_ip_position",
-      "third_party_infrastructure_dependencies",
-      "user_facing_claims_product_reliance"
+      "feature_inventory_summary",
+      "feature_table",
+      "functional_profile",
+      "risk_surface_profile",
+      "ip_content_profile",
+      "architecture_profile",
+      "commercial_scan",
+      "evidence_basis",
+      "limitations"
     ]
   },
-  legal_risk_surface_map: {
-    heading: "Legal Risk Surface Map",
+  data_risk_provenance_controls: {
+    heading: "Data Risk, Provenance & Controls",
     required_blocks: [
-      "active_legal_surfaces",
-      "surface_activation_basis",
-      "legal_consequence_categories",
-      "linked_findings",
-      "linked_controls"
+      "data_risk_thesis",
+      "data_flow_summary",
+      "data_flow_table",
+      "control_review",
+      "data_gaps",
+      "evidence_basis",
+      "limitations"
     ]
   },
-  legal_stack_control_review: {
-    heading: "Legal Stack & Control Review",
+  legal_document_control_review: {
+    heading: "Legal Document & Control Review",
     required_blocks: [
+      "legal_document_review_thesis",
+      "document_inventory_summary",
       "document_inventory",
-      "document_coverage_matrix",
-      "control_evidenced_items",
-      "control_gaps",
+      "legal_unit_index",
+      "document_relationships",
+      "control_signal_matrix",
+      "document_mismatch_signals",
       "counsel_review_points",
-      "legal_stack_synthesis"
+      "evidence_basis",
+      "limitations"
     ]
   },
   exposure_findings: {
     heading: "Exposure Findings",
     required_blocks: [
-      "consolidated_findings_schedule",
-      "finding_statements",
-      "evidence_basis",
-      "legal_significance",
-      "control_position",
-      "affected_documents_controls",
-      "commercial_deal_impact",
-      "recommended_remediation",
-      "supporting_registry_items"
-    ]
-  },
-  evidence_gaps_clarification_points: {
-    heading: "Evidence Gaps & Clarification Points",
-    required_blocks: [
-      "open_information_request_list",
-      "missing_documents",
-      "missing_factual_confirmations",
-      "consequence_if_unresolved"
+      "exposure_category_groups",
+      "finding_rows",
+      "severity_summary",
+      "control_position_summary",
+      "evidence_basis_summary",
+      "appendix_crosswalk"
     ]
   },
   implications_remediation_path: {
     heading: "Implications & Remediation Path",
     required_blocks: [
-      "remediation_roadmap",
+      "remediation_thesis",
+      "priority_actions",
       "document_route",
-      "control_route",
-      "review_priority",
+      "data_control_route",
+      "operational_control_route",
+      "local_counsel_review_queue",
+      "quick_wins",
+      "blocked_until_clarified",
       "review_ready_handoff_bridge"
+    ]
+  },
+  evidence_gaps_clarification_points: {
+    heading: "Evidence Gaps & Clarification Points",
+    required_blocks: [
+      "open_information_requests",
+      "missing_documents",
+      "missing_factual_confirmations",
+      "unclear_data_flows",
+      "unclear_provider_dependencies",
+      "evidence_limitations",
+      "consequence_if_unresolved",
+      "client_confirmation_questions"
     ]
   },
   methodology_limitations_review_notes: {
@@ -102,17 +123,23 @@ export const STAGE9_DD_SECTION_CONTENT_CONTRACT = Object.freeze({
       "stage_roles",
       "status_definitions",
       "legal_limitations",
-      "evidence_limitations"
+      "evidence_limitations",
+      "registry_use_note",
+      "reviewer_notes"
     ]
   },
   forensic_ledger_appendix: {
     heading: "Forensic Ledger Appendix",
     required_blocks: [
+      "appendix_notice",
+      "full_ledger_summary",
       "full_registry_ledger",
       "row_level_proof",
       "condition_trigger_basis",
       "evidence_references",
-      "operator_challenge_trace"
+      "operator_challenge_trace",
+      "batch_warnings",
+      "appendix_limitations"
     ]
   }
 });
