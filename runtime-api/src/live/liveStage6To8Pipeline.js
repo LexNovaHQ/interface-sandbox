@@ -1,7 +1,9 @@
 import { runDiligenceStage } from "../diligence/stageRunner.js";
 import { buildRegistryLedgerInput } from "../diligence/adapters/registryLedgerInputAdapter.js";
 import { buildPriorityRowPlan, mergePriorityRows, validatePriorityMerge } from "../diligence/priorityRowPlanner.js";
+import { validateStage6ReviewGuardrail } from "../diligence/guardrails/stage6ReviewGuardrail.js";
 import { buildStage6IntegratedHandoffArtifact } from "../diligence/stage6IntegratedHandoffBuilder.js";
+import { validateDiligenceStageOutput } from "../diligence/stageSchemaValidator.js";
 import {
   applyCorrections,
   asArray,
@@ -40,6 +42,61 @@ function buildStage6Input({ sourceBundle, evidenceJunction, companyProfile, targ
   };
 }
 
+function compactValidationErrors(errors = []) {
+  return asArray(errors)
+    .map((error) => `${error?.instancePath || "/"}: ${error?.message || error?.code || error?.keyword || "validation error"}`)
+    .join("; ");
+}
+
+function throwStage6IntegratedValidationError({ message, result }) {
+  const error = new Error(message);
+  error.status = 422;
+  error.result = result;
+  throw error;
+}
+
+function validateStage6IntegratedArtifact({ stage6IntegratedArtifact, stage6Input, stage6aStageResult, stage6bStageResult }) {
+  const stage6Review = stage6IntegratedArtifact?.stage6_review;
+  const schemaValidation = validateDiligenceStageOutput("stage6Review", stage6Review);
+
+  if (!schemaValidation.ok) {
+    throwStage6IntegratedValidationError({
+      message: `Stage 6 integrated handoff failed schema validation: ${compactValidationErrors(schemaValidation.errors)}`,
+      result: {
+        ok: false,
+        status: 422,
+        stage_id: "stage6_integrated_handoff",
+        error_type: "STAGE6_INTEGRATED_SCHEMA_VALIDATION_ERROR",
+        validation: schemaValidation,
+        stage6_review: stage6Review || null
+      }
+    });
+  }
+
+  const guardrail = validateStage6ReviewGuardrail(stage6Review, {
+    input: stage6Input,
+    stageId: "stage6_integrated_handoff",
+    semanticModelAttempted: stage6aStageResult?.semantic_model_attempted === true || stage6bStageResult?.semantic_model_attempted === true
+  });
+
+  if (!guardrail.ok) {
+    throwStage6IntegratedValidationError({
+      message: `Stage 6 integrated handoff failed canonical guardrail validation: ${compactValidationErrors(guardrail.critical || guardrail.errors)}`,
+      result: {
+        ok: false,
+        status: 422,
+        stage_id: "stage6_integrated_handoff",
+        error_type: "STAGE6_INTEGRATED_GUARDRAIL_VALIDATION_ERROR",
+        validation: schemaValidation,
+        stage6_guardrail: guardrail,
+        stage6_review: stage6Review
+      }
+    });
+  }
+
+  return { schemaValidation, guardrail };
+}
+
 export async function runStage6Live({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, logs, runId }) {
   const stage6Input = buildStage6Input({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, runId });
 
@@ -51,7 +108,7 @@ export async function runStage6Live({ sourceBundle, evidenceJunction, companyPro
   });
   logStage(logs, "stage6a_legal_document_cartography", "complete", {
     legal_document_inventory_count: stage6aStageResult.stage6_review?.legal_document_cartography?.legal_document_inventory?.length || 0,
-    legal_unit_count: stage6aStageResult.stage6_review?.legal_document_cartography?.legal_unit_index?.length || 0,
+    legal_unit_count: stage6aStageResult.stage6_review?.legal_document_cartography?.legal_document_index?.length || 0,
     semantic_model_attempted: stage6aStageResult.semantic_model_attempted === true
   });
 
@@ -76,15 +133,25 @@ export async function runStage6Live({ sourceBundle, evidenceJunction, companyPro
     stage6a_stage_id: stage6aStageResult.stage_id || "stage6a_legal_document_cartography",
     stage6b_stage_id: stage6bStageResult.stage_id || "stage6b_data_provenance"
   });
+  const integratedValidation = validateStage6IntegratedArtifact({
+    stage6IntegratedArtifact,
+    stage6Input,
+    stage6aStageResult,
+    stage6bStageResult
+  });
   logStage(logs, "stage6_integrated_handoff", "complete", {
     feature_to_data_flow_index_count: stage6IntegratedArtifact.stage6_review?.stage7_navigation_index?.feature_to_data_flow_index?.length || 0,
-    feature_to_legal_unit_index_count: stage6IntegratedArtifact.stage6_review?.stage7_navigation_index?.feature_to_legal_unit_index?.length || 0
+    feature_to_legal_unit_index_count: stage6IntegratedArtifact.stage6_review?.stage7_navigation_index?.feature_to_legal_unit_index?.length || 0,
+    validation_mode: integratedValidation.schemaValidation.validation_mode,
+    guardrail_validation_mode: integratedValidation.guardrail.validation_mode,
+    guardrail_warning_count: integratedValidation.guardrail.warnings?.length || 0,
+    guardrail_repair_count: integratedValidation.guardrail.repairs?.length || 0
   });
 
-  return { stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact };
+  return { stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact, stage6IntegratedValidation: integratedValidation };
 }
 
-export function buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact }) {
+export function buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact, stage6IntegratedValidation = null }) {
   return {
     cache_version: "stage6_integrated_handoff_live_cache_v1",
     generated_at: nowIso(),
@@ -95,6 +162,7 @@ export function buildStage6Cache({ sourceBundle, evidenceJunction, companyProfil
     stage6a_stage_result: stage6aStageResult,
     stage6b_stage_result: stage6bStageResult,
     stage6_integrated_artifact: stage6IntegratedArtifact,
+    stage6_integrated_validation: stage6IntegratedValidation,
     stage6_review: stage6IntegratedArtifact.stage6_review,
     stage6_to_stage7_adapter: stage6IntegratedArtifact.stage6_to_stage7_adapter
   };
