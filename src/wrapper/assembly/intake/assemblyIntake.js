@@ -1,6 +1,6 @@
 import assemblyOutputSchema from "../../../../data/schemas/assemblyOutput.schema.json";
 import { validateHandoffEnvelope } from "../../contracts/handoffEnvelope.js";
-import { formatSchemaErrors, validateJsonSchema } from "../../diligence/validation/jsonSchemaValidator.js";
+import { formatSchemaErrors, validateJsonSchema } from "../validation/jsonSchemaValidator.js";
 
 const FORBIDDEN_ASSEMBLY_INTAKE_FIELDS = Object.freeze([
   "compiler_output",
@@ -12,7 +12,11 @@ const FORBIDDEN_ASSEMBLY_INTAKE_FIELDS = Object.freeze([
   "merged_registry_result",
   "registry_evaluation_ledger",
   "operator_challenge_result",
-  "correction_result"
+  "correction_result",
+  "document_stack_status",
+  "legal_stack",
+  "document_stack_redline",
+  "legal_stack_assessment"
 ]);
 
 function hasOwn(object, key) {
@@ -37,7 +41,7 @@ function createIntakeSummary({ handoff_envelope, assembly_handoff }) {
     recommended_package: assembly_handoff.assembly_route_recommendation?.recommended_package || null,
     feature_count: Array.isArray(assembly_handoff.feature_map) ? assembly_handoff.feature_map.length : 0,
     threat_finding_count: Array.isArray(assembly_handoff.threat_findings) ? assembly_handoff.threat_findings.length : 0,
-    document_status_count: Array.isArray(assembly_handoff.document_stack_status) ? assembly_handoff.document_stack_status.length : 0,
+    legal_document_status_count: Array.isArray(assembly_handoff.legal_document_status) ? assembly_handoff.legal_document_status.length : 0,
     prefill_field_count: countPrefillFields(assembly_handoff.vault_prefill_suggestions),
     confirmation_question_count: Array.isArray(assembly_handoff.vault_confirmation_questions)
       ? assembly_handoff.vault_confirmation_questions.length
@@ -50,8 +54,8 @@ export function validateAssemblyIntake(input = {}) {
   const errors = [];
 
   FORBIDDEN_ASSEMBLY_INTAKE_FIELDS.forEach((field) => {
-    if (hasOwn(input, field)) {
-      errors.push(`Assembly intake must not receive raw Diligence field: ${field}`);
+    if (hasOwn(input, field) || hasOwn(input?.assembly_handoff, field)) {
+      errors.push(`Assembly intake must not receive retired Diligence/Assembly field: ${field}`);
     }
   });
 
