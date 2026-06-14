@@ -26,11 +26,13 @@ export function buildRegistryLedgerInput(args = {}) {
     route_records: routeRecords,
     batch_route_summary: routeSummary
   };
+  if (batch.reinvestigation_request) base.registry_ledger_input.stage7_reinvestigation_request = batch.reinvestigation_request;
   base.registry_ledger_input.registry_rows = rows.map((row, index) => ({ ...row, stage7_route_contract: routeForRow(row, index) }));
   base.registry_ledger_input.registry_batch_meta = {
     ...base.registry_ledger_input.registry_batch_meta,
     stage7_route_contract_version: "stage7_route_contract_v2",
-    batch_route_summary: routeSummary
+    batch_route_summary: routeSummary,
+    reinvestigation: Boolean(batch.reinvestigation_request)
   };
   return base;
 }
