@@ -46,7 +46,11 @@ async function main() {
     schemaKeyToExport[schemaId] = exportName;
   }
 
-  const validatorSource = standaloneCode(ajv, standaloneExports);
+  const validatorSource = standaloneCode(ajv, standaloneExports)
+    .replace(
+      'const func0 = require("ajv/dist/runtime/equal").default;',
+      "const func0 = equalRuntime.default;"
+    );
   const canonicalKeyToSchemaId = {};
 
   for (const [canonicalKey, schemaPath] of Object.entries(CANONICAL_SCHEMA_PATHS)) {
@@ -64,8 +68,7 @@ async function main() {
     canonical_key_to_schema_id: canonicalKeyToSchemaId
   }, null, 2);
 
-  const source = `import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
+  const source = `import equalRuntime from "ajv/dist/runtime/equal.js";
 
 ${validatorSource}
 
