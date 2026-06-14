@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runGeminiPool } from "./modelPool.js";
+import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
+import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyBuilder.js";
 import { buildStage6ASemanticClassificationPacket } from "./stage6aModelOverlayPacketBuilder.js";
 import { normalizeStage6ASemanticClassification } from "./stage6aModelOverlayNormalizer.js";
@@ -13,10 +14,12 @@ const ACTIVE_STAGE6A_PROMPT_PATH = path.resolve(__dirname, "../../../functions/_
 
 function readDefaultSemanticPrompt() {
   try {
-    return fs.readFileSync(ACTIVE_STAGE6A_PROMPT_PATH, "utf8");
+    const sourcePrompt = fs.readFileSync(ACTIVE_STAGE6A_PROMPT_PATH, "utf8").trim();
+    if (sourcePrompt) return sourcePrompt;
   } catch {
-    return "";
+    // Fall back to generated bundle when source prompts are unavailable in a deployed package.
   }
+  return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_legal_document_cartography?.text || "";
 }
 
 function safeJson(value) {
