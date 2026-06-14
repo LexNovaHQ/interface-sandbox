@@ -37,31 +37,7 @@ const STAGE_CONFIGS = Object.freeze({
     stage6_component: "stage6a_legal_document_cartography",
     pool: "reasoning",
     max_output_tokens: 24000,
-    timeout_ms: 60000,
-    temperature: 0.05
-  },
-  stage6b_data_provenance: {
-    stage_id: "stage6b_data_provenance",
-    prompt_stage_id: "stage6a_legal_document_cartography",
-    output_key: "stage6_review",
-    output_schema_key: "stage6ComponentUnavailable",
-    stage6_component: "stage6b_data_provenance",
-    disabled_until: "stage6b_canonical_runtime_rebuild",
-    pool: "reasoning",
-    max_output_tokens: 24000,
-    timeout_ms: 60000,
-    temperature: 0.05
-  },
-  stage6_integrated_handoff: {
-    stage_id: "stage6_integrated_handoff",
-    prompt_stage_id: "stage6a_legal_document_cartography",
-    output_key: "stage6_review",
-    output_schema_key: "stage6ComponentUnavailable",
-    stage6_component: "stage6_integrated_handoff",
-    disabled_until: "stage6_integrated_canonical_runtime_rebuild",
-    pool: "reasoning",
-    max_output_tokens: 24000,
-    timeout_ms: 60000,
+    timeout_ms: 90000,
     temperature: 0.05
   },
   stage6b_data_provenance: {
@@ -69,6 +45,19 @@ const STAGE_CONFIGS = Object.freeze({
     prompt_stage_id: "stage6b_data_provenance",
     output_key: "stage6_review",
     output_schema_key: "stage6Review",
+    stage6_component: "stage6b_data_provenance",
+    pool: "reasoning",
+    max_output_tokens: 24000,
+    timeout_ms: 90000,
+    temperature: 0.05
+  },
+  stage6_integrated_handoff: {
+    stage_id: "stage6_integrated_handoff",
+    prompt_stage_id: "stage6_integrated_handoff",
+    output_key: "stage6_review",
+    output_schema_key: "stage6Review",
+    stage6_component: "stage6_integrated_handoff",
+    disabled_until: "stage6_integrated_runtime_adapter_rebuild",
     pool: "reasoning",
     max_output_tokens: 24000,
     timeout_ms: 90000,
