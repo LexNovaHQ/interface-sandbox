@@ -1,3 +1,6 @@
+import { buildStage7ArchetypeBatches } from "./stage7ArchetypeBatcher.js";
+import { buildStage7RouteContract } from "./stage7RouteContract.js";
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -134,6 +137,13 @@ function refsFor(row, active) {
   return [...refs];
 }
 
+function fallbackFeatureRefs(reason, refs) {
+  if (refs.length) return refs;
+  if (reason === "UNI_ALWAYS_RUN") return ["GLOBAL_UNIVERSAL_ROW"];
+  if (reason === "CONDITIONAL_DOC_REVIEW") return ["LEGAL_GOVERNANCE_ARTIFACT_ROUTE"];
+  return ["NO_STAGE5_TRIGGER"];
+}
+
 function deterministicEntry(row, index, active, routeReason) {
   const refs = refsFor(row, active);
   return {
@@ -151,13 +161,6 @@ function deterministicEntry(row, index, active, routeReason) {
     evidence_ref: "stage5_priority_gate",
     reasoning_summary: `${routeReason}: non-triggered INT row skipped by deterministic Stage 5 priority gate and marked NOT_APPLICABLE.`
   };
-}
-
-function chunkRows(rows, batchSize) {
-  const size = Math.max(1, Number(batchSize || 8));
-  const out = [];
-  for (let index = 0; index < rows.length; index += size) out.push(rows.slice(index, index + size));
-  return out;
 }
 
 function normalizeRow(row, index) {
@@ -182,16 +185,44 @@ export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, i
   const modelRows = [];
   const deterministicRows = [];
   const routeRecords = [];
+  const activeArchetypes = [...active.archetypes].sort();
+  const activeSurfaces = [...active.surfaces].sort();
+
   sourceRows.forEach((row, index) => {
     const reason = routeRow(row, active, includeConditional);
     const shouldRun = reason === "UNI_ALWAYS_RUN" || reason === "STAGE5_INT_TRIGGERED" || reason === "CONDITIONAL_DOC_REVIEW";
-    const routeRecord = { threat_id: row.Threat_ID, threat_name: row.Threat_Name, archetype: rowArchetype(row), surfaces: rowSurfaces(row), route: shouldRun ? "RUN" : "SKIP", route_reason: reason, feature_refs: refsFor(row, active) };
-    routeRecords.push(routeRecord);
-    if (shouldRun) modelRows.push(row);
+    const refs = refsFor(row, active);
+    const routeContract = buildStage7RouteContract({
+      row,
+      index,
+      routeReason: reason,
+      featureRefs: fallbackFeatureRefs(reason, refs),
+      activeArchetypes,
+      activeSurfaces
+    });
+    routeRecords.push(routeContract);
+    if (shouldRun) modelRows.push({ ...row, _stage7_route: routeContract });
     else deterministicRows.push(deterministicEntry(row, index, active, reason));
   });
-  const batches = chunkRows(modelRows, batchSize);
-  return { plan_version: "priority_row_plan_v1", mode: "priority_first", batch_size: Math.max(1, Number(batchSize || 8)), active_archetypes: [...active.archetypes].sort(), active_surfaces: [...active.surfaces].sort(), model_rows: modelRows, model_batches: batches, deterministic_rows: deterministicRows, route_records: routeRecords, counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length }, routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {}) };
+
+  const batching = buildStage7ArchetypeBatches({ modelRows, routeRecords, minRows: 8, maxRows: Math.max(8, Math.min(15, Number(batchSize || 15))) });
+  const batches = batching.batches;
+  return {
+    plan_version: "priority_row_plan_v2",
+    mode: "priority_first_route_contract_batched",
+    batch_size: { min: batching.min_rows, max: batching.max_rows },
+    batching_strategy: batching.strategy,
+    active_archetypes: activeArchetypes,
+    active_surfaces: activeSurfaces,
+    model_rows: modelRows,
+    model_batches: batches,
+    model_batch_records: batching.batch_records,
+    deterministic_rows: deterministicRows,
+    route_records: routeRecords,
+    batch_warnings: batching.warnings,
+    counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length },
+    routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {})
+  };
 }
 
 export function mergePriorityRows({ modelRows = [], deterministicRows = [], sourceRows = [] } = {}) {
