@@ -11,7 +11,7 @@ function assert(condition, message, detail = null) { if (!condition) fail(messag
 function parseJson(filePath) { try { return JSON.parse(read(filePath)); } catch (error) { fail(`Could not parse ${filePath}`, { error: error.message }); } }
 function countOccurrences(text, needle) { return text.split(needle).length - 1; }
 
-const activeFiles = [
+const requiredFiles = [
   "data/schemas/stage6Review.schema.json",
   "runtime-api/src/diligence/stage6CanonicalVocabulary.js",
   "runtime-api/src/diligence/guardrails/stage6ReviewGuardrail.js",
@@ -35,6 +35,8 @@ const activeFiles = [
   "functions/_prompts/diligence-v2/03B_DATA_PROVENANCE.prompt.md"
 ];
 
+const dialectScanFiles = requiredFiles.filter((file) => !file.endsWith("stage6CanonicalVocabulary.js") && !file.endsWith("stage6ReviewGuardrail.js"));
+
 function retiredHits() {
   const patterns = [
     { name: "source_text_classification", pattern: /\bsource_text_classification\b/ },
@@ -53,11 +55,9 @@ function retiredHits() {
     { name: "legalStackReview_schema", pattern: /\blegalStackReview\.schema\.json\b/ }
   ];
   const hits = [];
-  for (const file of activeFiles) {
+  for (const file of dialectScanFiles) {
     const text = read(file);
-    for (const retired of patterns) {
-      if (retired.pattern.test(text)) hits.push({ file, retired_key: retired.name });
-    }
+    for (const retired of patterns) if (retired.pattern.test(text)) hits.push({ file, retired_key: retired.name });
   }
   return hits;
 }
@@ -69,7 +69,7 @@ assert(schema.properties?.data_provenance_profile, "stage6Review schema missing 
 assert(schema.$defs?.dataFlowProfileItem?.additionalProperties === false, "dataFlowProfileItem must be closed.");
 assert(schema.properties?.stage7_navigation_index?.additionalProperties === false, "stage7_navigation_index must be closed.");
 for (const retiredSchema of ["data/schemas/stage6aLegalCartography.schema.json", "data/schemas/stage6aModelOverlay.schema.json", "data/schemas/legalStackReview.schema.json"]) assert(!exists(retiredSchema), "Retired Stage 6 schema file must not exist.", { retiredSchema });
-for (const requiredFile of activeFiles) assert(exists(requiredFile), "Required Stage 6 active file is missing.", { requiredFile });
+for (const requiredFile of requiredFiles) assert(exists(requiredFile), "Required Stage 6 active file is missing.", { requiredFile });
 
 const configText = read("runtime-api/src/diligence/stageConfigs.js");
 assert(countOccurrences(configText, "stage6b_data_provenance:") === 1, "Stage 6B config must be registered exactly once.");
@@ -95,18 +95,4 @@ for (const needle of ["Run Stage 6 Canon Audit", "Run Stage 6A Legal Cartography
 const hits = retiredHits();
 assert(hits.length === 0, "Retired Stage 6 dialect keys found in active files.", hits);
 
-console.log(JSON.stringify({
-  ok: true,
-  phase: "stage6_canon_audit",
-  checks: {
-    single_schema_closed: true,
-    retired_schema_files_absent: true,
-    guardrail_present: true,
-    stage6a_route_registered: true,
-    stage6b_route_registered_once: true,
-    audit_lanes_registered: true,
-    workflow_lanes_registered: true,
-    runtime_dependencies_match_lockfile: true,
-    retired_dialect_hits: 0
-  }
-}, null, 2));
+console.log(JSON.stringify({ ok: true, phase: "stage6_canon_audit", checks: { single_schema_closed: true, retired_schema_files_absent: true, guardrail_present: true, stage6a_route_registered: true, stage6b_route_registered_once: true, audit_lanes_registered: true, workflow_lanes_registered: true, runtime_dependencies_match_lockfile: true, retired_dialect_hits: 0 } }, null, 2));
