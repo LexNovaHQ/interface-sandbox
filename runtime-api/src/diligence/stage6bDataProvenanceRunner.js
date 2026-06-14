@@ -135,7 +135,8 @@ export async function runStage6BDataProvenanceClassification({ input = {}, promp
 export async function runStage6BDataProvenance({ source_bundle, target_profile, company_profile, target_feature_profile, evidence_junction, runtime_options = {}, promptText = "", env = process.env } = {}) {
   const input = { source_bundle, target_profile: target_profile || company_profile, company_profile: company_profile || target_profile, target_feature_profile, evidence_junction };
   const options = runtime_options || {};
-  if (options.disableSemanticClassification === true || env.STAGE6_DISABLE_SEMANTIC_MODEL === "true") {
+  const deterministicOnlyAllowed = env.STAGE6_ALLOW_DETERMINISTIC_ONLY === "true";
+  if (deterministicOnlyAllowed && options.disableSemanticClassification === true) {
     const stage6Review = buildStage6BDataProvenance(input);
     const finalValidation = validateFinalStage6B(stage6Review, input, false);
     if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail) };
@@ -153,7 +154,7 @@ export async function runStage6BDataProvenance({ source_bundle, target_profile, 
       model_metadata: null
     };
   }
-  const result = await runStage6BDataProvenanceClassification({ input, promptText, env, options });
+  const result = await runStage6BDataProvenanceClassification({ input, promptText, env, options: { ...options, disableSemanticClassification: false } });
   return { ...result, semantic_model_attempted: true };
 }
 
