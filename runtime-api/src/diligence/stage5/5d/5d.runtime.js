@@ -3,7 +3,7 @@ import path from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import { assertLosslessPrimaryEvidence, assertNoPlaceholderEvidence, assertWindowIsVerbatim } from "../stage5.runtime.js";
 import { buildStage5DIntegratorInput } from "./5d.prompt.js";
-import { STAGE5D_INTERNAL_ONLY_FIELDS, STAGE5D_OUTPUT_VERSION, TARGET_FEATURE_PROFILE_HANDOFF_KEYS } from "./5d.dictionary.js";
+import { STAGE5D_INTERNAL_ONLY_FIELDS, STAGE5D_OUTPUT_VERSION, STAGE5D_REINVESTIGATION_STATUS, TARGET_FEATURE_PROFILE_HANDOFF_KEYS } from "./5d.dictionary.js";
 
 function delivery(channels = []) {
   return {
@@ -71,8 +71,13 @@ function sameStringSet(left = [], right = []) {
   return a.length === b.length && a.every((item, index) => item === b[index]);
 }
 
+function isReinvestigationProfile(profile = {}) {
+  return profile.classification_quality?.reinvestigation_required === true || profile.classification_quality?.status === STAGE5D_REINVESTIGATION_STATUS;
+}
+
 export function assertTargetFeatureProfileHandoffContract(profile = {}) {
   const topLevelKeys = Object.keys(profile);
+  const reinvestigationProfile = isReinvestigationProfile(profile);
   if (!sameStringSet(topLevelKeys, TARGET_FEATURE_PROFILE_HANDOFF_KEYS)) {
     throwContractViolation("target_feature_profile top-level keys changed.", {
       expected: TARGET_FEATURE_PROFILE_HANDOFF_KEYS,
@@ -90,8 +95,22 @@ export function assertTargetFeatureProfileHandoffContract(profile = {}) {
   if (!Array.isArray(profile.product_feature_map) || profile.product_feature_map.length !== 0) {
     throwContractViolation("product_feature_map must remain the empty legacy compatibility alias.", { product_feature_map_length: profile.product_feature_map?.length });
   }
-  if (!Array.isArray(profile.feature_inventory) || !profile.feature_inventory.length) {
+  if (!Array.isArray(profile.feature_inventory)) {
     throwContractViolation("feature_inventory must remain the downstream feature array.");
+  }
+  if (!profile.feature_inventory.length && !reinvestigationProfile) {
+    throwContractViolation("feature_inventory may be empty only when classification_quality.reinvestigation_required is true.");
+  }
+  if (reinvestigationProfile) {
+    if (profile.classification_quality?.reinvestigation_required !== true) {
+      throwContractViolation("Reinvestigation profiles must set classification_quality.reinvestigation_required=true.");
+    }
+    if (!Array.isArray(profile.unresolved_feature_candidates)) {
+      throwContractViolation("Reinvestigation profiles must preserve unresolved_feature_candidates array.");
+    }
+    if (!Array.isArray(profile.evidence?.unresolved_questions)) {
+      throwContractViolation("Reinvestigation profiles must preserve evidence.unresolved_questions array.");
+    }
   }
   if (!Array.isArray(profile.data_provenance_map) || !Array.isArray(profile.regulated_surface_map)) {
     throwContractViolation("Stage 5D must emit flat downstream maps for data_provenance_map and regulated_surface_map.");
@@ -142,7 +161,7 @@ function buildFeature(record, tag, windows) {
     data_provenance: dataProvenance,
     archetype_codes: record.archetype_codes,
     archetype_labels: record.archetype_labels,
-    archetype_provenance: record.archetype_codes.map((code, index) => ({
+    archetype_provenance: record.archetype_codes.map((code) => ({
       archetype_code: code,
       registry_key_detection_logic: "Assigned in 5B from cited product-function evidence windows.",
       matched_feature_behavior: record.system_action,
@@ -170,9 +189,9 @@ export async function runStage5D({ canonicalInput, stage5a, stage5b, stage5c, sc
   assertLosslessPrimaryEvidence(canonicalInput);
   const windows = windowMap(stage5a, stage5b, stage5c);
   for (const window of windows.values()) assertWindowIsVerbatim(sourceForWindow(canonicalInput, window), window);
-  for (const fn of stage5a?.admitted_functions || []) if (!fn.source_window_refs?.length) throw new Error("5D blocked: 5A function without source windows.");
-  for (const tag of stage5b?.feature_tags || []) if (!tag.source_window_refs?.length) throw new Error("5D blocked: 5B tag without source windows.");
-  for (const record of stage5c?.complete_feature_records || []) if (!record.evidence_window_refs?.length) throw new Error("5D blocked: 5C record without source windows.");
+  for (const fn of stage5a?.admitted_functions || []) if (!fn.source_window_refs?.length) throw new Error("5D reinvestigation required: 5A function without source windows.");
+  for (const tag of stage5b?.feature_tags || []) if (!tag.source_window_refs?.length) throw new Error("5D reinvestigation required: 5B tag without source windows.");
+  for (const record of stage5c?.complete_feature_records || []) if (!record.evidence_window_refs?.length) throw new Error("5D reinvestigation required: 5C record without source windows.");
 
   const tagsByFunction = new Map((stage5b?.feature_tags || []).map((tag) => [tag.function_id, tag]));
   const featureInventory = (stage5c?.complete_feature_records || []).map((record) => buildFeature(record, tagsByFunction.get(record.function_id), windows));
@@ -248,8 +267,8 @@ export async function runStage5D({ canonicalInput, stage5a, stage5b, stage5c, sc
   assertNoPlaceholderEvidence(profile, "target_feature_profile");
   const validation = validateWithSchema(profile, schemaValidator);
   if (!validation.ok) {
-    const error = new Error("Stage 5D target_feature_profile schema validation failed.");
-    error.code = "STAGE5D_SCHEMA_VALIDATION_FAILED";
+    const error = new Error("Stage 5D target_feature_profile schema validation failed; reinvestigation required.");
+    error.code = "STAGE5D_SCHEMA_VALIDATION_REINVESTIGATION_REQUIRED";
     error.validation = validation;
     throw error;
   }
@@ -258,7 +277,7 @@ export async function runStage5D({ canonicalInput, stage5a, stage5b, stage5c, sc
     stage5d_output_version: STAGE5D_OUTPUT_VERSION,
     target_feature_profile: profile,
     prompt_input: buildStage5DIntegratorInput({ canonicalInput, stage5a, stage5b, stage5c }),
-    validation,
+    validation: { ...validation, reinvestigation_required: false, blocking: false, reinvestigation_requests: [] },
     forensic_log: { substage: "5D", run_id: runContext?.runId || null }
   };
 }
