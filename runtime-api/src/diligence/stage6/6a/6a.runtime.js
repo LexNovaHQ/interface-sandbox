@@ -24,7 +24,7 @@ import {
 } from './6a.dictionary.js';
 
 export function inferDocumentType(source = {}) {
-  const corpus = `${asText(source.source_title)} ${asText(source.source_url)} ${asText(source.clean_text_lossless).slice(0, 5000)}`.toLowerCase();
+  const corpus = `${asText(source.source_title)} ${asText(source.source_url)} ${asText(source.clean_text_lossless)}`.toLowerCase();
   for (const candidate of STAGE6A_DOCUMENT_TYPE_KEYWORDS) {
     if (candidate.terms.some((term) => corpus.includes(term.toLowerCase()))) return candidate.type;
   }
