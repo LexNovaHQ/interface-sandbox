@@ -18,7 +18,7 @@
     "test:stage3": "node src/diligence/evidenceJunction.test.mjs",
     "e2e:stage3": "node scripts/e2e-stage3-evidence-junction.mjs",
     "e2e:stage4:company": "node scripts/e2e-stage4-company-profile.mjs",
-    "e2e:stage5:features": "node scripts/e2e-stage5-target-feature-profile.mjs && node scripts/e2e-stage5-completeness-audit.mjs",
+    "e2e:stage5:features": "node scripts/e2e-stage5-full-runtime.mjs",
     "e2e:stage5a:product-function-discovery": "node scripts/e2e-stage5a-product-function-discovery.mjs",
     "e2e:stage5b:archetype-surface-tagging": "node scripts/e2e-stage5b-archetype-surface-tagging.mjs",
     "e2e:stage5c:complete-feature-records": "node scripts/e2e-stage5c-complete-feature-records.mjs",
@@ -44,8 +44,7 @@
   "dependencies": {
     "@google/genai": "^1.33.0",
     "ajv": "^8.20.0",
-    "cors": "^2.8.5",
-    "express": "^4.22.2",
+    "cors": "^4.22.2",
     "helmet": "^8.1.5",
     "pdf-parse": "^1.1.1"
   }
