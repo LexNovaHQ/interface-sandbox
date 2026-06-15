@@ -36,6 +36,13 @@ function dataProfileFromArgs(args = {}, input = {}) {
     || null;
 }
 
+function evidenceExpansionModeFromBatch(batch = {}, budget = {}) {
+  const mode = String(budget.stage7_source_text_mode || budget.source_text_mode || "").trim().toLowerCase();
+  if (["full", "full_text", "raw_full_text", "expansion"].includes(mode)) return true;
+  if (["profile", "profile_only", "manifest", "manifest_only"].includes(mode)) return false;
+  return Boolean(batch?.reinvestigation_request);
+}
+
 export function buildRegistryLedgerInput(args = {}) {
   const base = buildBaseRegistryLedgerInput(args);
   if (!base?.registry_ledger_input) return base;
@@ -60,7 +67,7 @@ export function buildRegistryLedgerInput(args = {}) {
     dataProvenanceProfile: dataProfileFromArgs(args, base.registry_ledger_input),
     stage6Review: asObject(args.stage6Review || base.registry_ledger_input.stage6_review),
     registryBatch: batch,
-    expansionMode: Boolean(batch.reinvestigation_request?.evidence_expansion_required || batch.reinvestigation_request?.request_type === "stage7_evidence_expansion")
+    expansionMode: evidenceExpansionModeFromBatch(batch, args.budget || {})
   });
   base.registry_ledger_input.stage7_evidence_safety = evidenceSafety;
   base.registry_ledger_input.stage7_evidence_coverage_manifest = evidenceSafety.coverage_manifest;
