@@ -1,2 +1,3 @@
 #!/usr/bin/env node
-console.log(JSON.stringify({ ok: true, step: "stage5_strict_completeness_audit" }, null, 2));
+/* RETIRED LEGACY STAGE 5 SCRIPT. Use e2e-stage5-full-runtime.mjs. */
+throw new Error("RETIRED_LEGACY_STAGE5_SCRIPT");
