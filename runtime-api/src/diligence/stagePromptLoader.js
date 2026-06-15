@@ -1,21 +1,12 @@
 import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
+import { stage7RouteRuleText } from "./stage7RouteContract.js";
 
 const STAGE7_ROUTE_CONTRACT_RULES = `
 
 ---STAGE_7_DETERMINISTIC_ROUTE_CONTRACT_RULES---
 
-Runtime-applicable rows are rows whose route_reason is UNI_ALWAYS_RUN, STAGE5_INT_TRIGGERED, or CONDITIONAL_DOC_REVIEW.
-
-Runtime-applicable rows must not receive NOT_APPLICABLE.
-
-For runtime-applicable rows, the only allowed final_status values are CONTROLLED, TRIGGERED, NOT_TRIGGERED, and INSUFFICIENT_EVIDENCE.
-
-Only deterministic skipped rows whose route_reason is INT_NOT_TRIGGERED may receive NOT_APPLICABLE.
-
-The model must not decide whether an archetype applies. Applicability is decided by Stage 5 and the deterministic Stage 7 planner before the model runs.
-
-CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route.
+${stage7RouteRuleText()}
 
 If evidence is thin for a runtime-applicable row, use INSUFFICIENT_EVIDENCE, not NOT_APPLICABLE.
 
@@ -151,29 +142,23 @@ function getCanonDictionaryPrompt() {
   const canonicalPromptId = DILIGENCE_PROMPT_BUNDLE.diligence_canon_field_dictionary_prompt_id || "diligence_canon_field_dictionary";
   const canonical = getPromptIfAvailable(canonicalPromptId);
   if (canonical) return { prompt: canonical, mode: "canonical" };
-
   const legacyPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
   const legacy = getPromptIfAvailable(legacyPromptId);
   if (legacy) return { prompt: legacy, mode: "legacy_stage4_stage5" };
-
   return { prompt: null, mode: "missing" };
 }
 
 function canonFieldDictionaryAppendix(stageId) {
   const blockNames = CANON_BLOCKS_BY_STAGE[stageId];
   if (!blockNames?.length) return "";
-
   const { prompt: dictionary, mode } = getCanonDictionaryPrompt();
   if (!dictionary?.text) return "";
-
   if (mode === "legacy_stage4_stage5") {
     if (stageId !== "company_profile" && stageId !== "target_feature_profile") return "";
     return `\n\n---LEGACY_STAGE_4_5_CANON_FIELD_DICTIONARY_FALLBACK---\n\n${dictionary.text.trim()}`;
   }
-
   const sections = blockNames.map((blockName) => extractCanonBlock(dictionary.text, blockName)).filter(Boolean);
   if (!sections.length) return "";
-
   return `\n\n---DILIGENCE_CANON_FIELD_DICTIONARY---\n\n${sections.join("\n\n---\n\n")}`;
 }
 
@@ -188,24 +173,40 @@ function runtimePromptAppendixFor(stageId) {
   return parts.join("");
 }
 
+function promptMeta(prompt) {
+  return prompt ? {
+    prompt_id: prompt.prompt_id,
+    file_name: prompt.file_name,
+    path: prompt.path,
+    sha256: prompt.sha256,
+    characters: prompt.characters
+  } : null;
+}
+
 export function loadDiligencePrompt(stageId) {
   const normalizedStageId = String(stageId || "").trim();
   if (!getDiligenceStageIds().includes(normalizedStageId)) throw new Error(`Unknown Diligence prompt stage "${stageId}".`);
-  const sharedPromptId = DILIGENCE_PROMPT_BUNDLE.shared_prompt_id;
-  const stagePromptId = DILIGENCE_PROMPT_BUNDLE.stage_prompt_ids?.[normalizedStageId];
+  const sharedPrompt = getPrompt(DILIGENCE_PROMPT_BUNDLE.shared_prompt_id);
+  const stagePrompt = getPrompt(DILIGENCE_PROMPT_BUNDLE.stage_prompt_ids?.[normalizedStageId]);
   const stageConfig = getDiligenceStageConfig(normalizedStageId);
-  const sharedPrompt = getPrompt(sharedPromptId);
-  const stagePrompt = getPrompt(stagePromptId);
   const promptParts = [sharedPrompt.text.trim(), "\n\n---\n\n", stagePrompt.text.trim()];
   const runtimeAppendix = runtimePromptAppendixFor(normalizedStageId);
   if (runtimeAppendix) promptParts.push(runtimeAppendix);
   if (stageConfig.runtime_instruction) promptParts.push("\n\n---STAGE_CONTEXT---\n\n", stageConfig.runtime_instruction.trim());
   const combinedPrompt = promptParts.join("");
   const canonicalPromptId = DILIGENCE_PROMPT_BUNDLE.diligence_canon_field_dictionary_prompt_id || "diligence_canon_field_dictionary";
-  const canonicalDictionary = getPromptIfAvailable(canonicalPromptId);
   const legacyPromptId = DILIGENCE_PROMPT_BUNDLE.stage4_stage5_field_dictionary_prompt_id || "stage4_stage5_field_dictionary";
-  const legacyDictionary = getPromptIfAvailable(legacyPromptId);
-  return { stage_id: normalizedStageId, prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root, bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at, shared_prompt: { prompt_id: sharedPrompt.prompt_id, file_name: sharedPrompt.file_name, path: sharedPrompt.path, sha256: sharedPrompt.sha256, characters: sharedPrompt.characters }, stage_prompt: { prompt_id: stagePrompt.prompt_id, file_name: stagePrompt.file_name, path: stagePrompt.path, sha256: stagePrompt.sha256, characters: stagePrompt.characters }, canon_field_dictionary: canonicalDictionary ? { prompt_id: canonicalDictionary.prompt_id, file_name: canonicalDictionary.file_name, path: canonicalDictionary.path, sha256: canonicalDictionary.sha256, characters: canonicalDictionary.characters } : null, legacy_stage4_stage5_field_dictionary: legacyDictionary ? { prompt_id: legacyDictionary.prompt_id, file_name: legacyDictionary.file_name, path: legacyDictionary.path, sha256: legacyDictionary.sha256, characters: legacyDictionary.characters } : null, combined_prompt: combinedPrompt, combined_characters: combinedPrompt.length };
+  return {
+    stage_id: normalizedStageId,
+    prompt_root: DILIGENCE_PROMPT_BUNDLE.prompt_root,
+    bundle_generated_at: DILIGENCE_PROMPT_BUNDLE.generated_at,
+    shared_prompt: promptMeta(sharedPrompt),
+    stage_prompt: promptMeta(stagePrompt),
+    canon_field_dictionary: promptMeta(getPromptIfAvailable(canonicalPromptId)),
+    legacy_stage4_stage5_field_dictionary: promptMeta(getPromptIfAvailable(legacyPromptId)),
+    combined_prompt: combinedPrompt,
+    combined_characters: combinedPrompt.length
+  };
 }
 
 export function assertDiligencePromptBundleReady() {
