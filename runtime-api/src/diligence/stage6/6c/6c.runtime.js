@@ -275,9 +275,7 @@ export function buildStage6CIntegratedDataProvenanceProfile(stage6cInput = {}) {
   }
 
   for (const legalFinding of legalFindings) {
-    if (!usedLegal.has(legalFinding.legal_flow_id)) {
-      rows.push(buildIntegrationRow({ legalFinding, index: rows.length }));
-    }
+    if (!usedLegal.has(legalFinding.legal_flow_id)) rows.push(buildIntegrationRow({ legalFinding, index: rows.length }));
   }
 
   const unmatchedProduct = rows.filter((row) => row.alignment_status === STAGE6C_ALIGNMENT_STATUS.PRODUCT_OBSERVED_BUT_LEGAL_SOURCE_SILENT);
@@ -394,16 +392,15 @@ export function validateStage6CIntegratedDataProvenance(stage6cOutput = {}, { st
 }
 
 export async function runStage6CDataProvenanceIntegration({ stage6cInput = {}, canonicalStage6Input = {}, stage6aOutput = {}, stage6bOutput = {}, targetFeatureProfile = null, maxReinvestigationAttempts = 1 } = {}) {
+  const hasProvidedStage6cInput = Boolean(stage6cInput && Object.keys(asObject(stage6cInput)).length);
   const handoffValidation = validate6bTo6cHandoff({
     canonicalStage6Input,
     stage6aOutput,
     stage6bOutput,
     targetFeatureProfile,
-    proposedStage6cInput: stage6cInput
+    proposedStage6cInput: hasProvidedStage6cInput ? stage6cInput : null
   });
-  const effectiveStage6cInput = stage6cInput && Object.keys(asObject(stage6cInput)).length
-    ? stage6cInput
-    : handoffValidation.stage6c_input;
+  const effectiveStage6cInput = hasProvidedStage6cInput ? stage6cInput : handoffValidation.stage6c_input;
 
   if (handoffValidation.status === STAGE6_VALIDATION_STATUS.CONTRACT_VIOLATION) {
     return {
