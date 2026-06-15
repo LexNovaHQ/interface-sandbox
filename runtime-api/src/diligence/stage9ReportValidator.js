@@ -60,6 +60,15 @@ function validateSectionSubstance(reportData, errors, warnings, ledgerCounts) {
   if (!hasValue(reportData?.forensic_ledger_appendix?.condition_trigger_basis)) errors.push("forensic_ledger_appendix.condition_trigger_basis marker is missing");
   for (const [section, value] of Object.entries(reportData || {})) if (!hasValue(value)) warnings.push(`thin report section: ${section}`);
 }
+function validateProfileMode(stage9Report, errors) {
+  if (stage9Report?.profile_input_version !== "stage9_profile_input_v1") errors.push("Stage 9 must be assembled through stage9_profile_input_v1");
+  const profileValidation = stage9Report?.stage9_profile_input_validation || {};
+  for (const key of ["target_profile_present", "target_feature_profile_present", "legal_cartography_present", "data_provenance_profile_present", "exposure_profile_present", "stage8_quality_control_ledger_present"]) {
+    if (profileValidation[key] !== true) errors.push(`Stage 9 profile input validation failed: ${key}`);
+  }
+  if (Number(profileValidation.exposure_registry_ledger_count || 0) <= 0) errors.push("Stage 9 exposure_profile.registry_ledger is empty after Stage 8 quality-control overlay");
+  if (stage9Report?.source_meta?.effective_registry_ledger_source !== "exposure_profile.registry_ledger_after_stage8_quality_control_overlay") errors.push("Stage 9 effective registry ledger source is not the corrected exposure profile");
+}
 
 export function validateStage9Report({ stage9Report, postChallengeLedger, registryRuntime }) {
   const errors = [];
@@ -67,6 +76,7 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
   const report = stage9Report?.report;
   const reportData = report?.report_data;
   if (stage9Report?.stage9_report_version !== "stage9_report_v2") errors.push("stage9_report_version must be stage9_report_v2");
+  validateProfileMode(stage9Report, errors);
   if (!report || typeof report !== "object") errors.push("report object missing");
   if (!reportData || typeof reportData !== "object") errors.push("report.report_data object missing");
   if (reportData) {
