@@ -18,11 +18,14 @@ import "../src/diligence/stage7EvidenceSafetyPacket.js";
 import "../src/diligence/stage7ExposureProfileBuilder.js";
 import "../src/diligence/stage9CanonicalProfileInputAdapter.js";
 import "../src/diligence/stage9ProfileInputAdapter.js";
-import "../src/diligence/stage9QualityControlOverlay.js";
 import "../src/diligence/stage9ReportAssembler.js";
 import "../src/diligence/stage9ReportValidator.js";
+import "../src/handoff/stage10CanonicalSourcePacketBuilder.js";
 import "../src/handoff/stage10SourcePacketBuilder.js";
+import "../src/handoff/vaultPrefillFromStage10Canonical.js";
+import "../src/handoff/vaultQuestionsFromStage10Canonical.js";
 import "../src/handoff/stage9ToVaultHandoffAdapter.js";
+import "../src/handoff/reviewReadyHandoffValidatorCanonical.js";
 import "../src/handoff/reviewReadyHandoffValidator.js";
 
 console.log("canonical runtime import graph ok");
