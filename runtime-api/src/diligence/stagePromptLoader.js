@@ -13,6 +13,18 @@ If evidence is thin for a runtime-applicable row, use INSUFFICIENT_EVIDENCE, not
 If a runtime-applicable row does not trigger after Hunter_Trigger evaluation, use NOT_TRIGGERED, not NOT_APPLICABLE.
 `;
 
+const STAGE7_EVIDENCE_SAFETY_RULES = `
+
+---STAGE_7_EVIDENCE_SAFETY_AND_EXPANSION_RULES---
+
+1. Read stage7_evidence_safety and stage7_evidence_coverage_manifest before finalising any runtime-applicable row.
+2. Deterministic evidence packaging is an organising layer only. It is not proof that other supplied canonical profile evidence is irrelevant.
+3. Profiles are native stage handoff wrappers, not summaries. Use target_profile, target_feature_profile, legal_cartography/stage6_review, and data_provenance_profile/stage6_review fields as canonical evidence before declaring a gap.
+4. If a row's coverage manifest says required evidence classes are missing, or if the supplied packet appears unable to answer the Hunter_Trigger, do not present a final weakness as if the company failed the row. Mark the row INSUFFICIENT_EVIDENCE and set evidence_ref or reasoning_summary with EVIDENCE_PACKET_INSUFFICIENT plus the missing evidence class.
+5. UNKNOWN/INSUFFICIENT_EVIDENCE is acceptable only after the supplied profile evidence was reviewed, or where the packet itself is flagged insufficient so the runtime can trigger one row-level expansion pass.
+6. Do not use NOT_APPLICABLE for any runtime-applicable route. Do not let deterministic packet targeting cause under-reading.
+`;
+
 const REGISTRY_HUNTER_ENGINE_RULES = `
 
 ---MANDATORY_HUNTER_ENGINE_RULES---
@@ -169,7 +181,7 @@ function runtimePromptAppendixFor(stageId) {
   const stage6Spine = getPromptIfAvailable("stage6_canonical_spine");
   if (stageId === "stage6a_legal_document_cartography" && stage6Spine?.text) parts.push(`\n\n---DILIGENCE_STAGE_6_CANONICAL_SPINE---\n\n${stage6Spine.text.trim()}`);
   if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES, STAGE5_FIELD_DERIVATION_INSTRUCTIONS_V2);
-  if (stageId === "registry_ledger_evaluation") parts.push(STAGE7_ROUTE_CONTRACT_RULES, REGISTRY_HUNTER_ENGINE_RULES);
+  if (stageId === "registry_ledger_evaluation") parts.push(STAGE7_ROUTE_CONTRACT_RULES, STAGE7_EVIDENCE_SAFETY_RULES, REGISTRY_HUNTER_ENGINE_RULES);
   return parts.join("");
 }
 
