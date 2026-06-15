@@ -150,7 +150,8 @@ function fail(message, detail = {}) {
 }
 
 function profileHandoffs({ internal = {}, stage10Handoff = {}, stage9ReportData = {} } = {}) {
-  const sourcePacket = safeObject(stage10Handoff.stage10_source_packet || stage10Handoff.assembly_handoff?.stage10_source_packet);
+  const handoff = safeObject(stage10Handoff);
+  const sourcePacket = safeObject(handoff.stage10_source_packet || handoff.assembly_handoff?.stage10_source_packet);
   const packetProfiles = safeObject(sourcePacket.profile_handoffs);
   const stage6Cache = safeObject(internal.stage6Cache);
   const stage7Artifact = safeObject(internal.stage7Artifact);
@@ -216,6 +217,12 @@ if (!runtimeStatusResponse.ok || runtimeStatusResponse.body?.ok === false) fail(
 
 const liveRunResponse = await postJson(`${runtimeUrl}${LIVE_RUN_ENDPOINT}`, liveRunRequest);
 writeJson("01-live-run-result.full.json", liveRunResponse.body);
+if (!liveRunResponse.ok || liveRunResponse.body?.non_json_body) {
+  fail("Live run request failed before canonical artifact validation.", {
+    status: liveRunResponse.status,
+    body: liveRunResponse.body
+  });
+}
 
 const liveRunResult = liveRunResponse.body || {};
 const stage9ReportData = liveRunResult.stage9_report_data || null;
