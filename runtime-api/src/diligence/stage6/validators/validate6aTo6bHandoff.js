@@ -36,10 +36,16 @@ function hasDataLanguage(text = '') {
   return STAGE6_DATA_LANGUAGE_TERMS.some((term) => haystack.includes(term.toLowerCase()));
 }
 
+function nonEmptyObject(value) {
+  const obj = asObject(value);
+  return Object.keys(obj).length ? obj : null;
+}
+
 function normalizeLegalCartography(stage6aOutput = {}, proposedStage6bInput = {}) {
-  return asObject(stage6aOutput.legal_cartography)
-    || asObject(proposedStage6bInput.reference?.legal_cartography)
-    || asObject(proposedStage6bInput.legal_cartography);
+  return nonEmptyObject(stage6aOutput.legal_cartography)
+    || nonEmptyObject(proposedStage6bInput.reference?.legal_cartography)
+    || nonEmptyObject(proposedStage6bInput.legal_cartography)
+    || {};
 }
 
 function legalWindowById(legalCartography = {}) {
