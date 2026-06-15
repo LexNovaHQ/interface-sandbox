@@ -1,5 +1,6 @@
 import { validateTargetFeatureProfileGuardrails as validateBaseGuardrails } from "./targetFeatureProfileGuardrailsLocked.js";
 import { validateTargetFeatureProfileGuardrails as validateCompletenessGuardrails } from "./targetFeatureProfileGuardrailsCompleteness.js";
+import { validateStage5FeatureQuality } from "./targetFeatureProfileGuardrailsQuality.js";
 
 const NULL_COMPLETENESS_HELPER_PATTERNS = [
   "mapped_feature_ids",
@@ -35,12 +36,16 @@ function appendCompletenessFallbackWarning(profile, result, error) {
 
 export function validateTargetFeatureProfileGuardrails(profile, options = {}) {
   try {
-    return validateCompletenessGuardrails(profile, options);
+    const result = validateCompletenessGuardrails(profile, options);
+    validateStage5FeatureQuality(profile, result, options);
+    result.ok = Array.isArray(result.errors) ? result.errors.length === 0 : result.ok;
+    return result;
   } catch (error) {
     if (!isNullCompletenessHelperError(error)) throw error;
 
     const result = validateBaseGuardrails(profile, options);
     appendCompletenessFallbackWarning(profile, result, error);
+    validateStage5FeatureQuality(profile, result, options);
     result.ok = Array.isArray(result.errors) ? result.errors.length === 0 : result.ok;
     return result;
   }
