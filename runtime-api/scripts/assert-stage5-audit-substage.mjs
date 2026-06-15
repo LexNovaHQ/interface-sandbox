@@ -90,6 +90,19 @@ function requireSummary(stageId, direction) {
   return { name, artifact };
 }
 
+function requireForensic(stageId) {
+  const name = `${stageId}-forensic-summary.json`;
+  const filePath = path.join(outputRoot, name);
+  if (!fs.existsSync(filePath)) throw new Error(`${name} missing for ${stageId}`);
+  const artifact = readJson(name);
+  if (artifact.stage_id !== stageId || artifact.artifact_type !== "full_live_runtime_audit_stage_forensic_summary") throw new Error(`${name} has invalid forensic identity.`);
+  if (artifact.ok === false) throw new Error(`${name} reports ok=false.`);
+  if (!artifact.duration || typeof artifact.duration.duration_ms !== "number") throw new Error(`${name} missing duration.duration_ms.`);
+  if (!artifact.token_usage || typeof artifact.token_usage !== "object") throw new Error(`${name} missing token_usage object.`);
+  if (!Array.isArray(artifact.artifact_integrity) || !artifact.artifact_integrity.length) throw new Error(`${name} missing artifact_integrity.`);
+  return { name, artifact };
+}
+
 if (!SUBSTAGES[substageArg]) {
   console.error(`Usage: node scripts/assert-stage5-audit-substage.mjs <5a|5b|5c|5d>`);
   process.exit(2);
@@ -104,11 +117,13 @@ if (!fs.existsSync(artifactPath)) {
 
 let inputSummary;
 let outputSummary;
+let forensicSummary;
 try {
   inputSummary = requireSummary(spec.summary_stage_id, "input");
   outputSummary = requireSummary(spec.summary_stage_id, "output");
+  forensicSummary = requireForensic(spec.summary_stage_id);
 } catch (error) {
-  console.log(`::error title=${spec.label} missing input/output summary::${error?.message || String(error)}`);
+  console.log(`::error title=${spec.label} missing audit summary::${error?.message || String(error)}`);
   process.exit(1);
 }
 
@@ -146,9 +161,14 @@ const markdown = `## ${spec.label}\n\n` +
   `| Status | ${status} |\n` +
   `| Input summary | ${inputSummary.name} |\n` +
   `| Output summary | ${outputSummary.name} |\n` +
+  `| Forensic summary | ${forensicSummary.name} |\n` +
   `| Artifact | ${spec.artifact} |\n` +
   `| Primary rows | ${rows.length} |\n` +
   `| Source windows | ${windows.length} |\n` +
+  `| Duration ms | ${forensicSummary.artifact.duration.duration_ms} |\n` +
+  `| Duration source | ${forensicSummary.artifact.duration.duration_source} |\n` +
+  `| Token fields | ${forensicSummary.artifact.token_usage.fields_found} |\n` +
+  `| Total tokens | ${forensicSummary.artifact.token_usage.total_tokens ?? ""} |\n` +
   `| Reinvestigation required | ${validation.reinvestigation_required} |\n` +
   `| Reinvestigation requests | ${validation.reinvestigation_request_count} |\n` +
   `| Failures | ${failures.length ? failures.join("; ") : "none"} |\n` +
@@ -160,4 +180,4 @@ if (failures.length) {
   process.exit(1);
 }
 if (warnings.length) console.log(`::warning title=${spec.label}::${warnings.join("; ")}`);
-console.log(JSON.stringify({ ok: true, substage: substageArg.toUpperCase(), status, input_summary: inputSummary.name, output_summary: outputSummary.name, artifact: spec.artifact, primary_rows: rows.length, source_windows: windows.length, validation, warnings }, null, 2));
+console.log(JSON.stringify({ ok: true, substage: substageArg.toUpperCase(), status, input_summary: inputSummary.name, output_summary: outputSummary.name, forensic_summary: forensicSummary.name, artifact: spec.artifact, primary_rows: rows.length, source_windows: windows.length, validation, duration: forensicSummary.artifact.duration, token_usage: forensicSummary.artifact.token_usage, warnings }, null, 2));
