@@ -40,6 +40,14 @@ export const STAGE5_LEGACY_PARKED_COMPONENTS = Object.freeze([
   "5a/stage5aProductFamilyInputAdapter.js",
   "5a/stage5aLosslessSourceIndexBuilder.js",
   "5a/stage5aDeterministicCandidatePoolBuilder.js",
+  "5a/stage5aInstructionBuilder.js",
+  "5a/stage5aPromptBuilder.js",
+  "5a/stage5aProductFunctionMapper.js",
+  "5a/stage5aOutputNormalizer.js",
+  "5a/stage5aValidator.js",
+  "5a/stage5aFeaturePackageBuilder.js",
+  "5a/stage5aForensicBuilder.js",
+  "5a/stage5aIndex.js",
   "5b/stage5bFeatureInvestigationPacketBuilder.js",
   "5c/stage5cInputJoiner.js",
   "5d/stage5dFeatureContextBuilder.js",
@@ -54,6 +62,7 @@ export const STAGE5_BLOCKING_ERROR_CODES = Object.freeze([
   "INDEX_AS_PRIMARY_EVIDENCE_BLOCKED",
   "PLACEHOLDER_EVIDENCE_BLOCKED",
   "STAGE5A_NO_ADMITTED_FUNCTIONS",
+  "STAGE5A_SOURCE_WINDOW_REF_VIOLATION",
   "STAGE5_FINAL_PROFILE_SCHEMA_VIOLATION"
 ]);
 
