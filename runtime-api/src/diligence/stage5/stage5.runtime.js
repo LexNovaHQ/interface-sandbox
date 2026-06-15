@@ -86,6 +86,16 @@ function routedFamilySources(container = {}) {
   );
 }
 
+function rawSourceBundleRecords(container = {}) {
+  const sourceRecords = asArray(container.raw_footprint?.source_records);
+  const productFamily = sourceRecords.filter((record) => sourceFamily(record, "").toLowerCase() === "product_family");
+  return productFamily.length ? productFamily : sourceRecords;
+}
+
+function evidenceBufferRecords(container = {}) {
+  return asArray(container.source_bundle?.evidence_buffer || container.evidence_buffer);
+}
+
 function candidateSources({ stage5Input = {}, adapterResult = {} } = {}) {
   return [
     ...asArray(stage5Input?.primary_evidence?.sources),
@@ -94,9 +104,13 @@ function candidateSources({ stage5Input = {}, adapterResult = {} } = {}) {
     ...routedFamilySources(adapterResult),
     ...routedFamilySources(stage5Input?.stage3_output || {}),
     ...routedFamilySources(adapterResult?.stage3_output || {}),
-    ...asArray(stage5Input?.source_bundle?.evidence_buffer),
-    ...asArray(adapterResult?.target_feature_profile_input?.source_bundle?.evidence_buffer),
-    ...asArray(adapterResult?.source_bundle?.evidence_buffer)
+    ...evidenceBufferRecords(stage5Input),
+    ...evidenceBufferRecords(adapterResult?.target_feature_profile_input || {}),
+    ...evidenceBufferRecords(adapterResult || {}),
+    ...rawSourceBundleRecords(stage5Input?.sourceBundle || {}),
+    ...rawSourceBundleRecords(stage5Input?.source_bundle || {}),
+    ...rawSourceBundleRecords(adapterResult?.sourceBundle || {}),
+    ...rawSourceBundleRecords(adapterResult?.source_bundle || {})
   ];
 }
 
