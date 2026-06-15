@@ -1,10 +1,18 @@
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { validateDiligenceStageOutput } from "./stageSchemaValidator.js";
 import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
-import {
-  STAGE5_COMPATIBILITY_TERMS,
-  canonicalCandidateCluster
-} from "./stage5TargetFeaturePackageBuilder.js";
+import { assertLosslessPrimaryEvidence } from "./stage5/stage5.runtime.js";
+
+const STAGE5_COMPATIBILITY_TERMS = {
+  api_platform: true, model_catalog: true, integration_connector: true,
+  embeddings: true, language_model: true, voice_agent: true,
+  document_digitisation: true, dubbing: true, translation: true,
+  speech_to_text: true, text_to_speech: true
+};
+
+function canonicalCandidateCluster(candidate = {}) {
+  return candidate.candidate_cluster || "api_platform";
+}
 
 const ARCHETYPES = Object.freeze({
   UNI: { label: "Universal", detection_logic: "No archetype gate — applies to every product regardless of behavior." },

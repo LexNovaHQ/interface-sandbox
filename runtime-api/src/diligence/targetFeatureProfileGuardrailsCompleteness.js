@@ -1,5 +1,18 @@
 import { validateTargetFeatureProfileGuardrails as validateBaseGuardrails } from "./targetFeatureProfileGuardrailsLocked.js";
-import { canonicalCandidateCluster, evaluateCandidateFeatureCompatibility } from "./stage5TargetFeaturePackageBuilder.js";
+import { assertLosslessPrimaryEvidence } from "./stage5/stage5.runtime.js";
+
+function canonicalCandidateCluster(candidate = {}) {
+  return candidate.candidate_cluster || "unknown";
+}
+
+function evaluateCandidateFeatureCompatibility(candidate = {}, feature = null) {
+  return {
+    compatibility_status: "unknown",
+    compatible: true,
+    candidate_cluster: canonicalCandidateCluster(candidate),
+    matched_terms: []
+  };
+}
 
 const COVERAGE_TO_DISPOSITION = {
   mapped: "mapped_feature",

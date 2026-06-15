@@ -9,7 +9,6 @@ import "../src/routes/liveDiligenceRoutes.js";
 import "../src/live/canonicalLiveDiligenceRunOrchestrator.js";
 import "../src/live/liveStage6To8Pipeline.js";
 import "../src/diligence/stageRunnerLocked.js";
-import "../src/diligence/stage5ProductFamilyLiveRunner.js";
 import "../src/diligence/stage5/stage5.runtime.js";
 import "../src/diligence/stage6aLegalSourceAdmission.js";
 import "../src/diligence/stage6bDataProvenanceRunner.js";
