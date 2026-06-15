@@ -41,44 +41,15 @@ const STAGE10_RETIRED_KEYS = new Set([
   "registry_reference"
 ]);
 
-function ensureDir(dir) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-function safeJson(value) {
-  return JSON.stringify(value ?? null, null, 2);
-}
-
-function writeText(name, text) {
-  ensureDir(outputRoot);
-  const filePath = path.join(outputRoot, name);
-  fs.writeFileSync(filePath, text, "utf8");
-  return filePath;
-}
-
-function writeJson(name, value) {
-  return writeText(name, safeJson(value));
-}
-
-function bytes(filePath) {
-  return fs.statSync(filePath).size;
-}
-
-function sha256(filePath) {
-  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
-}
-
-function safeObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-}
-
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
+function ensureDir(dir) { fs.mkdirSync(dir, { recursive: true }); }
+function safeJson(value) { return JSON.stringify(value ?? null, null, 2); }
+function writeText(name, text) { ensureDir(outputRoot); const filePath = path.join(outputRoot, name); fs.writeFileSync(filePath, text, "utf8"); return filePath; }
+function writeJson(name, value) { return writeText(name, safeJson(value)); }
+function bytes(filePath) { return fs.statSync(filePath).size; }
+function sha256(filePath) { return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex"); }
+function safeObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+function asArray(value) { return Array.isArray(value) ? value : []; }
+function nowIso() { return new Date().toISOString(); }
 
 function normalizeUrl(value) {
   const raw = String(value || "").trim();
@@ -96,24 +67,11 @@ function normalizeUrl(value) {
 
 async function readJsonResponse(response) {
   const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { non_json_body: text.slice(0, 10000) };
-  }
+  try { return JSON.parse(text); } catch { return { non_json_body: text.slice(0, 10000) }; }
 }
-
-async function getJson(url, headers = {}) {
-  const response = await fetch(url, { method: "GET", headers });
-  return { status: response.status, ok: response.ok, body: await readJsonResponse(response) };
-}
-
+async function getJson(url, headers = {}) { const response = await fetch(url, { method: "GET", headers }); return { status: response.status, ok: response.ok, body: await readJsonResponse(response) }; }
 async function postJson(url, payload, headers = {}) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(payload)
-  });
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(payload) });
   return { status: response.status, ok: response.ok, body: await readJsonResponse(response) };
 }
 
@@ -121,20 +79,15 @@ function scanKeys(value, retiredKeys, options = {}) {
   const findings = [];
   const maxFindings = options.maxFindings || 250;
   const skipPath = options.skipPath || (() => false);
-
   function walk(node, trail = []) {
     if (findings.length >= maxFindings || !node || typeof node !== "object" || skipPath(trail)) return;
-    if (Array.isArray(node)) {
-      node.forEach((item, index) => walk(item, trail.concat(String(index))));
-      return;
-    }
+    if (Array.isArray(node)) { node.forEach((item, index) => walk(item, trail.concat(String(index)))); return; }
     for (const [key, child] of Object.entries(node)) {
       const nextTrail = trail.concat(key);
       if (retiredKeys.has(key)) findings.push({ path: nextTrail.join("."), key });
       walk(child, nextTrail);
     }
   }
-
   walk(value, []);
   return findings;
 }
@@ -142,9 +95,7 @@ function scanKeys(value, retiredKeys, options = {}) {
 function stage9MainBody(stage9ReportData = {}) {
   const reportData = safeObject(stage9ReportData.report?.report_data);
   const out = {};
-  for (const [key, value] of Object.entries(reportData)) {
-    if (key !== "forensic_ledger_appendix") out[key] = value;
-  }
+  for (const [key, value] of Object.entries(reportData)) if (key !== "forensic_ledger_appendix") out[key] = value;
   return out;
 }
 
@@ -158,34 +109,23 @@ function stage10MainBody(stage10Handoff = {}) {
 function collectUsageMetadata(value) {
   const records = [];
   const seen = new Set();
-
   function walk(node, trail = []) {
     if (!node || typeof node !== "object") return;
     if (node.usage_metadata && typeof node.usage_metadata === "object") {
       const key = `${trail.join(".")}:${JSON.stringify(node.usage_metadata)}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        records.push({ path: trail.join("."), usage_metadata: node.usage_metadata });
-      }
+      if (!seen.has(key)) { seen.add(key); records.push({ path: trail.join("."), usage_metadata: node.usage_metadata }); }
     }
     if (Array.isArray(node)) node.forEach((item, index) => walk(item, trail.concat(String(index))));
     else for (const [key, child] of Object.entries(node)) walk(child, trail.concat(key));
   }
-
   walk(value, []);
   const totals = {};
-  for (const record of records) {
-    for (const [key, value] of Object.entries(record.usage_metadata || {})) {
-      if (typeof value === "number" && Number.isFinite(value)) totals[key] = (totals[key] || 0) + value;
-    }
-  }
+  for (const record of records) for (const [key, value] of Object.entries(record.usage_metadata || {})) if (typeof value === "number" && Number.isFinite(value)) totals[key] = (totals[key] || 0) + value;
   return { usage_metadata_count: records.length, totals, records };
 }
 
 function writeManifest(extra = {}) {
-  const files = fs.existsSync(outputRoot)
-    ? fs.readdirSync(outputRoot).filter((name) => name !== "16-artifact-manifest.json").sort()
-    : [];
+  const files = fs.existsSync(outputRoot) ? fs.readdirSync(outputRoot).filter((name) => name !== "21-artifact-manifest.json").sort() : [];
   const manifest = {
     ok: extra.ok !== false,
     audit_phase: "full_live_runtime_audit",
@@ -196,12 +136,9 @@ function writeManifest(extra = {}) {
     company_name: companyName,
     run_id: runId,
     ...extra,
-    files: files.map((name) => {
-      const filePath = path.join(outputRoot, name);
-      return { name, bytes: bytes(filePath), sha256: sha256(filePath) };
-    })
+    files: files.map((name) => { const filePath = path.join(outputRoot, name); return { name, bytes: bytes(filePath), sha256: sha256(filePath) }; })
   };
-  writeJson("16-artifact-manifest.json", manifest);
+  writeJson("21-artifact-manifest.json", manifest);
   return manifest;
 }
 
@@ -212,7 +149,25 @@ function fail(message, detail = {}) {
   process.exit(1);
 }
 
-function createSummaryMarkdown({ runtimeStatus, liveRunResult, leakageAudit, failedChecks }) {
+function profileHandoffs({ internal = {}, stage10Handoff = {}, stage9ReportData = {} } = {}) {
+  const sourcePacket = safeObject(stage10Handoff.stage10_source_packet || stage10Handoff.assembly_handoff?.stage10_source_packet);
+  const packetProfiles = safeObject(sourcePacket.profile_handoffs);
+  const stage6Cache = safeObject(internal.stage6Cache);
+  const stage7Artifact = safeObject(internal.stage7Artifact);
+  const qcLedger = safeObject(internal.stage8QualityControlLedger || internal.stage8Ledger || packetProfiles.stage8_quality_control_ledger);
+  return {
+    target_profile: safeObject(stage6Cache.target_profile || stage6Cache.company_profile || packetProfiles.target_profile || sourcePacket.target_profile_v2),
+    target_feature_profile: safeObject(stage6Cache.target_feature_profile || packetProfiles.target_feature_profile || sourcePacket.feature_profile_v2),
+    legal_cartography: safeObject(stage6Cache.legal_cartography || packetProfiles.legal_cartography || sourcePacket.legal_cartography || sourcePacket.stage6_review?.legal_document_cartography),
+    data_provenance_profile: safeObject(stage6Cache.data_provenance_profile || packetProfiles.data_provenance_profile || sourcePacket.data_provenance_profile || sourcePacket.stage6_review?.data_provenance_profile),
+    exposure_profile: safeObject(stage7Artifact.exposure_profile || packetProfiles.exposure_profile),
+    stage8_quality_control_ledger: qcLedger,
+    stage10_source_packet: sourcePacket,
+    stage9_profile_sources: safeObject(stage9ReportData.profile_sources)
+  };
+}
+
+function createSummaryMarkdown({ runtimeStatus, liveRunResult, leakageAudit, failedChecks, profiles }) {
   const validation = safeObject(liveRunResult.validation);
   const metrics = safeObject(liveRunResult.metrics);
   const stage10 = safeObject(liveRunResult.stage10_handoff);
@@ -227,6 +182,12 @@ function createSummaryMarkdown({ runtimeStatus, liveRunResult, leakageAudit, fai
     `- Live run OK: ${liveRunResult.ok === true}\n` +
     `- Stage 9 validation OK: ${validation.stage9?.ok === true}\n` +
     `- Stage 10 validation OK: ${validation.stage10?.ok === true}\n` +
+    `- Target profile present: ${Object.keys(profiles.target_profile || {}).length > 0}\n` +
+    `- Feature profile present: ${Object.keys(profiles.target_feature_profile || {}).length > 0}\n` +
+    `- Legal cartography present: ${Object.keys(profiles.legal_cartography || {}).length > 0}\n` +
+    `- Data provenance profile present: ${Object.keys(profiles.data_provenance_profile || {}).length > 0}\n` +
+    `- Exposure profile rows: ${asArray(profiles.exposure_profile?.registry_ledger).length}\n` +
+    `- Stage 8 QC artifact: ${profiles.stage8_quality_control_ledger?.artifact_type || "missing"}\n` +
     `- HTML bytes: ${metrics.html_bytes || 0}\n` +
     `- Source count: ${metrics.source_count || 0}\n` +
     `- Stage 7 rows: ${metrics.stage7_rows || 0}\n` +
@@ -243,42 +204,15 @@ if (!runtimeUrl) fail("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required.");
 if (!token) fail("RUNTIME_ACCESS_TOKEN is required for runtime-status smoke check.");
 
 const authHeaders = { "x-runtime-access-token": token };
-const targetInput = {
-  primary_url: normalizeUrl(targetUrl),
-  company_name: companyName,
-  submitted_at: nowIso(),
-  live_review_input_mode: "url_only"
-};
-
+const targetInput = { primary_url: normalizeUrl(targetUrl), company_name: companyName, submitted_at: nowIso(), live_review_input_mode: "url_only" };
 if (!targetInput.primary_url) fail("Invalid AUDIT_TARGET_URL/TARGET_URL.", { targetUrl });
 
-const liveRunRequest = {
-  input: targetInput,
-  options: {
-    include_internal_artifacts: true,
-    render_html: true,
-    run_handoff: true
-  }
-};
-
-writeJson("00-audit-request.json", {
-  ok: true,
-  audit_phase: "full_live_runtime_audit",
-  run_id: runId,
-  runtime_url: runtimeUrl,
-  target_input: targetInput,
-  endpoint_policy: "mirror_public_live_sandbox_run_only",
-  endpoint: LIVE_RUN_ENDPOINT,
-  status_endpoint: STATUS_ENDPOINT,
-  forbidden_endpoint: FORBIDDEN_STAGE_ENDPOINT,
-  options: liveRunRequest.options
-});
+const liveRunRequest = { input: targetInput, options: { include_internal_artifacts: true, render_html: true, run_handoff: true } };
+writeJson("00-audit-request.json", { ok: true, audit_phase: "full_live_runtime_audit", run_id: runId, runtime_url: runtimeUrl, target_input: targetInput, endpoint_policy: "mirror_public_live_sandbox_run_only", endpoint: LIVE_RUN_ENDPOINT, status_endpoint: STATUS_ENDPOINT, forbidden_endpoint: FORBIDDEN_STAGE_ENDPOINT, options: liveRunRequest.options });
 
 const runtimeStatusResponse = await getJson(`${runtimeUrl}${STATUS_ENDPOINT}`, authHeaders);
 writeJson("00-runtime-status.json", { status: runtimeStatusResponse.status, ok: runtimeStatusResponse.ok, body: runtimeStatusResponse.body });
-if (!runtimeStatusResponse.ok || runtimeStatusResponse.body?.ok === false) {
-  fail("Runtime status check failed.", { status: runtimeStatusResponse.status, body: runtimeStatusResponse.body });
-}
+if (!runtimeStatusResponse.ok || runtimeStatusResponse.body?.ok === false) fail("Runtime status check failed.", { status: runtimeStatusResponse.status, body: runtimeStatusResponse.body });
 
 const liveRunResponse = await postJson(`${runtimeUrl}${LIVE_RUN_ENDPOINT}`, liveRunRequest);
 writeJson("01-live-run-result.full.json", liveRunResponse.body);
@@ -289,48 +223,31 @@ const stage10Handoff = liveRunResult.stage10_handoff || null;
 const validation = safeObject(liveRunResult.validation);
 const internal = safeObject(liveRunResult.internal_artifacts);
 const htmlReport = typeof liveRunResult.html_report === "string" ? liveRunResult.html_report : "";
+const profiles = profileHandoffs({ internal, stage10Handoff, stage9ReportData });
 
-writeJson("01-live-run-result.summary.json", {
-  ok: liveRunResult.ok === true,
-  http_status: liveRunResponse.status,
-  phase: liveRunResult.phase || null,
-  run_id: liveRunResult.run_id || null,
-  mode: liveRunResult.mode || null,
-  stage_status_count: asArray(liveRunResult.stage_status).length,
-  has_stage9_report_data: Boolean(stage9ReportData),
-  has_html_report: Boolean(htmlReport),
-  has_stage10_handoff: Boolean(stage10Handoff),
-  has_internal_stage6_cache: Boolean(internal.stage6Cache),
-  has_internal_stage7_artifact: Boolean(internal.stage7Artifact),
-  has_internal_stage8_ledger: Boolean(internal.stage8Ledger),
-  stage9_validation_ok: validation.stage9?.ok === true,
-  stage10_validation_ok: validation.stage10?.ok === true,
-  metrics: liveRunResult.metrics || null,
-  warnings: liveRunResult.warnings || []
-});
+writeJson("01-live-run-result.summary.json", { ok: liveRunResult.ok === true, http_status: liveRunResponse.status, phase: liveRunResult.phase || null, run_id: liveRunResult.run_id || null, mode: liveRunResult.mode || null, stage_status_count: asArray(liveRunResult.stage_status).length, has_stage9_report_data: Boolean(stage9ReportData), has_html_report: Boolean(htmlReport), has_stage10_handoff: Boolean(stage10Handoff), profile_handoff_presence: { target_profile: Object.keys(profiles.target_profile).length > 0, target_feature_profile: Object.keys(profiles.target_feature_profile).length > 0, legal_cartography: Object.keys(profiles.legal_cartography).length > 0, data_provenance_profile: Object.keys(profiles.data_provenance_profile).length > 0, exposure_profile: Object.keys(profiles.exposure_profile).length > 0, stage8_quality_control_ledger: Object.keys(profiles.stage8_quality_control_ledger).length > 0 }, stage9_validation_ok: validation.stage9?.ok === true, stage10_validation_ok: validation.stage10?.ok === true, metrics: liveRunResult.metrics || null, warnings: liveRunResult.warnings || [] });
 writeJson("02-stage-status.json", liveRunResult.stage_status || []);
 writeJson("03-metrics.json", liveRunResult.metrics || {});
-writeJson("04-stage9-report-data.json", stage9ReportData);
-writeText("05-stage9-report.html", htmlReport);
-writeJson("06-stage9-validation.json", validation.stage9 || null);
-writeJson("07-stage10-handoff.json", stage10Handoff);
-writeJson("08-stage10-validation.json", validation.stage10 || null);
-writeJson("09-functional-intake-vault.json", stage10Handoff?.functional_intake_vault || null);
-writeJson("10-vault-payload.json", stage10Handoff?.vault_payload || null);
-writeJson("11-assembly-handoff.json", stage10Handoff?.assembly_handoff || null);
-writeJson("12-internal-stage6-cache.json", internal.stage6Cache || null);
-writeJson("13-internal-stage7-artifact.json", internal.stage7Artifact || null);
-writeJson("14-internal-stage8-ledger.json", internal.stage8Ledger || null);
-writeJson("14b-internal-stage8-export.json", internal.stage8Export || null);
+writeJson("04-target-profile.json", profiles.target_profile);
+writeJson("05-target-feature-profile.json", profiles.target_feature_profile);
+writeJson("06-legal-cartography.json", profiles.legal_cartography);
+writeJson("07-data-provenance-profile.json", profiles.data_provenance_profile);
+writeJson("08-exposure-profile.json", profiles.exposure_profile);
+writeJson("08b-stage8-quality-control-ledger.json", profiles.stage8_quality_control_ledger);
+writeJson("09-stage9-report-data.json", stage9ReportData);
+writeText("10-stage9-report.html", htmlReport);
+writeJson("11-stage9-validation.json", validation.stage9 || null);
+writeJson("12-stage10-source-packet.json", profiles.stage10_source_packet || null);
+writeJson("13-stage10-handoff.json", stage10Handoff);
+writeJson("14-stage10-validation.json", validation.stage10 || null);
+writeJson("15-functional-intake-vault.json", stage10Handoff?.functional_intake_vault || null);
+writeJson("16-vault-payload.json", stage10Handoff?.vault_payload || null);
+writeJson("17-assembly-handoff.json", stage10Handoff?.assembly_handoff || null);
 writeJson("18-token-usage.json", collectUsageMetadata(liveRunResult));
 
-const leakageAudit = {
-  ok: true,
-  stage9_main_findings: scanKeys(stage9MainBody(stage9ReportData), STAGE9_RETIRED_MAIN_KEYS),
-  stage10_main_findings: scanKeys(stage10MainBody(stage10Handoff), STAGE10_RETIRED_KEYS)
-};
+const leakageAudit = { ok: true, stage9_main_findings: scanKeys(stage9MainBody(stage9ReportData), STAGE9_RETIRED_MAIN_KEYS), stage10_main_findings: scanKeys(stage10MainBody(stage10Handoff), STAGE10_RETIRED_KEYS) };
 leakageAudit.ok = leakageAudit.stage9_main_findings.length === 0 && leakageAudit.stage10_main_findings.length === 0;
-writeJson("15-legacy-leakage-audit.json", leakageAudit);
+writeJson("19-legacy-leakage-audit.json", leakageAudit);
 
 const failedChecks = [];
 if (!liveRunResponse.ok || liveRunResult.ok !== true) failedChecks.push("live_run_not_ok");
@@ -340,20 +257,22 @@ if (!stage10Handoff) failedChecks.push("missing_stage10_handoff");
 if (validation.stage9?.ok !== true) failedChecks.push("stage9_validation_failed");
 if (validation.stage10?.ok !== true) failedChecks.push("stage10_validation_failed");
 if (!stage10Handoff?.stage10_source_packet) failedChecks.push("missing_stage10_source_packet");
+if (profiles.stage10_source_packet?.source_mode !== "profile_handoff_remap_v1") failedChecks.push("stage10_source_packet_not_profile_handoff_remap");
 if (!stage10Handoff?.functional_intake_vault) failedChecks.push("missing_functional_intake_vault");
 if (!stage10Handoff?.vault_payload) failedChecks.push("missing_vault_payload");
 if (!stage10Handoff?.assembly_handoff) failedChecks.push("missing_assembly_handoff");
 if (!Array.isArray(stage10Handoff?.assembly_handoff?.legal_document_status)) failedChecks.push("missing_legal_document_status");
-if (!internal.stage6Cache) failedChecks.push("missing_internal_stage6_cache");
-if (!internal.stage7Artifact) failedChecks.push("missing_internal_stage7_artifact");
-if (!internal.stage8Ledger) failedChecks.push("missing_internal_stage8_ledger");
+if (!Object.keys(profiles.target_profile).length) failedChecks.push("missing_target_profile_handoff");
+if (!Object.keys(profiles.target_feature_profile).length) failedChecks.push("missing_target_feature_profile_handoff");
+if (!Object.keys(profiles.legal_cartography).length) failedChecks.push("missing_legal_cartography_handoff");
+if (!Object.keys(profiles.data_provenance_profile).length) failedChecks.push("missing_data_provenance_profile_handoff");
+if (!Array.isArray(profiles.exposure_profile?.registry_ledger) || !profiles.exposure_profile.registry_ledger.length) failedChecks.push("missing_exposure_profile_registry_ledger");
+if (profiles.stage8_quality_control_ledger?.artifact_type !== "stage8_quality_control_ledger") failedChecks.push("stage8_qc_ledger_not_canonical");
 if (!leakageAudit.ok) failedChecks.push("legacy_leakage_detected");
 
-writeText("17-summary.md", createSummaryMarkdown({ runtimeStatus: runtimeStatusResponse, liveRunResult, leakageAudit, failedChecks }));
+writeText("20-summary.md", createSummaryMarkdown({ runtimeStatus: runtimeStatusResponse, liveRunResult, leakageAudit, failedChecks, profiles }));
 writeManifest({ ok: failedChecks.length === 0, failed_checks: failedChecks });
 
-if (failedChecks.length) {
-  fail("Full live runtime audit failed pass conditions.", { failed_checks: failedChecks, leakageAudit });
-}
+if (failedChecks.length) fail("Full live runtime audit failed pass conditions.", { failed_checks: failedChecks, leakageAudit });
 
 console.log(JSON.stringify({ ok: true, phase: "full_live_runtime_audit", runtime_url: runtimeUrl, live_endpoint: LIVE_RUN_ENDPOINT, target_url: targetUrl, company_name: companyName, run_id: liveRunResult.run_id || runId, metrics: liveRunResult.metrics, artifact_dir: outputRoot }, null, 2));
