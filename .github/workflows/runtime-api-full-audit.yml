@@ -113,6 +113,13 @@ jobs:
           GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
         run: npm run audit:full-live-runtime
 
+      - name: Publish full audit stage input/output artifacts
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/publish-full-audit-stage-io.mjs
+
       - name: Audit Stage 1 - Source Discovery
         if: always()
         working-directory: runtime-api
