@@ -5,17 +5,20 @@ import {
 } from "../diligence/stage6/stage6.runtime.js";
 import { runStage6ALegalCartography } from "../diligence/stage6/6a/6a.runtime.js";
 import { runStage6BLegalGovernanceDataProvenance } from "../diligence/stage6/6b/6b.runtime.js";
+import { runStage6CDataProvenanceIntegration } from "../diligence/stage6/6c/6c.runtime.js";
 import { buildStage6BInputFrom6AHandoff } from "../diligence/stage6/validators/validate6aTo6bHandoff.js";
 import { validate6bTo6cHandoff } from "../diligence/stage6/validators/validate6bTo6cHandoff.js";
+import { validate6cTo7Handoff } from "../diligence/stage6/validators/validate6cTo7Handoff.js";
+import { STAGE6_VALIDATION_STATUS } from "../diligence/stage6/stage6.dictionary.js";
 import { asArray, logStage, nowIso } from "./liveRunShared.js";
 import {
-  buildStage6Cache,
+  buildStage6Cache as buildLegacyStage6Cache,
   runStage,
   runStage7,
   runStage8
 } from "./liveStage6To8Pipeline.js";
 
-export { buildStage6Cache, runStage, runStage7, runStage8 };
+export { runStage, runStage7, runStage8 };
 
 function legalDocumentIndexFromCartography(legalCartography = {}) {
   return asArray(legalCartography.legal_unit_map).map((unit) => ({
@@ -71,58 +74,40 @@ function buildCanonicalStage6AReview(stage6aCanonical = {}) {
   };
 }
 
-function compatibilityDataFlowRows(stage6bCanonical = {}) {
-  const findings = asArray(stage6bCanonical.legal_governance_data_provenance_profile?.legal_data_findings);
-  return findings.map((finding, index) => ({
-    data_flow_id: `LGDP_FLOW_${String(index + 1).padStart(4, "0")}`,
-    legal_data_finding_id: finding.legal_data_finding_id,
-    source_basis: finding.source_basis,
-    data_category: finding.data_category,
-    data_subject: finding.data_subject,
-    processing_context: finding.processing_context,
-    declared_action: finding.declared_action,
-    ai_or_model_treatment: finding.ai_or_model_treatment,
-    retention_or_deletion_signal: finding.retention_or_deletion_signal,
-    subprocessor_or_transfer_signal: finding.subprocessor_or_transfer_signal,
-    controller_processor_role: finding.controller_processor_role,
-    legal_unit_refs: asArray(finding.legal_unit_refs),
-    source_window_refs: asArray(finding.source_window_refs),
-    stage6c_integration_status: "PENDING_STAGE6C_INTEGRATION"
+function compatibilityDataSignalIndex(stage6cCanonical = {}) {
+  return asArray(stage6cCanonical.data_provenance_profile?.integrated_data_flows).map((row) => ({
+    integrated_data_flow_id: row.integrated_data_flow_id,
+    data_flow_id: row.integrated_data_flow_id,
+    alignment_status: row.alignment_status,
+    data_category: row.data_category,
+    product_observed_refs: asArray(row.product_observed_refs),
+    legal_governance_refs: asArray(row.legal_governance_refs),
+    product_source_window_refs: asArray(row.product_source_window_refs),
+    legal_source_window_refs: asArray(row.legal_source_window_refs)
   }));
 }
 
-function buildCanonicalStage6BReview(stage6bCanonical = {}) {
-  const legalGovernanceProfile = stage6bCanonical.legal_governance_data_provenance_profile || {};
-  const dataFlowProfile = compatibilityDataFlowRows(stage6bCanonical);
-  const dataProvenanceProfile = {
-    data_provenance_profile_version: "stage6b_legal_governance_reference_profile_v1",
-    profile_scope: "LEGAL_GOVERNANCE_ONLY_PENDING_STAGE6C_INTEGRATION",
-    legal_governance_data_provenance_profile: legalGovernanceProfile,
-    data_flow_profile: dataFlowProfile,
-    integrated_feature_data_flow_profile: [],
-    stage6c_required: true,
-    limitations: [
-      "This live Stage 6 handoff uses canonical 6B legal/governance findings. Product/legal integration is pending Stage 6C."
-    ]
-  };
+function buildCanonicalStage6CReview(stage6cCanonical = {}) {
+  const dataProvenanceProfile = stage6cCanonical.data_provenance_profile || {};
   return {
     stage6_review_version: "stage6_review_v1",
-    stage6_component: "stage6b_legal_governance_data_provenance_canonical",
-    stage_role: "legal_governance_data_provenance",
-    legal_governance_data_provenance_profile: legalGovernanceProfile,
+    stage6_component: "stage6c_integrated_data_provenance_canonical",
+    stage_role: "integrated_data_provenance_profile",
     data_provenance_profile: dataProvenanceProfile,
+    legal_governance_data_provenance_profile: stage6cCanonical.legal_governance_profile || null,
+    product_observed_flows: asArray(stage6cCanonical.product_observed_flows),
+    legal_governance_findings: asArray(stage6cCanonical.legal_governance_findings),
     stage7_navigation_index: {
-      feature_to_data_flow_index: [],
-      data_signal_index: dataFlowProfile.map((row) => ({
-        data_flow_id: row.data_flow_id,
-        legal_data_finding_id: row.legal_data_finding_id,
-        data_category: row.data_category,
-        source_window_refs: row.source_window_refs
+      feature_to_data_flow_index: asArray(stage6cCanonical.product_observed_flows).map((flow) => ({
+        feature_id: flow.feature_id,
+        product_flow_id: flow.product_flow_id,
+        source_window_refs: asArray(flow.source_window_refs)
       })),
+      data_signal_index: compatibilityDataSignalIndex(stage6cCanonical),
       absence_unknown_index: [],
       fallback_source_packet: []
     },
-    stage6_limitations: asArray(legalGovernanceProfile.limitations)
+    stage6_limitations: asArray(dataProvenanceProfile.limitations)
   };
 }
 
@@ -131,6 +116,52 @@ function throwCanonicalStage6Error(message, result = {}) {
   error.status = 422;
   error.result = result;
   throw error;
+}
+
+export function buildStage6Cache({
+  sourceBundle,
+  evidenceJunction,
+  companyProfile,
+  targetFeatureProfile,
+  stage6aStageResult,
+  stage6bStageResult,
+  stage6cStageResult = null,
+  legalCartography = null,
+  dataProvenanceProfile = null,
+  stage6IntegratedArtifact,
+  stage6IntegratedValidation = null,
+  stage7HandoffValidation = null,
+  stage7HandoffInput = null
+}) {
+  const cache = buildLegacyStage6Cache({
+    sourceBundle,
+    evidenceJunction,
+    companyProfile,
+    targetFeatureProfile,
+    stage6aStageResult,
+    stage6bStageResult,
+    legalCartography,
+    dataProvenanceProfile,
+    stage6IntegratedArtifact,
+    stage6IntegratedValidation
+  });
+  return {
+    ...cache,
+    canonical_stage6_runtime: "6A_6B_6C_TO_7_CANONICAL",
+    data_provenance_profile: dataProvenanceProfile || cache.data_provenance_profile || null,
+    stage6c_stage_result: stage6cStageResult,
+    stage7_handoff_validation: stage7HandoffValidation,
+    stage7_input_handoff: stage7HandoffInput,
+    compatibility_adapters: {
+      ...(cache.compatibility_adapters || {}),
+      stage6_integrated_artifact: stage6IntegratedArtifact,
+      stage6_integrated_validation: stage6IntegratedValidation,
+      stage6_review: stage6IntegratedArtifact?.stage6_review || null,
+      stage6_to_stage7_adapter: stage6IntegratedArtifact?.stage6_to_stage7_adapter || null,
+      stage7_handoff_validation: stage7HandoffValidation,
+      stage7_input_handoff: stage7HandoffInput
+    }
+  };
 }
 
 export async function runStage6Live({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, logs, runId }) {
@@ -188,7 +219,7 @@ export async function runStage6Live({ sourceBundle, evidenceJunction, companyPro
     stage6bInput,
     maxReinvestigationAttempts: Number(process.env.LIVE_STAGE6B_MAX_REINVESTIGATION_ATTEMPTS || process.env.STAGE6B_MAX_REINVESTIGATION_ATTEMPTS || 1)
   });
-  if (stage6bCanonical.status === "CONTRACT_VIOLATION") throwCanonicalStage6Error("Canonical Stage 6B contract failed.", stage6bCanonical);
+  if (stage6bCanonical.status === STAGE6_VALIDATION_STATUS.CONTRACT_VIOLATION) throwCanonicalStage6Error("Canonical Stage 6B contract failed.", stage6bCanonical);
 
   const stage6bTo6cValidation = validate6bTo6cHandoff({
     canonicalStage6Input,
@@ -199,8 +230,20 @@ export async function runStage6Live({ sourceBundle, evidenceJunction, companyPro
   });
   const stage6bStageResult = {
     ok: stage6bCanonical.ok !== false,
-    stage_id: "stage6b_data_provenance",
-    stage6_review: buildCanonicalStage6BReview(stage6bCanonical),
+    stage_id: "stage6b_legal_governance_data_provenance",
+    stage6_review: {
+      stage6_review_version: "stage6_review_v1",
+      stage6_component: "stage6b_legal_governance_data_provenance_canonical",
+      stage_role: "legal_governance_data_provenance",
+      legal_governance_data_provenance_profile: stage6bCanonical.legal_governance_data_provenance_profile || {},
+      data_provenance_profile: {
+        profile_version: "stage6b_legal_governance_profile_reference_only_v1",
+        legal_governance_data_provenance_profile: stage6bCanonical.legal_governance_data_provenance_profile || {},
+        stage6c_required: true
+      },
+      stage7_navigation_index: { feature_to_data_flow_index: [], data_signal_index: [], absence_unknown_index: [], fallback_source_packet: [] },
+      stage6_limitations: asArray(stage6bCanonical.legal_governance_data_provenance_profile?.limitations)
+    },
     canonical_stage6b_output: stage6bCanonical,
     semantic_model_attempted: false,
     validation: {
@@ -208,42 +251,85 @@ export async function runStage6Live({ sourceBundle, evidenceJunction, companyPro
       stage6b_to_6c_handoff: stage6bTo6cValidation
     }
   };
-  const dataProvenanceProfile = stage6bStageResult.stage6_review.data_provenance_profile;
   logStage(logs, "stage6b_legal_governance_data_provenance_canonical", "complete", {
     legal_data_finding_count: stage6bCanonical.legal_governance_data_provenance_profile?.legal_data_findings?.length || 0,
-    data_flow_profile_count: dataProvenanceProfile?.data_flow_profile?.length || 0,
     validation_status: stage6bCanonical.validation?.status || null,
     stage6b_to_6c_status: stage6bTo6cValidation.status || null
   });
 
+  logStage(logs, "stage6c_integrated_data_provenance_canonical", "running", { handoff: "stage6b_legal_governance_profile" });
+  const stage6cCanonical = await runStage6CDataProvenanceIntegration({
+    canonicalStage6Input,
+    stage6aOutput: stage6aCanonical,
+    stage6bOutput: stage6bCanonical,
+    targetFeatureProfile,
+    maxReinvestigationAttempts: Number(process.env.LIVE_STAGE6C_MAX_REINVESTIGATION_ATTEMPTS || process.env.STAGE6C_MAX_REINVESTIGATION_ATTEMPTS || 1)
+  });
+  if (stage6cCanonical.status === STAGE6_VALIDATION_STATUS.CONTRACT_VIOLATION) throwCanonicalStage6Error("Canonical Stage 6C contract failed.", stage6cCanonical);
+  const stage6cInput = stage6cCanonical.validation?.handoff?.stage6c_input || stage6bTo6cValidation.stage6c_input || null;
+  const stage6cTo7Validation = validate6cTo7Handoff({
+    canonicalStage6Input,
+    stage6aOutput: stage6aCanonical,
+    stage6bOutput: stage6bCanonical,
+    stage6cOutput: stage6cCanonical,
+    stage6cInput,
+    targetProfile: companyProfile,
+    targetFeatureProfile
+  });
+  if (stage6cTo7Validation.status === STAGE6_VALIDATION_STATUS.CONTRACT_VIOLATION) throwCanonicalStage6Error("Canonical Stage 6C→7 handoff contract failed.", stage6cTo7Validation);
+  const stage6cStageResult = {
+    ok: stage6cCanonical.ok !== false,
+    stage_id: "stage6c_data_provenance_integration",
+    stage6_review: buildCanonicalStage6CReview(stage6cCanonical),
+    canonical_stage6c_output: stage6cCanonical,
+    semantic_model_attempted: false,
+    validation: {
+      ...(stage6cCanonical.validation || {}),
+      stage6c_to_7_handoff: stage6cTo7Validation
+    }
+  };
+  const dataProvenanceProfile = stage6cCanonical.data_provenance_profile || null;
+  logStage(logs, "stage6c_integrated_data_provenance_canonical", "complete", {
+    integrated_data_flow_count: dataProvenanceProfile?.integrated_data_flows?.length || 0,
+    validation_status: stage6cCanonical.validation?.status || null,
+    stage6c_to_7_status: stage6cTo7Validation.status || null
+  });
+
   const stage6IntegratedArtifact = buildStage6IntegratedHandoffArtifact(
-    { stage6a_review: stage6aStageResult.stage6_review, stage6b_review: stage6bStageResult.stage6_review },
+    { stage6a_review: stage6aStageResult.stage6_review, stage6b_review: stage6cStageResult.stage6_review },
     {
       run_id: `${runId}_stage6_integrated_handoff`,
       generated_at: nowIso(),
       stage6a_stage_id: stage6aStageResult.stage_id,
       stage6b_stage_id: stage6bStageResult.stage_id,
-      canonical_stage6_runtime: "6A_6B_CANONICAL_PENDING_6C",
-      stage6b_to_6c_status: stage6bTo6cValidation.status || null
+      stage6c_stage_id: stage6cStageResult.stage_id,
+      canonical_stage6_runtime: "6A_6B_6C_TO_7_CANONICAL",
+      stage6b_to_6c_status: stage6bTo6cValidation.status || null,
+      stage6c_to_7_status: stage6cTo7Validation.status || null
     }
   );
   const stage6IntegratedValidation = {
-    schemaValidation: { ok: true, validation_mode: "canonical_6a_6b_compatibility_pending_6c" },
-    guardrail: { ok: true, validation_mode: "canonical_6a_6b_compatibility_pending_6c", warnings: [], repairs: [] },
-    stage6b_to_6c_handoff: stage6bTo6cValidation
+    schemaValidation: { ok: true, validation_mode: "canonical_6a_6b_6c_compatibility" },
+    guardrail: { ok: true, validation_mode: "canonical_6a_6b_6c_compatibility", warnings: [], repairs: [] },
+    stage6b_to_6c_handoff: stage6bTo6cValidation,
+    stage6c_to_7_handoff: stage6cTo7Validation
   };
   logStage(logs, "stage6_integrated_handoff", "complete", {
     compatibility_adapter_only: true,
-    canonical_stage6_path: "6A_6B_PENDING_6C",
-    stage6b_to_6c_status: stage6bTo6cValidation.status || null
+    canonical_stage6_path: "6A_6B_6C_TO_7",
+    stage6b_to_6c_status: stage6bTo6cValidation.status || null,
+    stage6c_to_7_status: stage6cTo7Validation.status || null
   });
 
   return {
     stage6aStageResult,
     stage6bStageResult,
+    stage6cStageResult,
     legalCartography,
     dataProvenanceProfile,
     stage6IntegratedArtifact,
-    stage6IntegratedValidation
+    stage6IntegratedValidation,
+    stage7HandoffValidation: stage6cTo7Validation,
+    stage7HandoffInput: stage6cTo7Validation.stage7_input || null
   };
 }
