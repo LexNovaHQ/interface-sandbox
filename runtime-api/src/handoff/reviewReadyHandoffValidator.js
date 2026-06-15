@@ -51,6 +51,15 @@ const RETIRED_STAGE10_KEYS = Object.freeze([
   "supporting_registry_rows"
 ]);
 
+const REQUIRED_PROFILE_HANDOFFS = Object.freeze([
+  "target_profile",
+  "target_feature_profile",
+  "legal_cartography",
+  "data_provenance_profile",
+  "exposure_profile",
+  "stage8_quality_control_ledger"
+]);
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -170,19 +179,39 @@ function validateFunctionalIntakeVault(vault, errors) {
   validateFunctionalSections(vault.functional_sections, vault.vault_confirmation_questions, errors);
 }
 
+function validateProfileHandoffs(packet, errors) {
+  if (!isObject(packet.profile_handoffs)) {
+    errors.push("stage10_source_packet.profile_handoffs must be an object.");
+    return;
+  }
+  REQUIRED_PROFILE_HANDOFFS.forEach((field) => {
+    if (!isObject(packet.profile_handoffs[field])) errors.push(`stage10_source_packet.profile_handoffs.${field} must be an object.`);
+  });
+  if (!Array.isArray(packet.profile_handoffs.exposure_profile?.registry_ledger)) errors.push("stage10_source_packet.profile_handoffs.exposure_profile.registry_ledger must be an array.");
+}
+
 function validateStage10SourcePacket(packet, errors) {
   if (!isObject(packet)) {
     errors.push("stage10_source_packet must be an object.");
     return;
   }
   if (packet.stage10_source_packet_version !== "stage10_source_packet_v2") errors.push("stage10_source_packet_version must be stage10_source_packet_v2.");
+  if (packet.source_mode !== "profile_handoff_remap_v1") errors.push("stage10_source_packet.source_mode must be profile_handoff_remap_v1.");
+  validateProfileHandoffs(packet, errors);
   ["target_profile_v2", "feature_profile_v2", "stage6_review", "stage9_report_summary", "source_trace"].forEach((field) => {
+    if (!isObject(packet[field])) errors.push(`stage10_source_packet.${field} must be an object.`);
+  });
+  ["legal_cartography", "data_provenance_profile", "exposure_profile", "stage8_quality_control_ledger"].forEach((field) => {
     if (!isObject(packet[field])) errors.push(`stage10_source_packet.${field} must be an object.`);
   });
   if (!Array.isArray(packet.feature_map)) errors.push("stage10_source_packet.feature_map must be an array.");
   if (!Array.isArray(packet.threat_findings)) errors.push("stage10_source_packet.threat_findings must be an array.");
   if (!Array.isArray(packet.legal_document_status)) errors.push("stage10_source_packet.legal_document_status must be an array.");
-  if (!packet.target_profile?.company_name || packet.target_profile.company_name === "Unknown target") errors.push("stage10_source_packet.target_profile.company_name must be populated from target_profile_v2.");
+  if (!packet.target_profile?.company_name || packet.target_profile.company_name === "Unknown target") errors.push("stage10_source_packet.target_profile.company_name must be populated from the canonical target_profile handoff.");
+  const refs = asArray(packet.source_trace?.source_stage_refs);
+  REQUIRED_PROFILE_HANDOFFS.forEach((field) => {
+    if (!refs.includes(field)) errors.push(`stage10_source_packet.source_trace.source_stage_refs missing canonical profile ref: ${field}`);
+  });
 }
 
 function validateAssemblyHandoff(assemblyHandoff, errors) {
@@ -232,8 +261,8 @@ function validateAgainstSourcePacket(result, errors) {
   const handoff = result.assembly_handoff || {};
   if (!packet) return;
   if (asArray(packet.feature_map).length > 0 && asArray(handoff.feature_map).length !== asArray(packet.feature_map).length) errors.push("Stage 10 lost canonical feature_map rows from source packet.");
-  if (asArray(packet.legal_document_status).length > 0 && asArray(handoff.legal_document_status).length !== asArray(packet.legal_document_status).length) errors.push("Stage 10 lost legal_document_status rows from Stage 6.");
-  if (asArray(packet.threat_findings).length > 0 && asArray(handoff.threat_findings).length !== asArray(packet.threat_findings).length) errors.push("Stage 10 lost threat_findings rows from Stage 9.");
+  if (asArray(packet.legal_document_status).length > 0 && asArray(handoff.legal_document_status).length !== asArray(packet.legal_document_status).length) errors.push("Stage 10 lost legal_document_status rows from legal_cartography.");
+  if (asArray(packet.threat_findings).length > 0 && asArray(handoff.threat_findings).length !== asArray(packet.threat_findings).length) errors.push("Stage 10 lost threat_findings rows from Stage 9/exposure profile.");
   if (countPrefillFields(handoff.vault_prefill_suggestions) === 0) errors.push("Stage 10 derived no Vault prefill fields from canonical source packet.");
 }
 
