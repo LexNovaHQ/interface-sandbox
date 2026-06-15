@@ -55,23 +55,20 @@ const canonicalInput = buildStage6CanonicalInput({
     feature_inventory: [],
     data_provenance_map: []
   },
-  stage6Input: {
-    legal_governance_lossless_sources: [
+  sourceBundle: {
+    raw_footprint: {
+      source_records: [
       {
-        source_id: 'SRC_LG_001',
-        source_url: 'https://example.ai/privacy',
-        source_title: 'Privacy Policy',
+        evidence_source_id: 'SRC_LG_001',
+        url: 'https://example.ai/privacy',
+        title: 'Privacy Policy',
         source_family: 'legal_governance',
-        clean_text_lossless: legalText,
-        lossless_policy: {
-          full_text_lossless: true,
-          summarized: false,
-          compressed: false,
-          truncated: false,
-          normalized: false
+        text: {
+          clean_text_lossless: legalText
         }
       }
     ]
+    }
   }
 });
 

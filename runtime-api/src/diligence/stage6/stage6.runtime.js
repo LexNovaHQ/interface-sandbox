@@ -36,6 +36,7 @@ export function computeSourceSha256(text = '') {
 
 export function stableSourceId(record = {}, index = 0) {
   return asText(record.source_id)
+    || asText(record.evidence_source_id)
     || asText(record.id)
     || asText(record.source_ref)
     || asText(record.ref)
@@ -123,9 +124,13 @@ export function collectLegalGovernanceCandidateRecords({ stage6Input = {}, adapt
   pushAll(evidenceJunction.legal_sources);
   pushAll(evidenceJunction.governance_sources);
   pushAll(evidenceJunction.sources);
+  pushAll(evidenceJunction.source_registry);
 
   pushAll(sourceBundle.evidence_buffer);
   pushAll(sourceBundle.sources);
+  pushAll(sourceBundle.source_records);
+  pushAll(sourceBundle.raw_footprint?.source_records);
+  pushAll(sourceBundle.raw_footprint?.sources);
 
   return candidates;
 }
