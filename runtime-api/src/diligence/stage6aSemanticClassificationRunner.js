@@ -11,15 +11,34 @@ import { validateStage6ReviewGuardrail } from "./guardrails/stage6ReviewGuardrai
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ACTIVE_STAGE6A_PROMPT_PATH = path.resolve(__dirname, "../../../functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md");
+const STAGE6A_FIELD_DERIVATION_PATH = path.resolve(__dirname, "../../../docs/contracts/STAGE6A_FIELD_DERIVATION_INSTRUCTIONS_v1.md");
+
+function readStage6ADerivationInstructions() {
+  try {
+    const instructions = fs.readFileSync(STAGE6A_FIELD_DERIVATION_PATH, "utf8").trim();
+    return instructions || "";
+  } catch {
+    return "";
+  }
+}
+
+function appendStage6ADerivationInstructions(promptText = "") {
+  const prompt = String(promptText || "").trim();
+  const instructions = readStage6ADerivationInstructions();
+  if (!instructions || prompt.includes("STAGE6A_FIELD_DERIVATION_INSTRUCTIONS_v1")) return prompt;
+  return `${prompt}\n\n---\n# Runtime-Appended Stage 6A Field Derivation Instructions\n${instructions}`;
+}
 
 function readDefaultSemanticPrompt() {
+  let promptText = "";
   try {
     const sourcePrompt = fs.readFileSync(ACTIVE_STAGE6A_PROMPT_PATH, "utf8").trim();
-    if (sourcePrompt) return sourcePrompt;
+    if (sourcePrompt) promptText = sourcePrompt;
   } catch {
     // Fall back to generated bundle when source prompts are unavailable in a deployed package.
   }
-  return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_legal_document_cartography?.text || "";
+  if (!promptText) promptText = DILIGENCE_PROMPT_BUNDLE.prompts?.stage6a_legal_document_cartography?.text || "";
+  return appendStage6ADerivationInstructions(promptText);
 }
 
 function safeJson(value) {
@@ -71,7 +90,7 @@ function guardrailFailure(stage6Review, guardrail, packetSummary) {
 }
 
 export async function runStage6ASemanticClassification({ input = {}, promptText = "", env = process.env, options = {} } = {}) {
-  const semanticPromptText = String(promptText || readDefaultSemanticPrompt() || "").trim();
+  const semanticPromptText = appendStage6ADerivationInstructions(String(promptText || readDefaultSemanticPrompt() || "").trim());
   if (!semanticPromptText) return { ok: false, error_type: "STAGE6_SEMANTIC_PROMPT_MISSING", error: "Stage 6 semantic prompt text is required." };
 
   const packet = buildStage6ASemanticClassificationPacket(input, {
