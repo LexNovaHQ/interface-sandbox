@@ -1,1 +1,54 @@
-{"name":"lexnova-runtime-api","version":"0.1.0","private":true,"type":"module","description":"Lex Nova HQ Cloud Run runtime API for server-side model execution.","scripts":{"start":"node server.js","dev":"node server.js","check":"node scripts/check-canonical-runtime.mjs && node --check server.js && node --check src/live/liveEvidenceAndProfilePipeline.js && npm run check:stage5:canonical && node --check scripts/check-canonical-runtime.mjs && node --check scripts/e2e-full-live-runtime-audit.mjs && node --check scripts/stage6-e2e-utils.mjs && node --check scripts/e2e-stage6a-legal-cartography.mjs && node --check scripts/e2e-stage6a-structural-coverage.mjs && node --check scripts/e2e-stage6b-data-provenance.mjs && node --check scripts/e2e-stage6-integrated-handoff.mjs && node --check scripts/audit-stage6-canon.mjs","check:stage5:canonical":"node --check src/diligence/stage5/stage5.runtime.js && node --check src/diligence/stage5/stage5.prompt.js && node --check src/diligence/stage5/stage5.dictionary.js && node --check src/diligence/stage5/5a/5a.runtime.js && node --check src/diligence/stage5/5a/5a.prompt.js && node --check src/diligence/stage5/5a/5a.dictionary.js && node --check src/diligence/stage5/5b/5b.runtime.js && node --check src/diligence/stage5/5b/5b.prompt.js && node --check src/diligence/stage5/5b/5b.dictionary.js && node --check src/diligence/stage5/5c/5c.runtime.js && node --check src/diligence/stage5/5c/5c.prompt.js && node --check src/diligence/stage5/5c/5c.dictionary.js && node --check src/diligence/stage5/5d/5d.runtime.js && node --check src/diligence/stage5/5d/5d.prompt.js && node --check src/diligence/stage5/5d/5d.dictionary.js","test:stage4-stage5-guardrails":"node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs","smoke:runtime":"node scripts/smoke-runtime.mjs","audit:full-live-runtime":"node scripts/e2e-full-live-runtime-audit.mjs","audit:full-live-runtime:6b":"node scripts/e2e-full-live-runtime-audit.mjs","audit:stage5:canonical":"node scripts/e2e-stage5-full-runtime.mjs","e2e:stage2":"node scripts/e2e-stage2-evidence-refiner.mjs","test:stage3":"node src/diligence/evidenceJunction.test.mjs","e2e:stage3":"node scripts/e2e-stage3-evidence-junction.mjs","e2e:stage4:company":"node scripts/e2e-stage4-company-profile.mjs","e2e:stage5:features":"node scripts/e2e-stage5-full-runtime.mjs","e2e:stage5a:product-function-discovery":"node scripts/e2e-stage5a-product-function-discovery.mjs","e2e:stage5b:archetype-surface-tagging":"node scripts/e2e-stage5b-archetype-surface-tagging.mjs","e2e:stage5c:complete-feature-records":"node scripts/e2e-stage5c-complete-feature-records.mjs","e2e:stage5d:target-feature-profile-integrator":"node scripts/e2e-stage5d-target-feature-profile-integrator.mjs","e2e:stage5:full-runtime":"node scripts/e2e-stage5-full-runtime.mjs","audit:stage6:canon":"node scripts/audit-stage6-canon.mjs","e2e:stage6a:legal-cartography":"node scripts/e2e-stage6a-legal-cartography.mjs","e2e:stage6a:structural-coverage":"node scripts/e2e-stage6a-structural-coverage.mjs","e2e:stage6b:data-provenance":"node scripts/e2e-stage6b-data-provenance.mjs","e2e:stage6:integrated-handoff":"node scripts/e2e-stage6-integrated-handoff.mjs","e2e:stage7:registry":"node scripts/e2e-stage7-priority-runtime.mjs","e2e:stage7:registry:sample":"node scripts/e2e-stage7-registry-ledger.mjs","e2e:stage7:registry:priority":"node scripts/e2e-stage7-priority-runtime.mjs","e2e:stage8:operator":"node scripts/e2e-stage8-operator-challenge.mjs","e2e:stage9:report":"node scripts/e2e-stage9-report-assembler.mjs","render:stage9:html":"node scripts/render-stage9-html-preview.mjs","e2e:stage10:vault":"node scripts/e2e-stage10-vault-handoff.mjs","e2e:stage4":"node scripts/e2e-stage4-target-legal-v3.mjs","audit:product-sources":"node scripts/audit-product-source-discovery.mjs"},"engines":{"node":">=20.0.0"},"dependencies":{"@google/genai":"^1.33.0","ajv":"^8.20.0","cors":"^2.8.5","express":"^4.22.2","helmet":"^8.1.5","pdf-parse":"^1.1.1"}}
+{
+  "name": "lexnova-runtime-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lex Nova HQ Cloud Run runtime API for server-side model execution.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node scripts/check-canonical-runtime.mjs && node --check server.js && node --check src/live/liveEvidenceAndProfilePipeline.js && npm run check:stage5:canonical && node --check scripts/check-canonical-runtime.mjs && node --check scripts/e2e-full-live-runtime-audit.mjs && node --check scripts/stage6-e2e-utils.mjs && node --check scripts/e2e-stage6a-legal-cartography.mjs && node --check scripts/e2e-stage6a-structural-coverage.mjs && node --check scripts/e2e-stage6b-data-provenance.mjs && node --check scripts/e2e-stage6b-legal-governance-data-provenance.mjs && node --check scripts/e2e-stage6-integrated-handoff.mjs && node --check scripts/audit-stage6-canon.mjs",
+    "check:stage5:canonical": "node --check src/diligence/stage5/stage5.runtime.js && node --check src/diligence/stage5/stage5.prompt.js && node --check src/diligence/stage5/stage5.dictionary.js && node --check src/diligence/stage5/5a/5a.runtime.js && node --check src/diligence/stage5/5a/5a.prompt.js && node --check src/diligence/stage5/5a/5a.dictionary.js && node --check src/diligence/stage5/5b/5b.runtime.js && node --check src/diligence/stage5/5b/5b.prompt.js && node --check src/diligence/stage5/5b/5b.dictionary.js && node --check src/diligence/stage5/5c/5c.runtime.js && node --check src/diligence/stage5/5c/5c.prompt.js && node --check src/diligence/stage5/5c/5c.dictionary.js && node --check src/diligence/stage5/5d/5d.runtime.js && node --check src/diligence/stage5/5d/5d.prompt.js && node --check src/diligence/stage5/5d/5d.dictionary.js",
+    "test:stage4-stage5-guardrails": "node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs",
+    "smoke:runtime": "node scripts/smoke-runtime.mjs",
+    "audit:full-live-runtime": "node scripts/e2e-full-live-runtime-audit.mjs",
+    "audit:full-live-runtime:6b": "node scripts/e2e-full-live-runtime-audit.mjs",
+    "audit:stage5:canonical": "node scripts/e2e-stage5-full-runtime.mjs",
+    "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
+    "test:stage3": "node src/diligence/evidenceJunction.test.mjs",
+    "e2e:stage3": "node scripts/e2e-stage3-evidence-junction.mjs",
+    "e2e:stage4:company": "node scripts/e2e-stage4-company-profile.mjs",
+    "e2e:stage5:features": "node scripts/e2e-stage5-full-runtime.mjs",
+    "e2e:stage5a:product-function-discovery": "node scripts/e2e-stage5a-product-function-discovery.mjs",
+    "e2e:stage5b:archetype-surface-tagging": "node scripts/e2e-stage5b-archetype-surface-tagging.mjs",
+    "e2e:stage5c:complete-feature-records": "node scripts/e2e-stage5c-complete-feature-records.mjs",
+    "e2e:stage5d:target-feature-profile-integrator": "node scripts/e2e-stage5d-target-feature-profile-integrator.mjs",
+    "e2e:stage5:full-runtime": "node scripts/e2e-stage5-full-runtime.mjs",
+    "audit:stage6:canon": "node scripts/audit-stage6-canon.mjs",
+    "e2e:stage6a:legal-cartography": "node scripts/e2e-stage6a-legal-cartography.mjs",
+    "e2e:stage6a:structural-coverage": "node scripts/e2e-stage6a-structural-coverage.mjs",
+    "e2e:stage6b:data-provenance": "node scripts/e2e-stage6b-data-provenance.mjs",
+    "e2e:stage6b:legal-governance-data-provenance": "node scripts/e2e-stage6b-legal-governance-data-provenance.mjs",
+    "e2e:stage6:integrated-handoff": "node scripts/e2e-stage6-integrated-handoff.mjs",
+    "e2e:stage7:registry": "node scripts/e2e-stage7-priority-runtime.mjs",
+    "e2e:stage7:registry:sample": "node scripts/e2e-stage7-registry-ledger.mjs",
+    "e2e:stage7:registry:priority": "node scripts/e2e-stage7-priority-runtime.mjs",
+    "e2e:stage8:operator": "node scripts/e2e-stage8-operator-challenge.mjs",
+    "e2e:stage9:report": "node scripts/e2e-stage9-report-assembler.mjs",
+    "render:stage9:html": "node scripts/render-stage9-html-preview.mjs",
+    "e2e:stage10:vault": "node scripts/e2e-stage10-vault-handoff.mjs",
+    "e2e:stage4": "node scripts/e2e-stage4-target-legal-v3.mjs",
+    "audit:product-sources": "node scripts/audit-product-source-discovery.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@google/genai": "^1.33.0",
+    "ajv": "^8.20.0",
+    "cors": "^2.8.5",
+    "express": "^4.22.2",
+    "helmet": "^8.1.5",
+    "pdf-parse": "^1.1.1"
+  }
+}
