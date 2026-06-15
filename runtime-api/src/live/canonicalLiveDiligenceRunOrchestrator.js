@@ -49,8 +49,32 @@ export async function runLiveDiligenceReview(input = {}, options = {}) {
   const { sourceBundle, evidenceJunction, reviewerSource } = evidence;
 
   const { companyProfile, targetFeatureProfile } = await buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode, logs, runId, runStage });
-  const { stage6aStageResult, stage6bStageResult, legalCartography, dataProvenanceProfile, stage6IntegratedArtifact, stage6IntegratedValidation } = await runStage6Live({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, logs, runId });
-  const stage6Cache = buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, legalCartography, dataProvenanceProfile, stage6IntegratedArtifact, stage6IntegratedValidation });
+  const {
+    stage6aStageResult,
+    stage6bStageResult,
+    stage6cStageResult,
+    legalCartography,
+    dataProvenanceProfile,
+    stage6IntegratedArtifact,
+    stage6IntegratedValidation,
+    stage7HandoffValidation,
+    stage7HandoffInput
+  } = await runStage6Live({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, logs, runId });
+  const stage6Cache = buildStage6Cache({
+    sourceBundle,
+    evidenceJunction,
+    companyProfile,
+    targetFeatureProfile,
+    stage6aStageResult,
+    stage6bStageResult,
+    stage6cStageResult,
+    legalCartography,
+    dataProvenanceProfile,
+    stage6IntegratedArtifact,
+    stage6IntegratedValidation,
+    stage7HandoffValidation,
+    stage7HandoffInput
+  });
   const stage7Artifact = await runStage7({ stage6Cache, registryRuntime, registryKey, logs, runId: `${runId}_stage7` });
   const { stage8Export, stage8Ledger, stage8Input } = await runStage8({ stage6Cache, stage7Artifact, registryRuntime, logs, runId: `${runId}_stage8` });
   normalizeStage8QualityControlLedger(stage8Ledger);
