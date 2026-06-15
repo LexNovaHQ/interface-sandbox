@@ -24,86 +24,91 @@ function parseJson(filePath) {
   }
 }
 
-function countOccurrences(text, needle) {
-  return text.split(needle).length - 1;
+function assertExists(files = []) {
+  for (const file of files) assert(exists(file), "Required canonical Stage 6 file is missing.", { file });
 }
 
-function resolveRef(schema, ref) {
-  if (!ref || typeof ref !== "string" || !ref.startsWith("#/$defs/")) return null;
-  return schema.$defs?.[ref.slice("#/$defs/".length)] || null;
+function assertIncludes(file, needles = []) {
+  const text = read(file);
+  for (const needle of needles) assert(text.includes(needle), "Canonical Stage 6 file missing required token.", { file, needle });
 }
 
-function schemaProperty(schema, propertyName) {
-  const property = schema.properties?.[propertyName];
-  return property?.$ref ? resolveRef(schema, property.$ref) : property;
+function assertExcludes(file, needles = []) {
+  const text = read(file);
+  for (const needle of needles) assert(!text.includes(needle), "Old Stage 6 token remains in active canonical path.", { file, needle });
 }
 
-const activeFiles = [
-  "data/schemas/stage6Review.schema.json",
-  "runtime-api/src/diligence/stage6CanonicalVocabulary.js",
-  "runtime-api/src/diligence/guardrails/stage6ReviewGuardrail.js",
-  "runtime-api/src/diligence/stage6aLegalCartographyBuilder.js",
-  "runtime-api/src/diligence/stage6aSemanticClassificationPacketBuilder.js",
-  "runtime-api/src/diligence/stage6aSemanticClassificationNormalizer.js",
-  "runtime-api/src/diligence/stage6aLegalCartographyMerge.js",
-  "runtime-api/src/diligence/stage6aSemanticClassificationRunner.js",
-  "runtime-api/src/diligence/stage6bDataProvenanceBuilder.js",
-  "runtime-api/src/diligence/stage6bSemanticPacketBuilder.js",
-  "runtime-api/src/diligence/stage6bDataProvenanceNormalizer.js",
-  "runtime-api/src/diligence/stage6bDataProvenanceMerge.js",
-  "runtime-api/src/diligence/stage6bDataProvenanceRunner.js",
-  "runtime-api/src/diligence/stage6IntegratedHandoffBuilder.js",
-  "runtime-api/src/diligence/stageRunnerLocked.js",
-  "runtime-api/src/diligence/stageConfigs.js",
-  "runtime-api/scripts/stage6-e2e-utils.mjs",
-  "runtime-api/scripts/e2e-stage6a-legal-cartography.mjs",
-  "runtime-api/scripts/e2e-stage6b-data-provenance.mjs",
-  "runtime-api/scripts/e2e-stage6-integrated-handoff.mjs",
-  "functions/_prompts/diligence-v2/03A_LEGAL_CARTOGRAPHY.prompt.md",
-  "functions/_prompts/diligence-v2/03B_DATA_PROVENANCE.prompt.md"
+const canonicalFiles = [
+  "docs/canon/STAGE6_CANONICAL_FLOW.md",
+  "runtime-api/src/diligence/stage6/stage6.runtime.js",
+  "runtime-api/src/diligence/stage6/stage6.dictionary.js",
+  "runtime-api/src/diligence/stage6/stage6.prompt.js",
+  "runtime-api/src/diligence/stage6/6a/6a.runtime.js",
+  "runtime-api/src/diligence/stage6/6a/6a.dictionary.js",
+  "runtime-api/src/diligence/stage6/6a/6a.prompt.js",
+  "runtime-api/src/diligence/stage6/6b/6b.runtime.js",
+  "runtime-api/src/diligence/stage6/6b/6b.dictionary.js",
+  "runtime-api/src/diligence/stage6/6b/6b.prompt.js",
+  "runtime-api/src/diligence/stage6/6c/6c.runtime.js",
+  "runtime-api/src/diligence/stage6/6c/6c.dictionary.js",
+  "runtime-api/src/diligence/stage6/6c/6c.prompt.js",
+  "runtime-api/src/diligence/stage6/validators/validate6aTo6bHandoff.js",
+  "runtime-api/src/diligence/stage6/validators/validate6bTo6cHandoff.js",
+  "runtime-api/src/diligence/stage6/validators/validate6cTo7Handoff.js",
+  "runtime-api/src/live/canonicalLiveStage6To8Pipeline.js",
+  "runtime-api/src/live/canonicalLiveDiligenceRunOrchestrator.js",
+  "runtime-api/scripts/e2e-stage6a-structural-coverage.mjs",
+  "runtime-api/scripts/e2e-stage6b-legal-governance-data-provenance.mjs",
+  "runtime-api/scripts/e2e-stage6c-data-provenance-integration.mjs",
+  "runtime-api/scripts/e2e-stage6c-to-stage7-handoff.mjs"
 ];
 
-for (const file of activeFiles) assert(exists(file), "Required Stage 6 active file is missing.", { file });
+assertExists(canonicalFiles);
 
-const schema = parseJson("data/schemas/stage6Review.schema.json");
-assert(schema.additionalProperties === false, "stage6Review schema must be closed.");
-assert(schema.properties?.legal_document_cartography, "stage6Review schema missing legal_document_cartography.");
-assert(schema.properties?.data_provenance_profile, "stage6Review schema missing data_provenance_profile.");
-assert(schema.$defs?.dataFlowProfileItem?.additionalProperties === false, "dataFlowProfileItem must be closed.");
-const stage7NavigationIndexSchema = schemaProperty(schema, "stage7_navigation_index");
-assert(stage7NavigationIndexSchema?.additionalProperties === false, "stage7_navigation_index must be closed.", { resolved_ref: schema.properties?.stage7_navigation_index?.$ref || null });
+assertIncludes("docs/canon/STAGE6_CANONICAL_FLOW.md", [
+  "Stage 6A = legal cartography",
+  "Stage 6B = legal/governance data provenance extraction",
+  "Stage 6C = product/legal data provenance integration",
+  "Stage 6B may never require Stage 5 data provenance rows"
+]);
 
-const configText = read("runtime-api/src/diligence/stageConfigs.js");
-assert(countOccurrences(configText, "stage6b_data_provenance:") === 1, "Stage 6B config must be registered exactly once.");
-assert(configText.includes("stage6a_legal_document_cartography"), "Stage 6A config missing.");
-assert(configText.includes("stage6_integrated_handoff"), "Integrated Stage 6 config missing.");
+assertIncludes("runtime-api/src/live/canonicalLiveStage6To8Pipeline.js", [
+  "runStage6ALegalCartography",
+  "runStage6BLegalGovernanceDataProvenance",
+  "runStage6CDataProvenanceIntegration",
+  "validate6cTo7Handoff",
+  "6A_6B_6C_TO_7_CANONICAL"
+]);
 
-const runnerText = read("runtime-api/src/diligence/stageRunnerLocked.js");
-assert(runnerText.includes("runStage6ALegalCartography"), "Stage runner does not route Stage 6A.");
-assert(runnerText.includes("runStage6BDataProvenance"), "Stage runner does not route Stage 6B.");
-assert(runnerText.includes("STAGE6_COMPONENT_NOT_IMPLEMENTED"), "Stage 6 component dispatch must fail explicitly for unimplemented components.");
+assertExcludes("runtime-api/src/live/canonicalLiveStage6To8Pipeline.js", [
+  "runStage6BDataProvenance",
+  "stage6bDataProvenanceRunner",
+  "stage6a_legal_document_cartography\", \"running\""
+]);
 
 const pkg = parseJson("runtime-api/package.json");
 for (const script of [
   "audit:stage6:canon",
-  "e2e:stage6a:legal-cartography",
-  "e2e:stage6b:data-provenance",
-  "e2e:stage6:integrated-handoff"
-]) assert(pkg.scripts?.[script], "Stage 6 package script missing.", { script });
+  "e2e:stage6a:structural-coverage",
+  "e2e:stage6b:legal-governance-data-provenance",
+  "e2e:stage6c:data-provenance-integration",
+  "e2e:stage6c:stage7-handoff"
+]) assert(pkg.scripts?.[script], "Stage 6 canonical package script missing.", { script });
+
+assert(!pkg.scripts?.["e2e:stage6b:data-provenance"], "Old Stage 6B data provenance script must not remain active in package.json.");
 assert(pkg.dependencies?.cors === "^2.8.5", "runtime-api/package.json dependency drift: cors must match package-lock.");
-assert(pkg.dependencies?.helmet === "^8.1.1", "runtime-api/package.json dependency drift: helmet must match package-lock.");
+assert(pkg.dependencies?.helmet === "^8.1.5", "runtime-api/package.json dependency drift: helmet must match package-lock.");
 
 console.log(JSON.stringify({
   ok: true,
   phase: "stage6_canon_audit",
   checks: {
-    schema_closed: true,
-    active_files_present: true,
-    stage6a_route_registered: true,
-    stage6b_route_registered_once: true,
-    integrated_handoff_registered: true,
-    scripts_registered: true,
-    runtime_dependencies_match_lockfile: true,
-    stage7_navigation_index_closed: true
+    canonical_files_present: true,
+    canonical_live_path_wired: true,
+    stage6a_to_6b_to_6c_to_7_declared: true,
+    old_stage6b_runner_not_in_canonical_live_path: true,
+    canonical_scripts_registered: true,
+    old_stage6b_package_script_retired: true,
+    runtime_dependencies_match_package: true
   }
 }, null, 2));
