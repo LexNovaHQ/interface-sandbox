@@ -5,6 +5,7 @@ import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildEvidenceRefinerInput } from "../diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../diligence/evidenceJunction.js";
 import { buildStage5TargetFeaturePackage } from "../diligence/stage5TargetFeaturePackageBuilder.js";
+import { runStage5ABatch2Pipeline } from "../diligence/stage5/stage5aPipelineConnector.js";
 import { runStage5MultiSubstageProfile } from "../diligence/stage5MultiSubstageRunner.js";
 import { runStage5ProductFamilyScopedProfile } from "../diligence/stage5ProductFamilyLiveRunner.js";
 import { appendReviewerDocumentSource, buildDocumentOnlySourceBundle } from "./reviewerDocumentSourceAdapter.js";
@@ -215,6 +216,28 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
     throw error;
   }
 
+  if (process.env.STAGE5A_BATCH2_ENABLED !== "false") {
+    try {
+      const stage5aBatch2 = await runStage5ABatch2Pipeline({ adapterResult, companyProfile, runGeminiPool, logs, logStage, runId });
+      adapterResult.stage5a_batch2 = stage5aBatch2;
+      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") {
+        adapterResult.target_feature_profile_input.stage5a_batch2 = {
+          stage5a_product_function_mapping: stage5aBatch2.stage5a_product_function_mapping,
+          stage5a_feature_package: stage5aBatch2.stage5a_feature_package,
+          stage5a_validation: stage5aBatch2.stage5a_validation
+        };
+      }
+    } catch (error) {
+      logStage(logs, "stage5a_product_function_mapping", "failed", {
+        error: error?.message || String(error),
+        status: error?.status || null
+      });
+      if (process.env.STAGE5A_BATCH2_BLOCKING !== "false") throw error;
+    }
+  } else {
+    logStage(logs, "stage5a_product_function_mapping", "skipped", { reason: "STAGE5A_BATCH2_ENABLED=false" });
+  }
+
   try {
     const multiSubstageProfile = await runStage5MultiSubstageProfile({ adapterResult, logs, logStage });
     if (multiSubstageProfile) {
@@ -222,6 +245,8 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
         execution_mode: "stage5_multi_substage",
         feature_count: multiSubstageProfile?.feature_inventory?.length || 0,
         classification_status: multiSubstageProfile?.classification_quality?.status || null,
+        stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0,
+        stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0,
         deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0,
         deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0
       });
@@ -238,13 +263,13 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
   if (process.env.STAGE5_LEGACY_FALLBACK === "true") {
     const familyScopedProfile = await runStage5ProductFamilyScopedProfile({ adapterResult, runStage, logs, logStage });
     if (familyScopedProfile) {
-      logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification_legacy_fallback", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+      logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification_legacy_fallback", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0, stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
       return { companyProfile, targetFeatureProfile: familyScopedProfile };
     }
 
     const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
     const targetFeatureProfile = featureStage.target_feature_profile;
-    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_legacy_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_legacy_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0, stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
     return { companyProfile, targetFeatureProfile };
   }
 
