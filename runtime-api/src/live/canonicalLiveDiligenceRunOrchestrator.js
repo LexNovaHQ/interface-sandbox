@@ -6,7 +6,7 @@ import { validateReviewReadyHandoff } from "../handoff/reviewReadyHandoffValidat
 import { hasReviewerDocumentText } from "./reviewerDocumentSourceAdapter.js";
 import { asArray, loadRuntimeData, logStage, nowIso } from "./liveRunShared.js";
 import { buildLiveEvidence, buildProfiles, normalizeInput } from "./liveEvidenceAndProfilePipeline.js";
-import { buildStage6Cache, runStage, runStage6Live, runStage7, runStage8 } from "./liveStage6To8Pipeline.js";
+import { buildStage6Cache, runStage, runStage6Live, runStage7, runStage8 } from "./canonicalLiveStage6To8Pipeline.js";
 
 function normalizeStage8QualityControlLedger(stage8Ledger = {}) {
   const corrected = asArray(stage8Ledger.corrected_registry_ledger || stage8Ledger.post_challenge_ledger);
