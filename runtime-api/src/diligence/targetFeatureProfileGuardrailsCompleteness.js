@@ -1,5 +1,4 @@
 import { validateTargetFeatureProfileGuardrails as validateBaseGuardrails } from "./targetFeatureProfileGuardrailsLocked.js";
-import { canonicalCandidateCluster, evaluateCandidateFeatureCompatibility } from "./stage5TargetFeaturePackageBuilder.js";
 
 const COVERAGE_TO_DISPOSITION = {
   mapped: "mapped_feature",
@@ -20,6 +19,54 @@ const FINAL_DISPOSITIONS = new Set([
 ]);
 const COMPLETE_STATUS = new Set(["COMPLETE", "PARTIAL", "THIN"]);
 const REPAIR_ACTION = "rerun_missing_stage5_candidate_or_source_accounting";
+
+const STAGE5_COMPATIBILITY_TERMS = Object.freeze({
+  speech_to_text: ["speech", "audio", "transcription", "transcribe", "transcript", "stt"],
+  text_to_speech: ["speech", "audio", "tts", "voice", "spoken", "synthesis"],
+  translation: ["translation", "translate", "translated", "language", "languages"],
+  dubbing: ["dubbing", "dub", "voiceover", "audio", "video", "translation"],
+  document_digitisation: ["document", "ocr", "digitisation", "digitization", "extract", "parse"],
+  voice_agent: ["voice", "agent", "call", "conversation", "assistant"],
+  language_model: ["language", "model", "prompt", "generate", "text", "llm"],
+  embeddings: ["embedding", "vector", "semantic", "similarity"],
+  integration_connector: ["integration", "connector", "workflow", "api", "route"],
+  model_catalog: ["model", "catalog", "available", "selection"],
+  api_platform: ["api", "sdk", "endpoint", "developer", "platform"]
+});
+
+function canonicalCandidateCluster(candidate = {}) {
+  const explicit = String(candidate?.candidate_cluster || candidate?.canonical_function_cluster || "").trim();
+  if (explicit && STAGE5_COMPATIBILITY_TERMS[explicit]) return explicit;
+  const text = [candidate?.normalized_label, candidate?.raw_label, candidate?.candidate_label, candidate?.candidate_type, candidate?.source_url]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  for (const [cluster, terms] of Object.entries(STAGE5_COMPATIBILITY_TERMS)) {
+    if (terms.some((term) => text.includes(term))) return cluster;
+  }
+  return "api_platform";
+}
+
+function evaluateCandidateFeatureCompatibility(candidate = {}, feature = {}) {
+  const candidate_cluster = canonicalCandidateCluster(candidate);
+  const terms = STAGE5_COMPATIBILITY_TERMS[candidate_cluster] || [];
+  const featureText = [
+    feature?.feature_id,
+    feature?.feature_name,
+    feature?.commercial_function,
+    feature?.business_label_or_product_area,
+    feature?.feature_description,
+    feature?.system_action,
+    feature?.output_or_result,
+    ...(Array.isArray(feature?.input_data) ? feature.input_data : []),
+    ...(Array.isArray(feature?.archetype_codes) ? feature.archetype_codes : []),
+    ...(Array.isArray(feature?.surface_tokens) ? feature.surface_tokens : [])
+  ].filter(Boolean).join(" ").toLowerCase();
+  const matched_terms = terms.filter((term) => featureText.includes(term));
+  if (!terms.length) return { compatibility_status: "unknown", compatible: true, candidate_cluster, matched_terms };
+  if (matched_terms.length) return { compatibility_status: "compatible", compatible: true, candidate_cluster, matched_terms };
+  return { compatibility_status: "incompatible", compatible: false, candidate_cluster, matched_terms };
+}
 
 function issue(keyword, severity, instancePath, message, params = {}) {
   return { keyword, severity, instancePath, schemaPath: "#/targetFeatureProfileCompletenessGuardrails", message, params };
@@ -397,7 +444,7 @@ function validateCompleteness(profile, result, options = {}) {
   if (asArray(profile.commercial_scan?.unmapped_outcomes_due_to_insufficient_detail).length) addWarning(profile, warnings, "/commercial_scan/unmapped_outcomes_due_to_insufficient_detail", "Stage 5 has properly accounted unmapped commercial outcomes", { count: profile.commercial_scan.unmapped_outcomes_due_to_insufficient_detail.length });
 
   if (unresolved.missingIndex) {
-    addBlocking(errors, "/target_feature_candidate_index", "deterministic target_feature_candidate_index missing or empty", { required: true });
+    addRepair(profile, repairs, "/target_feature_candidate_index", "deterministic target_feature_candidate_index missing or empty; request canonical Stage 5 reinvestigation instead of blocking runtime", { required: true });
     return;
   }
 
