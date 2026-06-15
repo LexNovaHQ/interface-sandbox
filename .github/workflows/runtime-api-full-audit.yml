@@ -24,9 +24,9 @@ on:
         default: "30"
         type: string
       audit_stop_stage:
-        description: "Audit stop stage. Default runs through Stage 6B with Stage 1-5 canonical audit steps."
+        description: "Audit stop stage. Default runs through canonical Stage 6C and Stage 6→7 handoff."
         required: true
-        default: "6b"
+        default: "6c"
         type: string
 
 permissions:
@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   full-live-runtime-audit:
-    name: Full live runtime audit through Stage 6B
+    name: Full live runtime audit through Stage 6C
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -90,7 +90,7 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run smoke:runtime
 
-      - name: Run Runtime API Full Live Audit through Stage 6B
+      - name: Run Runtime API Full Live Audit through Stage 6C
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
@@ -182,6 +182,41 @@ jobs:
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage5-audit-substage.mjs 5d
+
+      - name: Audit Stage 6 - Canonical Legal/Governance Runtime
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage6-audit-substage.mjs 6
+
+      - name: Audit Stage 6A - Legal Cartography
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage6-audit-substage.mjs 6a
+
+      - name: Audit Stage 6B - Legal Governance Data Provenance
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage6-audit-substage.mjs 6b
+
+      - name: Audit Stage 6C - Data Provenance Integration
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage6-audit-substage.mjs 6c
+
+      - name: Audit Stage 6C to Stage 7 Handoff
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage6-audit-substage.mjs 6handoff
 
       - name: Publish Stage 5 canonical audit UI
         if: always()
