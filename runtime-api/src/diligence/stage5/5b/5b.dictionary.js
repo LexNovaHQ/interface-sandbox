@@ -89,6 +89,24 @@ export const STAGE5B_TAGGING_PATTERNS = Object.freeze([
   }
 ]);
 
+export const STAGE5B_FIELD_DERIVATION_RULES = Object.freeze({
+  feature_tags: "One tag row per 5A admitted function. 5B cannot create/drop functions.",
+  archetype_codes: "Controlled codes selected from STAGE5B_ALLOWED_ARCHETYPE_CODES using 5A feature windows plus 5B TAGGING_CONTEXT_WINDOW windows.",
+  surface_tokens: "Controlled tokens selected from STAGE5B_ALLOWED_SURFACE_TOKENS using cited feature behavior, data surface, and delivery context.",
+  int_ext_classification: "Derived from controlled surface_tokens; external_interaction/workflow_action usually external, otherwise both unless source-window evidence narrows it.",
+  inherited_feature_window_refs: "Must point to 5A FEATURE_CAPABILITY_WINDOW refs. These are primary evidence inherited from 5A.",
+  supplemental_tag_window_refs: "Must point to 5B TAGGING_CONTEXT_WINDOW refs created from full source custody.",
+  feature_packets_for_5c: "Handoff packet to 5C carrying function identity and all 5A/5B evidence-window refs."
+});
+
+export const STAGE5B_REINVESTIGATION_RULES = Object.freeze({
+  missing_5a_output: "Ask 5A to reinvestigate product-function discovery first.",
+  missing_5a_window_refs: "Ask 5A to regenerate verbatim feature windows before tagging.",
+  no_controlled_tags: "Ask 5B to expand tag-context windows from full clean_text_lossless before falling back.",
+  invalid_controlled_value: "Reject non-controlled values and request 5B retagging from dictionary-controlled vocabulary.",
+  metadata_or_index_detected: "Reject the tag row and request reinvestigation from source windows."
+});
+
 export const STAGE5B_DICTIONARY = Object.freeze({
   substage: "5B",
   output_version: STAGE5B_OUTPUT_VERSION,
@@ -111,5 +129,7 @@ export const STAGE5B_DICTIONARY = Object.freeze({
   allowed_surface_tokens: STAGE5B_ALLOWED_SURFACE_TOKENS,
   tagging_patterns: STAGE5B_TAGGING_PATTERNS,
   window_policy: STAGE5B_WINDOW_POLICY,
-  failure_reasons: STAGE5B_FAILURE_REASONS
+  failure_reasons: STAGE5B_FAILURE_REASONS,
+  field_derivation_rules: STAGE5B_FIELD_DERIVATION_RULES,
+  reinvestigation_rules: STAGE5B_REINVESTIGATION_RULES
 });
