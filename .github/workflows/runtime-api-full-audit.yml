@@ -24,7 +24,7 @@ on:
         default: "30"
         type: string
       audit_stop_stage:
-        description: "Audit stop stage. Default runs through canonical Stage 6C and Stage 6→7 handoff."
+        description: "Requested stop stage for diagnostics. Canonical audit producer always runs through 6c."
         required: true
         default: "6c"
         type: string
@@ -91,13 +91,15 @@ jobs:
         run: npm run smoke:runtime
 
       - name: Run Runtime API Full Live Audit through Stage 6C
+        id: canonical_audit
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
           AUDIT_TARGET_URL: ${{ inputs.target_url }}
           AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
-          AUDIT_STOP_STAGE: ${{ inputs.audit_stop_stage }}
+          AUDIT_REQUESTED_STOP_STAGE: ${{ inputs.audit_stop_stage }}
+          AUDIT_STOP_STAGE: "6c"
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
           STAGE5_CANONICAL_ENABLED: "true"
           STAGE5_CANONICAL_BLOCKING: "true"
@@ -128,91 +130,91 @@ jobs:
         run: node scripts/publish-full-audit-stage-forensics.mjs
 
       - name: Audit Stage 1 - Source Discovery
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-live-audit-stage.mjs 1
 
       - name: Audit Stage 2 - Source Capture
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-live-audit-stage.mjs 2
 
       - name: Audit Stage 3 - Evidence Refiner / Source Bundle
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-live-audit-stage.mjs 3
 
       - name: Audit Stage 4 - Company / Target Profile
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-live-audit-stage.mjs 4
 
       - name: Audit Stage 5A - Product Function Discovery
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage5-audit-substage.mjs 5a
 
       - name: Audit Stage 5B - Archetype Surface Tagging
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage5-audit-substage.mjs 5b
 
       - name: Audit Stage 5C - Complete Feature Record Builder
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage5-audit-substage.mjs 5c
 
       - name: Audit Stage 5D - target_feature_profile Integrator
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage5-audit-substage.mjs 5d
 
       - name: Audit Stage 6 - Canonical Legal/Governance Runtime
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage6-audit-substage.mjs 6
 
       - name: Audit Stage 6A - Legal Cartography
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage6-audit-substage.mjs 6a
 
       - name: Audit Stage 6B - Legal Governance Data Provenance
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage6-audit-substage.mjs 6b
 
       - name: Audit Stage 6C - Data Provenance Integration
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
         run: node scripts/assert-stage6-audit-substage.mjs 6c
 
       - name: Audit Stage 6C to Stage 7 Handoff
-        if: always()
+        if: ${{ steps.canonical_audit.outcome == 'success' }}
         working-directory: runtime-api
         env:
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
