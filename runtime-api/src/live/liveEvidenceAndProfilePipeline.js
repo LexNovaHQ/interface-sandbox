@@ -4,7 +4,6 @@ import { captureSources } from "../source-capture/sourceCapture.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildEvidenceRefinerInput } from "../diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../diligence/evidenceJunction.js";
-import { buildStage5TargetFeaturePackage } from "../diligence/stage5TargetFeaturePackageBuilder.js";
 import { runStage5Runtime } from "../diligence/stage5/stage5.runtime.js";
 import { appendReviewerDocumentSource, buildDocumentOnlySourceBundle } from "./reviewerDocumentSourceAdapter.js";
 import { asArray, asText, logStage, normalizeUrl, SOURCE_BUCKETS } from "./liveRunShared.js";
@@ -144,13 +143,18 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
   logStage(logs, "company_profile", "complete", { company_name: companyProfile?.identity?.brand_name || null, target_profile_sources: targetProfileSources.length, company_sources: companyProfileSources.length });
 
   logStage(logs, "target_feature_profile", "running", { execution_mode: "stage5_lossless_windowed_runtime" });
-  const adapterResult = buildStage5TargetFeaturePackage({ sourceBundle, evidenceJunction, companyProfile, runId: `${runId}_stage5_input`, budget: { max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 120000), max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 60000), max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000), prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000), max_product_family_packets: Number(process.env.STAGE5_MAX_PRODUCT_FAMILY_PACKETS || 8) } });
-  if (!adapterResult.ok) { const error = new Error(adapterResult.error || "Target Feature Profile input adapter failed"); error.status = adapterResult.status || 500; error.result = adapterResult; throw error; }
-
   const stage5Result = await runStage5Runtime({
     companyProfile,
-    adapterResult,
-    stage5Input: adapterResult?.target_feature_profile_input || adapterResult,
+    stage5Input: {
+      source_bundle: sourceBundle,
+      evidence_junction: evidenceJunction,
+      target_profile_ref: {
+        target_profile_version: companyProfile?.target_profile_version || "target_profile_v2",
+        brand_name: companyProfile?.identity?.brand_name || targetInput.company_name || "Unknown target",
+        legal_name: companyProfile?.identity?.legal_name || "",
+        domain: companyProfile?.identity?.domain || companyProfile?.identity?.website || targetInput.primary_url || ""
+      }
+    },
     runContext: { runId },
     modelPorts: { runGeminiPool },
     registryPorts: {},
