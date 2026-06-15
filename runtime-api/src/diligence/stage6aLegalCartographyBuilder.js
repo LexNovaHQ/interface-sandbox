@@ -20,56 +20,28 @@ import {
   normalizeStage6Enum,
   uniqueStage6Values
 } from "./stage6CanonicalVocabulary.js";
+import {
+  classifyStage6ADocumentType,
+  shouldAdmitStage6ALegalSource,
+  stage6AAdmissionDecision,
+  stage6ASourceRecordRef,
+  stage6ASourceText,
+  stage6ASourceTitle,
+  stage6ASourceUrl
+} from "./stage6aLegalSourceAdmission.js";
 
-const LEGAL_OR_GOVERNANCE_FAMILIES = new Set(["legal_profile", "governance_profile"]);
 const MAX_MACRO_LEGAL_UNITS_PER_DOCUMENT = 12;
 
 function compact(value = "") { return String(value || "").replace(/\s+/g, " ").trim(); }
 function lower(value = "") { return compact(value).toLowerCase(); }
-function firstNonEmpty(...values) { for (const value of values) { const text = compact(value); if (text) return text; } return ""; }
-function sourceUrl(record = {}) { return firstNonEmpty(record.final_url, record.source_url, record.url, record.href); }
-function sourceTitle(record = {}) { return firstNonEmpty(record.title, record.structure?.title, record.meta_title); }
-function sourceFamily(record = {}) { return firstNonEmpty(record.source_family, record.profile_family, record.family, record.evidence_family, record.source_type) || "unknown"; }
-function sourceRecordRef(record = {}, index = 0) { return firstNonEmpty(record.source_record_ref, record.evidence_source_id, record.source_id, record.id) || `SRC_${String(index + 1).padStart(3, "0")}`; }
-function sourceText(record = {}) { return firstNonEmpty(record.clean_text_lossless, record.text?.clean_text_lossless, record.normalized_text, record.text); }
+function sourceUrl(record = {}) { return stage6ASourceUrl(record); }
+function sourceTitle(record = {}) { return stage6ASourceTitle(record); }
+function sourceRecordRef(record = {}, index = 0) { return stage6ASourceRecordRef(record, index); }
+function sourceText(record = {}) { return stage6ASourceText(record); }
 function sourceHeadings(record = {}) { const headings = record.structure?.headings; return Array.isArray(headings) ? headings : []; }
 
-function classifyDocumentType(record = {}) {
-  const combined = `${lower(sourceUrl(record))} ${lower(sourceTitle(record))} ${lower(sourceText(record).slice(0, 2000))}`;
-  if (/terms-of-service|terms of service|\btos\b|terms and conditions/.test(combined)) return "tos";
-  if (/privacy-policy|privacy policy|privacy notice/.test(combined)) return "privacy_policy";
-  if (/\beula\b|end user license/.test(combined)) return "eula";
-  if (/pricing terms|fees|billing terms|payment terms/.test(combined)) return "pricing_terms";
-  if (/service description|service-specific terms|product terms/.test(combined)) return "service_description_page";
-  if (/terms\b|terms page|legal terms/.test(combined)) return "terms_page";
-  if (/status\.|system status|status page/.test(combined)) return "status_page";
-  if (/data-processing|data processing agreement|data processing addendum|\bdpa\b/.test(combined)) return "dpa";
-  if (/acceptable-use|acceptable use|prohibited use|usage restrictions|\baup\b/.test(combined)) return "aup";
-  if (/service-level|service level agreement|\bsla\b|uptime/.test(combined)) return "sla";
-  if (/responsible ai|ai policy|artificial intelligence policy/.test(combined)) return "responsible_ai_page";
-  if (/model card/.test(combined)) return "model_card";
-  if (/trust-center|trust center/.test(combined)) return "trust_center";
-  if (/security posture|security/.test(combined)) return "security_page";
-  if (/subprocessor|sub-processor|service provider list/.test(combined)) return "subprocessor_page";
-  if (/cookie policy|cookies/.test(combined)) return "cookie_policy";
-  if (/delete your data|data deletion|erasure request/.test(combined)) return "data_deletion_page";
-  if (/data subject request|dsr|privacy rights/.test(combined)) return "dsr_page";
-  if (/grievance|grievance officer/.test(combined)) return "grievance_page";
-  if (/developer terms/.test(combined)) return "developer_terms";
-  if (/api terms/.test(combined)) return "api_terms";
-  if (/community guidelines/.test(combined)) return "community_guidelines";
-  if (/business associate agreement|\bbaa\b/.test(combined)) return "baa";
-  if (/hipaa/.test(combined)) return "hipaa_notice";
-  if (/data transfer addendum|standard contractual/.test(combined)) return "data_transfer_addendum";
-  if (/legal|policy|terms|privacy|security|trust|compliance|status/.test(combined)) return "other_valid_control_doc";
-  return "unknown";
-}
-
-function shouldAdmitAsLegalSource(record = {}) {
-  const family = sourceFamily(record);
-  if (LEGAL_OR_GOVERNANCE_FAMILIES.has(family)) return true;
-  return classifyDocumentType(record) !== "unknown";
-}
+function classifyDocumentType(record = {}) { return stage6AAdmissionDecision(record).document_type; }
+function shouldAdmitAsLegalSource(record = {}) { return shouldAdmitStage6ALegalSource(record); }
 
 function normalizeSourceRecords(input = {}) {
   const rawRecords = input?.source_bundle?.raw_footprint?.source_records;
@@ -85,8 +57,35 @@ function normalizeSourceRecords(input = {}) {
 
 function legalSourceEntries(input = {}) {
   return normalizeSourceRecords(input)
-    .map((record, index) => ({ record, index, document_type: classifyDocumentType(record), source_record_ref: sourceRecordRef(record, index) }))
-    .filter(({ record, document_type }) => shouldAdmitAsLegalSource(record) && document_type !== "unknown");
+    .map((record, index) => {
+      const admission_decision = stage6AAdmissionDecision(record);
+      return {
+        record,
+        index,
+        document_type: admission_decision.document_type,
+        admission_decision,
+        source_record_ref: sourceRecordRef(record, index)
+      };
+    })
+    .filter(({ admission_decision, document_type }) => admission_decision.admitted === true && document_type !== "unknown");
+}
+
+export function buildStage6ARejectedSourceLedger(input = {}) {
+  return normalizeSourceRecords(input)
+    .map((record, index) => {
+      const decision = stage6AAdmissionDecision(record);
+      return {
+        source_record_ref: sourceRecordRef(record, index),
+        source_url: sourceUrl(record) || "unknown",
+        source_title: sourceTitle(record) || "unknown",
+        source_family: decision.source_family,
+        admitted: decision.admitted,
+        document_type: decision.document_type,
+        admission_reason: decision.admission_reason,
+        locator_document_type: decision.locator_document_type
+      };
+    })
+    .filter((row) => row.admitted !== true);
 }
 
 function documentStatusFor(record = {}) { return sourceText(record) ? "visible" : (sourceUrl(record) ? "linked" : "unknown"); }
@@ -315,11 +314,14 @@ export function buildStage6ALegalCartographySkeleton(input = {}) {
 export const stage6aLegalCartographyBuilderInternals = {
   STAGE6_BASIS_CODES,
   STAGE6_CONFIDENCE_VALUES,
+  buildStage6ARejectedSourceLedger,
   classifyDocumentType,
+  classifyStage6ADocumentType,
   classifySectionFunction,
   classifyLegalUnitType,
   macroHeadingsForRecord,
   normalizeSourceRecords,
+  shouldAdmitAsLegalSource,
   sourceHeadings,
-  shouldAdmitAsLegalSource
+  stage6AAdmissionDecision
 };
