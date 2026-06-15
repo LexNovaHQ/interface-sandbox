@@ -1,6 +1,6 @@
 const RUN_STATUSES = ["CONTROLLED", "TRIGGERED", "NOT_TRIGGERED", "INSUFFICIENT_EVIDENCE"];
 const SKIP_STATUSES = ["NOT_APPLICABLE"];
-const RUN_REASONS = new Set(["UNI_ALWAYS_RUN", "STAGE5_INT_TRIGGERED", "CONDITIONAL_DOC_REVIEW"]);
+const RUN_REASONS = new Set(["UNI_ALWAYS_RUN", "STAGE5_INT_TRIGGERED", "CONDITIONAL_DOC_REVIEW", "STAGE5_DEGRADED_FALLBACK"]);
 const SKIP_REASONS = new Set(["INT_NOT_TRIGGERED"]);
 
 function asText(value) {
@@ -48,7 +48,20 @@ export function allowedStatusesForRoute(routeReason) {
   return isStage7RunReason(routeReason) ? [...RUN_STATUSES] : [...SKIP_STATUSES];
 }
 
-export function buildStage7RouteContract({ row = {}, index = 0, routeReason = "INT_NOT_TRIGGERED", featureRefs = [], activeArchetypes = [], activeSurfaces = [] } = {}) {
+function routeFamily(reason) {
+  const normalized = asUpper(reason);
+  if (normalized === "UNI_ALWAYS_RUN") return "UNIVERSAL";
+  if (normalized === "STAGE5_INT_TRIGGERED") return "ACTIVE_ARCHETYPE";
+  if (normalized === "CONDITIONAL_DOC_REVIEW") return "LEGAL_GOVERNANCE_ARTIFACT";
+  if (normalized === "STAGE5_DEGRADED_FALLBACK") return "STAGE5_DEGRADED_FALLBACK";
+  return "NON_ACTIVE_ARCHETYPE";
+}
+
+export function stage7RouteRuleText() {
+  return "Runtime-applicable rows are rows whose route_reason is UNI_ALWAYS_RUN, STAGE5_INT_TRIGGERED, CONDITIONAL_DOC_REVIEW, or STAGE5_DEGRADED_FALLBACK. Runtime-applicable rows must not receive NOT_APPLICABLE. For runtime-applicable rows, the only allowed final_status values are CONTROLLED, TRIGGERED, NOT_TRIGGERED, and INSUFFICIENT_EVIDENCE. Only deterministic skipped rows whose route_reason is INT_NOT_TRIGGERED may receive NOT_APPLICABLE. The model must not decide whether an archetype applies. Applicability is decided by Stage 5 and the deterministic Stage 7 planner before the model runs. CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route. STAGE5_DEGRADED_FALLBACK = conservative deterministic route for rows matching unresolved Stage 5 feature-candidate signals after capped Stage5R reinvestigation.";
+}
+
+export function buildStage7RouteContract({ row = {}, index = 0, routeReason = "INT_NOT_TRIGGERED", featureRefs = [], activeArchetypes = [], activeSurfaces = [], fallbackContext = null } = {}) {
   const normalizedReason = asUpper(routeReason) || "INT_NOT_TRIGGERED";
   const shouldRun = isStage7RunReason(normalizedReason);
   const archetype = stage7RowArchetype(row);
@@ -58,15 +71,24 @@ export function buildStage7RouteContract({ row = {}, index = 0, routeReason = "I
     threat_name: stage7RowName(row),
     route: shouldRun ? "RUN" : "SKIP",
     route_reason: normalizedReason,
-    route_family: normalizedReason === "UNI_ALWAYS_RUN" ? "UNIVERSAL" : normalizedReason === "STAGE5_INT_TRIGGERED" ? "ACTIVE_ARCHETYPE" : normalizedReason === "CONDITIONAL_DOC_REVIEW" ? "LEGAL_GOVERNANCE_ARTIFACT" : "NON_ACTIVE_ARCHETYPE",
+    route_family: routeFamily(normalizedReason),
     archetype,
     surfaces: stage7RowSurfaces(row),
     active_archetypes: asArray(activeArchetypes).map(asUpper).filter(Boolean),
     active_surfaces: asArray(activeSurfaces).map(asText).filter(Boolean),
     feature_refs: asArray(featureRefs).map(asText).filter(Boolean),
+    stage5_degraded_fallback: normalizedReason === "STAGE5_DEGRADED_FALLBACK" ? {
+      fallback_context_version: fallbackContext?.fallback_context_version || "stage7_stage5_degraded_fallback_v1",
+      classification_status: fallbackContext?.classification_status || "UNKNOWN",
+      signal_rules_triggered: asArray(fallbackContext?.signal_rules_triggered),
+      inferred_archetypes: asArray(fallbackContext?.inferred_archetypes),
+      inferred_surfaces: asArray(fallbackContext?.inferred_surfaces),
+      inferred_subcats: asArray(fallbackContext?.inferred_subcats),
+      candidate_refs: asArray(fallbackContext?.candidate_refs)
+    } : undefined,
     allowed_final_statuses: allowedStatusesForRoute(normalizedReason),
     not_applicable_allowed: !shouldRun,
-    rule_text: "Runtime-applicable rows are rows whose route_reason is UNI_ALWAYS_RUN, STAGE5_INT_TRIGGERED, or CONDITIONAL_DOC_REVIEW. Runtime-applicable rows must not receive NOT_APPLICABLE. For runtime-applicable rows, the only allowed final_status values are CONTROLLED, TRIGGERED, NOT_TRIGGERED, and INSUFFICIENT_EVIDENCE. Only deterministic skipped rows whose route_reason is INT_NOT_TRIGGERED may receive NOT_APPLICABLE. The model must not decide whether an archetype applies. Applicability is decided by Stage 5 and the deterministic Stage 7 planner before the model runs. CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route."
+    rule_text: stage7RouteRuleText()
   };
 }
 
@@ -101,8 +123,4 @@ export function deriveFinalStatusForRoute(entry = {}, routeContract = {}) {
 
 export function statusAllowedByRoute(status, routeContract = {}) {
   return allowedStatusesForRoute(routeContract?.route_reason).includes(status);
-}
-
-export function stage7RouteRuleText() {
-  return "Runtime-applicable rows are rows whose route_reason is UNI_ALWAYS_RUN, STAGE5_INT_TRIGGERED, or CONDITIONAL_DOC_REVIEW. Runtime-applicable rows must not receive NOT_APPLICABLE. For runtime-applicable rows, the only allowed final_status values are CONTROLLED, TRIGGERED, NOT_TRIGGERED, and INSUFFICIENT_EVIDENCE. Only deterministic skipped rows whose route_reason is INT_NOT_TRIGGERED may receive NOT_APPLICABLE. The model must not decide whether an archetype applies. Applicability is decided by Stage 5 and the deterministic Stage 7 planner before the model runs. CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route.";
 }
