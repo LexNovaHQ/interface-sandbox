@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-import "../server.js";
+import "express";
+import "helmet";
+import "cors";
+import "@google/genai";
+import "ajv";
 import "../src/routes/liveDiligenceRoutes.js";
 import "../src/live/canonicalLiveDiligenceRunOrchestrator.js";
 import "../src/live/liveStage6To8Pipeline.js";
