@@ -33,10 +33,15 @@ import {
 
 export const STAGE6B_PROFILE_VERSION = 'legal_governance_data_provenance_profile_v1';
 
+function nonEmptyObject(value) {
+  const obj = asObject(value);
+  return Object.keys(obj).length ? obj : null;
+}
+
 function legalCartographyFromInput(stage6bInput = {}, stage6aOutput = {}) {
-  return asObject(stage6bInput.reference?.legal_cartography)
-    || asObject(stage6bInput.legal_cartography)
-    || asObject(stage6aOutput.legal_cartography)
+  return nonEmptyObject(stage6bInput.reference?.legal_cartography)
+    || nonEmptyObject(stage6bInput.legal_cartography)
+    || nonEmptyObject(stage6aOutput.legal_cartography)
     || {};
 }
 
