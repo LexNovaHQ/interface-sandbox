@@ -18,45 +18,38 @@ import {
   STAGE6_ROLE_ALLOCATION_VALUES,
   STAGE6_STANDARD_SIGNALS
 } from "./stage6CanonicalVocabulary.js";
+import {
+  buildStage6BLegalGovernancePrefill,
+  normalizeStage6BSourceRef,
+  stage6BLegalGovernanceSourceRecords,
+  stage6BSourceRecordRef
+} from "./stage6bLegalGovernancePrefill.js";
 
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
+function asArray(value) { return Array.isArray(value) ? value : []; }
+function compact(value = "") { return String(value || "").replace(/\s+/g, " ").trim(); }
+function sourceText(record = {}) { return compact(record.clean_text_lossless || record.text?.clean_text_lossless || record.normalized_text || record.text || ""); }
+function sourceUrl(record = {}) { return compact(record.source_url || record.url || record.final_url); }
+function sourceFamily(record = {}) { return compact(record.source_family || record.family || record.source_type || record.type || "unknown"); }
+
+function sourceRecordPacket(record = {}, index = 0) {
+  const ref = stage6BSourceRecordRef(record, index);
+  return {
+    source_record_ref: ref,
+    normalized_source_record_ref: normalizeStage6BSourceRef(ref),
+    source_url: sourceUrl(record),
+    source_family: sourceFamily(record),
+    source_type: compact(record.source_type || record.type || "unknown"),
+    title: compact(record.structure?.title || record.title || ""),
+    clean_text_lossless: sourceText(record),
+    source_text_is_lossless: true,
+    summarized: false,
+    compressed: false,
+    snippet_selected: false
+  };
 }
 
-function compact(value = "") {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-function sourceText(record = {}) {
-  return compact(record.clean_text_lossless || record.text?.clean_text_lossless || record.normalized_text || record.text || "");
-}
-
-function sourceRecordRef(record = {}, index = 0) {
-  return compact(record.source_record_ref || record.evidence_source_id || record.source_id || record.id || `SRC_${String(index + 1).padStart(3, "0")}`);
-}
-
-function normalizeSourceRecords(input = {}) {
-  const rawRecords = input?.source_bundle?.raw_footprint?.source_records;
-  if (Array.isArray(rawRecords) && rawRecords.length) return rawRecords;
-  const evidenceBuffer = input?.source_bundle?.evidence_buffer;
-  if (Array.isArray(evidenceBuffer) && evidenceBuffer.length) return evidenceBuffer;
-  const artifactInventory = input?.source_bundle?.artifact_inventory;
-  if (Array.isArray(artifactInventory) && artifactInventory.length) return artifactInventory;
-  return [];
-}
-
-function sourceWindows(input = {}, sourceRefs = [], maxChars = 1200) {
-  const wanted = new Set(sourceRefs);
-  return normalizeSourceRecords(input).map((record, index) => {
-    const ref = sourceRecordRef(record, index);
-    if (wanted.size && !wanted.has(ref)) return null;
-    return {
-      source_record_ref: ref,
-      source_url: compact(record.source_url || record.url || record.final_url),
-      source_type: compact(record.source_type || record.type || "unknown"),
-      nearby_text_window: sourceText(record).slice(0, maxChars)
-    };
-  }).filter(Boolean);
+function legalGovernanceLosslessSources(input = {}) {
+  return stage6BLegalGovernanceSourceRecords(input).map(sourceRecordPacket);
 }
 
 function featureRefs(profile = {}) {
@@ -86,17 +79,55 @@ function provenanceRefs(profile = {}) {
   }));
 }
 
+function legalCartographyRefs(input = {}) {
+  const cartography = input.legal_document_cartography || input.stage6a_review?.legal_document_cartography || {};
+  const nav = input.stage6a_review?.stage7_navigation_index || {};
+  return {
+    legal_document_inventory: asArray(cartography.legal_document_inventory).map((row) => ({
+      document_id: row.document_id,
+      document_type: row.document_type,
+      document_title: row.document_title,
+      source_record_ref: row.source_record_ref,
+      source_url: row.source_url
+    })),
+    legal_document_index: asArray(cartography.legal_document_index).map((row) => ({
+      legal_unit_id: row.legal_unit_id,
+      document_id: row.document_id,
+      section_function: row.section_function,
+      control_families_detected: asArray(row.control_families_detected),
+      source_record_ref: row.source_record_ref,
+      source_locator: row.source_locator,
+      confidence: row.confidence
+    })),
+    control_signal_map: asArray(cartography.document_control_signal_map).map((row) => ({
+      document_id: row.document_id,
+      legal_unit_id: row.legal_unit_id,
+      control_family: row.control_family,
+      control_signal: row.control_signal,
+      confidence: row.confidence
+    })),
+    legal_unit_source_locator_index: asArray(nav.legal_unit_source_locator_index)
+  };
+}
+
 export function buildStage6BSemanticPacket(input = {}, options = {}) {
   const canonical = buildStage6BDataProvenanceSkeleton(input);
   const profile = normalizeStage5FeatureProfile(input);
   const maxDataFlows = Number(options.maxDataFlows || 200);
-  const textWindowChars = Number(options.textWindowChars || 1200);
   const dataFlowSeed = asArray(canonical.data_provenance_profile?.data_flow_profile).slice(0, maxDataFlows);
-  const sourceRefs = [...new Set(dataFlowSeed.flatMap((row) => asArray(row.source_refs)))];
+  const legalSources = legalGovernanceLosslessSources(input);
+  const prefill = buildStage6BLegalGovernancePrefill(input);
 
   return {
-    semantic_packet_version: "stage6_semantic_packet_v1",
+    semantic_packet_version: "stage6b_semantic_packet_v2",
     stage6_component: "stage6b_data_provenance",
+    input_firewall: {
+      allowed_lossless_source_families: ["legal_profile", "governance_profile"],
+      forbidden_lossless_source_families: ["product_profile", "company_profile", "commercial_profile", "docs_developer_profile"],
+      stage5_role: "feature_data_behavior_map_only",
+      stage6a_role: "legal_unit_navigation_only",
+      product_lossless_sources_excluded: true
+    },
     allowed_vocabulary: {
       standard_signal: STAGE6_STANDARD_SIGNALS,
       confidence: STAGE6_CONFIDENCE_VALUES,
@@ -113,6 +144,15 @@ export function buildStage6BSemanticPacket(input = {}, options = {}) {
       limitation_reason_code: STAGE6_LIMITATION_REASON_CODES,
       limitation_impact_code: STAGE6_LIMITATION_IMPACT_CODES
     },
+    target_feature_profile_refs: {
+      feature_inventory: featureRefs(profile),
+      stage5_product_observed_data_provenance: provenanceRefs(profile),
+      regulated_surface_refs: asArray(profile.regulated_surface_map)
+    },
+    stage6a_legal_cartography_refs: legalCartographyRefs(input),
+    legal_governance_lossless_sources: legalSources,
+    source_refs: legalSources,
+    deterministic_policy_prefill: prefill,
     data_flow_seed: dataFlowSeed.map((row) => ({
       data_flow_id: row.data_flow_id,
       feature_id: row.feature_id,
@@ -143,20 +183,26 @@ export function buildStage6BSemanticPacket(input = {}, options = {}) {
     feature_refs: featureRefs(profile),
     provenance_refs: provenanceRefs(profile),
     regulated_surface_refs: asArray(profile.regulated_surface_map),
-    source_refs: sourceWindows(input, sourceRefs, textWindowChars),
+    target_data_provenance_merge_policy: {
+      integrated_profile_is_runtime_merged: true,
+      model_must_not_emit_integrated_profile: true,
+      merge_key_primary: "feature_id + provenance_id",
+      merge_key_fallback: "feature_id + normalised data_category + normalised processing_context"
+    },
     instructions: {
       classification_only: true,
       no_final_schema_wrapper: true,
       no_new_data_flow_rows: true,
       no_ref_mutation: true,
       no_quotes_or_prose: true,
-      use_canonical_vocabulary_only: true
+      use_canonical_vocabulary_only: true,
+      unknown_is_exception_not_norm: true
     }
   };
 }
 
 export const stage6bSemanticPacketBuilderInternals = {
-  normalizeSourceRecords,
-  sourceRecordRef,
-  sourceWindows
+  legalGovernanceLosslessSources,
+  sourceRecordPacket,
+  legalCartographyRefs
 };
