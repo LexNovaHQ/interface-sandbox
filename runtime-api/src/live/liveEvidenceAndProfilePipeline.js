@@ -5,6 +5,7 @@ import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildEvidenceRefinerInput } from "../diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../diligence/evidenceJunction.js";
 import { buildStage5TargetFeaturePackage } from "../diligence/stage5TargetFeaturePackageBuilder.js";
+import { runStage5MultiSubstageProfile } from "../diligence/stage5MultiSubstageRunner.js";
 import { runStage5ProductFamilyScopedProfile } from "../diligence/stage5ProductFamilyLiveRunner.js";
 import { appendReviewerDocumentSource, buildDocumentOnlySourceBundle } from "./reviewerDocumentSourceAdapter.js";
 import { asArray, asText, logStage, normalizeUrl, SOURCE_BUCKETS } from "./liveRunShared.js";
@@ -193,7 +194,7 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
   const companyProfile = companyStage.company_profile;
   logStage(logs, "company_profile", "complete", { company_name: companyProfile?.identity?.brand_name || null, target_profile_sources: targetProfileSources.length, company_sources: companyProfileSources.length });
 
-  logStage(logs, "target_feature_profile", "running");
+  logStage(logs, "target_feature_profile", "running", { execution_mode: "stage5_multi_substage" });
   const adapterResult = buildStage5TargetFeaturePackage({
     sourceBundle,
     evidenceJunction,
@@ -214,14 +215,38 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
     throw error;
   }
 
-  const familyScopedProfile = await runStage5ProductFamilyScopedProfile({ adapterResult, runStage, logs, logStage });
-  if (familyScopedProfile) {
-    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
-    return { companyProfile, targetFeatureProfile: familyScopedProfile };
+  try {
+    const multiSubstageProfile = await runStage5MultiSubstageProfile({ adapterResult, logs, logStage });
+    if (multiSubstageProfile) {
+      logStage(logs, "target_feature_profile", "complete", {
+        execution_mode: "stage5_multi_substage",
+        feature_count: multiSubstageProfile?.feature_inventory?.length || 0,
+        classification_status: multiSubstageProfile?.classification_quality?.status || null,
+        deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0,
+        deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0
+      });
+      return { companyProfile, targetFeatureProfile: multiSubstageProfile };
+    }
+  } catch (error) {
+    logStage(logs, "target_feature_profile", "multi_substage_failed", {
+      error: error?.message || String(error),
+      validation_error_count: error?.validation_errors?.length || 0
+    });
+    if (process.env.STAGE5_LEGACY_FALLBACK !== "true") throw error;
   }
 
-  const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
-  const targetFeatureProfile = featureStage.target_feature_profile;
-  logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
-  return { companyProfile, targetFeatureProfile };
+  if (process.env.STAGE5_LEGACY_FALLBACK === "true") {
+    const familyScopedProfile = await runStage5ProductFamilyScopedProfile({ adapterResult, runStage, logs, logStage });
+    if (familyScopedProfile) {
+      logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification_legacy_fallback", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+      return { companyProfile, targetFeatureProfile: familyScopedProfile };
+    }
+
+    const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
+    const targetFeatureProfile = featureStage.target_feature_profile;
+    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_legacy_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+    return { companyProfile, targetFeatureProfile };
+  }
+
+  throw new Error("Stage 5 multi-substage runner returned no target_feature_profile and legacy fallback is disabled.");
 }
