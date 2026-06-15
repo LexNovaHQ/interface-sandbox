@@ -5,6 +5,7 @@ import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildEvidenceRefinerInput } from "../diligence/adapters/sourceBundleAdapter.js";
 import { buildEvidenceJunction } from "../diligence/evidenceJunction.js";
 import { buildStage5TargetFeaturePackage } from "../diligence/stage5TargetFeaturePackageBuilder.js";
+import { runStage5ProductFamilyScopedProfile } from "../diligence/stage5ProductFamilyLiveRunner.js";
 import { appendReviewerDocumentSource, buildDocumentOnlySourceBundle } from "./reviewerDocumentSourceAdapter.js";
 import { asArray, asText, logStage, normalizeUrl, SOURCE_BUCKETS } from "./liveRunShared.js";
 
@@ -202,7 +203,8 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
       max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 120000),
       max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 60000),
       max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000),
-      prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000)
+      prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000),
+      max_product_family_packets: Number(process.env.STAGE5_MAX_PRODUCT_FAMILY_PACKETS || 8)
     }
   });
   if (!adapterResult.ok) {
@@ -211,8 +213,15 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
     error.result = adapterResult;
     throw error;
   }
+
+  const familyScopedProfile = await runStage5ProductFamilyScopedProfile({ adapterResult, runStage, logs, logStage });
+  if (familyScopedProfile) {
+    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+    return { companyProfile, targetFeatureProfile: familyScopedProfile };
+  }
+
   const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
   const targetFeatureProfile = featureStage.target_feature_profile;
-  logStage(logs, "target_feature_profile", "complete", { feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+  logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
   return { companyProfile, targetFeatureProfile };
 }
