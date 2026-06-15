@@ -3,6 +3,7 @@ import path from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import { assertLosslessPrimaryEvidence, assertNoPlaceholderEvidence, assertWindowIsVerbatim } from "../stage5.runtime.js";
 import { buildStage5DIntegratorInput } from "./5d.prompt.js";
+import { STAGE5D_INTERNAL_ONLY_FIELDS, STAGE5D_OUTPUT_VERSION, TARGET_FEATURE_PROFILE_HANDOFF_KEYS } from "./5d.dictionary.js";
 
 function delivery(channels = []) {
   return {
@@ -10,6 +11,10 @@ function delivery(channels = []) {
     api: channels.includes("api") ? "true" : "unknown",
     web: channels.includes("web") ? "true" : "unknown"
   };
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function windowMap(stage5a, stage5b, stage5c) {
@@ -51,6 +56,57 @@ function profileRef(canonicalInput) {
     legal_name: String(ref.legal_name || upstreamIdentity.legal_name || ""),
     domain: String(ref.domain || upstreamIdentity.domain || upstreamIdentity.website || "")
   };
+}
+
+function throwContractViolation(message, details = {}) {
+  const error = new Error(message);
+  error.code = "STAGE5D_DOWNSTREAM_CONTRACT_VIOLATION";
+  error.details = details;
+  throw error;
+}
+
+function sameStringSet(left = [], right = []) {
+  const a = [...left].sort();
+  const b = [...right].sort();
+  return a.length === b.length && a.every((item, index) => item === b[index]);
+}
+
+export function assertTargetFeatureProfileHandoffContract(profile = {}) {
+  const topLevelKeys = Object.keys(profile);
+  if (!sameStringSet(topLevelKeys, TARGET_FEATURE_PROFILE_HANDOFF_KEYS)) {
+    throwContractViolation("target_feature_profile top-level keys changed.", {
+      expected: TARGET_FEATURE_PROFILE_HANDOFF_KEYS,
+      actual: topLevelKeys
+    });
+  }
+  for (const forbidden of STAGE5D_INTERNAL_ONLY_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(profile, forbidden)) {
+      throwContractViolation("Internal Stage 5 field leaked into downstream target_feature_profile.", { field: forbidden });
+    }
+  }
+  if (profile.feature_profile_version !== "feature_profile_v2") {
+    throwContractViolation("target_feature_profile must preserve feature_profile_v2.", { feature_profile_version: profile.feature_profile_version });
+  }
+  if (!Array.isArray(profile.product_feature_map) || profile.product_feature_map.length !== 0) {
+    throwContractViolation("product_feature_map must remain the empty legacy compatibility alias.", { product_feature_map_length: profile.product_feature_map?.length });
+  }
+  if (!Array.isArray(profile.feature_inventory) || !profile.feature_inventory.length) {
+    throwContractViolation("feature_inventory must remain the downstream feature array.");
+  }
+  if (!Array.isArray(profile.data_provenance_map) || !Array.isArray(profile.regulated_surface_map)) {
+    throwContractViolation("Stage 5D must emit flat downstream maps for data_provenance_map and regulated_surface_map.");
+  }
+  for (const [index, feature] of asArray(profile.feature_inventory).entries()) {
+    for (const forbidden of STAGE5D_INTERNAL_ONLY_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(feature, forbidden)) {
+        throwContractViolation("Internal Stage 5 field leaked into feature_inventory row.", { index, field: forbidden });
+      }
+    }
+    if (!Array.isArray(feature.evidence_refs) || !feature.evidence_refs.length) {
+      throwContractViolation("feature_inventory rows must retain evidence_refs for downstream stages.", { index, feature_id: feature.feature_id });
+    }
+  }
+  return true;
 }
 
 function buildFeature(record, tag, windows) {
@@ -188,6 +244,7 @@ export async function runStage5D({ canonicalInput, stage5a, stage5b, stage5c, sc
     },
     limitations: []
   };
+  assertTargetFeatureProfileHandoffContract(profile);
   assertNoPlaceholderEvidence(profile, "target_feature_profile");
   const validation = validateWithSchema(profile, schemaValidator);
   if (!validation.ok) {
@@ -198,7 +255,7 @@ export async function runStage5D({ canonicalInput, stage5a, stage5b, stage5c, sc
   }
   return {
     ok: true,
-    stage5d_output_version: "stage5d_target_feature_profile_integrator_v2",
+    stage5d_output_version: STAGE5D_OUTPUT_VERSION,
     target_feature_profile: profile,
     prompt_input: buildStage5DIntegratorInput({ canonicalInput, stage5a, stage5b, stage5c }),
     validation,
