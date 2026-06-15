@@ -8,6 +8,31 @@ import { asArray, loadRuntimeData, logStage, nowIso } from "./liveRunShared.js";
 import { buildLiveEvidence, buildProfiles, normalizeInput } from "./liveEvidenceAndProfilePipeline.js";
 import { buildStage6Cache, runStage, runStage6Live, runStage7, runStage8 } from "./liveStage6To8Pipeline.js";
 
+function normalizeStage8QualityControlLedger(stage8Ledger = {}) {
+  const corrected = asArray(stage8Ledger.corrected_registry_ledger || stage8Ledger.post_challenge_ledger);
+  const originalArtifactType = stage8Ledger.artifact_type || "stage8_post_challenge_ledger";
+  stage8Ledger.qc_ledger_version = stage8Ledger.qc_ledger_version || "stage8_quality_control_ledger_v1";
+  stage8Ledger.source_artifact_type = stage8Ledger.source_artifact_type || originalArtifactType;
+  stage8Ledger.artifact_type = "stage8_quality_control_ledger";
+  stage8Ledger.corrected_registry_ledger = corrected;
+  stage8Ledger.post_challenge_ledger = corrected;
+  stage8Ledger.source_policy = {
+    ...(stage8Ledger.source_policy || {}),
+    not_a_registry_ledger: true,
+    applies_to: "exposure_profile.registry_ledger",
+    stage9_must_consume_effective_registry_ledger_after_qc: true
+  };
+  return stage8Ledger;
+}
+
+function effectiveStage9Ledger(stage9ReportData = {}) {
+  return asArray(
+    stage9ReportData?.forensic_ledger_appendix?.full_registry_ledger
+      || stage9ReportData?.report?.report_data?.forensic_ledger_appendix?.full_registry_ledger
+      || stage9ReportData?.report?.report_data?.forensic_ledger_appendix?.appendix_e_exposure_forensic_ledger
+  );
+}
+
 export async function runLiveDiligenceReview(input = {}, options = {}) {
   const logs = [];
   const warnings = [];
@@ -24,14 +49,15 @@ export async function runLiveDiligenceReview(input = {}, options = {}) {
   const { sourceBundle, evidenceJunction, reviewerSource } = evidence;
 
   const { companyProfile, targetFeatureProfile } = await buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode, logs, runId, runStage });
-  const { stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact } = await runStage6Live({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, logs, runId });
-  const stage6Cache = buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, stage6IntegratedArtifact });
+  const { stage6aStageResult, stage6bStageResult, legalCartography, dataProvenanceProfile, stage6IntegratedArtifact, stage6IntegratedValidation } = await runStage6Live({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, logs, runId });
+  const stage6Cache = buildStage6Cache({ sourceBundle, evidenceJunction, companyProfile, targetFeatureProfile, stage6aStageResult, stage6bStageResult, legalCartography, dataProvenanceProfile, stage6IntegratedArtifact, stage6IntegratedValidation });
   const stage7Artifact = await runStage7({ stage6Cache, registryRuntime, registryKey, logs, runId: `${runId}_stage7` });
   const { stage8Export, stage8Ledger, stage8Input } = await runStage8({ stage6Cache, stage7Artifact, registryRuntime, logs, runId: `${runId}_stage8` });
+  normalizeStage8QualityControlLedger(stage8Ledger);
 
   logStage(logs, "stage9_report", "running");
   const stage9ReportData = buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, stage8Export, registryRuntime });
-  const stage9Validation = validateStage9Report({ stage9Report: stage9ReportData, postChallengeLedger: asArray(stage8Ledger.post_challenge_ledger), registryRuntime });
+  const stage9Validation = validateStage9Report({ stage9Report: stage9ReportData, postChallengeLedger: effectiveStage9Ledger(stage9ReportData), registryRuntime });
   if (!stage9Validation.ok) {
     const error = new Error("Stage 9 report validation failed.");
     error.result = stage9Validation;
@@ -77,12 +103,12 @@ export async function runLiveDiligenceReview(input = {}, options = {}) {
     metrics: {
       source_count: sourceBundle.raw_footprint?.source_records?.length || 0,
       reviewer_document_included: Boolean(reviewerSource),
-      stage7_rows: stage7Artifact.merged_ledger?.length || 0,
-      stage8_rows: stage8Ledger.post_challenge_ledger?.length || 0,
+      stage7_rows: stage7Artifact.exposure_profile?.registry_ledger?.length || stage7Artifact.merged_ledger?.length || 0,
+      stage8_rows: stage8Ledger.corrected_registry_ledger?.length || stage8Ledger.post_challenge_ledger?.length || 0,
       stage8_corrected_count: stage8Ledger.corrected_count || 0,
       html_bytes: htmlReport ? Buffer.byteLength(htmlReport, "utf8") : 0
     },
     warnings,
-    internal_artifacts: options.include_internal_artifacts === true ? { stage6Cache, stage7Artifact, stage8Export, stage8Ledger, stage8Input } : undefined
+    internal_artifacts: options.include_internal_artifacts === true ? { stage6Cache, stage7Artifact, stage8Export, stage8QualityControlLedger: stage8Ledger, stage8Ledger, stage8Input } : undefined
   };
 }
