@@ -1,5 +1,62 @@
 export const STAGE5_CANONICAL_VERSION = "stage5_lossless_windowed_runtime_v1";
 
+export const STAGE5_CANONICAL_SUBSTAGES = Object.freeze([
+  {
+    id: "5A",
+    name: "Product Function Discovery",
+    purpose: "Discover admitted product/API functions from product-family lossless source and create verbatim feature evidence windows.",
+    primary_input: "product_family.clean_text_lossless",
+    output_key: "stage5a"
+  },
+  {
+    id: "5B",
+    name: "Archetype / Surface Tagging",
+    purpose: "Tag 5A admitted functions using 5A windows, supplemental verbatim windows if needed, and controlled registry vocabulary.",
+    primary_input: "5A admitted functions + source custody",
+    output_key: "stage5b"
+  },
+  {
+    id: "5C",
+    name: "Complete Feature Record Builder",
+    purpose: "Merge old 5C feature inventory and old 5D data touchpoints into complete feature-wise records.",
+    primary_input: "5A + 5B outputs + source custody",
+    output_key: "stage5c"
+  },
+  {
+    id: "5D",
+    name: "Final target_feature_profile Integrator",
+    purpose: "Integrate 5A, 5B, and 5C outputs into the downstream target_feature_profile handoff.",
+    primary_input: "substage outputs + custody manifest",
+    output_key: "stage5d"
+  }
+]);
+
+export const STAGE5_LEGACY_PARKED_COMPONENTS = Object.freeze([
+  "stage5aPipelineConnector.js",
+  "stage5bPipelineConnector.js",
+  "stage5cPipelineConnector.js",
+  "stage5dPipelineConnector.js",
+  "stage5ePipelineConnector.js",
+  "5a/stage5aProductFamilyInputAdapter.js",
+  "5a/stage5aLosslessSourceIndexBuilder.js",
+  "5a/stage5aDeterministicCandidatePoolBuilder.js",
+  "5b/stage5bFeatureInvestigationPacketBuilder.js",
+  "5c/stage5cInputJoiner.js",
+  "5d/stage5dFeatureContextBuilder.js",
+  "5e/stage5eSchemaMappers.js"
+]);
+
+export const STAGE5_BLOCKING_ERROR_CODES = Object.freeze([
+  "LOSSLESS_PRIMARY_EVIDENCE_VIOLATION",
+  "SOURCE_WINDOW_NOT_VERBATIM",
+  "SOURCE_WINDOW_REF_VIOLATION",
+  "METADATA_AS_PRIMARY_EVIDENCE_BLOCKED",
+  "INDEX_AS_PRIMARY_EVIDENCE_BLOCKED",
+  "PLACEHOLDER_EVIDENCE_BLOCKED",
+  "STAGE5A_NO_ADMITTED_FUNCTIONS",
+  "STAGE5_FINAL_PROFILE_SCHEMA_VIOLATION"
+]);
+
 export const STAGE5_FEATURE_PATTERNS = Object.freeze([
   {
     key: "speech_to_text",
