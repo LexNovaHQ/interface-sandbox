@@ -124,6 +124,240 @@ function collectUsageMetadata(value) {
   return { usage_metadata_count: records.length, totals, records };
 }
 
+function compactValue(value, max = 280) {
+  if (value == null) return value;
+  if (typeof value === "string") return value.length > max ? `${value.slice(0, max)}...` : value;
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  try {
+    const text = JSON.stringify(value);
+    return text.length > max ? `${text.slice(0, max)}...` : value;
+  } catch {
+    return String(value).slice(0, max);
+  }
+}
+
+function objectSummary(value) {
+  if (Array.isArray(value)) return { type: "array", count: value.length };
+  if (!value || typeof value !== "object") return { type: value == null ? "null" : typeof value };
+  const keys = Object.keys(value);
+  const array_counts = {};
+  const object_keys = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (Array.isArray(child)) array_counts[key] = child.length;
+    else if (child && typeof child === "object") object_keys[key] = Object.keys(child).slice(0, 24);
+  }
+  return { type: "object", key_count: keys.length, keys: keys.slice(0, 80), array_counts, object_keys };
+}
+
+function collectRefs(value, maxRefs = 120) {
+  const refs = [];
+  function walk(node, trail = []) {
+    if (refs.length >= maxRefs || !node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      node.slice(0, 40).forEach((item, index) => walk(item, trail.concat(String(index))));
+      return;
+    }
+    for (const [key, child] of Object.entries(node)) {
+      const pathName = trail.concat(key).join(".");
+      if (/(^|_)(id|ids|ref|refs|url|urls|path|sha256|source|sources)$/i.test(key)) {
+        refs.push({ path: pathName, value: compactValue(child) });
+        if (refs.length >= maxRefs) return;
+      }
+      walk(child, trail.concat(key));
+    }
+  }
+  walk(value, []);
+  return refs;
+}
+
+function warningErrorSummary(...values) {
+  const warnings = [];
+  const errors = [];
+  function addIssue(list, issue, source) {
+    if (issue == null) return;
+    if (typeof issue === "string") list.push({ source, message: issue });
+    else list.push({ source, ...safeObject(issue), message: issue.message || issue.error || issue.code || issue.keyword || JSON.stringify(issue).slice(0, 300) });
+  }
+  function walk(node, source = "stage") {
+    if (!node || typeof node !== "object") return;
+    for (const key of ["warnings", "guardrail_warnings", "operator_challenge_warnings", "batch_warnings"]) {
+      for (const issue of asArray(node[key])) addIssue(warnings, issue, key);
+    }
+    for (const key of ["errors", "critical", "validation_errors", "correction_errors"]) {
+      for (const issue of asArray(node[key])) addIssue(errors, issue, key);
+    }
+    if (node.error) addIssue(errors, { error: node.error, error_type: node.error_type || null }, "error");
+    if (node.error_summary) addIssue(errors, { error_summary: node.error_summary }, "error_summary");
+  }
+  values.forEach((value) => walk(value));
+  return { warning_count: warnings.length, error_count: errors.length, warnings: warnings.slice(0, 80), errors: errors.slice(0, 80) };
+}
+
+function validationSummary(...values) {
+  const validations = values.filter((value) => value && typeof value === "object");
+  if (!validations.length) return null;
+  return validations.map((value) => ({
+    ok: value.ok ?? null,
+    validation_mode: value.validation_mode || value.schemaValidation?.validation_mode || value.guardrail?.validation_mode || null,
+    guardrail_validation_mode: value.guardrail_validation_mode || value.guardrail?.validation_mode || null,
+    error_count: asArray(value.errors || value.validation_errors || value.critical).length,
+    warning_count: asArray(value.warnings || value.guardrail_warnings).length,
+    repair_count: asArray(value.repairs || value.guardrail_repairs).length
+  }));
+}
+
+function forensicStage({ stage_number, stage_id, present, input, output, validation = null, issue_sources = [], usage_source = null, handoff_integrity = {}, canonical_output_pointer = null }) {
+  return {
+    stage_number,
+    stage_id,
+    present: Boolean(present),
+    input_summary: objectSummary(input),
+    input_refs: collectRefs(input),
+    output_summary: objectSummary(output),
+    output_refs: collectRefs(output),
+    validation_result: validation,
+    warnings_errors: warningErrorSummary(output, ...issue_sources),
+    token_model_usage: collectUsageMetadata(usage_source || output),
+    handoff_integrity,
+    canonical_output_pointer
+  };
+}
+
+function buildStageForensicTrace({ targetInput, liveRunRequest, liveRunResult, internal, profiles, validation, stage9ReportData, stage10Handoff }) {
+  const stage6Cache = safeObject(internal.stage6Cache);
+  const sourceBundle = safeObject(stage6Cache.source_bundle);
+  const evidenceJunction = safeObject(stage6Cache.evidence_junction);
+  const stage7Artifact = safeObject(internal.stage7Artifact);
+  const stage8Export = safeObject(internal.stage8Export);
+  const stage8Input = safeObject(internal.stage8Input);
+  const stage8Ledger = safeObject(internal.stage8QualityControlLedger || internal.stage8Ledger);
+  const stage6a = safeObject(stage6Cache.stage6a_stage_result);
+  const stage6b = safeObject(stage6Cache.stage6b_stage_result);
+  const stage6Compat = safeObject(stage6Cache.compatibility_adapters);
+  const stageStatus = asArray(liveRunResult.stage_status);
+  const stageLogs = (name) => stageStatus.filter((entry) => entry?.stage === name);
+  const trace = [
+    forensicStage({
+      stage_number: 0,
+      stage_id: "target_intake",
+      present: true,
+      input: liveRunRequest,
+      output: targetInput,
+      handoff_integrity: { target_input_normalized: Boolean(targetInput.primary_url || targetInput.document_text_received) },
+      canonical_output_pointer: "00-audit-request.json"
+    }),
+    forensicStage({
+      stage_number: 1,
+      stage_id: "source_discovery",
+      present: Boolean(stageLogs("source_discovery").length || sourceBundle.raw_footprint),
+      input: targetInput,
+      output: { stage_status: stageLogs("source_discovery"), source_review: sourceBundle.source_review || null },
+      handoff_integrity: { completed: stageLogs("source_discovery").some((entry) => entry.status === "complete") },
+      canonical_output_pointer: "22-stage-01-forensic.json"
+    }),
+    forensicStage({
+      stage_number: 2,
+      stage_id: "source_capture",
+      present: Boolean(sourceBundle.raw_footprint),
+      input: { discovered_source_refs: collectRefs(sourceBundle.source_review || sourceBundle.raw_footprint) },
+      output: sourceBundle,
+      handoff_integrity: { source_bundle_present: Object.keys(sourceBundle).length > 0, source_records: asArray(sourceBundle.raw_footprint?.source_records).length },
+      canonical_output_pointer: "22-stage-02-forensic.json"
+    }),
+    forensicStage({
+      stage_number: 3,
+      stage_id: "evidence_junction",
+      present: Boolean(Object.keys(evidenceJunction).length),
+      input: sourceBundle,
+      output: evidenceJunction,
+      handoff_integrity: { source_bundle_sha256_present: Boolean(evidenceJunction.source_bundle_sha256), evidence_junction_version: evidenceJunction.evidence_junction_version || null },
+      canonical_output_pointer: "22-stage-03-forensic.json"
+    }),
+    forensicStage({
+      stage_number: 4,
+      stage_id: "target_profile",
+      present: Boolean(Object.keys(profiles.target_profile).length),
+      input: { target_input: targetInput, evidence_junction_sha256: evidenceJunction.source_bundle_sha256 || null },
+      output: profiles.target_profile,
+      usage_source: stage6Cache.stage4_stage_result || profiles.target_profile,
+      handoff_integrity: { canonical_profile_present: Object.keys(profiles.target_profile).length > 0 },
+      canonical_output_pointer: "04-target-profile.json"
+    }),
+    forensicStage({
+      stage_number: 5,
+      stage_id: "target_feature_profile",
+      present: Boolean(Object.keys(profiles.target_feature_profile).length),
+      input: { target_profile_ref: profiles.target_profile?.target_profile_version || profiles.target_profile?.identity?.brand_name || null, evidence_junction_sha256: evidenceJunction.source_bundle_sha256 || null },
+      output: profiles.target_feature_profile,
+      usage_source: stage6Cache.stage5_stage_result || profiles.target_feature_profile,
+      handoff_integrity: { canonical_profile_present: Object.keys(profiles.target_feature_profile).length > 0, feature_count: asArray(profiles.target_feature_profile.feature_inventory).length },
+      canonical_output_pointer: "05-target-feature-profile.json"
+    }),
+    forensicStage({
+      stage_number: 6,
+      stage_id: "legal_cartography_and_data_provenance",
+      present: Boolean(Object.keys(profiles.legal_cartography).length || Object.keys(profiles.data_provenance_profile).length || Object.keys(stage6a).length || Object.keys(stage6b).length),
+      input: { stage6_input_refs: collectRefs({ sourceBundle, evidenceJunction, target_profile: profiles.target_profile, target_feature_profile: profiles.target_feature_profile }) },
+      output: { legal_cartography: profiles.legal_cartography, data_provenance_profile: profiles.data_provenance_profile, stage6a_stage_result: stage6a, stage6b_stage_result: stage6b, compatibility_adapters: stage6Compat },
+      validation: validationSummary(stage6a.validation, stage6a.stage6_guardrail, stage6b.validation, stage6b.stage6_guardrail, stage6Compat.stage6_integrated_validation?.schemaValidation, stage6Compat.stage6_integrated_validation?.guardrail),
+      issue_sources: [stage6a, stage6b, stage6Compat.stage6_integrated_validation?.guardrail],
+      handoff_integrity: { legal_cartography_present: Object.keys(profiles.legal_cartography).length > 0, data_provenance_profile_present: Object.keys(profiles.data_provenance_profile).length > 0, compatibility_adapter_only: Boolean(stage6Compat.stage6_integrated_artifact) },
+      canonical_output_pointer: ["06-legal-cartography.json", "07-data-provenance-profile.json"]
+    }),
+    forensicStage({
+      stage_number: 7,
+      stage_id: "exposure_profile_registry_ledger",
+      present: Boolean(Object.keys(stage7Artifact).length || Object.keys(profiles.exposure_profile).length),
+      input: { stage6_profile_handoffs: ["target_profile", "target_feature_profile", "legal_cartography", "data_provenance_profile"], registry_source_row_count: stage7Artifact.source_row_count || null },
+      output: stage7Artifact,
+      validation: validationSummary(stage7Artifact.summary?.validation),
+      issue_sources: [stage7Artifact.summary],
+      handoff_integrity: { exposure_profile_present: Object.keys(profiles.exposure_profile).length > 0, registry_ledger_rows: asArray(profiles.exposure_profile.registry_ledger).length, stage7_main_artifact: "exposure_profile.registry_ledger" },
+      canonical_output_pointer: "08-exposure-profile.json"
+    }),
+    forensicStage({
+      stage_number: 8,
+      stage_id: "stage8_quality_control_ledger",
+      present: Boolean(Object.keys(stage8Ledger).length || Object.keys(stage8Export).length),
+      input: stage8Input,
+      output: { stage8_export: stage8Export, stage8_quality_control_ledger: stage8Ledger },
+      validation: validationSummary(stage8Export.correction_result),
+      issue_sources: [stage8Export, stage8Ledger],
+      handoff_integrity: { qc_ledger_present: stage8Ledger.artifact_type === "stage8_quality_control_ledger", replaces_stage7_registry: false, applies_to: stage8Ledger.source_policy?.applies_to || null },
+      canonical_output_pointer: "08b-stage8-quality-control-ledger.json"
+    }),
+    forensicStage({
+      stage_number: 9,
+      stage_id: "stage9_report_assembly",
+      present: Boolean(stage9ReportData),
+      input: stage9ReportData?.stage9_profile_input || stage9ReportData?.profile_sources || null,
+      output: stage9ReportData,
+      validation: validationSummary(validation.stage9),
+      issue_sources: [validation.stage9],
+      handoff_integrity: { profile_input_version: stage9ReportData?.stage9_profile_input_version || stage9ReportData?.stage9_profile_input?.profile_input_version || null, effective_ledger_rows: asArray(stage9ReportData?.forensic_ledger_appendix?.full_registry_ledger || stage9ReportData?.report?.report_data?.forensic_ledger_appendix?.full_registry_ledger).length },
+      canonical_output_pointer: ["09-stage9-report-data.json", "10-stage9-report.html", "11-stage9-validation.json"]
+    }),
+    forensicStage({
+      stage_number: 10,
+      stage_id: "stage10_functional_assembly_intake_vault",
+      present: Boolean(stage10Handoff),
+      input: profiles.stage10_source_packet,
+      output: stage10Handoff,
+      validation: validationSummary(validation.stage10),
+      issue_sources: [validation.stage10, stage10Handoff],
+      handoff_integrity: { source_mode: profiles.stage10_source_packet?.source_mode || null, profile_handoff_keys: Object.keys(safeObject(profiles.stage10_source_packet?.profile_handoffs)), functional_intake_vault_present: Boolean(stage10Handoff?.functional_intake_vault) },
+      canonical_output_pointer: ["12-stage10-source-packet.json", "13-stage10-handoff.json", "14-stage10-validation.json", "15-functional-intake-vault.json", "16-vault-payload.json", "17-assembly-handoff.json"]
+    })
+  ];
+  return {
+    artifact_type: "full_live_runtime_stage_forensic_trace",
+    generated_at: nowIso(),
+    requirement: "Canonical profile artifacts are required but are not a substitute for stage forensic artifacts.",
+    stage_count: trace.filter((stage) => stage.present).length,
+    stages: trace.filter((stage) => stage.present)
+  };
+}
+
 function writeManifest(extra = {}) {
   const files = fs.existsSync(outputRoot) ? fs.readdirSync(outputRoot).filter((name) => name !== "21-artifact-manifest.json").sort() : [];
   const manifest = {
@@ -251,6 +485,12 @@ writeJson("15-functional-intake-vault.json", stage10Handoff?.functional_intake_v
 writeJson("16-vault-payload.json", stage10Handoff?.vault_payload || null);
 writeJson("17-assembly-handoff.json", stage10Handoff?.assembly_handoff || null);
 writeJson("18-token-usage.json", collectUsageMetadata(liveRunResult));
+
+const stageForensicTrace = buildStageForensicTrace({ targetInput, liveRunRequest, liveRunResult, internal, profiles, validation, stage9ReportData, stage10Handoff });
+writeJson("22-stage-forensic-trace.json", stageForensicTrace);
+for (const stage of stageForensicTrace.stages) {
+  writeJson(`22-stage-${String(stage.stage_number).padStart(2, "0")}-forensic.json`, stage);
+}
 
 const leakageAudit = { ok: true, stage9_main_findings: scanKeys(stage9MainBody(stage9ReportData), STAGE9_RETIRED_MAIN_KEYS), stage10_main_findings: scanKeys(stage10MainBody(stage10Handoff), STAGE10_RETIRED_KEYS) };
 leakageAudit.ok = leakageAudit.stage9_main_findings.length === 0 && leakageAudit.stage10_main_findings.length === 0;
