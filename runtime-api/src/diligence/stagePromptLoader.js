@@ -1,6 +1,16 @@
-import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { getDiligenceStageConfig, getDiligenceStageIds } from "./stageConfigs.js";
 import { stage7RouteRuleText } from "./stage7RouteContract.js";
+
+async function loadPromptBundle() {
+  try {
+    return await import("../../functions/_generated/diligencePromptBundle.js");
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    return import("../../../functions/_generated/diligencePromptBundle.js");
+  }
+}
+
+const { DILIGENCE_PROMPT_BUNDLE } = await loadPromptBundle();
 
 const STAGE7_ROUTE_CONTRACT_RULES = `
 

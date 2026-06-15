@@ -1,12 +1,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { buildStage6ACartography } from "./stage6aLegalCartographyMerge.js";
 import { buildStage6ASemanticClassificationPacket } from "./stage6aSemanticClassificationPacketBuilder.js";
 import { normalizeStage6ASemanticClassification } from "./stage6aSemanticClassificationNormalizer.js";
 import { validateStage6ReviewGuardrail } from "./guardrails/stage6ReviewGuardrail.js";
+
+async function loadPromptBundle() {
+  try {
+    return await import("../../functions/_generated/diligencePromptBundle.js");
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    return import("../../../functions/_generated/diligencePromptBundle.js");
+  }
+}
+
+const { DILIGENCE_PROMPT_BUNDLE } = await loadPromptBundle();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

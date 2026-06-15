@@ -2,9 +2,19 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
-import { DILIGENCE_SCHEMA_BUNDLE } from "../../functions/_generated/diligenceSchemaBundle.js";
-import { validateGeneratedSchema } from "../../functions/_generated/diligenceValidatorBundle.js";
 import { repairTargetFeatureProfileForSchema } from "./targetFeatureProfileSchemaRepair.js";
+
+async function loadGeneratedBundle(localPath, rootPath) {
+  try {
+    return await import(localPath);
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    return import(rootPath);
+  }
+}
+
+const { DILIGENCE_SCHEMA_BUNDLE } = await loadGeneratedBundle("../../functions/_generated/diligenceSchemaBundle.js", "../../../functions/_generated/diligenceSchemaBundle.js");
+const { validateGeneratedSchema = fallbackValidateGeneratedSchema } = await loadGeneratedBundle("../../functions/_generated/diligenceValidatorBundle.js", "../../../functions/_generated/diligenceValidatorBundle.js").catch(() => ({}));
 
 const TARGET_PROFILE_V2_PATH = "/data/schemas/companyProfile.schema.json";
 const STAGE6_REVIEW_PATH = "/data/schemas/stage6Review.schema.json";
@@ -18,6 +28,14 @@ function isObject(value) { return Boolean(value && typeof value === "object" && 
 function asArray(value) { if (Array.isArray(value)) return value; if (value === undefined || value === null || value === "") return []; return [value]; }
 function asString(value, fallback = "") { if (typeof value === "string") return value.trim() || fallback; if (value === undefined || value === null || value === "") return fallback; return String(value).trim() || fallback; }
 function normalizeError(error) { return { keyword: error?.keyword || "validation", instancePath: error?.instancePath || "", schemaPath: error?.schemaPath || "", message: error?.message || "schema validation error", params: error?.params || {} }; }
+function fallbackValidateGeneratedSchema(schemaKey, data) {
+  const entry = DILIGENCE_SCHEMA_BUNDLE.schemas?.[schemaKey] || Object.values(DILIGENCE_SCHEMA_BUNDLE.schemas || {}).find((row) => row?.schema_id === schemaKey);
+  if (!entry?.schema) return { ok: false, schemaKey, resolvedKey: schemaKey, errors: [normalizeError({ keyword: "schema_missing", message: `Output schema not found for ${schemaKey}` })] };
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(entry.schema);
+  const ok = validate(data);
+  return { ok, schemaKey, resolvedKey: entry.schema_id || schemaKey, errors: (validate.errors || []).map(normalizeError) };
+}
 function stripTo(obj, keys) { const allowed = new Set(keys); for (const key of Object.keys(obj || {})) if (!allowed.has(key)) delete obj[key]; }
 function candidate(value = "") { return { value, status: "UNKNOWN", basis: "not visible in admitted evidence", confidence: "unknown", evidence_refs: [] }; }
 function ensureCandidate(parent, key) { if (!isObject(parent[key])) parent[key] = candidate(""); else { parent[key].status = ["PREFILL_READY", "CONFIRM", "UNKNOWN"].includes(parent[key].status) ? parent[key].status : "UNKNOWN"; parent[key].basis = asString(parent[key].basis, "not visible in admitted evidence"); parent[key].confidence = ["high", "medium", "low", "unknown"].includes(parent[key].confidence) ? parent[key].confidence : "unknown"; parent[key].evidence_refs = asArray(parent[key].evidence_refs).map((x) => asString(x, "")).filter(Boolean); } }

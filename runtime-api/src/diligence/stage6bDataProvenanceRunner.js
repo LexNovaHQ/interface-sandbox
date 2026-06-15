@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DILIGENCE_PROMPT_BUNDLE } from "../../functions/_generated/diligencePromptBundle.js";
 import { runGeminiPool } from "../gemini/geminiPool.js";
 import { validateStage6ReviewGuardrail } from "./guardrails/stage6ReviewGuardrail.js";
 import { formatSchemaErrors, validateDiligenceStageOutput } from "./stageSchemaValidator.js";
@@ -12,6 +11,17 @@ import { buildStage6BSemanticPacket } from "./stage6bSemanticPacketBuilder.js";
 import { normalizeStage5FeatureProfile } from "./stage6bDataProvenanceBuilder.js";
 import { normalizeStage6BDataProvenanceClassification } from "./stage6bDataProvenanceNormalizer.js";
 import { buildDataProvenanceProfile } from "./stage6bTargetDataProvenanceProfile.js";
+
+async function loadPromptBundle() {
+  try {
+    return await import("../../functions/_generated/diligencePromptBundle.js");
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    return import("../../../functions/_generated/diligencePromptBundle.js");
+  }
+}
+
+const { DILIGENCE_PROMPT_BUNDLE } = await loadPromptBundle();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
