@@ -7,6 +7,8 @@ import {
   STAGE6_VALIDATION_STATUS
 } from '../stage6.dictionary.js';
 
+export { STAGE6A_LEGAL_UNIT_TYPE };
+
 export const STAGE6A_RUNTIME_VERSION = 'stage6a_legal_cartography_v2';
 
 export const STAGE6A_DOCUMENT_TYPE_KEYWORDS = Object.freeze([
