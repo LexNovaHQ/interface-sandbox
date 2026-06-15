@@ -19,7 +19,7 @@ export const STAGE5_CANONICAL_SUBSTAGES = Object.freeze([
     id: "5C",
     name: "Complete Feature Record Builder",
     purpose: "Merge old 5C feature inventory and old 5D data touchpoints into complete feature-wise records.",
-    primary_input: "5A + 5B outputs + source custody",
+    primary_input: "5A + 5B outputs + 5A/5B windows + full source custody",
     output_key: "stage5c"
   },
   {
@@ -60,8 +60,41 @@ export const STAGE5_LEGACY_PARKED_COMPONENTS = Object.freeze([
   "5b/stage5bForensicBuilder.js",
   "5b/stage5bIndex.js",
   "5c/stage5cInputJoiner.js",
+  "5c/stage5cCanonicalDraftBuilder.js",
+  "5c/stage5cCompletenessAnalyzer.js",
+  "5c/stage5cCanonicalizationInstructionBuilder.js",
+  "5c/stage5cCanonicalizationPromptBuilder.js",
+  "5c/stage5cCanonicalizationAdjudicator.js",
+  "5c/stage5cOutputMerger.js",
+  "5c/stage5cValidator.js",
+  "5c/stage5cFeatureInventoryPackageBuilder.js",
+  "5c/stage5cForensicBuilder.js",
+  "5c/stage5cIndex.js",
+  "5d/stage5dInputJoiner.js",
   "5d/stage5dFeatureContextBuilder.js",
-  "5e/stage5eSchemaMappers.js"
+  "5d/stage5dDeterministicDataSignalBuilder.js",
+  "5d/stage5dInstructionBuilder.js",
+  "5d/stage5dPromptBuilder.js",
+  "5d/stage5dDataTouchpointExtractor.js",
+  "5d/stage5dOutputNormalizer.js",
+  "5d/stage5dValidator.js",
+  "5d/stage5dDataTouchpointPackageBuilder.js",
+  "5d/stage5dForensicBuilder.js",
+  "5d/stage5dIndex.js",
+  "5e/stage5eInputJoiner.js",
+  "5e/stage5eSchemaMappers.js",
+  "5e/stage5eFeatureInventoryIntegrator.js",
+  "5e/stage5eDataProvenanceMapBuilder.js",
+  "5e/stage5eRegulatedSurfaceMapBuilder.js",
+  "5e/stage5eArchitectureHintsBuilder.js",
+  "5e/stage5eCommercialScanBuilder.js",
+  "5e/stage5eVaultCandidatesBuilder.js",
+  "5e/stage5eEvidenceRollupBuilder.js",
+  "5e/stage5eClassificationQualityBuilder.js",
+  "5e/stage5eFinalProfileAssembler.js",
+  "5e/stage5eValidator.js",
+  "5e/stage5eForensicBuilder.js",
+  "5e/stage5eIndex.js"
 ]);
 
 export const STAGE5_BLOCKING_ERROR_CODES = Object.freeze([
@@ -79,7 +112,18 @@ export const STAGE5_BLOCKING_ERROR_CODES = Object.freeze([
   "STAGE5B_CONTROLLED_VALUE_VIOLATION",
   "STAGE5B_METADATA_OR_INDEX_AS_EVIDENCE_BLOCKED",
   "STAGE5B_FUNCTION_COVERAGE_FAILURE",
-  "STAGE5_FINAL_PROFILE_SCHEMA_VIOLATION"
+  "STAGE5C_MISSING_STAGE5A_OUTPUT",
+  "STAGE5C_MISSING_5B_TAG",
+  "STAGE5C_INVALID_SOURCE_WINDOW_REF",
+  "STAGE5C_SOURCE_WINDOW_REF_VIOLATION",
+  "STAGE5C_MISSING_5A_WINDOW",
+  "STAGE5C_MISSING_5B_WINDOW",
+  "STAGE5C_MISSING_5C_SUPPLEMENTAL_WINDOW",
+  "STAGE5C_EMPTY_FEATURE_RECORD",
+  "STAGE5C_METADATA_OR_INDEX_AS_EVIDENCE_BLOCKED",
+  "STAGE5C_FEATURE_COVERAGE_FAILURE",
+  "STAGE5_FINAL_PROFILE_SCHEMA_VIOLATION",
+  "STAGE5D_SCHEMA_VALIDATION_FAILED"
 ]);
 
 export const STAGE5_FEATURE_PATTERNS = Object.freeze([
