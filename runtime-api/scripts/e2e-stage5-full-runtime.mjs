@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { runStage5Runtime, buildStage5CanonicalInput, createVerbatimSourceWindow, assertWindowIsVerbatim, assertNoPlaceholderEvidence } from "../src/diligence/stage5/stage5.runtime.js";
+import { TARGET_FEATURE_PROFILE_HANDOFF_KEYS, STAGE5D_INTERNAL_ONLY_FIELDS } from "../src/diligence/stage5/5d/5d.dictionary.js";
 
 export const fixtureText = [
   "Speech-to-text API transcribes audio into text transcripts for developers.",
@@ -48,10 +49,28 @@ export function assertWindowIntegrity(canonicalInput, windows) {
   }
 }
 
+function assertNoInternalStage5Leak(value, path = "target_feature_profile") {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertNoInternalStage5Leak(item, `${path}[${index}]`));
+    return;
+  }
+  for (const key of Object.keys(value)) {
+    assert.ok(!STAGE5D_INTERNAL_ONLY_FIELDS.includes(key), `${path}.${key} must not leak into downstream target_feature_profile`);
+    assertNoInternalStage5Leak(value[key], `${path}.${key}`);
+  }
+}
+
 export function assertCanonicalProfile(result) {
   assert.equal(result.ok, true);
   assert.equal(result.stage5_version, "stage5_lossless_windowed_runtime_v1");
+  assert.deepEqual(Object.keys(result.target_feature_profile).sort(), [...TARGET_FEATURE_PROFILE_HANDOFF_KEYS].sort());
+  assert.equal(result.target_feature_profile.feature_profile_version, "feature_profile_v2");
+  assert.deepEqual(result.target_feature_profile.product_feature_map, []);
   assert.ok(result.target_feature_profile.feature_inventory.length >= 5);
+  assert.ok(Array.isArray(result.target_feature_profile.data_provenance_map));
+  assert.ok(Array.isArray(result.target_feature_profile.regulated_surface_map));
+  assertNoInternalStage5Leak(result.target_feature_profile);
   assert.deepEqual(Object.keys({ companyProfile: {}, targetFeatureProfile: result.target_feature_profile }), ["companyProfile", "targetFeatureProfile"]);
   for (const feature of result.target_feature_profile.feature_inventory) {
     assert.ok(feature.evidence_refs.length > 0);
