@@ -103,7 +103,7 @@ function deliveryChannels(pattern = {}, tag = {}) {
 function autonomyLevel(pattern = {}, tag = {}) {
   const surfaces = new Set(asArray(tag.surface_tokens));
   if (pattern.key === "voice_agent" || surfaces.has("workflow_action") || surfaces.has("external_interaction")) return "execute";
-  if (asText(pattern.function_type) === "api_capability") return "assist";
+  if (asText(pattern.function_type) === "api_capability") return "draft";
   return "unknown";
 }
 

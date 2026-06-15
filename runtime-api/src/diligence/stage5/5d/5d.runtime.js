@@ -13,6 +13,15 @@ function delivery(channels = []) {
   };
 }
 
+function autonomy(value) {
+  const text = String(value || "").trim().toLowerCase();
+  if (["none", "no", "manual"].includes(text)) return "none";
+  if (["draft", "assist", "assisted", "assistive"].includes(text)) return "draft";
+  if (["recommend", "recommendation", "score"].includes(text)) return "recommend";
+  if (["execute", "autonomous", "agentic"].includes(text)) return "execute";
+  return "unknown";
+}
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -154,7 +163,7 @@ function buildFeature(record, tag, windows) {
     input_data: record.input_data,
     system_action: record.system_action,
     output_or_result: record.output_or_result,
-    autonomy_level: record.autonomy_level,
+    autonomy_level: autonomy(record.autonomy_level),
     human_review_signal: record.human_review_signal,
     external_action_signal: record.external_action_signal,
     delivery_channels: delivery(record.delivery_channels),
