@@ -302,25 +302,245 @@ export function sourceById(canonicalInput = {}) {
   return new Map(asArray(canonicalInput.primary_evidence?.sources).map((source) => [source.source_id, source]));
 }
 
+function isSourceCustodyError(error = {}) {
+  return error?.code === "LOSSLESS_PRIMARY_EVIDENCE_VIOLATION";
+}
+
+function issueFromError(error = {}, substage = "STAGE5") {
+  return {
+    issue_id: `${substage}_REINVESTIGATION_${String(1).padStart(3, "0")}`,
+    substage,
+    code: asText(error.code) || `${substage}_REINVESTIGATION_REQUIRED`,
+    message: asText(error.message) || "Reinvestigation required.",
+    details: error.details || error.validation || {},
+    required_action: "Re-run this substage with broader verbatim source windows from clean_text_lossless; do not use metadata or indexes as evidence.",
+    blocking: false
+  };
+}
+
+function validationEnvelope(substage, issues = []) {
+  const normalized = asArray(issues).filter(Boolean).map((issue, index) => ({
+    issue_id: issue.issue_id || `${substage}_REINVESTIGATION_${String(index + 1).padStart(3, "0")}`,
+    substage,
+    code: issue.code || `${substage}_REINVESTIGATION_REQUIRED`,
+    message: issue.message || "Reinvestigation required.",
+    details: issue.details || {},
+    required_action: issue.required_action || "Reinvestigate with broader verbatim windows from clean_text_lossless.",
+    blocking: false
+  }));
+  return {
+    ok: normalized.length === 0,
+    reinvestigation_required: normalized.length > 0,
+    blocking: false,
+    next_action: normalized.length ? "REINVESTIGATE_WITH_BROADER_VERBATIM_WINDOWS" : "NONE",
+    reinvestigation_requests: normalized,
+    issues: normalized
+  };
+}
+
+function fallbackStage5A(canonicalInput, error) {
+  const validation = validationEnvelope("5A", [issueFromError(error, "5A")]);
+  return {
+    ok: true,
+    stage5a_output_version: "stage5a_product_function_discovery_v3",
+    target_profile_ref: canonicalInput.target_profile_ref,
+    admitted_functions: [],
+    core_products: [],
+    rejected_or_uncertain_candidates: validation.reinvestigation_requests,
+    feature_evidence_windows: [],
+    prompt_input: null,
+    validation,
+    forensic_log: { substage: "5A", reinvestigation_required: true, recovered_without_runtime_failure: true }
+  };
+}
+
+function fallbackStage5B(canonicalInput, error) {
+  const validation = validationEnvelope("5B", [issueFromError(error, "5B")]);
+  return {
+    ok: true,
+    stage5b_output_version: "stage5b_archetype_surface_tagging_v3",
+    target_profile_ref: canonicalInput.target_profile_ref,
+    feature_tags: [],
+    tagging_failures: validation.reinvestigation_requests,
+    inherited_feature_evidence_windows: [],
+    supplemental_evidence_windows: [],
+    feature_packets_for_5c: [],
+    prompt_input: null,
+    validation,
+    forensic_log: { substage: "5B", reinvestigation_required: true, recovered_without_runtime_failure: true }
+  };
+}
+
+function fallbackStage5C(canonicalInput, error) {
+  const validation = validationEnvelope("5C", [issueFromError(error, "5C")]);
+  return {
+    ok: true,
+    stage5c_output_version: "stage5c_complete_feature_records_v3",
+    target_profile_ref: canonicalInput.target_profile_ref,
+    complete_feature_records: [],
+    feature_unknowns: validation.reinvestigation_requests,
+    data_provenance_seeds: [],
+    regulated_surface_seeds: [],
+    vault_question_seeds: [],
+    supplemental_evidence_windows: [],
+    prompt_input: null,
+    validation,
+    forensic_log: { substage: "5C", reinvestigation_required: true, recovered_without_runtime_failure: true }
+  };
+}
+
+function targetProfileRef(canonicalInput = {}) {
+  const ref = canonicalInput.target_profile_ref || {};
+  return {
+    target_profile_version: String(ref.target_profile_version || "target_profile_v2"),
+    brand_name: String(ref.brand_name || "Unknown target"),
+    legal_name: String(ref.legal_name || ""),
+    domain: String(ref.domain || "")
+  };
+}
+
+function buildReinvestigationTargetFeatureProfile(canonicalInput, issues = []) {
+  const requests = asArray(issues).flatMap((item) => asArray(item?.validation?.reinvestigation_requests || item?.validation?.issues || item?.reinvestigation_requests || item?.issues));
+  const normalizedRequests = requests.length ? requests : [
+    {
+      issue_id: "5D_REINVESTIGATION_001",
+      substage: "5D",
+      code: "STAGE5D_REINVESTIGATION_REQUIRED",
+      message: "Stage 5D could not safely assemble target_feature_profile from prior substage outputs.",
+      required_action: "Re-run Stage 5 with broader verbatim source windows and preserve downstream handoff shape.",
+      blocking: false
+    }
+  ];
+  return {
+    feature_profile_version: "feature_profile_v2",
+    target_profile_ref: targetProfileRef(canonicalInput),
+    feature_inventory: [],
+    product_feature_map: [],
+    data_provenance_map: [],
+    regulated_surface_map: [],
+    architecture_hints: [],
+    classification_quality: {
+      quality_version: "stage5_classification_quality_v2",
+      status: "REINVESTIGATION_REQUIRED",
+      reinvestigation_required: true,
+      reinvestigation_attempted: false,
+      reinvestigation_pass_count: 0,
+      unresolved_feature_count: normalizedRequests.length,
+      fallback_routing_required: true,
+      reinvestigation_requests: normalizedRequests
+    },
+    unresolved_feature_candidates: normalizedRequests.map((request) => ({
+      candidate_id: request.issue_id,
+      reason: request.message,
+      required_action: request.required_action,
+      source_window_refs: []
+    })),
+    commercial_scan: {
+      distinct_commercial_outcomes_seen: [],
+      mapped_core_feature_ids: [],
+      source_coverage: asArray(canonicalInput.primary_evidence?.sources).map((source) => ({
+        source_id: source.source_id,
+        source_url: source.source_url,
+        source_family: source.source_family,
+        coverage_status: "REINVESTIGATION_REQUIRED",
+        mapped_feature_ids: [],
+        unmapped_reason: "Feature windows require reinvestigation before safe mapping.",
+        evidence_refs: []
+      })),
+      unmapped_outcomes_due_to_insufficient_detail: normalizedRequests.map((request) => request.message),
+      completeness_status: "REINVESTIGATION_REQUIRED",
+      completeness_warnings: normalizedRequests.map((request) => request.code)
+    },
+    vault_feature_candidates: { baseline: {}, archetypes: {}, compliance: {} },
+    evidence: {
+      field_evidence_refs: [],
+      unresolved_questions: normalizedRequests.map((request) => ({
+        question_id: request.issue_id,
+        question: request.required_action,
+        basis: request.message,
+        source_window_refs: []
+      }))
+    },
+    limitations: ["Stage 5 returned a contract-safe target_feature_profile requiring reinvestigation instead of failing the runtime."]
+  };
+}
+
+function fallbackStage5D(canonicalInput, stage5a, stage5b, stage5c, error) {
+  const ownIssue = issueFromError(error, "5D");
+  const profile = buildReinvestigationTargetFeatureProfile(canonicalInput, [stage5a, stage5b, stage5c, { validation: validationEnvelope("5D", [ownIssue]) }]);
+  return {
+    ok: true,
+    stage5d_output_version: "stage5d_target_feature_profile_integrator_v2",
+    target_feature_profile: profile,
+    prompt_input: null,
+    validation: validationEnvelope("5D", [ownIssue]),
+    forensic_log: { substage: "5D", reinvestigation_required: true, recovered_without_runtime_failure: true }
+  };
+}
+
+async function runOrReinvestigate({ substage, runner, fallback }) {
+  try {
+    return await runner();
+  } catch (error) {
+    if (isSourceCustodyError(error)) throw error;
+    return fallback(error);
+  }
+}
+
+function aggregateValidation(stage5a, stage5b, stage5c, stage5d) {
+  const substages = { stage5a: stage5a.validation, stage5b: stage5b.validation, stage5c: stage5c.validation, stage5d: stage5d.validation };
+  const requests = Object.values(substages).flatMap((validation) => asArray(validation?.reinvestigation_requests));
+  return {
+    ok: requests.length === 0,
+    reinvestigation_required: requests.length > 0,
+    blocking: false,
+    next_action: requests.length ? "REINVESTIGATE_STAGE5_SUBSTAGES" : "NONE",
+    reinvestigation_requests: requests,
+    substages,
+    stage5d: stage5d.validation
+  };
+}
+
 export async function runStage5Runtime({ companyProfile, stage5Input, adapterResult, runContext = {}, modelPorts = {}, registryPorts = {}, schemaValidator = null } = {}) {
   const canonicalInput = buildStage5CanonicalInput({ companyProfile, adapterResult, stage5Input });
   const custody_manifest = collectSourceCustodyManifest(canonicalInput.primary_evidence);
-  const stage5a = await runStage5A({ canonicalInput, modelPorts, runContext });
-  const stage5b = await runStage5B({ canonicalInput, stage5a, registryPorts, modelPorts, runContext });
-  const stage5c = await runStage5C({ canonicalInput, stage5a, stage5b, modelPorts, runContext });
-  const stage5d = await runStage5D({ canonicalInput, stage5a, stage5b, stage5c, schemaValidator, runContext });
+
+  const stage5a = await runOrReinvestigate({
+    substage: "5A",
+    runner: () => runStage5A({ canonicalInput, modelPorts, runContext }),
+    fallback: (error) => fallbackStage5A(canonicalInput, error)
+  });
+  const stage5b = await runOrReinvestigate({
+    substage: "5B",
+    runner: () => runStage5B({ canonicalInput, stage5a, registryPorts, modelPorts, runContext }),
+    fallback: (error) => fallbackStage5B(canonicalInput, error)
+  });
+  const stage5c = await runOrReinvestigate({
+    substage: "5C",
+    runner: () => runStage5C({ canonicalInput, stage5a, stage5b, modelPorts, runContext }),
+    fallback: (error) => fallbackStage5C(canonicalInput, error)
+  });
+  const stage5d = await runOrReinvestigate({
+    substage: "5D",
+    runner: () => runStage5D({ canonicalInput, stage5a, stage5b, stage5c, schemaValidator, runContext }),
+    fallback: (error) => fallbackStage5D(canonicalInput, stage5a, stage5b, stage5c, error)
+  });
+
   assertNoPlaceholderEvidence(stage5d.target_feature_profile, "target_feature_profile");
+  const validation = aggregateValidation(stage5a, stage5b, stage5c, stage5d);
   return {
     ok: true,
     stage5_version: STAGE5_CANONICAL_VERSION,
     target_feature_profile: stage5d.target_feature_profile,
     substage_outputs: { stage5a, stage5b, stage5c, stage5d },
     custody_manifest,
-    validation: { ok: true, stage5d: stage5d.validation },
+    validation,
     forensic_log: {
       runtime: "runStage5Runtime",
       substages: ["5A", "5B", "5C", "5D"],
-      run_id: runContext?.runId || runContext?.run_id || null
+      run_id: runContext?.runId || runContext?.run_id || null,
+      reinvestigation_required: validation.reinvestigation_required,
+      runtime_failed: false
     }
   };
 }
