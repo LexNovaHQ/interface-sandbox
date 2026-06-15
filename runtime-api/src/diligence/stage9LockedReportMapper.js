@@ -42,11 +42,7 @@ function severityForMain(severity = {}) {
     T4: "Regulatory remediation / enforcement attention",
     T5: "Governance friction / monitoring item"
   };
-  return {
-    priority_label: labelByTier[tier] || category,
-    exposure_category: category,
-    priority_explanation: depth
-  };
+  return { priority_label: labelByTier[tier] || category, exposure_category: category, priority_explanation: depth };
 }
 
 function priorityForMain(severity = {}, timing = {}) {
@@ -71,11 +67,38 @@ function buildFeatureLookup(targetFeatureProfile = {}) {
   return new Map(asArray(targetFeatureProfile.feature_inventory).map((feature) => [asText(feature?.feature_id), feature]).filter(([key]) => key));
 }
 
-function buildRouteMap(stage7Artifact = {}) {
-  return new Map(asArray(stage7Artifact.route_records).map((route) => [asText(route?.threat_id), route]).filter(([key]) => key));
+function dataFlowsFromProfile(dataProvenanceProfile = {}) {
+  return asArray(
+    dataProvenanceProfile.integrated_feature_data_flow_profile
+    || dataProvenanceProfile.data_flow_profile
+    || dataProvenanceProfile.feature_data_flow_profile
+    || dataProvenanceProfile.data_flows
+  );
 }
 
-function buildSourceRows({ sourceBundle = {}, reviewedSources = [], targetFeatureProfile = {}, stage6Review = {}, hydratedRows = {} }) {
+function legalInventoryFromCartography(legalCartography = {}) {
+  return asArray(legalCartography.legal_document_inventory || legalCartography.document_inventory || legalCartography.documents);
+}
+
+function legalControlsFromCartography(legalCartography = {}) {
+  return asArray(legalCartography.document_control_signal_map || legalCartography.control_signal_map || legalCartography.controls);
+}
+
+function legalGapsFromCartography(legalCartography = {}) {
+  return asArray(legalCartography.document_mismatch_signal_map || legalCartography.mismatch_signal_map || legalCartography.gaps);
+}
+
+function buildRouteMap({ stage7Artifact = {}, exposureProfile = {} } = {}) {
+  const records = asArray(
+    exposureProfile.route_records
+    || exposureProfile.routing_summary?.route_records
+    || stage7Artifact.route_records
+    || stage7Artifact.stage7_route_contract?.route_records
+  );
+  return new Map(records.map((route) => [asText(route?.threat_id || route?.registry_reference), route]).filter(([key]) => key));
+}
+
+function buildSourceRows({ sourceBundle = {}, reviewedSources = [], targetFeatureProfile = {}, dataProvenanceProfile = {}, legalCartography = {}, hydratedRows = {} }) {
   const raw = [];
   raw.push(...asArray(sourceBundle?.evidence_buffer));
   raw.push(...asArray(sourceBundle?.source_review?.source_records));
@@ -115,13 +138,13 @@ function buildSourceRows({ sourceBundle = {}, reviewedSources = [], targetFeatur
       if (target) target.linked_feature_refs = unique([...target.linked_feature_refs, feature.feature_id]);
     }
   }
-  for (const flow of asArray(stage6Review?.data_provenance_profile?.data_flow_profile)) {
-    for (const ref of unique(asArray(flow.source_refs))) {
+  for (const flow of dataFlowsFromProfile(dataProvenanceProfile)) {
+    for (const ref of unique(asArray(flow.source_refs || flow.legal_unit_refs))) {
       const target = byRef.get(ref) || byUrl.get(ref);
-      if (target) target.linked_data_flow_refs = unique([...target.linked_data_flow_refs, flow.data_flow_id]);
+      if (target) target.linked_data_flow_refs = unique([...target.linked_data_flow_refs, flow.data_flow_id || flow.flow_id]);
     }
   }
-  for (const doc of asArray(stage6Review?.legal_document_cartography?.legal_document_inventory)) {
+  for (const doc of legalInventoryFromCartography(legalCartography)) {
     for (const ref of unique([doc.source_record_ref, doc.source_url, doc.final_url, ...asArray(doc.source_refs)])) {
       const target = byRef.get(ref) || byUrl.get(ref);
       if (target) target.linked_legal_document_refs = unique([...target.linked_legal_document_refs, doc.document_id || doc.document_type]);
@@ -171,35 +194,34 @@ function buildFeatureMainTable(featureLedger = []) {
     feature_reference: `${row.feature_ref} (*)`,
     product_function: [row.feature_name, row.commercial_function, row.product_area].filter(Boolean).join(" — ") || "Product function not specified",
     triggering_ai_function: row.triggering_ai_function,
-    input_output_pattern: {
-      input_data_categories: row.input_data_categories,
-      system_action: row.system_action,
-      output_or_result: row.output_or_result
-    },
+    input_output_pattern: { input_data_categories: row.input_data_categories, system_action: row.system_action, output_or_result: row.output_or_result },
     autonomy_and_human_review: [row.autonomy_level, row.human_review_signal, row.external_action_signal].filter(Boolean).join("; ") || "Autonomy / human-review posture not specified in reviewed evidence.",
     legal_risk_surface: row.legal_risk_surfaces,
     evidence_provenance: `See Appendix B (${row.appendix_ref}) and Appendix A for full source provenance.`
   }));
 }
 
-function buildDataLedger(stage6Review = {}) {
-  return asArray(stage6Review?.data_provenance_profile?.data_flow_profile).map((flow, index) => ({
+function buildDataLedger(dataProvenanceProfile = {}) {
+  return dataFlowsFromProfile(dataProvenanceProfile).map((flow, index) => ({
     appendix_ref: appendixRef("DATA", index),
-    data_flow_ref: asText(flow.data_flow_id, `DATA-${index + 1}`),
-    linked_feature_ref: asText(flow.feature_id),
-    data_subject: flow.data_subject || {},
-    data_category: flow.data_category || {},
-    processing_actions: asArray(flow.processing?.processing_actions),
-    processing_purpose: asArray(flow.processing?.processing_purpose),
-    role_allocation: flow.role_allocation || {},
-    regime_relevance: flow.regime_relevance || {},
-    notice_position: flow.notice || {},
-    consent_or_basis_position: flow.consent_basis || {},
-    rights_position: flow.rights || {},
-    processor_chain: flow.processor_chain || {},
-    transfer_location: flow.transfer_location || {},
-    retention_deletion_position: flow.retention_deletion_ai || {},
-    security_accountability_position: flow.security_accountability || {},
+    data_flow_ref: asText(flow.data_flow_id || flow.flow_id, `DATA-${index + 1}`),
+    linked_feature_ref: asText(flow.feature_id || flow.feature_ref),
+    data_subject: flow.data_subject || flow.subject_layer || {},
+    data_category: flow.data_category || flow.category_layer || {},
+    processing_actions: asArray(flow.processing?.processing_actions || flow.processing_actions || flow.actions),
+    processing_purpose: asArray(flow.processing?.processing_purpose || flow.processing_purpose || flow.purposes),
+    role_allocation: flow.role_allocation || flow.roles || {},
+    regime_relevance: flow.regime_relevance || flow.regimes || {},
+    notice_position: flow.notice || flow.notice_position || {},
+    consent_or_basis_position: flow.consent_basis || flow.legal_basis || flow.basis_position || {},
+    rights_position: flow.rights || flow.rights_position || {},
+    processor_chain: flow.processor_chain || flow.provider_chain || {},
+    transfer_location: flow.transfer_location || flow.residency_transfer || {},
+    retention_deletion_position: flow.retention_deletion_ai || flow.retention_deletion || flow.retention_position || {},
+    security_accountability_position: flow.security_accountability || flow.security_position || {},
+    product_observed_layer: flow.product_observed_layer || flow.product_observed_data_layer || {},
+    legal_governance_layer: flow.legal_governance_layer || flow.legal_governance_control_layer || {},
+    legal_unit_refs: asArray(flow.legal_unit_refs),
     source_refs: asArray(flow.source_refs),
     confidence: humanText(flow.confidence || "Not specified upstream"),
     limitations: asArray(flow.limitations).map(humanText)
@@ -216,15 +238,14 @@ function buildDataMainTable(dataLedger = [], featureLookup = new Map()) {
       processing_purpose_and_action: humanText([row.processing_actions.join(", "), row.processing_purpose.join(", ")].filter(Boolean).join("; ")),
       role_and_provider_chain: humanText([JSON.stringify(row.role_allocation), JSON.stringify(row.processor_chain)].filter(Boolean).join("; ")),
       transfer_retention_security_position: humanText([JSON.stringify(row.transfer_location), JSON.stringify(row.retention_deletion_position), JSON.stringify(row.security_accountability_position)].filter(Boolean).join("; ")),
-      control_or_gap_position: humanText([JSON.stringify(row.notice_position), JSON.stringify(row.consent_or_basis_position), JSON.stringify(row.rights_position)].filter(Boolean).join("; ")),
+      control_or_gap_position: humanText([JSON.stringify(row.notice_position), JSON.stringify(row.consent_or_basis_position), JSON.stringify(row.rights_position), JSON.stringify(row.legal_governance_layer)].filter(Boolean).join("; ")),
       appendix_provenance: `See Appendix C (${row.appendix_ref}) and Appendix A for full source provenance.`
     };
   });
 }
 
-function buildLegalLedger(stage6Review = {}) {
-  const cartography = safeObject(stage6Review.legal_document_cartography);
-  const docs = asArray(cartography.legal_document_inventory).map((doc, index) => ({
+function buildLegalLedger(legalCartography = {}) {
+  const docs = legalInventoryFromCartography(legalCartography).map((doc, index) => ({
     appendix_ref: appendixRef("LEGAL-DOC", index),
     row_type: "document",
     document_ref: asText(doc.document_id || doc.source_record_ref, `DOC-${index + 1}`),
@@ -239,7 +260,7 @@ function buildLegalLedger(stage6Review = {}) {
     confidence: humanText(doc.confidence || "Not specified upstream"),
     limitations: asArray(doc.limitations).map(humanText)
   }));
-  const controls = asArray(cartography.document_control_signal_map).map((signal, index) => ({
+  const controls = legalControlsFromCartography(legalCartography).map((signal, index) => ({
     appendix_ref: appendixRef("LEGAL-CTRL", index),
     row_type: "control_signal",
     control_signal_ref: asText(signal.control_signal_id, `CTRL-${index + 1}`),
@@ -252,7 +273,7 @@ function buildLegalLedger(stage6Review = {}) {
     source_refs: asArray(signal.source_refs),
     confidence: humanText(signal.confidence || "Not specified upstream")
   }));
-  const gaps = asArray(cartography.document_mismatch_signal_map).map((gap, index) => ({
+  const gaps = legalGapsFromCartography(legalCartography).map((gap, index) => ({
     appendix_ref: appendixRef("LEGAL-GAP", index),
     row_type: "gap_or_mismatch",
     gap_ref: asText(gap.mismatch_id || gap.gap_id, `GAP-${index + 1}`),
@@ -292,6 +313,7 @@ function routeReasonLabel(reason) {
   const normalized = asText(reason).toUpperCase();
   if (normalized === "UNI_ALWAYS_RUN") return "Universal review item";
   if (normalized === "STAGE5_INT_TRIGGERED") return "Triggered by active product/function evidence";
+  if (normalized === "STAGE5_DEGRADED_FALLBACK") return "Triggered by degraded feature-profile fallback review";
   if (normalized === "CONDITIONAL_DOC_REVIEW") return "Triggered by legal/governance document-review route";
   if (normalized === "INT_NOT_TRIGGERED") return "Outside current active product/function route";
   return humanText(reason || "Route not specified");
@@ -314,9 +336,9 @@ function exposureAppendixRefById(exposureLedger = []) {
   return new Map(exposureLedger.map((row) => [asText(row.threat_id || row.registry_row_id), row.appendix_ref]).filter(([id]) => id));
 }
 
-function buildExposureLedger({ hydratedRows = {}, stage7Artifact = {}, stage8Ledger = {}, registryRuntime = {}, featureLookup = new Map() }) {
-  const routeMap = buildRouteMap(stage7Artifact);
-  const correctionMeta = new Map(asArray(stage8Ledger?.correction_meta).map((item) => [asText(item?.threat_id || item?.registry_reference), item]).filter(([id]) => id));
+function buildExposureLedger({ hydratedRows = {}, stage7Artifact = {}, exposureProfile = {}, stage8QualityControlLedger = {}, registryRuntime = {}, featureLookup = new Map() }) {
+  const routeMap = buildRouteMap({ stage7Artifact, exposureProfile });
+  const correctionMeta = new Map(asArray(stage8QualityControlLedger?.correction_meta).map((item) => [asText(item?.threat_id || item?.registry_reference), item]).filter(([id]) => id));
   return asArray(hydratedRows.rows).map((item, index) => {
     const route = routeMap.get(item.registry_reference) || {};
     const correction = correctionMeta.get(item.registry_reference) || null;
@@ -353,36 +375,47 @@ function buildExposureLedger({ hydratedRows = {}, stage7Artifact = {}, stage8Led
       evidence_ref: humanText(item.reviewed_evidence?.evidence_reference),
       reasoning_summary: humanText(item.residual_exposure),
       registry_basis: humanText(item.registry_basis),
-      batch_or_challenge_trace: correction ? humanText(JSON.stringify(correction)) : "No Stage 8 correction applied to this row.",
+      batch_or_challenge_trace: correction ? humanText(JSON.stringify(correction)) : "No Stage 8 quality-control correction applied to this row.",
       raw_registry_payload: item.raw_registry_payload || null,
       registry_version: registryRuntime?.version || null
     };
   });
 }
 
-function dataFlowRefsForFeatures(stage6Review = {}, featureRefs = []) {
+function dataFlowRefsForFeatures(dataProvenanceProfile = {}, featureRefs = []) {
   const wanted = new Set(asArray(featureRefs).map(asText));
-  return unique(asArray(stage6Review.stage7_navigation_index?.feature_to_data_flow_index)
+  const indexed = asArray(dataProvenanceProfile.stage7_navigation_index?.feature_to_data_flow_index || dataProvenanceProfile.feature_to_data_flow_index)
     .filter((row) => wanted.has(asText(row.feature_id)))
-    .flatMap((row) => asArray(row.data_flow_refs || row.data_flow_ids || row.to_refs)));
+    .flatMap((row) => asArray(row.data_flow_refs || row.data_flow_ids || row.to_refs));
+  const fromFlows = dataFlowsFromProfile(dataProvenanceProfile)
+    .filter((flow) => wanted.has(asText(flow.feature_id || flow.feature_ref)))
+    .map((flow) => flow.data_flow_id || flow.flow_id);
+  return unique([...indexed, ...fromFlows]);
 }
 
-function legalUnitRefsForFeatures(stage6Review = {}, featureRefs = []) {
+function legalUnitRefsForFeatures(legalCartography = {}, featureRefs = []) {
   const wanted = new Set(asArray(featureRefs).map(asText));
-  return unique(asArray(stage6Review.stage7_navigation_index?.feature_to_legal_unit_index)
+  const indexed = asArray(legalCartography.stage7_navigation_index?.feature_to_legal_unit_index || legalCartography.feature_to_legal_unit_index)
     .filter((row) => wanted.has(asText(row.feature_id)))
-    .flatMap((row) => asArray(row.legal_unit_refs || row.legal_unit_ids || row.to_refs)));
+    .flatMap((row) => asArray(row.legal_unit_refs || row.legal_unit_ids || row.to_refs));
+  const controls = legalControlsFromCartography(legalCartography)
+    .filter((row) => asArray(row.feature_refs).some((ref) => wanted.has(asText(ref))))
+    .flatMap((row) => [row.legal_unit_id, row.control_signal_id, row.document_id]);
+  const gaps = legalGapsFromCartography(legalCartography)
+    .filter((row) => asArray(row.feature_refs).some((ref) => wanted.has(asText(ref))))
+    .flatMap((row) => [row.legal_unit_id, row.mismatch_id, row.gap_id, row.document_id]);
+  return unique([...indexed, ...controls, ...gaps]);
 }
 
-function buildIntegratedExposureMatrix({ hydratedRows = {}, stage6Review = {}, stage7Artifact = {}, exposureLedger = [], targetFeatureProfile = {} }) {
+function buildIntegratedExposureMatrix({ hydratedRows = {}, dataProvenanceProfile = {}, legalCartography = {}, stage7Artifact = {}, exposureProfile = {}, exposureLedger = [], targetFeatureProfile = {} }) {
   const featureLookup = buildFeatureLookup(targetFeatureProfile);
-  const routeMap = buildRouteMap(stage7Artifact);
+  const routeMap = buildRouteMap({ stage7Artifact, exposureProfile });
   const appendixById = exposureAppendixRefById(exposureLedger);
   return asArray(hydratedRows.sorted_identified_exposures).map((item, index) => {
     const featureRefs = asArray(item.reviewed_evidence?.feature_references);
     const affectedFeatures = featureRefs.map((ref) => featureLookup.get(ref)).filter(Boolean).map((feature) => humanText(feature.feature_name || feature.feature_id));
-    const dataRefs = dataFlowRefsForFeatures(stage6Review, featureRefs);
-    const legalRefs = legalUnitRefsForFeatures(stage6Review, featureRefs);
+    const dataRefs = dataFlowRefsForFeatures(dataProvenanceProfile, featureRefs);
+    const legalRefs = legalUnitRefsForFeatures(legalCartography, featureRefs);
     const severity = severityForMain(item.severity);
     return {
       finding_reference: `FIND-${String(index + 1).padStart(3, "0")} (*)`,
@@ -503,6 +536,26 @@ function buildLegalSection({ prior = {}, legalLedger = {}, integratedExposureMat
   };
 }
 
+function inferWorkstream(row = {}) {
+  const text = JSON.stringify(row).toLowerCase();
+  if (/privacy|data|processor|subprocessor|retention|deletion|transfer/.test(text)) return "Privacy / Data Protection";
+  if (/security|breach|confidential/.test(text)) return "Security / Trust";
+  if (/ip|content|output|copyright|training/.test(text)) return "IP / Content / Product";
+  if (/terms|dpa|aup|sla|contract|liability|warranty/.test(text)) return "Commercial / Legal Documents";
+  if (/human review|decision|automated|appeal|escalation/.test(text)) return "Product Governance / Human Review";
+  return "Legal / Product Governance";
+}
+
+function outputNeeded(row = {}) {
+  const text = JSON.stringify(row).toLowerCase();
+  const outputs = [];
+  if (/privacy|processor|subprocessor|retention|deletion|transfer/.test(text)) outputs.push("privacy/DPA/subprocessor control review");
+  if (/terms|liability|warranty|contract/.test(text)) outputs.push("terms and liability allocation review");
+  if (/aup|misuse|abuse|prohibited/.test(text)) outputs.push("acceptable-use restriction review");
+  if (/human review|decision|appeal|escalation/.test(text)) outputs.push("human-review and escalation protocol review");
+  return outputs.length ? outputs.join("; ") : "counsel review note and client factual confirmation";
+}
+
 function buildRemediationSection({ prior = {}, integratedExposureMatrix = [] }) {
   return {
     content_contract: prior.content_contract,
@@ -524,26 +577,6 @@ function buildRemediationSection({ prior = {}, integratedExposureMatrix = [] }) 
   };
 }
 
-function inferWorkstream(row = {}) {
-  const text = JSON.stringify(row).toLowerCase();
-  if (/privacy|data|processor|subprocessor|retention|deletion|transfer/.test(text)) return "Privacy / Data Protection";
-  if (/security|breach|confidential/.test(text)) return "Security / Trust";
-  if (/ip|content|output|copyright|training/.test(text)) return "IP / Content / Product";
-  if (/terms|dpa|aup|sla|contract|liability|warranty/.test(text)) return "Commercial / Legal Documents";
-  if (/human review|decision|automated|appeal|escalation/.test(text)) return "Product Governance / Human Review";
-  return "Legal / Product Governance";
-}
-
-function outputNeeded(row = {}) {
-  const text = JSON.stringify(row).toLowerCase();
-  const outputs = [];
-  if (/privacy|processor|subprocessor|retention|deletion|transfer/.test(text)) outputs.push("privacy/DPA/subprocessor control review");
-  if (/terms|liability|warranty|contract/.test(text)) outputs.push("terms and liability allocation review");
-  if (/aup|misuse|abuse|prohibited/.test(text)) outputs.push("acceptable-use restriction review");
-  if (/human review|decision|appeal|escalation/.test(text)) outputs.push("human-review and escalation protocol review");
-  return outputs.length ? outputs.join("; ") : "counsel review note and client factual confirmation";
-}
-
 function buildEvidenceGapSection({ prior = {}, integratedExposureMatrix = [] }) {
   const byCategory = new Map(integratedExposureMatrix.map((row) => [humanText(row.exposure_issue?.exposure_category), row.finding_reference]));
   const openRequests = asArray(prior.open_information_requests).map((request, index) => ({
@@ -558,11 +591,7 @@ function buildEvidenceGapSection({ prior = {}, integratedExposureMatrix = [] }) 
   return {
     content_contract: prior.content_contract,
     open_information_requests: openRequests,
-    missing_documents: asArray(prior.missing_documents).map((doc, index) => ({
-      request_reference: `DOCREQ-${String(index + 1).padStart(3, "0")}`,
-      document_type: documentLabel(doc.document_type),
-      reason_needed: humanText(doc.reason_needed || doc.requested_evidence)
-    })),
+    missing_documents: asArray(prior.missing_documents).map((doc, index) => ({ request_reference: `DOCREQ-${String(index + 1).padStart(3, "0")}`, document_type: documentLabel(doc.document_type), reason_needed: humanText(doc.reason_needed || doc.requested_evidence) })),
     missing_factual_confirmations: asArray(prior.missing_factual_confirmations).map((item, index) => ({ confirmation_reference: asText(item.confirmation_id, `FC-${index + 1}`), question: humanText(item.question) })),
     unclear_data_flows: asArray(prior.unclear_data_flows).map((flow) => ({ data_flow_reference: asText(flow.data_flow_id), confidence_level: humanText(flow.confidence) })),
     unclear_provider_dependencies: asArray(prior.unclear_provider_dependencies).map((hint) => ({ provider_dependency_reference: asText(hint.hint_id), provider_dependency_type: humanText(hint.hint_type), provider_dependency_value: humanText(hint.hint_value), confidence_level: humanText(hint.confidence) })),
@@ -573,10 +602,7 @@ function buildEvidenceGapSection({ prior = {}, integratedExposureMatrix = [] }) 
 }
 
 function buildMethodologySection(prior = {}) {
-  const stageRoles = asArray(prior.stage_roles).map((item) => ({
-    review_step: humanText(item.stage || item.review_step),
-    purpose: humanText(item.role || item.purpose)
-  }));
+  const stageRoles = asArray(prior.stage_roles).map((item) => ({ review_step: humanText(item.stage || item.review_step), purpose: humanText(item.role || item.purpose) }));
   return {
     ...prior,
     stage_roles: stageRoles,
@@ -616,25 +642,43 @@ function buildAppendixHub({ prior = {}, evidenceSourceIndex, featureLedger, data
   };
 }
 
-function buildQualityTraceLedger(stage8Export = {}, stage8Ledger = {}) {
+function buildQualityTraceLedger({ stage8Export = {}, stage8Ledger = {}, stage8QualityControlLedger = {} } = {}) {
+  const qc = safeObject(stage8QualityControlLedger);
+  const rows = [];
+  for (const correction of asArray(qc.accepted_corrections || qc.corrections || qc.correction_meta)) {
+    rows.push({
+      appendix_ref: appendixRef("QA", rows.length),
+      challenge_ref: `QA-${String(rows.length + 1).padStart(3, "0")}`,
+      row_ref: asText(correction.threat_id || correction.registry_reference || correction.row_ref),
+      deterministic_flag: humanText(correction.reason || correction.required_action || "Quality control correction recorded."),
+      previous_outcome: humanText(correction.previous_status || correction.from_status),
+      corrected_outcome: humanText(correction.corrected_status || correction.to_status || correction.reopened_status),
+      reason_for_challenge: humanText(correction.reason || correction.note),
+      required_action: humanText(correction.required_action || "Review correction trace before delivery if material."),
+      model_challenge_used: Boolean(stage8Export?.model_metadata?.compact_challenge),
+      challenge_warning: "",
+      correction_applied: true,
+      exhausted_or_unresolved: false
+    });
+  }
   const reopened = asArray(stage8Export?.summary?.reopened_rows || stage8Ledger?.operator_challenge_gate?.reopened_rows);
-  const notes = asArray(stage8Ledger?.operator_challenge_gate?.notes);
-  const warnings = asArray(stage8Export?.model_metadata?.model_warnings);
-  const rows = reopened.map((row, index) => ({
-    appendix_ref: appendixRef("QA", index),
-    challenge_ref: `QA-${String(index + 1).padStart(3, "0")}`,
-    row_ref: asText(row.threat_id || row.registry_reference || row.appendix_row_reference),
-    deterministic_flag: humanText(row.reason || row.required_action || "Quality review reopened this row."),
-    previous_outcome: humanText(row.previous_status),
-    corrected_outcome: humanText(row.reopened_status),
-    reason_for_challenge: humanText(row.reason),
-    required_action: humanText(row.required_action),
-    model_challenge_used: Boolean(stage8Export?.model_metadata?.compact_challenge),
-    challenge_warning: "",
-    correction_applied: true,
-    exhausted_or_unresolved: false
-  }));
-  for (const warning of warnings.concat(notes).filter(Boolean)) {
+  for (const row of reopened) {
+    rows.push({
+      appendix_ref: appendixRef("QA", rows.length),
+      challenge_ref: `QA-${String(rows.length + 1).padStart(3, "0")}`,
+      row_ref: asText(row.threat_id || row.registry_reference || row.appendix_row_reference),
+      deterministic_flag: humanText(row.reason || row.required_action || "Quality review reopened this row."),
+      previous_outcome: humanText(row.previous_status),
+      corrected_outcome: humanText(row.reopened_status),
+      reason_for_challenge: humanText(row.reason),
+      required_action: humanText(row.required_action),
+      model_challenge_used: Boolean(stage8Export?.model_metadata?.compact_challenge),
+      challenge_warning: "",
+      correction_applied: true,
+      exhausted_or_unresolved: false
+    });
+  }
+  for (const warning of asArray(qc.quality_warnings).concat(asArray(qc.unresolved_items), asArray(stage8Export?.model_metadata?.model_warnings), asArray(stage8Ledger?.operator_challenge_gate?.notes)).filter(Boolean)) {
     rows.push({
       appendix_ref: appendixRef("QA", rows.length),
       challenge_ref: `QA-${String(rows.length + 1).padStart(3, "0")}`,
@@ -642,12 +686,12 @@ function buildQualityTraceLedger(stage8Export = {}, stage8Ledger = {}) {
       deterministic_flag: "Quality review warning",
       previous_outcome: "Not applicable",
       corrected_outcome: "Not applicable",
-      reason_for_challenge: humanText(warning),
-      required_action: "Review warning before delivery if material.",
+      reason_for_challenge: humanText(warning?.reason || warning?.note || warning),
+      required_action: humanText(warning?.required_action || "Review warning before delivery if material."),
       model_challenge_used: Boolean(stage8Export?.model_metadata?.compact_challenge),
-      challenge_warning: humanText(warning),
+      challenge_warning: humanText(warning?.warning || warning?.note || warning),
       correction_applied: false,
-      exhausted_or_unresolved: /exhaust|unresolved|failed/i.test(String(warning))
+      exhausted_or_unresolved: /exhaust|unresolved|failed/i.test(String(warning?.reason || warning?.note || warning))
     });
   }
   if (!rows.length) {
@@ -669,28 +713,32 @@ function buildQualityTraceLedger(stage8Export = {}, stage8Ledger = {}) {
   return rows;
 }
 
-export function applyLockedStage9ReportArchitecture({ sections = {}, stage6Cache = {}, stage7Artifact = {}, stage8Ledger = {}, stage8Export = {}, registryRuntime = {}, hydratedRows = {}, reviewedSources = [] } = {}) {
-  const sourceBundle = stage6Cache.source_bundle || {};
-  const targetFeatureProfile = stage6Cache.target_feature_profile || {};
-  const stage6Review = stage6Cache.stage6_review || {};
+export function applyLockedStage9ReportArchitecture({ sections = {}, profileInput = null, stage6Cache = {}, stage7Artifact = {}, stage8Ledger = {}, stage8Export = {}, registryRuntime = {}, hydratedRows = {}, reviewedSources = [] } = {}) {
+  const sourceBundle = profileInput?.source_bundle || stage6Cache.source_bundle || {};
+  const targetProfile = profileInput?.target_profile || stage6Cache.target_profile || stage6Cache.company_profile || {};
+  const targetFeatureProfile = profileInput?.target_feature_profile || stage6Cache.target_feature_profile || {};
+  const legalCartography = profileInput?.legal_cartography || stage6Cache.legal_cartography || stage6Cache.stage6_review?.legal_document_cartography || {};
+  const dataProvenanceProfile = profileInput?.data_provenance_profile || stage6Cache.data_provenance_profile || stage6Cache.stage6_review?.data_provenance_profile || {};
+  const exposureProfile = profileInput?.exposure_profile || stage7Artifact.exposure_profile || { registry_ledger: asArray(stage7Artifact.registry_ledger || stage7Artifact.merged_ledger) };
+  const stage8QualityControlLedger = profileInput?.stage8_quality_control_ledger || stage8Ledger.stage8_quality_control_ledger || stage8Ledger || {};
   const featureLookup = buildFeatureLookup(targetFeatureProfile);
-  const evidenceSourceIndex = buildSourceRows({ sourceBundle, reviewedSources, targetFeatureProfile, stage6Review, hydratedRows });
+  const evidenceSourceIndex = buildSourceRows({ sourceBundle, reviewedSources, targetFeatureProfile, dataProvenanceProfile, legalCartography, hydratedRows });
   const featureLedger = buildFeatureLedger(targetFeatureProfile);
-  const dataLedger = buildDataLedger(stage6Review);
-  const legalLedger = buildLegalLedger(stage6Review);
-  const exposureLedger = buildExposureLedger({ hydratedRows, stage7Artifact, stage8Ledger, registryRuntime, featureLookup });
-  const qualityTraceLedger = buildQualityTraceLedger(stage8Export, stage8Ledger);
-  const integratedExposureMatrix = buildIntegratedExposureMatrix({ hydratedRows, stage6Review, stage7Artifact, exposureLedger, targetFeatureProfile });
+  const dataLedger = buildDataLedger(dataProvenanceProfile);
+  const legalLedger = buildLegalLedger(legalCartography);
+  const exposureLedger = buildExposureLedger({ hydratedRows, stage7Artifact, exposureProfile, stage8QualityControlLedger, registryRuntime, featureLookup });
+  const qualityTraceLedger = buildQualityTraceLedger({ stage8Export, stage8Ledger, stage8QualityControlLedger });
+  const integratedExposureMatrix = buildIntegratedExposureMatrix({ hydratedRows, dataProvenanceProfile, legalCartography, stage7Artifact, exposureProfile, exposureLedger, targetFeatureProfile });
   return {
     ...sections,
     target_profile: {
       ...(sections.target_profile || {}),
       target_snapshot: {
-        target_identity: safeObject(stage6Cache.company_profile?.identity),
-        jurisdictional_profile: safeObject(stage6Cache.company_profile?.jurisdiction),
-        business_model_profile: safeObject(stage6Cache.company_profile?.business_model),
-        market_context: safeObject(stage6Cache.company_profile?.market_context),
-        product_baseline: safeObject(stage6Cache.company_profile?.product_baseline),
+        target_identity: safeObject(targetProfile.identity),
+        jurisdictional_profile: safeObject(targetProfile.jurisdiction),
+        business_model_profile: safeObject(targetProfile.business_model),
+        market_context: safeObject(targetProfile.market_context),
+        product_baseline: safeObject(targetProfile.product_baseline),
         evidence_provenance_note: "(*) See Appendix A for source provenance."
       }
     },
