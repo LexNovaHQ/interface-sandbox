@@ -24,7 +24,7 @@ on:
         default: "30"
         type: string
       audit_stop_stage:
-        description: "Audit stop stage. Default runs through Stage 6B with canonical Stage 5 substage audit steps."
+        description: "Audit stop stage. Default runs through Stage 6B with Stage 1-5 canonical audit steps."
         required: true
         default: "6b"
         type: string
@@ -112,6 +112,34 @@ jobs:
           GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
           GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
         run: npm run audit:full-live-runtime
+
+      - name: Audit Stage 1 - Source Discovery
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-live-audit-stage.mjs 1
+
+      - name: Audit Stage 2 - Source Capture
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-live-audit-stage.mjs 2
+
+      - name: Audit Stage 3 - Evidence Refiner / Source Bundle
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-live-audit-stage.mjs 3
+
+      - name: Audit Stage 4 - Company / Target Profile
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-live-audit-stage.mjs 4
 
       - name: Audit Stage 5A - Product Function Discovery
         if: always()
