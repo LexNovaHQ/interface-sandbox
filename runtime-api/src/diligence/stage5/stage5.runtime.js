@@ -10,7 +10,11 @@ function asArray(value) {
 }
 
 function asText(value) {
-  return String(value || "").trim();
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function exactString(value) {
+  return typeof value === "string" ? value : "";
 }
 
 function violation(message, details = {}) {
@@ -25,15 +29,13 @@ export function computeSourceSha256(text = "") {
 }
 
 function sourceText(record = {}) {
-  return typeof record.clean_text_lossless === "string"
-    ? record.clean_text_lossless
-    : typeof record.text?.clean_text_lossless === "string"
-      ? record.text.clean_text_lossless
-      : "";
+  if (typeof record.clean_text_lossless === "string") return record.clean_text_lossless;
+  if (typeof record.text?.clean_text_lossless === "string") return record.text.clean_text_lossless;
+  return "";
 }
 
 function sourceId(record = {}, index = 0) {
-  return asText(record.source_id || record.evidence_source_id) || `SRC_${String(index + 1).padStart(3, "0")}`;
+  return asText(record.source_id || record.evidence_source_id || record.id) || `SRC_${String(index + 1).padStart(3, "0")}`;
 }
 
 function sourceUrl(record = {}) {
@@ -42,6 +44,21 @@ function sourceUrl(record = {}) {
 
 function sourceTitle(record = {}) {
   return asText(record.source_title || record.title || record.structure?.title);
+}
+
+function sourceFamily(record = {}, fallback = "product_family") {
+  return asText(record.source_family || record.family_id || record.family) || fallback;
+}
+
+function losslessPolicy(record = {}) {
+  const existing = record.lossless_policy || record.evidence_policy || {};
+  return {
+    full_text_lossless: existing.full_text_lossless === false ? false : true,
+    summarized: existing.summarized === true ? true : false,
+    compressed: existing.compressed === true ? true : false,
+    truncated: existing.truncated === true ? true : false,
+    normalized: existing.normalized === true ? true : false
+  };
 }
 
 function metadataSidecar(stage5Input = {}, adapterResult = {}) {
@@ -53,15 +70,81 @@ function metadataSidecar(stage5Input = {}, adapterResult = {}) {
     "product_family_discovery_sources",
     "product_family_non_feature_context_sources"
   ];
-  return keys.flatMap((key) => asArray(stage5Input[key] || adapterResult[key]).map((row) => ({ ...row, metadata_source: key })));
+  return keys.flatMap((key) => [
+    ...asArray(stage5Input[key]).map((row) => ({ ...row, metadata_source: key })),
+    ...asArray(adapterResult[key]).map((row) => ({ ...row, metadata_source: key }))
+  ]);
+}
+
+function routedFamilySources(container = {}) {
+  return asArray(container.routed_family_sources).flatMap((family) =>
+    asArray(family.sources).map((source) => ({
+      ...source,
+      source_family: source.source_family || family.family_id,
+      family_label: family.family_label
+    }))
+  );
 }
 
 function candidateSources({ stage5Input = {}, adapterResult = {} } = {}) {
   return [
+    ...asArray(stage5Input?.primary_evidence?.sources),
+    ...asArray(adapterResult?.primary_evidence?.sources),
+    ...routedFamilySources(stage5Input),
+    ...routedFamilySources(adapterResult),
+    ...routedFamilySources(stage5Input?.stage3_output || {}),
+    ...routedFamilySources(adapterResult?.stage3_output || {}),
     ...asArray(stage5Input?.source_bundle?.evidence_buffer),
     ...asArray(adapterResult?.target_feature_profile_input?.source_bundle?.evidence_buffer),
     ...asArray(adapterResult?.source_bundle?.evidence_buffer)
   ];
+}
+
+function canonicalSourceFromRecord(record = {}, index = 0) {
+  const cleanText = sourceText(record);
+  if (!cleanText) return null;
+  const id = sourceId(record, index);
+  const sha = asText(record.source_sha256 || record.clean_text_sha256 || record.text?.clean_text_sha256) || computeSourceSha256(cleanText);
+  return {
+    source_id: id,
+    source_url: sourceUrl(record),
+    source_title: sourceTitle(record),
+    source_family: sourceFamily(record),
+    clean_text_lossless: exactString(cleanText),
+    source_sha256: sha,
+    lossless_policy: losslessPolicy(record)
+  };
+}
+
+function sourceMergeKey(source = {}, index = 0) {
+  return asText(source.source_id) || asText(source.source_url) || `SOURCE_${index}`;
+}
+
+function mergeLosslessSources(records = []) {
+  const byKey = new Map();
+  const duplicate_report = [];
+  let sourceIndex = 0;
+  for (const record of records) {
+    const source = canonicalSourceFromRecord(record, sourceIndex);
+    sourceIndex += 1;
+    if (!source) continue;
+    const key = sourceMergeKey(source, sourceIndex);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, source);
+      continue;
+    }
+    const existingLen = existing.clean_text_lossless.length;
+    const candidateLen = source.clean_text_lossless.length;
+    duplicate_report.push({
+      source_key: key,
+      kept_length: Math.max(existingLen, candidateLen),
+      replaced_length: Math.min(existingLen, candidateLen),
+      policy: "lossless_fuller_source_wins"
+    });
+    if (candidateLen > existingLen) byKey.set(key, source);
+  }
+  return { sources: [...byKey.values()], duplicate_report };
 }
 
 export function buildNavigationSidecarFromSources(sources = []) {
@@ -76,36 +159,10 @@ export function buildNavigationSidecarFromSources(sources = []) {
 }
 
 export function buildStage5CanonicalInput({ companyProfile = {}, adapterResult = {}, stage5Input = {} } = {}) {
-  const fullSources = [];
-  const seen = new Set();
-  for (const record of candidateSources({ stage5Input, adapterResult })) {
-    const cleanText = sourceText(record);
-    if (!cleanText) continue;
-    const id = sourceId(record, fullSources.length);
-    const url = sourceUrl(record);
-    const key = id || url;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const sha = asText(record.source_sha256 || record.clean_text_sha256 || record.text?.clean_text_sha256) || computeSourceSha256(cleanText);
-    fullSources.push({
-      source_id: id,
-      source_url: url,
-      source_title: sourceTitle(record),
-      source_family: asText(record.source_family) || "product_family",
-      clean_text_lossless: cleanText,
-      source_sha256: sha,
-      lossless_policy: {
-        full_text_lossless: true,
-        summarized: false,
-        compressed: false,
-        truncated: false,
-        normalized: false
-      }
-    });
-  }
+  const { sources: fullSources, duplicate_report } = mergeLosslessSources(candidateSources({ stage5Input, adapterResult }));
   const canonical = {
     stage5_input_version: "stage5_lossless_family_input_v1",
-    target_profile_ref: stage5Input.target_profile_ref || {
+    target_profile_ref: stage5Input.target_profile_ref || adapterResult.target_profile_ref || {
       target_profile_version: companyProfile?.target_profile_version || "target_profile_v2",
       brand_name: companyProfile?.identity?.brand_name || "Unknown target",
       legal_name: companyProfile?.identity?.legal_name || "",
@@ -119,7 +176,8 @@ export function buildStage5CanonicalInput({ companyProfile = {}, adapterResult =
     },
     reference: {
       metadata_sidecar: metadataSidecar(stage5Input, adapterResult),
-      navigation_index_sidecar: buildNavigationSidecarFromSources(fullSources)
+      navigation_index_sidecar: buildNavigationSidecarFromSources(fullSources),
+      duplicate_lossless_source_report: duplicate_report
     }
   };
   assertLosslessPrimaryEvidence(canonical);
@@ -139,6 +197,9 @@ export function assertLosslessPrimaryEvidence(input = {}) {
       throw violation("metadata-only source cannot enter primary evidence", { source_id: source.source_id });
     }
     source.source_sha256 = asText(source.source_sha256) || computeSourceSha256(source.clean_text_lossless);
+    if (source.source_sha256 !== computeSourceSha256(source.clean_text_lossless)) {
+      throw violation("source_sha256 must match clean_text_lossless", { source_id: source.source_id });
+    }
     const policy = source.lossless_policy || {};
     if (policy.full_text_lossless !== true || policy.summarized !== false || policy.compressed !== false || policy.truncated !== false || policy.normalized !== false) {
       throw violation("lossless_policy must prove unmodified full text custody", { source_id: source.source_id });
@@ -148,7 +209,19 @@ export function assertLosslessPrimaryEvidence(input = {}) {
 }
 
 export function assertWindowIsVerbatim(source = {}, window = {}) {
-  if (source.clean_text_lossless?.slice(window.char_start, window.char_end) !== window.verbatim_text) {
+  if (!source || typeof source.clean_text_lossless !== "string") {
+    const error = new Error("Source window cannot be verified without clean_text_lossless.");
+    error.code = "SOURCE_WINDOW_NOT_VERBATIM";
+    error.details = { source_id: window?.source_id || null, window_id: window?.window_id || null };
+    throw error;
+  }
+  if (!Number.isInteger(window.char_start) || !Number.isInteger(window.char_end) || window.char_start < 0 || window.char_end <= window.char_start) {
+    const error = new Error("Source window offsets must define a non-empty range.");
+    error.code = "SOURCE_WINDOW_NOT_VERBATIM";
+    error.details = { source_id: source.source_id, window_id: window.window_id };
+    throw error;
+  }
+  if (source.clean_text_lossless.slice(window.char_start, window.char_end) !== window.verbatim_text) {
     const error = new Error("Source window is not an exact clean_text_lossless substring.");
     error.code = "SOURCE_WINDOW_NOT_VERBATIM";
     error.details = { source_id: source.source_id, window_id: window.window_id };
@@ -157,14 +230,17 @@ export function assertWindowIsVerbatim(source = {}, window = {}) {
   if (source.source_sha256 && window.source_sha256 !== source.source_sha256) {
     const error = new Error("Source window hash does not match source custody hash.");
     error.code = "SOURCE_WINDOW_NOT_VERBATIM";
+    error.details = { source_id: source.source_id, window_id: window.window_id };
     throw error;
   }
   return true;
 }
 
 export function createVerbatimSourceWindow(source, range = {}, options = {}) {
+  assertLosslessPrimaryEvidence({ primary_evidence: { sources: [source] } });
   const charStart = Math.max(0, Number(range.char_start ?? range.start ?? 0));
-  const charEnd = Math.min(source.clean_text_lossless.length, Math.max(charStart, Number(range.char_end ?? range.end ?? source.clean_text_lossless.length)));
+  const requestedEnd = Number(range.char_end ?? range.end ?? source.clean_text_lossless.length);
+  const charEnd = Math.min(source.clean_text_lossless.length, Math.max(charStart + 1, requestedEnd));
   const window = {
     window_id: options.window_id || `${source.source_id}#${options.created_by_substage || "S5"}#W${String(options.window_index || 1).padStart(3, "0")}`,
     source_id: source.source_id,
