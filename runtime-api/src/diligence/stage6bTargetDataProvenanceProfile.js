@@ -104,7 +104,7 @@ function buildFeatureNavigation(overlays = []) {
   })).filter((row) => row.feature_id && row.data_flow_id);
 }
 
-export function buildTargetDataProvenanceProfile({ targetFeatureProfile = {}, stage6bReview = {}, legalDocumentCartography = {}, normalizedClassification = null } = {}) {
+export function buildDataProvenanceProfile({ targetFeatureProfile = {}, stage6bReview = {}, legalDocumentCartography = {}, normalizedClassification = null, legalGovernancePrefill = null } = {}) {
   const profile = normalizeStage5FeatureProfile({ target_feature_profile: targetFeatureProfile });
   const productRecords = dataProvenanceRows(profile).map(productObservedRecord);
   const overlayRecords = arr(stage6bReview?.data_provenance_profile?.data_flow_profile).map(overlayRecord);
@@ -144,7 +144,7 @@ export function buildTargetDataProvenanceProfile({ targetFeatureProfile = {}, st
   }
 
   return {
-    target_data_provenance_profile_version: "target_data_provenance_profile_v1",
+    data_provenance_profile_version: "data_provenance_profile_v1",
     profile_policy: {
       stage5_layer: "product_observed_data_behavior_only",
       stage6b_layer: "legal_governance_control_overlay_only",
@@ -163,10 +163,16 @@ export function buildTargetDataProvenanceProfile({ targetFeatureProfile = {}, st
       overlay_record_count: overlayRecords.length,
       integrated_record_count: integrated.length,
       legal_document_unit_count: arr(legalDocumentCartography?.legal_document_index).length,
-      semantic_classification_row_count: arr(normalizedClassification?.data_flow_classification).length
+      semantic_classification_row_count: arr(normalizedClassification?.data_flow_classification).length,
+      legal_governance_prefill_applied: Boolean(legalGovernancePrefill),
+      legal_governance_prefill_debug_available: Boolean(legalGovernancePrefill)
     },
     limitations: arr(stage6bReview?.data_provenance_profile?.data_profile_limitations)
   };
+}
+
+export function buildTargetDataProvenanceProfile(args = {}) {
+  return buildDataProvenanceProfile(args);
 }
 
 export const stage6bTargetDataProvenanceProfileInternals = { dataProvenanceRows, productKey, flowKey, productObservedRecord, overlayRecord, integratedStatus };
