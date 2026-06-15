@@ -102,7 +102,7 @@ export function validateStage6ReviewGuardrail(stage6Review = {}, { input = {}, s
   walk(stage6Review, (key, value, path) => {
     if (RETIRED_KEYS.has(key)) critical.push(err("STAGE6_LEGACY_FIELD_PRESENT", path, `Retired Stage 6 key present: ${key}`, { key }));
     if (typeof value === "string" && RETIRED_VALUES.has(value)) critical.push(err("STAGE6_RETIRED_TERM_PRESENT", path, `Retired Stage 6 value present: ${value}`, { value }));
-    if (["quote", "evidence_quote", "excerpt_text", "html", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions"].includes(key)) critical.push(err("STAGE6_RETIRED_TERM_PRESENT", path, `Stage 6 output cannot contain ${key}.", { key }));
+    if (["quote", "evidence_quote", "excerpt_text", "html", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions"].includes(key)) critical.push(err("STAGE6_RETIRED_TERM_PRESENT", path, `Stage 6 output cannot contain ${key}.`, { key }));
   });
 
   const component = stage6Review?.stage6_component;
