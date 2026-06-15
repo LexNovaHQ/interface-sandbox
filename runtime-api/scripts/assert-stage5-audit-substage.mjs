@@ -14,7 +14,8 @@ const SUBSTAGES = {
     expected_version: "stage5a_product_function_discovery_v3",
     primary_rows: "admitted_functions",
     window_rows: "feature_evidence_windows",
-    required_ref_key: "source_window_refs"
+    required_ref_key: "source_window_refs",
+    summary_stage_id: "stage5a"
   },
   "5b": {
     label: "Stage 5B - Archetype / Surface Tagging",
@@ -23,7 +24,8 @@ const SUBSTAGES = {
     expected_version: "stage5b_archetype_surface_tagging_v3",
     primary_rows: "feature_tags",
     window_rows: "supplemental_evidence_windows",
-    required_ref_key: "source_window_refs"
+    required_ref_key: "source_window_refs",
+    summary_stage_id: "stage5b"
   },
   "5c": {
     label: "Stage 5C - Complete Feature Record Builder",
@@ -32,7 +34,8 @@ const SUBSTAGES = {
     expected_version: "stage5c_complete_feature_records_v3",
     primary_rows: "complete_feature_records",
     window_rows: "supplemental_evidence_windows",
-    required_ref_key: "evidence_window_refs"
+    required_ref_key: "evidence_window_refs",
+    summary_stage_id: "stage5c"
   },
   "5d": {
     label: "Stage 5D - Final target_feature_profile Integrator",
@@ -41,7 +44,8 @@ const SUBSTAGES = {
     expected_version: "stage5d_target_feature_profile_integrator_v2",
     primary_rows: "target_feature_profile.feature_inventory",
     window_rows: null,
-    required_ref_key: "evidence_refs"
+    required_ref_key: "evidence_refs",
+    summary_stage_id: "stage5d"
   }
 };
 
@@ -76,6 +80,16 @@ function appendSummary(markdown) {
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`, "utf8");
 }
 
+function requireSummary(stageId, direction) {
+  const name = `${stageId}-${direction}-summary.json`;
+  const filePath = path.join(outputRoot, name);
+  if (!fs.existsSync(filePath)) throw new Error(`${name} missing for ${stageId}`);
+  const artifact = readJson(name);
+  if (artifact.stage_id !== stageId || artifact.direction !== direction) throw new Error(`${name} has invalid stage/direction identity.`);
+  if (artifact.ok === false) throw new Error(`${name} reports ok=false.`);
+  return { name, artifact };
+}
+
 if (!SUBSTAGES[substageArg]) {
   console.error(`Usage: node scripts/assert-stage5-audit-substage.mjs <5a|5b|5c|5d>`);
   process.exit(2);
@@ -85,6 +99,16 @@ const spec = SUBSTAGES[substageArg];
 const artifactPath = path.join(outputRoot, spec.artifact);
 if (!fs.existsSync(artifactPath)) {
   console.log(`::error title=${spec.label} missing artifact::${spec.artifact} not found in ${outputRoot}`);
+  process.exit(1);
+}
+
+let inputSummary;
+let outputSummary;
+try {
+  inputSummary = requireSummary(spec.summary_stage_id, "input");
+  outputSummary = requireSummary(spec.summary_stage_id, "output");
+} catch (error) {
+  console.log(`::error title=${spec.label} missing input/output summary::${error?.message || String(error)}`);
   process.exit(1);
 }
 
@@ -108,12 +132,20 @@ if (rows.length && substageArg === "5d") {
   const missingRefs = rows.filter((row) => !asArray(row?.evidence_refs).length && !asArray(row?.source_window_refs).length).length;
   if (missingRefs) failures.push(`${missingRefs} feature_inventory row(s) missing evidence refs`);
 }
+if (Number(outputSummary.artifact.primary_rows ?? outputSummary.artifact.feature_count ?? rows.length) !== rows.length && !validation.reinvestigation_required) {
+  failures.push(`${outputSummary.name} primary row count does not match ${spec.artifact}`);
+}
+if (spec.window_rows && Number(outputSummary.artifact.source_window_count ?? windows.length) !== windows.length && !validation.reinvestigation_required) {
+  failures.push(`${outputSummary.name} source window count does not match ${spec.artifact}`);
+}
 if (validation.reinvestigation_required) warnings.push(`reinvestigation requested: ${validation.reinvestigation_request_count}`);
 
 const status = failures.length ? "FAIL" : warnings.length ? "REINVESTIGATION" : "PASS";
 const markdown = `## ${spec.label}\n\n` +
   `| Field | Value |\n|---|---:|\n` +
   `| Status | ${status} |\n` +
+  `| Input summary | ${inputSummary.name} |\n` +
+  `| Output summary | ${outputSummary.name} |\n` +
   `| Artifact | ${spec.artifact} |\n` +
   `| Primary rows | ${rows.length} |\n` +
   `| Source windows | ${windows.length} |\n` +
@@ -128,4 +160,4 @@ if (failures.length) {
   process.exit(1);
 }
 if (warnings.length) console.log(`::warning title=${spec.label}::${warnings.join("; ")}`);
-console.log(JSON.stringify({ ok: true, substage: substageArg.toUpperCase(), status, artifact: spec.artifact, primary_rows: rows.length, source_windows: windows.length, validation, warnings }, null, 2));
+console.log(JSON.stringify({ ok: true, substage: substageArg.toUpperCase(), status, input_summary: inputSummary.name, output_summary: outputSummary.name, artifact: spec.artifact, primary_rows: rows.length, source_windows: windows.length, validation, warnings }, null, 2));
