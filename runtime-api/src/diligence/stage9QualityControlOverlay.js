@@ -3,7 +3,7 @@ const safeObject = (value) => value && typeof value === "object" && !Array.isArr
 const asText = (value, fallback = "") => String(value ?? "").trim() || fallback;
 
 function rowId(row = {}) {
-  return asText(row.threat_id || row.Threat_ID || row.registry_reference || row.registry_row_id || row.appendix_row_reference);
+  return asText(row.threat_id || row.Threat_ID || row.registry_reference || row.registry_row_id || row.appendix_row_reference || row.row_ref);
 }
 
 function clone(value) {
@@ -37,13 +37,16 @@ export function normalizeStage8QualityControlLedger({ stage8Ledger = {}, stage8E
     proposed_outcome: asText(item.reopened_status),
     raw_challenge: item
   }));
+  const correctedRegistryLedger = asArray(stage8Ledger.corrected_registry_ledger || stage8Ledger.post_challenge_ledger);
   return {
     qc_ledger_version: "stage8_quality_control_ledger_v1",
     artifact_type: "stage8_quality_control_ledger",
     generated_at: stage8Ledger.generated_at || stage8Export.generated_at || null,
     run_id: stage8Ledger.run_id || stage8Export.run_id || null,
-    source_artifact_type: stage8Ledger.artifact_type || stage8Export.artifact_type || null,
+    source_artifact_type: stage8Ledger.source_artifact_type || stage8Ledger.artifact_type || stage8Export.artifact_type || null,
     corrected_count: Number(stage8Ledger.corrected_count ?? stage8Export.correction_result?.corrected_count ?? corrections.length ?? 0),
+    corrected_registry_ledger: correctedRegistryLedger,
+    post_challenge_ledger: correctedRegistryLedger,
     corrections,
     challenges,
     accepted_corrections: corrections,
@@ -63,8 +66,8 @@ export function normalizeStage8QualityControlLedger({ stage8Ledger = {}, stage8E
 export function applyStage8QualityControlToExposureProfile({ exposureProfile = {}, stage8QualityControlLedger = {}, stage8Ledger = {} } = {}) {
   const base = clone(exposureProfile) || {};
   const originalLedger = asArray(base.registry_ledger);
-  const postChallengeLedger = asArray(stage8Ledger.post_challenge_ledger);
-  const effectiveLedger = postChallengeLedger.length ? postChallengeLedger : originalLedger;
+  const correctedRegistryLedger = asArray(stage8QualityControlLedger.corrected_registry_ledger || stage8Ledger.corrected_registry_ledger || stage8Ledger.post_challenge_ledger);
+  const effectiveLedger = correctedRegistryLedger.length ? correctedRegistryLedger : originalLedger;
   const correctionRows = correctionRowsFromStage8(stage8QualityControlLedger);
   const correctedIds = new Set(correctionRows.map((item) => rowId(item) || asText(item.row_ref)).filter(Boolean));
   return {
