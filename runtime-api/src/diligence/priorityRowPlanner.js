@@ -1,5 +1,6 @@
 import { buildStage7ArchetypeBatches } from "./stage7ArchetypeBatcher.js";
 import { buildStage7RouteContract } from "./stage7RouteContract.js";
+import { buildStage5DegradedFallbackContext, isStage5DegradedFallbackRow } from "./stage7DegradedFallbackRouter.js";
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -137,10 +138,11 @@ function refsFor(row, active) {
   return [...refs];
 }
 
-function fallbackFeatureRefs(reason, refs) {
+function fallbackFeatureRefs(reason, refs, fallbackContext = {}) {
   if (refs.length) return refs;
   if (reason === "UNI_ALWAYS_RUN") return ["GLOBAL_UNIVERSAL_ROW"];
   if (reason === "CONDITIONAL_DOC_REVIEW") return ["LEGAL_GOVERNANCE_ARTIFACT_ROUTE"];
+  if (reason === "STAGE5_DEGRADED_FALLBACK") return asArray(fallbackContext.candidate_refs).length ? asArray(fallbackContext.candidate_refs) : ["STAGE5_DEGRADED_UNRESOLVED_CANDIDATE"];
   return ["NO_STAGE5_TRIGGER"];
 }
 
@@ -167,7 +169,7 @@ function normalizeRow(row, index) {
   return { ...row, Threat_ID: rowId(row, index), Threat_Name: rowName(row), _registry_index: index, _registry_position: index + 1 };
 }
 
-function routeRow(row, active, includeConditional) {
+function routeRow(row, active, includeConditional, fallbackContext) {
   const archetype = rowArchetype(row);
   const surfaces = rowSurfaces(row);
   const isUni = archetype === "UNI";
@@ -176,12 +178,14 @@ function routeRow(row, active, includeConditional) {
   if (isUni) return "UNI_ALWAYS_RUN";
   if (archetypeMatch || surfaceMatch) return "STAGE5_INT_TRIGGERED";
   if (includeConditional && isConditionalDocRow(row)) return "CONDITIONAL_DOC_REVIEW";
+  if (isStage5DegradedFallbackRow(row, fallbackContext)) return "STAGE5_DEGRADED_FALLBACK";
   return "INT_NOT_TRIGGERED";
 }
 
 export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, includeConditional = true } = {}) {
   const sourceRows = asArray(rows).map(normalizeRow);
   const active = activeSignals(profile);
+  const fallbackContext = buildStage5DegradedFallbackContext(profile);
   const modelRows = [];
   const deterministicRows = [];
   const routeRecords = [];
@@ -189,16 +193,17 @@ export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, i
   const activeSurfaces = [...active.surfaces].sort();
 
   sourceRows.forEach((row, index) => {
-    const reason = routeRow(row, active, includeConditional);
-    const shouldRun = reason === "UNI_ALWAYS_RUN" || reason === "STAGE5_INT_TRIGGERED" || reason === "CONDITIONAL_DOC_REVIEW";
+    const reason = routeRow(row, active, includeConditional, fallbackContext);
+    const shouldRun = reason === "UNI_ALWAYS_RUN" || reason === "STAGE5_INT_TRIGGERED" || reason === "CONDITIONAL_DOC_REVIEW" || reason === "STAGE5_DEGRADED_FALLBACK";
     const refs = refsFor(row, active);
     const routeContract = buildStage7RouteContract({
       row,
       index,
       routeReason: reason,
-      featureRefs: fallbackFeatureRefs(reason, refs),
+      featureRefs: fallbackFeatureRefs(reason, refs, fallbackContext),
       activeArchetypes,
-      activeSurfaces
+      activeSurfaces,
+      fallbackContext: reason === "STAGE5_DEGRADED_FALLBACK" ? fallbackContext : null
     });
     routeRecords.push(routeContract);
     if (shouldRun) modelRows.push({ ...row, _stage7_route: routeContract });
@@ -207,22 +212,25 @@ export function buildPriorityRowPlan({ rows = [], profile = {}, batchSize = 8, i
 
   const batching = buildStage7ArchetypeBatches({ modelRows, routeRecords, minRows: 8, maxRows: 15 });
   const batches = batching.batches;
+  const routingSummary = routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {});
   return {
-    plan_version: "priority_row_plan_v2",
-    mode: "priority_first_route_contract_batched",
+    plan_version: "priority_row_plan_v3",
+    mode: "priority_first_route_contract_batched_with_stage5_degraded_fallback",
     batch_size: { min: batching.min_rows, max: batching.max_rows },
     legacy_requested_batch_size: Math.max(1, Number(batchSize || 8)),
     batching_strategy: batching.strategy,
     active_archetypes: activeArchetypes,
     active_surfaces: activeSurfaces,
+    stage5_classification_quality: profile?.classification_quality || null,
+    stage5_degraded_fallback_context: fallbackContext,
     model_rows: modelRows,
     model_batches: batches,
     model_batch_records: batching.batch_records,
     deterministic_rows: deterministicRows,
     route_records: routeRecords,
-    batch_warnings: batching.warnings,
-    counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length },
-    routing_summary: routeRecords.reduce((acc, item) => { acc[item.route_reason] = (acc[item.route_reason] || 0) + 1; return acc; }, {})
+    batch_warnings: [...asArray(batching.warnings), ...asArray(fallbackContext.warnings)],
+    counts: { total_rows: sourceRows.length, model_rows: modelRows.length, deterministic_rows: deterministicRows.length, model_batch_count: batches.length, stage5_degraded_fallback_rows: routingSummary.STAGE5_DEGRADED_FALLBACK || 0 },
+    routing_summary: routingSummary
   };
 }
 
