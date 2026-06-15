@@ -11,8 +11,8 @@ export const STAGE5_CANONICAL_SUBSTAGES = Object.freeze([
   {
     id: "5B",
     name: "Archetype / Surface Tagging",
-    purpose: "Tag 5A admitted functions using 5A windows, supplemental verbatim windows if needed, and controlled registry vocabulary.",
-    primary_input: "5A admitted functions + source custody",
+    purpose: "Tag 5A admitted functions using inherited 5A verbatim windows, supplemental 5B verbatim windows, and controlled registry vocabulary.",
+    primary_input: "5A admitted functions + 5A verbatim windows + source custody",
     output_key: "stage5b"
   },
   {
@@ -48,7 +48,17 @@ export const STAGE5_LEGACY_PARKED_COMPONENTS = Object.freeze([
   "5a/stage5aFeaturePackageBuilder.js",
   "5a/stage5aForensicBuilder.js",
   "5a/stage5aIndex.js",
+  "5b/stage5bRegistryTaxonomyBuilder.js",
   "5b/stage5bFeatureInvestigationPacketBuilder.js",
+  "5b/stage5bDeterministicSignalBuilder.js",
+  "5b/stage5bInstructionBuilder.js",
+  "5b/stage5bPromptBuilder.js",
+  "5b/stage5bArchetypeSurfaceTagger.js",
+  "5b/stage5bOutputNormalizer.js",
+  "5b/stage5bValidator.js",
+  "5b/stage5bTagPackageBuilder.js",
+  "5b/stage5bForensicBuilder.js",
+  "5b/stage5bIndex.js",
   "5c/stage5cInputJoiner.js",
   "5d/stage5dFeatureContextBuilder.js",
   "5e/stage5eSchemaMappers.js"
@@ -63,6 +73,12 @@ export const STAGE5_BLOCKING_ERROR_CODES = Object.freeze([
   "PLACEHOLDER_EVIDENCE_BLOCKED",
   "STAGE5A_NO_ADMITTED_FUNCTIONS",
   "STAGE5A_SOURCE_WINDOW_REF_VIOLATION",
+  "STAGE5B_SOURCE_WINDOW_REF_VIOLATION",
+  "STAGE5B_INHERITED_WINDOW_REQUIRED",
+  "STAGE5B_SUPPLEMENTAL_WINDOW_REQUIRED",
+  "STAGE5B_CONTROLLED_VALUE_VIOLATION",
+  "STAGE5B_METADATA_OR_INDEX_AS_EVIDENCE_BLOCKED",
+  "STAGE5B_FUNCTION_COVERAGE_FAILURE",
   "STAGE5_FINAL_PROFILE_SCHEMA_VIOLATION"
 ]);
 
