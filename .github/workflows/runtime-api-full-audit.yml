@@ -99,16 +99,8 @@ jobs:
           AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
           AUDIT_STOP_STAGE: ${{ inputs.audit_stop_stage }}
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
-          STAGE5A_BATCH2_ENABLED: "true"
-          STAGE5B_BATCH3_ENABLED: "true"
-          STAGE5C_BATCH4_ENABLED: "true"
-          STAGE5D_BATCH5_ENABLED: "true"
-          STAGE5E_BATCH6_ENABLED: "true"
-          STAGE5A_BATCH2_BLOCKING: "true"
-          STAGE5B_BATCH3_BLOCKING: "true"
-          STAGE5C_BATCH4_BLOCKING: "true"
-          STAGE5D_BATCH5_BLOCKING: "true"
-          STAGE5E_BATCH6_BLOCKING: "true"
+          STAGE5_CANONICAL_ENABLED: "true"
+          STAGE5_CANONICAL_BLOCKING: "true"
           STAGE5_LEGACY_FALLBACK: "false"
           GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
           GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}

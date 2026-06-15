@@ -4,11 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { buildStage5TargetFeaturePackage } from "../src/diligence/stage5TargetFeaturePackageBuilder.js";
-import { runStage5ABatch2Pipeline } from "../src/diligence/stage5/stage5aPipelineConnector.js";
-import { runStage5BBatch3Pipeline } from "../src/diligence/stage5/stage5bPipelineConnector.js";
-import { runStage5CBatch4Pipeline } from "../src/diligence/stage5/stage5cPipelineConnector.js";
-import { runStage5DBatch5Pipeline } from "../src/diligence/stage5/stage5dPipelineConnector.js";
-import { runStage5EBatch6Pipeline } from "../src/diligence/stage5/stage5ePipelineConnector.js";
+import { assertWindowIsVerbatim, buildStage5CanonicalInput, runStage5Runtime } from "../src/diligence/stage5/stage5.runtime.js";
 import { buildStage6IntegratedHandoffArtifact } from "../src/diligence/stage6IntegratedHandoffBuilder.js";
 import { validateStage6ReviewGuardrail } from "../src/diligence/guardrails/stage6ReviewGuardrail.js";
 import { runStage6BDataProvenance } from "../src/diligence/stage6bDataProvenanceRunner.js";
@@ -45,18 +41,7 @@ const FORBIDDEN_TRUE_FLAGS = [
   "SKIP_STAGE6"
 ];
 
-const REQUIRED_TRUE_FLAGS = [
-  "STAGE5A_BATCH2_ENABLED",
-  "STAGE5B_BATCH3_ENABLED",
-  "STAGE5C_BATCH4_ENABLED",
-  "STAGE5D_BATCH5_ENABLED",
-  "STAGE5E_BATCH6_ENABLED",
-  "STAGE5A_BATCH2_BLOCKING",
-  "STAGE5B_BATCH3_BLOCKING",
-  "STAGE5C_BATCH4_BLOCKING",
-  "STAGE5D_BATCH5_BLOCKING",
-  "STAGE5E_BATCH6_BLOCKING"
-];
+const REQUIRED_TRUE_FLAGS = ["STAGE5_CANONICAL_ENABLED", "STAGE5_CANONICAL_BLOCKING"];
 
 const STAGE_ORDER = new Map([
   ["source_discovery", 1],
@@ -66,16 +51,12 @@ const STAGE_ORDER = new Map([
   ["evidence_junction", 4],
   ["target_profile", 5],
   ["stage5_input_adapter", 6],
-  ["stage5a_product_function_mapping", 7],
-  ["stage5b_archetype_surface_tagging", 8],
-  ["stage5c_feature_inventory", 9],
-  ["stage5d_data_touchpoints", 10],
-  ["stage5e_target_feature_profile", 11],
-  ["stage6a_legal_cartography", 12],
-  ["stage6b_data_provenance", 13],
-  ["stage6_integrated_handoff_validation", 14],
-  ["6b", 14],
-  ["stage6b", 14],
+  ["stage5_canonical_runtime", 7],
+  ["stage6a_legal_cartography", 8],
+  ["stage6b_data_provenance", 9],
+  ["stage6_integrated_handoff_validation", 10],
+  ["6b", 10],
+  ["stage6b", 10],
   ["7", 20],
   ["8", 21],
   ["9", 22],
@@ -133,16 +114,8 @@ function applyAuditRuntimeDefaults() {
     STAGE5_MAX_ESTIMATED_TOKENS: "120000",
     STAGE5_MAX_SINGLE_SOURCE_CHARS: String(Number.MAX_SAFE_INTEGER),
     STAGE5_PROMPT_OVERHEAD_TOKENS: "30000",
-    STAGE5A_BATCH2_ENABLED: "true",
-    STAGE5B_BATCH3_ENABLED: "true",
-    STAGE5C_BATCH4_ENABLED: "true",
-    STAGE5D_BATCH5_ENABLED: "true",
-    STAGE5E_BATCH6_ENABLED: "true",
-    STAGE5A_BATCH2_BLOCKING: "true",
-    STAGE5B_BATCH3_BLOCKING: "true",
-    STAGE5C_BATCH4_BLOCKING: "true",
-    STAGE5D_BATCH5_BLOCKING: "true",
-    STAGE5E_BATCH6_BLOCKING: "true",
+    STAGE5_CANONICAL_ENABLED: "true",
+    STAGE5_CANONICAL_BLOCKING: "true",
     STAGE5_LEGACY_FALLBACK: "false",
     AUDIT_STOP_STAGE: "6b"
   };
@@ -154,9 +127,14 @@ function assertRuntimePolicy() {
   if (forbidden.length) throw new Error(`Forbidden audit flag(s) enabled: ${forbidden.join(", ")}`);
   const missingRequired = REQUIRED_TRUE_FLAGS.filter((key) => String(process.env[key] || "").toLowerCase() !== "true");
   if (missingRequired.length) throw new Error(`Required Stage 5 flag(s) are not true: ${missingRequired.join(", ")}`);
+  const oldStage5Flags = ["A", "B", "C", "D", "E"].flatMap((letter, index) => {
+    const oldBatch = index + 2;
+    return [`STAGE5${letter}_BATCH${oldBatch}_ENABLED`, `STAGE5${letter}_BATCH${oldBatch}_BLOCKING`];
+  }).filter((key) => process.env[key] !== undefined);
+  if (oldStage5Flags.length) throw new Error(`Old Stage 5 batch flag(s) are not allowed in canonical audit: ${oldStage5Flags.join(", ")}`);
   if (String(process.env.STAGE5_LEGACY_FALLBACK || "").toLowerCase() !== "false") throw new Error("STAGE5_LEGACY_FALLBACK must be false for this audit.");
   if (!STAGE_ORDER.has(auditStopStage)) throw new Error(`Unsupported AUDIT_STOP_STAGE: ${auditStopStage}`);
-  if (STAGE_ORDER.get(auditStopStage) > 14) throw new Error("Stage 7/8/9/10 are intentionally unavailable in the default full live audit lane.");
+  if (STAGE_ORDER.get(auditStopStage) > 10) throw new Error("Stage 7/8/9/10 are intentionally unavailable in the default full live audit lane.");
   if (!runtimeUrl) throw new Error("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required.");
   if (!token) throw new Error("RUNTIME_ACCESS_TOKEN is required for deployed runtime smoke check.");
 }
@@ -403,11 +381,15 @@ function writeLiveProof({ ctx, manifestPath }) {
     audit_stop_stage: auditStopStage,
     cache_cleared_at: cacheClearedAt,
     legacy_fallback_used: false,
-    stage5a_enabled: true,
-    stage5b_enabled: true,
-    stage5c_enabled: true,
-    stage5d_enabled: true,
-    stage5e_enabled: true,
+    stage5_runtime: "runStage5Runtime",
+    stage5_substages: [
+      "5A Product Function Discovery",
+      "5B Archetype Surface Tagging",
+      "5C Complete Feature Record Builder",
+      "5D Final target_feature_profile Integrator"
+    ],
+    stage5_canonical_enabled: true,
+    stage5_external_handoff_shape: "{ companyProfile, targetFeatureProfile }",
     stage7_ran: false,
     stage8_ran: false,
     stage9_ran: false,
@@ -451,6 +433,8 @@ function createSummaryMarkdown({ ctx, failedChecks }) {
     `- Target: ${companyName} (${targetUrl})\n` +
     `- Run ID: ${runId}\n` +
     `- Audit stop stage: ${auditStopStage}\n` +
+    `- Stage 5 runtime: runStage5Runtime\n` +
+    `- Stage 5 flow: 5A Product Function Discovery -> 5B Archetype Surface Tagging -> 5C Complete Feature Record Builder -> 5D Final target_feature_profile Integrator\n` +
     `- Legacy Stage 5 fallback used: NO\n` +
     `- Stage 7 ran: NO\n` +
     `- Stage 8 ran: NO\n` +
@@ -467,18 +451,120 @@ function validatePassConditions(ctx) {
   if (!ctx.evidenceJunction || !Object.keys(ctx.evidenceJunction).length) failed.push("missing_evidence_junction");
   if (!ctx.companyProfile || !Object.keys(ctx.companyProfile).length) failed.push("missing_target_profile");
   if (!ctx.adapterResult?.ok) failed.push("missing_stage5_input_adapter");
-  if (!ctx.stage5a?.stage5a_feature_package) failed.push("missing_stage5a_package");
-  if (!ctx.stage5b?.stage5b_tag_package) failed.push("missing_stage5b_tag_package");
-  if (!ctx.stage5c?.stage5c_feature_inventory_package) failed.push("missing_stage5c_feature_inventory_package");
-  if (!ctx.stage5d?.stage5d_data_touchpoint_package) failed.push("missing_stage5d_data_touchpoint_package");
-  if (!ctx.targetFeatureProfile || !Object.keys(ctx.targetFeatureProfile).length) failed.push("missing_stage5e_target_feature_profile");
-  if (ctx.stage5e?.stage5e_validation?.ok === false) failed.push("stage5e_target_feature_profile_schema_invalid");
+  if (ctx.stage5Result?.stage5_version !== "stage5_lossless_windowed_runtime_v1") failed.push("missing_stage5_canonical_runtime_result");
+  if (!ctx.stage5a?.admitted_functions?.length) failed.push("missing_stage5a_product_function_discovery");
+  if (!ctx.stage5b?.feature_tags?.length) failed.push("missing_stage5b_archetype_surface_tagging");
+  if (!ctx.stage5c?.complete_feature_records?.length) failed.push("missing_stage5c_complete_feature_records");
+  if (ctx.stage5d?.validation?.ok !== true) failed.push("stage5d_target_feature_profile_schema_invalid");
+  if (!ctx.stage5AuditEvidence?.clean_text_lossless_present) failed.push("stage5_clean_text_lossless_missing");
+  if (!ctx.stage5AuditEvidence?.source_sha256_present) failed.push("stage5_source_sha256_missing");
+  if (!ctx.stage5AuditEvidence?.all_windows_verbatim) failed.push("stage5_source_windows_not_verbatim");
+  if (!ctx.stage5AuditEvidence?.metadata_not_primary_evidence) failed.push("stage5_metadata_used_as_primary_evidence");
+  if (!ctx.stage5AuditEvidence?.index_not_primary_evidence) failed.push("stage5_index_used_as_primary_evidence");
+  if (!ctx.stage5AuditEvidence?.external_handoff_ok) failed.push("stage5_external_handoff_shape_changed");
+  if (!ctx.targetFeatureProfile || !Object.keys(ctx.targetFeatureProfile).length) failed.push("missing_stage5_target_feature_profile");
   if (!ctx.legalCartography || !Object.keys(ctx.legalCartography).length) failed.push("missing_stage6a_legal_cartography");
   if (!ctx.dataProvenanceProfile || !Object.keys(ctx.dataProvenanceProfile).length) failed.push("missing_stage6b_data_provenance_profile");
   if (ctx.stage6IntegratedValidation?.schemaValidation?.ok !== true || ctx.stage6IntegratedValidation?.guardrail?.ok !== true) failed.push("stage6_integrated_handoff_validation_failed");
   if (ctx.legacyFallbackUsed !== false) failed.push("legacy_stage5_fallback_used_or_unknown");
   for (const forbidden of ["stage7", "stage8", "stage9", "stage10"]) if (ctx[`${forbidden}Ran`]) failed.push(`${forbidden}_ran_unexpectedly`);
   return failed;
+}
+
+function collectStage5Windows(stage5Result = {}) {
+  const substage = stage5Result.substage_outputs || {};
+  return [
+    ...asArray(substage.stage5a?.feature_evidence_windows),
+    ...asArray(substage.stage5b?.supplemental_evidence_windows),
+    ...asArray(substage.stage5c?.supplemental_evidence_windows)
+  ];
+}
+
+function buildStage5SourceWindowLedger({ canonicalInput, stage5Result }) {
+  const sourcesById = new Map(asArray(canonicalInput?.primary_evidence?.sources).map((source) => [source.source_id, source]));
+  return collectStage5Windows(stage5Result).map((window) => {
+    const source = sourcesById.get(window.source_id);
+    let verbatim = false;
+    try {
+      assertWindowIsVerbatim(source, window);
+      verbatim = true;
+    } catch {
+      verbatim = false;
+    }
+    return {
+      window_id: window.window_id,
+      source_id: window.source_id,
+      source_url: window.source_url,
+      source_title: window.source_title,
+      char_start: window.char_start,
+      char_end: window.char_end,
+      source_sha256: window.source_sha256,
+      created_by_substage: window.created_by_substage,
+      used_for: window.used_for,
+      selection_reason: window.selection_reason,
+      verbatim_text_length: String(window.verbatim_text || "").length,
+      exact_substring_verified: verbatim
+    };
+  });
+}
+
+function buildStage5AuditEvidence({ canonicalInput, stage5Result, companyProfile, targetFeatureProfile }) {
+  const sources = asArray(canonicalInput?.primary_evidence?.sources);
+  const ledger = buildStage5SourceWindowLedger({ canonicalInput, stage5Result });
+  const substage = stage5Result.substage_outputs || {};
+  const windowIds = new Set(ledger.map((row) => row.window_id));
+  const citesWindows = (rows, key) => asArray(rows).every((row) => asArray(row?.[key]).length > 0 && asArray(row?.[key]).every((ref) => windowIds.has(ref)));
+  return {
+    stage5_runtime: "runStage5Runtime",
+    substages: [
+      "5A Product Function Discovery",
+      "5B Archetype Surface Tagging",
+      "5C Complete Feature Record Builder",
+      "5D Final target_feature_profile Integrator"
+    ],
+    clean_text_lossless_present: sources.length > 0 && sources.every((source) => typeof source.clean_text_lossless === "string" && source.clean_text_lossless.length > 0),
+    source_sha256_present: sources.length > 0 && sources.every((source) => Boolean(source.source_sha256)),
+    all_windows_verbatim: ledger.length > 0 && ledger.every((row) => row.exact_substring_verified),
+    metadata_not_primary_evidence: sources.every((source) => source.clean_text_lossless !== source.source_url && source.clean_text_lossless !== source.source_title),
+    index_not_primary_evidence: asArray(canonicalInput?.reference?.navigation_index_sidecar).every((row) => row.verbatim_text === undefined && row.clean_text_lossless === undefined),
+    stage5a_output_cited_windows: citesWindows(substage.stage5a?.admitted_functions, "source_window_refs"),
+    stage5b_output_cited_windows: citesWindows(substage.stage5b?.feature_tags, "source_window_refs"),
+    stage5c_output_cited_windows: citesWindows(substage.stage5c?.complete_feature_records, "evidence_window_refs"),
+    stage5d_final_profile_schema_passed: substage.stage5d?.validation?.ok === true,
+    external_handoff_ok: Boolean(companyProfile && targetFeatureProfile && !targetFeatureProfile.substage_outputs && !targetFeatureProfile.stage5a),
+    source_window_count: ledger.length,
+    primary_source_count: sources.length,
+    feature_count: asArray(targetFeatureProfile?.feature_inventory).length
+  };
+}
+
+function writeStage5CanonicalArtifacts(ctx) {
+  const substage = ctx.stage5Result.substage_outputs || {};
+  const ledger = buildStage5SourceWindowLedger({ canonicalInput: ctx.stage5CanonicalInput, stage5Result: ctx.stage5Result });
+  ctx.stage5SourceWindowLedger = ledger;
+  ctx.stage5AuditEvidence = buildStage5AuditEvidence({
+    canonicalInput: ctx.stage5CanonicalInput,
+    stage5Result: ctx.stage5Result,
+    companyProfile: ctx.companyProfile,
+    targetFeatureProfile: ctx.targetFeatureProfile
+  });
+  writeJson("stage5-canonical-runtime-summary.json", {
+    ok: ctx.stage5Result.ok === true,
+    stage5_version: ctx.stage5Result.stage5_version,
+    runtime_entrypoint: "runStage5Runtime",
+    external_handoff_shape: "{ companyProfile, targetFeatureProfile }",
+    substage_flow: ctx.stage5AuditEvidence.substages,
+    validation: ctx.stage5Result.validation,
+    evidence: ctx.stage5AuditEvidence
+  });
+  writeJson("stage5a-product-function-discovery.json", substage.stage5a);
+  writeJson("stage5b-archetype-surface-tagging.json", substage.stage5b);
+  writeJson("stage5c-complete-feature-records.json", substage.stage5c);
+  writeJson("stage5d-target-feature-profile-integrator.json", substage.stage5d);
+  writeJson("stage5-final-target-feature-profile.json", ctx.targetFeatureProfile);
+  writeJson("stage5-lossless-custody-manifest.json", ctx.stage5Result.custody_manifest);
+  writeJson("stage5-source-window-ledger.json", ledger);
+  writeJson("stage5-validation-summary.json", ctx.stage5AuditEvidence);
 }
 
 const AUDIT_STAGE_REGISTRY = [
@@ -605,100 +691,60 @@ const AUDIT_STAGE_REGISTRY = [
     }
   },
   {
-    id: "stage5a_product_function_mapping",
-    label: "Stage 5A - Product Function Mapping",
+    id: "stage5_canonical_runtime",
+    label: "Stage 5 - Canonical Lossless Window Runtime",
     stage_order: 7,
-    artifact: "07-stage5a-product-functions.json",
-    forensic_artifact: "37-stage5a-product-functions-forensic.json",
+    artifact: "07-stage5-canonical-runtime.json",
+    forensic_artifact: "37-stage5-canonical-runtime-forensic.json",
     required_input_keys: ["adapterResult"],
     stop_stage_compatibility: ["6b", "stage6b"],
     async run(ctx) {
-      ctx.stage5a = await runStage5ABatch2Pipeline({ adapterResult: ctx.adapterResult, companyProfile: ctx.companyProfile, runGeminiPool, logs: ctx.logs, logStage: liveLogStage, runId });
-      ctx.adapterResult.stage5a_batch2 = ctx.stage5a;
-      ctx.adapterResult.target_feature_profile_input.stage5a_batch2 = { stage5a_product_function_mapping: ctx.stage5a.stage5a_product_function_mapping, stage5a_feature_package: ctx.stage5a.stage5a_feature_package, stage5a_validation: ctx.stage5a.stage5a_validation };
-      ctx.modelBackedStages.push("stage5a_product_function_mapping");
-      writeJson(this.artifact, ctx.stage5a);
-      writeJson("05b-stage5a-product-function-mapping.json", ctx.stage5a);
-      return { input: ctx.adapterResult.target_feature_profile_input, output: ctx.stage5a, usage_source: ctx.stage5a, validation: validationSummary(ctx.stage5a.stage5a_validation), handoff_integrity: { status: ctx.stage5a.stage5a_feature_package ? "PASS" : "FAIL", package_present: Boolean(ctx.stage5a.stage5a_feature_package) } };
-    }
-  },
-  {
-    id: "stage5b_archetype_surface_tagging",
-    label: "Stage 5B - Archetype Surface Tagging",
-    stage_order: 8,
-    artifact: "08-stage5b-tags.json",
-    forensic_artifact: "38-stage5b-tags-forensic.json",
-    required_input_keys: ["stage5a"],
-    stop_stage_compatibility: ["6b", "stage6b"],
-    async run(ctx) {
-      ctx.stage5b = await runStage5BBatch3Pipeline({ adapterResult: ctx.adapterResult, runGeminiPool, logs: ctx.logs, logStage: liveLogStage, runId });
-      ctx.adapterResult.stage5b_batch3 = ctx.stage5b;
-      ctx.adapterResult.target_feature_profile_input.stage5b_batch3 = { stage5b_archetype_surface_tagging: ctx.stage5b.stage5b_archetype_surface_tagging, stage5b_tag_package: ctx.stage5b.stage5b_tag_package, stage5b_validation: ctx.stage5b.stage5b_validation };
-      ctx.modelBackedStages.push("stage5b_archetype_surface_tagging");
-      writeJson(this.artifact, ctx.stage5b);
-      writeJson("05c-stage5b-archetype-surface-tagging.json", ctx.stage5b);
-      return { input: ctx.stage5a, output: ctx.stage5b, usage_source: ctx.stage5b, validation: validationSummary(ctx.stage5b.stage5b_validation), handoff_integrity: { status: ctx.stage5b.stage5b_tag_package ? "PASS" : "FAIL", package_present: Boolean(ctx.stage5b.stage5b_tag_package) } };
-    }
-  },
-  {
-    id: "stage5c_feature_inventory",
-    label: "Stage 5C - Feature Inventory",
-    stage_order: 9,
-    artifact: "09-stage5c-feature-inventory.json",
-    forensic_artifact: "39-stage5c-feature-inventory-forensic.json",
-    required_input_keys: ["stage5b"],
-    stop_stage_compatibility: ["6b", "stage6b"],
-    async run(ctx) {
-      ctx.stage5c = await runStage5CBatch4Pipeline({ adapterResult: ctx.adapterResult, runGeminiPool, logs: ctx.logs, logStage: liveLogStage, runId });
-      ctx.adapterResult.stage5c_batch4 = ctx.stage5c;
-      ctx.adapterResult.target_feature_profile_input.stage5c_batch4 = { stage5c_feature_inventory_package: ctx.stage5c.stage5c_feature_inventory_package, stage5c_validation: ctx.stage5c.stage5c_validation, stage5c_canonicalization_repair: ctx.stage5c.stage5c_canonicalization_repair };
-      ctx.modelBackedStages.push("stage5c_feature_inventory");
-      writeJson(this.artifact, ctx.stage5c);
-      writeJson("05d-stage5c-feature-inventory.json", ctx.stage5c);
-      return { input: ctx.stage5b, output: ctx.stage5c, usage_source: ctx.stage5c, validation: validationSummary(ctx.stage5c.stage5c_validation), handoff_integrity: { status: ctx.stage5c.stage5c_feature_inventory_package ? "PASS" : "FAIL", package_present: Boolean(ctx.stage5c.stage5c_feature_inventory_package) } };
-    }
-  },
-  {
-    id: "stage5d_data_touchpoints",
-    label: "Stage 5D - Data Touchpoints",
-    stage_order: 10,
-    artifact: "10-stage5d-data-touchpoints.json",
-    forensic_artifact: "40-stage5d-data-touchpoints-forensic.json",
-    required_input_keys: ["stage5c"],
-    stop_stage_compatibility: ["6b", "stage6b"],
-    async run(ctx) {
-      ctx.stage5d = await runStage5DBatch5Pipeline({ adapterResult: ctx.adapterResult, runGeminiPool, logs: ctx.logs, logStage: liveLogStage, runId });
-      ctx.adapterResult.stage5d_batch5 = ctx.stage5d;
-      ctx.adapterResult.target_feature_profile_input.stage5d_batch5 = { stage5d_data_touchpoint_package: ctx.stage5d.stage5d_data_touchpoint_package, stage5d_validation: ctx.stage5d.stage5d_validation, stage5d_data_touchpoints: ctx.stage5d.stage5d_data_touchpoints };
-      ctx.modelBackedStages.push("stage5d_data_touchpoints");
-      writeJson(this.artifact, ctx.stage5d);
-      writeJson("05e-stage5d-data-touchpoints.json", ctx.stage5d);
-      return { input: ctx.stage5c, output: ctx.stage5d, usage_source: ctx.stage5d, validation: validationSummary(ctx.stage5d.stage5d_validation), handoff_integrity: { status: ctx.stage5d.stage5d_data_touchpoint_package ? "PASS" : "FAIL", package_present: Boolean(ctx.stage5d.stage5d_data_touchpoint_package) } };
-    }
-  },
-  {
-    id: "stage5e_target_feature_profile",
-    label: "Stage 5E - Target Feature Profile",
-    stage_order: 11,
-    artifact: "11-stage5e-target-feature-profile.json",
-    forensic_artifact: "41-stage5e-target-feature-profile-forensic.json",
-    required_input_keys: ["stage5d"],
-    stop_stage_compatibility: ["6b", "stage6b"],
-    async run(ctx) {
-      ctx.stage5e = await runStage5EBatch6Pipeline({ adapterResult: ctx.adapterResult, companyProfile: ctx.companyProfile, logs: ctx.logs, logStage: liveLogStage, runId });
-      ctx.adapterResult.stage5e_batch6 = ctx.stage5e;
-      ctx.targetFeatureProfile = ctx.stage5e.target_feature_profile;
-      ctx.modelBackedStages.push("stage5e_target_feature_profile");
-      writeJson(this.artifact, ctx.stage5e);
-      writeJson("05f-stage5e-target-feature-profile.json", ctx.stage5e);
+      ctx.stage5CanonicalInput = buildStage5CanonicalInput({
+        companyProfile: ctx.companyProfile,
+        adapterResult: ctx.adapterResult,
+        stage5Input: ctx.adapterResult?.target_feature_profile_input || ctx.adapterResult
+      });
+      ctx.stage5Result = await runStage5Runtime({
+        companyProfile: ctx.companyProfile,
+        adapterResult: ctx.adapterResult,
+        stage5Input: ctx.adapterResult?.target_feature_profile_input || ctx.adapterResult,
+        runContext: { runId },
+        modelPorts: { runGeminiPool },
+        registryPorts: {},
+        schemaValidator: null
+      });
+      ctx.stage5a = ctx.stage5Result.substage_outputs.stage5a;
+      ctx.stage5b = ctx.stage5Result.substage_outputs.stage5b;
+      ctx.stage5c = ctx.stage5Result.substage_outputs.stage5c;
+      ctx.stage5d = ctx.stage5Result.substage_outputs.stage5d;
+      ctx.targetFeatureProfile = ctx.stage5Result.target_feature_profile;
+      ctx.modelBackedStages.push("stage5_canonical_runtime");
+      writeStage5CanonicalArtifacts(ctx);
+      writeJson(this.artifact, ctx.stage5Result);
       writeJson("05-target-feature-profile.json", ctx.targetFeatureProfile);
-      return { input: ctx.stage5d, output: ctx.stage5e, usage_source: ctx.stage5e, validation: validationSummary(ctx.stage5e.stage5e_validation), handoff_integrity: { status: ctx.targetFeatureProfile ? "PASS" : "FAIL", canonical_handoff_key: "target_feature_profile", feature_count: asArray(ctx.targetFeatureProfile?.feature_inventory).length } };
+      return {
+        input: ctx.adapterResult.target_feature_profile_input,
+        output: ctx.stage5Result,
+        usage_source: ctx.stage5Result,
+        validation: validationSummary(ctx.stage5Result.validation, ctx.stage5d.validation),
+        handoff_integrity: {
+          status: ctx.stage5AuditEvidence.external_handoff_ok ? "PASS" : "FAIL",
+          canonical_handoff_key: "target_feature_profile",
+          external_shape: "{ companyProfile, targetFeatureProfile }",
+          feature_count: asArray(ctx.targetFeatureProfile?.feature_inventory).length
+        },
+        source_coverage: {
+          primary_source_count: ctx.stage5AuditEvidence.primary_source_count,
+          source_window_count: ctx.stage5AuditEvidence.source_window_count,
+          all_windows_verbatim: ctx.stage5AuditEvidence.all_windows_verbatim
+        }
+      };
     }
   },
   {
     id: "stage6a_legal_cartography",
     label: "Stage 6A - Legal Cartography",
-    stage_order: 12,
+    stage_order: 8,
     artifact: "12-stage6a-legal-cartography.json",
     forensic_artifact: "42-stage6a-legal-cartography-forensic.json",
     required_input_keys: ["targetFeatureProfile"],
@@ -719,7 +765,7 @@ const AUDIT_STAGE_REGISTRY = [
   {
     id: "stage6b_data_provenance",
     label: "Stage 6B - Data Provenance",
-    stage_order: 13,
+    stage_order: 9,
     artifact: "13-stage6b-data-provenance-profile.json",
     forensic_artifact: "43-stage6b-data-provenance-profile-forensic.json",
     required_input_keys: ["stage6aStageResult"],
@@ -751,7 +797,7 @@ const AUDIT_STAGE_REGISTRY = [
   {
     id: "stage6_integrated_handoff_validation",
     label: "Stage 6 - Integrated Handoff Validation",
-    stage_order: 14,
+    stage_order: 10,
     artifact: "14-stage6-integrated-handoff-validation.json",
     forensic_artifact: "46-stage6-integrated-handoff-validation-forensic.json",
     required_input_keys: ["stage6bStageResult"],

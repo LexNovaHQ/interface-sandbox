@@ -13,7 +13,7 @@
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "audit:full-live-runtime": "node scripts/e2e-full-live-runtime-audit.mjs",
     "audit:full-live-runtime:6b": "node scripts/e2e-full-live-runtime-audit.mjs",
-    "audit:stage5:substage-node": "node scripts/audit-stage5-substage-node.mjs",
+    "audit:stage5:canonical": "node scripts/e2e-stage5-full-runtime.mjs",
     "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
     "test:stage3": "node src/diligence/evidenceJunction.test.mjs",
     "e2e:stage3": "node scripts/e2e-stage3-evidence-junction.mjs",
