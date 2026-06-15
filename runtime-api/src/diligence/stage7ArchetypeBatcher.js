@@ -16,6 +16,7 @@ function rowId(row, index = 0) {
 
 function routeKey(record = {}) {
   if (record.route_reason === "UNI_ALWAYS_RUN") return "00_UNI";
+  if (record.route_reason === "STAGE5_DEGRADED_FALLBACK") return `90_STAGE5_DEGRADED_FALLBACK_${asUpper(record.archetype) || "UNKNOWN"}`;
   if (record.route_reason === "CONDITIONAL_DOC_REVIEW") return "99_CONDITIONAL_DOC_REVIEW";
   return `10_ARCH_${asUpper(record.archetype) || "UNKNOWN"}`;
 }
@@ -23,12 +24,14 @@ function routeKey(record = {}) {
 function groupLabelFromKey(key = "") {
   if (key === "00_UNI") return "UNI";
   if (key === "99_CONDITIONAL_DOC_REVIEW") return "CONDITIONAL_DOC_REVIEW";
+  if (key.startsWith("90_STAGE5_DEGRADED_FALLBACK_")) return key.replace(/^90_STAGE5_DEGRADED_FALLBACK_/, "STAGE5_DEGRADED_FALLBACK:");
   return key.replace(/^10_ARCH_/, "");
 }
 
 function groupKindFromKey(key = "") {
   if (key === "00_UNI") return "UNI_ALWAYS_RUN";
   if (key === "99_CONDITIONAL_DOC_REVIEW") return "CONDITIONAL_DOC_REVIEW";
+  if (key.startsWith("90_STAGE5_DEGRADED_FALLBACK_")) return "STAGE5_DEGRADED_FALLBACK";
   return "STAGE5_INT_TRIGGERED";
 }
 
@@ -43,19 +46,21 @@ function splitOversizedGroup(group, maxRows) {
 function makeBatch(groups, batchIndex) {
   const rows = groups.flatMap((group) => group.rows);
   const routeReasons = [...new Set(groups.map((group) => group.route_reason))];
-  const archetypes = [...new Set(groups.map((group) => group.label).filter((label) => label && label !== "UNI" && label !== "CONDITIONAL_DOC_REVIEW"))];
+  const archetypes = [...new Set(groups.map((group) => group.label).filter((label) => label && label !== "UNI" && label !== "CONDITIONAL_DOC_REVIEW" && !label.startsWith("STAGE5_DEGRADED_FALLBACK:")))];
+  const degradedFallbackGroups = groups.filter((group) => group.route_reason === "STAGE5_DEGRADED_FALLBACK").map((group) => ({ label: group.label, row_count: group.rows.length, split_index: group.split_index || null }));
   return {
     batch_index: batchIndex,
     rows,
     batch_meta: {
       batch_index: batchIndex,
-      stage7_batching_strategy: "stage7_archetype_batcher_v1",
+      stage7_batching_strategy: "stage7_archetype_batcher_v2",
       row_count: rows.length,
       group_count: groups.length,
       groups: groups.map((group) => ({ label: group.label, route_reason: group.route_reason, row_count: group.rows.length, split_index: group.split_index || null })),
       route_reasons: routeReasons,
       archetypes,
-      rule_text: "Batch order is UNI rows first, then active archetype groups, then CONDITIONAL_DOC_REVIEW legal/governance artifact rows. Minimum rows per batch is 8, maximum rows per batch is 15. One archetype per batch is the default. If a group has fewer than 8 rows, add the next group without exceeding 15 rows. Do not combine more than 3 archetype groups in one batch. CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route."
+      degraded_fallback_groups: degradedFallbackGroups,
+      rule_text: "Batch order is UNI rows first, then active archetype groups, then STAGE5_DEGRADED_FALLBACK groups, then CONDITIONAL_DOC_REVIEW legal/governance artifact rows. Minimum rows per batch is 8, maximum rows per batch is 15. One archetype or fallback group per batch is the default. If a group has fewer than 8 rows, add the next group without exceeding 15 rows. Do not combine more than 3 active archetype groups in one batch. CONDITIONAL_DOC_REVIEW = legal/governance artifact route, not archetype route. STAGE5_DEGRADED_FALLBACK rows are conservative deterministic routes for unresolved Stage 5 feature candidates."
     }
   };
 }
@@ -115,7 +120,7 @@ export function buildStage7ArchetypeBatches({ modelRows = [], routeRecords = [],
   flush();
 
   return {
-    strategy: "stage7_archetype_batcher_v1",
+    strategy: "stage7_archetype_batcher_v2",
     min_rows: min,
     max_rows: max,
     max_archetype_groups_per_batch: 3,
