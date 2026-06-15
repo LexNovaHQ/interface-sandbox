@@ -37,13 +37,29 @@ function usage(meta = {}) { const raw = meta?.usage_metadata || {}; return { pro
 function tokenTable(rows) { return rows.map((row) => `| ${row.label} | ${row.duration_ms ?? 0} | ${row.tokens?.prompt_tokens ?? 0} | ${row.tokens?.output_tokens ?? 0} | ${row.tokens?.total_tokens ?? 0} | ${row.tokens?.selected_model || "n/a"} |`).join("\n"); }
 function summaryHeader(title) { appendSummary(`## ${title}\n`); }
 function writeNodeSummary({ title, findings = [], forensic = {}, guardrails = [], tokenRows = [] }) {
+  const guardrailFailures = guardrails.filter((item) => /^BLOCKING:|^FAIL:/i.test(String(item || ""))).length;
+  const guardrailWarnings = guardrails.filter((item) => /^WARNING:|warning/i.test(String(item || ""))).length;
+  const warningCount = Number.isFinite(forensic.warning_count) ? forensic.warning_count : guardrailWarnings;
+  const failureCount = Number.isFinite(forensic.failure_count) ? forensic.failure_count : guardrailFailures;
+  const status = forensic.guardrail_status || (failureCount ? "FAIL" : warningCount ? "WARNING" : "PASS");
+  const detailedArtifactPath = forensic.detailed_artifact_path || (forensic.output_file ? path.join(outputRoot, forensic.output_file) : outputRoot);
+  const enrichedForensic = {
+    duration_ms: forensic.duration_ms ?? 0,
+    token_usage: tokenRows.length ? tokenRows.map((row) => `${row.label}: ${row.tokens?.total_tokens ?? 0}`).join(", ") : "0",
+    model_usage: tokenRows.length ? tokenRows.map((row) => `${row.label}: ${row.tokens?.selected_model || "n/a"}`).join(", ") : "n/a",
+    input_count: forensic.input_count ?? 0,
+    output_count: forensic.output_count ?? 0,
+    ...forensic,
+    detailed_artifact_path: detailedArtifactPath
+  };
   summaryHeader(title);
   appendSummary(`### Stage summary findings\n${findings.length ? findings.map((item) => `- ${item}`).join("\n") : "- No findings recorded."}\n`);
   appendSummary(`### Summary forensics\n`);
   appendSummary(`| Metric | Value |\n|---|---|`);
-  for (const [key, value] of Object.entries(forensic)) appendSummary(`| ${key} | ${Array.isArray(value) ? value.join(", ") : String(value)} |`);
+  for (const [key, value] of Object.entries(enrichedForensic)) appendSummary(`| ${key} | ${Array.isArray(value) ? value.join(", ") : String(value)} |`);
   appendSummary(`\n### Token + duration\n| Node | duration_ms | prompt_tokens | output_tokens | total_tokens | model |\n|---|---:|---:|---:|---:|---|\n${tokenRows.length ? tokenTable(tokenRows) : "| deterministic | 0 | 0 | 0 | 0 | n/a |"}\n`);
-  appendSummary(`### Summary guardrail findings\n${guardrails.length ? guardrails.map((item) => `- ${item}`).join("\n") : "- No blocking guardrail findings."}\n`);
+  appendSummary(`### Summary guardrail findings\n- Status: ${status}\n- Warning count: ${warningCount}\n- Failure count: ${failureCount}\n${guardrails.length ? guardrails.map((item) => `- ${item}`).join("\n") : "- No blocking guardrail findings."}\n`);
+  appendSummary(`### Detailed artifact file path\n\`${detailedArtifactPath}\`\n`);
 }
 
 const SOURCE_BUCKETS = ["company_profile_sources", "product_profile_sources", "legal_profile_sources", "governance_profile_sources"];
@@ -110,7 +126,7 @@ async function prepare() {
   writeJson(statePath, state);
   writeJson(path.join(outputRoot, "00-stage5-audit-input.json"), state);
   const findings = [`Prepared Stage 5 input from ${sources.length} discovered/captured source URL(s).`, `Adapter included ${adapterResult.target_feature_profile_input?.input_budget?.included_sources?.length || 0} Stage 5 source(s).`, `Deterministic candidate count: ${adapterResult.target_feature_profile_input?.target_feature_candidate_index?.candidate_count || 0}.`];
-  writeNodeSummary({ title: "Stage 5 Input Preparation", findings, forensic: { target: `${companyName} / ${primaryUrl}`, source_count: sources.length, included_sources: adapterResult.target_feature_profile_input?.input_budget?.included_sources?.length || 0, deterministic_candidates: adapterResult.target_feature_profile_input?.target_feature_candidate_index?.candidate_count || 0, duration_ms: duration(started) }, guardrails: [], tokenRows: [{ label: "company_profile", duration_ms: 0, tokens: usage(companyProfileStage.model_metadata || {}) }] });
+  writeNodeSummary({ title: "Stage 5 Input Preparation", findings, forensic: { output_file: "00-stage5-audit-input.json", target: `${companyName} / ${primaryUrl}`, source_count: sources.length, included_sources: adapterResult.target_feature_profile_input?.input_budget?.included_sources?.length || 0, deterministic_candidates: adapterResult.target_feature_profile_input?.target_feature_candidate_index?.candidate_count || 0, input_count: sources.length, output_count: adapterResult.target_feature_profile_input?.target_feature_candidate_index?.candidate_count || 0, duration_ms: duration(started) }, guardrails: [], tokenRows: [{ label: "company_profile", duration_ms: 0, tokens: usage(companyProfileStage.model_metadata || {}) }] });
   log("prepare_done", { statePath, duration_ms: duration(started) });
 }
 
@@ -196,7 +212,7 @@ async function run5A() {
   writeJson(path.join(outputRoot, "11-stage5a-product-function-extraction.json"), { stage5a, model, duration_ms: duration(started) });
   const guardrails = [];
   if (!asArray(stage5a.product_functions).length) guardrails.push("BLOCKING: 5A produced zero product functions.");
-  writeNodeSummary({ title: "Stage 5A — Product Function Extraction", findings: [`Product functions: ${asArray(stage5a.product_functions).length}.`, `Primary functions: ${asArray(stage5a.product_functions).filter((f) => f.primary_or_secondary === "primary").length}.`, `Secondary functions: ${asArray(stage5a.product_functions).filter((f) => f.primary_or_secondary === "secondary").length}.`], forensic: { output_file: "11-stage5a-product-function-extraction.json", duration_ms: duration(started), model_error: stage5a.model_error?.error_type || "none" }, guardrails, tokenRows: [{ label: "5A model", duration_ms: model.duration_ms, tokens: usage(model.model_metadata) }] });
+  writeNodeSummary({ title: "Stage 5A — Product Function Extraction", findings: [`Product functions: ${asArray(stage5a.product_functions).length}.`, `Primary functions: ${asArray(stage5a.product_functions).filter((f) => f.primary_or_secondary === "primary").length}.`, `Secondary functions: ${asArray(stage5a.product_functions).filter((f) => f.primary_or_secondary === "secondary").length}.`], forensic: { output_file: "11-stage5a-product-function-extraction.json", duration_ms: duration(started), input_count: asArray(deterministic.product_functions).length, output_count: asArray(stage5a.product_functions).length, model_error: stage5a.model_error?.error_type || "none" }, guardrails, tokenRows: [{ label: "5A model", duration_ms: model.duration_ms, tokens: usage(model.model_metadata) }] });
   if (guardrails.some((g) => g.startsWith("BLOCKING"))) process.exit(1);
 }
 
@@ -222,7 +238,7 @@ async function run5B() {
   writeJson(path.join(outputRoot, "12-stage5b-archetype-surface-tagging.json"), { stage5b, model, duration_ms: duration(started) });
   const missing = asArray(stage5b.feature_tags).filter((row) => !asArray(row.archetype_codes).length || !asArray(row.surface_tokens).length);
   const guardrails = missing.length ? [`BLOCKING: ${missing.length} product function(s) missing archetype or surface tags.`] : [];
-  writeNodeSummary({ title: "Stage 5B — Archetype + Surface Tagging", findings: [`Tagged functions: ${asArray(stage5b.feature_tags).length}.`, `Functions missing archetype/surface: ${missing.length}.`, `Controlled registry source: ${stage5b.registry_key_source || "runtime registry key"}.`], forensic: { output_file: "12-stage5b-archetype-surface-tagging.json", duration_ms: duration(started), model_error: stage5b.model_error?.error_type || "none" }, guardrails, tokenRows: [{ label: "5B model", duration_ms: model.duration_ms, tokens: usage(model.model_metadata) }] });
+  writeNodeSummary({ title: "Stage 5B — Archetype + Surface Tagging", findings: [`Tagged functions: ${asArray(stage5b.feature_tags).length}.`, `Functions missing archetype/surface: ${missing.length}.`, `Controlled registry source: ${stage5b.registry_key_source || "runtime registry key"}.`], forensic: { output_file: "12-stage5b-archetype-surface-tagging.json", duration_ms: duration(started), input_count: asArray(state.stage5a.product_functions).length, output_count: asArray(stage5b.feature_tags).length, warning_count: 0, failure_count: missing.length, model_error: stage5b.model_error?.error_type || "none" }, guardrails, tokenRows: [{ label: "5B model", duration_ms: model.duration_ms, tokens: usage(model.model_metadata) }] });
   if (missing.length) process.exit(1);
 }
 
@@ -236,7 +252,7 @@ function run5C() {
   writeJson(path.join(outputRoot, "13-stage5c-feature-inventory-canonicalization.json"), { stage5c, duration_ms: duration(started) });
   const guardrails = [];
   if (!asArray(stage5c.feature_inventory_seed).length) guardrails.push("BLOCKING: 5C built zero feature_inventory_seed rows.");
-  writeNodeSummary({ title: "Stage 5C — Feature Inventory Canonicalization", findings: [`Feature inventory seed rows: ${asArray(stage5c.feature_inventory_seed).length}.`, `Unresolved candidates: ${asArray(stage5c.unresolved_feature_candidates).length}.`, "5C is deterministic; token usage must remain zero."], forensic: { output_file: "13-stage5c-feature-inventory-canonicalization.json", duration_ms: duration(started), deterministic: true }, guardrails, tokenRows: [{ label: "5C deterministic", duration_ms: duration(started), tokens: { prompt_tokens: 0, output_tokens: 0, total_tokens: 0, selected_model: "n/a" } }] });
+  writeNodeSummary({ title: "Stage 5C — Feature Inventory Canonicalization", findings: [`Feature inventory seed rows: ${asArray(stage5c.feature_inventory_seed).length}.`, `Unresolved candidates: ${asArray(stage5c.unresolved_feature_candidates).length}.`, "5C is deterministic; token usage must remain zero."], forensic: { output_file: "13-stage5c-feature-inventory-canonicalization.json", duration_ms: duration(started), input_count: asArray(state.stage5b.feature_tags).length, output_count: asArray(stage5c.feature_inventory_seed).length, deterministic: true }, guardrails, tokenRows: [{ label: "5C deterministic", duration_ms: duration(started), tokens: { prompt_tokens: 0, output_tokens: 0, total_tokens: 0, selected_model: "n/a" } }] });
   if (guardrails.some((g) => g.startsWith("BLOCKING"))) process.exit(1);
 }
 
@@ -261,7 +277,7 @@ async function run5D() {
   writeJson(path.join(outputRoot, "14-stage5d-feature-data-touchpoints.json"), { stage5d, model, duration_ms: duration(started) });
   const missing = asArray(state.stage5c.feature_inventory_seed).filter((feature) => !asArray(stage5d.feature_data_touchpoints).some((row) => row.feature_id === feature.feature_id));
   const guardrails = missing.length ? [`BLOCKING: ${missing.length} feature(s) missing data touchpoint row.`] : [];
-  writeNodeSummary({ title: "Stage 5D — Feature Data Touchpoints", findings: [`Feature data touchpoint rows: ${asArray(stage5d.feature_data_touchpoints).length}.`, `Features missing touchpoints: ${missing.length}.`, "This is feature-level data mapping only; Stage 6B remains full legal/governance data provenance."], forensic: { output_file: "14-stage5d-feature-data-touchpoints.json", duration_ms: duration(started), model_error: stage5d.model_error?.error_type || "none" }, guardrails, tokenRows: [{ label: "5D model", duration_ms: model.duration_ms, tokens: usage(model.model_metadata) }] });
+  writeNodeSummary({ title: "Stage 5D — Feature Data Touchpoints", findings: [`Feature data touchpoint rows: ${asArray(stage5d.feature_data_touchpoints).length}.`, `Features missing touchpoints: ${missing.length}.`, "This is feature-level data mapping only; Stage 6B remains full legal/governance data provenance."], forensic: { output_file: "14-stage5d-feature-data-touchpoints.json", duration_ms: duration(started), input_count: asArray(state.stage5c.feature_inventory_seed).length, output_count: asArray(stage5d.feature_data_touchpoints).length, warning_count: 0, failure_count: missing.length, model_error: stage5d.model_error?.error_type || "none" }, guardrails, tokenRows: [{ label: "5D model", duration_ms: model.duration_ms, tokens: usage(model.model_metadata) }] });
   if (missing.length) process.exit(1);
 }
 
@@ -283,7 +299,7 @@ function run5E() {
   const guardrails = [];
   if (!schemaValidation.ok) guardrails.push(`BLOCKING: schema errors=${schemaValidation.errors?.length || 0}`);
   if (!guardrail.ok) guardrails.push(`BLOCKING: guardrail errors=${guardrail.errors?.length || 0}; repairs=${guardrail.repairs?.length || 0}; warnings=${guardrail.warnings?.length || 0}`);
-  writeNodeSummary({ title: "Stage 5E — Target Feature Profile Assembly", findings: [`Final feature_inventory rows: ${asArray(schemaProfile.feature_inventory).length}.`, `Data provenance map rows: ${asArray(schemaProfile.data_provenance_map).length}.`, `Regulated surface map rows: ${asArray(schemaProfile.regulated_surface_map).length}.`, `Classification quality: ${schemaProfile.classification_quality?.status || "unknown"}.`], forensic: { output_file: "15-stage5e-target-feature-profile-assembly.json", canonical_profile_file: "05-target-feature-profile.json", duration_ms: duration(started), schema_ok: schemaValidation.ok, guardrail_ok: guardrail.ok }, guardrails: guardrails.length ? guardrails : [`Guardrail warnings: ${guardrail.warnings?.length || 0}`, `Guardrail repairs: ${guardrail.repairs?.length || 0}`], tokenRows: [{ label: "5E deterministic", duration_ms: duration(started), tokens: { prompt_tokens: 0, output_tokens: 0, total_tokens: 0, selected_model: "n/a" } }] });
+  writeNodeSummary({ title: "Stage 5E — Target Feature Profile Assembly", findings: [`Final feature_inventory rows: ${asArray(schemaProfile.feature_inventory).length}.`, `Data provenance map rows: ${asArray(schemaProfile.data_provenance_map).length}.`, `Regulated surface map rows: ${asArray(schemaProfile.regulated_surface_map).length}.`, `Classification quality: ${schemaProfile.classification_quality?.status || "unknown"}.`], forensic: { output_file: "15-stage5e-target-feature-profile-assembly.json", canonical_profile_file: "05-target-feature-profile.json", duration_ms: duration(started), input_count: asArray(state.stage5c.feature_inventory_seed).length, output_count: asArray(schemaProfile.feature_inventory).length, warning_count: guardrail.warnings?.length || 0, failure_count: (schemaValidation.ok ? 0 : schemaValidation.errors?.length || 1) + (guardrail.ok ? 0 : guardrail.errors?.length || 1), schema_ok: schemaValidation.ok, guardrail_ok: guardrail.ok }, guardrails: guardrails.length ? guardrails : [`Guardrail warnings: ${guardrail.warnings?.length || 0}`, `Guardrail repairs: ${guardrail.repairs?.length || 0}`], tokenRows: [{ label: "5E deterministic", duration_ms: duration(started), tokens: { prompt_tokens: 0, output_tokens: 0, total_tokens: 0, selected_model: "n/a" } }] });
   if (!schemaValidation.ok || !guardrail.ok) process.exit(1);
 }
 

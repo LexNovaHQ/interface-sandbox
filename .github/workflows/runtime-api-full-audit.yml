@@ -76,6 +76,73 @@ jobs:
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run smoke:runtime
 
+      - name: Stage 5 audit input preparation
+        working-directory: runtime-api
+        env:
+          RUNTIME_URL: ${{ inputs.runtime_url }}
+          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
+          AUDIT_TARGET_URL: ${{ inputs.target_url }}
+          AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
+          STAGE5_AUDIT_MODE: prepare
+          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
+          GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_REGISTRY_API_KEYS: ${{ secrets.GEMINI_REGISTRY_API_KEYS }}
+          GEMINI_SEARCH_MODEL_SEQUENCE: ${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
+          GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
+        run: npm run audit:stage5:substage-node
+
+      - name: Stage 5A product function extraction
+        working-directory: runtime-api
+        env:
+          STAGE5_AUDIT_MODE: 5a
+          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+        run: npm run audit:stage5:substage-node
+
+      - name: Stage 5B archetype and surface tagging
+        working-directory: runtime-api
+        env:
+          STAGE5_AUDIT_MODE: 5b
+          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+        run: npm run audit:stage5:substage-node
+
+      - name: Stage 5C feature inventory canonicalization
+        working-directory: runtime-api
+        env:
+          STAGE5_AUDIT_MODE: 5c
+          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
+        run: npm run audit:stage5:substage-node
+
+      - name: Stage 5D feature data touchpoints
+        working-directory: runtime-api
+        env:
+          STAGE5_AUDIT_MODE: 5d
+          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
+          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
+          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
+          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
+          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
+        run: npm run audit:stage5:substage-node
+
+      - name: Stage 5E target feature profile assembly
+        working-directory: runtime-api
+        env:
+          STAGE5_AUDIT_MODE: 5e
+          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
+        run: npm run audit:stage5:substage-node
+
       - name: Run full live runtime audit
         working-directory: runtime-api
         env:
@@ -101,5 +168,14 @@ jobs:
         with:
           name: full-live-runtime-audit-${{ github.run_id }}
           path: runtime-api/.runtime-e2e-cache/full-runtime-audit
+          if-no-files-found: error
+          retention-days: ${{ inputs.artifact_retention_days }}
+
+      - name: Upload Stage 5 substage audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage5-substage-audit-${{ github.run_id }}
+          path: runtime-api/.runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}
