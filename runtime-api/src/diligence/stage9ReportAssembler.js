@@ -2,6 +2,7 @@ import { makeReportShell, makeSection, REPORT_SECTION_KEYS } from "./reportSecti
 import { hydrateRegistryReportRows, statusCounts } from "./reportRegistryHydrator.js";
 import { synthesizeDiligenceReportSections } from "./reportDiligenceSynthesizer.js";
 import { applyLockedStage9ReportArchitecture } from "./stage9LockedReportMapper.js";
+import { buildStage9ProfileInput } from "./stage9ProfileInputAdapter.js";
 
 const asArray = (value) => Array.isArray(value) ? value : [];
 const asText = (value, fallback = "") => String(value ?? "").trim() || fallback;
@@ -122,37 +123,47 @@ function reviewedSources({ sourceBundle = {}, targetFeatureProfile = {}, stage6R
   });
 }
 
+function profileVersion(profile = {}, keys = []) {
+  for (const key of keys) if (profile?.[key]) return profile[key];
+  return null;
+}
+
 export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, stage8Export = {}, registryRuntime }) {
   const generatedAt = new Date().toISOString();
-  const sourceBundle = stage6Cache?.source_bundle || {};
-  const evidenceJunction = stage6Cache?.evidence_junction || {};
-  const companyProfile = stage6Cache?.company_profile || stage6Cache?.target_profile_v2 || {};
-  const targetFeatureProfile = stage6Cache?.target_feature_profile || {};
-  const stage6Review = stage6Cache?.stage6_review || {};
-  const postChallengeLedger = asArray(stage8Ledger?.post_challenge_ledger || stage7Artifact?.merged_ledger);
-  const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger });
+  const profileInput = buildStage9ProfileInput({ stage6Cache, stage7Artifact, stage8Ledger, stage8Export, registryRuntime });
+  const effectiveStage6Cache = profileInput.compatibility.stage6_cache;
+  const effectiveStage7Artifact = profileInput.compatibility.stage7_artifact;
+  const effectiveStage8Ledger = profileInput.compatibility.stage8_ledger;
+  const effectiveStage8Export = profileInput.compatibility.stage8_export || stage8Export;
+  const sourceBundle = profileInput.source_bundle || {};
+  const evidenceJunction = profileInput.evidence_junction || {};
+  const companyProfile = profileInput.target_profile || {};
+  const targetFeatureProfile = profileInput.target_feature_profile || {};
+  const stage6Review = effectiveStage6Cache.stage6_review || {};
+  const effectiveRegistryLedger = asArray(profileInput.exposure_profile?.registry_ledger);
+  const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger: effectiveRegistryLedger });
   const reviewed = reviewedSources({ sourceBundle, targetFeatureProfile, stage6Review });
   const report = makeReportShell({ generated_at: generatedAt });
   const synthesizedSections = synthesizeDiligenceReportSections({
     targetName: targetName({ companyProfile, targetFeatureProfile, sourceBundle }),
-    primaryUrl: primaryUrl({ sourceBundle, evidenceJunction, stage7Artifact, stage8Ledger }),
+    primaryUrl: primaryUrl({ sourceBundle, evidenceJunction, stage7Artifact: effectiveStage7Artifact, stage8Ledger: effectiveStage8Ledger }),
     sourceBundle,
     companyProfile,
     targetFeatureProfile,
     stage6Review,
     hydratedRows,
     reviewedSources: reviewed,
-    stage7Artifact,
-    stage8Ledger,
+    stage7Artifact: effectiveStage7Artifact,
+    stage8Ledger: effectiveStage8Ledger,
     registryRuntime,
     generatedAt
   });
   const sections = applyLockedStage9ReportArchitecture({
     sections: synthesizedSections,
-    stage6Cache,
-    stage7Artifact,
-    stage8Ledger,
-    stage8Export,
+    stage6Cache: effectiveStage6Cache,
+    stage7Artifact: effectiveStage7Artifact,
+    stage8Ledger: effectiveStage8Ledger,
+    stage8Export: effectiveStage8Export,
     registryRuntime,
     hydratedRows,
     reviewedSources: reviewed
@@ -165,27 +176,39 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, s
     artifact_type: "stage9_legal_exposure_report_data_v2",
     stage9_report_version: "stage9_report_v2",
     generated_at: generatedAt,
+    profile_input_version: profileInput.profile_input_version,
     report,
     forensic_ledger_appendix: sections.forensic_ledger_appendix,
     platform_diligence_object: sections.platform_diligence_object,
+    profile_sources: {
+      target_profile_version: profileVersion(profileInput.target_profile, ["target_profile_version", "company_profile_version"]),
+      target_feature_profile_version: profileVersion(profileInput.target_feature_profile, ["feature_profile_version", "target_feature_profile_version"]),
+      legal_cartography_version: profileVersion(profileInput.legal_cartography, ["legal_cartography_version", "legal_document_cartography_version"]),
+      data_provenance_profile_version: profileVersion(profileInput.data_provenance_profile, ["data_provenance_profile_version", "target_data_provenance_profile_version"]),
+      exposure_profile_version: profileVersion(profileInput.exposure_profile, ["profile_version", "exposure_profile_version"]),
+      stage8_quality_control_ledger_version: profileInput.stage8_quality_control_ledger?.qc_ledger_version || null
+    },
     source_meta: {
-      stage7_artifact_type: stage7Artifact?.artifact_type || null,
-      stage8_artifact_type: stage8Ledger?.artifact_type || null,
-      stage8_export_artifact_type: stage8Export?.artifact_type || null,
+      stage7_artifact_type: effectiveStage7Artifact?.artifact_type || null,
+      stage8_artifact_type: effectiveStage8Ledger?.artifact_type || null,
+      stage8_export_artifact_type: effectiveStage8Export?.artifact_type || null,
       registry_version: registryRuntime?.version || null,
       source_bundle_version: sourceBundle?.source_bundle_version || sourceBundle?.schema_version || null,
-      stage6_review_version: stage6Review?.stage6_review_version || null,
-      stage6_component: stage6Review?.stage6_component || null
+      profile_input_version: profileInput.profile_input_version,
+      quality_control_applied: profileInput.exposure_profile?.quality_control_applied === true,
+      quality_control_corrected_count: profileInput.stage8_quality_control_ledger?.corrected_count || 0,
+      effective_registry_ledger_source: "exposure_profile.registry_ledger_after_stage8_quality_control_overlay"
     },
+    stage9_profile_input_validation: profileInput.validation,
     validation_expectations: {
-      status_counts: statusCounts(postChallengeLedger),
-      ledger_count: postChallengeLedger.length,
+      status_counts: statusCounts(effectiveRegistryLedger),
+      ledger_count: effectiveRegistryLedger.length,
       registry_count: hydratedRows.registry_count,
       exposure_findings: report.report_data.exposure_findings?.finding_rows?.length || 0,
       exposure_categories: report.report_data.exposure_findings?.exposure_category_groups?.length || 0,
       reviewed_sources: reviewed.length,
-      legal_documents: asArray(stage6Review.legal_document_cartography?.legal_document_inventory).length,
-      data_flows: asArray(stage6Review.data_provenance_profile?.data_flow_profile).length,
+      legal_documents: asArray(profileInput.legal_cartography?.legal_document_inventory).length,
+      data_flows: asArray(profileInput.data_provenance_profile?.data_flow_profile || profileInput.data_provenance_profile?.integrated_feature_data_flow_profile).length,
       feature_count: asArray(targetFeatureProfile.feature_inventory).length,
       reviewed_source_families: unique(reviewed.map((source) => source.source_type)),
       appendices: {
