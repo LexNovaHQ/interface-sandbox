@@ -16,6 +16,9 @@ function enforcementMode(value) { return String(value || "guidance").trim().toLo
 function shouldEnforce(budget = {}) { return enforcementMode(budget.enforcement_mode || budget.mode) === "hard"; }
 function estimateSourceTokens(chars) { return Math.ceil(Number(chars || 0) / ESTIMATED_CHARS_PER_TOKEN); }
 function estimateTotalPromptTokens(sourceChars, promptOverheadTokens = DEFAULT_PROMPT_OVERHEAD_TOKENS) { return estimateSourceTokens(sourceChars) + promptOverheadTokens; }
+function asObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+function asArray(value) { return Array.isArray(value) ? value : []; }
+
 function fullTextExpansionMode(batch = {}, budget = {}) {
   const mode = String(budget.stage7_source_text_mode || budget.source_text_mode || "").trim().toLowerCase();
   if (["full", "full_text", "raw_full_text", "expansion"].includes(mode)) return true;
@@ -38,15 +41,14 @@ function sourceSpecificity(record = {}) {
 }
 
 function sortSources(records = []) { return [...records].sort((a, b) => sourceSpecificity(b) - sourceSpecificity(a)); }
-function asObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
-function asArray(value) { return Array.isArray(value) ? value : []; }
+
 function allSourceRecords(sourceBundle = {}, evidenceJunction = {}) {
   const fromArchive = Array.isArray(sourceBundle?.raw_footprint?.source_records) ? sourceBundle.raw_footprint.source_records : [];
   if (fromArchive.length) return fromArchive;
   const packets = evidenceJunction?.downstream_packets || {};
   const seen = new Set();
   const out = [];
-  for (const key of ["stage6a_legal_document_cartography", "stage6b_data_provenance", "stage6_integrated_handoff", "governance_review", "registry_matching", "registry_ledger_evaluation"]) {
+  for (const key of ["stage6a_legal_document_cartography", "stage6b_data_provenance", "governance_review", "registry_matching", "registry_ledger_evaluation"]) {
     for (const record of Array.isArray(packets?.[key]?.source_records) ? packets[key].source_records : []) {
       const id = record.evidence_source_id || `${record.source_family}|${record.url}|${record.final_url}`;
       if (seen.has(id)) continue;
@@ -56,7 +58,11 @@ function allSourceRecords(sourceBundle = {}, evidenceJunction = {}) {
   }
   return out;
 }
-function legalGovernanceRecords(sourceBundle = {}, evidenceJunction = {}) { return allSourceRecords(sourceBundle, evidenceJunction).filter((record) => LEGAL_SOURCE_FAMILIES.has(record.source_family)); }
+
+function legalGovernanceRecords(sourceBundle = {}, evidenceJunction = {}) {
+  return allSourceRecords(sourceBundle, evidenceJunction).filter((record) => LEGAL_SOURCE_FAMILIES.has(record.source_family));
+}
+
 function artifactFromRecord(record = {}, options = {}) {
   const text = cleanText(record);
   return {
@@ -73,6 +79,7 @@ function artifactFromRecord(record = {}, options = {}) {
     full_text_in_evidence_buffer: options.fullTextInEvidenceBuffer !== false
   };
 }
+
 function evidenceFromRecord(record = {}) {
   const text = cleanText(record);
   return {
@@ -88,10 +95,11 @@ function evidenceFromRecord(record = {}) {
     evidence_policy: { admitted_source: true, discovery_only: false, full_text_lossless: true, summarized: false, compressed: false, truncated_by_stage_7_adapter: false }
   };
 }
+
 function compactTargetProfile(profile = {}) {
   const object = asObject(profile?.target_profile || profile?.company_profile || profile);
   return {
-    target_profile_version: object.target_profile_version || "target_profile_v2",
+    target_profile_version: object.target_profile_version || object.company_profile_version || "target_profile_v2",
     identity: asObject(object.identity),
     jurisdiction: asObject(object.jurisdiction),
     business_model: asObject(object.business_model),
@@ -105,45 +113,72 @@ function compactTargetProfile(profile = {}) {
     live_review_mode: object.live_review_mode || null
   };
 }
+
 function compactTargetFeatureProfile(profile = {}) {
+  const object = asObject(profile?.target_feature_profile || profile?.feature_profile_v2 || profile);
   return {
-    feature_profile_version: profile.feature_profile_version || "feature_profile_v2",
-    target_profile_ref: profile.target_profile_ref || {},
-    feature_inventory: Array.isArray(profile.feature_inventory) ? profile.feature_inventory : [],
-    data_provenance_map: Array.isArray(profile.data_provenance_map) ? profile.data_provenance_map : [],
-    regulated_surface_map: Array.isArray(profile.regulated_surface_map) ? profile.regulated_surface_map : [],
-    architecture_hints: Array.isArray(profile.architecture_hints) ? profile.architecture_hints : [],
-    commercial_scan: profile.commercial_scan && typeof profile.commercial_scan === "object" && !Array.isArray(profile.commercial_scan) ? profile.commercial_scan : {},
-    limitations: Array.isArray(profile.limitations) ? profile.limitations : [],
-    classification_quality: asObject(profile.classification_quality),
-    unresolved_feature_candidates: asArray(profile.unresolved_feature_candidates)
+    feature_profile_version: object.feature_profile_version || "feature_profile_v2",
+    target_profile_ref: asObject(object.target_profile_ref),
+    feature_inventory: asArray(object.feature_inventory),
+    data_provenance_map: asArray(object.data_provenance_map),
+    regulated_surface_map: asArray(object.regulated_surface_map),
+    architecture_hints: asArray(object.architecture_hints),
+    commercial_scan: asObject(object.commercial_scan),
+    limitations: asArray(object.limitations),
+    classification_quality: asObject(object.classification_quality),
+    unresolved_feature_candidates: asArray(object.unresolved_feature_candidates)
   };
 }
-function compactStage6Review(review = {}) {
-  const object = asObject(review?.stage6_review || review);
+
+function navigationIndexFromProfiles(legalCartography = {}, dataProvenanceProfile = {}) {
+  const legalIndex = asArray(legalCartography.legal_document_index);
+  const dataFlows = asArray(dataProvenanceProfile.integrated_feature_data_flow_profile || dataProvenanceProfile.data_flow_profile || dataProvenanceProfile.data_flows);
   return {
-    stage6_review_version: object.stage6_review_version || "stage6_review_v1",
-    stage6_component: object.stage6_component || "stage6_profile_context",
-    stage_role: object.stage_role || "stage7_navigation_index",
+    index_version: "stage7_navigation_index_from_profile_handoffs_v1",
+    feature_to_data_flow_index: dataFlows.map((flow) => ({
+      feature_id: flow.feature_id || flow.feature_ref || null,
+      data_flow_id: flow.data_flow_id || flow.flow_id || null,
+      provenance_refs: asArray(flow.provenance_refs || flow.legal_unit_refs || flow.evidence_refs)
+    })).filter((row) => row.feature_id || row.data_flow_id),
+    feature_to_legal_unit_index: legalIndex.flatMap((unit) => asArray(unit.feature_refs).map((featureId) => ({
+      feature_id: featureId,
+      legal_unit_id: unit.legal_unit_id || unit.unit_id || null,
+      document_id: unit.document_id || null,
+      control_families: asArray(unit.control_families_detected || unit.control_families)
+    }))).filter((row) => row.feature_id || row.legal_unit_id)
+  };
+}
+
+function stage6ReviewFromProfiles({ legalCartography = {}, dataProvenanceProfile = {}, stage6Review = null } = {}) {
+  const object = asObject(stage6Review?.stage6_review || stage6Review);
+  const legal = asObject(legalCartography || object.legal_document_cartography);
+  const data = asObject(dataProvenanceProfile || object.data_provenance_profile);
+  return {
+    stage6_review_version: object.stage6_review_version || "stage6_profile_context_v1",
+    stage6_component: "profile_handoff_context",
+    stage_role: "stage7_profile_navigation_context",
     input_refs: asObject(object.input_refs),
-    legal_document_cartography: asObject(object.legal_document_cartography),
-    data_provenance_profile: asObject(object.data_provenance_profile),
-    stage7_navigation_index: asObject(object.stage7_navigation_index),
-    stage6_limitations: asArray(object.stage6_limitations)
+    legal_document_cartography: legal,
+    data_provenance_profile: data,
+    stage7_navigation_index: asObject(object.stage7_navigation_index || navigationIndexFromProfiles(legal, data)),
+    stage6_limitations: asArray(object.stage6_limitations || object.limitations)
   };
 }
-function compactStage6ToStage7Adapter(adapter = {}, stage6Review = {}) {
-  const object = asObject(adapter?.stage6_to_stage7_adapter || adapter);
-  const review = compactStage6Review(stage6Review);
+
+function stage7AdapterFromProfiles({ legalCartography = {}, dataProvenanceProfile = {}, stage6ToStage7Adapter = null, stage6Review = null } = {}) {
+  const review = stage6ReviewFromProfiles({ legalCartography, dataProvenanceProfile, stage6Review });
+  const object = asObject(stage6ToStage7Adapter?.stage6_to_stage7_adapter || stage6ToStage7Adapter);
   return {
-    adapter_version: object.adapter_version || "stage7_runtime_adapter_v1",
+    adapter_version: object.adapter_version || "stage7_runtime_adapter_from_profile_handoffs_v1",
     source_component: object.source_component || "profile_handoff_cache",
+    compatibility_adapter_only: false,
     stage6_review_version: object.stage6_review_version || review.stage6_review_version,
     stage7_navigation_index: asObject(object.stage7_navigation_index || review.stage7_navigation_index),
     legal_document_cartography: asObject(object.legal_document_cartography || review.legal_document_cartography),
     data_provenance_profile: asObject(object.data_provenance_profile || review.data_provenance_profile)
   };
 }
+
 function normalizeBatch(batch = {}) {
   const rows = Array.isArray(batch.registry_rows) ? batch.registry_rows : [];
   return {
@@ -161,10 +196,32 @@ function normalizeBatch(batch = {}) {
     batch_route_summary: batch.batch_route_summary || null
   };
 }
-function exclusionBase(record = {}) { const text = cleanText(record); return { ...artifactFromRecord(record), clean_text_length: text.length }; }
 
-export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction = {}, targetProfile = null, targetFeatureProfile = null, stage6Review = null, stage6ToStage7Adapter = null, registryBatch = {}, registryKey = {}, runId = null, generatedAt = nowIso(), budget = {} } = {}) {
+function exclusionBase(record = {}) {
+  const text = cleanText(record);
+  return { ...artifactFromRecord(record), clean_text_length: text.length };
+}
+
+export function buildRegistryLedgerInput({
+  sourceBundle = {},
+  evidenceJunction = {},
+  targetProfile = null,
+  targetFeatureProfile = null,
+  legalCartography = null,
+  legal_cartography = null,
+  dataProvenanceProfile = null,
+  data_provenance_profile = null,
+  stage6Review = null,
+  stage6ToStage7Adapter = null,
+  registryBatch = {},
+  registryKey = {},
+  runId = null,
+  generatedAt = nowIso(),
+  budget = {}
+} = {}) {
   const batch = normalizeBatch(registryBatch);
+  const legalProfile = asObject(legalCartography || legal_cartography || stage6Review?.legal_document_cartography || stage6ToStage7Adapter?.legal_document_cartography);
+  const dataProfile = asObject(dataProvenanceProfile || data_provenance_profile || stage6Review?.data_provenance_profile || stage6ToStage7Adapter?.data_provenance_profile);
   const sortedRecords = sortSources(legalGovernanceRecords(sourceBundle, evidenceJunction));
   const expansionMode = fullTextExpansionMode(batch, budget);
   const maxInputChars = normalizeLimit(budget.max_input_chars) || DEFAULT_MAX_INPUT_CHARS;
@@ -212,8 +269,8 @@ export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction =
 
   const compactTarget = compactTargetProfile(targetProfile || sourceBundle?.target_input || {});
   const compactFeature = compactTargetFeatureProfile(targetFeatureProfile || {});
-  const compactStage6 = compactStage6Review(stage6Review || {});
-  const compactStage6Adapter = compactStage6ToStage7Adapter(stage6ToStage7Adapter || {}, compactStage6);
+  const compactStage6 = stage6ReviewFromProfiles({ legalCartography: legalProfile, dataProvenanceProfile: dataProfile, stage6Review });
+  const compactStage6Adapter = stage7AdapterFromProfiles({ legalCartography: legalProfile, dataProvenanceProfile: dataProfile, stage6ToStage7Adapter, stage6Review: compactStage6 });
   const sourceSelectionPolicy = expansionMode
     ? (hardMode ? "legal_governance_full_text_expansion_hard_budget" : "legal_governance_full_text_expansion_guidance")
     : "profile_handoff_plus_legal_governance_manifest_no_raw_text";
@@ -264,6 +321,8 @@ export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction =
     },
     target_profile: compactTarget,
     target_feature_profile: compactFeature,
+    legal_cartography: legalProfile,
+    data_provenance_profile: dataProfile,
     stage6_review: compactStage6,
     stage6_to_stage7_adapter: compactStage6Adapter,
     input_budget: {
@@ -290,9 +349,11 @@ export function buildRegistryLedgerInput({ sourceBundle = {}, evidenceJunction =
       text_compressed: false
     },
     adapter_policy: {
-      prompt_compatibility_mode: "target_profile_v2_feature_profile_v2_profile_handoff_fields",
+      prompt_compatibility_mode: "target_profile_feature_profile_canonical_profile_handoff_fields",
       profiles_are_native_handoff_wrappers_not_summaries: true,
       full_target_profile_included: true,
+      legal_cartography_profile_included: Boolean(Object.keys(legalProfile).length),
+      data_provenance_profile_included: Boolean(Object.keys(dataProfile).length),
       legal_governance_source_manifest_included: true,
       raw_legal_governance_text_included_in_this_batch: expansionMode,
       raw_legal_governance_text_available_for_evidence_expansion: true,
