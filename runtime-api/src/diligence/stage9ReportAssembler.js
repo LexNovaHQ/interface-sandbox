@@ -91,8 +91,8 @@ function primaryUrl({ sourceBundle = {}, evidenceJunction = {}, stage7Artifact =
   return asText(sourceBundle.target_input?.primary_url || sourceBundle.target_url || evidenceJunction.target_input?.primary_url || stage7Artifact.target_url || stage8Ledger.target_url);
 }
 
-function reviewedSources({ sourceBundle = {}, targetFeatureProfile = {}, stage6Review = {} }) {
-  const docs = asArray(stage6Review.legal_document_cartography?.legal_document_inventory).map((doc) => ({
+function reviewedSources({ sourceBundle = {}, targetFeatureProfile = {}, legalCartography = {}, stage6Review = {} }) {
+  const docs = asArray((legalCartography.legal_document_inventory || stage6Review.legal_document_cartography?.legal_document_inventory)).map((doc) => ({
     source_id: doc.source_record_ref || doc.document_id,
     title: doc.document_title || doc.document_type,
     source_url: doc.source_url || doc.final_url,
@@ -139,10 +139,11 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, s
   const evidenceJunction = profileInput.evidence_junction || {};
   const companyProfile = profileInput.target_profile || {};
   const targetFeatureProfile = profileInput.target_feature_profile || {};
+  const legalCartography = profileInput.legal_cartography || {};
   const stage6Review = effectiveStage6Cache.stage6_review || {};
   const effectiveRegistryLedger = asArray(profileInput.exposure_profile?.registry_ledger);
   const hydratedRows = hydrateRegistryReportRows({ registryRuntime, postChallengeLedger: effectiveRegistryLedger });
-  const reviewed = reviewedSources({ sourceBundle, targetFeatureProfile, stage6Review });
+  const reviewed = reviewedSources({ sourceBundle, targetFeatureProfile, legalCartography, stage6Review });
   const report = makeReportShell({ generated_at: generatedAt });
   const synthesizedSections = synthesizeDiligenceReportSections({
     targetName: targetName({ companyProfile, targetFeatureProfile, sourceBundle }),
@@ -160,6 +161,7 @@ export function buildStage9Report({ stage6Cache, stage7Artifact, stage8Ledger, s
   });
   const sections = applyLockedStage9ReportArchitecture({
     sections: synthesizedSections,
+    profileInput,
     stage6Cache: effectiveStage6Cache,
     stage7Artifact: effectiveStage7Artifact,
     stage8Ledger: effectiveStage8Ledger,
