@@ -134,6 +134,38 @@ function ensureQualityContainers(profile = {}) {
   }
 }
 
+function cleanRemovedFeatureReferences(profile = {}, removedFeatureIds = new Set(), result) {
+  if (!removedFeatureIds.size) return;
+
+  const beforeData = asArray(profile.data_provenance_map).length;
+  profile.data_provenance_map = asArray(profile.data_provenance_map).filter((row) => !removedFeatureIds.has(String(row?.feature_id || "")));
+
+  const beforeSurfaces = asArray(profile.regulated_surface_map).length;
+  profile.regulated_surface_map = asArray(profile.regulated_surface_map).filter((row) => !removedFeatureIds.has(String(row?.feature_id || "")));
+
+  const beforeHints = asArray(profile.architecture_hints).length;
+  profile.architecture_hints = asArray(profile.architecture_hints).filter((row) => !removedFeatureIds.has(String(row?.feature_id || "")));
+
+  const scan = profile.commercial_scan || {};
+  if (scan && typeof scan === "object" && !Array.isArray(scan)) {
+    scan.mapped_core_feature_ids = asArray(scan.mapped_core_feature_ids).filter((id) => !removedFeatureIds.has(String(id || "")));
+    scan.source_coverage = asArray(scan.source_coverage).map((row) => ({
+      ...row,
+      mapped_feature_ids: asArray(row?.mapped_feature_ids).filter((id) => !removedFeatureIds.has(String(id || "")))
+    }));
+    if (!Array.isArray(scan.completeness_warnings)) scan.completeness_warnings = [];
+    const warning = `Stage 5 degraded mode removed unresolved feature refs: ${[...removedFeatureIds].join(", ")}`;
+    if (!scan.completeness_warnings.includes(warning)) scan.completeness_warnings.push(warning);
+  }
+
+  addWarning(profile, result, "/classification_quality/removed_feature_refs", "Removed orphaned Stage 5 flat-map references for unresolved feature candidates.", {
+    removed_feature_ids: [...removedFeatureIds],
+    removed_data_provenance_rows: beforeData - profile.data_provenance_map.length,
+    removed_surface_rows: beforeSurfaces - profile.regulated_surface_map.length,
+    removed_architecture_hints: beforeHints - profile.architecture_hints.length
+  });
+}
+
 export function validateStage5FeatureQuality(profile, result, options = {}) {
   if (!profile || typeof profile !== "object" || Array.isArray(profile)) return result;
 
@@ -184,8 +216,10 @@ export function validateStage5FeatureQuality(profile, result, options = {}) {
 
   const failedIndexes = new Set(failedFeatureRows.map((row) => row.index));
   const unresolved = failedFeatureRows.map((row) => unresolvedCandidateFromFeature(row.feature, row.index, row.problems));
+  const removedFeatureIds = new Set(failedFeatureRows.map((row) => String(row.feature?.feature_id || "")).filter(Boolean));
   profile.unresolved_feature_candidates.push(...unresolved);
   profile.feature_inventory = features.filter((_, index) => !failedIndexes.has(index));
+  cleanRemovedFeatureReferences(profile, removedFeatureIds, result);
 
   addWarning(profile, result, "/classification_quality", "Stage5R reinvestigation left unresolved feature classifications. Invalid final feature rows were moved to unresolved_feature_candidates and runtime may continue in degraded fallback mode.", {
     moved_feature_count: unresolved.length,
