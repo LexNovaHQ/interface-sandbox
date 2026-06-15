@@ -63,6 +63,62 @@ These rules supersede any older Stage 4/5 dictionary language that still asks th
 8. Completeness gaps are nonblocking runtime warnings, but they are quality/audit failures before deploy.
 `;
 
+const STAGE5_FIELD_DERIVATION_INSTRUCTIONS_V2 = `
+
+---STAGE5_FIELD_DERIVATION_INSTRUCTIONS_v2---
+
+These rules are binding for target_feature_profile. They implement docs/contracts/STAGE5_FIELD_DERIVATION_INSTRUCTIONS_v2.md.
+
+A. Candidate typing comes before feature output.
+The deterministic candidate index and Stage 5A discovery are high-recall inputs, not final truth. First classify each visible candidate as one of: PRODUCT_AREA, ATOMIC_FEATURE_CANDIDATE, DELIVERY_CHANNEL_SIGNAL, DATA_SIGNAL, ARCHITECTURE_SIGNAL, COMMERCIAL_OUTCOME_SIGNAL, LEGAL_CONTROL_SIGNAL, DUPLICATE_OR_ALIAS, or INSUFFICIENT_FEATURE_EVIDENCE.
+
+B. Product areas are not final features by default.
+A product/module/brand/page label such as Samvaad, Arya, Studio, Akshar, Edge, Models, or Integrations is a product area, architecture signal, delivery signal, or source label unless evidence proves it is itself an atomic function. Decompose product areas into atomic features. Emit only atomic functions in feature_inventory[]. Link the product area through business_label_or_product_area.
+
+C. Every final feature_inventory[] row must have at least one archetype and one surface.
+No final atomic feature may have archetype_codes.length === 0 or surface_tokens.length === 0. If no controlled archetype or surface safely applies, do not emit the row as a final feature. Put it in unresolved_feature_candidates[] or account for it in commercial_scan as insufficient_detail/non_feature_context.
+
+D. UNI is not an uncertainty fallback.
+Use UNI only where evidence supports a general-purpose AI assistant/tool. Do not use UNI because classification is uncertain.
+
+E. CORE vs SECONDARY.
+Set feature_role = CORE when the function is independently marketed, sold, API-exposed, or materially drives customer value. Set SECONDARY when it is a support/deployment/enablement/context capability.
+
+F. Per-feature derivation checklist.
+For every final feature answer these from admitted evidence:
+1. What is the atomic feature name? Use function language, not product branding.
+2. Which product area does it belong to?
+3. Who uses it? actor_or_user.
+4. What input data does it consume? input_data[] and data_provenance[].
+5. What system action does it perform? system_action.
+6. What output/result does it produce? output_or_result.
+7. What autonomy level is visible? none, draft, recommend, execute, or unknown.
+8. Is human review required/optional/not visible/unknown?
+9. Does it trigger external actions or downstream systems? external_action_signal true/false/unknown.
+10. Which delivery channels are visible? app/api/web true/false/unknown.
+11. Which controlled archetype code(s) apply, with archetype_provenance[] for every code?
+12. Which controlled surface token(s) apply, with surface_provenance[] for every token?
+13. Which source URL and evidence_refs support the row?
+
+G. Controlled archetype classification.
+Use only UNI, DOE, JDG, CMP, CRT, RDR, ORC, TRN, SHD, OPT, MOV. Multiple archetypes are allowed and expected where behavior supports them. DOE requires action on the user's behalf or external execution. ORC requires routing/coordinating models/tools/agents/workflows. CRT requires generated/synthetic/copyrightable output. RDR requires ingesting or reading customer/user/third-party source material. TRN covers translation, audio, voice, speech, biometric-adjacent transformation. JDG requires decisioning/recommendation that materially affects people, rights, eligibility, HR, legal, finance, health, or similar. Do not over-trigger; cite behavior.
+
+H. Controlled surface classification.
+Use only Consumer-Public, Enterprise-Private, PII, Employment, Sensitive/Biometric, Financial, Content&IP, Safety&Physical, Infrastructure, Minors. Every final atomic feature must have at least one surface. Surface must be tied to data/context, not guessed from company category alone.
+
+I. Data provenance derivation.
+For each feature, derive data_origin, data_subject, data_category, processing_context, storage_or_retention_signal, training_or_finetuning_signal, source_url, evidence_refs, and confidence. Prefer deterministic source evidence for audio/text/document/API payloads, retention, training/fine-tuning, and product-improvement signals.
+
+J. Architecture hints.
+Emit architecture_hints[] only for visible provider, memory, cloud_host, vector_db, subprocessor, or integration facts. Do not emit unknown/empty hints. Use disposition=prefill_candidate only where the value is explicit; otherwise confirmation_only.
+
+K. Stage5R repair policy.
+If completion_repair_request is present, perform exactly one focused repair pass over the listed failed candidates/features. Do not start a recursive repair loop. If a candidate still cannot satisfy archetype/surface/provenance requirements, remove it from feature_inventory[] and place it in unresolved_feature_candidates[] with reason and evidence_refs. Set classification_quality.status = DEGRADED and fallback_routing_required = true.
+
+L. Stage 5 never emits threat IDs or registry statuses.
+linked_threat_ids must remain []. Stage 7 owns registry rows, Hunter Trigger evaluation, and final statuses.
+`;
+
 const CANON_BLOCKS_BY_STAGE = Object.freeze({
   company_profile: ["UNIVERSAL", "STAGE4"],
   target_feature_profile: ["UNIVERSAL", "STAGE5"],
@@ -127,7 +183,7 @@ function runtimePromptAppendixFor(stageId) {
   if (fieldDictionary) parts.push(fieldDictionary);
   const stage6Spine = getPromptIfAvailable("stage6_canonical_spine");
   if (stageId === "stage6a_legal_document_cartography" && stage6Spine?.text) parts.push(`\n\n---DILIGENCE_STAGE_6_CANONICAL_SPINE---\n\n${stage6Spine.text.trim()}`);
-  if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES);
+  if (stageId === "target_feature_profile") parts.push(STAGE5_COMPLETENESS_SUPREMACY_RULES, STAGE5_FIELD_DERIVATION_INSTRUCTIONS_V2);
   if (stageId === "registry_ledger_evaluation") parts.push(STAGE7_ROUTE_CONTRACT_RULES, REGISTRY_HUNTER_ENGINE_RULES);
   return parts.join("");
 }
