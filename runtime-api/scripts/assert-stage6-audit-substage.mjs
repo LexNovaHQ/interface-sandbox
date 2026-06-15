@@ -28,12 +28,8 @@ function requireIoFor(stageId) {
   if (forensic.stage_id !== stageId) fail(`Invalid ${stageId} forensic summary identity`, { forensic });
   return { input, output, forensic };
 }
-function validationStatus(output = {}) {
-  return output?.validation?.status || output?.validation?.foundation?.status || output?.status || null;
-}
-function reinvestigationRequired(output = {}) {
-  return validationStatus(output) === "REINVESTIGATE_REQUIRED" || output?.validation?.reinvestigation_required === true || output?.validation?.foundation?.status === "REINVESTIGATE_REQUIRED";
-}
+function validationStatus(output = {}) { return output?.validation?.status || output?.validation?.foundation?.status || output?.status || null; }
+function reinvestigationRequired(output = {}) { return validationStatus(output) === "REINVESTIGATE_REQUIRED" || output?.validation?.reinvestigation_required === true || output?.validation?.foundation?.status === "REINVESTIGATE_REQUIRED"; }
 
 const SPECS = {
   "6": {
@@ -51,7 +47,7 @@ const SPECS = {
     stageId: "stage6a",
     artifact: "12-stage6a-legal-cartography.json",
     versionKey: "stage6a_output_version",
-    expectedVersion: "stage6a_legal_cartography_v1",
+    expectedVersion: "stage6a_legal_cartography_v2",
     validate(output) {
       const cartography = output.legal_cartography || {};
       if (!asArray(cartography.legal_unit_map).length && !reinvestigationRequired(output)) fail("6A legal_unit_map is empty without reinvestigation request");
@@ -66,7 +62,7 @@ const SPECS = {
     stageId: "stage6b",
     artifact: "13-stage6b-legal-governance-data-provenance-profile.json",
     versionKey: "stage6b_output_version",
-    expectedVersion: "stage6b_legal_governance_data_provenance_v1",
+    expectedVersion: "stage6b_legal_governance_data_provenance_v2",
     validate(output) {
       const profile = output.legal_governance_data_provenance_profile || {};
       const findings = asArray(profile.legal_data_findings);
@@ -111,9 +107,7 @@ const spec = SPECS[requested];
 if (!spec) fail("Usage: node scripts/assert-stage6-audit-substage.mjs <6|6a|6b|6c|6handoff>");
 const io = requireIoFor(spec.stageId);
 const artifact = readJson(spec.artifact);
-if (spec.versionKey && artifact?.[spec.versionKey] !== spec.expectedVersion) {
-  fail(`Unexpected ${spec.stageId} output version`, { expected: spec.expectedVersion, received: artifact?.[spec.versionKey] });
-}
+if (spec.versionKey && artifact?.[spec.versionKey] !== spec.expectedVersion) fail(`Unexpected ${spec.stageId} output version`, { expected: spec.expectedVersion, received: artifact?.[spec.versionKey] });
 const result = spec.validate(artifact) || {};
 if (result.reinvestigation) warn(result.reason || `${spec.stageId} requires reinvestigation`);
 console.log(JSON.stringify({ ok: true, stage: spec.stageId, artifact: spec.artifact, status: io.output.status || artifact.status || artifact.validation?.status || "PASS", input_summary: `${spec.stageId}-input-summary.json`, output_summary: `${spec.stageId}-output-summary.json`, forensic_summary: `${spec.stageId}-forensic-summary.json` }, null, 2));
