@@ -1,5 +1,7 @@
 import { buildStage5ProductFamilyPackets } from "./stage5ProductFamilyPacketBuilder.js";
 import { mergeStage5ProductFamilyProfiles } from "./stage5ProductFamilyProfileMerger.js";
+import { validateDiligenceStageOutput } from "./stageSchemaValidator.js";
+import { validateTargetFeatureProfileGuardrails } from "./targetFeatureProfileGuardrails.js";
 
 function asString(value, fallback = "") {
   if (typeof value === "string" && value.trim()) return value.trim();
@@ -25,6 +27,21 @@ function featureRunOptions(env = process.env, extra = {}) {
 }
 function log(logStage, logs, stage, status, details = {}) {
   if (typeof logStage === "function") logStage(logs, stage, status, details);
+}
+
+function validateMergedTargetFeatureProfile(profile, packageInput = {}) {
+  const schema = validateDiligenceStageOutput("targetFeatureProfile", profile);
+  if (!schema.ok) return { ok: false, reason: "schema_validation_failed", schema };
+
+  const evidenceBuffer = Array.isArray(packageInput?.source_bundle?.evidence_buffer) ? packageInput.source_bundle.evidence_buffer : [];
+  const threatMappingSupplied = packageInput?.threat_mapping_supplied === true || packageInput?.source_bundle?.source_review?.threat_mapping_supplied === true;
+  const guardrail = validateTargetFeatureProfileGuardrails(profile, {
+    packageInput,
+    evidenceBuffer,
+    threatMappingSupplied
+  });
+  if (!guardrail.ok) return { ok: false, reason: "guardrail_validation_failed", schema, guardrail };
+  return { ok: true, schema, guardrail };
 }
 
 export async function runStage5ProductFamilyScopedProfile({ adapterResult, runStage, logs, logStage, options = {}, env = process.env } = {}) {
@@ -81,9 +98,29 @@ export async function runStage5ProductFamilyScopedProfile({ adapterResult, runSt
     });
     return null;
   }
+
+  const mergedValidation = validateMergedTargetFeatureProfile(merged.target_feature_profile, adapterResult.target_feature_profile_input);
+  if (!mergedValidation.ok) {
+    log(logStage, logs, "target_feature_profile_product_families", "fallback", {
+      reason: `product_family_merge_${mergedValidation.reason}`,
+      merge_summary: merged.merge_summary,
+      schema_error_count: mergedValidation.schema?.errors?.length || 0,
+      guardrail_error_count: mergedValidation.guardrail?.errors?.length || 0,
+      guardrail_repair_count: mergedValidation.guardrail?.repairs?.length || 0,
+      guardrail_warning_count: mergedValidation.guardrail?.warnings?.length || 0
+    });
+    return null;
+  }
+
   log(logStage, logs, "target_feature_profile_product_families", "complete", {
     merge_summary: merged.merge_summary,
-    classification_status: merged.target_feature_profile.classification_quality?.status || null
+    classification_status: merged.target_feature_profile.classification_quality?.status || null,
+    merged_schema_validation_mode: mergedValidation.schema.validation_mode,
+    merged_guardrail_validation_mode: mergedValidation.guardrail.validation_mode,
+    merged_guardrail_warning_count: mergedValidation.guardrail.warnings?.length || 0,
+    merged_guardrail_repair_count: mergedValidation.guardrail.repairs?.length || 0
   });
   return merged.target_feature_profile;
 }
+
+export const stage5ProductFamilyLiveRunnerInternals = { validateMergedTargetFeatureProfile };
