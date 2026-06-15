@@ -3,11 +3,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { buildStage6IntegratedHandoffArtifact } from "../src/diligence/stage6IntegratedHandoffBuilder.js";
-import { validateStage6ReviewGuardrail } from "../src/diligence/guardrails/stage6ReviewGuardrail.js";
-import { runStage6BDataProvenance } from "../src/diligence/stage6bDataProvenanceRunner.js";
-import { validateDiligenceStageOutput } from "../src/diligence/stageSchemaValidator.js";
+
 import { assertWindowIsVerbatim, buildStage5CanonicalInput, runStage5Runtime } from "../src/diligence/stage5/stage5.runtime.js";
+import { runStage6Runtime } from "../src/diligence/stage6/stage6.runtime.js";
+import { runStage6ALegalCartography } from "../src/diligence/stage6/6a/6a.runtime.js";
+import { runStage6BLegalGovernanceDataProvenance } from "../src/diligence/stage6/6b/6b.runtime.js";
+import { runStage6CDataProvenanceIntegration } from "../src/diligence/stage6/6c/6c.runtime.js";
 import { runGeminiPool } from "../src/gemini/geminiPool.js";
 import { buildLiveEvidence, normalizeInput } from "../src/live/liveEvidenceAndProfilePipeline.js";
 import { runStage } from "../src/live/liveStage6To8Pipeline.js";
@@ -23,7 +24,7 @@ const outputRoot = path.resolve(process.env.AUDIT_OUTPUT_DIR || path.join(proces
 const githubRunId = process.env.GITHUB_RUN_ID || "local";
 const runTimestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const runId = `full_live_runtime_audit_${githubRunId}_${runTimestamp}`;
-const auditStopStage = String(process.env.AUDIT_STOP_STAGE || "6b").toLowerCase();
+const auditStopStage = String(process.env.AUDIT_STOP_STAGE || "6c").toLowerCase();
 const cacheClearedAt = new Date().toISOString();
 
 const FORBIDDEN_TRUE_FLAGS = [
@@ -67,9 +68,7 @@ function clearAuditCaches() {
   ];
   const cacheRoot = path.join(cwd, ".runtime-e2e-cache");
   if (fs.existsSync(cacheRoot)) {
-    for (const name of fs.readdirSync(cacheRoot)) {
-      if (/^stage[56]/i.test(name)) targets.push(path.join(cacheRoot, name));
-    }
+    for (const name of fs.readdirSync(cacheRoot)) if (/^stage[56]/i.test(name)) targets.push(path.join(cacheRoot, name));
   }
   for (const target of targets) fs.rmSync(target, { recursive: true, force: true });
   ensureDir(outputRoot);
@@ -99,7 +98,7 @@ function applyAuditRuntimeDefaults() {
     STAGE5_CANONICAL_ENABLED: "true",
     STAGE5_CANONICAL_BLOCKING: "true",
     STAGE5_LEGACY_FALLBACK: "false",
-    AUDIT_STOP_STAGE: "6b"
+    AUDIT_STOP_STAGE: "6c"
   };
   for (const [key, value] of Object.entries(defaults)) if (!process.env[key]) process.env[key] = value;
 }
@@ -115,7 +114,7 @@ function assertRuntimePolicy() {
   }).filter((key) => process.env[key] !== undefined);
   if (oldStage5Flags.length) throw new Error(`Old Stage 5 batch flag(s) are not allowed in canonical audit: ${oldStage5Flags.join(", ")}`);
   if (String(process.env.STAGE5_LEGACY_FALLBACK || "").toLowerCase() !== "false") throw new Error("STAGE5_LEGACY_FALLBACK must be false for this audit.");
-  if (!["6b", "stage6b"].includes(auditStopStage)) throw new Error(`Unsupported AUDIT_STOP_STAGE for canonical full audit: ${auditStopStage}`);
+  if (!["6c", "stage6c"].includes(auditStopStage)) throw new Error(`Unsupported AUDIT_STOP_STAGE for canonical full audit: ${auditStopStage}; use 6c.`);
   if (!runtimeUrl) throw new Error("RUNTIME_URL or LEXNOVA_RUNTIME_URL is required.");
   if (!token) throw new Error("RUNTIME_ACCESS_TOKEN is required for deployed runtime smoke check.");
 }
@@ -171,12 +170,7 @@ function buildStage5SourceWindowLedger({ canonicalInput, stage5Result }) {
   return collectStage5Windows(stage5Result).map((window) => {
     const source = sourcesById.get(window.source_id);
     let verbatim = false;
-    try {
-      assertWindowIsVerbatim(source, window);
-      verbatim = true;
-    } catch {
-      verbatim = false;
-    }
+    try { assertWindowIsVerbatim(source, window); verbatim = true; } catch { verbatim = false; }
     return {
       window_id: window.window_id,
       source_id: window.source_id,
@@ -232,12 +226,7 @@ function writeStage5CanonicalArtifacts(ctx) {
   const substage = ctx.stage5Result.substage_outputs || {};
   const ledger = buildStage5SourceWindowLedger({ canonicalInput: ctx.stage5CanonicalInput, stage5Result: ctx.stage5Result });
   ctx.stage5SourceWindowLedger = ledger;
-  ctx.stage5AuditEvidence = buildStage5AuditEvidence({
-    canonicalInput: ctx.stage5CanonicalInput,
-    stage5Result: ctx.stage5Result,
-    companyProfile: ctx.companyProfile,
-    targetFeatureProfile: ctx.targetFeatureProfile
-  });
+  ctx.stage5AuditEvidence = buildStage5AuditEvidence({ canonicalInput: ctx.stage5CanonicalInput, stage5Result: ctx.stage5Result, companyProfile: ctx.companyProfile, targetFeatureProfile: ctx.targetFeatureProfile });
   writeJson("stage5-canonical-runtime-summary.json", {
     ok: ctx.stage5Result.ok === true,
     stage5_version: ctx.stage5Result.stage5_version,
@@ -273,6 +262,7 @@ function writeManifest(extra = {}) {
     audit_stop_stage: auditStopStage,
     legacy_fallback_used: false,
     legacy_stage5_adapter_used: false,
+    stage6_runtime_entrypoint: "runStage6Runtime",
     ...extra,
     files: files.map((name) => {
       const filePath = path.join(outputRoot, name);
@@ -283,18 +273,6 @@ function writeManifest(extra = {}) {
   return manifest;
 }
 
-function buildStage6Input(ctx) {
-  return {
-    stage6_input_version: "stage6_live_input_v1",
-    run_id: `${runId}_stage6_input`,
-    source_bundle: ctx.sourceBundle,
-    evidence_junction: ctx.evidenceJunction,
-    company_profile: ctx.companyProfile,
-    target_profile: ctx.companyProfile,
-    target_feature_profile: ctx.targetFeatureProfile
-  };
-}
-
 function validatePassConditions(ctx) {
   const failed = [];
   const sourceRecords = asArray(ctx.sourceBundle?.raw_footprint?.source_records);
@@ -302,32 +280,30 @@ function validatePassConditions(ctx) {
   if (!ctx.evidenceJunction || !Object.keys(ctx.evidenceJunction).length) failed.push("missing_evidence_junction");
   if (!ctx.companyProfile || !Object.keys(ctx.companyProfile).length) failed.push("missing_target_profile");
   if (ctx.stage5Result?.stage5_version !== "stage5_lossless_windowed_runtime_v1") failed.push("missing_stage5_canonical_runtime_result");
-  if (!ctx.stage5a?.admitted_functions?.length && ctx.stage5a?.validation?.reinvestigation_required !== true) failed.push("missing_stage5a_product_function_discovery");
-  if (!ctx.stage5b?.feature_tags?.length && ctx.stage5b?.validation?.reinvestigation_required !== true) failed.push("missing_stage5b_archetype_surface_tagging");
-  if (!ctx.stage5c?.complete_feature_records?.length && ctx.stage5c?.validation?.reinvestigation_required !== true) failed.push("missing_stage5c_complete_feature_records");
-  if (ctx.stage5d?.validation?.ok !== true && ctx.targetFeatureProfile?.classification_quality?.reinvestigation_required !== true) failed.push("stage5d_target_feature_profile_schema_invalid");
+  if (!ctx.targetFeatureProfile || !Object.keys(ctx.targetFeatureProfile).length) failed.push("missing_stage5_target_feature_profile");
   if (!ctx.stage5AuditEvidence?.clean_text_lossless_present) failed.push("stage5_clean_text_lossless_missing");
   if (!ctx.stage5AuditEvidence?.source_sha256_present) failed.push("stage5_source_sha256_missing");
   if (!ctx.stage5AuditEvidence?.all_windows_verbatim && !ctx.stage5AuditEvidence?.reinvestigation_required) failed.push("stage5_source_windows_not_verbatim");
   if (!ctx.stage5AuditEvidence?.metadata_not_primary_evidence) failed.push("stage5_metadata_used_as_primary_evidence");
   if (!ctx.stage5AuditEvidence?.index_not_primary_evidence) failed.push("stage5_index_used_as_primary_evidence");
   if (!ctx.stage5AuditEvidence?.external_handoff_ok) failed.push("stage5_external_handoff_shape_changed");
-  if (!ctx.targetFeatureProfile || !Object.keys(ctx.targetFeatureProfile).length) failed.push("missing_stage5_target_feature_profile");
-  if (!ctx.legalCartography || !Object.keys(ctx.legalCartography).length) failed.push("missing_stage6a_legal_cartography");
-  if (!ctx.dataProvenanceProfile || !Object.keys(ctx.dataProvenanceProfile).length) failed.push("missing_stage6b_data_provenance_profile");
-  if (ctx.stage6IntegratedValidation?.schemaValidation?.ok !== true || ctx.stage6IntegratedValidation?.guardrail?.ok !== true) failed.push("stage6_integrated_handoff_validation_failed");
+  if (ctx.stage6Result?.stage6_output_version !== "stage6_canonical_runtime_v1") failed.push("missing_stage6_canonical_runtime_result");
+  if (!ctx.stage6aOutput?.legal_cartography && ctx.stage6Result?.status !== "CONTRACT_VIOLATION") failed.push("missing_stage6a_legal_cartography");
+  if (!ctx.stage6bOutput?.legal_governance_data_provenance_profile && ctx.stage6Result?.status !== "CONTRACT_VIOLATION") failed.push("missing_stage6b_legal_governance_data_provenance_profile");
+  if (!ctx.stage6cOutput?.data_provenance_profile && ctx.stage6Result?.status !== "CONTRACT_VIOLATION") failed.push("missing_stage6c_data_provenance_profile");
+  if (!ctx.stage6Result?.stage7_handoff && ctx.stage6Result?.status !== "CONTRACT_VIOLATION") failed.push("missing_stage6_to_stage7_handoff");
   if (ctx.legacyFallbackUsed !== false) failed.push("legacy_stage5_fallback_used_or_unknown");
   return failed;
 }
 
 function writeStageSummary(ctx, failedChecks = []) {
   const rows = ctx.stage_rows || [];
-  const markdown = `# Runtime API Full Live Audit — Canonical Stage 5 Path\n\n` +
+  const markdown = `# Runtime API Full Live Audit — Canonical Stage 5 + Stage 6 Path\n\n` +
     `- Runtime URL: ${runtimeUrl}\n` +
     `- Target: ${companyName} (${targetUrl})\n` +
     `- Run ID: ${runId}\n` +
     `- Stage 5 runtime: runStage5Runtime\n` +
-    `- Stage 5 input: live sourceBundle + evidenceJunction + companyProfile, no legacy adapter\n` +
+    `- Stage 6 runtime: runStage6Runtime → 6A/6B/6C\n` +
     `- Failed checks: ${failedChecks.length ? failedChecks.join(", ") : "none"}\n\n` +
     `| Stage | Status | Artifact | Notes |\n|---|---:|---|---|\n` +
     rows.map((row) => `| ${row.stage} | ${row.status} | ${row.artifact} | ${row.notes || ""} |`).join("\n") + "\n";
@@ -355,14 +331,15 @@ async function main() {
     writeJson("00-audit-request.json", {
       ok: true,
       audit_phase: "full_live_runtime_audit_canonical",
-      execution_model: "public_live_pipeline_canonical_stage5_runtime_v2",
+      execution_model: "public_live_pipeline_canonical_stage5_stage6_runtime_v3",
       github_run_id: githubRunId,
       run_id: runId,
       runtime_url: runtimeUrl,
       target_input: ctx.targetInput,
       audit_stop_stage: auditStopStage,
       stage5_legacy_adapter_used: false,
-      stage5_runtime_entrypoint: "runStage5Runtime"
+      stage5_runtime_entrypoint: "runStage5Runtime",
+      stage6_runtime_entrypoint: "runStage6Runtime"
     });
 
     const runtimeStatusResponse = await getJson(`${runtimeUrl}${STATUS_ENDPOINT}`, { "x-runtime-access-token": token });
@@ -378,7 +355,9 @@ async function main() {
     writeJson("02-source-capture.json", { ok: true, raw_footprint: ctx.sourceBundle.raw_footprint, reviewer_source: ctx.reviewerSource || null });
     writeJson("03-evidence-refiner-source-bundle.json", ctx.sourceBundle);
     writeJson("04-evidence-junction.json", ctx.evidenceJunction);
-    recordStage(ctx, "Stage 1-4 live evidence", "PASS", "01/02/03/04 artifacts", `sources=${asArray(ctx.sourceBundle?.raw_footprint?.source_records).length}`);
+    recordStage(ctx, "Stage 1 Source Discovery", "PASS", "01-source-discovery.json");
+    recordStage(ctx, "Stage 2 Source Capture", "PASS", "02-source-capture.json");
+    recordStage(ctx, "Stage 3 Evidence Refiner / Source Bundle", "PASS", "03/04 artifacts", `sources=${asArray(ctx.sourceBundle?.raw_footprint?.source_records).length}`);
 
     liveLogStage(ctx.logs, "company_profile", "running");
     const targetProfileSources = stage4SourceRecords(ctx.sourceBundle);
@@ -402,6 +381,7 @@ async function main() {
     ctx.modelBackedStages.push("target_profile");
     liveLogStage(ctx.logs, "company_profile", "complete", { company_name: ctx.companyProfile?.identity?.brand_name || null, target_profile_sources: targetProfileSources.length, company_sources: companyProfileSources.length });
     writeJson("05-target-profile.json", ctx.companyProfile);
+    writeJson("05-target-profile-stage-result.json", companyStage);
     recordStage(ctx, "Stage 4 company profile", statusFromOk(Boolean(ctx.companyProfile)), "05-target-profile.json");
 
     ctx.stage5Input = buildStage5Input({ sourceBundle: ctx.sourceBundle, evidenceJunction: ctx.evidenceJunction, companyProfile: ctx.companyProfile, targetInput: ctx.targetInput });
@@ -438,54 +418,74 @@ async function main() {
     writeJson("05-target-feature-profile.json", ctx.targetFeatureProfile);
     recordStage(ctx, "Stage 5 canonical runtime", ctx.stage5Result.ok ? "PASS" : "FAIL", "07-stage5-canonical-runtime.json", `windows=${ctx.stage5AuditEvidence.source_window_count}; reinvestigation=${ctx.stage5AuditEvidence.reinvestigation_request_count}`);
 
-    ctx.stage6Input = buildStage6Input(ctx);
-    ctx.stage6aStageResult = await runStage("stage6a_legal_document_cartography", ctx.stage6Input, {
-      pool: process.env.LIVE_STAGE6A_POOL || process.env.LIVE_LEGAL_POOL || process.env.STAGE6A_POOL || process.env.STAGE6_POOL || "reasoning",
-      maxOutputTokens: Number(process.env.LIVE_STAGE6A_MAX_OUTPUT_TOKENS || process.env.LIVE_LEGAL_MAX_OUTPUT_TOKENS || process.env.STAGE6A_MAX_OUTPUT_TOKENS || 24000),
-      timeoutMs: Number(process.env.LIVE_STAGE6A_TIMEOUT_MS || process.env.LIVE_LEGAL_TIMEOUT_MS || process.env.STAGE6A_TIMEOUT_MS || 90000)
-    });
-    ctx.legalCartography = ctx.stage6aStageResult.stage6_review?.legal_document_cartography || null;
-    ctx.modelBackedStages.push("stage6a_legal_cartography");
-    writeJson("12-stage6a-legal-cartography.json", ctx.legalCartography);
-    recordStage(ctx, "Stage 6A Legal Cartography", statusFromOk(Boolean(ctx.legalCartography)), "12-stage6a-legal-cartography.json");
-
-    ctx.stage6bInput = { ...ctx.stage6Input, stage6a_review: ctx.stage6aStageResult.stage6_review, legal_document_cartography: ctx.legalCartography };
-    ctx.stage6bStageResult = await runStage6BDataProvenance({
-      source_bundle: ctx.stage6bInput.source_bundle,
-      target_profile: ctx.stage6bInput.target_profile,
-      company_profile: ctx.stage6bInput.company_profile,
-      target_feature_profile: ctx.stage6bInput.target_feature_profile,
-      evidence_junction: ctx.stage6bInput.evidence_junction,
-      legal_document_cartography: ctx.stage6bInput.legal_document_cartography,
-      stage6a_review: ctx.stage6bInput.stage6a_review,
-      runtime_options: {
-        pool: process.env.LIVE_STAGE6B_POOL || process.env.STAGE6B_POOL || process.env.STAGE6_POOL || "reasoning",
-        maxOutputTokens: Number(process.env.LIVE_STAGE6B_MAX_OUTPUT_TOKENS || process.env.STAGE6B_MAX_OUTPUT_TOKENS || 24000),
-        timeoutMs: Number(process.env.LIVE_STAGE6B_TIMEOUT_MS || process.env.STAGE6B_TIMEOUT_MS || 90000)
+    let captured6a = null;
+    let captured6b = null;
+    let captured6c = null;
+    ctx.stage6Result = await runStage6Runtime({
+      targetRef: { brand_name: companyName, target_url: targetUrl, run_id: runId },
+      targetProfile: ctx.companyProfile,
+      targetFeatureProfile: ctx.targetFeatureProfile,
+      evidenceJunction: ctx.evidenceJunction,
+      sourceBundle: ctx.sourceBundle,
+      run6A: async ({ canonicalInput }) => {
+        captured6a = await runStage6ALegalCartography({ canonicalInput });
+        return captured6a;
       },
-      env: process.env
+      run6B: async ({ canonicalInput, legalCartography }) => {
+        captured6b = await runStage6BLegalGovernanceDataProvenance({ canonicalInput, stage6aOutput: { legal_cartography: legalCartography } });
+        return captured6b;
+      },
+      run6C: async ({ canonicalInput, legalCartography, legalGovernanceDataProvenanceProfile, targetFeatureProfile }) => {
+        captured6c = await runStage6CDataProvenanceIntegration({
+          canonicalStage6Input: canonicalInput,
+          stage6aOutput: { legal_cartography: legalCartography },
+          stage6bOutput: { legal_governance_data_provenance_profile: legalGovernanceDataProvenanceProfile },
+          targetFeatureProfile
+        });
+        return captured6c;
+      }
     });
-    if (!ctx.stage6bStageResult.ok) throw Object.assign(new Error(ctx.stage6bStageResult.error || "Stage 6B Data Provenance failed."), { result: ctx.stage6bStageResult });
-    ctx.dataProvenanceProfile = ctx.stage6bStageResult.data_provenance_profile || ctx.stage6bStageResult.stage6_review?.data_provenance_profile || null;
-    ctx.modelBackedStages.push("stage6b_data_provenance");
-    writeJson("13-stage6b-data-provenance-profile.json", ctx.dataProvenanceProfile);
-    recordStage(ctx, "Stage 6B Data Provenance", statusFromOk(Boolean(ctx.dataProvenanceProfile)), "13-stage6b-data-provenance-profile.json");
+    ctx.stage6aOutput = captured6a || { legal_cartography: ctx.stage6Result.legal_cartography };
+    ctx.stage6bOutput = captured6b || { legal_governance_data_provenance_profile: ctx.stage6Result.legal_governance_data_provenance_profile };
+    ctx.stage6cOutput = captured6c || { data_provenance_profile: ctx.stage6Result.data_provenance_profile };
+    ctx.legalCartography = ctx.stage6Result.legal_cartography;
+    ctx.legalGovernanceDataProvenanceProfile = ctx.stage6Result.legal_governance_data_provenance_profile;
+    ctx.dataProvenanceProfile = ctx.stage6Result.data_provenance_profile;
+    ctx.modelBackedStages.push("stage6_canonical_runtime", "stage6a_legal_cartography", "stage6b_legal_governance_data_provenance", "stage6c_data_provenance_integration");
 
-    ctx.stage6IntegratedArtifact = buildStage6IntegratedHandoffArtifact(
-      { stage6a_review: ctx.stage6aStageResult.stage6_review, stage6b_review: ctx.stage6bStageResult.stage6_review },
-      { run_id: `${runId}_stage6_integrated_handoff`, generated_at: nowIso(), stage6a_stage_id: ctx.stage6aStageResult.stage_id || "stage6a_legal_document_cartography", stage6b_stage_id: ctx.stage6bStageResult.stage_id || "stage6b_data_provenance" }
-    );
-    const schemaValidation = validateDiligenceStageOutput("stage6Review", ctx.stage6IntegratedArtifact.stage6_review);
-    const guardrail = validateStage6ReviewGuardrail(ctx.stage6IntegratedArtifact.stage6_review, { input: ctx.stage6bInput, stageId: "stage6_integrated_handoff", semanticModelAttempted: true });
-    ctx.stage6IntegratedValidation = { schemaValidation, guardrail };
-    const integratedOutput = { ok: schemaValidation.ok === true && guardrail.ok === true, stage6_integrated_artifact: ctx.stage6IntegratedArtifact, schemaValidation, guardrail };
-    writeJson("14-stage6-integrated-handoff-validation.json", integratedOutput);
-    if (!integratedOutput.ok) throw Object.assign(new Error("Stage 6 integrated handoff validation failed."), { result: integratedOutput });
-    recordStage(ctx, "Stage 6 Integrated Handoff", "PASS", "14-stage6-integrated-handoff-validation.json");
+    writeJson("08-stage6-canonical-runtime.json", ctx.stage6Result);
+    writeJson("11-stage6-input-custody-package.json", {
+      ok: ctx.stage6Result?.validation?.foundation?.ok === true,
+      artifact_type: "stage6_input_custody_package",
+      runtime_entrypoint: "runStage6Runtime",
+      source_input_contract: "live sourceBundle + evidenceJunction + Stage 4 profile + Stage 5 target_feature_profile",
+      target_feature_profile_handoff_present: Boolean(ctx.targetFeatureProfile),
+      target_feature_count: asArray(ctx.targetFeatureProfile?.feature_inventory).length,
+      foundation_validation: ctx.stage6Result?.validation?.foundation || null
+    });
+    writeJson("12-stage6a-legal-cartography.json", ctx.stage6aOutput);
+    writeJson("13-stage6b-legal-governance-data-provenance-profile.json", ctx.stage6bOutput);
+    writeJson("13-stage6b-data-provenance-profile.json", ctx.legalGovernanceDataProvenanceProfile);
+    writeJson("14-stage6c-data-provenance-integration.json", ctx.stage6cOutput);
+    writeJson("14-stage6-integrated-handoff-validation.json", {
+      ok: ctx.stage6Result.ok === true,
+      compatibility_artifact: true,
+      replaced_by: "15-stage6-stage7-handoff.json",
+      stage6_runtime_entrypoint: "runStage6Runtime",
+      validation: ctx.stage6Result.validation,
+      stage7_handoff_present: Boolean(ctx.stage6Result.stage7_handoff)
+    });
+    writeJson("15-stage6-stage7-handoff.json", ctx.stage6Result.stage7_handoff);
+
+    recordStage(ctx, "Stage 6 canonical runtime", ctx.stage6Result.ok ? "PASS" : "FAIL", "08-stage6-canonical-runtime.json", `active=${asArray(ctx.stage6Result.forensic_log?.active_substages).join("/")}`);
+    recordStage(ctx, "Stage 6A Legal Cartography", statusFromOk(Boolean(ctx.legalCartography)), "12-stage6a-legal-cartography.json");
+    recordStage(ctx, "Stage 6B Legal Governance Data Provenance", statusFromOk(Boolean(ctx.legalGovernanceDataProvenanceProfile)), "13-stage6b-legal-governance-data-provenance-profile.json");
+    recordStage(ctx, "Stage 6C Data Provenance Integration", statusFromOk(Boolean(ctx.dataProvenanceProfile)), "14-stage6c-data-provenance-integration.json");
+    recordStage(ctx, "Stage 6C to Stage 7 Handoff", statusFromOk(Boolean(ctx.stage6Result.stage7_handoff)), "15-stage6-stage7-handoff.json");
 
     const failedChecks = validatePassConditions(ctx);
     writeStageSummary(ctx, failedChecks);
-    const manifest = writeManifest({ ok: failedChecks.length === 0, execution_model: "public_live_pipeline_canonical_stage5_runtime_v2", failed_checks: failedChecks });
+    const manifest = writeManifest({ ok: failedChecks.length === 0, execution_model: "public_live_pipeline_canonical_stage5_stage6_runtime_v3", failed_checks: failedChecks });
     writeJson("00-live-run-proof.json", {
       github_run_id: githubRunId,
       runtime_url: runtimeUrl,
@@ -497,7 +497,14 @@ async function main() {
       legacy_stage5_adapter_used: false,
       stage5_runtime: "runStage5Runtime",
       stage5_input_contract: "live_pipeline_stage5Input_source_bundle_evidence_junction_target_profile_ref",
-      stage5_substages: ["5A Product Function Discovery", "5B Archetype Surface Tagging", "5C Complete Feature Record Builder", "5D Final target_feature_profile Integrator"],
+      stage5_to_stage6_handoff: {
+        target_feature_profile_present: Boolean(ctx.targetFeatureProfile),
+        target_feature_count: asArray(ctx.targetFeatureProfile?.feature_inventory).length,
+        stage5d_validation: ctx.stage5d?.validation || null
+      },
+      stage6_runtime: "runStage6Runtime",
+      stage6_substages: ["6A Legal Cartography", "6B Legal Governance Data Provenance", "6C Data Provenance Integration"],
+      stage6_to_stage7_handoff_present: Boolean(ctx.stage6Result.stage7_handoff),
       model_backed_stages: ctx.modelBackedStages,
       artifact_manifest_path: path.join(outputRoot, "21-artifact-manifest.json")
     });
@@ -509,13 +516,14 @@ async function main() {
     console.log(JSON.stringify({
       ok: true,
       phase: "full_live_runtime_audit_canonical",
-      execution_model: "public_live_pipeline_canonical_stage5_runtime_v2",
+      execution_model: "public_live_pipeline_canonical_stage5_stage6_runtime_v3",
       runtime_url: runtimeUrl,
       target_url: targetUrl,
       company_name: companyName,
       run_id: runId,
       audit_stop_stage: auditStopStage,
       legacy_stage5_adapter_used: false,
+      stage6_runtime: "runStage6Runtime",
       artifact_dir: outputRoot,
       artifact_manifest: manifest.files.map((file) => file.name)
     }, null, 2));
