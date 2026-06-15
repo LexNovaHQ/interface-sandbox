@@ -3953,7 +3953,9 @@ return errors === 0;
 validate25.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_targetFeatureProfile = validate34;
-const schema61 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/targetFeatureProfile.schema.json","title":"Feature Profile","description":"Stage 5 canonical feature_profile_v2. Full clean_text_lossless remains in the stage packet. Model proof uses compact evidence_refs citations; evidence_quote is optional legacy/runtime-resolved text only. Completeness is source-coverage based and nonblocking at runtime.","type":"object","required":["feature_profile_version","target_profile_ref","feature_inventory","product_feature_map","data_provenance_map","regulated_surface_map","architecture_hints","commercial_scan","vault_feature_candidates","evidence","limitations"],"additionalProperties":false,"properties":{"feature_profile_version":{"const":"feature_profile_v2"},"target_profile_ref":{"type":"object","required":["target_profile_version","brand_name","legal_name","domain"],"additionalProperties":false,"properties":{"target_profile_version":{"type":"string"},"brand_name":{"type":"string"},"legal_name":{"type":"string"},"domain":{"type":"string"}}},"feature_inventory":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/feature"}},"product_feature_map":{"description":"Legacy compatibility alias. Must be empty; feature_inventory[] is canonical.","type":"array","maxItems":0},"data_provenance_map":{"type":"array","items":{"$ref":"#/$defs/flatDataProvenance"}},"regulated_surface_map":{"type":"array","items":{"$ref":"#/$defs/regulatedSurface"}},"architecture_hints":{"type":"array","items":{"$ref":"#/$defs/architectureHint"}},"commercial_scan":{"type":"object","required":["distinct_commercial_outcomes_seen","mapped_core_feature_ids","source_coverage","unmapped_outcomes_due_to_insufficient_detail","completeness_status","completeness_warnings"],"additionalProperties":false,"properties":{"distinct_commercial_outcomes_seen":{"type":"array","items":{"type":"string"}},"mapped_core_feature_ids":{"type":"array","items":{"type":"string"}},"source_coverage":{"type":"array","items":{"$ref":"#/$defs/sourceCoverage"}},"unmapped_outcomes_due_to_insufficient_detail":{"type":"array","items":{"type":"string"}},"completeness_status":{"type":"string","enum":["COMPLETE","PARTIAL","THIN"]},"completeness_warnings":{"type":"array","items":{"type":"string"}}}},"vault_feature_candidates":{"type":"object","required":["baseline","archetypes","compliance"],"additionalProperties":false,"properties":{"baseline":{"type":"object","additionalProperties":true},"archetypes":{"type":"object","additionalProperties":true},"compliance":{"type":"object","additionalProperties":true}}},"evidence":{"type":"object","required":["field_evidence_refs","unresolved_questions"],"additionalProperties":false,"properties":{"field_evidence_refs":{"type":"array","items":{"$ref":"#/$defs/fieldEvidenceRef"}},"unresolved_questions":{"type":"array","items":{"type":"string"}}}},"limitations":{"type":"array","items":{"type":"string"}}},"$defs":{"confidence":{"type":"string","enum":["high","medium","low","unknown"]},"triState":{"type":"string","enum":["true","false","unknown"]},"evidenceRefs":{"type":"array","items":{"type":"string"},"minItems":1},"optionalQuote":{"type":"string","description":"Optional legacy/runtime-resolved quote. Model should cite evidence_refs instead of copying verbatim quotes."},"dataCategory":{"type":"string","enum":["prompt","account","contact","uploaded_file","generated_output","audio","text","document","image","video","code","api_payload","payment","usage_log","support","sensitive","unknown"]},"feature":{"type":"object","required":["feature_id","feature_name","feature_role","commercial_function","business_label_or_product_area","feature_description","actor_or_user","input_data","system_action","output_or_result","autonomy_level","human_review_signal","external_action_signal","delivery_channels","data_provenance","archetype_codes","archetype_labels","archetype_provenance","surface_tokens","surface_provenance","confidence","feature_source_url","evidence_refs","linked_threat_ids"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"feature_name":{"type":"string"},"feature_role":{"type":"string","enum":["CORE","SECONDARY"]},"commercial_function":{"type":"string"},"business_label_or_product_area":{"type":"string"},"feature_description":{"type":"string"},"actor_or_user":{"type":"string"},"input_data":{"type":"array","items":{"type":"string"}},"system_action":{"type":"string"},"output_or_result":{"type":"string"},"autonomy_level":{"type":"string","enum":["none","draft","recommend","execute","unknown"]},"human_review_signal":{"type":"string","enum":["required","optional","not_visible","unknown"]},"external_action_signal":{"$ref":"#/$defs/triState"},"delivery_channels":{"type":"object","required":["app","api","web"],"additionalProperties":false,"properties":{"app":{"$ref":"#/$defs/triState"},"api":{"$ref":"#/$defs/triState"},"web":{"$ref":"#/$defs/triState"}}},"data_provenance":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/dataProvenance"}},"archetype_codes":{"type":"array","items":{"type":"string"}},"archetype_labels":{"type":"array","items":{"type":"string"}},"archetype_provenance":{"type":"array","items":{"$ref":"#/$defs/archetypeProvenance"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"surface_provenance":{"type":"array","items":{"$ref":"#/$defs/surfaceProvenance"}},"confidence":{"$ref":"#/$defs/confidence"},"feature_source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"linked_threat_ids":{"type":"array","items":{"type":"string"}}}},"dataProvenance":{"type":"object","required":["data_origin","data_subject","data_category","processing_context","storage_or_retention_signal","training_or_finetuning_signal","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"data_origin":{"type":"string","enum":["user_provided","customer_provided","third_party_source","public_web","system_generated","unknown"]},"data_subject":{"type":"string","enum":["user","customer","employee","consumer","developer","child","business_entity","unknown"]},"data_category":{"$ref":"#/$defs/dataCategory"},"processing_context":{"type":"string"},"storage_or_retention_signal":{"type":"string"},"training_or_finetuning_signal":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"flatDataProvenance":{"type":"object","required":["provenance_id","feature_id","data_origin","data_subject","data_category","processing_context","storage_or_retention_signal","training_or_finetuning_signal","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"provenance_id":{"type":"string"},"feature_id":{"type":"string"},"data_origin":{"type":"string"},"data_subject":{"type":"string"},"data_category":{"$ref":"#/$defs/dataCategory"},"processing_context":{"type":"string"},"storage_or_retention_signal":{"type":"string"},"training_or_finetuning_signal":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"archetypeProvenance":{"type":"object","required":["archetype_code","registry_key_detection_logic","matched_feature_behavior","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"archetype_code":{"type":"string"},"registry_key_detection_logic":{"type":"string"},"matched_feature_behavior":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"surfaceProvenance":{"type":"object","required":["surface_token","registry_key_surface_meaning","matched_data_or_context","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"surface_token":{"type":"string"},"registry_key_surface_meaning":{"type":"string"},"matched_data_or_context":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"regulatedSurface":{"type":"object","required":["surface_id","feature_id","surface_token","int_ext_classification","basis","confidence","evidence_refs"],"additionalProperties":false,"properties":{"surface_id":{"type":"string"},"feature_id":{"type":"string"},"surface_token":{"type":"string"},"int_ext_classification":{"type":"string","enum":["internal","external","both","unknown"]},"basis":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"}}},"architectureHint":{"type":"object","required":["hint_id","feature_id","hint_type","hint_value","disposition","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"hint_id":{"type":"string"},"feature_id":{"type":"string"},"hint_type":{"type":"string","enum":["memory","model_provider","cloud_host","vector_db","subprocessor","integration","unknown"]},"hint_value":{"type":"string"},"disposition":{"type":"string","enum":["prefill_candidate","confirmation_only","ignore"]},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"sourceCoverage":{"type":"object","required":["source_id","source_url","source_family","coverage_status","mapped_feature_ids","unmapped_reason","evidence_refs"],"additionalProperties":false,"properties":{"source_id":{"type":"string"},"source_url":{"type":"string"},"source_family":{"type":"string"},"coverage_status":{"type":"string","enum":["mapped","supporting","duplicate","insufficient_detail","non_feature_context"]},"mapped_feature_ids":{"type":"array","items":{"type":"string"}},"unmapped_reason":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"}}},"fieldEvidenceRef":{"type":"object","required":["field_path","evidence_refs","basis","confidence"],"additionalProperties":false,"properties":{"field_path":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"basis":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}}}};
+const schema61 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/targetFeatureProfile.schema.json","title":"Feature Profile","description":"Stage 5 canonical feature_profile_v2. Full clean_text_lossless remains in the stage packet. Model proof uses compact evidence_refs citations; evidence_quote is optional legacy/runtime-resolved text only. Completeness is source-coverage based and nonblocking at runtime. Stage 5 Batch 1 adds feature classification quality metadata and unresolved feature candidates for capped reinvestigation/degraded fallback.","type":"object","required":["feature_profile_version","target_profile_ref","feature_inventory","product_feature_map","data_provenance_map","regulated_surface_map","architecture_hints","commercial_scan","vault_feature_candidates","evidence","limitations"],"additionalProperties":false,"properties":{"feature_profile_version":{"const":"feature_profile_v2"},"target_profile_ref":{"type":"object","required":["target_profile_version","brand_name","legal_name","domain"],"additionalProperties":false,"properties":{"target_profile_version":{"type":"string"},"brand_name":{"type":"string"},"legal_name":{"type":"string"},"domain":{"type":"string"}}},"feature_inventory":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/feature"}},"product_feature_map":{"description":"Legacy compatibility alias. Must be empty; feature_inventory[] is canonical.","type":"array","maxItems":0},"data_provenance_map":{"type":"array","items":{"$ref":"#/$defs/flatDataProvenance"}},"regulated_surface_map":{"type":"array","items":{"$ref":"#/$defs/regulatedSurface"}},"architecture_hints":{"type":"array","items":{"$ref":"#/$defs/architectureHint"}},"classification_quality":{"$ref":"#/$defs/classificationQuality"},"unresolved_feature_candidates":{"type":"array","items":{"$ref":"#/$defs/unresolvedFeatureCandidate"}},"commercial_scan":{"type":"object","required":["distinct_commercial_outcomes_seen","mapped_core_feature_ids","source_coverage","unmapped_outcomes_due_to_insufficient_detail","completeness_status","completeness_warnings"],"additionalProperties":false,"properties":{"distinct_commercial_outcomes_seen":{"type":"array","items":{"type":"string"}},"mapped_core_feature_ids":{"type":"array","items":{"type":"string"}},"source_coverage":{"type":"array","items":{"$ref":"#/$defs/sourceCoverage"}},"unmapped_outcomes_due_to_insufficient_detail":{"type":"array","items":{"type":"string"}},"completeness_status":{"type":"string","enum":["COMPLETE","PARTIAL","THIN"]},"completeness_warnings":{"type":"array","items":{"type":"string"}}}},"vault_feature_candidates":{"type":"object","required":["baseline","archetypes","compliance"],"additionalProperties":false,"properties":{"baseline":{"type":"object","additionalProperties":true},"archetypes":{"type":"object","additionalProperties":true},"compliance":{"type":"object","additionalProperties":true}}},"evidence":{"type":"object","required":["field_evidence_refs","unresolved_questions"],"additionalProperties":false,"properties":{"field_evidence_refs":{"type":"array","items":{"$ref":"#/$defs/fieldEvidenceRef"}},"unresolved_questions":{"type":"array","items":{"type":"string"}}}},"limitations":{"type":"array","items":{"type":"string"}}},"$defs":{"confidence":{"type":"string","enum":["high","medium","low","unknown"]},"triState":{"type":"string","enum":["true","false","unknown"]},"evidenceRefs":{"type":"array","items":{"type":"string"},"minItems":1},"optionalQuote":{"type":"string","description":"Optional legacy/runtime-resolved quote. Model should cite evidence_refs instead of copying verbatim quotes."},"dataCategory":{"type":"string","enum":["prompt","account","contact","uploaded_file","generated_output","audio","text","document","image","video","code","api_payload","payment","usage_log","support","sensitive","unknown"]},"classificationQuality":{"type":"object","required":["quality_version","status","reinvestigation_required","reinvestigation_attempted","reinvestigation_pass_count","unresolved_feature_count","fallback_routing_required"],"additionalProperties":false,"properties":{"quality_version":{"type":"string"},"status":{"type":"string","enum":["PASS","REINVESTIGATION_REQUIRED","DEGRADED"]},"reinvestigation_required":{"type":"boolean"},"reinvestigation_attempted":{"type":"boolean"},"reinvestigation_pass_count":{"type":"integer","minimum":0,"maximum":1},"unresolved_feature_count":{"type":"integer","minimum":0},"fallback_routing_required":{"type":"boolean"}}},"unresolvedFeatureCandidate":{"type":"object","required":["candidate_id","candidate_name","reason","evidence_refs","recommended_downstream_handling"],"additionalProperties":false,"properties":{"candidate_id":{"type":"string"},"candidate_name":{"type":"string"},"previous_feature_id":{"type":["string","null"]},"reason":{"type":"string"},"source_url":{"type":["string","null"]},"evidence_refs":{"type":"array","items":{"type":"string"}},"recommended_downstream_handling":{"type":"string"}}},"feature":{"type":"object","required":["feature_id","feature_name","feature_role","commercial_function","business_label_or_product_area","feature_description","actor_or_user","input_data","system_action","output_or_result","autonomy_level","human_review_signal","external_action_signal","delivery_channels","data_provenance","archetype_codes","archetype_labels","archetype_provenance","surface_tokens","surface_provenance","confidence","feature_source_url","evidence_refs","linked_threat_ids"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"feature_name":{"type":"string"},"feature_role":{"type":"string","enum":["CORE","SECONDARY"]},"commercial_function":{"type":"string"},"business_label_or_product_area":{"type":"string"},"feature_description":{"type":"string"},"actor_or_user":{"type":"string"},"input_data":{"type":"array","items":{"type":"string"}},"system_action":{"type":"string"},"output_or_result":{"type":"string"},"autonomy_level":{"type":"string","enum":["none","draft","recommend","execute","unknown"]},"human_review_signal":{"type":"string","enum":["required","optional","not_visible","unknown"]},"external_action_signal":{"$ref":"#/$defs/triState"},"delivery_channels":{"type":"object","required":["app","api","web"],"additionalProperties":false,"properties":{"app":{"$ref":"#/$defs/triState"},"api":{"$ref":"#/$defs/triState"},"web":{"$ref":"#/$defs/triState"}}},"data_provenance":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/dataProvenance"}},"archetype_codes":{"type":"array","items":{"type":"string"}},"archetype_labels":{"type":"array","items":{"type":"string"}},"archetype_provenance":{"type":"array","items":{"$ref":"#/$defs/archetypeProvenance"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"surface_provenance":{"type":"array","items":{"$ref":"#/$defs/surfaceProvenance"}},"confidence":{"$ref":"#/$defs/confidence"},"feature_source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"linked_threat_ids":{"type":"array","items":{"type":"string"}}}},"dataProvenance":{"type":"object","required":["data_origin","data_subject","data_category","processing_context","storage_or_retention_signal","training_or_finetuning_signal","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"data_origin":{"type":"string","enum":["user_provided","customer_provided","third_party_source","public_web","system_generated","unknown"]},"data_subject":{"type":"string","enum":["user","customer","employee","consumer","developer","child","business_entity","unknown"]},"data_category":{"$ref":"#/$defs/dataCategory"},"processing_context":{"type":"string"},"storage_or_retention_signal":{"type":"string"},"training_or_finetuning_signal":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"flatDataProvenance":{"type":"object","required":["provenance_id","feature_id","data_origin","data_subject","data_category","processing_context","storage_or_retention_signal","training_or_finetuning_signal","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"provenance_id":{"type":"string"},"feature_id":{"type":"string"},"data_origin":{"type":"string"},"data_subject":{"type":"string"},"data_category":{"$ref":"#/$defs/dataCategory"},"processing_context":{"type":"string"},"storage_or_retention_signal":{"type":"string"},"training_or_finetuning_signal":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"archetypeProvenance":{"type":"object","required":["archetype_code","registry_key_detection_logic","matched_feature_behavior","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"archetype_code":{"type":"string"},"registry_key_detection_logic":{"type":"string"},"matched_feature_behavior":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"surfaceProvenance":{"type":"object","required":["surface_token","registry_key_surface_meaning","matched_data_or_context","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"surface_token":{"type":"string"},"registry_key_surface_meaning":{"type":"string"},"matched_data_or_context":{"type":"string"},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"regulatedSurface":{"type":"object","required":["surface_id","feature_id","surface_token","int_ext_classification","basis","confidence","evidence_refs"],"additionalProperties":false,"properties":{"surface_id":{"type":"string"},"feature_id":{"type":"string"},"surface_token":{"type":"string"},"int_ext_classification":{"type":"string","enum":["internal","external","both","unknown"]},"basis":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"}}},"architectureHint":{"type":"object","required":["hint_id","feature_id","hint_type","hint_value","disposition","source_url","evidence_refs","confidence"],"additionalProperties":false,"properties":{"hint_id":{"type":"string"},"feature_id":{"type":"string"},"hint_type":{"type":"string","enum":["memory","model_provider","cloud_host","vector_db","subprocessor","integration","unknown"]},"hint_value":{"type":"string"},"disposition":{"type":"string","enum":["prefill_candidate","confirmation_only","ignore"]},"source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"confidence":{"$ref":"#/$defs/confidence"}}},"sourceCoverage":{"type":"object","required":["source_id","source_url","source_family","coverage_status","mapped_feature_ids","unmapped_reason","evidence_refs"],"additionalProperties":false,"properties":{"source_id":{"type":"string"},"source_url":{"type":"string"},"source_family":{"type":"string"},"coverage_status":{"type":"string","enum":["mapped","supporting","duplicate","insufficient_detail","non_feature_context"]},"mapped_feature_ids":{"type":"array","items":{"type":"string"}},"unmapped_reason":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"}}},"fieldEvidenceRef":{"type":"object","required":["field_path","evidence_refs","basis","confidence"],"additionalProperties":false,"properties":{"field_path":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"basis":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}}}};
+const schema95 = {"type":"object","required":["quality_version","status","reinvestigation_required","reinvestigation_attempted","reinvestigation_pass_count","unresolved_feature_count","fallback_routing_required"],"additionalProperties":false,"properties":{"quality_version":{"type":"string"},"status":{"type":"string","enum":["PASS","REINVESTIGATION_REQUIRED","DEGRADED"]},"reinvestigation_required":{"type":"boolean"},"reinvestigation_attempted":{"type":"boolean"},"reinvestigation_pass_count":{"type":"integer","minimum":0,"maximum":1},"unresolved_feature_count":{"type":"integer","minimum":0},"fallback_routing_required":{"type":"boolean"}}};
+const schema96 = {"type":"object","required":["candidate_id","candidate_name","reason","evidence_refs","recommended_downstream_handling"],"additionalProperties":false,"properties":{"candidate_id":{"type":"string"},"candidate_name":{"type":"string"},"previous_feature_id":{"type":["string","null"]},"reason":{"type":"string"},"source_url":{"type":["string","null"]},"evidence_refs":{"type":"array","items":{"type":"string"}},"recommended_downstream_handling":{"type":"string"}}};
 const schema62 = {"type":"object","required":["feature_id","feature_name","feature_role","commercial_function","business_label_or_product_area","feature_description","actor_or_user","input_data","system_action","output_or_result","autonomy_level","human_review_signal","external_action_signal","delivery_channels","data_provenance","archetype_codes","archetype_labels","archetype_provenance","surface_tokens","surface_provenance","confidence","feature_source_url","evidence_refs","linked_threat_ids"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"feature_name":{"type":"string"},"feature_role":{"type":"string","enum":["CORE","SECONDARY"]},"commercial_function":{"type":"string"},"business_label_or_product_area":{"type":"string"},"feature_description":{"type":"string"},"actor_or_user":{"type":"string"},"input_data":{"type":"array","items":{"type":"string"}},"system_action":{"type":"string"},"output_or_result":{"type":"string"},"autonomy_level":{"type":"string","enum":["none","draft","recommend","execute","unknown"]},"human_review_signal":{"type":"string","enum":["required","optional","not_visible","unknown"]},"external_action_signal":{"$ref":"#/$defs/triState"},"delivery_channels":{"type":"object","required":["app","api","web"],"additionalProperties":false,"properties":{"app":{"$ref":"#/$defs/triState"},"api":{"$ref":"#/$defs/triState"},"web":{"$ref":"#/$defs/triState"}}},"data_provenance":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/dataProvenance"}},"archetype_codes":{"type":"array","items":{"type":"string"}},"archetype_labels":{"type":"array","items":{"type":"string"}},"archetype_provenance":{"type":"array","items":{"$ref":"#/$defs/archetypeProvenance"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"surface_provenance":{"type":"array","items":{"$ref":"#/$defs/surfaceProvenance"}},"confidence":{"$ref":"#/$defs/confidence"},"feature_source_url":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"evidence_quote":{"$ref":"#/$defs/optionalQuote"},"linked_threat_ids":{"type":"array","items":{"type":"string"}}}};
 const schema63 = {"type":"string","enum":["true","false","unknown"]};
 const schema71 = {"type":"string","enum":["high","medium","low","unknown"]};
@@ -6494,7 +6496,7 @@ return errors === 0;
 }
 validate47.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema95 = {"type":"object","required":["source_id","source_url","source_family","coverage_status","mapped_feature_ids","unmapped_reason","evidence_refs"],"additionalProperties":false,"properties":{"source_id":{"type":"string"},"source_url":{"type":"string"},"source_family":{"type":"string"},"coverage_status":{"type":"string","enum":["mapped","supporting","duplicate","insufficient_detail","non_feature_context"]},"mapped_feature_ids":{"type":"array","items":{"type":"string"}},"unmapped_reason":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"}}};
+const schema97 = {"type":"object","required":["source_id","source_url","source_family","coverage_status","mapped_feature_ids","unmapped_reason","evidence_refs"],"additionalProperties":false,"properties":{"source_id":{"type":"string"},"source_url":{"type":"string"},"source_family":{"type":"string"},"coverage_status":{"type":"string","enum":["mapped","supporting","duplicate","insufficient_detail","non_feature_context"]},"mapped_feature_ids":{"type":"array","items":{"type":"string"}},"unmapped_reason":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"}}};
 
 function validate49(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -6638,7 +6640,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!(((((data3 === "mapped") || (data3 === "supporting")) || (data3 === "duplicate")) || (data3 === "insufficient_detail")) || (data3 === "non_feature_context"))){
-const err12 = {instancePath:instancePath+"/coverage_status",schemaPath:"#/properties/coverage_status/enum",keyword:"enum",params:{allowedValues: schema95.properties.coverage_status.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/coverage_status",schemaPath:"#/properties/coverage_status/enum",keyword:"enum",params:{allowedValues: schema97.properties.coverage_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -6742,7 +6744,7 @@ return errors === 0;
 }
 validate49.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema97 = {"type":"object","required":["field_path","evidence_refs","basis","confidence"],"additionalProperties":false,"properties":{"field_path":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"basis":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema99 = {"type":"object","required":["field_path","evidence_refs","basis","confidence"],"additionalProperties":false,"properties":{"field_path":{"type":"string"},"evidence_refs":{"$ref":"#/$defs/evidenceRefs"},"basis":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate51(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -7293,11 +7295,11 @@ vErrors.push(err29);
 errors++;
 }
 }
-if(data.commercial_scan !== undefined){
-let data15 = data.commercial_scan;
+if(data.classification_quality !== undefined){
+let data15 = data.classification_quality;
 if(data15 && typeof data15 == "object" && !Array.isArray(data15)){
-if(data15.distinct_commercial_outcomes_seen === undefined){
-const err30 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "distinct_commercial_outcomes_seen"},message:"must have required property '"+"distinct_commercial_outcomes_seen"+"'"};
+if(data15.quality_version === undefined){
+const err30 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "quality_version"},message:"must have required property '"+"quality_version"+"'"};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -7306,8 +7308,8 @@ vErrors.push(err30);
 }
 errors++;
 }
-if(data15.mapped_core_feature_ids === undefined){
-const err31 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "mapped_core_feature_ids"},message:"must have required property '"+"mapped_core_feature_ids"+"'"};
+if(data15.status === undefined){
+const err31 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "status"},message:"must have required property '"+"status"+"'"};
 if(vErrors === null){
 vErrors = [err31];
 }
@@ -7316,8 +7318,8 @@ vErrors.push(err31);
 }
 errors++;
 }
-if(data15.source_coverage === undefined){
-const err32 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "source_coverage"},message:"must have required property '"+"source_coverage"+"'"};
+if(data15.reinvestigation_required === undefined){
+const err32 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "reinvestigation_required"},message:"must have required property '"+"reinvestigation_required"+"'"};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -7326,8 +7328,8 @@ vErrors.push(err32);
 }
 errors++;
 }
-if(data15.unmapped_outcomes_due_to_insufficient_detail === undefined){
-const err33 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "unmapped_outcomes_due_to_insufficient_detail"},message:"must have required property '"+"unmapped_outcomes_due_to_insufficient_detail"+"'"};
+if(data15.reinvestigation_attempted === undefined){
+const err33 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "reinvestigation_attempted"},message:"must have required property '"+"reinvestigation_attempted"+"'"};
 if(vErrors === null){
 vErrors = [err33];
 }
@@ -7336,8 +7338,8 @@ vErrors.push(err33);
 }
 errors++;
 }
-if(data15.completeness_status === undefined){
-const err34 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "completeness_status"},message:"must have required property '"+"completeness_status"+"'"};
+if(data15.reinvestigation_pass_count === undefined){
+const err34 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "reinvestigation_pass_count"},message:"must have required property '"+"reinvestigation_pass_count"+"'"};
 if(vErrors === null){
 vErrors = [err34];
 }
@@ -7346,8 +7348,8 @@ vErrors.push(err34);
 }
 errors++;
 }
-if(data15.completeness_warnings === undefined){
-const err35 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "completeness_warnings"},message:"must have required property '"+"completeness_warnings"+"'"};
+if(data15.unresolved_feature_count === undefined){
+const err35 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "unresolved_feature_count"},message:"must have required property '"+"unresolved_feature_count"+"'"};
 if(vErrors === null){
 vErrors = [err35];
 }
@@ -7356,9 +7358,8 @@ vErrors.push(err35);
 }
 errors++;
 }
-for(const key2 in data15){
-if(!((((((key2 === "distinct_commercial_outcomes_seen") || (key2 === "mapped_core_feature_ids")) || (key2 === "source_coverage")) || (key2 === "unmapped_outcomes_due_to_insufficient_detail")) || (key2 === "completeness_status")) || (key2 === "completeness_warnings"))){
-const err36 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key2},message:"must NOT have additional properties"};
+if(data15.fallback_routing_required === undefined){
+const err36 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/required",keyword:"required",params:{missingProperty: "fallback_routing_required"},message:"must have required property '"+"fallback_routing_required"+"'"};
 if(vErrors === null){
 vErrors = [err36];
 }
@@ -7367,14 +7368,9 @@ vErrors.push(err36);
 }
 errors++;
 }
-}
-if(data15.distinct_commercial_outcomes_seen !== undefined){
-let data16 = data15.distinct_commercial_outcomes_seen;
-if(Array.isArray(data16)){
-const len4 = data16.length;
-for(let i4=0; i4<len4; i4++){
-if(typeof data16[i4] !== "string"){
-const err37 = {instancePath:instancePath+"/commercial_scan/distinct_commercial_outcomes_seen/" + i4,schemaPath:"#/properties/commercial_scan/properties/distinct_commercial_outcomes_seen/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+for(const key2 in data15){
+if(!(((((((key2 === "quality_version") || (key2 === "status")) || (key2 === "reinvestigation_required")) || (key2 === "reinvestigation_attempted")) || (key2 === "reinvestigation_pass_count")) || (key2 === "unresolved_feature_count")) || (key2 === "fallback_routing_required"))){
+const err37 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key2},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err37];
 }
@@ -7384,9 +7380,9 @@ vErrors.push(err37);
 errors++;
 }
 }
-}
-else {
-const err38 = {instancePath:instancePath+"/commercial_scan/distinct_commercial_outcomes_seen",schemaPath:"#/properties/commercial_scan/properties/distinct_commercial_outcomes_seen/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(data15.quality_version !== undefined){
+if(typeof data15.quality_version !== "string"){
+const err38 = {instancePath:instancePath+"/classification_quality/quality_version",schemaPath:"#/$defs/classificationQuality/properties/quality_version/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err38];
 }
@@ -7396,13 +7392,10 @@ vErrors.push(err38);
 errors++;
 }
 }
-if(data15.mapped_core_feature_ids !== undefined){
-let data18 = data15.mapped_core_feature_ids;
-if(Array.isArray(data18)){
-const len5 = data18.length;
-for(let i5=0; i5<len5; i5++){
-if(typeof data18[i5] !== "string"){
-const err39 = {instancePath:instancePath+"/commercial_scan/mapped_core_feature_ids/" + i5,schemaPath:"#/properties/commercial_scan/properties/mapped_core_feature_ids/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(data15.status !== undefined){
+let data17 = data15.status;
+if(typeof data17 !== "string"){
+const err39 = {instancePath:instancePath+"/classification_quality/status",schemaPath:"#/$defs/classificationQuality/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err39];
 }
@@ -7411,10 +7404,8 @@ vErrors.push(err39);
 }
 errors++;
 }
-}
-}
-else {
-const err40 = {instancePath:instancePath+"/commercial_scan/mapped_core_feature_ids",schemaPath:"#/properties/commercial_scan/properties/mapped_core_feature_ids/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(!(((data17 === "PASS") || (data17 === "REINVESTIGATION_REQUIRED")) || (data17 === "DEGRADED"))){
+const err40 = {instancePath:instancePath+"/classification_quality/status",schemaPath:"#/$defs/classificationQuality/properties/status/enum",keyword:"enum",params:{allowedValues: schema95.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err40];
 }
@@ -7424,19 +7415,9 @@ vErrors.push(err40);
 errors++;
 }
 }
-if(data15.source_coverage !== undefined){
-let data20 = data15.source_coverage;
-if(Array.isArray(data20)){
-const len6 = data20.length;
-for(let i6=0; i6<len6; i6++){
-if(!(validate49(data20[i6], {instancePath:instancePath+"/commercial_scan/source_coverage/" + i6,parentData:data20,parentDataProperty:i6,rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate49.errors : vErrors.concat(validate49.errors);
-errors = vErrors.length;
-}
-}
-}
-else {
-const err41 = {instancePath:instancePath+"/commercial_scan/source_coverage",schemaPath:"#/properties/commercial_scan/properties/source_coverage/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(data15.reinvestigation_required !== undefined){
+if(typeof data15.reinvestigation_required !== "boolean"){
+const err41 = {instancePath:instancePath+"/classification_quality/reinvestigation_required",schemaPath:"#/$defs/classificationQuality/properties/reinvestigation_required/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
 if(vErrors === null){
 vErrors = [err41];
 }
@@ -7446,13 +7427,9 @@ vErrors.push(err41);
 errors++;
 }
 }
-if(data15.unmapped_outcomes_due_to_insufficient_detail !== undefined){
-let data22 = data15.unmapped_outcomes_due_to_insufficient_detail;
-if(Array.isArray(data22)){
-const len7 = data22.length;
-for(let i7=0; i7<len7; i7++){
-if(typeof data22[i7] !== "string"){
-const err42 = {instancePath:instancePath+"/commercial_scan/unmapped_outcomes_due_to_insufficient_detail/" + i7,schemaPath:"#/properties/commercial_scan/properties/unmapped_outcomes_due_to_insufficient_detail/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(data15.reinvestigation_attempted !== undefined){
+if(typeof data15.reinvestigation_attempted !== "boolean"){
+const err42 = {instancePath:instancePath+"/classification_quality/reinvestigation_attempted",schemaPath:"#/$defs/classificationQuality/properties/reinvestigation_attempted/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
 if(vErrors === null){
 vErrors = [err42];
 }
@@ -7462,9 +7439,10 @@ vErrors.push(err42);
 errors++;
 }
 }
-}
-else {
-const err43 = {instancePath:instancePath+"/commercial_scan/unmapped_outcomes_due_to_insufficient_detail",schemaPath:"#/properties/commercial_scan/properties/unmapped_outcomes_due_to_insufficient_detail/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(data15.reinvestigation_pass_count !== undefined){
+let data20 = data15.reinvestigation_pass_count;
+if(!((typeof data20 == "number") && (!(data20 % 1) && !isNaN(data20)))){
+const err43 = {instancePath:instancePath+"/classification_quality/reinvestigation_pass_count",schemaPath:"#/$defs/classificationQuality/properties/reinvestigation_pass_count/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
 if(vErrors === null){
 vErrors = [err43];
 }
@@ -7473,11 +7451,9 @@ vErrors.push(err43);
 }
 errors++;
 }
-}
-if(data15.completeness_status !== undefined){
-let data24 = data15.completeness_status;
-if(typeof data24 !== "string"){
-const err44 = {instancePath:instancePath+"/commercial_scan/completeness_status",schemaPath:"#/properties/commercial_scan/properties/completeness_status/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(typeof data20 == "number"){
+if(data20 > 1 || isNaN(data20)){
+const err44 = {instancePath:instancePath+"/classification_quality/reinvestigation_pass_count",schemaPath:"#/$defs/classificationQuality/properties/reinvestigation_pass_count/maximum",keyword:"maximum",params:{comparison: "<=", limit: 1},message:"must be <= 1"};
 if(vErrors === null){
 vErrors = [err44];
 }
@@ -7486,8 +7462,8 @@ vErrors.push(err44);
 }
 errors++;
 }
-if(!(((data24 === "COMPLETE") || (data24 === "PARTIAL")) || (data24 === "THIN"))){
-const err45 = {instancePath:instancePath+"/commercial_scan/completeness_status",schemaPath:"#/properties/commercial_scan/properties/completeness_status/enum",keyword:"enum",params:{allowedValues: schema61.properties.commercial_scan.properties.completeness_status.enum},message:"must be equal to one of the allowed values"};
+if(data20 < 0 || isNaN(data20)){
+const err45 = {instancePath:instancePath+"/classification_quality/reinvestigation_pass_count",schemaPath:"#/$defs/classificationQuality/properties/reinvestigation_pass_count/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
 if(vErrors === null){
 vErrors = [err45];
 }
@@ -7497,13 +7473,11 @@ vErrors.push(err45);
 errors++;
 }
 }
-if(data15.completeness_warnings !== undefined){
-let data25 = data15.completeness_warnings;
-if(Array.isArray(data25)){
-const len8 = data25.length;
-for(let i8=0; i8<len8; i8++){
-if(typeof data25[i8] !== "string"){
-const err46 = {instancePath:instancePath+"/commercial_scan/completeness_warnings/" + i8,schemaPath:"#/properties/commercial_scan/properties/completeness_warnings/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+}
+if(data15.unresolved_feature_count !== undefined){
+let data21 = data15.unresolved_feature_count;
+if(!((typeof data21 == "number") && (!(data21 % 1) && !isNaN(data21)))){
+const err46 = {instancePath:instancePath+"/classification_quality/unresolved_feature_count",schemaPath:"#/$defs/classificationQuality/properties/unresolved_feature_count/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
 if(vErrors === null){
 vErrors = [err46];
 }
@@ -7512,10 +7486,9 @@ vErrors.push(err46);
 }
 errors++;
 }
-}
-}
-else {
-const err47 = {instancePath:instancePath+"/commercial_scan/completeness_warnings",schemaPath:"#/properties/commercial_scan/properties/completeness_warnings/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(typeof data21 == "number"){
+if(data21 < 0 || isNaN(data21)){
+const err47 = {instancePath:instancePath+"/classification_quality/unresolved_feature_count",schemaPath:"#/$defs/classificationQuality/properties/unresolved_feature_count/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"};
 if(vErrors === null){
 vErrors = [err47];
 }
@@ -7526,8 +7499,9 @@ errors++;
 }
 }
 }
-else {
-const err48 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data15.fallback_routing_required !== undefined){
+if(typeof data15.fallback_routing_required !== "boolean"){
+const err48 = {instancePath:instancePath+"/classification_quality/fallback_routing_required",schemaPath:"#/$defs/classificationQuality/properties/fallback_routing_required/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"};
 if(vErrors === null){
 vErrors = [err48];
 }
@@ -7537,11 +7511,9 @@ vErrors.push(err48);
 errors++;
 }
 }
-if(data.vault_feature_candidates !== undefined){
-let data27 = data.vault_feature_candidates;
-if(data27 && typeof data27 == "object" && !Array.isArray(data27)){
-if(data27.baseline === undefined){
-const err49 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/required",keyword:"required",params:{missingProperty: "baseline"},message:"must have required property '"+"baseline"+"'"};
+}
+else {
+const err49 = {instancePath:instancePath+"/classification_quality",schemaPath:"#/$defs/classificationQuality/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err49];
 }
@@ -7550,8 +7522,16 @@ vErrors.push(err49);
 }
 errors++;
 }
-if(data27.archetypes === undefined){
-const err50 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/required",keyword:"required",params:{missingProperty: "archetypes"},message:"must have required property '"+"archetypes"+"'"};
+}
+if(data.unresolved_feature_candidates !== undefined){
+let data23 = data.unresolved_feature_candidates;
+if(Array.isArray(data23)){
+const len4 = data23.length;
+for(let i4=0; i4<len4; i4++){
+let data24 = data23[i4];
+if(data24 && typeof data24 == "object" && !Array.isArray(data24)){
+if(data24.candidate_id === undefined){
+const err50 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/required",keyword:"required",params:{missingProperty: "candidate_id"},message:"must have required property '"+"candidate_id"+"'"};
 if(vErrors === null){
 vErrors = [err50];
 }
@@ -7560,8 +7540,8 @@ vErrors.push(err50);
 }
 errors++;
 }
-if(data27.compliance === undefined){
-const err51 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/required",keyword:"required",params:{missingProperty: "compliance"},message:"must have required property '"+"compliance"+"'"};
+if(data24.candidate_name === undefined){
+const err51 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/required",keyword:"required",params:{missingProperty: "candidate_name"},message:"must have required property '"+"candidate_name"+"'"};
 if(vErrors === null){
 vErrors = [err51];
 }
@@ -7570,9 +7550,8 @@ vErrors.push(err51);
 }
 errors++;
 }
-for(const key3 in data27){
-if(!(((key3 === "baseline") || (key3 === "archetypes")) || (key3 === "compliance"))){
-const err52 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
+if(data24.reason === undefined){
+const err52 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/required",keyword:"required",params:{missingProperty: "reason"},message:"must have required property '"+"reason"+"'"};
 if(vErrors === null){
 vErrors = [err52];
 }
@@ -7581,13 +7560,8 @@ vErrors.push(err52);
 }
 errors++;
 }
-}
-if(data27.baseline !== undefined){
-let data28 = data27.baseline;
-if(data28 && typeof data28 == "object" && !Array.isArray(data28)){
-}
-else {
-const err53 = {instancePath:instancePath+"/vault_feature_candidates/baseline",schemaPath:"#/properties/vault_feature_candidates/properties/baseline/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data24.evidence_refs === undefined){
+const err53 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/required",keyword:"required",params:{missingProperty: "evidence_refs"},message:"must have required property '"+"evidence_refs"+"'"};
 if(vErrors === null){
 vErrors = [err53];
 }
@@ -7596,13 +7570,8 @@ vErrors.push(err53);
 }
 errors++;
 }
-}
-if(data27.archetypes !== undefined){
-let data29 = data27.archetypes;
-if(data29 && typeof data29 == "object" && !Array.isArray(data29)){
-}
-else {
-const err54 = {instancePath:instancePath+"/vault_feature_candidates/archetypes",schemaPath:"#/properties/vault_feature_candidates/properties/archetypes/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data24.recommended_downstream_handling === undefined){
+const err54 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/required",keyword:"required",params:{missingProperty: "recommended_downstream_handling"},message:"must have required property '"+"recommended_downstream_handling"+"'"};
 if(vErrors === null){
 vErrors = [err54];
 }
@@ -7611,13 +7580,9 @@ vErrors.push(err54);
 }
 errors++;
 }
-}
-if(data27.compliance !== undefined){
-let data30 = data27.compliance;
-if(data30 && typeof data30 == "object" && !Array.isArray(data30)){
-}
-else {
-const err55 = {instancePath:instancePath+"/vault_feature_candidates/compliance",schemaPath:"#/properties/vault_feature_candidates/properties/compliance/type",keyword:"type",params:{type: "object"},message:"must be object"};
+for(const key3 in data24){
+if(!(((((((key3 === "candidate_id") || (key3 === "candidate_name")) || (key3 === "previous_feature_id")) || (key3 === "reason")) || (key3 === "source_url")) || (key3 === "evidence_refs")) || (key3 === "recommended_downstream_handling"))){
+const err55 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err55];
 }
@@ -7627,9 +7592,9 @@ vErrors.push(err55);
 errors++;
 }
 }
-}
-else {
-const err56 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data24.candidate_id !== undefined){
+if(typeof data24.candidate_id !== "string"){
+const err56 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/candidate_id",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/candidate_id/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err56];
 }
@@ -7639,11 +7604,9 @@ vErrors.push(err56);
 errors++;
 }
 }
-if(data.evidence !== undefined){
-let data31 = data.evidence;
-if(data31 && typeof data31 == "object" && !Array.isArray(data31)){
-if(data31.field_evidence_refs === undefined){
-const err57 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/required",keyword:"required",params:{missingProperty: "field_evidence_refs"},message:"must have required property '"+"field_evidence_refs"+"'"};
+if(data24.candidate_name !== undefined){
+if(typeof data24.candidate_name !== "string"){
+const err57 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/candidate_name",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/candidate_name/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err57];
 }
@@ -7652,8 +7615,11 @@ vErrors.push(err57);
 }
 errors++;
 }
-if(data31.unresolved_questions === undefined){
-const err58 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/required",keyword:"required",params:{missingProperty: "unresolved_questions"},message:"must have required property '"+"unresolved_questions"+"'"};
+}
+if(data24.previous_feature_id !== undefined){
+let data27 = data24.previous_feature_id;
+if((typeof data27 !== "string") && (data27 !== null)){
+const err58 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/previous_feature_id",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/previous_feature_id/type",keyword:"type",params:{type: schema96.properties.previous_feature_id.type},message:"must be string,null"};
 if(vErrors === null){
 vErrors = [err58];
 }
@@ -7662,9 +7628,10 @@ vErrors.push(err58);
 }
 errors++;
 }
-for(const key4 in data31){
-if(!((key4 === "field_evidence_refs") || (key4 === "unresolved_questions"))){
-const err59 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key4},message:"must NOT have additional properties"};
+}
+if(data24.reason !== undefined){
+if(typeof data24.reason !== "string"){
+const err59 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/reason",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/reason/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err59];
 }
@@ -7674,19 +7641,10 @@ vErrors.push(err59);
 errors++;
 }
 }
-if(data31.field_evidence_refs !== undefined){
-let data32 = data31.field_evidence_refs;
-if(Array.isArray(data32)){
-const len9 = data32.length;
-for(let i9=0; i9<len9; i9++){
-if(!(validate51(data32[i9], {instancePath:instancePath+"/evidence/field_evidence_refs/" + i9,parentData:data32,parentDataProperty:i9,rootData,dynamicAnchors}))){
-vErrors = vErrors === null ? validate51.errors : vErrors.concat(validate51.errors);
-errors = vErrors.length;
-}
-}
-}
-else {
-const err60 = {instancePath:instancePath+"/evidence/field_evidence_refs",schemaPath:"#/properties/evidence/properties/field_evidence_refs/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(data24.source_url !== undefined){
+let data29 = data24.source_url;
+if((typeof data29 !== "string") && (data29 !== null)){
+const err60 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/source_url",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/source_url/type",keyword:"type",params:{type: schema96.properties.source_url.type},message:"must be string,null"};
 if(vErrors === null){
 vErrors = [err60];
 }
@@ -7696,13 +7654,13 @@ vErrors.push(err60);
 errors++;
 }
 }
-if(data31.unresolved_questions !== undefined){
-let data34 = data31.unresolved_questions;
-if(Array.isArray(data34)){
-const len10 = data34.length;
-for(let i10=0; i10<len10; i10++){
-if(typeof data34[i10] !== "string"){
-const err61 = {instancePath:instancePath+"/evidence/unresolved_questions/" + i10,schemaPath:"#/properties/evidence/properties/unresolved_questions/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(data24.evidence_refs !== undefined){
+let data30 = data24.evidence_refs;
+if(Array.isArray(data30)){
+const len5 = data30.length;
+for(let i5=0; i5<len5; i5++){
+if(typeof data30[i5] !== "string"){
+const err61 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/evidence_refs/" + i5,schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/evidence_refs/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err61];
 }
@@ -7714,7 +7672,7 @@ errors++;
 }
 }
 else {
-const err62 = {instancePath:instancePath+"/evidence/unresolved_questions",schemaPath:"#/properties/evidence/properties/unresolved_questions/type",keyword:"type",params:{type: "array"},message:"must be array"};
+const err62 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/evidence_refs",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/evidence_refs/type",keyword:"type",params:{type: "array"},message:"must be array"};
 if(vErrors === null){
 vErrors = [err62];
 }
@@ -7724,9 +7682,9 @@ vErrors.push(err62);
 errors++;
 }
 }
-}
-else {
-const err63 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data24.recommended_downstream_handling !== undefined){
+if(typeof data24.recommended_downstream_handling !== "string"){
+const err63 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4+"/recommended_downstream_handling",schemaPath:"#/$defs/unresolvedFeatureCandidate/properties/recommended_downstream_handling/type",keyword:"type",params:{type: "string"},message:"must be string"};
 if(vErrors === null){
 vErrors = [err63];
 }
@@ -7736,13 +7694,9 @@ vErrors.push(err63);
 errors++;
 }
 }
-if(data.limitations !== undefined){
-let data36 = data.limitations;
-if(Array.isArray(data36)){
-const len11 = data36.length;
-for(let i11=0; i11<len11; i11++){
-if(typeof data36[i11] !== "string"){
-const err64 = {instancePath:instancePath+"/limitations/" + i11,schemaPath:"#/properties/limitations/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+}
+else {
+const err64 = {instancePath:instancePath+"/unresolved_feature_candidates/" + i4,schemaPath:"#/$defs/unresolvedFeatureCandidate/type",keyword:"type",params:{type: "object"},message:"must be object"};
 if(vErrors === null){
 vErrors = [err64];
 }
@@ -7754,7 +7708,7 @@ errors++;
 }
 }
 else {
-const err65 = {instancePath:instancePath+"/limitations",schemaPath:"#/properties/limitations/type",keyword:"type",params:{type: "array"},message:"must be array"};
+const err65 = {instancePath:instancePath+"/unresolved_feature_candidates",schemaPath:"#/properties/unresolved_feature_candidates/type",keyword:"type",params:{type: "array"},message:"must be array"};
 if(vErrors === null){
 vErrors = [err65];
 }
@@ -7764,14 +7718,485 @@ vErrors.push(err65);
 errors++;
 }
 }
-}
-else {
-const err66 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(data.commercial_scan !== undefined){
+let data33 = data.commercial_scan;
+if(data33 && typeof data33 == "object" && !Array.isArray(data33)){
+if(data33.distinct_commercial_outcomes_seen === undefined){
+const err66 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "distinct_commercial_outcomes_seen"},message:"must have required property '"+"distinct_commercial_outcomes_seen"+"'"};
 if(vErrors === null){
 vErrors = [err66];
 }
 else {
 vErrors.push(err66);
+}
+errors++;
+}
+if(data33.mapped_core_feature_ids === undefined){
+const err67 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "mapped_core_feature_ids"},message:"must have required property '"+"mapped_core_feature_ids"+"'"};
+if(vErrors === null){
+vErrors = [err67];
+}
+else {
+vErrors.push(err67);
+}
+errors++;
+}
+if(data33.source_coverage === undefined){
+const err68 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "source_coverage"},message:"must have required property '"+"source_coverage"+"'"};
+if(vErrors === null){
+vErrors = [err68];
+}
+else {
+vErrors.push(err68);
+}
+errors++;
+}
+if(data33.unmapped_outcomes_due_to_insufficient_detail === undefined){
+const err69 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "unmapped_outcomes_due_to_insufficient_detail"},message:"must have required property '"+"unmapped_outcomes_due_to_insufficient_detail"+"'"};
+if(vErrors === null){
+vErrors = [err69];
+}
+else {
+vErrors.push(err69);
+}
+errors++;
+}
+if(data33.completeness_status === undefined){
+const err70 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "completeness_status"},message:"must have required property '"+"completeness_status"+"'"};
+if(vErrors === null){
+vErrors = [err70];
+}
+else {
+vErrors.push(err70);
+}
+errors++;
+}
+if(data33.completeness_warnings === undefined){
+const err71 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/required",keyword:"required",params:{missingProperty: "completeness_warnings"},message:"must have required property '"+"completeness_warnings"+"'"};
+if(vErrors === null){
+vErrors = [err71];
+}
+else {
+vErrors.push(err71);
+}
+errors++;
+}
+for(const key4 in data33){
+if(!((((((key4 === "distinct_commercial_outcomes_seen") || (key4 === "mapped_core_feature_ids")) || (key4 === "source_coverage")) || (key4 === "unmapped_outcomes_due_to_insufficient_detail")) || (key4 === "completeness_status")) || (key4 === "completeness_warnings"))){
+const err72 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key4},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err72];
+}
+else {
+vErrors.push(err72);
+}
+errors++;
+}
+}
+if(data33.distinct_commercial_outcomes_seen !== undefined){
+let data34 = data33.distinct_commercial_outcomes_seen;
+if(Array.isArray(data34)){
+const len6 = data34.length;
+for(let i6=0; i6<len6; i6++){
+if(typeof data34[i6] !== "string"){
+const err73 = {instancePath:instancePath+"/commercial_scan/distinct_commercial_outcomes_seen/" + i6,schemaPath:"#/properties/commercial_scan/properties/distinct_commercial_outcomes_seen/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err73];
+}
+else {
+vErrors.push(err73);
+}
+errors++;
+}
+}
+}
+else {
+const err74 = {instancePath:instancePath+"/commercial_scan/distinct_commercial_outcomes_seen",schemaPath:"#/properties/commercial_scan/properties/distinct_commercial_outcomes_seen/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err74];
+}
+else {
+vErrors.push(err74);
+}
+errors++;
+}
+}
+if(data33.mapped_core_feature_ids !== undefined){
+let data36 = data33.mapped_core_feature_ids;
+if(Array.isArray(data36)){
+const len7 = data36.length;
+for(let i7=0; i7<len7; i7++){
+if(typeof data36[i7] !== "string"){
+const err75 = {instancePath:instancePath+"/commercial_scan/mapped_core_feature_ids/" + i7,schemaPath:"#/properties/commercial_scan/properties/mapped_core_feature_ids/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err75];
+}
+else {
+vErrors.push(err75);
+}
+errors++;
+}
+}
+}
+else {
+const err76 = {instancePath:instancePath+"/commercial_scan/mapped_core_feature_ids",schemaPath:"#/properties/commercial_scan/properties/mapped_core_feature_ids/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err76];
+}
+else {
+vErrors.push(err76);
+}
+errors++;
+}
+}
+if(data33.source_coverage !== undefined){
+let data38 = data33.source_coverage;
+if(Array.isArray(data38)){
+const len8 = data38.length;
+for(let i8=0; i8<len8; i8++){
+if(!(validate49(data38[i8], {instancePath:instancePath+"/commercial_scan/source_coverage/" + i8,parentData:data38,parentDataProperty:i8,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate49.errors : vErrors.concat(validate49.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err77 = {instancePath:instancePath+"/commercial_scan/source_coverage",schemaPath:"#/properties/commercial_scan/properties/source_coverage/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err77];
+}
+else {
+vErrors.push(err77);
+}
+errors++;
+}
+}
+if(data33.unmapped_outcomes_due_to_insufficient_detail !== undefined){
+let data40 = data33.unmapped_outcomes_due_to_insufficient_detail;
+if(Array.isArray(data40)){
+const len9 = data40.length;
+for(let i9=0; i9<len9; i9++){
+if(typeof data40[i9] !== "string"){
+const err78 = {instancePath:instancePath+"/commercial_scan/unmapped_outcomes_due_to_insufficient_detail/" + i9,schemaPath:"#/properties/commercial_scan/properties/unmapped_outcomes_due_to_insufficient_detail/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err78];
+}
+else {
+vErrors.push(err78);
+}
+errors++;
+}
+}
+}
+else {
+const err79 = {instancePath:instancePath+"/commercial_scan/unmapped_outcomes_due_to_insufficient_detail",schemaPath:"#/properties/commercial_scan/properties/unmapped_outcomes_due_to_insufficient_detail/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err79];
+}
+else {
+vErrors.push(err79);
+}
+errors++;
+}
+}
+if(data33.completeness_status !== undefined){
+let data42 = data33.completeness_status;
+if(typeof data42 !== "string"){
+const err80 = {instancePath:instancePath+"/commercial_scan/completeness_status",schemaPath:"#/properties/commercial_scan/properties/completeness_status/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err80];
+}
+else {
+vErrors.push(err80);
+}
+errors++;
+}
+if(!(((data42 === "COMPLETE") || (data42 === "PARTIAL")) || (data42 === "THIN"))){
+const err81 = {instancePath:instancePath+"/commercial_scan/completeness_status",schemaPath:"#/properties/commercial_scan/properties/completeness_status/enum",keyword:"enum",params:{allowedValues: schema61.properties.commercial_scan.properties.completeness_status.enum},message:"must be equal to one of the allowed values"};
+if(vErrors === null){
+vErrors = [err81];
+}
+else {
+vErrors.push(err81);
+}
+errors++;
+}
+}
+if(data33.completeness_warnings !== undefined){
+let data43 = data33.completeness_warnings;
+if(Array.isArray(data43)){
+const len10 = data43.length;
+for(let i10=0; i10<len10; i10++){
+if(typeof data43[i10] !== "string"){
+const err82 = {instancePath:instancePath+"/commercial_scan/completeness_warnings/" + i10,schemaPath:"#/properties/commercial_scan/properties/completeness_warnings/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err82];
+}
+else {
+vErrors.push(err82);
+}
+errors++;
+}
+}
+}
+else {
+const err83 = {instancePath:instancePath+"/commercial_scan/completeness_warnings",schemaPath:"#/properties/commercial_scan/properties/completeness_warnings/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err83];
+}
+else {
+vErrors.push(err83);
+}
+errors++;
+}
+}
+}
+else {
+const err84 = {instancePath:instancePath+"/commercial_scan",schemaPath:"#/properties/commercial_scan/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err84];
+}
+else {
+vErrors.push(err84);
+}
+errors++;
+}
+}
+if(data.vault_feature_candidates !== undefined){
+let data45 = data.vault_feature_candidates;
+if(data45 && typeof data45 == "object" && !Array.isArray(data45)){
+if(data45.baseline === undefined){
+const err85 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/required",keyword:"required",params:{missingProperty: "baseline"},message:"must have required property '"+"baseline"+"'"};
+if(vErrors === null){
+vErrors = [err85];
+}
+else {
+vErrors.push(err85);
+}
+errors++;
+}
+if(data45.archetypes === undefined){
+const err86 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/required",keyword:"required",params:{missingProperty: "archetypes"},message:"must have required property '"+"archetypes"+"'"};
+if(vErrors === null){
+vErrors = [err86];
+}
+else {
+vErrors.push(err86);
+}
+errors++;
+}
+if(data45.compliance === undefined){
+const err87 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/required",keyword:"required",params:{missingProperty: "compliance"},message:"must have required property '"+"compliance"+"'"};
+if(vErrors === null){
+vErrors = [err87];
+}
+else {
+vErrors.push(err87);
+}
+errors++;
+}
+for(const key5 in data45){
+if(!(((key5 === "baseline") || (key5 === "archetypes")) || (key5 === "compliance"))){
+const err88 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key5},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err88];
+}
+else {
+vErrors.push(err88);
+}
+errors++;
+}
+}
+if(data45.baseline !== undefined){
+let data46 = data45.baseline;
+if(data46 && typeof data46 == "object" && !Array.isArray(data46)){
+}
+else {
+const err89 = {instancePath:instancePath+"/vault_feature_candidates/baseline",schemaPath:"#/properties/vault_feature_candidates/properties/baseline/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err89];
+}
+else {
+vErrors.push(err89);
+}
+errors++;
+}
+}
+if(data45.archetypes !== undefined){
+let data47 = data45.archetypes;
+if(data47 && typeof data47 == "object" && !Array.isArray(data47)){
+}
+else {
+const err90 = {instancePath:instancePath+"/vault_feature_candidates/archetypes",schemaPath:"#/properties/vault_feature_candidates/properties/archetypes/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err90];
+}
+else {
+vErrors.push(err90);
+}
+errors++;
+}
+}
+if(data45.compliance !== undefined){
+let data48 = data45.compliance;
+if(data48 && typeof data48 == "object" && !Array.isArray(data48)){
+}
+else {
+const err91 = {instancePath:instancePath+"/vault_feature_candidates/compliance",schemaPath:"#/properties/vault_feature_candidates/properties/compliance/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err91];
+}
+else {
+vErrors.push(err91);
+}
+errors++;
+}
+}
+}
+else {
+const err92 = {instancePath:instancePath+"/vault_feature_candidates",schemaPath:"#/properties/vault_feature_candidates/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err92];
+}
+else {
+vErrors.push(err92);
+}
+errors++;
+}
+}
+if(data.evidence !== undefined){
+let data49 = data.evidence;
+if(data49 && typeof data49 == "object" && !Array.isArray(data49)){
+if(data49.field_evidence_refs === undefined){
+const err93 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/required",keyword:"required",params:{missingProperty: "field_evidence_refs"},message:"must have required property '"+"field_evidence_refs"+"'"};
+if(vErrors === null){
+vErrors = [err93];
+}
+else {
+vErrors.push(err93);
+}
+errors++;
+}
+if(data49.unresolved_questions === undefined){
+const err94 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/required",keyword:"required",params:{missingProperty: "unresolved_questions"},message:"must have required property '"+"unresolved_questions"+"'"};
+if(vErrors === null){
+vErrors = [err94];
+}
+else {
+vErrors.push(err94);
+}
+errors++;
+}
+for(const key6 in data49){
+if(!((key6 === "field_evidence_refs") || (key6 === "unresolved_questions"))){
+const err95 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key6},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err95];
+}
+else {
+vErrors.push(err95);
+}
+errors++;
+}
+}
+if(data49.field_evidence_refs !== undefined){
+let data50 = data49.field_evidence_refs;
+if(Array.isArray(data50)){
+const len11 = data50.length;
+for(let i11=0; i11<len11; i11++){
+if(!(validate51(data50[i11], {instancePath:instancePath+"/evidence/field_evidence_refs/" + i11,parentData:data50,parentDataProperty:i11,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate51.errors : vErrors.concat(validate51.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err96 = {instancePath:instancePath+"/evidence/field_evidence_refs",schemaPath:"#/properties/evidence/properties/field_evidence_refs/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err96];
+}
+else {
+vErrors.push(err96);
+}
+errors++;
+}
+}
+if(data49.unresolved_questions !== undefined){
+let data52 = data49.unresolved_questions;
+if(Array.isArray(data52)){
+const len12 = data52.length;
+for(let i12=0; i12<len12; i12++){
+if(typeof data52[i12] !== "string"){
+const err97 = {instancePath:instancePath+"/evidence/unresolved_questions/" + i12,schemaPath:"#/properties/evidence/properties/unresolved_questions/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err97];
+}
+else {
+vErrors.push(err97);
+}
+errors++;
+}
+}
+}
+else {
+const err98 = {instancePath:instancePath+"/evidence/unresolved_questions",schemaPath:"#/properties/evidence/properties/unresolved_questions/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err98];
+}
+else {
+vErrors.push(err98);
+}
+errors++;
+}
+}
+}
+else {
+const err99 = {instancePath:instancePath+"/evidence",schemaPath:"#/properties/evidence/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err99];
+}
+else {
+vErrors.push(err99);
+}
+errors++;
+}
+}
+if(data.limitations !== undefined){
+let data54 = data.limitations;
+if(Array.isArray(data54)){
+const len13 = data54.length;
+for(let i13=0; i13<len13; i13++){
+if(typeof data54[i13] !== "string"){
+const err100 = {instancePath:instancePath+"/limitations/" + i13,schemaPath:"#/properties/limitations/items/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err100];
+}
+else {
+vErrors.push(err100);
+}
+errors++;
+}
+}
+}
+else {
+const err101 = {instancePath:instancePath+"/limitations",schemaPath:"#/properties/limitations/type",keyword:"type",params:{type: "array"},message:"must be array"};
+if(vErrors === null){
+vErrors = [err101];
+}
+else {
+vErrors.push(err101);
+}
+errors++;
+}
+}
+}
+else {
+const err102 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err102];
+}
+else {
+vErrors.push(err102);
 }
 errors++;
 }
@@ -7781,15 +8206,15 @@ return errors === 0;
 validate34.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_stage6Review = validate53;
-const schema100 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/stage6Review.schema.json","title":"Stage 6 Review","description":"Single canonical Stage 6 schema. Stage 6A, Stage 6B, and integrated handoff components use this one contract and the shared Stage 6 vocabulary.","type":"object","required":["stage6_review_version","stage6_component","stage_role","input_refs","stage7_navigation_index","stage6_limitations"],"additionalProperties":false,"properties":{"stage6_review_version":{"const":"stage6_review_v1"},"stage6_component":{"$ref":"#/$defs/stage6Component"},"stage_role":{"const":"stage7_navigation_index"},"input_refs":{"$ref":"#/$defs/inputRefs"},"legal_document_cartography":{"$ref":"#/$defs/legalDocumentCartography"},"data_provenance_profile":{"$ref":"#/$defs/dataProvenanceProfile"},"stage7_navigation_index":{"$ref":"#/$defs/stage7NavigationIndex"},"stage6_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}},"allOf":[{"if":{"properties":{"stage6_component":{"const":"stage6a_legal_document_cartography"}}},"then":{"required":["legal_document_cartography"],"not":{"required":["data_provenance_profile"]}}},{"if":{"properties":{"stage6_component":{"const":"stage6b_data_provenance"}}},"then":{"required":["data_provenance_profile"],"not":{"required":["legal_document_cartography"]}}},{"if":{"properties":{"stage6_component":{"const":"stage6_integrated_handoff"}}},"then":{"required":["legal_document_cartography","data_provenance_profile"]}}],"$defs":{"stage6Component":{"type":"string","enum":["stage6a_legal_document_cartography","stage6b_data_provenance","stage6_integrated_handoff"]},"standardSignal":{"type":"string","enum":["visible","not_visible","partial","conflicting","not_applicable","unknown"]},"controlSignal":{"type":"string","enum":["visible","partial","absent_after_search","unclear","not_applicable","unknown"]},"confidence":{"type":"string","enum":["high","medium","low","unknown"]},"stringArray":{"type":"array","items":{"type":"string"}},"nullableString":{"type":["string","null"]},"inputRefs":{"type":"object","additionalProperties":false,"properties":{"target_profile_version":{"type":"string"},"feature_profile_version":{"type":"string"},"source_bundle_version":{"type":"string"},"target_profile_ref":{"type":["string","object","null"],"additionalProperties":true},"feature_profile_ref":{"type":["string","object","null"],"additionalProperties":true}}},"basisCode":{"type":"string","enum":["source_bundle_record_ref","stage5_feature_ref","stage5_data_provenance","stage5_regulated_surface","stage5_architecture_hint","stage6_legal_unit_ref","stage6_control_signal_ref","stage6_data_flow_ref","direct_policy_signal","indirect_policy_signal","absence_after_search","macro_heading_classification","source_metadata","model_semantic_classification","deterministic_seed","unknown"]},"basisCodes":{"type":"array","items":{"$ref":"#/$defs/basisCode"},"uniqueItems":true},"documentType":{"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","eula","cookie_policy","subprocessor_page","security_page","trust_center","status_page","ai_policy","responsible_ai_page","model_card","developer_terms","api_terms","community_guidelines","data_deletion_page","dsr_page","grievance_page","baa","hipaa_notice","data_transfer_addendum","terms_page","pricing_terms","service_description_page","other_valid_control_doc","unknown"]},"controlFamily":{"type":"string","enum":["ai_disclosure","hallucination_disclaimer","hitl_mandate","acceptable_use","prohibited_use","privacy_notice","data_collection","data_use","data_sharing","subprocessor_disclosure","model_provider_disclosure","training_or_finetuning","retention","deletion","data_subject_rights","consent_withdrawal","grievance_channel","security_safeguards","breach_notice","cross_border_transfer","liability_cap","warranty_disclaimer","sla_performance","agentic_controls","commercial_terms","dispute_terms","ip_ownership","minor_access","automated_decision","sensitive_data","unknown"]},"sectionFunction":{"type":"string","enum":["definitions","service_description","ai_disclosure","privacy_notice","data_processing_terms","subprocessor_terms","acceptable_use_rules","prohibited_use_rules","security_terms","breach_terms","retention_deletion_terms","rights_request_terms","cross_border_transfer_terms","liability_terms","warranty_disclaimer","sla_terms","agentic_controls","commercial_terms","dispute_terms","ip_ownership_terms","minor_access_terms","automated_decision_terms","sensitive_data_terms","other","unknown"]},"legalDocumentCartography":{"type":"object","required":["legal_document_inventory","legal_document_index","document_relationship_map","document_control_signal_map","document_mismatch_signal_map","legal_document_summary_signals","legal_document_limitations"],"additionalProperties":false,"properties":{"legal_document_inventory":{"type":"array","items":{"$ref":"#/$defs/legalDocumentInventoryItem"}},"legal_document_index":{"type":"array","items":{"$ref":"#/$defs/legalDocumentIndexItem"}},"document_relationship_map":{"type":"array","items":{"$ref":"#/$defs/documentRelationshipItem"}},"document_control_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentControlSignalItem"}},"document_mismatch_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentMismatchSignalItem"}},"legal_document_summary_signals":{"$ref":"#/$defs/legalDocumentSummarySignals"},"legal_document_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}},"legalDocumentInventoryItem":{"type":"object","required":["document_id","document_type","document_family","document_title","document_status","access_status","source_record_ref","source_url","final_url","confidence"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"document_type":{"$ref":"#/$defs/documentType"},"document_family":{"type":"string","enum":["core","supplemental","embedded","operational","unknown"]},"document_title":{"type":"string"},"document_status":{"type":"string","enum":["visible","embedded","linked","not_visible","unknown"]},"access_status":{"type":"string","enum":["ingested","metadata_only","fetch_failed","blocked","not_attempted","unknown"]},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"final_url":{"$ref":"#/$defs/nullableString"},"parent_document_id":{"$ref":"#/$defs/nullableString"},"effective_date":{"type":"string"},"last_updated":{"type":"string"},"version":{"type":"string"},"jurisdiction_scope":{"$ref":"#/$defs/stringArray"},"language":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}},"legalDocumentIndexItem":{"type":"object","required":["index_id","document_id","legal_unit_id","legal_unit_type","legal_unit_title","legal_unit_path","legal_unit_order","section_function","control_families_detected","feature_refs","data_flow_refs","source_record_ref","source_locator","basis_codes","confidence"],"additionalProperties":false,"properties":{"index_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"legal_unit_type":{"type":"string","enum":["main_section","annexure","schedule","exhibit","linked_policy","material_table","control_notice","unknown"]},"legal_unit_title":{"type":"string"},"legal_unit_path":{"type":"string"},"legal_unit_order":{"type":"integer","minimum":1},"section_function":{"$ref":"#/$defs/sectionFunction"},"control_families_detected":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"source_record_ref":{"type":"string"},"source_locator":{"$ref":"#/$defs/sourceLocator"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}},"sourceLocator":{"type":"object","required":["locator_type","locator_value"],"additionalProperties":false,"properties":{"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}},"documentRelationshipItem":{"type":"object","required":["relationship_id","from_ref","to_ref","relationship_type","basis_codes","confidence"],"additionalProperties":false,"properties":{"relationship_id":{"type":"string"},"from_ref":{"type":"string"},"to_ref":{"type":"string"},"relationship_type":{"type":"string","enum":["incorporates_by_reference","supplements","controls_on_conflict","linked_from","defines_terms_for","activates_when","supersedes_for_subject_matter","embedded_within","unknown"]},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}},"documentControlSignalItem":{"type":"object","required":["control_signal_id","document_id","legal_unit_id","control_family","control_signal","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"control_signal_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"documentMismatchSignalItem":{"type":"object","required":["mismatch_id","mismatch_type","mismatch_signal","expected_ref","actual_ref","control_family","basis_codes","confidence"],"additionalProperties":false,"properties":{"mismatch_id":{"type":"string"},"mismatch_type":{"$ref":"#/$defs/mismatchType"},"mismatch_signal":{"$ref":"#/$defs/mismatchSignal"},"expected_ref":{"type":"string"},"actual_ref":{"type":["string","null"]},"control_family":{"$ref":"#/$defs/controlFamily"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}},"legalDocumentSummarySignals":{"type":"object","required":["core_stack_status","supplemental_artifacts_detected","document_hierarchy_signal","legal_document_coverage_signal","major_unknowns"],"additionalProperties":false,"properties":{"core_stack_status":{"type":"object","required":["tos","privacy_policy","dpa","aup","sla"],"additionalProperties":false,"properties":{"tos":{"$ref":"#/$defs/standardSignal"},"privacy_policy":{"$ref":"#/$defs/standardSignal"},"dpa":{"$ref":"#/$defs/standardSignal"},"aup":{"$ref":"#/$defs/standardSignal"},"sla":{"$ref":"#/$defs/standardSignal"}}},"supplemental_artifacts_detected":{"$ref":"#/$defs/stringArray"},"document_hierarchy_signal":{"$ref":"#/$defs/standardSignal"},"legal_document_coverage_signal":{"$ref":"#/$defs/standardSignal"},"major_unknowns":{"$ref":"#/$defs/stringArray"}}},"dataProvenanceProfile":{"type":"object","required":["data_provenance_profile_version","data_flow_profile","data_profile_summary_signals","data_profile_limitations"],"additionalProperties":false,"properties":{"data_provenance_profile_version":{"const":"data_provenance_profile_v1"},"data_flow_profile":{"type":"array","items":{"$ref":"#/$defs/dataFlowProfileItem"}},"data_profile_summary_signals":{"$ref":"#/$defs/dataProfileSummarySignals"},"data_profile_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}},"dataFlowProfileItem":{"type":"object","required":["data_flow_id","feature_id","provenance_id","feature_role","flow_role","data_subject","data_category","processing","role_allocation","regime_relevance","notice","consent_basis","rights","processor_chain","transfer_location","retention_deletion_ai","security_accountability","source_trace","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"data_flow_id":{"type":"string"},"feature_id":{"type":"string"},"provenance_id":{"type":"string"},"feature_role":{"type":"string","enum":["core","supporting","contextual","unknown"]},"flow_role":{"type":"string","enum":["primary_input","secondary_input","system_metadata","generated_output","stored_record","third_party_transfer","derived_data","unknown"]},"data_subject":{"$ref":"#/$defs/dataSubject"},"data_category":{"$ref":"#/$defs/dataCategory"},"processing":{"$ref":"#/$defs/processing"},"role_allocation":{"$ref":"#/$defs/roleAllocation"},"regime_relevance":{"$ref":"#/$defs/regimeRelevance"},"notice":{"$ref":"#/$defs/notice"},"consent_basis":{"$ref":"#/$defs/consentBasis"},"rights":{"$ref":"#/$defs/rights"},"processor_chain":{"$ref":"#/$defs/processorChain"},"transfer_location":{"$ref":"#/$defs/transferLocation"},"retention_deletion_ai":{"$ref":"#/$defs/retentionDeletionAi"},"security_accountability":{"$ref":"#/$defs/securityAccountability"},"source_trace":{"$ref":"#/$defs/sourceTrace"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"dataSubjectType":{"type":"string","enum":["customer_user","end_user","employee","contractor","website_visitor","developer_user","child_or_minor","business_contact","unknown"]},"dataCategoryType":{"type":"string","enum":["account_data","contact_data","usage_data","device_data","network_data","location_data","prompt_input","uploaded_file","generated_output","embedding_vector","action_log","payment_data","support_ticket","employee_hr_data","creative_work_product","source_code","credential_or_secret","client_confidential_data","biometric_data","health_data","financial_data","unknown"]},"collectionContext":{"type":"string","enum":["user_provided","customer_provided","employee_provided","automatically_collected","third_party_imported","system_generated","derived_or_inferred","unknown"]},"processingAction":{"type":"string","enum":["collect","store","retrieve","generate","summarize","classify","embed","rank","route","transmit","log","monitor","delete","anonymize","aggregate","fine_tune","unknown"]},"processingPurpose":{"type":"string","enum":["service_delivery","ai_generation","personalization","analytics","security","billing","support","compliance","product_improvement","model_training","fraud_prevention","internal_governance","unknown"]},"outputCategory":{"type":"string","enum":["ai_output","recommendation","classification","decision_support","automated_action","system_log","analytics","none","unknown"]},"roleAllocationValue":{"type":"string","enum":["controller","processor","subprocessor","service_provider","business","third_party","independent_controller","principal","agent","platform_provider","not_visible","not_applicable","unknown"]},"regimeBasisTag":{"type":"string","enum":["personal_data","sensitive_data","children_data","employee_data","automated_decision","high_risk_ai","cross_border_transfer","processor_relationship","subprocessor_relationship","consumer_rights","deletion_rights","training_or_finetuning","unknown"]},"recipientCategory":{"type":"string","enum":["model_provider","cloud_provider","payment_provider","analytics_provider","support_provider","security_provider","workflow_provider","storage_provider","unknown"]},"region":{"type":"string","enum":["us","eu","uk","india","canada","australia","singapore","global","not_visible","unknown"]},"evidenceStrength":{"type":"string","enum":["direct_source","inferred_from_stage5","inferred_from_stage4","model_classified","unknown"]},"dataSignalType":{"type":"string","enum":["personal_data","sensitive_data","children_data","credential_or_secret","client_confidential","biometric_data","financial_data","health_data","training_or_finetuning","processor_chain","cross_border_transfer","deletion","notice","automated_decision","unknown"]},"dataSubject":{"type":"object","required":["subject_type","subject_labels","minor_signal","employee_signal","customer_signal","confidence"],"additionalProperties":false,"properties":{"subject_type":{"$ref":"#/$defs/dataSubjectType"},"subject_labels":{"$ref":"#/$defs/stringArray"},"minor_signal":{"$ref":"#/$defs/standardSignal"},"employee_signal":{"$ref":"#/$defs/standardSignal"},"customer_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}},"dataCategory":{"type":"object","required":["category_types","personal_data_signal","sensitive_data_signal","credential_or_secret_signal","client_confidential_signal","biometric_signal","financial_data_signal","health_data_signal","confidence"],"additionalProperties":false,"properties":{"category_types":{"type":"array","items":{"$ref":"#/$defs/dataCategoryType"}},"personal_data_signal":{"$ref":"#/$defs/standardSignal"},"sensitive_data_signal":{"$ref":"#/$defs/standardSignal"},"credential_or_secret_signal":{"$ref":"#/$defs/standardSignal"},"client_confidential_signal":{"$ref":"#/$defs/standardSignal"},"biometric_signal":{"$ref":"#/$defs/standardSignal"},"financial_data_signal":{"$ref":"#/$defs/standardSignal"},"health_data_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}},"processing":{"type":"object","required":["collection_context","processing_actions","processing_purpose","output_category","storage_signal","embedding_signal","fine_tuning_signal","confidence"],"additionalProperties":false,"properties":{"collection_context":{"$ref":"#/$defs/collectionContext"},"processing_actions":{"type":"array","items":{"$ref":"#/$defs/processingAction"}},"processing_purpose":{"type":"array","items":{"$ref":"#/$defs/processingPurpose"}},"output_category":{"$ref":"#/$defs/outputCategory"},"storage_signal":{"$ref":"#/$defs/standardSignal"},"embedding_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}},"roleAllocation":{"type":"object","required":["provider_role","customer_role","model_provider_role","subprocessor_role","third_party_recipient_role","confidence"],"additionalProperties":false,"properties":{"provider_role":{"$ref":"#/$defs/roleAllocationValue"},"customer_role":{"$ref":"#/$defs/roleAllocationValue"},"model_provider_role":{"$ref":"#/$defs/roleAllocationValue"},"subprocessor_role":{"$ref":"#/$defs/roleAllocationValue"},"third_party_recipient_role":{"$ref":"#/$defs/roleAllocationValue"},"confidence":{"$ref":"#/$defs/confidence"}}},"regimeRelevance":{"type":"object","required":["gdpr_signal","uk_gdpr_signal","ccpa_cpra_signal","dpdp_signal","colorado_ai_signal","eu_ai_act_signal","basis_tags","confidence"],"additionalProperties":false,"properties":{"gdpr_signal":{"$ref":"#/$defs/standardSignal"},"uk_gdpr_signal":{"$ref":"#/$defs/standardSignal"},"ccpa_cpra_signal":{"$ref":"#/$defs/standardSignal"},"dpdp_signal":{"$ref":"#/$defs/standardSignal"},"colorado_ai_signal":{"$ref":"#/$defs/standardSignal"},"eu_ai_act_signal":{"$ref":"#/$defs/standardSignal"},"basis_tags":{"type":"array","items":{"$ref":"#/$defs/regimeBasisTag"}},"confidence":{"$ref":"#/$defs/confidence"}}},"notice":{"type":"object","required":["privacy_notice_signal","ai_notice_signal","model_provider_notice_signal","subprocessor_notice_signal","notice_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"privacy_notice_signal":{"$ref":"#/$defs/standardSignal"},"ai_notice_signal":{"$ref":"#/$defs/standardSignal"},"model_provider_notice_signal":{"$ref":"#/$defs/standardSignal"},"subprocessor_notice_signal":{"$ref":"#/$defs/standardSignal"},"notice_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"consentBasis":{"type":"object","required":["consent_signal","contract_signal","legitimate_interest_signal","legal_obligation_signal","withdrawal_signal","basis_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"consent_signal":{"$ref":"#/$defs/standardSignal"},"contract_signal":{"$ref":"#/$defs/standardSignal"},"legitimate_interest_signal":{"$ref":"#/$defs/standardSignal"},"legal_obligation_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_signal":{"$ref":"#/$defs/standardSignal"},"basis_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"rights":{"type":"object","required":["access_right_signal","correction_right_signal","deletion_right_signal","portability_right_signal","opt_out_signal","withdrawal_right_signal","grievance_signal","nomination_signal","rights_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"access_right_signal":{"$ref":"#/$defs/standardSignal"},"correction_right_signal":{"$ref":"#/$defs/standardSignal"},"deletion_right_signal":{"$ref":"#/$defs/standardSignal"},"portability_right_signal":{"$ref":"#/$defs/standardSignal"},"opt_out_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_right_signal":{"$ref":"#/$defs/standardSignal"},"grievance_signal":{"$ref":"#/$defs/standardSignal"},"nomination_signal":{"$ref":"#/$defs/standardSignal"},"rights_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"processorChain":{"type":"object","required":["model_provider_visible","cloud_provider_visible","payment_provider_visible","analytics_provider_visible","subprocessor_list_visible","recipient_categories","processor_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"model_provider_visible":{"$ref":"#/$defs/standardSignal"},"cloud_provider_visible":{"$ref":"#/$defs/standardSignal"},"payment_provider_visible":{"$ref":"#/$defs/standardSignal"},"analytics_provider_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_list_visible":{"$ref":"#/$defs/standardSignal"},"recipient_categories":{"type":"array","items":{"$ref":"#/$defs/recipientCategory"}},"processor_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"transferLocation":{"type":"object","required":["cross_border_signal","regions_visible","transfer_basis_signal","data_residency_signal","location_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"cross_border_signal":{"$ref":"#/$defs/standardSignal"},"regions_visible":{"type":"array","items":{"$ref":"#/$defs/region"}},"transfer_basis_signal":{"$ref":"#/$defs/standardSignal"},"data_residency_signal":{"$ref":"#/$defs/standardSignal"},"location_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"retentionDeletionAi":{"type":"object","required":["retention_period_visible","deletion_channel_visible","training_opt_out_visible","embedding_retention_signal","fine_tuning_prohibition_signal","model_weight_deletion_signal","ai_architecture_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"retention_period_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"training_opt_out_visible":{"$ref":"#/$defs/standardSignal"},"embedding_retention_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_prohibition_signal":{"$ref":"#/$defs/standardSignal"},"model_weight_deletion_signal":{"$ref":"#/$defs/standardSignal"},"ai_architecture_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"securityAccountability":{"type":"object","required":["encryption_signal","access_control_signal","audit_log_signal","breach_notice_signal","dpo_or_contact_signal","security_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"encryption_signal":{"$ref":"#/$defs/standardSignal"},"access_control_signal":{"$ref":"#/$defs/standardSignal"},"audit_log_signal":{"$ref":"#/$defs/standardSignal"},"breach_notice_signal":{"$ref":"#/$defs/standardSignal"},"dpo_or_contact_signal":{"$ref":"#/$defs/standardSignal"},"security_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"sourceTrace":{"type":"object","required":["feature_refs","provenance_refs","source_refs","document_refs","legal_unit_refs","basis_codes","evidence_strength"],"additionalProperties":false,"properties":{"feature_refs":{"$ref":"#/$defs/stringArray"},"provenance_refs":{"$ref":"#/$defs/stringArray"},"source_refs":{"$ref":"#/$defs/stringArray"},"document_refs":{"$ref":"#/$defs/stringArray"},"legal_unit_refs":{"$ref":"#/$defs/stringArray"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"evidence_strength":{"$ref":"#/$defs/evidenceStrength"}}},"dataProfileSummarySignals":{"type":"object","additionalProperties":false,"properties":{"personal_data_visible":{"$ref":"#/$defs/standardSignal"},"sensitive_data_visible":{"$ref":"#/$defs/standardSignal"},"children_data_visible":{"$ref":"#/$defs/standardSignal"},"cross_border_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_visible":{"$ref":"#/$defs/standardSignal"},"training_or_finetuning_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"automated_decision_visible":{"$ref":"#/$defs/standardSignal"}}},"stage7NavigationIndex":{"type":"object","required":["feature_to_data_flow_index","feature_to_legal_unit_index","control_family_index","data_signal_index","legal_unit_source_locator_index","absence_unknown_index","fallback_source_packet"],"additionalProperties":false,"properties":{"feature_to_data_flow_index":{"type":"array","items":{"$ref":"#/$defs/featureToDataFlowIndexItem"}},"feature_to_legal_unit_index":{"type":"array","items":{"$ref":"#/$defs/featureToLegalUnitIndexItem"}},"control_family_index":{"type":"array","items":{"$ref":"#/$defs/controlFamilyIndexItem"}},"data_signal_index":{"type":"array","items":{"$ref":"#/$defs/dataSignalIndexItem"}},"legal_unit_source_locator_index":{"type":"array","items":{"$ref":"#/$defs/legalUnitSourceLocatorIndexItem"}},"absence_unknown_index":{"type":"array","items":{"$ref":"#/$defs/absenceUnknownIndexItem"}},"fallback_source_packet":{"type":"array","items":{"$ref":"#/$defs/fallbackSourcePacketItem"}}}},"featureToDataFlowIndexItem":{"type":"object","required":["feature_id","data_flow_ids","provenance_ids","data_categories","surface_tokens"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"provenance_ids":{"$ref":"#/$defs/stringArray"},"data_categories":{"$ref":"#/$defs/stringArray"},"surface_tokens":{"$ref":"#/$defs/stringArray"}}},"featureToLegalUnitIndexItem":{"type":"object","required":["feature_id","document_ids","legal_unit_ids","control_families"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"},"control_families":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}}}},"controlFamilyIndexItem":{"type":"object","required":["control_family","control_signal","control_signal_ids","document_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"control_signal_ids":{"$ref":"#/$defs/stringArray"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}},"dataSignalIndexItem":{"type":"object","required":["signal_type","signal_value","data_flow_ids","feature_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"signal_value":{"$ref":"#/$defs/standardSignal"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"feature_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}},"legalUnitSourceLocatorIndexItem":{"type":"object","required":["document_id","legal_unit_id","source_record_ref","source_url","locator_type","locator_value"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}},"absenceUnknownIndexItem":{"type":"object","required":["signal_type","object_ref","search_scope","absence_basis","confidence"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"object_ref":{"type":"string"},"search_scope":{"type":"string"},"absence_basis":{"type":"string","enum":["searched_legal_docs","searched_privacy_docs","searched_security_docs","searched_trust_docs","searched_public_sources","source_not_available","access_failed","not_enough_context","unknown"]},"confidence":{"$ref":"#/$defs/confidence"}}},"fallbackSourcePacketItem":{"type":"object","required":["source_record_ref","source_url","source_type","reason_for_fallback"],"additionalProperties":false,"properties":{"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"source_type":{"$ref":"#/$defs/sourceType"},"reason_for_fallback":{"$ref":"#/$defs/fallbackReason"}}},"stage6Limitation":{"type":"object","required":["limitation_id","scope","reason_code","impact_code","confidence"],"additionalProperties":false,"properties":{"limitation_id":{"type":"string"},"scope":{"type":"string"},"reason_code":{"$ref":"#/$defs/limitationReasonCode"},"impact_code":{"$ref":"#/$defs/limitationImpactCode"},"confidence":{"$ref":"#/$defs/confidence"}}},"mismatchType":{"type":"string","enum":["feature_vs_document","data_flow_vs_document","document_vs_document","claim_vs_absence","stack_vs_reality","unknown"]},"mismatchSignal":{"type":"string","enum":["expected_signal_absent","expected_signal_partial","conflicting_signal","source_absent","source_unclear","unknown"]},"locatorType":{"type":"string","enum":["heading_path","url_fragment","text_anchor","source_record","page_url","chunk_index","unknown"]},"sourceType":{"type":"string","enum":["legal_document","privacy_document","terms_document","security_document","trust_document","status_document","feature_source","public_page","api_doc","help_doc","source_bundle_record","unknown"]},"absenceBasis":{"type":"string","enum":["searched_legal_docs","searched_privacy_docs","searched_security_docs","searched_trust_docs","searched_public_sources","source_not_available","access_failed","not_enough_context","unknown"]},"fallbackReason":{"type":"string","enum":["direct_source_verification_required","stage6_signal_unknown","stage6_signal_conflicting","missing_legal_unit_ref","hunter_trigger_requires_line_read","source_locator_available","source_scope_incomplete","unindexed_admitted_source","unknown"]},"limitationReasonCode":{"type":"string","enum":["source_missing","source_conflicting","source_access_failed","stage5_signal_unknown","legal_unit_ref_missing","low_confidence_inference","model_skipped","unknown"]},"limitationImpactCode":{"type":"string","enum":["no_stage7_block","requires_source_line_read","reduces_confidence","partial_navigation_only","unknown"]}}};
-const schema101 = {"type":"string","enum":["stage6a_legal_document_cartography","stage6b_data_provenance","stage6_integrated_handoff"]};
-const schema102 = {"type":"object","additionalProperties":false,"properties":{"target_profile_version":{"type":"string"},"feature_profile_version":{"type":"string"},"source_bundle_version":{"type":"string"},"target_profile_ref":{"type":["string","object","null"],"additionalProperties":true},"feature_profile_ref":{"type":["string","object","null"],"additionalProperties":true}}};
-const schema103 = {"type":"object","required":["legal_document_inventory","legal_document_index","document_relationship_map","document_control_signal_map","document_mismatch_signal_map","legal_document_summary_signals","legal_document_limitations"],"additionalProperties":false,"properties":{"legal_document_inventory":{"type":"array","items":{"$ref":"#/$defs/legalDocumentInventoryItem"}},"legal_document_index":{"type":"array","items":{"$ref":"#/$defs/legalDocumentIndexItem"}},"document_relationship_map":{"type":"array","items":{"$ref":"#/$defs/documentRelationshipItem"}},"document_control_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentControlSignalItem"}},"document_mismatch_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentMismatchSignalItem"}},"legal_document_summary_signals":{"$ref":"#/$defs/legalDocumentSummarySignals"},"legal_document_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}};
-const schema104 = {"type":"object","required":["document_id","document_type","document_family","document_title","document_status","access_status","source_record_ref","source_url","final_url","confidence"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"document_type":{"$ref":"#/$defs/documentType"},"document_family":{"type":"string","enum":["core","supplemental","embedded","operational","unknown"]},"document_title":{"type":"string"},"document_status":{"type":"string","enum":["visible","embedded","linked","not_visible","unknown"]},"access_status":{"type":"string","enum":["ingested","metadata_only","fetch_failed","blocked","not_attempted","unknown"]},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"final_url":{"$ref":"#/$defs/nullableString"},"parent_document_id":{"$ref":"#/$defs/nullableString"},"effective_date":{"type":"string"},"last_updated":{"type":"string"},"version":{"type":"string"},"jurisdiction_scope":{"$ref":"#/$defs/stringArray"},"language":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema105 = {"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","eula","cookie_policy","subprocessor_page","security_page","trust_center","status_page","ai_policy","responsible_ai_page","model_card","developer_terms","api_terms","community_guidelines","data_deletion_page","dsr_page","grievance_page","baa","hipaa_notice","data_transfer_addendum","terms_page","pricing_terms","service_description_page","other_valid_control_doc","unknown"]};
-const schema106 = {"type":["string","null"]};
-const schema108 = {"type":"array","items":{"type":"string"}};
-const schema109 = {"type":"string","enum":["high","medium","low","unknown"]};
+const schema102 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/stage6Review.schema.json","title":"Stage 6 Review","description":"Single canonical Stage 6 schema. Stage 6A, Stage 6B, and integrated handoff components use this one contract and the shared Stage 6 vocabulary.","type":"object","required":["stage6_review_version","stage6_component","stage_role","input_refs","stage7_navigation_index","stage6_limitations"],"additionalProperties":false,"properties":{"stage6_review_version":{"const":"stage6_review_v1"},"stage6_component":{"$ref":"#/$defs/stage6Component"},"stage_role":{"const":"stage7_navigation_index"},"input_refs":{"$ref":"#/$defs/inputRefs"},"legal_document_cartography":{"$ref":"#/$defs/legalDocumentCartography"},"data_provenance_profile":{"$ref":"#/$defs/dataProvenanceProfile"},"stage7_navigation_index":{"$ref":"#/$defs/stage7NavigationIndex"},"stage6_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}},"allOf":[{"if":{"properties":{"stage6_component":{"const":"stage6a_legal_document_cartography"}}},"then":{"required":["legal_document_cartography"],"not":{"required":["data_provenance_profile"]}}},{"if":{"properties":{"stage6_component":{"const":"stage6b_data_provenance"}}},"then":{"required":["data_provenance_profile"],"not":{"required":["legal_document_cartography"]}}},{"if":{"properties":{"stage6_component":{"const":"stage6_integrated_handoff"}}},"then":{"required":["legal_document_cartography","data_provenance_profile"]}}],"$defs":{"stage6Component":{"type":"string","enum":["stage6a_legal_document_cartography","stage6b_data_provenance","stage6_integrated_handoff"]},"standardSignal":{"type":"string","enum":["visible","not_visible","partial","conflicting","not_applicable","unknown"]},"controlSignal":{"type":"string","enum":["visible","partial","absent_after_search","unclear","not_applicable","unknown"]},"confidence":{"type":"string","enum":["high","medium","low","unknown"]},"stringArray":{"type":"array","items":{"type":"string"}},"nullableString":{"type":["string","null"]},"inputRefs":{"type":"object","additionalProperties":false,"properties":{"target_profile_version":{"type":"string"},"feature_profile_version":{"type":"string"},"source_bundle_version":{"type":"string"},"target_profile_ref":{"type":["string","object","null"],"additionalProperties":true},"feature_profile_ref":{"type":["string","object","null"],"additionalProperties":true}}},"basisCode":{"type":"string","enum":["source_bundle_record_ref","stage5_feature_ref","stage5_data_provenance","stage5_regulated_surface","stage5_architecture_hint","stage6_legal_unit_ref","stage6_control_signal_ref","stage6_data_flow_ref","direct_policy_signal","indirect_policy_signal","absence_after_search","macro_heading_classification","source_metadata","model_semantic_classification","deterministic_seed","unknown"]},"basisCodes":{"type":"array","items":{"$ref":"#/$defs/basisCode"},"uniqueItems":true},"documentType":{"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","eula","cookie_policy","subprocessor_page","security_page","trust_center","status_page","ai_policy","responsible_ai_page","model_card","developer_terms","api_terms","community_guidelines","data_deletion_page","dsr_page","grievance_page","baa","hipaa_notice","data_transfer_addendum","terms_page","pricing_terms","service_description_page","other_valid_control_doc","unknown"]},"controlFamily":{"type":"string","enum":["ai_disclosure","hallucination_disclaimer","hitl_mandate","acceptable_use","prohibited_use","privacy_notice","data_collection","data_use","data_sharing","subprocessor_disclosure","model_provider_disclosure","training_or_finetuning","retention","deletion","data_subject_rights","consent_withdrawal","grievance_channel","security_safeguards","breach_notice","cross_border_transfer","liability_cap","warranty_disclaimer","sla_performance","agentic_controls","commercial_terms","dispute_terms","ip_ownership","minor_access","automated_decision","sensitive_data","unknown"]},"sectionFunction":{"type":"string","enum":["definitions","service_description","ai_disclosure","privacy_notice","data_processing_terms","subprocessor_terms","acceptable_use_rules","prohibited_use_rules","security_terms","breach_terms","retention_deletion_terms","rights_request_terms","cross_border_transfer_terms","liability_terms","warranty_disclaimer","sla_terms","agentic_controls","commercial_terms","dispute_terms","ip_ownership_terms","minor_access_terms","automated_decision_terms","sensitive_data_terms","other","unknown"]},"legalDocumentCartography":{"type":"object","required":["legal_document_inventory","legal_document_index","document_relationship_map","document_control_signal_map","document_mismatch_signal_map","legal_document_summary_signals","legal_document_limitations"],"additionalProperties":false,"properties":{"legal_document_inventory":{"type":"array","items":{"$ref":"#/$defs/legalDocumentInventoryItem"}},"legal_document_index":{"type":"array","items":{"$ref":"#/$defs/legalDocumentIndexItem"}},"document_relationship_map":{"type":"array","items":{"$ref":"#/$defs/documentRelationshipItem"}},"document_control_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentControlSignalItem"}},"document_mismatch_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentMismatchSignalItem"}},"legal_document_summary_signals":{"$ref":"#/$defs/legalDocumentSummarySignals"},"legal_document_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}},"legalDocumentInventoryItem":{"type":"object","required":["document_id","document_type","document_family","document_title","document_status","access_status","source_record_ref","source_url","final_url","confidence"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"document_type":{"$ref":"#/$defs/documentType"},"document_family":{"type":"string","enum":["core","supplemental","embedded","operational","unknown"]},"document_title":{"type":"string"},"document_status":{"type":"string","enum":["visible","embedded","linked","not_visible","unknown"]},"access_status":{"type":"string","enum":["ingested","metadata_only","fetch_failed","blocked","not_attempted","unknown"]},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"final_url":{"$ref":"#/$defs/nullableString"},"parent_document_id":{"$ref":"#/$defs/nullableString"},"effective_date":{"type":"string"},"last_updated":{"type":"string"},"version":{"type":"string"},"jurisdiction_scope":{"$ref":"#/$defs/stringArray"},"language":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}},"legalDocumentIndexItem":{"type":"object","required":["index_id","document_id","legal_unit_id","legal_unit_type","legal_unit_title","legal_unit_path","legal_unit_order","section_function","control_families_detected","feature_refs","data_flow_refs","source_record_ref","source_locator","basis_codes","confidence"],"additionalProperties":false,"properties":{"index_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"legal_unit_type":{"type":"string","enum":["main_section","annexure","schedule","exhibit","linked_policy","material_table","control_notice","unknown"]},"legal_unit_title":{"type":"string"},"legal_unit_path":{"type":"string"},"legal_unit_order":{"type":"integer","minimum":1},"section_function":{"$ref":"#/$defs/sectionFunction"},"control_families_detected":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"source_record_ref":{"type":"string"},"source_locator":{"$ref":"#/$defs/sourceLocator"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}},"sourceLocator":{"type":"object","required":["locator_type","locator_value"],"additionalProperties":false,"properties":{"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}},"documentRelationshipItem":{"type":"object","required":["relationship_id","from_ref","to_ref","relationship_type","basis_codes","confidence"],"additionalProperties":false,"properties":{"relationship_id":{"type":"string"},"from_ref":{"type":"string"},"to_ref":{"type":"string"},"relationship_type":{"type":"string","enum":["incorporates_by_reference","supplements","controls_on_conflict","linked_from","defines_terms_for","activates_when","supersedes_for_subject_matter","embedded_within","unknown"]},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}},"documentControlSignalItem":{"type":"object","required":["control_signal_id","document_id","legal_unit_id","control_family","control_signal","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"control_signal_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"documentMismatchSignalItem":{"type":"object","required":["mismatch_id","mismatch_type","mismatch_signal","expected_ref","actual_ref","control_family","basis_codes","confidence"],"additionalProperties":false,"properties":{"mismatch_id":{"type":"string"},"mismatch_type":{"$ref":"#/$defs/mismatchType"},"mismatch_signal":{"$ref":"#/$defs/mismatchSignal"},"expected_ref":{"type":"string"},"actual_ref":{"type":["string","null"]},"control_family":{"$ref":"#/$defs/controlFamily"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}},"legalDocumentSummarySignals":{"type":"object","required":["core_stack_status","supplemental_artifacts_detected","document_hierarchy_signal","legal_document_coverage_signal","major_unknowns"],"additionalProperties":false,"properties":{"core_stack_status":{"type":"object","required":["tos","privacy_policy","dpa","aup","sla"],"additionalProperties":false,"properties":{"tos":{"$ref":"#/$defs/standardSignal"},"privacy_policy":{"$ref":"#/$defs/standardSignal"},"dpa":{"$ref":"#/$defs/standardSignal"},"aup":{"$ref":"#/$defs/standardSignal"},"sla":{"$ref":"#/$defs/standardSignal"}}},"supplemental_artifacts_detected":{"$ref":"#/$defs/stringArray"},"document_hierarchy_signal":{"$ref":"#/$defs/standardSignal"},"legal_document_coverage_signal":{"$ref":"#/$defs/standardSignal"},"major_unknowns":{"$ref":"#/$defs/stringArray"}}},"dataProvenanceProfile":{"type":"object","required":["data_provenance_profile_version","data_flow_profile","data_profile_summary_signals","data_profile_limitations"],"additionalProperties":false,"properties":{"data_provenance_profile_version":{"const":"data_provenance_profile_v1"},"data_flow_profile":{"type":"array","items":{"$ref":"#/$defs/dataFlowProfileItem"}},"data_profile_summary_signals":{"$ref":"#/$defs/dataProfileSummarySignals"},"data_profile_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}},"dataFlowProfileItem":{"type":"object","required":["data_flow_id","feature_id","provenance_id","feature_role","flow_role","data_subject","data_category","processing","role_allocation","regime_relevance","notice","consent_basis","rights","processor_chain","transfer_location","retention_deletion_ai","security_accountability","source_trace","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"data_flow_id":{"type":"string"},"feature_id":{"type":"string"},"provenance_id":{"type":"string"},"feature_role":{"type":"string","enum":["core","supporting","contextual","unknown"]},"flow_role":{"type":"string","enum":["primary_input","secondary_input","system_metadata","generated_output","stored_record","third_party_transfer","derived_data","unknown"]},"data_subject":{"$ref":"#/$defs/dataSubject"},"data_category":{"$ref":"#/$defs/dataCategory"},"processing":{"$ref":"#/$defs/processing"},"role_allocation":{"$ref":"#/$defs/roleAllocation"},"regime_relevance":{"$ref":"#/$defs/regimeRelevance"},"notice":{"$ref":"#/$defs/notice"},"consent_basis":{"$ref":"#/$defs/consentBasis"},"rights":{"$ref":"#/$defs/rights"},"processor_chain":{"$ref":"#/$defs/processorChain"},"transfer_location":{"$ref":"#/$defs/transferLocation"},"retention_deletion_ai":{"$ref":"#/$defs/retentionDeletionAi"},"security_accountability":{"$ref":"#/$defs/securityAccountability"},"source_trace":{"$ref":"#/$defs/sourceTrace"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"dataSubjectType":{"type":"string","enum":["customer_user","end_user","employee","contractor","website_visitor","developer_user","child_or_minor","business_contact","unknown"]},"dataCategoryType":{"type":"string","enum":["account_data","contact_data","usage_data","device_data","network_data","location_data","prompt_input","uploaded_file","generated_output","embedding_vector","action_log","payment_data","support_ticket","employee_hr_data","creative_work_product","source_code","credential_or_secret","client_confidential_data","biometric_data","health_data","financial_data","unknown"]},"collectionContext":{"type":"string","enum":["user_provided","customer_provided","employee_provided","automatically_collected","third_party_imported","system_generated","derived_or_inferred","unknown"]},"processingAction":{"type":"string","enum":["collect","store","retrieve","generate","summarize","classify","embed","rank","route","transmit","log","monitor","delete","anonymize","aggregate","fine_tune","unknown"]},"processingPurpose":{"type":"string","enum":["service_delivery","ai_generation","personalization","analytics","security","billing","support","compliance","product_improvement","model_training","fraud_prevention","internal_governance","unknown"]},"outputCategory":{"type":"string","enum":["ai_output","recommendation","classification","decision_support","automated_action","system_log","analytics","none","unknown"]},"roleAllocationValue":{"type":"string","enum":["controller","processor","subprocessor","service_provider","business","third_party","independent_controller","principal","agent","platform_provider","not_visible","not_applicable","unknown"]},"regimeBasisTag":{"type":"string","enum":["personal_data","sensitive_data","children_data","employee_data","automated_decision","high_risk_ai","cross_border_transfer","processor_relationship","subprocessor_relationship","consumer_rights","deletion_rights","training_or_finetuning","unknown"]},"recipientCategory":{"type":"string","enum":["model_provider","cloud_provider","payment_provider","analytics_provider","support_provider","security_provider","workflow_provider","storage_provider","unknown"]},"region":{"type":"string","enum":["us","eu","uk","india","canada","australia","singapore","global","not_visible","unknown"]},"evidenceStrength":{"type":"string","enum":["direct_source","inferred_from_stage5","inferred_from_stage4","model_classified","unknown"]},"dataSignalType":{"type":"string","enum":["personal_data","sensitive_data","children_data","credential_or_secret","client_confidential","biometric_data","financial_data","health_data","training_or_finetuning","processor_chain","cross_border_transfer","deletion","notice","automated_decision","unknown"]},"dataSubject":{"type":"object","required":["subject_type","subject_labels","minor_signal","employee_signal","customer_signal","confidence"],"additionalProperties":false,"properties":{"subject_type":{"$ref":"#/$defs/dataSubjectType"},"subject_labels":{"$ref":"#/$defs/stringArray"},"minor_signal":{"$ref":"#/$defs/standardSignal"},"employee_signal":{"$ref":"#/$defs/standardSignal"},"customer_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}},"dataCategory":{"type":"object","required":["category_types","personal_data_signal","sensitive_data_signal","credential_or_secret_signal","client_confidential_signal","biometric_signal","financial_data_signal","health_data_signal","confidence"],"additionalProperties":false,"properties":{"category_types":{"type":"array","items":{"$ref":"#/$defs/dataCategoryType"}},"personal_data_signal":{"$ref":"#/$defs/standardSignal"},"sensitive_data_signal":{"$ref":"#/$defs/standardSignal"},"credential_or_secret_signal":{"$ref":"#/$defs/standardSignal"},"client_confidential_signal":{"$ref":"#/$defs/standardSignal"},"biometric_signal":{"$ref":"#/$defs/standardSignal"},"financial_data_signal":{"$ref":"#/$defs/standardSignal"},"health_data_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}},"processing":{"type":"object","required":["collection_context","processing_actions","processing_purpose","output_category","storage_signal","embedding_signal","fine_tuning_signal","confidence"],"additionalProperties":false,"properties":{"collection_context":{"$ref":"#/$defs/collectionContext"},"processing_actions":{"type":"array","items":{"$ref":"#/$defs/processingAction"}},"processing_purpose":{"type":"array","items":{"$ref":"#/$defs/processingPurpose"}},"output_category":{"$ref":"#/$defs/outputCategory"},"storage_signal":{"$ref":"#/$defs/standardSignal"},"embedding_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}},"roleAllocation":{"type":"object","required":["provider_role","customer_role","model_provider_role","subprocessor_role","third_party_recipient_role","confidence"],"additionalProperties":false,"properties":{"provider_role":{"$ref":"#/$defs/roleAllocationValue"},"customer_role":{"$ref":"#/$defs/roleAllocationValue"},"model_provider_role":{"$ref":"#/$defs/roleAllocationValue"},"subprocessor_role":{"$ref":"#/$defs/roleAllocationValue"},"third_party_recipient_role":{"$ref":"#/$defs/roleAllocationValue"},"confidence":{"$ref":"#/$defs/confidence"}}},"regimeRelevance":{"type":"object","required":["gdpr_signal","uk_gdpr_signal","ccpa_cpra_signal","dpdp_signal","colorado_ai_signal","eu_ai_act_signal","basis_tags","confidence"],"additionalProperties":false,"properties":{"gdpr_signal":{"$ref":"#/$defs/standardSignal"},"uk_gdpr_signal":{"$ref":"#/$defs/standardSignal"},"ccpa_cpra_signal":{"$ref":"#/$defs/standardSignal"},"dpdp_signal":{"$ref":"#/$defs/standardSignal"},"colorado_ai_signal":{"$ref":"#/$defs/standardSignal"},"eu_ai_act_signal":{"$ref":"#/$defs/standardSignal"},"basis_tags":{"type":"array","items":{"$ref":"#/$defs/regimeBasisTag"}},"confidence":{"$ref":"#/$defs/confidence"}}},"notice":{"type":"object","required":["privacy_notice_signal","ai_notice_signal","model_provider_notice_signal","subprocessor_notice_signal","notice_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"privacy_notice_signal":{"$ref":"#/$defs/standardSignal"},"ai_notice_signal":{"$ref":"#/$defs/standardSignal"},"model_provider_notice_signal":{"$ref":"#/$defs/standardSignal"},"subprocessor_notice_signal":{"$ref":"#/$defs/standardSignal"},"notice_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"consentBasis":{"type":"object","required":["consent_signal","contract_signal","legitimate_interest_signal","legal_obligation_signal","withdrawal_signal","basis_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"consent_signal":{"$ref":"#/$defs/standardSignal"},"contract_signal":{"$ref":"#/$defs/standardSignal"},"legitimate_interest_signal":{"$ref":"#/$defs/standardSignal"},"legal_obligation_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_signal":{"$ref":"#/$defs/standardSignal"},"basis_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"rights":{"type":"object","required":["access_right_signal","correction_right_signal","deletion_right_signal","portability_right_signal","opt_out_signal","withdrawal_right_signal","grievance_signal","nomination_signal","rights_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"access_right_signal":{"$ref":"#/$defs/standardSignal"},"correction_right_signal":{"$ref":"#/$defs/standardSignal"},"deletion_right_signal":{"$ref":"#/$defs/standardSignal"},"portability_right_signal":{"$ref":"#/$defs/standardSignal"},"opt_out_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_right_signal":{"$ref":"#/$defs/standardSignal"},"grievance_signal":{"$ref":"#/$defs/standardSignal"},"nomination_signal":{"$ref":"#/$defs/standardSignal"},"rights_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"processorChain":{"type":"object","required":["model_provider_visible","cloud_provider_visible","payment_provider_visible","analytics_provider_visible","subprocessor_list_visible","recipient_categories","processor_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"model_provider_visible":{"$ref":"#/$defs/standardSignal"},"cloud_provider_visible":{"$ref":"#/$defs/standardSignal"},"payment_provider_visible":{"$ref":"#/$defs/standardSignal"},"analytics_provider_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_list_visible":{"$ref":"#/$defs/standardSignal"},"recipient_categories":{"type":"array","items":{"$ref":"#/$defs/recipientCategory"}},"processor_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"transferLocation":{"type":"object","required":["cross_border_signal","regions_visible","transfer_basis_signal","data_residency_signal","location_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"cross_border_signal":{"$ref":"#/$defs/standardSignal"},"regions_visible":{"type":"array","items":{"$ref":"#/$defs/region"}},"transfer_basis_signal":{"$ref":"#/$defs/standardSignal"},"data_residency_signal":{"$ref":"#/$defs/standardSignal"},"location_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"retentionDeletionAi":{"type":"object","required":["retention_period_visible","deletion_channel_visible","training_opt_out_visible","embedding_retention_signal","fine_tuning_prohibition_signal","model_weight_deletion_signal","ai_architecture_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"retention_period_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"training_opt_out_visible":{"$ref":"#/$defs/standardSignal"},"embedding_retention_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_prohibition_signal":{"$ref":"#/$defs/standardSignal"},"model_weight_deletion_signal":{"$ref":"#/$defs/standardSignal"},"ai_architecture_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"securityAccountability":{"type":"object","required":["encryption_signal","access_control_signal","audit_log_signal","breach_notice_signal","dpo_or_contact_signal","security_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"encryption_signal":{"$ref":"#/$defs/standardSignal"},"access_control_signal":{"$ref":"#/$defs/standardSignal"},"audit_log_signal":{"$ref":"#/$defs/standardSignal"},"breach_notice_signal":{"$ref":"#/$defs/standardSignal"},"dpo_or_contact_signal":{"$ref":"#/$defs/standardSignal"},"security_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}},"sourceTrace":{"type":"object","required":["feature_refs","provenance_refs","source_refs","document_refs","legal_unit_refs","basis_codes","evidence_strength"],"additionalProperties":false,"properties":{"feature_refs":{"$ref":"#/$defs/stringArray"},"provenance_refs":{"$ref":"#/$defs/stringArray"},"source_refs":{"$ref":"#/$defs/stringArray"},"document_refs":{"$ref":"#/$defs/stringArray"},"legal_unit_refs":{"$ref":"#/$defs/stringArray"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"evidence_strength":{"$ref":"#/$defs/evidenceStrength"}}},"dataProfileSummarySignals":{"type":"object","additionalProperties":false,"properties":{"personal_data_visible":{"$ref":"#/$defs/standardSignal"},"sensitive_data_visible":{"$ref":"#/$defs/standardSignal"},"children_data_visible":{"$ref":"#/$defs/standardSignal"},"cross_border_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_visible":{"$ref":"#/$defs/standardSignal"},"training_or_finetuning_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"automated_decision_visible":{"$ref":"#/$defs/standardSignal"}}},"stage7NavigationIndex":{"type":"object","required":["feature_to_data_flow_index","feature_to_legal_unit_index","control_family_index","data_signal_index","legal_unit_source_locator_index","absence_unknown_index","fallback_source_packet"],"additionalProperties":false,"properties":{"feature_to_data_flow_index":{"type":"array","items":{"$ref":"#/$defs/featureToDataFlowIndexItem"}},"feature_to_legal_unit_index":{"type":"array","items":{"$ref":"#/$defs/featureToLegalUnitIndexItem"}},"control_family_index":{"type":"array","items":{"$ref":"#/$defs/controlFamilyIndexItem"}},"data_signal_index":{"type":"array","items":{"$ref":"#/$defs/dataSignalIndexItem"}},"legal_unit_source_locator_index":{"type":"array","items":{"$ref":"#/$defs/legalUnitSourceLocatorIndexItem"}},"absence_unknown_index":{"type":"array","items":{"$ref":"#/$defs/absenceUnknownIndexItem"}},"fallback_source_packet":{"type":"array","items":{"$ref":"#/$defs/fallbackSourcePacketItem"}}}},"featureToDataFlowIndexItem":{"type":"object","required":["feature_id","data_flow_ids","provenance_ids","data_categories","surface_tokens"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"provenance_ids":{"$ref":"#/$defs/stringArray"},"data_categories":{"$ref":"#/$defs/stringArray"},"surface_tokens":{"$ref":"#/$defs/stringArray"}}},"featureToLegalUnitIndexItem":{"type":"object","required":["feature_id","document_ids","legal_unit_ids","control_families"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"},"control_families":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}}}},"controlFamilyIndexItem":{"type":"object","required":["control_family","control_signal","control_signal_ids","document_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"control_signal_ids":{"$ref":"#/$defs/stringArray"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}},"dataSignalIndexItem":{"type":"object","required":["signal_type","signal_value","data_flow_ids","feature_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"signal_value":{"$ref":"#/$defs/standardSignal"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"feature_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}},"legalUnitSourceLocatorIndexItem":{"type":"object","required":["document_id","legal_unit_id","source_record_ref","source_url","locator_type","locator_value"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}},"absenceUnknownIndexItem":{"type":"object","required":["signal_type","object_ref","search_scope","absence_basis","confidence"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"object_ref":{"type":"string"},"search_scope":{"type":"string"},"absence_basis":{"type":"string","enum":["searched_legal_docs","searched_privacy_docs","searched_security_docs","searched_trust_docs","searched_public_sources","source_not_available","access_failed","not_enough_context","unknown"]},"confidence":{"$ref":"#/$defs/confidence"}}},"fallbackSourcePacketItem":{"type":"object","required":["source_record_ref","source_url","source_type","reason_for_fallback"],"additionalProperties":false,"properties":{"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"source_type":{"$ref":"#/$defs/sourceType"},"reason_for_fallback":{"$ref":"#/$defs/fallbackReason"}}},"stage6Limitation":{"type":"object","required":["limitation_id","scope","reason_code","impact_code","confidence"],"additionalProperties":false,"properties":{"limitation_id":{"type":"string"},"scope":{"type":"string"},"reason_code":{"$ref":"#/$defs/limitationReasonCode"},"impact_code":{"$ref":"#/$defs/limitationImpactCode"},"confidence":{"$ref":"#/$defs/confidence"}}},"mismatchType":{"type":"string","enum":["feature_vs_document","data_flow_vs_document","document_vs_document","claim_vs_absence","stack_vs_reality","unknown"]},"mismatchSignal":{"type":"string","enum":["expected_signal_absent","expected_signal_partial","conflicting_signal","source_absent","source_unclear","unknown"]},"locatorType":{"type":"string","enum":["heading_path","url_fragment","text_anchor","source_record","page_url","chunk_index","unknown"]},"sourceType":{"type":"string","enum":["legal_document","privacy_document","terms_document","security_document","trust_document","status_document","feature_source","public_page","api_doc","help_doc","source_bundle_record","unknown"]},"absenceBasis":{"type":"string","enum":["searched_legal_docs","searched_privacy_docs","searched_security_docs","searched_trust_docs","searched_public_sources","source_not_available","access_failed","not_enough_context","unknown"]},"fallbackReason":{"type":"string","enum":["direct_source_verification_required","stage6_signal_unknown","stage6_signal_conflicting","missing_legal_unit_ref","hunter_trigger_requires_line_read","source_locator_available","source_scope_incomplete","unindexed_admitted_source","unknown"]},"limitationReasonCode":{"type":"string","enum":["source_missing","source_conflicting","source_access_failed","stage5_signal_unknown","legal_unit_ref_missing","low_confidence_inference","model_skipped","unknown"]},"limitationImpactCode":{"type":"string","enum":["no_stage7_block","requires_source_line_read","reduces_confidence","partial_navigation_only","unknown"]}}};
+const schema103 = {"type":"string","enum":["stage6a_legal_document_cartography","stage6b_data_provenance","stage6_integrated_handoff"]};
+const schema104 = {"type":"object","additionalProperties":false,"properties":{"target_profile_version":{"type":"string"},"feature_profile_version":{"type":"string"},"source_bundle_version":{"type":"string"},"target_profile_ref":{"type":["string","object","null"],"additionalProperties":true},"feature_profile_ref":{"type":["string","object","null"],"additionalProperties":true}}};
+const schema105 = {"type":"object","required":["legal_document_inventory","legal_document_index","document_relationship_map","document_control_signal_map","document_mismatch_signal_map","legal_document_summary_signals","legal_document_limitations"],"additionalProperties":false,"properties":{"legal_document_inventory":{"type":"array","items":{"$ref":"#/$defs/legalDocumentInventoryItem"}},"legal_document_index":{"type":"array","items":{"$ref":"#/$defs/legalDocumentIndexItem"}},"document_relationship_map":{"type":"array","items":{"$ref":"#/$defs/documentRelationshipItem"}},"document_control_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentControlSignalItem"}},"document_mismatch_signal_map":{"type":"array","items":{"$ref":"#/$defs/documentMismatchSignalItem"}},"legal_document_summary_signals":{"$ref":"#/$defs/legalDocumentSummarySignals"},"legal_document_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}};
+const schema106 = {"type":"object","required":["document_id","document_type","document_family","document_title","document_status","access_status","source_record_ref","source_url","final_url","confidence"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"document_type":{"$ref":"#/$defs/documentType"},"document_family":{"type":"string","enum":["core","supplemental","embedded","operational","unknown"]},"document_title":{"type":"string"},"document_status":{"type":"string","enum":["visible","embedded","linked","not_visible","unknown"]},"access_status":{"type":"string","enum":["ingested","metadata_only","fetch_failed","blocked","not_attempted","unknown"]},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"final_url":{"$ref":"#/$defs/nullableString"},"parent_document_id":{"$ref":"#/$defs/nullableString"},"effective_date":{"type":"string"},"last_updated":{"type":"string"},"version":{"type":"string"},"jurisdiction_scope":{"$ref":"#/$defs/stringArray"},"language":{"type":"string"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema107 = {"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","eula","cookie_policy","subprocessor_page","security_page","trust_center","status_page","ai_policy","responsible_ai_page","model_card","developer_terms","api_terms","community_guidelines","data_deletion_page","dsr_page","grievance_page","baa","hipaa_notice","data_transfer_addendum","terms_page","pricing_terms","service_description_page","other_valid_control_doc","unknown"]};
+const schema108 = {"type":["string","null"]};
+const schema110 = {"type":"array","items":{"type":"string"}};
+const schema111 = {"type":"string","enum":["high","medium","low","unknown"]};
 
 function validate55(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -7903,7 +8328,7 @@ vErrors.push(err9);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema104.properties, key0))){
+if(!(func1.call(schema106.properties, key0))){
 const err10 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err10];
@@ -7939,7 +8364,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((((((((((((((((((((((((((data1 === "tos") || (data1 === "privacy_policy")) || (data1 === "dpa")) || (data1 === "aup")) || (data1 === "sla")) || (data1 === "eula")) || (data1 === "cookie_policy")) || (data1 === "subprocessor_page")) || (data1 === "security_page")) || (data1 === "trust_center")) || (data1 === "status_page")) || (data1 === "ai_policy")) || (data1 === "responsible_ai_page")) || (data1 === "model_card")) || (data1 === "developer_terms")) || (data1 === "api_terms")) || (data1 === "community_guidelines")) || (data1 === "data_deletion_page")) || (data1 === "dsr_page")) || (data1 === "grievance_page")) || (data1 === "baa")) || (data1 === "hipaa_notice")) || (data1 === "data_transfer_addendum")) || (data1 === "terms_page")) || (data1 === "pricing_terms")) || (data1 === "service_description_page")) || (data1 === "other_valid_control_doc")) || (data1 === "unknown"))){
-const err13 = {instancePath:instancePath+"/document_type",schemaPath:"#/$defs/documentType/enum",keyword:"enum",params:{allowedValues: schema105.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/document_type",schemaPath:"#/$defs/documentType/enum",keyword:"enum",params:{allowedValues: schema107.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -7962,7 +8387,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!(((((data2 === "core") || (data2 === "supplemental")) || (data2 === "embedded")) || (data2 === "operational")) || (data2 === "unknown"))){
-const err15 = {instancePath:instancePath+"/document_family",schemaPath:"#/properties/document_family/enum",keyword:"enum",params:{allowedValues: schema104.properties.document_family.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/document_family",schemaPath:"#/properties/document_family/enum",keyword:"enum",params:{allowedValues: schema106.properties.document_family.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -7997,7 +8422,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!(((((data4 === "visible") || (data4 === "embedded")) || (data4 === "linked")) || (data4 === "not_visible")) || (data4 === "unknown"))){
-const err18 = {instancePath:instancePath+"/document_status",schemaPath:"#/properties/document_status/enum",keyword:"enum",params:{allowedValues: schema104.properties.document_status.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/document_status",schemaPath:"#/properties/document_status/enum",keyword:"enum",params:{allowedValues: schema106.properties.document_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -8020,7 +8445,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((data5 === "ingested") || (data5 === "metadata_only")) || (data5 === "fetch_failed")) || (data5 === "blocked")) || (data5 === "not_attempted")) || (data5 === "unknown"))){
-const err20 = {instancePath:instancePath+"/access_status",schemaPath:"#/properties/access_status/enum",keyword:"enum",params:{allowedValues: schema104.properties.access_status.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/access_status",schemaPath:"#/properties/access_status/enum",keyword:"enum",params:{allowedValues: schema106.properties.access_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -8057,7 +8482,7 @@ errors++;
 if(data.final_url !== undefined){
 let data8 = data.final_url;
 if((typeof data8 !== "string") && (data8 !== null)){
-const err23 = {instancePath:instancePath+"/final_url",schemaPath:"#/$defs/nullableString/type",keyword:"type",params:{type: schema106.type},message:"must be string,null"};
+const err23 = {instancePath:instancePath+"/final_url",schemaPath:"#/$defs/nullableString/type",keyword:"type",params:{type: schema108.type},message:"must be string,null"};
 if(vErrors === null){
 vErrors = [err23];
 }
@@ -8070,7 +8495,7 @@ errors++;
 if(data.parent_document_id !== undefined){
 let data9 = data.parent_document_id;
 if((typeof data9 !== "string") && (data9 !== null)){
-const err24 = {instancePath:instancePath+"/parent_document_id",schemaPath:"#/$defs/nullableString/type",keyword:"type",params:{type: schema106.type},message:"must be string,null"};
+const err24 = {instancePath:instancePath+"/parent_document_id",schemaPath:"#/$defs/nullableString/type",keyword:"type",params:{type: schema108.type},message:"must be string,null"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -8169,7 +8594,7 @@ vErrors.push(err31);
 errors++;
 }
 if(!((((data16 === "high") || (data16 === "medium")) || (data16 === "low")) || (data16 === "unknown"))){
-const err32 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err32 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -8195,11 +8620,11 @@ return errors === 0;
 }
 validate55.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema110 = {"type":"object","required":["index_id","document_id","legal_unit_id","legal_unit_type","legal_unit_title","legal_unit_path","legal_unit_order","section_function","control_families_detected","feature_refs","data_flow_refs","source_record_ref","source_locator","basis_codes","confidence"],"additionalProperties":false,"properties":{"index_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"legal_unit_type":{"type":"string","enum":["main_section","annexure","schedule","exhibit","linked_policy","material_table","control_notice","unknown"]},"legal_unit_title":{"type":"string"},"legal_unit_path":{"type":"string"},"legal_unit_order":{"type":"integer","minimum":1},"section_function":{"$ref":"#/$defs/sectionFunction"},"control_families_detected":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"source_record_ref":{"type":"string"},"source_locator":{"$ref":"#/$defs/sourceLocator"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema111 = {"type":"string","enum":["definitions","service_description","ai_disclosure","privacy_notice","data_processing_terms","subprocessor_terms","acceptable_use_rules","prohibited_use_rules","security_terms","breach_terms","retention_deletion_terms","rights_request_terms","cross_border_transfer_terms","liability_terms","warranty_disclaimer","sla_terms","agentic_controls","commercial_terms","dispute_terms","ip_ownership_terms","minor_access_terms","automated_decision_terms","sensitive_data_terms","other","unknown"]};
-const schema112 = {"type":"string","enum":["ai_disclosure","hallucination_disclaimer","hitl_mandate","acceptable_use","prohibited_use","privacy_notice","data_collection","data_use","data_sharing","subprocessor_disclosure","model_provider_disclosure","training_or_finetuning","retention","deletion","data_subject_rights","consent_withdrawal","grievance_channel","security_safeguards","breach_notice","cross_border_transfer","liability_cap","warranty_disclaimer","sla_performance","agentic_controls","commercial_terms","dispute_terms","ip_ownership","minor_access","automated_decision","sensitive_data","unknown"]};
-const schema115 = {"type":"object","required":["locator_type","locator_value"],"additionalProperties":false,"properties":{"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}};
-const schema116 = {"type":"string","enum":["heading_path","url_fragment","text_anchor","source_record","page_url","chunk_index","unknown"]};
+const schema112 = {"type":"object","required":["index_id","document_id","legal_unit_id","legal_unit_type","legal_unit_title","legal_unit_path","legal_unit_order","section_function","control_families_detected","feature_refs","data_flow_refs","source_record_ref","source_locator","basis_codes","confidence"],"additionalProperties":false,"properties":{"index_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"legal_unit_type":{"type":"string","enum":["main_section","annexure","schedule","exhibit","linked_policy","material_table","control_notice","unknown"]},"legal_unit_title":{"type":"string"},"legal_unit_path":{"type":"string"},"legal_unit_order":{"type":"integer","minimum":1},"section_function":{"$ref":"#/$defs/sectionFunction"},"control_families_detected":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"source_record_ref":{"type":"string"},"source_locator":{"$ref":"#/$defs/sourceLocator"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema113 = {"type":"string","enum":["definitions","service_description","ai_disclosure","privacy_notice","data_processing_terms","subprocessor_terms","acceptable_use_rules","prohibited_use_rules","security_terms","breach_terms","retention_deletion_terms","rights_request_terms","cross_border_transfer_terms","liability_terms","warranty_disclaimer","sla_terms","agentic_controls","commercial_terms","dispute_terms","ip_ownership_terms","minor_access_terms","automated_decision_terms","sensitive_data_terms","other","unknown"]};
+const schema114 = {"type":"string","enum":["ai_disclosure","hallucination_disclaimer","hitl_mandate","acceptable_use","prohibited_use","privacy_notice","data_collection","data_use","data_sharing","subprocessor_disclosure","model_provider_disclosure","training_or_finetuning","retention","deletion","data_subject_rights","consent_withdrawal","grievance_channel","security_safeguards","breach_notice","cross_border_transfer","liability_cap","warranty_disclaimer","sla_performance","agentic_controls","commercial_terms","dispute_terms","ip_ownership","minor_access","automated_decision","sensitive_data","unknown"]};
+const schema117 = {"type":"object","required":["locator_type","locator_value"],"additionalProperties":false,"properties":{"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}};
+const schema118 = {"type":"string","enum":["heading_path","url_fragment","text_anchor","source_record","page_url","chunk_index","unknown"]};
 
 function validate58(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8257,7 +8682,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!(((((((data0 === "heading_path") || (data0 === "url_fragment")) || (data0 === "text_anchor")) || (data0 === "source_record")) || (data0 === "page_url")) || (data0 === "chunk_index")) || (data0 === "unknown"))){
-const err4 = {instancePath:instancePath+"/locator_type",schemaPath:"#/$defs/locatorType/enum",keyword:"enum",params:{allowedValues: schema116.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/locator_type",schemaPath:"#/$defs/locatorType/enum",keyword:"enum",params:{allowedValues: schema118.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -8295,8 +8720,8 @@ return errors === 0;
 }
 validate58.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema117 = {"type":"array","items":{"$ref":"#/$defs/basisCode"},"uniqueItems":true};
-const schema118 = {"type":"string","enum":["source_bundle_record_ref","stage5_feature_ref","stage5_data_provenance","stage5_regulated_surface","stage5_architecture_hint","stage6_legal_unit_ref","stage6_control_signal_ref","stage6_data_flow_ref","direct_policy_signal","indirect_policy_signal","absence_after_search","macro_heading_classification","source_metadata","model_semantic_classification","deterministic_seed","unknown"]};
+const schema119 = {"type":"array","items":{"$ref":"#/$defs/basisCode"},"uniqueItems":true};
+const schema120 = {"type":"string","enum":["source_bundle_record_ref","stage5_feature_ref","stage5_data_provenance","stage5_regulated_surface","stage5_architecture_hint","stage6_legal_unit_ref","stage6_control_signal_ref","stage6_data_flow_ref","direct_policy_signal","indirect_policy_signal","absence_after_search","macro_heading_classification","source_metadata","model_semantic_classification","deterministic_seed","unknown"]};
 const func0 = equalRuntime.default;
 
 function validate60(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
@@ -8324,7 +8749,7 @@ vErrors.push(err0);
 errors++;
 }
 if(!((((((((((((((((data0 === "source_bundle_record_ref") || (data0 === "stage5_feature_ref")) || (data0 === "stage5_data_provenance")) || (data0 === "stage5_regulated_surface")) || (data0 === "stage5_architecture_hint")) || (data0 === "stage6_legal_unit_ref")) || (data0 === "stage6_control_signal_ref")) || (data0 === "stage6_data_flow_ref")) || (data0 === "direct_policy_signal")) || (data0 === "indirect_policy_signal")) || (data0 === "absence_after_search")) || (data0 === "macro_heading_classification")) || (data0 === "source_metadata")) || (data0 === "model_semantic_classification")) || (data0 === "deterministic_seed")) || (data0 === "unknown"))){
-const err1 = {instancePath:instancePath+"/" + i0,schemaPath:"#/$defs/basisCode/enum",keyword:"enum",params:{allowedValues: schema118.enum},message:"must be equal to one of the allowed values"};
+const err1 = {instancePath:instancePath+"/" + i0,schemaPath:"#/$defs/basisCode/enum",keyword:"enum",params:{allowedValues: schema120.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err1];
 }
@@ -8533,7 +8958,7 @@ vErrors.push(err14);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema110.properties, key0))){
+if(!(func1.call(schema112.properties, key0))){
 const err15 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err15];
@@ -8593,7 +9018,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((((data3 === "main_section") || (data3 === "annexure")) || (data3 === "schedule")) || (data3 === "exhibit")) || (data3 === "linked_policy")) || (data3 === "material_table")) || (data3 === "control_notice")) || (data3 === "unknown"))){
-const err20 = {instancePath:instancePath+"/legal_unit_type",schemaPath:"#/properties/legal_unit_type/enum",keyword:"enum",params:{allowedValues: schema110.properties.legal_unit_type.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/legal_unit_type",schemaPath:"#/properties/legal_unit_type/enum",keyword:"enum",params:{allowedValues: schema112.properties.legal_unit_type.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -8665,7 +9090,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!(((((((((((((((((((((((((data7 === "definitions") || (data7 === "service_description")) || (data7 === "ai_disclosure")) || (data7 === "privacy_notice")) || (data7 === "data_processing_terms")) || (data7 === "subprocessor_terms")) || (data7 === "acceptable_use_rules")) || (data7 === "prohibited_use_rules")) || (data7 === "security_terms")) || (data7 === "breach_terms")) || (data7 === "retention_deletion_terms")) || (data7 === "rights_request_terms")) || (data7 === "cross_border_transfer_terms")) || (data7 === "liability_terms")) || (data7 === "warranty_disclaimer")) || (data7 === "sla_terms")) || (data7 === "agentic_controls")) || (data7 === "commercial_terms")) || (data7 === "dispute_terms")) || (data7 === "ip_ownership_terms")) || (data7 === "minor_access_terms")) || (data7 === "automated_decision_terms")) || (data7 === "sensitive_data_terms")) || (data7 === "other")) || (data7 === "unknown"))){
-const err26 = {instancePath:instancePath+"/section_function",schemaPath:"#/$defs/sectionFunction/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/section_function",schemaPath:"#/$defs/sectionFunction/enum",keyword:"enum",params:{allowedValues: schema113.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -8692,7 +9117,7 @@ vErrors.push(err27);
 errors++;
 }
 if(!(((((((((((((((((((((((((((((((data9 === "ai_disclosure") || (data9 === "hallucination_disclaimer")) || (data9 === "hitl_mandate")) || (data9 === "acceptable_use")) || (data9 === "prohibited_use")) || (data9 === "privacy_notice")) || (data9 === "data_collection")) || (data9 === "data_use")) || (data9 === "data_sharing")) || (data9 === "subprocessor_disclosure")) || (data9 === "model_provider_disclosure")) || (data9 === "training_or_finetuning")) || (data9 === "retention")) || (data9 === "deletion")) || (data9 === "data_subject_rights")) || (data9 === "consent_withdrawal")) || (data9 === "grievance_channel")) || (data9 === "security_safeguards")) || (data9 === "breach_notice")) || (data9 === "cross_border_transfer")) || (data9 === "liability_cap")) || (data9 === "warranty_disclaimer")) || (data9 === "sla_performance")) || (data9 === "agentic_controls")) || (data9 === "commercial_terms")) || (data9 === "dispute_terms")) || (data9 === "ip_ownership")) || (data9 === "minor_access")) || (data9 === "automated_decision")) || (data9 === "sensitive_data")) || (data9 === "unknown"))){
-const err28 = {instancePath:instancePath+"/control_families_detected/" + i0,schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema112.enum},message:"must be equal to one of the allowed values"};
+const err28 = {instancePath:instancePath+"/control_families_detected/" + i0,schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema114.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -8807,7 +9232,7 @@ vErrors.push(err35);
 errors++;
 }
 if(!((((data17 === "high") || (data17 === "medium")) || (data17 === "low")) || (data17 === "unknown"))){
-const err36 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err36 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err36];
 }
@@ -8833,7 +9258,7 @@ return errors === 0;
 }
 validate57.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema120 = {"type":"object","required":["relationship_id","from_ref","to_ref","relationship_type","basis_codes","confidence"],"additionalProperties":false,"properties":{"relationship_id":{"type":"string"},"from_ref":{"type":"string"},"to_ref":{"type":"string"},"relationship_type":{"type":"string","enum":["incorporates_by_reference","supplements","controls_on_conflict","linked_from","defines_terms_for","activates_when","supersedes_for_subject_matter","embedded_within","unknown"]},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema122 = {"type":"object","required":["relationship_id","from_ref","to_ref","relationship_type","basis_codes","confidence"],"additionalProperties":false,"properties":{"relationship_id":{"type":"string"},"from_ref":{"type":"string"},"to_ref":{"type":"string"},"relationship_type":{"type":"string","enum":["incorporates_by_reference","supplements","controls_on_conflict","linked_from","defines_terms_for","activates_when","supersedes_for_subject_matter","embedded_within","unknown"]},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate63(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -8967,7 +9392,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!(((((((((data3 === "incorporates_by_reference") || (data3 === "supplements")) || (data3 === "controls_on_conflict")) || (data3 === "linked_from")) || (data3 === "defines_terms_for")) || (data3 === "activates_when")) || (data3 === "supersedes_for_subject_matter")) || (data3 === "embedded_within")) || (data3 === "unknown"))){
-const err11 = {instancePath:instancePath+"/relationship_type",schemaPath:"#/properties/relationship_type/enum",keyword:"enum",params:{allowedValues: schema120.properties.relationship_type.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/relationship_type",schemaPath:"#/properties/relationship_type/enum",keyword:"enum",params:{allowedValues: schema122.properties.relationship_type.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -8996,7 +9421,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((data5 === "high") || (data5 === "medium")) || (data5 === "low")) || (data5 === "unknown"))){
-const err13 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -9022,8 +9447,8 @@ return errors === 0;
 }
 validate63.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema122 = {"type":"object","required":["control_signal_id","document_id","legal_unit_id","control_family","control_signal","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"control_signal_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema124 = {"type":"string","enum":["visible","partial","absent_after_search","unclear","not_applicable","unknown"]};
+const schema124 = {"type":"object","required":["control_signal_id","document_id","legal_unit_id","control_family","control_signal","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"control_signal_id":{"type":"string"},"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"feature_refs":{"$ref":"#/$defs/stringArray"},"data_flow_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema126 = {"type":"string","enum":["visible","partial","absent_after_search","unclear","not_applicable","unknown"]};
 
 function validate66(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9117,7 +9542,7 @@ vErrors.push(err7);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema122.properties, key0))){
+if(!(func1.call(schema124.properties, key0))){
 const err8 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err8];
@@ -9177,7 +9602,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!(((((((((((((((((((((((((((((((data3 === "ai_disclosure") || (data3 === "hallucination_disclaimer")) || (data3 === "hitl_mandate")) || (data3 === "acceptable_use")) || (data3 === "prohibited_use")) || (data3 === "privacy_notice")) || (data3 === "data_collection")) || (data3 === "data_use")) || (data3 === "data_sharing")) || (data3 === "subprocessor_disclosure")) || (data3 === "model_provider_disclosure")) || (data3 === "training_or_finetuning")) || (data3 === "retention")) || (data3 === "deletion")) || (data3 === "data_subject_rights")) || (data3 === "consent_withdrawal")) || (data3 === "grievance_channel")) || (data3 === "security_safeguards")) || (data3 === "breach_notice")) || (data3 === "cross_border_transfer")) || (data3 === "liability_cap")) || (data3 === "warranty_disclaimer")) || (data3 === "sla_performance")) || (data3 === "agentic_controls")) || (data3 === "commercial_terms")) || (data3 === "dispute_terms")) || (data3 === "ip_ownership")) || (data3 === "minor_access")) || (data3 === "automated_decision")) || (data3 === "sensitive_data")) || (data3 === "unknown"))){
-const err13 = {instancePath:instancePath+"/control_family",schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema112.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/control_family",schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema114.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -9200,7 +9625,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "partial")) || (data4 === "absent_after_search")) || (data4 === "unclear")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err15 = {instancePath:instancePath+"/control_signal",schemaPath:"#/$defs/controlSignal/enum",keyword:"enum",params:{allowedValues: schema124.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/control_signal",schemaPath:"#/$defs/controlSignal/enum",keyword:"enum",params:{allowedValues: schema126.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -9313,7 +9738,7 @@ vErrors.push(err22);
 errors++;
 }
 if(!((((data12 === "high") || (data12 === "medium")) || (data12 === "low")) || (data12 === "unknown"))){
-const err23 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err23 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err23];
 }
@@ -9339,9 +9764,9 @@ return errors === 0;
 }
 validate66.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema129 = {"type":"object","required":["mismatch_id","mismatch_type","mismatch_signal","expected_ref","actual_ref","control_family","basis_codes","confidence"],"additionalProperties":false,"properties":{"mismatch_id":{"type":"string"},"mismatch_type":{"$ref":"#/$defs/mismatchType"},"mismatch_signal":{"$ref":"#/$defs/mismatchSignal"},"expected_ref":{"type":"string"},"actual_ref":{"type":["string","null"]},"control_family":{"$ref":"#/$defs/controlFamily"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema130 = {"type":"string","enum":["feature_vs_document","data_flow_vs_document","document_vs_document","claim_vs_absence","stack_vs_reality","unknown"]};
-const schema131 = {"type":"string","enum":["expected_signal_absent","expected_signal_partial","conflicting_signal","source_absent","source_unclear","unknown"]};
+const schema131 = {"type":"object","required":["mismatch_id","mismatch_type","mismatch_signal","expected_ref","actual_ref","control_family","basis_codes","confidence"],"additionalProperties":false,"properties":{"mismatch_id":{"type":"string"},"mismatch_type":{"$ref":"#/$defs/mismatchType"},"mismatch_signal":{"$ref":"#/$defs/mismatchSignal"},"expected_ref":{"type":"string"},"actual_ref":{"type":["string","null"]},"control_family":{"$ref":"#/$defs/controlFamily"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema132 = {"type":"string","enum":["feature_vs_document","data_flow_vs_document","document_vs_document","claim_vs_absence","stack_vs_reality","unknown"]};
+const schema133 = {"type":"string","enum":["expected_signal_absent","expected_signal_partial","conflicting_signal","source_absent","source_unclear","unknown"]};
 
 function validate69(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9471,7 +9896,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!((((((data1 === "feature_vs_document") || (data1 === "data_flow_vs_document")) || (data1 === "document_vs_document")) || (data1 === "claim_vs_absence")) || (data1 === "stack_vs_reality")) || (data1 === "unknown"))){
-const err11 = {instancePath:instancePath+"/mismatch_type",schemaPath:"#/$defs/mismatchType/enum",keyword:"enum",params:{allowedValues: schema130.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/mismatch_type",schemaPath:"#/$defs/mismatchType/enum",keyword:"enum",params:{allowedValues: schema132.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -9494,7 +9919,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((((data2 === "expected_signal_absent") || (data2 === "expected_signal_partial")) || (data2 === "conflicting_signal")) || (data2 === "source_absent")) || (data2 === "source_unclear")) || (data2 === "unknown"))){
-const err13 = {instancePath:instancePath+"/mismatch_signal",schemaPath:"#/$defs/mismatchSignal/enum",keyword:"enum",params:{allowedValues: schema131.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/mismatch_signal",schemaPath:"#/$defs/mismatchSignal/enum",keyword:"enum",params:{allowedValues: schema133.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -9519,7 +9944,7 @@ errors++;
 if(data.actual_ref !== undefined){
 let data4 = data.actual_ref;
 if((typeof data4 !== "string") && (data4 !== null)){
-const err15 = {instancePath:instancePath+"/actual_ref",schemaPath:"#/properties/actual_ref/type",keyword:"type",params:{type: schema129.properties.actual_ref.type},message:"must be string,null"};
+const err15 = {instancePath:instancePath+"/actual_ref",schemaPath:"#/properties/actual_ref/type",keyword:"type",params:{type: schema131.properties.actual_ref.type},message:"must be string,null"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -9542,7 +9967,7 @@ vErrors.push(err16);
 errors++;
 }
 if(!(((((((((((((((((((((((((((((((data5 === "ai_disclosure") || (data5 === "hallucination_disclaimer")) || (data5 === "hitl_mandate")) || (data5 === "acceptable_use")) || (data5 === "prohibited_use")) || (data5 === "privacy_notice")) || (data5 === "data_collection")) || (data5 === "data_use")) || (data5 === "data_sharing")) || (data5 === "subprocessor_disclosure")) || (data5 === "model_provider_disclosure")) || (data5 === "training_or_finetuning")) || (data5 === "retention")) || (data5 === "deletion")) || (data5 === "data_subject_rights")) || (data5 === "consent_withdrawal")) || (data5 === "grievance_channel")) || (data5 === "security_safeguards")) || (data5 === "breach_notice")) || (data5 === "cross_border_transfer")) || (data5 === "liability_cap")) || (data5 === "warranty_disclaimer")) || (data5 === "sla_performance")) || (data5 === "agentic_controls")) || (data5 === "commercial_terms")) || (data5 === "dispute_terms")) || (data5 === "ip_ownership")) || (data5 === "minor_access")) || (data5 === "automated_decision")) || (data5 === "sensitive_data")) || (data5 === "unknown"))){
-const err17 = {instancePath:instancePath+"/control_family",schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema112.enum},message:"must be equal to one of the allowed values"};
+const err17 = {instancePath:instancePath+"/control_family",schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema114.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -9571,7 +9996,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!((((data7 === "high") || (data7 === "medium")) || (data7 === "low")) || (data7 === "unknown"))){
-const err19 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -9597,8 +10022,8 @@ return errors === 0;
 }
 validate69.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema134 = {"type":"object","required":["core_stack_status","supplemental_artifacts_detected","document_hierarchy_signal","legal_document_coverage_signal","major_unknowns"],"additionalProperties":false,"properties":{"core_stack_status":{"type":"object","required":["tos","privacy_policy","dpa","aup","sla"],"additionalProperties":false,"properties":{"tos":{"$ref":"#/$defs/standardSignal"},"privacy_policy":{"$ref":"#/$defs/standardSignal"},"dpa":{"$ref":"#/$defs/standardSignal"},"aup":{"$ref":"#/$defs/standardSignal"},"sla":{"$ref":"#/$defs/standardSignal"}}},"supplemental_artifacts_detected":{"$ref":"#/$defs/stringArray"},"document_hierarchy_signal":{"$ref":"#/$defs/standardSignal"},"legal_document_coverage_signal":{"$ref":"#/$defs/standardSignal"},"major_unknowns":{"$ref":"#/$defs/stringArray"}}};
-const schema135 = {"type":"string","enum":["visible","not_visible","partial","conflicting","not_applicable","unknown"]};
+const schema136 = {"type":"object","required":["core_stack_status","supplemental_artifacts_detected","document_hierarchy_signal","legal_document_coverage_signal","major_unknowns"],"additionalProperties":false,"properties":{"core_stack_status":{"type":"object","required":["tos","privacy_policy","dpa","aup","sla"],"additionalProperties":false,"properties":{"tos":{"$ref":"#/$defs/standardSignal"},"privacy_policy":{"$ref":"#/$defs/standardSignal"},"dpa":{"$ref":"#/$defs/standardSignal"},"aup":{"$ref":"#/$defs/standardSignal"},"sla":{"$ref":"#/$defs/standardSignal"}}},"supplemental_artifacts_detected":{"$ref":"#/$defs/stringArray"},"document_hierarchy_signal":{"$ref":"#/$defs/standardSignal"},"legal_document_coverage_signal":{"$ref":"#/$defs/standardSignal"},"major_unknowns":{"$ref":"#/$defs/stringArray"}}};
+const schema137 = {"type":"string","enum":["visible","not_visible","partial","conflicting","not_applicable","unknown"]};
 
 function validate72(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -9751,7 +10176,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err13 = {instancePath:instancePath+"/core_stack_status/tos",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/core_stack_status/tos",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -9774,7 +10199,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err15 = {instancePath:instancePath+"/core_stack_status/privacy_policy",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/core_stack_status/privacy_policy",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -9797,7 +10222,7 @@ vErrors.push(err16);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err17 = {instancePath:instancePath+"/core_stack_status/dpa",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err17 = {instancePath:instancePath+"/core_stack_status/dpa",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -9820,7 +10245,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err19 = {instancePath:instancePath+"/core_stack_status/aup",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/core_stack_status/aup",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -9843,7 +10268,7 @@ vErrors.push(err20);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err21 = {instancePath:instancePath+"/core_stack_status/sla",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err21 = {instancePath:instancePath+"/core_stack_status/sla",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -9906,7 +10331,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!((((((data8 === "visible") || (data8 === "not_visible")) || (data8 === "partial")) || (data8 === "conflicting")) || (data8 === "not_applicable")) || (data8 === "unknown"))){
-const err26 = {instancePath:instancePath+"/document_hierarchy_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/document_hierarchy_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -9929,7 +10354,7 @@ vErrors.push(err27);
 errors++;
 }
 if(!((((((data9 === "visible") || (data9 === "not_visible")) || (data9 === "partial")) || (data9 === "conflicting")) || (data9 === "not_applicable")) || (data9 === "unknown"))){
-const err28 = {instancePath:instancePath+"/legal_document_coverage_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err28 = {instancePath:instancePath+"/legal_document_coverage_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -9983,9 +10408,9 @@ return errors === 0;
 }
 validate72.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema144 = {"type":"object","required":["limitation_id","scope","reason_code","impact_code","confidence"],"additionalProperties":false,"properties":{"limitation_id":{"type":"string"},"scope":{"type":"string"},"reason_code":{"$ref":"#/$defs/limitationReasonCode"},"impact_code":{"$ref":"#/$defs/limitationImpactCode"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema145 = {"type":"string","enum":["source_missing","source_conflicting","source_access_failed","stage5_signal_unknown","legal_unit_ref_missing","low_confidence_inference","model_skipped","unknown"]};
-const schema146 = {"type":"string","enum":["no_stage7_block","requires_source_line_read","reduces_confidence","partial_navigation_only","unknown"]};
+const schema146 = {"type":"object","required":["limitation_id","scope","reason_code","impact_code","confidence"],"additionalProperties":false,"properties":{"limitation_id":{"type":"string"},"scope":{"type":"string"},"reason_code":{"$ref":"#/$defs/limitationReasonCode"},"impact_code":{"$ref":"#/$defs/limitationImpactCode"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema147 = {"type":"string","enum":["source_missing","source_conflicting","source_access_failed","stage5_signal_unknown","legal_unit_ref_missing","low_confidence_inference","model_skipped","unknown"]};
+const schema148 = {"type":"string","enum":["no_stage7_block","requires_source_line_read","reduces_confidence","partial_navigation_only","unknown"]};
 
 function validate74(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -10097,7 +10522,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!((((((((data2 === "source_missing") || (data2 === "source_conflicting")) || (data2 === "source_access_failed")) || (data2 === "stage5_signal_unknown")) || (data2 === "legal_unit_ref_missing")) || (data2 === "low_confidence_inference")) || (data2 === "model_skipped")) || (data2 === "unknown"))){
-const err9 = {instancePath:instancePath+"/reason_code",schemaPath:"#/$defs/limitationReasonCode/enum",keyword:"enum",params:{allowedValues: schema145.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/reason_code",schemaPath:"#/$defs/limitationReasonCode/enum",keyword:"enum",params:{allowedValues: schema147.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -10120,7 +10545,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!(((((data3 === "no_stage7_block") || (data3 === "requires_source_line_read")) || (data3 === "reduces_confidence")) || (data3 === "partial_navigation_only")) || (data3 === "unknown"))){
-const err11 = {instancePath:instancePath+"/impact_code",schemaPath:"#/$defs/limitationImpactCode/enum",keyword:"enum",params:{allowedValues: schema146.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/impact_code",schemaPath:"#/$defs/limitationImpactCode/enum",keyword:"enum",params:{allowedValues: schema148.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -10143,7 +10568,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((data4 === "high") || (data4 === "medium")) || (data4 === "low")) || (data4 === "unknown"))){
-const err13 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -10417,10 +10842,10 @@ return errors === 0;
 }
 validate54.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema148 = {"type":"object","required":["data_provenance_profile_version","data_flow_profile","data_profile_summary_signals","data_profile_limitations"],"additionalProperties":false,"properties":{"data_provenance_profile_version":{"const":"data_provenance_profile_v1"},"data_flow_profile":{"type":"array","items":{"$ref":"#/$defs/dataFlowProfileItem"}},"data_profile_summary_signals":{"$ref":"#/$defs/dataProfileSummarySignals"},"data_profile_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}};
-const schema149 = {"type":"object","required":["data_flow_id","feature_id","provenance_id","feature_role","flow_role","data_subject","data_category","processing","role_allocation","regime_relevance","notice","consent_basis","rights","processor_chain","transfer_location","retention_deletion_ai","security_accountability","source_trace","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"data_flow_id":{"type":"string"},"feature_id":{"type":"string"},"provenance_id":{"type":"string"},"feature_role":{"type":"string","enum":["core","supporting","contextual","unknown"]},"flow_role":{"type":"string","enum":["primary_input","secondary_input","system_metadata","generated_output","stored_record","third_party_transfer","derived_data","unknown"]},"data_subject":{"$ref":"#/$defs/dataSubject"},"data_category":{"$ref":"#/$defs/dataCategory"},"processing":{"$ref":"#/$defs/processing"},"role_allocation":{"$ref":"#/$defs/roleAllocation"},"regime_relevance":{"$ref":"#/$defs/regimeRelevance"},"notice":{"$ref":"#/$defs/notice"},"consent_basis":{"$ref":"#/$defs/consentBasis"},"rights":{"$ref":"#/$defs/rights"},"processor_chain":{"$ref":"#/$defs/processorChain"},"transfer_location":{"$ref":"#/$defs/transferLocation"},"retention_deletion_ai":{"$ref":"#/$defs/retentionDeletionAi"},"security_accountability":{"$ref":"#/$defs/securityAccountability"},"source_trace":{"$ref":"#/$defs/sourceTrace"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema150 = {"type":"object","required":["subject_type","subject_labels","minor_signal","employee_signal","customer_signal","confidence"],"additionalProperties":false,"properties":{"subject_type":{"$ref":"#/$defs/dataSubjectType"},"subject_labels":{"$ref":"#/$defs/stringArray"},"minor_signal":{"$ref":"#/$defs/standardSignal"},"employee_signal":{"$ref":"#/$defs/standardSignal"},"customer_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema151 = {"type":"string","enum":["customer_user","end_user","employee","contractor","website_visitor","developer_user","child_or_minor","business_contact","unknown"]};
+const schema150 = {"type":"object","required":["data_provenance_profile_version","data_flow_profile","data_profile_summary_signals","data_profile_limitations"],"additionalProperties":false,"properties":{"data_provenance_profile_version":{"const":"data_provenance_profile_v1"},"data_flow_profile":{"type":"array","items":{"$ref":"#/$defs/dataFlowProfileItem"}},"data_profile_summary_signals":{"$ref":"#/$defs/dataProfileSummarySignals"},"data_profile_limitations":{"type":"array","items":{"$ref":"#/$defs/stage6Limitation"}}}};
+const schema151 = {"type":"object","required":["data_flow_id","feature_id","provenance_id","feature_role","flow_role","data_subject","data_category","processing","role_allocation","regime_relevance","notice","consent_basis","rights","processor_chain","transfer_location","retention_deletion_ai","security_accountability","source_trace","basis_codes","source_refs","confidence"],"additionalProperties":false,"properties":{"data_flow_id":{"type":"string"},"feature_id":{"type":"string"},"provenance_id":{"type":"string"},"feature_role":{"type":"string","enum":["core","supporting","contextual","unknown"]},"flow_role":{"type":"string","enum":["primary_input","secondary_input","system_metadata","generated_output","stored_record","third_party_transfer","derived_data","unknown"]},"data_subject":{"$ref":"#/$defs/dataSubject"},"data_category":{"$ref":"#/$defs/dataCategory"},"processing":{"$ref":"#/$defs/processing"},"role_allocation":{"$ref":"#/$defs/roleAllocation"},"regime_relevance":{"$ref":"#/$defs/regimeRelevance"},"notice":{"$ref":"#/$defs/notice"},"consent_basis":{"$ref":"#/$defs/consentBasis"},"rights":{"$ref":"#/$defs/rights"},"processor_chain":{"$ref":"#/$defs/processorChain"},"transfer_location":{"$ref":"#/$defs/transferLocation"},"retention_deletion_ai":{"$ref":"#/$defs/retentionDeletionAi"},"security_accountability":{"$ref":"#/$defs/securityAccountability"},"source_trace":{"$ref":"#/$defs/sourceTrace"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"source_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema152 = {"type":"object","required":["subject_type","subject_labels","minor_signal","employee_signal","customer_signal","confidence"],"additionalProperties":false,"properties":{"subject_type":{"$ref":"#/$defs/dataSubjectType"},"subject_labels":{"$ref":"#/$defs/stringArray"},"minor_signal":{"$ref":"#/$defs/standardSignal"},"employee_signal":{"$ref":"#/$defs/standardSignal"},"customer_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema153 = {"type":"string","enum":["customer_user","end_user","employee","contractor","website_visitor","developer_user","child_or_minor","business_contact","unknown"]};
 
 function validate79(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -10518,7 +10943,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!(((((((((data0 === "customer_user") || (data0 === "end_user")) || (data0 === "employee")) || (data0 === "contractor")) || (data0 === "website_visitor")) || (data0 === "developer_user")) || (data0 === "child_or_minor")) || (data0 === "business_contact")) || (data0 === "unknown"))){
-const err8 = {instancePath:instancePath+"/subject_type",schemaPath:"#/$defs/dataSubjectType/enum",keyword:"enum",params:{allowedValues: schema151.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/subject_type",schemaPath:"#/$defs/dataSubjectType/enum",keyword:"enum",params:{allowedValues: schema153.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -10569,7 +10994,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err12 = {instancePath:instancePath+"/minor_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/minor_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -10592,7 +11017,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err14 = {instancePath:instancePath+"/employee_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/employee_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -10615,7 +11040,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err16 = {instancePath:instancePath+"/customer_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/customer_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -10638,7 +11063,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((data6 === "high") || (data6 === "medium")) || (data6 === "low")) || (data6 === "unknown"))){
-const err18 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -10664,8 +11089,8 @@ return errors === 0;
 }
 validate79.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema157 = {"type":"object","required":["category_types","personal_data_signal","sensitive_data_signal","credential_or_secret_signal","client_confidential_signal","biometric_signal","financial_data_signal","health_data_signal","confidence"],"additionalProperties":false,"properties":{"category_types":{"type":"array","items":{"$ref":"#/$defs/dataCategoryType"}},"personal_data_signal":{"$ref":"#/$defs/standardSignal"},"sensitive_data_signal":{"$ref":"#/$defs/standardSignal"},"credential_or_secret_signal":{"$ref":"#/$defs/standardSignal"},"client_confidential_signal":{"$ref":"#/$defs/standardSignal"},"biometric_signal":{"$ref":"#/$defs/standardSignal"},"financial_data_signal":{"$ref":"#/$defs/standardSignal"},"health_data_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema158 = {"type":"string","enum":["account_data","contact_data","usage_data","device_data","network_data","location_data","prompt_input","uploaded_file","generated_output","embedding_vector","action_log","payment_data","support_ticket","employee_hr_data","creative_work_product","source_code","credential_or_secret","client_confidential_data","biometric_data","health_data","financial_data","unknown"]};
+const schema159 = {"type":"object","required":["category_types","personal_data_signal","sensitive_data_signal","credential_or_secret_signal","client_confidential_signal","biometric_signal","financial_data_signal","health_data_signal","confidence"],"additionalProperties":false,"properties":{"category_types":{"type":"array","items":{"$ref":"#/$defs/dataCategoryType"}},"personal_data_signal":{"$ref":"#/$defs/standardSignal"},"sensitive_data_signal":{"$ref":"#/$defs/standardSignal"},"credential_or_secret_signal":{"$ref":"#/$defs/standardSignal"},"client_confidential_signal":{"$ref":"#/$defs/standardSignal"},"biometric_signal":{"$ref":"#/$defs/standardSignal"},"financial_data_signal":{"$ref":"#/$defs/standardSignal"},"health_data_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema160 = {"type":"string","enum":["account_data","contact_data","usage_data","device_data","network_data","location_data","prompt_input","uploaded_file","generated_output","embedding_vector","action_log","payment_data","support_ticket","employee_hr_data","creative_work_product","source_code","credential_or_secret","client_confidential_data","biometric_data","health_data","financial_data","unknown"]};
 
 function validate81(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -10769,7 +11194,7 @@ vErrors.push(err8);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema157.properties, key0))){
+if(!(func1.call(schema159.properties, key0))){
 const err9 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err9];
@@ -10797,7 +11222,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!((((((((((((((((((((((data1 === "account_data") || (data1 === "contact_data")) || (data1 === "usage_data")) || (data1 === "device_data")) || (data1 === "network_data")) || (data1 === "location_data")) || (data1 === "prompt_input")) || (data1 === "uploaded_file")) || (data1 === "generated_output")) || (data1 === "embedding_vector")) || (data1 === "action_log")) || (data1 === "payment_data")) || (data1 === "support_ticket")) || (data1 === "employee_hr_data")) || (data1 === "creative_work_product")) || (data1 === "source_code")) || (data1 === "credential_or_secret")) || (data1 === "client_confidential_data")) || (data1 === "biometric_data")) || (data1 === "health_data")) || (data1 === "financial_data")) || (data1 === "unknown"))){
-const err11 = {instancePath:instancePath+"/category_types/" + i0,schemaPath:"#/$defs/dataCategoryType/enum",keyword:"enum",params:{allowedValues: schema158.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/category_types/" + i0,schemaPath:"#/$defs/dataCategoryType/enum",keyword:"enum",params:{allowedValues: schema160.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -10832,7 +11257,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err14 = {instancePath:instancePath+"/personal_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/personal_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -10855,7 +11280,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err16 = {instancePath:instancePath+"/sensitive_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/sensitive_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -10878,7 +11303,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err18 = {instancePath:instancePath+"/credential_or_secret_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/credential_or_secret_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -10901,7 +11326,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err20 = {instancePath:instancePath+"/client_confidential_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/client_confidential_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -10924,7 +11349,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!((((((data6 === "visible") || (data6 === "not_visible")) || (data6 === "partial")) || (data6 === "conflicting")) || (data6 === "not_applicable")) || (data6 === "unknown"))){
-const err22 = {instancePath:instancePath+"/biometric_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/biometric_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -10947,7 +11372,7 @@ vErrors.push(err23);
 errors++;
 }
 if(!((((((data7 === "visible") || (data7 === "not_visible")) || (data7 === "partial")) || (data7 === "conflicting")) || (data7 === "not_applicable")) || (data7 === "unknown"))){
-const err24 = {instancePath:instancePath+"/financial_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err24 = {instancePath:instancePath+"/financial_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -10970,7 +11395,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!((((((data8 === "visible") || (data8 === "not_visible")) || (data8 === "partial")) || (data8 === "conflicting")) || (data8 === "not_applicable")) || (data8 === "unknown"))){
-const err26 = {instancePath:instancePath+"/health_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/health_data_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -10993,7 +11418,7 @@ vErrors.push(err27);
 errors++;
 }
 if(!((((data9 === "high") || (data9 === "medium")) || (data9 === "low")) || (data9 === "unknown"))){
-const err28 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err28 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -11019,11 +11444,11 @@ return errors === 0;
 }
 validate81.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema167 = {"type":"object","required":["collection_context","processing_actions","processing_purpose","output_category","storage_signal","embedding_signal","fine_tuning_signal","confidence"],"additionalProperties":false,"properties":{"collection_context":{"$ref":"#/$defs/collectionContext"},"processing_actions":{"type":"array","items":{"$ref":"#/$defs/processingAction"}},"processing_purpose":{"type":"array","items":{"$ref":"#/$defs/processingPurpose"}},"output_category":{"$ref":"#/$defs/outputCategory"},"storage_signal":{"$ref":"#/$defs/standardSignal"},"embedding_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema168 = {"type":"string","enum":["user_provided","customer_provided","employee_provided","automatically_collected","third_party_imported","system_generated","derived_or_inferred","unknown"]};
-const schema169 = {"type":"string","enum":["collect","store","retrieve","generate","summarize","classify","embed","rank","route","transmit","log","monitor","delete","anonymize","aggregate","fine_tune","unknown"]};
-const schema170 = {"type":"string","enum":["service_delivery","ai_generation","personalization","analytics","security","billing","support","compliance","product_improvement","model_training","fraud_prevention","internal_governance","unknown"]};
-const schema171 = {"type":"string","enum":["ai_output","recommendation","classification","decision_support","automated_action","system_log","analytics","none","unknown"]};
+const schema169 = {"type":"object","required":["collection_context","processing_actions","processing_purpose","output_category","storage_signal","embedding_signal","fine_tuning_signal","confidence"],"additionalProperties":false,"properties":{"collection_context":{"$ref":"#/$defs/collectionContext"},"processing_actions":{"type":"array","items":{"$ref":"#/$defs/processingAction"}},"processing_purpose":{"type":"array","items":{"$ref":"#/$defs/processingPurpose"}},"output_category":{"$ref":"#/$defs/outputCategory"},"storage_signal":{"$ref":"#/$defs/standardSignal"},"embedding_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_signal":{"$ref":"#/$defs/standardSignal"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema170 = {"type":"string","enum":["user_provided","customer_provided","employee_provided","automatically_collected","third_party_imported","system_generated","derived_or_inferred","unknown"]};
+const schema171 = {"type":"string","enum":["collect","store","retrieve","generate","summarize","classify","embed","rank","route","transmit","log","monitor","delete","anonymize","aggregate","fine_tune","unknown"]};
+const schema172 = {"type":"string","enum":["service_delivery","ai_generation","personalization","analytics","security","billing","support","compliance","product_improvement","model_training","fraud_prevention","internal_governance","unknown"]};
+const schema173 = {"type":"string","enum":["ai_output","recommendation","classification","decision_support","automated_action","system_log","analytics","none","unknown"]};
 
 function validate83(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -11141,7 +11566,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((((data0 === "user_provided") || (data0 === "customer_provided")) || (data0 === "employee_provided")) || (data0 === "automatically_collected")) || (data0 === "third_party_imported")) || (data0 === "system_generated")) || (data0 === "derived_or_inferred")) || (data0 === "unknown"))){
-const err10 = {instancePath:instancePath+"/collection_context",schemaPath:"#/$defs/collectionContext/enum",keyword:"enum",params:{allowedValues: schema168.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/collection_context",schemaPath:"#/$defs/collectionContext/enum",keyword:"enum",params:{allowedValues: schema170.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -11168,7 +11593,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!(((((((((((((((((data2 === "collect") || (data2 === "store")) || (data2 === "retrieve")) || (data2 === "generate")) || (data2 === "summarize")) || (data2 === "classify")) || (data2 === "embed")) || (data2 === "rank")) || (data2 === "route")) || (data2 === "transmit")) || (data2 === "log")) || (data2 === "monitor")) || (data2 === "delete")) || (data2 === "anonymize")) || (data2 === "aggregate")) || (data2 === "fine_tune")) || (data2 === "unknown"))){
-const err12 = {instancePath:instancePath+"/processing_actions/" + i0,schemaPath:"#/$defs/processingAction/enum",keyword:"enum",params:{allowedValues: schema169.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/processing_actions/" + i0,schemaPath:"#/$defs/processingAction/enum",keyword:"enum",params:{allowedValues: schema171.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -11207,7 +11632,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!(((((((((((((data4 === "service_delivery") || (data4 === "ai_generation")) || (data4 === "personalization")) || (data4 === "analytics")) || (data4 === "security")) || (data4 === "billing")) || (data4 === "support")) || (data4 === "compliance")) || (data4 === "product_improvement")) || (data4 === "model_training")) || (data4 === "fraud_prevention")) || (data4 === "internal_governance")) || (data4 === "unknown"))){
-const err15 = {instancePath:instancePath+"/processing_purpose/" + i1,schemaPath:"#/$defs/processingPurpose/enum",keyword:"enum",params:{allowedValues: schema170.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/processing_purpose/" + i1,schemaPath:"#/$defs/processingPurpose/enum",keyword:"enum",params:{allowedValues: schema172.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -11242,7 +11667,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!(((((((((data5 === "ai_output") || (data5 === "recommendation")) || (data5 === "classification")) || (data5 === "decision_support")) || (data5 === "automated_action")) || (data5 === "system_log")) || (data5 === "analytics")) || (data5 === "none")) || (data5 === "unknown"))){
-const err18 = {instancePath:instancePath+"/output_category",schemaPath:"#/$defs/outputCategory/enum",keyword:"enum",params:{allowedValues: schema171.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/output_category",schemaPath:"#/$defs/outputCategory/enum",keyword:"enum",params:{allowedValues: schema173.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -11265,7 +11690,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((data6 === "visible") || (data6 === "not_visible")) || (data6 === "partial")) || (data6 === "conflicting")) || (data6 === "not_applicable")) || (data6 === "unknown"))){
-const err20 = {instancePath:instancePath+"/storage_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/storage_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -11288,7 +11713,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!((((((data7 === "visible") || (data7 === "not_visible")) || (data7 === "partial")) || (data7 === "conflicting")) || (data7 === "not_applicable")) || (data7 === "unknown"))){
-const err22 = {instancePath:instancePath+"/embedding_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/embedding_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -11311,7 +11736,7 @@ vErrors.push(err23);
 errors++;
 }
 if(!((((((data8 === "visible") || (data8 === "not_visible")) || (data8 === "partial")) || (data8 === "conflicting")) || (data8 === "not_applicable")) || (data8 === "unknown"))){
-const err24 = {instancePath:instancePath+"/fine_tuning_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err24 = {instancePath:instancePath+"/fine_tuning_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -11334,7 +11759,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!((((data9 === "high") || (data9 === "medium")) || (data9 === "low")) || (data9 === "unknown"))){
-const err26 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -11360,8 +11785,8 @@ return errors === 0;
 }
 validate83.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema176 = {"type":"object","required":["provider_role","customer_role","model_provider_role","subprocessor_role","third_party_recipient_role","confidence"],"additionalProperties":false,"properties":{"provider_role":{"$ref":"#/$defs/roleAllocationValue"},"customer_role":{"$ref":"#/$defs/roleAllocationValue"},"model_provider_role":{"$ref":"#/$defs/roleAllocationValue"},"subprocessor_role":{"$ref":"#/$defs/roleAllocationValue"},"third_party_recipient_role":{"$ref":"#/$defs/roleAllocationValue"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema177 = {"type":"string","enum":["controller","processor","subprocessor","service_provider","business","third_party","independent_controller","principal","agent","platform_provider","not_visible","not_applicable","unknown"]};
+const schema178 = {"type":"object","required":["provider_role","customer_role","model_provider_role","subprocessor_role","third_party_recipient_role","confidence"],"additionalProperties":false,"properties":{"provider_role":{"$ref":"#/$defs/roleAllocationValue"},"customer_role":{"$ref":"#/$defs/roleAllocationValue"},"model_provider_role":{"$ref":"#/$defs/roleAllocationValue"},"subprocessor_role":{"$ref":"#/$defs/roleAllocationValue"},"third_party_recipient_role":{"$ref":"#/$defs/roleAllocationValue"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema179 = {"type":"string","enum":["controller","processor","subprocessor","service_provider","business","third_party","independent_controller","principal","agent","platform_provider","not_visible","not_applicable","unknown"]};
 
 function validate85(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -11459,7 +11884,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!(((((((((((((data0 === "controller") || (data0 === "processor")) || (data0 === "subprocessor")) || (data0 === "service_provider")) || (data0 === "business")) || (data0 === "third_party")) || (data0 === "independent_controller")) || (data0 === "principal")) || (data0 === "agent")) || (data0 === "platform_provider")) || (data0 === "not_visible")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err8 = {instancePath:instancePath+"/provider_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema177.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/provider_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema179.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -11482,7 +11907,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!(((((((((((((data1 === "controller") || (data1 === "processor")) || (data1 === "subprocessor")) || (data1 === "service_provider")) || (data1 === "business")) || (data1 === "third_party")) || (data1 === "independent_controller")) || (data1 === "principal")) || (data1 === "agent")) || (data1 === "platform_provider")) || (data1 === "not_visible")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err10 = {instancePath:instancePath+"/customer_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema177.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/customer_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema179.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -11505,7 +11930,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!(((((((((((((data2 === "controller") || (data2 === "processor")) || (data2 === "subprocessor")) || (data2 === "service_provider")) || (data2 === "business")) || (data2 === "third_party")) || (data2 === "independent_controller")) || (data2 === "principal")) || (data2 === "agent")) || (data2 === "platform_provider")) || (data2 === "not_visible")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err12 = {instancePath:instancePath+"/model_provider_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema177.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/model_provider_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema179.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -11528,7 +11953,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!(((((((((((((data3 === "controller") || (data3 === "processor")) || (data3 === "subprocessor")) || (data3 === "service_provider")) || (data3 === "business")) || (data3 === "third_party")) || (data3 === "independent_controller")) || (data3 === "principal")) || (data3 === "agent")) || (data3 === "platform_provider")) || (data3 === "not_visible")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err14 = {instancePath:instancePath+"/subprocessor_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema177.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/subprocessor_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema179.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -11551,7 +11976,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!(((((((((((((data4 === "controller") || (data4 === "processor")) || (data4 === "subprocessor")) || (data4 === "service_provider")) || (data4 === "business")) || (data4 === "third_party")) || (data4 === "independent_controller")) || (data4 === "principal")) || (data4 === "agent")) || (data4 === "platform_provider")) || (data4 === "not_visible")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err16 = {instancePath:instancePath+"/third_party_recipient_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema177.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/third_party_recipient_role",schemaPath:"#/$defs/roleAllocationValue/enum",keyword:"enum",params:{allowedValues: schema179.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -11574,7 +11999,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((data5 === "high") || (data5 === "medium")) || (data5 === "low")) || (data5 === "unknown"))){
-const err18 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -11600,8 +12025,8 @@ return errors === 0;
 }
 validate85.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema183 = {"type":"object","required":["gdpr_signal","uk_gdpr_signal","ccpa_cpra_signal","dpdp_signal","colorado_ai_signal","eu_ai_act_signal","basis_tags","confidence"],"additionalProperties":false,"properties":{"gdpr_signal":{"$ref":"#/$defs/standardSignal"},"uk_gdpr_signal":{"$ref":"#/$defs/standardSignal"},"ccpa_cpra_signal":{"$ref":"#/$defs/standardSignal"},"dpdp_signal":{"$ref":"#/$defs/standardSignal"},"colorado_ai_signal":{"$ref":"#/$defs/standardSignal"},"eu_ai_act_signal":{"$ref":"#/$defs/standardSignal"},"basis_tags":{"type":"array","items":{"$ref":"#/$defs/regimeBasisTag"}},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema190 = {"type":"string","enum":["personal_data","sensitive_data","children_data","employee_data","automated_decision","high_risk_ai","cross_border_transfer","processor_relationship","subprocessor_relationship","consumer_rights","deletion_rights","training_or_finetuning","unknown"]};
+const schema185 = {"type":"object","required":["gdpr_signal","uk_gdpr_signal","ccpa_cpra_signal","dpdp_signal","colorado_ai_signal","eu_ai_act_signal","basis_tags","confidence"],"additionalProperties":false,"properties":{"gdpr_signal":{"$ref":"#/$defs/standardSignal"},"uk_gdpr_signal":{"$ref":"#/$defs/standardSignal"},"ccpa_cpra_signal":{"$ref":"#/$defs/standardSignal"},"dpdp_signal":{"$ref":"#/$defs/standardSignal"},"colorado_ai_signal":{"$ref":"#/$defs/standardSignal"},"eu_ai_act_signal":{"$ref":"#/$defs/standardSignal"},"basis_tags":{"type":"array","items":{"$ref":"#/$defs/regimeBasisTag"}},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema192 = {"type":"string","enum":["personal_data","sensitive_data","children_data","employee_data","automated_decision","high_risk_ai","cross_border_transfer","processor_relationship","subprocessor_relationship","consumer_rights","deletion_rights","training_or_finetuning","unknown"]};
 
 function validate87(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -11719,7 +12144,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err10 = {instancePath:instancePath+"/gdpr_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/gdpr_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -11742,7 +12167,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err12 = {instancePath:instancePath+"/uk_gdpr_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/uk_gdpr_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -11765,7 +12190,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err14 = {instancePath:instancePath+"/ccpa_cpra_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/ccpa_cpra_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -11788,7 +12213,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err16 = {instancePath:instancePath+"/dpdp_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/dpdp_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -11811,7 +12236,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err18 = {instancePath:instancePath+"/colorado_ai_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/colorado_ai_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -11834,7 +12259,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err20 = {instancePath:instancePath+"/eu_ai_act_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/eu_ai_act_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -11861,7 +12286,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!(((((((((((((data7 === "personal_data") || (data7 === "sensitive_data")) || (data7 === "children_data")) || (data7 === "employee_data")) || (data7 === "automated_decision")) || (data7 === "high_risk_ai")) || (data7 === "cross_border_transfer")) || (data7 === "processor_relationship")) || (data7 === "subprocessor_relationship")) || (data7 === "consumer_rights")) || (data7 === "deletion_rights")) || (data7 === "training_or_finetuning")) || (data7 === "unknown"))){
-const err22 = {instancePath:instancePath+"/basis_tags/" + i0,schemaPath:"#/$defs/regimeBasisTag/enum",keyword:"enum",params:{allowedValues: schema190.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/basis_tags/" + i0,schemaPath:"#/$defs/regimeBasisTag/enum",keyword:"enum",params:{allowedValues: schema192.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -11896,7 +12321,7 @@ vErrors.push(err24);
 errors++;
 }
 if(!((((data8 === "high") || (data8 === "medium")) || (data8 === "low")) || (data8 === "unknown"))){
-const err25 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err25 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -11922,7 +12347,7 @@ return errors === 0;
 }
 validate87.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema192 = {"type":"object","required":["privacy_notice_signal","ai_notice_signal","model_provider_notice_signal","subprocessor_notice_signal","notice_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"privacy_notice_signal":{"$ref":"#/$defs/standardSignal"},"ai_notice_signal":{"$ref":"#/$defs/standardSignal"},"model_provider_notice_signal":{"$ref":"#/$defs/standardSignal"},"subprocessor_notice_signal":{"$ref":"#/$defs/standardSignal"},"notice_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema194 = {"type":"object","required":["privacy_notice_signal","ai_notice_signal","model_provider_notice_signal","subprocessor_notice_signal","notice_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"privacy_notice_signal":{"$ref":"#/$defs/standardSignal"},"ai_notice_signal":{"$ref":"#/$defs/standardSignal"},"model_provider_notice_signal":{"$ref":"#/$defs/standardSignal"},"subprocessor_notice_signal":{"$ref":"#/$defs/standardSignal"},"notice_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate89(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -12020,7 +12445,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err8 = {instancePath:instancePath+"/privacy_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/privacy_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -12043,7 +12468,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err10 = {instancePath:instancePath+"/ai_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/ai_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -12066,7 +12491,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err12 = {instancePath:instancePath+"/model_provider_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/model_provider_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -12089,7 +12514,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err14 = {instancePath:instancePath+"/subprocessor_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/subprocessor_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -12140,7 +12565,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((data6 === "high") || (data6 === "medium")) || (data6 === "low")) || (data6 === "unknown"))){
-const err18 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -12166,7 +12591,7 @@ return errors === 0;
 }
 validate89.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema199 = {"type":"object","required":["consent_signal","contract_signal","legitimate_interest_signal","legal_obligation_signal","withdrawal_signal","basis_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"consent_signal":{"$ref":"#/$defs/standardSignal"},"contract_signal":{"$ref":"#/$defs/standardSignal"},"legitimate_interest_signal":{"$ref":"#/$defs/standardSignal"},"legal_obligation_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_signal":{"$ref":"#/$defs/standardSignal"},"basis_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema201 = {"type":"object","required":["consent_signal","contract_signal","legitimate_interest_signal","legal_obligation_signal","withdrawal_signal","basis_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"consent_signal":{"$ref":"#/$defs/standardSignal"},"contract_signal":{"$ref":"#/$defs/standardSignal"},"legitimate_interest_signal":{"$ref":"#/$defs/standardSignal"},"legal_obligation_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_signal":{"$ref":"#/$defs/standardSignal"},"basis_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate91(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -12274,7 +12699,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err9 = {instancePath:instancePath+"/consent_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/consent_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -12297,7 +12722,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err11 = {instancePath:instancePath+"/contract_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/contract_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -12320,7 +12745,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err13 = {instancePath:instancePath+"/legitimate_interest_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/legitimate_interest_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -12343,7 +12768,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err15 = {instancePath:instancePath+"/legal_obligation_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/legal_obligation_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -12366,7 +12791,7 @@ vErrors.push(err16);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err17 = {instancePath:instancePath+"/withdrawal_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err17 = {instancePath:instancePath+"/withdrawal_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -12417,7 +12842,7 @@ vErrors.push(err20);
 errors++;
 }
 if(!((((data7 === "high") || (data7 === "medium")) || (data7 === "low")) || (data7 === "unknown"))){
-const err21 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err21 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -12443,7 +12868,7 @@ return errors === 0;
 }
 validate91.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema207 = {"type":"object","required":["access_right_signal","correction_right_signal","deletion_right_signal","portability_right_signal","opt_out_signal","withdrawal_right_signal","grievance_signal","nomination_signal","rights_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"access_right_signal":{"$ref":"#/$defs/standardSignal"},"correction_right_signal":{"$ref":"#/$defs/standardSignal"},"deletion_right_signal":{"$ref":"#/$defs/standardSignal"},"portability_right_signal":{"$ref":"#/$defs/standardSignal"},"opt_out_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_right_signal":{"$ref":"#/$defs/standardSignal"},"grievance_signal":{"$ref":"#/$defs/standardSignal"},"nomination_signal":{"$ref":"#/$defs/standardSignal"},"rights_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema209 = {"type":"object","required":["access_right_signal","correction_right_signal","deletion_right_signal","portability_right_signal","opt_out_signal","withdrawal_right_signal","grievance_signal","nomination_signal","rights_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"access_right_signal":{"$ref":"#/$defs/standardSignal"},"correction_right_signal":{"$ref":"#/$defs/standardSignal"},"deletion_right_signal":{"$ref":"#/$defs/standardSignal"},"portability_right_signal":{"$ref":"#/$defs/standardSignal"},"opt_out_signal":{"$ref":"#/$defs/standardSignal"},"withdrawal_right_signal":{"$ref":"#/$defs/standardSignal"},"grievance_signal":{"$ref":"#/$defs/standardSignal"},"nomination_signal":{"$ref":"#/$defs/standardSignal"},"rights_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate93(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -12557,7 +12982,7 @@ vErrors.push(err9);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema207.properties, key0))){
+if(!(func1.call(schema209.properties, key0))){
 const err10 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err10];
@@ -12581,7 +13006,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err12 = {instancePath:instancePath+"/access_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/access_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -12604,7 +13029,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err14 = {instancePath:instancePath+"/correction_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/correction_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -12627,7 +13052,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err16 = {instancePath:instancePath+"/deletion_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/deletion_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -12650,7 +13075,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err18 = {instancePath:instancePath+"/portability_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/portability_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -12673,7 +13098,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err20 = {instancePath:instancePath+"/opt_out_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/opt_out_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -12696,7 +13121,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err22 = {instancePath:instancePath+"/withdrawal_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/withdrawal_right_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -12719,7 +13144,7 @@ vErrors.push(err23);
 errors++;
 }
 if(!((((((data6 === "visible") || (data6 === "not_visible")) || (data6 === "partial")) || (data6 === "conflicting")) || (data6 === "not_applicable")) || (data6 === "unknown"))){
-const err24 = {instancePath:instancePath+"/grievance_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err24 = {instancePath:instancePath+"/grievance_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -12742,7 +13167,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!((((((data7 === "visible") || (data7 === "not_visible")) || (data7 === "partial")) || (data7 === "conflicting")) || (data7 === "not_applicable")) || (data7 === "unknown"))){
-const err26 = {instancePath:instancePath+"/nomination_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/nomination_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -12793,7 +13218,7 @@ vErrors.push(err29);
 errors++;
 }
 if(!((((data10 === "high") || (data10 === "medium")) || (data10 === "low")) || (data10 === "unknown"))){
-const err30 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err30 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -12819,8 +13244,8 @@ return errors === 0;
 }
 validate93.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema218 = {"type":"object","required":["model_provider_visible","cloud_provider_visible","payment_provider_visible","analytics_provider_visible","subprocessor_list_visible","recipient_categories","processor_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"model_provider_visible":{"$ref":"#/$defs/standardSignal"},"cloud_provider_visible":{"$ref":"#/$defs/standardSignal"},"payment_provider_visible":{"$ref":"#/$defs/standardSignal"},"analytics_provider_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_list_visible":{"$ref":"#/$defs/standardSignal"},"recipient_categories":{"type":"array","items":{"$ref":"#/$defs/recipientCategory"}},"processor_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema224 = {"type":"string","enum":["model_provider","cloud_provider","payment_provider","analytics_provider","support_provider","security_provider","workflow_provider","storage_provider","unknown"]};
+const schema220 = {"type":"object","required":["model_provider_visible","cloud_provider_visible","payment_provider_visible","analytics_provider_visible","subprocessor_list_visible","recipient_categories","processor_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"model_provider_visible":{"$ref":"#/$defs/standardSignal"},"cloud_provider_visible":{"$ref":"#/$defs/standardSignal"},"payment_provider_visible":{"$ref":"#/$defs/standardSignal"},"analytics_provider_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_list_visible":{"$ref":"#/$defs/standardSignal"},"recipient_categories":{"type":"array","items":{"$ref":"#/$defs/recipientCategory"}},"processor_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema226 = {"type":"string","enum":["model_provider","cloud_provider","payment_provider","analytics_provider","support_provider","security_provider","workflow_provider","storage_provider","unknown"]};
 
 function validate95(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -12938,7 +13363,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err10 = {instancePath:instancePath+"/model_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/model_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -12961,7 +13386,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err12 = {instancePath:instancePath+"/cloud_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/cloud_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -12984,7 +13409,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err14 = {instancePath:instancePath+"/payment_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/payment_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -13007,7 +13432,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err16 = {instancePath:instancePath+"/analytics_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/analytics_provider_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -13030,7 +13455,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err18 = {instancePath:instancePath+"/subprocessor_list_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/subprocessor_list_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -13057,7 +13482,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!(((((((((data6 === "model_provider") || (data6 === "cloud_provider")) || (data6 === "payment_provider")) || (data6 === "analytics_provider")) || (data6 === "support_provider")) || (data6 === "security_provider")) || (data6 === "workflow_provider")) || (data6 === "storage_provider")) || (data6 === "unknown"))){
-const err20 = {instancePath:instancePath+"/recipient_categories/" + i0,schemaPath:"#/$defs/recipientCategory/enum",keyword:"enum",params:{allowedValues: schema224.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/recipient_categories/" + i0,schemaPath:"#/$defs/recipientCategory/enum",keyword:"enum",params:{allowedValues: schema226.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -13120,7 +13545,7 @@ vErrors.push(err24);
 errors++;
 }
 if(!((((data9 === "high") || (data9 === "medium")) || (data9 === "low")) || (data9 === "unknown"))){
-const err25 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err25 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -13146,8 +13571,8 @@ return errors === 0;
 }
 validate95.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema227 = {"type":"object","required":["cross_border_signal","regions_visible","transfer_basis_signal","data_residency_signal","location_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"cross_border_signal":{"$ref":"#/$defs/standardSignal"},"regions_visible":{"type":"array","items":{"$ref":"#/$defs/region"}},"transfer_basis_signal":{"$ref":"#/$defs/standardSignal"},"data_residency_signal":{"$ref":"#/$defs/standardSignal"},"location_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
-const schema229 = {"type":"string","enum":["us","eu","uk","india","canada","australia","singapore","global","not_visible","unknown"]};
+const schema229 = {"type":"object","required":["cross_border_signal","regions_visible","transfer_basis_signal","data_residency_signal","location_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"cross_border_signal":{"$ref":"#/$defs/standardSignal"},"regions_visible":{"type":"array","items":{"$ref":"#/$defs/region"}},"transfer_basis_signal":{"$ref":"#/$defs/standardSignal"},"data_residency_signal":{"$ref":"#/$defs/standardSignal"},"location_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema231 = {"type":"string","enum":["us","eu","uk","india","canada","australia","singapore","global","not_visible","unknown"]};
 
 function validate97(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -13245,7 +13670,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err8 = {instancePath:instancePath+"/cross_border_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/cross_border_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -13272,7 +13697,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((((((data2 === "us") || (data2 === "eu")) || (data2 === "uk")) || (data2 === "india")) || (data2 === "canada")) || (data2 === "australia")) || (data2 === "singapore")) || (data2 === "global")) || (data2 === "not_visible")) || (data2 === "unknown"))){
-const err10 = {instancePath:instancePath+"/regions_visible/" + i0,schemaPath:"#/$defs/region/enum",keyword:"enum",params:{allowedValues: schema229.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/regions_visible/" + i0,schemaPath:"#/$defs/region/enum",keyword:"enum",params:{allowedValues: schema231.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -13307,7 +13732,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err13 = {instancePath:instancePath+"/transfer_basis_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/transfer_basis_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -13330,7 +13755,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err15 = {instancePath:instancePath+"/data_residency_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/data_residency_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -13381,7 +13806,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!((((data7 === "high") || (data7 === "medium")) || (data7 === "low")) || (data7 === "unknown"))){
-const err19 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -13407,7 +13832,7 @@ return errors === 0;
 }
 validate97.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema234 = {"type":"object","required":["retention_period_visible","deletion_channel_visible","training_opt_out_visible","embedding_retention_signal","fine_tuning_prohibition_signal","model_weight_deletion_signal","ai_architecture_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"retention_period_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"training_opt_out_visible":{"$ref":"#/$defs/standardSignal"},"embedding_retention_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_prohibition_signal":{"$ref":"#/$defs/standardSignal"},"model_weight_deletion_signal":{"$ref":"#/$defs/standardSignal"},"ai_architecture_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema236 = {"type":"object","required":["retention_period_visible","deletion_channel_visible","training_opt_out_visible","embedding_retention_signal","fine_tuning_prohibition_signal","model_weight_deletion_signal","ai_architecture_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"retention_period_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"training_opt_out_visible":{"$ref":"#/$defs/standardSignal"},"embedding_retention_signal":{"$ref":"#/$defs/standardSignal"},"fine_tuning_prohibition_signal":{"$ref":"#/$defs/standardSignal"},"model_weight_deletion_signal":{"$ref":"#/$defs/standardSignal"},"ai_architecture_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate99(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -13525,7 +13950,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err10 = {instancePath:instancePath+"/retention_period_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/retention_period_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -13548,7 +13973,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err12 = {instancePath:instancePath+"/deletion_channel_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/deletion_channel_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -13571,7 +13996,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err14 = {instancePath:instancePath+"/training_opt_out_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/training_opt_out_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -13594,7 +14019,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err16 = {instancePath:instancePath+"/embedding_retention_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/embedding_retention_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -13617,7 +14042,7 @@ vErrors.push(err17);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err18 = {instancePath:instancePath+"/fine_tuning_prohibition_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err18 = {instancePath:instancePath+"/fine_tuning_prohibition_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err18];
 }
@@ -13640,7 +14065,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err20 = {instancePath:instancePath+"/model_weight_deletion_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/model_weight_deletion_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -13691,7 +14116,7 @@ vErrors.push(err23);
 errors++;
 }
 if(!((((data8 === "high") || (data8 === "medium")) || (data8 === "low")) || (data8 === "unknown"))){
-const err24 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err24 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -13717,7 +14142,7 @@ return errors === 0;
 }
 validate99.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema243 = {"type":"object","required":["encryption_signal","access_control_signal","audit_log_signal","breach_notice_signal","dpo_or_contact_signal","security_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"encryption_signal":{"$ref":"#/$defs/standardSignal"},"access_control_signal":{"$ref":"#/$defs/standardSignal"},"audit_log_signal":{"$ref":"#/$defs/standardSignal"},"breach_notice_signal":{"$ref":"#/$defs/standardSignal"},"dpo_or_contact_signal":{"$ref":"#/$defs/standardSignal"},"security_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema245 = {"type":"object","required":["encryption_signal","access_control_signal","audit_log_signal","breach_notice_signal","dpo_or_contact_signal","security_legal_unit_refs","confidence"],"additionalProperties":false,"properties":{"encryption_signal":{"$ref":"#/$defs/standardSignal"},"access_control_signal":{"$ref":"#/$defs/standardSignal"},"audit_log_signal":{"$ref":"#/$defs/standardSignal"},"breach_notice_signal":{"$ref":"#/$defs/standardSignal"},"dpo_or_contact_signal":{"$ref":"#/$defs/standardSignal"},"security_legal_unit_refs":{"$ref":"#/$defs/stringArray"},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate101(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -13825,7 +14250,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err9 = {instancePath:instancePath+"/encryption_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/encryption_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -13848,7 +14273,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err11 = {instancePath:instancePath+"/access_control_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/access_control_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -13871,7 +14296,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err13 = {instancePath:instancePath+"/audit_log_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/audit_log_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -13894,7 +14319,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err15 = {instancePath:instancePath+"/breach_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/breach_notice_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -13917,7 +14342,7 @@ vErrors.push(err16);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err17 = {instancePath:instancePath+"/dpo_or_contact_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err17 = {instancePath:instancePath+"/dpo_or_contact_signal",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -13968,7 +14393,7 @@ vErrors.push(err20);
 errors++;
 }
 if(!((((data7 === "high") || (data7 === "medium")) || (data7 === "low")) || (data7 === "unknown"))){
-const err21 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err21 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -13994,8 +14419,8 @@ return errors === 0;
 }
 validate101.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema251 = {"type":"object","required":["feature_refs","provenance_refs","source_refs","document_refs","legal_unit_refs","basis_codes","evidence_strength"],"additionalProperties":false,"properties":{"feature_refs":{"$ref":"#/$defs/stringArray"},"provenance_refs":{"$ref":"#/$defs/stringArray"},"source_refs":{"$ref":"#/$defs/stringArray"},"document_refs":{"$ref":"#/$defs/stringArray"},"legal_unit_refs":{"$ref":"#/$defs/stringArray"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"evidence_strength":{"$ref":"#/$defs/evidenceStrength"}}};
-const schema257 = {"type":"string","enum":["direct_source","inferred_from_stage5","inferred_from_stage4","model_classified","unknown"]};
+const schema253 = {"type":"object","required":["feature_refs","provenance_refs","source_refs","document_refs","legal_unit_refs","basis_codes","evidence_strength"],"additionalProperties":false,"properties":{"feature_refs":{"$ref":"#/$defs/stringArray"},"provenance_refs":{"$ref":"#/$defs/stringArray"},"source_refs":{"$ref":"#/$defs/stringArray"},"document_refs":{"$ref":"#/$defs/stringArray"},"legal_unit_refs":{"$ref":"#/$defs/stringArray"},"basis_codes":{"$ref":"#/$defs/basisCodes"},"evidence_strength":{"$ref":"#/$defs/evidenceStrength"}}};
+const schema259 = {"type":"string","enum":["direct_source","inferred_from_stage5","inferred_from_stage4","model_classified","unknown"]};
 
 function validate103(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -14249,7 +14674,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!(((((data11 === "direct_source") || (data11 === "inferred_from_stage5")) || (data11 === "inferred_from_stage4")) || (data11 === "model_classified")) || (data11 === "unknown"))){
-const err19 = {instancePath:instancePath+"/evidence_strength",schemaPath:"#/$defs/evidenceStrength/enum",keyword:"enum",params:{allowedValues: schema257.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/evidence_strength",schemaPath:"#/$defs/evidenceStrength/enum",keyword:"enum",params:{allowedValues: schema259.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -14498,7 +14923,7 @@ vErrors.push(err20);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema149.properties, key0))){
+if(!(func1.call(schema151.properties, key0))){
 const err21 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err21];
@@ -14558,7 +14983,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!((((data3 === "core") || (data3 === "supporting")) || (data3 === "contextual")) || (data3 === "unknown"))){
-const err26 = {instancePath:instancePath+"/feature_role",schemaPath:"#/properties/feature_role/enum",keyword:"enum",params:{allowedValues: schema149.properties.feature_role.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/feature_role",schemaPath:"#/properties/feature_role/enum",keyword:"enum",params:{allowedValues: schema151.properties.feature_role.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -14581,7 +15006,7 @@ vErrors.push(err27);
 errors++;
 }
 if(!((((((((data4 === "primary_input") || (data4 === "secondary_input")) || (data4 === "system_metadata")) || (data4 === "generated_output")) || (data4 === "stored_record")) || (data4 === "third_party_transfer")) || (data4 === "derived_data")) || (data4 === "unknown"))){
-const err28 = {instancePath:instancePath+"/flow_role",schemaPath:"#/properties/flow_role/enum",keyword:"enum",params:{allowedValues: schema149.properties.flow_role.enum},message:"must be equal to one of the allowed values"};
+const err28 = {instancePath:instancePath+"/flow_role",schemaPath:"#/properties/flow_role/enum",keyword:"enum",params:{allowedValues: schema151.properties.flow_role.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -14716,7 +15141,7 @@ vErrors.push(err31);
 errors++;
 }
 if(!((((data21 === "high") || (data21 === "medium")) || (data21 === "low")) || (data21 === "unknown"))){
-const err32 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err32 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -14742,7 +15167,7 @@ return errors === 0;
 }
 validate78.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema260 = {"type":"object","additionalProperties":false,"properties":{"personal_data_visible":{"$ref":"#/$defs/standardSignal"},"sensitive_data_visible":{"$ref":"#/$defs/standardSignal"},"children_data_visible":{"$ref":"#/$defs/standardSignal"},"cross_border_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_visible":{"$ref":"#/$defs/standardSignal"},"training_or_finetuning_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"automated_decision_visible":{"$ref":"#/$defs/standardSignal"}}};
+const schema262 = {"type":"object","additionalProperties":false,"properties":{"personal_data_visible":{"$ref":"#/$defs/standardSignal"},"sensitive_data_visible":{"$ref":"#/$defs/standardSignal"},"children_data_visible":{"$ref":"#/$defs/standardSignal"},"cross_border_visible":{"$ref":"#/$defs/standardSignal"},"subprocessor_visible":{"$ref":"#/$defs/standardSignal"},"training_or_finetuning_visible":{"$ref":"#/$defs/standardSignal"},"deletion_channel_visible":{"$ref":"#/$defs/standardSignal"},"automated_decision_visible":{"$ref":"#/$defs/standardSignal"}}};
 
 function validate108(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -14780,7 +15205,7 @@ vErrors.push(err1);
 errors++;
 }
 if(!((((((data0 === "visible") || (data0 === "not_visible")) || (data0 === "partial")) || (data0 === "conflicting")) || (data0 === "not_applicable")) || (data0 === "unknown"))){
-const err2 = {instancePath:instancePath+"/personal_data_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err2 = {instancePath:instancePath+"/personal_data_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err2];
 }
@@ -14803,7 +15228,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err4 = {instancePath:instancePath+"/sensitive_data_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/sensitive_data_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -14826,7 +15251,7 @@ vErrors.push(err5);
 errors++;
 }
 if(!((((((data2 === "visible") || (data2 === "not_visible")) || (data2 === "partial")) || (data2 === "conflicting")) || (data2 === "not_applicable")) || (data2 === "unknown"))){
-const err6 = {instancePath:instancePath+"/children_data_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err6 = {instancePath:instancePath+"/children_data_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err6];
 }
@@ -14849,7 +15274,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!((((((data3 === "visible") || (data3 === "not_visible")) || (data3 === "partial")) || (data3 === "conflicting")) || (data3 === "not_applicable")) || (data3 === "unknown"))){
-const err8 = {instancePath:instancePath+"/cross_border_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/cross_border_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -14872,7 +15297,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((((data4 === "visible") || (data4 === "not_visible")) || (data4 === "partial")) || (data4 === "conflicting")) || (data4 === "not_applicable")) || (data4 === "unknown"))){
-const err10 = {instancePath:instancePath+"/subprocessor_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/subprocessor_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -14895,7 +15320,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!((((((data5 === "visible") || (data5 === "not_visible")) || (data5 === "partial")) || (data5 === "conflicting")) || (data5 === "not_applicable")) || (data5 === "unknown"))){
-const err12 = {instancePath:instancePath+"/training_or_finetuning_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/training_or_finetuning_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -14918,7 +15343,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((((data6 === "visible") || (data6 === "not_visible")) || (data6 === "partial")) || (data6 === "conflicting")) || (data6 === "not_applicable")) || (data6 === "unknown"))){
-const err14 = {instancePath:instancePath+"/deletion_channel_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/deletion_channel_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -14941,7 +15366,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((data7 === "visible") || (data7 === "not_visible")) || (data7 === "partial")) || (data7 === "conflicting")) || (data7 === "not_applicable")) || (data7 === "unknown"))){
-const err16 = {instancePath:instancePath+"/automated_decision_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/automated_decision_visible",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -15109,8 +15534,8 @@ return errors === 0;
 }
 validate77.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema269 = {"type":"object","required":["feature_to_data_flow_index","feature_to_legal_unit_index","control_family_index","data_signal_index","legal_unit_source_locator_index","absence_unknown_index","fallback_source_packet"],"additionalProperties":false,"properties":{"feature_to_data_flow_index":{"type":"array","items":{"$ref":"#/$defs/featureToDataFlowIndexItem"}},"feature_to_legal_unit_index":{"type":"array","items":{"$ref":"#/$defs/featureToLegalUnitIndexItem"}},"control_family_index":{"type":"array","items":{"$ref":"#/$defs/controlFamilyIndexItem"}},"data_signal_index":{"type":"array","items":{"$ref":"#/$defs/dataSignalIndexItem"}},"legal_unit_source_locator_index":{"type":"array","items":{"$ref":"#/$defs/legalUnitSourceLocatorIndexItem"}},"absence_unknown_index":{"type":"array","items":{"$ref":"#/$defs/absenceUnknownIndexItem"}},"fallback_source_packet":{"type":"array","items":{"$ref":"#/$defs/fallbackSourcePacketItem"}}}};
-const schema270 = {"type":"object","required":["feature_id","data_flow_ids","provenance_ids","data_categories","surface_tokens"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"provenance_ids":{"$ref":"#/$defs/stringArray"},"data_categories":{"$ref":"#/$defs/stringArray"},"surface_tokens":{"$ref":"#/$defs/stringArray"}}};
+const schema271 = {"type":"object","required":["feature_to_data_flow_index","feature_to_legal_unit_index","control_family_index","data_signal_index","legal_unit_source_locator_index","absence_unknown_index","fallback_source_packet"],"additionalProperties":false,"properties":{"feature_to_data_flow_index":{"type":"array","items":{"$ref":"#/$defs/featureToDataFlowIndexItem"}},"feature_to_legal_unit_index":{"type":"array","items":{"$ref":"#/$defs/featureToLegalUnitIndexItem"}},"control_family_index":{"type":"array","items":{"$ref":"#/$defs/controlFamilyIndexItem"}},"data_signal_index":{"type":"array","items":{"$ref":"#/$defs/dataSignalIndexItem"}},"legal_unit_source_locator_index":{"type":"array","items":{"$ref":"#/$defs/legalUnitSourceLocatorIndexItem"}},"absence_unknown_index":{"type":"array","items":{"$ref":"#/$defs/absenceUnknownIndexItem"}},"fallback_source_packet":{"type":"array","items":{"$ref":"#/$defs/fallbackSourcePacketItem"}}}};
+const schema272 = {"type":"object","required":["feature_id","data_flow_ids","provenance_ids","data_categories","surface_tokens"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"provenance_ids":{"$ref":"#/$defs/stringArray"},"data_categories":{"$ref":"#/$defs/stringArray"},"surface_tokens":{"$ref":"#/$defs/stringArray"}}};
 
 function validate113(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -15325,7 +15750,7 @@ return errors === 0;
 }
 validate113.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema275 = {"type":"object","required":["feature_id","document_ids","legal_unit_ids","control_families"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"},"control_families":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}}}};
+const schema277 = {"type":"object","required":["feature_id","document_ids","legal_unit_ids","control_families"],"additionalProperties":false,"properties":{"feature_id":{"type":"string"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"},"control_families":{"type":"array","items":{"$ref":"#/$defs/controlFamily"}}}};
 
 function validate115(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -15475,7 +15900,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!(((((((((((((((((((((((((((((((data6 === "ai_disclosure") || (data6 === "hallucination_disclaimer")) || (data6 === "hitl_mandate")) || (data6 === "acceptable_use")) || (data6 === "prohibited_use")) || (data6 === "privacy_notice")) || (data6 === "data_collection")) || (data6 === "data_use")) || (data6 === "data_sharing")) || (data6 === "subprocessor_disclosure")) || (data6 === "model_provider_disclosure")) || (data6 === "training_or_finetuning")) || (data6 === "retention")) || (data6 === "deletion")) || (data6 === "data_subject_rights")) || (data6 === "consent_withdrawal")) || (data6 === "grievance_channel")) || (data6 === "security_safeguards")) || (data6 === "breach_notice")) || (data6 === "cross_border_transfer")) || (data6 === "liability_cap")) || (data6 === "warranty_disclaimer")) || (data6 === "sla_performance")) || (data6 === "agentic_controls")) || (data6 === "commercial_terms")) || (data6 === "dispute_terms")) || (data6 === "ip_ownership")) || (data6 === "minor_access")) || (data6 === "automated_decision")) || (data6 === "sensitive_data")) || (data6 === "unknown"))){
-const err11 = {instancePath:instancePath+"/control_families/" + i2,schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema112.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/control_families/" + i2,schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema114.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -15513,7 +15938,7 @@ return errors === 0;
 }
 validate115.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema279 = {"type":"object","required":["control_family","control_signal","control_signal_ids","document_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"control_signal_ids":{"$ref":"#/$defs/stringArray"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}};
+const schema281 = {"type":"object","required":["control_family","control_signal","control_signal_ids","document_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"control_family":{"$ref":"#/$defs/controlFamily"},"control_signal":{"$ref":"#/$defs/controlSignal"},"control_signal_ids":{"$ref":"#/$defs/stringArray"},"document_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}};
 
 function validate117(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -15601,7 +16026,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!(((((((((((((((((((((((((((((((data0 === "ai_disclosure") || (data0 === "hallucination_disclaimer")) || (data0 === "hitl_mandate")) || (data0 === "acceptable_use")) || (data0 === "prohibited_use")) || (data0 === "privacy_notice")) || (data0 === "data_collection")) || (data0 === "data_use")) || (data0 === "data_sharing")) || (data0 === "subprocessor_disclosure")) || (data0 === "model_provider_disclosure")) || (data0 === "training_or_finetuning")) || (data0 === "retention")) || (data0 === "deletion")) || (data0 === "data_subject_rights")) || (data0 === "consent_withdrawal")) || (data0 === "grievance_channel")) || (data0 === "security_safeguards")) || (data0 === "breach_notice")) || (data0 === "cross_border_transfer")) || (data0 === "liability_cap")) || (data0 === "warranty_disclaimer")) || (data0 === "sla_performance")) || (data0 === "agentic_controls")) || (data0 === "commercial_terms")) || (data0 === "dispute_terms")) || (data0 === "ip_ownership")) || (data0 === "minor_access")) || (data0 === "automated_decision")) || (data0 === "sensitive_data")) || (data0 === "unknown"))){
-const err7 = {instancePath:instancePath+"/control_family",schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema112.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/control_family",schemaPath:"#/$defs/controlFamily/enum",keyword:"enum",params:{allowedValues: schema114.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -15624,7 +16049,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "partial")) || (data1 === "absent_after_search")) || (data1 === "unclear")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err9 = {instancePath:instancePath+"/control_signal",schemaPath:"#/$defs/controlSignal/enum",keyword:"enum",params:{allowedValues: schema124.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/control_signal",schemaPath:"#/$defs/controlSignal/enum",keyword:"enum",params:{allowedValues: schema126.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -15734,8 +16159,8 @@ return errors === 0;
 }
 validate117.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema285 = {"type":"object","required":["signal_type","signal_value","data_flow_ids","feature_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"signal_value":{"$ref":"#/$defs/standardSignal"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"feature_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}};
-const schema286 = {"type":"string","enum":["personal_data","sensitive_data","children_data","credential_or_secret","client_confidential","biometric_data","financial_data","health_data","training_or_finetuning","processor_chain","cross_border_transfer","deletion","notice","automated_decision","unknown"]};
+const schema287 = {"type":"object","required":["signal_type","signal_value","data_flow_ids","feature_ids","legal_unit_ids"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"signal_value":{"$ref":"#/$defs/standardSignal"},"data_flow_ids":{"$ref":"#/$defs/stringArray"},"feature_ids":{"$ref":"#/$defs/stringArray"},"legal_unit_ids":{"$ref":"#/$defs/stringArray"}}};
+const schema288 = {"type":"string","enum":["personal_data","sensitive_data","children_data","credential_or_secret","client_confidential","biometric_data","financial_data","health_data","training_or_finetuning","processor_chain","cross_border_transfer","deletion","notice","automated_decision","unknown"]};
 
 function validate119(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -15823,7 +16248,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!(((((((((((((((data0 === "personal_data") || (data0 === "sensitive_data")) || (data0 === "children_data")) || (data0 === "credential_or_secret")) || (data0 === "client_confidential")) || (data0 === "biometric_data")) || (data0 === "financial_data")) || (data0 === "health_data")) || (data0 === "training_or_finetuning")) || (data0 === "processor_chain")) || (data0 === "cross_border_transfer")) || (data0 === "deletion")) || (data0 === "notice")) || (data0 === "automated_decision")) || (data0 === "unknown"))){
-const err7 = {instancePath:instancePath+"/signal_type",schemaPath:"#/$defs/dataSignalType/enum",keyword:"enum",params:{allowedValues: schema286.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/signal_type",schemaPath:"#/$defs/dataSignalType/enum",keyword:"enum",params:{allowedValues: schema288.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -15846,7 +16271,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!((((((data1 === "visible") || (data1 === "not_visible")) || (data1 === "partial")) || (data1 === "conflicting")) || (data1 === "not_applicable")) || (data1 === "unknown"))){
-const err9 = {instancePath:instancePath+"/signal_value",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema135.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/signal_value",schemaPath:"#/$defs/standardSignal/enum",keyword:"enum",params:{allowedValues: schema137.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -15956,7 +16381,7 @@ return errors === 0;
 }
 validate119.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema291 = {"type":"object","required":["document_id","legal_unit_id","source_record_ref","source_url","locator_type","locator_value"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}};
+const schema293 = {"type":"object","required":["document_id","legal_unit_id","source_record_ref","source_url","locator_type","locator_value"],"additionalProperties":false,"properties":{"document_id":{"type":"string"},"legal_unit_id":{"type":"string"},"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"locator_type":{"$ref":"#/$defs/locatorType"},"locator_value":{"type":"string"}}};
 
 function validate121(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -16102,7 +16527,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!(((((((data4 === "heading_path") || (data4 === "url_fragment")) || (data4 === "text_anchor")) || (data4 === "source_record")) || (data4 === "page_url")) || (data4 === "chunk_index")) || (data4 === "unknown"))){
-const err12 = {instancePath:instancePath+"/locator_type",schemaPath:"#/$defs/locatorType/enum",keyword:"enum",params:{allowedValues: schema116.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/locator_type",schemaPath:"#/$defs/locatorType/enum",keyword:"enum",params:{allowedValues: schema118.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -16140,7 +16565,7 @@ return errors === 0;
 }
 validate121.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema293 = {"type":"object","required":["signal_type","object_ref","search_scope","absence_basis","confidence"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"object_ref":{"type":"string"},"search_scope":{"type":"string"},"absence_basis":{"type":"string","enum":["searched_legal_docs","searched_privacy_docs","searched_security_docs","searched_trust_docs","searched_public_sources","source_not_available","access_failed","not_enough_context","unknown"]},"confidence":{"$ref":"#/$defs/confidence"}}};
+const schema295 = {"type":"object","required":["signal_type","object_ref","search_scope","absence_basis","confidence"],"additionalProperties":false,"properties":{"signal_type":{"$ref":"#/$defs/dataSignalType"},"object_ref":{"type":"string"},"search_scope":{"type":"string"},"absence_basis":{"type":"string","enum":["searched_legal_docs","searched_privacy_docs","searched_security_docs","searched_trust_docs","searched_public_sources","source_not_available","access_failed","not_enough_context","unknown"]},"confidence":{"$ref":"#/$defs/confidence"}}};
 
 function validate123(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -16228,7 +16653,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!(((((((((((((((data0 === "personal_data") || (data0 === "sensitive_data")) || (data0 === "children_data")) || (data0 === "credential_or_secret")) || (data0 === "client_confidential")) || (data0 === "biometric_data")) || (data0 === "financial_data")) || (data0 === "health_data")) || (data0 === "training_or_finetuning")) || (data0 === "processor_chain")) || (data0 === "cross_border_transfer")) || (data0 === "deletion")) || (data0 === "notice")) || (data0 === "automated_decision")) || (data0 === "unknown"))){
-const err7 = {instancePath:instancePath+"/signal_type",schemaPath:"#/$defs/dataSignalType/enum",keyword:"enum",params:{allowedValues: schema286.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/signal_type",schemaPath:"#/$defs/dataSignalType/enum",keyword:"enum",params:{allowedValues: schema288.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -16275,7 +16700,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!(((((((((data3 === "searched_legal_docs") || (data3 === "searched_privacy_docs")) || (data3 === "searched_security_docs")) || (data3 === "searched_trust_docs")) || (data3 === "searched_public_sources")) || (data3 === "source_not_available")) || (data3 === "access_failed")) || (data3 === "not_enough_context")) || (data3 === "unknown"))){
-const err11 = {instancePath:instancePath+"/absence_basis",schemaPath:"#/properties/absence_basis/enum",keyword:"enum",params:{allowedValues: schema293.properties.absence_basis.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/absence_basis",schemaPath:"#/properties/absence_basis/enum",keyword:"enum",params:{allowedValues: schema295.properties.absence_basis.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -16298,7 +16723,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((data4 === "high") || (data4 === "medium")) || (data4 === "low")) || (data4 === "unknown"))){
-const err13 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema109.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/confidence",schemaPath:"#/$defs/confidence/enum",keyword:"enum",params:{allowedValues: schema111.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -16324,9 +16749,9 @@ return errors === 0;
 }
 validate123.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema296 = {"type":"object","required":["source_record_ref","source_url","source_type","reason_for_fallback"],"additionalProperties":false,"properties":{"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"source_type":{"$ref":"#/$defs/sourceType"},"reason_for_fallback":{"$ref":"#/$defs/fallbackReason"}}};
-const schema297 = {"type":"string","enum":["legal_document","privacy_document","terms_document","security_document","trust_document","status_document","feature_source","public_page","api_doc","help_doc","source_bundle_record","unknown"]};
-const schema298 = {"type":"string","enum":["direct_source_verification_required","stage6_signal_unknown","stage6_signal_conflicting","missing_legal_unit_ref","hunter_trigger_requires_line_read","source_locator_available","source_scope_incomplete","unindexed_admitted_source","unknown"]};
+const schema298 = {"type":"object","required":["source_record_ref","source_url","source_type","reason_for_fallback"],"additionalProperties":false,"properties":{"source_record_ref":{"type":"string"},"source_url":{"type":"string"},"source_type":{"$ref":"#/$defs/sourceType"},"reason_for_fallback":{"$ref":"#/$defs/fallbackReason"}}};
+const schema299 = {"type":"string","enum":["legal_document","privacy_document","terms_document","security_document","trust_document","status_document","feature_source","public_page","api_doc","help_doc","source_bundle_record","unknown"]};
+const schema300 = {"type":"string","enum":["direct_source_verification_required","stage6_signal_unknown","stage6_signal_conflicting","missing_legal_unit_ref","hunter_trigger_requires_line_read","source_locator_available","source_scope_incomplete","unindexed_admitted_source","unknown"]};
 
 function validate125(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -16428,7 +16853,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!((((((((((((data2 === "legal_document") || (data2 === "privacy_document")) || (data2 === "terms_document")) || (data2 === "security_document")) || (data2 === "trust_document")) || (data2 === "status_document")) || (data2 === "feature_source")) || (data2 === "public_page")) || (data2 === "api_doc")) || (data2 === "help_doc")) || (data2 === "source_bundle_record")) || (data2 === "unknown"))){
-const err8 = {instancePath:instancePath+"/source_type",schemaPath:"#/$defs/sourceType/enum",keyword:"enum",params:{allowedValues: schema297.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/source_type",schemaPath:"#/$defs/sourceType/enum",keyword:"enum",params:{allowedValues: schema299.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -16451,7 +16876,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!(((((((((data3 === "direct_source_verification_required") || (data3 === "stage6_signal_unknown")) || (data3 === "stage6_signal_conflicting")) || (data3 === "missing_legal_unit_ref")) || (data3 === "hunter_trigger_requires_line_read")) || (data3 === "source_locator_available")) || (data3 === "source_scope_incomplete")) || (data3 === "unindexed_admitted_source")) || (data3 === "unknown"))){
-const err10 = {instancePath:instancePath+"/reason_for_fallback",schemaPath:"#/$defs/fallbackReason/enum",keyword:"enum",params:{allowedValues: schema298.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/reason_for_fallback",schemaPath:"#/$defs/fallbackReason/enum",keyword:"enum",params:{allowedValues: schema300.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -17097,7 +17522,7 @@ vErrors.push(err22);
 errors++;
 }
 if(!(((data4 === "stage6a_legal_document_cartography") || (data4 === "stage6b_data_provenance")) || (data4 === "stage6_integrated_handoff"))){
-const err23 = {instancePath:instancePath+"/stage6_component",schemaPath:"#/$defs/stage6Component/enum",keyword:"enum",params:{allowedValues: schema101.enum},message:"must be equal to one of the allowed values"};
+const err23 = {instancePath:instancePath+"/stage6_component",schemaPath:"#/$defs/stage6Component/enum",keyword:"enum",params:{allowedValues: schema103.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err23];
 }
@@ -17173,7 +17598,7 @@ errors++;
 if(data6.target_profile_ref !== undefined){
 let data10 = data6.target_profile_ref;
 if(((typeof data10 !== "string") && (!(data10 && typeof data10 == "object" && !Array.isArray(data10)))) && (data10 !== null)){
-const err29 = {instancePath:instancePath+"/input_refs/target_profile_ref",schemaPath:"#/$defs/inputRefs/properties/target_profile_ref/type",keyword:"type",params:{type: schema102.properties.target_profile_ref.type},message:"must be string,object,null"};
+const err29 = {instancePath:instancePath+"/input_refs/target_profile_ref",schemaPath:"#/$defs/inputRefs/properties/target_profile_ref/type",keyword:"type",params:{type: schema104.properties.target_profile_ref.type},message:"must be string,object,null"};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -17186,7 +17611,7 @@ errors++;
 if(data6.feature_profile_ref !== undefined){
 let data11 = data6.feature_profile_ref;
 if(((typeof data11 !== "string") && (!(data11 && typeof data11 == "object" && !Array.isArray(data11)))) && (data11 !== null)){
-const err30 = {instancePath:instancePath+"/input_refs/feature_profile_ref",schemaPath:"#/$defs/inputRefs/properties/feature_profile_ref/type",keyword:"type",params:{type: schema102.properties.feature_profile_ref.type},message:"must be string,object,null"};
+const err30 = {instancePath:instancePath+"/input_refs/feature_profile_ref",schemaPath:"#/$defs/inputRefs/properties/feature_profile_ref/type",keyword:"type",params:{type: schema104.properties.feature_profile_ref.type},message:"must be string,object,null"};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -17265,9 +17690,9 @@ return errors === 0;
 validate53.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_registryLedger = validate129;
-const schema299 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/registryLedger.schema.json","title":"Registry Evaluation Ledger","description":"Canonical registry_evaluation_ledger. After merge, ledger length must equal the active loaded registry row count; this schema does not hardcode the current artifact row count.","type":"object","required":["registry_batch_meta","registry_evaluation_ledger","batch_warnings"],"additionalProperties":false,"properties":{"registry_batch_meta":{"type":"object","required":["run_id","registry_count_loaded"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"registry_count_loaded":{"type":"integer","minimum":0},"batch_id":{"type":"string"}}},"registry_evaluation_ledger":{"type":"array","items":{"$ref":"#/$defs/ledgerEntry"}},"registry_batch_evaluation":{"type":"array","items":{"$ref":"#/$defs/ledgerEntry"}},"batch_warnings":{"type":"array","items":{"type":"string"}}},"$defs":{"condition":{"type":"object","required":["condition_id","result","basis"],"additionalProperties":false,"properties":{"condition_id":{"type":"string"},"result":{"type":"boolean"},"basis":{"type":"string"}}},"ledgerEntry":{"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":false,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"archetype_gate":{"type":"string"},"surface_gate":{"type":"string"},"authority_relevance":{"type":"string"},"conditions":{"type":"array","items":{"$ref":"#/$defs/condition"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}}}};
-const schema300 = {"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":false,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"archetype_gate":{"type":"string"},"surface_gate":{"type":"string"},"authority_relevance":{"type":"string"},"conditions":{"type":"array","items":{"$ref":"#/$defs/condition"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}};
-const schema301 = {"type":"object","required":["condition_id","result","basis"],"additionalProperties":false,"properties":{"condition_id":{"type":"string"},"result":{"type":"boolean"},"basis":{"type":"string"}}};
+const schema301 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/registryLedger.schema.json","title":"Registry Evaluation Ledger","description":"Canonical registry_evaluation_ledger. After merge, ledger length must equal the active loaded registry row count; this schema does not hardcode the current artifact row count.","type":"object","required":["registry_batch_meta","registry_evaluation_ledger","batch_warnings"],"additionalProperties":false,"properties":{"registry_batch_meta":{"type":"object","required":["run_id","registry_count_loaded"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"registry_count_loaded":{"type":"integer","minimum":0},"batch_id":{"type":"string"}}},"registry_evaluation_ledger":{"type":"array","items":{"$ref":"#/$defs/ledgerEntry"}},"registry_batch_evaluation":{"type":"array","items":{"$ref":"#/$defs/ledgerEntry"}},"batch_warnings":{"type":"array","items":{"type":"string"}}},"$defs":{"condition":{"type":"object","required":["condition_id","result","basis"],"additionalProperties":false,"properties":{"condition_id":{"type":"string"},"result":{"type":"boolean"},"basis":{"type":"string"}}},"ledgerEntry":{"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":false,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"archetype_gate":{"type":"string"},"surface_gate":{"type":"string"},"authority_relevance":{"type":"string"},"conditions":{"type":"array","items":{"$ref":"#/$defs/condition"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}}}};
+const schema302 = {"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":false,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"archetype_gate":{"type":"string"},"surface_gate":{"type":"string"},"authority_relevance":{"type":"string"},"conditions":{"type":"array","items":{"$ref":"#/$defs/condition"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}};
+const schema303 = {"type":"object","required":["condition_id","result","basis"],"additionalProperties":false,"properties":{"condition_id":{"type":"string"},"result":{"type":"boolean"},"basis":{"type":"string"}}};
 
 function validate130(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -17381,7 +17806,7 @@ vErrors.push(err9);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema300.properties, key0))){
+if(!(func1.call(schema302.properties, key0))){
 const err10 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err10];
@@ -17623,7 +18048,7 @@ vErrors.push(err29);
 errors++;
 }
 if(!(((((data13 === "TRIGGERED") || (data13 === "CONTROLLED")) || (data13 === "NOT_TRIGGERED")) || (data13 === "NOT_APPLICABLE")) || (data13 === "INSUFFICIENT_EVIDENCE"))){
-const err30 = {instancePath:instancePath+"/final_status",schemaPath:"#/properties/final_status/enum",keyword:"enum",params:{allowedValues: schema300.properties.final_status.enum},message:"must be equal to one of the allowed values"};
+const err30 = {instancePath:instancePath+"/final_status",schemaPath:"#/properties/final_status/enum",keyword:"enum",params:{allowedValues: schema302.properties.final_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -17929,9 +18354,9 @@ return errors === 0;
 validate129.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_operatorChallenge = validate133;
-const schema302 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/operatorChallenge.schema.json","title":"Operator Challenge Gate","description":"Canonical operator_challenge_gate produced by Stage 8 and used to verify or reopen Stage 7 registry ledger rows.","type":"object","required":["operator_challenge_gate","corrected_ledger_entries"],"additionalProperties":false,"properties":{"operator_challenge_gate":{"type":"object","required":["completed","result","registry_count_loaded","registry_count_evaluated","reopened_rows","high_risk_checks","notes"],"additionalProperties":false,"properties":{"completed":{"type":"boolean"},"result":{"type":"string","enum":["PASS","PASS_WITH_WARNINGS","REOPENED","FAIL_RETRY_REQUIRED"]},"registry_count_loaded":{"type":"integer","minimum":0},"registry_count_evaluated":{"type":"integer","minimum":0},"reopened_rows":{"type":"array","items":{"type":"object","required":["threat_id","previous_status","reopened_status","reason","required_action"],"additionalProperties":false,"properties":{"threat_id":{"type":"string"},"previous_status":{"$ref":"#/$defs/finalStatus"},"reopened_status":{"$ref":"#/$defs/finalStatus"},"reason":{"type":"string"},"required_action":{"type":"string"}}}},"high_risk_checks":{"type":"object","additionalProperties":true},"notes":{"type":"array","items":{"type":"string"}}}},"corrected_ledger_entries":{"type":"array","items":{"$ref":"#/$defs/ledgerEntry"}}},"$defs":{"finalStatus":{"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]},"ledgerEntry":{"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":true,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"conditions":{"type":"array","items":{"type":"object"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"$ref":"#/$defs/finalStatus"},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}}}};
-const schema303 = {"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]};
-const schema305 = {"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":true,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"conditions":{"type":"array","items":{"type":"object"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"$ref":"#/$defs/finalStatus"},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}};
+const schema304 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/operatorChallenge.schema.json","title":"Operator Challenge Gate","description":"Canonical operator_challenge_gate produced by Stage 8 and used to verify or reopen Stage 7 registry ledger rows.","type":"object","required":["operator_challenge_gate","corrected_ledger_entries"],"additionalProperties":false,"properties":{"operator_challenge_gate":{"type":"object","required":["completed","result","registry_count_loaded","registry_count_evaluated","reopened_rows","high_risk_checks","notes"],"additionalProperties":false,"properties":{"completed":{"type":"boolean"},"result":{"type":"string","enum":["PASS","PASS_WITH_WARNINGS","REOPENED","FAIL_RETRY_REQUIRED"]},"registry_count_loaded":{"type":"integer","minimum":0},"registry_count_evaluated":{"type":"integer","minimum":0},"reopened_rows":{"type":"array","items":{"type":"object","required":["threat_id","previous_status","reopened_status","reason","required_action"],"additionalProperties":false,"properties":{"threat_id":{"type":"string"},"previous_status":{"$ref":"#/$defs/finalStatus"},"reopened_status":{"$ref":"#/$defs/finalStatus"},"reason":{"type":"string"},"required_action":{"type":"string"}}}},"high_risk_checks":{"type":"object","additionalProperties":true},"notes":{"type":"array","items":{"type":"string"}}}},"corrected_ledger_entries":{"type":"array","items":{"$ref":"#/$defs/ledgerEntry"}}},"$defs":{"finalStatus":{"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]},"ledgerEntry":{"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":true,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"conditions":{"type":"array","items":{"type":"object"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"$ref":"#/$defs/finalStatus"},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}}}};
+const schema305 = {"type":"string","enum":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"]};
+const schema307 = {"type":"object","required":["entry_number","threat_id","threat_name","conditions","trigger_if_result","exclude_if_result","final_status","feature_refs","evidence_ref","reasoning_summary"],"additionalProperties":true,"properties":{"entry_number":{"type":"integer","minimum":1},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"conditions":{"type":"array","items":{"type":"object"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"final_status":{"$ref":"#/$defs/finalStatus"},"feature_refs":{"type":"array","items":{"type":"string"}},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"}}};
 
 function validate134(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -18159,7 +18584,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!(((((data7 === "TRIGGERED") || (data7 === "CONTROLLED")) || (data7 === "NOT_TRIGGERED")) || (data7 === "NOT_APPLICABLE")) || (data7 === "INSUFFICIENT_EVIDENCE"))){
-const err19 = {instancePath:instancePath+"/final_status",schemaPath:"#/$defs/finalStatus/enum",keyword:"enum",params:{allowedValues: schema303.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/final_status",schemaPath:"#/$defs/finalStatus/enum",keyword:"enum",params:{allowedValues: schema305.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -18392,7 +18817,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!((((data2 === "PASS") || (data2 === "PASS_WITH_WARNINGS")) || (data2 === "REOPENED")) || (data2 === "FAIL_RETRY_REQUIRED"))){
-const err13 = {instancePath:instancePath+"/operator_challenge_gate/result",schemaPath:"#/properties/operator_challenge_gate/properties/result/enum",keyword:"enum",params:{allowedValues: schema302.properties.operator_challenge_gate.properties.result.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/operator_challenge_gate/result",schemaPath:"#/properties/operator_challenge_gate/properties/result/enum",keyword:"enum",params:{allowedValues: schema304.properties.operator_challenge_gate.properties.result.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -18546,7 +18971,7 @@ vErrors.push(err25);
 errors++;
 }
 if(!(((((data8 === "TRIGGERED") || (data8 === "CONTROLLED")) || (data8 === "NOT_TRIGGERED")) || (data8 === "NOT_APPLICABLE")) || (data8 === "INSUFFICIENT_EVIDENCE"))){
-const err26 = {instancePath:instancePath+"/operator_challenge_gate/reopened_rows/" + i0+"/previous_status",schemaPath:"#/$defs/finalStatus/enum",keyword:"enum",params:{allowedValues: schema303.enum},message:"must be equal to one of the allowed values"};
+const err26 = {instancePath:instancePath+"/operator_challenge_gate/reopened_rows/" + i0+"/previous_status",schemaPath:"#/$defs/finalStatus/enum",keyword:"enum",params:{allowedValues: schema305.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err26];
 }
@@ -18569,7 +18994,7 @@ vErrors.push(err27);
 errors++;
 }
 if(!(((((data9 === "TRIGGERED") || (data9 === "CONTROLLED")) || (data9 === "NOT_TRIGGERED")) || (data9 === "NOT_APPLICABLE")) || (data9 === "INSUFFICIENT_EVIDENCE"))){
-const err28 = {instancePath:instancePath+"/operator_challenge_gate/reopened_rows/" + i0+"/reopened_status",schemaPath:"#/$defs/finalStatus/enum",keyword:"enum",params:{allowedValues: schema303.enum},message:"must be equal to one of the allowed values"};
+const err28 = {instancePath:instancePath+"/operator_challenge_gate/reopened_rows/" + i0+"/reopened_status",schemaPath:"#/$defs/finalStatus/enum",keyword:"enum",params:{allowedValues: schema305.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err28];
 }
@@ -18721,13 +19146,13 @@ return errors === 0;
 validate133.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_compilerOutput = validate136;
-const schema307 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/compilerOutput.schema.json","title":"Diligence Compiler Output","description":"Stage 9 / Node 5 compiler-only output. Canonical Stage 4/5 slices are target_profile_v2 and feature_profile_v2. Legacy target_profile, primary_product, and product_feature_map are not compiler truth. This schema excludes Node 5B backend-owned fields: vault_prefill_suggestions, assembly_handoff, and handoff_envelope.","type":"object","required":["diligence_run","source_bundle_summary","target_profile_v2","feature_profile_v2","legal_stack","document_stack_redline","threat_registry_summary","feature_to_threat_matrix","findings","controlled_rows","insufficient_evidence_rows","assembly_route","report_data","technical_audit_log","threat_findings","vault_confirmation_questions","disclaimer"],"additionalProperties":false,"properties":{"diligence_run":{"type":"object","required":["run_id","source_mode","compiler_status"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"submitted_at":{"type":"string"},"created_at":{"type":"string"},"source_mode":{"type":"string","enum":["url","text","url_plus_text"]},"compiler_status":{"type":"string"}}},"source_bundle_summary":{"type":"object","additionalProperties":true},"target_profile_v2":{"type":"object","additionalProperties":true},"feature_profile_v2":{"type":"object","additionalProperties":true},"legal_stack":{"type":"array","items":{"type":"object","additionalProperties":true}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"threat_registry_summary":{"type":"object","required":["registry_count_loaded","registry_count_evaluated","status_counts"],"additionalProperties":true,"properties":{"registry_count_loaded":{"type":"integer","minimum":0},"registry_count_evaluated":{"type":"integer","minimum":0},"status_counts":{"type":"object","required":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"],"additionalProperties":false,"properties":{"TRIGGERED":{"type":"integer","minimum":0},"CONTROLLED":{"type":"integer","minimum":0},"NOT_TRIGGERED":{"type":"integer","minimum":0},"NOT_APPLICABLE":{"type":"integer","minimum":0},"INSUFFICIENT_EVIDENCE":{"type":"integer","minimum":0}}}}},"feature_to_threat_matrix":{"type":"array","items":{"$ref":"#/$defs/featureThreatMatrixItem"}},"findings":{"type":"array","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","items":{"$ref":"#/$defs/controlledRow"}},"insufficient_evidence_rows":{"type":"array","items":{"$ref":"#/$defs/insufficientEvidenceRow"}},"assembly_route":{"type":"object","required":["recommended_package","document_routes","route_reasoning","local_counsel_review_required","vault_confirmation_question_count","backend_assembler_note"],"additionalProperties":true,"properties":{"recommended_package":{"type":"string"},"document_routes":{"type":"array","items":{"type":"string"}},"route_reasoning":{"type":"string"},"local_counsel_review_required":{"type":"boolean"},"vault_confirmation_question_count":{"type":"integer","minimum":0},"backend_assembler_note":{"type":"string"}}},"report_data":{"type":"object","required":["executive_report","full_forensic_record"],"additionalProperties":false,"properties":{"executive_report":{"type":"object","additionalProperties":true},"full_forensic_record":{"type":"object","required":["source_review","artifact_inventory","feature_inventory","feature_to_threat_matrix","document_stack_redline","triggered_findings","controlled_rows","insufficient_evidence_rows","assembly_route","technical_audit_log"],"additionalProperties":false,"properties":{"source_review":{"type":"object","additionalProperties":true},"artifact_inventory":{"type":"array","items":{"type":"object","additionalProperties":true}},"feature_inventory":{"type":"array","items":{"type":"object","additionalProperties":true}},"feature_to_threat_matrix":{"type":"array","items":{"$ref":"#/$defs/featureThreatMatrixItem"}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"triggered_findings":{"type":"array","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","items":{"$ref":"#/$defs/controlledRow"}},"insufficient_evidence_rows":{"type":"array","items":{"$ref":"#/$defs/insufficientEvidenceRow"}},"assembly_route":{"type":"object","additionalProperties":true},"technical_audit_log":{"type":"array","items":{"$ref":"#/$defs/auditEntry"}}}}}},"technical_audit_log":{"type":"array","items":{"$ref":"#/$defs/auditEntry"}},"threat_findings":{"type":"array","items":{"$ref":"#/$defs/threatFinding"}},"vault_confirmation_questions":{"type":"array","items":{"$ref":"#/$defs/vaultConfirmationQuestion"}},"disclaimer":{"type":"string","const":"Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information. Outputs are demo artifacts requiring qualified legal review before use."}},"$defs":{"finding":{"type":"object","required":["finding_id","threat_id","threat_name","status","linked_feature_ids","evidence","trigger_evaluation","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","additionalProperties":true},"trigger_evaluation":{"type":"object","additionalProperties":true},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"finding_memo_note":{"type":"string"}}},"controlledRow":{"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","control_basis","evidence_ref","reasoning_summary","document_routes","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"CONTROLLED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"control_basis":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"document_routes":{"type":"array","items":{"type":"string"}},"technical_note":{"type":"string"}}},"insufficientEvidenceRow":{"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","missing_evidence","evidence_ref","reasoning_summary","recommended_follow_up","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"INSUFFICIENT_EVIDENCE"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"missing_evidence":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"recommended_follow_up":{"type":"string"},"technical_note":{"type":"string"}}},"featureThreatMatrixItem":{"type":"object","required":["feature_ref","feature_name","archetype_codes","surface_tokens","triggered_threat_ids","controlled_threat_ids","insufficient_evidence_threat_ids","not_triggered_threat_ids","not_applicable_threat_ids","document_routes","summary"],"additionalProperties":true,"properties":{"feature_ref":{"type":"string"},"feature_name":{"type":"string"},"archetype_codes":{"type":"array","items":{"type":"string"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"triggered_threat_ids":{"type":"array","items":{"type":"string"}},"controlled_threat_ids":{"type":"array","items":{"type":"string"}},"insufficient_evidence_threat_ids":{"type":"array","items":{"type":"string"}},"not_triggered_threat_ids":{"type":"array","items":{"type":"string"}},"not_applicable_threat_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}}},"auditEntry":{"type":"object","required":["entry_type","message","severity"],"additionalProperties":true,"properties":{"entry_type":{"type":"string"},"threat_id":{"type":"string"},"status":{"type":"string"},"message":{"type":"string"},"source_ref":{"type":"string"},"severity":{"type":"string","enum":["INFO","WARNING","ERROR"]}}},"threatFinding":{"type":"object","required":["finding_id","threat_id","threat_name","linked_feature_ids","document_routes","vault_dependencies","severity","status"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"severity":{"type":"string"},"status":{"const":"TRIGGERED"}}},"vaultConfirmationQuestion":{"type":"object","required":["field_path","question","why_it_matters","source_finding_ids","priority"],"additionalProperties":false,"properties":{"field_path":{"$ref":"#/$defs/vaultFieldPath"},"question":{"type":"string"},"why_it_matters":{"type":"string"},"source_finding_ids":{"type":"array","items":{"type":"string"}},"priority":{"type":"string","enum":["HIGH","MEDIUM","LOW"]}}},"vaultFieldPath":{"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.app","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.none","baseline.reliance_threshold","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]}}};
-const schema308 = {"type":"object","required":["feature_ref","feature_name","archetype_codes","surface_tokens","triggered_threat_ids","controlled_threat_ids","insufficient_evidence_threat_ids","not_triggered_threat_ids","not_applicable_threat_ids","document_routes","summary"],"additionalProperties":true,"properties":{"feature_ref":{"type":"string"},"feature_name":{"type":"string"},"archetype_codes":{"type":"array","items":{"type":"string"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"triggered_threat_ids":{"type":"array","items":{"type":"string"}},"controlled_threat_ids":{"type":"array","items":{"type":"string"}},"insufficient_evidence_threat_ids":{"type":"array","items":{"type":"string"}},"not_triggered_threat_ids":{"type":"array","items":{"type":"string"}},"not_applicable_threat_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}}};
-const schema311 = {"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","control_basis","evidence_ref","reasoning_summary","document_routes","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"CONTROLLED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"control_basis":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"document_routes":{"type":"array","items":{"type":"string"}},"technical_note":{"type":"string"}}};
-const schema312 = {"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","missing_evidence","evidence_ref","reasoning_summary","recommended_follow_up","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"INSUFFICIENT_EVIDENCE"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"missing_evidence":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"recommended_follow_up":{"type":"string"},"technical_note":{"type":"string"}}};
-const schema316 = {"type":"object","required":["entry_type","message","severity"],"additionalProperties":true,"properties":{"entry_type":{"type":"string"},"threat_id":{"type":"string"},"status":{"type":"string"},"message":{"type":"string"},"source_ref":{"type":"string"},"severity":{"type":"string","enum":["INFO","WARNING","ERROR"]}}};
-const schema309 = {"type":"object","required":["finding_id","threat_id","threat_name","status","linked_feature_ids","evidence","trigger_evaluation","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","additionalProperties":true},"trigger_evaluation":{"type":"object","additionalProperties":true},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"finding_memo_note":{"type":"string"}}};
-const schema310 = {"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.app","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.none","baseline.reliance_threshold","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]};
+const schema309 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/compilerOutput.schema.json","title":"Diligence Compiler Output","description":"Stage 9 / Node 5 compiler-only output. Canonical Stage 4/5 slices are target_profile_v2 and feature_profile_v2. Legacy target_profile, primary_product, and product_feature_map are not compiler truth. This schema excludes Node 5B backend-owned fields: vault_prefill_suggestions, assembly_handoff, and handoff_envelope.","type":"object","required":["diligence_run","source_bundle_summary","target_profile_v2","feature_profile_v2","legal_stack","document_stack_redline","threat_registry_summary","feature_to_threat_matrix","findings","controlled_rows","insufficient_evidence_rows","assembly_route","report_data","technical_audit_log","threat_findings","vault_confirmation_questions","disclaimer"],"additionalProperties":false,"properties":{"diligence_run":{"type":"object","required":["run_id","source_mode","compiler_status"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"submitted_at":{"type":"string"},"created_at":{"type":"string"},"source_mode":{"type":"string","enum":["url","text","url_plus_text"]},"compiler_status":{"type":"string"}}},"source_bundle_summary":{"type":"object","additionalProperties":true},"target_profile_v2":{"type":"object","additionalProperties":true},"feature_profile_v2":{"type":"object","additionalProperties":true},"legal_stack":{"type":"array","items":{"type":"object","additionalProperties":true}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"threat_registry_summary":{"type":"object","required":["registry_count_loaded","registry_count_evaluated","status_counts"],"additionalProperties":true,"properties":{"registry_count_loaded":{"type":"integer","minimum":0},"registry_count_evaluated":{"type":"integer","minimum":0},"status_counts":{"type":"object","required":["TRIGGERED","CONTROLLED","NOT_TRIGGERED","NOT_APPLICABLE","INSUFFICIENT_EVIDENCE"],"additionalProperties":false,"properties":{"TRIGGERED":{"type":"integer","minimum":0},"CONTROLLED":{"type":"integer","minimum":0},"NOT_TRIGGERED":{"type":"integer","minimum":0},"NOT_APPLICABLE":{"type":"integer","minimum":0},"INSUFFICIENT_EVIDENCE":{"type":"integer","minimum":0}}}}},"feature_to_threat_matrix":{"type":"array","items":{"$ref":"#/$defs/featureThreatMatrixItem"}},"findings":{"type":"array","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","items":{"$ref":"#/$defs/controlledRow"}},"insufficient_evidence_rows":{"type":"array","items":{"$ref":"#/$defs/insufficientEvidenceRow"}},"assembly_route":{"type":"object","required":["recommended_package","document_routes","route_reasoning","local_counsel_review_required","vault_confirmation_question_count","backend_assembler_note"],"additionalProperties":true,"properties":{"recommended_package":{"type":"string"},"document_routes":{"type":"array","items":{"type":"string"}},"route_reasoning":{"type":"string"},"local_counsel_review_required":{"type":"boolean"},"vault_confirmation_question_count":{"type":"integer","minimum":0},"backend_assembler_note":{"type":"string"}}},"report_data":{"type":"object","required":["executive_report","full_forensic_record"],"additionalProperties":false,"properties":{"executive_report":{"type":"object","additionalProperties":true},"full_forensic_record":{"type":"object","required":["source_review","artifact_inventory","feature_inventory","feature_to_threat_matrix","document_stack_redline","triggered_findings","controlled_rows","insufficient_evidence_rows","assembly_route","technical_audit_log"],"additionalProperties":false,"properties":{"source_review":{"type":"object","additionalProperties":true},"artifact_inventory":{"type":"array","items":{"type":"object","additionalProperties":true}},"feature_inventory":{"type":"array","items":{"type":"object","additionalProperties":true}},"feature_to_threat_matrix":{"type":"array","items":{"$ref":"#/$defs/featureThreatMatrixItem"}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"triggered_findings":{"type":"array","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","items":{"$ref":"#/$defs/controlledRow"}},"insufficient_evidence_rows":{"type":"array","items":{"$ref":"#/$defs/insufficientEvidenceRow"}},"assembly_route":{"type":"object","additionalProperties":true},"technical_audit_log":{"type":"array","items":{"$ref":"#/$defs/auditEntry"}}}}}},"technical_audit_log":{"type":"array","items":{"$ref":"#/$defs/auditEntry"}},"threat_findings":{"type":"array","items":{"$ref":"#/$defs/threatFinding"}},"vault_confirmation_questions":{"type":"array","items":{"$ref":"#/$defs/vaultConfirmationQuestion"}},"disclaimer":{"type":"string","const":"Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information. Outputs are demo artifacts requiring qualified legal review before use."}},"$defs":{"finding":{"type":"object","required":["finding_id","threat_id","threat_name","status","linked_feature_ids","evidence","trigger_evaluation","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","additionalProperties":true},"trigger_evaluation":{"type":"object","additionalProperties":true},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"finding_memo_note":{"type":"string"}}},"controlledRow":{"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","control_basis","evidence_ref","reasoning_summary","document_routes","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"CONTROLLED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"control_basis":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"document_routes":{"type":"array","items":{"type":"string"}},"technical_note":{"type":"string"}}},"insufficientEvidenceRow":{"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","missing_evidence","evidence_ref","reasoning_summary","recommended_follow_up","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"INSUFFICIENT_EVIDENCE"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"missing_evidence":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"recommended_follow_up":{"type":"string"},"technical_note":{"type":"string"}}},"featureThreatMatrixItem":{"type":"object","required":["feature_ref","feature_name","archetype_codes","surface_tokens","triggered_threat_ids","controlled_threat_ids","insufficient_evidence_threat_ids","not_triggered_threat_ids","not_applicable_threat_ids","document_routes","summary"],"additionalProperties":true,"properties":{"feature_ref":{"type":"string"},"feature_name":{"type":"string"},"archetype_codes":{"type":"array","items":{"type":"string"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"triggered_threat_ids":{"type":"array","items":{"type":"string"}},"controlled_threat_ids":{"type":"array","items":{"type":"string"}},"insufficient_evidence_threat_ids":{"type":"array","items":{"type":"string"}},"not_triggered_threat_ids":{"type":"array","items":{"type":"string"}},"not_applicable_threat_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}}},"auditEntry":{"type":"object","required":["entry_type","message","severity"],"additionalProperties":true,"properties":{"entry_type":{"type":"string"},"threat_id":{"type":"string"},"status":{"type":"string"},"message":{"type":"string"},"source_ref":{"type":"string"},"severity":{"type":"string","enum":["INFO","WARNING","ERROR"]}}},"threatFinding":{"type":"object","required":["finding_id","threat_id","threat_name","linked_feature_ids","document_routes","vault_dependencies","severity","status"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"severity":{"type":"string"},"status":{"const":"TRIGGERED"}}},"vaultConfirmationQuestion":{"type":"object","required":["field_path","question","why_it_matters","source_finding_ids","priority"],"additionalProperties":false,"properties":{"field_path":{"$ref":"#/$defs/vaultFieldPath"},"question":{"type":"string"},"why_it_matters":{"type":"string"},"source_finding_ids":{"type":"array","items":{"type":"string"}},"priority":{"type":"string","enum":["HIGH","MEDIUM","LOW"]}}},"vaultFieldPath":{"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.app","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.none","baseline.reliance_threshold","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]}}};
+const schema310 = {"type":"object","required":["feature_ref","feature_name","archetype_codes","surface_tokens","triggered_threat_ids","controlled_threat_ids","insufficient_evidence_threat_ids","not_triggered_threat_ids","not_applicable_threat_ids","document_routes","summary"],"additionalProperties":true,"properties":{"feature_ref":{"type":"string"},"feature_name":{"type":"string"},"archetype_codes":{"type":"array","items":{"type":"string"}},"surface_tokens":{"type":"array","items":{"type":"string"}},"triggered_threat_ids":{"type":"array","items":{"type":"string"}},"controlled_threat_ids":{"type":"array","items":{"type":"string"}},"insufficient_evidence_threat_ids":{"type":"array","items":{"type":"string"}},"not_triggered_threat_ids":{"type":"array","items":{"type":"string"}},"not_applicable_threat_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}}};
+const schema313 = {"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","control_basis","evidence_ref","reasoning_summary","document_routes","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"CONTROLLED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"control_basis":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"document_routes":{"type":"array","items":{"type":"string"}},"technical_note":{"type":"string"}}};
+const schema314 = {"type":"object","required":["threat_id","threat_name","status","linked_feature_ids","missing_evidence","evidence_ref","reasoning_summary","recommended_follow_up","technical_note"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"INSUFFICIENT_EVIDENCE"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"missing_evidence":{"type":"string"},"evidence_ref":{"type":"string"},"reasoning_summary":{"type":"string"},"recommended_follow_up":{"type":"string"},"technical_note":{"type":"string"}}};
+const schema318 = {"type":"object","required":["entry_type","message","severity"],"additionalProperties":true,"properties":{"entry_type":{"type":"string"},"threat_id":{"type":"string"},"status":{"type":"string"},"message":{"type":"string"},"source_ref":{"type":"string"},"severity":{"type":"string","enum":["INFO","WARNING","ERROR"]}}};
+const schema311 = {"type":"object","required":["finding_id","threat_id","threat_name","status","linked_feature_ids","evidence","trigger_evaluation","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","additionalProperties":true},"trigger_evaluation":{"type":"object","additionalProperties":true},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"finding_memo_note":{"type":"string"}}};
+const schema312 = {"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.app","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.none","baseline.reliance_threshold","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]};
 
 function validate137(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -18991,7 +19416,7 @@ vErrors.push(err20);
 errors++;
 }
 if(!((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((data11 === "baseline.company") || (data11 === "baseline.entity_type")) || (data11 === "baseline.address")) || (data11 === "baseline.legal_email")) || (data11 === "baseline.privacy_email")) || (data11 === "baseline.products")) || (data11 === "baseline.jurisdiction.country")) || (data11 === "baseline.jurisdiction.state")) || (data11 === "baseline.market")) || (data11 === "baseline.delivery.app")) || (data11 === "baseline.delivery.api")) || (data11 === "baseline.revenue_model")) || (data11 === "baseline.acv")) || (data11 === "baseline.has_beta")) || (data11 === "baseline.output_ownership")) || (data11 === "baseline.sla_type")) || (data11 === "baseline.integrations.slack")) || (data11 === "baseline.integrations.crm")) || (data11 === "baseline.integrations.stripe")) || (data11 === "baseline.integrations.github")) || (data11 === "baseline.integrations.webhooks")) || (data11 === "baseline.integrations.none")) || (data11 === "baseline.reliance_threshold")) || (data11 === "architecture.memory")) || (data11 === "architecture.models")) || (data11 === "architecture.sub_processors.openai")) || (data11 === "architecture.sub_processors.anthropic")) || (data11 === "architecture.sub_processors.google")) || (data11 === "architecture.sub_processors.cohere")) || (data11 === "architecture.sub_processors.mistral")) || (data11 === "architecture.sub_processors.other")) || (data11 === "architecture.sub_processors.url")) || (data11 === "architecture.cloud_host")) || (data11 === "architecture.vector_db")) || (data11 === "archetypes.is_doer")) || (data11 === "archetypes.is_orchestrator")) || (data11 === "archetypes.agent_limits.session_cap")) || (data11 === "archetypes.agent_limits.period_cap")) || (data11 === "archetypes.agent_limits.retry_limit")) || (data11 === "archetypes.agent_limits.loop_threshold")) || (data11 === "archetypes.is_creator")) || (data11 === "archetypes.is_reader")) || (data11 === "archetypes.conversational_ui")) || (data11 === "archetypes.sens_bio")) || (data11 === "archetypes.is_judge")) || (data11 === "archetypes.is_judge_hr")) || (data11 === "archetypes.is_judge_legal")) || (data11 === "archetypes.is_optimizer")) || (data11 === "archetypes.sens_fin")) || (data11 === "archetypes.is_shield")) || (data11 === "archetypes.is_mover")) || (data11 === "archetypes.is_generalist")) || (data11 === "compliance.processes_pii")) || (data11 === "compliance.eu_users")) || (data11 === "compliance.ca_users")) || (data11 === "compliance.other_regions")) || (data11 === "compliance.sens_health")) || (data11 === "compliance.sens_fin")) || (data11 === "compliance.sens_employment")) || (data11 === "compliance.minors")) || (data11 === "compliance.distress")) || (data11 === "compliance.standard_adults"))){
-const err21 = {instancePath:instancePath+"/vault_dependencies/" + i2,schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema310.enum},message:"must be equal to one of the allowed values"};
+const err21 = {instancePath:instancePath+"/vault_dependencies/" + i2,schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema312.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -19041,7 +19466,7 @@ return errors === 0;
 }
 validate137.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema318 = {"type":"object","required":["finding_id","threat_id","threat_name","linked_feature_ids","document_routes","vault_dependencies","severity","status"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"severity":{"type":"string"},"status":{"const":"TRIGGERED"}}};
+const schema320 = {"type":"object","required":["finding_id","threat_id","threat_name","linked_feature_ids","document_routes","vault_dependencies","severity","status"],"additionalProperties":true,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"}},"severity":{"type":"string"},"status":{"const":"TRIGGERED"}}};
 
 function validate140(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -19243,7 +19668,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((data8 === "baseline.company") || (data8 === "baseline.entity_type")) || (data8 === "baseline.address")) || (data8 === "baseline.legal_email")) || (data8 === "baseline.privacy_email")) || (data8 === "baseline.products")) || (data8 === "baseline.jurisdiction.country")) || (data8 === "baseline.jurisdiction.state")) || (data8 === "baseline.market")) || (data8 === "baseline.delivery.app")) || (data8 === "baseline.delivery.api")) || (data8 === "baseline.revenue_model")) || (data8 === "baseline.acv")) || (data8 === "baseline.has_beta")) || (data8 === "baseline.output_ownership")) || (data8 === "baseline.sla_type")) || (data8 === "baseline.integrations.slack")) || (data8 === "baseline.integrations.crm")) || (data8 === "baseline.integrations.stripe")) || (data8 === "baseline.integrations.github")) || (data8 === "baseline.integrations.webhooks")) || (data8 === "baseline.integrations.none")) || (data8 === "baseline.reliance_threshold")) || (data8 === "architecture.memory")) || (data8 === "architecture.models")) || (data8 === "architecture.sub_processors.openai")) || (data8 === "architecture.sub_processors.anthropic")) || (data8 === "architecture.sub_processors.google")) || (data8 === "architecture.sub_processors.cohere")) || (data8 === "architecture.sub_processors.mistral")) || (data8 === "architecture.sub_processors.other")) || (data8 === "architecture.sub_processors.url")) || (data8 === "architecture.cloud_host")) || (data8 === "architecture.vector_db")) || (data8 === "archetypes.is_doer")) || (data8 === "archetypes.is_orchestrator")) || (data8 === "archetypes.agent_limits.session_cap")) || (data8 === "archetypes.agent_limits.period_cap")) || (data8 === "archetypes.agent_limits.retry_limit")) || (data8 === "archetypes.agent_limits.loop_threshold")) || (data8 === "archetypes.is_creator")) || (data8 === "archetypes.is_reader")) || (data8 === "archetypes.conversational_ui")) || (data8 === "archetypes.sens_bio")) || (data8 === "archetypes.is_judge")) || (data8 === "archetypes.is_judge_hr")) || (data8 === "archetypes.is_judge_legal")) || (data8 === "archetypes.is_optimizer")) || (data8 === "archetypes.sens_fin")) || (data8 === "archetypes.is_shield")) || (data8 === "archetypes.is_mover")) || (data8 === "archetypes.is_generalist")) || (data8 === "compliance.processes_pii")) || (data8 === "compliance.eu_users")) || (data8 === "compliance.ca_users")) || (data8 === "compliance.other_regions")) || (data8 === "compliance.sens_health")) || (data8 === "compliance.sens_fin")) || (data8 === "compliance.sens_employment")) || (data8 === "compliance.minors")) || (data8 === "compliance.distress")) || (data8 === "compliance.standard_adults"))){
-const err16 = {instancePath:instancePath+"/vault_dependencies/" + i2,schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema310.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/vault_dependencies/" + i2,schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema312.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -19305,7 +19730,7 @@ return errors === 0;
 }
 validate140.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema320 = {"type":"object","required":["field_path","question","why_it_matters","source_finding_ids","priority"],"additionalProperties":false,"properties":{"field_path":{"$ref":"#/$defs/vaultFieldPath"},"question":{"type":"string"},"why_it_matters":{"type":"string"},"source_finding_ids":{"type":"array","items":{"type":"string"}},"priority":{"type":"string","enum":["HIGH","MEDIUM","LOW"]}}};
+const schema322 = {"type":"object","required":["field_path","question","why_it_matters","source_finding_ids","priority"],"additionalProperties":false,"properties":{"field_path":{"$ref":"#/$defs/vaultFieldPath"},"question":{"type":"string"},"why_it_matters":{"type":"string"},"source_finding_ids":{"type":"array","items":{"type":"string"}},"priority":{"type":"string","enum":["HIGH","MEDIUM","LOW"]}}};
 
 function validate142(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -19393,7 +19818,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((data0 === "baseline.company") || (data0 === "baseline.entity_type")) || (data0 === "baseline.address")) || (data0 === "baseline.legal_email")) || (data0 === "baseline.privacy_email")) || (data0 === "baseline.products")) || (data0 === "baseline.jurisdiction.country")) || (data0 === "baseline.jurisdiction.state")) || (data0 === "baseline.market")) || (data0 === "baseline.delivery.app")) || (data0 === "baseline.delivery.api")) || (data0 === "baseline.revenue_model")) || (data0 === "baseline.acv")) || (data0 === "baseline.has_beta")) || (data0 === "baseline.output_ownership")) || (data0 === "baseline.sla_type")) || (data0 === "baseline.integrations.slack")) || (data0 === "baseline.integrations.crm")) || (data0 === "baseline.integrations.stripe")) || (data0 === "baseline.integrations.github")) || (data0 === "baseline.integrations.webhooks")) || (data0 === "baseline.integrations.none")) || (data0 === "baseline.reliance_threshold")) || (data0 === "architecture.memory")) || (data0 === "architecture.models")) || (data0 === "architecture.sub_processors.openai")) || (data0 === "architecture.sub_processors.anthropic")) || (data0 === "architecture.sub_processors.google")) || (data0 === "architecture.sub_processors.cohere")) || (data0 === "architecture.sub_processors.mistral")) || (data0 === "architecture.sub_processors.other")) || (data0 === "architecture.sub_processors.url")) || (data0 === "architecture.cloud_host")) || (data0 === "architecture.vector_db")) || (data0 === "archetypes.is_doer")) || (data0 === "archetypes.is_orchestrator")) || (data0 === "archetypes.agent_limits.session_cap")) || (data0 === "archetypes.agent_limits.period_cap")) || (data0 === "archetypes.agent_limits.retry_limit")) || (data0 === "archetypes.agent_limits.loop_threshold")) || (data0 === "archetypes.is_creator")) || (data0 === "archetypes.is_reader")) || (data0 === "archetypes.conversational_ui")) || (data0 === "archetypes.sens_bio")) || (data0 === "archetypes.is_judge")) || (data0 === "archetypes.is_judge_hr")) || (data0 === "archetypes.is_judge_legal")) || (data0 === "archetypes.is_optimizer")) || (data0 === "archetypes.sens_fin")) || (data0 === "archetypes.is_shield")) || (data0 === "archetypes.is_mover")) || (data0 === "archetypes.is_generalist")) || (data0 === "compliance.processes_pii")) || (data0 === "compliance.eu_users")) || (data0 === "compliance.ca_users")) || (data0 === "compliance.other_regions")) || (data0 === "compliance.sens_health")) || (data0 === "compliance.sens_fin")) || (data0 === "compliance.sens_employment")) || (data0 === "compliance.minors")) || (data0 === "compliance.distress")) || (data0 === "compliance.standard_adults"))){
-const err7 = {instancePath:instancePath+"/field_path",schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema310.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/field_path",schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema312.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -19468,7 +19893,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!(((data5 === "HIGH") || (data5 === "MEDIUM")) || (data5 === "LOW"))){
-const err13 = {instancePath:instancePath+"/priority",schemaPath:"#/properties/priority/enum",keyword:"enum",params:{allowedValues: schema320.properties.priority.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/priority",schemaPath:"#/properties/priority/enum",keyword:"enum",params:{allowedValues: schema322.properties.priority.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -19678,7 +20103,7 @@ vErrors.push(err16);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema307.properties, key0))){
+if(!(func1.call(schema309.properties, key0))){
 const err17 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err17];
@@ -19771,7 +20196,7 @@ vErrors.push(err24);
 errors++;
 }
 if(!(((data4 === "url") || (data4 === "text")) || (data4 === "url_plus_text"))){
-const err25 = {instancePath:instancePath+"/diligence_run/source_mode",schemaPath:"#/properties/diligence_run/properties/source_mode/enum",keyword:"enum",params:{allowedValues: schema307.properties.diligence_run.properties.source_mode.enum},message:"must be equal to one of the allowed values"};
+const err25 = {instancePath:instancePath+"/diligence_run/source_mode",schemaPath:"#/properties/diligence_run/properties/source_mode/enum",keyword:"enum",params:{allowedValues: schema309.properties.diligence_run.properties.source_mode.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -21468,7 +21893,7 @@ vErrors.push(err164);
 errors++;
 }
 for(const key3 in data80){
-if(!(func1.call(schema307.properties.report_data.properties.full_forensic_record.properties, key3))){
+if(!(func1.call(schema309.properties.report_data.properties.full_forensic_record.properties, key3))){
 const err165 = {instancePath:instancePath+"/report_data/full_forensic_record",schemaPath:"#/properties/report_data/properties/full_forensic_record/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err165];
@@ -22641,7 +23066,7 @@ vErrors.push(err258);
 errors++;
 }
 if(!(((data144 === "INFO") || (data144 === "WARNING")) || (data144 === "ERROR"))){
-const err259 = {instancePath:instancePath+"/report_data/full_forensic_record/technical_audit_log/" + i36+"/severity",schemaPath:"#/$defs/auditEntry/properties/severity/enum",keyword:"enum",params:{allowedValues: schema316.properties.severity.enum},message:"must be equal to one of the allowed values"};
+const err259 = {instancePath:instancePath+"/report_data/full_forensic_record/technical_audit_log/" + i36+"/severity",schemaPath:"#/$defs/auditEntry/properties/severity/enum",keyword:"enum",params:{allowedValues: schema318.properties.severity.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err259];
 }
@@ -22809,7 +23234,7 @@ vErrors.push(err272);
 errors++;
 }
 if(!(((data152 === "INFO") || (data152 === "WARNING")) || (data152 === "ERROR"))){
-const err273 = {instancePath:instancePath+"/technical_audit_log/" + i37+"/severity",schemaPath:"#/$defs/auditEntry/properties/severity/enum",keyword:"enum",params:{allowedValues: schema316.properties.severity.enum},message:"must be equal to one of the allowed values"};
+const err273 = {instancePath:instancePath+"/technical_audit_log/" + i37+"/severity",schemaPath:"#/$defs/auditEntry/properties/severity/enum",keyword:"enum",params:{allowedValues: schema318.properties.severity.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err273];
 }
@@ -22927,9 +23352,9 @@ return errors === 0;
 validate136.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_diligenceReport = validate144;
-const schema322 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/diligenceReport.schema.json","title":"Diligence Compiler Output","description":"Canonical diligence_compiler_output. No array cap is imposed on findings, controlled rows, insufficient-evidence rows, or product features. Counts must match registry status totals at validation time.","type":"object","required":["diligence_run","source_bundle_summary","target_profile","primary_product","product_feature_map","legal_stack","document_stack_redline","threat_registry_summary","feature_to_threat_matrix","findings","controlled_rows","insufficient_evidence_rows","report_data","technical_audit_log","assembly_route","assembly_handoff","handoff_envelope","disclaimer"],"additionalProperties":false,"properties":{"diligence_run":{"type":"object","required":["run_id","created_at","source_mode"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"created_at":{"type":"string","format":"date-time"},"source_mode":{"type":"string","enum":["url","manual_urls","text","url_plus_text"]}}},"source_bundle_summary":{"type":"object","additionalProperties":true},"target_profile":{"type":"object","additionalProperties":true},"primary_product":{"type":"object","additionalProperties":true},"product_feature_map":{"type":"array","items":{"type":"object","additionalProperties":true}},"legal_stack":{"type":"array","items":{"type":"object","additionalProperties":true}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"threat_registry_summary":{"type":"object","required":["registry_count_loaded","count_by_status"],"additionalProperties":true,"properties":{"registry_count_loaded":{"type":"integer","minimum":0},"count_by_status":{"type":"object","additionalProperties":{"type":"integer","minimum":0}}}},"feature_to_threat_matrix":{"type":"array","items":{"type":"object","additionalProperties":true}},"findings":{"type":"array","description":"Must equal count(TRIGGERED).","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","description":"Must equal count(CONTROLLED).","items":{"$ref":"#/$defs/statusRow"}},"insufficient_evidence_rows":{"type":"array","description":"Must equal count(INSUFFICIENT_EVIDENCE).","items":{"$ref":"#/$defs/statusRow"}},"report_data":{"type":"object","required":["executive_report","full_forensic_record"],"additionalProperties":false,"properties":{"executive_report":{"type":"object","required":["cover_reliance","scope_methodology","subject_profile","risk_posture_summary","material_findings_highlights","triggered_findings_schedule","document_stack_verdict","recommended_route"],"additionalProperties":false,"properties":{"cover_reliance":{"type":"object","additionalProperties":true},"scope_methodology":{"type":"object","additionalProperties":true},"subject_profile":{"type":"object","additionalProperties":true},"risk_posture_summary":{"type":"object","additionalProperties":true},"material_findings_highlights":{"type":"array","items":{"type":"object","additionalProperties":true}},"triggered_findings_schedule":{"type":"array","items":{"type":"object","required":["threat_id","threat_name","pain_category","archetype","linked_feature","document_route","short_issue"],"additionalProperties":false,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"pain_category":{"type":"string"},"archetype":{"type":"string"},"linked_feature":{"type":"string"},"document_route":{"type":"string"},"short_issue":{"type":"string"}}}},"document_stack_verdict":{"type":"object","additionalProperties":true},"recommended_route":{"type":"object","additionalProperties":true}}},"full_forensic_record":{"type":"object","required":["source_review","product_feature_map","feature_to_threat_matrix","document_stack_redline","triggered_findings","controlled_rows","insufficient_evidence_rows","assembly_route","technical_audit_log"],"additionalProperties":false,"properties":{"source_review":{"type":"object","additionalProperties":true},"product_feature_map":{"type":"array","items":{"type":"object","additionalProperties":true}},"feature_to_threat_matrix":{"type":"array","items":{"type":"object","additionalProperties":true}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"triggered_findings":{"type":"array","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","items":{"$ref":"#/$defs/statusRow"}},"insufficient_evidence_rows":{"type":"array","items":{"$ref":"#/$defs/statusRow"}},"assembly_route":{"type":"object","additionalProperties":true},"technical_audit_log":{"type":"array","items":{"type":"object","additionalProperties":true}}}}}},"technical_audit_log":{"type":"array","items":{"type":"object","additionalProperties":true}},"assembly_route":{"type":"object","additionalProperties":true},"assembly_handoff":{"type":"object","additionalProperties":true},"handoff_envelope":{"type":"object","additionalProperties":true},"disclaimer":{"type":"string"}},"$defs":{"finding":{"type":"object","required":["finding_id","threat_id","threat_name","status","pain_tier","pain_category","pain_depth","lane","archetype","surface_tokens","subcat","authority","linked_feature_ids","evidence","trigger_evaluation","registry_payload","redline_route","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":false,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"pain_tier":{"type":"string"},"pain_category":{"type":"string"},"pain_depth":{"type":"string"},"lane":{"type":"string"},"archetype":{"type":"string"},"surface_tokens":{"type":"array","items":{"type":"string"}},"subcat":{"type":"string"},"authority":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","required":["source_url","artifact_class","proof_citation","evidence_mode","source_hash","extracted_excerpt"],"additionalProperties":false,"properties":{"source_url":{"type":"string"},"artifact_class":{"type":"string"},"proof_citation":{"type":"string"},"evidence_mode":{"type":"string"},"source_hash":{"type":"string"},"extracted_excerpt":{"type":"string"}}},"trigger_evaluation":{"type":"object","required":["conditions_passed","conditions_failed","trigger_if_result","exclude_if_result","exclude_if_basis"],"additionalProperties":false,"properties":{"conditions_passed":{"type":"array","items":{"type":"string"}},"conditions_failed":{"type":"array","items":{"type":"string"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"exclude_if_basis":{"type":"string"}}},"registry_payload":{"type":"object","required":["legal_pain","fp_mechanism","fp_impact","lex_nova_fix"],"additionalProperties":false,"properties":{"legal_pain":{"type":"string"},"fp_mechanism":{"type":"string"},"fp_impact":{"type":"string"},"lex_nova_fix":{"type":"string"}}},"redline_route":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"type":"string"}},"finding_memo_note":{"type":"string"}}},"statusRow":{"type":"object","required":["threat_id","threat_name","status","reasoning_summary"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"type":"string","enum":["CONTROLLED","INSUFFICIENT_EVIDENCE"]},"reasoning_summary":{"type":"string"}}}}};
-const schema323 = {"type":"object","required":["finding_id","threat_id","threat_name","status","pain_tier","pain_category","pain_depth","lane","archetype","surface_tokens","subcat","authority","linked_feature_ids","evidence","trigger_evaluation","registry_payload","redline_route","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":false,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"pain_tier":{"type":"string"},"pain_category":{"type":"string"},"pain_depth":{"type":"string"},"lane":{"type":"string"},"archetype":{"type":"string"},"surface_tokens":{"type":"array","items":{"type":"string"}},"subcat":{"type":"string"},"authority":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","required":["source_url","artifact_class","proof_citation","evidence_mode","source_hash","extracted_excerpt"],"additionalProperties":false,"properties":{"source_url":{"type":"string"},"artifact_class":{"type":"string"},"proof_citation":{"type":"string"},"evidence_mode":{"type":"string"},"source_hash":{"type":"string"},"extracted_excerpt":{"type":"string"}}},"trigger_evaluation":{"type":"object","required":["conditions_passed","conditions_failed","trigger_if_result","exclude_if_result","exclude_if_basis"],"additionalProperties":false,"properties":{"conditions_passed":{"type":"array","items":{"type":"string"}},"conditions_failed":{"type":"array","items":{"type":"string"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"exclude_if_basis":{"type":"string"}}},"registry_payload":{"type":"object","required":["legal_pain","fp_mechanism","fp_impact","lex_nova_fix"],"additionalProperties":false,"properties":{"legal_pain":{"type":"string"},"fp_mechanism":{"type":"string"},"fp_impact":{"type":"string"},"lex_nova_fix":{"type":"string"}}},"redline_route":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"type":"string"}},"finding_memo_note":{"type":"string"}}};
-const schema324 = {"type":"object","required":["threat_id","threat_name","status","reasoning_summary"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"type":"string","enum":["CONTROLLED","INSUFFICIENT_EVIDENCE"]},"reasoning_summary":{"type":"string"}}};
+const schema324 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/diligenceReport.schema.json","title":"Diligence Compiler Output","description":"Canonical diligence_compiler_output. No array cap is imposed on findings, controlled rows, insufficient-evidence rows, or product features. Counts must match registry status totals at validation time.","type":"object","required":["diligence_run","source_bundle_summary","target_profile","primary_product","product_feature_map","legal_stack","document_stack_redline","threat_registry_summary","feature_to_threat_matrix","findings","controlled_rows","insufficient_evidence_rows","report_data","technical_audit_log","assembly_route","assembly_handoff","handoff_envelope","disclaimer"],"additionalProperties":false,"properties":{"diligence_run":{"type":"object","required":["run_id","created_at","source_mode"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"created_at":{"type":"string","format":"date-time"},"source_mode":{"type":"string","enum":["url","manual_urls","text","url_plus_text"]}}},"source_bundle_summary":{"type":"object","additionalProperties":true},"target_profile":{"type":"object","additionalProperties":true},"primary_product":{"type":"object","additionalProperties":true},"product_feature_map":{"type":"array","items":{"type":"object","additionalProperties":true}},"legal_stack":{"type":"array","items":{"type":"object","additionalProperties":true}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"threat_registry_summary":{"type":"object","required":["registry_count_loaded","count_by_status"],"additionalProperties":true,"properties":{"registry_count_loaded":{"type":"integer","minimum":0},"count_by_status":{"type":"object","additionalProperties":{"type":"integer","minimum":0}}}},"feature_to_threat_matrix":{"type":"array","items":{"type":"object","additionalProperties":true}},"findings":{"type":"array","description":"Must equal count(TRIGGERED).","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","description":"Must equal count(CONTROLLED).","items":{"$ref":"#/$defs/statusRow"}},"insufficient_evidence_rows":{"type":"array","description":"Must equal count(INSUFFICIENT_EVIDENCE).","items":{"$ref":"#/$defs/statusRow"}},"report_data":{"type":"object","required":["executive_report","full_forensic_record"],"additionalProperties":false,"properties":{"executive_report":{"type":"object","required":["cover_reliance","scope_methodology","subject_profile","risk_posture_summary","material_findings_highlights","triggered_findings_schedule","document_stack_verdict","recommended_route"],"additionalProperties":false,"properties":{"cover_reliance":{"type":"object","additionalProperties":true},"scope_methodology":{"type":"object","additionalProperties":true},"subject_profile":{"type":"object","additionalProperties":true},"risk_posture_summary":{"type":"object","additionalProperties":true},"material_findings_highlights":{"type":"array","items":{"type":"object","additionalProperties":true}},"triggered_findings_schedule":{"type":"array","items":{"type":"object","required":["threat_id","threat_name","pain_category","archetype","linked_feature","document_route","short_issue"],"additionalProperties":false,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"pain_category":{"type":"string"},"archetype":{"type":"string"},"linked_feature":{"type":"string"},"document_route":{"type":"string"},"short_issue":{"type":"string"}}}},"document_stack_verdict":{"type":"object","additionalProperties":true},"recommended_route":{"type":"object","additionalProperties":true}}},"full_forensic_record":{"type":"object","required":["source_review","product_feature_map","feature_to_threat_matrix","document_stack_redline","triggered_findings","controlled_rows","insufficient_evidence_rows","assembly_route","technical_audit_log"],"additionalProperties":false,"properties":{"source_review":{"type":"object","additionalProperties":true},"product_feature_map":{"type":"array","items":{"type":"object","additionalProperties":true}},"feature_to_threat_matrix":{"type":"array","items":{"type":"object","additionalProperties":true}},"document_stack_redline":{"type":"array","items":{"type":"object","additionalProperties":true}},"triggered_findings":{"type":"array","items":{"$ref":"#/$defs/finding"}},"controlled_rows":{"type":"array","items":{"$ref":"#/$defs/statusRow"}},"insufficient_evidence_rows":{"type":"array","items":{"$ref":"#/$defs/statusRow"}},"assembly_route":{"type":"object","additionalProperties":true},"technical_audit_log":{"type":"array","items":{"type":"object","additionalProperties":true}}}}}},"technical_audit_log":{"type":"array","items":{"type":"object","additionalProperties":true}},"assembly_route":{"type":"object","additionalProperties":true},"assembly_handoff":{"type":"object","additionalProperties":true},"handoff_envelope":{"type":"object","additionalProperties":true},"disclaimer":{"type":"string"}},"$defs":{"finding":{"type":"object","required":["finding_id","threat_id","threat_name","status","pain_tier","pain_category","pain_depth","lane","archetype","surface_tokens","subcat","authority","linked_feature_ids","evidence","trigger_evaluation","registry_payload","redline_route","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":false,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"pain_tier":{"type":"string"},"pain_category":{"type":"string"},"pain_depth":{"type":"string"},"lane":{"type":"string"},"archetype":{"type":"string"},"surface_tokens":{"type":"array","items":{"type":"string"}},"subcat":{"type":"string"},"authority":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","required":["source_url","artifact_class","proof_citation","evidence_mode","source_hash","extracted_excerpt"],"additionalProperties":false,"properties":{"source_url":{"type":"string"},"artifact_class":{"type":"string"},"proof_citation":{"type":"string"},"evidence_mode":{"type":"string"},"source_hash":{"type":"string"},"extracted_excerpt":{"type":"string"}}},"trigger_evaluation":{"type":"object","required":["conditions_passed","conditions_failed","trigger_if_result","exclude_if_result","exclude_if_basis"],"additionalProperties":false,"properties":{"conditions_passed":{"type":"array","items":{"type":"string"}},"conditions_failed":{"type":"array","items":{"type":"string"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"exclude_if_basis":{"type":"string"}}},"registry_payload":{"type":"object","required":["legal_pain","fp_mechanism","fp_impact","lex_nova_fix"],"additionalProperties":false,"properties":{"legal_pain":{"type":"string"},"fp_mechanism":{"type":"string"},"fp_impact":{"type":"string"},"lex_nova_fix":{"type":"string"}}},"redline_route":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"type":"string"}},"finding_memo_note":{"type":"string"}}},"statusRow":{"type":"object","required":["threat_id","threat_name","status","reasoning_summary"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"type":"string","enum":["CONTROLLED","INSUFFICIENT_EVIDENCE"]},"reasoning_summary":{"type":"string"}}}}};
+const schema325 = {"type":"object","required":["finding_id","threat_id","threat_name","status","pain_tier","pain_category","pain_depth","lane","archetype","surface_tokens","subcat","authority","linked_feature_ids","evidence","trigger_evaluation","registry_payload","redline_route","document_routes","vault_dependencies","finding_memo_note"],"additionalProperties":false,"properties":{"finding_id":{"type":"string"},"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"const":"TRIGGERED"},"pain_tier":{"type":"string"},"pain_category":{"type":"string"},"pain_depth":{"type":"string"},"lane":{"type":"string"},"archetype":{"type":"string"},"surface_tokens":{"type":"array","items":{"type":"string"}},"subcat":{"type":"string"},"authority":{"type":"string"},"linked_feature_ids":{"type":"array","items":{"type":"string"}},"evidence":{"type":"object","required":["source_url","artifact_class","proof_citation","evidence_mode","source_hash","extracted_excerpt"],"additionalProperties":false,"properties":{"source_url":{"type":"string"},"artifact_class":{"type":"string"},"proof_citation":{"type":"string"},"evidence_mode":{"type":"string"},"source_hash":{"type":"string"},"extracted_excerpt":{"type":"string"}}},"trigger_evaluation":{"type":"object","required":["conditions_passed","conditions_failed","trigger_if_result","exclude_if_result","exclude_if_basis"],"additionalProperties":false,"properties":{"conditions_passed":{"type":"array","items":{"type":"string"}},"conditions_failed":{"type":"array","items":{"type":"string"}},"trigger_if_result":{"type":"boolean"},"exclude_if_result":{"type":"boolean"},"exclude_if_basis":{"type":"string"}}},"registry_payload":{"type":"object","required":["legal_pain","fp_mechanism","fp_impact","lex_nova_fix"],"additionalProperties":false,"properties":{"legal_pain":{"type":"string"},"fp_mechanism":{"type":"string"},"fp_impact":{"type":"string"},"lex_nova_fix":{"type":"string"}}},"redline_route":{"type":"array","items":{"type":"string"}},"document_routes":{"type":"array","items":{"type":"string"}},"vault_dependencies":{"type":"array","items":{"type":"string"}},"finding_memo_note":{"type":"string"}}};
+const schema326 = {"type":"object","required":["threat_id","threat_name","status","reasoning_summary"],"additionalProperties":true,"properties":{"threat_id":{"type":"string"},"threat_name":{"type":"string"},"status":{"type":"string","enum":["CONTROLLED","INSUFFICIENT_EVIDENCE"]},"reasoning_summary":{"type":"string"}}};
 
 function validate144(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 /*# sourceURL="https://interface-sandbox.local/schemas/diligenceReport.schema.json" */;
@@ -23124,7 +23549,7 @@ vErrors.push(err17);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema322.properties, key0))){
+if(!(func1.call(schema324.properties, key0))){
 const err18 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err18];
@@ -23205,7 +23630,7 @@ vErrors.push(err24);
 errors++;
 }
 if(!((((data3 === "url") || (data3 === "manual_urls")) || (data3 === "text")) || (data3 === "url_plus_text"))){
-const err25 = {instancePath:instancePath+"/diligence_run/source_mode",schemaPath:"#/properties/diligence_run/properties/source_mode/enum",keyword:"enum",params:{allowedValues: schema322.properties.diligence_run.properties.source_mode.enum},message:"must be equal to one of the allowed values"};
+const err25 = {instancePath:instancePath+"/diligence_run/source_mode",schemaPath:"#/properties/diligence_run/properties/source_mode/enum",keyword:"enum",params:{allowedValues: schema324.properties.diligence_run.properties.source_mode.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err25];
 }
@@ -23704,7 +24129,7 @@ vErrors.push(err65);
 errors++;
 }
 for(const key2 in data20){
-if(!(func1.call(schema323.properties, key2))){
+if(!(func1.call(schema325.properties, key2))){
 const err66 = {instancePath:instancePath+"/findings/" + i4,schemaPath:"#/$defs/finding/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key2},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err66];
@@ -24550,7 +24975,7 @@ vErrors.push(err135);
 errors++;
 }
 if(!((data67 === "CONTROLLED") || (data67 === "INSUFFICIENT_EVIDENCE"))){
-const err136 = {instancePath:instancePath+"/controlled_rows/" + i12+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema324.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err136 = {instancePath:instancePath+"/controlled_rows/" + i12+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema326.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err136];
 }
@@ -24680,7 +25105,7 @@ vErrors.push(err146);
 errors++;
 }
 if(!((data73 === "CONTROLLED") || (data73 === "INSUFFICIENT_EVIDENCE"))){
-const err147 = {instancePath:instancePath+"/insufficient_evidence_rows/" + i13+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema324.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err147 = {instancePath:instancePath+"/insufficient_evidence_rows/" + i13+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema326.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err147];
 }
@@ -25280,7 +25705,7 @@ vErrors.push(err197);
 errors++;
 }
 for(const key9 in data94){
-if(!(func1.call(schema322.properties.report_data.properties.full_forensic_record.properties, key9))){
+if(!(func1.call(schema324.properties.report_data.properties.full_forensic_record.properties, key9))){
 const err198 = {instancePath:instancePath+"/report_data/full_forensic_record",schemaPath:"#/properties/report_data/properties/full_forensic_record/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key9},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err198];
@@ -25607,7 +26032,7 @@ vErrors.push(err225);
 errors++;
 }
 for(const key10 in data103){
-if(!(func1.call(schema323.properties, key10))){
+if(!(func1.call(schema325.properties, key10))){
 const err226 = {instancePath:instancePath+"/report_data/full_forensic_record/triggered_findings/" + i19,schemaPath:"#/$defs/finding/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key10},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err226];
@@ -26453,7 +26878,7 @@ vErrors.push(err295);
 errors++;
 }
 if(!((data150 === "CONTROLLED") || (data150 === "INSUFFICIENT_EVIDENCE"))){
-const err296 = {instancePath:instancePath+"/report_data/full_forensic_record/controlled_rows/" + i27+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema324.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err296 = {instancePath:instancePath+"/report_data/full_forensic_record/controlled_rows/" + i27+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema326.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err296];
 }
@@ -26583,7 +27008,7 @@ vErrors.push(err306);
 errors++;
 }
 if(!((data156 === "CONTROLLED") || (data156 === "INSUFFICIENT_EVIDENCE"))){
-const err307 = {instancePath:instancePath+"/report_data/full_forensic_record/insufficient_evidence_rows/" + i28+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema324.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err307 = {instancePath:instancePath+"/report_data/full_forensic_record/insufficient_evidence_rows/" + i28+"/status",schemaPath:"#/$defs/statusRow/properties/status/enum",keyword:"enum",params:{allowedValues: schema326.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err307];
 }
@@ -26804,9 +27229,9 @@ return errors === 0;
 validate144.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_assemblyOutput = validate145;
-const schema329 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/assemblyOutput.schema.json","title":"Assembly Handoff Payload","description":"Canonical assembly_handoff_payload for Diligence to Assembly.","type":"object","required":["handoff_meta","target_profile","feature_map","threat_findings","legal_document_status","vault_prefill_suggestions","vault_confirmation_questions","assembly_route_recommendation","warnings"],"additionalProperties":false,"properties":{"handoff_meta":{"type":"object","required":["run_id","created_at","source_engine","target_engine"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"created_at":{"type":"string","format":"date-time"},"source_engine":{"const":"diligence"},"target_engine":{"const":"assembly"}}},"target_profile":{"type":"object","additionalProperties":true},"feature_map":{"type":"array","items":{"type":"object","additionalProperties":true}},"threat_findings":{"type":"array","items":{"type":"object","additionalProperties":true}},"legal_document_status":{"type":"array","items":{"type":"object","additionalProperties":true}},"vault_prefill_suggestions":{"type":"object","required":["baseline","architecture","archetypes","compliance"],"additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/prefillGroup"},"architecture":{"$ref":"#/$defs/prefillGroup"},"archetypes":{"$ref":"#/$defs/prefillGroup"},"compliance":{"$ref":"#/$defs/prefillGroup"}}},"vault_confirmation_questions":{"type":"array","items":{"type":"object","required":["field_path","question","why_it_matters","source_context","required_for"],"additionalProperties":false,"properties":{"field_path":{"type":"string"},"question":{"type":"string"},"why_it_matters":{"type":"string"},"source_context":{"type":"string"},"required_for":{"type":"string"}}}},"assembly_route_recommendation":{"type":"object","additionalProperties":true},"warnings":{"type":"array","items":{"type":"string"}}},"$defs":{"prefillSuggestion":{"type":"object","required":["value","basis","confidence","source_finding_ids"],"additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}}}},"prefillGroup":{"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}}}};
-const schema330 = {"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}};
-const schema331 = {"type":"object","required":["value","basis","confidence","source_finding_ids"],"additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}}}};
+const schema331 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/assemblyOutput.schema.json","title":"Assembly Handoff Payload","description":"Canonical assembly_handoff_payload for Diligence to Assembly.","type":"object","required":["handoff_meta","target_profile","feature_map","threat_findings","legal_document_status","vault_prefill_suggestions","vault_confirmation_questions","assembly_route_recommendation","warnings"],"additionalProperties":false,"properties":{"handoff_meta":{"type":"object","required":["run_id","created_at","source_engine","target_engine"],"additionalProperties":true,"properties":{"run_id":{"type":"string"},"created_at":{"type":"string","format":"date-time"},"source_engine":{"const":"diligence"},"target_engine":{"const":"assembly"}}},"target_profile":{"type":"object","additionalProperties":true},"feature_map":{"type":"array","items":{"type":"object","additionalProperties":true}},"threat_findings":{"type":"array","items":{"type":"object","additionalProperties":true}},"legal_document_status":{"type":"array","items":{"type":"object","additionalProperties":true}},"vault_prefill_suggestions":{"type":"object","required":["baseline","architecture","archetypes","compliance"],"additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/prefillGroup"},"architecture":{"$ref":"#/$defs/prefillGroup"},"archetypes":{"$ref":"#/$defs/prefillGroup"},"compliance":{"$ref":"#/$defs/prefillGroup"}}},"vault_confirmation_questions":{"type":"array","items":{"type":"object","required":["field_path","question","why_it_matters","source_context","required_for"],"additionalProperties":false,"properties":{"field_path":{"type":"string"},"question":{"type":"string"},"why_it_matters":{"type":"string"},"source_context":{"type":"string"},"required_for":{"type":"string"}}}},"assembly_route_recommendation":{"type":"object","additionalProperties":true},"warnings":{"type":"array","items":{"type":"string"}}},"$defs":{"prefillSuggestion":{"type":"object","required":["value","basis","confidence","source_finding_ids"],"additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}}}},"prefillGroup":{"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}}}};
+const schema332 = {"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}};
+const schema333 = {"type":"object","required":["value","basis","confidence","source_finding_ids"],"additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}}}};
 
 function validate146(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -26899,7 +27324,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!(((data2 === "high") || (data2 === "medium")) || (data2 === "low"))){
-const err7 = {instancePath:instancePath+"/" + key0.replace(/~/g, "~0").replace(/\//g, "~1")+"/confidence",schemaPath:"#/$defs/prefillSuggestion/properties/confidence/enum",keyword:"enum",params:{allowedValues: schema331.properties.confidence.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/" + key0.replace(/~/g, "~0").replace(/\//g, "~1")+"/confidence",schemaPath:"#/$defs/prefillSuggestion/properties/confidence/enum",keyword:"enum",params:{allowedValues: schema333.properties.confidence.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -27069,7 +27494,7 @@ vErrors.push(err8);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema329.properties, key0))){
+if(!(func1.call(schema331.properties, key0))){
 const err9 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err9];
@@ -27595,13 +28020,13 @@ return errors === 0;
 validate145.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_functionalIntakeVault = validate151;
-const schema332 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/vault.schema.json","title":"Functional Assembly Intake Vault","description":"Canonical Functional Assembly Intake Vault. Single form contract between the Diligence Engine and Final Assembly. Contains a strict nested vault_payload, functional question sections, confirmation questions, and Assembly handoff intake. The visible form is organized by function; backend mapping preserves exact Vault field paths.","type":"object","required":["vault_schema_version","intake_mode","functional_sections","vault_payload","vault_prefill_suggestions","vault_confirmation_questions","assembly_handoff_intake","source_trace","status","submittedAt"],"additionalProperties":false,"properties":{"vault_schema_version":{"const":"functional_assembly_intake_vault_v1"},"intake_mode":{"type":"string","enum":["diligence_to_assembly","manual_intake","hybrid"]},"functional_sections":{"type":"object","additionalProperties":false,"properties":{"company_jurisdiction_contacts":{"$ref":"#/$defs/functionalSection"},"product_delivery_commercial_model":{"$ref":"#/$defs/functionalSection"},"ai_functionality_autonomy_user_reliance":{"$ref":"#/$defs/functionalSection"},"data_users_regulated_surfaces":{"$ref":"#/$defs/functionalSection"},"technical_architecture_ai_supply_chain_integrations":{"$ref":"#/$defs/functionalSection"},"contracting_output_customer_commitments":{"$ref":"#/$defs/functionalSection"},"operational_controls_human_review_incident_handling":{"$ref":"#/$defs/functionalSection"},"document_assembly_instructions":{"$ref":"#/$defs/functionalSection"},"counsel_review_localisation":{"$ref":"#/$defs/functionalSection"}},"required":["company_jurisdiction_contacts","product_delivery_commercial_model","ai_functionality_autonomy_user_reliance","data_users_regulated_surfaces","technical_architecture_ai_supply_chain_integrations","contracting_output_customer_commitments","operational_controls_human_review_incident_handling","document_assembly_instructions","counsel_review_localisation"],"description":"User-facing functional sections. These organize questions; they do not replace exact vault_payload paths."},"vault_payload":{"$ref":"#/$defs/vaultPayload"},"vault_prefill_suggestions":{"type":"object","additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/prefillGroup"},"architecture":{"$ref":"#/$defs/prefillGroup"},"archetypes":{"$ref":"#/$defs/prefillGroup"},"compliance":{"$ref":"#/$defs/prefillGroup"}},"required":["baseline","architecture","archetypes","compliance"]},"vault_confirmation_questions":{"type":"array","items":{"$ref":"#/$defs/intakeQuestion"}},"assembly_handoff_intake":{"$ref":"#/$defs/assemblyHandoffIntake"},"source_trace":{"$ref":"#/$defs/sourceTrace"},"status":{"type":"string","enum":["intake_received","prefill_ready","needs_confirmation","assembly_ready"]},"submittedAt":{"type":"string","format":"date-time"}},"$defs":{"vaultFieldPath":{"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.web","baseline.delivery.app","baseline.delivery.mobile","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.email","baseline.integrations.calendar","baseline.integrations.ticketing","baseline.integrations.hris","baseline.integrations.payment_billing","baseline.integrations.database","baseline.integrations.custom_api","baseline.integrations.other","baseline.integrations.none","baseline.reliance_threshold","architecture.ai_provider_stack.providers","architecture.ai_provider_stack.other_providers","architecture.ai_provider_stack.hosting_model","architecture.ai_provider_stack.sends_customer_data_to_model_provider","architecture.ai_provider_stack.fallback_provider","architecture.ai_provider_stack.public_provider_disclosure_url","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.azure_openai","architecture.sub_processors.aws_bedrock","architecture.sub_processors.meta_llama","architecture.sub_processors.deepseek","architecture.sub_processors.xai","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","architecture.hosting_regions","architecture.deployment_model","architecture.model_improvement.customer_inputs_used_for_training","architecture.model_improvement.customer_inputs_used_for_evaluation","architecture.model_improvement.product_improvement_use","architecture.model_improvement.opt_out_available","architecture.storage_logging.stores_prompts","architecture.storage_logging.stores_uploaded_files","architecture.storage_logging.stores_generated_outputs","architecture.storage_logging.conversation_history","architecture.storage_logging.audit_logs","architecture.security_controls.encryption_at_rest","architecture.security_controls.encryption_in_transit","architecture.security_controls.status_or_trust_url","architecture.api_developer_config.api_or_sdk_available","architecture.api_developer_config.rate_limits_or_usage_limits","architecture.api_developer_config.customer_configurable_tools","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]},"answerType":{"type":"string","enum":["text","textarea","email","url","number","date","boolean","yes_no","yes_no_unknown","single_select","multi_select","object","repeatable_table"]},"priority":{"type":"string","enum":["critical","high","medium","low"]},"triState":{"type":"string","enum":["yes","no","unknown"]},"intakeQuestion":{"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"question_key":{"type":"string"},"question":{"type":"string"},"answer_type":{"$ref":"#/$defs/answerType"},"answer":{},"options":{"type":"array","items":{"type":"string"}},"vault_match":{"type":"string","enum":["perfect","partial","none"]},"vault_paths":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"},"uniqueItems":true},"assembly_paths":{"type":"array","items":{"type":"string"},"uniqueItems":true},"priority":{"$ref":"#/$defs/priority"},"required_for":{"type":"array","items":{"type":"string"}},"prefill_status":{"type":"string","enum":["prefilled","needs_confirmation","manual_only","not_applicable","unknown"]},"match_notes":{"type":"string"},"why_it_matters":{"type":"string"},"source_context":{"type":"string"},"evidence_refs":{"type":"array","items":{"type":"string"}},"related_finding_ids":{"type":"array","items":{"type":"string"}},"related_document_routes":{"type":"array","items":{"type":"string"}},"related_data_flow_ids":{"type":"array","items":{"type":"string"}},"allowed_values":{"type":"array","items":{"type":"string"}}},"required":["section_key","question_key","question","answer_type","vault_match","vault_paths","assembly_paths","priority","required_for","prefill_status"]},"functionalSection":{"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"section_role":{"type":"string"},"completion_status":{"type":"string","enum":["complete","partial","needs_confirmation","not_started"]},"prefill_summary":{"type":"string"},"questions":{"type":"array","items":{"$ref":"#/$defs/intakeQuestion"}},"section_warnings":{"type":"array","items":{"type":"string"}}},"required":["section_key","section_label","section_role","completion_status","questions"]},"prefillSuggestion":{"type":"object","additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapped_question_keys":{"type":"array","items":{"type":"string"}}},"required":["value","basis","confidence","source_finding_ids"]},"prefillGroup":{"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}},"vaultPayload":{"type":"object","additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/baseline"},"architecture":{"$ref":"#/$defs/architecture"},"archetypes":{"$ref":"#/$defs/archetypes"},"compliance":{"$ref":"#/$defs/compliance"},"status":{"type":"string","enum":["intake_received","prefill_ready","needs_confirmation","assembly_ready"]},"submittedAt":{"type":"string","format":"date-time"}},"required":["baseline","architecture","archetypes","compliance","status","submittedAt"]},"baseline":{"type":"object","additionalProperties":false,"properties":{"company":{"type":"string"},"entity_type":{"type":"string"},"address":{"type":"string"},"legal_email":{"type":"string"},"privacy_email":{"type":"string"},"products":{"type":"array","items":{"type":"string"}},"jurisdiction":{"type":"object","additionalProperties":false,"properties":{"country":{"type":"string"},"state":{"type":"string"}}},"market":{"type":"string","enum":["b2b","b2c","hybrid","unknown"]},"delivery":{"type":"object","additionalProperties":false,"properties":{"web":{"type":"boolean"},"app":{"type":"boolean"},"mobile":{"type":"boolean"},"api":{"type":"boolean"}}},"revenue_model":{"type":"string"},"acv":{"type":"string"},"has_beta":{"type":"boolean"},"output_ownership":{"type":"string","enum":["full","limited","none","unknown"]},"sla_type":{"type":"string","enum":["no","standard","custom","unknown"]},"integrations":{"$ref":"#/$defs/integrations"},"reliance_threshold":{"type":"string"}},"required":["company","products","jurisdiction","market","delivery","integrations"],"description":"Company, product, delivery, commercial and customer-commitment payload fields."},"integrations":{"type":"object","additionalProperties":false,"properties":{"slack":{"type":"boolean"},"crm":{"type":"boolean"},"stripe":{"type":"boolean"},"github":{"type":"boolean"},"webhooks":{"type":"boolean"},"email":{"type":"boolean"},"calendar":{"type":"boolean"},"ticketing":{"type":"boolean"},"hris":{"type":"boolean"},"payment_billing":{"type":"boolean"},"database":{"type":"boolean"},"custom_api":{"type":"boolean"},"none":{"type":"boolean"},"other":{"type":"string"}}},"architecture":{"type":"object","additionalProperties":false,"properties":{"ai_provider_stack":{"$ref":"#/$defs/aiProviderStack"},"memory":{"type":"string","enum":["rag","stateless","finetuning","mixed","unknown"]},"models":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sub_processors":{"$ref":"#/$defs/subProcessors"},"cloud_host":{"type":"string"},"vector_db":{"type":"string"},"hosting_regions":{"type":"array","items":{"type":"string"}},"deployment_model":{"type":"string","enum":["saas","customer_hosted","on_prem","private_cloud","hybrid","unknown"]},"model_improvement":{"$ref":"#/$defs/modelImprovement"},"storage_logging":{"$ref":"#/$defs/storageLogging"},"security_controls":{"$ref":"#/$defs/securityControls"},"api_developer_config":{"$ref":"#/$defs/apiDeveloperConfig"}},"description":"Technical architecture, AI supply chain, subprocessors, hosting, storage/logging, security and developer configuration."},"aiProviderStack":{"type":"object","additionalProperties":false,"properties":{"providers":{"type":"array","items":{"type":"string","enum":["openai","anthropic","google_gemini","cohere","mistral","meta_llama","deepseek","xai","azure_openai","aws_bedrock","self_hosted_oss","other","unknown"]},"uniqueItems":true},"other_providers":{"type":"array","items":{"type":"string"}},"hosting_model":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sends_customer_data_to_model_provider":{"$ref":"#/$defs/triState"},"fallback_provider":{"type":"string"},"public_provider_disclosure_url":{"type":"string"}},"required":["providers"]},"subProcessors":{"type":"object","additionalProperties":false,"properties":{"openai":{"type":"boolean"},"anthropic":{"type":"boolean"},"google":{"type":"boolean"},"cohere":{"type":"boolean"},"mistral":{"type":"boolean"},"azure_openai":{"type":"boolean"},"aws_bedrock":{"type":"boolean"},"meta_llama":{"type":"boolean"},"deepseek":{"type":"boolean"},"xai":{"type":"boolean"},"other":{"type":"string"},"url":{"type":"string"}},"description":"Compatibility provider flags plus subprocessor disclosure URL. User-facing form collects ai_provider_stack.providers first."},"modelImprovement":{"type":"object","additionalProperties":false,"properties":{"customer_inputs_used_for_training":{"$ref":"#/$defs/triState"},"customer_inputs_used_for_evaluation":{"$ref":"#/$defs/triState"},"product_improvement_use":{"$ref":"#/$defs/triState"},"opt_out_available":{"$ref":"#/$defs/triState"}}},"storageLogging":{"type":"object","additionalProperties":false,"properties":{"stores_prompts":{"$ref":"#/$defs/triState"},"stores_uploaded_files":{"$ref":"#/$defs/triState"},"stores_generated_outputs":{"$ref":"#/$defs/triState"},"conversation_history":{"$ref":"#/$defs/triState"},"audit_logs":{"$ref":"#/$defs/triState"},"retention_summary":{"type":"string"}}},"securityControls":{"type":"object","additionalProperties":false,"properties":{"encryption_at_rest":{"$ref":"#/$defs/triState"},"encryption_in_transit":{"$ref":"#/$defs/triState"},"status_or_trust_url":{"type":"string"}}},"apiDeveloperConfig":{"type":"object","additionalProperties":false,"properties":{"api_or_sdk_available":{"$ref":"#/$defs/triState"},"rate_limits_or_usage_limits":{"type":"string"},"customer_configurable_tools":{"$ref":"#/$defs/triState"}}},"archetypes":{"type":"object","additionalProperties":false,"properties":{"is_doer":{"type":"boolean"},"is_orchestrator":{"type":"boolean"},"agent_limits":{"type":"object","additionalProperties":false,"properties":{"session_cap":{"type":"string"},"period_cap":{"type":"string"},"retry_limit":{"type":"string"},"loop_threshold":{"type":"string"}}},"is_creator":{"type":"boolean"},"is_reader":{"type":"boolean"},"conversational_ui":{"type":"boolean"},"sens_bio":{"type":"boolean"},"is_judge":{"type":"boolean"},"is_judge_hr":{"type":"boolean"},"is_judge_legal":{"type":"boolean"},"is_optimizer":{"type":"boolean"},"sens_fin":{"type":"boolean"},"is_shield":{"type":"boolean"},"is_mover":{"type":"boolean"},"is_generalist":{"type":"boolean"}},"description":"AI functionality, autonomy and risk archetype payload fields."},"compliance":{"type":"object","additionalProperties":false,"properties":{"processes_pii":{"type":"string","enum":["yes","no","unknown"]},"eu_users":{"type":"boolean"},"ca_users":{"type":"boolean"},"other_regions":{"type":"array","items":{"type":"string"}},"sens_health":{"type":"boolean"},"sens_fin":{"type":"boolean"},"sens_employment":{"type":"boolean"},"minors":{"type":"boolean"},"distress":{"type":"boolean"},"standard_adults":{"type":"boolean"}},"description":"Data, users and regulated surface payload fields."},"assemblyHandoffIntake":{"type":"object","additionalProperties":false,"properties":{"package_selection":{"$ref":"#/$defs/packageSelection"},"document_routes":{"$ref":"#/$defs/documentRoutes"},"drafting_preferences":{"$ref":"#/$defs/draftingPreferences"},"output_options":{"$ref":"#/$defs/outputOptions"},"localisation":{"$ref":"#/$defs/localisation"},"local_counsel_review":{"$ref":"#/$defs/localCounselReview"},"operational_controls":{"$ref":"#/$defs/operationalControls"},"source_materials":{"$ref":"#/$defs/sourceMaterials"},"unresolved_gap_policy":{"$ref":"#/$defs/unresolvedGapPolicy"},"assembly_warnings":{"type":"array","items":{"type":"string"}}},"required":["package_selection","document_routes","drafting_preferences","output_options","localisation","local_counsel_review","operational_controls","unresolved_gap_policy"]},"packageSelection":{"type":"object","additionalProperties":false,"properties":{"selected_package":{"type":"string","enum":["ai_terms_pack","privacy_dpa_pack","agent_governance_pack","full_ai_legal_architecture_pack","custom","unknown"]},"custom_package_description":{"type":"string"}}},"documentRoutes":{"type":"object","additionalProperties":false,"properties":{"selected_documents":{"type":"array","items":{"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","ai_agent_terms","ip_output_terms","subprocessor_schedule","human_review_protocol","internal_ai_sop","dpia_memo","security_addendum","api_terms","cookie_policy","counsel_issue_list","other"]},"uniqueItems":true},"missing_document_policy":{"type":"string","enum":["treat_as_drafting_target","ask_client_first","exclude_unless_confirmed","unknown"]},"existing_document_treatment":{"type":"string","enum":["redline_update","draft_fresh","hybrid","reference_only","unknown"]},"other_document_description":{"type":"string"}}},"draftingPreferences":{"type":"object","additionalProperties":false,"properties":{"style":{"type":"string","enum":["startup_friendly","enterprise_saas","developer_api","consumer","regulated_sector_cautious","custom","unknown"]},"risk_posture":{"type":"string","enum":["founder_friendly","balanced","enterprise_buyer_friendly","conservative_legal_review_heavy","custom","unknown"]},"counsel_notes":{"type":"boolean"},"jurisdiction_placeholders":{"type":"boolean"},"preserve_brand_language":{"type":"boolean"},"bracket_unresolved_gaps":{"type":"boolean"},"custom_notes":{"type":"string"}}},"outputOptions":{"type":"object","additionalProperties":false,"properties":{"review_ready_drafts":{"type":"boolean"},"issue_list_for_counsel":{"type":"boolean"},"counsel_checklist":{"type":"boolean"},"executive_summary":{"type":"boolean"},"machine_readable_exports":{"type":"boolean"}}},"localisation":{"type":"object","additionalProperties":false,"properties":{"target_regions":{"type":"array","items":{"type":"string"}},"primary_jurisdiction":{"type":"string"},"governing_law_instruction":{"type":"string","enum":["selected","bracketed","counsel_to_decide","unknown"]},"courts_or_venue_instruction":{"type":"string"},"localisation_notes":{"type":"string"}}},"localCounselReview":{"type":"object","additionalProperties":false,"properties":{"local_counsel_review_required":{"const":true},"priority_points":{"type":"array","items":{"type":"string"}},"counsel_templates_available":{"type":"boolean"},"counsel_template_notes":{"type":"string"}},"required":["local_counsel_review_required"]},"operationalControls":{"type":"object","additionalProperties":false,"properties":{"human_approval_required_for":{"type":"array","items":{"type":"string"}},"audit_logging":{"$ref":"#/$defs/triState"},"escalation_owner":{"type":"string"},"incident_response_or_shutdown":{"type":"string"},"customer_notice_for_ai_use":{"$ref":"#/$defs/triState"},"fallback_or_shutdown_rules":{"type":"string"}}},"sourceMaterials":{"type":"object","additionalProperties":false,"properties":{"client_templates_available":{"type":"boolean"},"existing_docs_urls":{"type":"array","items":{"type":"string"}},"template_notes":{"type":"string"}}},"unresolvedGapPolicy":{"type":"object","additionalProperties":false,"properties":{"treatment":{"type":"string","enum":["bracket_in_drafts","ask_before_assembly","counsel_notes_only","ignore_low_risk","unknown"]},"notes":{"type":"string"}}},"sourceTrace":{"type":"object","additionalProperties":false,"properties":{"diligence_run_id":{"type":"string"},"stage9_report_version":{"type":"string"},"stage10_source_packet_version":{"type":"string"},"evidence_cutoff":{"type":"string"},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapping_warnings":{"type":"array","items":{"type":"string"}}}}}};
-const schema378 = {"type":"object","additionalProperties":false,"properties":{"diligence_run_id":{"type":"string"},"stage9_report_version":{"type":"string"},"stage10_source_packet_version":{"type":"string"},"evidence_cutoff":{"type":"string"},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapping_warnings":{"type":"array","items":{"type":"string"}}}};
-const schema333 = {"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"section_role":{"type":"string"},"completion_status":{"type":"string","enum":["complete","partial","needs_confirmation","not_started"]},"prefill_summary":{"type":"string"},"questions":{"type":"array","items":{"$ref":"#/$defs/intakeQuestion"}},"section_warnings":{"type":"array","items":{"type":"string"}}},"required":["section_key","section_label","section_role","completion_status","questions"]};
-const schema334 = {"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"question_key":{"type":"string"},"question":{"type":"string"},"answer_type":{"$ref":"#/$defs/answerType"},"answer":{},"options":{"type":"array","items":{"type":"string"}},"vault_match":{"type":"string","enum":["perfect","partial","none"]},"vault_paths":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"},"uniqueItems":true},"assembly_paths":{"type":"array","items":{"type":"string"},"uniqueItems":true},"priority":{"$ref":"#/$defs/priority"},"required_for":{"type":"array","items":{"type":"string"}},"prefill_status":{"type":"string","enum":["prefilled","needs_confirmation","manual_only","not_applicable","unknown"]},"match_notes":{"type":"string"},"why_it_matters":{"type":"string"},"source_context":{"type":"string"},"evidence_refs":{"type":"array","items":{"type":"string"}},"related_finding_ids":{"type":"array","items":{"type":"string"}},"related_document_routes":{"type":"array","items":{"type":"string"}},"related_data_flow_ids":{"type":"array","items":{"type":"string"}},"allowed_values":{"type":"array","items":{"type":"string"}}},"required":["section_key","question_key","question","answer_type","vault_match","vault_paths","assembly_paths","priority","required_for","prefill_status"]};
-const schema335 = {"type":"string","enum":["text","textarea","email","url","number","date","boolean","yes_no","yes_no_unknown","single_select","multi_select","object","repeatable_table"]};
-const schema336 = {"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.web","baseline.delivery.app","baseline.delivery.mobile","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.email","baseline.integrations.calendar","baseline.integrations.ticketing","baseline.integrations.hris","baseline.integrations.payment_billing","baseline.integrations.database","baseline.integrations.custom_api","baseline.integrations.other","baseline.integrations.none","baseline.reliance_threshold","architecture.ai_provider_stack.providers","architecture.ai_provider_stack.other_providers","architecture.ai_provider_stack.hosting_model","architecture.ai_provider_stack.sends_customer_data_to_model_provider","architecture.ai_provider_stack.fallback_provider","architecture.ai_provider_stack.public_provider_disclosure_url","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.azure_openai","architecture.sub_processors.aws_bedrock","architecture.sub_processors.meta_llama","architecture.sub_processors.deepseek","architecture.sub_processors.xai","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","architecture.hosting_regions","architecture.deployment_model","architecture.model_improvement.customer_inputs_used_for_training","architecture.model_improvement.customer_inputs_used_for_evaluation","architecture.model_improvement.product_improvement_use","architecture.model_improvement.opt_out_available","architecture.storage_logging.stores_prompts","architecture.storage_logging.stores_uploaded_files","architecture.storage_logging.stores_generated_outputs","architecture.storage_logging.conversation_history","architecture.storage_logging.audit_logs","architecture.security_controls.encryption_at_rest","architecture.security_controls.encryption_in_transit","architecture.security_controls.status_or_trust_url","architecture.api_developer_config.api_or_sdk_available","architecture.api_developer_config.rate_limits_or_usage_limits","architecture.api_developer_config.customer_configurable_tools","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]};
-const schema337 = {"type":"string","enum":["critical","high","medium","low"]};
+const schema334 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/vault.schema.json","title":"Functional Assembly Intake Vault","description":"Canonical Functional Assembly Intake Vault. Single form contract between the Diligence Engine and Final Assembly. Contains a strict nested vault_payload, functional question sections, confirmation questions, and Assembly handoff intake. The visible form is organized by function; backend mapping preserves exact Vault field paths.","type":"object","required":["vault_schema_version","intake_mode","functional_sections","vault_payload","vault_prefill_suggestions","vault_confirmation_questions","assembly_handoff_intake","source_trace","status","submittedAt"],"additionalProperties":false,"properties":{"vault_schema_version":{"const":"functional_assembly_intake_vault_v1"},"intake_mode":{"type":"string","enum":["diligence_to_assembly","manual_intake","hybrid"]},"functional_sections":{"type":"object","additionalProperties":false,"properties":{"company_jurisdiction_contacts":{"$ref":"#/$defs/functionalSection"},"product_delivery_commercial_model":{"$ref":"#/$defs/functionalSection"},"ai_functionality_autonomy_user_reliance":{"$ref":"#/$defs/functionalSection"},"data_users_regulated_surfaces":{"$ref":"#/$defs/functionalSection"},"technical_architecture_ai_supply_chain_integrations":{"$ref":"#/$defs/functionalSection"},"contracting_output_customer_commitments":{"$ref":"#/$defs/functionalSection"},"operational_controls_human_review_incident_handling":{"$ref":"#/$defs/functionalSection"},"document_assembly_instructions":{"$ref":"#/$defs/functionalSection"},"counsel_review_localisation":{"$ref":"#/$defs/functionalSection"}},"required":["company_jurisdiction_contacts","product_delivery_commercial_model","ai_functionality_autonomy_user_reliance","data_users_regulated_surfaces","technical_architecture_ai_supply_chain_integrations","contracting_output_customer_commitments","operational_controls_human_review_incident_handling","document_assembly_instructions","counsel_review_localisation"],"description":"User-facing functional sections. These organize questions; they do not replace exact vault_payload paths."},"vault_payload":{"$ref":"#/$defs/vaultPayload"},"vault_prefill_suggestions":{"type":"object","additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/prefillGroup"},"architecture":{"$ref":"#/$defs/prefillGroup"},"archetypes":{"$ref":"#/$defs/prefillGroup"},"compliance":{"$ref":"#/$defs/prefillGroup"}},"required":["baseline","architecture","archetypes","compliance"]},"vault_confirmation_questions":{"type":"array","items":{"$ref":"#/$defs/intakeQuestion"}},"assembly_handoff_intake":{"$ref":"#/$defs/assemblyHandoffIntake"},"source_trace":{"$ref":"#/$defs/sourceTrace"},"status":{"type":"string","enum":["intake_received","prefill_ready","needs_confirmation","assembly_ready"]},"submittedAt":{"type":"string","format":"date-time"}},"$defs":{"vaultFieldPath":{"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.web","baseline.delivery.app","baseline.delivery.mobile","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.email","baseline.integrations.calendar","baseline.integrations.ticketing","baseline.integrations.hris","baseline.integrations.payment_billing","baseline.integrations.database","baseline.integrations.custom_api","baseline.integrations.other","baseline.integrations.none","baseline.reliance_threshold","architecture.ai_provider_stack.providers","architecture.ai_provider_stack.other_providers","architecture.ai_provider_stack.hosting_model","architecture.ai_provider_stack.sends_customer_data_to_model_provider","architecture.ai_provider_stack.fallback_provider","architecture.ai_provider_stack.public_provider_disclosure_url","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.azure_openai","architecture.sub_processors.aws_bedrock","architecture.sub_processors.meta_llama","architecture.sub_processors.deepseek","architecture.sub_processors.xai","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","architecture.hosting_regions","architecture.deployment_model","architecture.model_improvement.customer_inputs_used_for_training","architecture.model_improvement.customer_inputs_used_for_evaluation","architecture.model_improvement.product_improvement_use","architecture.model_improvement.opt_out_available","architecture.storage_logging.stores_prompts","architecture.storage_logging.stores_uploaded_files","architecture.storage_logging.stores_generated_outputs","architecture.storage_logging.conversation_history","architecture.storage_logging.audit_logs","architecture.security_controls.encryption_at_rest","architecture.security_controls.encryption_in_transit","architecture.security_controls.status_or_trust_url","architecture.api_developer_config.api_or_sdk_available","architecture.api_developer_config.rate_limits_or_usage_limits","architecture.api_developer_config.customer_configurable_tools","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]},"answerType":{"type":"string","enum":["text","textarea","email","url","number","date","boolean","yes_no","yes_no_unknown","single_select","multi_select","object","repeatable_table"]},"priority":{"type":"string","enum":["critical","high","medium","low"]},"triState":{"type":"string","enum":["yes","no","unknown"]},"intakeQuestion":{"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"question_key":{"type":"string"},"question":{"type":"string"},"answer_type":{"$ref":"#/$defs/answerType"},"answer":{},"options":{"type":"array","items":{"type":"string"}},"vault_match":{"type":"string","enum":["perfect","partial","none"]},"vault_paths":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"},"uniqueItems":true},"assembly_paths":{"type":"array","items":{"type":"string"},"uniqueItems":true},"priority":{"$ref":"#/$defs/priority"},"required_for":{"type":"array","items":{"type":"string"}},"prefill_status":{"type":"string","enum":["prefilled","needs_confirmation","manual_only","not_applicable","unknown"]},"match_notes":{"type":"string"},"why_it_matters":{"type":"string"},"source_context":{"type":"string"},"evidence_refs":{"type":"array","items":{"type":"string"}},"related_finding_ids":{"type":"array","items":{"type":"string"}},"related_document_routes":{"type":"array","items":{"type":"string"}},"related_data_flow_ids":{"type":"array","items":{"type":"string"}},"allowed_values":{"type":"array","items":{"type":"string"}}},"required":["section_key","question_key","question","answer_type","vault_match","vault_paths","assembly_paths","priority","required_for","prefill_status"]},"functionalSection":{"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"section_role":{"type":"string"},"completion_status":{"type":"string","enum":["complete","partial","needs_confirmation","not_started"]},"prefill_summary":{"type":"string"},"questions":{"type":"array","items":{"$ref":"#/$defs/intakeQuestion"}},"section_warnings":{"type":"array","items":{"type":"string"}}},"required":["section_key","section_label","section_role","completion_status","questions"]},"prefillSuggestion":{"type":"object","additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapped_question_keys":{"type":"array","items":{"type":"string"}}},"required":["value","basis","confidence","source_finding_ids"]},"prefillGroup":{"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}},"vaultPayload":{"type":"object","additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/baseline"},"architecture":{"$ref":"#/$defs/architecture"},"archetypes":{"$ref":"#/$defs/archetypes"},"compliance":{"$ref":"#/$defs/compliance"},"status":{"type":"string","enum":["intake_received","prefill_ready","needs_confirmation","assembly_ready"]},"submittedAt":{"type":"string","format":"date-time"}},"required":["baseline","architecture","archetypes","compliance","status","submittedAt"]},"baseline":{"type":"object","additionalProperties":false,"properties":{"company":{"type":"string"},"entity_type":{"type":"string"},"address":{"type":"string"},"legal_email":{"type":"string"},"privacy_email":{"type":"string"},"products":{"type":"array","items":{"type":"string"}},"jurisdiction":{"type":"object","additionalProperties":false,"properties":{"country":{"type":"string"},"state":{"type":"string"}}},"market":{"type":"string","enum":["b2b","b2c","hybrid","unknown"]},"delivery":{"type":"object","additionalProperties":false,"properties":{"web":{"type":"boolean"},"app":{"type":"boolean"},"mobile":{"type":"boolean"},"api":{"type":"boolean"}}},"revenue_model":{"type":"string"},"acv":{"type":"string"},"has_beta":{"type":"boolean"},"output_ownership":{"type":"string","enum":["full","limited","none","unknown"]},"sla_type":{"type":"string","enum":["no","standard","custom","unknown"]},"integrations":{"$ref":"#/$defs/integrations"},"reliance_threshold":{"type":"string"}},"required":["company","products","jurisdiction","market","delivery","integrations"],"description":"Company, product, delivery, commercial and customer-commitment payload fields."},"integrations":{"type":"object","additionalProperties":false,"properties":{"slack":{"type":"boolean"},"crm":{"type":"boolean"},"stripe":{"type":"boolean"},"github":{"type":"boolean"},"webhooks":{"type":"boolean"},"email":{"type":"boolean"},"calendar":{"type":"boolean"},"ticketing":{"type":"boolean"},"hris":{"type":"boolean"},"payment_billing":{"type":"boolean"},"database":{"type":"boolean"},"custom_api":{"type":"boolean"},"none":{"type":"boolean"},"other":{"type":"string"}}},"architecture":{"type":"object","additionalProperties":false,"properties":{"ai_provider_stack":{"$ref":"#/$defs/aiProviderStack"},"memory":{"type":"string","enum":["rag","stateless","finetuning","mixed","unknown"]},"models":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sub_processors":{"$ref":"#/$defs/subProcessors"},"cloud_host":{"type":"string"},"vector_db":{"type":"string"},"hosting_regions":{"type":"array","items":{"type":"string"}},"deployment_model":{"type":"string","enum":["saas","customer_hosted","on_prem","private_cloud","hybrid","unknown"]},"model_improvement":{"$ref":"#/$defs/modelImprovement"},"storage_logging":{"$ref":"#/$defs/storageLogging"},"security_controls":{"$ref":"#/$defs/securityControls"},"api_developer_config":{"$ref":"#/$defs/apiDeveloperConfig"}},"description":"Technical architecture, AI supply chain, subprocessors, hosting, storage/logging, security and developer configuration."},"aiProviderStack":{"type":"object","additionalProperties":false,"properties":{"providers":{"type":"array","items":{"type":"string","enum":["openai","anthropic","google_gemini","cohere","mistral","meta_llama","deepseek","xai","azure_openai","aws_bedrock","self_hosted_oss","other","unknown"]},"uniqueItems":true},"other_providers":{"type":"array","items":{"type":"string"}},"hosting_model":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sends_customer_data_to_model_provider":{"$ref":"#/$defs/triState"},"fallback_provider":{"type":"string"},"public_provider_disclosure_url":{"type":"string"}},"required":["providers"]},"subProcessors":{"type":"object","additionalProperties":false,"properties":{"openai":{"type":"boolean"},"anthropic":{"type":"boolean"},"google":{"type":"boolean"},"cohere":{"type":"boolean"},"mistral":{"type":"boolean"},"azure_openai":{"type":"boolean"},"aws_bedrock":{"type":"boolean"},"meta_llama":{"type":"boolean"},"deepseek":{"type":"boolean"},"xai":{"type":"boolean"},"other":{"type":"string"},"url":{"type":"string"}},"description":"Compatibility provider flags plus subprocessor disclosure URL. User-facing form collects ai_provider_stack.providers first."},"modelImprovement":{"type":"object","additionalProperties":false,"properties":{"customer_inputs_used_for_training":{"$ref":"#/$defs/triState"},"customer_inputs_used_for_evaluation":{"$ref":"#/$defs/triState"},"product_improvement_use":{"$ref":"#/$defs/triState"},"opt_out_available":{"$ref":"#/$defs/triState"}}},"storageLogging":{"type":"object","additionalProperties":false,"properties":{"stores_prompts":{"$ref":"#/$defs/triState"},"stores_uploaded_files":{"$ref":"#/$defs/triState"},"stores_generated_outputs":{"$ref":"#/$defs/triState"},"conversation_history":{"$ref":"#/$defs/triState"},"audit_logs":{"$ref":"#/$defs/triState"},"retention_summary":{"type":"string"}}},"securityControls":{"type":"object","additionalProperties":false,"properties":{"encryption_at_rest":{"$ref":"#/$defs/triState"},"encryption_in_transit":{"$ref":"#/$defs/triState"},"status_or_trust_url":{"type":"string"}}},"apiDeveloperConfig":{"type":"object","additionalProperties":false,"properties":{"api_or_sdk_available":{"$ref":"#/$defs/triState"},"rate_limits_or_usage_limits":{"type":"string"},"customer_configurable_tools":{"$ref":"#/$defs/triState"}}},"archetypes":{"type":"object","additionalProperties":false,"properties":{"is_doer":{"type":"boolean"},"is_orchestrator":{"type":"boolean"},"agent_limits":{"type":"object","additionalProperties":false,"properties":{"session_cap":{"type":"string"},"period_cap":{"type":"string"},"retry_limit":{"type":"string"},"loop_threshold":{"type":"string"}}},"is_creator":{"type":"boolean"},"is_reader":{"type":"boolean"},"conversational_ui":{"type":"boolean"},"sens_bio":{"type":"boolean"},"is_judge":{"type":"boolean"},"is_judge_hr":{"type":"boolean"},"is_judge_legal":{"type":"boolean"},"is_optimizer":{"type":"boolean"},"sens_fin":{"type":"boolean"},"is_shield":{"type":"boolean"},"is_mover":{"type":"boolean"},"is_generalist":{"type":"boolean"}},"description":"AI functionality, autonomy and risk archetype payload fields."},"compliance":{"type":"object","additionalProperties":false,"properties":{"processes_pii":{"type":"string","enum":["yes","no","unknown"]},"eu_users":{"type":"boolean"},"ca_users":{"type":"boolean"},"other_regions":{"type":"array","items":{"type":"string"}},"sens_health":{"type":"boolean"},"sens_fin":{"type":"boolean"},"sens_employment":{"type":"boolean"},"minors":{"type":"boolean"},"distress":{"type":"boolean"},"standard_adults":{"type":"boolean"}},"description":"Data, users and regulated surface payload fields."},"assemblyHandoffIntake":{"type":"object","additionalProperties":false,"properties":{"package_selection":{"$ref":"#/$defs/packageSelection"},"document_routes":{"$ref":"#/$defs/documentRoutes"},"drafting_preferences":{"$ref":"#/$defs/draftingPreferences"},"output_options":{"$ref":"#/$defs/outputOptions"},"localisation":{"$ref":"#/$defs/localisation"},"local_counsel_review":{"$ref":"#/$defs/localCounselReview"},"operational_controls":{"$ref":"#/$defs/operationalControls"},"source_materials":{"$ref":"#/$defs/sourceMaterials"},"unresolved_gap_policy":{"$ref":"#/$defs/unresolvedGapPolicy"},"assembly_warnings":{"type":"array","items":{"type":"string"}}},"required":["package_selection","document_routes","drafting_preferences","output_options","localisation","local_counsel_review","operational_controls","unresolved_gap_policy"]},"packageSelection":{"type":"object","additionalProperties":false,"properties":{"selected_package":{"type":"string","enum":["ai_terms_pack","privacy_dpa_pack","agent_governance_pack","full_ai_legal_architecture_pack","custom","unknown"]},"custom_package_description":{"type":"string"}}},"documentRoutes":{"type":"object","additionalProperties":false,"properties":{"selected_documents":{"type":"array","items":{"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","ai_agent_terms","ip_output_terms","subprocessor_schedule","human_review_protocol","internal_ai_sop","dpia_memo","security_addendum","api_terms","cookie_policy","counsel_issue_list","other"]},"uniqueItems":true},"missing_document_policy":{"type":"string","enum":["treat_as_drafting_target","ask_client_first","exclude_unless_confirmed","unknown"]},"existing_document_treatment":{"type":"string","enum":["redline_update","draft_fresh","hybrid","reference_only","unknown"]},"other_document_description":{"type":"string"}}},"draftingPreferences":{"type":"object","additionalProperties":false,"properties":{"style":{"type":"string","enum":["startup_friendly","enterprise_saas","developer_api","consumer","regulated_sector_cautious","custom","unknown"]},"risk_posture":{"type":"string","enum":["founder_friendly","balanced","enterprise_buyer_friendly","conservative_legal_review_heavy","custom","unknown"]},"counsel_notes":{"type":"boolean"},"jurisdiction_placeholders":{"type":"boolean"},"preserve_brand_language":{"type":"boolean"},"bracket_unresolved_gaps":{"type":"boolean"},"custom_notes":{"type":"string"}}},"outputOptions":{"type":"object","additionalProperties":false,"properties":{"review_ready_drafts":{"type":"boolean"},"issue_list_for_counsel":{"type":"boolean"},"counsel_checklist":{"type":"boolean"},"executive_summary":{"type":"boolean"},"machine_readable_exports":{"type":"boolean"}}},"localisation":{"type":"object","additionalProperties":false,"properties":{"target_regions":{"type":"array","items":{"type":"string"}},"primary_jurisdiction":{"type":"string"},"governing_law_instruction":{"type":"string","enum":["selected","bracketed","counsel_to_decide","unknown"]},"courts_or_venue_instruction":{"type":"string"},"localisation_notes":{"type":"string"}}},"localCounselReview":{"type":"object","additionalProperties":false,"properties":{"local_counsel_review_required":{"const":true},"priority_points":{"type":"array","items":{"type":"string"}},"counsel_templates_available":{"type":"boolean"},"counsel_template_notes":{"type":"string"}},"required":["local_counsel_review_required"]},"operationalControls":{"type":"object","additionalProperties":false,"properties":{"human_approval_required_for":{"type":"array","items":{"type":"string"}},"audit_logging":{"$ref":"#/$defs/triState"},"escalation_owner":{"type":"string"},"incident_response_or_shutdown":{"type":"string"},"customer_notice_for_ai_use":{"$ref":"#/$defs/triState"},"fallback_or_shutdown_rules":{"type":"string"}}},"sourceMaterials":{"type":"object","additionalProperties":false,"properties":{"client_templates_available":{"type":"boolean"},"existing_docs_urls":{"type":"array","items":{"type":"string"}},"template_notes":{"type":"string"}}},"unresolvedGapPolicy":{"type":"object","additionalProperties":false,"properties":{"treatment":{"type":"string","enum":["bracket_in_drafts","ask_before_assembly","counsel_notes_only","ignore_low_risk","unknown"]},"notes":{"type":"string"}}},"sourceTrace":{"type":"object","additionalProperties":false,"properties":{"diligence_run_id":{"type":"string"},"stage9_report_version":{"type":"string"},"stage10_source_packet_version":{"type":"string"},"evidence_cutoff":{"type":"string"},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapping_warnings":{"type":"array","items":{"type":"string"}}}}}};
+const schema380 = {"type":"object","additionalProperties":false,"properties":{"diligence_run_id":{"type":"string"},"stage9_report_version":{"type":"string"},"stage10_source_packet_version":{"type":"string"},"evidence_cutoff":{"type":"string"},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapping_warnings":{"type":"array","items":{"type":"string"}}}};
+const schema335 = {"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"section_role":{"type":"string"},"completion_status":{"type":"string","enum":["complete","partial","needs_confirmation","not_started"]},"prefill_summary":{"type":"string"},"questions":{"type":"array","items":{"$ref":"#/$defs/intakeQuestion"}},"section_warnings":{"type":"array","items":{"type":"string"}}},"required":["section_key","section_label","section_role","completion_status","questions"]};
+const schema336 = {"type":"object","additionalProperties":false,"properties":{"section_key":{"type":"string"},"section_label":{"type":"string"},"question_key":{"type":"string"},"question":{"type":"string"},"answer_type":{"$ref":"#/$defs/answerType"},"answer":{},"options":{"type":"array","items":{"type":"string"}},"vault_match":{"type":"string","enum":["perfect","partial","none"]},"vault_paths":{"type":"array","items":{"$ref":"#/$defs/vaultFieldPath"},"uniqueItems":true},"assembly_paths":{"type":"array","items":{"type":"string"},"uniqueItems":true},"priority":{"$ref":"#/$defs/priority"},"required_for":{"type":"array","items":{"type":"string"}},"prefill_status":{"type":"string","enum":["prefilled","needs_confirmation","manual_only","not_applicable","unknown"]},"match_notes":{"type":"string"},"why_it_matters":{"type":"string"},"source_context":{"type":"string"},"evidence_refs":{"type":"array","items":{"type":"string"}},"related_finding_ids":{"type":"array","items":{"type":"string"}},"related_document_routes":{"type":"array","items":{"type":"string"}},"related_data_flow_ids":{"type":"array","items":{"type":"string"}},"allowed_values":{"type":"array","items":{"type":"string"}}},"required":["section_key","question_key","question","answer_type","vault_match","vault_paths","assembly_paths","priority","required_for","prefill_status"]};
+const schema337 = {"type":"string","enum":["text","textarea","email","url","number","date","boolean","yes_no","yes_no_unknown","single_select","multi_select","object","repeatable_table"]};
+const schema338 = {"type":"string","enum":["baseline.company","baseline.entity_type","baseline.address","baseline.legal_email","baseline.privacy_email","baseline.products","baseline.jurisdiction.country","baseline.jurisdiction.state","baseline.market","baseline.delivery.web","baseline.delivery.app","baseline.delivery.mobile","baseline.delivery.api","baseline.revenue_model","baseline.acv","baseline.has_beta","baseline.output_ownership","baseline.sla_type","baseline.integrations.slack","baseline.integrations.crm","baseline.integrations.stripe","baseline.integrations.github","baseline.integrations.webhooks","baseline.integrations.email","baseline.integrations.calendar","baseline.integrations.ticketing","baseline.integrations.hris","baseline.integrations.payment_billing","baseline.integrations.database","baseline.integrations.custom_api","baseline.integrations.other","baseline.integrations.none","baseline.reliance_threshold","architecture.ai_provider_stack.providers","architecture.ai_provider_stack.other_providers","architecture.ai_provider_stack.hosting_model","architecture.ai_provider_stack.sends_customer_data_to_model_provider","architecture.ai_provider_stack.fallback_provider","architecture.ai_provider_stack.public_provider_disclosure_url","architecture.memory","architecture.models","architecture.sub_processors.openai","architecture.sub_processors.anthropic","architecture.sub_processors.google","architecture.sub_processors.cohere","architecture.sub_processors.mistral","architecture.sub_processors.azure_openai","architecture.sub_processors.aws_bedrock","architecture.sub_processors.meta_llama","architecture.sub_processors.deepseek","architecture.sub_processors.xai","architecture.sub_processors.other","architecture.sub_processors.url","architecture.cloud_host","architecture.vector_db","architecture.hosting_regions","architecture.deployment_model","architecture.model_improvement.customer_inputs_used_for_training","architecture.model_improvement.customer_inputs_used_for_evaluation","architecture.model_improvement.product_improvement_use","architecture.model_improvement.opt_out_available","architecture.storage_logging.stores_prompts","architecture.storage_logging.stores_uploaded_files","architecture.storage_logging.stores_generated_outputs","architecture.storage_logging.conversation_history","architecture.storage_logging.audit_logs","architecture.security_controls.encryption_at_rest","architecture.security_controls.encryption_in_transit","architecture.security_controls.status_or_trust_url","architecture.api_developer_config.api_or_sdk_available","architecture.api_developer_config.rate_limits_or_usage_limits","architecture.api_developer_config.customer_configurable_tools","archetypes.is_doer","archetypes.is_orchestrator","archetypes.agent_limits.session_cap","archetypes.agent_limits.period_cap","archetypes.agent_limits.retry_limit","archetypes.agent_limits.loop_threshold","archetypes.is_creator","archetypes.is_reader","archetypes.conversational_ui","archetypes.sens_bio","archetypes.is_judge","archetypes.is_judge_hr","archetypes.is_judge_legal","archetypes.is_optimizer","archetypes.sens_fin","archetypes.is_shield","archetypes.is_mover","archetypes.is_generalist","compliance.processes_pii","compliance.eu_users","compliance.ca_users","compliance.other_regions","compliance.sens_health","compliance.sens_fin","compliance.sens_employment","compliance.minors","compliance.distress","compliance.standard_adults"]};
+const schema339 = {"type":"string","enum":["critical","high","medium","low"]};
 
 function validate153(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -27715,7 +28140,7 @@ vErrors.push(err9);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema334.properties, key0))){
+if(!(func1.call(schema336.properties, key0))){
 const err10 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err10];
@@ -27787,7 +28212,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!(((((((((((((data4 === "text") || (data4 === "textarea")) || (data4 === "email")) || (data4 === "url")) || (data4 === "number")) || (data4 === "date")) || (data4 === "boolean")) || (data4 === "yes_no")) || (data4 === "yes_no_unknown")) || (data4 === "single_select")) || (data4 === "multi_select")) || (data4 === "object")) || (data4 === "repeatable_table"))){
-const err16 = {instancePath:instancePath+"/answer_type",schemaPath:"#/$defs/answerType/enum",keyword:"enum",params:{allowedValues: schema335.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/answer_type",schemaPath:"#/$defs/answerType/enum",keyword:"enum",params:{allowedValues: schema337.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -27838,7 +28263,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!(((data7 === "perfect") || (data7 === "partial")) || (data7 === "none"))){
-const err20 = {instancePath:instancePath+"/vault_match",schemaPath:"#/properties/vault_match/enum",keyword:"enum",params:{allowedValues: schema334.properties.vault_match.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/vault_match",schemaPath:"#/properties/vault_match/enum",keyword:"enum",params:{allowedValues: schema336.properties.vault_match.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -27865,7 +28290,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((data9 === "baseline.company") || (data9 === "baseline.entity_type")) || (data9 === "baseline.address")) || (data9 === "baseline.legal_email")) || (data9 === "baseline.privacy_email")) || (data9 === "baseline.products")) || (data9 === "baseline.jurisdiction.country")) || (data9 === "baseline.jurisdiction.state")) || (data9 === "baseline.market")) || (data9 === "baseline.delivery.web")) || (data9 === "baseline.delivery.app")) || (data9 === "baseline.delivery.mobile")) || (data9 === "baseline.delivery.api")) || (data9 === "baseline.revenue_model")) || (data9 === "baseline.acv")) || (data9 === "baseline.has_beta")) || (data9 === "baseline.output_ownership")) || (data9 === "baseline.sla_type")) || (data9 === "baseline.integrations.slack")) || (data9 === "baseline.integrations.crm")) || (data9 === "baseline.integrations.stripe")) || (data9 === "baseline.integrations.github")) || (data9 === "baseline.integrations.webhooks")) || (data9 === "baseline.integrations.email")) || (data9 === "baseline.integrations.calendar")) || (data9 === "baseline.integrations.ticketing")) || (data9 === "baseline.integrations.hris")) || (data9 === "baseline.integrations.payment_billing")) || (data9 === "baseline.integrations.database")) || (data9 === "baseline.integrations.custom_api")) || (data9 === "baseline.integrations.other")) || (data9 === "baseline.integrations.none")) || (data9 === "baseline.reliance_threshold")) || (data9 === "architecture.ai_provider_stack.providers")) || (data9 === "architecture.ai_provider_stack.other_providers")) || (data9 === "architecture.ai_provider_stack.hosting_model")) || (data9 === "architecture.ai_provider_stack.sends_customer_data_to_model_provider")) || (data9 === "architecture.ai_provider_stack.fallback_provider")) || (data9 === "architecture.ai_provider_stack.public_provider_disclosure_url")) || (data9 === "architecture.memory")) || (data9 === "architecture.models")) || (data9 === "architecture.sub_processors.openai")) || (data9 === "architecture.sub_processors.anthropic")) || (data9 === "architecture.sub_processors.google")) || (data9 === "architecture.sub_processors.cohere")) || (data9 === "architecture.sub_processors.mistral")) || (data9 === "architecture.sub_processors.azure_openai")) || (data9 === "architecture.sub_processors.aws_bedrock")) || (data9 === "architecture.sub_processors.meta_llama")) || (data9 === "architecture.sub_processors.deepseek")) || (data9 === "architecture.sub_processors.xai")) || (data9 === "architecture.sub_processors.other")) || (data9 === "architecture.sub_processors.url")) || (data9 === "architecture.cloud_host")) || (data9 === "architecture.vector_db")) || (data9 === "architecture.hosting_regions")) || (data9 === "architecture.deployment_model")) || (data9 === "architecture.model_improvement.customer_inputs_used_for_training")) || (data9 === "architecture.model_improvement.customer_inputs_used_for_evaluation")) || (data9 === "architecture.model_improvement.product_improvement_use")) || (data9 === "architecture.model_improvement.opt_out_available")) || (data9 === "architecture.storage_logging.stores_prompts")) || (data9 === "architecture.storage_logging.stores_uploaded_files")) || (data9 === "architecture.storage_logging.stores_generated_outputs")) || (data9 === "architecture.storage_logging.conversation_history")) || (data9 === "architecture.storage_logging.audit_logs")) || (data9 === "architecture.security_controls.encryption_at_rest")) || (data9 === "architecture.security_controls.encryption_in_transit")) || (data9 === "architecture.security_controls.status_or_trust_url")) || (data9 === "architecture.api_developer_config.api_or_sdk_available")) || (data9 === "architecture.api_developer_config.rate_limits_or_usage_limits")) || (data9 === "architecture.api_developer_config.customer_configurable_tools")) || (data9 === "archetypes.is_doer")) || (data9 === "archetypes.is_orchestrator")) || (data9 === "archetypes.agent_limits.session_cap")) || (data9 === "archetypes.agent_limits.period_cap")) || (data9 === "archetypes.agent_limits.retry_limit")) || (data9 === "archetypes.agent_limits.loop_threshold")) || (data9 === "archetypes.is_creator")) || (data9 === "archetypes.is_reader")) || (data9 === "archetypes.conversational_ui")) || (data9 === "archetypes.sens_bio")) || (data9 === "archetypes.is_judge")) || (data9 === "archetypes.is_judge_hr")) || (data9 === "archetypes.is_judge_legal")) || (data9 === "archetypes.is_optimizer")) || (data9 === "archetypes.sens_fin")) || (data9 === "archetypes.is_shield")) || (data9 === "archetypes.is_mover")) || (data9 === "archetypes.is_generalist")) || (data9 === "compliance.processes_pii")) || (data9 === "compliance.eu_users")) || (data9 === "compliance.ca_users")) || (data9 === "compliance.other_regions")) || (data9 === "compliance.sens_health")) || (data9 === "compliance.sens_fin")) || (data9 === "compliance.sens_employment")) || (data9 === "compliance.minors")) || (data9 === "compliance.distress")) || (data9 === "compliance.standard_adults"))){
-const err22 = {instancePath:instancePath+"/vault_paths/" + i1,schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema336.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/vault_paths/" + i1,schemaPath:"#/$defs/vaultFieldPath/enum",keyword:"enum",params:{allowedValues: schema338.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -27972,7 +28397,7 @@ vErrors.push(err28);
 errors++;
 }
 if(!((((data12 === "critical") || (data12 === "high")) || (data12 === "medium")) || (data12 === "low"))){
-const err29 = {instancePath:instancePath+"/priority",schemaPath:"#/$defs/priority/enum",keyword:"enum",params:{allowedValues: schema337.enum},message:"must be equal to one of the allowed values"};
+const err29 = {instancePath:instancePath+"/priority",schemaPath:"#/$defs/priority/enum",keyword:"enum",params:{allowedValues: schema339.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -28023,7 +28448,7 @@ vErrors.push(err32);
 errors++;
 }
 if(!(((((data15 === "prefilled") || (data15 === "needs_confirmation")) || (data15 === "manual_only")) || (data15 === "not_applicable")) || (data15 === "unknown"))){
-const err33 = {instancePath:instancePath+"/prefill_status",schemaPath:"#/properties/prefill_status/enum",keyword:"enum",params:{allowedValues: schema334.properties.prefill_status.enum},message:"must be equal to one of the allowed values"};
+const err33 = {instancePath:instancePath+"/prefill_status",schemaPath:"#/properties/prefill_status/enum",keyword:"enum",params:{allowedValues: schema336.properties.prefill_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err33];
 }
@@ -28348,7 +28773,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!((((data3 === "complete") || (data3 === "partial")) || (data3 === "needs_confirmation")) || (data3 === "not_started"))){
-const err10 = {instancePath:instancePath+"/completion_status",schemaPath:"#/properties/completion_status/enum",keyword:"enum",params:{allowedValues: schema333.properties.completion_status.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/completion_status",schemaPath:"#/properties/completion_status/enum",keyword:"enum",params:{allowedValues: schema335.properties.completion_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -28436,11 +28861,11 @@ return errors === 0;
 }
 validate152.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema338 = {"type":"object","additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/baseline"},"architecture":{"$ref":"#/$defs/architecture"},"archetypes":{"$ref":"#/$defs/archetypes"},"compliance":{"$ref":"#/$defs/compliance"},"status":{"type":"string","enum":["intake_received","prefill_ready","needs_confirmation","assembly_ready"]},"submittedAt":{"type":"string","format":"date-time"}},"required":["baseline","architecture","archetypes","compliance","status","submittedAt"]};
-const schema362 = {"type":"object","additionalProperties":false,"properties":{"is_doer":{"type":"boolean"},"is_orchestrator":{"type":"boolean"},"agent_limits":{"type":"object","additionalProperties":false,"properties":{"session_cap":{"type":"string"},"period_cap":{"type":"string"},"retry_limit":{"type":"string"},"loop_threshold":{"type":"string"}}},"is_creator":{"type":"boolean"},"is_reader":{"type":"boolean"},"conversational_ui":{"type":"boolean"},"sens_bio":{"type":"boolean"},"is_judge":{"type":"boolean"},"is_judge_hr":{"type":"boolean"},"is_judge_legal":{"type":"boolean"},"is_optimizer":{"type":"boolean"},"sens_fin":{"type":"boolean"},"is_shield":{"type":"boolean"},"is_mover":{"type":"boolean"},"is_generalist":{"type":"boolean"}},"description":"AI functionality, autonomy and risk archetype payload fields."};
-const schema363 = {"type":"object","additionalProperties":false,"properties":{"processes_pii":{"type":"string","enum":["yes","no","unknown"]},"eu_users":{"type":"boolean"},"ca_users":{"type":"boolean"},"other_regions":{"type":"array","items":{"type":"string"}},"sens_health":{"type":"boolean"},"sens_fin":{"type":"boolean"},"sens_employment":{"type":"boolean"},"minors":{"type":"boolean"},"distress":{"type":"boolean"},"standard_adults":{"type":"boolean"}},"description":"Data, users and regulated surface payload fields."};
-const schema339 = {"type":"object","additionalProperties":false,"properties":{"company":{"type":"string"},"entity_type":{"type":"string"},"address":{"type":"string"},"legal_email":{"type":"string"},"privacy_email":{"type":"string"},"products":{"type":"array","items":{"type":"string"}},"jurisdiction":{"type":"object","additionalProperties":false,"properties":{"country":{"type":"string"},"state":{"type":"string"}}},"market":{"type":"string","enum":["b2b","b2c","hybrid","unknown"]},"delivery":{"type":"object","additionalProperties":false,"properties":{"web":{"type":"boolean"},"app":{"type":"boolean"},"mobile":{"type":"boolean"},"api":{"type":"boolean"}}},"revenue_model":{"type":"string"},"acv":{"type":"string"},"has_beta":{"type":"boolean"},"output_ownership":{"type":"string","enum":["full","limited","none","unknown"]},"sla_type":{"type":"string","enum":["no","standard","custom","unknown"]},"integrations":{"$ref":"#/$defs/integrations"},"reliance_threshold":{"type":"string"}},"required":["company","products","jurisdiction","market","delivery","integrations"],"description":"Company, product, delivery, commercial and customer-commitment payload fields."};
-const schema340 = {"type":"object","additionalProperties":false,"properties":{"slack":{"type":"boolean"},"crm":{"type":"boolean"},"stripe":{"type":"boolean"},"github":{"type":"boolean"},"webhooks":{"type":"boolean"},"email":{"type":"boolean"},"calendar":{"type":"boolean"},"ticketing":{"type":"boolean"},"hris":{"type":"boolean"},"payment_billing":{"type":"boolean"},"database":{"type":"boolean"},"custom_api":{"type":"boolean"},"none":{"type":"boolean"},"other":{"type":"string"}}};
+const schema340 = {"type":"object","additionalProperties":false,"properties":{"baseline":{"$ref":"#/$defs/baseline"},"architecture":{"$ref":"#/$defs/architecture"},"archetypes":{"$ref":"#/$defs/archetypes"},"compliance":{"$ref":"#/$defs/compliance"},"status":{"type":"string","enum":["intake_received","prefill_ready","needs_confirmation","assembly_ready"]},"submittedAt":{"type":"string","format":"date-time"}},"required":["baseline","architecture","archetypes","compliance","status","submittedAt"]};
+const schema364 = {"type":"object","additionalProperties":false,"properties":{"is_doer":{"type":"boolean"},"is_orchestrator":{"type":"boolean"},"agent_limits":{"type":"object","additionalProperties":false,"properties":{"session_cap":{"type":"string"},"period_cap":{"type":"string"},"retry_limit":{"type":"string"},"loop_threshold":{"type":"string"}}},"is_creator":{"type":"boolean"},"is_reader":{"type":"boolean"},"conversational_ui":{"type":"boolean"},"sens_bio":{"type":"boolean"},"is_judge":{"type":"boolean"},"is_judge_hr":{"type":"boolean"},"is_judge_legal":{"type":"boolean"},"is_optimizer":{"type":"boolean"},"sens_fin":{"type":"boolean"},"is_shield":{"type":"boolean"},"is_mover":{"type":"boolean"},"is_generalist":{"type":"boolean"}},"description":"AI functionality, autonomy and risk archetype payload fields."};
+const schema365 = {"type":"object","additionalProperties":false,"properties":{"processes_pii":{"type":"string","enum":["yes","no","unknown"]},"eu_users":{"type":"boolean"},"ca_users":{"type":"boolean"},"other_regions":{"type":"array","items":{"type":"string"}},"sens_health":{"type":"boolean"},"sens_fin":{"type":"boolean"},"sens_employment":{"type":"boolean"},"minors":{"type":"boolean"},"distress":{"type":"boolean"},"standard_adults":{"type":"boolean"}},"description":"Data, users and regulated surface payload fields."};
+const schema341 = {"type":"object","additionalProperties":false,"properties":{"company":{"type":"string"},"entity_type":{"type":"string"},"address":{"type":"string"},"legal_email":{"type":"string"},"privacy_email":{"type":"string"},"products":{"type":"array","items":{"type":"string"}},"jurisdiction":{"type":"object","additionalProperties":false,"properties":{"country":{"type":"string"},"state":{"type":"string"}}},"market":{"type":"string","enum":["b2b","b2c","hybrid","unknown"]},"delivery":{"type":"object","additionalProperties":false,"properties":{"web":{"type":"boolean"},"app":{"type":"boolean"},"mobile":{"type":"boolean"},"api":{"type":"boolean"}}},"revenue_model":{"type":"string"},"acv":{"type":"string"},"has_beta":{"type":"boolean"},"output_ownership":{"type":"string","enum":["full","limited","none","unknown"]},"sla_type":{"type":"string","enum":["no","standard","custom","unknown"]},"integrations":{"$ref":"#/$defs/integrations"},"reliance_threshold":{"type":"string"}},"required":["company","products","jurisdiction","market","delivery","integrations"],"description":"Company, product, delivery, commercial and customer-commitment payload fields."};
+const schema342 = {"type":"object","additionalProperties":false,"properties":{"slack":{"type":"boolean"},"crm":{"type":"boolean"},"stripe":{"type":"boolean"},"github":{"type":"boolean"},"webhooks":{"type":"boolean"},"email":{"type":"boolean"},"calendar":{"type":"boolean"},"ticketing":{"type":"boolean"},"hris":{"type":"boolean"},"payment_billing":{"type":"boolean"},"database":{"type":"boolean"},"custom_api":{"type":"boolean"},"none":{"type":"boolean"},"other":{"type":"string"}}};
 
 function validate165(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -28514,7 +28939,7 @@ vErrors.push(err5);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema339.properties, key0))){
+if(!(func1.call(schema341.properties, key0))){
 const err6 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err6];
@@ -28677,7 +29102,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!((((data10 === "b2b") || (data10 === "b2c")) || (data10 === "hybrid")) || (data10 === "unknown"))){
-const err19 = {instancePath:instancePath+"/market",schemaPath:"#/properties/market/enum",keyword:"enum",params:{allowedValues: schema339.properties.market.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/market",schemaPath:"#/properties/market/enum",keyword:"enum",params:{allowedValues: schema341.properties.market.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -28811,7 +29236,7 @@ vErrors.push(err29);
 errors++;
 }
 if(!((((data19 === "full") || (data19 === "limited")) || (data19 === "none")) || (data19 === "unknown"))){
-const err30 = {instancePath:instancePath+"/output_ownership",schemaPath:"#/properties/output_ownership/enum",keyword:"enum",params:{allowedValues: schema339.properties.output_ownership.enum},message:"must be equal to one of the allowed values"};
+const err30 = {instancePath:instancePath+"/output_ownership",schemaPath:"#/properties/output_ownership/enum",keyword:"enum",params:{allowedValues: schema341.properties.output_ownership.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err30];
 }
@@ -28834,7 +29259,7 @@ vErrors.push(err31);
 errors++;
 }
 if(!((((data20 === "no") || (data20 === "standard")) || (data20 === "custom")) || (data20 === "unknown"))){
-const err32 = {instancePath:instancePath+"/sla_type",schemaPath:"#/properties/sla_type/enum",keyword:"enum",params:{allowedValues: schema339.properties.sla_type.enum},message:"must be equal to one of the allowed values"};
+const err32 = {instancePath:instancePath+"/sla_type",schemaPath:"#/properties/sla_type/enum",keyword:"enum",params:{allowedValues: schema341.properties.sla_type.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err32];
 }
@@ -28848,7 +29273,7 @@ if(data.integrations !== undefined){
 let data21 = data.integrations;
 if(data21 && typeof data21 == "object" && !Array.isArray(data21)){
 for(const key3 in data21){
-if(!(func1.call(schema340.properties, key3))){
+if(!(func1.call(schema342.properties, key3))){
 const err33 = {instancePath:instancePath+"/integrations",schemaPath:"#/$defs/integrations/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err33];
@@ -29067,10 +29492,10 @@ return errors === 0;
 }
 validate165.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema341 = {"type":"object","additionalProperties":false,"properties":{"ai_provider_stack":{"$ref":"#/$defs/aiProviderStack"},"memory":{"type":"string","enum":["rag","stateless","finetuning","mixed","unknown"]},"models":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sub_processors":{"$ref":"#/$defs/subProcessors"},"cloud_host":{"type":"string"},"vector_db":{"type":"string"},"hosting_regions":{"type":"array","items":{"type":"string"}},"deployment_model":{"type":"string","enum":["saas","customer_hosted","on_prem","private_cloud","hybrid","unknown"]},"model_improvement":{"$ref":"#/$defs/modelImprovement"},"storage_logging":{"$ref":"#/$defs/storageLogging"},"security_controls":{"$ref":"#/$defs/securityControls"},"api_developer_config":{"$ref":"#/$defs/apiDeveloperConfig"}},"description":"Technical architecture, AI supply chain, subprocessors, hosting, storage/logging, security and developer configuration."};
-const schema344 = {"type":"object","additionalProperties":false,"properties":{"openai":{"type":"boolean"},"anthropic":{"type":"boolean"},"google":{"type":"boolean"},"cohere":{"type":"boolean"},"mistral":{"type":"boolean"},"azure_openai":{"type":"boolean"},"aws_bedrock":{"type":"boolean"},"meta_llama":{"type":"boolean"},"deepseek":{"type":"boolean"},"xai":{"type":"boolean"},"other":{"type":"string"},"url":{"type":"string"}},"description":"Compatibility provider flags plus subprocessor disclosure URL. User-facing form collects ai_provider_stack.providers first."};
-const schema342 = {"type":"object","additionalProperties":false,"properties":{"providers":{"type":"array","items":{"type":"string","enum":["openai","anthropic","google_gemini","cohere","mistral","meta_llama","deepseek","xai","azure_openai","aws_bedrock","self_hosted_oss","other","unknown"]},"uniqueItems":true},"other_providers":{"type":"array","items":{"type":"string"}},"hosting_model":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sends_customer_data_to_model_provider":{"$ref":"#/$defs/triState"},"fallback_provider":{"type":"string"},"public_provider_disclosure_url":{"type":"string"}},"required":["providers"]};
-const schema343 = {"type":"string","enum":["yes","no","unknown"]};
+const schema343 = {"type":"object","additionalProperties":false,"properties":{"ai_provider_stack":{"$ref":"#/$defs/aiProviderStack"},"memory":{"type":"string","enum":["rag","stateless","finetuning","mixed","unknown"]},"models":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sub_processors":{"$ref":"#/$defs/subProcessors"},"cloud_host":{"type":"string"},"vector_db":{"type":"string"},"hosting_regions":{"type":"array","items":{"type":"string"}},"deployment_model":{"type":"string","enum":["saas","customer_hosted","on_prem","private_cloud","hybrid","unknown"]},"model_improvement":{"$ref":"#/$defs/modelImprovement"},"storage_logging":{"$ref":"#/$defs/storageLogging"},"security_controls":{"$ref":"#/$defs/securityControls"},"api_developer_config":{"$ref":"#/$defs/apiDeveloperConfig"}},"description":"Technical architecture, AI supply chain, subprocessors, hosting, storage/logging, security and developer configuration."};
+const schema346 = {"type":"object","additionalProperties":false,"properties":{"openai":{"type":"boolean"},"anthropic":{"type":"boolean"},"google":{"type":"boolean"},"cohere":{"type":"boolean"},"mistral":{"type":"boolean"},"azure_openai":{"type":"boolean"},"aws_bedrock":{"type":"boolean"},"meta_llama":{"type":"boolean"},"deepseek":{"type":"boolean"},"xai":{"type":"boolean"},"other":{"type":"string"},"url":{"type":"string"}},"description":"Compatibility provider flags plus subprocessor disclosure URL. User-facing form collects ai_provider_stack.providers first."};
+const schema344 = {"type":"object","additionalProperties":false,"properties":{"providers":{"type":"array","items":{"type":"string","enum":["openai","anthropic","google_gemini","cohere","mistral","meta_llama","deepseek","xai","azure_openai","aws_bedrock","self_hosted_oss","other","unknown"]},"uniqueItems":true},"other_providers":{"type":"array","items":{"type":"string"}},"hosting_model":{"type":"string","enum":["selfhosted","thirdparty","mixed","unknown"]},"sends_customer_data_to_model_provider":{"$ref":"#/$defs/triState"},"fallback_provider":{"type":"string"},"public_provider_disclosure_url":{"type":"string"}},"required":["providers"]};
+const schema345 = {"type":"string","enum":["yes","no","unknown"]};
 
 function validate168(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -29122,7 +29547,7 @@ vErrors.push(err2);
 errors++;
 }
 if(!(((((((((((((data1 === "openai") || (data1 === "anthropic")) || (data1 === "google_gemini")) || (data1 === "cohere")) || (data1 === "mistral")) || (data1 === "meta_llama")) || (data1 === "deepseek")) || (data1 === "xai")) || (data1 === "azure_openai")) || (data1 === "aws_bedrock")) || (data1 === "self_hosted_oss")) || (data1 === "other")) || (data1 === "unknown"))){
-const err3 = {instancePath:instancePath+"/providers/" + i0,schemaPath:"#/properties/providers/items/enum",keyword:"enum",params:{allowedValues: schema342.properties.providers.items.enum},message:"must be equal to one of the allowed values"};
+const err3 = {instancePath:instancePath+"/providers/" + i0,schemaPath:"#/properties/providers/items/enum",keyword:"enum",params:{allowedValues: schema344.properties.providers.items.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err3];
 }
@@ -29209,7 +29634,7 @@ vErrors.push(err8);
 errors++;
 }
 if(!((((data4 === "selfhosted") || (data4 === "thirdparty")) || (data4 === "mixed")) || (data4 === "unknown"))){
-const err9 = {instancePath:instancePath+"/hosting_model",schemaPath:"#/properties/hosting_model/enum",keyword:"enum",params:{allowedValues: schema342.properties.hosting_model.enum},message:"must be equal to one of the allowed values"};
+const err9 = {instancePath:instancePath+"/hosting_model",schemaPath:"#/properties/hosting_model/enum",keyword:"enum",params:{allowedValues: schema344.properties.hosting_model.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err9];
 }
@@ -29232,7 +29657,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!(((data5 === "yes") || (data5 === "no")) || (data5 === "unknown"))){
-const err11 = {instancePath:instancePath+"/sends_customer_data_to_model_provider",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/sends_customer_data_to_model_provider",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -29282,7 +29707,7 @@ return errors === 0;
 }
 validate168.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema345 = {"type":"object","additionalProperties":false,"properties":{"customer_inputs_used_for_training":{"$ref":"#/$defs/triState"},"customer_inputs_used_for_evaluation":{"$ref":"#/$defs/triState"},"product_improvement_use":{"$ref":"#/$defs/triState"},"opt_out_available":{"$ref":"#/$defs/triState"}}};
+const schema347 = {"type":"object","additionalProperties":false,"properties":{"customer_inputs_used_for_training":{"$ref":"#/$defs/triState"},"customer_inputs_used_for_evaluation":{"$ref":"#/$defs/triState"},"product_improvement_use":{"$ref":"#/$defs/triState"},"opt_out_available":{"$ref":"#/$defs/triState"}}};
 
 function validate170(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -29320,7 +29745,7 @@ vErrors.push(err1);
 errors++;
 }
 if(!(((data0 === "yes") || (data0 === "no")) || (data0 === "unknown"))){
-const err2 = {instancePath:instancePath+"/customer_inputs_used_for_training",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err2 = {instancePath:instancePath+"/customer_inputs_used_for_training",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err2];
 }
@@ -29343,7 +29768,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!(((data1 === "yes") || (data1 === "no")) || (data1 === "unknown"))){
-const err4 = {instancePath:instancePath+"/customer_inputs_used_for_evaluation",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/customer_inputs_used_for_evaluation",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -29366,7 +29791,7 @@ vErrors.push(err5);
 errors++;
 }
 if(!(((data2 === "yes") || (data2 === "no")) || (data2 === "unknown"))){
-const err6 = {instancePath:instancePath+"/product_improvement_use",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err6 = {instancePath:instancePath+"/product_improvement_use",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err6];
 }
@@ -29389,7 +29814,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!(((data3 === "yes") || (data3 === "no")) || (data3 === "unknown"))){
-const err8 = {instancePath:instancePath+"/opt_out_available",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/opt_out_available",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -29415,7 +29840,7 @@ return errors === 0;
 }
 validate170.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema350 = {"type":"object","additionalProperties":false,"properties":{"stores_prompts":{"$ref":"#/$defs/triState"},"stores_uploaded_files":{"$ref":"#/$defs/triState"},"stores_generated_outputs":{"$ref":"#/$defs/triState"},"conversation_history":{"$ref":"#/$defs/triState"},"audit_logs":{"$ref":"#/$defs/triState"},"retention_summary":{"type":"string"}}};
+const schema352 = {"type":"object","additionalProperties":false,"properties":{"stores_prompts":{"$ref":"#/$defs/triState"},"stores_uploaded_files":{"$ref":"#/$defs/triState"},"stores_generated_outputs":{"$ref":"#/$defs/triState"},"conversation_history":{"$ref":"#/$defs/triState"},"audit_logs":{"$ref":"#/$defs/triState"},"retention_summary":{"type":"string"}}};
 
 function validate172(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -29453,7 +29878,7 @@ vErrors.push(err1);
 errors++;
 }
 if(!(((data0 === "yes") || (data0 === "no")) || (data0 === "unknown"))){
-const err2 = {instancePath:instancePath+"/stores_prompts",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err2 = {instancePath:instancePath+"/stores_prompts",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err2];
 }
@@ -29476,7 +29901,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!(((data1 === "yes") || (data1 === "no")) || (data1 === "unknown"))){
-const err4 = {instancePath:instancePath+"/stores_uploaded_files",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/stores_uploaded_files",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -29499,7 +29924,7 @@ vErrors.push(err5);
 errors++;
 }
 if(!(((data2 === "yes") || (data2 === "no")) || (data2 === "unknown"))){
-const err6 = {instancePath:instancePath+"/stores_generated_outputs",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err6 = {instancePath:instancePath+"/stores_generated_outputs",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err6];
 }
@@ -29522,7 +29947,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!(((data3 === "yes") || (data3 === "no")) || (data3 === "unknown"))){
-const err8 = {instancePath:instancePath+"/conversation_history",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/conversation_history",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -29545,7 +29970,7 @@ vErrors.push(err9);
 errors++;
 }
 if(!(((data4 === "yes") || (data4 === "no")) || (data4 === "unknown"))){
-const err10 = {instancePath:instancePath+"/audit_logs",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err10 = {instancePath:instancePath+"/audit_logs",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err10];
 }
@@ -29583,7 +30008,7 @@ return errors === 0;
 }
 validate172.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema356 = {"type":"object","additionalProperties":false,"properties":{"encryption_at_rest":{"$ref":"#/$defs/triState"},"encryption_in_transit":{"$ref":"#/$defs/triState"},"status_or_trust_url":{"type":"string"}}};
+const schema358 = {"type":"object","additionalProperties":false,"properties":{"encryption_at_rest":{"$ref":"#/$defs/triState"},"encryption_in_transit":{"$ref":"#/$defs/triState"},"status_or_trust_url":{"type":"string"}}};
 
 function validate174(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -29621,7 +30046,7 @@ vErrors.push(err1);
 errors++;
 }
 if(!(((data0 === "yes") || (data0 === "no")) || (data0 === "unknown"))){
-const err2 = {instancePath:instancePath+"/encryption_at_rest",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err2 = {instancePath:instancePath+"/encryption_at_rest",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err2];
 }
@@ -29644,7 +30069,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!(((data1 === "yes") || (data1 === "no")) || (data1 === "unknown"))){
-const err4 = {instancePath:instancePath+"/encryption_in_transit",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/encryption_in_transit",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -29682,7 +30107,7 @@ return errors === 0;
 }
 validate174.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema359 = {"type":"object","additionalProperties":false,"properties":{"api_or_sdk_available":{"$ref":"#/$defs/triState"},"rate_limits_or_usage_limits":{"type":"string"},"customer_configurable_tools":{"$ref":"#/$defs/triState"}}};
+const schema361 = {"type":"object","additionalProperties":false,"properties":{"api_or_sdk_available":{"$ref":"#/$defs/triState"},"rate_limits_or_usage_limits":{"type":"string"},"customer_configurable_tools":{"$ref":"#/$defs/triState"}}};
 
 function validate176(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -29720,7 +30145,7 @@ vErrors.push(err1);
 errors++;
 }
 if(!(((data0 === "yes") || (data0 === "no")) || (data0 === "unknown"))){
-const err2 = {instancePath:instancePath+"/api_or_sdk_available",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err2 = {instancePath:instancePath+"/api_or_sdk_available",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err2];
 }
@@ -29755,7 +30180,7 @@ vErrors.push(err4);
 errors++;
 }
 if(!(((data2 === "yes") || (data2 === "no")) || (data2 === "unknown"))){
-const err5 = {instancePath:instancePath+"/customer_configurable_tools",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err5 = {instancePath:instancePath+"/customer_configurable_tools",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err5];
 }
@@ -29794,7 +30219,7 @@ evaluated0.items = undefined;
 }
 if(data && typeof data == "object" && !Array.isArray(data)){
 for(const key0 in data){
-if(!(func1.call(schema341.properties, key0))){
+if(!(func1.call(schema343.properties, key0))){
 const err0 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err0];
@@ -29824,7 +30249,7 @@ vErrors.push(err1);
 errors++;
 }
 if(!(((((data1 === "rag") || (data1 === "stateless")) || (data1 === "finetuning")) || (data1 === "mixed")) || (data1 === "unknown"))){
-const err2 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/enum",keyword:"enum",params:{allowedValues: schema341.properties.memory.enum},message:"must be equal to one of the allowed values"};
+const err2 = {instancePath:instancePath+"/memory",schemaPath:"#/properties/memory/enum",keyword:"enum",params:{allowedValues: schema343.properties.memory.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err2];
 }
@@ -29847,7 +30272,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!((((data2 === "selfhosted") || (data2 === "thirdparty")) || (data2 === "mixed")) || (data2 === "unknown"))){
-const err4 = {instancePath:instancePath+"/models",schemaPath:"#/properties/models/enum",keyword:"enum",params:{allowedValues: schema341.properties.models.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/models",schemaPath:"#/properties/models/enum",keyword:"enum",params:{allowedValues: schema343.properties.models.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -29861,7 +30286,7 @@ if(data.sub_processors !== undefined){
 let data3 = data.sub_processors;
 if(data3 && typeof data3 == "object" && !Array.isArray(data3)){
 for(const key1 in data3){
-if(!(func1.call(schema344.properties, key1))){
+if(!(func1.call(schema346.properties, key1))){
 const err5 = {instancePath:instancePath+"/sub_processors",schemaPath:"#/$defs/subProcessors/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key1},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err5];
@@ -30093,7 +30518,7 @@ vErrors.push(err23);
 errors++;
 }
 if(!((((((data20 === "saas") || (data20 === "customer_hosted")) || (data20 === "on_prem")) || (data20 === "private_cloud")) || (data20 === "hybrid")) || (data20 === "unknown"))){
-const err24 = {instancePath:instancePath+"/deployment_model",schemaPath:"#/properties/deployment_model/enum",keyword:"enum",params:{allowedValues: schema341.properties.deployment_model.enum},message:"must be equal to one of the allowed values"};
+const err24 = {instancePath:instancePath+"/deployment_model",schemaPath:"#/properties/deployment_model/enum",keyword:"enum",params:{allowedValues: schema343.properties.deployment_model.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err24];
 }
@@ -30243,7 +30668,7 @@ if(data.archetypes !== undefined){
 let data2 = data.archetypes;
 if(data2 && typeof data2 == "object" && !Array.isArray(data2)){
 for(const key1 in data2){
-if(!(func1.call(schema362.properties, key1))){
+if(!(func1.call(schema364.properties, key1))){
 const err7 = {instancePath:instancePath+"/archetypes",schemaPath:"#/$defs/archetypes/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key1},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err7];
@@ -30513,7 +30938,7 @@ if(data.compliance !== undefined){
 let data22 = data.compliance;
 if(data22 && typeof data22 == "object" && !Array.isArray(data22)){
 for(const key3 in data22){
-if(!(func1.call(schema363.properties, key3))){
+if(!(func1.call(schema365.properties, key3))){
 const err29 = {instancePath:instancePath+"/compliance",schemaPath:"#/$defs/compliance/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key3},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err29];
@@ -30537,7 +30962,7 @@ vErrors.push(err30);
 errors++;
 }
 if(!(((data23 === "yes") || (data23 === "no")) || (data23 === "unknown"))){
-const err31 = {instancePath:instancePath+"/compliance/processes_pii",schemaPath:"#/$defs/compliance/properties/processes_pii/enum",keyword:"enum",params:{allowedValues: schema363.properties.processes_pii.enum},message:"must be equal to one of the allowed values"};
+const err31 = {instancePath:instancePath+"/compliance/processes_pii",schemaPath:"#/$defs/compliance/properties/processes_pii/enum",keyword:"enum",params:{allowedValues: schema365.properties.processes_pii.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err31];
 }
@@ -30696,7 +31121,7 @@ vErrors.push(err43);
 errors++;
 }
 if(!((((data34 === "intake_received") || (data34 === "prefill_ready")) || (data34 === "needs_confirmation")) || (data34 === "assembly_ready"))){
-const err44 = {instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema338.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err44 = {instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema340.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err44];
 }
@@ -30734,8 +31159,8 @@ return errors === 0;
 }
 validate164.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema364 = {"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}};
-const schema365 = {"type":"object","additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapped_question_keys":{"type":"array","items":{"type":"string"}}},"required":["value","basis","confidence","source_finding_ids"]};
+const schema366 = {"type":"object","additionalProperties":{"$ref":"#/$defs/prefillSuggestion"}};
+const schema367 = {"type":"object","additionalProperties":false,"properties":{"value":{},"basis":{"type":"string"},"confidence":{"type":"string","enum":["high","medium","low"]},"source_finding_ids":{"type":"array","items":{"type":"string"}},"source_stage_refs":{"type":"array","items":{"type":"string"}},"mapped_question_keys":{"type":"array","items":{"type":"string"}}},"required":["value","basis","confidence","source_finding_ids"]};
 
 function validate180(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -30828,7 +31253,7 @@ vErrors.push(err6);
 errors++;
 }
 if(!(((data2 === "high") || (data2 === "medium")) || (data2 === "low"))){
-const err7 = {instancePath:instancePath+"/" + key0.replace(/~/g, "~0").replace(/\//g, "~1")+"/confidence",schemaPath:"#/$defs/prefillSuggestion/properties/confidence/enum",keyword:"enum",params:{allowedValues: schema365.properties.confidence.enum},message:"must be equal to one of the allowed values"};
+const err7 = {instancePath:instancePath+"/" + key0.replace(/~/g, "~0").replace(/\//g, "~1")+"/confidence",schemaPath:"#/$defs/prefillSuggestion/properties/confidence/enum",keyword:"enum",params:{allowedValues: schema367.properties.confidence.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err7];
 }
@@ -30950,16 +31375,16 @@ return errors === 0;
 }
 validate180.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
-const schema366 = {"type":"object","additionalProperties":false,"properties":{"package_selection":{"$ref":"#/$defs/packageSelection"},"document_routes":{"$ref":"#/$defs/documentRoutes"},"drafting_preferences":{"$ref":"#/$defs/draftingPreferences"},"output_options":{"$ref":"#/$defs/outputOptions"},"localisation":{"$ref":"#/$defs/localisation"},"local_counsel_review":{"$ref":"#/$defs/localCounselReview"},"operational_controls":{"$ref":"#/$defs/operationalControls"},"source_materials":{"$ref":"#/$defs/sourceMaterials"},"unresolved_gap_policy":{"$ref":"#/$defs/unresolvedGapPolicy"},"assembly_warnings":{"type":"array","items":{"type":"string"}}},"required":["package_selection","document_routes","drafting_preferences","output_options","localisation","local_counsel_review","operational_controls","unresolved_gap_policy"]};
-const schema367 = {"type":"object","additionalProperties":false,"properties":{"selected_package":{"type":"string","enum":["ai_terms_pack","privacy_dpa_pack","agent_governance_pack","full_ai_legal_architecture_pack","custom","unknown"]},"custom_package_description":{"type":"string"}}};
-const schema368 = {"type":"object","additionalProperties":false,"properties":{"selected_documents":{"type":"array","items":{"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","ai_agent_terms","ip_output_terms","subprocessor_schedule","human_review_protocol","internal_ai_sop","dpia_memo","security_addendum","api_terms","cookie_policy","counsel_issue_list","other"]},"uniqueItems":true},"missing_document_policy":{"type":"string","enum":["treat_as_drafting_target","ask_client_first","exclude_unless_confirmed","unknown"]},"existing_document_treatment":{"type":"string","enum":["redline_update","draft_fresh","hybrid","reference_only","unknown"]},"other_document_description":{"type":"string"}}};
-const schema369 = {"type":"object","additionalProperties":false,"properties":{"style":{"type":"string","enum":["startup_friendly","enterprise_saas","developer_api","consumer","regulated_sector_cautious","custom","unknown"]},"risk_posture":{"type":"string","enum":["founder_friendly","balanced","enterprise_buyer_friendly","conservative_legal_review_heavy","custom","unknown"]},"counsel_notes":{"type":"boolean"},"jurisdiction_placeholders":{"type":"boolean"},"preserve_brand_language":{"type":"boolean"},"bracket_unresolved_gaps":{"type":"boolean"},"custom_notes":{"type":"string"}}};
-const schema370 = {"type":"object","additionalProperties":false,"properties":{"review_ready_drafts":{"type":"boolean"},"issue_list_for_counsel":{"type":"boolean"},"counsel_checklist":{"type":"boolean"},"executive_summary":{"type":"boolean"},"machine_readable_exports":{"type":"boolean"}}};
-const schema371 = {"type":"object","additionalProperties":false,"properties":{"target_regions":{"type":"array","items":{"type":"string"}},"primary_jurisdiction":{"type":"string"},"governing_law_instruction":{"type":"string","enum":["selected","bracketed","counsel_to_decide","unknown"]},"courts_or_venue_instruction":{"type":"string"},"localisation_notes":{"type":"string"}}};
-const schema372 = {"type":"object","additionalProperties":false,"properties":{"local_counsel_review_required":{"const":true},"priority_points":{"type":"array","items":{"type":"string"}},"counsel_templates_available":{"type":"boolean"},"counsel_template_notes":{"type":"string"}},"required":["local_counsel_review_required"]};
-const schema376 = {"type":"object","additionalProperties":false,"properties":{"client_templates_available":{"type":"boolean"},"existing_docs_urls":{"type":"array","items":{"type":"string"}},"template_notes":{"type":"string"}}};
-const schema377 = {"type":"object","additionalProperties":false,"properties":{"treatment":{"type":"string","enum":["bracket_in_drafts","ask_before_assembly","counsel_notes_only","ignore_low_risk","unknown"]},"notes":{"type":"string"}}};
-const schema373 = {"type":"object","additionalProperties":false,"properties":{"human_approval_required_for":{"type":"array","items":{"type":"string"}},"audit_logging":{"$ref":"#/$defs/triState"},"escalation_owner":{"type":"string"},"incident_response_or_shutdown":{"type":"string"},"customer_notice_for_ai_use":{"$ref":"#/$defs/triState"},"fallback_or_shutdown_rules":{"type":"string"}}};
+const schema368 = {"type":"object","additionalProperties":false,"properties":{"package_selection":{"$ref":"#/$defs/packageSelection"},"document_routes":{"$ref":"#/$defs/documentRoutes"},"drafting_preferences":{"$ref":"#/$defs/draftingPreferences"},"output_options":{"$ref":"#/$defs/outputOptions"},"localisation":{"$ref":"#/$defs/localisation"},"local_counsel_review":{"$ref":"#/$defs/localCounselReview"},"operational_controls":{"$ref":"#/$defs/operationalControls"},"source_materials":{"$ref":"#/$defs/sourceMaterials"},"unresolved_gap_policy":{"$ref":"#/$defs/unresolvedGapPolicy"},"assembly_warnings":{"type":"array","items":{"type":"string"}}},"required":["package_selection","document_routes","drafting_preferences","output_options","localisation","local_counsel_review","operational_controls","unresolved_gap_policy"]};
+const schema369 = {"type":"object","additionalProperties":false,"properties":{"selected_package":{"type":"string","enum":["ai_terms_pack","privacy_dpa_pack","agent_governance_pack","full_ai_legal_architecture_pack","custom","unknown"]},"custom_package_description":{"type":"string"}}};
+const schema370 = {"type":"object","additionalProperties":false,"properties":{"selected_documents":{"type":"array","items":{"type":"string","enum":["tos","privacy_policy","dpa","aup","sla","ai_agent_terms","ip_output_terms","subprocessor_schedule","human_review_protocol","internal_ai_sop","dpia_memo","security_addendum","api_terms","cookie_policy","counsel_issue_list","other"]},"uniqueItems":true},"missing_document_policy":{"type":"string","enum":["treat_as_drafting_target","ask_client_first","exclude_unless_confirmed","unknown"]},"existing_document_treatment":{"type":"string","enum":["redline_update","draft_fresh","hybrid","reference_only","unknown"]},"other_document_description":{"type":"string"}}};
+const schema371 = {"type":"object","additionalProperties":false,"properties":{"style":{"type":"string","enum":["startup_friendly","enterprise_saas","developer_api","consumer","regulated_sector_cautious","custom","unknown"]},"risk_posture":{"type":"string","enum":["founder_friendly","balanced","enterprise_buyer_friendly","conservative_legal_review_heavy","custom","unknown"]},"counsel_notes":{"type":"boolean"},"jurisdiction_placeholders":{"type":"boolean"},"preserve_brand_language":{"type":"boolean"},"bracket_unresolved_gaps":{"type":"boolean"},"custom_notes":{"type":"string"}}};
+const schema372 = {"type":"object","additionalProperties":false,"properties":{"review_ready_drafts":{"type":"boolean"},"issue_list_for_counsel":{"type":"boolean"},"counsel_checklist":{"type":"boolean"},"executive_summary":{"type":"boolean"},"machine_readable_exports":{"type":"boolean"}}};
+const schema373 = {"type":"object","additionalProperties":false,"properties":{"target_regions":{"type":"array","items":{"type":"string"}},"primary_jurisdiction":{"type":"string"},"governing_law_instruction":{"type":"string","enum":["selected","bracketed","counsel_to_decide","unknown"]},"courts_or_venue_instruction":{"type":"string"},"localisation_notes":{"type":"string"}}};
+const schema374 = {"type":"object","additionalProperties":false,"properties":{"local_counsel_review_required":{"const":true},"priority_points":{"type":"array","items":{"type":"string"}},"counsel_templates_available":{"type":"boolean"},"counsel_template_notes":{"type":"string"}},"required":["local_counsel_review_required"]};
+const schema378 = {"type":"object","additionalProperties":false,"properties":{"client_templates_available":{"type":"boolean"},"existing_docs_urls":{"type":"array","items":{"type":"string"}},"template_notes":{"type":"string"}}};
+const schema379 = {"type":"object","additionalProperties":false,"properties":{"treatment":{"type":"string","enum":["bracket_in_drafts","ask_before_assembly","counsel_notes_only","ignore_low_risk","unknown"]},"notes":{"type":"string"}}};
+const schema375 = {"type":"object","additionalProperties":false,"properties":{"human_approval_required_for":{"type":"array","items":{"type":"string"}},"audit_logging":{"$ref":"#/$defs/triState"},"escalation_owner":{"type":"string"},"incident_response_or_shutdown":{"type":"string"},"customer_notice_for_ai_use":{"$ref":"#/$defs/triState"},"fallback_or_shutdown_rules":{"type":"string"}}};
 
 function validate187(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -31025,7 +31450,7 @@ vErrors.push(err3);
 errors++;
 }
 if(!(((data2 === "yes") || (data2 === "no")) || (data2 === "unknown"))){
-const err4 = {instancePath:instancePath+"/audit_logging",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err4 = {instancePath:instancePath+"/audit_logging",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err4];
 }
@@ -31072,7 +31497,7 @@ vErrors.push(err7);
 errors++;
 }
 if(!(((data5 === "yes") || (data5 === "no")) || (data5 === "unknown"))){
-const err8 = {instancePath:instancePath+"/customer_notice_for_ai_use",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema343.enum},message:"must be equal to one of the allowed values"};
+const err8 = {instancePath:instancePath+"/customer_notice_for_ai_use",schemaPath:"#/$defs/triState/enum",keyword:"enum",params:{allowedValues: schema345.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err8];
 }
@@ -31203,7 +31628,7 @@ vErrors.push(err7);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema366.properties, key0))){
+if(!(func1.call(schema368.properties, key0))){
 const err8 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err8];
@@ -31242,7 +31667,7 @@ vErrors.push(err10);
 errors++;
 }
 if(!((((((data1 === "ai_terms_pack") || (data1 === "privacy_dpa_pack")) || (data1 === "agent_governance_pack")) || (data1 === "full_ai_legal_architecture_pack")) || (data1 === "custom")) || (data1 === "unknown"))){
-const err11 = {instancePath:instancePath+"/package_selection/selected_package",schemaPath:"#/$defs/packageSelection/properties/selected_package/enum",keyword:"enum",params:{allowedValues: schema367.properties.selected_package.enum},message:"must be equal to one of the allowed values"};
+const err11 = {instancePath:instancePath+"/package_selection/selected_package",schemaPath:"#/$defs/packageSelection/properties/selected_package/enum",keyword:"enum",params:{allowedValues: schema369.properties.selected_package.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err11];
 }
@@ -31308,7 +31733,7 @@ vErrors.push(err15);
 errors++;
 }
 if(!((((((((((((((((data5 === "tos") || (data5 === "privacy_policy")) || (data5 === "dpa")) || (data5 === "aup")) || (data5 === "sla")) || (data5 === "ai_agent_terms")) || (data5 === "ip_output_terms")) || (data5 === "subprocessor_schedule")) || (data5 === "human_review_protocol")) || (data5 === "internal_ai_sop")) || (data5 === "dpia_memo")) || (data5 === "security_addendum")) || (data5 === "api_terms")) || (data5 === "cookie_policy")) || (data5 === "counsel_issue_list")) || (data5 === "other"))){
-const err16 = {instancePath:instancePath+"/document_routes/selected_documents/" + i0,schemaPath:"#/$defs/documentRoutes/properties/selected_documents/items/enum",keyword:"enum",params:{allowedValues: schema368.properties.selected_documents.items.enum},message:"must be equal to one of the allowed values"};
+const err16 = {instancePath:instancePath+"/document_routes/selected_documents/" + i0,schemaPath:"#/$defs/documentRoutes/properties/selected_documents/items/enum",keyword:"enum",params:{allowedValues: schema370.properties.selected_documents.items.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err16];
 }
@@ -31367,7 +31792,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!((((data6 === "treat_as_drafting_target") || (data6 === "ask_client_first")) || (data6 === "exclude_unless_confirmed")) || (data6 === "unknown"))){
-const err20 = {instancePath:instancePath+"/document_routes/missing_document_policy",schemaPath:"#/$defs/documentRoutes/properties/missing_document_policy/enum",keyword:"enum",params:{allowedValues: schema368.properties.missing_document_policy.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/document_routes/missing_document_policy",schemaPath:"#/$defs/documentRoutes/properties/missing_document_policy/enum",keyword:"enum",params:{allowedValues: schema370.properties.missing_document_policy.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -31390,7 +31815,7 @@ vErrors.push(err21);
 errors++;
 }
 if(!(((((data7 === "redline_update") || (data7 === "draft_fresh")) || (data7 === "hybrid")) || (data7 === "reference_only")) || (data7 === "unknown"))){
-const err22 = {instancePath:instancePath+"/document_routes/existing_document_treatment",schemaPath:"#/$defs/documentRoutes/properties/existing_document_treatment/enum",keyword:"enum",params:{allowedValues: schema368.properties.existing_document_treatment.enum},message:"must be equal to one of the allowed values"};
+const err22 = {instancePath:instancePath+"/document_routes/existing_document_treatment",schemaPath:"#/$defs/documentRoutes/properties/existing_document_treatment/enum",keyword:"enum",params:{allowedValues: schema370.properties.existing_document_treatment.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err22];
 }
@@ -31452,7 +31877,7 @@ vErrors.push(err26);
 errors++;
 }
 if(!(((((((data10 === "startup_friendly") || (data10 === "enterprise_saas")) || (data10 === "developer_api")) || (data10 === "consumer")) || (data10 === "regulated_sector_cautious")) || (data10 === "custom")) || (data10 === "unknown"))){
-const err27 = {instancePath:instancePath+"/drafting_preferences/style",schemaPath:"#/$defs/draftingPreferences/properties/style/enum",keyword:"enum",params:{allowedValues: schema369.properties.style.enum},message:"must be equal to one of the allowed values"};
+const err27 = {instancePath:instancePath+"/drafting_preferences/style",schemaPath:"#/$defs/draftingPreferences/properties/style/enum",keyword:"enum",params:{allowedValues: schema371.properties.style.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err27];
 }
@@ -31475,7 +31900,7 @@ vErrors.push(err28);
 errors++;
 }
 if(!((((((data11 === "founder_friendly") || (data11 === "balanced")) || (data11 === "enterprise_buyer_friendly")) || (data11 === "conservative_legal_review_heavy")) || (data11 === "custom")) || (data11 === "unknown"))){
-const err29 = {instancePath:instancePath+"/drafting_preferences/risk_posture",schemaPath:"#/$defs/draftingPreferences/properties/risk_posture/enum",keyword:"enum",params:{allowedValues: schema369.properties.risk_posture.enum},message:"must be equal to one of the allowed values"};
+const err29 = {instancePath:instancePath+"/drafting_preferences/risk_posture",schemaPath:"#/$defs/draftingPreferences/properties/risk_posture/enum",keyword:"enum",params:{allowedValues: schema371.properties.risk_posture.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err29];
 }
@@ -31712,7 +32137,7 @@ vErrors.push(err47);
 errors++;
 }
 if(!((((data27 === "selected") || (data27 === "bracketed")) || (data27 === "counsel_to_decide")) || (data27 === "unknown"))){
-const err48 = {instancePath:instancePath+"/localisation/governing_law_instruction",schemaPath:"#/$defs/localisation/properties/governing_law_instruction/enum",keyword:"enum",params:{allowedValues: schema371.properties.governing_law_instruction.enum},message:"must be equal to one of the allowed values"};
+const err48 = {instancePath:instancePath+"/localisation/governing_law_instruction",schemaPath:"#/$defs/localisation/properties/governing_law_instruction/enum",keyword:"enum",params:{allowedValues: schema373.properties.governing_law_instruction.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err48];
 }
@@ -31972,7 +32397,7 @@ vErrors.push(err67);
 errors++;
 }
 if(!(((((data43 === "bracket_in_drafts") || (data43 === "ask_before_assembly")) || (data43 === "counsel_notes_only")) || (data43 === "ignore_low_risk")) || (data43 === "unknown"))){
-const err68 = {instancePath:instancePath+"/unresolved_gap_policy/treatment",schemaPath:"#/$defs/unresolvedGapPolicy/properties/treatment/enum",keyword:"enum",params:{allowedValues: schema377.properties.treatment.enum},message:"must be equal to one of the allowed values"};
+const err68 = {instancePath:instancePath+"/unresolved_gap_policy/treatment",schemaPath:"#/$defs/unresolvedGapPolicy/properties/treatment/enum",keyword:"enum",params:{allowedValues: schema379.properties.treatment.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err68];
 }
@@ -32164,7 +32589,7 @@ vErrors.push(err9);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema332.properties, key0))){
+if(!(func1.call(schema334.properties, key0))){
 const err10 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err10];
@@ -32200,7 +32625,7 @@ vErrors.push(err12);
 errors++;
 }
 if(!(((data1 === "diligence_to_assembly") || (data1 === "manual_intake")) || (data1 === "hybrid"))){
-const err13 = {instancePath:instancePath+"/intake_mode",schemaPath:"#/properties/intake_mode/enum",keyword:"enum",params:{allowedValues: schema332.properties.intake_mode.enum},message:"must be equal to one of the allowed values"};
+const err13 = {instancePath:instancePath+"/intake_mode",schemaPath:"#/properties/intake_mode/enum",keyword:"enum",params:{allowedValues: schema334.properties.intake_mode.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err13];
 }
@@ -32304,7 +32729,7 @@ vErrors.push(err22);
 errors++;
 }
 for(const key1 in data2){
-if(!(func1.call(schema332.properties.functional_sections.properties, key1))){
+if(!(func1.call(schema334.properties.functional_sections.properties, key1))){
 const err23 = {instancePath:instancePath+"/functional_sections",schemaPath:"#/properties/functional_sections/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key1},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err23];
@@ -32650,7 +33075,7 @@ vErrors.push(err42);
 errors++;
 }
 if(!((((data30 === "intake_received") || (data30 === "prefill_ready")) || (data30 === "needs_confirmation")) || (data30 === "assembly_ready"))){
-const err43 = {instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema332.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err43 = {instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema334.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err43];
 }
@@ -32689,7 +33114,7 @@ return errors === 0;
 validate151.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_handoffEnvelope = validate190;
-const schema379 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/handoffEnvelope.schema.json","title":"Handoff Envelope","description":"Canonical handoff_envelope schema mirroring src/wrapper/contracts/handoffEnvelope.js. Includes existing JS statuses plus queued/created for future contract compatibility.","type":"object","required":["handoff_id","run_id","source_engine","target_engine","payload_type","status","created_at","updated_at","payload_ref","summary","warnings"],"additionalProperties":false,"properties":{"handoff_id":{"type":"string"},"run_id":{"type":"string"},"source_engine":{"type":"string","enum":["wrapper","diligence","assembly","delivery","horizon","maintenance"]},"target_engine":{"type":"string","enum":["wrapper","diligence","assembly","delivery","horizon","maintenance"]},"payload_type":{"type":"string","enum":["assembly_handoff_payload","delivery_package_payload","regulatory_update_payload","maintenance_alert_payload","vault_confirmation_payload","system_status_payload"]},"status":{"type":"string","enum":["draft","ready","pushed","received","failed","created","queued"]},"created_at":{"type":"string","format":"date-time"},"updated_at":{"type":"string","format":"date-time"},"payload_ref":{"type":"string"},"summary":{"type":"string"},"warnings":{"type":"array","items":{"type":"string"}}}};
+const schema381 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/handoffEnvelope.schema.json","title":"Handoff Envelope","description":"Canonical handoff_envelope schema mirroring src/wrapper/contracts/handoffEnvelope.js. Includes existing JS statuses plus queued/created for future contract compatibility.","type":"object","required":["handoff_id","run_id","source_engine","target_engine","payload_type","status","created_at","updated_at","payload_ref","summary","warnings"],"additionalProperties":false,"properties":{"handoff_id":{"type":"string"},"run_id":{"type":"string"},"source_engine":{"type":"string","enum":["wrapper","diligence","assembly","delivery","horizon","maintenance"]},"target_engine":{"type":"string","enum":["wrapper","diligence","assembly","delivery","horizon","maintenance"]},"payload_type":{"type":"string","enum":["assembly_handoff_payload","delivery_package_payload","regulatory_update_payload","maintenance_alert_payload","vault_confirmation_payload","system_status_payload"]},"status":{"type":"string","enum":["draft","ready","pushed","received","failed","created","queued"]},"created_at":{"type":"string","format":"date-time"},"updated_at":{"type":"string","format":"date-time"},"payload_ref":{"type":"string"},"summary":{"type":"string"},"warnings":{"type":"array","items":{"type":"string"}}}};
 
 function validate190(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 /*# sourceURL="https://interface-sandbox.local/schemas/handoffEnvelope.schema.json" */;
@@ -32814,7 +33239,7 @@ vErrors.push(err10);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema379.properties, key0))){
+if(!(func1.call(schema381.properties, key0))){
 const err11 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err11];
@@ -32862,7 +33287,7 @@ vErrors.push(err14);
 errors++;
 }
 if(!((((((data2 === "wrapper") || (data2 === "diligence")) || (data2 === "assembly")) || (data2 === "delivery")) || (data2 === "horizon")) || (data2 === "maintenance"))){
-const err15 = {instancePath:instancePath+"/source_engine",schemaPath:"#/properties/source_engine/enum",keyword:"enum",params:{allowedValues: schema379.properties.source_engine.enum},message:"must be equal to one of the allowed values"};
+const err15 = {instancePath:instancePath+"/source_engine",schemaPath:"#/properties/source_engine/enum",keyword:"enum",params:{allowedValues: schema381.properties.source_engine.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err15];
 }
@@ -32885,7 +33310,7 @@ vErrors.push(err16);
 errors++;
 }
 if(!((((((data3 === "wrapper") || (data3 === "diligence")) || (data3 === "assembly")) || (data3 === "delivery")) || (data3 === "horizon")) || (data3 === "maintenance"))){
-const err17 = {instancePath:instancePath+"/target_engine",schemaPath:"#/properties/target_engine/enum",keyword:"enum",params:{allowedValues: schema379.properties.target_engine.enum},message:"must be equal to one of the allowed values"};
+const err17 = {instancePath:instancePath+"/target_engine",schemaPath:"#/properties/target_engine/enum",keyword:"enum",params:{allowedValues: schema381.properties.target_engine.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err17];
 }
@@ -32908,7 +33333,7 @@ vErrors.push(err18);
 errors++;
 }
 if(!((((((data4 === "assembly_handoff_payload") || (data4 === "delivery_package_payload")) || (data4 === "regulatory_update_payload")) || (data4 === "maintenance_alert_payload")) || (data4 === "vault_confirmation_payload")) || (data4 === "system_status_payload"))){
-const err19 = {instancePath:instancePath+"/payload_type",schemaPath:"#/properties/payload_type/enum",keyword:"enum",params:{allowedValues: schema379.properties.payload_type.enum},message:"must be equal to one of the allowed values"};
+const err19 = {instancePath:instancePath+"/payload_type",schemaPath:"#/properties/payload_type/enum",keyword:"enum",params:{allowedValues: schema381.properties.payload_type.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err19];
 }
@@ -32931,7 +33356,7 @@ vErrors.push(err20);
 errors++;
 }
 if(!(((((((data5 === "draft") || (data5 === "ready")) || (data5 === "pushed")) || (data5 === "received")) || (data5 === "failed")) || (data5 === "created")) || (data5 === "queued"))){
-const err21 = {instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema379.properties.status.enum},message:"must be equal to one of the allowed values"};
+const err21 = {instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema381.properties.status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err21];
 }
@@ -33034,7 +33459,7 @@ return errors === 0;
 validate190.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_diligenceRunState = validate191;
-const schema380 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/diligenceRunState.schema.json","title":"Diligence Run State","description":"Canonical diligence_run_state for active orchestration state. raw_zoned_footprint may hold active-run raw scrape text; it is not final report payload.","type":"object","required":["run_id","current_stage","source_mode","raw_zoned_footprint","stage_outputs","validation_status","errors","retry_state","ui_filters"],"additionalProperties":false,"properties":{"run_id":{"type":"string"},"current_stage":{"type":"string","enum":["collect","refine","stage_1","stage_2","stage_3","stage_4","stage_5","handoff","complete"]},"source_mode":{"type":"string","enum":["url","manual_urls","text","url_plus_text"]},"raw_zoned_footprint":{"type":"array","items":{"type":"object","required":["zone","source_url","raw_text"],"additionalProperties":false,"properties":{"zone":{"type":"string","enum":["mechanical","commercial","governance","context","manual_text"]},"source_url":{"type":"string"},"raw_text":{"type":"string"}}}},"stage_outputs":{"type":"object","additionalProperties":true},"validation_status":{"type":"string","enum":["pending","valid","invalid","warning"]},"errors":{"type":"array","items":{"type":"string"}},"retry_state":{"type":"object","additionalProperties":true},"ui_filters":{"type":"object","additionalProperties":true}}};
+const schema382 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/diligenceRunState.schema.json","title":"Diligence Run State","description":"Canonical diligence_run_state for active orchestration state. raw_zoned_footprint may hold active-run raw scrape text; it is not final report payload.","type":"object","required":["run_id","current_stage","source_mode","raw_zoned_footprint","stage_outputs","validation_status","errors","retry_state","ui_filters"],"additionalProperties":false,"properties":{"run_id":{"type":"string"},"current_stage":{"type":"string","enum":["collect","refine","stage_1","stage_2","stage_3","stage_4","stage_5","handoff","complete"]},"source_mode":{"type":"string","enum":["url","manual_urls","text","url_plus_text"]},"raw_zoned_footprint":{"type":"array","items":{"type":"object","required":["zone","source_url","raw_text"],"additionalProperties":false,"properties":{"zone":{"type":"string","enum":["mechanical","commercial","governance","context","manual_text"]},"source_url":{"type":"string"},"raw_text":{"type":"string"}}}},"stage_outputs":{"type":"object","additionalProperties":true},"validation_status":{"type":"string","enum":["pending","valid","invalid","warning"]},"errors":{"type":"array","items":{"type":"string"}},"retry_state":{"type":"object","additionalProperties":true},"ui_filters":{"type":"object","additionalProperties":true}}};
 
 function validate191(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 /*# sourceURL="https://interface-sandbox.local/schemas/diligenceRunState.schema.json" */;
@@ -33139,7 +33564,7 @@ vErrors.push(err8);
 errors++;
 }
 for(const key0 in data){
-if(!(func1.call(schema380.properties, key0))){
+if(!(func1.call(schema382.properties, key0))){
 const err9 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err9];
@@ -33175,7 +33600,7 @@ vErrors.push(err11);
 errors++;
 }
 if(!(((((((((data1 === "collect") || (data1 === "refine")) || (data1 === "stage_1")) || (data1 === "stage_2")) || (data1 === "stage_3")) || (data1 === "stage_4")) || (data1 === "stage_5")) || (data1 === "handoff")) || (data1 === "complete"))){
-const err12 = {instancePath:instancePath+"/current_stage",schemaPath:"#/properties/current_stage/enum",keyword:"enum",params:{allowedValues: schema380.properties.current_stage.enum},message:"must be equal to one of the allowed values"};
+const err12 = {instancePath:instancePath+"/current_stage",schemaPath:"#/properties/current_stage/enum",keyword:"enum",params:{allowedValues: schema382.properties.current_stage.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err12];
 }
@@ -33198,7 +33623,7 @@ vErrors.push(err13);
 errors++;
 }
 if(!((((data2 === "url") || (data2 === "manual_urls")) || (data2 === "text")) || (data2 === "url_plus_text"))){
-const err14 = {instancePath:instancePath+"/source_mode",schemaPath:"#/properties/source_mode/enum",keyword:"enum",params:{allowedValues: schema380.properties.source_mode.enum},message:"must be equal to one of the allowed values"};
+const err14 = {instancePath:instancePath+"/source_mode",schemaPath:"#/properties/source_mode/enum",keyword:"enum",params:{allowedValues: schema382.properties.source_mode.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err14];
 }
@@ -33270,7 +33695,7 @@ vErrors.push(err19);
 errors++;
 }
 if(!(((((data5 === "mechanical") || (data5 === "commercial")) || (data5 === "governance")) || (data5 === "context")) || (data5 === "manual_text"))){
-const err20 = {instancePath:instancePath+"/raw_zoned_footprint/" + i0+"/zone",schemaPath:"#/properties/raw_zoned_footprint/items/properties/zone/enum",keyword:"enum",params:{allowedValues: schema380.properties.raw_zoned_footprint.items.properties.zone.enum},message:"must be equal to one of the allowed values"};
+const err20 = {instancePath:instancePath+"/raw_zoned_footprint/" + i0+"/zone",schemaPath:"#/properties/raw_zoned_footprint/items/properties/zone/enum",keyword:"enum",params:{allowedValues: schema382.properties.raw_zoned_footprint.items.properties.zone.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err20];
 }
@@ -33356,7 +33781,7 @@ vErrors.push(err26);
 errors++;
 }
 if(!((((data9 === "pending") || (data9 === "valid")) || (data9 === "invalid")) || (data9 === "warning"))){
-const err27 = {instancePath:instancePath+"/validation_status",schemaPath:"#/properties/validation_status/enum",keyword:"enum",params:{allowedValues: schema380.properties.validation_status.enum},message:"must be equal to one of the allowed values"};
+const err27 = {instancePath:instancePath+"/validation_status",schemaPath:"#/properties/validation_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.validation_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err27];
 }
@@ -33441,8 +33866,8 @@ return errors === 0;
 validate191.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_schemaManifest = validate192;
-const schema381 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/schemaManifest.schema.json","title":"Schema Manifest","description":"Canonical schema_manifest mapping logical schema names to file paths and governing contracts.","type":"object","required":["version","generated_from","schemas","canonical_objects","notes"],"additionalProperties":false,"properties":{"version":{"type":"string"},"generated_from":{"type":"array","items":{"type":"string"}},"schemas":{"type":"object","required":["source_bundle","target_feature_profile","stage6_review","registry_evaluation_ledger","operator_challenge_gate","diligence_compiler_output","assembly_handoff_payload","vault_payload","handoff_envelope","diligence_run_state"],"additionalProperties":false,"properties":{"source_bundle":{"$ref":"#/$defs/schemaEntry"},"target_feature_profile":{"$ref":"#/$defs/schemaEntry"},"stage6_review":{"$ref":"#/$defs/schemaEntry"},"registry_evaluation_ledger":{"$ref":"#/$defs/schemaEntry"},"operator_challenge_gate":{"$ref":"#/$defs/schemaEntry"},"diligence_compiler_output":{"$ref":"#/$defs/schemaEntry"},"assembly_handoff_payload":{"$ref":"#/$defs/schemaEntry"},"vault_payload":{"$ref":"#/$defs/schemaEntry"},"handoff_envelope":{"$ref":"#/$defs/schemaEntry"},"diligence_run_state":{"$ref":"#/$defs/schemaEntry"},"delivery_state":{"$ref":"#/$defs/schemaEntry"},"maintenance_run":{"$ref":"#/$defs/schemaEntry"}}},"canonical_objects":{"type":"array","items":{"type":"string"}},"notes":{"type":"array","items":{"type":"string"}}},"$defs":{"schemaEntry":{"type":"object","required":["path","canonical_object","phase_status"],"additionalProperties":false,"properties":{"path":{"type":"string"},"canonical_object":{"type":"string"},"phase_status":{"type":"string","enum":["active","deferred","downstream"]}}}}};
-const schema382 = {"type":"object","required":["path","canonical_object","phase_status"],"additionalProperties":false,"properties":{"path":{"type":"string"},"canonical_object":{"type":"string"},"phase_status":{"type":"string","enum":["active","deferred","downstream"]}}};
+const schema383 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://interface-sandbox.local/schemas/schemaManifest.schema.json","title":"Schema Manifest","description":"Canonical schema_manifest mapping logical schema names to file paths and governing contracts.","type":"object","required":["version","generated_from","schemas","canonical_objects","notes"],"additionalProperties":false,"properties":{"version":{"type":"string"},"generated_from":{"type":"array","items":{"type":"string"}},"schemas":{"type":"object","required":["source_bundle","target_feature_profile","stage6_review","registry_evaluation_ledger","operator_challenge_gate","diligence_compiler_output","assembly_handoff_payload","vault_payload","handoff_envelope","diligence_run_state"],"additionalProperties":false,"properties":{"source_bundle":{"$ref":"#/$defs/schemaEntry"},"target_feature_profile":{"$ref":"#/$defs/schemaEntry"},"stage6_review":{"$ref":"#/$defs/schemaEntry"},"registry_evaluation_ledger":{"$ref":"#/$defs/schemaEntry"},"operator_challenge_gate":{"$ref":"#/$defs/schemaEntry"},"diligence_compiler_output":{"$ref":"#/$defs/schemaEntry"},"assembly_handoff_payload":{"$ref":"#/$defs/schemaEntry"},"vault_payload":{"$ref":"#/$defs/schemaEntry"},"handoff_envelope":{"$ref":"#/$defs/schemaEntry"},"diligence_run_state":{"$ref":"#/$defs/schemaEntry"},"delivery_state":{"$ref":"#/$defs/schemaEntry"},"maintenance_run":{"$ref":"#/$defs/schemaEntry"}}},"canonical_objects":{"type":"array","items":{"type":"string"}},"notes":{"type":"array","items":{"type":"string"}}},"$defs":{"schemaEntry":{"type":"object","required":["path","canonical_object","phase_status"],"additionalProperties":false,"properties":{"path":{"type":"string"},"canonical_object":{"type":"string"},"phase_status":{"type":"string","enum":["active","deferred","downstream"]}}}}};
+const schema384 = {"type":"object","required":["path","canonical_object","phase_status"],"additionalProperties":false,"properties":{"path":{"type":"string"},"canonical_object":{"type":"string"},"phase_status":{"type":"string","enum":["active","deferred","downstream"]}}};
 
 function validate192(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 /*# sourceURL="https://interface-sandbox.local/schemas/schemaManifest.schema.json" */;
@@ -33662,7 +34087,7 @@ vErrors.push(err18);
 errors++;
 }
 for(const key1 in data3){
-if(!(func1.call(schema381.properties.schemas.properties, key1))){
+if(!(func1.call(schema383.properties.schemas.properties, key1))){
 const err19 = {instancePath:instancePath+"/schemas",schemaPath:"#/properties/schemas/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key1},message:"must NOT have additional properties"};
 if(vErrors === null){
 vErrors = [err19];
@@ -33755,7 +34180,7 @@ vErrors.push(err26);
 errors++;
 }
 if(!(((data7 === "active") || (data7 === "deferred")) || (data7 === "downstream"))){
-const err27 = {instancePath:instancePath+"/schemas/source_bundle/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err27 = {instancePath:instancePath+"/schemas/source_bundle/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err27];
 }
@@ -33859,7 +34284,7 @@ vErrors.push(err35);
 errors++;
 }
 if(!(((data11 === "active") || (data11 === "deferred")) || (data11 === "downstream"))){
-const err36 = {instancePath:instancePath+"/schemas/target_feature_profile/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err36 = {instancePath:instancePath+"/schemas/target_feature_profile/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err36];
 }
@@ -33963,7 +34388,7 @@ vErrors.push(err44);
 errors++;
 }
 if(!(((data15 === "active") || (data15 === "deferred")) || (data15 === "downstream"))){
-const err45 = {instancePath:instancePath+"/schemas/stage6_review/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err45 = {instancePath:instancePath+"/schemas/stage6_review/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err45];
 }
@@ -34067,7 +34492,7 @@ vErrors.push(err53);
 errors++;
 }
 if(!(((data19 === "active") || (data19 === "deferred")) || (data19 === "downstream"))){
-const err54 = {instancePath:instancePath+"/schemas/registry_evaluation_ledger/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err54 = {instancePath:instancePath+"/schemas/registry_evaluation_ledger/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err54];
 }
@@ -34171,7 +34596,7 @@ vErrors.push(err62);
 errors++;
 }
 if(!(((data23 === "active") || (data23 === "deferred")) || (data23 === "downstream"))){
-const err63 = {instancePath:instancePath+"/schemas/operator_challenge_gate/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err63 = {instancePath:instancePath+"/schemas/operator_challenge_gate/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err63];
 }
@@ -34275,7 +34700,7 @@ vErrors.push(err71);
 errors++;
 }
 if(!(((data27 === "active") || (data27 === "deferred")) || (data27 === "downstream"))){
-const err72 = {instancePath:instancePath+"/schemas/diligence_compiler_output/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err72 = {instancePath:instancePath+"/schemas/diligence_compiler_output/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err72];
 }
@@ -34379,7 +34804,7 @@ vErrors.push(err80);
 errors++;
 }
 if(!(((data31 === "active") || (data31 === "deferred")) || (data31 === "downstream"))){
-const err81 = {instancePath:instancePath+"/schemas/assembly_handoff_payload/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err81 = {instancePath:instancePath+"/schemas/assembly_handoff_payload/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err81];
 }
@@ -34483,7 +34908,7 @@ vErrors.push(err89);
 errors++;
 }
 if(!(((data35 === "active") || (data35 === "deferred")) || (data35 === "downstream"))){
-const err90 = {instancePath:instancePath+"/schemas/vault_payload/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err90 = {instancePath:instancePath+"/schemas/vault_payload/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err90];
 }
@@ -34587,7 +35012,7 @@ vErrors.push(err98);
 errors++;
 }
 if(!(((data39 === "active") || (data39 === "deferred")) || (data39 === "downstream"))){
-const err99 = {instancePath:instancePath+"/schemas/handoff_envelope/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err99 = {instancePath:instancePath+"/schemas/handoff_envelope/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err99];
 }
@@ -34691,7 +35116,7 @@ vErrors.push(err107);
 errors++;
 }
 if(!(((data43 === "active") || (data43 === "deferred")) || (data43 === "downstream"))){
-const err108 = {instancePath:instancePath+"/schemas/diligence_run_state/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err108 = {instancePath:instancePath+"/schemas/diligence_run_state/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err108];
 }
@@ -34795,7 +35220,7 @@ vErrors.push(err116);
 errors++;
 }
 if(!(((data47 === "active") || (data47 === "deferred")) || (data47 === "downstream"))){
-const err117 = {instancePath:instancePath+"/schemas/delivery_state/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err117 = {instancePath:instancePath+"/schemas/delivery_state/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err117];
 }
@@ -34899,7 +35324,7 @@ vErrors.push(err125);
 errors++;
 }
 if(!(((data51 === "active") || (data51 === "deferred")) || (data51 === "downstream"))){
-const err126 = {instancePath:instancePath+"/schemas/maintenance_run/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema382.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
+const err126 = {instancePath:instancePath+"/schemas/maintenance_run/phase_status",schemaPath:"#/$defs/schemaEntry/properties/phase_status/enum",keyword:"enum",params:{allowedValues: schema384.properties.phase_status.enum},message:"must be equal to one of the allowed values"};
 if(vErrors === null){
 vErrors = [err126];
 }
@@ -35006,7 +35431,7 @@ return errors === 0;
 validate192.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
 
 export const validate_deliveryState = validate193;
-const schema394 = {"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Delivery State","type":"object","required":["matter_id","company_name","draft_bundle_status","crm_status","counsel_review_required","client_delivery_status","documents"],"properties":{"matter_id":{"type":"string"},"company_name":{"type":"string"},"draft_bundle_status":{"type":"string"},"crm_status":{"type":"string"},"counsel_review_required":{"type":"boolean"},"client_delivery_status":{"type":"string"},"documents":{"type":"array"}}};
+const schema396 = {"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Delivery State","type":"object","required":["matter_id","company_name","draft_bundle_status","crm_status","counsel_review_required","client_delivery_status","documents"],"properties":{"matter_id":{"type":"string"},"company_name":{"type":"string"},"draft_bundle_status":{"type":"string"},"crm_status":{"type":"string"},"counsel_review_required":{"type":"boolean"},"client_delivery_status":{"type":"string"},"documents":{"type":"array"}}};
 
 function validate193(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -35190,7 +35615,7 @@ return errors === 0;
 validate193.evaluated = {"props":{"matter_id":true,"company_name":true,"draft_bundle_status":true,"crm_status":true,"counsel_review_required":true,"client_delivery_status":true,"documents":true},"dynamicProps":false,"dynamicItems":false};
 
 export const validate_maintenanceRun = validate194;
-const schema395 = {"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Maintenance Run","type":"object","required":["new_threat","coverage","recommended_update_route"],"properties":{"new_threat":{"type":"object"},"coverage":{"type":"object","required":["covered","upcoming","exposed"],"properties":{"covered":{"type":"array"},"upcoming":{"type":"array"},"exposed":{"type":"array"}}},"recommended_update_route":{"type":"array"}}};
+const schema397 = {"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Maintenance Run","type":"object","required":["new_threat","coverage","recommended_update_route"],"properties":{"new_threat":{"type":"object"},"coverage":{"type":"object","required":["covered","upcoming","exposed"],"properties":{"covered":{"type":"array"},"upcoming":{"type":"array"},"exposed":{"type":"array"}}},"recommended_update_route":{"type":"array"}}};
 
 function validate194(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
 let vErrors = null;
@@ -35358,7 +35783,7 @@ validate194.evaluated = {"props":{"new_threat":true,"coverage":true,"recommended
 
 // Runtime lookup metadata generated by scripts/generate-diligence-validator-bundle.mjs.
 export const DILIGENCE_VALIDATOR_META = Object.freeze({
-  "generated_at": "2026-06-14T23:09:51.459Z",
+  "generated_at": "2026-06-15T17:31:40.594Z",
   "schema_key_to_export": {
     "sourceBundle": "validate_sourceBundle",
     "companyProfile": "validate_companyProfile",

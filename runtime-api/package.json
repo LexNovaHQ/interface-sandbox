@@ -15,6 +15,7 @@
     "test:stage4-stage5-guardrails": "node src/diligence/adapters/sourceBundleAdapter.v2.test.mjs && node src/diligence/adapters/targetFeatureProfileInputAdapter.test.mjs && node src/diligence/targetFeatureProfileSchemaRepair.test.mjs && node src/diligence/stageSchemaValidatorLocked.test.mjs && node src/diligence/targetFeatureProfileGuardrails.test.mjs && node src/diligence/evidenceJunction.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "audit:full-live-runtime": "node scripts/e2e-full-live-runtime-audit.mjs",
+    "audit:full-live-runtime:6b": "node scripts/e2e-full-live-runtime-audit.mjs",
     "audit:stage5:substage-node": "node scripts/audit-stage5-substage-node.mjs",
     "e2e:stage2": "node scripts/e2e-stage2-evidence-refiner.mjs",
     "test:stage3": "node src/diligence/evidenceJunction.test.mjs",
@@ -40,11 +41,14 @@
     "e2e:stage4": "node scripts/e2e-stage4-target-legal-v3.mjs",
     "audit:product-sources": "node scripts/audit-product-source-discovery.mjs"
   },
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@google/genai": "^1.33.0",
     "ajv": "^8.20.0",
     "cors": "^2.8.5",
+    "express": "^4.22.2",
     "helmet": "^8.1.5",
     "pdf-parse": "^1.1.1"
   }

@@ -23,13 +23,18 @@ on:
         required: true
         default: "30"
         type: string
+      audit_stop_stage:
+        description: "Audit stop stage. Default runs Stage 1 through Stage 6B only."
+        required: true
+        default: "6b"
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   full-live-runtime-audit:
-    name: Full live runtime audit
+    name: Full live runtime audit through Stage 6B
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -66,91 +71,45 @@ jobs:
         working-directory: runtime-api
         run: npm run check
 
-      - name: Clear full live audit artifacts
-        run: rm -rf runtime-api/.runtime-e2e-cache/full-runtime-audit && mkdir -p runtime-api/.runtime-e2e-cache/full-runtime-audit
+      - name: Clear audit artifacts
+        run: |
+          set -euo pipefail
+          rm -rf runtime-api/.runtime-e2e-cache/full-runtime-audit
+          rm -rf runtime-api/.runtime-e2e-cache/staged-live-runtime-audit
+          rm -rf runtime-api/.runtime-e2e-cache/stage5*
+          rm -rf runtime-api/.runtime-e2e-cache/stage6*
+          rm -rf runtime-api/source-scout-output
+          rm -rf runtime-api/step2-output
+          rm -rf runtime-api/step5-quality-audit
+          mkdir -p runtime-api/.runtime-e2e-cache/full-runtime-audit
 
-      - name: Smoke existing runtime
+      - name: Smoke existing/deployed runtime
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
         run: npm run smoke:runtime
 
-      - name: Stage 5 audit input preparation
+      - name: Run Runtime API Full Live Audit through Stage 6B
         working-directory: runtime-api
         env:
           RUNTIME_URL: ${{ inputs.runtime_url }}
           RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
           AUDIT_TARGET_URL: ${{ inputs.target_url }}
           AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
-          STAGE5_AUDIT_MODE: prepare
-          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
-          GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
-          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
-          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
-          GEMINI_REGISTRY_API_KEYS: ${{ secrets.GEMINI_REGISTRY_API_KEYS }}
-          GEMINI_SEARCH_MODEL_SEQUENCE: ${{ secrets.GEMINI_SEARCH_MODEL_SEQUENCE }}
-          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
-          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
-          GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
-          GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
-        run: npm run audit:stage5:substage-node
-
-      - name: Stage 5A product function extraction
-        working-directory: runtime-api
-        env:
-          STAGE5_AUDIT_MODE: 5a
-          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
-          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
-          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
-          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
-          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
-        run: npm run audit:stage5:substage-node
-
-      - name: Stage 5B archetype and surface tagging
-        working-directory: runtime-api
-        env:
-          STAGE5_AUDIT_MODE: 5b
-          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
-          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
-          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
-          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
-          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
-        run: npm run audit:stage5:substage-node
-
-      - name: Stage 5C feature inventory canonicalization
-        working-directory: runtime-api
-        env:
-          STAGE5_AUDIT_MODE: 5c
-          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
-        run: npm run audit:stage5:substage-node
-
-      - name: Stage 5D feature data touchpoints
-        working-directory: runtime-api
-        env:
-          STAGE5_AUDIT_MODE: 5d
-          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
-          GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
-          GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
-          GEMINI_REASONING_MODEL_SEQUENCE: ${{ secrets.GEMINI_REASONING_MODEL_SEQUENCE }}
-          GEMINI_JSON_MODEL_SEQUENCE: ${{ secrets.GEMINI_JSON_MODEL_SEQUENCE }}
-        run: npm run audit:stage5:substage-node
-
-      - name: Stage 5E target feature profile assembly
-        working-directory: runtime-api
-        env:
-          STAGE5_AUDIT_MODE: 5e
-          STAGE5_AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
-        run: npm run audit:stage5:substage-node
-
-      - name: Run full live runtime audit
-        working-directory: runtime-api
-        env:
-          RUNTIME_URL: ${{ inputs.runtime_url }}
-          RUNTIME_ACCESS_TOKEN: ${{ secrets.RUNTIME_ACCESS_TOKEN }}
-          AUDIT_TARGET_URL: ${{ inputs.target_url }}
-          AUDIT_COMPANY_NAME: ${{ inputs.company_name }}
+          AUDIT_STOP_STAGE: ${{ inputs.audit_stop_stage }}
           AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+          STAGE5A_BATCH2_ENABLED: "true"
+          STAGE5B_BATCH3_ENABLED: "true"
+          STAGE5C_BATCH4_ENABLED: "true"
+          STAGE5D_BATCH5_ENABLED: "true"
+          STAGE5E_BATCH6_ENABLED: "true"
+          STAGE5A_BATCH2_BLOCKING: "true"
+          STAGE5B_BATCH3_BLOCKING: "true"
+          STAGE5C_BATCH4_BLOCKING: "true"
+          STAGE5D_BATCH5_BLOCKING: "true"
+          STAGE5E_BATCH6_BLOCKING: "true"
+          STAGE5_LEGACY_FALLBACK: "false"
           GEMINI_SEARCH_API_KEYS: ${{ secrets.GEMINI_SEARCH_API_KEYS }}
           GEMINI_JSON_API_KEYS: ${{ secrets.GEMINI_JSON_API_KEYS }}
           GEMINI_REASONING_API_KEYS: ${{ secrets.GEMINI_REASONING_API_KEYS }}
@@ -168,14 +127,5 @@ jobs:
         with:
           name: full-live-runtime-audit-${{ github.run_id }}
           path: runtime-api/.runtime-e2e-cache/full-runtime-audit
-          if-no-files-found: error
-          retention-days: ${{ inputs.artifact_retention_days }}
-
-      - name: Upload Stage 5 substage audit artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stage5-substage-audit-${{ github.run_id }}
-          path: runtime-api/.runtime-e2e-cache/full-runtime-audit/stage5-substage-audit
           if-no-files-found: error
           retention-days: ${{ inputs.artifact_retention_days }}
