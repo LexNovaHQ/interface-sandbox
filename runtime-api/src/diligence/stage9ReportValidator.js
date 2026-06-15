@@ -9,11 +9,15 @@ const SRC_ID_KEY = `${T[0].toUpperCase()}${T.slice(1)}_ID`;
 const asArray = (value) => Array.isArray(value) ? value : [];
 const asText = (value) => String(value ?? "").trim();
 const hasValue = (value) => Array.isArray(value) || (value && typeof value === "object" ? Object.keys(value).length > 0 : asText(value).length > 0);
-function rowId(entry) { return asText(entry?.[ID_KEY] || entry?.[SRC_ID_KEY] || entry?.registry_reference || entry?.registry_row_id); }
+function rowId(entry) { return asText(entry?.[ID_KEY] || entry?.[SRC_ID_KEY] || entry?.registry_reference || entry?.registry_row_id || entry?.appendix_row_reference); }
 function duplicateValues(values) { const seen = new Set(); const dup = new Set(); for (const value of values) { if (seen.has(value)) dup.add(value); seen.add(value); } return [...dup]; }
 function countsByStatus(rows = []) { return rows.reduce((acc, entry) => { const status = asText(entry?.final_status || entry?.assessment_status || entry?.raw_assessment_status || "UNKNOWN"); acc[status] = (acc[status] || 0) + 1; return acc; }, {}); }
 function visibleObject(reportData = {}) { const clone = { ...reportData }; delete clone.forensic_ledger_appendix; return clone; }
 function visibleBody(reportData = {}) { return JSON.stringify(visibleObject(reportData)); }
+function effectiveLedgerFromStage9(stage9Report = {}) {
+  const appendix = stage9Report?.forensic_ledger_appendix || stage9Report?.report?.report_data?.forensic_ledger_appendix || {};
+  return asArray(appendix.full_registry_ledger || appendix.appendix_e_exposure_forensic_ledger || appendix.forensic_ledger);
+}
 function hasVisibleLeak(reportData = {}) {
   const body = visibleBody(reportData);
   const explicitTerms = ["legal_stack_review", "legal_stack_control_review", "document_stack_redline", "legal_stack_assessment", "registry_reference", ID_KEY, "entry_number", "trigger_if_result", "exclude_if_result", "condition_trigger_basis", "raw_registry_payload", "Hunter_Trigger", "TRIGGER_IF", "EXCLUDE_IF", "Operator Challenge", "Registry Evaluation"].filter((term) => body.includes(term));
@@ -86,7 +90,7 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
     }
     for (const staleKey of ["evidence_reviewed", "legal_risk_surface_map", "legal_stack_control_review", "executive_exposure_summary"]) if (Object.prototype.hasOwnProperty.call(reportData, staleKey)) errors.push(`legacy Stage 9 section key present: ${staleKey}`);
   }
-  const ledger = asArray(postChallengeLedger);
+  const ledger = asArray(postChallengeLedger).length ? asArray(postChallengeLedger) : effectiveLedgerFromStage9(stage9Report);
   const ledgerIds = ledger.map(rowId).filter(Boolean);
   const ledgerCounts = countsByStatus(ledger);
   const registryRows = asArray(registryRuntime?.threats);
@@ -104,7 +108,7 @@ export function validateStage9Report({ stage9Report, postChallengeLedger, regist
   if (missingFromAppendix.length) errors.push(`forensic appendix missing row reference(s): ${missingFromAppendix.join(", ")}`);
   if (unexpectedAppendix.length) errors.push(`forensic appendix has unexpected row reference(s): ${unexpectedAppendix.join(", ")}`);
   if (duplicateAppendix.length) errors.push(`forensic appendix has duplicate row reference(s): ${duplicateAppendix.join(", ")}`);
-  if (registryIds.length && ledgerIds.length !== registryIds.length) errors.push(`post-challenge ledger row count does not match registry count: ledger=${ledgerIds.length}, registry=${registryIds.length}`);
+  if (registryIds.length && ledgerIds.length !== registryIds.length) errors.push(`effective exposure ledger row count does not match registry count: ledger=${ledgerIds.length}, registry=${registryIds.length}`);
   const leaks = reportData ? hasVisibleLeak(reportData) : [];
   if (leaks.length) errors.push(`internal terminology leaked into visible Stage 9 v2 sections: ${leaks.join(", ")}`);
   const reportText = JSON.stringify(report || {});
