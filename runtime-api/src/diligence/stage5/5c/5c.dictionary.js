@@ -76,6 +76,25 @@ export const STAGE5C_DATA_SIGNAL_TERMS = Object.freeze({
   logging_or_telemetry_signal: Object.freeze(["log", "logs", "telemetry", "monitor", "analytics", "audit trail"])
 });
 
+export const STAGE5C_FIELD_DERIVATION_RULES = Object.freeze({
+  complete_feature_records: "One complete record per 5A admitted function; 5C cannot add or delete product functions.",
+  feature_identity: "feature_id/function_id/core_product fields are inherited from 5A and carried through 5B packets.",
+  archetype_surface_fields: "archetype_codes, archetype_labels, surface_tokens, and int_ext_classification are carried from 5B; 5C does not reclassify them.",
+  feature_mechanics: "actor_or_user, input_data, system_action, output_or_result are derived from 5A mechanics plus 5C DATA_MECHANICS_WINDOW text.",
+  data_touchpoints: "Derived feature-wise from DATA_MECHANICS_WINDOW text and controlled touchpoint/data-category vocabularies.",
+  data_provenance: "Derived from each touchpoint with storage/training/sharing/logging signals marked EVIDENCED only when text terms appear in cited windows; otherwise NOT_EVIDENCED.",
+  feature_unknowns: "Generated only for NOT_EVIDENCED controls that need Vault/client confirmation.",
+  supplemental_evidence_windows: "Created by 5C from full clean_text_lossless and handed to 5D; never summaries."
+});
+
+export const STAGE5C_REINVESTIGATION_RULES = Object.freeze({
+  missing_5a_output: "Ask 5A to re-run discovery before building feature records.",
+  missing_5b_tag: "Ask 5B to retag the feature from inherited and supplemental windows.",
+  missing_5c_supplemental_window: "Ask 5C to create broader DATA_MECHANICS_WINDOW source slices from clean_text_lossless.",
+  empty_feature_record: "Ask 5C to rebuild the feature record from 5A/5B windows and data-mechanics windows.",
+  metadata_or_index_detected: "Reject the field and request reinvestigation from source windows."
+});
+
 export const STAGE5C_DICTIONARY = Object.freeze({
   substage: "5C",
   output_version: STAGE5C_OUTPUT_VERSION,
@@ -88,5 +107,8 @@ export const STAGE5C_DICTIONARY = Object.freeze({
   data_subjects: STAGE5C_DATA_SUBJECTS,
   directions: STAGE5C_DIRECTIONS,
   explicitness: STAGE5C_EXPLICITNESS,
-  failure_reasons: STAGE5C_FAILURE_REASONS
+  failure_reasons: STAGE5C_FAILURE_REASONS,
+  data_signal_terms: STAGE5C_DATA_SIGNAL_TERMS,
+  field_derivation_rules: STAGE5C_FIELD_DERIVATION_RULES,
+  reinvestigation_rules: STAGE5C_REINVESTIGATION_RULES
 });
