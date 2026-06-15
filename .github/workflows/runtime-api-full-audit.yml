@@ -24,7 +24,7 @@ on:
         default: "30"
         type: string
       audit_stop_stage:
-        description: "Audit stop stage. Default runs through Stage 6B with canonical Stage 5 audit UI."
+        description: "Audit stop stage. Default runs through Stage 6B with canonical Stage 5 substage audit steps."
         required: true
         default: "6b"
         type: string
@@ -112,6 +112,34 @@ jobs:
           GEMINI_REGISTRY_MODEL_SEQUENCE: ${{ secrets.GEMINI_REGISTRY_MODEL_SEQUENCE }}
           GEMINI_FINAL_MODEL_SEQUENCE: ${{ secrets.GEMINI_FINAL_MODEL_SEQUENCE }}
         run: npm run audit:full-live-runtime
+
+      - name: Audit Stage 5A - Product Function Discovery
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage5-audit-substage.mjs 5a
+
+      - name: Audit Stage 5B - Archetype Surface Tagging
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage5-audit-substage.mjs 5b
+
+      - name: Audit Stage 5C - Complete Feature Record Builder
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage5-audit-substage.mjs 5c
+
+      - name: Audit Stage 5D - target_feature_profile Integrator
+        if: always()
+        working-directory: runtime-api
+        env:
+          AUDIT_OUTPUT_DIR: .runtime-e2e-cache/full-runtime-audit
+        run: node scripts/assert-stage5-audit-substage.mjs 5d
 
       - name: Publish Stage 5 canonical audit UI
         if: always()
