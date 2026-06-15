@@ -8,6 +8,7 @@ import { buildStage5TargetFeaturePackage } from "../diligence/stage5TargetFeatur
 import { runStage5ABatch2Pipeline } from "../diligence/stage5/stage5aPipelineConnector.js";
 import { runStage5BBatch3Pipeline } from "../diligence/stage5/stage5bPipelineConnector.js";
 import { runStage5CBatch4Pipeline } from "../diligence/stage5/stage5cPipelineConnector.js";
+import { runStage5DBatch5Pipeline } from "../diligence/stage5/stage5dPipelineConnector.js";
 import { runStage5MultiSubstageProfile } from "../diligence/stage5MultiSubstageRunner.js";
 import { runStage5ProductFamilyScopedProfile } from "../diligence/stage5ProductFamilyLiveRunner.js";
 import { appendReviewerDocumentSource, buildDocumentOnlySourceBundle } from "./reviewerDocumentSourceAdapter.js";
@@ -34,9 +35,7 @@ function collectSources(discovery) {
     seen.add(record.url);
     selected.push(record);
   };
-  for (const bucket of SOURCE_BUCKETS) {
-    for (const record of pools[bucket] || []) add(record);
-  }
+  for (const bucket of SOURCE_BUCKETS) for (const record of pools[bucket] || []) add(record);
   return selected;
 }
 
@@ -57,12 +56,7 @@ function stage4SourceRecords(sourceBundle, familyFilter = null) {
 function minimalCompanyProfile(targetInput = {}, mode = "document_text_only") {
   return {
     target_profile_version: "target_profile_v2",
-    identity: {
-      brand_name: targetInput.company_name || "Document review target",
-      legal_name: null,
-      domain: targetInput.primary_url || null,
-      website: targetInput.primary_url || null
-    },
+    identity: { brand_name: targetInput.company_name || "Document review target", legal_name: null, domain: targetInput.primary_url || null, website: targetInput.primary_url || null },
     jurisdiction: { headquarters: null, operating_markets: [], data_sovereignty_signature: "Not established from reviewed public evidence" },
     business_model: { company_type: "Not established from reviewed public evidence", revenue_model: null },
     market_context: { industry: "Not established from reviewed public evidence", customer_segments: [] },
@@ -101,17 +95,7 @@ export function normalizeInput(input = {}) {
     error.error_type = "BAD_REQUEST";
     throw error;
   }
-  return {
-    targetInput: {
-      primary_url: targetUrl,
-      company_name: companyName,
-      submitted_at: new Date().toISOString(),
-      live_review_input_mode: targetUrl && documentText ? "url_and_document_text" : (targetUrl ? "url_only" : "document_text_only")
-    },
-    targetUrl,
-    documentText,
-    documentLabel
-  };
+  return { targetInput: { primary_url: targetUrl, company_name: companyName, submitted_at: new Date().toISOString(), live_review_input_mode: targetUrl && documentText ? "url_and_document_text" : (targetUrl ? "url_only" : "document_text_only") }, targetUrl, documentText, documentLabel };
 }
 
 async function buildUrlEvidence({ targetInput, options, logs, runId, documentText, documentLabel }) {
@@ -136,13 +120,9 @@ async function buildUrlEvidence({ targetInput, options, logs, runId, documentTex
   if (!sources.length) throw new Error("Source discovery returned no capturable public sources.");
 
   logStage(logs, "source_capture", "running", { source_count: sources.length });
-  const capture = await captureSources(sources, {
-    timeout_ms: Number(options.capture_timeout_ms || process.env.LIVE_CAPTURE_TIMEOUT_MS || 24000),
-    max_fetch_bytes: Number(options.capture_max_bytes || process.env.LIVE_CAPTURE_MAX_BYTES || process.env.SOURCE_CAPTURE_MAX_BYTES || 30 * 1024 * 1024)
-  });
+  const capture = await captureSources(sources, { timeout_ms: Number(options.capture_timeout_ms || process.env.LIVE_CAPTURE_TIMEOUT_MS || 24000), max_fetch_bytes: Number(options.capture_max_bytes || process.env.LIVE_CAPTURE_MAX_BYTES || process.env.SOURCE_CAPTURE_MAX_BYTES || 30 * 1024 * 1024) });
   const captureResponse = { ok: true, capture };
   let sourceBundle = buildEvidenceRefinerInput({ targetInput, discoveryResponse, captureResponse, runId: `${runId}_source_bundle`, sourceMode: "live_review_url_capture" });
-
   let reviewerSource = null;
   if (documentText) {
     const appended = appendReviewerDocumentSource({ sourceBundle, documentText, documentLabel, targetInput });
@@ -167,6 +147,22 @@ export async function buildLiveEvidence({ targetInput, targetUrl, documentText, 
   return buildDocumentEvidence({ targetInput, documentText, documentLabel, runId, logs });
 }
 
+function batchMetrics(adapterResult = {}) {
+  return {
+    stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0,
+    stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0,
+    stage5b_batch3_feature_tag_count: adapterResult.stage5b_batch3?.stage5b_archetype_surface_tagging?.feature_tags?.length || 0,
+    stage5b_batch3_features_for_5c_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.feature_tags_for_5c?.length || 0,
+    stage5b_batch3_tagging_failure_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.tagging_failures?.length || 0,
+    stage5c_batch4_feature_inventory_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.feature_inventory?.length || 0,
+    stage5c_batch4_repair_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.canonicalization_repairs?.length || 0,
+    stage5c_batch4_true_unknown_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.true_unknowns?.length || 0,
+    stage5d_batch5_touchpoint_count: adapterResult.stage5d_batch5?.stage5d_data_touchpoint_package?.feature_data_touchpoints?.length || 0,
+    stage5d_batch5_data_provenance_seed_count: adapterResult.stage5d_batch5?.stage5d_data_touchpoint_package?.seeds_for_5e?.data_provenance_map_seed?.length || 0,
+    stage5d_batch5_unknown_category_count: adapterResult.stage5d_batch5?.stage5d_validation?.metrics?.unknown_category_count || 0
+  };
+}
+
 export async function buildProfiles({ targetInput, sourceBundle, evidenceJunction, mode, logs, runId, runStage }) {
   if (mode === "document_text_only") {
     logStage(logs, "company_profile", "skipped", { reason: "document_text_only_minimal_profile" });
@@ -185,14 +181,7 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
     evidence_junction_version: evidenceJunction.evidence_junction_version,
     target_profile_sources: targetProfileSources,
     company_profile_sources: companyProfileSources,
-    input_policy: {
-      target_profile_source_packet: true,
-      company_family_only: false,
-      product_feature_mapping_forbidden: true,
-      legal_review_forbidden: true,
-      registry_evaluation_forbidden: true,
-      outside_browsing_forbidden: true
-    }
+    input_policy: { target_profile_source_packet: true, company_family_only: false, product_feature_mapping_forbidden: true, legal_review_forbidden: true, registry_evaluation_forbidden: true, outside_browsing_forbidden: true }
   }, { pool: process.env.LIVE_COMPANY_POOL || process.env.STAGE4_COMPANY_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_COMPANY_MAX_OUTPUT_TOKENS || 4096), timeoutMs: Number(process.env.LIVE_COMPANY_TIMEOUT_MS || 60000) });
   const companyProfile = companyStage.company_profile;
   logStage(logs, "company_profile", "complete", { company_name: companyProfile?.identity?.brand_name || null, target_profile_sources: targetProfileSources.length, company_sources: companyProfileSources.length });
@@ -203,13 +192,7 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
     evidenceJunction,
     companyProfile,
     runId: `${runId}_stage5_input`,
-    budget: {
-      max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 120000),
-      max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 60000),
-      max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000),
-      prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000),
-      max_product_family_packets: Number(process.env.STAGE5_MAX_PRODUCT_FAMILY_PACKETS || 8)
-    }
+    budget: { max_input_chars: Number(process.env.STAGE5_MAX_INPUT_CHARS || 120000), max_estimated_tokens: Number(process.env.STAGE5_MAX_ESTIMATED_TOKENS || 60000), max_single_source_chars: Number(process.env.STAGE5_MAX_SINGLE_SOURCE_CHARS || 45000), prompt_overhead_tokens: Number(process.env.STAGE5_PROMPT_OVERHEAD_TOKENS || 30000), max_product_family_packets: Number(process.env.STAGE5_MAX_PRODUCT_FAMILY_PACKETS || 8) }
   });
   if (!adapterResult.ok) {
     const error = new Error(adapterResult.error || "Target Feature Profile input adapter failed");
@@ -222,97 +205,67 @@ export async function buildProfiles({ targetInput, sourceBundle, evidenceJunctio
     try {
       const stage5aBatch2 = await runStage5ABatch2Pipeline({ adapterResult, companyProfile, runGeminiPool, logs, logStage, runId });
       adapterResult.stage5a_batch2 = stage5aBatch2;
-      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") {
-        adapterResult.target_feature_profile_input.stage5a_batch2 = {
-          stage5a_product_function_mapping: stage5aBatch2.stage5a_product_function_mapping,
-          stage5a_feature_package: stage5aBatch2.stage5a_feature_package,
-          stage5a_validation: stage5aBatch2.stage5a_validation
-        };
-      }
+      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") adapterResult.target_feature_profile_input.stage5a_batch2 = { stage5a_product_function_mapping: stage5aBatch2.stage5a_product_function_mapping, stage5a_feature_package: stage5aBatch2.stage5a_feature_package, stage5a_validation: stage5aBatch2.stage5a_validation };
     } catch (error) {
       logStage(logs, "stage5a_product_function_mapping", "failed", { error: error?.message || String(error), status: error?.status || null });
       if (process.env.STAGE5A_BATCH2_BLOCKING !== "false") throw error;
     }
-  } else {
-    logStage(logs, "stage5a_product_function_mapping", "skipped", { reason: "STAGE5A_BATCH2_ENABLED=false" });
-  }
+  } else logStage(logs, "stage5a_product_function_mapping", "skipped", { reason: "STAGE5A_BATCH2_ENABLED=false" });
 
   if (process.env.STAGE5B_BATCH3_ENABLED !== "false") {
     try {
       const stage5bBatch3 = await runStage5BBatch3Pipeline({ adapterResult, runGeminiPool, logs, logStage, runId });
       adapterResult.stage5b_batch3 = stage5bBatch3;
-      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") {
-        adapterResult.target_feature_profile_input.stage5b_batch3 = {
-          stage5b_archetype_surface_tagging: stage5bBatch3.stage5b_archetype_surface_tagging,
-          stage5b_tag_package: stage5bBatch3.stage5b_tag_package,
-          stage5b_validation: stage5bBatch3.stage5b_validation
-        };
-      }
+      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") adapterResult.target_feature_profile_input.stage5b_batch3 = { stage5b_archetype_surface_tagging: stage5bBatch3.stage5b_archetype_surface_tagging, stage5b_tag_package: stage5bBatch3.stage5b_tag_package, stage5b_validation: stage5bBatch3.stage5b_validation };
     } catch (error) {
       logStage(logs, "stage5b_archetype_surface_tagging", "failed", { error: error?.message || String(error), status: error?.status || null });
       if (process.env.STAGE5B_BATCH3_BLOCKING !== "false") throw error;
     }
-  } else {
-    logStage(logs, "stage5b_archetype_surface_tagging", "skipped", { reason: "STAGE5B_BATCH3_ENABLED=false" });
-  }
+  } else logStage(logs, "stage5b_archetype_surface_tagging", "skipped", { reason: "STAGE5B_BATCH3_ENABLED=false" });
 
   if (process.env.STAGE5C_BATCH4_ENABLED !== "false") {
     try {
       const stage5cBatch4 = await runStage5CBatch4Pipeline({ adapterResult, runGeminiPool, logs, logStage, runId });
       adapterResult.stage5c_batch4 = stage5cBatch4;
-      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") {
-        adapterResult.target_feature_profile_input.stage5c_batch4 = {
-          stage5c_feature_inventory_package: stage5cBatch4.stage5c_feature_inventory_package,
-          stage5c_validation: stage5cBatch4.stage5c_validation,
-          stage5c_canonicalization_repair: stage5cBatch4.stage5c_canonicalization_repair
-        };
-      }
+      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") adapterResult.target_feature_profile_input.stage5c_batch4 = { stage5c_feature_inventory_package: stage5cBatch4.stage5c_feature_inventory_package, stage5c_validation: stage5cBatch4.stage5c_validation, stage5c_canonicalization_repair: stage5cBatch4.stage5c_canonicalization_repair };
     } catch (error) {
       logStage(logs, "stage5c_feature_inventory", "failed", { error: error?.message || String(error), status: error?.status || null });
       if (process.env.STAGE5C_BATCH4_BLOCKING !== "false") throw error;
     }
-  } else {
-    logStage(logs, "stage5c_feature_inventory", "skipped", { reason: "STAGE5C_BATCH4_ENABLED=false" });
-  }
+  } else logStage(logs, "stage5c_feature_inventory", "skipped", { reason: "STAGE5C_BATCH4_ENABLED=false" });
+
+  if (process.env.STAGE5D_BATCH5_ENABLED !== "false") {
+    try {
+      const stage5dBatch5 = await runStage5DBatch5Pipeline({ adapterResult, runGeminiPool, logs, logStage, runId });
+      adapterResult.stage5d_batch5 = stage5dBatch5;
+      if (adapterResult.target_feature_profile_input && typeof adapterResult.target_feature_profile_input === "object") adapterResult.target_feature_profile_input.stage5d_batch5 = { stage5d_data_touchpoint_package: stage5dBatch5.stage5d_data_touchpoint_package, stage5d_validation: stage5dBatch5.stage5d_validation, stage5d_data_touchpoints: stage5dBatch5.stage5d_data_touchpoints };
+    } catch (error) {
+      logStage(logs, "stage5d_data_touchpoints", "failed", { error: error?.message || String(error), status: error?.status || null });
+      if (process.env.STAGE5D_BATCH5_BLOCKING !== "false") throw error;
+    }
+  } else logStage(logs, "stage5d_data_touchpoints", "skipped", { reason: "STAGE5D_BATCH5_ENABLED=false" });
 
   try {
     const multiSubstageProfile = await runStage5MultiSubstageProfile({ adapterResult, logs, logStage });
     if (multiSubstageProfile) {
-      logStage(logs, "target_feature_profile", "complete", {
-        execution_mode: "stage5_multi_substage",
-        feature_count: multiSubstageProfile?.feature_inventory?.length || 0,
-        classification_status: multiSubstageProfile?.classification_quality?.status || null,
-        stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0,
-        stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0,
-        stage5b_batch3_feature_tag_count: adapterResult.stage5b_batch3?.stage5b_archetype_surface_tagging?.feature_tags?.length || 0,
-        stage5b_batch3_features_for_5c_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.feature_tags_for_5c?.length || 0,
-        stage5b_batch3_tagging_failure_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.tagging_failures?.length || 0,
-        stage5c_batch4_feature_inventory_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.feature_inventory?.length || 0,
-        stage5c_batch4_repair_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.canonicalization_repairs?.length || 0,
-        stage5c_batch4_true_unknown_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.true_unknowns?.length || 0,
-        deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0,
-        deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0
-      });
+      logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_multi_substage", feature_count: multiSubstageProfile?.feature_inventory?.length || 0, classification_status: multiSubstageProfile?.classification_quality?.status || null, ...batchMetrics(adapterResult), deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
       return { companyProfile, targetFeatureProfile: multiSubstageProfile };
     }
   } catch (error) {
-    logStage(logs, "target_feature_profile", "multi_substage_failed", {
-      error: error?.message || String(error),
-      validation_error_count: error?.validation_errors?.length || 0
-    });
+    logStage(logs, "target_feature_profile", "multi_substage_failed", { error: error?.message || String(error), validation_error_count: error?.validation_errors?.length || 0 });
     if (process.env.STAGE5_LEGACY_FALLBACK !== "true") throw error;
   }
 
   if (process.env.STAGE5_LEGACY_FALLBACK === "true") {
     const familyScopedProfile = await runStage5ProductFamilyScopedProfile({ adapterResult, runStage, logs, logStage });
     if (familyScopedProfile) {
-      logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification_legacy_fallback", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0, stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0, stage5b_batch3_feature_tag_count: adapterResult.stage5b_batch3?.stage5b_archetype_surface_tagging?.feature_tags?.length || 0, stage5b_batch3_features_for_5c_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.feature_tags_for_5c?.length || 0, stage5b_batch3_tagging_failure_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.tagging_failures?.length || 0, stage5c_batch4_feature_inventory_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.feature_inventory?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+      logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_product_family_scoped_lossless_classification_legacy_fallback", feature_count: familyScopedProfile?.feature_inventory?.length || 0, classification_status: familyScopedProfile?.classification_quality?.status || null, ...batchMetrics(adapterResult), deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
       return { companyProfile, targetFeatureProfile: familyScopedProfile };
     }
 
     const featureStage = await runStage("target_feature_profile", adapterResult.target_feature_profile_input, { pool: process.env.LIVE_FEATURE_POOL || process.env.STAGE5_FEATURE_POOL || "reasoning", maxOutputTokens: Number(process.env.LIVE_FEATURE_MAX_OUTPUT_TOKENS || 8192), timeoutMs: Number(process.env.LIVE_FEATURE_TIMEOUT_MS || 90000) });
     const targetFeatureProfile = featureStage.target_feature_profile;
-    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_legacy_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, stage5a_batch2_function_count: adapterResult.stage5a_batch2?.stage5a_product_function_mapping?.product_function_map?.length || 0, stage5a_batch2_features_for_5b_count: adapterResult.stage5a_batch2?.stage5a_feature_package?.features_for_5b?.length || 0, stage5b_batch3_feature_tag_count: adapterResult.stage5b_batch3?.stage5b_archetype_surface_tagging?.feature_tags?.length || 0, stage5b_batch3_features_for_5c_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.feature_tags_for_5c?.length || 0, stage5b_batch3_tagging_failure_count: adapterResult.stage5b_batch3?.stage5b_tag_package?.tagging_failures?.length || 0, stage5c_batch4_feature_inventory_count: adapterResult.stage5c_batch4?.stage5c_feature_inventory_package?.feature_inventory?.length || 0, product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
+    logStage(logs, "target_feature_profile", "complete", { execution_mode: "stage5_single_packet_legacy_fallback", feature_count: targetFeatureProfile?.feature_inventory?.length || 0, stage5_feature_discovery_count: featureStage.stage5_feature_discovery?.discovered_features?.length || 0, ...batchMetrics(adapterResult), product_family_discovery_source_count: adapterResult.product_family_discovery_sources?.length || 0, product_family_primary_source_count: adapterResult.product_family_primary_sources?.length || 0, product_family_secondary_source_count: adapterResult.product_family_secondary_sources?.length || 0, product_family_supporting_source_count: adapterResult.product_family_supporting_sources?.length || 0, product_family_duplicate_source_count: adapterResult.product_family_duplicate_sources?.length || 0, product_family_non_feature_context_count: adapterResult.product_family_non_feature_context_sources?.length || 0, deterministic_cluster_count: adapterResult.stage5_candidate_clusters?.length || 0, deterministic_candidate_count: adapterResult.target_feature_candidate_index?.candidate_count || 0 });
     return { companyProfile, targetFeatureProfile };
   }
 
