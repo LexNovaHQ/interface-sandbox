@@ -6,30 +6,48 @@ import { runGeminiPool } from "../gemini/geminiPool.js";
 import { validateStage6ReviewGuardrail } from "./guardrails/stage6ReviewGuardrail.js";
 import { formatSchemaErrors, validateDiligenceStageOutput } from "./stageSchemaValidator.js";
 import { buildStage6BDataProvenance } from "./stage6bDataProvenanceMerge.js";
+import { finalizeStage6BDataProvenance } from "./stage6bDataProvenanceFinalizer.js";
 import { buildStage6BSemanticPacket } from "./stage6bSemanticPacketBuilder.js";
 import { normalizeStage5FeatureProfile } from "./stage6bDataProvenanceBuilder.js";
 import { normalizeStage6BDataProvenanceClassification } from "./stage6bDataProvenanceNormalizer.js";
+import { buildTargetDataProvenanceProfile } from "./stage6bTargetDataProvenanceProfile.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const ACTIVE_STAGE6B_PROMPT_PATH = path.resolve(REPO_ROOT, "functions/_prompts/diligence-v2/03B_DATA_PROVENANCE.prompt.md");
+const STAGE6B_FIELD_DERIVATION_PATH = path.resolve(REPO_ROOT, "docs/contracts/STAGE6B_FIELD_DERIVATION_INSTRUCTIONS_v1.md");
 
 function asArray(value) { return Array.isArray(value) ? value : []; }
+function asObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
 
 function readDefaultSemanticPrompt() {
   try {
     const sourcePrompt = fs.readFileSync(ACTIVE_STAGE6B_PROMPT_PATH, "utf8").trim();
     if (sourcePrompt) return sourcePrompt;
-  } catch {
-    // Fall back to generated bundle when source prompts are unavailable in a deployed package.
-  }
+  } catch {}
   return DILIGENCE_PROMPT_BUNDLE.prompts?.stage6b_data_provenance?.text || "";
+}
+
+function readStage6BDerivationInstructions() {
+  try {
+    const text = fs.readFileSync(STAGE6B_FIELD_DERIVATION_PATH, "utf8").trim();
+    return text ? `---STAGE6B_FIELD_DERIVATION_INSTRUCTIONS_V1---\n${text}` : "";
+  } catch {
+    return "";
+  }
+}
+
+function withStage6BDerivationInstructions(promptText = "") {
+  const base = String(promptText || "").trim();
+  const derivation = readStage6BDerivationInstructions();
+  if (!derivation || base.includes("STAGE6B_FIELD_DERIVATION_INSTRUCTIONS_V1")) return base;
+  return [base, "", derivation].filter(Boolean).join("\n");
 }
 
 function buildSemanticPrompt(promptText, packet) {
   return [
-    String(promptText || "").trim(),
+    withStage6BDerivationInstructions(promptText),
     "",
     "---CANONICAL_STAGE_6B_SEMANTIC_PACKET---",
     JSON.stringify(packet, null, 2),
@@ -78,7 +96,9 @@ function packetSummaryFromPacket(packet) {
     data_flow_seed_count: packet.data_flow_seed.length,
     feature_ref_count: packet.feature_refs.length,
     provenance_ref_count: packet.provenance_refs.length,
-    source_ref_count: packet.source_refs.length
+    source_ref_count: packet.source_refs.length,
+    legal_governance_lossless_source_count: packet.legal_governance_lossless_sources?.length || 0,
+    legal_unit_ref_count: packet.stage6a_legal_cartography_refs?.legal_unit_source_locator_index?.length || 0
   };
 }
 
@@ -91,6 +111,15 @@ function validateFinalStage6B(stage6Review, input = {}, semanticModelAttempted =
   const guardrail = validateStage6ReviewGuardrail(stage6Review, { input, stageId: "stage6b_data_provenance", semanticModelAttempted });
   if (!guardrail.ok) return { ok: false, error_type: "STAGE6_GUARDRAIL_VALIDATION_ERROR", error: "Stage 6B Data Provenance failed canonical Stage 6 guardrails.", validation, guardrail, error_summary: formatSchemaErrors(guardrail.errors) };
   return { ok: true, validation, guardrail };
+}
+
+function buildTargetDataProfile(stage6Review, input, normalized = null) {
+  return buildTargetDataProvenanceProfile({
+    targetFeatureProfile: input.target_feature_profile,
+    stage6bReview: stage6Review,
+    legalDocumentCartography: input.legal_document_cartography || input.stage6a_review?.legal_document_cartography || {},
+    normalizedClassification: normalized
+  });
 }
 
 export async function runStage6BDataProvenanceClassification({ input = {}, promptText = "", env = process.env, options = {} } = {}) {
@@ -114,9 +143,12 @@ export async function runStage6BDataProvenanceClassification({ input = {}, promp
   if (!runResult.ok) return { ok: false, error_type: runResult.error_type || "STAGE6B_SEMANTIC_MODEL_FAILED", error: runResult.error || "Stage 6B semantic model call failed.", packet_summary: packetSummary, model_metadata: publicModelMetadata(runResult) };
   const rawClassification = runResult.json?.stage6_semantic_classification || runResult.json;
   const normalized = normalizeStage6BDataProvenanceClassification(rawClassification, packet);
-  const stage6Review = buildStage6BDataProvenance(input, { normalized_semantic_classification: normalized.classification });
+  const built = buildStage6BDataProvenance(input, { normalized_semantic_classification: normalized.classification });
+  const finalized = finalizeStage6BDataProvenance(built, input);
+  const stage6Review = finalized.stage6_review;
+  const targetDataProvenanceProfile = buildTargetDataProfile(stage6Review, input, normalized.classification);
   const finalValidation = validateFinalStage6B(stage6Review, input, true);
-  if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail), packet_summary: packetSummary, normalized_semantic_classification: normalized.classification, semantic_classification_repairs: normalized.repairs, model_metadata: publicModelMetadata(runResult) };
+  if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, target_data_provenance_profile: targetDataProvenanceProfile, legal_governance_prefill: finalized.legal_governance_prefill, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail), packet_summary: packetSummary, normalized_semantic_classification: normalized.classification, semantic_classification_repairs: normalized.repairs, model_metadata: publicModelMetadata(runResult) };
   return {
     ok: true,
     semantic_packet_version: packet.semantic_packet_version,
@@ -124,6 +156,8 @@ export async function runStage6BDataProvenanceClassification({ input = {}, promp
     normalized_semantic_classification: normalized.classification,
     semantic_classification_repairs: normalized.repairs,
     stage6_review: stage6Review,
+    target_data_provenance_profile: targetDataProvenanceProfile,
+    legal_governance_prefill: finalized.legal_governance_prefill,
     stage6_guardrail: finalValidation.guardrail,
     packet_summary: packetSummary,
     stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail),
@@ -132,14 +166,22 @@ export async function runStage6BDataProvenanceClassification({ input = {}, promp
   };
 }
 
-export async function runStage6BDataProvenance({ source_bundle, target_profile, company_profile, target_feature_profile, evidence_junction, runtime_options = {}, promptText = "", env = process.env } = {}) {
-  const input = { source_bundle, target_profile: target_profile || company_profile, company_profile: company_profile || target_profile, target_feature_profile, evidence_junction };
+function resolveLegalCartography(input = {}) {
+  return input.legal_document_cartography || input.stage6a_review?.legal_document_cartography || input.stage6a?.legal_document_cartography || input.stage6a_result?.stage6_review?.legal_document_cartography || null;
+}
+
+export async function runStage6BDataProvenance({ source_bundle, target_profile, company_profile, target_feature_profile, evidence_junction, legal_document_cartography, stage6a_review, runtime_options = {}, promptText = "", env = process.env } = {}) {
+  const baseInput = { source_bundle, target_profile: target_profile || company_profile, company_profile: company_profile || target_profile, target_feature_profile, evidence_junction, legal_document_cartography, stage6a_review };
+  const input = { ...baseInput, legal_document_cartography: resolveLegalCartography(baseInput) || legal_document_cartography || null };
   const options = runtime_options || {};
   const deterministicOnlyAllowed = env.STAGE6_ALLOW_DETERMINISTIC_ONLY === "true";
   if (deterministicOnlyAllowed && options.disableSemanticClassification === true) {
-    const stage6Review = buildStage6BDataProvenance(input);
+    const built = buildStage6BDataProvenance(input);
+    const finalized = finalizeStage6BDataProvenance(built, input);
+    const stage6Review = finalized.stage6_review;
+    const targetDataProvenanceProfile = buildTargetDataProfile(stage6Review, input, null);
     const finalValidation = validateFinalStage6B(stage6Review, input, false);
-    if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail) };
+    if (!finalValidation.ok) return { ok: false, ...finalValidation, stage6_review: stage6Review, target_data_provenance_profile: targetDataProvenanceProfile, legal_governance_prefill: finalized.legal_governance_prefill, stage6_guardrail: finalValidation.guardrail || null, stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail) };
     return {
       ok: true,
       semantic_model_attempted: false,
@@ -147,6 +189,8 @@ export async function runStage6BDataProvenance({ source_bundle, target_profile, 
       normalized_semantic_classification: null,
       semantic_classification_repairs: [],
       stage6_review: stage6Review,
+      target_data_provenance_profile: targetDataProvenanceProfile,
+      legal_governance_prefill: finalized.legal_governance_prefill,
       stage6_guardrail: finalValidation.guardrail,
       packet_summary: { data_flow_seed_count: stage6Review.data_provenance_profile?.data_flow_profile?.length || 0, feature_ref_count: target_feature_profile?.feature_inventory?.length || 0, provenance_ref_count: dataProvenanceCount(input), source_ref_count: 0 },
       stage6_summary: stage6Summary(stage6Review, finalValidation.guardrail),
@@ -158,4 +202,4 @@ export async function runStage6BDataProvenance({ source_bundle, target_profile, 
   return { ...result, semantic_model_attempted: true };
 }
 
-export const stage6bDataProvenanceRunnerInternals = { buildSemanticPrompt, dataProvenanceCount, validateFinalStage6B, ACTIVE_STAGE6B_PROMPT_PATH };
+export const stage6bDataProvenanceRunnerInternals = { buildSemanticPrompt, dataProvenanceCount, validateFinalStage6B, ACTIVE_STAGE6B_PROMPT_PATH, STAGE6B_FIELD_DERIVATION_PATH, withStage6BDerivationInstructions };
