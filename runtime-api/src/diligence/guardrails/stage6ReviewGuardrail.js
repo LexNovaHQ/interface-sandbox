@@ -13,6 +13,7 @@ import {
   stage6ASourceRecordRef
 } from "../stage6aLegalSourceAdmission.js";
 import { evaluateStage6AQualityExpectations } from "../stage6aSemanticQualityExpectations.js";
+import { evaluateStage6BQualityExpectations } from "../stage6bSemanticQualityExpectations.js";
 
 const RETIRED_KEYS = new Set([
   "legal_stack_review_version",
@@ -81,7 +82,7 @@ function checkEnum(values, allowed, path, warnings) { const set = new Set(allowe
 function checkIdArrayRefs(values, allowedIds, path, warnings, code, message) { arr(values).forEach((value, index) => { if (!allowedIds.has(value)) warnings.push(warn(code, `${path}/${index}`, message, { value })); }); }
 function stage5ProvenanceCount(input = {}) { const p = input?.target_feature_profile || input?.feature_profile_v2 || {}; if (Array.isArray(p.data_provenance_map)) return p.data_provenance_map.length; return arr(p.feature_inventory).reduce((n, f) => n + arr(f?.data_provenance).length, 0); }
 function stage5FeatureCount(input = {}) { const p = input?.target_feature_profile || input?.feature_profile_v2 || {}; return arr(p.feature_inventory).length; }
-function pushStage6AQualityIssues(qualityIssues = [], warnings, repairs, critical) {
+function pushQualityIssues(qualityIssues = [], warnings, repairs, critical) {
   for (const issue of arr(qualityIssues)) {
     if (issue?.severity === "critical") critical.push(err(issue.code, issue.path || "/", issue.message || issue.code, issue.params || {}));
     else if (issue?.severity === "repairable") repairs.push(rep(issue.code, issue.path || "/", issue.message || issue.code, issue.params || {}));
@@ -102,7 +103,7 @@ export function validateStage6ReviewGuardrail(stage6Review = {}, { input = {}, s
   walk(stage6Review, (key, value, path) => {
     if (RETIRED_KEYS.has(key)) critical.push(err("STAGE6_LEGACY_FIELD_PRESENT", path, `Retired Stage 6 key present: ${key}`, { key }));
     if (typeof value === "string" && RETIRED_VALUES.has(value)) critical.push(err("STAGE6_RETIRED_TERM_PRESENT", path, `Retired Stage 6 value present: ${value}`, { value }));
-    if (["quote", "evidence_quote", "excerpt_text", "html", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions"].includes(key)) critical.push(err("STAGE6_RETIRED_TERM_PRESENT", path, `Stage 6 output cannot contain ${key}.`, { key }));
+    if (["quote", "evidence_quote", "excerpt_text", "html", "report_data", "vault_prefill_suggestions", "vault_confirmation_questions"].includes(key)) critical.push(err("STAGE6_RETIRED_TERM_PRESENT", path, `Stage 6 output cannot contain ${key}.", { key }));
   });
 
   const component = stage6Review?.stage6_component;
@@ -136,7 +137,7 @@ export function validateStage6ReviewGuardrail(stage6Review = {}, { input = {}, s
     units.forEach((r, i) => { if (!STAGE6_LEGAL_UNIT_TYPES.includes(r?.legal_unit_type) || RETIRED_VALUES.has(r?.legal_unit_type)) critical.push(err("STAGE6_MICRO_LEGAL_UNIT_PRESENT", `/legal_document_cartography/legal_document_index/${i}/legal_unit_type`, "Macro legal units only.")); if (!documentIds.has(r?.document_id)) warnings.push(warn("STAGE6_UNKNOWN_DOCUMENT_REF_WARNING", `/legal_document_cartography/legal_document_index/${i}/document_id`, "Unknown document_id ref passed as warning.")); checkEnum(r?.control_families_detected, STAGE6_CONTROL_FAMILIES, `/legal_document_cartography/legal_document_index/${i}/control_families_detected`, warnings); checkEnum(r?.basis_codes, STAGE6_BASIS_CODES, `/legal_document_cartography/legal_document_index/${i}/basis_codes`, warnings); });
     controls.forEach((r, i) => { if (!documentIds.has(r?.document_id)) warnings.push(warn("STAGE6_UNKNOWN_DOCUMENT_REF_WARNING", `/legal_document_cartography/document_control_signal_map/${i}/document_id`, "Unknown document_id ref passed as warning.")); if (r?.legal_unit_id && !legalUnitIds.has(r.legal_unit_id)) warnings.push(warn("STAGE6_UNKNOWN_LEGAL_UNIT_REF_WARNING", `/legal_document_cartography/document_control_signal_map/${i}/legal_unit_id`, "Unknown legal_unit_id ref passed as warning.")); if (!STAGE6_CONTROL_FAMILIES.includes(r?.control_family)) warnings.push(warn("STAGE6_ENUM_DRIFT_WARNING", `/legal_document_cartography/document_control_signal_map/${i}/control_family`, "Invalid control_family passed as warning.")); if (!STAGE6_CONTROL_SIGNALS.includes(r?.control_signal)) warnings.push(warn("STAGE6_ENUM_DRIFT_WARNING", `/legal_document_cartography/document_control_signal_map/${i}/control_signal`, "Invalid control_signal passed as warning.")); checkEnum(r?.basis_codes, STAGE6_BASIS_CODES, `/legal_document_cartography/document_control_signal_map/${i}/basis_codes`, warnings); });
     if (inventory.length > 1 && arr(c.document_relationship_map).length === 0) warnings.push(warn("STAGE6_ZERO_RELATIONSHIP_WARNING", "/legal_document_cartography/document_relationship_map", "Multiple legal documents exist but no relationships were emitted."));
-    pushStage6AQualityIssues(evaluateStage6AQualityExpectations(stage6Review, { input, semanticModelAttempted }), warnings, repairs, critical);
+    pushQualityIssues(evaluateStage6AQualityExpectations(stage6Review, { input, semanticModelAttempted }), warnings, repairs, critical);
   }
 
   if (component === "stage6b_data_provenance" || component === "stage6_integrated_handoff") {
@@ -151,6 +152,7 @@ export function validateStage6ReviewGuardrail(stage6Review = {}, { input = {}, s
     rows.forEach((r, i) => checkEnum(r?.basis_codes, STAGE6_BASIS_CODES, `/data_provenance_profile/data_flow_profile/${i}/basis_codes`, warnings));
     arr(nav.feature_to_data_flow_index).forEach((r, i) => checkIdArrayRefs(r?.data_flow_ids, flowIds, `/stage7_navigation_index/feature_to_data_flow_index/${i}/data_flow_ids`, warnings, "STAGE6_UNKNOWN_DATA_FLOW_REF_WARNING", "Unknown data_flow_id ref passed as warning."));
     arr(nav.data_signal_index).forEach((r, i) => checkIdArrayRefs(r?.data_flow_ids, flowIds, `/stage7_navigation_index/data_signal_index/${i}/data_flow_ids`, warnings, "STAGE6_UNKNOWN_DATA_FLOW_REF_WARNING", "Unknown data_flow_id ref passed as warning."));
+    pushQualityIssues(evaluateStage6BQualityExpectations(stage6Review, { input, semanticModelAttempted }), warnings, repairs, critical);
   }
 
   if (semanticModelAttempted === false) warnings.push(warn("STAGE6_SEMANTIC_MODEL_SKIPPED_WARNING", "/", "Semantic model was skipped; deterministic Stage 6 path passed only.", { stageId }));
