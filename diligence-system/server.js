@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import helmet from "helmet";
 import fs from "fs/promises";
 import path from "path";
@@ -15,13 +15,16 @@ const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 8080);
 const DILIGENCE_MODE = process.env.DILIGENCE_MODE || "mock";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const DEFAULT_GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const GEMINI_MODELS = parseModelPool();
+const GEMINI_MODEL = GEMINI_MODELS[0] || DEFAULT_GEMINI_MODELS[0];
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 240000);
 const GEMINI_PING_TIMEOUT_MS = Number(process.env.GEMINI_PING_TIMEOUT_MS || 30000);
 const GEMINI_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS || 65535);
 const GEMINI_PING_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_PING_MAX_OUTPUT_TOKENS || 128);
 const GEMINI_API_KEYS = parseKeyPool();
 const GEMINI_POOL = buildGeminiPool(GEMINI_API_KEYS);
+const GEMINI_MODEL_POOL = buildGeminiModelPool(GEMINI_MODELS);
 
 const PROMPT_LIVE_FILES = {
   monolith: "prompts/01_DILIGENCE_RUNTIME_GPT_v1.md",
@@ -276,7 +279,7 @@ app.post("/api/vault/push", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Interface Diligence System listening on :${PORT}`);
   console.log(`Mode: ${DILIGENCE_MODE}`);
-  console.log(`Gemini model: ${GEMINI_MODEL}`);
+  console.log(`Gemini models: ${GEMINI_MODELS.join(", ")}`);
   console.log(`Gemini key pool size: ${GEMINI_POOL.length}`);
 });
 
@@ -470,31 +473,45 @@ async function callGeminiWithFallback({
 }) {
   const errors = [];
 
-  for (const poolEntry of GEMINI_POOL) {
-    try {
-      const text = await callGeminiOnce({
-        apiKey: poolEntry.key,
-        systemPrompt,
-        userPrompt,
-        responseMimeType,
-        timeoutMs,
-        maxOutputTokens,
-        temperature
-      });
-      if (text && text.trim()) return text;
-      errors.push({ key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: "EMPTY_RESPONSE" });
-    } catch (err) {
-      const message = err?.message || String(err);
-      errors.push({ key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: message });
-      console.warn(`[gemini] key ${poolEntry.index} failed: ${message}`);
+  for (const modelEntry of GEMINI_MODEL_POOL) {
+    for (const poolEntry of GEMINI_POOL) {
+      try {
+        const text = await callGeminiOnce({
+          apiKey: poolEntry.key,
+          model: modelEntry.model,
+          systemPrompt,
+          userPrompt,
+          responseMimeType,
+          timeoutMs,
+          maxOutputTokens,
+          temperature
+        });
+        if (text && text.trim()) return text;
+
+        errors.push({
+          model: modelEntry.model,
+          key_index: poolEntry.index,
+          fingerprint: poolEntry.fingerprint,
+          error: "EMPTY_RESPONSE"
+        });
+      } catch (err) {
+        const message = err?.message || String(err);
+        errors.push({
+          model: modelEntry.model,
+          key_index: poolEntry.index,
+          fingerprint: poolEntry.fingerprint,
+          error: message
+        });
+        console.warn(`[gemini] model ${modelEntry.model} key ${poolEntry.index} failed: ${message}`);
+      }
     }
   }
 
-  throw new Error(`ALL_GEMINI_KEYS_FAILED: ${JSON.stringify(errors).slice(0, 1500)}`);
+  throw new Error(`ALL_GEMINI_MODEL_KEY_COMBINATIONS_FAILED: ${JSON.stringify(errors).slice(0, 2500)}`);
 }
-
 async function callGeminiOnce({
   apiKey,
+  model,
   systemPrompt,
   userPrompt,
   responseMimeType,
@@ -504,7 +521,7 @@ async function callGeminiOnce({
 }) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -542,7 +559,6 @@ async function callGeminiOnce({
     clearTimeout(timeout);
   }
 }
-
 function parseDiligenceOutput(rawText) {
   const trimmed = String(rawText || "").trim();
 
@@ -635,3 +651,4 @@ function safeJsonOrText(text) {
     return text;
   }
 }
+
