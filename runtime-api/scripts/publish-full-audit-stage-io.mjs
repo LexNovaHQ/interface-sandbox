@@ -62,7 +62,7 @@ const stage6c = readJsonOptional("14-stage6c-data-provenance-integration.json") 
 const stage6Handoff = readJsonOptional("15-stage6-stage7-handoff.json") || {};
 
 const sourceRecords = asArray(sourceBundle?.raw_footprint?.source_records || sourceCapture?.raw_footprint?.source_records);
-const productLossless = sourceRecords.filter((record) => record?.source_family === "product_family" && typeof record?.text?.clean_text_lossless === "string" && record.text.clean_text_lossless.length > 0);
+const productLossless = sourceRecords.filter((record) => ["product_profile", "product_family"].includes(record?.source_family) && typeof record?.text?.clean_text_lossless === "string" && record.text.clean_text_lossless.length > 0);
 const legalLossless = sourceRecords.filter((record) => /legal|governance|privacy|terms|security|trust|dpa|policy/i.test(`${record?.source_family || ""} ${record?.url || ""} ${record?.title || ""}`) && typeof record?.text?.clean_text_lossless === "string" && record.text.clean_text_lossless.length > 0);
 
 const stageRows = [];
@@ -117,6 +117,7 @@ addStage("stage3", "Stage 3 - Evidence Refiner / Source Bundle", {
   ok: Boolean(asArray(sourceBundle?.raw_footprint?.source_records).length && evidenceJunction && Object.keys(evidenceJunction).length),
   records: sourceRecords.length,
   clean_text_lossless_records: losslessCount(sourceRecords),
+  product_profile_lossless_records: productLossless.length,
   product_family_lossless_records: productLossless.length,
   legal_governance_lossless_records: legalLossless.length,
   source_bundle_sha256: evidenceJunction?.source_bundle_sha256 || null,
@@ -142,7 +143,7 @@ addStage("stage5", "Stage 5 - Canonical Lossless Window Runtime", {
   input_artifact: "06-stage5-input-custody-package.json",
   primary_source_count: Number(stage5Input?.primary_source_count || 0),
   navigation_index_count: Number(stage5Input?.navigation_index_count || 0),
-  product_family_lossless_records: productLossless.length,
+  product_profile_lossless_records: productLossless.length,
   legacy_adapter_used: stage5Input?.legacy_adapter_used === true
 }, {
   present: Boolean(stage5Runtime && Object.keys(stage5Runtime).length),
