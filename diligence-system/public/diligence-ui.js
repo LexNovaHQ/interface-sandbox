@@ -1,4 +1,4 @@
-const state = {
+﻿const state = {
   lastResult: null,
   health: null
 };
@@ -53,11 +53,11 @@ async function loadHealth() {
     if (els.modeBadge) {
       const mode = health.mode || "unknown";
       const fetcher = health.hybrid_fetcher?.version || "no_fetcher";
-      els.modeBadge.textContent = `${mode} · ${fetcher}`;
+      els.modeBadge.textContent = `${mode} Â· ${fetcher}`;
     }
 
     setStatus(
-      `Runtime ready: mode=${health.mode || "unknown"} · models=${(health.models || []).join("/") || health.model || "N/A"} · prompt_live=${Boolean(health.prompt_live_ready)} · hybrid=${health.hybrid_fetcher?.version || "N/A"}`
+      `Runtime ready: mode=${health.mode || "unknown"} Â· models=${(health.models || []).join("/") || health.model || "N/A"} Â· prompt_live=${Boolean(health.prompt_live_ready)} Â· hybrid=${health.hybrid_fetcher?.version || "N/A"}`
     );
   } catch (err) {
     if (els.modeBadge) els.modeBadge.textContent = "unknown";
@@ -100,7 +100,7 @@ async function handleRun(event) {
     setRunning(true);
     setProgress(12);
     setRail("input");
-    setStatus(`Input accepted: ${payload.source_mode} · ${payload.target_url}. Sending runtime payload to server...`);
+    setStatus(`Input accepted: ${payload.source_mode} Â· ${payload.target_url}. Sending runtime payload to server...`);
 
     const response = await fetch("/api/diligence/run", {
       method: "POST",
@@ -385,3 +385,191 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+/* DILIGENCE_DIAGNOSTIC_OVERLAY_V2_START */
+(function diligenceDiagnosticOverlayV2() {
+  const STORAGE_KEY = "interface_diligence_last_result";
+  let lastRenderedSignature = "";
+
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function getLastResult() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function ensureBox() {
+    let box = document.getElementById("runtimeDiagnosticBox");
+    if (box) return box;
+
+    box = document.createElement("div");
+    box.id = "runtimeDiagnosticBox";
+    box.setAttribute("aria-live", "polite");
+    box.style.cssText = [
+      "display:block",
+      "margin-top:16px",
+      "border:1px solid rgba(197,160,89,.42)",
+      "background:rgba(0,0,0,.38)",
+      "border-radius:16px",
+      "padding:14px",
+      "color:rgba(229,229,229,.88)",
+      "font-size:12px",
+      "line-height:1.55",
+      "max-height:620px",
+      "overflow:auto",
+      "white-space:normal",
+      "position:relative",
+      "z-index:5"
+    ].join(";");
+
+    const statusText = document.getElementById("statusText");
+    if (statusText && statusText.parentNode) {
+      statusText.parentNode.insertBefore(box, statusText.nextSibling);
+    } else {
+      document.body.prepend(box);
+    }
+    return box;
+  }
+
+  function forceReveal() {
+    ["result", "vault"].forEach((id) => {
+      const node = document.getElementById(id);
+      if (!node) return;
+      node.classList.remove("hidden");
+      node.style.setProperty("display", "block", "important");
+      node.style.setProperty("visibility", "visible", "important");
+      node.style.setProperty("opacity", "1", "important");
+      node.style.setProperty("height", "auto", "important");
+      node.style.setProperty("overflow", "visible", "important");
+    });
+
+    ["tab-report", "tab-json", "tab-audit", "tab-vault"].forEach((id) => {
+      const node = document.getElementById(id);
+      if (!node) return;
+      node.style.setProperty("visibility", "visible", "important");
+      node.style.setProperty("opacity", "1", "important");
+      node.style.setProperty("min-height", "80px", "important");
+    });
+  }
+
+  function auditText(result) {
+    const chunks = [];
+    if (result?.guardrail) chunks.push("[SERVER_GUARDRAIL]\n" + JSON.stringify(result.guardrail, null, 2));
+    if (result?.hybrid_evidence_packet?.source_review) chunks.push("[HYBRID_SOURCE_REVIEW]\n" + JSON.stringify(result.hybrid_evidence_packet.source_review, null, 2));
+    if (result?.hybrid_evidence_packet?.warnings?.length) chunks.push("[HYBRID_WARNINGS]\n" + JSON.stringify(result.hybrid_evidence_packet.warnings, null, 2));
+    if (result?.operator_challenge_gate) chunks.push("[OPERATOR_CHALLENGE_GATE]\n" + JSON.stringify(result.operator_challenge_gate, null, 2));
+    if (result?.technical_audit_log) chunks.push("[MODEL_TECHNICAL_AUDIT_LOG]\n" + result.technical_audit_log);
+    if (result?.raw_output && !result?.technical_audit_log) chunks.push("[RAW_OUTPUT_HEAD]\n" + String(result.raw_output).slice(0, 12000));
+    if (result?.error || result?.message) chunks.push("[ERROR_DIAGNOSTIC]\n" + JSON.stringify({ error: result.error || null, message: result.message || null }, null, 2));
+    return chunks.join("\n\n") || "No audit diagnostics returned.";
+  }
+
+  function render(result, reason) {
+    const box = ensureBox();
+
+    if (!result) {
+      box.innerHTML =
+        '<strong style="color:#C5A059;letter-spacing:.12em;text-transform:uppercase;">Runtime diagnostics</strong>' +
+        '<pre style="white-space:pre-wrap;color:rgba(229,229,229,.76);">No run result saved yet.</pre>';
+      return;
+    }
+
+    forceReveal();
+
+    const errors = result?.guardrail?.errors || [];
+    const sourceReview = result?.hybrid_evidence_packet?.source_review || null;
+    const isBad = result?.status === "GUARDRAIL_FAILED" || result?.ok === false || result?.error;
+    const title = result?.status === "GUARDRAIL_FAILED"
+      ? "Guardrail failed"
+      : isBad
+        ? "Runtime diagnostic"
+        : "Run completed";
+
+    const audit = auditText(result);
+
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+        <strong style="color:${isBad ? "#ffb4a8" : "#b7f7d0"};letter-spacing:.12em;text-transform:uppercase;">${esc(title)}</strong>
+        <span style="color:rgba(229,229,229,.55);">${esc(result.run_id || reason || "diagnostic")}</span>
+      </div>
+
+      <div style="margin-bottom:8px;color:rgba(229,229,229,.72);">
+        status=${esc(result.status || "N/A")} Â· parse=${esc(result.parse_status || "N/A")} Â· model=${esc(result.model || "N/A")} Â· key=${esc(result.key_index || "N/A")}
+      </div>
+
+      ${errors.length ? `
+        <div style="margin:10px 0;color:#ffb4a8;">
+          <strong>Guardrail errors</strong>
+          <pre style="white-space:pre-wrap;margin:6px 0 0;">${esc(errors.join("\n"))}</pre>
+        </div>` : ""}
+
+      ${sourceReview ? `
+        <div style="margin:10px 0;color:rgba(229,229,229,.78);">
+          <strong>Hybrid source review</strong>
+          <pre style="white-space:pre-wrap;margin:6px 0 0;">${esc(JSON.stringify(sourceReview, null, 2))}</pre>
+        </div>` : ""}
+
+      <details open>
+        <summary style="cursor:pointer;color:#C5A059;font-weight:800;">Audit log</summary>
+        <pre id="runtimeDiagnosticPre" style="white-space:pre-wrap;margin:10px 0 0;color:rgba(229,229,229,.84);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;">${esc(audit)}</pre>
+      </details>`;
+
+    const auditTab = document.getElementById("tab-audit");
+    if (auditTab) {
+      auditTab.textContent = audit;
+      document.querySelectorAll(".tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "audit"));
+      ["report", "json", "audit", "vault"].forEach((name) => {
+        const panel = document.getElementById("tab-" + name);
+        if (!panel) return;
+        const active = name === "audit";
+        panel.classList.toggle("hidden", !active);
+        panel.style.setProperty("display", active ? "block" : "none", "important");
+        panel.style.setProperty("visibility", active ? "visible" : "hidden", "important");
+      });
+    }
+  }
+
+  function renderFromStorage(reason) {
+    const result = getLastResult();
+    const sig = JSON.stringify({
+      reason,
+      run_id: result?.run_id,
+      status: result?.status,
+      parse_status: result?.parse_status,
+      guardrail: result?.guardrail
+    });
+
+    if (sig === lastRenderedSignature) return;
+    lastRenderedSignature = sig;
+    render(result, reason);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => renderFromStorage("boot"));
+  window.addEventListener("storage", () => renderFromStorage("storage"));
+
+  const form = document.getElementById("diligenceForm");
+  if (form) {
+    form.addEventListener("submit", () => {
+      const box = ensureBox();
+      box.innerHTML =
+        '<strong style="color:#C5A059;letter-spacing:.12em;text-transform:uppercase;">Running</strong>' +
+        '<pre style="white-space:pre-wrap;color:rgba(229,229,229,.76);">Waiting for server response. Audit will appear here even if report rendering fails.</pre>';
+    }, true);
+  }
+
+  setInterval(() => renderFromStorage("poll"), 1000);
+  renderFromStorage("load");
+})();
+ /* DILIGENCE_DIAGNOSTIC_OVERLAY_V2_END */
+
