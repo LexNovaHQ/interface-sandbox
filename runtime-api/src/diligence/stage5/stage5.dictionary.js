@@ -11,7 +11,7 @@ export const STAGE5_CANONICAL_SUBSTAGES = Object.freeze([
   {
     id: "5B",
     name: "Archetype / Surface Tagging",
-    purpose: "Tag 5A admitted functions using inherited 5A verbatim windows, supplemental 5B verbatim windows, and controlled registry vocabulary.",
+    purpose: "Tag 5A admitted functions using inherited 5A verbatim windows, supplemental 5B verbatim windows, and locked Registry v3.0 vocabulary.",
     primary_input: "5A admitted functions + 5A verbatim windows + source custody",
     output_key: "stage5b"
   },
@@ -35,7 +35,49 @@ export const STAGE5_VALIDATION_POLICY = Object.freeze({
   hard_stop_rule: "Only missing/invalid primary lossless source custody remains a hard runtime stop.",
   reinvestigation_rule: "Recoverable substage validation defects must become validation.reinvestigation_required envelopes, not runtime failures.",
   downstream_contract_rule: "Even when reinvestigation is required, Stage 5 preserves the target_feature_profile handoff shape.",
-  evidence_rule: "Metadata and navigation indexes are never primary evidence; every material decision cites verbatim source windows."
+  evidence_rule: "Metadata and navigation indexes are never primary evidence; every material decision cites verbatim source windows.",
+  registry_vocabulary_rule: "Archetype and Surface values must use the locked Registry v3.0 vocabularies, never internal feature-taxonomy labels."
+});
+
+export const STAGE5_REGISTRY_ARCHETYPE_CODES = Object.freeze([
+  "UNI",
+  "DOE",
+  "JDG",
+  "CMP",
+  "CRT",
+  "RDR",
+  "ORC",
+  "TRN",
+  "SHD",
+  "OPT",
+  "MOV"
+]);
+
+export const STAGE5_REGISTRY_SURFACE_TOKENS = Object.freeze([
+  "Consumer-Public",
+  "Enterprise-Private",
+  "PII",
+  "Employment",
+  "Sensitive/Biometric",
+  "Financial",
+  "Content&IP",
+  "Safety&Physical",
+  "Infrastructure",
+  "Minors"
+]);
+
+export const STAGE5_REGISTRY_ARCHETYPE_LABELS = Object.freeze({
+  UNI: "Universal",
+  DOE: "The Doer",
+  JDG: "The Judge",
+  CMP: "The Companion",
+  CRT: "The Creator",
+  RDR: "The Reader",
+  ORC: "The Orchestrator",
+  TRN: "The Translator",
+  SHD: "The Shield",
+  OPT: "The Optimizer",
+  MOV: "The Mover"
 });
 
 export const STAGE5_SOURCE_CUSTODY_HARD_STOP_CODES = Object.freeze([
@@ -149,9 +191,9 @@ export const STAGE5_FEATURE_PATTERNS = Object.freeze([
     input_data: ["audio"],
     system_action: "converts speech audio into text",
     output_or_result: "text transcript",
-    archetype_codes: ["CONTENT_TRANSFORMATION"],
-    archetype_labels: ["Content transformation"],
-    surface_tokens: ["audio_input", "text_output", "developer_api"]
+    archetype_codes: ["TRN"],
+    archetype_labels: [STAGE5_REGISTRY_ARCHETYPE_LABELS.TRN],
+    surface_tokens: ["PII", "Sensitive/Biometric", "Enterprise-Private", "Content&IP"]
   },
   {
     key: "text_to_speech",
@@ -161,9 +203,9 @@ export const STAGE5_FEATURE_PATTERNS = Object.freeze([
     input_data: ["text"],
     system_action: "converts text into speech audio",
     output_or_result: "generated audio",
-    archetype_codes: ["CONTENT_GENERATION"],
-    archetype_labels: ["Content generation"],
-    surface_tokens: ["text_input", "audio_output", "developer_api"]
+    archetype_codes: ["CRT"],
+    archetype_labels: [STAGE5_REGISTRY_ARCHETYPE_LABELS.CRT],
+    surface_tokens: ["Content&IP", "Enterprise-Private"]
   },
   {
     key: "document_digitisation",
@@ -173,9 +215,9 @@ export const STAGE5_FEATURE_PATTERNS = Object.freeze([
     input_data: ["document"],
     system_action: "extracts structured information from documents",
     output_or_result: "digitised document data",
-    archetype_codes: ["DOCUMENT_INTELLIGENCE"],
-    archetype_labels: ["Document intelligence"],
-    surface_tokens: ["document_input", "api_payload_output", "developer_api"]
+    archetype_codes: ["RDR"],
+    archetype_labels: [STAGE5_REGISTRY_ARCHETYPE_LABELS.RDR],
+    surface_tokens: ["PII", "Content&IP", "Enterprise-Private"]
   },
   {
     key: "translation",
@@ -185,9 +227,9 @@ export const STAGE5_FEATURE_PATTERNS = Object.freeze([
     input_data: ["text"],
     system_action: "translates content between languages",
     output_or_result: "translated text",
-    archetype_codes: ["CONTENT_TRANSFORMATION"],
-    archetype_labels: ["Content transformation"],
-    surface_tokens: ["text_input", "text_output", "developer_api"]
+    archetype_codes: ["CRT"],
+    archetype_labels: [STAGE5_REGISTRY_ARCHETYPE_LABELS.CRT],
+    surface_tokens: ["PII", "Content&IP", "Enterprise-Private"]
   },
   {
     key: "voice_agent",
@@ -197,9 +239,9 @@ export const STAGE5_FEATURE_PATTERNS = Object.freeze([
     input_data: ["audio", "text"],
     system_action: "handles interactive voice conversations",
     output_or_result: "agent response or action",
-    archetype_codes: ["AGENTIC_INTERFACE"],
-    archetype_labels: ["Agentic interface"],
-    surface_tokens: ["voice_interface", "external_interaction", "workflow_action"]
+    archetype_codes: ["DOE", "TRN"],
+    archetype_labels: [STAGE5_REGISTRY_ARCHETYPE_LABELS.DOE, STAGE5_REGISTRY_ARCHETYPE_LABELS.TRN],
+    surface_tokens: ["PII", "Sensitive/Biometric", "Consumer-Public", "Enterprise-Private"]
   }
 ]);
 
