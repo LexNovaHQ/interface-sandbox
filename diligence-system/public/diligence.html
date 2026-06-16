@@ -5,13 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>The Interface — Diligence System</title>
   <meta name="description" content="The Interface public-footprint diligence system."/>
+  <meta property="og:title" content="The Interface — Diligence System"/>
+  <meta property="og:description" content="URL → Diligence runtime → review-ready report → Vault Assembly handoff."/>
   <meta name="theme-color" content="#050505"/>
 
   <script src="https://cdn.tailwindcss.com"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/diligence.css"/>
 </head>
@@ -21,111 +23,196 @@
 
   <nav class="topnav">
     <div class="mx-auto max-w-7xl px-5 py-4 flex items-center justify-between">
-      <a class="wordmark" href="/diligence.html">
+      <a class="wordmark" href="/diligence.html" aria-label="The Interface Diligence System home">
         <span class="wordmark-title">The Interface</span>
-        <span class="wordmark-subtitle">Diligence System · Vault Handoff</span>
+        <span class="wordmark-subtitle">Diligence System · Vault Assembly Handoff</span>
       </a>
 
       <div class="hidden md:flex items-center gap-6 text-xs tracking-[.18em] uppercase">
-        <a class="nav-link" href="#run">Run</a>
+        <a class="nav-link active" href="#run">Run</a>
+        <a class="nav-link" href="#runtime">Runtime</a>
         <a class="nav-link" href="#result">Report</a>
         <a class="nav-link" href="#vault">Vault</a>
       </div>
     </div>
   </nav>
 
+  <div class="mobile-funnel" aria-hidden="true">
+    <span class="seg active" data-mobile-stage="input"></span>
+    <span class="seg" data-mobile-stage="runtime"></span>
+    <span class="seg" data-mobile-stage="report"></span>
+    <span class="seg" data-mobile-stage="vault"></span>
+    <span class="lbl">Diligence Flow</span>
+  </div>
+
   <main class="page-shell">
-    <section class="mx-auto max-w-7xl px-5 pt-12 pb-8">
+    <section class="mx-auto max-w-7xl px-5 pt-12 pb-8 md:pt-16">
       <div class="hero-grid">
         <div class="load-in d1">
-          <p class="eyebrow">Diligence System v0</p>
+          <p class="eyebrow">Diligence System v0 · Execution Shell</p>
           <h1 class="font-display hero-title mt-5">
-            Public-footprint diligence, rendered into a review-ready interface.
+            Public footprint in. Review-ready diligence out.
           </h1>
           <p class="hero-copy mt-6">
-            Enter a company URL. The server runs with protected environment keys, returns
-            a report object, and prepares a Vault Assembly handoff payload. Phase 0 uses
-            mock output until the real prompt and reference documents are wired.
+            A clean Diligence System lane inside <span class="gold">interface-sandbox</span>: URL entry, server-side runtime,
+            protected Gemini environment keys, HTML report rendering, and a Vault Assembly handoff payload. The current
+            phase proves the live shell before the final prompt and reference documents are wired.
           </p>
+
+          <div class="hero-cta mt-7 flex flex-wrap items-center gap-3">
+            <a class="btn" href="#run">Start run</a>
+            <a class="quiet-link" href="#runtime">Inspect runtime route</a>
+          </div>
 
           <div class="hairline my-8"></div>
 
           <div class="flex flex-wrap gap-3">
-            <span class="pill">Google Cloud Run runtime</span>
-            <span class="pill">Server-side Gemini pool</span>
+            <span class="pill">Google Cloud Run</span>
+            <span class="pill">Gemini key pool</span>
             <span class="pill">HTML report</span>
-            <span class="pill">Vault handoff</span>
+            <span class="pill">Vault payload</span>
+            <span class="pill">Mock-safe shell</span>
           </div>
         </div>
 
-        <div class="surface rounded-[2rem] p-5 md:p-7 load-in d2" id="run">
-          <form id="diligenceForm" class="space-y-5">
-            <div>
-              <label class="field-label" for="targetUrl">Target URL</label>
-              <input id="targetUrl" name="target_url" type="url" placeholder="https://example.ai" class="field" required/>
-            </div>
+        <aside class="proof-panel load-in d2" aria-label="Diligence runtime proof panel">
+          <div class="proof-glow"></div>
+          <p class="eyebrow">System Contract</p>
+          <h2 class="font-display proof-title mt-3">URL → Runtime → Report → Vault</h2>
+          <p class="proof-copy mt-4">
+            The visible application stays simple. The prompt layer can evolve later without changing the user journey.
+          </p>
 
-            <div>
-              <label class="field-label" for="companyName">Company name <span>optional</span></label>
-              <input id="companyName" name="company_name" type="text" placeholder="Example AI" class="field"/>
-            </div>
-
-            <div>
-              <label class="field-label" for="sourceMode">Source mode</label>
-              <select id="sourceMode" name="source_mode" class="field">
-                <option value="url">URL only</option>
-                <option value="url_plus_text">URL + pasted public material</option>
-                <option value="text">Pasted public material only</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="field-label" for="pastedMaterial">Pasted public material <span>optional</span></label>
-              <textarea id="pastedMaterial" name="pasted_public_material" rows="5" placeholder="Paste public product/legal/governance text only. Do not paste confidential material." class="field textarea"></textarea>
-            </div>
-
-            <button id="runButton" type="submit" class="btn w-full">Run Diligence System</button>
-
-            <p class="disclaimer">
-              Public demo. No legal advice. Public or user-provided materials only.
-              Do not submit confidential information.
-            </p>
-          </form>
-        </div>
+          <div class="proof-steps mt-6">
+            <div class="proof-step"><span>01</span><strong>Input</strong><em>public URL or public pasted material</em></div>
+            <div class="proof-step"><span>02</span><strong>Runtime</strong><em>Cloud Run server + key pool</em></div>
+            <div class="proof-step"><span>03</span><strong>Output</strong><em>HTML report + machine JSON</em></div>
+            <div class="proof-step"><span>04</span><strong>Handoff</strong><em>Vault Assembly Engine payload</em></div>
+          </div>
+        </aside>
       </div>
     </section>
 
-    <section class="mx-auto max-w-7xl px-5 pb-12">
+    <section class="mx-auto max-w-7xl px-5 pb-14">
       <div class="main-grid">
         <aside class="rail-wrap">
           <div class="rail">
             <div class="rail-band">Runtime <span class="tag">Live flow</span></div>
-            <div class="rail-stage active" data-stage="input"><span class="rail-dot"></span><span><span class="rail-node">Input</span><span class="rail-sub">URL + optional public text</span></span></div>
-            <div class="rail-stage" data-stage="runtime"><span class="rail-dot"></span><span><span class="rail-node">Runtime</span><span class="rail-sub">Server execution</span></span></div>
-            <div class="rail-stage" data-stage="report"><span class="rail-dot"></span><span><span class="rail-node">Report</span><span class="rail-sub">HTML output</span></span></div>
-            <div class="rail-stage" data-stage="vault"><span class="rail-dot endpoint"></span><span><span class="rail-node">Vault</span><span class="rail-sub">Assembly handoff</span></span></div>
-            <div class="rail-chip"><span class="pulse"></span> Shell online</div>
+            <a class="rail-stage active" href="#run" data-stage="input">
+              <span class="rail-dot"></span>
+              <span>
+                <span class="rail-node">Input</span>
+                <span class="rail-sub">URL + optional public text</span>
+                <span class="rail-why">The only user-facing ignition switch. No confidential documents. No browser keys.</span>
+              </span>
+            </a>
+            <a class="rail-stage" href="#runtime" data-stage="runtime">
+              <span class="rail-dot"></span>
+              <span>
+                <span class="rail-node">Runtime</span>
+                <span class="rail-sub">Server execution</span>
+                <span class="rail-why">Cloud Run handles Gemini calls, mock/live switch, parser, and fallback pool.</span>
+              </span>
+            </a>
+            <a class="rail-stage" href="#result" data-stage="report">
+              <span class="rail-dot"></span>
+              <span>
+                <span class="rail-node">Report</span>
+                <span class="rail-sub">HTML + JSON output</span>
+                <span class="rail-why">The report renders in-page while the machine payload remains inspectable.</span>
+              </span>
+            </a>
+            <a class="rail-stage" href="#vault" data-stage="vault">
+              <span class="rail-dot endpoint"></span>
+              <span>
+                <span class="rail-node">Vault</span>
+                <span class="rail-sub">Assembly handoff</span>
+                <span class="rail-why">The handoff object is preserved for the downstream Vault Assembly Engine.</span>
+              </span>
+            </a>
+            <div class="rail-chip"><span class="pulse"></span> Diligence shell online</div>
           </div>
         </aside>
 
-        <div class="space-y-6">
-          <section id="statusPanel" class="surface rounded-[2rem] p-5 md:p-7">
-            <p class="eyebrow">Execution Console</p>
-            <div id="statusText" class="console mt-4">Waiting for target URL.</div>
+        <div class="space-y-7">
+          <section id="run" class="act card-shell reveal visible">
+            <div class="section-kicker">
+              <p class="eyebrow">Run Input</p>
+              <span class="kicker-line"></span>
+              <span class="kicker-note">Phase 1 UI · Mock-safe</span>
+            </div>
+
+            <div class="grid lg:grid-cols-[.95fr_1.05fr] gap-7 items-start mt-5">
+              <div>
+                <h2 class="font-display section-title">Start a public-footprint diligence run.</h2>
+                <p class="section-copy mt-4">
+                  This shell is intentionally isolated from the legacy runtime. It proves the route that matters:
+                  enter URL, execute server-side, render report, push handoff.
+                </p>
+
+                <div class="dossier-grid mt-6">
+                  <div class="mini-card"><span>Mode</span><strong id="modeBadge">Mock</strong></div>
+                  <div class="mini-card"><span>Runtime</span><strong>Cloud Run-ready</strong></div>
+                  <div class="mini-card"><span>Keys</span><strong>Server-side only</strong></div>
+                  <div class="mini-card"><span>Vault</span><strong>Local ACK fallback</strong></div>
+                </div>
+              </div>
+
+              <form id="diligenceForm" class="input-panel space-y-5">
+                <div>
+                  <label class="field-label" for="targetUrl">Target URL</label>
+                  <input id="targetUrl" name="target_url" type="url" placeholder="https://example.ai" class="field" required/>
+                </div>
+
+                <div>
+                  <label class="field-label" for="companyName">Company name <span>optional</span></label>
+                  <input id="companyName" name="company_name" type="text" placeholder="Example AI" class="field"/>
+                </div>
+
+                <div>
+                  <label class="field-label" for="sourceMode">Source mode</label>
+                  <select id="sourceMode" name="source_mode" class="field">
+                    <option value="url">URL only</option>
+                    <option value="url_plus_text">URL + pasted public material</option>
+                    <option value="text">Pasted public material only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="field-label" for="pastedMaterial">Pasted public material <span>optional</span></label>
+                  <textarea id="pastedMaterial" name="pasted_public_material" rows="5" placeholder="Paste public product/legal/governance text only. Do not paste confidential material." class="field textarea"></textarea>
+                </div>
+
+                <button id="runButton" type="submit" class="btn w-full">Run Diligence System</button>
+
+                <p class="disclaimer">
+                  Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information.
+                </p>
+              </form>
+            </div>
           </section>
 
-          <section id="result" class="surface rounded-[2rem] p-5 md:p-7 hidden">
+          <section id="runtime" class="act card-shell reveal visible">
+            <div class="section-kicker">
+              <p class="eyebrow">Execution Console</p>
+              <span class="kicker-line"></span>
+              <span class="kicker-note">Server response rail</span>
+            </div>
+            <div id="statusText" class="console mt-5">Waiting for target URL.</div>
+          </section>
+
+          <section id="result" class="act card-shell reveal hidden">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p class="eyebrow">Diligence Report</p>
                 <h2 class="font-display section-title mt-2">System Output</h2>
               </div>
 
-              <div class="tabbar">
-                <button class="tab active" data-tab="report">Report</button>
-                <button class="tab" data-tab="json">JSON</button>
-                <button class="tab" data-tab="audit">Audit</button>
-                <button class="tab" data-tab="vault">Vault</button>
+              <div class="tabbar" role="tablist" aria-label="Diligence output tabs">
+                <button class="tab active" data-tab="report" type="button">Report</button>
+                <button class="tab" data-tab="json" type="button">JSON</button>
+                <button class="tab" data-tab="audit" type="button">Audit</button>
+                <button class="tab" data-tab="vault" type="button">Vault</button>
               </div>
             </div>
 
@@ -137,14 +224,21 @@
             <pre id="tab-vault" class="tab-panel hidden codebox"></pre>
           </section>
 
-          <section id="vault" class="surface rounded-[2rem] p-5 md:p-7 hidden">
-            <p class="eyebrow">Vault Assembly Engine</p>
-            <h2 class="font-display section-title mt-2">Handoff Payload</h2>
-            <p class="hero-copy mt-3">Push the generated handoff to the downstream Vault Assembly Engine when the endpoint is configured.</p>
+          <section id="vault" class="act card-shell reveal hidden">
+            <div class="section-kicker">
+              <p class="eyebrow">Vault Assembly Engine</p>
+              <span class="kicker-line"></span>
+              <span class="kicker-note">Downstream payload</span>
+            </div>
+            <h2 class="font-display section-title mt-3">Prepare the handoff packet.</h2>
+            <p class="section-copy mt-4">
+              The Diligence System keeps the downstream object separate from the visible report. If no Vault endpoint is
+              configured, the server acknowledges locally so the UI flow can still be tested end-to-end.
+            </p>
 
             <div class="mt-6 flex flex-wrap gap-3">
-              <button id="pushVaultButton" class="btn">Push to Vault</button>
-              <button id="downloadButton" class="btn sec">Download JSON</button>
+              <button id="pushVaultButton" class="btn" type="button">Push to Vault</button>
+              <button id="downloadButton" class="btn sec" type="button">Download JSON</button>
             </div>
 
             <div id="vaultStatus" class="console mt-5">Vault handoff not pushed yet.</div>
