@@ -49,14 +49,14 @@
     <section class="mx-auto max-w-7xl px-5 pt-12 pb-8 md:pt-16">
       <div class="hero-grid">
         <div class="load-in d1">
-          <p class="eyebrow">Diligence System v0 · Execution Shell</p>
+          <p class="eyebrow">Diligence System v0 · Prompt-Live Hybrid Shell</p>
           <h1 class="font-display hero-title mt-5">
             Public footprint in. Review-ready diligence out.
           </h1>
           <p class="hero-copy mt-6">
-            A clean Diligence System lane inside <span class="gold">interface-sandbox</span>: URL entry, server-side runtime,
-            protected Gemini environment keys, HTML report rendering, and a Vault Assembly handoff payload. The current
-            phase proves the live shell before the final prompt and reference documents are wired.
+            A clean Diligence System lane inside <span class="gold">interface-sandbox</span>: URL entry, server-side hybrid fetch,
+            protected Gemini environment keys, prompt-live execution, HTML report rendering, and a Vault Assembly handoff payload.
+            The current phase hardens evidence capture, grounding fallback, and registry guardrails.
           </p>
 
           <div class="hero-cta mt-7 flex flex-wrap items-center gap-3">
@@ -69,25 +69,25 @@
           <div class="flex flex-wrap gap-3">
             <span class="pill">Google Cloud Run</span>
             <span class="pill">Gemini key pool</span>
-            <span class="pill">HTML report</span>
+            <span class="pill">Hybrid fetcher v1</span>
+            <span class="pill">Grounding fallback</span>
             <span class="pill">Vault payload</span>
-            <span class="pill">Mock-safe shell</span>
           </div>
         </div>
 
         <aside class="proof-panel load-in d2" aria-label="Diligence runtime proof panel">
           <div class="proof-glow"></div>
           <p class="eyebrow">System Contract</p>
-          <h2 class="font-display proof-title mt-3">URL → Runtime → Report → Vault</h2>
+          <h2 class="font-display proof-title mt-3">URL → Fetcher → Gemini → Report → Vault</h2>
           <p class="proof-copy mt-4">
-            The visible application stays simple. The prompt layer can evolve later without changing the user journey.
+            The visible application stays simple. The server now injects first-party evidence before the prompt runs.
           </p>
 
           <div class="proof-steps mt-6">
             <div class="proof-step"><span>01</span><strong>Input</strong><em>public URL or public pasted material</em></div>
-            <div class="proof-step"><span>02</span><strong>Runtime</strong><em>Cloud Run server + key pool</em></div>
-            <div class="proof-step"><span>03</span><strong>Output</strong><em>HTML report + machine JSON</em></div>
-            <div class="proof-step"><span>04</span><strong>Handoff</strong><em>Vault Assembly Engine payload</em></div>
+            <div class="proof-step"><span>02</span><strong>Evidence</strong><em>server fetch + Jina fallback</em></div>
+            <div class="proof-step"><span>03</span><strong>Runtime</strong><em>Gemini model/key pool + grounding</em></div>
+            <div class="proof-step"><span>04</span><strong>Output</strong><em>HTML + JSON + Vault handoff</em></div>
           </div>
         </aside>
       </div>
@@ -111,7 +111,7 @@
               <span>
                 <span class="rail-node">Runtime</span>
                 <span class="rail-sub">Server execution</span>
-                <span class="rail-why">Cloud Run handles Gemini calls, mock/live switch, parser, and fallback pool.</span>
+                <span class="rail-why">Cloud Run handles fetch, Gemini calls, parser, guardrails, and fallback pool.</span>
               </span>
             </a>
             <a class="rail-stage" href="#result" data-stage="report">
@@ -119,7 +119,7 @@
               <span>
                 <span class="rail-node">Report</span>
                 <span class="rail-sub">HTML + JSON output</span>
-                <span class="rail-why">The report renders in-page while the machine payload remains inspectable.</span>
+                <span class="rail-why">The report renders in-page while the evidence packet and machine payload remain inspectable.</span>
               </span>
             </a>
             <a class="rail-stage" href="#vault" data-stage="vault">
@@ -139,22 +139,22 @@
             <div class="section-kicker">
               <p class="eyebrow">Run Input</p>
               <span class="kicker-line"></span>
-              <span class="kicker-note">Phase 1 UI · Mock-safe</span>
+              <span class="kicker-note">Prompt-live · Hybrid fetch</span>
             </div>
 
             <div class="grid lg:grid-cols-[.95fr_1.05fr] gap-7 items-start mt-5">
               <div>
                 <h2 class="font-display section-title">Start a public-footprint diligence run.</h2>
                 <p class="section-copy mt-4">
-                  This shell is intentionally isolated from the legacy runtime. It proves the route that matters:
-                  enter URL, execute server-side, render report, push handoff.
+                  The server fetches first-party pages, builds a hybrid evidence packet, allows controlled grounding fallback,
+                  runs the prompt, and rejects incomplete registry output instead of silently accepting it.
                 </p>
 
                 <div class="dossier-grid mt-6">
-                  <div class="mini-card"><span>Mode</span><strong id="modeBadge">Mock</strong></div>
-                  <div class="mini-card"><span>Runtime</span><strong>Cloud Run-ready</strong></div>
+                  <div class="mini-card"><span>Mode</span><strong id="modeBadge">Loading...</strong></div>
+                  <div class="mini-card"><span>Evidence</span><strong>Hybrid v1</strong></div>
                   <div class="mini-card"><span>Keys</span><strong>Server-side only</strong></div>
-                  <div class="mini-card"><span>Vault</span><strong>Local ACK fallback</strong></div>
+                  <div class="mini-card"><span>Guardrail</span><strong>Registry checked</strong></div>
                 </div>
               </div>
 
@@ -198,7 +198,7 @@
               <span class="kicker-line"></span>
               <span class="kicker-note">Server response rail</span>
             </div>
-            <div id="statusText" class="console mt-5">Waiting for target URL.</div>
+            <div id="statusText" class="console mt-5">Checking runtime health...</div>
           </section>
 
           <section id="result" class="act card-shell reveal hidden">
