@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
@@ -16,6 +17,17 @@ const DILIGENCE_MODE = process.env.DILIGENCE_MODE || "mock";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_API_KEYS = parseKeyPool();
 
+const PROMPT_LIVE_FILES = {
+  monolith: "prompts/01_DILIGENCE_RUNTIME_GPT_v1.md",
+  registryKey: "reference/REGISTRY_KEY_v3_0.md",
+  registryCsv: "reference/AI_THREAT_REGISTRY_REGISTRY.csv",
+  hunterEngineRules: "reference/AI_THREAT_REGISTRY_HUNTER_ENGINE_RULES.csv",
+  vaultMap: "reference/VAULT_JS_CANONICAL_MAP_v1.md",
+  contractSpine: "reference/INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md"
+};
+
+const referenceBundlePromise = loadReferenceBundle();
+
 const app = express();
 
 app.use(
@@ -23,16 +35,25 @@ app.use(
     contentSecurityPolicy: false
   })
 );
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/health", (_req, res) => {
+app.get("/", (_req, res) => {
+  res.redirect(302, "/diligence.html");
+});
+
+app.get("/health", async (_req, res) => {
+  const referenceBundle = await safeReferenceBundle();
   res.json({
     ok: true,
     service: "interface-diligence-system",
     mode: DILIGENCE_MODE,
     model: GEMINI_MODEL,
-    key_pool_size: GEMINI_API_KEYS.length
+    key_pool_size: GEMINI_API_KEYS.length,
+    prompt_live_ready: referenceBundle.ok,
+    prompt_live_files: referenceBundle.manifest || [],
+    registry_row_count_estimate: referenceBundle.registry_row_count_estimate || 0,
+    reference_load_error: referenceBundle.ok ? null : referenceBundle.error
   });
 });
 
@@ -57,7 +78,7 @@ app.post("/api/diligence/run", async (req, res) => {
       company_name: req.body?.company_name || ""
     });
 
-    if (DILIGENCE_MODE !== "live") {
+    if (DILIGENCE_MODE === "mock") {
       return res.json(buildMockResult(runtimePayload));
     }
 
@@ -68,10 +89,48 @@ app.post("/api/diligence/run", async (req, res) => {
       });
     }
 
+    if (DILIGENCE_MODE === "prompt_live") {
+      const referenceBundle = await referenceBundlePromise;
+      const hybridEvidencePacket = buildHybridEvidencePacket(runtimePayload);
+      const userPrompt = buildPromptLiveUserPrompt({
+        runtimePayload,
+        hybridEvidencePacket,
+        referenceBundle
+      });
+
+      const rawText = await callGeminiWithFallback({
+        systemPrompt: referenceBundle.monolith,
+        userPrompt,
+        responseMimeType: "text/plain"
+      });
+      const parsed = parseDiligenceOutput(rawText);
+
+      return res.json({
+        ok: true,
+        run_id: runId,
+        target_url: targetUrl,
+        mode: DILIGENCE_MODE,
+        prompt_bundle: referenceBundle.manifest,
+        hybrid_evidence_packet: hybridEvidencePacket,
+        parse_status: parsed.parse_status,
+        ...parsed
+      });
+    }
+
+    if (DILIGENCE_MODE !== "live") {
+      return res.status(400).json({
+        ok: false,
+        error: "UNSUPPORTED_DILIGENCE_MODE",
+        mode: DILIGENCE_MODE,
+        supported_modes: ["mock", "live", "prompt_live"]
+      });
+    }
+
     const userPrompt = buildDiligenceUserPrompt({ runtimePayload });
     const rawText = await callGeminiWithFallback({
       systemPrompt: DILIGENCE_SYSTEM_PROMPT,
-      userPrompt
+      userPrompt,
+      responseMimeType: "application/json"
     });
     const parsed = parseDiligenceOutput(rawText);
 
@@ -79,6 +138,7 @@ app.post("/api/diligence/run", async (req, res) => {
       ok: true,
       run_id: runId,
       target_url: targetUrl,
+      mode: DILIGENCE_MODE,
       parse_status: parsed.parse_status,
       ...parsed
     });
@@ -102,7 +162,9 @@ app.post("/api/vault/push", async (req, res) => {
       message: "Vault Assembly endpoint not configured. Handoff payload accepted locally.",
       received: {
         run_id: req.body?.run_id || "N/A",
-        has_handoff: Boolean(req.body?.vault_assembly_handoff)
+        has_handoff: Boolean(req.body?.vault_assembly_handoff),
+        has_machine_json: Boolean(req.body?.machine_json),
+        has_html_report: Boolean(req.body?.html_report)
       }
     });
   }
@@ -156,6 +218,119 @@ function createRunId() {
   return `diligence_${stamp}_${rand}`;
 }
 
+async function safeReferenceBundle() {
+  try {
+    return await referenceBundlePromise;
+  } catch (err) {
+    return {
+      ok: false,
+      error: err?.message || String(err),
+      manifest: []
+    };
+  }
+}
+
+async function loadReferenceBundle() {
+  const entries = await Promise.all(
+    Object.entries(PROMPT_LIVE_FILES).map(async ([key, relativePath]) => {
+      const absolutePath = path.join(__dirname, relativePath);
+      const content = await fs.readFile(absolutePath, "utf8");
+      return [key, { relativePath, content, chars: content.length }];
+    })
+  );
+
+  const bundle = Object.fromEntries(entries);
+  const registryRowCount = estimateCsvDataRows(bundle.registryCsv.content);
+
+  return {
+    ok: true,
+    monolith: bundle.monolith.content,
+    registryKey: bundle.registryKey.content,
+    registryCsv: bundle.registryCsv.content,
+    hunterEngineRules: bundle.hunterEngineRules.content,
+    vaultMap: bundle.vaultMap.content,
+    contractSpine: bundle.contractSpine.content,
+    registry_row_count_estimate: registryRowCount,
+    manifest: Object.entries(bundle).map(([key, value]) => ({
+      key,
+      path: value.relativePath,
+      chars: value.chars
+    }))
+  };
+}
+
+function estimateCsvDataRows(csvText) {
+  return String(csvText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean).length - 1;
+}
+
+function buildHybridEvidencePacket(runtimePayload) {
+  return {
+    mode: "hybrid_v0",
+    status: "INITIALIZED_NO_DIRECT_FETCHER_YET",
+    target_url: runtimePayload.target_url || "N/A",
+    source_mode: runtimePayload.source_mode,
+    direct_fetch_attempts: [],
+    evidence_buffer: [],
+    artifact_inventory: [],
+    warnings: [
+      "HYBRID_PACKET_INITIALIZED_NO_FETCHER_YET",
+      "SERVER_REFERENCE_BUNDLE_LOADED",
+      "MODEL_MUST_USE_ONLY_FIRST_PARTY_OR_PASTED_PUBLIC_MATERIAL"
+    ]
+  };
+}
+
+function buildPromptLiveUserPrompt({ runtimePayload, hybridEvidencePacket, referenceBundle }) {
+  return [
+    "# EXECUTION COMMAND",
+    "Run the Diligence Engine against exactly one target using the runtime payload below.",
+    "Do not use private documents. Do not use prior memory. Obey the monolithic prompt and reference documents.",
+    "",
+    "# RUNTIME PAYLOAD",
+    fencedJson(runtimePayload),
+    "",
+    "# HYBRID EVIDENCE PACKET",
+    "The server-side hybrid evidence packet is provided for runtime compatibility. In this v0 shell it may be empty until the direct fetcher is added.",
+    fencedJson(hybridEvidencePacket),
+    "",
+    "# REFERENCE DOCUMENTS",
+    "These files are authoritative runtime references. Apply them in the priority and boundaries specified by the Diligence Runtime.",
+    "",
+    "## REGISTRY_KEY_v3_0.md",
+    fencedText(referenceBundle.registryKey),
+    "",
+    "## AI_THREAT_REGISTRY_REGISTRY.csv",
+    fencedText(referenceBundle.registryCsv),
+    "",
+    "## AI_THREAT_REGISTRY_HUNTER_ENGINE_RULES.csv",
+    fencedText(referenceBundle.hunterEngineRules),
+    "",
+    "## VAULT_JS_CANONICAL_MAP_v1.md",
+    fencedText(referenceBundle.vaultMap),
+    "",
+    "## INTERFACE_DILIGENCE_CONTRACT_SPINE_v1.md",
+    fencedText(referenceBundle.contractSpine),
+    "",
+    "# TERMINAL OUTPUT REQUIREMENT",
+    "Return the full terminal sequence required by the monolithic Diligence Runtime:",
+    "1. <technical_audit_log> ... </technical_audit_log>",
+    "2. <operator_challenge_gate> ... </operator_challenge_gate>",
+    "3. fenced json Machine JSON Payload including assembly_handoff",
+    "4. fenced html final report"
+  ].join("\n");
+}
+
+function fencedJson(value) {
+  return `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
+}
+
+function fencedText(value) {
+  return `\`\`\`text\n${String(value || "")}\n\`\`\``;
+}
+
 function buildMockResult(runtimePayload) {
   return {
     ok: true,
@@ -163,12 +338,12 @@ function buildMockResult(runtimePayload) {
     target_url: runtimePayload.target_url,
     status: "MOCK_COMPLETED",
     parse_status: "MOCK",
-    html_report: `<div class="interface-report"><h1>Diligence System Skeleton Live</h1><p>Target accepted: ${escapeHtml(runtimePayload.target_url)}</p><p>This is Phase 0 mock output. Prompt and reference documents are not wired yet.</p></div>`,
-    technical_audit_log: "MOCK_PHASE_0: Diligence System shell received the runtime payload and returned a mock report.",
+    html_report: `<div class="interface-report"><h1>Diligence System Skeleton Live</h1><p>Target accepted: ${escapeHtml(runtimePayload.target_url)}</p><p>This is mock output. Prompt and reference documents are now present, but prompt_live execution is intentionally disabled unless DILIGENCE_MODE=prompt_live.</p></div>`,
+    technical_audit_log: "MOCK: Diligence System shell received the runtime payload and returned a mock report.",
     operator_challenge_gate: {
       completed: false,
       result: "MOCK_NOT_RUN",
-      notes: ["Prompt-layer execution is intentionally not wired in Phase 0."]
+      notes: ["Prompt-layer execution is intentionally skipped in mock mode."]
     },
     machine_json: {
       target_profile: {
@@ -181,19 +356,19 @@ function buildMockResult(runtimePayload) {
     },
     vault_assembly_handoff: {
       source: "interface_diligence_system",
-      handoff_version: "phase_0_mock",
+      handoff_version: "mock_reference_ready",
       run_id: runtimePayload.run_id,
       target_url: runtimePayload.target_url,
       handoff_envelope: {
         status: "MOCK_READY",
-        warnings: ["Vault handoff contract placeholder only. Real contract to be wired after shell lock."]
+        warnings: ["Vault handoff contract placeholder only. Real prompt_live output available only in prompt_live mode."]
       }
     },
     raw_output: ""
   };
 }
 
-async function callGeminiWithFallback({ systemPrompt, userPrompt }) {
+async function callGeminiWithFallback({ systemPrompt, userPrompt, responseMimeType }) {
   const errors = [];
 
   for (let i = 0; i < GEMINI_API_KEYS.length; i += 1) {
@@ -201,7 +376,8 @@ async function callGeminiWithFallback({ systemPrompt, userPrompt }) {
       const text = await callGeminiOnce({
         apiKey: GEMINI_API_KEYS[i],
         systemPrompt,
-        userPrompt
+        userPrompt,
+        responseMimeType
       });
       if (text && text.trim()) return text;
       errors.push({ key_index: i, error: "EMPTY_RESPONSE" });
@@ -215,13 +391,23 @@ async function callGeminiWithFallback({ systemPrompt, userPrompt }) {
   throw new Error(`ALL_GEMINI_KEYS_FAILED: ${JSON.stringify(errors).slice(0, 1500)}`);
 }
 
-async function callGeminiOnce({ apiKey, systemPrompt, userPrompt }) {
+async function callGeminiOnce({ apiKey, systemPrompt, userPrompt, responseMimeType }) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
     `${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 180000);
+  const timeout = setTimeout(() => controller.abort(), 240000);
+
+  const generationConfig = {
+    temperature: 0.2,
+    topP: 0.9,
+    maxOutputTokens: 65535
+  };
+
+  if (responseMimeType && responseMimeType !== "text/plain") {
+    generationConfig.responseMimeType = responseMimeType;
+  }
 
   try {
     const response = await fetch(endpoint, {
@@ -231,12 +417,7 @@ async function callGeminiOnce({ apiKey, systemPrompt, userPrompt }) {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.9,
-          maxOutputTokens: 65535,
-          responseMimeType: "application/json"
-        }
+        generationConfig
       })
     });
 
@@ -257,28 +438,71 @@ function parseDiligenceOutput(rawText) {
 
   try {
     const json = JSON.parse(stripJsonFence(trimmed));
-    return {
-      parse_status: "JSON_OK",
-      raw_output: trimmed,
-      status: json.status || "COMPLETED",
-      technical_audit_log: json.technical_audit_log || "",
-      operator_challenge_gate: json.operator_challenge_gate || {},
-      machine_json: json.machine_json || {},
-      html_report: json.html_report || "",
-      vault_assembly_handoff: json.vault_assembly_handoff || {}
-    };
+    return normalizeParsedJson(json, trimmed);
   } catch {
+    // Continue to fenced-output parser.
+  }
+
+  const technicalAuditLog = extractTaggedBlock(trimmed, "technical_audit_log");
+  const operatorChallengeRaw = extractTaggedBlock(trimmed, "operator_challenge_gate");
+  const jsonFence = extractFence(trimmed, "json");
+  const htmlFence = extractFence(trimmed, "html");
+
+  if (technicalAuditLog || operatorChallengeRaw || jsonFence || htmlFence) {
+    const machineJson = safeJsonOrText(jsonFence || "");
     return {
-      parse_status: "RAW_FALLBACK",
+      parse_status: "FENCED_OUTPUT_OK",
       raw_output: trimmed,
-      status: "PARTIAL",
-      technical_audit_log: "",
-      operator_challenge_gate: {},
-      machine_json: {},
-      html_report: `<div class="interface-report"><h2>Raw Diligence Output</h2><pre>${escapeHtml(trimmed)}</pre></div>`,
-      vault_assembly_handoff: {}
+      status: "COMPLETED",
+      technical_audit_log: technicalAuditLog || "",
+      operator_challenge_gate: safeJsonOrText(operatorChallengeRaw || "{}"),
+      machine_json: typeof machineJson === "object" ? machineJson : { raw_machine_json: machineJson },
+      html_report: htmlFence || `<div class="interface-report"><h2>Diligence Output</h2><pre>${escapeHtml(trimmed)}</pre></div>`,
+      vault_assembly_handoff: extractVaultHandoff(machineJson)
     };
   }
+
+  return {
+    parse_status: "RAW_FALLBACK",
+    raw_output: trimmed,
+    status: "PARTIAL",
+    technical_audit_log: "",
+    operator_challenge_gate: {},
+    machine_json: {},
+    html_report: `<div class="interface-report"><h2>Raw Diligence Output</h2><pre>${escapeHtml(trimmed)}</pre></div>`,
+    vault_assembly_handoff: {}
+  };
+}
+
+function normalizeParsedJson(json, rawText) {
+  const machineJson = json.machine_json || json;
+  return {
+    parse_status: "JSON_OK",
+    raw_output: rawText,
+    status: json.status || "COMPLETED",
+    technical_audit_log: json.technical_audit_log || "",
+    operator_challenge_gate: json.operator_challenge_gate || {},
+    machine_json: machineJson || {},
+    html_report: json.html_report || json.report_html || "",
+    vault_assembly_handoff: json.vault_assembly_handoff || extractVaultHandoff(machineJson)
+  };
+}
+
+function extractVaultHandoff(machineJson) {
+  if (!machineJson || typeof machineJson !== "object") return {};
+  return machineJson.vault_assembly_handoff || machineJson.assembly_handoff || machineJson.handoff_envelope || {};
+}
+
+function extractTaggedBlock(text, tagName) {
+  const pattern = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i");
+  const match = String(text || "").match(pattern);
+  return match?.[1]?.trim() || "";
+}
+
+function extractFence(text, lang) {
+  const pattern = new RegExp("```" + lang + "\\s*([\\s\\S]*?)```", "i");
+  const match = String(text || "").match(pattern);
+  return match?.[1]?.trim() || "";
 }
 
 function stripJsonFence(text) {
