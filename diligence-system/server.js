@@ -2,6 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import fs from "fs/promises";
 import path from "path";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import {
   DILIGENCE_SYSTEM_PROMPT,
@@ -15,7 +16,12 @@ const __dirname = path.dirname(__filename);
 const PORT = Number(process.env.PORT || 8080);
 const DILIGENCE_MODE = process.env.DILIGENCE_MODE || "mock";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 240000);
+const GEMINI_PING_TIMEOUT_MS = Number(process.env.GEMINI_PING_TIMEOUT_MS || 30000);
+const GEMINI_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS || 65535);
+const GEMINI_PING_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_PING_MAX_OUTPUT_TOKENS || 128);
 const GEMINI_API_KEYS = parseKeyPool();
+const GEMINI_POOL = buildGeminiPool(GEMINI_API_KEYS);
 
 const PROMPT_LIVE_FILES = {
   monolith: "prompts/01_DILIGENCE_RUNTIME_GPT_v1.md",
@@ -48,13 +54,72 @@ app.get("/health", async (_req, res) => {
     ok: true,
     service: "interface-diligence-system",
     mode: DILIGENCE_MODE,
+    supported_modes: ["mock", "live", "prompt_live"],
     model: GEMINI_MODEL,
-    key_pool_size: GEMINI_API_KEYS.length,
+    gemini_ready: GEMINI_POOL.length > 0,
+    key_pool_size: GEMINI_POOL.length,
+    key_pool: publicPoolSnapshot(),
+    timeouts: {
+      gemini_timeout_ms: GEMINI_TIMEOUT_MS,
+      gemini_ping_timeout_ms: GEMINI_PING_TIMEOUT_MS
+    },
+    output_limits: {
+      gemini_max_output_tokens: GEMINI_MAX_OUTPUT_TOKENS,
+      gemini_ping_max_output_tokens: GEMINI_PING_MAX_OUTPUT_TOKENS
+    },
     prompt_live_ready: referenceBundle.ok,
     prompt_live_files: referenceBundle.manifest || [],
     registry_row_count_estimate: referenceBundle.registry_row_count_estimate || 0,
     reference_load_error: referenceBundle.ok ? null : referenceBundle.error
   });
+});
+
+app.get("/api/gemini/pool", (_req, res) => {
+  res.json({
+    ok: true,
+    model: GEMINI_MODEL,
+    configured: GEMINI_POOL.length > 0,
+    key_pool_size: GEMINI_POOL.length,
+    pool: publicPoolSnapshot(),
+    mode: DILIGENCE_MODE,
+    note: "Keys are server-side only. Raw key material is never returned."
+  });
+});
+
+app.post("/api/gemini/ping", async (_req, res) => {
+  if (!GEMINI_POOL.length) {
+    return res.status(500).json({
+      ok: false,
+      error: "GEMINI_API_KEYS_NOT_CONFIGURED"
+    });
+  }
+
+  const startedAt = Date.now();
+  try {
+    const rawText = await callGeminiWithFallback({
+      systemPrompt: "You are a server health-check responder. Return only valid JSON.",
+      userPrompt: "Return exactly this JSON shape with no markdown: {\"ok\":true,\"ping\":\"pong\"}",
+      responseMimeType: "application/json",
+      timeoutMs: GEMINI_PING_TIMEOUT_MS,
+      maxOutputTokens: GEMINI_PING_MAX_OUTPUT_TOKENS,
+      temperature: 0
+    });
+
+    return res.json({
+      ok: true,
+      model: GEMINI_MODEL,
+      key_pool_size: GEMINI_POOL.length,
+      latency_ms: Date.now() - startedAt,
+      response: safeJsonOrText(stripJsonFence(rawText))
+    });
+  } catch (err) {
+    return res.status(502).json({
+      ok: false,
+      error: "GEMINI_PING_FAILED",
+      message: err?.message || String(err),
+      latency_ms: Date.now() - startedAt
+    });
+  }
 });
 
 app.post("/api/diligence/run", async (req, res) => {
@@ -82,10 +147,11 @@ app.post("/api/diligence/run", async (req, res) => {
       return res.json(buildMockResult(runtimePayload));
     }
 
-    if (!GEMINI_API_KEYS.length) {
+    if (!GEMINI_POOL.length) {
       return res.status(500).json({
         ok: false,
-        error: "GEMINI_API_KEYS_NOT_CONFIGURED"
+        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
+        key_pool_size: 0
       });
     }
 
@@ -101,7 +167,10 @@ app.post("/api/diligence/run", async (req, res) => {
       const rawText = await callGeminiWithFallback({
         systemPrompt: referenceBundle.monolith,
         userPrompt,
-        responseMimeType: "text/plain"
+        responseMimeType: "text/plain",
+        timeoutMs: GEMINI_TIMEOUT_MS,
+        maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+        temperature: 0.2
       });
       const parsed = parseDiligenceOutput(rawText);
 
@@ -110,6 +179,8 @@ app.post("/api/diligence/run", async (req, res) => {
         run_id: runId,
         target_url: targetUrl,
         mode: DILIGENCE_MODE,
+        model: GEMINI_MODEL,
+        key_pool_size: GEMINI_POOL.length,
         prompt_bundle: referenceBundle.manifest,
         hybrid_evidence_packet: hybridEvidencePacket,
         parse_status: parsed.parse_status,
@@ -130,7 +201,10 @@ app.post("/api/diligence/run", async (req, res) => {
     const rawText = await callGeminiWithFallback({
       systemPrompt: DILIGENCE_SYSTEM_PROMPT,
       userPrompt,
-      responseMimeType: "application/json"
+      responseMimeType: "application/json",
+      timeoutMs: GEMINI_TIMEOUT_MS,
+      maxOutputTokens: Math.min(GEMINI_MAX_OUTPUT_TOKENS, 8192),
+      temperature: 0.2
     });
     const parsed = parseDiligenceOutput(rawText);
 
@@ -139,6 +213,8 @@ app.post("/api/diligence/run", async (req, res) => {
       run_id: runId,
       target_url: targetUrl,
       mode: DILIGENCE_MODE,
+      model: GEMINI_MODEL,
+      key_pool_size: GEMINI_POOL.length,
       parse_status: parsed.parse_status,
       ...parsed
     });
@@ -201,7 +277,7 @@ app.listen(PORT, () => {
   console.log(`Interface Diligence System listening on :${PORT}`);
   console.log(`Mode: ${DILIGENCE_MODE}`);
   console.log(`Gemini model: ${GEMINI_MODEL}`);
-  console.log(`Gemini key pool size: ${GEMINI_API_KEYS.length}`);
+  console.log(`Gemini key pool size: ${GEMINI_POOL.length}`);
 });
 
 function parseKeyPool() {
@@ -210,6 +286,22 @@ function parseKeyPool() {
   const keys = multi.split(",").map((x) => x.trim()).filter(Boolean);
   if (single.trim()) keys.push(single.trim());
   return Array.from(new Set(keys));
+}
+
+function buildGeminiPool(keys) {
+  return keys.map((key, index) => ({
+    index: index + 1,
+    key,
+    fingerprint: crypto.createHash("sha256").update(key).digest("hex").slice(0, 12)
+  }));
+}
+
+function publicPoolSnapshot() {
+  return GEMINI_POOL.map((entry) => ({
+    index: entry.index,
+    configured: true,
+    fingerprint: entry.fingerprint
+  }));
 }
 
 function createRunId() {
@@ -368,41 +460,59 @@ function buildMockResult(runtimePayload) {
   };
 }
 
-async function callGeminiWithFallback({ systemPrompt, userPrompt, responseMimeType }) {
+async function callGeminiWithFallback({
+  systemPrompt,
+  userPrompt,
+  responseMimeType,
+  timeoutMs = GEMINI_TIMEOUT_MS,
+  maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
+  temperature = 0.2
+}) {
   const errors = [];
 
-  for (let i = 0; i < GEMINI_API_KEYS.length; i += 1) {
+  for (const poolEntry of GEMINI_POOL) {
     try {
       const text = await callGeminiOnce({
-        apiKey: GEMINI_API_KEYS[i],
+        apiKey: poolEntry.key,
         systemPrompt,
         userPrompt,
-        responseMimeType
+        responseMimeType,
+        timeoutMs,
+        maxOutputTokens,
+        temperature
       });
       if (text && text.trim()) return text;
-      errors.push({ key_index: i, error: "EMPTY_RESPONSE" });
+      errors.push({ key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: "EMPTY_RESPONSE" });
     } catch (err) {
       const message = err?.message || String(err);
-      errors.push({ key_index: i, error: message });
-      console.warn(`[gemini] key ${i + 1} failed: ${message}`);
+      errors.push({ key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: message });
+      console.warn(`[gemini] key ${poolEntry.index} failed: ${message}`);
     }
   }
 
   throw new Error(`ALL_GEMINI_KEYS_FAILED: ${JSON.stringify(errors).slice(0, 1500)}`);
 }
 
-async function callGeminiOnce({ apiKey, systemPrompt, userPrompt, responseMimeType }) {
+async function callGeminiOnce({
+  apiKey,
+  systemPrompt,
+  userPrompt,
+  responseMimeType,
+  timeoutMs = GEMINI_TIMEOUT_MS,
+  maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
+  temperature = 0.2
+}) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
     `${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 240000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   const generationConfig = {
-    temperature: 0.2,
+    temperature,
     topP: 0.9,
-    maxOutputTokens: 65535
+    maxOutputTokens
   };
 
   if (responseMimeType && responseMimeType !== "text/plain") {
