@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>The Interface — Diligence System</title>
+  <meta name="description" content="The Interface public-footprint diligence system."/>
+  <meta name="theme-color" content="#050505"/>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/diligence.css"/>
+</head>
+
+<body>
+  <div id="progressLine" class="progress-line"></div>
+
+  <nav class="topnav">
+    <div class="mx-auto max-w-7xl px-5 py-4 flex items-center justify-between">
+      <a class="wordmark" href="/diligence.html">
+        <span class="wordmark-title">The Interface</span>
+        <span class="wordmark-subtitle">Diligence System · Vault Handoff</span>
+      </a>
+
+      <div class="hidden md:flex items-center gap-6 text-xs tracking-[.18em] uppercase">
+        <a class="nav-link" href="#run">Run</a>
+        <a class="nav-link" href="#result">Report</a>
+        <a class="nav-link" href="#vault">Vault</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page-shell">
+    <section class="mx-auto max-w-7xl px-5 pt-12 pb-8">
+      <div class="hero-grid">
+        <div class="load-in d1">
+          <p class="eyebrow">Diligence System v0</p>
+          <h1 class="font-display hero-title mt-5">
+            Public-footprint diligence, rendered into a review-ready interface.
+          </h1>
+          <p class="hero-copy mt-6">
+            Enter a company URL. The server runs with protected environment keys, returns
+            a report object, and prepares a Vault Assembly handoff payload. Phase 0 uses
+            mock output until the real prompt and reference documents are wired.
+          </p>
+
+          <div class="hairline my-8"></div>
+
+          <div class="flex flex-wrap gap-3">
+            <span class="pill">Google Cloud Run runtime</span>
+            <span class="pill">Server-side Gemini pool</span>
+            <span class="pill">HTML report</span>
+            <span class="pill">Vault handoff</span>
+          </div>
+        </div>
+
+        <div class="surface rounded-[2rem] p-5 md:p-7 load-in d2" id="run">
+          <form id="diligenceForm" class="space-y-5">
+            <div>
+              <label class="field-label" for="targetUrl">Target URL</label>
+              <input id="targetUrl" name="target_url" type="url" placeholder="https://example.ai" class="field" required/>
+            </div>
+
+            <div>
+              <label class="field-label" for="companyName">Company name <span>optional</span></label>
+              <input id="companyName" name="company_name" type="text" placeholder="Example AI" class="field"/>
+            </div>
+
+            <div>
+              <label class="field-label" for="sourceMode">Source mode</label>
+              <select id="sourceMode" name="source_mode" class="field">
+                <option value="url">URL only</option>
+                <option value="url_plus_text">URL + pasted public material</option>
+                <option value="text">Pasted public material only</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="field-label" for="pastedMaterial">Pasted public material <span>optional</span></label>
+              <textarea id="pastedMaterial" name="pasted_public_material" rows="5" placeholder="Paste public product/legal/governance text only. Do not paste confidential material." class="field textarea"></textarea>
+            </div>
+
+            <button id="runButton" type="submit" class="btn w-full">Run Diligence System</button>
+
+            <p class="disclaimer">
+              Public demo. No legal advice. Public or user-provided materials only.
+              Do not submit confidential information.
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-7xl px-5 pb-12">
+      <div class="main-grid">
+        <aside class="rail-wrap">
+          <div class="rail">
+            <div class="rail-band">Runtime <span class="tag">Live flow</span></div>
+            <div class="rail-stage active" data-stage="input"><span class="rail-dot"></span><span><span class="rail-node">Input</span><span class="rail-sub">URL + optional public text</span></span></div>
+            <div class="rail-stage" data-stage="runtime"><span class="rail-dot"></span><span><span class="rail-node">Runtime</span><span class="rail-sub">Server execution</span></span></div>
+            <div class="rail-stage" data-stage="report"><span class="rail-dot"></span><span><span class="rail-node">Report</span><span class="rail-sub">HTML output</span></span></div>
+            <div class="rail-stage" data-stage="vault"><span class="rail-dot endpoint"></span><span><span class="rail-node">Vault</span><span class="rail-sub">Assembly handoff</span></span></div>
+            <div class="rail-chip"><span class="pulse"></span> Shell online</div>
+          </div>
+        </aside>
+
+        <div class="space-y-6">
+          <section id="statusPanel" class="surface rounded-[2rem] p-5 md:p-7">
+            <p class="eyebrow">Execution Console</p>
+            <div id="statusText" class="console mt-4">Waiting for target URL.</div>
+          </section>
+
+          <section id="result" class="surface rounded-[2rem] p-5 md:p-7 hidden">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p class="eyebrow">Diligence Report</p>
+                <h2 class="font-display section-title mt-2">System Output</h2>
+              </div>
+
+              <div class="tabbar">
+                <button class="tab active" data-tab="report">Report</button>
+                <button class="tab" data-tab="json">JSON</button>
+                <button class="tab" data-tab="audit">Audit</button>
+                <button class="tab" data-tab="vault">Vault</button>
+              </div>
+            </div>
+
+            <div class="hairline my-6"></div>
+
+            <div id="tab-report" class="tab-panel"></div>
+            <pre id="tab-json" class="tab-panel hidden codebox"></pre>
+            <pre id="tab-audit" class="tab-panel hidden codebox"></pre>
+            <pre id="tab-vault" class="tab-panel hidden codebox"></pre>
+          </section>
+
+          <section id="vault" class="surface rounded-[2rem] p-5 md:p-7 hidden">
+            <p class="eyebrow">Vault Assembly Engine</p>
+            <h2 class="font-display section-title mt-2">Handoff Payload</h2>
+            <p class="hero-copy mt-3">Push the generated handoff to the downstream Vault Assembly Engine when the endpoint is configured.</p>
+
+            <div class="mt-6 flex flex-wrap gap-3">
+              <button id="pushVaultButton" class="btn">Push to Vault</button>
+              <button id="downloadButton" class="btn sec">Download JSON</button>
+            </div>
+
+            <div id="vaultStatus" class="console mt-5">Vault handoff not pushed yet.</div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/diligence-ui.js"></script>
+</body>
+</html>
