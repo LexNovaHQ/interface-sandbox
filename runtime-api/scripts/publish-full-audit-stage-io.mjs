@@ -144,6 +144,7 @@ addStage("stage5", "Stage 5 - Canonical Lossless Window Runtime", {
   primary_source_count: Number(stage5Input?.primary_source_count || 0),
   navigation_index_count: Number(stage5Input?.navigation_index_count || 0),
   product_profile_lossless_records: productLossless.length,
+  product_family_lossless_records: productLossless.length,
   legacy_adapter_used: stage5Input?.legacy_adapter_used === true
 }, {
   present: Boolean(stage5Runtime && Object.keys(stage5Runtime).length),
