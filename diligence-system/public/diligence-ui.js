@@ -1,5 +1,6 @@
 const state = {
-  lastResult: null
+  lastResult: null,
+  health: null
 };
 
 const els = {
@@ -18,7 +19,8 @@ const els = {
   vaultStatus: document.getElementById("vaultStatus"),
   targetUrl: document.getElementById("targetUrl"),
   sourceMode: document.getElementById("sourceMode"),
-  pastedMaterial: document.getElementById("pastedMaterial")
+  pastedMaterial: document.getElementById("pastedMaterial"),
+  modeBadge: document.getElementById("modeBadge")
 };
 
 els.form.addEventListener("submit", handleRun);
@@ -34,8 +36,34 @@ document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => activateTab(btn.dataset.tab));
 });
 
-updateInputRequirements();
-restoreLastResult();
+boot();
+
+async function boot() {
+  updateInputRequirements();
+  await loadHealth();
+  restoreLastResult();
+}
+
+async function loadHealth() {
+  try {
+    const response = await fetch("/health", { headers: { accept: "application/json" } });
+    const health = await response.json();
+    state.health = health;
+
+    if (els.modeBadge) {
+      const mode = health.mode || "unknown";
+      const fetcher = health.hybrid_fetcher?.version || "no_fetcher";
+      els.modeBadge.textContent = `${mode} · ${fetcher}`;
+    }
+
+    setStatus(
+      `Runtime ready: mode=${health.mode || "unknown"} · models=${(health.models || []).join("/") || health.model || "N/A"} · prompt_live=${Boolean(health.prompt_live_ready)} · hybrid=${health.hybrid_fetcher?.version || "N/A"}`
+    );
+  } catch (err) {
+    if (els.modeBadge) els.modeBadge.textContent = "unknown";
+    setStatus(`Runtime health check unavailable: ${err.message || String(err)}`);
+  }
+}
 
 async function handleRun(event) {
   event.preventDefault();
@@ -82,11 +110,18 @@ async function handleRun(event) {
 
     setProgress(55);
     setRail("runtime");
-    setStatus("Diligence runtime executing...");
+    setStatus("Diligence runtime executing or returning diagnostics...");
 
-    const result = await response.json();
+    const result = await safeReadJson(response);
     if (!response.ok || !result.ok) {
-      throw new Error(result.message || result.error || `HTTP_${response.status}`);
+      const diagnostic = buildErrorResult({ response, result, payload });
+      state.lastResult = diagnostic;
+      localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
+      renderResult(diagnostic);
+      setProgress(100);
+      setRail("report");
+      setStatus(`Run returned diagnostic failure: ${diagnostic.error || diagnostic.status || `HTTP_${response.status}`}`);
+      return;
     }
 
     setProgress(86);
@@ -98,11 +133,14 @@ async function handleRun(event) {
     renderResult(result);
 
     setProgress(100);
-    setRail("vault");
-    setStatus(`Completed. Run ID: ${result.run_id || "N/A"}`);
+    setRail(result.status === "GUARDRAIL_FAILED" ? "report" : "vault");
+    setStatus(`${result.status === "GUARDRAIL_FAILED" ? "Guardrail failed" : "Completed"}. Run ID: ${result.run_id || "N/A"}`);
   } catch (err) {
     setProgress(0);
-    setStatus(`Run failed: ${err.message || String(err)}`);
+    const diagnostic = buildErrorResult({ error: err, payload });
+    state.lastResult = diagnostic;
+    renderResult(diagnostic);
+    setStatus(`Run failed before a normal response: ${err.message || String(err)}`);
   } finally {
     setRunning(false);
   }
@@ -146,18 +184,91 @@ function renderResult(result) {
   els.result.classList.remove("hidden");
   els.vault.classList.remove("hidden");
 
-  els.reportTab.innerHTML = result.html_report || `<div class="interface-report"><h2>No HTML report returned</h2><p>Open JSON tab for raw output.</p></div>`;
-  els.jsonTab.textContent = JSON.stringify({
-    parse_status: result.parse_status,
-    status: result.status,
-    machine_json: result.machine_json || {},
-    raw_output: result.raw_output || ""
-  }, null, 2);
-  els.auditTab.textContent = result.technical_audit_log || JSON.stringify(result.operator_challenge_gate || {}, null, 2) || "No audit log returned.";
+  els.reportTab.innerHTML = result.html_report || buildFallbackReportHtml(result);
+  els.jsonTab.textContent = JSON.stringify(buildVisibleJson(result), null, 2);
+  els.auditTab.textContent = buildAuditText(result);
   els.vaultTab.textContent = JSON.stringify(result.vault_assembly_handoff || {}, null, 2);
 
   activateTab("report");
   setTimeout(() => document.getElementById("result").scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+}
+
+function buildVisibleJson(result) {
+  return {
+    ok: result.ok,
+    status: result.status,
+    parse_status: result.parse_status,
+    mode: result.mode,
+    model: result.model,
+    key_index: result.key_index,
+    guardrail: result.guardrail || null,
+    hybrid_source_review: result.hybrid_evidence_packet?.source_review || null,
+    hybrid_warnings: result.hybrid_evidence_packet?.warnings || [],
+    hybrid_candidate_links: result.hybrid_evidence_packet?.candidate_links || [],
+    hybrid_direct_fetch_attempts: result.hybrid_evidence_packet?.direct_fetch_attempts || [],
+    hybrid_artifact_inventory: result.hybrid_evidence_packet?.artifact_inventory || [],
+    machine_json: result.machine_json || {},
+    raw_output: result.raw_output || "",
+    error: result.error || null,
+    message: result.message || null
+  };
+}
+
+function buildAuditText(result) {
+  const chunks = [];
+  if (result.guardrail) chunks.push(`[SERVER_GUARDRAIL]\n${JSON.stringify(result.guardrail, null, 2)}`);
+  if (result.hybrid_evidence_packet?.source_review) chunks.push(`[HYBRID_SOURCE_REVIEW]\n${JSON.stringify(result.hybrid_evidence_packet.source_review, null, 2)}`);
+  if (result.hybrid_evidence_packet?.warnings?.length) chunks.push(`[HYBRID_WARNINGS]\n${JSON.stringify(result.hybrid_evidence_packet.warnings, null, 2)}`);
+  if (result.technical_audit_log) chunks.push(`[MODEL_TECHNICAL_AUDIT_LOG]\n${result.technical_audit_log}`);
+  if (result.operator_challenge_gate) chunks.push(`[OPERATOR_CHALLENGE_GATE]\n${JSON.stringify(result.operator_challenge_gate, null, 2)}`);
+  if (result.raw_output && !result.technical_audit_log) chunks.push(`[RAW_OUTPUT]\n${result.raw_output}`);
+  return chunks.join("\n\n") || "No audit diagnostics returned.";
+}
+
+function buildFallbackReportHtml(result) {
+  const title = result.status === "ERROR" || result.error ? "Runtime Diagnostic" : "No HTML report returned";
+  return `
+    <div class="interface-report guardrail-failed">
+      <h1>${escapeHtml(title)}</h1>
+      <p>The server returned no HTML report. Open the JSON and Audit tabs for diagnostics.</p>
+      ${result.error ? `<p><strong>Error:</strong> ${escapeHtml(result.error)}</p>` : ""}
+      ${result.message ? `<pre>${escapeHtml(result.message)}</pre>` : ""}
+    </div>`;
+}
+
+function buildErrorResult({ response, result, error, payload }) {
+  const status = response ? `HTTP_${response.status}` : "CLIENT_ERROR";
+  const err = result?.error || error?.name || status;
+  const message = result?.message || error?.message || "No additional message returned.";
+  return {
+    ok: false,
+    status: "ERROR",
+    parse_status: "ERROR_DIAGNOSTIC",
+    error: err,
+    message,
+    target_url: payload?.target_url || "N/A",
+    mode: state.health?.mode || "unknown",
+    html_report: buildFallbackReportHtml({ status: "ERROR", error: err, message }),
+    machine_json: result || {},
+    technical_audit_log: result?.technical_audit_log || "",
+    operator_challenge_gate: result?.operator_challenge_gate || {},
+    vault_assembly_handoff: result?.vault_assembly_handoff || {},
+    raw_output: result?.raw_output || ""
+  };
+}
+
+async function safeReadJson(response) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      ok: false,
+      error: "NON_JSON_RESPONSE",
+      message: text.slice(0, 5000)
+    };
+  }
 }
 
 async function handleVaultPush() {
@@ -224,7 +335,7 @@ function restoreLastResult() {
     renderResult(result);
     setStatus(`Restored last run. Run ID: ${result.run_id || "N/A"}`);
     setProgress(100);
-    setRail("vault");
+    setRail(result.status === "GUARDRAIL_FAILED" ? "report" : "vault");
   } catch {
     localStorage.removeItem("interface_diligence_last_result");
   }
@@ -264,4 +375,13 @@ function setRail(activeStage) {
     node.classList.toggle("active", stage === activeStage);
     node.classList.toggle("completed", idx >= 0 && idx < activeIndex);
   });
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
