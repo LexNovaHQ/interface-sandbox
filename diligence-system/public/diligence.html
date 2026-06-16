@@ -158,10 +158,10 @@
                 </div>
               </div>
 
-              <form id="diligenceForm" class="input-panel space-y-5">
+              <form id="diligenceForm" class="input-panel space-y-5" novalidate>
                 <div>
-                  <label class="field-label" for="targetUrl">Target URL</label>
-                  <input id="targetUrl" name="target_url" type="url" placeholder="https://example.ai" class="field" required/>
+                  <label class="field-label" for="targetUrl">Target URL <span>accepts example.ai or https://example.ai</span></label>
+                  <input id="targetUrl" name="target_url" type="text" inputmode="url" placeholder="https://example.ai" class="field" autocomplete="url"/>
                 </div>
 
                 <div>
