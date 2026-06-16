@@ -57,6 +57,14 @@ function assertForensic(stageKey, forensic) {
   if (!Array.isArray(forensic.artifact_integrity) || !forensic.artifact_integrity.length) fail(`${stageKey} forensic summary missing artifact_integrity.`);
 }
 
+function isProductSourceFamily(record = {}) {
+  return ["product_profile", "product_family"].includes(record.source_family);
+}
+
+function productLosslessOutputCount(output = {}) {
+  return Number(output.product_profile_lossless_records ?? output.product_family_lossless_records ?? 0);
+}
+
 function assertStage1() {
   const { input, output, forensic } = assertIoSummaries("stage1");
   assertForensic("stage1", forensic);
@@ -89,10 +97,10 @@ function assertStage3() {
   const records = asArray(bundle.raw_footprint?.source_records);
   if (!records.length) fail("Stage 3 source bundle has zero raw_footprint.source_records.");
   if (!junction || typeof junction !== "object" || !Object.keys(junction).length) fail("Stage 3 evidence junction artifact is empty.");
-  const productRecords = records.filter((record) => record.source_family === "product_family");
+  const productRecords = records.filter((record) => isProductSourceFamily(record));
   const losslessProductRecords = productRecords.filter((record) => hasText(record.text?.clean_text_lossless));
-  if (!losslessProductRecords.length) fail("Stage 3 did not preserve product_family clean_text_lossless for Stage 5 custody.");
-  if (Number(output.product_family_lossless_records || 0) !== losslessProductRecords.length) fail("Stage 3 output summary product_family_lossless_records does not match artifact.");
+  if (!losslessProductRecords.length) fail("Stage 3 did not preserve product_profile clean_text_lossless for Stage 5 custody.");
+  if (productLosslessOutputCount(output) !== losslessProductRecords.length) fail("Stage 3 output summary product_profile_lossless_records does not match artifact.");
   pass("Stage 3 - Evidence Refiner / Source Bundle", "stage3-input-summary.json + stage3-output-summary.json + stage3-forensic-summary.json + 03/04 artifacts", `records=${records.length}; product_lossless=${losslessProductRecords.length}; duration_ms=${forensic.duration.duration_ms}`);
 }
 
