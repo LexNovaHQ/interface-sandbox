@@ -35,6 +35,92 @@ const GEMINI_API_KEYS = parseKeyPool();
 const GEMINI_POOL = buildGeminiPool(GEMINI_API_KEYS);
 const GEMINI_MODEL_POOL = buildGeminiModelPool(GEMINI_MODELS);
 
+const DILIGENCE_POOL_DEFINITIONS = {
+  search: {
+    label: "Source Discovery / Grounded Search",
+    keyEnv: "DILIGENCE_SEARCH_API_KEYS",
+    singleKeyEnv: "DILIGENCE_SEARCH_API_KEY",
+    modelEnv: "DILIGENCE_SEARCH_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_SEARCH_MODEL",
+    defaultModels: ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    groundingDefault: true,
+    fallbackPool: null
+  },
+  extract: {
+    label: "Extraction / Evidence Structuring",
+    keyEnv: "DILIGENCE_EXTRACT_API_KEYS",
+    singleKeyEnv: "DILIGENCE_EXTRACT_API_KEY",
+    modelEnv: "DILIGENCE_EXTRACT_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_EXTRACT_MODEL",
+    defaultModels: ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    groundingDefault: false,
+    fallbackPool: "repair"
+  },
+  router: {
+    label: "Evidence Package Router",
+    keyEnv: "DILIGENCE_ROUTER_API_KEYS",
+    singleKeyEnv: "DILIGENCE_ROUTER_API_KEY",
+    modelEnv: "DILIGENCE_ROUTER_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_ROUTER_MODEL",
+    defaultModels: ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    groundingDefault: false,
+    fallbackPool: "extract"
+  },
+  profile: {
+    label: "Target / Function / Data Profile Builder",
+    keyEnv: "DILIGENCE_PROFILE_API_KEYS",
+    singleKeyEnv: "DILIGENCE_PROFILE_API_KEY",
+    modelEnv: "DILIGENCE_PROFILE_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_PROFILE_MODEL",
+    defaultModels: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+    groundingDefault: false,
+    fallbackPool: "repair"
+  },
+  registry: {
+    label: "Registry / Exposure Evaluation",
+    keyEnv: "DILIGENCE_REGISTRY_API_KEYS",
+    singleKeyEnv: "DILIGENCE_REGISTRY_API_KEY",
+    modelEnv: "DILIGENCE_REGISTRY_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_REGISTRY_MODEL",
+    defaultModels: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+    groundingDefault: false,
+    fallbackPool: "repair"
+  },
+  final: {
+    label: "Integrated Report / Vault Handoff Compiler",
+    keyEnv: "DILIGENCE_FINAL_API_KEYS",
+    singleKeyEnv: "DILIGENCE_FINAL_API_KEY",
+    modelEnv: "DILIGENCE_FINAL_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_FINAL_MODEL",
+    defaultModels: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+    groundingDefault: false,
+    fallbackPool: "repair"
+  },
+  repair: {
+    label: "Schema Repair / Normalization",
+    keyEnv: "DILIGENCE_REPAIR_API_KEYS",
+    singleKeyEnv: "DILIGENCE_REPAIR_API_KEY",
+    modelEnv: "DILIGENCE_REPAIR_MODEL_SEQUENCE",
+    singleModelEnv: "DILIGENCE_REPAIR_MODEL",
+    defaultModels: ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+    groundingDefault: false,
+    fallbackPool: null
+  }
+};
+
+const DILIGENCE_STAGE_POOL_BINDINGS = {
+  stage1_source_evidence_box: { primary: "search", secondary: "extract" },
+  stage2_evidence_package_router: { primary: "router", secondary: "extract" },
+  stage3_target_profile: { primary: "profile", secondary: "repair" },
+  stage4_function_profile: { primary: "profile", secondary: "repair" },
+  stage5_legal_index: { primary: "extract", secondary: "profile" },
+  stage6_data_profile: { primary: "profile", secondary: "repair" },
+  stage7_registry_exposure: { primary: "registry", secondary: "repair" },
+  stage8_integrated_report_handoff: { primary: "final", secondary: "repair" }
+};
+
+const DILIGENCE_POOLS = buildDiligencePools();
+
 const PROMPT_LIVE_FILES = {
   monolith: "prompts/01_DILIGENCE_RUNTIME_GPT_v1.md",
   registryKey: "reference/REGISTRY_KEY_v3_0.md",
@@ -109,6 +195,12 @@ app.get("/health", async (_req, res) => {
     gemini_ready: GEMINI_POOL.length > 0 && GEMINI_MODEL_POOL.length > 0,
     key_pool_size: GEMINI_POOL.length,
     key_pool: publicPoolSnapshot(),
+    diligence_pool_foundation: {
+      version: "diligence_pool_v1",
+      pool_count: Object.keys(DILIGENCE_POOLS).length,
+      pools: publicDiligencePoolsSnapshot(),
+      stage_pool_bindings: DILIGENCE_STAGE_POOL_BINDINGS
+    },
     hybrid_fetcher: {
       version: "hybrid_v1",
       enabled: HYBRID_FETCH_ENABLED,
@@ -144,7 +236,25 @@ app.get("/api/gemini/pool", (_req, res) => {
     configured: GEMINI_POOL.length > 0 && GEMINI_MODEL_POOL.length > 0,
     key_pool_size: GEMINI_POOL.length,
     pool: publicPoolSnapshot(),
+    diligence_pool_foundation: {
+      version: "diligence_pool_v1",
+      pools: publicDiligencePoolsSnapshot(),
+      stage_pool_bindings: DILIGENCE_STAGE_POOL_BINDINGS
+    },
     mode: DILIGENCE_MODE,
+    note: "Keys are server-side only. Raw key material is never returned."
+  });
+});
+
+app.get("/api/diligence/pools", (_req, res) => {
+  res.json({
+    ok: true,
+    version: "diligence_pool_v1",
+    service: "interface-diligence-system",
+    mode: DILIGENCE_MODE,
+    fallback_policy: "Pool-specific DILIGENCE_* env values are preferred; GEMINI_API_KEYS/GEMINI_MODEL(S) remain migration fallbacks.",
+    pools: publicDiligencePoolsSnapshot(),
+    stage_pool_bindings: DILIGENCE_STAGE_POOL_BINDINGS,
     note: "Keys are server-side only. Raw key material is never returned."
   });
 });
@@ -164,7 +274,8 @@ app.post("/api/gemini/ping", async (_req, res) => {
       maxOutputTokens: GEMINI_PING_MAX_OUTPUT_TOKENS,
       temperature: 0,
       returnMeta: true,
-      allowGrounding: false
+      allowGrounding: false,
+      poolName: "repair"
     });
 
     return res.json({
@@ -172,6 +283,7 @@ app.post("/api/gemini/ping", async (_req, res) => {
       model: result.model,
       key_index: result.key_index,
       key_fingerprint: result.fingerprint,
+      pool_name: result.pool_name,
       models: GEMINI_MODELS,
       key_pool_size: GEMINI_POOL.length,
       latency_ms: Date.now() - startedAt,
@@ -230,7 +342,8 @@ app.post("/api/diligence/run", async (req, res) => {
         maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
         temperature: 0.2,
         returnMeta: true,
-        allowGrounding: HYBRID_GROUNDING_ALLOWED
+        allowGrounding: HYBRID_GROUNDING_ALLOWED,
+        poolName: "final"
       });
       const parsed = parseDiligenceOutput(result.text);
       const guardrail = validatePromptLiveOutput({
@@ -247,6 +360,7 @@ app.post("/api/diligence/run", async (req, res) => {
         mode: DILIGENCE_MODE,
         model: result.model,
         key_index: result.key_index,
+        pool_name: result.pool_name,
         key_pool_size: GEMINI_POOL.length,
         model_pool_size: GEMINI_MODEL_POOL.length,
         prompt_bundle: referenceBundle.manifest,
@@ -275,7 +389,8 @@ app.post("/api/diligence/run", async (req, res) => {
       maxOutputTokens: Math.min(GEMINI_MAX_OUTPUT_TOKENS, 8192),
       temperature: 0.2,
       returnMeta: true,
-      allowGrounding: false
+      allowGrounding: false,
+      poolName: "repair"
     });
     const parsed = parseDiligenceOutput(result.text);
 
@@ -342,6 +457,7 @@ app.listen(PORT, () => {
   console.log(`Mode: ${DILIGENCE_MODE}`);
   console.log(`Gemini models: ${GEMINI_MODELS.join(", ")}`);
   console.log(`Gemini key pool size: ${GEMINI_POOL.length}`);
+  console.log(`Diligence pool foundation: diligence_pool_v1 pools=${Object.keys(DILIGENCE_POOLS).length}`);
   console.log(`Hybrid fetcher: hybrid_v1 enabled=${HYBRID_FETCH_ENABLED} grounding=${HYBRID_GROUNDING_ALLOWED}`);
 });
 
@@ -384,6 +500,97 @@ function publicPoolSnapshot() {
     configured: true,
     fingerprint: entry.fingerprint
   }));
+}
+
+function buildDiligencePools() {
+  const pools = {};
+  for (const [name, definition] of Object.entries(DILIGENCE_POOL_DEFINITIONS)) {
+    const keys = parseRoleKeyPool(definition);
+    const models = parseRoleModelPool(definition);
+    pools[name] = {
+      name,
+      label: definition.label,
+      keys: buildGeminiPool(keys),
+      models: buildGeminiModelPool(models),
+      grounding_default: Boolean(definition.groundingDefault),
+      fallback_pool: definition.fallbackPool || null,
+      env: {
+        keys: definition.keyEnv,
+        single_key: definition.singleKeyEnv,
+        models: definition.modelEnv,
+        single_model: definition.singleModelEnv
+      }
+    };
+  }
+  return pools;
+}
+
+function parseRoleKeyPool(definition) {
+  const multi = process.env[definition.keyEnv] || "";
+  const single = process.env[definition.singleKeyEnv] || "";
+  const migrationMulti = process.env.GEMINI_API_KEYS || "";
+  const migrationSingle = process.env.GEMINI_API_KEY || "";
+
+  const raw = [multi, single, migrationMulti, migrationSingle].join(",");
+  return Array.from(new Set(raw.split(",").map((x) => x.trim()).filter(Boolean)));
+}
+
+function parseRoleModelPool(definition) {
+  const multi = process.env[definition.modelEnv] || "";
+  const single = process.env[definition.singleModelEnv] || "";
+  const migrationMulti = process.env.GEMINI_MODELS || "";
+  const migrationSingle = process.env.GEMINI_MODEL || "";
+  const raw = multi.trim() ? multi : (single.trim() ? single : (migrationMulti.trim() ? migrationMulti : migrationSingle));
+  const models = raw.split(",").map((x) => x.trim()).filter(Boolean);
+  return Array.from(new Set(models.length ? models : definition.defaultModels));
+}
+
+function getExecutionPool(poolName = "default") {
+  if (!poolName || poolName === "default") {
+    return {
+      name: "default",
+      label: "Legacy simple Gemini pool",
+      keys: GEMINI_POOL,
+      models: GEMINI_MODEL_POOL,
+      grounding_default: false,
+      fallback_pool: null
+    };
+  }
+
+  const selected = DILIGENCE_POOLS[poolName];
+  if (selected) return selected;
+
+  return {
+    name: "default",
+    label: `Unknown pool requested (${poolName}); using legacy simple Gemini pool`,
+    keys: GEMINI_POOL,
+    models: GEMINI_MODEL_POOL,
+    grounding_default: false,
+    fallback_pool: null
+  };
+}
+
+function publicDiligencePoolsSnapshot() {
+  return Object.fromEntries(
+    Object.entries(DILIGENCE_POOLS).map(([name, pool]) => [
+      name,
+      {
+        label: pool.label,
+        configured: pool.keys.length > 0 && pool.models.length > 0,
+        key_count: pool.keys.length,
+        model_count: pool.models.length,
+        models: pool.models.map((entry) => entry.model),
+        key_pool: pool.keys.map((entry) => ({
+          index: entry.index,
+          configured: true,
+          fingerprint: entry.fingerprint
+        })),
+        grounding_default: pool.grounding_default,
+        fallback_pool: pool.fallback_pool,
+        env: pool.env
+      }
+    ])
+  );
 }
 
 function createRunId() {
@@ -921,12 +1128,19 @@ async function callGeminiWithFallback({
   maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
   temperature = 0.2,
   returnMeta = false,
-  allowGrounding = false
+  allowGrounding,
+  poolName = "default"
 }) {
+  const executionPool = getExecutionPool(poolName);
+  const effectiveGrounding = allowGrounding === undefined ? executionPool.grounding_default : Boolean(allowGrounding);
   const errors = [];
 
-  for (const modelEntry of GEMINI_MODEL_POOL) {
-    for (const poolEntry of GEMINI_POOL) {
+  if (!executionPool.keys.length || !executionPool.models.length) {
+    throw new Error(`DILIGENCE_POOL_NOT_CONFIGURED:${executionPool.name}:keys=${executionPool.keys.length}:models=${executionPool.models.length}`);
+  }
+
+  for (const modelEntry of executionPool.models) {
+    for (const poolEntry of executionPool.keys) {
       try {
         const result = await callGeminiOnce({
           apiKey: poolEntry.key,
@@ -937,11 +1151,12 @@ async function callGeminiWithFallback({
           timeoutMs,
           maxOutputTokens,
           temperature,
-          allowGrounding
+          allowGrounding: effectiveGrounding
         });
         if (result.text && result.text.trim()) {
           const meta = {
             text: result.text,
+            pool_name: executionPool.name,
             model: modelEntry.model,
             key_index: poolEntry.index,
             fingerprint: poolEntry.fingerprint,
@@ -950,16 +1165,16 @@ async function callGeminiWithFallback({
           };
           return returnMeta ? meta : result.text;
         }
-        errors.push({ model: modelEntry.model, key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: "EMPTY_RESPONSE" });
+        errors.push({ pool_name: executionPool.name, model: modelEntry.model, key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: "EMPTY_RESPONSE" });
       } catch (err) {
         const message = err?.message || String(err);
-        errors.push({ model: modelEntry.model, key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: message });
-        console.warn(`[gemini] model ${modelEntry.model} key ${poolEntry.index} failed: ${message}`);
+        errors.push({ pool_name: executionPool.name, model: modelEntry.model, key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: message });
+        console.warn(`[gemini:${executionPool.name}] model ${modelEntry.model} key ${poolEntry.index} failed: ${message}`);
       }
     }
   }
 
-  throw new Error(`ALL_GEMINI_MODEL_KEY_COMBINATIONS_FAILED: ${JSON.stringify(errors).slice(0, 2500)}`);
+  throw new Error(`ALL_DILIGENCE_POOL_MODEL_KEY_COMBINATIONS_FAILED:${executionPool.name}:${JSON.stringify(errors).slice(0, 2500)}`);
 }
 
 async function callGeminiOnce({
@@ -1265,4 +1480,5 @@ function safeJsonOrText(text) {
     return text;
   }
 }
+
 
