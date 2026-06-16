@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import helmet from "helmet";
 import fs from "fs/promises";
 import path from "path";
@@ -38,12 +38,7 @@ const PROMPT_LIVE_FILES = {
 const referenceBundlePromise = loadReferenceBundle();
 
 const app = express();
-
-app.use(
-  helmet({
-    contentSecurityPolicy: false
-  })
-);
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -59,7 +54,9 @@ app.get("/health", async (_req, res) => {
     mode: DILIGENCE_MODE,
     supported_modes: ["mock", "live", "prompt_live"],
     model: GEMINI_MODEL,
-    gemini_ready: GEMINI_POOL.length > 0,
+    models: GEMINI_MODELS,
+    model_pool_size: GEMINI_MODEL_POOL.length,
+    gemini_ready: GEMINI_POOL.length > 0 && GEMINI_MODEL_POOL.length > 0,
     key_pool_size: GEMINI_POOL.length,
     key_pool: publicPoolSnapshot(),
     timeouts: {
@@ -81,7 +78,9 @@ app.get("/api/gemini/pool", (_req, res) => {
   res.json({
     ok: true,
     model: GEMINI_MODEL,
-    configured: GEMINI_POOL.length > 0,
+    models: GEMINI_MODELS,
+    model_pool_size: GEMINI_MODEL_POOL.length,
+    configured: GEMINI_POOL.length > 0 && GEMINI_MODEL_POOL.length > 0,
     key_pool_size: GEMINI_POOL.length,
     pool: publicPoolSnapshot(),
     mode: DILIGENCE_MODE,
@@ -91,29 +90,30 @@ app.get("/api/gemini/pool", (_req, res) => {
 
 app.post("/api/gemini/ping", async (_req, res) => {
   if (!GEMINI_POOL.length) {
-    return res.status(500).json({
-      ok: false,
-      error: "GEMINI_API_KEYS_NOT_CONFIGURED"
-    });
+    return res.status(500).json({ ok: false, error: "GEMINI_API_KEYS_NOT_CONFIGURED" });
   }
 
   const startedAt = Date.now();
   try {
-    const rawText = await callGeminiWithFallback({
+    const result = await callGeminiWithFallback({
       systemPrompt: "You are a server health-check responder. Return only valid JSON.",
       userPrompt: "Return exactly this JSON shape with no markdown: {\"ok\":true,\"ping\":\"pong\"}",
       responseMimeType: "application/json",
       timeoutMs: GEMINI_PING_TIMEOUT_MS,
       maxOutputTokens: GEMINI_PING_MAX_OUTPUT_TOKENS,
-      temperature: 0
+      temperature: 0,
+      returnMeta: true
     });
 
     return res.json({
       ok: true,
-      model: GEMINI_MODEL,
+      model: result.model,
+      key_index: result.key_index,
+      key_fingerprint: result.fingerprint,
+      models: GEMINI_MODELS,
       key_pool_size: GEMINI_POOL.length,
       latency_ms: Date.now() - startedAt,
-      response: safeJsonOrText(stripJsonFence(rawText))
+      response: safeJsonOrText(stripJsonFence(result.text))
     });
   } catch (err) {
     return res.status(502).json({
@@ -131,10 +131,7 @@ app.post("/api/diligence/run", async (req, res) => {
     const sourceMode = String(req.body?.source_mode || "url").trim();
 
     if (!targetUrl && sourceMode !== "text") {
-      return res.status(400).json({
-        ok: false,
-        error: "TARGET_URL_REQUIRED"
-      });
+      return res.status(400).json({ ok: false, error: "TARGET_URL_REQUIRED" });
     }
 
     const runId = createRunId();
@@ -161,29 +158,27 @@ app.post("/api/diligence/run", async (req, res) => {
     if (DILIGENCE_MODE === "prompt_live") {
       const referenceBundle = await referenceBundlePromise;
       const hybridEvidencePacket = buildHybridEvidencePacket(runtimePayload);
-      const userPrompt = buildPromptLiveUserPrompt({
-        runtimePayload,
-        hybridEvidencePacket,
-        referenceBundle
-      });
-
-      const rawText = await callGeminiWithFallback({
+      const userPrompt = buildPromptLiveUserPrompt({ runtimePayload, hybridEvidencePacket, referenceBundle });
+      const result = await callGeminiWithFallback({
         systemPrompt: referenceBundle.monolith,
         userPrompt,
         responseMimeType: "text/plain",
         timeoutMs: GEMINI_TIMEOUT_MS,
         maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
-        temperature: 0.2
+        temperature: 0.2,
+        returnMeta: true
       });
-      const parsed = parseDiligenceOutput(rawText);
+      const parsed = parseDiligenceOutput(result.text);
 
       return res.json({
         ok: true,
         run_id: runId,
         target_url: targetUrl,
         mode: DILIGENCE_MODE,
-        model: GEMINI_MODEL,
+        model: result.model,
+        key_index: result.key_index,
         key_pool_size: GEMINI_POOL.length,
+        model_pool_size: GEMINI_MODEL_POOL.length,
         prompt_bundle: referenceBundle.manifest,
         hybrid_evidence_packet: hybridEvidencePacket,
         parse_status: parsed.parse_status,
@@ -201,23 +196,26 @@ app.post("/api/diligence/run", async (req, res) => {
     }
 
     const userPrompt = buildDiligenceUserPrompt({ runtimePayload });
-    const rawText = await callGeminiWithFallback({
+    const result = await callGeminiWithFallback({
       systemPrompt: DILIGENCE_SYSTEM_PROMPT,
       userPrompt,
       responseMimeType: "application/json",
       timeoutMs: GEMINI_TIMEOUT_MS,
       maxOutputTokens: Math.min(GEMINI_MAX_OUTPUT_TOKENS, 8192),
-      temperature: 0.2
+      temperature: 0.2,
+      returnMeta: true
     });
-    const parsed = parseDiligenceOutput(rawText);
+    const parsed = parseDiligenceOutput(result.text);
 
     return res.json({
       ok: true,
       run_id: runId,
       target_url: targetUrl,
       mode: DILIGENCE_MODE,
-      model: GEMINI_MODEL,
+      model: result.model,
+      key_index: result.key_index,
       key_pool_size: GEMINI_POOL.length,
+      model_pool_size: GEMINI_MODEL_POOL.length,
       parse_status: parsed.parse_status,
       ...parsed
     });
@@ -233,7 +231,6 @@ app.post("/api/diligence/run", async (req, res) => {
 
 app.post("/api/vault/push", async (req, res) => {
   const vaultUrl = process.env.VAULT_ASSEMBLY_ENDPOINT || "";
-
   if (!vaultUrl) {
     return res.json({
       ok: true,
@@ -253,26 +250,18 @@ app.post("/api/vault/push", async (req, res) => {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(process.env.VAULT_ASSEMBLY_TOKEN
-          ? { authorization: `Bearer ${process.env.VAULT_ASSEMBLY_TOKEN}` }
-          : {})
+        ...(process.env.VAULT_ASSEMBLY_TOKEN ? { authorization: `Bearer ${process.env.VAULT_ASSEMBLY_TOKEN}` } : {})
       },
       body: JSON.stringify(req.body)
     });
-
     const text = await response.text();
-
     return res.status(response.ok ? 200 : 502).json({
       ok: response.ok,
       status: response.status,
       vault_response: safeJsonOrText(text)
     });
   } catch (err) {
-    return res.status(502).json({
-      ok: false,
-      error: "VAULT_PUSH_FAILED",
-      message: err?.message || String(err)
-    });
+    return res.status(502).json({ ok: false, error: "VAULT_PUSH_FAILED", message: err?.message || String(err) });
   }
 });
 
@@ -291,12 +280,24 @@ function parseKeyPool() {
   return Array.from(new Set(keys));
 }
 
+function parseModelPool() {
+  const multi = process.env.GEMINI_MODELS || "";
+  const single = process.env.GEMINI_MODEL || "";
+  const raw = multi.trim() ? multi : single;
+  const models = raw.split(",").map((x) => x.trim()).filter(Boolean);
+  return Array.from(new Set(models.length ? models : DEFAULT_GEMINI_MODELS));
+}
+
 function buildGeminiPool(keys) {
   return keys.map((key, index) => ({
     index: index + 1,
     key,
     fingerprint: crypto.createHash("sha256").update(key).digest("hex").slice(0, 12)
   }));
+}
+
+function buildGeminiModelPool(models) {
+  return models.map((model, index) => ({ index: index + 1, model }));
 }
 
 function publicPoolSnapshot() {
@@ -317,11 +318,7 @@ async function safeReferenceBundle() {
   try {
     return await referenceBundlePromise;
   } catch (err) {
-    return {
-      ok: false,
-      error: err?.message || String(err),
-      manifest: []
-    };
+    return { ok: false, error: err?.message || String(err), manifest: [] };
   }
 }
 
@@ -336,7 +333,6 @@ async function loadReferenceBundle() {
 
   const bundle = Object.fromEntries(entries);
   const registryRowCount = estimateCsvDataRows(bundle.registryCsv.content);
-
   return {
     ok: true,
     monolith: bundle.monolith.content,
@@ -355,10 +351,7 @@ async function loadReferenceBundle() {
 }
 
 function estimateCsvDataRows(csvText) {
-  return String(csvText || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean).length - 1;
+  return Math.max(0, String(csvText || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean).length - 1);
 }
 
 function buildHybridEvidencePacket(runtimePayload) {
@@ -433,7 +426,7 @@ function buildMockResult(runtimePayload) {
     target_url: runtimePayload.target_url,
     status: "MOCK_COMPLETED",
     parse_status: "MOCK",
-    html_report: `<div class="interface-report"><h1>Diligence System Skeleton Live</h1><p>Target accepted: ${escapeHtml(runtimePayload.target_url)}</p><p>This is mock output. Prompt and reference documents are now present, but prompt_live execution is intentionally disabled unless DILIGENCE_MODE=prompt_live.</p></div>`,
+    html_report: `<div class="interface-report"><h1>Diligence System Skeleton Live</h1><p>Target accepted: ${escapeHtml(runtimePayload.target_url)}</p><p>This is mock output. Prompt and reference documents are present. Real execution is available only in live or prompt_live mode.</p></div>`,
     technical_audit_log: "MOCK: Diligence System shell received the runtime payload and returned a mock report.",
     operator_challenge_gate: {
       completed: false,
@@ -445,9 +438,7 @@ function buildMockResult(runtimePayload) {
         website: runtimePayload.target_url,
         company_name: runtimePayload.company_name || "N/A"
       },
-      source_review: {
-        mode: "MOCK"
-      }
+      source_review: { mode: "MOCK" }
     },
     vault_assembly_handoff: {
       source: "interface_diligence_system",
@@ -456,7 +447,7 @@ function buildMockResult(runtimePayload) {
       target_url: runtimePayload.target_url,
       handoff_envelope: {
         status: "MOCK_READY",
-        warnings: ["Vault handoff contract placeholder only. Real prompt_live output available only in prompt_live mode."]
+        warnings: ["Vault handoff contract placeholder only. Real output available in live/prompt_live mode."]
       }
     },
     raw_output: ""
@@ -469,7 +460,8 @@ async function callGeminiWithFallback({
   responseMimeType,
   timeoutMs = GEMINI_TIMEOUT_MS,
   maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
-  temperature = 0.2
+  temperature = 0.2,
+  returnMeta = false
 }) {
   const errors = [];
 
@@ -486,22 +478,19 @@ async function callGeminiWithFallback({
           maxOutputTokens,
           temperature
         });
-        if (text && text.trim()) return text;
-
-        errors.push({
-          model: modelEntry.model,
-          key_index: poolEntry.index,
-          fingerprint: poolEntry.fingerprint,
-          error: "EMPTY_RESPONSE"
-        });
+        if (text && text.trim()) {
+          const result = {
+            text,
+            model: modelEntry.model,
+            key_index: poolEntry.index,
+            fingerprint: poolEntry.fingerprint
+          };
+          return returnMeta ? result : text;
+        }
+        errors.push({ model: modelEntry.model, key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: "EMPTY_RESPONSE" });
       } catch (err) {
         const message = err?.message || String(err);
-        errors.push({
-          model: modelEntry.model,
-          key_index: poolEntry.index,
-          fingerprint: poolEntry.fingerprint,
-          error: message
-        });
+        errors.push({ model: modelEntry.model, key_index: poolEntry.index, fingerprint: poolEntry.fingerprint, error: message });
         console.warn(`[gemini] model ${modelEntry.model} key ${poolEntry.index} failed: ${message}`);
       }
     }
@@ -509,6 +498,7 @@ async function callGeminiWithFallback({
 
   throw new Error(`ALL_GEMINI_MODEL_KEY_COMBINATIONS_FAILED: ${JSON.stringify(errors).slice(0, 2500)}`);
 }
+
 async function callGeminiOnce({
   apiKey,
   model,
@@ -519,19 +509,11 @@ async function callGeminiOnce({
   maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
   temperature = 0.2
 }) {
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  const generationConfig = {
-    temperature,
-    topP: 0.9,
-    maxOutputTokens
-  };
-
+  const generationConfig = { temperature, topP: 0.9, maxOutputTokens };
   if (responseMimeType && responseMimeType !== "text/plain") {
     generationConfig.responseMimeType = responseMimeType;
   }
@@ -559,9 +541,9 @@ async function callGeminiOnce({
     clearTimeout(timeout);
   }
 }
+
 function parseDiligenceOutput(rawText) {
   const trimmed = String(rawText || "").trim();
-
   try {
     const json = JSON.parse(stripJsonFence(trimmed));
     return normalizeParsedJson(json, trimmed);
@@ -632,7 +614,7 @@ function extractFence(text, lang) {
 }
 
 function stripJsonFence(text) {
-  return text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
+  return String(text || "").replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
 }
 
 function escapeHtml(value) {
@@ -651,4 +633,3 @@ function safeJsonOrText(text) {
     return text;
   }
 }
-
