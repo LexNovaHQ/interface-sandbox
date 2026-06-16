@@ -15,40 +15,64 @@ const els = {
   vaultTab: document.getElementById("tab-vault"),
   pushVaultButton: document.getElementById("pushVaultButton"),
   downloadButton: document.getElementById("downloadButton"),
-  vaultStatus: document.getElementById("vaultStatus")
+  vaultStatus: document.getElementById("vaultStatus"),
+  targetUrl: document.getElementById("targetUrl"),
+  sourceMode: document.getElementById("sourceMode"),
+  pastedMaterial: document.getElementById("pastedMaterial")
 };
 
 els.form.addEventListener("submit", handleRun);
 els.pushVaultButton.addEventListener("click", handleVaultPush);
 els.downloadButton.addEventListener("click", handleDownload);
+els.sourceMode.addEventListener("change", updateInputRequirements);
+els.targetUrl.addEventListener("blur", () => {
+  const normalized = normalizeTargetUrl(els.targetUrl.value);
+  if (normalized.ok && normalized.url) els.targetUrl.value = normalized.url;
+});
 
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => activateTab(btn.dataset.tab));
 });
 
+updateInputRequirements();
 restoreLastResult();
 
 async function handleRun(event) {
   event.preventDefault();
 
   const formData = new FormData(els.form);
+  const sourceMode = String(formData.get("source_mode") || "url").trim();
+  const pastedMaterial = String(formData.get("pasted_public_material") || "").trim();
+  const normalized = normalizeTargetUrl(String(formData.get("target_url") || ""));
+
+  if (sourceMode !== "text" && !normalized.ok) {
+    setStatus(normalized.message || "Enter a valid public URL, for example https://sarvam.ai or sarvam.ai.");
+    els.targetUrl.focus();
+    return;
+  }
+
+  if (sourceMode === "text" && !pastedMaterial) {
+    setStatus("Pasted public material is required when source mode is text-only.");
+    els.pastedMaterial.focus();
+    return;
+  }
+
   const payload = {
-    target_url: String(formData.get("target_url") || "").trim(),
+    target_url: sourceMode === "text" ? "N/A" : normalized.url,
     company_name: String(formData.get("company_name") || "").trim(),
-    source_mode: String(formData.get("source_mode") || "url").trim(),
-    pasted_public_material: String(formData.get("pasted_public_material") || "")
+    source_mode: sourceMode,
+    pasted_public_material: pastedMaterial
   };
 
-  if (!payload.target_url && payload.source_mode !== "text") {
-    setStatus("Target URL is required unless source mode is text-only.");
-    return;
+  if (payload.target_url !== "N/A") {
+    els.targetUrl.value = payload.target_url;
   }
 
   try {
     setRunning(true);
     setProgress(12);
     setRail("input");
-    setStatus("Input accepted. Sending runtime payload to server...");
+    setStatus(`Input accepted: ${payload.source_mode} · ${payload.target_url}. Sending runtime payload to server...`);
 
     const response = await fetch("/api/diligence/run", {
       method: "POST",
@@ -82,6 +106,40 @@ async function handleRun(event) {
   } finally {
     setRunning(false);
   }
+}
+
+function normalizeTargetUrl(rawValue) {
+  let value = String(rawValue || "").trim();
+  if (!value) return { ok: false, url: "", message: "Target URL is required unless source mode is text-only." };
+
+  value = value.replace(/^http:\/\//i, "https://");
+  if (!/^https:\/\//i.test(value)) {
+    value = `https://${value}`;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return { ok: false, url: "", message: "Only http/https URLs are allowed." };
+    }
+    if (!parsed.hostname || !parsed.hostname.includes(".")) {
+      return { ok: false, url: "", message: "Enter a valid domain, for example sarvam.ai." };
+    }
+    return { ok: true, url: parsed.toString(), message: "" };
+  } catch {
+    return { ok: false, url: "", message: "Enter a valid public URL, for example https://sarvam.ai or sarvam.ai." };
+  }
+}
+
+function updateInputRequirements() {
+  const mode = els.sourceMode.value;
+  const isTextOnly = mode === "text";
+  els.targetUrl.toggleAttribute("aria-required", !isTextOnly);
+  els.pastedMaterial.toggleAttribute("aria-required", isTextOnly);
+  els.targetUrl.placeholder = isTextOnly ? "Optional in text-only mode" : "https://example.ai or example.ai";
+  els.pastedMaterial.placeholder = isTextOnly
+    ? "Required in text-only mode. Paste public product/legal/governance text only."
+    : "Paste public product/legal/governance text only. Do not paste confidential material.";
 }
 
 function renderResult(result) {
@@ -195,6 +253,13 @@ function setRail(activeStage) {
 
   document.querySelectorAll(".rail-stage").forEach((node) => {
     const stage = node.dataset.stage;
+    const idx = order.indexOf(stage);
+    node.classList.toggle("active", stage === activeStage);
+    node.classList.toggle("completed", idx >= 0 && idx < activeIndex);
+  });
+
+  document.querySelectorAll(".mobile-funnel .seg").forEach((node) => {
+    const stage = node.dataset.mobileStage;
     const idx = order.indexOf(stage);
     node.classList.toggle("active", stage === activeStage);
     node.classList.toggle("completed", idx >= 0 && idx < activeIndex);
