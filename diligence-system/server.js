@@ -15,13 +15,17 @@ import {
   summarizeHybridExtractionManifest,
   validateHybridExtractionManifest
 } from "./stage0-adapter.js";
-import { runP1SourceDiscovery } from "./phase-runner.js";
+import {
+  runP1SourceDiscovery,
+  runP2TargetProfile,
+  runP3TargetFeatureProfile
+} from "./phase-runner.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 8080);
 const DILIGENCE_MODE = process.env.DILIGENCE_MODE || "mock";
-const ACTIVE_DILIGENCE_RUNTIME = "phase_stack_p1";
+const ACTIVE_DILIGENCE_RUNTIME = "phase_stack_p3";
 
 const DEFAULT_GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const GEMINI_MODELS = parseModelPool();
@@ -212,7 +216,9 @@ app.get("/health", async (_req, res) => {
     monolith_active: false,
     phase_stack_stage0_adapter: true,
     phase_stack_p1_runner: true,
-    supported_modes: ["phase_stack_p1"],
+    phase_stack_p2_runner: true,
+    phase_stack_p3_runner: true,
+    supported_modes: ["phase_stack_p3"],
     model: GEMINI_MODEL,
     models: GEMINI_MODELS,
     model_pool_size: GEMINI_MODEL_POOL.length,
@@ -467,17 +473,256 @@ app.post("/api/diligence/run", async (req, res) => {
     const sourceDiscoveryForensicLedger = p1Output.source_discovery_forensic_ledger || null;
     const sourceDiscoveryTrace = p1Output.source_discovery_trace || null;
 
+    if (!p1Result.ok) {
+      return res.json({
+        ok: false,
+        run_id: runId,
+        target_url: runtimePayload.target_url,
+        mode: "phase_stack_p1",
+        status: p1Result.status,
+        phase_stack: {
+          active: true,
+          current_node: "P1",
+          completed_nodes: ["S0"],
+          next_node: p1Result.next_node,
+          execution_map_loaded: promptStackStatus.ok === true
+        },
+        stage0_summary: stage0Summary,
+        stage0_validation: stage0Validation,
+        p1_summary: p1Result.p1_summary,
+        p1_validation: p1Result.p1_validation,
+        p1_parse: p1Result.p1_parse,
+        p2_summary: null,
+        p2_validation: null,
+        p2_parse: null,
+        p3_summary: null,
+        p3_validation: null,
+        p3_parse: null,
+        p1_model_meta: p1Result.model_meta,
+        p2_model_meta: null,
+        p3_model_meta: null,
+        hybrid_extraction_manifest: manifest.hybrid_extraction_manifest,
+        source_discovery_handoff: sourceDiscoveryHandoff,
+        source_discovery_forensic_ledger: sourceDiscoveryForensicLedger,
+        source_discovery_trace: sourceDiscoveryTrace,
+        target_profile: null,
+        target_profile_forensic_ledger: null,
+        target_profile_trace: null,
+        target_feature_profile: null,
+        feature_profile_forensic_ledger: null,
+        feature_function_trace: null,
+        final_output_handoff: null,
+        legacy_monolith_active: false,
+        machine_json: {
+          run_meta: buildRunMeta({ runId, sourceMode, targetUrl: runtimePayload.target_url, companyName }),
+          stage0_summary: stage0Summary,
+          source_discovery_handoff: sourceDiscoveryHandoff,
+          target_profile: null,
+          target_feature_profile: null,
+          p1_summary: p1Result.p1_summary,
+          p2_summary: null,
+          p3_summary: null,
+          next_required_phase: "P1_RETRY_OR_REPAIR"
+        },
+        html_report: "",
+        audit: {
+          stage0_validation: stage0Validation,
+          p1_validation: p1Result.p1_validation,
+          p1_parse: p1Result.p1_parse,
+          p2_validation: null,
+          p2_parse: null,
+          p3_validation: null,
+          p3_parse: null,
+          prompt_stack_status: safePromptStackStatus()
+        },
+        vault_payload: null
+      });
+    }
+
+    const callPhaseModel = async ({ poolName, systemInstruction, userMessage, allowGrounding }) => callGeminiWithFallback({
+      systemPrompt: systemInstruction,
+      userPrompt: userMessage,
+      responseMimeType: "application/json",
+      timeoutMs: GEMINI_TIMEOUT_MS,
+      maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+      temperature: 0,
+      returnMeta: true,
+      allowGrounding: allowGrounding === true,
+      poolName
+    });
+
+    const p2Result = await runP2TargetProfile({
+      runId,
+      targetUrl: runtimePayload.target_url,
+      companyName,
+      sourceMode,
+      hybridExtractionManifest: manifest.hybrid_extraction_manifest,
+      sourceDiscoveryHandoff,
+      sourceDiscoveryForensicLedger,
+      sourceDiscoveryTrace,
+      promptStackStatus,
+      callModel: callPhaseModel
+    });
+
+    if (!p2Result.ok) {
+      return res.json({
+        ok: false,
+        run_id: runId,
+        target_url: runtimePayload.target_url,
+        mode: "phase_stack_p2",
+        status: p2Result.status,
+        phase_stack: {
+          active: true,
+          current_node: "P2",
+          completed_nodes: ["S0", "P1"],
+          next_node: p2Result.next_node,
+          execution_map_loaded: promptStackStatus.ok === true
+        },
+        stage0_summary: stage0Summary,
+        stage0_validation: stage0Validation,
+        p1_summary: p1Result.p1_summary,
+        p1_validation: p1Result.p1_validation,
+        p1_parse: p1Result.p1_parse,
+        p2_summary: p2Result.p2_summary,
+        p2_validation: p2Result.p2_validation,
+        p2_parse: p2Result.p2_parse,
+        p3_summary: null,
+        p3_validation: null,
+        p3_parse: null,
+        p1_model_meta: p1Result.model_meta,
+        p2_model_meta: p2Result.model_meta,
+        p3_model_meta: null,
+        hybrid_extraction_manifest: manifest.hybrid_extraction_manifest,
+        source_discovery_handoff: sourceDiscoveryHandoff,
+        source_discovery_forensic_ledger: sourceDiscoveryForensicLedger,
+        source_discovery_trace: sourceDiscoveryTrace,
+        target_profile: null,
+        target_profile_forensic_ledger: null,
+        target_profile_trace: null,
+        target_feature_profile: null,
+        feature_profile_forensic_ledger: null,
+        feature_function_trace: null,
+        final_output_handoff: null,
+        legacy_monolith_active: false,
+        machine_json: {
+          run_meta: buildRunMeta({ runId, sourceMode, targetUrl: runtimePayload.target_url, companyName }),
+          stage0_summary: stage0Summary,
+          source_discovery_handoff: sourceDiscoveryHandoff,
+          target_profile: null,
+          target_feature_profile: null,
+          p1_summary: p1Result.p1_summary,
+          p2_summary: p2Result.p2_summary,
+          p3_summary: null,
+          next_required_phase: "P2_RETRY_OR_REPAIR"
+        },
+        html_report: "",
+        audit: {
+          stage0_validation: stage0Validation,
+          p1_validation: p1Result.p1_validation,
+          p1_parse: p1Result.p1_parse,
+          p2_validation: p2Result.p2_validation,
+          p2_parse: p2Result.p2_parse,
+          p3_validation: null,
+          p3_parse: null,
+          prompt_stack_status: safePromptStackStatus()
+        },
+        vault_payload: null
+      });
+    }
+
+    const p3Result = await runP3TargetFeatureProfile({
+      runId,
+      targetUrl: runtimePayload.target_url,
+      companyName,
+      sourceMode,
+      hybridExtractionManifest: manifest.hybrid_extraction_manifest,
+      sourceDiscoveryHandoff,
+      sourceDiscoveryForensicLedger,
+      sourceDiscoveryTrace,
+      targetProfile: p2Result.target_profile,
+      targetProfileForensicLedger: p2Result.target_profile_forensic_ledger,
+      targetProfileTrace: p2Result.target_profile_trace,
+      promptStackStatus,
+      callModel: callPhaseModel
+    });
+
+    if (!p3Result.ok) {
+      return res.json({
+        ok: false,
+        run_id: runId,
+        target_url: runtimePayload.target_url,
+        mode: "phase_stack_p3",
+        status: p3Result.status,
+        phase_stack: {
+          active: true,
+          current_node: "P3",
+          completed_nodes: ["S0", "P1", "P2"],
+          next_node: p3Result.next_node,
+          execution_map_loaded: promptStackStatus.ok === true
+        },
+        stage0_summary: stage0Summary,
+        stage0_validation: stage0Validation,
+        p1_summary: p1Result.p1_summary,
+        p1_validation: p1Result.p1_validation,
+        p1_parse: p1Result.p1_parse,
+        p2_summary: p2Result.p2_summary,
+        p2_validation: p2Result.p2_validation,
+        p2_parse: p2Result.p2_parse,
+        p3_summary: p3Result.p3_summary,
+        p3_validation: p3Result.p3_validation,
+        p3_parse: p3Result.p3_parse,
+        p1_model_meta: p1Result.model_meta,
+        p2_model_meta: p2Result.model_meta,
+        p3_model_meta: p3Result.model_meta,
+        hybrid_extraction_manifest: manifest.hybrid_extraction_manifest,
+        source_discovery_handoff: sourceDiscoveryHandoff,
+        source_discovery_forensic_ledger: sourceDiscoveryForensicLedger,
+        source_discovery_trace: sourceDiscoveryTrace,
+        target_profile: p2Result.target_profile,
+        target_profile_forensic_ledger: p2Result.target_profile_forensic_ledger,
+        target_profile_trace: p2Result.target_profile_trace,
+        target_feature_profile: null,
+        feature_profile_forensic_ledger: null,
+        feature_function_trace: null,
+        final_output_handoff: null,
+        legacy_monolith_active: false,
+        machine_json: {
+          run_meta: buildRunMeta({ runId, sourceMode, targetUrl: runtimePayload.target_url, companyName }),
+          stage0_summary: stage0Summary,
+          source_discovery_handoff: sourceDiscoveryHandoff,
+          target_profile: p2Result.target_profile,
+          target_feature_profile: null,
+          p1_summary: p1Result.p1_summary,
+          p2_summary: p2Result.p2_summary,
+          p3_summary: p3Result.p3_summary,
+          next_required_phase: "P3_RETRY_OR_REPAIR"
+        },
+        html_report: "",
+        audit: {
+          stage0_validation: stage0Validation,
+          p1_validation: p1Result.p1_validation,
+          p1_parse: p1Result.p1_parse,
+          p2_validation: p2Result.p2_validation,
+          p2_parse: p2Result.p2_parse,
+          p3_validation: p3Result.p3_validation,
+          p3_parse: p3Result.p3_parse,
+          prompt_stack_status: safePromptStackStatus()
+        },
+        vault_payload: null
+      });
+    }
+
     return res.json({
-      ok: p1Result.ok,
+      ok: p3Result.ok,
       run_id: runId,
       target_url: runtimePayload.target_url,
-      mode: ACTIVE_DILIGENCE_RUNTIME,
-      status: p1Result.status,
+      mode: "phase_stack_p3",
+      status: p3Result.status,
       phase_stack: {
         active: true,
-        current_node: "P1",
-        completed_nodes: p1Result.ok ? ["S0", "P1"] : ["S0"],
-        next_node: p1Result.next_node,
+        current_node: "P3",
+        completed_nodes: ["S0", "P1", "P2", "P3"],
+        next_node: p3Result.next_node,
         execution_map_loaded: promptStackStatus.ok === true
       },
       stage0_summary: stage0Summary,
@@ -485,31 +730,47 @@ app.post("/api/diligence/run", async (req, res) => {
       p1_summary: p1Result.p1_summary,
       p1_validation: p1Result.p1_validation,
       p1_parse: p1Result.p1_parse,
+      p2_summary: p2Result.p2_summary,
+      p2_validation: p2Result.p2_validation,
+      p2_parse: p2Result.p2_parse,
+      p3_summary: p3Result.p3_summary,
+      p3_validation: p3Result.p3_validation,
+      p3_parse: p3Result.p3_parse,
       p1_model_meta: p1Result.model_meta,
+      p2_model_meta: p2Result.model_meta,
+      p3_model_meta: p3Result.model_meta,
       hybrid_extraction_manifest: manifest.hybrid_extraction_manifest,
       source_discovery_handoff: sourceDiscoveryHandoff,
       source_discovery_forensic_ledger: sourceDiscoveryForensicLedger,
       source_discovery_trace: sourceDiscoveryTrace,
+      target_profile: p2Result.target_profile,
+      target_profile_forensic_ledger: p2Result.target_profile_forensic_ledger,
+      target_profile_trace: p2Result.target_profile_trace,
+      target_feature_profile: p3Result.target_feature_profile,
+      feature_profile_forensic_ledger: p3Result.feature_profile_forensic_ledger,
+      feature_function_trace: p3Result.feature_function_trace,
       legacy_monolith_active: false,
       final_output_handoff: null,
       machine_json: {
-        run_meta: {
-          run_id: runId,
-          source_mode: sourceMode,
-          target_url: runtimePayload.target_url,
-          company_name: companyName,
-          active_diligence_runtime: ACTIVE_DILIGENCE_RUNTIME
-        },
+        run_meta: buildRunMeta({ runId, sourceMode, targetUrl: runtimePayload.target_url, companyName }),
         stage0_summary: stage0Summary,
         source_discovery_handoff: sourceDiscoveryHandoff,
+        target_profile: p2Result.target_profile,
+        target_feature_profile: p3Result.target_feature_profile,
         p1_summary: p1Result.p1_summary,
-        next_required_phase: "P2_TARGET_PROFILE"
+        p2_summary: p2Result.p2_summary,
+        p3_summary: p3Result.p3_summary,
+        next_required_phase: "P4_LEGAL_CARTOGRAPHY_INDEX"
       },
       html_report: "",
       audit: {
         stage0_validation: stage0Validation,
         p1_validation: p1Result.p1_validation,
         p1_parse: p1Result.p1_parse,
+        p2_validation: p2Result.p2_validation,
+        p2_parse: p2Result.p2_parse,
+        p3_validation: p3Result.p3_validation,
+        p3_parse: p3Result.p3_parse,
         prompt_stack_status: safePromptStackStatus()
       },
       vault_payload: null
@@ -574,6 +835,32 @@ app.listen(PORT, () => {
   console.log(`Diligence pool foundation: diligence_pool_v1 pools=${Object.keys(DILIGENCE_POOLS).length}`);
   console.log(`Hybrid fetcher: hybrid_v1 enabled=${HYBRID_FETCH_ENABLED} grounding=${HYBRID_GROUNDING_ALLOWED}`);
 });
+
+function buildRunMeta({
+  runId,
+  targetUrl,
+  companyName,
+  sourceMode,
+  startedAt,
+  completedAt,
+  activeRuntime,
+  completedNodes = [],
+  currentNode = null,
+  nextNode = null
+} = {}) {
+  return {
+    run_id: runId || null,
+    target_url: targetUrl || "",
+    company_name: companyName || "",
+    source_mode: sourceMode || "",
+    active_runtime: activeRuntime || ACTIVE_DILIGENCE_RUNTIME,
+    completed_nodes: completedNodes,
+    current_node: currentNode,
+    next_node: nextNode,
+    started_at: startedAt || null,
+    completed_at: completedAt || new Date().toISOString()
+  };
+}
 
 function parseBool(value, defaultValue) {
   if (value === undefined || value === null || value === "") return defaultValue;
