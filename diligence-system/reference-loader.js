@@ -125,7 +125,14 @@ function candidatePathsForReference({ name, baseDir }) {
 
 function referenceNameVariants(name) {
   const n = String(name || "").trim();
-  if (n === "AI_THREAT_REGISTRY") return ["AI_THREAT_REGISTRY.csv", "AI_THREAT_REGISTRY.md", "AI_THREAT_REGISTRY.txt", "AI_THREAT_REGISTRY"];
+  if (n === "AI_THREAT_REGISTRY") return [
+    "AI_THREAT_REGISTRY.csv",
+    "AI_THREAT_REGISTRY_REGISTRY.csv",
+    "AI_THREAT_REGISTRY_HUNTER_ENGINE_RULES.csv",
+    "AI_THREAT_REGISTRY.md",
+    "AI_THREAT_REGISTRY.txt",
+    "AI_THREAT_REGISTRY"
+  ];
   if (n === "REGISTRY_KEY_v3_0.md") return ["REGISTRY_KEY_v3_0.md", "REGISTRY_KEY_v3_0.txt", "REGISTRY_KEY.md"];
   return [n];
 }
