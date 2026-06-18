@@ -21,9 +21,7 @@ export const REFERENCE_ROUTES = {
   ],
   P6: [
     "REGISTRY_KEY_v3_0.md",
-    "AI_THREAT_REGISTRY",
-    "AI_THREAT_REGISTRY.csv",
-    "AI_THREAT_REGISTRY.md"
+    "AI_THREAT_REGISTRY"
   ],
   P7: [
     "09_OUTPUT_HANDOFF_CONTRACT.md"
