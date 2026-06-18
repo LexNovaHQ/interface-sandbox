@@ -144,10 +144,100 @@ function buildPayload({ run, promptStack, phase, upstream, referenceBundle }) {
       run_context: { run_id: run.run_id, target_url: run.target_url, company_name: run.company_name, source_mode: run.source_mode },
       reference_manifest: referenceBundle.reference_manifest,
       missing_references: referenceBundle.missing_references,
-      upstream_outputs: upstream,
+      upstream_outputs: compactUpstreamForPrompt(upstream),
       current_node: phase.node_id,
       current_prompt_file: phase.file
     }, null, 2)
+  };
+}
+
+function compactUpstreamForPrompt(upstream = {}) {
+  const out = {};
+  if (upstream.S0) out.S0 = compactStage0ForPrompt(upstream.S0);
+  for (const [node, value] of Object.entries(upstream)) {
+    if (node !== "S0") out[node] = value;
+  }
+  return out;
+}
+
+function compactStage0ForPrompt(stage0 = {}) {
+  const m = stage0.hybrid_extraction_manifest || {};
+  return {
+    node_id: m.node_id || "S0",
+    adapter_version: m.adapter_version,
+    source_mode: m.source_mode,
+    run_id: m.run_id,
+    target: m.target,
+    target_url: m.target_url,
+    company_name: m.company_name,
+    generated_at: m.generated_at,
+    extraction_call_card: m.extraction_call_card,
+    collection_summary: m.collection_summary,
+    collection_limitations: m.collection_limitations || [],
+    batch_plan: m.batch_plan || [],
+    root_clusters: m.root_clusters || [],
+    candidate_sources: (m.candidate_sources || []).map(compactCandidateSourceForPrompt),
+    fetch_failures: (m.fetch_failures || []).map((x) => ({
+      candidate_url: x.candidate_url,
+      fetch_status: x.fetch_status,
+      failure_basis: x.failure_basis,
+      phase1_review_required: true
+    })),
+    deferred_candidates: (m.deferred_candidates || []).map((x) => ({
+      candidate_url: x.candidate_url,
+      priority: x.priority,
+      source_family_hint: x.source_family_hint,
+      defer_reason: x.defer_reason,
+      not_silently_dropped: true,
+      phase1_review_required: true
+    })),
+    rejected_by_scope: (m.rejected_by_scope || []).map((x) => ({
+      candidate_url: x.candidate_url,
+      scope_class: x.scope_class,
+      reason: x.reason
+    })),
+    prompt_payload_policy: {
+      raw_text_removed_from_prompt: true,
+      raw_html_removed_from_prompt: true,
+      raw_refs_preserved_not_inlined: true,
+      clean_text_preserved_for_candidate_sources: true,
+      full_custody_retained_in_stage0_internal_output: true,
+      phase1_admission_required: true
+    }
+  };
+}
+
+function compactCandidateSourceForPrompt(x = {}) {
+  return {
+    source_id: x.source_id,
+    candidate_source_id: x.candidate_source_id,
+    source_url: x.source_url,
+    canonical_url: x.canonical_url,
+    root_cluster_id: x.root_cluster_id,
+    root_cluster_type: x.root_cluster_type,
+    source_kind: x.source_kind,
+    scope_class: x.scope_class,
+    priority: x.priority,
+    source_family_hint: x.source_family_hint,
+    discovery_methods: x.discovery_methods || [],
+    fetch_status: x.fetch_status,
+    http_status: x.http_status,
+    fetch_method: x.fetch_method,
+    fetched_at: x.fetched_at,
+    content_hash: x.content_hash,
+    normalized_text_hash: x.normalized_text_hash,
+    clean_text_ref: x.clean_text_ref,
+    clean_text: x.clean_text || "",
+    clean_char_count: x.clean_char_count,
+    char_count: x.char_count,
+    word_count: x.word_count,
+    extraction_quality: x.extraction_quality,
+    snippet_only: Boolean(x.snippet_only),
+    phase1_admission_forbidden: Boolean(x.phase1_admission_forbidden),
+    requires_phase1_admission: x.requires_phase1_admission !== false,
+    requires_phase1_limitation_review: Boolean(x.requires_phase1_limitation_review),
+    custody_status: x.custody_status,
+    collection_notes: x.collection_notes || []
   };
 }
 
@@ -183,8 +273,13 @@ function fail({ run, promptStack, upstream = {}, phaseOutputs = {}, referenceBun
     reference_bundles: summarizeReferenceBundles(referenceBundles),
     mechanical_validations: mechanicalValidations,
     phase_outputs: phaseOutputs,
-    hybrid_extraction_manifest: upstream?.S0?.hybrid_extraction_manifest || null,
-    extraction_forensic_ledger: upstream?.S0?.extraction_forensic_ledger || null,
+    hybrid_extraction_manifest: upstream?.S0 ? compactStage0ForPrompt(upstream.S0) : null,
+    extraction_forensic_ledger: upstream?.S0?.extraction_forensic_ledger ? {
+      redacted_for_failure_response: true,
+      ledger_event_count: upstream.S0.extraction_forensic_ledger?.ledger_events?.length || 0,
+      retry_log_count: upstream.S0.extraction_forensic_ledger?.retry_log?.length || 0,
+      fetch_attempt_log_count: upstream.S0.extraction_forensic_ledger?.fetch_attempt_log?.length || 0
+    } : null,
     runtime_orchestration_manifest: promptStack ? buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode, referenceBundles }) : null,
     phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
     error,
