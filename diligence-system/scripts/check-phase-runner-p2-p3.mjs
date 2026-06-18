@@ -4,6 +4,7 @@ import {
 } from "../stage0-adapter.js";
 import { validatePromptStack } from "../prompt-stack-loader.js";
 import { runP2TargetProfile, runP3TargetFeatureProfile } from "../phase-runner.js";
+import { validateP2Output } from "../p2-output-validator.js";
 
 const runId = "p2_p3_stub_fixture_run";
 const manifest = buildHybridExtractionManifest({
@@ -27,6 +28,82 @@ const sourceDiscoveryHandoff = {
   candidate_source_count: 1,
   notes: ["Stubbed P1 validator-only output. No model call."]
 };
+
+const p2Ev0001Regression = validateP2Output({
+  sourceDiscoveryHandoff: {
+    ...sourceDiscoveryHandoff,
+    admitted_sources: [
+      {
+        evidence_ref: "ev_0001",
+        source_ref: "src_0001",
+        source_id: "source_0001"
+      }
+    ]
+  },
+  hybridExtractionManifest: manifest.hybrid_extraction_manifest,
+  p2Output: {
+    target_profile: {
+      phase_id: "P2_TARGET_PROFILE",
+      identity: {
+        brand_name: "DemoCo",
+        legal_name: "N/A"
+      },
+      jurisdiction: {
+        governing_law_country: "N/A"
+      },
+      pipeline_assumptions: {
+        for_legal_cartography: []
+      },
+      vault_baseline_candidates: {
+        compliance: {}
+      },
+      evidence: {
+        field_evidence_refs: [
+          {
+            field_path: "target_profile.identity.brand_name",
+            evidence_refs: ["ev_0001"],
+            basis: "Stubbed validator-only reference.",
+            confidence: "TEST"
+          }
+        ]
+      },
+      limitations: ["Legal details are unknown in this stub."]
+    },
+    target_profile_forensic_ledger: {
+      phase_id: "P2_TARGET_PROFILE",
+      ledger_status: "TEST_STUB_ONLY",
+      ledger_events: []
+    },
+    target_profile_trace: {
+      phase_id: "P2_TARGET_PROFILE",
+      trace_status: "TEST_STUB_ONLY",
+      input_objects: ["hybrid_extraction_manifest", "source_discovery_handoff"]
+    }
+  }
+});
+
+const p2LegalCartographyForbiddenRegression = validateP2Output({
+  sourceDiscoveryHandoff,
+  hybridExtractionManifest: manifest.hybrid_extraction_manifest,
+  p2Output: {
+    target_profile: {
+      phase_id: "P2_TARGET_PROFILE",
+      company_name: "DemoCo",
+      limitations: ["Stubbed validator-only output."]
+    },
+    target_profile_forensic_ledger: {
+      phase_id: "P2_TARGET_PROFILE",
+      ledger_status: "TEST_STUB_ONLY",
+      ledger_events: []
+    },
+    target_profile_trace: {
+      phase_id: "P2_TARGET_PROFILE",
+      trace_status: "TEST_STUB_ONLY"
+    },
+    legal_cartography_index: {}
+  }
+});
+
 const sourceDiscoveryForensicLedger = {
   phase_id: "P1_SOURCE_DISCOVERY_EVIDENCE_BOX",
   ledger_status: "TEST_STUB_ONLY",
@@ -166,6 +243,8 @@ const ok = stage0Validation.ok
   && p3Result?.ok
   && p3CallCount === 1
   && !failedP2.ok
+  && p2Ev0001Regression.ok
+  && !p2LegalCartographyForbiddenRegression.ok
   && blockedP3CallCount === 0
   && !realGeminiCalled;
 
@@ -189,7 +268,18 @@ console.log(JSON.stringify({
     summary: p3Result?.p3_summary || null
   },
   p3_not_run_after_failed_p2: blockedP3CallCount === 0 && !failedP2.ok,
-  failed_p2_status: failedP2.status
+  failed_p2_status: failedP2.status,
+  p2_ev_0001_regression: {
+    ok: p2Ev0001Regression.ok,
+    errors: p2Ev0001Regression.errors,
+    warnings: p2Ev0001Regression.warnings,
+    evidence_ref_check: p2Ev0001Regression.summary.evidence_ref_check
+  },
+  p2_legal_cartography_index_forbidden_regression: {
+    ok: p2LegalCartographyForbiddenRegression.ok,
+    errors: p2LegalCartographyForbiddenRegression.errors,
+    warnings: p2LegalCartographyForbiddenRegression.warnings
+  }
 }, null, 2));
 
 if (!ok) process.exit(1);

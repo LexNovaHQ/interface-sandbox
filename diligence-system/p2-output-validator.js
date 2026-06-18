@@ -15,10 +15,27 @@ const FORBIDDEN_TOP_LEVEL = [
   "html_report"
 ];
 
+const FORBIDDEN_DOWNSTREAM_KEYS = new Set([
+  "legal_cartography_index",
+  "legal_unit_map",
+  "legal_control_map",
+  "clause_map",
+  "control_family_map",
+  "enforceability_verdict",
+  "compliance_verdict",
+  "legal_advice",
+  "registry_ledger",
+  "target_exposure_profile",
+  "final_output_handoff"
+]);
+
 const FEATURE_RE = /\b(feature_inventory|feature_id|feature_name|function_behavior|archetypes?|surfaces?|target_feature_profile)\b/i;
-const LEGAL_RE = /\b(legal_cartography|legal advice|compliance verdict|compliant|non-compliant|violates|lawful|unlawful)\b/i;
+const LEGAL_VERDICT_RE = /\b(legal advice|compliance verdict|enforceability verdict)\b/i;
+const LEGAL_ROUTING_HINT_RE = /\b(legal_cartography|governing_law|courts_or_venue|compliance|legal details|legal_name)\b/i;
 const REGISTRY_RE = /\b(registry row|registry_ledger|threat id|row status|applicable|not_applicable)\b/i;
 const NEW_FETCH_RE = /\b(new\s+(fetch|search|browse|crawl)|performed\s+(a\s+)?(search|browse|fetch)|google\s+search|grounding\s+used)\b/i;
+const REFERENCE_FIELD_RE = /^(evidence_ref|evidence_refs|source_ref|source_refs|source_id|source_ids|candidate_source_id|candidate_source_ids|lossless_artifact_ref|lossless_artifact_refs|artifact_ref|artifact_refs|candidate_source_ref|candidate_source_refs|lossless_artifact_id|lossless_artifact_ids)$/i;
+const TOKENISH_ID_RE = /^(ev_|src_|cand_|lossless_|artifact_|source_|doc_)/i;
 
 export function validateP2Output({ p2Output, sourceDiscoveryHandoff, hybridExtractionManifest } = {}) {
   const errors = [];
@@ -43,7 +60,11 @@ export function validateP2Output({ p2Output, sourceDiscoveryHandoff, hybridExtra
   const profileText = compactJson(targetProfile);
   const outputText = compactJson(output);
   if (FEATURE_RE.test(profileText)) errors.push("P2_PERFORMS_FEATURE_OR_FUNCTION_DECOMPOSITION");
-  if (LEGAL_RE.test(outputText)) errors.push("P2_PERFORMS_LEGAL_CARTOGRAPHY_OR_VERDICT");
+  if (containsForbiddenDownstreamKey(output) || LEGAL_VERDICT_RE.test(outputText)) {
+    errors.push("P2_PERFORMS_LEGAL_CARTOGRAPHY_OR_VERDICT");
+  } else if (LEGAL_ROUTING_HINT_RE.test(outputText)) {
+    warnings.push("P2_LEGAL_ROUTING_HINT_PRESENT_NOT_CARTOGRAPHY");
+  }
   if (REGISTRY_RE.test(outputText)) errors.push("P2_ASSIGNES_REGISTRY_ROW_STATUS");
   if (NEW_FETCH_RE.test(outputText)) errors.push("P2_CLAIMS_NEW_FETCH_SEARCH_OR_BROWSE");
 
@@ -88,11 +109,7 @@ function unwrapManifest(manifest) {
 
 function checkEvidenceRefs(output, sourceDiscoveryHandoff, manifest) {
   const allowed = collectAllowedRefs(sourceDiscoveryHandoff, manifest);
-  const refs = new Set();
-  walk(output, (key, child) => {
-    if (/(candidate_source_id|candidate_source_ref|lossless_artifact_id|lossless_artifact_ref|evidence_ref|source_ref)$/i.test(key) && typeof child === "string") refs.add(child);
-    if (/evidence_refs?$/i.test(key) && Array.isArray(child)) child.filter((entry) => typeof entry === "string").forEach((entry) => refs.add(entry));
-  });
+  const refs = collectReferenceTokens(output);
   const unresolved = Array.from(refs).filter((ref) => !allowed.has(String(ref)));
   return {
     ok: unresolved.length === 0,
@@ -104,6 +121,8 @@ function checkEvidenceRefs(output, sourceDiscoveryHandoff, manifest) {
 function collectAllowedRefs(sourceDiscoveryHandoff, manifest) {
   const root = unwrapManifest(manifest);
   const allowed = new Set();
+  for (const ref of collectReferenceTokens(root)) allowed.add(ref);
+  for (const ref of collectReferenceTokens(sourceDiscoveryHandoff)) allowed.add(ref);
   for (const candidate of arr(root.candidate_sources)) {
     if (candidate.candidate_source_id) allowed.add(String(candidate.candidate_source_id));
     if (candidate.lossless_artifact_ref) allowed.add(String(candidate.lossless_artifact_ref));
@@ -112,10 +131,43 @@ function collectAllowedRefs(sourceDiscoveryHandoff, manifest) {
     if (artifact.lossless_artifact_id) allowed.add(String(artifact.lossless_artifact_id));
     if (artifact.candidate_source_id) allowed.add(String(artifact.candidate_source_id));
   }
-  walk(sourceDiscoveryHandoff, (key, child) => {
-    if (/(candidate_source_id|candidate_source_ref|lossless_artifact_id|lossless_artifact_ref|evidence_ref|source_ref)$/i.test(key) && typeof child === "string") allowed.add(child);
-  });
   return allowed;
+}
+
+export function collectReferenceTokens(value) {
+  const refs = new Set();
+  walk(value, (key, child) => {
+    if ((/^evidence_map$/i.test(key) || /^source_map$/i.test(key)) && objectOrNull(child)) {
+      for (const mapKey of Object.keys(child)) refs.add(String(mapKey));
+    }
+    if (REFERENCE_FIELD_RE.test(key)) addReferenceValue(refs, child);
+    if (/^id$/i.test(key) || /_id$/i.test(key)) addTokenishId(refs, child);
+  });
+  return refs;
+}
+
+function addReferenceValue(refs, value) {
+  if (typeof value === "string") {
+    refs.add(value);
+    return;
+  }
+  if (!Array.isArray(value)) return;
+  for (const entry of value) {
+    if (typeof entry === "string") refs.add(entry);
+  }
+}
+
+function addTokenishId(refs, value) {
+  if (typeof value !== "string") return;
+  if (TOKENISH_ID_RE.test(value)) refs.add(value);
+}
+
+function containsForbiddenDownstreamKey(value) {
+  let found = false;
+  walk(value, (key) => {
+    if (FORBIDDEN_DOWNSTREAM_KEYS.has(key)) found = true;
+  });
+  return found;
 }
 
 function countProductFamilies(value) {
