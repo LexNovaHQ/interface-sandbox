@@ -327,15 +327,29 @@ function extractExecutionNodes(text) {
 
 function extractRequiredTopLevelKeys(text) {
   const keys = new Set();
-  const marker = String(text || "").match(/required_top_level_output_keys\s*:\s*([\s\S]{0,600})/i);
-  if (marker) for (const match of marker[1].matchAll(/-\s*`?([A-Za-z0-9_]+)`?/g)) keys.add(match[1]);
-  const primary = String(text || "").match(/primary_output(?:_object)?\s*:\s*`?([A-Za-z0-9_]+)`?/i);
+  const src = String(text || "");
+  const marker = src.match(/required_top_level_output_keys\s*:\s*([\s\S]{0,900})/i);
+  if (marker) {
+    const lines = marker[1].split(/\r?\n/);
+    for (const line of lines) {
+      if (/^\s*#{1,6}\s+/.test(line) && keys.size) break;
+      for (const match of line.matchAll(/`([A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+)`/g)) keys.add(match[1]);
+      for (const match of line.matchAll(/["']([A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+)["']\s*:/g)) keys.add(match[1]);
+      const bareBullet = line.match(/^\s*-\s*([A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+)\s*$/);
+      if (bareBullet) keys.add(bareBullet[1]);
+    }
+  }
+  const primary = src.match(/primary_output(?:_object)?\s*:\s*`?([A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+)`?/i);
   if (keys.size === 0 && primary) keys.add(primary[1]);
-  const primaryMd = String(text || "").match(/\*\*Primary Output:\*\*\s*`([^`]+)`/i);
+  const primaryMd = src.match(/\*\*Primary Output:\*\*\s*`([A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+)`/i);
   if (keys.size === 0 && primaryMd) keys.add(primaryMd[1]);
-  const handoff = String(text || "").match(/\*\*Output handoff:\*\*\s*`([^`]+)`/i);
+  const handoff = src.match(/\*\*Output handoff:\*\*\s*`([A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+)`/i);
   if (keys.size === 0 && handoff) keys.add(handoff[1]);
-  return Array.from(keys);
+  return Array.from(keys).filter(isMachineTopLevelKey);
+}
+
+function isMachineTopLevelKey(value) {
+  return /^[A-Za-z][A-Za-z0-9_]*_[A-Za-z0-9_]+$/.test(String(value || ""));
 }
 
 function stripCoreReferences(bundle) {
