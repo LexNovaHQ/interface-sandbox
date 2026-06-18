@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 const ADAPTER_VERSION = "source_adapter_hybrid_contract_v2";
-const DEFAULT_MAX_CANDIDATES = 36;
+const DEFAULT_MAX_CANDIDATES = 75;
 const DEFAULT_FETCH_TIMEOUT_MS = 15000;
 const DEFAULT_USER_AGENT = "InterfaceDiligenceSystem/1.0 (+public-footprint-diligence)";
 const JINA_READER_BASE = String(process.env.DILIGENCE_JINA_READER_BASE || "").trim();
