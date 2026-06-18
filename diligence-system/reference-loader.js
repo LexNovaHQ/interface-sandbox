@@ -9,47 +9,24 @@ const BASE_DIR = path.dirname(__filename);
 const LOADER_VERSION = "reference_loader_prompt_supremacy_v1";
 
 export const REFERENCE_ROUTES = {
-  ALL: [
-    "00_RUNTIME_SPINE.md",
-    "00_RUNTIME_SPINE_INDEX.md"
-  ],
-  S0: [
-    "00_SOURCE_EXTRACTION_CONTRACT.md"
-  ],
-  P1: [
-    "00_SOURCE_EXTRACTION_CONTRACT.md"
-  ],
-  P6: [
-    "REGISTRY_KEY_v3_0.md",
-    "AI_THREAT_REGISTRY"
-  ],
-  P7: [
-    "09_OUTPUT_HANDOFF_CONTRACT.md"
-  ],
-  AUDIT: [
-    "08_PHASE_STACK_EXECUTION_MAP.md",
-    "10_RUNTIME_AUDIT_CHECKLIST.md"
-  ]
+  ALL: ["00_RUNTIME_SPINE.md", "00_RUNTIME_SPINE_INDEX.md"],
+  S0: ["00_SOURCE_EXTRACTION_CONTRACT.md"],
+  P1: ["00_SOURCE_EXTRACTION_CONTRACT.md"],
+  P6: ["REGISTRY_KEY_v3_0.md", "AI_THREAT_REGISTRY"],
+  P7: ["09_OUTPUT_HANDOFF_CONTRACT.md"],
+  AUDIT: ["08_PHASE_STACK_EXECUTION_MAP.md", "10_RUNTIME_AUDIT_CHECKLIST.md"]
 };
 
-const DEFAULT_REFERENCE_SEARCH_DIRS = [
-  ".",
-  "reference",
-  "references",
-  "prompts",
-  "prompts/phase-stack",
-  "../",
-  "../reference",
-  "../references"
-];
+const DEFAULT_REFERENCE_SEARCH_DIRS = [".", "reference", "references", "prompts", "prompts/phase-stack", "../", "../reference", "../references"];
 
 export async function loadReferenceBundle({ phaseId = "ALL", baseDir = BASE_DIR, extraRoutes = {}, maxCharsPerReference = Number(process.env.DILIGENCE_REFERENCE_MAX_CHARS || 0) } = {}) {
   const requested = requestedReferencesForPhase(phaseId, extraRoutes);
   const references = [];
   const missing = [];
+  const rejected = [];
 
   for (const name of requested) {
-    const loaded = await findAndLoadReference({ name, baseDir, maxCharsPerReference });
+    const loaded = await findAndLoadReference({ name, baseDir, maxCharsPerReference, rejected });
     if (loaded) references.push(loaded);
     else missing.push(name);
   }
@@ -60,14 +37,8 @@ export async function loadReferenceBundle({ phaseId = "ALL", baseDir = BASE_DIR,
     phase_id: phaseId,
     references,
     missing_references: missing,
-    reference_manifest: references.map((ref) => ({
-      name: ref.name,
-      path: ref.path,
-      sha256: ref.sha256,
-      char_count: ref.char_count,
-      loaded_for_phase: phaseId,
-      route_reason: ref.route_reason
-    }))
+    rejected_references: rejected,
+    reference_manifest: references.map((ref) => ({ name: ref.name, path: ref.path, sha256: ref.sha256, char_count: ref.char_count, loaded_for_phase: phaseId, route_reason: ref.route_reason, content_kind: ref.content_kind }))
   };
 }
 
@@ -84,6 +55,7 @@ export function formatReferencesForPrompt(bundle) {
     `REFERENCE_FILE: ${ref.name}`,
     `REFERENCE_PATH: ${ref.path}`,
     `REFERENCE_SHA256: ${ref.sha256}`,
+    `REFERENCE_KIND: ${ref.content_kind}`,
     `REFERENCE_SCOPE: ${ref.route_reason}`,
     "REFERENCE_CONTENT_BEGIN",
     ref.content,
@@ -109,17 +81,20 @@ export function validatePhaseReferences({ phaseId, bundle }) {
   const required = requiredReferenceNamesForPhase(phaseId);
   const loadedNames = new Set((bundle?.references || []).map((ref) => ref.name));
   const errors = [];
-  for (const name of required) {
-    if (!loadedNames.has(name)) errors.push(`REFERENCE_REQUIRED_BUT_MISSING:${phaseId}:${name}`);
-  }
+  for (const name of required) if (!loadedNames.has(name)) errors.push(`REFERENCE_REQUIRED_BUT_MISSING:${phaseId}:${name}`);
   return { ok: errors.length === 0, phase_id: phaseId, errors, mechanical_only: true };
 }
 
-async function findAndLoadReference({ name, baseDir, maxCharsPerReference }) {
+async function findAndLoadReference({ name, baseDir, maxCharsPerReference, rejected }) {
   const candidates = candidatePathsForReference({ name, baseDir });
   for (const candidate of candidates) {
     try {
-      const content = await fs.readFile(candidate, "utf8");
+      const buffer = await fs.readFile(candidate);
+      if (isLikelyBinary(buffer)) {
+        rejected.push({ name: canonicalReferenceName(name), path: path.relative(baseDir, candidate) || path.basename(candidate), reason: "BINARY_REFERENCE_REJECTED_USE_TEXT_OR_CSV" });
+        continue;
+      }
+      const content = buffer.toString("utf8");
       const finalContent = maxCharsPerReference > 0 && content.length > maxCharsPerReference
         ? `${content.slice(0, maxCharsPerReference)}\n\n[REFERENCE_TRUNCATED_FOR_MODEL_CONTEXT chars=${content.length} max=${maxCharsPerReference}]`
         : content;
@@ -128,9 +103,10 @@ async function findAndLoadReference({ name, baseDir, maxCharsPerReference }) {
         requested_name: name,
         path: path.relative(baseDir, candidate) || path.basename(candidate),
         content: finalContent,
+        content_kind: "text",
         char_count: finalContent.length,
         original_char_count: content.length,
-        sha256: sha256(content),
+        sha256: sha256(buffer),
         route_reason: routeReasonForReference(name)
       };
     } catch {
@@ -143,25 +119,15 @@ async function findAndLoadReference({ name, baseDir, maxCharsPerReference }) {
 function candidatePathsForReference({ name, baseDir }) {
   const names = referenceNameVariants(name);
   const paths = [];
-  for (const dir of DEFAULT_REFERENCE_SEARCH_DIRS) {
-    for (const file of names) paths.push(path.resolve(baseDir, dir, file));
-  }
+  for (const dir of DEFAULT_REFERENCE_SEARCH_DIRS) for (const file of names) paths.push(path.resolve(baseDir, dir, file));
   return Array.from(new Set(paths));
 }
 
 function referenceNameVariants(name) {
   const n = String(name || "").trim();
-  const variants = new Set([n]);
-  if (n === "AI_THREAT_REGISTRY") {
-    variants.add("AI_THREAT_REGISTRY.csv");
-    variants.add("AI_THREAT_REGISTRY.md");
-    variants.add("AI_THREAT_REGISTRY.txt");
-  }
-  if (n === "REGISTRY_KEY_v3_0.md") {
-    variants.add("REGISTRY_KEY_v3_0.txt");
-    variants.add("REGISTRY_KEY.md");
-  }
-  return Array.from(variants);
+  if (n === "AI_THREAT_REGISTRY") return ["AI_THREAT_REGISTRY.csv", "AI_THREAT_REGISTRY.md", "AI_THREAT_REGISTRY.txt", "AI_THREAT_REGISTRY"];
+  if (n === "REGISTRY_KEY_v3_0.md") return ["REGISTRY_KEY_v3_0.md", "REGISTRY_KEY_v3_0.txt", "REGISTRY_KEY.md"];
+  return [n];
 }
 
 function canonicalReferenceName(name) {
@@ -188,6 +154,12 @@ function optionalReference(name) {
   return true;
 }
 
+function isLikelyBinary(buffer) {
+  const sample = buffer.slice(0, Math.min(buffer.length, 4096));
+  if (sample[0] === 0x50 && sample[1] === 0x4b) return true;
+  return sample.includes(0);
+}
+
 function sha256(value) {
-  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
