@@ -3,7 +3,7 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import { loadPromptStack, runPhaseStack } from "./phase-runner.js";
-import { buildPool, callGeminiClient, fingerprint, uniqueCsv } from "./gemini-client.js";
+import { PHASE_POOL_ENV, buildRuntimePool, callGeminiClient, fingerprint } from "./gemini-client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,15 +12,6 @@ const PORT = Number(process.env.PORT || 8080);
 const ACTIVE_RUNTIME = "phase_stack_prompt_supremacy";
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 240000);
 const GEMINI_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS || 65535);
-
-const POOL_ENV = {
-  router: { keys: "DILIGENCE_ROUTER_API_KEYS", key: "DILIGENCE_ROUTER_API_KEY", models: "DILIGENCE_ROUTER_MODEL_SEQUENCE", model: "DILIGENCE_ROUTER_MODEL", defaults: ["gemini-2.5-flash-lite", "gemini-2.5-flash"] },
-  extract: { keys: "DILIGENCE_EXTRACT_API_KEYS", key: "DILIGENCE_EXTRACT_API_KEY", models: "DILIGENCE_EXTRACT_MODEL_SEQUENCE", model: "DILIGENCE_EXTRACT_MODEL", defaults: ["gemini-2.5-flash-lite", "gemini-2.5-flash"] },
-  profile: { keys: "DILIGENCE_PROFILE_API_KEYS", key: "DILIGENCE_PROFILE_API_KEY", models: "DILIGENCE_PROFILE_MODEL_SEQUENCE", model: "DILIGENCE_PROFILE_MODEL", defaults: ["gemini-2.5-flash", "gemini-2.5-flash-lite"] },
-  registry: { keys: "DILIGENCE_REGISTRY_API_KEYS", key: "DILIGENCE_REGISTRY_API_KEY", models: "DILIGENCE_REGISTRY_MODEL_SEQUENCE", model: "DILIGENCE_REGISTRY_MODEL", defaults: ["gemini-2.5-flash", "gemini-2.5-flash-lite"] },
-  final: { keys: "DILIGENCE_FINAL_API_KEYS", key: "DILIGENCE_FINAL_API_KEY", models: "DILIGENCE_FINAL_MODEL_SEQUENCE", model: "DILIGENCE_FINAL_MODEL", defaults: ["gemini-2.5-flash", "gemini-2.5-flash-lite"] },
-  repair: { keys: "DILIGENCE_REPAIR_API_KEYS", key: "DILIGENCE_REPAIR_API_KEY", models: "DILIGENCE_REPAIR_MODEL_SEQUENCE", model: "DILIGENCE_REPAIR_MODEL", defaults: ["gemini-2.5-flash-lite", "gemini-2.5-flash"] }
-};
 
 const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -95,7 +86,7 @@ async function safePromptStack() {
 }
 
 async function callModel({ phaseId, poolName = "repair", systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS }) {
-  const pool = getPool(poolName);
+  const pool = buildRuntimePool(poolName);
   let lastError = null;
   for (let keyIndex = 0; keyIndex < pool.keys.length; keyIndex += 1) {
     for (let modelIndex = 0; modelIndex < pool.models.length; modelIndex += 1) {
@@ -112,20 +103,13 @@ async function callModel({ phaseId, poolName = "repair", systemPrompt, userPromp
   throw lastError || new Error(`MODEL_POOL_FAILED:${poolName}`);
 }
 
-function getPool(poolName) {
-  const env = POOL_ENV[poolName] || POOL_ENV.repair;
-  const keyCsv = [process.env[env.keys], process.env[env.key], process.env.GEMINI_API_KEYS, process.env.GEMINI_API_KEY].join(",");
-  const modelCsv = process.env[env.models] || process.env[env.model] || process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "";
-  return buildPool({ keys: keyCsv, models: modelCsv, defaults: env.defaults });
-}
-
 function hasAnyGeminiKey() {
-  return Object.keys(POOL_ENV).some((pool) => getPool(pool).keys.length > 0);
+  return Object.keys(PHASE_POOL_ENV).some((pool) => buildRuntimePool(pool).keys.length > 0);
 }
 
 function publicPoolsSnapshot() {
-  return Object.fromEntries(Object.keys(POOL_ENV).map((pool) => {
-    const built = getPool(pool);
+  return Object.fromEntries(Object.keys(PHASE_POOL_ENV).map((pool) => {
+    const built = buildRuntimePool(pool);
     return [pool, { key_count: built.keys.length, models: built.models, key_pool: built.keys.map((key, index) => ({ index: index + 1, configured: true, fingerprint: fingerprint(key) })) }];
   }));
 }
