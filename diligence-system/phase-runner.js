@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseJsonObject, validateMechanicalPhaseOutput, validatePromptStackReadiness } from "./mechanical-output-validator.js";
+import { runSourceAdapter } from "./source-adapter.js";
+import { loadReferenceBundle, formatReferencesForPrompt, validatePhaseReferences } from "./reference-loader.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const BASE_DIR = path.dirname(__filename);
@@ -45,7 +47,16 @@ export async function loadPromptStack(baseDir = BASE_DIR) {
     phases,
     manifest: [
       ...CORE_PROMPT_FILES.map((file) => ({ kind: "core", file, present: Boolean(core[file]) })),
-      ...executionNodes.map((node) => ({ kind: node.type, node_id: node.node_id, order: node.order, file: node.file, pool: node.pool, present: node.type === "model_phase" ? Boolean(phases.find((phase) => phase.node_id === node.node_id)?.prompt) : Boolean(core[node.file] || node.file === "deterministic_renderer") })),
+      ...executionNodes.map((node) => ({
+        kind: node.type,
+        node_id: node.node_id,
+        order: node.order,
+        file: node.file,
+        pool: node.pool,
+        present: node.type === "model_phase"
+          ? Boolean(phases.find((phase) => phase.node_id === node.node_id)?.prompt)
+          : Boolean(core[node.file] || node.file === "deterministic_renderer")
+      })),
       ...phases.map((phase) => ({ kind: "phase_prompt", node_id: phase.node_id, file: phase.file, required_top_level_keys: phase.required_top_level_keys }))
     ]
   };
@@ -58,15 +69,42 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
   const promptStack = await loadPromptStack(baseDir);
   if (!promptStack.ok) return fail({ run, promptStack, status: "PROMPT_STACK_NOT_READY", failedNode: "PROMPT_STACK", error: promptStack.errors.join(";") });
 
-  const stage0 = buildStage0(run);
+  let stage0;
+  try {
+    stage0 = await runSourceAdapter({ input: run, baseDir });
+  } catch (err) {
+    return fail({ run, promptStack, status: "S0_SOURCE_ADAPTER_FAILED", failedNode: "S0", error: err?.message || String(err) });
+  }
+
   const upstream = { S0: stage0 };
   const phaseOutputs = {};
+  const referenceBundles = {};
   const mechanicalValidations = { S0: { ok: true, phase_id: "S0", errors: [], mechanical_only: true } };
   const completedNodes = ["S0"];
   let lastModelMeta = null;
 
   for (const phase of promptStack.phases) {
-    const payload = buildPayload({ run, promptStack, phase, upstream });
+    const referenceBundle = await loadReferenceBundle({ phaseId: phase.node_id, baseDir });
+    referenceBundles[phase.node_id] = referenceBundle;
+    const referenceValidation = validatePhaseReferences({ phaseId: phase.node_id, bundle: referenceBundle });
+    mechanicalValidations[`REF_${phase.node_id}`] = referenceValidation;
+    if (!referenceValidation.ok) {
+      return fail({
+        run,
+        promptStack,
+        upstream,
+        phaseOutputs,
+        referenceBundles,
+        mechanicalValidations,
+        completedNodes,
+        status: `${phase.node_id}_REFERENCE_VALIDATION_FAILED`,
+        failedNode: phase.node_id,
+        error: referenceValidation.errors.join(";"),
+        lastModelMeta
+      });
+    }
+
+    const payload = buildPayload({ run, promptStack, phase, upstream, referenceBundle });
     let modelResult;
     try {
       modelResult = await callModel({
@@ -79,7 +117,7 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
         allowGrounding: false
       });
     } catch (err) {
-      return fail({ run, promptStack, upstream, phaseOutputs, mechanicalValidations, completedNodes, status: `${phase.node_id}_MODEL_CALL_FAILED`, failedNode: phase.node_id, error: err?.message || String(err), lastModelMeta });
+      return fail({ run, promptStack, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, status: `${phase.node_id}_MODEL_CALL_FAILED`, failedNode: phase.node_id, error: err?.message || String(err), lastModelMeta });
     }
 
     lastModelMeta = modelResult?.meta || modelResult || null;
@@ -87,13 +125,13 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
     const parsed = parseJsonObject(rawText);
     if (!parsed.ok) {
       mechanicalValidations[phase.node_id] = { ok: false, phase_id: phase.node_id, errors: [parsed.error], mechanical_only: true };
-      return fail({ run, promptStack, upstream, phaseOutputs, mechanicalValidations, completedNodes, status: `${phase.node_id}_JSON_PARSE_FAILED`, failedNode: phase.node_id, error: parsed.error, lastModelMeta });
+      return fail({ run, promptStack, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, status: `${phase.node_id}_JSON_PARSE_FAILED`, failedNode: phase.node_id, error: parsed.error, lastModelMeta });
     }
 
     const validation = validateMechanicalPhaseOutput({ phaseId: phase.node_id, rawText, parsed: parsed.parsed, requiredTopLevelKeys: phase.required_top_level_keys });
     mechanicalValidations[phase.node_id] = validation;
     if (!validation.ok) {
-      return fail({ run, promptStack, upstream, phaseOutputs, mechanicalValidations, completedNodes, status: `${phase.node_id}_MECHANICAL_VALIDATION_FAILED`, failedNode: phase.node_id, error: validation.errors.join(";"), lastModelMeta });
+      return fail({ run, promptStack, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, status: `${phase.node_id}_MECHANICAL_VALIDATION_FAILED`, failedNode: phase.node_id, error: validation.errors.join(";"), lastModelMeta });
     }
 
     phaseOutputs[phase.node_id] = parsed.parsed;
@@ -110,18 +148,20 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
     company_name: run.company_name,
     source_mode: run.source_mode,
     prompt_stack: promptStack.manifest,
+    reference_bundles: summarizeReferenceBundles(referenceBundles),
     mechanical_validations: mechanicalValidations,
     phase_outputs: phaseOutputs,
     hybrid_extraction_manifest: stage0.hybrid_extraction_manifest,
     extraction_forensic_ledger: stage0.extraction_forensic_ledger,
-    runtime_orchestration_manifest: buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode: null }),
+    runtime_orchestration_manifest: buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode: null, referenceBundles }),
     phase_stack: { completed_nodes: completedNodes, failed_node: null, next_node: "RENDERER" },
     model_meta_last: lastModelMeta,
     ...flatten(phaseOutputs)
   };
 }
 
-function buildPayload({ run, promptStack, phase, upstream }) {
+function buildPayload({ run, promptStack, phase, upstream, referenceBundle }) {
+  const supplementalReferenceBundle = stripCoreReferences(referenceBundle);
   return {
     systemPrompt: [
       promptStack.core["00_RUNTIME_SPINE.md"],
@@ -130,10 +170,13 @@ function buildPayload({ run, promptStack, phase, upstream }) {
       promptStack.core["08_PHASE_STACK_EXECUTION_MAP.md"],
       promptStack.core["09_OUTPUT_HANDOFF_CONTRACT.md"],
       promptStack.core["10_RUNTIME_AUDIT_CHECKLIST.md"],
+      formatReferencesForPrompt(supplementalReferenceBundle),
       phase.prompt
-    ].join("\n\n"),
+    ].filter(Boolean).join("\n\n"),
     userPrompt: JSON.stringify({
       run_context: { run_id: run.run_id, target_url: run.target_url, company_name: run.company_name, source_mode: run.source_mode },
+      reference_manifest: referenceBundle.reference_manifest,
+      missing_references: referenceBundle.missing_references,
       upstream_outputs: upstream,
       current_node: phase.node_id,
       current_prompt_file: phase.file
@@ -141,37 +184,7 @@ function buildPayload({ run, promptStack, phase, upstream }) {
   };
 }
 
-function buildStage0(run) {
-  const text = run.pasted_public_material;
-  const candidate_sources = text ? [{
-    source_id: "S0_CAND_001",
-    source_url: run.target_url || "PASTED_PUBLIC_MATERIAL",
-    source_kind: run.source_mode === "synthetic_demo" ? "synthetic_demo_material" : "user_supplied_public_material",
-    clean_text: text,
-    char_count: text.length,
-    custody_status: "candidate_only_pending_phase_1_admission"
-  }] : [];
-
-  return {
-    hybrid_extraction_manifest: {
-      node_id: "S0",
-      source_mode: run.source_mode,
-      target_url: run.target_url || "N/A",
-      company_name: run.company_name || "N/A",
-      candidate_sources,
-      artifact_store_manifest: candidate_sources.map((item) => ({ source_id: item.source_id, source_url: item.source_url, source_kind: item.source_kind, char_count: item.char_count }))
-    },
-    extraction_forensic_ledger: {
-      node_id: "S0",
-      run_id: run.run_id,
-      source_mode: run.source_mode,
-      candidate_count: candidate_sources.length,
-      controlled_limitations: candidate_sources.length ? [] : ["NO_CANDIDATE_SOURCE_MATERIAL_SUPPLIED"]
-    }
-  };
-}
-
-function buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode }) {
+function buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode, referenceBundles = {} }) {
   return {
     run_id: run.run_id,
     source_mode: run.source_mode,
@@ -198,6 +211,7 @@ function buildOrchestrationManifest({ run, promptStack, completedNodes, failedNo
       runtime_model_ref: null,
       runtime_key_pool_ref: phase.pool
     })),
+    reference_execution_records: summarizeReferenceBundles(referenceBundles),
     handoff_chain_status: failedNode ? "PARTIAL" : "COMPLETE",
     ledger_chain_status: failedNode ? "PARTIAL" : "COMPLETE",
     artifact_access_status: "VALID",
@@ -207,7 +221,7 @@ function buildOrchestrationManifest({ run, promptStack, completedNodes, failedNo
   };
 }
 
-function fail({ run, promptStack, upstream = {}, phaseOutputs = {}, mechanicalValidations = {}, completedNodes = [], status, failedNode, error, lastModelMeta = null }) {
+function fail({ run, promptStack, upstream = {}, phaseOutputs = {}, referenceBundles = {}, mechanicalValidations = {}, completedNodes = [], status, failedNode, error, lastModelMeta = null }) {
   return {
     ok: false,
     mode: "phase_stack_prompt_supremacy",
@@ -217,11 +231,12 @@ function fail({ run, promptStack, upstream = {}, phaseOutputs = {}, mechanicalVa
     company_name: run.company_name,
     source_mode: run.source_mode,
     prompt_stack: promptStack?.manifest || [],
+    reference_bundles: summarizeReferenceBundles(referenceBundles),
     mechanical_validations: mechanicalValidations,
     phase_outputs: phaseOutputs,
     hybrid_extraction_manifest: upstream?.S0?.hybrid_extraction_manifest || null,
     extraction_forensic_ledger: upstream?.S0?.extraction_forensic_ledger || null,
-    runtime_orchestration_manifest: promptStack ? buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode }) : null,
+    runtime_orchestration_manifest: promptStack ? buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode, referenceBundles }) : null,
     phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
     error,
     model_meta_last: lastModelMeta,
@@ -235,7 +250,9 @@ function normalizeInput(input) {
     source_mode: String(input.source_mode || input.sourceMode || "text").trim(),
     target_url: String(input.target_url || input.targetUrl || "").trim(),
     company_name: String(input.company_name || input.companyName || "").trim(),
-    pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim()
+    pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim(),
+    max_candidate_sources: input.max_candidate_sources || input.maxCandidateSources,
+    fetch_timeout_ms: input.fetch_timeout_ms || input.fetchTimeoutMs
   };
 }
 
@@ -277,6 +294,22 @@ function extractRequiredTopLevelKeys(text) {
   return Array.from(keys);
 }
 
+function stripCoreReferences(bundle) {
+  const core = new Set(CORE_PROMPT_FILES);
+  return {
+    ...(bundle || {}),
+    references: (bundle?.references || []).filter((ref) => !core.has(ref.name))
+  };
+}
+
+function summarizeReferenceBundles(bundles = {}) {
+  return Object.fromEntries(Object.entries(bundles).map(([phaseId, bundle]) => [phaseId, {
+    ok: bundle.ok,
+    missing_references: bundle.missing_references,
+    reference_manifest: bundle.reference_manifest
+  }]));
+}
+
 function flatten(outputs) {
   const out = {};
   for (const value of Object.values(outputs || {})) {
@@ -286,11 +319,14 @@ function flatten(outputs) {
 }
 
 async function readFileSafe(baseDir, file, missingFiles) {
-  try { return await fs.readFile(path.join(baseDir, file), "utf8"); }
-  catch (_err) { missingFiles.push(file); return ""; }
+  try {
+    return await fs.readFile(path.join(baseDir, file), "utf8");
+  } catch {
+    missingFiles.push(file);
+    return "";
+  }
 }
 
 function createRunId() {
-  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-  return `diligence_${stamp}_${Math.random().toString(36).slice(2, 8)}`;
+  return `run_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 }
