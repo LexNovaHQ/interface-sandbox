@@ -1,385 +1,514 @@
 import crypto from "crypto";
 
-const ADAPTER_VERSION = "source_adapter_prompt_supremacy_v1";
-const DEFAULT_MAX_CANDIDATES = 24;
+const ADAPTER_VERSION = "source_adapter_hybrid_contract_v2";
+const DEFAULT_MAX_CANDIDATES = 36;
 const DEFAULT_FETCH_TIMEOUT_MS = 15000;
 const DEFAULT_USER_AGENT = "InterfaceDiligenceSystem/1.0 (+public-footprint-diligence)";
+const JINA_READER_BASE = String(process.env.DILIGENCE_JINA_READER_BASE || "").trim();
+const MAX_EXTRACTION_PASSES = 2;
 
-const PRIORITY_PATHS = [
-  "/",
-  "/privacy", "/privacy-policy", "/legal/privacy", "/policies/privacy-policy",
-  "/terms", "/terms-of-service", "/legal/terms", "/terms-and-conditions",
-  "/security", "/trust", "/trust-center", "/subprocessors", "/sub-processors", "/dpa",
-  "/product", "/products", "/platform", "/solutions", "/features",
-  "/docs", "/documentation", "/developers", "/developer", "/api", "/pricing"
+const STATIC_SEED_PATHS = [
+  "/", "/product", "/products", "/platform", "/features", "/solutions", "/solution", "/use-cases", "/usecases", "/models", "/model", "/agents", "/agent", "/studio", "/apps", "/tools", "/workflows", "/automation", "/automations",
+  "/terms", "/terms-of-service", "/terms-and-conditions", "/legal", "/privacy", "/privacy-policy", "/dpa", "/data-processing-agreement", "/subprocessors", "/cookie-policy", "/acceptable-use", "/aup", "/sla",
+  "/security", "/trust", "/trust-center", "/security-center", "/compliance", "/docs", "/documentation", "/developers", "/developer", "/api", "/api-docs", "/reference", "/integrations", "/pricing", "/plans", "/enterprise", "/contact-sales", "/demo"
 ];
 
-export async function runSourceAdapter({ input = {}, baseDir = process.cwd(), fetchImpl = globalThis.fetch, now = new Date() } = {}) {
+const SIGNAL_PATH_RE = /(product|products|platform|feature|features|solution|solutions|use-cases|usecases|models|agents|studio|apps|tools|workflows|automation|terms|privacy|legal|dpa|data-processing|subprocessor|cookie|acceptable-use|aup|sla|security|trust|compliance|docs|documentation|developer|developers|api|reference|integrations|pricing|plans|enterprise|contact-sales|demo)/i;
+const KILL_HOST_RE = /(crunchbase|pitchbook|techcrunch|g2\.com|capterra|reddit|twitter|x\.com|facebook|linkedin|youtube|medium\.com)/i;
+const HOSTED_GOVERNANCE_RE = /(termly|iubenda|termsfeed|onetrust|drata|vanta|secureframe|trustcloud|notion\.site|github\.io|webflow\.io)/i;
+
+export async function runSourceAdapter({ input = {}, baseDir = process.cwd(), fetchImpl = globalThis.fetch, callModel, now = new Date() } = {}) {
   const run = normalizeInput(input);
   const startedAt = now.toISOString();
-  const maxCandidates = positiveInt(input.max_candidate_sources || input.maxCandidateSources || process.env.DILIGENCE_SOURCE_MAX_URLS, DEFAULT_MAX_CANDIDATES);
-  const timeoutMs = positiveInt(input.fetch_timeout_ms || input.fetchTimeoutMs || process.env.DILIGENCE_SOURCE_FETCH_TIMEOUT_MS, DEFAULT_FETCH_TIMEOUT_MS);
-  const candidateQueue = [];
-  const discoveryRecords = [];
-  const failedSources = [];
-  const rejectedSources = [];
-  const deferredSources = [];
-  const limitations = [];
+  const maxCandidates = positiveInt(run.max_candidate_sources || process.env.DILIGENCE_SOURCE_MAX_URLS, DEFAULT_MAX_CANDIDATES);
+  const timeoutMs = positiveInt(run.fetch_timeout_ms || process.env.DILIGENCE_SOURCE_FETCH_TIMEOUT_MS, DEFAULT_FETCH_TIMEOUT_MS);
 
-  if (run.pasted_public_material) {
-    candidateQueue.push(buildTextCandidate({ run, startedAt }));
+  const state = createState({ run, startedAt, maxCandidates, timeoutMs });
+  recordEvent(state, "SX.B0_START", "INFO", { source_mode: run.source_mode, target_url: run.target_url || null });
+
+  const modeValidation = validateSourceMode(run);
+  if (!modeValidation.ok) {
+    state.collection_limitations.push(modeValidation.error);
+    recordEvent(state, "SX.B0_CONTROLLED_FAILURE", "ERROR", { error: modeValidation.error });
+    return assembleManifest({ run, state, startedAt });
   }
 
-  if (isUrlMode(run.source_mode) && run.target_url) {
-    if (typeof fetchImpl !== "function") {
-      limitations.push("FETCH_IMPL_UNAVAILABLE_FOR_URL_MODE");
-    } else {
-      const discovered = await discoverUrlCandidates({ run, fetchImpl, timeoutMs, maxCandidates, discoveryRecords, failedSources });
-      candidateQueue.push(...discovered);
+  if (run.pasted_public_material && (run.source_mode === "text" || run.source_mode === "url_plus_text" || run.source_mode === "synthetic_demo")) {
+    addCandidate(state, textCandidate({ run, startedAt }));
+  }
+
+  if (run.source_mode === "text" || run.source_mode === "synthetic_demo") {
+    recordEvent(state, "SX.B0_TEXT_OR_DEMO_BYPASS", "INFO", { source_mode: run.source_mode });
+    await materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt });
+    return assembleManifest({ run, state, startedAt });
+  }
+
+  const target = canonicalizeTarget(run.target_url);
+  if (!target.ok) {
+    state.collection_limitations.push(target.error);
+    recordEvent(state, "SX.B1_TARGET_CANONICALIZATION_FAILED", "ERROR", { error: target.error });
+    return assembleManifest({ run, state, startedAt, target: target.target });
+  }
+  state.target = target.target;
+  recordEvent(state, "SX.B1_TARGET_CANONICALIZATION", "INFO", state.target);
+
+  deterministicKnownPathDiscovery({ state });
+  await sitemapRobotsDiscovery({ state, fetchImpl, timeoutMs });
+  await navAnchorDiscovery({ state, fetchImpl, timeoutMs });
+  await searchScoutDiscovery({ run, state, callModel });
+  scopeFilterAndQueue(state);
+  await materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt });
+  await coverageChallenge({ run, state, callModel });
+
+  if (state.second_pass_required && state.pass_count < MAX_EXTRACTION_PASSES) {
+    state.pass_count += 1;
+    scopeFilterAndQueue(state);
+    await materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt });
+  }
+
+  return assembleManifest({ run, state, startedAt, target: state.target });
+}
+
+function createState({ run, startedAt, maxCandidates, timeoutMs }) {
+  return {
+    adapter_version: ADAPTER_VERSION,
+    run_id: run.run_id,
+    started_at: startedAt,
+    target: null,
+    max_candidates: maxCandidates,
+    timeout_ms: timeoutMs,
+    pass_count: 1,
+    candidates: [],
+    candidate_map: new Map(),
+    fetch_queue: [],
+    final_sources: [],
+    root_clusters: new Map(),
+    batch_plan: [],
+    collection_passes: [],
+    discovery_records: [],
+    search_scout_records: [],
+    coverage_challenge_records: [],
+    fetch_successes: [],
+    fetch_failures: [],
+    deferred_candidates: [],
+    dedupe_records: [],
+    rejected_by_scope: [],
+    warnings: [],
+    collection_limitations: [],
+    ledger_events: [],
+    batch_execution_log: [],
+    candidate_discovery_log: [],
+    fetch_attempt_log: [],
+    dedupe_log: [],
+    retry_log: [],
+    second_pass_required: false
+  };
+}
+
+function validateSourceMode(run) {
+  const allowed = new Set(["url", "text", "url_plus_text", "synthetic_demo"]);
+  if (!allowed.has(run.source_mode)) return { ok: false, error: "INVALID_SOURCE_MODE" };
+  if ((run.source_mode === "url" || run.source_mode === "url_plus_text") && !run.target_url) return { ok: false, error: "URL_REQUIRED_FOR_SOURCE_MODE" };
+  if ((run.source_mode === "text" || run.source_mode === "synthetic_demo") && !run.pasted_public_material) return { ok: false, error: "TEXT_REQUIRED_FOR_SOURCE_MODE" };
+  return { ok: true };
+}
+
+function canonicalizeTarget(rawUrl) {
+  const normalized = normalizeUrl(rawUrl);
+  if (!normalized) return { ok: false, error: "INVALID_TARGET_URL", target: null };
+  const u = new URL(normalized);
+  const canonicalDomain = u.hostname.replace(/^www\./i, "");
+  const rootUrl = `${u.protocol}//${u.hostname}/`;
+  const allowedHosts = Array.from(new Set([u.hostname, `www.${canonicalDomain}`, canonicalDomain]));
+  return { ok: true, target: { target_url: rawUrl, normalized_target_url: normalized, canonical_domain: canonicalDomain, root_url: rootUrl, allowed_hosts: allowedHosts, normalization_notes: [] } };
+}
+
+function deterministicKnownPathDiscovery({ state }) {
+  const origin = new URL(state.target.root_url).origin;
+  for (const p of STATIC_SEED_PATHS) addCandidate(state, candidateFromUrl({ url: new URL(p, origin).href, discovery_method: "SX.B2_KNOWN_PATH_PROBING", parent: state.target.root_url }));
+  recordEvent(state, "SX.B2_KNOWN_PATH_PROBING", "INFO", { candidate_count: state.candidates.length });
+}
+
+async function sitemapRobotsDiscovery({ state, fetchImpl, timeoutMs }) {
+  const origin = new URL(state.target.root_url).origin;
+  const sitemapSeeds = [new URL("/robots.txt", origin).href, new URL("/sitemap.xml", origin).href, new URL("/sitemap_index.xml", origin).href];
+  for (const url of sitemapSeeds) {
+    const res = await fetchText({ url, fetchImpl, timeoutMs, method: "direct_fetch" });
+    state.discovery_records.push({ method: "SX.B3_SITEMAP_ROBOTS_DISCOVERY", source_url: url, ok: res.ok, status_code: res.status_code || null, error: res.error || null });
+    if (!res.ok) continue;
+    const discovered = url.endsWith("robots.txt") ? extractSitemapsFromRobots(res.raw_text) : extractLocUrls(res.raw_text);
+    for (const found of discovered) {
+      if (isAllowedOrHostedCandidate(found, state.target)) addCandidate(state, candidateFromUrl({ url: found, discovery_method: "SX.B3_SITEMAP_ROBOTS_DISCOVERY", parent: url }));
     }
   }
+  recordEvent(state, "SX.B3_SITEMAP_ROBOTS_DISCOVERY", "INFO", { discovery_records: state.discovery_records.length });
+}
 
-  const uniqueQueue = uniqueCandidates(candidateQueue, rejectedSources).slice(0, maxCandidates);
-  if (candidateQueue.length > uniqueQueue.length) {
-    deferredSources.push(...candidateQueue.slice(uniqueQueue.length).map((item) => ({ source_url: item.source_url, reason: "CANDIDATE_LIMIT_DEFERRED" })));
+async function navAnchorDiscovery({ state, fetchImpl, timeoutMs }) {
+  const seedUrls = state.candidates.filter((c) => ["root_homepage", "product_platform", "product_solution", "docs_api_developer"].includes(c.source_family_hint)).slice(0, 10);
+  for (const seed of seedUrls) {
+    const res = await fetchText({ url: seed.candidate_url, fetchImpl, timeoutMs, method: "direct_fetch" });
+    state.discovery_records.push({ method: "SX.B4_NAV_FOOTER_ANCHOR_DISCOVERY", source_url: seed.candidate_url, ok: res.ok, status_code: res.status_code || null, error: res.error || null });
+    if (!res.ok) continue;
+    const links = extractLinksAndRouteHints(res.raw_text, seed.candidate_url);
+    for (const link of links) {
+      if (isAllowedOrHostedCandidate(link, state.target) && isUsefulCandidate(link)) addCandidate(state, candidateFromUrl({ url: link, discovery_method: "SX.B4_NAV_FOOTER_ANCHOR_DISCOVERY", parent: seed.candidate_url }));
+    }
   }
+  recordEvent(state, "SX.B4_NAV_FOOTER_ANCHOR_DISCOVERY", "INFO", { candidate_count: state.candidates.length });
+}
 
-  const fetchedCandidates = [];
-  for (let index = 0; index < uniqueQueue.length; index += 1) {
-    const item = uniqueQueue[index];
-    if (item.inline_text) {
-      fetchedCandidates.push(materializeCandidate({ item, index, run, startedAt, rejectedSources }));
+async function searchScoutDiscovery({ run, state, callModel }) {
+  if (typeof callModel !== "function") {
+    state.collection_limitations.push("SEARCH_SCOUT_SKIPPED_CALL_MODEL_UNAVAILABLE");
+    return;
+  }
+  const packet = buildSearchScoutPacket({ run, state });
+  try {
+    const result = await callModel({ phaseId: "S0_SEARCH_SCOUT", poolName: "search", systemPrompt: packet.systemPrompt, userPrompt: packet.userPrompt, responseMimeType: "application/json", temperature: 0, allowGrounding: true, maxOutputTokens: 8192 });
+    const parsed = safeParseJson(result.text);
+    const rows = Array.isArray(parsed?.search_scout_candidates) ? parsed.search_scout_candidates : [];
+    for (const row of rows) {
+      if (row?.candidate_url && isAllowedOrHostedCandidate(row.candidate_url, state.target)) addCandidate(state, candidateFromUrl({ url: row.candidate_url, discovery_method: "SX.B5_GROUNDED_SEARCH_SCOUT", parent: row.discovery_query || "search_scout", scout: row }));
+    }
+    state.search_scout_records.push({ ok: true, candidate_count: rows.length, model_meta: result.meta || null, follow_up_queries: parsed?.follow_up_queries || [] });
+  } catch (err) {
+    state.search_scout_records.push({ ok: false, error: err?.message || String(err) });
+    state.collection_limitations.push("SEARCH_SCOUT_FAILED_OR_UNAVAILABLE");
+  }
+  recordEvent(state, "SX.B5_GROUNDED_SEARCH_SCOUT", "INFO", { records: state.search_scout_records.length });
+}
+
+function scopeFilterAndQueue(state) {
+  const ranked = state.candidates.sort(candidateSort);
+  const queue = [];
+  for (const candidate of ranked) {
+    const scope = scopeClass(candidate.candidate_url, state.target);
+    candidate.scope_class = scope;
+    if (scope === "THIRD_PARTY_NON_GOVERNANCE" || scope === "PRIVATE_OR_PROHIBITED") {
+      state.rejected_by_scope.push({ candidate_url: candidate.candidate_url, scope_class: scope, reason: "OUT_OF_SCOPE_FOR_STAGE0" });
+      recordEvent(state, "SX.B6_SCOPE_REJECT", "INFO", { candidate_url: candidate.candidate_url, scope_class: scope });
       continue;
     }
-    const fetched = await fetchCandidate({ item, index, run, fetchImpl, timeoutMs, startedAt, failedSources });
-    if (fetched) fetchedCandidates.push(fetched);
+    if (queue.length < state.max_candidates) queue.push(candidate);
+    else state.deferred_candidates.push({ candidate_url: candidate.candidate_url, priority: candidate.priority, source_family_hint: candidate.source_family_hint, defer_reason: "FETCH_QUEUE_LIMIT", not_silently_dropped: true, phase1_review_required: true });
   }
-
-  const finalCandidates = dedupeByText(fetchedCandidates, rejectedSources);
-  if (!finalCandidates.length) limitations.push("NO_CANDIDATE_SOURCE_MATERIAL_AVAILABLE_AFTER_STAGE0");
-
-  const losslessTextArtifacts = finalCandidates.map((source) => ({
-    source_id: source.source_id,
-    source_url: source.source_url,
-    raw_text_ref: source.raw_text_ref,
-    clean_text_ref: source.clean_text_ref,
-    raw_content_hash: source.raw_content_hash,
-    normalized_text_hash: source.normalized_text_hash,
-    raw_char_count: source.raw_char_count,
-    clean_char_count: source.clean_char_count,
-    word_count: source.word_count,
-    custody_status: source.custody_status
-  }));
-
-  const hybrid_extraction_manifest = {
-    node_id: "S0",
-    adapter_version: ADAPTER_VERSION,
-    source_mode: run.source_mode,
-    run_id: run.run_id,
-    target_url: run.target_url || "N/A",
-    normalized_target_url: run.target_url ? normalizeUrl(run.target_url) : "N/A",
-    company_name: run.company_name || "N/A",
-    generated_at: startedAt,
-    candidate_sources: finalCandidates,
-    lossless_text_artifacts: losslessTextArtifacts,
-    artifact_store_manifest: losslessTextArtifacts,
-    rejected_sources: rejectedSources,
-    deferred_sources: deferredSources,
-    failed_sources: failedSources,
-    batch_plan: {
-      max_candidate_sources: maxCandidates,
-      candidate_count: finalCandidates.length,
-      discovery_record_count: discoveryRecords.length,
-      fetch_timeout_ms: timeoutMs
-    },
-    controlled_limitations: limitations
-  };
-
-  const extraction_forensic_ledger = {
-    node_id: "S0",
-    adapter_version: ADAPTER_VERSION,
-    run_id: run.run_id,
-    source_mode: run.source_mode,
-    target_url: run.target_url || null,
-    started_at: startedAt,
-    completed_at: new Date().toISOString(),
-    candidate_count: finalCandidates.length,
-    rejected_count: rejectedSources.length,
-    deferred_count: deferredSources.length,
-    failed_count: failedSources.length,
-    discovery_records: discoveryRecords,
-    controlled_limitations: limitations
-  };
-
-  return { hybrid_extraction_manifest, extraction_forensic_ledger };
+  state.fetch_queue = queue;
+  buildBatchPlan(state);
 }
 
-async function discoverUrlCandidates({ run, fetchImpl, timeoutMs, maxCandidates, discoveryRecords, failedSources }) {
-  const root = normalizeUrl(run.target_url);
-  const origin = getOrigin(root);
-  const candidates = [];
-  const add = (url, basis) => {
-    const normalized = normalizeUrl(url, origin);
-    if (!normalized || !sameOrigin(normalized, origin)) return;
-    const hint = classifyCandidateSource(normalized);
-    candidates.push({
-      source_url: normalized,
-      normalized_url: normalized,
-      discovery_basis: basis,
-      source_family_hint: hint.source_family_hint,
-      priority_tier: hint.priority_tier,
-      inline_text: ""
-    });
-  };
-
-  add(root, "TARGET_ROOT");
-  for (const p of PRIORITY_PATHS) add(new URL(p, origin).href, "DETERMINISTIC_PRIORITY_PATH");
-
-  const rootFetch = await fetchUrlText({ url: root, fetchImpl, timeoutMs });
-  discoveryRecords.push({ source_url: root, method: "ROOT_LINK_DISCOVERY", ok: rootFetch.ok, status_code: rootFetch.status_code || null, error: rootFetch.error || null });
-  if (rootFetch.ok) {
-    const links = extractLinks(rootFetch.raw_text, origin).slice(0, maxCandidates * 4);
-    for (const link of links) {
-      if (isUsefulFirstPartyPath(link)) add(link, "ROOT_LINK_DISCOVERY");
+async function materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt }) {
+  const fetched = [];
+  for (let index = 0; index < state.fetch_queue.length; index += 1) {
+    const candidate = state.fetch_queue[index];
+    if (candidate._fetched) continue;
+    candidate._fetched = true;
+    if (candidate.inline_text) {
+      fetched.push(buildSourceRecord({ candidate, index, run, startedAt, rawText: candidate.inline_text, cleanText: cleanPlainText(candidate.inline_text), fetchMeta: { method: run.source_mode === "synthetic_demo" ? "synthetic_demo" : "pasted_text", status: "Pasted", status_code: null } }));
+      continue;
     }
-  } else {
-    failedSources.push({ source_url: root, failure_stage: "DISCOVERY_ROOT_FETCH", error: rootFetch.error || "ROOT_FETCH_FAILED", status_code: rootFetch.status_code || null });
+    const fetchedRecord = await fetchWithLadder({ candidate, index, run, state, fetchImpl, timeoutMs, startedAt });
+    if (fetchedRecord) fetched.push(fetchedRecord);
   }
-
-  return uniqueCandidates(candidates, []).slice(0, maxCandidates);
+  for (const record of fetched) addFinalSource(state, record);
 }
 
-async function fetchCandidate({ item, index, run, fetchImpl, timeoutMs, startedAt, failedSources }) {
-  const result = await fetchUrlText({ url: item.source_url, fetchImpl, timeoutMs });
-  if (!result.ok) {
-    failedSources.push({ source_url: item.source_url, failure_stage: "FETCH_OR_EXTRACT", error: result.error || "FETCH_FAILED", status_code: result.status_code || null });
-    return null;
+async function fetchWithLadder({ candidate, index, run, state, fetchImpl, timeoutMs, startedAt }) {
+  const methods = ["direct_fetch"];
+  if (JINA_READER_BASE) methods.push("jina_reader_extract");
+  for (const method of methods) {
+    const url = method === "jina_reader_extract" ? buildJinaUrl(candidate.candidate_url) : candidate.candidate_url;
+    state.fetch_attempt_log.push({ candidate_url: candidate.candidate_url, fetch_method: method, attempted_url: url, attempted_at: new Date().toISOString() });
+    const result = await fetchText({ url, fetchImpl, timeoutMs, method });
+    if (!result.ok) {
+      state.retry_log.push({ candidate_url: candidate.candidate_url, fetch_method: method, outcome: result.error || "FETCH_FAILED" });
+      continue;
+    }
+    const cleanText = cleanExtractedText(result.raw_text, result.content_type);
+    if (countWords(cleanText) < 25) {
+      state.retry_log.push({ candidate_url: candidate.candidate_url, fetch_method: method, outcome: "THIN_EXTRACTION_RETRY_NEXT_METHOD" });
+      continue;
+    }
+    const source = buildSourceRecord({ candidate, index, run, startedAt, rawText: result.raw_text, cleanText, fetchMeta: { method, status: "FETCHED", status_code: result.status_code, content_type: result.content_type } });
+    state.fetch_successes.push({ candidate_source_id: source.source_id, candidate_url: candidate.candidate_url, fetch_method: method, http_status: result.status_code, word_count: source.word_count });
+    return source;
   }
-  const rawText = result.raw_text || "";
-  const cleanText = cleanExtractedText(rawText, result.content_type);
-  if (!cleanText.trim()) {
-    failedSources.push({ source_url: item.source_url, failure_stage: "CLEAN_TEXT_EMPTY", error: "NO_EXTRACTABLE_TEXT", status_code: result.status_code || null });
-    return null;
+  if (candidate.scout?.reason_for_candidate) {
+    const snippet = cleanPlainText(candidate.scout.reason_for_candidate);
+    const source = buildSourceRecord({ candidate, index, run, startedAt, rawText: snippet, cleanText: snippet, fetchMeta: { method: "search_snippet_candidate_capture", status: "SNIPPET_ONLY", status_code: null, content_type: "text/plain" }, snippetOnly: true });
+    state.fetch_failures.push({ candidate_url: candidate.candidate_url, fetch_status: "SNIPPET_ONLY", failure_basis: "FETCH_FAILED_SNIPPET_CAPTURED" });
+    return source;
   }
-  return buildCandidateRecord({ item, index, run, startedAt, rawText, cleanText, fetchMeta: result });
+  state.fetch_failures.push({ candidate_url: candidate.candidate_url, fetch_status: "FETCH_FAILED", failure_basis: "FETCH_LADDER_EXHAUSTED" });
+  return null;
 }
 
-function materializeCandidate({ item, index, run, startedAt }) {
-  const rawText = item.inline_text;
-  const cleanText = cleanPlainText(rawText);
-  return buildCandidateRecord({ item, index, run, startedAt, rawText, cleanText, fetchMeta: { ok: true, status_code: null, content_type: "text/plain", fetch_method: "USER_SUPPLIED_TEXT" } });
+async function coverageChallenge({ run, state, callModel }) {
+  if (typeof callModel !== "function") {
+    state.collection_limitations.push("COVERAGE_CHALLENGE_SKIPPED_CALL_MODEL_UNAVAILABLE");
+    return;
+  }
+  const summary = summarizeCoverage(state);
+  const packet = buildCoverageChallengePacket({ run, state, summary });
+  try {
+    const result = await callModel({ phaseId: "S0_COVERAGE_CHALLENGE", poolName: "search", systemPrompt: packet.systemPrompt, userPrompt: packet.userPrompt, responseMimeType: "application/json", temperature: 0, allowGrounding: true, maxOutputTokens: 8192 });
+    const parsed = safeParseJson(result.text)?.coverage_challenge || {};
+    const leads = Array.isArray(parsed.follow_up_candidate_urls) ? parsed.follow_up_candidate_urls : [];
+    for (const lead of leads) if (isAllowedOrHostedCandidate(lead, state.target)) addCandidate(state, candidateFromUrl({ url: lead, discovery_method: "SX.B9_COVERAGE_CHALLENGE_SCOUT", parent: "coverage_challenge" }));
+    state.second_pass_required = Boolean(parsed.requires_second_pass && leads.length);
+    state.coverage_challenge_records.push({ ok: true, possibly_missing_families: parsed.possibly_missing_families || [], follow_up_candidate_urls: leads, follow_up_queries: parsed.follow_up_queries || [], requires_second_pass: state.second_pass_required, model_meta: result.meta || null });
+  } catch (err) {
+    state.coverage_challenge_records.push({ ok: false, error: err?.message || String(err), candidate_summary: summary });
+    state.collection_limitations.push("COVERAGE_CHALLENGE_FAILED_OR_UNAVAILABLE");
+  }
+  recordEvent(state, "SX.B9_COVERAGE_CHALLENGE_SCOUT", "INFO", { second_pass_required: state.second_pass_required });
 }
 
-function buildCandidateRecord({ item, index, run, startedAt, rawText, cleanText, fetchMeta }) {
+function addCandidate(state, candidate) {
+  const key = candidate.url_dedup_key;
+  if (state.candidate_map.has(key)) {
+    const retained = state.candidate_map.get(key);
+    retained.discovery_methods = Array.from(new Set([...(retained.discovery_methods || []), ...(candidate.discovery_methods || [])]));
+    state.dedupe_records.push({ dedupe_cluster_id: `sx_dup_${String(state.dedupe_records.length + 1).padStart(3, "0")}`, canonical_candidate_source_id: retained.temp_candidate_id, suppressed_candidate_source_ids: [candidate.temp_candidate_id], dedupe_type: "URL_NORMALIZATION", dedupe_basis: ["same_url_dedup_key"], root_cluster_ids_involved: [retained.root_cluster_id], phase1_visibility: true, not_silently_dropped: true });
+    return;
+  }
+  state.candidate_map.set(key, candidate);
+  state.candidates.push(candidate);
+  state.candidate_discovery_log.push({ candidate_url: candidate.candidate_url, discovery_methods: candidate.discovery_methods, priority: candidate.priority, source_family_hint: candidate.source_family_hint, root_cluster_id: candidate.root_cluster_id });
+  ensureRootCluster(state, candidate);
+}
+
+function candidateFromUrl({ url, discovery_method, parent, scout = null }) {
+  const normalized = normalizeUrl(url, parent);
+  const info = classifyCandidate(normalized);
+  const root = rootClusterFor(normalized, parent, info.source_family_hint);
+  return {
+    temp_candidate_id: `cand_tmp_${sha256(normalized).slice(0, 10)}`,
+    candidate_url: normalized,
+    original_url: url,
+    normalized_url: normalized,
+    canonical_url: normalized,
+    url_without_tracking_params: normalized,
+    url_dedup_key: urlDedupKey(normalized),
+    fragment_policy: fragmentPolicy(url),
+    source_family_hint: scout?.source_family_hint || info.source_family_hint,
+    priority: scout?.priority_hint || info.priority,
+    root_cluster_id: root.root_cluster_id,
+    root_cluster_type: root.root_cluster_type,
+    root_cluster_seed_url: root.root_cluster_seed_url,
+    discovery_parent_url: parent || null,
+    discovery_methods: [discovery_method],
+    scout
+  };
+}
+
+function textCandidate({ run }) {
+  const hint = run.source_mode === "synthetic_demo" ? "synthetic_demo" : "pasted_public_material";
+  return { temp_candidate_id: "cand_tmp_pasted_001", candidate_url: run.target_url || "PASTED_PUBLIC_MATERIAL", original_url: run.target_url || "PASTED_PUBLIC_MATERIAL", normalized_url: run.target_url || "PASTED_PUBLIC_MATERIAL", canonical_url: run.target_url || "PASTED_PUBLIC_MATERIAL", url_without_tracking_params: run.target_url || "PASTED_PUBLIC_MATERIAL", url_dedup_key: `text:${sha256(run.pasted_public_material).slice(0, 16)}`, fragment_policy: "NOT_APPLICABLE", source_family_hint: hint, priority: "P1_CORE", scope_class: run.source_mode === "synthetic_demo" ? "SYNTHETIC_DEMO_CANDIDATE" : "PASTED_PUBLIC_MATERIAL_CANDIDATE", root_cluster_id: run.source_mode === "synthetic_demo" ? "rc_synthetic_001" : "rc_pasted_001", root_cluster_type: run.source_mode === "synthetic_demo" ? "SYNTHETIC_ROOT" : "PASTED_TEXT_ROOT", root_cluster_seed_url: run.target_url || hint, discovery_parent_url: null, discovery_methods: [run.source_mode === "synthetic_demo" ? "SYNTHETIC_DEMO_INPUT" : "USER_SUPPLIED_PUBLIC_TEXT"], inline_text: run.pasted_public_material };
+}
+
+function buildSourceRecord({ candidate, index, run, startedAt, rawText, cleanText, fetchMeta, snippetOnly = false }) {
   const sourceId = `S0_CAND_${String(index + 1).padStart(3, "0")}`;
-  const rawHash = sha256(rawText);
-  const cleanHash = sha256(normalizeForHash(cleanText));
   return {
     source_id: sourceId,
-    source_url: item.source_url,
-    normalized_url: item.normalized_url || item.source_url,
-    canonical_url: item.normalized_url || item.source_url,
-    source_kind: run.source_mode === "synthetic_demo" ? "synthetic_demo_material" : item.source_url === "PASTED_PUBLIC_MATERIAL" ? "user_supplied_public_material" : "first_party_public_url",
-    source_family_hint: item.source_family_hint || "unknown_candidate",
-    priority_tier: item.priority_tier || "P3",
-    discovery_basis: item.discovery_basis || "USER_SUPPLIED_TEXT",
-    fetch_method: fetchMeta.fetch_method || "HTTP_FETCH",
-    status_code: fetchMeta.status_code || null,
-    content_type: fetchMeta.content_type || null,
+    candidate_source_id: sourceId,
+    source_url: candidate.candidate_url,
+    original_url: candidate.original_url,
+    normalized_url: candidate.normalized_url,
+    canonical_url: candidate.canonical_url,
+    url_dedup_key: candidate.url_dedup_key,
+    fragment_policy: candidate.fragment_policy,
+    root_cluster_id: candidate.root_cluster_id,
+    root_cluster_type: candidate.root_cluster_type,
+    root_cluster_seed_url: candidate.root_cluster_seed_url,
+    discovery_parent_url: candidate.discovery_parent_url,
+    source_kind: run.source_mode === "synthetic_demo" ? "synthetic_demo_material" : candidate.inline_text ? "user_supplied_public_material" : "public_candidate_url",
+    scope_class: candidate.scope_class || scopeClass(candidate.candidate_url),
+    priority: candidate.priority,
+    source_family_hint: candidate.source_family_hint,
+    discovery_methods: candidate.discovery_methods,
+    fetch_status: snippetOnly ? "SNIPPET_ONLY" : fetchMeta.status || "FETCHED",
+    http_status: fetchMeta.status_code || null,
+    fetch_method: fetchMeta.method,
     fetched_at: startedAt,
+    raw_html_ref: snippetOnly ? null : `stage0://${sourceId}/raw_html`,
     raw_text_ref: `stage0://${sourceId}/raw_text`,
     clean_text_ref: `stage0://${sourceId}/clean_text`,
-    raw_content_hash: rawHash,
-    normalized_text_hash: cleanHash,
+    search_snippet_ref: snippetOnly ? `stage0://${sourceId}/search_snippet` : null,
+    content_hash: sha256(rawText),
+    raw_content_hash: sha256(rawText),
+    normalized_text_hash: sha256(normalizeForHash(cleanText)),
     raw_text: rawText,
     clean_text: cleanText,
     raw_char_count: rawText.length,
     clean_char_count: cleanText.length,
     char_count: cleanText.length,
     word_count: countWords(cleanText),
-    extraction_quality: classifyExtractionQuality(cleanText),
-    custody_status: "candidate_only_pending_phase_1_admission"
+    extraction_quality: extractionQuality(cleanText, snippetOnly),
+    snippet_only: snippetOnly,
+    phase1_admission_forbidden: snippetOnly,
+    requires_phase1_admission: true,
+    requires_phase1_limitation_review: snippetOnly,
+    custody_status: "candidate_only_pending_phase_1_admission",
+    collection_notes: snippetOnly ? ["SEARCH_SNIPPET_ONLY_LAST_RESORT"] : []
   };
 }
 
-function buildTextCandidate({ run }) {
+function addFinalSource(state, source) {
+  const duplicate = state.final_sources.find((item) => item.normalized_text_hash === source.normalized_text_hash);
+  if (duplicate) {
+    const rec = { dedupe_cluster_id: `sx_dup_${String(state.dedupe_records.length + 1).padStart(3, "0")}`, canonical_candidate_source_id: duplicate.source_id, suppressed_candidate_source_ids: [source.source_id], dedupe_type: "NORMALIZED_TEXT_HASH", dedupe_basis: ["same_normalized_text_hash"], root_cluster_ids_involved: [duplicate.root_cluster_id, source.root_cluster_id], phase1_visibility: true, not_silently_dropped: true };
+    state.dedupe_records.push(rec);
+    state.dedupe_log.push(rec);
+    return;
+  }
+  state.final_sources.push(source);
+}
+
+function buildBatchPlan(state) {
+  const groups = new Map();
+  for (const candidate of state.fetch_queue) {
+    const key = `${candidate.priority}:${candidate.root_cluster_id}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(candidate);
+  }
+  state.batch_plan = Array.from(groups.entries()).map(([key, rows], index) => ({ batch_id: `sx_batch_${String(index + 1).padStart(3, "0")}`, batch_family: batchFamily(rows[0]), root_cluster_id: rows[0].root_cluster_id, root_cluster_seed_url: rows[0].root_cluster_seed_url, priority: rows[0].priority, source_family_target: rows[0].source_family_hint, candidate_url_count: rows.length, fetch_attempted_count: 0, fetch_success_count: 0, fetch_failure_count: 0, deferred_count: 0, batch_status: "PENDING" }));
+  state.batch_execution_log = state.batch_plan.map((b) => ({ ...b }));
+}
+
+function ensureRootCluster(state, candidate) {
+  if (state.root_clusters.has(candidate.root_cluster_id)) return;
+  state.root_clusters.set(candidate.root_cluster_id, { root_cluster_id: candidate.root_cluster_id, root_cluster_type: candidate.root_cluster_type, root_cluster_seed_url: candidate.root_cluster_seed_url, discovery_parent_url: candidate.discovery_parent_url });
+}
+
+function assembleManifest({ run, state, startedAt, target = null }) {
+  const sources = state.final_sources;
+  const lossless = sources.map((source) => ({ source_id: source.source_id, source_url: source.source_url, raw_text_ref: source.raw_text_ref, clean_text_ref: source.clean_text_ref, content_hash: source.content_hash, normalized_text_hash: source.normalized_text_hash, word_count: source.word_count, extraction_quality: source.extraction_quality, custody_status: source.custody_status }));
+  if (!sources.length) state.collection_limitations.push("NO_CANDIDATE_SOURCE_MATERIAL_AVAILABLE_AFTER_STAGE0");
   return {
-    source_url: run.target_url || "PASTED_PUBLIC_MATERIAL",
-    normalized_url: run.target_url || "PASTED_PUBLIC_MATERIAL",
-    discovery_basis: run.source_mode === "synthetic_demo" ? "SYNTHETIC_DEMO_INPUT" : "USER_SUPPLIED_PUBLIC_TEXT",
-    source_family_hint: run.source_mode === "synthetic_demo" ? "synthetic_demo_candidate" : "user_supplied_public_material",
-    priority_tier: "P1",
-    inline_text: run.pasted_public_material
+    hybrid_extraction_manifest: {
+      node_id: "S0",
+      adapter_version: ADAPTER_VERSION,
+      source_mode: run.source_mode,
+      run_id: run.run_id,
+      target: target || state.target,
+      target_url: run.target_url || "N/A",
+      company_name: run.company_name || "N/A",
+      generated_at: startedAt,
+      extraction_call_card: buildCallCard({ run, state }),
+      collection_summary: { candidate_count: sources.length, rejected_count: state.rejected_by_scope.length, deferred_count: state.deferred_candidates.length, fetch_failure_count: state.fetch_failures.length, search_scout_record_count: state.search_scout_records.length, coverage_challenge_record_count: state.coverage_challenge_records.length },
+      batch_plan: state.batch_plan,
+      root_clusters: Array.from(state.root_clusters.values()),
+      collection_passes: state.collection_passes,
+      candidate_sources: sources,
+      lossless_text_artifacts: lossless,
+      artifact_store_manifest: lossless,
+      fetch_successes: state.fetch_successes,
+      fetch_failures: state.fetch_failures,
+      deferred_candidates: state.deferred_candidates,
+      dedupe_records: state.dedupe_records,
+      rejected_by_scope: state.rejected_by_scope,
+      search_scout_records: state.search_scout_records,
+      coverage_challenge_records: state.coverage_challenge_records,
+      warnings: state.warnings,
+      collection_limitations: Array.from(new Set(state.collection_limitations)),
+      phase_1_instructions: ["Stage 0 material is candidate-only.", "Phase 1 must admit, reject, quarantine, or limitation-route every candidate before downstream use.", "Snippet-only candidates are not admissible as evidence and require limitation review."]
+    },
+    extraction_forensic_ledger: {
+      node_id: "S0",
+      adapter_version: ADAPTER_VERSION,
+      run_id: run.run_id,
+      source_mode: run.source_mode,
+      started_at: startedAt,
+      completed_at: new Date().toISOString(),
+      ledger_events: state.ledger_events,
+      batch_execution_log: state.batch_execution_log,
+      candidate_discovery_log: state.candidate_discovery_log,
+      fetch_attempt_log: state.fetch_attempt_log,
+      fetch_success_log: state.fetch_successes,
+      fetch_failure_log: state.fetch_failures,
+      dedupe_log: state.dedupe_log,
+      retry_log: state.retry_log,
+      rejected_by_scope_log: state.rejected_by_scope,
+      deferred_candidate_log: state.deferred_candidates,
+      search_scout_log: state.search_scout_records,
+      coverage_challenge_log: state.coverage_challenge_records,
+      controlled_limitations: Array.from(new Set(state.collection_limitations))
+    }
   };
 }
 
-async function fetchUrlText({ url, fetchImpl, timeoutMs }) {
+function buildCallCard({ run, state }) {
+  const urlMode = run.source_mode === "url" || run.source_mode === "url_plus_text";
+  return { runtime_parent: "00_RUNTIME_SPINE.md", runtime_index: "00_RUNTIME_SPINE_INDEX.md", extraction_contract: "00_SOURCE_EXTRACTION_CONTRACT.md", active_stage: 0, active_layer: "Hybrid Source Extraction", canonical_output: "hybrid_extraction_manifest", source_mode: run.source_mode, target_url: run.target_url || null, search_pool_enabled: urlMode, grounding_enabled: urlMode, deterministic_fetch_enabled: urlMode, jina_or_reader_enabled: Boolean(JINA_READER_BASE), browser_render_fallback_enabled: false, output_is_candidate_only: true, phase_1_required_for_admission: true, failure_route: ["extraction_repair", "source_limitation", "controlled_failure"] };
+}
+
+function buildSearchScoutPacket({ run, state }) {
+  const q = searchQueries(run, state.target).join("\n");
+  return { systemPrompt: "You are a grounded search scout for Stage 0 Hybrid Source Extraction. Return candidate public URLs only. Do not analyze the target, infer product facts, evaluate legal gaps, or treat snippets as evidence. Output JSON only.", userPrompt: JSON.stringify({ target: state.target, company_name_candidate: run.company_name, priority_ladder: ["P1_CORE root/product/legal/governance", "P2_SUPPORT security/trust/docs/API", "P3_COMMERCIAL pricing/enterprise", "P4_SIGNAL_ONLY blog/changelog/help only with signal"], required_queries: q, deterministic_candidate_summary: summarizeCoverage(state), output_schema: { search_scout_candidates: [{ candidate_url: "", source_family_hint: "", priority_hint: "", discovery_query: "", reason_for_candidate: "", requires_fetch: true, requires_phase1_admission: true }], follow_up_queries: [] } }, null, 2) };
+}
+
+function buildCoverageChallengePacket({ run, state, summary }) {
+  return { systemPrompt: "You are a grounded coverage challenge scout for Stage 0 Hybrid Source Extraction. Return likely missing source families and follow-up URL leads only. Do not analyze the target or assign absence. Output JSON only.", userPrompt: JSON.stringify({ target: state.target, company_name_candidate: run.company_name, current_candidate_summary: summary, check_family_groups: ["root_homepage", "product_platform", "product_solution", "legal_governance", "subprocessor", "security_trust", "docs_api_developer", "pricing_commercial"], output_schema: { coverage_challenge: { possibly_missing_families: [], follow_up_queries: [], follow_up_candidate_urls: [], reason: "", requires_second_pass: true } } }, null, 2) };
+}
+
+function searchQueries(run, target) {
+  const domain = target?.canonical_domain || "";
+  const name = run.company_name || domain;
+  return [`site:${domain} product OR products OR platform OR features OR solutions OR "use cases" OR models OR agents OR studio`, `site:${domain} terms OR "terms of service" OR "terms and conditions" OR legal`, `site:${domain} privacy OR "privacy policy" OR DPA OR "data processing agreement" OR subprocessors`, `site:${domain} security OR trust OR compliance OR SOC2 OR GDPR OR "data protection"`, `site:${domain} docs OR API OR developers OR integrations`, `site:${domain} pricing OR enterprise OR "contact sales" OR demo`, `"${name}" "privacy policy"`, `"${name}" "terms of service"`, `"${name}" "data processing agreement"`, `"${name}" subprocessors`, `"${name}" "trust center"`];
+}
+
+async function fetchText({ url, fetchImpl, timeoutMs, method }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetchImpl(url, {
-      method: "GET",
-      signal: controller.signal,
-      headers: { "user-agent": DEFAULT_USER_AGENT, "accept": "text/html,text/plain,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5" }
-    });
-    const contentType = response.headers?.get?.("content-type") || "";
+    const response = await fetchImpl(url, { method: "GET", signal: controller.signal, headers: { "user-agent": DEFAULT_USER_AGENT, "accept": "text/html,text/plain,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5" } });
     const rawText = await response.text();
-    return { ok: response.ok, status_code: response.status, content_type: contentType, raw_text: rawText, fetch_method: "HTTP_FETCH", error: response.ok ? null : `HTTP_${response.status}` };
+    const contentType = response.headers?.get?.("content-type") || "";
+    return { ok: response.ok, status_code: response.status, raw_text: rawText, content_type: contentType, method, error: response.ok ? null : `HTTP_${response.status}` };
   } catch (err) {
-    return { ok: false, error: err?.name === "AbortError" ? "FETCH_TIMEOUT" : err?.message || String(err) };
+    return { ok: false, error: err?.name === "AbortError" ? "FETCH_TIMEOUT" : err?.message || String(err), method };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function classifyCandidateSource(url) {
-  const pathname = safePathname(url);
-  if (pathname === "/" || pathname === "") return { source_family_hint: "root_homepage_candidate", priority_tier: "P1" };
-  if (/(privacy|terms|legal|dpa|subprocessor|sub-processors|aup|acceptable-use|cookie|policy|policies)/i.test(pathname)) return { source_family_hint: "legal_governance_candidate", priority_tier: "P1" };
-  if (/(trust|security|compliance|gdpr|soc|iso|status)/i.test(pathname)) return { source_family_hint: "trust_security_candidate", priority_tier: "P2" };
-  if (/(docs|documentation|developer|developers|api|reference|sdk|guide)/i.test(pathname)) return { source_family_hint: "docs_developer_candidate", priority_tier: "P2" };
-  if (/(product|products|platform|solution|solutions|feature|features|model|models|studio|agent|agents)/i.test(pathname)) return { source_family_hint: "product_surface_candidate", priority_tier: "P1" };
-  if (/(pricing|plans|enterprise|customers|case-stud)/i.test(pathname)) return { source_family_hint: "commercial_candidate", priority_tier: "P3" };
-  return { source_family_hint: "general_first_party_candidate", priority_tier: "P3" };
+function extractSitemapsFromRobots(text) {
+  return String(text || "").split(/\r?\n/).map((line) => line.match(/^\s*Sitemap:\s*(\S+)/i)?.[1]).filter(Boolean);
 }
-
-function extractLinks(html, origin) {
-  const links = [];
-  const re = /href\s*=\s*["']([^"'#]+)["']/gi;
-  let match;
-  while ((match = re.exec(String(html || "")))) {
-    const href = match[1];
-    if (/^(mailto:|tel:|javascript:|#)/i.test(href)) continue;
-    const normalized = normalizeUrl(href, origin);
-    if (normalized) links.push(normalized);
-  }
-  return links;
+function extractLocUrls(xml) { return Array.from(String(xml || "").matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)).map((m) => cleanPlainText(m[1])); }
+function extractLinksAndRouteHints(html, base) {
+  const out = new Set();
+  for (const m of String(html || "").matchAll(/(?:href|to|data-href|data-url)\s*=\s*["']([^"']+)["']/gi)) addMaybe(out, m[1], base);
+  for (const m of String(html || "").matchAll(/["']((?:\/#|#|\/)(?:product|products|platform|features|solutions|use-cases|models|agents|studio|docs|developers|api)[^"'\s<]*)["']/gi)) addMaybe(out, m[1], base);
+  for (const m of String(html || "").matchAll(/<(?:link|meta)[^>]+(?:href|content)=["']([^"']+)["'][^>]*>/gi)) addMaybe(out, m[1], base);
+  return Array.from(out);
 }
-
-function isUsefulFirstPartyPath(url) {
-  const path = safePathname(url);
-  return path === "/" || /(privacy|terms|legal|dpa|subprocessor|trust|security|docs|developer|api|product|platform|solution|feature|pricing|models|studio|agents?)/i.test(path);
-}
-
-function cleanExtractedText(raw, contentType = "") {
-  if (/html|xml/i.test(contentType) || /<html|<body|<div|<p|<section|<article/i.test(raw)) return cleanHtmlText(raw);
-  return cleanPlainText(raw);
-}
-
-function cleanHtmlText(html) {
-  return cleanPlainText(String(html || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"'));
-}
-
-function cleanPlainText(value) {
-  return String(value || "").replace(/\r/g, "\n").replace(/[\t ]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
-}
-
-function dedupeByText(candidates, rejectedSources) {
-  const seen = new Map();
-  const out = [];
-  for (const candidate of candidates) {
-    const hash = candidate.normalized_text_hash;
-    if (seen.has(hash)) {
-      rejectedSources.push({ source_url: candidate.source_url, reason: "DUPLICATE_NORMALIZED_TEXT", duplicate_of: seen.get(hash) });
-      continue;
-    }
-    seen.set(hash, candidate.source_id);
-    out.push(candidate);
-  }
-  return out;
-}
-
-function uniqueCandidates(candidates, rejectedSources = []) {
-  const seen = new Set();
-  const out = [];
-  for (const candidate of candidates) {
-    const key = candidate.normalized_url || candidate.source_url;
-    if (!key || seen.has(key)) {
-      if (key) rejectedSources.push({ source_url: candidate.source_url, reason: "DUPLICATE_URL_CANDIDATE" });
-      continue;
-    }
-    seen.add(key);
-    out.push(candidate);
-  }
-  return out;
-}
-
-function normalizeInput(input) {
-  return {
-    run_id: String(input.run_id || input.runId || createRunId()).trim(),
-    source_mode: String(input.source_mode || input.sourceMode || "text").trim(),
-    target_url: String(input.target_url || input.targetUrl || "").trim(),
-    company_name: String(input.company_name || input.companyName || "").trim(),
-    pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim()
-  };
-}
-
-function isUrlMode(mode) {
-  return /url/i.test(String(mode || ""));
-}
-
-function normalizeUrl(value, base) {
-  try {
-    const raw = String(value || "").trim();
-    if (!raw) return "";
-    const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : base ? raw : `https://${raw}`;
-    const u = new URL(withScheme, base || undefined);
-    u.hash = "";
-    if (u.pathname !== "/") u.pathname = u.pathname.replace(/\/$/, "");
-    return u.href;
-  } catch {
-    return "";
-  }
-}
-
-function getOrigin(url) {
-  try { return new URL(url).origin; } catch { return ""; }
-}
-
-function sameOrigin(url, origin) {
-  try { return new URL(url).origin === origin; } catch { return false; }
-}
-
-function safePathname(url) {
-  try { return new URL(url).pathname || "/"; } catch { return "/"; }
-}
-
-function classifyExtractionQuality(text) {
-  const words = countWords(text);
-  if (words >= 800) return "HIGH_TEXT_DENSITY";
-  if (words >= 250) return "MEDIUM_TEXT_DENSITY";
-  if (words >= 40) return "LOW_TEXT_DENSITY";
-  return "VERY_LOW_TEXT_DENSITY";
-}
-
-function countWords(text) {
-  return String(text || "").trim().split(/\s+/).filter(Boolean).length;
-}
-
-function normalizeForHash(text) {
-  return String(text || "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function sha256(value) {
-  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
-}
-
-function positiveInt(value, fallback) {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
-}
-
-function createRunId() {
-  return `run_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-}
+function addMaybe(set, raw, base) { if (!/^(mailto:|tel:|javascript:)/i.test(raw || "")) { const url = normalizeUrl(raw, base); if (url) set.add(url); } }
+function isAllowedOrHostedCandidate(url, target) { try { const h = new URL(url).hostname; return target.allowed_hosts.includes(h) || h.endsWith(`.${target.canonical_domain}`) || HOSTED_GOVERNANCE_RE.test(h); } catch { return false; } }
+function isUsefulCandidate(url) { try { return SIGNAL_PATH_RE.test(new URL(url).pathname + new URL(url).hash); } catch { return false; } }
+function scopeClass(url, target = null) { try { const u = new URL(url); const h = u.hostname; const full = `${h}${u.pathname}`; if (KILL_HOST_RE.test(h)) return "THIRD_PARTY_NON_GOVERNANCE"; if (/login|signin|signup|account|dashboard|admin|private|app\./i.test(full)) return "PRIVATE_OR_PROHIBITED"; if (target && (target.allowed_hosts.includes(h) || h.endsWith(`.${target.canonical_domain}`))) return "TARGET_DOMAIN_CANDIDATE"; if (HOSTED_GOVERNANCE_RE.test(h)) return "HOSTED_GOVERNANCE_CANDIDATE"; return "THIRD_PARTY_NON_GOVERNANCE"; } catch { return "PRIVATE_OR_PROHIBITED"; } }
+function classifyCandidate(url) { const p = safePath(url); if (p === "/") return { source_family_hint: "root_homepage", priority: "P1_CORE" }; if (/subprocessor/i.test(p)) return { source_family_hint: "subprocessor", priority: "P1_CORE" }; if (/(terms|privacy|legal|dpa|cookie|acceptable-use|aup|sla)/i.test(p)) return { source_family_hint: "legal_governance", priority: "P1_CORE" }; if (/(trust|security|compliance)/i.test(p)) return { source_family_hint: "security_trust", priority: "P2_SUPPORT" }; if (/(docs|documentation|developer|developers|api|reference|integrations)/i.test(p)) return { source_family_hint: "docs_api_developer", priority: "P2_SUPPORT" }; if (/(product|products|platform|feature|features|solution|solutions|use-cases|models|agents|studio|apps|tools|workflows|automation)/i.test(p)) return { source_family_hint: p.split("/").filter(Boolean).length > 1 ? "product_solution" : "product_platform", priority: "P1_CORE" }; if (/(pricing|plans|enterprise|contact-sales|demo)/i.test(p)) return { source_family_hint: "pricing_commercial", priority: "P3_COMMERCIAL" }; return { source_family_hint: "unknown", priority: "P4_SIGNAL_ONLY" }; }
+function rootClusterFor(url, parent, family) { const type = family === "root_homepage" ? "ROOT_HOME" : family === "legal_governance" ? "LEGAL_ROOT" : family === "security_trust" ? "TRUST_ROOT" : family === "docs_api_developer" ? "DOCS_ROOT" : family === "pricing_commercial" ? "COMMERCIAL_ROOT" : family === "product_solution" ? "PRODUCT_DESCENDANT" : family === "product_platform" ? "PRODUCT_ROOT" : family === "subprocessor" ? "LEGAL_DESCENDANT" : "SIGNAL_ROOT"; return { root_cluster_id: `rc_${type.toLowerCase()}_${sha256(urlDedupKey(parent || url)).slice(0, 6)}`, root_cluster_type: type, root_cluster_seed_url: parent || url }; }
+function batchFamily(c) { if (c.source_family_hint === "root_homepage" || c.source_family_hint === "product_platform") return "SX_BATCH_P1_ROOT_PLATFORM"; if (c.source_family_hint === "product_solution") return "SX_BATCH_P1_PRODUCT_SOLUTION"; if (["legal_governance", "subprocessor"].includes(c.source_family_hint)) return "SX_BATCH_P1_LEGAL_GOVERNANCE"; if (c.source_family_hint === "security_trust") return "SX_BATCH_P2_SECURITY_TRUST"; if (c.source_family_hint === "docs_api_developer") return "SX_BATCH_P2_DOCS_API"; if (c.source_family_hint === "pricing_commercial") return "SX_BATCH_P3_COMMERCIAL"; return "SX_BATCH_P4_SIGNAL_ONLY"; }
+function candidateSort(a, b) { const order = { P1_CORE: 1, P2_SUPPORT: 2, P3_COMMERCIAL: 3, P4_SIGNAL_ONLY: 4 }; return (order[a.priority] || 9) - (order[b.priority] || 9) || a.candidate_url.localeCompare(b.candidate_url); }
+function summarizeCoverage(state) { const counts = {}; for (const c of state.final_sources) counts[c.source_family_hint] = (counts[c.source_family_hint] || 0) + 1; return { counts, final_candidate_count: state.final_sources.length, failed_count: state.fetch_failures.length, deferred_count: state.deferred_candidates.length }; }
+function recordEvent(state, event_type, severity, details = {}) { state.ledger_events.push({ event_id: `sx_evt_${String(state.ledger_events.length + 1).padStart(4, "0")}`, event_type, severity, at: new Date().toISOString(), details }); }
+function normalizeInput(input) { return { run_id: String(input.run_id || input.runId || createRunId()).trim(), source_mode: String(input.source_mode || input.sourceMode || "text").trim(), target_url: String(input.target_url || input.targetUrl || "").trim(), company_name: String(input.company_name || input.companyName || "").trim(), pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim(), max_candidate_sources: input.max_candidate_sources || input.maxCandidateSources, fetch_timeout_ms: input.fetch_timeout_ms || input.fetchTimeoutMs }; }
+function normalizeUrl(value, base) { try { const raw = String(value || "").trim(); if (!raw) return ""; const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith("#") || raw.startsWith("/") ? raw : base ? raw : `https://${raw}`; const u = new URL(withScheme, base || undefined); if (!isSemanticHash(u.hash)) u.hash = ""; u.search = stripTrackingParams(u.searchParams); if (u.pathname !== "/") u.pathname = u.pathname.replace(/\/$/, ""); return u.href; } catch { return ""; } }
+function stripTrackingParams(params) { const keep = []; for (const [k, v] of params.entries()) if (!/^(utm_|gclid|fbclid|ref$|source$)/i.test(k)) keep.push(`${encodeURIComponent(k)}=${encodeURIComponent(v)}`); return keep.length ? `?${keep.join("&")}` : ""; }
+function isSemanticHash(hash) { return /#\/?(product|products|platform|features|solutions|use-cases|docs|api|developers)/i.test(hash || ""); }
+function fragmentPolicy(url) { try { const h = new URL(normalizeUrl(url)).hash; if (!h) return "DROP_ANALYTICS_FRAGMENT"; return isSemanticHash(h) ? "PRESERVE_HASH_ROUTE" : "PRESERVE_SEMANTIC_FRAGMENT"; } catch { return "DROP_ANALYTICS_FRAGMENT"; } }
+function urlDedupKey(url) { try { const u = new URL(url); return `${u.hostname.replace(/^www\./, "")}${u.pathname}${isSemanticHash(u.hash) ? u.hash : ""}`.toLowerCase(); } catch { return String(url || "").toLowerCase(); } }
+function safePath(url) { try { const u = new URL(url); return `${u.pathname}${u.hash}` || "/"; } catch { return "/"; } }
+function cleanExtractedText(raw, contentType = "") { if (/html|xml/i.test(contentType) || /<html|<body|<div|<p|<section|<article/i.test(raw)) return cleanHtmlText(raw); return cleanPlainText(raw); }
+function cleanHtmlText(html) { return cleanPlainText(String(html || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<noscript[\s\S]*?<\/noscript>/gi, " ").replace(/<svg[\s\S]*?<\/svg>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"')); }
+function cleanPlainText(value) { return String(value || "").replace(/\r/g, "\n").replace(/[\t ]+/g, " ").replace(/\n{3,}/g, "\n\n").trim(); }
+function extractionQuality(text, snippetOnly) { if (snippetOnly) return "PARTIAL"; const words = countWords(text); if (words >= 500) return "GOOD"; if (words >= 120) return "PARTIAL"; if (words >= 25) return "THIN"; return "EMPTY"; }
+function countWords(text) { return String(text || "").trim().split(/\s+/).filter(Boolean).length; }
+function normalizeForHash(text) { return String(text || "").toLowerCase().replace(/\s+/g, " ").trim(); }
+function sha256(value) { return crypto.createHash("sha256").update(String(value || "")).digest("hex"); }
+function safeParseJson(text) { try { return JSON.parse(String(text || "").replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim()); } catch { return {}; } }
+function positiveInt(value, fallback) { const n = Number(value); return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback; }
+function buildJinaUrl(targetUrl) { return `${JINA_READER_BASE.replace(/\/$/, "")}/${targetUrl}`; }
+function createRunId() { return `run_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`; }
