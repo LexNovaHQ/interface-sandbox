@@ -56,26 +56,25 @@ export function buildRuntimePool(poolName, env = process.env) {
 export function buildPool({ keys = "", models = "", defaults = [] } = {}) {
   const keyList = uniqueCsv(keys);
   const modelList = uniqueCsv(models);
-  return {
-    keys: keyList,
-    models: modelList.length ? modelList : defaults
-  };
+  return { keys: keyList, models: modelList.length ? modelList : defaults };
 }
 
-export async function callGeminiClient({ key, model, systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = 65535, timeoutMs = 240000 } = {}) {
+export async function callGeminiClient({ key, model, systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = 65535, timeoutMs = 240000, allowGrounding = false } = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const body = {
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: { temperature, maxOutputTokens, responseMimeType }
+    };
+    if (allowGrounding) body.tools = [{ googleSearch: {} }];
     const response = await fetch(endpoint, {
       method: "POST",
       signal: controller.signal,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature, maxOutputTokens, responseMimeType }
-      })
+      body: JSON.stringify(body)
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload?.error?.message || `GEMINI_HTTP_${response.status}`);
