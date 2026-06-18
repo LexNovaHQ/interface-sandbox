@@ -31,11 +31,7 @@ export async function loadPromptStack(baseDir = BASE_DIR) {
 
   for (const node of phaseNodes) {
     const prompt = await readFileSafe(baseDir, node.file, missingFiles);
-    phases.push({
-      ...node,
-      prompt,
-      required_top_level_keys: extractRequiredTopLevelKeys(prompt)
-    });
+    phases.push({ ...node, prompt, required_top_level_keys: extractRequiredTopLevelKeys(prompt) });
   }
 
   const readiness = validatePromptStackReadiness({ missingFiles });
@@ -71,7 +67,7 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
 
   let stage0;
   try {
-    stage0 = await runSourceAdapter({ input: run, baseDir });
+    stage0 = await runSourceAdapter({ input: run, baseDir, callModel });
   } catch (err) {
     return fail({ run, promptStack, status: "S0_SOURCE_ADAPTER_FAILED", failedNode: "S0", error: err?.message || String(err) });
   }
@@ -89,33 +85,13 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
     const referenceValidation = validatePhaseReferences({ phaseId: phase.node_id, bundle: referenceBundle });
     mechanicalValidations[`REF_${phase.node_id}`] = referenceValidation;
     if (!referenceValidation.ok) {
-      return fail({
-        run,
-        promptStack,
-        upstream,
-        phaseOutputs,
-        referenceBundles,
-        mechanicalValidations,
-        completedNodes,
-        status: `${phase.node_id}_REFERENCE_VALIDATION_FAILED`,
-        failedNode: phase.node_id,
-        error: referenceValidation.errors.join(";"),
-        lastModelMeta
-      });
+      return fail({ run, promptStack, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, status: `${phase.node_id}_REFERENCE_VALIDATION_FAILED`, failedNode: phase.node_id, error: referenceValidation.errors.join(";"), lastModelMeta });
     }
 
     const payload = buildPayload({ run, promptStack, phase, upstream, referenceBundle });
     let modelResult;
     try {
-      modelResult = await callModel({
-        phaseId: phase.node_id,
-        poolName: phase.pool,
-        systemPrompt: payload.systemPrompt,
-        userPrompt: payload.userPrompt,
-        responseMimeType: "application/json",
-        temperature: 0,
-        allowGrounding: false
-      });
+      modelResult = await callModel({ phaseId: phase.node_id, poolName: phase.pool, systemPrompt: payload.systemPrompt, userPrompt: payload.userPrompt, responseMimeType: "application/json", temperature: 0, allowGrounding: false });
     } catch (err) {
       return fail({ run, promptStack, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, status: `${phase.node_id}_MODEL_CALL_FAILED`, failedNode: phase.node_id, error: err?.message || String(err), lastModelMeta });
     }
@@ -163,16 +139,7 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
 function buildPayload({ run, promptStack, phase, upstream, referenceBundle }) {
   const supplementalReferenceBundle = stripCoreReferences(referenceBundle);
   return {
-    systemPrompt: [
-      promptStack.core["00_RUNTIME_SPINE.md"],
-      promptStack.core["00_RUNTIME_SPINE_INDEX.md"],
-      promptStack.core["00_SOURCE_EXTRACTION_CONTRACT.md"],
-      promptStack.core["08_PHASE_STACK_EXECUTION_MAP.md"],
-      promptStack.core["09_OUTPUT_HANDOFF_CONTRACT.md"],
-      promptStack.core["10_RUNTIME_AUDIT_CHECKLIST.md"],
-      formatReferencesForPrompt(supplementalReferenceBundle),
-      phase.prompt
-    ].filter(Boolean).join("\n\n"),
+    systemPrompt: [promptStack.core["00_RUNTIME_SPINE.md"], promptStack.core["00_RUNTIME_SPINE_INDEX.md"], promptStack.core["00_SOURCE_EXTRACTION_CONTRACT.md"], promptStack.core["08_PHASE_STACK_EXECUTION_MAP.md"], promptStack.core["09_OUTPUT_HANDOFF_CONTRACT.md"], promptStack.core["10_RUNTIME_AUDIT_CHECKLIST.md"], formatReferencesForPrompt(supplementalReferenceBundle), phase.prompt].filter(Boolean).join("\n\n"),
     userPrompt: JSON.stringify({
       run_context: { run_id: run.run_id, target_url: run.target_url, company_name: run.company_name, source_mode: run.source_mode },
       reference_manifest: referenceBundle.reference_manifest,
@@ -191,26 +158,8 @@ function buildOrchestrationManifest({ run, promptStack, completedNodes, failedNo
     active_node: failedNode,
     completed_nodes: completedNodes,
     blocked_nodes: failedNode ? promptStack.phases.map((phase) => phase.node_id).filter((node) => !completedNodes.includes(node)) : [],
-    node_execution_records: promptStack.execution_nodes.map((node) => ({
-      node_id: node.node_id,
-      file: node.file,
-      status: completedNodes.includes(node.node_id) ? "LOCKED" : failedNode === node.node_id ? "CONTROLLED_FAILURE" : node.node_id === "RENDERER" ? "PENDING" : "SKIPPED",
-      inputs_received: [],
-      outputs_emitted: [],
-      lock_gates_passed: [],
-      lock_gates_failed: []
-    })),
-    pool_execution_records: promptStack.phases.map((phase) => ({
-      node_id: phase.node_id,
-      primary_pool: [phase.pool],
-      actual_pool_used: [],
-      fallback_used: false,
-      fallback_reason: null,
-      search_allowed: false,
-      grounding_allowed: false,
-      runtime_model_ref: null,
-      runtime_key_pool_ref: phase.pool
-    })),
+    node_execution_records: promptStack.execution_nodes.map((node) => ({ node_id: node.node_id, file: node.file, status: completedNodes.includes(node.node_id) ? "LOCKED" : failedNode === node.node_id ? "CONTROLLED_FAILURE" : node.node_id === "RENDERER" ? "PENDING" : "SKIPPED", inputs_received: [], outputs_emitted: [], lock_gates_passed: [], lock_gates_failed: [] })),
+    pool_execution_records: promptStack.phases.map((phase) => ({ node_id: phase.node_id, primary_pool: [phase.pool], actual_pool_used: [], fallback_used: false, fallback_reason: null, search_allowed: false, grounding_allowed: false, runtime_model_ref: null, runtime_key_pool_ref: phase.pool })),
     reference_execution_records: summarizeReferenceBundles(referenceBundles),
     handoff_chain_status: failedNode ? "PARTIAL" : "COMPLETE",
     ledger_chain_status: failedNode ? "PARTIAL" : "COMPLETE",
@@ -296,35 +245,22 @@ function extractRequiredTopLevelKeys(text) {
 
 function stripCoreReferences(bundle) {
   const core = new Set(CORE_PROMPT_FILES);
-  return {
-    ...(bundle || {}),
-    references: (bundle?.references || []).filter((ref) => !core.has(ref.name))
-  };
+  return { ...(bundle || {}), references: (bundle?.references || []).filter((ref) => !core.has(ref.name)) };
 }
 
 function summarizeReferenceBundles(bundles = {}) {
-  return Object.fromEntries(Object.entries(bundles).map(([phaseId, bundle]) => [phaseId, {
-    ok: bundle.ok,
-    missing_references: bundle.missing_references,
-    reference_manifest: bundle.reference_manifest
-  }]));
+  return Object.fromEntries(Object.entries(bundles).map(([phaseId, bundle]) => [phaseId, { ok: bundle.ok, missing_references: bundle.missing_references, reference_manifest: bundle.reference_manifest }]));
 }
 
 function flatten(outputs) {
   const out = {};
-  for (const value of Object.values(outputs || {})) {
-    if (value && typeof value === "object" && !Array.isArray(value)) Object.assign(out, value);
-  }
+  for (const value of Object.values(outputs || {})) if (value && typeof value === "object" && !Array.isArray(value)) Object.assign(out, value);
   return out;
 }
 
 async function readFileSafe(baseDir, file, missingFiles) {
-  try {
-    return await fs.readFile(path.join(baseDir, file), "utf8");
-  } catch {
-    missingFiles.push(file);
-    return "";
-  }
+  try { return await fs.readFile(path.join(baseDir, file), "utf8"); }
+  catch { missingFiles.push(file); return ""; }
 }
 
 function createRunId() {
