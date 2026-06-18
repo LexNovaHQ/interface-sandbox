@@ -381,7 +381,9 @@ export async function runP3TargetFeatureProfile(input = {}) {
       p3Output: parsed,
       targetProfile,
       sourceDiscoveryHandoff,
-      hybridExtractionManifest
+      hybridExtractionManifest,
+      targetProfileForensicLedger,
+      targetProfileTrace
     }),
     parseKey: "p3_parse",
     validationKey: "p3_validation",

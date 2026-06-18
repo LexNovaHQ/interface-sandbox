@@ -15,11 +15,27 @@ const FORBIDDEN_TOP_LEVEL = [
 ];
 
 const LEGAL_RE = /\b(legal_cartography|legal advice|compliance verdict|compliant|non-compliant|violates|lawful|unlawful)\b/i;
-const REGISTRY_RE = /\b(registry row|registry_ledger|threat id|row status|applicable|not_applicable)\b/i;
+const REGISTRY_ROUTING_RE = /\b(registry|registry row|registry_key_detection_test|registry_evaluation|registry row truth)\b/i;
 const DATA_PROVENANCE_RE = /\b(data_provenance|training data|retention analysis|privacy compliance)\b/i;
 const NEW_FETCH_RE = /\b(new\s+(fetch|search|browse|crawl)|performed\s+(a\s+)?(search|browse|fetch)|google\s+search|grounding\s+used)\b/i;
+const NON_REFERENCE_OBJECT_LABELS = new Set([
+  "source_discovery_handoff",
+  "hybrid_extraction_manifest",
+  "target_profile",
+  "target_profile_forensic_ledger",
+  "target_profile_trace",
+  "feature_profile_forensic_ledger",
+  "feature_function_trace"
+]);
 
-export function validateP3Output({ p3Output, targetProfile, sourceDiscoveryHandoff, hybridExtractionManifest } = {}) {
+export function validateP3Output({
+  p3Output,
+  targetProfile,
+  sourceDiscoveryHandoff,
+  hybridExtractionManifest,
+  targetProfileForensicLedger,
+  targetProfileTrace
+} = {}) {
   const errors = [];
   const warnings = [];
   const output = objectOrNull(p3Output) || {};
@@ -40,7 +56,11 @@ export function validateP3Output({ p3Output, targetProfile, sourceDiscoveryHando
   if (!trace || (typeof trace !== "object" && !Array.isArray(trace))) errors.push("P3_FEATURE_FUNCTION_TRACE_OBJECT_OR_ARRAY_MISSING");
 
   const outputText = compactJson(output);
-  if (REGISTRY_RE.test(outputText)) errors.push("P3_ASSIGNES_REGISTRY_ROW_STATUS");
+  const registryCheck = checkRegistrySubstance(output);
+  if (registryCheck.assignsRegistryRowStatus) errors.push("P3_ASSIGNES_REGISTRY_ROW_STATUS");
+  if (registryCheck.routingSignalPresent && !registryCheck.assignsRegistryRowStatus) {
+    warnings.push("P3_REGISTRY_ROUTING_SIGNAL_PRESENT_NOT_ROW_EVALUATION");
+  }
   if (LEGAL_RE.test(outputText)) errors.push("P3_PERFORMS_LEGAL_CARTOGRAPHY_OR_VERDICT");
   if (DATA_PROVENANCE_RE.test(outputText)) errors.push("P3_PERFORMS_DATA_PROVENANCE_FINAL_ANALYSIS");
   if (NEW_FETCH_RE.test(outputText)) errors.push("P3_CLAIMS_NEW_FETCH_SEARCH_OR_BROWSE");
@@ -51,7 +71,13 @@ export function validateP3Output({ p3Output, targetProfile, sourceDiscoveryHando
     errors.push("P3_PRODUCT_WRAPPER_USED_WITHOUT_FUNCTION_ATOMICITY");
   }
 
-  const evidenceRefCheck = checkEvidenceRefs(output, sourceDiscoveryHandoff, hybridExtractionManifest);
+  const evidenceRefCheck = checkEvidenceRefs(output, {
+    sourceDiscoveryHandoff,
+    hybridExtractionManifest,
+    targetProfile,
+    targetProfileForensicLedger,
+    targetProfileTrace
+  });
   if (!evidenceRefCheck.ok) errors.push(...evidenceRefCheck.errors);
   if (!targetProfile || typeof targetProfile !== "object") warnings.push("P3_TARGET_PROFILE_INPUT_MISSING_OR_NON_OBJECT");
   if (!featureStats.feature_inventory_named) warnings.push("P3_FEATURE_INVENTORY_EQUIVALENT_STRUCTURE_USED");
@@ -111,13 +137,9 @@ function summarizeFeatures(value) {
   return { feature_count: featureCount, product_wrapper_count: productWrapperCount, archetype_signal_count: archetypeSignalCount, surface_signal_count: surfaceSignalCount, function_signal_count: functionSignalCount, feature_inventory_named: featureInventoryNamed };
 }
 
-function checkEvidenceRefs(output, sourceDiscoveryHandoff, manifest) {
-  const allowed = collectAllowedRefs(sourceDiscoveryHandoff, manifest);
-  const refs = new Set();
-  walk(output, (key, child) => {
-    if (/(candidate_source_id|candidate_source_ref|lossless_artifact_id|lossless_artifact_ref|evidence_ref|source_ref)$/i.test(key) && typeof child === "string") refs.add(child);
-    if (/evidence_refs?$/i.test(key) && Array.isArray(child)) child.filter((entry) => typeof entry === "string").forEach((entry) => refs.add(entry));
-  });
+function checkEvidenceRefs(output, inputs = {}) {
+  const allowed = collectAllowedRefs(inputs);
+  const refs = collectReferenceTokens(output);
   const unresolved = Array.from(refs).filter((ref) => !allowed.has(String(ref)));
   return {
     ok: unresolved.length === 0,
@@ -126,8 +148,14 @@ function checkEvidenceRefs(output, sourceDiscoveryHandoff, manifest) {
   };
 }
 
-function collectAllowedRefs(sourceDiscoveryHandoff, manifest) {
-  const root = unwrapManifest(manifest);
+function collectAllowedRefs({
+  sourceDiscoveryHandoff,
+  hybridExtractionManifest,
+  targetProfile,
+  targetProfileForensicLedger,
+  targetProfileTrace
+} = {}) {
+  const root = unwrapManifest(hybridExtractionManifest);
   const allowed = new Set();
   for (const candidate of arr(root.candidate_sources)) {
     if (candidate.candidate_source_id) allowed.add(String(candidate.candidate_source_id));
@@ -137,10 +165,105 @@ function collectAllowedRefs(sourceDiscoveryHandoff, manifest) {
     if (artifact.lossless_artifact_id) allowed.add(String(artifact.lossless_artifact_id));
     if (artifact.candidate_source_id) allowed.add(String(artifact.candidate_source_id));
   }
-  walk(sourceDiscoveryHandoff, (key, child) => {
-    if (/(candidate_source_id|candidate_source_ref|lossless_artifact_id|lossless_artifact_ref|evidence_ref|source_ref)$/i.test(key) && typeof child === "string") allowed.add(child);
-  });
+  for (const input of [
+    sourceDiscoveryHandoff,
+    targetProfile,
+    targetProfileForensicLedger,
+    targetProfileTrace
+  ]) {
+    for (const token of collectReferenceTokens(input)) allowed.add(token);
+  }
   return allowed;
+}
+
+function collectReferenceTokens(value) {
+  const tokens = new Set();
+  walk(value, (key, child) => {
+    if (isReferenceKey(key)) collectReferenceValue(child, tokens);
+    if (typeof child === "string" && isIdLikeReference(child)) tokens.add(child);
+  });
+  return tokens;
+}
+
+function collectReferenceValue(value, tokens) {
+  if (typeof value === "string") {
+    tokens.add(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) collectReferenceValue(entry, tokens);
+  }
+}
+
+function isReferenceKey(key = "") {
+  return /^(evidence_ref|evidence_refs|source_ref|source_refs|source_id|source_ids|candidate_source_id|candidate_source_ids|lossless_artifact_ref|lossless_artifact_refs|artifact_ref|artifact_refs|primary_evidence_refs|secondary_evidence_refs)$/i.test(key);
+}
+
+function isIdLikeReference(value = "") {
+  return !NON_REFERENCE_OBJECT_LABELS.has(value) && /^(ev_|src_|cand_|lossless_|artifact_|source_|doc_)/i.test(value);
+}
+
+function checkRegistrySubstance(output) {
+  let assignsRegistryRowStatus = false;
+  let routingSignalPresent = false;
+  const controlledVerdictValues = new Set([
+    "APPLICABLE",
+    "NOT_APPLICABLE",
+    "INSUFFICIENT_EVIDENCE",
+    "CONTROL_PRESENT",
+    "CONTROL_MISSING",
+    "RISK_CONFIRMED"
+  ]);
+  const forbiddenKeys = /^(registry_row_status|threat_status|registry_evaluation_results|registry_row_evaluations|exposure_findings|remediation_map)$/i;
+
+  walk(output, (key, child, path = []) => {
+    const pathText = [...path, key].filter(Boolean).join(".");
+    const keyText = String(key || "");
+    const parentText = path.filter(Boolean).join(".");
+    if (REGISTRY_ROUTING_RE.test(keyText) || (typeof child === "string" && REGISTRY_ROUTING_RE.test(child))) {
+      routingSignalPresent = true;
+    }
+    if (forbiddenKeys.test(keyText)) {
+      assignsRegistryRowStatus = true;
+    }
+    if (/^row_status$/i.test(keyText) && /\b(registry|threat)\b/i.test(parentText)) {
+      assignsRegistryRowStatus = true;
+    }
+    if (/^threat_id$/i.test(keyText) && hasStatusEvaluationSibling(path, output)) {
+      assignsRegistryRowStatus = true;
+    }
+    if (typeof child === "string" && isRegistryVerdictValue(child, controlledVerdictValues, keyText, parentText)) {
+      assignsRegistryRowStatus = true;
+    }
+  });
+
+  return { assignsRegistryRowStatus, routingSignalPresent };
+}
+
+function isRegistryVerdictValue(value, controlledVerdictValues, keyText, parentText) {
+  const normalized = value.trim().toUpperCase();
+  if (controlledVerdictValues.has(normalized) && /\b(registry|row|threat|control|risk|exposure|status|verdict|finding)\b/i.test(`${keyText}.${parentText}`)) {
+    return true;
+  }
+  if (/^(PASS|FAIL)$/i.test(value.trim()) && /\b(registry|row|threat)\b/i.test(`${keyText}.${parentText}`) && !/forbidden_scope_checks\.registry_evaluation$/i.test(`${parentText}.${keyText}`)) {
+    return true;
+  }
+  return false;
+}
+
+function hasStatusEvaluationSibling(path, output) {
+  const parent = getAtPath(output, path);
+  if (!objectOrNull(parent)) return false;
+  return Object.keys(parent).some((key) => /(status|verdict|evaluation|finding)$/i.test(key));
+}
+
+function getAtPath(value, path = []) {
+  let current = value;
+  for (const key of path) {
+    if (!current || typeof current !== "object") return undefined;
+    current = current[key];
+  }
+  return current;
 }
 
 function countByKey(value, pattern) {
@@ -151,9 +274,9 @@ function countByKey(value, pattern) {
   return count;
 }
 
-function walk(value, visit, key = "") {
-  visit(key, value);
+function walk(value, visit, key = "", path = []) {
+  visit(key, value, path);
   if (!value || typeof value !== "object") return;
-  if (Array.isArray(value)) return value.forEach((child, index) => walk(child, visit, String(index)));
-  for (const [childKey, child] of Object.entries(value)) walk(child, visit, childKey);
+  if (Array.isArray(value)) return value.forEach((child, index) => walk(child, visit, String(index), [...path, key].filter(Boolean)));
+  for (const [childKey, child] of Object.entries(value)) walk(child, visit, childKey, [...path, key].filter(Boolean));
 }
