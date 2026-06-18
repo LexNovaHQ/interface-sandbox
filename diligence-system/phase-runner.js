@@ -15,36 +15,38 @@ export const CORE_PROMPT_FILES = [
   "10_RUNTIME_AUDIT_CHECKLIST.md"
 ];
 
-export const PHASE_PROMPT_FILES = [
-  { node_id: "P1", file: "01_SOURCE_DISCOVERY_EVIDENCE_BOX.md", pool: "router" },
-  { node_id: "P2", file: "02_TARGET_PROFILE.md", pool: "profile" },
-  { node_id: "P3", file: "03_TARGET_FEATURE_PROFILE.md", pool: "profile" },
-  { node_id: "P4", file: "04_LEGAL_CARTOGRAPHY_INDEX.md", pool: "extract" },
-  { node_id: "P5", file: "05_TARGET_DATA_PROVENANCE_PROFILE.md", pool: "profile" },
-  { node_id: "P6", file: "06_EXPOSURE_PROFILE_REGISTRY_LEDGER.md", pool: "registry" },
-  { node_id: "P7", file: "07_FINAL_OUTPUT_COMPILER_AND_HANDOFF.md", pool: "final" }
-];
+const EXECUTION_MAP_FILE = "08_PHASE_STACK_EXECUTION_MAP.md";
 
 export async function loadPromptStack(baseDir = BASE_DIR) {
   const missingFiles = [];
   const core = {};
-  const phases = [];
 
   for (const file of CORE_PROMPT_FILES) core[file] = await readFileSafe(baseDir, file, missingFiles);
-  for (const phase of PHASE_PROMPT_FILES) {
-    const prompt = await readFileSafe(baseDir, phase.file, missingFiles);
-    phases.push({ ...phase, prompt, required_top_level_keys: extractRequiredTopLevelKeys(prompt) });
+
+  const executionNodes = extractExecutionNodes(core[EXECUTION_MAP_FILE]);
+  const phaseNodes = executionNodes.filter((node) => node.type === "model_phase");
+  const phases = [];
+
+  for (const node of phaseNodes) {
+    const prompt = await readFileSafe(baseDir, node.file, missingFiles);
+    phases.push({
+      ...node,
+      prompt,
+      required_top_level_keys: extractRequiredTopLevelKeys(prompt)
+    });
   }
 
   const readiness = validatePromptStackReadiness({ missingFiles });
   return {
-    ok: readiness.ok,
-    errors: readiness.errors,
+    ok: readiness.ok && phaseNodes.length > 0,
+    errors: [...readiness.errors, ...(phaseNodes.length ? [] : ["EXECUTION_MAP_MODEL_PHASES_MISSING"])],
     core,
+    execution_nodes: executionNodes,
     phases,
     manifest: [
       ...CORE_PROMPT_FILES.map((file) => ({ kind: "core", file, present: Boolean(core[file]) })),
-      ...phases.map((phase) => ({ kind: "phase", node_id: phase.node_id, file: phase.file, present: Boolean(phase.prompt), required_top_level_keys: phase.required_top_level_keys }))
+      ...executionNodes.map((node) => ({ kind: node.type, node_id: node.node_id, order: node.order, file: node.file, pool: node.pool, present: node.type === "model_phase" ? Boolean(phases.find((phase) => phase.node_id === node.node_id)?.prompt) : Boolean(core[node.file] || node.file === "deterministic_renderer") })),
+      ...phases.map((phase) => ({ kind: "phase_prompt", node_id: phase.node_id, file: phase.file, required_top_level_keys: phase.required_top_level_keys }))
     ]
   };
 }
@@ -112,7 +114,8 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
     phase_outputs: phaseOutputs,
     hybrid_extraction_manifest: stage0.hybrid_extraction_manifest,
     extraction_forensic_ledger: stage0.extraction_forensic_ledger,
-    phase_stack: { completed_nodes: completedNodes, failed_node: null, next_node: "COMPLETE" },
+    runtime_orchestration_manifest: buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode: null }),
+    phase_stack: { completed_nodes: completedNodes, failed_node: null, next_node: "RENDERER" },
     model_meta_last: lastModelMeta,
     ...flatten(phaseOutputs)
   };
@@ -124,7 +127,9 @@ function buildPayload({ run, promptStack, phase, upstream }) {
       promptStack.core["00_RUNTIME_SPINE.md"],
       promptStack.core["00_RUNTIME_SPINE_INDEX.md"],
       promptStack.core["00_SOURCE_EXTRACTION_CONTRACT.md"],
+      promptStack.core["08_PHASE_STACK_EXECUTION_MAP.md"],
       promptStack.core["09_OUTPUT_HANDOFF_CONTRACT.md"],
+      promptStack.core["10_RUNTIME_AUDIT_CHECKLIST.md"],
       phase.prompt
     ].join("\n\n"),
     userPrompt: JSON.stringify({
@@ -166,6 +171,42 @@ function buildStage0(run) {
   };
 }
 
+function buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode }) {
+  return {
+    run_id: run.run_id,
+    source_mode: run.source_mode,
+    active_node: failedNode,
+    completed_nodes: completedNodes,
+    blocked_nodes: failedNode ? promptStack.phases.map((phase) => phase.node_id).filter((node) => !completedNodes.includes(node)) : [],
+    node_execution_records: promptStack.execution_nodes.map((node) => ({
+      node_id: node.node_id,
+      file: node.file,
+      status: completedNodes.includes(node.node_id) ? "LOCKED" : failedNode === node.node_id ? "CONTROLLED_FAILURE" : node.node_id === "RENDERER" ? "PENDING" : "SKIPPED",
+      inputs_received: [],
+      outputs_emitted: [],
+      lock_gates_passed: [],
+      lock_gates_failed: []
+    })),
+    pool_execution_records: promptStack.phases.map((phase) => ({
+      node_id: phase.node_id,
+      primary_pool: [phase.pool],
+      actual_pool_used: [],
+      fallback_used: false,
+      fallback_reason: null,
+      search_allowed: false,
+      grounding_allowed: false,
+      runtime_model_ref: null,
+      runtime_key_pool_ref: phase.pool
+    })),
+    handoff_chain_status: failedNode ? "PARTIAL" : "COMPLETE",
+    ledger_chain_status: failedNode ? "PARTIAL" : "COMPLETE",
+    artifact_access_status: "VALID",
+    repair_events: [],
+    controlled_failures: failedNode ? [failedNode] : [],
+    final_readiness: failedNode ? "CONTROLLED_FAILURE" : "READY_FOR_RENDER"
+  };
+}
+
 function fail({ run, promptStack, upstream = {}, phaseOutputs = {}, mechanicalValidations = {}, completedNodes = [], status, failedNode, error, lastModelMeta = null }) {
   return {
     ok: false,
@@ -180,6 +221,7 @@ function fail({ run, promptStack, upstream = {}, phaseOutputs = {}, mechanicalVa
     phase_outputs: phaseOutputs,
     hybrid_extraction_manifest: upstream?.S0?.hybrid_extraction_manifest || null,
     extraction_forensic_ledger: upstream?.S0?.extraction_forensic_ledger || null,
+    runtime_orchestration_manifest: promptStack ? buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode }) : null,
     phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
     error,
     model_meta_last: lastModelMeta,
@@ -195,6 +237,31 @@ function normalizeInput(input) {
     company_name: String(input.company_name || input.companyName || "").trim(),
     pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim()
   };
+}
+
+function extractExecutionNodes(text) {
+  const nodes = [];
+  const lines = String(text || "").split(/\r?\n/);
+  let current = null;
+  for (const line of lines) {
+    const node = line.match(/^\s*-\s+node_id:\s*([A-Za-z0-9_]+)/);
+    if (node) {
+      if (current) nodes.push(current);
+      current = { node_id: node[1], order: null, file: null, type: null, pool: "repair" };
+      continue;
+    }
+    if (!current) continue;
+    const order = line.match(/^\s+order:\s*(\d+)/);
+    if (order) current.order = Number(order[1]);
+    const file = line.match(/^\s+file:\s*([^\s]+)/);
+    if (file) current.file = file[1].trim();
+    const type = line.match(/^\s+type:\s*([^\s]+)/);
+    if (type) current.type = type[1].trim();
+    const pool = line.match(/^\s+pool:\s*\{\s*primary:\s*\[([^\]]*)\]/);
+    if (pool) current.pool = pool[1].split(",").map((item) => item.trim()).filter(Boolean)[0] || "repair";
+  }
+  if (current) nodes.push(current);
+  return nodes.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
 }
 
 function extractRequiredTopLevelKeys(text) {
