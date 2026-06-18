@@ -33,7 +33,7 @@ Phase 06 must operate under the following governing references:
 00_RUNTIME_SPINE.md
 REGISTRY_KEY_v3_0.md
 AI_THREAT_REGISTRY
-AI_THREAT_REGISTRY - HUNTER_ENGINE_RULES.csv
+AI_THREAT_REGISTRY_HUNTER_ENGINE_RULES.csv
 Phase 02 target_profile
 Phase 03 target_feature_profile
 Phase 04 legal_cartography_index
@@ -48,7 +48,7 @@ Runtime hierarchy:
 1. 00_RUNTIME_SPINE.md controls identity, evidence firewall, legal/advice boundary, and final-output discipline.
 2. REGISTRY_KEY_v3_0.md controls registry vocabulary, archetypes, surfaces, subcategories, threat ID format, and row interpretation rules.
 3. AI_THREAT_REGISTRY controls the locked registry row inventory. 
-4. AI_THREAT_REGISTRY - HUNTER_ENGINE_RULES.csv controls Hunter runtime trigger discipline, EXCLUDE_IF handling, risk-surface insufficiency, and controlled evidence output behavior. 
+4. AI_THREAT_REGISTRY_HUNTER_ENGINE_RULES.csv controls Hunter runtime trigger discipline, EXCLUDE_IF handling, risk-surface insufficiency, and controlled evidence output behavior. 
 5. Upstream phase profiles provide target, feature, legal cartography, and data-provenance context.
 6. Full admitted legal/governance lossless evidence is the primary reasoning substrate for row trigger/evaluation.
 ```
