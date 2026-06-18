@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "smoke": "node -e \"console.log('diligence-system scaffold smoke ok')\""
+    "smoke": "node -e \"console.log('diligence-system scaffold smoke ok')\"",
+    "check:prompt-stack": "node scripts/check-prompt-stack.mjs",
+    "check:stage0-adapter": "node scripts/check-stage0-adapter.mjs",
+    "check:phase-runner-p1": "node scripts/check-phase-runner-p1.mjs"
   },
   "dependencies": {
     "express": "^4.19.2",

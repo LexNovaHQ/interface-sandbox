@@ -201,8 +201,19 @@ function buildVisibleJson(result) {
     mode: result.mode,
     model: result.model,
     key_index: result.key_index,
+    phase_stack: result.phase_stack || null,
+    stage0_summary: result.stage0_summary || null,
+    stage0_validation: result.stage0_validation || null,
+    p1_summary: result.p1_summary || null,
+    p1_validation: result.p1_validation || null,
+    p1_parse: result.p1_parse || null,
+    p1_model_meta: result.p1_model_meta || null,
+    source_discovery_handoff: result.source_discovery_handoff || null,
+    source_discovery_forensic_ledger: result.source_discovery_forensic_ledger || null,
+    source_discovery_trace: result.source_discovery_trace || null,
     guardrail: result.guardrail || null,
     hybrid_source_review: result.hybrid_evidence_packet?.source_review || null,
+    hybrid_extraction_manifest: result.hybrid_extraction_manifest || null,
     hybrid_warnings: result.hybrid_evidence_packet?.warnings || [],
     hybrid_candidate_links: result.hybrid_evidence_packet?.candidate_links || [],
     hybrid_direct_fetch_attempts: result.hybrid_evidence_packet?.direct_fetch_attempts || [],
@@ -216,6 +227,10 @@ function buildVisibleJson(result) {
 
 function buildAuditText(result) {
   const chunks = [];
+  if (result.stage0_validation) chunks.push(`[STAGE0_VALIDATION]\n${JSON.stringify(result.stage0_validation, null, 2)}`);
+  if (result.p1_validation) chunks.push(`[P1_VALIDATION]\n${JSON.stringify(result.p1_validation, null, 2)}`);
+  if (result.p1_parse) chunks.push(`[P1_PARSE]\n${JSON.stringify(result.p1_parse, null, 2)}`);
+  if (result.p1_model_meta) chunks.push(`[P1_MODEL_META]\n${JSON.stringify(result.p1_model_meta, null, 2)}`);
   if (result.guardrail) chunks.push(`[SERVER_GUARDRAIL]\n${JSON.stringify(result.guardrail, null, 2)}`);
   if (result.hybrid_evidence_packet?.source_review) chunks.push(`[HYBRID_SOURCE_REVIEW]\n${JSON.stringify(result.hybrid_evidence_packet.source_review, null, 2)}`);
   if (result.hybrid_evidence_packet?.warnings?.length) chunks.push(`[HYBRID_WARNINGS]\n${JSON.stringify(result.hybrid_evidence_packet.warnings, null, 2)}`);
@@ -226,6 +241,17 @@ function buildAuditText(result) {
 }
 
 function buildFallbackReportHtml(result) {
+  if (result.source_discovery_handoff || result.mode === "phase_stack_p1") {
+    const p1Ready = Boolean(result.source_discovery_handoff && result.p1_validation?.ok);
+    return `
+      <div class="interface-report">
+        <h1>Phase-Stack Run Started</h1>
+        <p>Stage 0 Manifest Ready</p>
+        <p>${escapeHtml(p1Ready ? "P1 Source Discovery Handoff Ready" : "P1 Failed")}</p>
+        <p>Next node: ${escapeHtml(result.phase_stack?.next_node || "P1_RETRY_OR_REPAIR")}</p>
+      </div>`;
+  }
+
   const title = result.status === "ERROR" || result.error ? "Runtime Diagnostic" : "No HTML report returned";
   return `
     <div class="interface-report guardrail-failed">

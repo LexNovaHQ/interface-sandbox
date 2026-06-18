@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import helmet from "helmet";
 import fs from "fs/promises";
 import path from "path";
@@ -9,12 +9,19 @@ import {
   buildDiligenceRuntimePayload,
   buildDiligenceUserPrompt
 } from "./prompts/diligence-prompt.js";
-
+import { validatePromptStack, getPhasePoolBindings } from "./prompt-stack-loader.js";
+import {
+  buildHybridExtractionManifest,
+  summarizeHybridExtractionManifest,
+  validateHybridExtractionManifest
+} from "./stage0-adapter.js";
+import { runP1SourceDiscovery } from "./phase-runner.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 8080);
 const DILIGENCE_MODE = process.env.DILIGENCE_MODE || "mock";
+const ACTIVE_DILIGENCE_RUNTIME = "phase_stack_p1";
 
 const DEFAULT_GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const GEMINI_MODELS = parseModelPool();
@@ -173,6 +180,19 @@ const MANDATORY_DISCLAIMER =
 
 const referenceBundlePromise = loadReferenceBundle();
 
+let promptStackStatus = { ok: false, validation_errors: ["NOT_INITIALIZED"], validation_warnings: [] };
+try {
+  promptStackStatus = validatePromptStack();
+  console.log("[prompt-stack]", promptStackStatus.ok ? "loaded" : "validation failed");
+} catch (err) {
+  promptStackStatus = {
+    ok: false,
+    validation_errors: [err?.message || "PROMPT_STACK_LOAD_FAILED"],
+    validation_warnings: []
+  };
+  console.warn("[prompt-stack] validation failed", err?.message || err);
+}
+
 const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "15mb" }));
@@ -188,7 +208,11 @@ app.get("/health", async (_req, res) => {
     ok: true,
     service: "interface-diligence-system",
     mode: DILIGENCE_MODE,
-    supported_modes: ["mock", "live", "prompt_live"],
+    active_diligence_runtime: ACTIVE_DILIGENCE_RUNTIME,
+    monolith_active: false,
+    phase_stack_stage0_adapter: true,
+    phase_stack_p1_runner: true,
+    supported_modes: ["phase_stack_p1"],
     model: GEMINI_MODEL,
     models: GEMINI_MODELS,
     model_pool_size: GEMINI_MODEL_POOL.length,
@@ -220,8 +244,8 @@ app.get("/health", async (_req, res) => {
       gemini_max_output_tokens: GEMINI_MAX_OUTPUT_TOKENS,
       gemini_ping_max_output_tokens: GEMINI_PING_MAX_OUTPUT_TOKENS
     },
-    prompt_live_ready: referenceBundle.ok,
-    prompt_live_files: referenceBundle.manifest || [],
+    legacy_prompt_live_available: referenceBundle.ok,
+    legacy_prompt_live_files: referenceBundle.manifest || [],
     registry_row_count_estimate: referenceBundle.registry_row_count_estimate || 0,
     reference_load_error: referenceBundle.ok ? null : referenceBundle.error
   });
@@ -247,6 +271,14 @@ app.get("/api/gemini/pool", (_req, res) => {
 });
 
 app.get("/api/diligence/pools", (_req, res) => {
+  let phasePoolBindingsFrom08 = {};
+  let phasePoolBindingWarning;
+  try {
+    phasePoolBindingsFrom08 = getPhasePoolBindings();
+  } catch {
+    phasePoolBindingWarning = "PROMPT_STACK_NOT_LOADED";
+  }
+
   res.json({
     ok: true,
     version: "diligence_pool_v1",
@@ -255,7 +287,26 @@ app.get("/api/diligence/pools", (_req, res) => {
     fallback_policy: "Pool-specific DILIGENCE_* env values are preferred; GEMINI_API_KEYS/GEMINI_MODEL(S) remain migration fallbacks.",
     pools: publicDiligencePoolsSnapshot(),
     stage_pool_bindings: DILIGENCE_STAGE_POOL_BINDINGS,
+    phase_pool_bindings_from_08: phasePoolBindingsFrom08,
+    ...(phasePoolBindingWarning ? { phase_pool_binding_warning: phasePoolBindingWarning } : {}),
     note: "Keys are server-side only. Raw key material is never returned."
+  });
+});
+
+app.get("/api/diligence/prompt-stack", (_req, res) => {
+  res.json({
+    ok: promptStackStatus.ok,
+    stack_dir: promptStackStatus.stack_dir,
+    reference_dir: promptStackStatus.reference_dir,
+    loaded_phase_stack_files: promptStackStatus.loaded_phase_stack_files || [],
+    loaded_reference_files: promptStackStatus.loaded_reference_files || [],
+    missing_phase_stack_files: promptStackStatus.missing_phase_stack_files || [],
+    missing_reference_files: promptStackStatus.missing_reference_files || [],
+    missing_optional_reference_files: promptStackStatus.missing_optional_reference_files || [],
+    execution_graph_summary: promptStackStatus.execution_graph_summary || [],
+    phase_pool_bindings: promptStackStatus.phase_pool_bindings || {},
+    validation_errors: promptStackStatus.validation_errors || [],
+    validation_warnings: promptStackStatus.validation_warnings || []
   });
 });
 
@@ -301,121 +352,184 @@ app.post("/api/gemini/ping", async (_req, res) => {
 
 app.post("/api/diligence/run", async (req, res) => {
   try {
-    const sourceMode = String(req.body?.source_mode || "url").trim();
-    const incomingTargetUrl = String(req.body?.target_url || "").trim();
-    const normalizedTargetUrl = sourceMode === "text" ? "N/A" : normalizeTargetUrl(incomingTargetUrl);
+    const sourceMode = String(req.body?.source_mode || req.body?.sourceMode || "url").trim();
+    const incomingTargetUrl = String(req.body?.target_url || req.body?.targetUrl || "").trim();
+    const pastedPublicMaterial = String(req.body?.pasted_public_material || req.body?.pastedPublicMaterial || "");
+    const syntheticDemoMaterial = String(req.body?.synthetic_demo_material || req.body?.syntheticDemoMaterial || pastedPublicMaterial || "");
+    const companyName = String(req.body?.company_name || req.body?.companyName || "");
+    const normalizedTargetUrl = sourceMode === "text" || sourceMode === "synthetic_demo" ? "N/A" : normalizeTargetUrl(incomingTargetUrl);
 
-    if (!normalizedTargetUrl && sourceMode !== "text") {
+    if (!normalizedTargetUrl && sourceMode !== "text" && sourceMode !== "synthetic_demo") {
       return res.status(400).json({ ok: false, error: "TARGET_URL_REQUIRED" });
     }
 
     const runId = createRunId();
-    const runtimePayload = buildDiligenceRuntimePayload({
+    const runtimePayload = {
       run_id: runId,
       source_mode: sourceMode,
       target_url: normalizedTargetUrl || "N/A",
-      pasted_public_material: req.body?.pasted_public_material || "",
-      company_name: req.body?.company_name || ""
+      pasted_public_material: pastedPublicMaterial,
+      company_name: companyName
+    };
+
+    const startedAt = new Date().toISOString();
+    const hybridEvidencePacket = sourceMode === "synthetic_demo"
+      ? emptyHybridEvidencePacket(runtimePayload)
+      : await buildHybridEvidencePacket(runtimePayload);
+    const completedAt = new Date().toISOString();
+
+    const manifest = buildHybridExtractionManifest({
+      runId,
+      sourceMode,
+      targetUrl: runtimePayload.target_url,
+      companyName,
+      pastedPublicMaterial,
+      syntheticDemoMaterial,
+      hybridEvidencePacket,
+      startedAt,
+      completedAt
     });
+    const stage0Validation = validateHybridExtractionManifest(manifest);
+    const stage0Summary = summarizeHybridExtractionManifest(manifest);
 
-    if (DILIGENCE_MODE === "mock") {
-      return res.json(buildMockResult(runtimePayload));
-    }
-
-    if (!GEMINI_POOL.length) {
-      return res.status(500).json({
-        ok: false,
-        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
-        key_pool_size: 0
-      });
-    }
-
-    if (DILIGENCE_MODE === "prompt_live") {
-      const referenceBundle = await referenceBundlePromise;
-      const hybridEvidencePacket = await buildHybridEvidencePacket(runtimePayload);
-      const userPrompt = buildPromptLiveUserPrompt({ runtimePayload, hybridEvidencePacket, referenceBundle });
-      const result = await callGeminiWithFallback({
-        systemPrompt: referenceBundle.monolith,
-        userPrompt,
-        responseMimeType: "text/plain",
-        timeoutMs: GEMINI_TIMEOUT_MS,
-        maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
-        temperature: 0.2,
-        returnMeta: true,
-        allowGrounding: HYBRID_GROUNDING_ALLOWED,
-        poolName: "final"
-      });
-      const parsed = parseDiligenceOutput(result.text);
-      const guardrail = validatePromptLiveOutput({
-        parsed,
-        expectedRegistryCount: referenceBundle.registry_row_count_estimate,
-        expectedLegalStackSize: 5
-      });
-      const guardedParsed = applyGuardrailToParsed(parsed, guardrail);
-
+    if (!stage0Validation.ok) {
       return res.json({
-        ok: true,
+        ok: false,
         run_id: runId,
         target_url: runtimePayload.target_url,
-        mode: DILIGENCE_MODE,
-        model: result.model,
-        key_index: result.key_index,
-        pool_name: result.pool_name,
-        key_pool_size: GEMINI_POOL.length,
-        model_pool_size: GEMINI_MODEL_POOL.length,
-        prompt_bundle: referenceBundle.manifest,
-        hybrid_evidence_packet: hybridEvidencePacket,
-        guardrail,
-        parse_status: guardedParsed.parse_status,
-        ...guardedParsed
+        mode: ACTIVE_DILIGENCE_RUNTIME,
+        status: "STAGE0_MANIFEST_INVALID",
+        phase_stack: {
+          active: true,
+          current_node: "S0",
+          completed_nodes: [],
+          next_node: "S0_RETRY",
+          execution_map_loaded: promptStackStatus.ok === true
+        },
+        stage0_summary: stage0Summary,
+        stage0_validation: stage0Validation,
+        p1_summary: null,
+        p1_validation: null,
+        p1_parse: null,
+        p1_model_meta: null,
+        hybrid_extraction_manifest: manifest.hybrid_extraction_manifest,
+        source_discovery_handoff: null,
+        source_discovery_forensic_ledger: null,
+        source_discovery_trace: null,
+        legacy_monolith_active: false,
+        final_output_handoff: null,
+        machine_json: {
+          run_meta: {
+            run_id: runId,
+            source_mode: sourceMode,
+            target_url: runtimePayload.target_url,
+            company_name: companyName,
+            active_diligence_runtime: ACTIVE_DILIGENCE_RUNTIME
+          },
+          stage0_summary: stage0Summary,
+          source_discovery_handoff: null,
+          p1_summary: null,
+          next_required_phase: "S0_RETRY"
+        },
+        html_report: "",
+        audit: {
+          stage0_validation: stage0Validation,
+          p1_validation: null,
+          p1_parse: null,
+          prompt_stack_status: safePromptStackStatus()
+        },
+        vault_payload: null
       });
     }
 
-    if (DILIGENCE_MODE !== "live") {
-      return res.status(400).json({
-        ok: false,
-        error: "UNSUPPORTED_DILIGENCE_MODE",
-        mode: DILIGENCE_MODE,
-        supported_modes: ["mock", "live", "prompt_live"]
-      });
-    }
-
-    const userPrompt = buildDiligenceUserPrompt({ runtimePayload });
-    const result = await callGeminiWithFallback({
-      systemPrompt: DILIGENCE_SYSTEM_PROMPT,
-      userPrompt,
-      responseMimeType: "application/json",
-      timeoutMs: GEMINI_TIMEOUT_MS,
-      maxOutputTokens: Math.min(GEMINI_MAX_OUTPUT_TOKENS, 8192),
-      temperature: 0.2,
-      returnMeta: true,
-      allowGrounding: false,
-      poolName: "repair"
+    const p1Result = await runP1SourceDiscovery({
+      runId,
+      targetUrl: runtimePayload.target_url,
+      companyName,
+      sourceMode,
+      hybridExtractionManifest: manifest.hybrid_extraction_manifest,
+      promptStackStatus,
+      callModel: async ({ poolName, systemInstruction, userMessage, allowGrounding }) => callGeminiWithFallback({
+        systemPrompt: systemInstruction,
+        userPrompt: userMessage,
+        responseMimeType: "application/json",
+        timeoutMs: GEMINI_TIMEOUT_MS,
+        maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+        temperature: 0,
+        returnMeta: true,
+        allowGrounding: allowGrounding === true,
+        poolName
+      })
     });
-    const parsed = parseDiligenceOutput(result.text);
+
+    const p1Output = p1Result.p1_output || {};
+    const sourceDiscoveryHandoff = p1Output.source_discovery_handoff || null;
+    const sourceDiscoveryForensicLedger = p1Output.source_discovery_forensic_ledger || null;
+    const sourceDiscoveryTrace = p1Output.source_discovery_trace || null;
 
     return res.json({
-      ok: true,
+      ok: p1Result.ok,
       run_id: runId,
       target_url: runtimePayload.target_url,
-      mode: DILIGENCE_MODE,
-      model: result.model,
-      key_index: result.key_index,
-      key_pool_size: GEMINI_POOL.length,
-      model_pool_size: GEMINI_MODEL_POOL.length,
-      parse_status: parsed.parse_status,
-      ...parsed
+      mode: ACTIVE_DILIGENCE_RUNTIME,
+      status: p1Result.status,
+      phase_stack: {
+        active: true,
+        current_node: "P1",
+        completed_nodes: p1Result.ok ? ["S0", "P1"] : ["S0"],
+        next_node: p1Result.next_node,
+        execution_map_loaded: promptStackStatus.ok === true
+      },
+      stage0_summary: stage0Summary,
+      stage0_validation: stage0Validation,
+      p1_summary: p1Result.p1_summary,
+      p1_validation: p1Result.p1_validation,
+      p1_parse: p1Result.p1_parse,
+      p1_model_meta: p1Result.model_meta,
+      hybrid_extraction_manifest: manifest.hybrid_extraction_manifest,
+      source_discovery_handoff: sourceDiscoveryHandoff,
+      source_discovery_forensic_ledger: sourceDiscoveryForensicLedger,
+      source_discovery_trace: sourceDiscoveryTrace,
+      legacy_monolith_active: false,
+      final_output_handoff: null,
+      machine_json: {
+        run_meta: {
+          run_id: runId,
+          source_mode: sourceMode,
+          target_url: runtimePayload.target_url,
+          company_name: companyName,
+          active_diligence_runtime: ACTIVE_DILIGENCE_RUNTIME
+        },
+        stage0_summary: stage0Summary,
+        source_discovery_handoff: sourceDiscoveryHandoff,
+        p1_summary: p1Result.p1_summary,
+        next_required_phase: "P2_TARGET_PROFILE"
+      },
+      html_report: "",
+      audit: {
+        stage0_validation: stage0Validation,
+        p1_validation: p1Result.p1_validation,
+        p1_parse: p1Result.p1_parse,
+        prompt_stack_status: safePromptStackStatus()
+      },
+      vault_payload: null
     });
   } catch (err) {
-    console.error("[diligence/run] failed", err);
+    console.error("[diligence/run] stage0 failed", err);
     return res.status(500).json({
       ok: false,
-      error: "DILIGENCE_RUN_FAILED",
-      message: err?.message || String(err)
+      error: "STAGE0_RUN_FAILED",
+      message: err?.message || String(err),
+      mode: ACTIVE_DILIGENCE_RUNTIME,
+      legacy_monolith_active: false,
+      final_output_handoff: null,
+      machine_json: { run_meta: {}, stage0_summary: {}, next_required_phase: "P1_SOURCE_DISCOVERY_EVIDENCE_BOX" },
+      html_report: "",
+      audit: { stage0_validation: { ok: false, errors: [err?.message || "STAGE0_RUN_FAILED"], warnings: [] }, prompt_stack_status: safePromptStackStatus() },
+      vault_payload: null
     });
   }
 });
-
 app.post("/api/vault/push", async (req, res) => {
   const vaultUrl = process.env.VAULT_ASSEMBLY_ENDPOINT || "";
   if (!vaultUrl) {
@@ -639,6 +753,51 @@ function estimateCsvDataRows(csvText) {
   return Math.max(0, String(csvText || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean).length - 1);
 }
 
+function safePromptStackStatus() {
+  return {
+    ok: promptStackStatus.ok === true,
+    stack_dir: promptStackStatus.stack_dir,
+    reference_dir: promptStackStatus.reference_dir,
+    loaded_phase_stack_files: promptStackStatus.loaded_phase_stack_files || [],
+    loaded_reference_files: promptStackStatus.loaded_reference_files || [],
+    missing_phase_stack_files: promptStackStatus.missing_phase_stack_files || [],
+    missing_reference_files: promptStackStatus.missing_reference_files || [],
+    missing_optional_reference_files: promptStackStatus.missing_optional_reference_files || [],
+    execution_graph_summary: promptStackStatus.execution_graph_summary || [],
+    phase_pool_bindings: promptStackStatus.phase_pool_bindings || {},
+    validation_errors: promptStackStatus.validation_errors || [],
+    validation_warnings: promptStackStatus.validation_warnings || []
+  };
+}
+
+function emptyHybridEvidencePacket(runtimePayload) {
+  return {
+    mode: "hybrid_v1",
+    status: "NO_FETCH_SYNTHETIC_DEMO",
+    target_url: runtimePayload.target_url || "N/A",
+    source_mode: runtimePayload.source_mode || "synthetic_demo",
+    grounding_allowed: false,
+    source_review: {
+      primary_attempted: 0,
+      primary_ingested: 0,
+      secondary_attempted: 0,
+      secondary_ingested: 0,
+      total_fetch_attempts: 0,
+      evidence_entries: 0,
+      artifact_inventory_entries: 0,
+      jina_used: false,
+      grounding_allowed: false,
+      evidence_buffer_size_chars: 0
+    },
+    primary_paths: [],
+    secondary_paths: [],
+    direct_fetch_attempts: [],
+    candidate_links: [],
+    evidence_buffer: [],
+    artifact_inventory: [],
+    warnings: ["SYNTHETIC_DEMO_NO_FETCH"]
+  };
+}
 async function buildHybridEvidencePacket(runtimePayload) {
   const warnings = ["SERVER_REFERENCE_BUNDLE_LOADED"];
   const evidenceBuffer = [];
