@@ -33,6 +33,7 @@ Phase 06 must operate under the following governing references:
 00_RUNTIME_SPINE.md
 REGISTRY_KEY_v3_0.md
 AI_THREAT_REGISTRY
+AI_THREAT_REGISTRY - HUNTER_ENGINE_RULES.csv
 Phase 02 target_profile
 Phase 03 target_feature_profile
 Phase 04 legal_cartography_index
@@ -46,10 +47,55 @@ Runtime hierarchy:
 ```text
 1. 00_RUNTIME_SPINE.md controls identity, evidence firewall, legal/advice boundary, and final-output discipline.
 2. REGISTRY_KEY_v3_0.md controls registry vocabulary, archetypes, surfaces, subcategories, threat ID format, and row interpretation rules.
-3. AI_THREAT_REGISTRY controls the locked registry row inventory.
-4. Upstream phase profiles provide target, feature, legal cartography, and data-provenance context.
-5. Full admitted legal/governance lossless evidence is the primary reasoning substrate for row trigger/evaluation.
+3. AI_THREAT_REGISTRY controls the locked registry row inventory. 
+4. AI_THREAT_REGISTRY - HUNTER_ENGINE_RULES.csv controls Hunter runtime trigger discipline, EXCLUDE_IF handling, risk-surface insufficiency, and controlled evidence output behavior. 
+5. Upstream phase profiles provide target, feature, legal cartography, and data-provenance context.
+6. Full admitted legal/governance lossless evidence is the primary reasoning substrate for row trigger/evaluation.
 ```
+
+---
+
+
+# 02A. HUNTER ENGINE RULES
+
+Phase 06 must apply the locked Hunter Engine Rules when evaluating model-routed registry rows.
+
+These rules control trigger discipline. They do not authorize legal advice, compliance verdicts, liability findings, or enforceability conclusions.
+
+## HER_001 — Universal EXCLUDE_IF First-Party Control Rule
+
+For every Hunter-trigger row, Hunter must treat `EXCLUDE_IF` as a hard non-trigger rule only where first-party evidence shows legal, operational, product, UI, workflow, policy, or documentation controls sufficient to defeat the specific triggering conditions.
+
+Neutralizing evidence may be a clause, product control, UI flow, policy, trust-center artifact, DPA, ToS, AUP, privacy/security document, internal policy surfaced by the prospect, or a combination of these.
+
+Where the threat depends on legal allocation, a technical control alone is insufficient.
+
+Where the threat depends on product flow, consent, notice, or user assent, a clause alone is insufficient.
+
+Hunter must assess whether the evidence actually kills the row-specific conditions, not merely whether a generic control exists.
+
+## HER_001B — Risk Surface Is Insufficient Rule
+
+A risk surface alone is insufficient.
+
+Hunter must trigger only when the risk surface exists and the first-party public, legal, product, or governance evidence does not kill the relevant row-specific conditions.
+
+Row-specific `EXCLUDE_IF` language supplies examples, not the full universe of acceptable neutralizing evidence.
+
+## HER_002 — Controlled Evidence Output Rule
+
+Hunter must evaluate `CONDITION_N` and `TRIGGER_IF` first, then apply `EXCLUDE_IF`.
+
+If `EXCLUDE_IF` evidence is present in first-party materials, the output should mark the row as `NOT_TRIGGERED` or `SUPPORTED_CONTROL_PRESENT`, not as a supported exposure signal.
+
+## Hunter Rule Priority
+
+```text
+1. CONDITION_N / TRIGGER_IF fit must be assessed first.
+2. EXCLUDE_IF / first-party neutralizing evidence must then be assessed.
+3. A risk surface without row-specific unneutralized evidence is insufficient.
+4. Product controls, UI controls, workflow controls, policy controls, legal clauses, trust/security artifacts, and surfaced internal policies may all neutralize a row where they actually defeat the row-specific condition.
+5. Phase 06 must not treat generic risk-surface presence as enough to support an exposure row.
 
 ---
 
@@ -64,6 +110,7 @@ Phase 06 requires:
   "runtime_spine": {},
   "registry_key": {},
   "ai_threat_registry": [],
+  "hunter_engine_rules": [],
   "target_profile": {},
   "target_feature_profile": {},
   "legal_cartography_index": {},
@@ -143,18 +190,46 @@ All 98 registry rows must appear exactly once in `target_exposure_profile.regist
 
 Rows may be supported, controlled, weak, conflicting, insufficient, not visible, access failed, review required, not triggered, or contextually not applicable. No row may disappear.
 
-## HR6.003 — Model-Led Registry Intelligence
+Phase 06 uses two row paths: 
 
-The model decides:
+```text 
+MODEL_ROUTED_ROWS: 
+- all UNI rows 
+- all rows whose registry archetype is triggered by Phase 03 target_feature_profile 
+- all rows whose registry surface is triggered by Phase 03 target_feature_profile, where surface routing is available 
+
+DETERMINISTIC_NOT_APPLICABLE_ROWS: - non-UNI registry rows whose archetype and surface are not triggered by Phase 03 target_feature_profile
+
+
+```markdown
+
+## HR6.003 — Model-Led Registry Intelligence for Model-Routed Rows
+
+Phase 06 is model-led for all `MODEL_ROUTED_ROWS`.
+
+`MODEL_ROUTED_ROWS` are:
 
 ```text
-- whether the deterministic route is sufficient
-- whether a broader admitted evidence path is needed
-- whether the registry signal condition is triggered
-- whether the row is supported, controlled, weak, conflicting, not visible, insufficient, access failed, or review-required
-```
+- all UNI rows
+- all registry rows whose archetype is triggered by Phase 03 target_feature_profile
+- all registry rows whose surface is triggered by Phase 03 target_feature_profile, where surface routing is available
 
-Deterministic systems cannot decide, downgrade, suppress, or overwrite substantive registry outcomes.
+For MODEL_ROUTED_ROWS, the model decides:
+
+- whether the Hunter signal condition is triggered
+- whether CONDITION_N / TRIGGER_IF fits the admitted evidence
+- whether EXCLUDE_IF / first-party neutralizing evidence defeats the row-specific condition
+- whether a broader admitted evidence path is needed
+- whether the row is supported, controlled, weak, conflicting, not visible, insufficient, access failed, or review-required
+
+For DETERMINISTIC_NOT_APPLICABLE_ROWS, the deterministic route planner may assign the row to the final ledger without model evaluation only where the row is non-UNI and the row's archetype/surface was not triggered by Phase 03 target_feature_profile.
+
+This deterministic assignment is not a substantive Hunter trigger decision. It is an applicability routing decision.
+
+Deterministic systems cannot decide, downgrade, suppress, or overwrite substantive Hunter outcomes for MODEL_ROUTED_ROWS.
+
+
+---
 
 ## HR6.004 — Deterministic Support Rails Only
 
@@ -164,32 +239,40 @@ Deterministic systems may:
 - load all 98 registry rows
 - preserve row order
 - identify UNI rows
-- build initial navigation maps
+- derive active archetypes from Phase 03 target_feature_profile
+- derive active surfaces from Phase 03 target_feature_profile, where available
+- classify rows into MODEL_ROUTED_ROWS or DETERMINISTIC_NOT_APPLICABLE_ROWS
+- build deterministic NOT_APPLICABLE_CONTEXTUAL ledger rows for non-UNI rows whose archetype/surface is not triggered
+- build model batch packets for MODEL_ROUTED_ROWS
+- batch MODEL_ROUTED_ROWS in groups of up to 15
+- preserve row route basis and batch basis
 - attach legal cartography routes
 - attach upstream profile refs
 - attach admitted source refs
 - attach lossless legal/governance evidence blocks
 - flag missing inputs
 - validate schema
+- validate batch coverage
 - validate status vocabulary
 - validate ref resolution
 - validate 98-row ledger completeness
 - validate forbidden legal-verdict language
-```
+- merge model-routed rows and deterministic not-applicable rows into registry order
 
 Deterministic systems may not:
 
-```text
-- decide registry signal triggered / not triggered
-- decide conditional triggered / not triggered
-- decide whether governance language is sufficient
-- decide whether visible control mitigates a row
-- decide whether absence supports an exposure signal
-- decide whether qualified review is required
-- narrow the model to one evidence path
-- suppress rows because route tags do not match
+- decide Hunter signal triggered / not triggered for MODEL_ROUTED_ROWS
+- decide conditional triggered / not triggered for MODEL_ROUTED_ROWS
+- decide whether governance language is sufficient for MODEL_ROUTED_ROWS
+- decide whether visible control mitigates a MODEL_ROUTED_ROW
+- decide whether absence supports an exposure signal for a MODEL_ROUTED_ROW
+- decide whether qualified review is required for a MODEL_ROUTED_ROW
+- narrow the model to one evidence path for MODEL_ROUTED_ROWS
+- suppress UNI rows
+- suppress triggered archetype/surface rows
 - overwrite model trigger or evaluation status
-```
+
+---
 
 ## HR6.005 — Evidence Firewall
 
@@ -256,15 +339,17 @@ Phase 06 may cite upstream profiles. It may not rewrite upstream target facts, f
 # 06. EXECUTION BLOCKS
 
 ```text
-EB6.001 — Runtime and Registry Handshake
-EB6.002 — Input Boundary Gate
-EB6.003 — Full 98-Row Registry Inventory
-EB6.004 — Deterministic Navigation Map + Candidate Packetization
-EB6.005 — Model-Led Evidence Path Selection + Registry Signal Trigger Adjudication
-EB6.006 — Evidence Binding of Model-Selected Path
-EB6.007 — Model-Led Registry Row Evaluation
-EB6.008 — Exposure Ledger Assembly
-EB6.009 — Operator Challenge Gate
+EB6.001 — Runtime and Registry Handshake 
+EB6.002 — Input Boundary Gate 
+EB6.003 — Full 98-Row Registry Inventory 
+EB6.003A — Deterministic Hunter Route Planning 
+EB6.004 — Deterministic Navigation Map + Candidate Packetization 
+EB6.004A — Model Batch Construction 
+EB6.005 — Model-Led Evidence Path Selection + Hunter Signal Trigger Adjudication 
+EB6.006 — Evidence Binding of Model-Selected Path 
+EB6.007 — Model-Led Registry Row Evaluation 
+EB6.008 — Exposure Ledger Assembly 
+EB6.009 — Operator Challenge Gate 
 EB6.010 — Deterministic Terminal Gates + Final JSON Payload
 ```
 
@@ -291,15 +376,81 @@ Verify required inputs exist. Do not evaluate registry rows if the registry, reg
 
 Load all 98 registry rows from `AI_THREAT_REGISTRY`. Preserve threat IDs, archetypes, subcategories, surfaces, row titles, registry signal conditions, and order.
 
+## EB6.003A — Deterministic Hunter Route Planning
+
+Derive active routing signals from Phase 03 target_feature_profile.
+
+The deterministic route planner must create:
+
+```json
+{
+  "hunter_route_plan": {
+    "active_archetypes": [],
+    "active_surfaces": [],
+    "model_routed_row_ids": [],
+    "deterministic_not_applicable_row_ids": [],
+    "row_route_reasons": []
+  }
+}
+
+Routing rules:
+
+1. All UNI rows are MODEL_ROUTED_ROWS.
+2. Rows whose registry archetype appears in active_archetypes are MODEL_ROUTED_ROWS.
+3. Rows whose registry surface appears in active_surfaces are MODEL_ROUTED_ROWS, where surface routing is available.
+4. Non-UNI rows with no active archetype/surface match are DETERMINISTIC_NOT_APPLICABLE_ROWS.
+5. DETERMINISTIC_NOT_APPLICABLE_ROWS must not be sent to the model.
+6. DETERMINISTIC_NOT_APPLICABLE_ROWS must still appear in the final 98-row ledger with evaluation_status = NOT_APPLICABLE_CONTEXTUAL.
+
+The route planner may determine row applicability. It may not determine Hunter trigger/evaluation status for model-routed rows.
+
+
 ## EB6.004 — Deterministic Navigation Map + Candidate Packetization
 
 Build one `trigger_candidate_packet` per registry row.
 
 The packet is a starting map, not a conclusion.
 
+## EB6.004A — Model Batch Construction
+
+Build model batches only from `MODEL_ROUTED_ROWS`.
+
+Batching rules:
+
+```text
+1. Maximum batch size = 15 registry rows.
+2. UNI rows are batched first.
+3. Triggered archetype rows are batched after UNI rows.
+4. Where possible, keep rows from the same archetype group together.
+5. Do not mix more than three active archetype groups in one batch unless needed to avoid a tiny final batch.
+6. If one archetype group exceeds 15 rows, split it into multiple batches.
+7. The final batch may contain fewer than 15 rows.
+8. DETERMINISTIC_NOT_APPLICABLE_ROWS are not included in model batches.
+
+Each batch packet must include:
+
+{
+  "batch_id": "",
+  "batch_number": 0,
+  "batch_count": 0,
+  "batch_size": 0,
+  "expected_registry_row_ids": [],
+  "registry_rows": [],
+  "target_profile": {},
+  "target_feature_profile": {},
+  "legal_cartography_index": {},
+  "target_data_provenance_profile": {},
+  "legal_governance_lossless_evidence_package": [],
+  "hunter_engine_rules": []
+}
+
+Each model batch must return only the rows listed in expected_registry_row_ids.
+
+Batch output may not include rows outside the batch.
+
 ## EB6.005 — Model-Led Evidence Path Selection + Registry Signal Trigger Adjudication
 
-For each row, the model uses the deterministic navigation map, legal cartography, upstream profiles, and full admitted legal/governance lossless evidence to select the actual evidence path and decide registry signal trigger status.
+For each model-routed batch row, the model uses the deterministic navigation map, Hunter Engine Rules, legal cartography, upstream profiles, and full admitted legal/governance lossless evidence to select the actual evidence path and decide Hunter signal trigger status.
 
 The model may use, expand, or reject deterministic routes, but must stay within admitted evidence and record the actual path used.
 
@@ -313,7 +464,7 @@ For rows requiring evaluation, the model assigns `evaluation_status` using admit
 
 ## EB6.008 — Exposure Ledger Assembly
 
-Assemble all 98 rows into `registry_ledger[]`, carrying row identity, navigation, trigger status, evaluation status, evidence, summaries, and limitations.
+Assemble all 98 rows into `registry_ledger[]` by merging model-routed batch outputs with deterministic not-applicable rows, preserving locked registry order and carrying row identity, navigation, trigger status, evaluation status, evidence, summaries, and limitations.
 
 ## EB6.009 — Operator Challenge Gate
 
@@ -392,9 +543,38 @@ Run TG6.001–TG6.016. Emit final JSON only.
 | FD6.059 | `evidence_limitations_trace` | Deterministic / hybrid | Consolidate evidence coverage, limitations, gaps, failures, ambiguity, and public-footprint boundaries. | Trace only; not final report prose. |
 | FD6.060 | `terminal_gates_and_lock_status` | Deterministic | Run terminal gates and emit `LOCKED`, `REPAIR_REQUIRED`, or `CONTROLLED_FAILURE`. | Final lock gate. |
 
+
+## FD6.BATCH — Deterministic Routing + Batch Merge Addendum
+
+| FD ID | Canonical Field / Group | Owner | Derivation Logic | Output Placement / Guardrail |
+|---|---|---|---|---|
+| FD6.B01 | `active_archetypes[]` | Deterministic | Extract unique triggered archetype codes from Phase 03 target_feature_profile. | Used only for row applicability routing. |
+| FD6.B02 | `active_surfaces[]` | Deterministic | Extract unique triggered surface tokens from Phase 03 target_feature_profile where available. | Used only for row applicability routing. |
+| FD6.B03 | `row_route_plan[]` | Deterministic | Classify every registry row as `MODEL_ROUTED` or `DETERMINISTIC_NOT_APPLICABLE`. | Must include all 98 rows exactly once. |
+| FD6.B04 | `row_route_reason` | Deterministic | Assign one of: `UNI_ALWAYS_RUN`, `ARCHETYPE_TRIGGERED`, `SURFACE_TRIGGERED`, `INT_NOT_TRIGGERED_NOT_APPLICABLE`. | Does not decide Hunter trigger status for model-routed rows. |
+| FD6.B05 | `deterministic_not_applicable_rows[]` | Deterministic | Build non-model rows for non-UNI registry rows whose archetype/surface is not triggered. | Must use `evaluation_status = NOT_APPLICABLE_CONTEXTUAL`. |
+| FD6.B06 | `model_batch_plan[]` | Deterministic | Split `MODEL_ROUTED_ROWS` into batches of up to 15, with UNI first and archetype grouping where possible. | Batch coverage must equal model-routed row count. |
+| FD6.B07 | `batch_expected_registry_row_ids[]` | Deterministic | For each model batch, list exact expected row IDs. | Missing/unexpected/duplicate IDs fail batch validation. |
+| FD6.B08 | `batch_registry_ledger_rows[]` | Model-owned | Model evaluates only rows in the current batch. | No row outside the batch may appear. |
+| FD6.B09 | `batch_coverage_validation` | Deterministic | Validate exact batch ID coverage before merge. | Failed batch does not merge silently. |
+| FD6.B10 | `final_registry_merge` | Deterministic | Merge model rows and deterministic not-applicable rows in registry order. | Final ledger count must equal 98. |
 ---
 
 # 08. STATUS VOCABULARY
+
+## SV6.000 — `row_route_reason`
+
+```yaml
+row_route_reason:
+  - UNI_ALWAYS_RUN
+  - ARCHETYPE_TRIGGERED
+  - SURFACE_TRIGGERED
+  - INT_NOT_TRIGGERED_NOT_APPLICABLE
+
+Hard rules:
+
+UNI_ALWAYS_RUN, ARCHETYPE_TRIGGERED, and SURFACE_TRIGGERED rows are MODEL_ROUTED_ROWS.
+INT_NOT_TRIGGERED_NOT_APPLICABLE rows are DETERMINISTIC_NOT_APPLICABLE_ROWS.
 
 ## SV6.001 — `registry_signal_trigger_status`
 
@@ -560,6 +740,31 @@ LOW_RISK
 ---
 
 # 09. ROW SCHEMAS
+
+## RS6.000 — `p6_model_batch_output`
+
+Purpose: model output for one batch of model-routed registry rows.
+
+```json
+{
+  "batch_id": "P6B.001",
+  "batch_number": 1,
+  "batch_count": 1,
+  "expected_registry_row_ids": [],
+  "registry_signal_trigger_decisions": [],
+  "evidence_binding_records": [],
+  "registry_row_evaluations": [],
+  "registry_ledger_batch": []
+}
+
+Rules:
+
+1. `registry_ledger_batch[]` must contain only rows from expected_registry_row_ids.
+2. `registry_ledger_batch[]` must not include deterministic not-applicable rows.
+3. Each batch row must preserve registry metadata exactly.
+4. Each batch row must apply HER_001, HER_001B, and HER_002.
+5. If EXCLUDE_IF / neutralizing first-party evidence defeats the row-specific condition, use a controlled/not-triggered status, not a supported exposure signal.
+6. A risk surface alone is insufficient.
 
 ## RS6.001 — `trigger_candidate_packet`
 
@@ -856,9 +1061,11 @@ Repair: split status into `registry_signal_trigger_status` and `evaluation_statu
 
 Question: Did deterministic routing suppress or control any substantive model decision?
 
-Failure if deterministic route decided trigger status, blocked legal/governance evidence review, overwrote trigger/evaluation, or suppressed rows by route tags.
+Failure if deterministic routing decided Hunter trigger/evaluation status for MODEL_ROUTED_ROWS, blocked legal/governance evidence review for MODEL_ROUTED_ROWS, overwrote model trigger/evaluation, suppressed UNI rows, or suppressed triggered archetype/surface rows.
 
-Repair: re-run affected rows with model-led evidence path selection.
+Deterministic routing may assign non-UNI, non-triggered archetype/surface rows to DETERMINISTIC_NOT_APPLICABLE_ROWS without model evaluation.
+
+Repair: re-run affected MODEL_ROUTED_ROWS with model-led evidence path selection, or correct deterministic route planning where a row was wrongly classified.
 
 ## OCG6.005 — Evidence Path Challenge
 
@@ -1053,6 +1260,8 @@ Fail reason: `REGISTRY_SCHEMA_MISMATCH`.
 
 Check `registry_ledger[]` exists, exactly 98 rows, every registry row appears exactly once, every row has `ledger_row_id`, and every row links to trigger/evaluation/evidence/navigation.
 
+Rows assigned to DETERMINISTIC_NOT_APPLICABLE_ROWS satisfy this gate only if they preserve registry metadata, carry row_route_reason = INT_NOT_TRIGGERED_NOT_APPLICABLE, and use evaluation_status = NOT_APPLICABLE_CONTEXTUAL.
+
 Fail reason: `LEDGER_ROW_MISSING`.
 
 ## TG6.005 — UNI Row Gate
@@ -1063,7 +1272,7 @@ Fail reason: `UNI_ROW_OMITTED`.
 
 ## TG6.006 — Model Authority Gate
 
-Check that no deterministic field assigns trigger/evaluation status, no route tag suppresses a row, no validator overwrites model decision, and route disposition is recorded where model expands/rejects route.
+Check that no deterministic field assigns Hunter trigger/evaluation status for MODEL_ROUTED_ROWS, no route tag suppresses UNI rows or triggered archetype/surface rows, no validator overwrites model decision, deterministic not-applicable rows are limited to non-UNI rows whose archetype/surface was not triggered, and route disposition is recorded where model expands/rejects route.
 
 Fail reason: `DETERMINISTIC_MODEL_AUTHORITY_BREACH`.
 
