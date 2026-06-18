@@ -85,7 +85,7 @@ async function safePromptStack() {
   catch (err) { return { ok: false, errors: [err?.message || String(err)], manifest: [] }; }
 }
 
-async function callModel({ phaseId, poolName = "repair", systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS }) {
+async function callModel({ phaseId, poolName = "repair", systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS, allowGrounding = false }) {
   const pool = buildRuntimePool(poolName);
   let lastError = null;
   for (let keyIndex = 0; keyIndex < pool.keys.length; keyIndex += 1) {
@@ -93,8 +93,8 @@ async function callModel({ phaseId, poolName = "repair", systemPrompt, userPromp
       const key = pool.keys[keyIndex];
       const model = pool.models[modelIndex];
       try {
-        const text = await callGeminiClient({ key, model, systemPrompt, userPrompt, responseMimeType, temperature, maxOutputTokens, timeoutMs: GEMINI_TIMEOUT_MS });
-        return { text, meta: { phase_id: phaseId, pool_name: poolName, model, model_index: modelIndex + 1, key_index: keyIndex + 1, key_fingerprint: fingerprint(key) } };
+        const text = await callGeminiClient({ key, model, systemPrompt, userPrompt, responseMimeType, temperature, maxOutputTokens, timeoutMs: GEMINI_TIMEOUT_MS, allowGrounding });
+        return { text, meta: { phase_id: phaseId, pool_name: poolName, model, model_index: modelIndex + 1, key_index: keyIndex + 1, key_fingerprint: fingerprint(key), grounding_requested: Boolean(allowGrounding) } };
       } catch (err) {
         lastError = err;
       }
