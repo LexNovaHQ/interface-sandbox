@@ -20,7 +20,10 @@ const els = {
   targetUrl: document.getElementById("targetUrl"),
   sourceMode: document.getElementById("sourceMode"),
   pastedMaterial: document.getElementById("pastedMaterial"),
-  modeBadge: document.getElementById("modeBadge")
+  modeBadge: document.getElementById("modeBadge"),
+  diagnosticMode: document.getElementById("diagnosticMode"),
+  runUntil: document.getElementById("runUntil"),
+  runtimeTracePanel: document.getElementById("runtimeTracePanel")
 };
 
 els.form.addEventListener("submit", handleRun);
@@ -89,8 +92,11 @@ async function handleRun(event) {
     target_url: sourceMode === "text" ? "N/A" : normalized.url,
     company_name: String(formData.get("company_name") || "").trim(),
     source_mode: sourceMode,
-    pasted_public_material: pastedMaterial
+    pasted_public_material: pastedMaterial,
+    debug_trace: Boolean(els.diagnosticMode?.checked),
+    run_until: String(formData.get("run_until") || "").trim()
   };
+  if (payload.run_until) payload.debug_trace = true;
 
   if (payload.target_url !== "N/A") {
     els.targetUrl.value = payload.target_url;
@@ -188,6 +194,7 @@ function renderResult(result) {
   els.jsonTab.textContent = JSON.stringify(buildVisibleJson(result), null, 2);
   els.auditTab.textContent = buildAuditText(result);
   els.vaultTab.textContent = JSON.stringify(result.vault_assembly_handoff || {}, null, 2);
+  renderRuntimeTracePanel(result);
 
   activateTab("report");
   setTimeout(() => document.getElementById("result").scrollIntoView({ behavior: "smooth", block: "start" }), 100);
@@ -201,19 +208,8 @@ function buildVisibleJson(result) {
     mode: result.mode,
     model: result.model,
     key_index: result.key_index,
-    phase_stack: result.phase_stack || null,
-    stage0_summary: result.stage0_summary || null,
-    stage0_validation: result.stage0_validation || null,
-    p1_summary: result.p1_summary || null,
-    p1_validation: result.p1_validation || null,
-    p1_parse: result.p1_parse || null,
-    p1_model_meta: result.p1_model_meta || null,
-    source_discovery_handoff: result.source_discovery_handoff || null,
-    source_discovery_forensic_ledger: result.source_discovery_forensic_ledger || null,
-    source_discovery_trace: result.source_discovery_trace || null,
     guardrail: result.guardrail || null,
     hybrid_source_review: result.hybrid_evidence_packet?.source_review || null,
-    hybrid_extraction_manifest: result.hybrid_extraction_manifest || null,
     hybrid_warnings: result.hybrid_evidence_packet?.warnings || [],
     hybrid_candidate_links: result.hybrid_evidence_packet?.candidate_links || [],
     hybrid_direct_fetch_attempts: result.hybrid_evidence_packet?.direct_fetch_attempts || [],
@@ -221,37 +217,31 @@ function buildVisibleJson(result) {
     machine_json: result.machine_json || {},
     raw_output: result.raw_output || "",
     error: result.error || null,
-    message: result.message || null
+    message: result.message || null,
+    completed_nodes: result.completed_nodes || result.phase_stack?.completed_nodes || [],
+    runtime_trace: result.runtime_trace || null,
+    mechanical_validations: result.mechanical_validations || {},
+    model_meta_by_phase: result.model_meta_by_phase || {},
+    phase_top_level_presence: result.phase_top_level_presence || {},
+    s0_counts: result.s0_counts || {}
   };
 }
 
 function buildAuditText(result) {
   const chunks = [];
-  if (result.stage0_validation) chunks.push(`[STAGE0_VALIDATION]\n${JSON.stringify(result.stage0_validation, null, 2)}`);
-  if (result.p1_validation) chunks.push(`[P1_VALIDATION]\n${JSON.stringify(result.p1_validation, null, 2)}`);
-  if (result.p1_parse) chunks.push(`[P1_PARSE]\n${JSON.stringify(result.p1_parse, null, 2)}`);
-  if (result.p1_model_meta) chunks.push(`[P1_MODEL_META]\n${JSON.stringify(result.p1_model_meta, null, 2)}`);
   if (result.guardrail) chunks.push(`[SERVER_GUARDRAIL]\n${JSON.stringify(result.guardrail, null, 2)}`);
   if (result.hybrid_evidence_packet?.source_review) chunks.push(`[HYBRID_SOURCE_REVIEW]\n${JSON.stringify(result.hybrid_evidence_packet.source_review, null, 2)}`);
   if (result.hybrid_evidence_packet?.warnings?.length) chunks.push(`[HYBRID_WARNINGS]\n${JSON.stringify(result.hybrid_evidence_packet.warnings, null, 2)}`);
   if (result.technical_audit_log) chunks.push(`[MODEL_TECHNICAL_AUDIT_LOG]\n${result.technical_audit_log}`);
   if (result.operator_challenge_gate) chunks.push(`[OPERATOR_CHALLENGE_GATE]\n${JSON.stringify(result.operator_challenge_gate, null, 2)}`);
+  if (result.runtime_trace) chunks.push(`[RUNTIME_TRACE]\n${JSON.stringify(compactRuntimeTraceForDisplay(result.runtime_trace), null, 2)}`);
+  if (result.mechanical_validations) chunks.push(`[MECHANICAL_VALIDATIONS]\n${JSON.stringify(result.mechanical_validations, null, 2)}`);
+  if (result.model_meta_by_phase) chunks.push(`[MODEL_META_BY_PHASE]\n${JSON.stringify(result.model_meta_by_phase, null, 2)}`);
   if (result.raw_output && !result.technical_audit_log) chunks.push(`[RAW_OUTPUT]\n${result.raw_output}`);
   return chunks.join("\n\n") || "No audit diagnostics returned.";
 }
 
 function buildFallbackReportHtml(result) {
-  if (result.source_discovery_handoff || result.mode === "phase_stack_p1") {
-    const p1Ready = Boolean(result.source_discovery_handoff && result.p1_validation?.ok);
-    return `
-      <div class="interface-report">
-        <h1>Phase-Stack Run Started</h1>
-        <p>Stage 0 Manifest Ready</p>
-        <p>${escapeHtml(p1Ready ? "P1 Source Discovery Handoff Ready" : "P1 Failed")}</p>
-        <p>Next node: ${escapeHtml(result.phase_stack?.next_node || "P1_RETRY_OR_REPAIR")}</p>
-      </div>`;
-  }
-
   const title = result.status === "ERROR" || result.error ? "Runtime Diagnostic" : "No HTML report returned";
   return `
     <div class="interface-report guardrail-failed">
@@ -276,10 +266,102 @@ function buildErrorResult({ response, result, error, payload }) {
     mode: state.health?.mode || "unknown",
     html_report: buildFallbackReportHtml({ status: "ERROR", error: err, message }),
     machine_json: result || {},
+    runtime_trace: result?.runtime_trace || null,
+    mechanical_validations: result?.mechanical_validations || {},
+    model_meta_by_phase: result?.model_meta_by_phase || {},
+    phase_top_level_presence: result?.phase_top_level_presence || {},
+    s0_counts: result?.s0_counts || {},
     technical_audit_log: result?.technical_audit_log || "",
     operator_challenge_gate: result?.operator_challenge_gate || {},
     vault_assembly_handoff: result?.vault_assembly_handoff || {},
     raw_output: result?.raw_output || ""
+  };
+}
+
+function renderRuntimeTracePanel(result) {
+  if (!els.runtimeTracePanel) return;
+  const trace = result?.runtime_trace || null;
+  if (!trace && !result?.mechanical_validations && !result?.completed_nodes) {
+    els.runtimeTracePanel.classList.add("hidden");
+    els.runtimeTracePanel.innerHTML = "";
+    return;
+  }
+
+  const completed = result.completed_nodes || result.phase_stack?.completed_nodes || [];
+  const failedNode = result.phase_stack?.failed_node || null;
+  const stages = trace?.stages || {};
+  const stageRows = Object.values(stages).map((stage) => `
+    <tr>
+      <td>${escapeHtml(stage.node_id || "")}</td>
+      <td>${escapeHtml(stage.status || "")}</td>
+      <td>${escapeHtml(String(stage.duration_ms ?? ""))}</td>
+      <td>${escapeHtml((stage.output_top_level_keys || []).join(", "))}</td>
+      <td>${escapeHtml((stage.validation?.errors || []).join("; "))}</td>
+    </tr>`).join("");
+
+  els.runtimeTracePanel.innerHTML = `
+    <div class="runtime-trace-head">
+      <div>
+        <p class="eyebrow">Runtime Trace</p>
+        <strong>${escapeHtml(result.status || "N/A")}</strong>
+      </div>
+      <span>${escapeHtml(result.run_id || "N/A")}</span>
+    </div>
+    <div class="runtime-trace-grid">
+      <div><span>Completed nodes</span><strong>${escapeHtml(completed.join(" -> ") || "N/A")}</strong></div>
+      <div><span>Current/failed node</span><strong>${escapeHtml(failedNode || result.phase_stack?.next_node || "N/A")}</strong></div>
+      <div><span>S0 counts</span><strong>${escapeHtml(JSON.stringify(result.s0_counts || {}))}</strong></div>
+      <div><span>Models</span><strong>${escapeHtml(Object.keys(result.model_meta_by_phase || {}).join(", ") || "N/A")}</strong></div>
+    </div>
+    <div class="runtime-trace-table-wrap">
+      <table class="runtime-trace-table">
+        <thead><tr><th>Node</th><th>Status</th><th>ms</th><th>Output keys</th><th>Errors</th></tr></thead>
+        <tbody>${stageRows || '<tr><td colspan="5">No per-stage trace returned.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <details open>
+      <summary>P6 route plan summary</summary>
+      <pre>${escapeHtml(JSON.stringify(trace?.p6?.route_plan_summary || {}, null, 2))}</pre>
+    </details>
+    <details>
+      <summary>P6 batch plan</summary>
+      <pre>${escapeHtml(JSON.stringify(trace?.p6?.model_batch_plan || [], null, 2))}</pre>
+    </details>
+    <details>
+      <summary>Mechanical validations</summary>
+      <pre>${escapeHtml(JSON.stringify(result.mechanical_validations || {}, null, 2))}</pre>
+    </details>
+    <details>
+      <summary>Model meta</summary>
+      <pre>${escapeHtml(JSON.stringify(result.model_meta_by_phase || {}, null, 2))}</pre>
+    </details>
+    <details>
+      <summary>Errors and warnings</summary>
+      <pre>${escapeHtml(JSON.stringify(collectTraceIssues(trace, result), null, 2))}</pre>
+    </details>`;
+  els.runtimeTracePanel.classList.remove("hidden");
+}
+
+function compactRuntimeTraceForDisplay(trace) {
+  return {
+    run_id: trace.run_id,
+    started_at: trace.started_at,
+    ended_at: trace.ended_at,
+    active_runtime: trace.active_runtime,
+    stages: trace.stages,
+    gates: trace.gates,
+    models: trace.models,
+    p6: trace.p6,
+    events: trace.events
+  };
+}
+
+function collectTraceIssues(trace, result) {
+  const events = trace?.events || [];
+  return {
+    result_error: result?.error || null,
+    event_errors: events.filter((event) => (event.errors || []).length).map((event) => ({ node_id: event.node_id, summary: event.summary, errors: event.errors })),
+    event_warnings: events.filter((event) => (event.warnings || []).length).map((event) => ({ node_id: event.node_id, summary: event.summary, warnings: event.warnings }))
   };
 }
 
@@ -495,6 +577,9 @@ function escapeHtml(value) {
     if (result?.hybrid_evidence_packet?.source_review) chunks.push("[HYBRID_SOURCE_REVIEW]\n" + JSON.stringify(result.hybrid_evidence_packet.source_review, null, 2));
     if (result?.hybrid_evidence_packet?.warnings?.length) chunks.push("[HYBRID_WARNINGS]\n" + JSON.stringify(result.hybrid_evidence_packet.warnings, null, 2));
     if (result?.operator_challenge_gate) chunks.push("[OPERATOR_CHALLENGE_GATE]\n" + JSON.stringify(result.operator_challenge_gate, null, 2));
+    if (result?.runtime_trace) chunks.push("[RUNTIME_TRACE]\n" + JSON.stringify(result.runtime_trace, null, 2));
+    if (result?.mechanical_validations) chunks.push("[MECHANICAL_VALIDATIONS]\n" + JSON.stringify(result.mechanical_validations, null, 2));
+    if (result?.model_meta_by_phase) chunks.push("[MODEL_META_BY_PHASE]\n" + JSON.stringify(result.model_meta_by_phase, null, 2));
     if (result?.technical_audit_log) chunks.push("[MODEL_TECHNICAL_AUDIT_LOG]\n" + result.technical_audit_log);
     if (result?.raw_output && !result?.technical_audit_log) chunks.push("[RAW_OUTPUT_HEAD]\n" + String(result.raw_output).slice(0, 12000));
     if (result?.error || result?.message) chunks.push("[ERROR_DIAGNOSTIC]\n" + JSON.stringify({ error: result.error || null, message: result.message || null }, null, 2));

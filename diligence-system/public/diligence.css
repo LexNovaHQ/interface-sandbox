@@ -177,12 +177,32 @@ section{scroll-margin-top:110px;}
 .field:focus{border-color:rgba(197,160,89,.72);box-shadow:0 0 0 4px rgba(197,160,89,.10);background:rgba(255,255,255,.05);}
 .field::placeholder{color:rgba(229,229,229,.3);}
 .textarea{resize:vertical;min-height:120px;}
+.diagnostic-controls{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr);gap:.8rem;align-items:end;border:1px solid rgba(197,160,89,.18);background:rgba(197,160,89,.04);border-radius:1rem;padding:.85rem;}
+@media(max-width:640px){.diagnostic-controls{grid-template-columns:1fr;}}
+.diagnostic-toggle{display:flex;align-items:center;gap:.65rem;min-height:48px;color:rgba(229,229,229,.78);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800;}
+.diagnostic-toggle input{width:18px;height:18px;accent-color:var(--gold);}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.8rem 1.05rem;border-radius:999px;border:1px solid rgba(197,160,89,.48);color:var(--gold);background:rgba(197,160,89,.06);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;font-weight:800;transition:all .25s;cursor:pointer;}
 .btn:hover,.btn:focus{background:rgba(197,160,89,.14);transform:translateY(-1px);outline:none;box-shadow:0 0 0 3px rgba(197,160,89,.12);}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
 .btn.sec{border-color:rgba(229,229,229,.18);color:var(--marble);background:rgba(255,255,255,.025);}
 .disclaimer{color:rgba(229,229,229,.42);font-size:.72rem;line-height:1.5;}
 .console{border:1px solid rgba(197,160,89,.18);background:rgba(0,0,0,.26);border-radius:1.1rem;padding:1rem;color:rgba(229,229,229,.72);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;line-height:1.55;white-space:pre-wrap;}
+.runtime-trace-panel{margin-top:1rem;border:1px solid rgba(197,160,89,.2);background:rgba(0,0,0,.24);border-radius:1.1rem;padding:1rem;color:rgba(229,229,229,.78);font-size:.78rem;line-height:1.5;}
+.runtime-trace-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.85rem;}
+.runtime-trace-head strong{display:block;margin-top:.2rem;color:rgba(245,245,245,.9);font-size:1rem;}
+.runtime-trace-head span{color:rgba(229,229,229,.46);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}
+.runtime-trace-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;margin-bottom:.9rem;}
+@media(max-width:720px){.runtime-trace-grid{grid-template-columns:1fr;}}
+.runtime-trace-grid div{border:1px solid rgba(229,229,229,.1);background:rgba(255,255,255,.025);border-radius:.75rem;padding:.65rem;min-width:0;}
+.runtime-trace-grid span{display:block;color:rgba(229,229,229,.44);font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;font-weight:800;}
+.runtime-trace-grid strong{display:block;margin-top:.28rem;color:rgba(245,245,245,.82);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.72rem;overflow-wrap:anywhere;}
+.runtime-trace-table-wrap{overflow:auto;border:1px solid rgba(197,160,89,.14);border-radius:.8rem;margin:.8rem 0;}
+.runtime-trace-table{width:100%;border-collapse:collapse;min-width:680px;font-size:.72rem;}
+.runtime-trace-table th,.runtime-trace-table td{border-bottom:1px solid rgba(229,229,229,.08);padding:.55rem;text-align:left;vertical-align:top;}
+.runtime-trace-table th{color:var(--gold);background:rgba(197,160,89,.06);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;}
+.runtime-trace-panel details{border-top:1px solid rgba(229,229,229,.08);padding-top:.6rem;margin-top:.6rem;}
+.runtime-trace-panel summary{cursor:pointer;color:var(--gold);font-weight:800;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;}
+.runtime-trace-panel pre{max-height:340px;overflow:auto;white-space:pre-wrap;color:rgba(229,229,229,.76);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.72rem;}
 .tabbar{display:flex;flex-wrap:wrap;gap:.45rem;}
 .tab{border:1px solid rgba(229,229,229,.16);border-radius:999px;padding:.42rem .7rem;color:rgba(229,229,229,.6);background:rgba(255,255,255,.02);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;}
 .tab.active{color:var(--gold);border-color:rgba(197,160,89,.54);background:rgba(197,160,89,.08);}
