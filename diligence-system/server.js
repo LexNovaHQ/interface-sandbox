@@ -3,6 +3,12 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import { loadPromptStack, runPhaseStack } from "./phase-runner.js";
+import {
+  createRun,
+  getRun,
+  advanceRun,
+  getRunResult
+} from "./run-manager.js";
 import { PHASE_POOL_ENV, buildRuntimePool, callGeminiClient, fingerprint } from "./gemini-client.js";
 
 const __filename = fileURLToPath(import.meta.url);
