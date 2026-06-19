@@ -73,6 +73,14 @@ function resolveArtifactPath({ runId, nodeId, baseDir }) {
   return path.join(resolveArtifactsDir({ runId, baseDir }), `${nodeId}.json`);
 }
 
+
+function resolveScratchpadPath({ runId, baseDir }) {
+  return path.join(resolveRunDir({ runId, baseDir }), "scratchpad.json");
+}
+
+function resolveForensicsPath({ runId, baseDir }) {
+  return path.join(resolveRunDir({ runId, baseDir }), "forensics.json");
+}
 async function pathExists(filePath) {
   try {
     await fs.access(filePath);
@@ -193,6 +201,49 @@ export async function writeRunState({ runId, state, baseDir } = {}) {
   await atomicWriteJson(path.join(runDir, "state.json"), nextState);
 
   return nextState;
+}
+
+
+export async function readRunScratchpad({ runId, baseDir } = {}) {
+  const scratchpadPath = resolveScratchpadPath({ runId, baseDir });
+
+  if (!(await pathExists(scratchpadPath))) {
+    return null;
+  }
+
+  return readJsonFile(scratchpadPath);
+}
+
+export async function writeRunScratchpad({ runId, scratchpad, baseDir } = {}) {
+  if (!scratchpad || typeof scratchpad !== "object" || Array.isArray(scratchpad)) {
+    throw new Error("INVALID_RUN_SCRATCHPAD: scratchpad must be an object");
+  }
+
+  const scratchpadPath = resolveScratchpadPath({ runId, baseDir });
+  await atomicWriteJson(scratchpadPath, scratchpad);
+
+  return scratchpad;
+}
+
+export async function readRunForensics({ runId, baseDir } = {}) {
+  const forensicsPath = resolveForensicsPath({ runId, baseDir });
+
+  if (!(await pathExists(forensicsPath))) {
+    return null;
+  }
+
+  return readJsonFile(forensicsPath);
+}
+
+export async function writeRunForensics({ runId, forensics, baseDir } = {}) {
+  if (!forensics || typeof forensics !== "object" || Array.isArray(forensics)) {
+    throw new Error("INVALID_RUN_FORENSICS: forensics must be an object");
+  }
+
+  const forensicsPath = resolveForensicsPath({ runId, baseDir });
+  await atomicWriteJson(forensicsPath, forensics);
+
+  return forensics;
 }
 
 export async function writeArtifact({ runId, nodeId, artifact, baseDir } = {}) {
