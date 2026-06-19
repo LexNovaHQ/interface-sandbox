@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/compilerOutput.schema.json",
+  "title": "Diligence Compiler Output",
+  "description": "Stage 9 / Node 5 compiler-only output. Canonical Stage 4/5 slices are target_profile_v2 and feature_profile_v2. Legacy target_profile, primary_product, and product_feature_map are not compiler truth. This schema excludes Node 5B backend-owned fields: vault_prefill_suggestions, assembly_handoff, and handoff_envelope.",
+  "type": "object",
+  "required": [
+    "diligence_run",
+    "source_bundle_summary",
+    "target_profile_v2",
+    "feature_profile_v2",
+    "legal_stack",
+    "document_stack_redline",
+    "threat_registry_summary",
+    "feature_to_threat_matrix",
+    "findings",
+    "controlled_rows",
+    "insufficient_evidence_rows",
+    "assembly_route",
+    "report_data",
+    "technical_audit_log",
+    "threat_findings",
+    "vault_confirmation_questions",
+    "disclaimer"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "diligence_run": {
+      "type": "object",
+      "required": ["run_id", "source_mode", "compiler_status"],
+      "additionalProperties": true,
+      "properties": {
+        "run_id": { "type": "string" },
+        "submitted_at": { "type": "string" },
+        "created_at": { "type": "string" },
+        "source_mode": { "type": "string", "enum": ["url", "text", "url_plus_text"] },
+        "compiler_status": { "type": "string" }
+      }
+    },
+    "source_bundle_summary": { "type": "object", "additionalProperties": true },
+    "target_profile_v2": { "type": "object", "additionalProperties": true },
+    "feature_profile_v2": { "type": "object", "additionalProperties": true },
+    "legal_stack": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "document_stack_redline": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "threat_registry_summary": {
+      "type": "object",
+      "required": ["registry_count_loaded", "registry_count_evaluated", "status_counts"],
+      "additionalProperties": true,
+      "properties": {
+        "registry_count_loaded": { "type": "integer", "minimum": 0 },
+        "registry_count_evaluated": { "type": "integer", "minimum": 0 },
+        "status_counts": {
+          "type": "object",
+          "required": ["TRIGGERED", "CONTROLLED", "NOT_TRIGGERED", "NOT_APPLICABLE", "INSUFFICIENT_EVIDENCE"],
+          "additionalProperties": false,
+          "properties": {
+            "TRIGGERED": { "type": "integer", "minimum": 0 },
+            "CONTROLLED": { "type": "integer", "minimum": 0 },
+            "NOT_TRIGGERED": { "type": "integer", "minimum": 0 },
+            "NOT_APPLICABLE": { "type": "integer", "minimum": 0 },
+            "INSUFFICIENT_EVIDENCE": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "feature_to_threat_matrix": { "type": "array", "items": { "$ref": "#/$defs/featureThreatMatrixItem" } },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "controlled_rows": { "type": "array", "items": { "$ref": "#/$defs/controlledRow" } },
+    "insufficient_evidence_rows": { "type": "array", "items": { "$ref": "#/$defs/insufficientEvidenceRow" } },
+    "assembly_route": {
+      "type": "object",
+      "required": ["recommended_package", "document_routes", "route_reasoning", "local_counsel_review_required", "vault_confirmation_question_count", "backend_assembler_note"],
+      "additionalProperties": true,
+      "properties": {
+        "recommended_package": { "type": "string" },
+        "document_routes": { "type": "array", "items": { "type": "string" } },
+        "route_reasoning": { "type": "string" },
+        "local_counsel_review_required": { "type": "boolean" },
+        "vault_confirmation_question_count": { "type": "integer", "minimum": 0 },
+        "backend_assembler_note": { "type": "string" }
+      }
+    },
+    "report_data": {
+      "type": "object",
+      "required": ["executive_report", "full_forensic_record"],
+      "additionalProperties": false,
+      "properties": {
+        "executive_report": { "type": "object", "additionalProperties": true },
+        "full_forensic_record": {
+          "type": "object",
+          "required": ["source_review", "artifact_inventory", "feature_inventory", "feature_to_threat_matrix", "document_stack_redline", "triggered_findings", "controlled_rows", "insufficient_evidence_rows", "assembly_route", "technical_audit_log"],
+          "additionalProperties": false,
+          "properties": {
+            "source_review": { "type": "object", "additionalProperties": true },
+            "artifact_inventory": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+            "feature_inventory": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+            "feature_to_threat_matrix": { "type": "array", "items": { "$ref": "#/$defs/featureThreatMatrixItem" } },
+            "document_stack_redline": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+            "triggered_findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+            "controlled_rows": { "type": "array", "items": { "$ref": "#/$defs/controlledRow" } },
+            "insufficient_evidence_rows": { "type": "array", "items": { "$ref": "#/$defs/insufficientEvidenceRow" } },
+            "assembly_route": { "type": "object", "additionalProperties": true },
+            "technical_audit_log": { "type": "array", "items": { "$ref": "#/$defs/auditEntry" } }
+          }
+        }
+      }
+    },
+    "technical_audit_log": { "type": "array", "items": { "$ref": "#/$defs/auditEntry" } },
+    "threat_findings": { "type": "array", "items": { "$ref": "#/$defs/threatFinding" } },
+    "vault_confirmation_questions": { "type": "array", "items": { "$ref": "#/$defs/vaultConfirmationQuestion" } },
+    "disclaimer": { "type": "string", "const": "Public demo. No legal advice. Public or user-provided materials only. Do not submit confidential information. Outputs are demo artifacts requiring qualified legal review before use." }
+  },
+  "$defs": {
+    "finding": { "type": "object", "required": ["finding_id", "threat_id", "threat_name", "status", "linked_feature_ids", "evidence", "trigger_evaluation", "document_routes", "vault_dependencies", "finding_memo_note"], "additionalProperties": true, "properties": { "finding_id": { "type": "string" }, "threat_id": { "type": "string" }, "threat_name": { "type": "string" }, "status": { "const": "TRIGGERED" }, "linked_feature_ids": { "type": "array", "items": { "type": "string" } }, "evidence": { "type": "object", "additionalProperties": true }, "trigger_evaluation": { "type": "object", "additionalProperties": true }, "document_routes": { "type": "array", "items": { "type": "string" } }, "vault_dependencies": { "type": "array", "items": { "$ref": "#/$defs/vaultFieldPath" } }, "finding_memo_note": { "type": "string" } } },
+    "controlledRow": { "type": "object", "required": ["threat_id", "threat_name", "status", "linked_feature_ids", "control_basis", "evidence_ref", "reasoning_summary", "document_routes", "technical_note"], "additionalProperties": true, "properties": { "threat_id": { "type": "string" }, "threat_name": { "type": "string" }, "status": { "const": "CONTROLLED" }, "linked_feature_ids": { "type": "array", "items": { "type": "string" } }, "control_basis": { "type": "string" }, "evidence_ref": { "type": "string" }, "reasoning_summary": { "type": "string" }, "document_routes": { "type": "array", "items": { "type": "string" } }, "technical_note": { "type": "string" } } },
+    "insufficientEvidenceRow": { "type": "object", "required": ["threat_id", "threat_name", "status", "linked_feature_ids", "missing_evidence", "evidence_ref", "reasoning_summary", "recommended_follow_up", "technical_note"], "additionalProperties": true, "properties": { "threat_id": { "type": "string" }, "threat_name": { "type": "string" }, "status": { "const": "INSUFFICIENT_EVIDENCE" }, "linked_feature_ids": { "type": "array", "items": { "type": "string" } }, "missing_evidence": { "type": "string" }, "evidence_ref": { "type": "string" }, "reasoning_summary": { "type": "string" }, "recommended_follow_up": { "type": "string" }, "technical_note": { "type": "string" } } },
+    "featureThreatMatrixItem": { "type": "object", "required": ["feature_ref", "feature_name", "archetype_codes", "surface_tokens", "triggered_threat_ids", "controlled_threat_ids", "insufficient_evidence_threat_ids", "not_triggered_threat_ids", "not_applicable_threat_ids", "document_routes", "summary"], "additionalProperties": true, "properties": { "feature_ref": { "type": "string" }, "feature_name": { "type": "string" }, "archetype_codes": { "type": "array", "items": { "type": "string" } }, "surface_tokens": { "type": "array", "items": { "type": "string" } }, "triggered_threat_ids": { "type": "array", "items": { "type": "string" } }, "controlled_threat_ids": { "type": "array", "items": { "type": "string" } }, "insufficient_evidence_threat_ids": { "type": "array", "items": { "type": "string" } }, "not_triggered_threat_ids": { "type": "array", "items": { "type": "string" } }, "not_applicable_threat_ids": { "type": "array", "items": { "type": "string" } }, "document_routes": { "type": "array", "items": { "type": "string" } }, "summary": { "type": "string" } } },
+    "auditEntry": { "type": "object", "required": ["entry_type", "message", "severity"], "additionalProperties": true, "properties": { "entry_type": { "type": "string" }, "threat_id": { "type": "string" }, "status": { "type": "string" }, "message": { "type": "string" }, "source_ref": { "type": "string" }, "severity": { "type": "string", "enum": ["INFO", "WARNING", "ERROR"] } } },
+    "threatFinding": { "type": "object", "required": ["finding_id", "threat_id", "threat_name", "linked_feature_ids", "document_routes", "vault_dependencies", "severity", "status"], "additionalProperties": true, "properties": { "finding_id": { "type": "string" }, "threat_id": { "type": "string" }, "threat_name": { "type": "string" }, "linked_feature_ids": { "type": "array", "items": { "type": "string" } }, "document_routes": { "type": "array", "items": { "type": "string" } }, "vault_dependencies": { "type": "array", "items": { "$ref": "#/$defs/vaultFieldPath" } }, "severity": { "type": "string" }, "status": { "const": "TRIGGERED" } } },
+    "vaultConfirmationQuestion": { "type": "object", "required": ["field_path", "question", "why_it_matters", "source_finding_ids", "priority"], "additionalProperties": false, "properties": { "field_path": { "$ref": "#/$defs/vaultFieldPath" }, "question": { "type": "string" }, "why_it_matters": { "type": "string" }, "source_finding_ids": { "type": "array", "items": { "type": "string" } }, "priority": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] } } },
+    "vaultFieldPath": { "type": "string", "enum": ["baseline.company", "baseline.entity_type", "baseline.address", "baseline.legal_email", "baseline.privacy_email", "baseline.products", "baseline.jurisdiction.country", "baseline.jurisdiction.state", "baseline.market", "baseline.delivery.app", "baseline.delivery.api", "baseline.revenue_model", "baseline.acv", "baseline.has_beta", "baseline.output_ownership", "baseline.sla_type", "baseline.integrations.slack", "baseline.integrations.crm", "baseline.integrations.stripe", "baseline.integrations.github", "baseline.integrations.webhooks", "baseline.integrations.none", "baseline.reliance_threshold", "architecture.memory", "architecture.models", "architecture.sub_processors.openai", "architecture.sub_processors.anthropic", "architecture.sub_processors.google", "architecture.sub_processors.cohere", "architecture.sub_processors.mistral", "architecture.sub_processors.other", "architecture.sub_processors.url", "architecture.cloud_host", "architecture.vector_db", "archetypes.is_doer", "archetypes.is_orchestrator", "archetypes.agent_limits.session_cap", "archetypes.agent_limits.period_cap", "archetypes.agent_limits.retry_limit", "archetypes.agent_limits.loop_threshold", "archetypes.is_creator", "archetypes.is_reader", "archetypes.conversational_ui", "archetypes.sens_bio", "archetypes.is_judge", "archetypes.is_judge_hr", "archetypes.is_judge_legal", "archetypes.is_optimizer", "archetypes.sens_fin", "archetypes.is_shield", "archetypes.is_mover", "archetypes.is_generalist", "compliance.processes_pii", "compliance.eu_users", "compliance.ca_users", "compliance.other_regions", "compliance.sens_health", "compliance.sens_fin", "compliance.sens_employment", "compliance.minors", "compliance.distress", "compliance.standard_adults"] }
+  }
+}

@@ -1,0 +1,691 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/stage6Review.schema.json",
+  "title": "Stage 6 Review",
+  "description": "Single canonical Stage 6 schema. Stage 6A, Stage 6B, and integrated handoff components use this one contract and the shared Stage 6 vocabulary.",
+  "type": "object",
+  "required": [
+    "stage6_review_version",
+    "stage6_component",
+    "stage_role",
+    "input_refs",
+    "stage7_navigation_index",
+    "stage6_limitations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "stage6_review_version": { "const": "stage6_review_v1" },
+    "stage6_component": { "$ref": "#/$defs/stage6Component" },
+    "stage_role": { "const": "stage7_navigation_index" },
+    "input_refs": { "$ref": "#/$defs/inputRefs" },
+    "legal_document_cartography": { "$ref": "#/$defs/legalDocumentCartography" },
+    "data_provenance_profile": { "$ref": "#/$defs/dataProvenanceProfile" },
+    "stage7_navigation_index": { "$ref": "#/$defs/stage7NavigationIndex" },
+    "stage6_limitations": { "type": "array", "items": { "$ref": "#/$defs/stage6Limitation" } }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "stage6_component": { "const": "stage6a_legal_document_cartography" } } },
+      "then": {
+        "required": ["legal_document_cartography"],
+        "not": { "required": ["data_provenance_profile"] }
+      }
+    },
+    {
+      "if": { "properties": { "stage6_component": { "const": "stage6b_data_provenance" } } },
+      "then": {
+        "required": ["data_provenance_profile"],
+        "not": { "required": ["legal_document_cartography"] }
+      }
+    },
+    {
+      "if": { "properties": { "stage6_component": { "const": "stage6_integrated_handoff" } } },
+      "then": { "required": ["legal_document_cartography", "data_provenance_profile"] }
+    }
+  ],
+  "$defs": {
+    "stage6Component": { "type": "string", "enum": ["stage6a_legal_document_cartography", "stage6b_data_provenance", "stage6_integrated_handoff"] },
+    "standardSignal": { "type": "string", "enum": ["visible", "not_visible", "partial", "conflicting", "not_applicable", "unknown"] },
+    "controlSignal": { "type": "string", "enum": ["visible", "partial", "absent_after_search", "unclear", "not_applicable", "unknown"] },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low", "unknown"] },
+    "stringArray": { "type": "array", "items": { "type": "string" } },
+    "nullableString": { "type": ["string", "null"] },
+    "inputRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target_profile_version": { "type": "string" },
+        "feature_profile_version": { "type": "string" },
+        "source_bundle_version": { "type": "string" },
+        "target_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true },
+        "feature_profile_ref": { "type": ["string", "object", "null"], "additionalProperties": true }
+      }
+    },
+    "basisCode": {
+      "type": "string",
+      "enum": [
+        "source_bundle_record_ref",
+        "stage5_feature_ref",
+        "stage5_data_provenance",
+        "stage5_regulated_surface",
+        "stage5_architecture_hint",
+        "stage6_legal_unit_ref",
+        "stage6_control_signal_ref",
+        "stage6_data_flow_ref",
+        "direct_policy_signal",
+        "indirect_policy_signal",
+        "absence_after_search",
+        "macro_heading_classification",
+        "source_metadata",
+        "model_semantic_classification",
+        "deterministic_seed",
+        "unknown"
+      ]
+    },
+    "basisCodes": { "type": "array", "items": { "$ref": "#/$defs/basisCode" }, "uniqueItems": true },
+    "documentType": {
+      "type": "string",
+      "enum": [
+        "tos",
+        "privacy_policy",
+        "dpa",
+        "aup",
+        "sla",
+        "eula",
+        "cookie_policy",
+        "subprocessor_page",
+        "security_page",
+        "trust_center",
+        "status_page",
+        "ai_policy",
+        "responsible_ai_page",
+        "model_card",
+        "developer_terms",
+        "api_terms",
+        "community_guidelines",
+        "data_deletion_page",
+        "dsr_page",
+        "grievance_page",
+        "baa",
+        "hipaa_notice",
+        "data_transfer_addendum",
+        "terms_page",
+        "pricing_terms",
+        "service_description_page",
+        "other_valid_control_doc",
+        "unknown"
+      ]
+    },
+    "controlFamily": {
+      "type": "string",
+      "enum": [
+        "ai_disclosure",
+        "hallucination_disclaimer",
+        "hitl_mandate",
+        "acceptable_use",
+        "prohibited_use",
+        "privacy_notice",
+        "data_collection",
+        "data_use",
+        "data_sharing",
+        "subprocessor_disclosure",
+        "model_provider_disclosure",
+        "training_or_finetuning",
+        "retention",
+        "deletion",
+        "data_subject_rights",
+        "consent_withdrawal",
+        "grievance_channel",
+        "security_safeguards",
+        "breach_notice",
+        "cross_border_transfer",
+        "liability_cap",
+        "warranty_disclaimer",
+        "sla_performance",
+        "agentic_controls",
+        "commercial_terms",
+        "dispute_terms",
+        "ip_ownership",
+        "minor_access",
+        "automated_decision",
+        "sensitive_data",
+        "unknown"
+      ]
+    },
+    "sectionFunction": {
+      "type": "string",
+      "enum": [
+        "definitions",
+        "service_description",
+        "ai_disclosure",
+        "privacy_notice",
+        "data_processing_terms",
+        "subprocessor_terms",
+        "acceptable_use_rules",
+        "prohibited_use_rules",
+        "security_terms",
+        "breach_terms",
+        "retention_deletion_terms",
+        "rights_request_terms",
+        "cross_border_transfer_terms",
+        "liability_terms",
+        "warranty_disclaimer",
+        "sla_terms",
+        "agentic_controls",
+        "commercial_terms",
+        "dispute_terms",
+        "ip_ownership_terms",
+        "minor_access_terms",
+        "automated_decision_terms",
+        "sensitive_data_terms",
+        "other",
+        "unknown"
+      ]
+    },
+    "legalDocumentCartography": {
+      "type": "object",
+      "required": ["legal_document_inventory", "legal_document_index", "document_relationship_map", "document_control_signal_map", "document_mismatch_signal_map", "legal_document_summary_signals", "legal_document_limitations"],
+      "additionalProperties": false,
+      "properties": {
+        "legal_document_inventory": { "type": "array", "items": { "$ref": "#/$defs/legalDocumentInventoryItem" } },
+        "legal_document_index": { "type": "array", "items": { "$ref": "#/$defs/legalDocumentIndexItem" } },
+        "document_relationship_map": { "type": "array", "items": { "$ref": "#/$defs/documentRelationshipItem" } },
+        "document_control_signal_map": { "type": "array", "items": { "$ref": "#/$defs/documentControlSignalItem" } },
+        "document_mismatch_signal_map": { "type": "array", "items": { "$ref": "#/$defs/documentMismatchSignalItem" } },
+        "legal_document_summary_signals": { "$ref": "#/$defs/legalDocumentSummarySignals" },
+        "legal_document_limitations": { "type": "array", "items": { "$ref": "#/$defs/stage6Limitation" } }
+      }
+    },
+    "legalDocumentInventoryItem": {
+      "type": "object",
+      "required": ["document_id", "document_type", "document_family", "document_title", "document_status", "access_status", "source_record_ref", "source_url", "final_url", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "document_id": { "type": "string" },
+        "document_type": { "$ref": "#/$defs/documentType" },
+        "document_family": { "type": "string", "enum": ["core", "supplemental", "embedded", "operational", "unknown"] },
+        "document_title": { "type": "string" },
+        "document_status": { "type": "string", "enum": ["visible", "embedded", "linked", "not_visible", "unknown"] },
+        "access_status": { "type": "string", "enum": ["ingested", "metadata_only", "fetch_failed", "blocked", "not_attempted", "unknown"] },
+        "source_record_ref": { "type": "string" },
+        "source_url": { "type": "string" },
+        "final_url": { "$ref": "#/$defs/nullableString" },
+        "parent_document_id": { "$ref": "#/$defs/nullableString" },
+        "effective_date": { "type": "string" },
+        "last_updated": { "type": "string" },
+        "version": { "type": "string" },
+        "jurisdiction_scope": { "$ref": "#/$defs/stringArray" },
+        "language": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "legalDocumentIndexItem": {
+      "type": "object",
+      "required": ["index_id", "document_id", "legal_unit_id", "legal_unit_type", "legal_unit_title", "legal_unit_path", "legal_unit_order", "section_function", "control_families_detected", "feature_refs", "data_flow_refs", "source_record_ref", "source_locator", "basis_codes", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "index_id": { "type": "string" },
+        "document_id": { "type": "string" },
+        "legal_unit_id": { "type": "string" },
+        "legal_unit_type": { "type": "string", "enum": ["main_section", "annexure", "schedule", "exhibit", "linked_policy", "material_table", "control_notice", "unknown"] },
+        "legal_unit_title": { "type": "string" },
+        "legal_unit_path": { "type": "string" },
+        "legal_unit_order": { "type": "integer", "minimum": 1 },
+        "section_function": { "$ref": "#/$defs/sectionFunction" },
+        "control_families_detected": { "type": "array", "items": { "$ref": "#/$defs/controlFamily" } },
+        "feature_refs": { "$ref": "#/$defs/stringArray" },
+        "data_flow_refs": { "$ref": "#/$defs/stringArray" },
+        "source_record_ref": { "type": "string" },
+        "source_locator": { "$ref": "#/$defs/sourceLocator" },
+        "basis_codes": { "$ref": "#/$defs/basisCodes" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "sourceLocator": {
+      "type": "object",
+      "required": ["locator_type", "locator_value"],
+      "additionalProperties": false,
+      "properties": {
+        "locator_type": { "$ref": "#/$defs/locatorType" },
+        "locator_value": { "type": "string" }
+      }
+    },
+    "documentRelationshipItem": {
+      "type": "object",
+      "required": ["relationship_id", "from_ref", "to_ref", "relationship_type", "basis_codes", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "relationship_id": { "type": "string" },
+        "from_ref": { "type": "string" },
+        "to_ref": { "type": "string" },
+        "relationship_type": { "type": "string", "enum": ["incorporates_by_reference", "supplements", "controls_on_conflict", "linked_from", "defines_terms_for", "activates_when", "supersedes_for_subject_matter", "embedded_within", "unknown"] },
+        "basis_codes": { "$ref": "#/$defs/basisCodes" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "documentControlSignalItem": {
+      "type": "object",
+      "required": ["control_signal_id", "document_id", "legal_unit_id", "control_family", "control_signal", "basis_codes", "source_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "control_signal_id": { "type": "string" },
+        "document_id": { "type": "string" },
+        "legal_unit_id": { "type": "string" },
+        "control_family": { "$ref": "#/$defs/controlFamily" },
+        "control_signal": { "$ref": "#/$defs/controlSignal" },
+        "basis_codes": { "$ref": "#/$defs/basisCodes" },
+        "source_refs": { "$ref": "#/$defs/stringArray" },
+        "feature_refs": { "$ref": "#/$defs/stringArray" },
+        "data_flow_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "documentMismatchSignalItem": {
+      "type": "object",
+      "required": ["mismatch_id", "mismatch_type", "mismatch_signal", "expected_ref", "actual_ref", "control_family", "basis_codes", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "mismatch_id": { "type": "string" },
+        "mismatch_type": { "$ref": "#/$defs/mismatchType" },
+        "mismatch_signal": { "$ref": "#/$defs/mismatchSignal" },
+        "expected_ref": { "type": "string" },
+        "actual_ref": { "type": ["string", "null"] },
+        "control_family": { "$ref": "#/$defs/controlFamily" },
+        "basis_codes": { "$ref": "#/$defs/basisCodes" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "legalDocumentSummarySignals": {
+      "type": "object",
+      "required": ["core_stack_status", "supplemental_artifacts_detected", "document_hierarchy_signal", "legal_document_coverage_signal", "major_unknowns"],
+      "additionalProperties": false,
+      "properties": {
+        "core_stack_status": {
+          "type": "object",
+          "required": ["tos", "privacy_policy", "dpa", "aup", "sla"],
+          "additionalProperties": false,
+          "properties": {
+            "tos": { "$ref": "#/$defs/standardSignal" },
+            "privacy_policy": { "$ref": "#/$defs/standardSignal" },
+            "dpa": { "$ref": "#/$defs/standardSignal" },
+            "aup": { "$ref": "#/$defs/standardSignal" },
+            "sla": { "$ref": "#/$defs/standardSignal" }
+          }
+        },
+        "supplemental_artifacts_detected": { "$ref": "#/$defs/stringArray" },
+        "document_hierarchy_signal": { "$ref": "#/$defs/standardSignal" },
+        "legal_document_coverage_signal": { "$ref": "#/$defs/standardSignal" },
+        "major_unknowns": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "dataProvenanceProfile": {
+      "type": "object",
+      "required": ["data_provenance_profile_version", "data_flow_profile", "data_profile_summary_signals", "data_profile_limitations"],
+      "additionalProperties": false,
+      "properties": {
+        "data_provenance_profile_version": { "const": "data_provenance_profile_v1" },
+        "data_flow_profile": { "type": "array", "items": { "$ref": "#/$defs/dataFlowProfileItem" } },
+        "data_profile_summary_signals": { "$ref": "#/$defs/dataProfileSummarySignals" },
+        "data_profile_limitations": { "type": "array", "items": { "$ref": "#/$defs/stage6Limitation" } }
+      }
+    },
+    "dataFlowProfileItem": {
+      "type": "object",
+      "required": ["data_flow_id", "feature_id", "provenance_id", "feature_role", "flow_role", "data_subject", "data_category", "processing", "role_allocation", "regime_relevance", "notice", "consent_basis", "rights", "processor_chain", "transfer_location", "retention_deletion_ai", "security_accountability", "source_trace", "basis_codes", "source_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "data_flow_id": { "type": "string" },
+        "feature_id": { "type": "string" },
+        "provenance_id": { "type": "string" },
+        "feature_role": { "type": "string", "enum": ["core", "supporting", "contextual", "unknown"] },
+        "flow_role": { "type": "string", "enum": ["primary_input", "secondary_input", "system_metadata", "generated_output", "stored_record", "third_party_transfer", "derived_data", "unknown"] },
+        "data_subject": { "$ref": "#/$defs/dataSubject" },
+        "data_category": { "$ref": "#/$defs/dataCategory" },
+        "processing": { "$ref": "#/$defs/processing" },
+        "role_allocation": { "$ref": "#/$defs/roleAllocation" },
+        "regime_relevance": { "$ref": "#/$defs/regimeRelevance" },
+        "notice": { "$ref": "#/$defs/notice" },
+        "consent_basis": { "$ref": "#/$defs/consentBasis" },
+        "rights": { "$ref": "#/$defs/rights" },
+        "processor_chain": { "$ref": "#/$defs/processorChain" },
+        "transfer_location": { "$ref": "#/$defs/transferLocation" },
+        "retention_deletion_ai": { "$ref": "#/$defs/retentionDeletionAi" },
+        "security_accountability": { "$ref": "#/$defs/securityAccountability" },
+        "source_trace": { "$ref": "#/$defs/sourceTrace" },
+        "basis_codes": { "$ref": "#/$defs/basisCodes" },
+        "source_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "dataSubjectType": { "type": "string", "enum": ["customer_user", "end_user", "employee", "contractor", "website_visitor", "developer_user", "child_or_minor", "business_contact", "unknown"] },
+    "dataCategoryType": { "type": "string", "enum": ["account_data", "contact_data", "usage_data", "device_data", "network_data", "location_data", "prompt_input", "uploaded_file", "generated_output", "embedding_vector", "action_log", "payment_data", "support_ticket", "employee_hr_data", "creative_work_product", "source_code", "credential_or_secret", "client_confidential_data", "biometric_data", "health_data", "financial_data", "unknown"] },
+    "collectionContext": { "type": "string", "enum": ["user_provided", "customer_provided", "employee_provided", "automatically_collected", "third_party_imported", "system_generated", "derived_or_inferred", "unknown"] },
+    "processingAction": { "type": "string", "enum": ["collect", "store", "retrieve", "generate", "summarize", "classify", "embed", "rank", "route", "transmit", "log", "monitor", "delete", "anonymize", "aggregate", "fine_tune", "unknown"] },
+    "processingPurpose": { "type": "string", "enum": ["service_delivery", "ai_generation", "personalization", "analytics", "security", "billing", "support", "compliance", "product_improvement", "model_training", "fraud_prevention", "internal_governance", "unknown"] },
+    "outputCategory": { "type": "string", "enum": ["ai_output", "recommendation", "classification", "decision_support", "automated_action", "system_log", "analytics", "none", "unknown"] },
+    "roleAllocationValue": { "type": "string", "enum": ["controller", "processor", "subprocessor", "service_provider", "business", "third_party", "independent_controller", "principal", "agent", "platform_provider", "not_visible", "not_applicable", "unknown"] },
+    "regimeBasisTag": { "type": "string", "enum": ["personal_data", "sensitive_data", "children_data", "employee_data", "automated_decision", "high_risk_ai", "cross_border_transfer", "processor_relationship", "subprocessor_relationship", "consumer_rights", "deletion_rights", "training_or_finetuning", "unknown"] },
+    "recipientCategory": { "type": "string", "enum": ["model_provider", "cloud_provider", "payment_provider", "analytics_provider", "support_provider", "security_provider", "workflow_provider", "storage_provider", "unknown"] },
+    "region": { "type": "string", "enum": ["us", "eu", "uk", "india", "canada", "australia", "singapore", "global", "not_visible", "unknown"] },
+    "evidenceStrength": { "type": "string", "enum": ["direct_source", "inferred_from_stage5", "inferred_from_stage4", "model_classified", "unknown"] },
+    "dataSignalType": { "type": "string", "enum": ["personal_data", "sensitive_data", "children_data", "credential_or_secret", "client_confidential", "biometric_data", "financial_data", "health_data", "training_or_finetuning", "processor_chain", "cross_border_transfer", "deletion", "notice", "automated_decision", "unknown"] },
+    "dataSubject": {
+      "type": "object",
+      "required": ["subject_type", "subject_labels", "minor_signal", "employee_signal", "customer_signal", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "subject_type": { "$ref": "#/$defs/dataSubjectType" },
+        "subject_labels": { "$ref": "#/$defs/stringArray" },
+        "minor_signal": { "$ref": "#/$defs/standardSignal" },
+        "employee_signal": { "$ref": "#/$defs/standardSignal" },
+        "customer_signal": { "$ref": "#/$defs/standardSignal" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "dataCategory": {
+      "type": "object",
+      "required": ["category_types", "personal_data_signal", "sensitive_data_signal", "credential_or_secret_signal", "client_confidential_signal", "biometric_signal", "financial_data_signal", "health_data_signal", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "category_types": { "type": "array", "items": { "$ref": "#/$defs/dataCategoryType" } },
+        "personal_data_signal": { "$ref": "#/$defs/standardSignal" },
+        "sensitive_data_signal": { "$ref": "#/$defs/standardSignal" },
+        "credential_or_secret_signal": { "$ref": "#/$defs/standardSignal" },
+        "client_confidential_signal": { "$ref": "#/$defs/standardSignal" },
+        "biometric_signal": { "$ref": "#/$defs/standardSignal" },
+        "financial_data_signal": { "$ref": "#/$defs/standardSignal" },
+        "health_data_signal": { "$ref": "#/$defs/standardSignal" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "processing": {
+      "type": "object",
+      "required": ["collection_context", "processing_actions", "processing_purpose", "output_category", "storage_signal", "embedding_signal", "fine_tuning_signal", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "collection_context": { "$ref": "#/$defs/collectionContext" },
+        "processing_actions": { "type": "array", "items": { "$ref": "#/$defs/processingAction" } },
+        "processing_purpose": { "type": "array", "items": { "$ref": "#/$defs/processingPurpose" } },
+        "output_category": { "$ref": "#/$defs/outputCategory" },
+        "storage_signal": { "$ref": "#/$defs/standardSignal" },
+        "embedding_signal": { "$ref": "#/$defs/standardSignal" },
+        "fine_tuning_signal": { "$ref": "#/$defs/standardSignal" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "roleAllocation": {
+      "type": "object",
+      "required": ["provider_role", "customer_role", "model_provider_role", "subprocessor_role", "third_party_recipient_role", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "provider_role": { "$ref": "#/$defs/roleAllocationValue" },
+        "customer_role": { "$ref": "#/$defs/roleAllocationValue" },
+        "model_provider_role": { "$ref": "#/$defs/roleAllocationValue" },
+        "subprocessor_role": { "$ref": "#/$defs/roleAllocationValue" },
+        "third_party_recipient_role": { "$ref": "#/$defs/roleAllocationValue" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "regimeRelevance": {
+      "type": "object",
+      "required": ["gdpr_signal", "uk_gdpr_signal", "ccpa_cpra_signal", "dpdp_signal", "colorado_ai_signal", "eu_ai_act_signal", "basis_tags", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "gdpr_signal": { "$ref": "#/$defs/standardSignal" },
+        "uk_gdpr_signal": { "$ref": "#/$defs/standardSignal" },
+        "ccpa_cpra_signal": { "$ref": "#/$defs/standardSignal" },
+        "dpdp_signal": { "$ref": "#/$defs/standardSignal" },
+        "colorado_ai_signal": { "$ref": "#/$defs/standardSignal" },
+        "eu_ai_act_signal": { "$ref": "#/$defs/standardSignal" },
+        "basis_tags": { "type": "array", "items": { "$ref": "#/$defs/regimeBasisTag" } },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "notice": {
+      "type": "object",
+      "required": ["privacy_notice_signal", "ai_notice_signal", "model_provider_notice_signal", "subprocessor_notice_signal", "notice_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "privacy_notice_signal": { "$ref": "#/$defs/standardSignal" },
+        "ai_notice_signal": { "$ref": "#/$defs/standardSignal" },
+        "model_provider_notice_signal": { "$ref": "#/$defs/standardSignal" },
+        "subprocessor_notice_signal": { "$ref": "#/$defs/standardSignal" },
+        "notice_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "consentBasis": {
+      "type": "object",
+      "required": ["consent_signal", "contract_signal", "legitimate_interest_signal", "legal_obligation_signal", "withdrawal_signal", "basis_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "consent_signal": { "$ref": "#/$defs/standardSignal" },
+        "contract_signal": { "$ref": "#/$defs/standardSignal" },
+        "legitimate_interest_signal": { "$ref": "#/$defs/standardSignal" },
+        "legal_obligation_signal": { "$ref": "#/$defs/standardSignal" },
+        "withdrawal_signal": { "$ref": "#/$defs/standardSignal" },
+        "basis_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "rights": {
+      "type": "object",
+      "required": ["access_right_signal", "correction_right_signal", "deletion_right_signal", "portability_right_signal", "opt_out_signal", "withdrawal_right_signal", "grievance_signal", "nomination_signal", "rights_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "access_right_signal": { "$ref": "#/$defs/standardSignal" },
+        "correction_right_signal": { "$ref": "#/$defs/standardSignal" },
+        "deletion_right_signal": { "$ref": "#/$defs/standardSignal" },
+        "portability_right_signal": { "$ref": "#/$defs/standardSignal" },
+        "opt_out_signal": { "$ref": "#/$defs/standardSignal" },
+        "withdrawal_right_signal": { "$ref": "#/$defs/standardSignal" },
+        "grievance_signal": { "$ref": "#/$defs/standardSignal" },
+        "nomination_signal": { "$ref": "#/$defs/standardSignal" },
+        "rights_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "processorChain": {
+      "type": "object",
+      "required": ["model_provider_visible", "cloud_provider_visible", "payment_provider_visible", "analytics_provider_visible", "subprocessor_list_visible", "recipient_categories", "processor_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "model_provider_visible": { "$ref": "#/$defs/standardSignal" },
+        "cloud_provider_visible": { "$ref": "#/$defs/standardSignal" },
+        "payment_provider_visible": { "$ref": "#/$defs/standardSignal" },
+        "analytics_provider_visible": { "$ref": "#/$defs/standardSignal" },
+        "subprocessor_list_visible": { "$ref": "#/$defs/standardSignal" },
+        "recipient_categories": { "type": "array", "items": { "$ref": "#/$defs/recipientCategory" } },
+        "processor_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "transferLocation": {
+      "type": "object",
+      "required": ["cross_border_signal", "regions_visible", "transfer_basis_signal", "data_residency_signal", "location_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "cross_border_signal": { "$ref": "#/$defs/standardSignal" },
+        "regions_visible": { "type": "array", "items": { "$ref": "#/$defs/region" } },
+        "transfer_basis_signal": { "$ref": "#/$defs/standardSignal" },
+        "data_residency_signal": { "$ref": "#/$defs/standardSignal" },
+        "location_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "retentionDeletionAi": {
+      "type": "object",
+      "required": ["retention_period_visible", "deletion_channel_visible", "training_opt_out_visible", "embedding_retention_signal", "fine_tuning_prohibition_signal", "model_weight_deletion_signal", "ai_architecture_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "retention_period_visible": { "$ref": "#/$defs/standardSignal" },
+        "deletion_channel_visible": { "$ref": "#/$defs/standardSignal" },
+        "training_opt_out_visible": { "$ref": "#/$defs/standardSignal" },
+        "embedding_retention_signal": { "$ref": "#/$defs/standardSignal" },
+        "fine_tuning_prohibition_signal": { "$ref": "#/$defs/standardSignal" },
+        "model_weight_deletion_signal": { "$ref": "#/$defs/standardSignal" },
+        "ai_architecture_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "securityAccountability": {
+      "type": "object",
+      "required": ["encryption_signal", "access_control_signal", "audit_log_signal", "breach_notice_signal", "dpo_or_contact_signal", "security_legal_unit_refs", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "encryption_signal": { "$ref": "#/$defs/standardSignal" },
+        "access_control_signal": { "$ref": "#/$defs/standardSignal" },
+        "audit_log_signal": { "$ref": "#/$defs/standardSignal" },
+        "breach_notice_signal": { "$ref": "#/$defs/standardSignal" },
+        "dpo_or_contact_signal": { "$ref": "#/$defs/standardSignal" },
+        "security_legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "sourceTrace": {
+      "type": "object",
+      "required": ["feature_refs", "provenance_refs", "source_refs", "document_refs", "legal_unit_refs", "basis_codes", "evidence_strength"],
+      "additionalProperties": false,
+      "properties": {
+        "feature_refs": { "$ref": "#/$defs/stringArray" },
+        "provenance_refs": { "$ref": "#/$defs/stringArray" },
+        "source_refs": { "$ref": "#/$defs/stringArray" },
+        "document_refs": { "$ref": "#/$defs/stringArray" },
+        "legal_unit_refs": { "$ref": "#/$defs/stringArray" },
+        "basis_codes": { "$ref": "#/$defs/basisCodes" },
+        "evidence_strength": { "$ref": "#/$defs/evidenceStrength" }
+      }
+    },
+    "dataProfileSummarySignals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "personal_data_visible": { "$ref": "#/$defs/standardSignal" },
+        "sensitive_data_visible": { "$ref": "#/$defs/standardSignal" },
+        "children_data_visible": { "$ref": "#/$defs/standardSignal" },
+        "cross_border_visible": { "$ref": "#/$defs/standardSignal" },
+        "subprocessor_visible": { "$ref": "#/$defs/standardSignal" },
+        "training_or_finetuning_visible": { "$ref": "#/$defs/standardSignal" },
+        "deletion_channel_visible": { "$ref": "#/$defs/standardSignal" },
+        "automated_decision_visible": { "$ref": "#/$defs/standardSignal" }
+      }
+    },
+    "stage7NavigationIndex": {
+      "type": "object",
+      "required": ["feature_to_data_flow_index", "feature_to_legal_unit_index", "control_family_index", "data_signal_index", "legal_unit_source_locator_index", "absence_unknown_index", "fallback_source_packet"],
+      "additionalProperties": false,
+      "properties": {
+        "feature_to_data_flow_index": { "type": "array", "items": { "$ref": "#/$defs/featureToDataFlowIndexItem" } },
+        "feature_to_legal_unit_index": { "type": "array", "items": { "$ref": "#/$defs/featureToLegalUnitIndexItem" } },
+        "control_family_index": { "type": "array", "items": { "$ref": "#/$defs/controlFamilyIndexItem" } },
+        "data_signal_index": { "type": "array", "items": { "$ref": "#/$defs/dataSignalIndexItem" } },
+        "legal_unit_source_locator_index": { "type": "array", "items": { "$ref": "#/$defs/legalUnitSourceLocatorIndexItem" } },
+        "absence_unknown_index": { "type": "array", "items": { "$ref": "#/$defs/absenceUnknownIndexItem" } },
+        "fallback_source_packet": { "type": "array", "items": { "$ref": "#/$defs/fallbackSourcePacketItem" } }
+      }
+    },
+    "featureToDataFlowIndexItem": {
+      "type": "object",
+      "required": ["feature_id", "data_flow_ids", "provenance_ids", "data_categories", "surface_tokens"],
+      "additionalProperties": false,
+      "properties": {
+        "feature_id": { "type": "string" },
+        "data_flow_ids": { "$ref": "#/$defs/stringArray" },
+        "provenance_ids": { "$ref": "#/$defs/stringArray" },
+        "data_categories": { "$ref": "#/$defs/stringArray" },
+        "surface_tokens": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "featureToLegalUnitIndexItem": {
+      "type": "object",
+      "required": ["feature_id", "document_ids", "legal_unit_ids", "control_families"],
+      "additionalProperties": false,
+      "properties": {
+        "feature_id": { "type": "string" },
+        "document_ids": { "$ref": "#/$defs/stringArray" },
+        "legal_unit_ids": { "$ref": "#/$defs/stringArray" },
+        "control_families": { "type": "array", "items": { "$ref": "#/$defs/controlFamily" } }
+      }
+    },
+    "controlFamilyIndexItem": {
+      "type": "object",
+      "required": ["control_family", "control_signal", "control_signal_ids", "document_ids", "legal_unit_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "control_family": { "$ref": "#/$defs/controlFamily" },
+        "control_signal": { "$ref": "#/$defs/controlSignal" },
+        "control_signal_ids": { "$ref": "#/$defs/stringArray" },
+        "document_ids": { "$ref": "#/$defs/stringArray" },
+        "legal_unit_ids": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "dataSignalIndexItem": {
+      "type": "object",
+      "required": ["signal_type", "signal_value", "data_flow_ids", "feature_ids", "legal_unit_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "signal_type": { "$ref": "#/$defs/dataSignalType" },
+        "signal_value": { "$ref": "#/$defs/standardSignal" },
+        "data_flow_ids": { "$ref": "#/$defs/stringArray" },
+        "feature_ids": { "$ref": "#/$defs/stringArray" },
+        "legal_unit_ids": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "legalUnitSourceLocatorIndexItem": {
+      "type": "object",
+      "required": ["document_id", "legal_unit_id", "source_record_ref", "source_url", "locator_type", "locator_value"],
+      "additionalProperties": false,
+      "properties": {
+        "document_id": { "type": "string" },
+        "legal_unit_id": { "type": "string" },
+        "source_record_ref": { "type": "string" },
+        "source_url": { "type": "string" },
+        "locator_type": { "$ref": "#/$defs/locatorType" },
+        "locator_value": { "type": "string" }
+      }
+    },
+    "absenceUnknownIndexItem": {
+      "type": "object",
+      "required": ["signal_type", "object_ref", "search_scope", "absence_basis", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "signal_type": { "$ref": "#/$defs/dataSignalType" },
+        "object_ref": { "type": "string" },
+        "search_scope": { "type": "string" },
+        "absence_basis": { "type": "string", "enum": ["searched_legal_docs", "searched_privacy_docs", "searched_security_docs", "searched_trust_docs", "searched_public_sources", "source_not_available", "access_failed", "not_enough_context", "unknown"] },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "fallbackSourcePacketItem": {
+      "type": "object",
+      "required": ["source_record_ref", "source_url", "source_type", "reason_for_fallback"],
+      "additionalProperties": false,
+      "properties": {
+        "source_record_ref": { "type": "string" },
+        "source_url": { "type": "string" },
+        "source_type": { "$ref": "#/$defs/sourceType" },
+        "reason_for_fallback": { "$ref": "#/$defs/fallbackReason" }
+      }
+    },
+    "stage6Limitation": {
+      "type": "object",
+      "required": ["limitation_id", "scope", "reason_code", "impact_code", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "limitation_id": { "type": "string" },
+        "scope": { "type": "string" },
+        "reason_code": { "$ref": "#/$defs/limitationReasonCode" },
+        "impact_code": { "$ref": "#/$defs/limitationImpactCode" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "mismatchType": { "type": "string", "enum": ["feature_vs_document", "data_flow_vs_document", "document_vs_document", "claim_vs_absence", "stack_vs_reality", "unknown"] },
+    "mismatchSignal": { "type": "string", "enum": ["expected_signal_absent", "expected_signal_partial", "conflicting_signal", "source_absent", "source_unclear", "unknown"] },
+    "locatorType": { "type": "string", "enum": ["heading_path", "url_fragment", "text_anchor", "source_record", "page_url", "chunk_index", "unknown"] },
+    "sourceType": { "type": "string", "enum": ["legal_document", "privacy_document", "terms_document", "security_document", "trust_document", "status_document", "feature_source", "public_page", "api_doc", "help_doc", "source_bundle_record", "unknown"] },
+    "absenceBasis": { "type": "string", "enum": ["searched_legal_docs", "searched_privacy_docs", "searched_security_docs", "searched_trust_docs", "searched_public_sources", "source_not_available", "access_failed", "not_enough_context", "unknown"] },
+    "fallbackReason": { "type": "string", "enum": ["direct_source_verification_required", "stage6_signal_unknown", "stage6_signal_conflicting", "missing_legal_unit_ref", "hunter_trigger_requires_line_read", "source_locator_available", "source_scope_incomplete", "unindexed_admitted_source", "unknown"] },
+    "limitationReasonCode": { "type": "string", "enum": ["source_missing", "source_conflicting", "source_access_failed", "stage5_signal_unknown", "legal_unit_ref_missing", "low_confidence_inference", "model_skipped", "unknown"] },
+    "limitationImpactCode": { "type": "string", "enum": ["no_stage7_block", "requires_source_line_read", "reduces_confidence", "partial_navigation_only", "unknown"] }
+  }
+}

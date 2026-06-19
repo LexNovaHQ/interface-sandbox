@@ -1,0 +1,1365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://interface-sandbox.local/schemas/vault.schema.json",
+  "title": "Functional Assembly Intake Vault",
+  "description": "Canonical Functional Assembly Intake Vault. Single form contract between the Diligence Engine and Final Assembly. Contains a strict nested vault_payload, functional question sections, confirmation questions, and Assembly handoff intake. The visible form is organized by function; backend mapping preserves exact Vault field paths.",
+  "type": "object",
+  "required": [
+    "vault_schema_version",
+    "intake_mode",
+    "functional_sections",
+    "vault_payload",
+    "vault_prefill_suggestions",
+    "vault_confirmation_questions",
+    "assembly_handoff_intake",
+    "source_trace",
+    "status",
+    "submittedAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "vault_schema_version": {
+      "const": "functional_assembly_intake_vault_v1"
+    },
+    "intake_mode": {
+      "type": "string",
+      "enum": [
+        "diligence_to_assembly",
+        "manual_intake",
+        "hybrid"
+      ]
+    },
+    "functional_sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "company_jurisdiction_contacts": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "product_delivery_commercial_model": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "ai_functionality_autonomy_user_reliance": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "data_users_regulated_surfaces": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "technical_architecture_ai_supply_chain_integrations": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "contracting_output_customer_commitments": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "operational_controls_human_review_incident_handling": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "document_assembly_instructions": {
+          "$ref": "#/$defs/functionalSection"
+        },
+        "counsel_review_localisation": {
+          "$ref": "#/$defs/functionalSection"
+        }
+      },
+      "required": [
+        "company_jurisdiction_contacts",
+        "product_delivery_commercial_model",
+        "ai_functionality_autonomy_user_reliance",
+        "data_users_regulated_surfaces",
+        "technical_architecture_ai_supply_chain_integrations",
+        "contracting_output_customer_commitments",
+        "operational_controls_human_review_incident_handling",
+        "document_assembly_instructions",
+        "counsel_review_localisation"
+      ],
+      "description": "User-facing functional sections. These organize questions; they do not replace exact vault_payload paths."
+    },
+    "vault_payload": {
+      "$ref": "#/$defs/vaultPayload"
+    },
+    "vault_prefill_suggestions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "$ref": "#/$defs/prefillGroup"
+        },
+        "architecture": {
+          "$ref": "#/$defs/prefillGroup"
+        },
+        "archetypes": {
+          "$ref": "#/$defs/prefillGroup"
+        },
+        "compliance": {
+          "$ref": "#/$defs/prefillGroup"
+        }
+      },
+      "required": [
+        "baseline",
+        "architecture",
+        "archetypes",
+        "compliance"
+      ]
+    },
+    "vault_confirmation_questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/intakeQuestion"
+      }
+    },
+    "assembly_handoff_intake": {
+      "$ref": "#/$defs/assemblyHandoffIntake"
+    },
+    "source_trace": {
+      "$ref": "#/$defs/sourceTrace"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "intake_received",
+        "prefill_ready",
+        "needs_confirmation",
+        "assembly_ready"
+      ]
+    },
+    "submittedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "vaultFieldPath": {
+      "type": "string",
+      "enum": [
+        "baseline.company",
+        "baseline.entity_type",
+        "baseline.address",
+        "baseline.legal_email",
+        "baseline.privacy_email",
+        "baseline.products",
+        "baseline.jurisdiction.country",
+        "baseline.jurisdiction.state",
+        "baseline.market",
+        "baseline.delivery.web",
+        "baseline.delivery.app",
+        "baseline.delivery.mobile",
+        "baseline.delivery.api",
+        "baseline.revenue_model",
+        "baseline.acv",
+        "baseline.has_beta",
+        "baseline.output_ownership",
+        "baseline.sla_type",
+        "baseline.integrations.slack",
+        "baseline.integrations.crm",
+        "baseline.integrations.stripe",
+        "baseline.integrations.github",
+        "baseline.integrations.webhooks",
+        "baseline.integrations.email",
+        "baseline.integrations.calendar",
+        "baseline.integrations.ticketing",
+        "baseline.integrations.hris",
+        "baseline.integrations.payment_billing",
+        "baseline.integrations.database",
+        "baseline.integrations.custom_api",
+        "baseline.integrations.other",
+        "baseline.integrations.none",
+        "baseline.reliance_threshold",
+        "architecture.ai_provider_stack.providers",
+        "architecture.ai_provider_stack.other_providers",
+        "architecture.ai_provider_stack.hosting_model",
+        "architecture.ai_provider_stack.sends_customer_data_to_model_provider",
+        "architecture.ai_provider_stack.fallback_provider",
+        "architecture.ai_provider_stack.public_provider_disclosure_url",
+        "architecture.memory",
+        "architecture.models",
+        "architecture.sub_processors.openai",
+        "architecture.sub_processors.anthropic",
+        "architecture.sub_processors.google",
+        "architecture.sub_processors.cohere",
+        "architecture.sub_processors.mistral",
+        "architecture.sub_processors.azure_openai",
+        "architecture.sub_processors.aws_bedrock",
+        "architecture.sub_processors.meta_llama",
+        "architecture.sub_processors.deepseek",
+        "architecture.sub_processors.xai",
+        "architecture.sub_processors.other",
+        "architecture.sub_processors.url",
+        "architecture.cloud_host",
+        "architecture.vector_db",
+        "architecture.hosting_regions",
+        "architecture.deployment_model",
+        "architecture.model_improvement.customer_inputs_used_for_training",
+        "architecture.model_improvement.customer_inputs_used_for_evaluation",
+        "architecture.model_improvement.product_improvement_use",
+        "architecture.model_improvement.opt_out_available",
+        "architecture.storage_logging.stores_prompts",
+        "architecture.storage_logging.stores_uploaded_files",
+        "architecture.storage_logging.stores_generated_outputs",
+        "architecture.storage_logging.conversation_history",
+        "architecture.storage_logging.audit_logs",
+        "architecture.security_controls.encryption_at_rest",
+        "architecture.security_controls.encryption_in_transit",
+        "architecture.security_controls.status_or_trust_url",
+        "architecture.api_developer_config.api_or_sdk_available",
+        "architecture.api_developer_config.rate_limits_or_usage_limits",
+        "architecture.api_developer_config.customer_configurable_tools",
+        "archetypes.is_doer",
+        "archetypes.is_orchestrator",
+        "archetypes.agent_limits.session_cap",
+        "archetypes.agent_limits.period_cap",
+        "archetypes.agent_limits.retry_limit",
+        "archetypes.agent_limits.loop_threshold",
+        "archetypes.is_creator",
+        "archetypes.is_reader",
+        "archetypes.conversational_ui",
+        "archetypes.sens_bio",
+        "archetypes.is_judge",
+        "archetypes.is_judge_hr",
+        "archetypes.is_judge_legal",
+        "archetypes.is_optimizer",
+        "archetypes.sens_fin",
+        "archetypes.is_shield",
+        "archetypes.is_mover",
+        "archetypes.is_generalist",
+        "compliance.processes_pii",
+        "compliance.eu_users",
+        "compliance.ca_users",
+        "compliance.other_regions",
+        "compliance.sens_health",
+        "compliance.sens_fin",
+        "compliance.sens_employment",
+        "compliance.minors",
+        "compliance.distress",
+        "compliance.standard_adults"
+      ]
+    },
+    "answerType": {
+      "type": "string",
+      "enum": [
+        "text",
+        "textarea",
+        "email",
+        "url",
+        "number",
+        "date",
+        "boolean",
+        "yes_no",
+        "yes_no_unknown",
+        "single_select",
+        "multi_select",
+        "object",
+        "repeatable_table"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "triState": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no",
+        "unknown"
+      ]
+    },
+    "intakeQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "section_key": {
+          "type": "string"
+        },
+        "section_label": {
+          "type": "string"
+        },
+        "question_key": {
+          "type": "string"
+        },
+        "question": {
+          "type": "string"
+        },
+        "answer_type": {
+          "$ref": "#/$defs/answerType"
+        },
+        "answer": {},
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vault_match": {
+          "type": "string",
+          "enum": [
+            "perfect",
+            "partial",
+            "none"
+          ]
+        },
+        "vault_paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/vaultFieldPath"
+          },
+          "uniqueItems": true
+        },
+        "assembly_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "priority": {
+          "$ref": "#/$defs/priority"
+        },
+        "required_for": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prefill_status": {
+          "type": "string",
+          "enum": [
+            "prefilled",
+            "needs_confirmation",
+            "manual_only",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "match_notes": {
+          "type": "string"
+        },
+        "why_it_matters": {
+          "type": "string"
+        },
+        "source_context": {
+          "type": "string"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "related_finding_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "related_document_routes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "related_data_flow_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "section_key",
+        "question_key",
+        "question",
+        "answer_type",
+        "vault_match",
+        "vault_paths",
+        "assembly_paths",
+        "priority",
+        "required_for",
+        "prefill_status"
+      ]
+    },
+    "functionalSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "section_key": {
+          "type": "string"
+        },
+        "section_label": {
+          "type": "string"
+        },
+        "section_role": {
+          "type": "string"
+        },
+        "completion_status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "needs_confirmation",
+            "not_started"
+          ]
+        },
+        "prefill_summary": {
+          "type": "string"
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/intakeQuestion"
+          }
+        },
+        "section_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "section_key",
+        "section_label",
+        "section_role",
+        "completion_status",
+        "questions"
+      ]
+    },
+    "prefillSuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {},
+        "basis": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "source_finding_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_stage_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mapped_question_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "value",
+        "basis",
+        "confidence",
+        "source_finding_ids"
+      ]
+    },
+    "prefillGroup": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/prefillSuggestion"
+      }
+    },
+    "vaultPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "$ref": "#/$defs/baseline"
+        },
+        "architecture": {
+          "$ref": "#/$defs/architecture"
+        },
+        "archetypes": {
+          "$ref": "#/$defs/archetypes"
+        },
+        "compliance": {
+          "$ref": "#/$defs/compliance"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "intake_received",
+            "prefill_ready",
+            "needs_confirmation",
+            "assembly_ready"
+          ]
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "baseline",
+        "architecture",
+        "archetypes",
+        "compliance",
+        "status",
+        "submittedAt"
+      ]
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "company": {
+          "type": "string"
+        },
+        "entity_type": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "legal_email": {
+          "type": "string"
+        },
+        "privacy_email": {
+          "type": "string"
+        },
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "jurisdiction": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "country": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            }
+          }
+        },
+        "market": {
+          "type": "string",
+          "enum": [
+            "b2b",
+            "b2c",
+            "hybrid",
+            "unknown"
+          ]
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "web": {
+              "type": "boolean"
+            },
+            "app": {
+              "type": "boolean"
+            },
+            "mobile": {
+              "type": "boolean"
+            },
+            "api": {
+              "type": "boolean"
+            }
+          }
+        },
+        "revenue_model": {
+          "type": "string"
+        },
+        "acv": {
+          "type": "string"
+        },
+        "has_beta": {
+          "type": "boolean"
+        },
+        "output_ownership": {
+          "type": "string",
+          "enum": [
+            "full",
+            "limited",
+            "none",
+            "unknown"
+          ]
+        },
+        "sla_type": {
+          "type": "string",
+          "enum": [
+            "no",
+            "standard",
+            "custom",
+            "unknown"
+          ]
+        },
+        "integrations": {
+          "$ref": "#/$defs/integrations"
+        },
+        "reliance_threshold": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "company",
+        "products",
+        "jurisdiction",
+        "market",
+        "delivery",
+        "integrations"
+      ],
+      "description": "Company, product, delivery, commercial and customer-commitment payload fields."
+    },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slack": {
+          "type": "boolean"
+        },
+        "crm": {
+          "type": "boolean"
+        },
+        "stripe": {
+          "type": "boolean"
+        },
+        "github": {
+          "type": "boolean"
+        },
+        "webhooks": {
+          "type": "boolean"
+        },
+        "email": {
+          "type": "boolean"
+        },
+        "calendar": {
+          "type": "boolean"
+        },
+        "ticketing": {
+          "type": "boolean"
+        },
+        "hris": {
+          "type": "boolean"
+        },
+        "payment_billing": {
+          "type": "boolean"
+        },
+        "database": {
+          "type": "boolean"
+        },
+        "custom_api": {
+          "type": "boolean"
+        },
+        "none": {
+          "type": "boolean"
+        },
+        "other": {
+          "type": "string"
+        }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ai_provider_stack": {
+          "$ref": "#/$defs/aiProviderStack"
+        },
+        "memory": {
+          "type": "string",
+          "enum": [
+            "rag",
+            "stateless",
+            "finetuning",
+            "mixed",
+            "unknown"
+          ]
+        },
+        "models": {
+          "type": "string",
+          "enum": [
+            "selfhosted",
+            "thirdparty",
+            "mixed",
+            "unknown"
+          ]
+        },
+        "sub_processors": {
+          "$ref": "#/$defs/subProcessors"
+        },
+        "cloud_host": {
+          "type": "string"
+        },
+        "vector_db": {
+          "type": "string"
+        },
+        "hosting_regions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deployment_model": {
+          "type": "string",
+          "enum": [
+            "saas",
+            "customer_hosted",
+            "on_prem",
+            "private_cloud",
+            "hybrid",
+            "unknown"
+          ]
+        },
+        "model_improvement": {
+          "$ref": "#/$defs/modelImprovement"
+        },
+        "storage_logging": {
+          "$ref": "#/$defs/storageLogging"
+        },
+        "security_controls": {
+          "$ref": "#/$defs/securityControls"
+        },
+        "api_developer_config": {
+          "$ref": "#/$defs/apiDeveloperConfig"
+        }
+      },
+      "description": "Technical architecture, AI supply chain, subprocessors, hosting, storage/logging, security and developer configuration."
+    },
+    "aiProviderStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic",
+              "google_gemini",
+              "cohere",
+              "mistral",
+              "meta_llama",
+              "deepseek",
+              "xai",
+              "azure_openai",
+              "aws_bedrock",
+              "self_hosted_oss",
+              "other",
+              "unknown"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "other_providers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hosting_model": {
+          "type": "string",
+          "enum": [
+            "selfhosted",
+            "thirdparty",
+            "mixed",
+            "unknown"
+          ]
+        },
+        "sends_customer_data_to_model_provider": {
+          "$ref": "#/$defs/triState"
+        },
+        "fallback_provider": {
+          "type": "string"
+        },
+        "public_provider_disclosure_url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "providers"
+      ]
+    },
+    "subProcessors": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "openai": {
+          "type": "boolean"
+        },
+        "anthropic": {
+          "type": "boolean"
+        },
+        "google": {
+          "type": "boolean"
+        },
+        "cohere": {
+          "type": "boolean"
+        },
+        "mistral": {
+          "type": "boolean"
+        },
+        "azure_openai": {
+          "type": "boolean"
+        },
+        "aws_bedrock": {
+          "type": "boolean"
+        },
+        "meta_llama": {
+          "type": "boolean"
+        },
+        "deepseek": {
+          "type": "boolean"
+        },
+        "xai": {
+          "type": "boolean"
+        },
+        "other": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "description": "Compatibility provider flags plus subprocessor disclosure URL. User-facing form collects ai_provider_stack.providers first."
+    },
+    "modelImprovement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "customer_inputs_used_for_training": {
+          "$ref": "#/$defs/triState"
+        },
+        "customer_inputs_used_for_evaluation": {
+          "$ref": "#/$defs/triState"
+        },
+        "product_improvement_use": {
+          "$ref": "#/$defs/triState"
+        },
+        "opt_out_available": {
+          "$ref": "#/$defs/triState"
+        }
+      }
+    },
+    "storageLogging": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stores_prompts": {
+          "$ref": "#/$defs/triState"
+        },
+        "stores_uploaded_files": {
+          "$ref": "#/$defs/triState"
+        },
+        "stores_generated_outputs": {
+          "$ref": "#/$defs/triState"
+        },
+        "conversation_history": {
+          "$ref": "#/$defs/triState"
+        },
+        "audit_logs": {
+          "$ref": "#/$defs/triState"
+        },
+        "retention_summary": {
+          "type": "string"
+        }
+      }
+    },
+    "securityControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "encryption_at_rest": {
+          "$ref": "#/$defs/triState"
+        },
+        "encryption_in_transit": {
+          "$ref": "#/$defs/triState"
+        },
+        "status_or_trust_url": {
+          "type": "string"
+        }
+      }
+    },
+    "apiDeveloperConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "api_or_sdk_available": {
+          "$ref": "#/$defs/triState"
+        },
+        "rate_limits_or_usage_limits": {
+          "type": "string"
+        },
+        "customer_configurable_tools": {
+          "$ref": "#/$defs/triState"
+        }
+      }
+    },
+    "archetypes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "is_doer": {
+          "type": "boolean"
+        },
+        "is_orchestrator": {
+          "type": "boolean"
+        },
+        "agent_limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "session_cap": {
+              "type": "string"
+            },
+            "period_cap": {
+              "type": "string"
+            },
+            "retry_limit": {
+              "type": "string"
+            },
+            "loop_threshold": {
+              "type": "string"
+            }
+          }
+        },
+        "is_creator": {
+          "type": "boolean"
+        },
+        "is_reader": {
+          "type": "boolean"
+        },
+        "conversational_ui": {
+          "type": "boolean"
+        },
+        "sens_bio": {
+          "type": "boolean"
+        },
+        "is_judge": {
+          "type": "boolean"
+        },
+        "is_judge_hr": {
+          "type": "boolean"
+        },
+        "is_judge_legal": {
+          "type": "boolean"
+        },
+        "is_optimizer": {
+          "type": "boolean"
+        },
+        "sens_fin": {
+          "type": "boolean"
+        },
+        "is_shield": {
+          "type": "boolean"
+        },
+        "is_mover": {
+          "type": "boolean"
+        },
+        "is_generalist": {
+          "type": "boolean"
+        }
+      },
+      "description": "AI functionality, autonomy and risk archetype payload fields."
+    },
+    "compliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "processes_pii": {
+          "type": "string",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ]
+        },
+        "eu_users": {
+          "type": "boolean"
+        },
+        "ca_users": {
+          "type": "boolean"
+        },
+        "other_regions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sens_health": {
+          "type": "boolean"
+        },
+        "sens_fin": {
+          "type": "boolean"
+        },
+        "sens_employment": {
+          "type": "boolean"
+        },
+        "minors": {
+          "type": "boolean"
+        },
+        "distress": {
+          "type": "boolean"
+        },
+        "standard_adults": {
+          "type": "boolean"
+        }
+      },
+      "description": "Data, users and regulated surface payload fields."
+    },
+    "assemblyHandoffIntake": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "package_selection": {
+          "$ref": "#/$defs/packageSelection"
+        },
+        "document_routes": {
+          "$ref": "#/$defs/documentRoutes"
+        },
+        "drafting_preferences": {
+          "$ref": "#/$defs/draftingPreferences"
+        },
+        "output_options": {
+          "$ref": "#/$defs/outputOptions"
+        },
+        "localisation": {
+          "$ref": "#/$defs/localisation"
+        },
+        "local_counsel_review": {
+          "$ref": "#/$defs/localCounselReview"
+        },
+        "operational_controls": {
+          "$ref": "#/$defs/operationalControls"
+        },
+        "source_materials": {
+          "$ref": "#/$defs/sourceMaterials"
+        },
+        "unresolved_gap_policy": {
+          "$ref": "#/$defs/unresolvedGapPolicy"
+        },
+        "assembly_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "package_selection",
+        "document_routes",
+        "drafting_preferences",
+        "output_options",
+        "localisation",
+        "local_counsel_review",
+        "operational_controls",
+        "unresolved_gap_policy"
+      ]
+    },
+    "packageSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "selected_package": {
+          "type": "string",
+          "enum": [
+            "ai_terms_pack",
+            "privacy_dpa_pack",
+            "agent_governance_pack",
+            "full_ai_legal_architecture_pack",
+            "custom",
+            "unknown"
+          ]
+        },
+        "custom_package_description": {
+          "type": "string"
+        }
+      }
+    },
+    "documentRoutes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "selected_documents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "tos",
+              "privacy_policy",
+              "dpa",
+              "aup",
+              "sla",
+              "ai_agent_terms",
+              "ip_output_terms",
+              "subprocessor_schedule",
+              "human_review_protocol",
+              "internal_ai_sop",
+              "dpia_memo",
+              "security_addendum",
+              "api_terms",
+              "cookie_policy",
+              "counsel_issue_list",
+              "other"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "missing_document_policy": {
+          "type": "string",
+          "enum": [
+            "treat_as_drafting_target",
+            "ask_client_first",
+            "exclude_unless_confirmed",
+            "unknown"
+          ]
+        },
+        "existing_document_treatment": {
+          "type": "string",
+          "enum": [
+            "redline_update",
+            "draft_fresh",
+            "hybrid",
+            "reference_only",
+            "unknown"
+          ]
+        },
+        "other_document_description": {
+          "type": "string"
+        }
+      }
+    },
+    "draftingPreferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": [
+            "startup_friendly",
+            "enterprise_saas",
+            "developer_api",
+            "consumer",
+            "regulated_sector_cautious",
+            "custom",
+            "unknown"
+          ]
+        },
+        "risk_posture": {
+          "type": "string",
+          "enum": [
+            "founder_friendly",
+            "balanced",
+            "enterprise_buyer_friendly",
+            "conservative_legal_review_heavy",
+            "custom",
+            "unknown"
+          ]
+        },
+        "counsel_notes": {
+          "type": "boolean"
+        },
+        "jurisdiction_placeholders": {
+          "type": "boolean"
+        },
+        "preserve_brand_language": {
+          "type": "boolean"
+        },
+        "bracket_unresolved_gaps": {
+          "type": "boolean"
+        },
+        "custom_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "outputOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "review_ready_drafts": {
+          "type": "boolean"
+        },
+        "issue_list_for_counsel": {
+          "type": "boolean"
+        },
+        "counsel_checklist": {
+          "type": "boolean"
+        },
+        "executive_summary": {
+          "type": "boolean"
+        },
+        "machine_readable_exports": {
+          "type": "boolean"
+        }
+      }
+    },
+    "localisation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target_regions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "primary_jurisdiction": {
+          "type": "string"
+        },
+        "governing_law_instruction": {
+          "type": "string",
+          "enum": [
+            "selected",
+            "bracketed",
+            "counsel_to_decide",
+            "unknown"
+          ]
+        },
+        "courts_or_venue_instruction": {
+          "type": "string"
+        },
+        "localisation_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "localCounselReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local_counsel_review_required": {
+          "const": true
+        },
+        "priority_points": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counsel_templates_available": {
+          "type": "boolean"
+        },
+        "counsel_template_notes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_counsel_review_required"
+      ]
+    },
+    "operationalControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "human_approval_required_for": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "audit_logging": {
+          "$ref": "#/$defs/triState"
+        },
+        "escalation_owner": {
+          "type": "string"
+        },
+        "incident_response_or_shutdown": {
+          "type": "string"
+        },
+        "customer_notice_for_ai_use": {
+          "$ref": "#/$defs/triState"
+        },
+        "fallback_or_shutdown_rules": {
+          "type": "string"
+        }
+      }
+    },
+    "sourceMaterials": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client_templates_available": {
+          "type": "boolean"
+        },
+        "existing_docs_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "template_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "unresolvedGapPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "treatment": {
+          "type": "string",
+          "enum": [
+            "bracket_in_drafts",
+            "ask_before_assembly",
+            "counsel_notes_only",
+            "ignore_low_risk",
+            "unknown"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "sourceTrace": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "diligence_run_id": {
+          "type": "string"
+        },
+        "stage9_report_version": {
+          "type": "string"
+        },
+        "stage10_source_packet_version": {
+          "type": "string"
+        },
+        "evidence_cutoff": {
+          "type": "string"
+        },
+        "source_stage_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mapping_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

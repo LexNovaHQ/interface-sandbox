@@ -1,0 +1,913 @@
+{
+  "artifact_id": "registry_key_runtime",
+  "artifact_type": "registry_key",
+  "source_file": {
+    "filename": "REGISTRY_KEY_v3_0.md",
+    "sha256": "375a7ce1abe8f3298c0385645ef3138cb745973bcb4334b9446117c4069bb982"
+  },
+  "generated_at": "2026-06-04T19:59:12.075290+00:00",
+  "key": {
+    "title": "LEX NOVA THREAT REGISTRY — KEY v3.0",
+    "version": "v3.0",
+    "schema_spine_locked": true,
+    "final_registry": {
+      "registry_rows": 98,
+      "archetype_count": 11,
+      "subcat_count": 10,
+      "column_count": 19
+    }
+  },
+  "threat_id_schema": {
+    "format": "{ARCHETYPE}_{SUBCAT}_{VARIANT}",
+    "regex": "^(UNI|DOE|JDG|CMP|CRT|RDR|ORC|TRN|SHD|OPT|MOV)_(CNS|LIA|HAL|INF|PRV|BIO|DEC|HRM|FRD|TRD)_(\\d{3}|IN\\d|LB\\d)$",
+    "archetype_codes": [
+      "UNI",
+      "DOE",
+      "JDG",
+      "CMP",
+      "CRT",
+      "RDR",
+      "ORC",
+      "TRN",
+      "SHD",
+      "OPT",
+      "MOV"
+    ],
+    "subcat_codes": [
+      "CNS",
+      "LIA",
+      "HAL",
+      "INF",
+      "PRV",
+      "BIO",
+      "DEC",
+      "HRM",
+      "FRD",
+      "TRD"
+    ],
+    "variant_patterns": {
+      "NNN": {
+        "meaning": "Standard 3-digit, zero-padded counter, scoped to `{ARCHETYPE}_{SUBCAT}`. Append-only. Retired threats keep their number."
+      },
+      "INn": {
+        "meaning": "India-specific threat (DPDP / IT Act / CERT-In / MeitY origin). Single digit."
+      },
+      "LBn": {
+        "meaning": "Lane B / Workplace Shield threat (internal-AI-use exposure). Single digit."
+      }
+    },
+    "closed_vocabulary_discipline": true,
+    "fin_folded_to_lia": true
+  },
+  "vocabularies": {
+    "archetypes": {
+      "UNI": {
+        "archetype": "Universal",
+        "detection_logic": "No archetype gate — applies to every product regardless of behavior.",
+        "examples": "—",
+        "legacy": "UNIVERSAL"
+      },
+      "DOE": {
+        "archetype": "The Doer",
+        "detection_logic": "Product **takes autonomous actions in the world** on a user's behalf without per-action human approval.",
+        "examples": "bookings, transactions, sends, tool/API calls",
+        "legacy": "INT.01"
+      },
+      "JDG": {
+        "archetype": "The Judge",
+        "detection_logic": "Product **outputs a consequential decision or score about a human** that gates access to something.",
+        "examples": "hiring, credit, healthcare, insurance, admissions",
+        "legacy": "INT.02"
+      },
+      "CMP": {
+        "archetype": "The Companion",
+        "detection_logic": "Product **forms an ongoing emotional or relational bond** with the user as a primary function.",
+        "examples": "chatbots, therapy bots, AI companions, minors-facing chat",
+        "legacy": "INT.03"
+      },
+      "CRT": {
+        "archetype": "The Creator",
+        "detection_logic": "Product **generates new copyrightable or synthetic output** as its primary output.",
+        "examples": "text, image, audio, video, code, voice clones",
+        "legacy": "INT.04"
+      },
+      "RDR": {
+        "archetype": "The Reader",
+        "detection_logic": "Product **ingests third-party data it does not own** to function.",
+        "examples": "web scraping, RAG, training-corpus assembly, document Q&A",
+        "legacy": "INT.05"
+      },
+      "ORC": {
+        "archetype": "The Orchestrator",
+        "detection_logic": "Product **routes requests across multiple models or sub-processors** dynamically.",
+        "examples": "multi-LLM routers, model gateways, agent frameworks",
+        "legacy": "INT.06"
+      },
+      "TRN": {
+        "archetype": "The Translator",
+        "detection_logic": "Product **processes biometric or audio signals** as input.",
+        "examples": "voice, speech-to-text, diarization, face/voiceprint",
+        "legacy": "INT.07"
+      },
+      "SHD": {
+        "archetype": "The Shield",
+        "detection_logic": "Product **is deployed to defend or monitor a system** for security purposes.",
+        "examples": "threat detection, SOC automation, incident response",
+        "legacy": "INT.08"
+      },
+      "OPT": {
+        "archetype": "The Optimizer",
+        "detection_logic": "Product **runs high-stakes optimization where its output directly moves money or controls operations.**",
+        "examples": "trading, dynamic pricing, critical-infrastructure tuning",
+        "legacy": "INT.09"
+      },
+      "MOV": {
+        "archetype": "The Mover",
+        "detection_logic": "Product **governs a physical system that can act on or in the physical world.**",
+        "examples": "robotics, autonomous vehicles, drones, spatial computing",
+        "legacy": "INT.10"
+      }
+    },
+    "surfaces": {
+      "Consumer-Public": {
+        "meaning": "Product is consumer-facing / publicly accessible."
+      },
+      "Enterprise-Private": {
+        "meaning": "Product sold B2B / behind enterprise contracts."
+      },
+      "PII": {
+        "meaning": "Handles personally identifiable information."
+      },
+      "Employment": {
+        "meaning": "Touches hiring, HR, or workforce decisions."
+      },
+      "Sensitive/Biometric": {
+        "meaning": "Processes biometric or special-category data."
+      },
+      "Financial": {
+        "meaning": "Touches financial markets, payments, or money movement."
+      },
+      "Content&IP": {
+        "meaning": "Generates, ingests, or stores copyrightable content."
+      },
+      "Safety&Physical": {
+        "meaning": "Can cause physical harm or governs physical systems."
+      },
+      "Infrastructure": {
+        "meaning": "Operates critical or backbone infrastructure."
+      },
+      "Minors": {
+        "meaning": "Accessible to or directed at users under 18."
+      }
+    },
+    "subcats": {
+      "CNS": {
+        "harm_mechanism": "Consent & contract formation (browsewrap, dark patterns, cancellation, auto-renewal)"
+      },
+      "LIA": {
+        "harm_mechanism": "Liability caps, warranty disclaimers, product-vs-service classification, agent/credential misuse, runaway-agent financial commitment, wasted costs, negligence defense"
+      },
+      "HAL": {
+        "harm_mechanism": "Hallucination, defamation, false output, agent impersonation, bot accountability for fabricated promises"
+      },
+      "INF": {
+        "harm_mechanism": "IP infringement — copyright, training data, fair use collapse, RAG substitution, safe harbor loss, deepfake takedown, watermarking, internal IP contamination"
+      },
+      "PRV": {
+        "harm_mechanism": "Privacy & data protection — cross-border transfer, sub-processor liability, retention, breach notification, over-scope processing, CPRA service provider, DPDP duties"
+      },
+      "BIO": {
+        "harm_mechanism": "Biometric harvesting & consent (BIPA, CUBI, voiceprints, diarization)"
+      },
+      "DEC": {
+        "harm_mechanism": "Automated decision-making harms — bias, CRA classification, HR/healthcare decisions, high-risk AI, DPIA/FRIA failure, missing HITL, GDPR Art. 22"
+      },
+      "HRM": {
+        "harm_mechanism": "Direct user harm — minors, companions, healthcare impersonation, wrongful death, psychological manipulation"
+      },
+      "FRD": {
+        "harm_mechanism": "Fraud & misrepresentation — AI washing, evidence fabrication, vendor-risk flow-down, SEC enforcement"
+      },
+      "TRD": {
+        "harm_mechanism": "Trading, pricing, market manipulation — algo trading, algorithmic collusion, SEBI, Sherman Act"
+      }
+    },
+    "lanes": {
+      "A": {
+        "meaning": "Agentic Shield — exposure for external AI **product builders** (the thing they ship)."
+      },
+      "B": {
+        "meaning": "Workplace Shield — exposure from **internal AI use** inside an organization."
+      },
+      "Both": {
+        "meaning": "Applies to both lanes."
+      }
+    },
+    "pain_tiers": {
+      "T1": {
+        "name": "EXTINCTION",
+        "definition": "Business cannot continue. Forced teardown, permanent regulatory ban, total liquidation, model destruction, wrongful death."
+      },
+      "T2": {
+        "name": "UNCAPPED MONEY",
+        "definition": "Business continues but financial exposure has no ceiling. Every incident adds uncapped cost. Revenue-percentage penalty structures land here."
+      },
+      "T3": {
+        "name": "DEAL DEATH",
+        "definition": "Money is capped but enterprise deals stop closing. Regional market access narrows. Per-violation bounded penalties."
+      },
+      "T4": {
+        "name": "REGULATORY HEAT",
+        "definition": "Fines, enforcement action, forced operational changes. Expensive but survivable."
+      },
+      "T5": {
+        "name": "FRICTION",
+        "definition": "Pending legislation, documentation gaps, preemption uncertainty. Annoying, not existential."
+      }
+    },
+    "pain_depth": {
+      "Corporate": {
+        "definition": "LLC shield holds. Business loses money but founder's personal assets safe."
+      },
+      "Personal": {
+        "definition": "Shield pierces. Founder personally on the hook. Personal guarantees, agency-theory principals, direct tort exposure."
+      },
+      "Criminal": {
+        "definition": "Beyond civil. Fraud charges, perjury, criminal negligence."
+      }
+    },
+    "velocity": {
+      "ACTIVE_NOW": {
+        "definition": "Law active AND immediate consequence on first incident."
+      },
+      "THIS_YEAR": {
+        "definition": "Law active but enforcement takes 6–18 months to materialize."
+      },
+      "INCOMING": {
+        "definition": "T3–T5 threats with known effective date 2+ months out, OR T1–T2 threats more than 12 months out."
+      },
+      "WATCH": {
+        "definition": "Pending legislation/advisory with no known effective date. Pairs with `Status = Pending`."
+      }
+    },
+    "statuses": [
+      "Active",
+      "Upcoming",
+      "Pending"
+    ]
+  },
+  "schema": {
+    "column_count": 19,
+    "columns": [
+      {
+        "index": 1,
+        "name": "Threat_ID",
+        "type": "string",
+        "notes": "Primary key, regex-validated (§1)"
+      },
+      {
+        "index": 2,
+        "name": "Threat_Name",
+        "type": "string",
+        "notes": "Founder-facing name, prose"
+      },
+      {
+        "index": 3,
+        "name": "Lane",
+        "type": "enum",
+        "notes": "A / B / Both (§8)"
+      },
+      {
+        "index": 4,
+        "name": "Archetype",
+        "type": "enum",
+        "notes": "UNI or one mnemonic (§5) — single value, not array"
+      },
+      {
+        "index": 5,
+        "name": "Surface",
+        "type": "string",
+        "notes": "Pipe-combined atomic tokens (§6)"
+      },
+      {
+        "index": 6,
+        "name": "Authority_IN",
+        "type": "string",
+        "notes": "Named anchor or `—` (§7)"
+      },
+      {
+        "index": 7,
+        "name": "Authority_EU",
+        "type": "string",
+        "notes": "Named anchor or `—` (§7)"
+      },
+      {
+        "index": 8,
+        "name": "Authority_US",
+        "type": "string",
+        "notes": "Named anchor or `—` (§7)"
+      },
+      {
+        "index": 9,
+        "name": "Velocity",
+        "type": "enum",
+        "notes": "ACTIVE_NOW / THIS_YEAR / INCOMING / WATCH"
+      },
+      {
+        "index": 10,
+        "name": "Pain_Tier",
+        "type": "enum",
+        "notes": "T1 / T2 / T3 / T4 / T5"
+      },
+      {
+        "index": 11,
+        "name": "Pain_Depth",
+        "type": "enum",
+        "notes": "Corporate / Personal / Criminal (§3)"
+      },
+      {
+        "index": 12,
+        "name": "Status",
+        "type": "enum",
+        "notes": "Active / Upcoming / Pending"
+      },
+      {
+        "index": 13,
+        "name": "Effective_Date",
+        "type": "date",
+        "notes": "YYYY-MM-DD or \"TBD\""
+      },
+      {
+        "index": 14,
+        "name": "Legal_Pain",
+        "type": "prose",
+        "notes": "Lawyer register"
+      },
+      {
+        "index": 15,
+        "name": "FP_Mechanism",
+        "type": "prose",
+        "notes": "Coffee-test, founder register"
+      },
+      {
+        "index": 16,
+        "name": "FP_Impact",
+        "type": "prose",
+        "notes": "Coffee-test, founder register"
+      },
+      {
+        "index": 17,
+        "name": "Lex_Nova_Fix",
+        "type": "prose",
+        "notes": "Hybrid rule per §9"
+      },
+      {
+        "index": 18,
+        "name": "Hunter_Trigger",
+        "type": "pipe-delimited string",
+        "notes": "Detection logic (§12)"
+      },
+      {
+        "index": 19,
+        "name": "Provenance",
+        "type": "string",
+        "notes": "Source/version trace (e.g. `v1:UNI_CNS_001`, `v2-new IN-01 · verified 2026-06`)"
+      }
+    ],
+    "input_fields": [
+      "Threat_ID",
+      "Archetype",
+      "Surface",
+      "Authority_IN",
+      "Authority_EU",
+      "Authority_US",
+      "Status",
+      "Effective_Date",
+      "Hunter_Trigger"
+    ],
+    "output_fields": [
+      "Threat_Name",
+      "Legal_Pain",
+      "FP_Mechanism",
+      "FP_Impact",
+      "Lex_Nova_Fix",
+      "Velocity",
+      "Pain_Tier",
+      "Pain_Depth",
+      "Lane"
+    ]
+  },
+  "hunter_trigger": {
+    "format": "CONDITION_1: ... | CONDITION_2: ... | ... | TRIGGER_IF: ... | EXCLUDE_IF: ...",
+    "required_sections": {
+      "condition_n_min": 1,
+      "trigger_if_exactly": 1,
+      "exclude_if_exactly": 1
+    },
+    "rules": [
+      "Archetype and Surface are resolved first as categorical gates.",
+      "Hunter_Trigger must not re-encode archetype or jurisdiction.",
+      "Conditions must be LLM-parseable concrete detection criteria.",
+      "Conditions reference observable signals from public footprint.",
+      "TRIGGER_IF uses boolean combinators.",
+      "EXCLUDE_IF names the excluding posture.",
+      "Enumerated statutory categories get expanded."
+    ],
+    "evidence_source_rule": "One source per fired gap; legal document outranks product/marketing page for the same fact."
+  },
+  "authoring_rules": {
+    "authority_fill_rule": "100% surety or blank",
+    "lex_nova_fix_tone_rule": "Lead with asset reference; name the asset; ground in legal anchor; close with founder-language consequence; imply pre-existence.",
+    "founders_pain_structure": [
+      "FP_Mechanism",
+      "FP_Impact"
+    ],
+    "batch_by_batch_drafting": true,
+    "lex_nova_fix_rewrites_last": true
+  },
+  "distribution": {
+    "rows_per_archetype": [
+      {
+        "Archetype": "UNI",
+        "Rows": "37"
+      },
+      {
+        "Archetype": "JDG",
+        "Rows": "16"
+      },
+      {
+        "Archetype": "DOE",
+        "Rows": "7"
+      },
+      {
+        "Archetype": "CMP",
+        "Rows": "7"
+      },
+      {
+        "Archetype": "CRT",
+        "Rows": "6"
+      },
+      {
+        "Archetype": "RDR",
+        "Rows": "6"
+      },
+      {
+        "Archetype": "SHD",
+        "Rows": "5"
+      },
+      {
+        "Archetype": "OPT",
+        "Rows": "4"
+      },
+      {
+        "Archetype": "ORC",
+        "Rows": "4"
+      },
+      {
+        "Archetype": "TRN",
+        "Rows": "4"
+      },
+      {
+        "Archetype": "MOV",
+        "Rows": "2"
+      },
+      {
+        "Archetype": "**TOTAL**",
+        "Rows": "**98**"
+      }
+    ],
+    "rows_per_subcat": [
+      {
+        "Subcat": "LIA",
+        "Rows": "18"
+      },
+      {
+        "Subcat": "DEC",
+        "Rows": "15"
+      },
+      {
+        "Subcat": "PRV",
+        "Rows": "15"
+      },
+      {
+        "Subcat": "INF",
+        "Rows": "14"
+      },
+      {
+        "Subcat": "CNS",
+        "Rows": "9"
+      },
+      {
+        "Subcat": "HRM",
+        "Rows": "9"
+      },
+      {
+        "Subcat": "HAL",
+        "Rows": "6"
+      },
+      {
+        "Subcat": "BIO",
+        "Rows": "4"
+      },
+      {
+        "Subcat": "FRD",
+        "Rows": "4"
+      },
+      {
+        "Subcat": "TRD",
+        "Rows": "4"
+      },
+      {
+        "Subcat": "**TOTAL**",
+        "Rows": "**98**"
+      }
+    ],
+    "tier_distribution": [
+      {
+        "Tier": "T1",
+        "Count": "18",
+        "%": "18%"
+      },
+      {
+        "Tier": "T2",
+        "Count": "49",
+        "%": "50%"
+      },
+      {
+        "Tier": "T3",
+        "Count": "24",
+        "%": "24%"
+      },
+      {
+        "Tier": "T4",
+        "Count": "2",
+        "%": "2%"
+      },
+      {
+        "Tier": "T5",
+        "Count": "5",
+        "%": "5%"
+      }
+    ],
+    "lane_distribution": [
+      {
+        "Lane": "A",
+        "Count": "80"
+      },
+      {
+        "Lane": "Both",
+        "Count": "10"
+      },
+      {
+        "Lane": "B",
+        "Count": "8"
+      }
+    ]
+  },
+  "migration": {
+    "provenance_column": "Provenance",
+    "legacy_ids_retired": true,
+    "v3_0_notes": "FIN subcat folded into LIA; INT/EXT replaced by Archetype/Surface; Legal_Ammo replaced by Authority_IN/EU/US."
+  },
+  "raw_markdown": {
+    "included": false,
+    "section_index": [
+      {
+        "level": 2,
+        "heading": "1. THREAT_ID SCHEMA",
+        "char_start": 718,
+        "char_end": 1066,
+        "sha256": "315058bf1e4e3f63f8bae1a07154ae6c7dd3555865b4aefd7db440080d34d508"
+      },
+      {
+        "level": 3,
+        "heading": "1.1 ARCHETYPE (scope, 3 chars)",
+        "char_start": 1066,
+        "char_end": 1228,
+        "sha256": "cf16011edea290e2e9602592f6d09786c2618931ed1c23ddc092016c98b80df3"
+      },
+      {
+        "level": 3,
+        "heading": "1.2 SUBCAT (harm mechanism, closed vocabulary — 10 codes)",
+        "char_start": 1228,
+        "char_end": 3265,
+        "sha256": "57fb52b7eddeedb6ad0627bb238cbf205847cbf8508f7e4b2a6856ca5ff00130"
+      },
+      {
+        "level": 3,
+        "heading": "1.3 VARIANT (the threat counter)",
+        "char_start": 3265,
+        "char_end": 3838,
+        "sha256": "607fa0f248a46b9c30ac1847ca2cbcede1f817a99456f4c9e8ceba9599d73d29"
+      },
+      {
+        "level": 3,
+        "heading": "1.4 Archetype vs UNI test (assignment rule)",
+        "char_start": 3838,
+        "char_end": 4717,
+        "sha256": "931d60c721a88111635f7fb1d437730af05d0034716919c517c262e8afe446c0"
+      },
+      {
+        "level": 2,
+        "heading": "2. PAIN_TIER",
+        "char_start": 4717,
+        "char_end": 5567,
+        "sha256": "cf4194c81c374940401ecb52231424687dc1c0a89262c716cda262b84b087b25"
+      },
+      {
+        "level": 3,
+        "heading": "2.1 Ceiling rule (highest-leverage rule)",
+        "char_start": 5567,
+        "char_end": 6295,
+        "sha256": "240a78ac075bede9861b108b9aba631493fc02ce8f7e3d3619258263d2b750f0"
+      },
+      {
+        "level": 3,
+        "heading": "2.2 Tier assignment pattern (learned during drafting)",
+        "char_start": 6295,
+        "char_end": 7009,
+        "sha256": "0fd311e28bda7336719cab18de4df15a0aaf36e59d3b3439a464f660e28cfed5"
+      },
+      {
+        "level": 3,
+        "heading": "2.3 Drift-down failure mode",
+        "char_start": 7009,
+        "char_end": 7385,
+        "sha256": "4ecbe80dbf5dc6f6905a164969131f23dc4b7818bc0d5ab791790101c319d26c"
+      },
+      {
+        "level": 2,
+        "heading": "3. PAIN_DEPTH",
+        "char_start": 7385,
+        "char_end": 8400,
+        "sha256": "278e6eff1ee6fadbd9fcbeb1ad34aec3e106eaaacc7f10f8285b8cf42ae4acff"
+      },
+      {
+        "level": 2,
+        "heading": "4. VELOCITY",
+        "char_start": 8400,
+        "char_end": 8859,
+        "sha256": "37d27f9422acf7af3930112d28e1d0c5985a7dc05363d766a2646a78fe7aef3b"
+      },
+      {
+        "level": 3,
+        "heading": "4.1 T1/T2 Promotion Rule",
+        "char_start": 8859,
+        "char_end": 9116,
+        "sha256": "cda800e1f3a99df3753192b11897c1476cc10201559e46f10348a96c36cb08b1"
+      },
+      {
+        "level": 2,
+        "heading": "5. ARCHETYPE VOCABULARY (replaces legacy INT codes)",
+        "char_start": 9116,
+        "char_end": 11595,
+        "sha256": "c89b55fa6da8be384bc3c515262edea5fb7463b0a8ea8a644b3b143e50670db5"
+      },
+      {
+        "level": 2,
+        "heading": "6. SURFACE VOCABULARY (replaces legacy EXT context codes)",
+        "char_start": 11595,
+        "char_end": 12876,
+        "sha256": "a534970c55c8e82d3ebe9fbab014d8de1924f386e5e7b3500bbc2e9394469201"
+      },
+      {
+        "level": 2,
+        "heading": "7. AUTHORITY COLUMNS (replaces single Legal_Ammo column)",
+        "char_start": 12876,
+        "char_end": 13184,
+        "sha256": "c68e41527895064b3a6887822bbb7a75202a5ec45da5edf731dbd1eff54b1f6d"
+      },
+      {
+        "level": 3,
+        "heading": "7.1 Fill rule — 100% surety or blank",
+        "char_start": 13184,
+        "char_end": 13728,
+        "sha256": "bd9a8fa39ee044faa527ad052daff0880fc5eef11efc6d5be6116f9dddc0af73"
+      },
+      {
+        "level": 3,
+        "heading": "7.2 Format",
+        "char_start": 13728,
+        "char_end": 14106,
+        "sha256": "7ab51d6c304501cfffbf339ea90e3a5efcc1cab61900ab1f8789608a1e0abf28"
+      },
+      {
+        "level": 3,
+        "heading": "7.3 Relationship to Pain_Tier",
+        "char_start": 14106,
+        "char_end": 14379,
+        "sha256": "09be66d0763e427f6962f3e79bc5b2d5a06a25e5a7d032cdb8879293630c250c"
+      },
+      {
+        "level": 2,
+        "heading": "8. LANE",
+        "char_start": 14379,
+        "char_end": 14718,
+        "sha256": "4b0be08e6cd8a892409da73aff11f9c7bd753f1532720d4b98937cb47e574d35"
+      },
+      {
+        "level": 2,
+        "heading": "9. LEX_NOVA_FIX TONE RULE",
+        "char_start": 14718,
+        "char_end": 14748,
+        "sha256": "08cef789dfd7f7fd3dcaa9247a89cc3274dfe6149eb71f0c76c9a946caa7ca0a"
+      },
+      {
+        "level": 3,
+        "heading": "9.1 The hybrid rule",
+        "char_start": 14748,
+        "char_end": 15494,
+        "sha256": "a18491c5d84bf6eddf95ca2a3157d330dc9b9e5fa5fff197798c86d8c31c307a"
+      },
+      {
+        "level": 3,
+        "heading": "9.2 Forbidden vocabulary",
+        "char_start": 15494,
+        "char_end": 15741,
+        "sha256": "bfb12de674344df37140e8df3d051ac60b05b4614579349084731e94135ac321"
+      },
+      {
+        "level": 3,
+        "heading": "9.3 Length",
+        "char_start": 15741,
+        "char_end": 15795,
+        "sha256": "46d6e4e6d5a9da33a514f8a0da88727cbf1a8bc7e9069e31431d42a2277239fa"
+      },
+      {
+        "level": 3,
+        "heading": "9.4 The trade-secret test",
+        "char_start": 15795,
+        "char_end": 16081,
+        "sha256": "9c837094c47311a6e1dd0191dd268c7107dce60d4ea0f9e1ef896f85604a675c"
+      },
+      {
+        "level": 2,
+        "heading": "10. FOUNDERS_PAIN — 2-ELEMENT STRUCTURE",
+        "char_start": 16081,
+        "char_end": 16686,
+        "sha256": "bd625d3661337912114c83c0045814a12635743d14bac1fcb26f4609be591d60"
+      },
+      {
+        "level": 3,
+        "heading": "10.1 Coffee-test standard",
+        "char_start": 16686,
+        "char_end": 17369,
+        "sha256": "afa98370cf88ab8b82bce4dc483b69d90d501ffaa21e105035b90d0b99a87cc8"
+      },
+      {
+        "level": 3,
+        "heading": "10.2 Banned vocabulary (both elements)",
+        "char_start": 17369,
+        "char_end": 17566,
+        "sha256": "a7d1c2385c70512f8bbfed703379f8c60057f19876d6c0e85aa9a7a62eff4ecc"
+      },
+      {
+        "level": 2,
+        "heading": "11. CSV STRUCTURE — 19 COLUMNS (FINAL)",
+        "char_start": 17566,
+        "char_end": 18952,
+        "sha256": "9468bc982cfc4b5e9941b6a93baece6742d0398b2c4f65e3a5c79d1d34744e94"
+      },
+      {
+        "level": 3,
+        "heading": "11.1 Input vs Output fields",
+        "char_start": 18952,
+        "char_end": 19433,
+        "sha256": "7060f65aa162b98a7f60a29165965f81ab81864026a1d8cbe56e1ee05a9db0bf"
+      },
+      {
+        "level": 2,
+        "heading": "12. HUNTER_TRIGGER FORMAT",
+        "char_start": 19433,
+        "char_end": 19726,
+        "sha256": "2a984414e8da61b2900161011be8764f9268565dcd9593216b4a54cdc7623f35"
+      },
+      {
+        "level": 3,
+        "heading": "12.1 Required sections",
+        "char_start": 19726,
+        "char_end": 19983,
+        "sha256": "204012fbece6fdc2618d0af3bef2402f3f257e31b2865c362d29d89cb178840a"
+      },
+      {
+        "level": 3,
+        "heading": "12.2 Relationship to Archetype + Surface (v3.0 rule)",
+        "char_start": 19983,
+        "char_end": 20555,
+        "sha256": "238c5da89e7f1582e64e61c594ca2b424cb2fff411a3de8d2808eabfb518a52c"
+      },
+      {
+        "level": 3,
+        "heading": "12.3 Writing rules",
+        "char_start": 20555,
+        "char_end": 21438,
+        "sha256": "d0937b156397f5f4b4a495bcd5b1da338b41ec925f1ea0d2b0663943d9e036a7"
+      },
+      {
+        "level": 3,
+        "heading": "12.4 Evidence source rule",
+        "char_start": 21438,
+        "char_end": 21687,
+        "sha256": "5095b5dc623f0b604030b4c13c71dfe883953c28391aea36680e864534e76bc5"
+      },
+      {
+        "level": 2,
+        "heading": "13. DRAFTING STANDARDS",
+        "char_start": 21687,
+        "char_end": 21714,
+        "sha256": "910bf65f74446e5bff3efbe6d20aba3a324d0c89f0e476bd19af866f6328c764"
+      },
+      {
+        "level": 3,
+        "heading": "13.1 Labeled-block drafting format",
+        "char_start": 21714,
+        "char_end": 21984,
+        "sha256": "df6e687f3695724a28ec27dbc9ddcbec103b8a95d5b922bfa9efd7548c6b3f3a"
+      },
+      {
+        "level": 3,
+        "heading": "13.2 Batch-by-batch drafting, not registry-wide",
+        "char_start": 21984,
+        "char_end": 22216,
+        "sha256": "7904afb44ba1a5969a57743adc48aa6ee311d0f112a2afe7d9da2151c974e549"
+      },
+      {
+        "level": 3,
+        "heading": "13.3 Split vs merge criteria",
+        "char_start": 22216,
+        "char_end": 22588,
+        "sha256": "272b8128855c3f9f6e5f9556ff3745712571fc1b32a5c021fe2606cb6bc3ec76"
+      },
+      {
+        "level": 3,
+        "heading": "13.4 Cross-batch tier consistency",
+        "char_start": 22588,
+        "char_end": 22802,
+        "sha256": "5ff10f9fe8fe08f681489bdcf2c75ff07ac5d993837459afc9c8d8baf721d0e8"
+      },
+      {
+        "level": 3,
+        "heading": "13.5 Lex_Nova_Fix rewrites last",
+        "char_start": 22802,
+        "char_end": 22971,
+        "sha256": "c80a31e1ab7a73e0354665fb784fc3ebe45387c919d26145a42434f5515057ec"
+      },
+      {
+        "level": 2,
+        "heading": "14. FINAL REGISTRY DISTRIBUTION *(provisional — locks after Authority + Pain_Depth + Hunter_Trigger fill)*",
+        "char_start": 22971,
+        "char_end": 23082,
+        "sha256": "7533a4d3ff900d8a75bd311d378b7efdb6cc1974ffa004ae96932da46ac997f2"
+      },
+      {
+        "level": 3,
+        "heading": "14.1 Rows per archetype",
+        "char_start": 23082,
+        "char_end": 23300,
+        "sha256": "da7a3d9bd1dc3fd81abcbd325013d61a451692371c177d002c4ccad124bc4fd0"
+      },
+      {
+        "level": 3,
+        "heading": "14.2 Rows per subcat (FIN folded to LIA)",
+        "char_start": 23300,
+        "char_end": 23522,
+        "sha256": "908aef3031830ec9b7ae3a79464fd132aab2b9ad2f6831cd6493ffc4a84e4fee"
+      },
+      {
+        "level": 3,
+        "heading": "14.3 Tier distribution",
+        "char_start": 23522,
+        "char_end": 23672,
+        "sha256": "b0093cd0d7bb582aab6986d25765cae9923438f8ccb7b5afcbb1f3c6e78e0951"
+      },
+      {
+        "level": 3,
+        "heading": "14.4 Lane distribution",
+        "char_start": 23672,
+        "char_end": 23763,
+        "sha256": "99ba67709dd5d1d3c7a34aa2b03f4cd74550a4cae69bb16b1fed051ecd9ed121"
+      },
+      {
+        "level": 3,
+        "heading": "14.5 Pending fill metrics (to be completed)",
+        "char_start": 23763,
+        "char_end": 24118,
+        "sha256": "8fb35d11b23e3ed400957ea77c2868e68121ff95ddb2e28986bd850e68b157a0"
+      },
+      {
+        "level": 2,
+        "heading": "15. MIGRATION & PROVENANCE",
+        "char_start": 24118,
+        "char_end": 24608,
+        "sha256": "56373f88c67a1aace8afd48f2554377bdc12b4e38399eca33dfebfa10b720112"
+      },
+      {
+        "level": 2,
+        "heading": "16. VERSION HISTORY",
+        "char_start": 24608,
+        "char_end": 25498,
+        "sha256": "b53419e96831c6dd1d6368d9235bbbd2801c9386878d4bb7ab7d9cb5fc24dc7f"
+      }
+    ]
+  }
+}
