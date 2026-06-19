@@ -165,10 +165,12 @@ return sendDiligenceResponse(req, res, responsePayload, payload.ok ? 200 : 422);
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Interface Diligence System listening on :${PORT}`);
-  console.log(`Active runtime: ${ACTIVE_RUNTIME}`);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  app.listen(PORT, () => {
+    console.log(`Interface Diligence System listening on :${PORT}`);
+    console.log(`Active runtime: ${ACTIVE_RUNTIME}`);
+  });
+}
 
 async function safePromptStack() {
   try { return await loadPromptStack(__dirname); }

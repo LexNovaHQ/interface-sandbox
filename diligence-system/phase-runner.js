@@ -416,6 +416,7 @@ return withObservability(response, {
   modelMetaByPhase,
   debugTrace
 });
+}
 
 async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle, baseDir, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, runUntil }) {
   const registryRows = parseP6RegistryRows(referenceBundle);
@@ -1347,15 +1348,6 @@ function buildOperationalLimits(overrides = {}) {
 
 function updateRuntimeTraceSourceLimits(trace, stage0) {
   if (!trace) return;
-  const summary = stage0?.hybrid_extraction_manifest?.collection_summary || {};
-  trace.operational_limits = buildOperationalLimits({
-    source_max_candidates_default_or_used: summary.max_candidate_sources_used,
-    source_fetch_timeout_ms_default_or_used: summary.fetch_timeout_ms_used
-  });
-}
-
-function updateRuntimeTraceSourceLimits(trace, stage0) {
-  if (!trace) return;
 
   const manifest = stage0?.hybrid_extraction_manifest || {};
   const summary = manifest.collection_summary || {};
@@ -1633,10 +1625,10 @@ function fail({ run, promptStack, runtimeTrace = null, upstream = {}, phaseOutpu
       fetch_attempt_log_count: upstream.S0.extraction_forensic_ledger?.fetch_attempt_log?.length || 0
     } : null,
     runtime_orchestration_manifest: promptStack ? buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode, referenceBundles, modelMetaByPhase }) : null,
-operational_limits: runtimeTrace?.operational_limits || buildOperationalLimits(),
-source_runtime_trace: runtimeTrace?.source_runtime_trace || null,
-phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
-error,
+    operational_limits: runtimeTrace?.operational_limits || buildOperationalLimits(),
+    source_runtime_trace: runtimeTrace?.source_runtime_trace || null,
+    phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
+    error,
     model_meta_last: lastModelMeta,
     model_meta_by_phase: modelMetaByPhase,
     ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {}),
@@ -1667,6 +1659,7 @@ return withObservability(renderedFailureResponse, {
   debugTrace: Boolean(runtimeTrace)
 });
 }
+
 export function validateTransitionGate({ edge, upstream = {}, referenceBundles = {} } = {}) {
   const errors = [];
   const requirePath = (pathExpression) => {
@@ -1742,9 +1735,10 @@ export function validateTransitionGate({ edge, upstream = {}, referenceBundles =
   requirePath("P7.final_compiler_trace");
   requirePath("P7.final_output_handoff.screen_report_payload");
   requirePath("P7.final_output_handoff.screen_report_payload.renderer_contract");
-} else {
-  errors.push(`UNKNOWN_TRANSITION_GATE:${edge}`);
-}
+  } else {
+    errors.push(`UNKNOWN_TRANSITION_GATE:${edge}`);
+  }
+
   return {
     ok: errors.length === 0,
     edge,
