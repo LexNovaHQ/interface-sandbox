@@ -96,26 +96,126 @@ app.post("/api/gemini/ping", async (_req, res) => {
   }
 });
 
+app.post("/api/diligence/jobs", async (req, res) => {
+  try {
+    const runInput = buildRunInput(req);
+    const job = await createRun({
+      input: runInput,
+      baseDir: __dirname
+    });
+
+    return res.status(202).json(job);
+  } catch (err) {
+    console.error("[diligence/jobs] create failed", err);
+
+    return res.status(500).json({
+      ok: false,
+      error: "DILIGENCE_JOB_CREATE_FAILED",
+      message: err?.message || String(err)
+    });
+  }
+});
+
+app.get("/api/diligence/jobs/:runId", async (req, res) => {
+  try {
+    const job = await getRun({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    return res.json(job);
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:") ? 404 : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_STATUS_FAILED",
+      message
+    });
+  }
+});
+
+app.post("/api/diligence/jobs/:runId/advance", async (req, res) => {
+  try {
+    const jobState = await getRun({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    if (!hasAnyGeminiKey() && !canAdvanceWithoutGeminiKey(jobState)) {
+      return res.status(500).json({
+        ok: false,
+        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
+        message: "No Gemini API key is configured for any diligence runtime pool.",
+        run_id: req.params.runId,
+        current_status: jobState.status,
+        next_node: jobState.next_node
+      });
+    }
+
+    const advanced = await advanceRun({
+      runId: req.params.runId,
+      callModel,
+      baseDir: __dirname
+    });
+
+    return res.status(advanced.ok ? 200 : 422).json(advanced);
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:") ? 404 : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_ADVANCE_FAILED",
+      message,
+      run_id: req.params.runId
+    });
+  }
+});
+
+app.get("/api/diligence/jobs/:runId/result", async (req, res) => {
+  try {
+    const result = await getRunResult({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    const statusCode = result.ok ? 200 : result.status === "RESULT_NOT_READY" ? 425 : 422;
+
+    return sendDiligenceResponse(req, res, result, statusCode);
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:") ? 404 : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_RESULT_FAILED",
+      message,
+      run_id: req.params.runId
+    });
+  }
+});
+
 app.post("/api/diligence/run", async (req, res) => {
   const startedAt = Date.now();
 
   try {
     if (!hasAnyGeminiKey()) {
-     return sendDiligenceResponse(req, res, {
-  ok: false,
-  error: "DILIGENCE_RUN_FAILED",
-  message: err?.message || String(err),
-  runtime_trace: buildServerRuntimeTrace({
-    startedAt,
-    status: "SERVER_EXCEPTION",
-    failure_stage: "SERVER_CATCH",
-    sourceCandidateLimitHit: false,
-    exception: err
-  }),
-  operational_limits: buildRuntimeLimitTrace({
-    sourceCandidateLimitHit: false
-  })
-}, 500);
+      return sendDiligenceResponse(req, res, {
+        ok: false,
+        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
+        message: "No Gemini API key is configured for any diligence runtime pool.",
+        runtime_trace: buildServerRuntimeTrace({
+          startedAt,
+          status: "FAILED_BEFORE_RUN",
+          failure_stage: "SERVER_KEY_CHECK",
+          sourceCandidateLimitHit: false
+        }),
+        operational_limits: buildRuntimeLimitTrace({
+          sourceCandidateLimitHit: false
+        })
+      }, 500);
     }
 
     const runInput = buildRunInput(req);
@@ -144,30 +244,31 @@ app.post("/api/diligence/run", async (req, res) => {
     };
 
     const htmlRequested = wantsHtmlReport(req);
-const debugCompact = wantsCompactFailure(req);
+    const debugCompact = wantsCompactFailure(req);
 
-const responsePayload = !payload.ok && debugCompact && !htmlRequested
-  ? buildCompactFailure(payload)
-  : payload;
+    const responsePayload = !payload.ok && debugCompact && !htmlRequested
+      ? buildCompactFailure(payload)
+      : payload;
 
-return sendDiligenceResponse(req, res, responsePayload, payload.ok ? 200 : 422);
+    return sendDiligenceResponse(req, res, responsePayload, payload.ok ? 200 : 422);
   } catch (err) {
     console.error("[diligence/run] failed", err);
 
     return sendDiligenceResponse(req, res, {
-  ok: false,
-  error: "GEMINI_API_KEYS_NOT_CONFIGURED",
-  message: "No Gemini API key is configured for any diligence runtime pool.",
-  runtime_trace: buildServerRuntimeTrace({
-    startedAt,
-    status: "FAILED_BEFORE_RUN",
-    failure_stage: "SERVER_KEY_CHECK",
-    sourceCandidateLimitHit: false
-  }),
-  operational_limits: buildRuntimeLimitTrace({
-    sourceCandidateLimitHit: false
-  })
-}, 500);
+      ok: false,
+      error: "DILIGENCE_RUN_FAILED",
+      message: err?.message || String(err),
+      runtime_trace: buildServerRuntimeTrace({
+        startedAt,
+        status: "SERVER_EXCEPTION",
+        failure_stage: "SERVER_CATCH",
+        sourceCandidateLimitHit: false,
+        exception: err
+      }),
+      operational_limits: buildRuntimeLimitTrace({
+        sourceCandidateLimitHit: false
+      })
+    }, 500);
   }
 });
 
@@ -260,7 +361,20 @@ async function callModel({
 function hasAnyGeminiKey() {
   return Object.keys(PHASE_POOL_ENV).some((pool) => buildRuntimePool(pool).keys.length > 0);
 }
+function canAdvanceWithoutGeminiKey(jobState) {
+  if (jobState?.next_node !== "S0") return false;
 
+  const sourceMode = String(jobState?.input?.source_mode || "").trim().toLowerCase();
+
+  return [
+    "synthetic_demo",
+    "synthetic",
+    "demo",
+    "text",
+    "pasted_public_material",
+    "pasted"
+  ].includes(sourceMode);
+}
 function wantsCompactFailure(req) {
   return Boolean(
     req?.body?.debug_compact === true ||
