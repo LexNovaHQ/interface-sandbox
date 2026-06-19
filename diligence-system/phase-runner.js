@@ -1027,13 +1027,14 @@ function buildSingleNodeUpstreamFromArtifacts({ nodeId, artifacts = {} }) {
     const output = unwrapArtifactOutput(artifacts[priorNode]);
 
     if (output !== undefined && output !== null) {
-      upstream[priorNode] = output;
+      upstream[priorNode] = priorNode === "P1"
+        ? normalizeP1PhasePackages(output)
+        : output;
     }
   }
 
   return upstream;
 }
-
 function collectPhaseOutputsFromUpstream(upstream = {}) {
   const phaseOutputs = {};
 
