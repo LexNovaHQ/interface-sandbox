@@ -137,6 +137,12 @@ export function normalizeP1PhasePackages(parsed = {}) {
     ...parsed,
     source_discovery_handoff: {
       ...handoff,
+      absence_records: normalizeP1ArrayValue(
+        handoff.absence_records ?? handoff.documented_absences ?? []
+      ),
+      access_failed_sources: normalizeP1ArrayValue(
+        handoff.access_failed_sources ?? handoff.fetch_failures ?? []
+      ),
       phase_packages: normalizedPhasePackages
     }
   };
@@ -213,6 +219,14 @@ function validatePhaseSpecificShape({ phaseId, parsed, errors, warnings, context
     errors.push(`P1_PHASE_PACKAGE_INVALID:${key}`);
   }
 }
+    if (!Array.isArray(handoff.absence_records)) {
+      errors.push("P1_ABSENCE_RECORDS_NOT_ARRAY");
+    }
+
+    if (!Array.isArray(handoff.access_failed_sources)) {
+      errors.push("P1_ACCESS_FAILED_SOURCES_NOT_ARRAY");
+    }
+
     if (!isPlainObject(parsed.source_discovery_forensic_ledger)) {
       errors.push("P1_FORENSIC_LEDGER_MISSING_OR_NOT_OBJECT");
     }
@@ -312,6 +326,12 @@ function normalizeP1PackageValue(value) {
   if (Array.isArray(value)) return value;
   if (isPlainObject(value)) return value;
   return [];
+}
+
+function normalizeP1ArrayValue(value) {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null) return [];
+  return [value];
 }
 
 function isValidP1PackageValue(value) {
