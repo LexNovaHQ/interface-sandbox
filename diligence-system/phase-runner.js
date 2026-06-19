@@ -26,8 +26,8 @@ export const CORE_PROMPT_FILES = [
 const EXECUTION_MAP_FILE = "08_PHASE_STACK_EXECUTION_MAP.md";
 const JSON_REPAIR_SYSTEM_PROMPT = "You are a mechanical JSON repair function. You receive malformed JSON-like text emitted by a prior model. Return only valid JSON. Do not add, remove, summarize, infer, or reinterpret content. Do not include markdown. Preserve keys and values as closely as possible. If content is impossible to repair, return {\"repair_failed\":true,\"repair_error\":\"UNREPAIRABLE_JSON\"}.";
 const P6_MODEL_BATCH_SIZE = 15;
-const DEFAULT_GEMINI_TIMEOUT_MS =10000000;
-const DEFAULT_GEMINI_MAX_OUTPUT_TOKENS = 565535;
+const DEFAULT_GEMINI_TIMEOUT_MS =600000;
+const DEFAULT_GEMINI_MAX_OUTPUT_TOKENS = 165535;
 const EXPRESS_JSON_LIMIT = "50mb";
 const SOURCE_MAX_CANDIDATES_DEFAULT = 100;
 const SOURCE_FETCH_TIMEOUT_MS_DEFAULT = 120000;
@@ -1202,14 +1202,39 @@ function createRuntimeTrace({ run, activeRuntime, enabled }) {
 }
 
 function buildOperationalLimits(overrides = {}) {
+  const source = overrides.source || overrides;
+
   return {
     gemini_timeout_ms: positiveInt(process.env.GEMINI_TIMEOUT_MS, DEFAULT_GEMINI_TIMEOUT_MS),
     gemini_max_output_tokens: positiveInt(process.env.GEMINI_MAX_OUTPUT_TOKENS, DEFAULT_GEMINI_MAX_OUTPUT_TOKENS),
-    express_json_limit: EXPRESS_JSON_LIMIT,
-    source_max_candidates_default_or_used: overrides.source_max_candidates_default_or_used ?? positiveInt(process.env.DILIGENCE_SOURCE_MAX_URLS, SOURCE_MAX_CANDIDATES_DEFAULT),
-    source_fetch_timeout_ms_default_or_used: overrides.source_fetch_timeout_ms_default_or_used ?? positiveInt(process.env.DILIGENCE_SOURCE_FETCH_TIMEOUT_MS, SOURCE_FETCH_TIMEOUT_MS_DEFAULT),
+    express_json_limit: process.env.EXPRESS_JSON_LIMIT || EXPRESS_JSON_LIMIT,
+
+    source_max_candidates_used: Number(
+      source.source_max_candidates_used ??
+      source.max_candidate_sources_used ??
+      process.env.SOURCE_MAX_CANDIDATES ??
+      process.env.DILIGENCE_SOURCE_MAX_URLS ??
+      SOURCE_MAX_CANDIDATES_DEFAULT
+    ),
+
+    source_fetch_timeout_ms_used: Number(
+      source.source_fetch_timeout_ms_used ??
+      source.fetch_timeout_ms_used ??
+      process.env.SOURCE_FETCH_TIMEOUT_MS ??
+      process.env.DILIGENCE_SOURCE_FETCH_TIMEOUT_MS ??
+      SOURCE_FETCH_TIMEOUT_MS_DEFAULT
+    ),
+
+    source_candidate_limit_hit: Boolean(
+      source.source_candidate_limit_hit ??
+      source.candidate_limit_hit ??
+      false
+    ),
+
     source_max_extraction_passes: SOURCE_MAX_EXTRACTION_PASSES,
     p6_model_batch_size: P6_MODEL_BATCH_SIZE,
+    cloud_run_timeout_assumption: `${CLOUD_RUN_TIMEOUT_ASSUMPTION_SECONDS}s`,
+
     reference_max_chars_if_any: positiveInt(process.env.DILIGENCE_REFERENCE_MAX_CHARS, 0) || null
   };
 }
@@ -1223,15 +1248,63 @@ function updateRuntimeTraceSourceLimits(trace, stage0) {
   });
 }
 
-function addPromptArtifacts(trace, promptStack) {
+function updateRuntimeTraceSourceLimits(trace, stage0) {
   if (!trace) return;
-  trace.artifacts.push(...(promptStack?.manifest || []).map((item) => ({
-    kind: item.kind,
-    node_id: item.node_id || null,
-    file: item.file || null,
-    present: Boolean(item.present),
-    required_top_level_keys: item.required_top_level_keys || undefined
-  })));
+
+  const manifest = stage0?.hybrid_extraction_manifest || {};
+  const summary = manifest.collection_summary || {};
+  const sourceTrace =
+    manifest.source_runtime_trace ||
+    manifest.runtime_limits ||
+    summary ||
+    {};
+
+  trace.operational_limits = buildOperationalLimits({
+    source: {
+      source_max_candidates_used:
+        sourceTrace.source_max_candidates_used ??
+        summary.source_max_candidates_used,
+
+      source_fetch_timeout_ms_used:
+        sourceTrace.source_fetch_timeout_ms_used ??
+        summary.source_fetch_timeout_ms_used,
+
+      source_candidate_limit_hit:
+        sourceTrace.source_candidate_limit_hit ??
+        summary.source_candidate_limit_hit
+    }
+  });
+
+  trace.source_runtime_trace = {
+    source_max_candidates_used: trace.operational_limits.source_max_candidates_used,
+    source_fetch_timeout_ms_used: trace.operational_limits.source_fetch_timeout_ms_used,
+    source_candidate_limit_hit: trace.operational_limits.source_candidate_limit_hit,
+
+    source_candidate_count:
+      sourceTrace.source_candidate_count ??
+      summary.discovered_candidate_count ??
+      summary.source_candidate_count ??
+      null,
+
+    source_fetch_queue_count:
+      sourceTrace.source_fetch_queue_count ??
+      summary.fetch_queue_count ??
+      null,
+
+    source_deferred_count:
+      sourceTrace.source_deferred_count ??
+      summary.deferred_count ??
+      null,
+
+    fetch_failure_count:
+      sourceTrace.fetch_failure_count ??
+      summary.fetch_failure_count ??
+      null,
+
+    fetch_timeout_failure_count:
+      sourceTrace.fetch_timeout_failure_count ??
+      null
+  };
 }
 
 function startStage(trace, nodeId, input) {
@@ -1655,8 +1728,16 @@ function normalizeInput(input) {
     pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim(),
     max_candidate_sources: input.max_candidate_sources || input.maxCandidateSources,
     fetch_timeout_ms: input.fetch_timeout_ms || input.fetchTimeoutMs,
+
+    source_max_candidates: input.source_max_candidates || input.sourceMaxCandidates,
+    source_fetch_timeout_ms: input.source_fetch_timeout_ms || input.sourceFetchTimeoutMs,
+
+    runtime_limits: input.runtime_limits || input.runtimeLimits || {},
+
     debug_trace: toBoolean(input.debug_trace ?? input.debugTrace),
     debug_raw: toBoolean(input.debug_raw ?? input.debugRaw),
+    debug_compact: toBoolean(input.debug_compact ?? input.debugCompact),
+
     run_until: String(input.run_until || input.runUntil || "").trim(),
     p6_batch_number: input.p6_batch_number || input.p6BatchNumber,
     p6_batch_id: String(input.p6_batch_id || input.p6BatchId || "").trim()
