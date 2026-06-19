@@ -485,27 +485,6 @@ export async function runSingleNode({
   const modelMetaByPhase = {};
   const parseRepairTraces = {};
 
-  const inboundGateName = inboundTransitionForPhase(nodeId);
-  if (inboundGateName) {
-    const gate = validateTransitionGate({
-      edge: inboundGateName,
-      upstream,
-      referenceBundles
-    });
-
-    mechanicalValidations[`GATE_${inboundGateName}`] = gate;
-
-    if (!gate.ok) {
-      return singleNodeFailure({
-        nodeId,
-        status: `${inboundGateName.toUpperCase()}_TRANSITION_GATE_FAILED`,
-        error: gate.errors.join(";"),
-        mechanical_validation: gate,
-        upstream_keys: Object.keys(upstream)
-      });
-    }
-  }
-
   const referenceBundle = await loadReferenceBundle({
     phaseId: nodeId,
     baseDir
@@ -528,6 +507,28 @@ export async function runSingleNode({
       mechanical_validation: referenceValidation,
       reference_bundle: summarizeReferenceBundles(referenceBundles)
     });
+  }
+
+  const inboundGateName = inboundTransitionForPhase(nodeId);
+  if (inboundGateName) {
+    const gate = validateTransitionGate({
+      edge: inboundGateName,
+      upstream,
+      referenceBundles
+    });
+
+    mechanicalValidations[`GATE_${inboundGateName}`] = gate;
+
+    if (!gate.ok) {
+      return singleNodeFailure({
+        nodeId,
+        status: `${inboundGateName.toUpperCase()}_TRANSITION_GATE_FAILED`,
+        error: gate.errors.join(";"),
+        mechanical_validation: gate,
+        upstream_keys: Object.keys(upstream),
+        reference_bundle: summarizeReferenceBundles(referenceBundles)
+      });
+    }
   }
 
   if (nodeId === "P6") {
