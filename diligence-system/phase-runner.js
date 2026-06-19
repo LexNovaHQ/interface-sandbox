@@ -10,7 +10,7 @@ import {
 } from "./mechanical-output-validator.js";
 import { runSourceAdapter } from "./source-adapter.js";
 import { loadReferenceBundle, formatReferencesForPrompt, validatePhaseReferences } from "./reference-loader.js";
-
+import { renderDiligenceReport } from "./renderer.js";
 const __filename = fileURLToPath(import.meta.url);
 const BASE_DIR = path.dirname(__filename);
 
@@ -286,30 +286,136 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
     return fail({ run, promptStack, runtimeTrace, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, modelMetaByPhase, status: "P7_TO_RENDERER_TRANSITION_GATE_FAILED", failedNode: "RENDERER", error: rendererGate.errors.join(";"), lastModelMeta });
   }
 
-  const response = {
-    ok: true,
-    mode: ACTIVE_RUNTIME,
-    status: shouldStopAt(runUntil, "RENDERER") ? "STOPPED_AFTER_RENDERER" : "PHASE_STACK_COMPLETE",
-    run_id: run.run_id,
-    target_url: run.target_url,
-    company_name: run.company_name,
-    source_mode: run.source_mode,
-    completed_nodes: completedNodes,
-    prompt_stack: promptStack.manifest,
-    reference_bundles: summarizeReferenceBundles(referenceBundles),
-    mechanical_validations: mechanicalValidations,
-    phase_outputs: phaseOutputs,
-    hybrid_extraction_manifest: stage0.hybrid_extraction_manifest,
-    extraction_forensic_ledger: stage0.extraction_forensic_ledger,
-    runtime_orchestration_manifest: buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode: null, referenceBundles, modelMetaByPhase }),
-    phase_stack: { completed_nodes: completedNodes, failed_node: null, next_node: "RENDERER" },
-    model_meta_last: lastModelMeta,
-    model_meta_by_phase: modelMetaByPhase,
-    ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {}),
-    ...flatten(phaseOutputs)
-  };
-  return withObservability(response, { runtimeTrace, upstream, phaseOutputs, mechanicalValidations, modelMetaByPhase, debugTrace });
+  const rendererStage = startStage(runtimeTrace, "RENDERER", {
+  final_output_handoff_present: Boolean(upstream.P7?.final_output_handoff),
+  screen_report_payload_present: Boolean(upstream.P7?.final_output_handoff?.screen_report_payload),
+  renderer_contract_present: Boolean(upstream.P7?.final_output_handoff?.screen_report_payload?.renderer_contract)
+});
+
+let rendererResult;
+
+try {
+  rendererResult = renderDiligenceReport({
+    run,
+    phaseOutputs,
+    upstream,
+    mechanicalValidations,
+    runtimeTrace
+  });
+} catch (err) {
+  failStage(runtimeTrace, rendererStage, err, "Renderer failed");
+  return fail({
+    run,
+    promptStack,
+    runtimeTrace,
+    upstream,
+    phaseOutputs,
+    referenceBundles,
+    mechanicalValidations,
+    completedNodes,
+    modelMetaByPhase,
+    parseRepairTraces,
+    status: "RENDERER_FAILED",
+    failedNode: "RENDERER",
+    error: err?.message || String(err),
+    lastModelMeta
+  });
 }
+
+const rendererValidation = {
+  ok: rendererResult?.renderer_output?.render_status !== "FAILURE_RENDERED",
+  phase_id: "RENDERER",
+  errors: rendererResult?.renderer_output?.render_status === "FAILURE_RENDERED"
+    ? [rendererResult?.renderer_trace?.errors?.join(";") || "RENDERER_FAILURE_RENDERED"]
+    : [],
+  warnings: rendererResult?.renderer_trace?.warnings || [],
+  mechanical_only: true
+};
+
+mechanicalValidations.RENDERER = rendererValidation;
+
+if (!rendererValidation.ok) {
+  failStage(runtimeTrace, rendererStage, rendererValidation.errors, "Renderer validation failed");
+  return fail({
+    run,
+    promptStack,
+    runtimeTrace,
+    upstream,
+    phaseOutputs,
+    referenceBundles,
+    mechanicalValidations,
+    completedNodes,
+    modelMetaByPhase,
+    parseRepairTraces,
+    status: "RENDERER_VALIDATION_FAILED",
+    failedNode: "RENDERER",
+    error: rendererValidation.errors.join(";"),
+    lastModelMeta
+  });
+}
+
+finishStage(runtimeTrace, rendererStage, {
+  output: rendererResult,
+  validation: rendererValidation,
+  summary: "Renderer completed"
+});
+
+const renderCompletedNodes = [...completedNodes, "RENDERER"];
+const rendererStatus = rendererResult?.renderer_output?.render_status || "RENDERED";
+
+const response = {
+  ok: true,
+  mode: ACTIVE_RUNTIME,
+  status: shouldStopAt(runUntil, "RENDERER")
+    ? "STOPPED_AFTER_RENDERER"
+    : rendererStatus === "RENDERED_WITH_WARNINGS"
+      ? "PHASE_STACK_RENDERED_WITH_WARNINGS"
+      : "PHASE_STACK_RENDERED",
+  run_id: run.run_id,
+  target_url: run.target_url,
+  company_name: run.company_name,
+  source_mode: run.source_mode,
+  completed_nodes: renderCompletedNodes,
+  prompt_stack: promptStack.manifest,
+  reference_bundles: summarizeReferenceBundles(referenceBundles),
+  mechanical_validations: mechanicalValidations,
+  phase_outputs: phaseOutputs,
+  hybrid_extraction_manifest: stage0.hybrid_extraction_manifest,
+  extraction_forensic_ledger: stage0.extraction_forensic_ledger,
+  runtime_orchestration_manifest: buildOrchestrationManifest({
+    run,
+    promptStack,
+    completedNodes: renderCompletedNodes,
+    failedNode: null,
+    referenceBundles,
+    modelMetaByPhase
+  }),
+  operational_limits: runtimeTrace?.operational_limits || buildOperationalLimits(),
+  source_runtime_trace: runtimeTrace?.source_runtime_trace || null,
+  phase_stack: {
+    completed_nodes: renderCompletedNodes,
+    failed_node: null,
+    next_node: "COMPLETE"
+  },
+  renderer_output: rendererResult.renderer_output,
+  renderer_trace: rendererResult.renderer_trace,
+  rendered_report: rendererResult.rendered_report,
+  html_report: rendererResult.renderer_output?.html_report || rendererResult.rendered_report?.html || null,
+  report_json: rendererResult.renderer_output?.report_json || rendererResult.rendered_report?.report_json || null,
+  model_meta_last: lastModelMeta,
+  model_meta_by_phase: modelMetaByPhase,
+  ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {}),
+  ...flatten(phaseOutputs)
+};
+
+return withObservability(response, {
+  runtimeTrace,
+  upstream,
+  phaseOutputs,
+  mechanicalValidations,
+  modelMetaByPhase,
+  debugTrace
+});
 
 async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle, baseDir, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, runUntil }) {
   const registryRows = parseP6RegistryRows(referenceBundle);
@@ -1534,9 +1640,30 @@ function fail({ run, promptStack, runtimeTrace = null, upstream = {}, phaseOutpu
     ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {}),
     ...flatten(phaseOutputs)
   };
-  response.compact_failure = buildCompactFailureObject({ response, upstream, phaseOutputs, mechanicalValidations, modelMetaByPhase });
-  return withObservability(response, { runtimeTrace, upstream, phaseOutputs, mechanicalValidations, modelMetaByPhase, debugTrace: Boolean(runtimeTrace) });
-}
+  response.compact_failure = buildCompactFailureObject({
+  response,
+  upstream,
+  phaseOutputs,
+  mechanicalValidations,
+  modelMetaByPhase
+});
+
+const renderedFailureResponse = attachRendererArtifacts(response, {
+  run,
+  phaseOutputs,
+  upstream,
+  mechanicalValidations,
+  runtimeTrace
+});
+
+return withObservability(renderedFailureResponse, {
+  runtimeTrace,
+  upstream,
+  phaseOutputs,
+  mechanicalValidations,
+  modelMetaByPhase,
+  debugTrace: Boolean(runtimeTrace)
+});
 
 export function validateTransitionGate({ edge, upstream = {}, referenceBundles = {} } = {}) {
   const errors = [];
@@ -1608,14 +1735,12 @@ export function validateTransitionGate({ edge, upstream = {}, referenceBundles =
     requirePath("P6.exposure_profile_forensic_ledger");
     requirePath("P6.registry_evaluation_trace");
   } else if (edge === "P7_to_RENDERER") {
-    requirePath("P7.final_output_handoff");
-    requirePath("P7.final_output_forensic_ledger");
-    requirePath("P7.final_compiler_trace");
-    requireOneOf([
-      "P7.final_output_handoff.screen_report_payload",
-      "P7.final_output_handoff.integrated_json_report",
-      "P7.final_output_handoff.vault_assembler_handoff"
-    ]);
+  requirePath("P7.final_output_handoff");
+  requirePath("P7.final_output_forensic_ledger");
+  requirePath("P7.final_compiler_trace");
+  requirePath("P7.final_output_handoff.screen_report_payload");
+  requirePath("P7.final_output_handoff.screen_report_payload.renderer_contract");
+}
   } else {
     errors.push(`UNKNOWN_TRANSITION_GATE:${edge}`);
   }
@@ -1694,6 +1819,60 @@ function buildCompactFailureObject({ response, upstream, phaseOutputs, mechanica
       value && typeof value === "object" && !Array.isArray(value) ? Object.keys(value) : []
     ]))
   };
+}
+
+function attachRendererArtifacts(response, {
+  run,
+  phaseOutputs = {},
+  upstream = {},
+  mechanicalValidations = {},
+  runtimeTrace = null
+} = {}) {
+  try {
+    const rendererResult = renderDiligenceReport({
+      run,
+      phaseOutputs,
+      upstream,
+      mechanicalValidations,
+      runtimeTrace,
+      response
+    });
+
+    return {
+      ...response,
+      renderer_output: rendererResult.renderer_output,
+      renderer_trace: rendererResult.renderer_trace,
+      rendered_report: rendererResult.rendered_report,
+      html_report: rendererResult.renderer_output?.html_report || rendererResult.rendered_report?.html || null,
+      report_json: rendererResult.renderer_output?.report_json || rendererResult.rendered_report?.report_json || null
+    };
+  } catch (err) {
+    return {
+      ...response,
+      renderer_output: {
+        renderer_version: "deterministic_html_renderer_v1",
+        render_status: "RENDERER_FAILED_DURING_FAILURE_RENDER",
+        report_title: "Diligence Run Failed",
+        html_report: null,
+        plain_text_summary: `Renderer failed while building controlled failure report: ${err?.message || String(err)}`,
+        report_json: null,
+        export_payload: {
+          artifact_type: "renderer_failure",
+          html_report_present: false,
+          report_json_present: false
+        },
+        download_artifacts: []
+      },
+      renderer_trace: {
+        renderer_version: "deterministic_html_renderer_v1",
+        render_mode: "FAILURE_RENDER",
+        errors: [err?.message || String(err)],
+        warnings: ["RENDERER_FAILED_WHILE_RENDERING_FAILURE_RESPONSE"]
+      },
+      html_report: null,
+      report_json: null
+    };
+  }
 }
 
 function summarizeMechanicalValidations(validations = {}) {
