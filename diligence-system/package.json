@@ -8,7 +8,7 @@
     "dev": "node server.js",
 
     "check": "npm run check:syntax && npm run check:imports",
-    "check:syntax": "node --check server.js && node --check source-adapter.js && node --check phase-runner.js && node --check mechanical-output-validator.js && node --check reference-loader.js",
+    "check:syntax": "node --check server.js && node --check source-adapter.js && node --check phase-runner.js && node --check mechanical-output-validator.js && node --check reference-loader.js && node --check renderer.js",
     "check:imports": "node -e \"import('./server.js').then(()=>console.log('IMPORT_OK server')).catch((err)=>{console.error(err);process.exit(1)})\"",
 
     "smoke": "node -e \"console.log('diligence-system package smoke ok')\"",
