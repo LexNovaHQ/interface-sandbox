@@ -81,10 +81,12 @@ required_inputs:
       purpose: Stage 1 source admission, family routing, artifact-family coverage, absence/access/deferred records
   - source_discovery_forensic_ledger:
       purpose: upstream evidence custody, source-family status, hosted-governance admission, dedupe/absence/access-failed basis
-  - legal_governance_evidence_package:
+  - legal_cartography_package:
       purpose: admitted legal_governance and admitted hosted_governance artifacts only
-  - legal_governance_absence_package:
-      purpose: Stage 1 documented absence, unknown_not_searched, access_failed, deferred records for legal/governance artifact classes
+  - source_discovery_handoff.absence_records:
+      purpose: Stage 1 documented absence, unknown_not_searched, and deferred records for legal/governance artifact classes
+  - source_discovery_handoff.access_failed_sources:
+      purpose: Stage 1 documented access_failed records for legal/governance artifact classes
   - target_profile_ref_metadata:
       purpose: deterministic target metadata only; not evidence for legal/governance classification
 ```

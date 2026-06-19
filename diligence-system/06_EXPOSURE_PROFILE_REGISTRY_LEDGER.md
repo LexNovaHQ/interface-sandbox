@@ -115,7 +115,7 @@ Phase 06 requires:
   "target_feature_profile": {},
   "legal_cartography_index": {},
   "target_data_provenance_profile": {},
-  "legal_governance_lossless_evidence_package": [],
+  "registry_support_package": [],
   "prior_phase_forensic_ledgers": {}
 }
 ```
@@ -440,7 +440,7 @@ Each batch packet must include:
   "target_feature_profile": {},
   "legal_cartography_index": {},
   "target_data_provenance_profile": {},
-  "legal_governance_lossless_evidence_package": [],
+  "registry_support_package": [],
   "hunter_engine_rules": []
 }
 

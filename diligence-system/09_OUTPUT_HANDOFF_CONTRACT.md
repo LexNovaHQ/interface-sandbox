@@ -167,8 +167,8 @@ TRANSITION_CONTRACTS:
   P1_to_P2:
     required_inputs_to_next:
       - source_discovery_handoff
-      - source_discovery_handoff.target_profile_package
-      - source_discovery_handoff.final_source_coverage_package
+      - source_discovery_handoff.phase_packages.target_profile_package
+      - source_discovery_handoff.phase_packages.final_source_coverage_package
       - source_discovery_forensic_ledger
       - source_discovery_trace
     next_must_emit:
@@ -182,7 +182,7 @@ TRANSITION_CONTRACTS:
   P2_to_P3:
     required_inputs_to_next:
       - target_profile
-      - source_discovery_handoff.target_feature_package
+      - source_discovery_handoff.phase_packages.feature_profile_package
       - target_profile_forensic_ledger
       - target_profile_trace
     next_must_emit:
@@ -191,28 +191,29 @@ TRANSITION_CONTRACTS:
       - target_feature_profile
     block_if_missing:
       - target_profile
-      - target_feature_package
+      - feature_profile_package
 
   P3_to_P4:
     required_inputs_to_next:
       - target_profile
       - target_feature_profile
-      - source_discovery_handoff.legal_governance_evidence_package
-      - source_discovery_handoff.legal_governance_absence_package
+      - source_discovery_handoff.phase_packages.legal_cartography_package
+      - source_discovery_handoff.absence_records
+      - source_discovery_handoff.access_failed_sources
     next_must_emit:
       - legal_cartography_forensic_ledger
       - legal_cartography_trace
       - legal_cartography_index
     block_if_missing:
       - target_profile
-      - legal_governance_evidence_package
+      - legal_cartography_package
 
   P4_to_P5:
     required_inputs_to_next:
       - target_profile
       - target_feature_profile
       - legal_cartography_index
-      - source_discovery_handoff.data_provenance_packages
+      - source_discovery_handoff.phase_packages.data_provenance_package
       - legal_cartography_forensic_ledger
       - legal_cartography_trace
     next_must_emit:
@@ -222,7 +223,7 @@ TRANSITION_CONTRACTS:
     block_if_missing:
       - target_feature_profile
       - legal_cartography_index
-      - data_provenance_packages
+      - data_provenance_package
 
   P5_to_P6:
     required_inputs_to_next:
@@ -232,7 +233,7 @@ TRANSITION_CONTRACTS:
       - target_feature_profile
       - legal_cartography_index
       - target_data_provenance_profile
-      - legal_governance_lossless_evidence_package
+      - source_discovery_handoff.phase_packages.registry_support_package
       - data_provenance_forensic_ledger
       - data_provenance_trace
     next_must_emit:
@@ -243,7 +244,7 @@ TRANSITION_CONTRACTS:
       - registry_key
       - ai_threat_registry
       - target_data_provenance_profile
-      - legal_governance_lossless_evidence_package
+      - registry_support_package
 
   P6_to_P7:
     required_inputs_to_next:
@@ -323,14 +324,16 @@ REQUIRED_OUTPUT_SHAPES:
       - access_failed_sources
       - absence_records
       - source_family_map
-      - target_profile_package
-      - target_feature_package
-      - legal_governance_evidence_package
-      - legal_governance_absence_package
-      - data_provenance_packages
-      - legal_governance_lossless_evidence_package
-      - final_source_coverage_package
+      - phase_packages
       - source_discovery_lock
+    phase_packages:
+      required_keys:
+        - target_profile_package
+        - feature_profile_package
+        - legal_cartography_package
+        - data_provenance_package
+        - registry_support_package
+        - final_source_coverage_package
 
   target_profile:
     required_keys:

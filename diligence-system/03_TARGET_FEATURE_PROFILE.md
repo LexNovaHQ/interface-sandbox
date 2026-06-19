@@ -93,7 +93,7 @@ required_inputs:
       purpose: upstream evidence custody and admission ledger
   - target_profile:
       purpose: Phase 2 canonical target/company profile and product wrapper baseline
-  - target_feature_package:
+  - feature_profile_package:
       purpose: Phase 1 admitted product evidence routed to Phase 3
   - full_text_artifact_access:
       purpose: selected full-text artifacts by evidence_ref/source_ref when required

@@ -289,8 +289,8 @@ RUNTIME_EXECUTION_AUDIT:
       fail_if: phase_5_uses_unrouted_or_irrelevant_source_family_without_exception_record
       fail_status: BLOCKER
     - id: EVD.004
-      check: phase_6_legal_governance_lossless_access_present
-      fail_if: registry_evaluation_runs_without_required_lossless_legal_governance_evidence_package
+      check: phase_6_registry_support_package_present
+      fail_if: registry_evaluation_runs_without_required_registry_support_package
       fail_status: BLOCKER
     - id: EVD.005
       check: phase_7_no_fresh_source_analysis

@@ -1456,7 +1456,7 @@ function buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundl
       target_feature_profile: upstream.P3?.target_feature_profile,
       legal_cartography_index: upstream.P4?.legal_cartography_index,
       target_data_provenance_profile: upstream.P5?.target_data_provenance_profile,
-      legal_governance_lossless_evidence_package: buildP6EvidencePackage(upstream),
+      registry_support_package: buildP6EvidencePackage(upstream),
       admitted_evidence_package_available_to_p6: buildP6EvidencePackage(upstream),
       hunter_engine_rules: hunterRules.rows,
       route_plan_for_batch: batch.expected_registry_row_ids.map((id) => routePlan.by_id[id]).filter(Boolean)
@@ -1471,7 +1471,7 @@ function buildP6EvidencePackage(upstream = {}) {
     legal_cartography_package: handoff.phase_packages?.legal_cartography_package || null,
     data_provenance_package: handoff.phase_packages?.data_provenance_package || null,
     final_source_coverage_package: handoff.phase_packages?.final_source_coverage_package || null,
-    legal_governance_absence_package: handoff.legal_governance_absence_package || null,
+    absence_records: handoff.absence_records || null,
     documented_absences: handoff.documented_absences || []
   };
 }
@@ -2416,7 +2416,7 @@ export function validateTransitionGate({ edge, upstream = {}, referenceBundles =
     requirePath("P3.feature_function_trace");
     requirePath("P1.source_discovery_handoff.phase_packages.legal_cartography_package");
     requireOneOf([
-      "P1.source_discovery_handoff.legal_governance_absence_package",
+      "P1.source_discovery_handoff.absence_records",
       "P1.source_discovery_handoff.documented_absences",
       "P1.source_discovery_handoff.phase_packages.final_source_coverage_package"
     ]);
