@@ -418,6 +418,712 @@ return withObservability(response, {
 });
 }
 
+export async function runSingleNode({
+  run: input = {},
+  nodeId,
+  artifacts = {},
+  callModel,
+  baseDir = BASE_DIR
+} = {}) {
+  const run = normalizeInput(input);
+
+  if (!nodeId) {
+    return singleNodeFailure({
+      nodeId: "UNKNOWN",
+      status: "RUN_SINGLE_NODE_NODE_ID_MISSING",
+      error: "RUN_SINGLE_NODE_NODE_ID_MISSING"
+    });
+  }
+
+  if (nodeId === "S0") {
+    return runSingleS0Node({ run, baseDir, callModel });
+  }
+
+  if (nodeId === "RENDERER") {
+    return runSingleRendererNode({ run, artifacts, baseDir });
+  }
+
+  if (!["P1", "P2", "P3", "P4", "P5", "P6", "P7"].includes(nodeId)) {
+    return singleNodeFailure({
+      nodeId,
+      status: "RUN_SINGLE_NODE_NOT_IMPLEMENTED",
+      error: `RUN_SINGLE_NODE_NOT_IMPLEMENTED:${nodeId}`
+    });
+  }
+
+  if (typeof callModel !== "function") {
+    return singleNodeFailure({
+      nodeId,
+      status: `${nodeId}_CALL_MODEL_FUNCTION_REQUIRED`,
+      error: "CALL_MODEL_FUNCTION_REQUIRED"
+    });
+  }
+
+  const promptStack = await loadPromptStack(baseDir);
+  if (!promptStack.ok) {
+    return singleNodeFailure({
+      nodeId,
+      status: "PROMPT_STACK_NOT_READY",
+      error: promptStack.errors.join(";"),
+      prompt_stack: promptStack.manifest || []
+    });
+  }
+
+  const phase = promptStack.phases.find((item) => item.node_id === nodeId);
+  if (!phase) {
+    return singleNodeFailure({
+      nodeId,
+      status: `${nodeId}_PHASE_PROMPT_NOT_FOUND`,
+      error: `${nodeId}_PHASE_PROMPT_NOT_FOUND`,
+      prompt_stack: promptStack.manifest || []
+    });
+  }
+
+  const upstream = buildSingleNodeUpstreamFromArtifacts({ nodeId, artifacts });
+  const referenceBundles = {};
+  const mechanicalValidations = collectMechanicalValidationsFromArtifacts(artifacts);
+  const modelMetaByPhase = {};
+  const parseRepairTraces = {};
+
+  const inboundGateName = inboundTransitionForPhase(nodeId);
+  if (inboundGateName) {
+    const gate = validateTransitionGate({
+      edge: inboundGateName,
+      upstream,
+      referenceBundles
+    });
+
+    mechanicalValidations[`GATE_${inboundGateName}`] = gate;
+
+    if (!gate.ok) {
+      return singleNodeFailure({
+        nodeId,
+        status: `${inboundGateName.toUpperCase()}_TRANSITION_GATE_FAILED`,
+        error: gate.errors.join(";"),
+        mechanical_validation: gate,
+        upstream_keys: Object.keys(upstream)
+      });
+    }
+  }
+
+  const referenceBundle = await loadReferenceBundle({
+    phaseId: nodeId,
+    baseDir
+  });
+
+  referenceBundles[nodeId] = referenceBundle;
+
+  const referenceValidation = validatePhaseReferences({
+    phaseId: nodeId,
+    bundle: referenceBundle
+  });
+
+  mechanicalValidations[`REF_${nodeId}`] = referenceValidation;
+
+  if (!referenceValidation.ok) {
+    return singleNodeFailure({
+      nodeId,
+      status: `${nodeId}_REFERENCE_VALIDATION_FAILED`,
+      error: referenceValidation.errors.join(";"),
+      mechanical_validation: referenceValidation,
+      reference_bundle: summarizeReferenceBundles(referenceBundles)
+    });
+  }
+
+  if (nodeId === "P6") {
+    return runSingleP6Node({
+      run,
+      promptStack,
+      phase,
+      upstream,
+      referenceBundle,
+      referenceBundles,
+      mechanicalValidations,
+      modelMetaByPhase,
+      parseRepairTraces,
+      callModel,
+      baseDir
+    });
+  }
+
+  return runSingleModelPhaseNode({
+    run,
+    promptStack,
+    phase,
+    upstream,
+    referenceBundle,
+    referenceBundles,
+    mechanicalValidations,
+    modelMetaByPhase,
+    parseRepairTraces,
+    callModel
+  });
+}
+
+async function runSingleS0Node({ run, baseDir, callModel }) {
+  try {
+    const stage0 = await runSourceAdapter({
+      input: run,
+      baseDir,
+      callModel
+    });
+
+    if (!stage0 || typeof stage0 !== "object") {
+      return singleNodeFailure({
+        nodeId: "S0",
+        status: "S0_SOURCE_ADAPTER_EMPTY_OUTPUT",
+        error: "S0_SOURCE_ADAPTER_EMPTY_OUTPUT"
+      });
+    }
+
+    if (!stage0.hybrid_extraction_manifest) {
+      return singleNodeFailure({
+        nodeId: "S0",
+        status: "S0_HYBRID_EXTRACTION_MANIFEST_MISSING",
+        error: "S0_HYBRID_EXTRACTION_MANIFEST_MISSING"
+      });
+    }
+
+    if (!stage0.extraction_forensic_ledger) {
+      return singleNodeFailure({
+        nodeId: "S0",
+        status: "S0_EXTRACTION_FORENSIC_LEDGER_MISSING",
+        error: "S0_EXTRACTION_FORENSIC_LEDGER_MISSING"
+      });
+    }
+
+    return singleNodeEnvelope({
+      nodeId: "S0",
+      output: stage0,
+      mechanicalValidation: {
+        ok: true,
+        phase_id: "S0",
+        errors: [],
+        warnings: [],
+        mechanical_only: true
+      },
+      modelMeta: null
+    });
+  } catch (err) {
+    return singleNodeFailure({
+      nodeId: "S0",
+      status: "S0_SOURCE_ADAPTER_FAILED",
+      error: err?.message || String(err)
+    });
+  }
+}
+
+async function runSingleModelPhaseNode({
+  run,
+  promptStack,
+  phase,
+  upstream,
+  referenceBundle,
+  referenceBundles,
+  mechanicalValidations,
+  modelMetaByPhase,
+  parseRepairTraces,
+  callModel
+}) {
+  const nodeId = phase.node_id;
+  const payload = buildPayload({
+    run,
+    promptStack,
+    phase,
+    upstream,
+    referenceBundle
+  });
+
+  let modelResult;
+
+  try {
+    modelResult = await callModel({
+      phaseId: nodeId,
+      poolName: phase.pool,
+      systemPrompt: payload.systemPrompt,
+      userPrompt: payload.userPrompt,
+      responseMimeType: "application/json",
+      temperature: 0,
+      allowGrounding: false
+    });
+  } catch (err) {
+    return singleNodeFailure({
+      nodeId,
+      status: `${nodeId}_MODEL_CALL_FAILED`,
+      error: err?.message || String(err),
+      reference_bundle: summarizeReferenceBundles(referenceBundles),
+      mechanical_validations: mechanicalValidations
+    });
+  }
+
+  const modelMeta = compactModelMeta(modelResult?.meta || modelResult || null, phase);
+  modelMetaByPhase[nodeId] = modelMeta;
+
+  const rawText = String(modelResult?.text || "");
+  const parsedResult = await parseSingleNodeJsonWithRepair({
+    phase,
+    rawText,
+    callModel,
+    modelMetaByPhase,
+    parseRepairTraces
+  });
+
+  if (!parsedResult.ok) {
+    const validation = {
+      ok: false,
+      phase_id: nodeId,
+      errors: [parsedResult.error],
+      warnings: parsedResult.warning ? [parsedResult.warning] : [],
+      mechanical_only: true
+    };
+
+    mechanicalValidations[nodeId] = validation;
+
+    return singleNodeFailure({
+      nodeId,
+      status: `${nodeId}_JSON_PARSE_FAILED`,
+      error: parsedResult.error,
+      mechanical_validation: validation,
+      model_meta: modelMeta,
+      model_meta_by_phase: modelMetaByPhase,
+      parse_repair_trace: parseRepairTraces
+    });
+  }
+
+  const phaseParsed = nodeId === "P1"
+    ? normalizeP1PhasePackages(parsedResult.parsed)
+    : parsedResult.parsed;
+
+  const validation = validateMechanicalPhaseOutput({
+    phaseId: nodeId,
+    rawText,
+    parsed: phaseParsed,
+    requiredTopLevelKeys: getRequiredKeysForPhase(nodeId),
+    context: {
+      s0_candidate_count: upstream.S0?.hybrid_extraction_manifest?.candidate_sources?.length
+    }
+  });
+
+  if (parsedResult.warning) {
+    validation.warnings = [
+      ...(validation.warnings || []),
+      parsedResult.warning
+    ];
+  }
+
+  mechanicalValidations[nodeId] = validation;
+
+  if (!validation.ok) {
+    return singleNodeFailure({
+      nodeId,
+      status: `${nodeId}_MECHANICAL_VALIDATION_FAILED`,
+      error: validation.errors.join(";"),
+      mechanical_validation: validation,
+      model_meta: modelMeta,
+      model_meta_by_phase: modelMetaByPhase
+    });
+  }
+
+  return singleNodeEnvelope({
+    nodeId,
+    output: phaseParsed,
+    referenceBundle: summarizeReferenceBundles(referenceBundles),
+    mechanicalValidation: validation,
+    modelMeta,
+    extra: {
+      model_meta_by_phase: modelMetaByPhase,
+      ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {})
+    }
+  });
+}
+
+async function runSingleP6Node({
+  run,
+  promptStack,
+  phase,
+  upstream,
+  referenceBundle,
+  referenceBundles,
+  mechanicalValidations,
+  modelMetaByPhase,
+  parseRepairTraces,
+  callModel,
+  baseDir
+}) {
+  const nodeId = "P6";
+
+  let p6BatchResult;
+
+  try {
+    p6BatchResult = await runP6Batched({
+      run,
+      promptStack,
+      phase,
+      upstream,
+      referenceBundle,
+      baseDir,
+      callModel,
+      modelMetaByPhase,
+      parseRepairTraces,
+      runtimeTrace: null,
+      runUntil: null
+    });
+  } catch (err) {
+    return singleNodeFailure({
+      nodeId,
+      status: "P6_BATCHING_FAILED",
+      error: err?.message || String(err),
+      reference_bundle: summarizeReferenceBundles(referenceBundles),
+      mechanical_validations: mechanicalValidations,
+      model_meta_by_phase: modelMetaByPhase
+    });
+  }
+
+  if (!p6BatchResult?.ok) {
+    const validation = p6BatchResult?.validation || {
+      ok: false,
+      phase_id: nodeId,
+      errors: [p6BatchResult?.error || "P6_BATCHING_FAILED"],
+      warnings: p6BatchResult?.warnings || [],
+      mechanical_only: true
+    };
+
+    mechanicalValidations[nodeId] = validation;
+
+    return singleNodeFailure({
+      nodeId,
+      status: p6BatchResult?.status || "P6_BATCHING_FAILED",
+      error: p6BatchResult?.error || "P6_BATCHING_FAILED",
+      mechanical_validation: validation,
+      reference_bundle: summarizeReferenceBundles(referenceBundles),
+      model_meta_by_phase: modelMetaByPhase
+    });
+  }
+
+  const phaseParsed = p6BatchResult.parsed;
+
+  const validation = validateMechanicalPhaseOutput({
+    phaseId: nodeId,
+    rawText: JSON.stringify(phaseParsed),
+    parsed: phaseParsed,
+    requiredTopLevelKeys: getRequiredKeysForPhase(nodeId),
+    context: {
+      s0_candidate_count: upstream.S0?.hybrid_extraction_manifest?.candidate_sources?.length
+    }
+  });
+
+  validation.warnings = [
+    ...(validation.warnings || []),
+    ...(p6BatchResult.warnings || [])
+  ];
+
+  mechanicalValidations[nodeId] = validation;
+
+  if (!validation.ok) {
+    return singleNodeFailure({
+      nodeId,
+      status: "P6_MECHANICAL_VALIDATION_FAILED",
+      error: validation.errors.join(";"),
+      mechanical_validation: validation,
+      reference_bundle: summarizeReferenceBundles(referenceBundles),
+      model_meta_by_phase: modelMetaByPhase
+    });
+  }
+
+  return singleNodeEnvelope({
+    nodeId,
+    output: phaseParsed,
+    referenceBundle: summarizeReferenceBundles(referenceBundles),
+    mechanicalValidation: validation,
+    modelMeta: p6BatchResult.lastModelMeta || null,
+    extra: {
+      model_meta_by_phase: modelMetaByPhase,
+      ...(p6BatchResult.coverageValidation ? { p6_batch_coverage_validation: p6BatchResult.coverageValidation } : {}),
+      ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {})
+    }
+  });
+}
+
+function runSingleRendererNode({ run, artifacts }) {
+  const upstream = buildSingleNodeUpstreamFromArtifacts({
+    nodeId: "RENDERER",
+    artifacts
+  });
+
+  const referenceBundles = {};
+  const mechanicalValidations = collectMechanicalValidationsFromArtifacts(artifacts);
+  const phaseOutputs = collectPhaseOutputsFromUpstream(upstream);
+
+  const rendererGate = validateTransitionGate({
+    edge: "P7_to_RENDERER",
+    upstream,
+    referenceBundles
+  });
+
+  mechanicalValidations.GATE_P7_to_RENDERER = rendererGate;
+
+  if (!rendererGate.ok) {
+    return singleNodeFailure({
+      nodeId: "RENDERER",
+      status: "P7_TO_RENDERER_TRANSITION_GATE_FAILED",
+      error: rendererGate.errors.join(";"),
+      mechanical_validation: rendererGate
+    });
+  }
+
+  let rendererResult;
+
+  try {
+    rendererResult = renderDiligenceReport({
+      run,
+      phaseOutputs,
+      upstream,
+      mechanicalValidations,
+      runtimeTrace: null
+    });
+  } catch (err) {
+    return singleNodeFailure({
+      nodeId: "RENDERER",
+      status: "RENDERER_FAILED",
+      error: err?.message || String(err)
+    });
+  }
+
+  const rendererValidation = {
+    ok: rendererResult?.renderer_output?.render_status !== "FAILURE_RENDERED",
+    phase_id: "RENDERER",
+    errors: rendererResult?.renderer_output?.render_status === "FAILURE_RENDERED"
+      ? [rendererResult?.renderer_trace?.errors?.join(";") || "RENDERER_FAILURE_RENDERED"]
+      : [],
+    warnings: rendererResult?.renderer_trace?.warnings || [],
+    mechanical_only: true
+  };
+
+  if (!rendererValidation.ok) {
+    return singleNodeFailure({
+      nodeId: "RENDERER",
+      status: "RENDERER_VALIDATION_FAILED",
+      error: rendererValidation.errors.join(";"),
+      mechanical_validation: rendererValidation
+    });
+  }
+
+  return singleNodeEnvelope({
+    nodeId: "RENDERER",
+    output: {
+      ok: true,
+      status: "PUBLIC_REPORT_READY",
+      renderer_output: rendererResult.renderer_output,
+      renderer_trace: rendererResult.renderer_trace,
+      rendered_report: rendererResult.rendered_report,
+      html_report: rendererResult.renderer_output?.html_report || rendererResult.rendered_report?.html || null,
+      report_json: rendererResult.renderer_output?.report_json || rendererResult.rendered_report?.report_json || null,
+      vault_assembly_handoff: rendererResult.vault_assembly_handoff || null,
+      runtime_orchestration_manifest: rendererResult.runtime_orchestration_manifest || null
+    },
+    mechanicalValidation: rendererValidation,
+    modelMeta: null
+  });
+}
+
+async function parseSingleNodeJsonWithRepair({
+  phase,
+  rawText,
+  callModel,
+  modelMetaByPhase,
+  parseRepairTraces
+}) {
+  let parsed = parseJsonObject(rawText);
+  let warning = null;
+
+  if (parsed.ok) {
+    return {
+      ok: true,
+      parsed: parsed.parsed,
+      warning: null
+    };
+  }
+
+  const originalParseError = parsed.error;
+  const repairPhaseId = `${phase.node_id}_JSON_REPAIR`;
+  const repairTrace = {
+    phase_id: phase.node_id,
+    original_parse_error: originalParseError,
+    repair_attempted: true,
+    repair_succeeded: false,
+    repair_model_meta: null
+  };
+
+  let repairResult;
+
+  try {
+    repairResult = await callModel({
+      phaseId: repairPhaseId,
+      poolName: "repair",
+      systemPrompt: JSON_REPAIR_SYSTEM_PROMPT,
+      userPrompt: buildJsonRepairUserPrompt({
+        phase,
+        originalParseError,
+        rawText
+      }),
+      responseMimeType: "application/json",
+      temperature: 0,
+      allowGrounding: false
+    });
+  } catch (err) {
+    repairTrace.repair_error = err?.message || String(err);
+    parseRepairTraces[phase.node_id] = repairTrace;
+
+    return {
+      ok: false,
+      error: originalParseError
+    };
+  }
+
+  const repairModelMeta = compactModelMeta(
+    repairResult?.meta || repairResult || null,
+    {
+      node_id: repairPhaseId,
+      pool: "repair"
+    }
+  );
+
+  modelMetaByPhase[repairPhaseId] = repairModelMeta;
+  repairTrace.repair_model_meta = repairModelMeta;
+
+  const repairParsed = parseJsonObject(String(repairResult?.text || ""));
+  const repairFailed = repairParsed.ok && repairParsed.parsed?.repair_failed === true;
+
+  if (!repairParsed.ok || repairFailed) {
+    repairTrace.repair_error = repairFailed
+      ? (repairParsed.parsed?.repair_error || "UNREPAIRABLE_JSON")
+      : repairParsed.error;
+
+    parseRepairTraces[phase.node_id] = repairTrace;
+
+    return {
+      ok: false,
+      error: originalParseError
+    };
+  }
+
+  repairTrace.repair_succeeded = true;
+  parseRepairTraces[phase.node_id] = repairTrace;
+  parsed = repairParsed;
+  warning = `${phase.node_id}_JSON_REPAIRED_AFTER_PARSE_FAILURE`;
+
+  return {
+    ok: true,
+    parsed: parsed.parsed,
+    warning
+  };
+}
+
+function buildSingleNodeUpstreamFromArtifacts({ nodeId, artifacts = {} }) {
+  const upstream = {};
+  const requiredPriorNodes = priorNodesFor(nodeId);
+
+  for (const priorNode of requiredPriorNodes) {
+    const output = unwrapArtifactOutput(artifacts[priorNode]);
+
+    if (output !== undefined && output !== null) {
+      upstream[priorNode] = output;
+    }
+  }
+
+  return upstream;
+}
+
+function collectPhaseOutputsFromUpstream(upstream = {}) {
+  const phaseOutputs = {};
+
+  for (const nodeId of ["P1", "P2", "P3", "P4", "P5", "P6", "P7"]) {
+    if (upstream[nodeId]) {
+      phaseOutputs[nodeId] = upstream[nodeId];
+    }
+  }
+
+  return phaseOutputs;
+}
+
+function collectMechanicalValidationsFromArtifacts(artifacts = {}) {
+  const validations = {};
+
+  for (const [nodeId, artifact] of Object.entries(artifacts || {})) {
+    if (artifact?.mechanical_validation) {
+      validations[nodeId] = artifact.mechanical_validation;
+    }
+  }
+
+  return validations;
+}
+
+function unwrapArtifactOutput(artifact) {
+  if (!artifact) return null;
+  if (artifact.output !== undefined) return artifact.output;
+  return artifact;
+}
+
+function priorNodesFor(nodeId) {
+  const order = ["S0", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "RENDERER"];
+  const idx = order.indexOf(nodeId);
+
+  if (idx <= 0) return [];
+
+  return order.slice(0, idx);
+}
+
+function singleNodeEnvelope({
+  nodeId,
+  output,
+  referenceBundle = null,
+  mechanicalValidation,
+  modelMeta = null,
+  extra = {}
+}) {
+  return {
+    ok: true,
+    node_id: nodeId,
+    status: "LOCKED",
+    created_at: nowIso(),
+    output,
+    ...(referenceBundle ? { reference_bundle: referenceBundle } : {}),
+    mechanical_validation: mechanicalValidation || {
+      ok: true,
+      phase_id: nodeId,
+      errors: [],
+      warnings: [],
+      mechanical_only: true
+    },
+    model_meta: modelMeta,
+    ...extra
+  };
+}
+
+function singleNodeFailure({
+  nodeId,
+  status,
+  error,
+  mechanical_validation,
+  ...extra
+}) {
+  return {
+    ok: false,
+    node_id: nodeId,
+    status,
+    error,
+    created_at: nowIso(),
+    mechanical_validation: mechanical_validation || {
+      ok: false,
+      phase_id: nodeId,
+      errors: [error],
+      warnings: [],
+      mechanical_only: true
+    },
+    ...extra
+  };
+}
+
 async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle, baseDir, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, runUntil }) {
   const registryRows = parseP6RegistryRows(referenceBundle);
   if (!registryRows.length) {
