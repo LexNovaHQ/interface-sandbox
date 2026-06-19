@@ -1633,8 +1633,10 @@ function fail({ run, promptStack, runtimeTrace = null, upstream = {}, phaseOutpu
       fetch_attempt_log_count: upstream.S0.extraction_forensic_ledger?.fetch_attempt_log?.length || 0
     } : null,
     runtime_orchestration_manifest: promptStack ? buildOrchestrationManifest({ run, promptStack, completedNodes, failedNode, referenceBundles, modelMetaByPhase }) : null,
-    phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
-    error,
+operational_limits: runtimeTrace?.operational_limits || buildOperationalLimits(),
+source_runtime_trace: runtimeTrace?.source_runtime_trace || null,
+phase_stack: { completed_nodes: completedNodes, failed_node: failedNode, next_node: `${failedNode}_RETRY_OR_PROMPT_REPAIR` },
+error,
     model_meta_last: lastModelMeta,
     model_meta_by_phase: modelMetaByPhase,
     ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {}),
@@ -1664,7 +1666,7 @@ return withObservability(renderedFailureResponse, {
   modelMetaByPhase,
   debugTrace: Boolean(runtimeTrace)
 });
-
+}
 export function validateTransitionGate({ edge, upstream = {}, referenceBundles = {} } = {}) {
   const errors = [];
   const requirePath = (pathExpression) => {
@@ -1740,11 +1742,9 @@ export function validateTransitionGate({ edge, upstream = {}, referenceBundles =
   requirePath("P7.final_compiler_trace");
   requirePath("P7.final_output_handoff.screen_report_payload");
   requirePath("P7.final_output_handoff.screen_report_payload.renderer_contract");
+} else {
+  errors.push(`UNKNOWN_TRANSITION_GATE:${edge}`);
 }
-  } else {
-    errors.push(`UNKNOWN_TRANSITION_GATE:${edge}`);
-  }
-
   return {
     ok: errors.length === 0,
     edge,
