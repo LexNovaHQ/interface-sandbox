@@ -98,52 +98,252 @@ async function handleRun(event) {
 
   try {
     setRunning(true);
-    setProgress(12);
+    setProgress(8);
     setRail("input");
-    setStatus(`Input accepted: ${payload.source_mode} Â· ${payload.target_url}. Sending runtime payload to server...`);
+    setStatus(`Input accepted: ${payload.source_mode} · ${payload.target_url}. Creating durable diligence job...`);
 
-    const response = await fetch("/api/diligence/run", {
+    const createResponse = await fetch("/api/diligence/jobs", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    setProgress(55);
-    setRail("runtime");
-    setStatus("Diligence runtime executing or returning diagnostics...");
+    const createdJob = await safeReadJson(createResponse);
 
-    const result = await safeReadJson(response);
-    if (!response.ok || !result.ok) {
-      const diagnostic = buildErrorResult({ response, result, payload });
+    if (!createResponse.ok || !createdJob.ok || !createdJob.run_id) {
+      const diagnostic = buildErrorResult({
+        response: createResponse,
+        result: createdJob,
+        payload
+      });
+
       state.lastResult = diagnostic;
       localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
       renderResult(diagnostic);
       setProgress(100);
       setRail("report");
-      setStatus(`Run returned diagnostic failure: ${diagnostic.error || diagnostic.status || `HTTP_${response.status}`}`);
+      setStatus(`Job creation failed: ${diagnostic.error || diagnostic.status || `HTTP_${createResponse.status}`}`);
       return;
     }
 
-    setProgress(86);
-    setRail("report");
-    setStatus("Report received. Rendering output...");
+    localStorage.setItem("interface_diligence_active_run_id", createdJob.run_id);
 
-    state.lastResult = result;
-    localStorage.setItem("interface_diligence_last_result", JSON.stringify(result));
-    renderResult(result);
+    let jobState = createdJob;
+    let finalResult = null;
+
+    setProgress(10);
+    setRail("runtime");
+    setStatus(`Job created: ${createdJob.run_id}. Starting durable phase execution...`);
+
+    while (true) {
+      const nextNode = jobState.next_node;
+
+      if (jobState.status === "COMPLETE") {
+        break;
+      }
+
+      if (jobState.status === "FAILED") {
+        const diagnostic = buildErrorResult({
+          result: {
+            ok: false,
+            error: jobState.error?.message || jobState.error || "DILIGENCE_JOB_FAILED",
+            message: jobState.latest_message || "Durable diligence job failed.",
+            job_state: jobState
+          },
+          payload
+        });
+
+        diagnostic.run_id = createdJob.run_id;
+        diagnostic.job_state = jobState;
+
+        state.lastResult = diagnostic;
+        localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
+        renderResult(diagnostic);
+        setProgress(Number(jobState.progress?.percent || 100));
+        setRail("report");
+        setStatus(`Job failed at ${jobState.failed_node || nextNode || "unknown node"}: ${jobState.latest_message || diagnostic.error}`);
+        return;
+      }
+
+      if (!nextNode) {
+        const diagnostic = buildErrorResult({
+          result: {
+            ok: false,
+            error: "DILIGENCE_JOB_NEXT_NODE_MISSING",
+            message: "Job is not complete but no next node was provided.",
+            job_state: jobState
+          },
+          payload
+        });
+
+        diagnostic.run_id = createdJob.run_id;
+        diagnostic.job_state = jobState;
+
+        state.lastResult = diagnostic;
+        localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
+        renderResult(diagnostic);
+        setProgress(Number(jobState.progress?.percent || 100));
+        setRail("report");
+        setStatus("Job stopped because next_node was missing.");
+        return;
+      }
+
+      setProgress(Number(jobState.progress?.percent || progressForNode(nextNode)));
+      setRail(nextNode === "RENDERER" ? "report" : "runtime");
+      setStatus(`${jobNodeLabel(nextNode)}...`);
+
+      const advanceResponse = await fetch(`/api/diligence/jobs/${encodeURIComponent(createdJob.run_id)}/advance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" }
+      });
+
+      const advanced = await safeReadJson(advanceResponse);
+
+      if (!advanceResponse.ok || !advanced.ok) {
+        const diagnostic = buildErrorResult({
+          response: advanceResponse,
+          result: advanced,
+          payload
+        });
+
+        diagnostic.run_id = createdJob.run_id;
+        diagnostic.job_state = advanced;
+
+        state.lastResult = diagnostic;
+        localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
+        renderResult(diagnostic);
+        setProgress(Number(advanced.progress?.percent || 100));
+        setRail("report");
+        setStatus(`Job advance failed at ${advanced.failed_node || nextNode}: ${diagnostic.error || `HTTP_${advanceResponse.status}`}`);
+        return;
+      }
+
+      const statusResponse = await fetch(`/api/diligence/jobs/${encodeURIComponent(createdJob.run_id)}`, {
+        headers: { accept: "application/json" }
+      });
+
+      const latestState = await safeReadJson(statusResponse);
+
+      if (!statusResponse.ok || !latestState.ok) {
+        const diagnostic = buildErrorResult({
+          response: statusResponse,
+          result: latestState,
+          payload
+        });
+
+        diagnostic.run_id = createdJob.run_id;
+        diagnostic.job_state = latestState;
+
+        state.lastResult = diagnostic;
+        localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
+        renderResult(diagnostic);
+        setProgress(Number(latestState.progress?.percent || 100));
+        setRail("report");
+        setStatus(`Job status polling failed: ${diagnostic.error || `HTTP_${statusResponse.status}`}`);
+        return;
+      }
+
+      jobState = latestState;
+
+      setProgress(Number(jobState.progress?.percent || 0));
+      setRail(jobState.status === "COMPLETE" ? "report" : "runtime");
+      setStatus(jobState.latest_message || `${advanced.completed_node || nextNode} completed.`);
+
+      if (jobState.status === "COMPLETE") {
+        break;
+      }
+
+      await sleep(900);
+    }
+
+    setProgress(96);
+    setRail("report");
+    setStatus("Job completed. Fetching rendered public report...");
+
+    const resultResponse = await fetch(`/api/diligence/jobs/${encodeURIComponent(createdJob.run_id)}/result`, {
+      headers: { accept: "application/json" }
+    });
+
+    finalResult = await safeReadJson(resultResponse);
+
+    if (!resultResponse.ok || !finalResult.ok) {
+      const diagnostic = buildErrorResult({
+        response: resultResponse,
+        result: finalResult,
+        payload
+      });
+
+      diagnostic.run_id = createdJob.run_id;
+      diagnostic.job_state = jobState;
+
+      state.lastResult = diagnostic;
+      localStorage.setItem("interface_diligence_last_result", JSON.stringify(diagnostic));
+      renderResult(diagnostic);
+      setProgress(100);
+      setRail("report");
+      setStatus(`Result fetch failed: ${diagnostic.error || `HTTP_${resultResponse.status}`}`);
+      return;
+    }
+
+    finalResult.run_id = finalResult.run_id || createdJob.run_id;
+    finalResult.target_url = finalResult.target_url || payload.target_url;
+    finalResult.source_mode = finalResult.source_mode || payload.source_mode;
+
+    state.lastResult = finalResult;
+    localStorage.setItem("interface_diligence_last_result", JSON.stringify(finalResult));
+    localStorage.removeItem("interface_diligence_active_run_id");
+
+    renderResult(finalResult);
 
     setProgress(100);
-    setRail(result.status === "GUARDRAIL_FAILED" ? "report" : "vault");
-    setStatus(`${result.status === "GUARDRAIL_FAILED" ? "Guardrail failed" : "Completed"}. Run ID: ${result.run_id || "N/A"}`);
+    setRail("vault");
+    setStatus(`Completed. Run ID: ${finalResult.run_id || createdJob.run_id}`);
   } catch (err) {
     setProgress(0);
-    const diagnostic = buildErrorResult({ error: err, payload });
+
+    const diagnostic = buildErrorResult({
+      error: err,
+      payload
+    });
+
     state.lastResult = diagnostic;
     renderResult(diagnostic);
     setStatus(`Run failed before a normal response: ${err.message || String(err)}`);
   } finally {
     setRunning(false);
   }
+}
+
+function jobNodeLabel(nodeId) {
+  return {
+    S0: "Collecting public sources",
+    P1: "Building evidence box",
+    P2: "Building target profile",
+    P3: "Building feature profile",
+    P4: "Mapping legal/governance documents",
+    P5: "Building data provenance profile",
+    P6: "Evaluating exposure registry",
+    P7: "Compiling final handoff",
+    RENDERER: "Rendering public report"
+  }[nodeId] || `Running ${nodeId}`;
+}
+
+function progressForNode(nodeId) {
+  return {
+    S0: 11,
+    P1: 22,
+    P2: 33,
+    P3: 44,
+    P4: 56,
+    P5: 67,
+    P6: 78,
+    P7: 89,
+    RENDERER: 96
+  }[nodeId] || 10;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function normalizeTargetUrl(rawValue) {
