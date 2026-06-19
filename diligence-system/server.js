@@ -95,17 +95,21 @@ app.post("/api/diligence/run", async (req, res) => {
 
   try {
     if (!hasAnyGeminiKey()) {
-      return res.status(500).json({
-        ok: false,
-        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
-        message: "No Gemini API key is configured for any diligence runtime pool.",
-        runtime_trace: buildServerRuntimeTrace({
-          startedAt,
-          status: "FAILED_BEFORE_RUN",
-          failure_stage: "SERVER_KEY_CHECK",
-          sourceCandidateLimitHit: false
-        })
-      });
+     return sendDiligenceResponse(req, res, {
+  ok: false,
+  error: "DILIGENCE_RUN_FAILED",
+  message: err?.message || String(err),
+  runtime_trace: buildServerRuntimeTrace({
+    startedAt,
+    status: "SERVER_EXCEPTION",
+    failure_stage: "SERVER_CATCH",
+    sourceCandidateLimitHit: false,
+    exception: err
+  }),
+  operational_limits: buildRuntimeLimitTrace({
+    sourceCandidateLimitHit: false
+  })
+}, 500);
     }
 
     const runInput = buildRunInput(req);
@@ -133,30 +137,31 @@ app.post("/api/diligence/run", async (req, res) => {
       })
     };
 
-    const debugCompact = wantsCompactFailure(req);
-    const responsePayload = !payload.ok && debugCompact
-      ? buildCompactFailure(payload)
-      : payload;
+    const htmlRequested = wantsHtmlReport(req);
+const debugCompact = wantsCompactFailure(req);
 
-    return res.status(payload.ok ? 200 : 422).json(responsePayload);
+const responsePayload = !payload.ok && debugCompact && !htmlRequested
+  ? buildCompactFailure(payload)
+  : payload;
+
+return sendDiligenceResponse(req, res, responsePayload, payload.ok ? 200 : 422);
   } catch (err) {
     console.error("[diligence/run] failed", err);
 
-    return res.status(500).json({
-      ok: false,
-      error: "DILIGENCE_RUN_FAILED",
-      message: err?.message || String(err),
-      runtime_trace: buildServerRuntimeTrace({
-        startedAt,
-        status: "SERVER_EXCEPTION",
-        failure_stage: "SERVER_CATCH",
-        sourceCandidateLimitHit: false,
-        exception: err
-      }),
-      operational_limits: buildRuntimeLimitTrace({
-        sourceCandidateLimitHit: false
-      })
-    });
+    return sendDiligenceResponse(req, res, {
+  ok: false,
+  error: "GEMINI_API_KEYS_NOT_CONFIGURED",
+  message: "No Gemini API key is configured for any diligence runtime pool.",
+  runtime_trace: buildServerRuntimeTrace({
+    startedAt,
+    status: "FAILED_BEFORE_RUN",
+    failure_stage: "SERVER_KEY_CHECK",
+    sourceCandidateLimitHit: false
+  }),
+  operational_limits: buildRuntimeLimitTrace({
+    sourceCandidateLimitHit: false
+  })
+}, 500);
   }
 });
 
@@ -255,6 +260,116 @@ function wantsCompactFailure(req) {
   );
 }
 
+function wantsHtmlReport(req) {
+  const body = req.body || {};
+  const query = req.query || {};
+  const requestedFormat = String(
+    body.format ||
+    body.response_format ||
+    query.format ||
+    query.response_format ||
+    ""
+  ).trim().toLowerCase();
+
+  if (["html", "report_html", "rendered_html"].includes(requestedFormat)) return true;
+
+  const accept = String(req.headers.accept || "").toLowerCase();
+  return accept.includes("text/html") && !accept.includes("application/json");
+}
+
+function sendDiligenceResponse(req, res, payload, statusCode) {
+  if (wantsHtmlReport(req)) {
+    const html =
+      payload?.html_report ||
+      payload?.renderer_output?.html_report ||
+      payload?.rendered_report?.html ||
+      buildFallbackHtmlReport(payload);
+
+    return res
+      .status(statusCode)
+      .type("html")
+      .send(html);
+  }
+
+  return res.status(statusCode).json(payload);
+}
+
+function buildFallbackHtmlReport(payload = {}) {
+  const title = payload?.ok ? "Diligence Report" : "Diligence Run Failed";
+  const status = payload?.status || payload?.error || "UNKNOWN_STATUS";
+  const message = payload?.message || payload?.error || "No rendered report was available.";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f4ef;
+      color: #1d1d1f;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    main {
+      width: min(920px, calc(100% - 32px));
+      margin: 40px auto;
+      background: #fff;
+      border: 1px solid #ddd7cc;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 18px 45px rgba(31,39,54,.08);
+    }
+    h1 { margin-top: 0; }
+    .badge {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ffe2e2;
+      color: #9f2626;
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    pre {
+      overflow-x: auto;
+      padding: 14px;
+      border-radius: 14px;
+      background: #161a22;
+      color: #eef2f7;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge">${escapeHtml(status)}</span>
+    <h1>${escapeHtml(title)}</h1>
+    <p>${escapeHtml(message)}</p>
+    <p>This is a controlled server fallback page. The deterministic renderer did not provide an HTML report.</p>
+    <pre>${escapeHtml(JSON.stringify({
+      ok: payload?.ok,
+      status: payload?.status,
+      error: payload?.error,
+      message: payload?.message,
+      operational_limits: payload?.operational_limits || null
+    }, null, 2))}</pre>
+  </main>
+</body>
+</html>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildRunInput(req) {
   const body = req.body || {};
   const query = req.query || {};
@@ -266,7 +381,7 @@ function buildRunInput(req) {
     debug_raw: body.debug_raw ?? parseQueryBoolean(query.debug_raw),
     debug_compact: body.debug_compact ?? parseQueryBoolean(query.debug_compact),
 
-    run_until: body.run_until ?? query.run_until,
+    run_until: body.run_until ?? query.run_until, format: body.format ?? body.response_format ?? query.format ?? query.response_format,
 
     runtime_limits: {
       ...(body.runtime_limits || {}),
