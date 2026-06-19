@@ -9,9 +9,23 @@ import {
   readArtifact,
   markRunFailed,
   isAllowedJobNode,
+  readRunScratchpad,
+  writeRunScratchpad,
+  writeRunForensics,
 } from "./run-store.js";
 
 import { runSingleNode } from "./phase-runner.js";
+
+
+import {
+  buildFailureForensics,
+  buildScratchpadContext,
+  createRunScratchpad,
+  ensureRunScratchpad,
+  markNodeCompleted,
+  markNodeFailed,
+  markNodeStarted,
+} from "./scratchpad-manager.js";
 
 const TOTAL_NODES = JOB_NODE_SEQUENCE.length;
 
@@ -106,6 +120,18 @@ function unwrapRendererOutput(rendererArtifact) {
 
 export async function createRun({ input = {}, baseDir } = {}) {
   const state = await createRunRecord({ input, baseDir });
+  const scratchpad = createRunScratchpad({
+    runId: state.run_id,
+    input,
+    state,
+  });
+
+  await writeRunScratchpad({
+    runId: state.run_id,
+    baseDir,
+    scratchpad,
+  });
+
   return normalizeCreatePayload(state);
 }
 
@@ -139,6 +165,13 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
   }
 
   const completedBefore = uniqueCompletedNodes(state.completed_nodes || []);
+  const existingScratchpad = await readRunScratchpad({ runId, baseDir });
+  let runScratchpad = ensureRunScratchpad({
+    scratchpad: existingScratchpad,
+    runId,
+    input: state.input || {},
+    state,
+  });
 
   if (completedBefore.includes(nodeId)) {
     const nextNode = nextNodeAfter(nodeId);
@@ -160,10 +193,21 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
       },
     });
 
+    await writeRunScratchpad({
+      runId,
+      baseDir,
+      scratchpad: ensureRunScratchpad({
+        scratchpad: runScratchpad,
+        runId,
+        input: state.input || {},
+        state: repairedState,
+      }),
+    });
+
     return normalizeStatePayload(repairedState);
   }
 
-  await writeRunState({
+  const runningState = await writeRunState({
     runId,
     baseDir,
     state: {
@@ -173,8 +217,26 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
     },
   });
 
+  runScratchpad = markNodeStarted({
+    scratchpad: runScratchpad,
+    nodeId,
+    state: runningState,
+    runId,
+    input: state.input || {},
+  });
+
+  await writeRunScratchpad({
+    runId,
+    baseDir,
+    scratchpad: runScratchpad,
+  });
+
   try {
     const artifacts = await readArtifacts({ runId, baseDir });
+    const scratchpadContext = buildScratchpadContext({
+      scratchpad: runScratchpad,
+      nodeId,
+    });
 
     const artifact = await runSingleNode({
       run: state.input,
@@ -182,6 +244,7 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
       artifacts,
       callModel,
       baseDir,
+      scratchpadContext,
     });
 
     if (!artifact || artifact.ok === false) {
@@ -192,6 +255,38 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
         failedNode: nodeId,
         baseDir,
         error: message,
+      });
+
+      runScratchpad = markNodeFailed({
+        scratchpad: runScratchpad,
+        nodeId,
+        error: message,
+        nodeResult: artifact || null,
+        state: failedState,
+        runId,
+        input: state.input || {},
+      });
+
+      const forensics = buildFailureForensics({
+        runId,
+        failedNode: nodeId,
+        error: message,
+        nodeResult: artifact || null,
+        state: failedState,
+        input: state.input || {},
+        artifacts,
+      });
+
+      await writeRunScratchpad({
+        runId,
+        baseDir,
+        scratchpad: runScratchpad,
+      });
+
+      await writeRunForensics({
+        runId,
+        baseDir,
+        forensics,
       });
 
       return {
@@ -227,6 +322,21 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
       },
     });
 
+    runScratchpad = markNodeCompleted({
+      scratchpad: runScratchpad,
+      nodeId,
+      artifact: savedArtifact,
+      state: nextState,
+      runId,
+      input: state.input || {},
+    });
+
+    await writeRunScratchpad({
+      runId,
+      baseDir,
+      scratchpad: runScratchpad,
+    });
+
     return {
       ok: true,
       ...nextState,
@@ -245,6 +355,37 @@ export async function advanceRun({ runId, callModel, baseDir } = {}) {
       failedNode: nodeId,
       baseDir,
       error: message,
+    });
+
+    runScratchpad = markNodeFailed({
+      scratchpad: runScratchpad,
+      nodeId,
+      error: message,
+      nodeResult: null,
+      state: failedState,
+      runId,
+      input: state.input || {},
+    });
+
+    const forensics = buildFailureForensics({
+      runId,
+      failedNode: nodeId,
+      error: message,
+      nodeResult: null,
+      state: failedState,
+      input: state.input || {},
+    });
+
+    await writeRunScratchpad({
+      runId,
+      baseDir,
+      scratchpad: runScratchpad,
+    });
+
+    await writeRunForensics({
+      runId,
+      baseDir,
+      forensics,
     });
 
     return {
