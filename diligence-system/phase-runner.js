@@ -2283,7 +2283,17 @@ function shouldStopAt(runUntil, nodeId) {
 }
 
 function nextNodeAfter(nodeId) {
-  return { S0: "P1", P1: "P2", P2: "P3", P3: "P4", P4: "P5", P5: "P6", P7: "RENDERER" }[nodeId] || null;
+  return {
+    S0: "P1",
+    P1: "P2",
+    P2: "P3",
+    P3: "P4",
+    P4: "P5",
+    P5: "P6",
+    P6: "P7",
+    P7: "RENDERER",
+    RENDERER: null
+  }[nodeId] || null;
 }
 
 function nowIso() {
