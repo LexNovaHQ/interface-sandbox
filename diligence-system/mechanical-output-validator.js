@@ -36,6 +36,29 @@ export const REQUIRED_KEYS_BY_PHASE = {
   ]
 };
 
+const CANONICAL_P1_PHASE_PACKAGE_KEYS = [
+  "target_profile_package",
+  "feature_profile_package",
+  "legal_cartography_package",
+  "data_provenance_package",
+  "registry_support_package",
+  "final_source_coverage_package"
+];
+
+const P1_PHASE_PACKAGE_ALIASES = {
+  target_profile_source_package: "target_profile_package",
+  target_feature_package: "feature_profile_package",
+  target_feature_profile_package: "feature_profile_package",
+  legal_governance_package: "legal_cartography_package",
+  legal_governance_evidence_package: "legal_cartography_package",
+  legal_governance_lossless_evidence_package: "registry_support_package",
+  data_profile_package: "data_provenance_package",
+  data_provenance_packages: "data_provenance_package",
+  exposure_profile_package: "registry_support_package",
+  registry_evaluation_package: "registry_support_package",
+  source_coverage_package: "final_source_coverage_package"
+};
+
 export function stripJsonFence(text) {
   const raw = String(text || "").trim();
   if (!raw) return "";
@@ -88,53 +111,33 @@ export function normalizeP1PhasePackages(parsed = {}) {
       ? handoff.phase_packages
       : {};
 
-  const normalizedPhasePackages = {
-    target_profile_package:
-      phasePackages.target_profile_package ||
-      handoff.target_profile_package ||
-      handoff.target_profile_source_package ||
-      null,
+  const normalizedPhasePackages = { ...phasePackages };
 
-    feature_profile_package:
-      phasePackages.feature_profile_package ||
-      handoff.feature_profile_package ||
-      handoff.target_feature_profile_package ||
-      null,
+  for (const [aliasKey, canonicalKey] of Object.entries(P1_PHASE_PACKAGE_ALIASES)) {
+    const aliasValue =
+      phasePackages[aliasKey] !== undefined
+        ? phasePackages[aliasKey]
+        : handoff[aliasKey];
 
-    legal_cartography_package:
-      phasePackages.legal_cartography_package ||
-      handoff.legal_cartography_package ||
-      handoff.legal_governance_package ||
-      null,
+    if (
+      normalizedPhasePackages[canonicalKey] === undefined ||
+      normalizedPhasePackages[canonicalKey] === null
+    ) {
+      normalizedPhasePackages[canonicalKey] = normalizeP1PackageValue(aliasValue);
+    }
+  }
 
-    data_provenance_package:
-      phasePackages.data_provenance_package ||
-      handoff.data_provenance_package ||
-      handoff.data_profile_package ||
-      null,
-
-    registry_support_package:
-      phasePackages.registry_support_package ||
-      handoff.registry_support_package ||
-      handoff.exposure_profile_package ||
-      handoff.registry_evaluation_package ||
-      null,
-
-    final_source_coverage_package:
-      phasePackages.final_source_coverage_package ||
-      handoff.final_source_coverage_package ||
-      handoff.source_coverage_package ||
-      null
-  };
+  for (const canonicalKey of CANONICAL_P1_PHASE_PACKAGE_KEYS) {
+    normalizedPhasePackages[canonicalKey] = normalizeP1PackageValue(
+      normalizedPhasePackages[canonicalKey]
+    );
+  }
 
   return {
     ...parsed,
     source_discovery_handoff: {
       ...handoff,
-      phase_packages: {
-        ...phasePackages,
-        ...normalizedPhasePackages
-      }
+      phase_packages: normalizedPhasePackages
     }
   };
 }
@@ -200,21 +203,16 @@ function validatePhaseSpecificShape({ phaseId, parsed, errors, warnings, context
       return;
     }
 
-    const requiredPackages = [
-      "target_profile_package",
-      "feature_profile_package",
-      "legal_cartography_package",
-      "data_provenance_package",
-      "registry_support_package",
-      "final_source_coverage_package"
-    ];
+    for (const key of CANONICAL_P1_PHASE_PACKAGE_KEYS) {
+  if (!Object.prototype.hasOwnProperty.call(phasePackages, key)) {
+    errors.push(`P1_PHASE_PACKAGE_MISSING:${key}`);
+    continue;
+  }
 
-    for (const key of requiredPackages) {
-      if (!Object.prototype.hasOwnProperty.call(phasePackages, key)) {
-        errors.push(`P1_PHASE_PACKAGE_MISSING:${key}`);
-      }
-    }
-
+  if (!isValidP1PackageValue(phasePackages[key])) {
+    errors.push(`P1_PHASE_PACKAGE_INVALID:${key}`);
+  }
+}
     if (!isPlainObject(parsed.source_discovery_forensic_ledger)) {
       errors.push("P1_FORENSIC_LEDGER_MISSING_OR_NOT_OBJECT");
     }
@@ -310,7 +308,15 @@ export function validatePromptStackReadiness({ missingFiles = [] } = {}) {
     mechanical_only: true
   };
 }
+function normalizeP1PackageValue(value) {
+  if (Array.isArray(value)) return value;
+  if (isPlainObject(value)) return value;
+  return [];
+}
 
+function isValidP1PackageValue(value) {
+  return Array.isArray(value) || isPlainObject(value);
+}
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
