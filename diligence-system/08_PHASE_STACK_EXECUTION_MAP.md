@@ -65,7 +65,7 @@ EXECUTION_GRAPH:
     type: model_phase
     pool: {primary: [profile], fallback: [repair]}
     access: {search: false, grounding: false, full_text: [source_discovery_handoff.phase_packages.target_profile_package, source_discovery_handoff.phase_packages.final_source_coverage_package]}
-    requires: [source_discovery_handoff, source_discovery_handoff.phase_packages.target_profile_package, source_discovery_handoff.phase_packages.final_source_coverage_package]
+    requires: [source_discovery_handoff.phase_packages.target_profile_package, source_discovery_handoff.phase_packages.final_source_coverage_package]
     emits: [target_profile_forensic_ledger, target_profile_trace, target_profile]
     lock_requires: [target_profile_present, evidence_refs_resolve_or_fallback_recorded, limitations_preserved, no_feature_extraction, no_registry_evaluation]
     block_if: [missing_target_profile_package, missing_target_profile]
@@ -76,7 +76,7 @@ EXECUTION_GRAPH:
     type: model_phase
     pool: {primary: [profile], fallback: [repair]}
     access: {search: false, grounding: false, full_text: source_discovery_handoff.phase_packages.feature_profile_package}
-    requires: [target_profile, source_discovery_handoff.phase_packages.feature_profile_package, source_discovery_handoff]
+    requires: [target_profile, source_discovery_handoff.phase_packages.feature_profile_package]
     emits: [feature_profile_forensic_ledger, feature_function_trace, target_feature_profile]
     lock_requires: [target_feature_profile_present, feature_inventory_valid, emitted_features_have_system_action, emitted_features_have_output_or_result, evidence_refs_resolve_or_unresolved_candidate_recorded, no_registry_evaluation]
     block_if: [missing_target_profile, feature_inventory_schema_invalid]
@@ -87,7 +87,7 @@ EXECUTION_GRAPH:
     type: model_phase
     pool: {primary: [extract], fallback: [profile, repair]}
     access: {search: false, grounding: false, full_text: [source_discovery_handoff.phase_packages.legal_cartography_package, source_discovery_handoff.absence_records, source_discovery_handoff.access_failed_sources]}
-    requires: [target_profile, source_discovery_handoff.phase_packages.legal_cartography_package, source_discovery_handoff.absence_records, source_discovery_handoff.access_failed_sources, source_discovery_handoff]
+    requires: [target_profile, target_feature_profile, source_discovery_handoff.phase_packages.legal_cartography_package, source_discovery_handoff.absence_records, source_discovery_handoff.access_failed_sources]
     emits: [legal_cartography_forensic_ledger, legal_cartography_trace, legal_cartography_index]
     lock_requires: [legal_cartography_index_present, legal_governance_source_gate_passed, no_forbidden_source_family, artifact_inventory_present, macro_units_only]
     block_if: [legal_source_family_breach, missing_legal_cartography_package]
@@ -120,7 +120,7 @@ EXECUTION_GRAPH:
     type: model_phase
     pool: {primary: [final], fallback: [repair]}
     access: {search: false, grounding: false, full_text: none_by_default}
-    requires: [target_profile, target_feature_profile, legal_cartography_index, target_data_provenance_profile, target_exposure_profile, prior_phase_ledgers]
+    requires: [target_profile, target_feature_profile, legal_cartography_index, target_data_provenance_profile, target_exposure_profile, prior_phase_ledgers, prior_phase_limitations]
     emits: [final_output_forensic_ledger, final_compiler_trace, final_output_handoff]
     lock_requires: [final_output_handoff_present, final_output_forensic_ledger_present, integrated_json_report_present, screen_report_payload_present, vault_assembler_handoff_present, no_new_findings, no_upstream_mutation, branch_separation_preserved]
     block_if: [missing_locked_upstream_profile, branch_contamination, new_finding_created]
@@ -138,12 +138,12 @@ EXECUTION_GRAPH:
 
 TRANSITION_GATES:
   S0_to_P1: {require: [hybrid_extraction_manifest, extraction_forensic_ledger], block_if: [missing_candidate_manifest, invalid_source_mode]}
-  P1_to_P2: {require: [source_discovery_handoff, source_discovery_handoff.phase_packages.target_profile_package, source_discovery_handoff.phase_packages.final_source_coverage_package], block_if: [unaccounted_candidate_sources, evidence_box_missing]}
+  P1_to_P2: {require: [source_discovery_handoff.phase_packages.target_profile_package, source_discovery_handoff.phase_packages.final_source_coverage_package], block_if: [unaccounted_candidate_sources, evidence_box_missing]}
   P2_to_P3: {require: [target_profile, source_discovery_handoff.phase_packages.feature_profile_package], block_if: [missing_target_profile]}
-  P3_to_P4: {require: [target_feature_profile, source_discovery_handoff.phase_packages.legal_cartography_package, source_discovery_handoff.absence_records, source_discovery_handoff.access_failed_sources], block_if: [missing_target_feature_profile]}
-  P4_to_P5: {require: [legal_cartography_index, source_discovery_handoff.phase_packages.data_provenance_package], block_if: [legal_source_family_breach, missing_legal_cartography_index]}
-  P5_to_P6: {require: [target_data_provenance_profile, ai_threat_registry, registry_key, source_discovery_handoff.phase_packages.registry_support_package], block_if: [anti_unknown_protocol_not_applied, missing_target_data_provenance_profile, missing_registry_source]}
-  P6_to_P7: {require: [target_exposure_profile, target_exposure_profile.registry_ledger], block_if: [registry_row_count_not_98, registry_row_loss, registry_status_vocab_invalid]}
+  P3_to_P4: {require: [target_profile, target_feature_profile, source_discovery_handoff.phase_packages.legal_cartography_package, source_discovery_handoff.absence_records, source_discovery_handoff.access_failed_sources], block_if: [missing_target_feature_profile]}
+  P4_to_P5: {require: [target_profile, target_feature_profile, legal_cartography_index, source_discovery_handoff.phase_packages.data_provenance_package], block_if: [legal_source_family_breach, missing_legal_cartography_index]}
+  P5_to_P6: {require: [registry_key, ai_threat_registry, target_profile, target_feature_profile, legal_cartography_index, target_data_provenance_profile, source_discovery_handoff.phase_packages.registry_support_package], block_if: [anti_unknown_protocol_not_applied, missing_target_data_provenance_profile, missing_registry_source]}
+  P6_to_P7: {require: [target_profile, target_feature_profile, legal_cartography_index, target_data_provenance_profile, target_exposure_profile, prior_phase_ledgers, prior_phase_limitations], block_if: [registry_row_count_not_98, registry_row_loss, registry_status_vocab_invalid]}
   P7_to_RENDERER: {require: [final_output_handoff, final_output_forensic_ledger, final_compiler_trace], block_if: [missing_renderer_contract, branch_contamination, final_handoff_not_locked]}
 
 POOL_RULES:

@@ -2415,11 +2415,8 @@ export function validateTransitionGate({ edge, upstream = {}, referenceBundles =
     requirePath("P3.feature_profile_forensic_ledger");
     requirePath("P3.feature_function_trace");
     requirePath("P1.source_discovery_handoff.phase_packages.legal_cartography_package");
-    requireOneOf([
-      "P1.source_discovery_handoff.absence_records",
-      "P1.source_discovery_handoff.documented_absences",
-      "P1.source_discovery_handoff.phase_packages.final_source_coverage_package"
-    ]);
+    requirePath("P1.source_discovery_handoff.absence_records");
+    requirePath("P1.source_discovery_handoff.access_failed_sources");
   } else if (edge === "P4_to_P5") {
     requirePath("P2.target_profile");
     requirePath("P3.target_feature_profile");
