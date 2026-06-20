@@ -1,374 +1,868 @@
+// source-adapter.js
+// Lean S0 orchestration spine. The contract is canon; helper modules perform mechanical work.
+
 import crypto from "crypto";
 
-const ADAPTER_VERSION = "source_adapter_hybrid_contract_v2";
-const DEFAULT_MAX_CANDIDATES = 100;
-const DEFAULT_FETCH_TIMEOUT_MS = 120000;
-const DEFAULT_USER_AGENT = "InterfaceDiligenceSystem/1.0 (+public-footprint-diligence)";
-const JINA_READER_BASE = String(process.env.DILIGENCE_JINA_READER_BASE || "").trim();
-const MAX_EXTRACTION_PASSES = 2;
+import {
+  S0_SOURCE_CONTRACT_VERSION,
+  S0_NODE_ID,
+  S0_SOURCE_MODES,
+  S0_DOWNSTREAM_MODES,
+  S0_SOURCE_FAMILY_ORDER,
+  S0_FAMILY_CAPS,
+  S0_MAX_REPAIR_ATTEMPTS,
+  S0_HYBRID_EXTRACTION_MANIFEST_TOP_LEVEL_FIELDS,
+  S0_EXTRACTION_FORENSIC_LEDGER_TOP_LEVEL_FIELDS,
+  validateS0TerminalOutputShape
+} from "./s0-source-contract.js";
 
-const STATIC_SEED_PATHS = ["/"];
-const FALLBACK_SEED_PATHS = [
-  "/privacy-policy",
-  "/terms-of-service",
-  "/trust-center",
-  "/security",
-  "/docs",
-  "/api-pricing"
-];
+import {
+  buildS0ModelCall
+} from "./s0-prompt-renderer.js";
 
-const STATIC_ASSET_RE = /\.(css|js|mjs|map|svg|png|jpg|jpeg|webp|gif|ico|woff|woff2|ttf|eot)(?:[?#].*)?$/i;
-const PRIVATE_PATH_RE = /\/(login|signin|sign-in|signup|sign-up|account|dashboard|admin|private|app)(?:\/|$)/i;
-const JUNK_PATH_RE = /\/(_astro|assets?|static|dist|build|_next|cdn-cgi)(?:\/|$)/i;
-const KILL_HOST_RE = /(crunchbase|pitchbook|techcrunch|g2\.com|capterra|reddit|twitter|x\.com|facebook|linkedin|youtube|medium\.com)/i;
-const HOSTED_GOVERNANCE_RE = /(termly|iubenda|termsfeed|onetrust|drata|vanta|secureframe|trustcloud|notion\.site|github\.io|webflow\.io)/i;
+import {
+  normalizeInput,
+  canonicalizeTarget,
+  canonicalizeTextTarget,
+  canonicalizeSyntheticTarget,
+  canonicalizeUrl,
+  scopeClassForUrl,
+  generateKnownPathCandidates,
+  classifyCandidate,
+  isKnownFamilySubfamily,
+  isDiscoveredProductSlug,
+  hasD4DataFlowSignal,
+  compareCandidatePriority,
+  hardFamilyCap,
+  hardSubfamilyCap,
+  totalAcceptedHardMax
+} from "./s0-source-classifier.js";
 
-export async function runSourceAdapter({ input = {}, baseDir = process.cwd(), fetchImpl = globalThis.fetch, callModel, now = new Date() } = {}) {
-  const run = normalizeInput(input);
-  const startedAt = now.toISOString();
-  const maxCandidates = positiveInt(
-  run?.runtime_limits?.source_max_candidates_used ||
-  run.max_candidate_sources ||
-  run.source_max_candidates ||
-  process.env.SOURCE_MAX_CANDIDATES ||
-  process.env.DILIGENCE_SOURCE_MAX_URLS,
-  DEFAULT_MAX_CANDIDATES
-);
+import {
+  blankNavigationMap,
+  blankCandidateRoutesByFamily,
+  fetchRootNavigation,
+  fetchRobotsAndSitemaps,
+  fetchCandidateText,
+  buildLosslessArtifact,
+  buildAbsentInventoryRow,
+  wordCount
+} from "./s0-source-fetcher.js";
 
-const timeoutMs = positiveInt(
-  run?.runtime_limits?.source_fetch_timeout_ms_used ||
-  run.fetch_timeout_ms ||
-  run.source_fetch_timeout_ms ||
-  process.env.SOURCE_FETCH_TIMEOUT_MS ||
-  process.env.DILIGENCE_SOURCE_FETCH_TIMEOUT_MS,
-  DEFAULT_FETCH_TIMEOUT_MS
-);
+import {
+  dedupeCandidatesByUrl,
+  dedupeArtifactsByContent,
+  buildNearDuplicateClusters,
+  applyNearDuplicateReview,
+  syncInventoryRefs
+} from "./s0-source-dedupe.js";
 
-  const state = createState({ run, startedAt, maxCandidates, timeoutMs });
-  recordEvent(state, "SX.B0_START", "INFO", { source_mode: run.source_mode, target_url: run.target_url || null });
+export const S0_SOURCE_ADAPTER_VERSION = "source_adapter_v3_split_lean";
 
-  const modeValidation = validateSourceMode(run);
-  if (!modeValidation.ok) {
-    state.collection_limitations.push(modeValidation.error);
-    recordEvent(state, "SX.B0_CONTROLLED_FAILURE", "ERROR", { error: modeValidation.error });
-    return assembleManifest({ run, state, startedAt });
-  }
+export async function runSourceAdapter({
+  input = {},
+  fetchImpl = globalThis.fetch,
+  callModel = null,
+  now = () => new Date()
+} = {}) {
+  const state = createS0State({ input, now });
 
-  if (run.pasted_public_material && (run.source_mode === "text" || run.source_mode === "url_plus_text" || run.source_mode === "synthetic_demo")) {
-    addCandidate(state, textCandidate({ run, startedAt }));
-  }
+  await sx0ValidateAndCanonicalize({ state });
+  await sx1RootFetchAndNavigationMap({ state, fetchImpl });
+  await sx2GenerateCandidates({ state, callModel });
+  await sx3ClassifyCandidates({ state, callModel });
+  sx4DedupeCandidates({ state });
+  sx5SelectFetchQueue({ state });
+  await sx6FetchAndExtractLossless({ state, fetchImpl });
+  sx7DedupeAndAdmitArtifacts({ state });
+  await sx8ModelNearDuplicateReview({ state, callModel });
+  await sx9ModelSubfamilySatisfactionReview({ state, callModel });
+  await sx10CoverageChallenge({ state, callModel });
+  await sx11TargetedSecondPass({ state, fetchImpl });
 
-  if (run.source_mode === "text" || run.source_mode === "synthetic_demo") {
-    recordEvent(state, "SX.B0_TEXT_OR_DEMO_BYPASS", "INFO", { source_mode: run.source_mode });
-    scopeFilterAndQueue(state);
-    await materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt });
-    return assembleManifest({ run, state, startedAt });
-  }
-
-  const target = canonicalizeTarget(run.target_url);
-  if (!target.ok) {
-    state.collection_limitations.push(target.error);
-    recordEvent(state, "SX.B1_TARGET_CANONICALIZATION_FAILED", "ERROR", { error: target.error });
-    return assembleManifest({ run, state, startedAt, target: target.target });
-  }
-  state.target = target.target;
-  recordEvent(state, "SX.B1_TARGET_CANONICALIZATION", "INFO", state.target);
-
-  deterministicKnownPathDiscovery({ state });
-  await sitemapRobotsDiscovery({ state, fetchImpl, timeoutMs });
-  await navAnchorDiscovery({ state, fetchImpl, timeoutMs }); fallbackProbeDiscovery({ state });
-  await searchScoutDiscovery({ run, state, callModel });
-  scopeFilterAndQueue(state);
-  await materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt });
-  await coverageChallenge({ run, state, callModel });
-
-  if (state.second_pass_required && state.pass_count < MAX_EXTRACTION_PASSES) {
-    state.pass_count += 1;
-    scopeFilterAndQueue(state);
-    await materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt });
-  }
-
-  return assembleManifest({ run, state, startedAt, target: state.target });
+  return sx12AssembleAndValidate({ state, now });
 }
 
-function createState({ run, startedAt, maxCandidates, timeoutMs }) {
+function createS0State({ input, now }) {
+  const startedAt = isoNow(now);
+
   return {
-    adapter_version: ADAPTER_VERSION,
-    run_id: run.run_id,
+    input,
     started_at: startedAt,
-    target: null,
+    completed_at: null,
 
-    max_candidates: maxCandidates,
-    timeout_ms: timeoutMs,
+    run: {
+      run_id: stringOr(input.run_id, `s0_${Date.now()}_${randomId(6)}`),
+      source_mode: null,
+      downstream_mode: null,
+      search_pool_enabled: input.search_pool_enabled !== false,
+      grounding_enabled: input.grounding_enabled !== false,
+      deterministic_fetch_enabled: input.deterministic_fetch_enabled !== false,
+      output_is_candidate_only: true
+    },
 
-    source_candidate_limit_hit: false,
-    source_candidate_count: 0,
-    source_fetch_queue_count: 0,
-    source_deferred_count: 0,
-    source_fetch_timeout_ms_used: timeoutMs,
-    source_max_candidates_used: maxCandidates,
-
-    pass_count: 1,
-    candidates: [],
-    candidate_map: new Map(),
-    fetch_queue: [],
-    final_sources: [],
-    root_clusters: new Map(),
-    batch_plan: [],
-    collection_passes: [],
-    discovery_records: [],
-    search_scout_records: [],
-    coverage_challenge_records: [],
-    fetch_successes: [],
-    fetch_failures: [],
-    deferred_candidates: [],
+    target: {},
+    navigation_map: blankNavigationMap(),
+    candidate_sources: [],
+    artifact_inventory: [],
+    lossless_text_artifacts: [],
     dedupe_records: [],
-    rejected_by_scope: [],
-    warnings: [],
     collection_limitations: [],
+
     ledger_events: [],
-    batch_execution_log: [],
     candidate_discovery_log: [],
-    fetch_attempt_log: [],
+    fetch_log: [],
     dedupe_log: [],
-    retry_log: [],
-    second_pass_required: false
+    model_review_log: [],
+    validation_repair_log: [],
+    terminal_gate_log: [],
+
+    runtime: {
+      root_fetch: null,
+      fetch_queue: [],
+      challenge_queue: [],
+      unresolved_slots: [],
+      candidate_seq: 0,
+      artifact_seq: 0,
+      lossless_seq: 0,
+      dedupe_seq: 0,
+      limitation_seq: 0,
+      failure_seq: 0,
+      second_pass_attempts: new Map()
+    }
   };
 }
-function validateSourceMode(run) { const allowed = new Set(["url", "text", "url_plus_text", "synthetic_demo"]); if (!allowed.has(run.source_mode)) return { ok: false, error: "INVALID_SOURCE_MODE" }; if ((run.source_mode === "url" || run.source_mode === "url_plus_text") && !run.target_url) return { ok: false, error: "URL_REQUIRED_FOR_SOURCE_MODE" }; if ((run.source_mode === "text" || run.source_mode === "synthetic_demo") && !run.pasted_public_material) return { ok: false, error: "TEXT_REQUIRED_FOR_SOURCE_MODE" }; return { ok: true }; }
-function canonicalizeTarget(rawUrl) { const normalized = normalizeUrl(rawUrl); if (!normalized) return { ok: false, error: "INVALID_TARGET_URL", target: null }; const u = new URL(normalized); const canonicalDomain = u.hostname.replace(/^www\./i, ""); const rootUrl = `${u.protocol}//${u.hostname}/`; const allowedHosts = Array.from(new Set([u.hostname, `www.${canonicalDomain}`, canonicalDomain])); return { ok: true, target: { target_url: rawUrl, normalized_target_url: normalized, canonical_domain: canonicalDomain, root_url: rootUrl, allowed_hosts: allowedHosts, normalization_notes: [] } }; }
-function deterministicKnownPathDiscovery({ state }) { const origin = new URL(state.target.root_url).origin; addCandidate(state, candidateFromUrl({ url: new URL("/", origin).href, discovery_method: "SX.B2_ROOT_SEED", parent: state.target.root_url })); recordEvent(state, "SX.B2_ROOT_SEED", "INFO", { candidate_count: state.candidates.length }); }
-async function sitemapRobotsDiscovery({ state, fetchImpl, timeoutMs }) { const origin = new URL(state.target.root_url).origin; const sitemapSeeds = [new URL("/robots.txt", origin).href, new URL("/sitemap.xml", origin).href, new URL("/sitemap_index.xml", origin).href]; for (const url of sitemapSeeds) { const res = await fetchText({ url, fetchImpl, timeoutMs, method: "direct_fetch" }); state.discovery_records.push({ method: "SX.B3_SITEMAP_ROBOTS_DISCOVERY", source_url: url, ok: res.ok, status_code: res.status_code || null, error: res.error || null }); if (!res.ok) continue; const discovered = url.endsWith("robots.txt") ? extractSitemapsFromRobots(res.raw_text) : extractLocUrls(res.raw_text); for (const found of discovered) if (isAllowedOrHostedCandidate(found, state.target) && isUsefulCandidate(found)) addCandidate(state, candidateFromUrl({ url: found, discovery_method: "SX.B3_SITEMAP_ROBOTS_DISCOVERY", parent: url })); } recordEvent(state, "SX.B3_SITEMAP_ROBOTS_DISCOVERY", "INFO", { discovery_records: state.discovery_records.length }); }
-async function navAnchorDiscovery({ state, fetchImpl, timeoutMs }) { const seedUrls = state.candidates.filter((c) => c.candidate_url === state.target.root_url || ["root_homepage", "public_product_path_hint", "public_docs_api_path_hint", "public_first_party_candidate"].includes(c.source_family_hint)).slice(0, 12); for (const seed of seedUrls) { const res = await fetchText({ url: seed.candidate_url, fetchImpl, timeoutMs, method: "direct_fetch" }); state.discovery_records.push({ method: "SX.B4_NAV_FOOTER_HEADER_DISCOVERY", source_url: seed.candidate_url, ok: res.ok, status_code: res.status_code || null, error: res.error || null }); if (!res.ok) continue; const links = extractLinksAndRouteHints(res.raw_text, seed.candidate_url); for (const link of links) if (isAllowedOrHostedCandidate(link, state.target) && isUsefulCandidate(link)) addCandidate(state, candidateFromUrl({ url: link, discovery_method: "SX.B4_NAV_FOOTER_HEADER_DISCOVERY", parent: seed.candidate_url })); } recordEvent(state, "SX.B4_NAV_FOOTER_HEADER_DISCOVERY", "INFO", { candidate_count: state.candidates.length }); }
-function fallbackProbeDiscovery({ state }) { const origin = new URL(state.target.root_url).origin; const existing = new Set(state.candidates.map((c) => c.candidate_url)); const hints = new Set(state.candidates.map((c) => c.source_family_hint)); const needsFallback = !(hints.has("public_legal_path_hint") && hints.has("public_docs_api_path_hint") && hints.has("public_security_trust_path_hint")); if (!needsFallback) return; for (const p of FALLBACK_SEED_PATHS) { const url = new URL(p, origin).href; if (!existing.has(url)) addCandidate(state, candidateFromUrl({ url, discovery_method: "SX.B4A_TINY_MISSING_FAMILY_FALLBACK", parent: state.target.root_url })); } recordEvent(state, "SX.B4A_TINY_MISSING_FAMILY_FALLBACK", "INFO", { candidate_count: state.candidates.length }); }
-async function searchScoutDiscovery({ run, state, callModel }) { if (typeof callModel !== "function") { state.collection_limitations.push("SEARCH_SCOUT_SKIPPED_CALL_MODEL_UNAVAILABLE"); return; } const packet = buildSearchScoutPacket({ run, state }); try { const result = await callModel({ phaseId: "S0_SEARCH_SCOUT", poolName: "search", systemPrompt: packet.systemPrompt, userPrompt: packet.userPrompt, responseMimeType: "application/json", temperature: 0, allowGrounding: true, maxOutputTokens: 8192 }); const parsed = safeParseJson(result.text); const rows = Array.isArray(parsed?.search_scout_candidates) ? parsed.search_scout_candidates : []; for (const row of rows) if (row?.candidate_url && isAllowedOrHostedCandidate(row.candidate_url, state.target) && isUsefulCandidate(row.candidate_url)) addCandidate(state, candidateFromUrl({ url: row.candidate_url, discovery_method: "SX.B5_GROUNDED_SEARCH_SCOUT", parent: row.discovery_query || "search_scout", scout: row })); state.search_scout_records.push({ ok: true, candidate_count: rows.length, model_meta: result.meta || null, follow_up_queries: parsed?.follow_up_queries || [] }); } catch (err) { state.search_scout_records.push({ ok: false, error: err?.message || String(err) }); state.collection_limitations.push("SEARCH_SCOUT_FAILED_OR_UNAVAILABLE"); } recordEvent(state, "SX.B5_GROUNDED_SEARCH_SCOUT", "INFO", { records: state.search_scout_records.length }); }
-function scopeFilterAndQueue(state) {
-  const ranked = state.candidates.sort(candidateSort);
+
+async function sx0ValidateAndCanonicalize({ state }) {
+  const input = normalizeInput(state.input);
+  state.input = input;
+  state.run.source_mode = input.source_mode;
+  state.run.downstream_mode = input.downstream_mode;
+
+  if (!S0_SOURCE_MODES.includes(input.source_mode)) fatalBoundary(state, "invalid mode");
+  if (!S0_DOWNSTREAM_MODES.includes(input.downstream_mode)) fatalBoundary(state, "invalid downstream mode");
+
+  if (["url", "url_plus_text"].includes(input.source_mode)) {
+    if (!input.target_url) fatalBoundary(state, "no clear target");
+    state.target = canonicalizeTarget(input.target_url, input.company_name_candidate);
+  } else if (input.source_mode === "text") {
+    if (!input.text) fatalBoundary(state, "no clear target");
+    state.target = canonicalizeTextTarget(input);
+  } else {
+    state.target = canonicalizeSyntheticTarget(input);
+  }
+
+  state.navigation_map = blankNavigationMap(state.target.root_url);
+  logEvent(state, "SX.0_INPUT_VALIDATED", { source_mode: input.source_mode, downstream_mode: input.downstream_mode });
+}
+
+async function sx1RootFetchAndNavigationMap({ state, fetchImpl }) {
+  if (!isUrlMode(state)) {
+    logEvent(state, "SX.1_TEXT_MODE_NAVIGATION_BYPASS", { reason: "text/synthetic mode disables public fetch navigation" });
+    return;
+  }
+
+  addCandidate(state, {
+    candidate_url: state.target.root_url,
+    canonical_url: state.target.root_url,
+    source_family: "TARGET_FAMILY",
+    source_subfamily: "T0_ROOT",
+    route_source: "ROOT",
+    route_basis: "canonical root URL"
+  });
+
+  const rootNav = await fetchRootNavigation({ target: state.target, fetchImpl });
+  state.runtime.root_fetch = rootNav.root;
+  state.navigation_map = rootNav.navigation_map;
+
+  state.fetch_log.push({ step: "SX.1", url: state.target.root_url, ok: rootNav.root.ok, status: rootNav.root.status, error: rootNav.root.error || "", at: iso() });
+
+  if (!rootNav.root.ok) {
+    addCollectionLimitation(state, {
+      limitation_type: "ACCESS_FAILED",
+      affected_family: "TARGET_FAMILY",
+      affected_subfamily: "T0_ROOT",
+      basis: `root fetch failed: ${rootNav.root.error || rootNav.root.status}`,
+      downstream_effect: "navigation_map may be incomplete"
+    });
+    return;
+  }
+
+  for (const candidate of rootNav.route_candidates) addCandidate(state, candidate);
+
+  const sitemap = await fetchRobotsAndSitemaps({ target: state.target, fetchImpl });
+  state.navigation_map.robots_sitemap_links = sitemap.robots_sitemap_links;
+  state.navigation_map.sitemap_links = sitemap.sitemap_links;
+  state.fetch_log.push(...sitemap.fetch_log.map((row) => ({ ...row, step: "SX.1", at: iso() })));
+  for (const candidate of sitemap.route_candidates) addCandidate(state, candidate);
+
+  rebuildCandidateRoutesByFamily(state);
+}
+
+async function sx2GenerateCandidates({ state, callModel }) {
+  if (isUrlMode(state)) {
+    for (const candidate of generateKnownPathCandidates({ target: state.target })) addCandidate(state, candidate);
+  }
+
+  if (["text", "url_plus_text"].includes(state.run.source_mode) && state.input.text) {
+    addCandidate(state, {
+      candidate_url: "pasted://public-material",
+      canonical_url: "pasted://public-material",
+      source_family: "TARGET_FAMILY",
+      source_subfamily: "T4_SUPPORTING_IDENTITY",
+      route_source: "PASTED_TEXT",
+      route_basis: "user-supplied pasted public first-party material",
+      scope_class: "PASTED_PUBLIC_MATERIAL_CANDIDATE"
+    });
+  }
+
+  if (state.run.source_mode === "synthetic_demo") {
+    addCandidate(state, {
+      candidate_url: "synthetic://demo-fixture",
+      canonical_url: "synthetic://demo-fixture",
+      source_family: "TARGET_FAMILY",
+      source_subfamily: "T0_ROOT",
+      route_source: "SYNTHETIC_DEMO",
+      route_basis: "synthetic demo fixture",
+      scope_class: "SYNTHETIC_DEMO_CANDIDATE"
+    });
+  }
+
+  const missing = missingCandidateFamilies(state);
+  if (missing.length && callModel) {
+    const scout = await callModelTask(state, callModel, "S0_SEARCH_SCOUT", { target: state.target, missing_family_slots: missing });
+    for (const lead of asArray(scout?.candidates)) {
+      addCandidate(state, {
+        candidate_url: lead.url,
+        canonical_url: canonicalizeUrl(lead.url, state.target.root_url),
+        source_family: lead.source_family,
+        source_subfamily: lead.source_subfamily,
+        route_source: "SEARCH_SCOUT",
+        route_basis: lead.route_basis || "search scout lead"
+      });
+    }
+  }
+
+  rebuildCandidateRoutesByFamily(state);
+}
+
+async function sx3ClassifyCandidates({ state, callModel }) {
+  const ambiguous = [];
+
+  for (const candidate of state.candidate_sources) {
+    if (candidate.source_family && candidate.source_subfamily) continue;
+
+    const classified = classifyCandidate(candidate);
+    candidate.source_family = classified.source_family;
+    candidate.source_subfamily = classified.source_subfamily;
+
+    if (!candidate.source_family || !candidate.source_subfamily) ambiguous.push(candidate);
+  }
+
+  if (ambiguous.length && callModel) {
+    const review = await callModelTask(state, callModel, "S0_AMBIGUOUS_CLASSIFICATION_REVIEW", { candidates: compactCandidates(ambiguous) });
+    for (const item of asArray(review?.classifications)) {
+      const candidate = findCandidate(state, item.candidate_source_id);
+      if (candidate && isKnownFamilySubfamily(item.source_family, item.source_subfamily)) {
+        candidate.source_family = item.source_family;
+        candidate.source_subfamily = item.source_subfamily;
+        candidate.route_basis = joinBasis(candidate.route_basis, item.basis);
+      }
+    }
+  }
+
+  for (const candidate of state.candidate_sources) {
+    if (!isKnownFamilySubfamily(candidate.source_family, candidate.source_subfamily)) {
+      markDeferred(candidate, "unresolved family/subfamily classification");
+      addCollectionLimitation(state, {
+        limitation_type: "UNFILLED_SUBFAMILY",
+        affected_item_ids: [candidate.candidate_source_id],
+        basis: "candidate deferred because family/subfamily could not be resolved",
+        downstream_effect: "candidate not fetched"
+      });
+    }
+  }
+}
+
+function sx4DedupeCandidates({ state }) {
+  dedupeCandidatesByUrl({
+    candidates: state.candidate_sources,
+    addDedupeRecord: (record) => addDedupeRecord(state, record)
+  });
+}
+
+function sx5SelectFetchQueue({ state }) {
+  const familyCounts = Object.fromEntries(S0_SOURCE_FAMILY_ORDER.map((family) => [family, 0]));
+  const subfamilyCounts = {};
   const queue = [];
 
-  for (const candidate of ranked) {
-    const scope = candidate.scope_class || scopeClass(candidate.candidate_url, state.target);
-    candidate.scope_class = scope;
+  const candidates = state.candidate_sources
+    .filter((row) => !["DEFERRED", "REJECTED", "DEDUPED"].includes(row.final_status))
+    .sort(compareCandidatePriority);
 
-    if (scope === "THIRD_PARTY_NON_GOVERNANCE" || scope === "PRIVATE_OR_PROHIBITED") {
-      state.rejected_by_scope.push({
-        candidate_url: candidate.candidate_url,
-        scope_class: scope,
-        reason: "OUT_OF_SCOPE_FOR_STAGE0"
-      });
-      recordEvent(state, "SX.B6_SCOPE_REJECT", "INFO", {
-        candidate_url: candidate.candidate_url,
-        scope_class: scope
+  for (const candidate of candidates) {
+    const family = candidate.source_family;
+    const subfamily = candidate.source_subfamily;
+
+    if (!isKnownFamilySubfamily(family, subfamily)) {
+      markDeferred(candidate, "missing family/subfamily");
+      continue;
+    }
+    if (queue.length >= totalAcceptedHardMax()) {
+      markDeferred(candidate, "total accepted source hard max reached");
+      continue;
+    }
+    if ((familyCounts[family] || 0) >= hardFamilyCap(family)) {
+      markDeferred(candidate, "family hard cap reached");
+      continue;
+    }
+    if ((subfamilyCounts[subfamily] || 0) >= hardSubfamilyCap(subfamily)) {
+      markDeferred(candidate, "subfamily hard cap reached");
+      continue;
+    }
+    if (subfamily === "P1_PRODUCT_SLUG" && !isDiscoveredProductSlug(candidate)) {
+      markRejected(candidate, "product slug brute-force forbidden");
+      continue;
+    }
+    if (subfamily === "D4_DOCS_API_DATA_FLOW" && !hasD4DataFlowSignal(candidate)) {
+      markDeferred(candidate, "D4 docs/API data-flow signal missing");
+      continue;
+    }
+
+    candidate.fetch_decision = "FETCH";
+    candidate.fetch_decision_reason = "selected by family/subfamily queue";
+    queue.push(candidate);
+    familyCounts[family] += 1;
+    subfamilyCounts[subfamily] = (subfamilyCounts[subfamily] || 0) + 1;
+  }
+
+  state.runtime.fetch_queue = queue;
+}
+
+async function sx6FetchAndExtractLossless({ state, fetchImpl }) {
+  for (const candidate of state.runtime.fetch_queue) {
+    if (candidate.route_source === "PASTED_TEXT") {
+      acceptInlineText(state, candidate, state.input.text || "", "PASTED_TEXT");
+      continue;
+    }
+    if (candidate.route_source === "SYNTHETIC_DEMO") {
+      acceptInlineText(state, candidate, state.input.demo_text || "Synthetic demo fixture.", "SYNTHETIC_DEMO");
+      continue;
+    }
+
+    const result = await fetchCandidateText({ candidate, fetchImpl, cachedRootFetch: state.runtime.root_fetch });
+    state.fetch_log.push({ candidate_source_id: candidate.candidate_source_id, url: candidate.canonical_url || candidate.candidate_url, step: "SX.6", ok: result.ok, status: result.status, error: result.error || "", at: iso() });
+
+    if (!result.ok || wordCount(result.clean_text) < 20) {
+      candidate.final_status = "FETCH_FAILED";
+      const status = result.ok ? "INSUFFICIENT_TEXT" : "ACCESS_FAILED";
+      state.artifact_inventory.push(buildAbsentInventoryRow({ candidate, artifactId: nextArtifactId(state), status, warning: result.error || status }));
+      addCollectionLimitation(state, {
+        limitation_type: result.ok ? "THIN_COVERAGE" : "ACCESS_FAILED",
+        affected_family: candidate.source_family,
+        affected_subfamily: candidate.source_subfamily,
+        affected_item_ids: [candidate.candidate_source_id],
+        basis: result.error || "fetch succeeded but extracted text was thin or empty",
+        downstream_effect: "source not accepted as lossless evidence"
       });
       continue;
     }
 
-    if (queue.length < state.max_candidates) {
-      queue.push(candidate);
-    } else {
-      state.source_candidate_limit_hit = true;
-      state.deferred_candidates.push({
-        candidate_url: candidate.candidate_url,
-        priority: candidate.priority,
-        source_family_hint: candidate.source_family_hint,
-        defer_reason: "FETCH_QUEUE_LIMIT",
-        limit_name: "source_max_candidates",
-        source_max_candidates_used: state.max_candidates,
-        not_silently_dropped: true,
-        phase1_review_required: true
+    acceptInlineText(state, candidate, result.raw_text, result.method || "HTTP_FETCH", result.clean_text);
+  }
+}
+
+function sx7DedupeAndAdmitArtifacts({ state }) {
+  const result = dedupeArtifactsByContent({
+    artifacts: state.lossless_text_artifacts,
+    candidates: state.candidate_sources,
+    addDedupeRecord: (record) => addDedupeRecord(state, record)
+  });
+
+  state.lossless_text_artifacts = result.kept;
+  syncInventoryRefs({ inventory: state.artifact_inventory, keptLosslessIds: result.keptIds });
+}
+
+async function sx8ModelNearDuplicateReview({ state, callModel }) {
+  const clusters = buildNearDuplicateClusters(state.lossless_text_artifacts);
+  if (!clusters.length) return;
+
+  if (!callModel) {
+    logModel(state, "S0_NEAR_DUPLICATE_REVIEW", { status: "SKIPPED_NO_MODEL", cluster_count: clusters.length });
+    return;
+  }
+
+  for (const cluster of clusters) {
+    const review = await callModelTask(state, callModel, "S0_NEAR_DUPLICATE_REVIEW", { cluster });
+    logModel(state, "S0_NEAR_DUPLICATE_REVIEW", { result: review });
+    applyNearDuplicateReview({ review, candidates: state.candidate_sources, addDedupeRecord: (record) => addDedupeRecord(state, record) });
+  }
+}
+
+async function sx9ModelSubfamilySatisfactionReview({ state, callModel }) {
+  const packet = buildSatisfactionPacket(state);
+
+  if (!callModel) {
+    logModel(state, "S0_SUBFAMILY_SATISFACTION_REVIEW", { status: "SKIPPED_NO_MODEL", deterministic_packet: packet });
+    state.runtime.unresolved_slots = deterministicUnresolvedSlots(state);
+    return;
+  }
+
+  const review = await callModelTask(state, callModel, "S0_SUBFAMILY_SATISFACTION_REVIEW", packet);
+  logModel(state, "S0_SUBFAMILY_SATISFACTION_REVIEW", { result: review });
+  state.runtime.unresolved_slots = extractUnresolvedSlotsFromReview(state, review);
+}
+
+async function sx10CoverageChallenge({ state, callModel }) {
+  const unresolved = state.runtime.unresolved_slots || [];
+  if (!unresolved.length) return;
+
+  if (!callModel) {
+    for (const slot of unresolved) {
+      addCollectionLimitation(state, {
+        limitation_type: "UNFILLED_SUBFAMILY",
+        affected_family: slot.source_family,
+        affected_subfamily: slot.source_subfamily,
+        basis: "coverage challenge unavailable because model hook is absent",
+        downstream_effect: "slot remains unresolved"
+      });
+    }
+    return;
+  }
+
+  const challenge = await callModelTask(state, callModel, "S0_COVERAGE_CHALLENGE", { target: state.target, unresolved_slots: unresolved, remaining_caps: buildRemainingCaps(state) });
+  logModel(state, "S0_COVERAGE_CHALLENGE", { result: challenge });
+
+  for (const lead of asArray(challenge?.candidates)) {
+    const candidate = addCandidate(state, {
+      candidate_url: lead.url,
+      canonical_url: canonicalizeUrl(lead.url, state.target.root_url),
+      source_family: lead.source_family,
+      source_subfamily: lead.source_subfamily,
+      route_source: "COVERAGE_CHALLENGE",
+      route_basis: lead.route_basis || "coverage challenge lead"
+    });
+    state.runtime.challenge_queue.push(candidate);
+  }
+}
+
+async function sx11TargetedSecondPass({ state, fetchImpl }) {
+  if (!state.runtime.challenge_queue.length) return;
+
+  const saved = state.runtime.fetch_queue;
+  state.runtime.fetch_queue = state.runtime.challenge_queue.filter((candidate) => {
+    const key = `${candidate.source_family}:${candidate.source_subfamily}`;
+    const attempts = state.runtime.second_pass_attempts.get(key) || 0;
+    if (attempts >= S0_MAX_REPAIR_ATTEMPTS) return false;
+    state.runtime.second_pass_attempts.set(key, attempts + 1);
+    candidate.fetch_decision = "FETCH";
+    candidate.fetch_decision_reason = "targeted second pass challenge candidate";
+    return true;
+  });
+
+  await sx6FetchAndExtractLossless({ state, fetchImpl });
+  sx7DedupeAndAdmitArtifacts({ state });
+  state.runtime.fetch_queue = saved;
+}
+
+function sx12AssembleAndValidate({ state, now }) {
+  state.completed_at = isoNow(now);
+  const output = repairTerminalShape({
+    hybrid_extraction_manifest: buildHybridExtractionManifest(state),
+    extraction_forensic_ledger: buildExtractionForensicLedger(state)
+  });
+
+  const check = validateS0TerminalOutputShape(output);
+  state.terminal_gate_log.push({ gate_id: "G8", gate_name: "Terminal Schema Gate", ok: check.ok, result: check, at: iso() });
+
+  if (!check.ok) {
+    addFailureTicket(state, { gate_id: "G8", failed_condition: check.error || "TERMINAL_SCHEMA_INVALID", severity: "FATAL", repair_route: "SCHEMA_REPAIR", final_status: "FATAL" });
+    throw Object.assign(new Error("S0_TERMINAL_SCHEMA_INVALID"), { detail: check, output });
+  }
+
+  return output;
+}
+
+function addCandidate(state, candidateInput) {
+  const candidate = {
+    candidate_source_id: `cand_${String(++state.runtime.candidate_seq).padStart(4, "0")}`,
+    candidate_url: candidateInput.candidate_url || "",
+    canonical_url: candidateInput.canonical_url || candidateInput.candidate_url || "",
+    source_family: candidateInput.source_family || "",
+    source_subfamily: candidateInput.source_subfamily || "",
+    route_source: normalizeRouteSource(candidateInput.route_source || "ROOT"),
+    route_basis: candidateInput.route_basis || "",
+    scope_class: candidateInput.scope_class || scopeClassForUrl(candidateInput.candidate_url, state.target),
+    fetch_decision: "DEFER",
+    fetch_decision_reason: "pending queue selection",
+    final_status: "DEFERRED"
+  };
+
+  if (["THIRD_PARTY_NON_GOVERNANCE", "PRIVATE_OR_PROHIBITED"].includes(candidate.scope_class)) {
+    markRejected(candidate, "scope rejected");
+  }
+
+  state.candidate_sources.push(candidate);
+  state.candidate_discovery_log.push({ ...candidate, at: iso() });
+  return candidate;
+}
+
+function acceptInlineText(state, candidate, rawText, method, cleanText = null) {
+  const artifactId = nextArtifactId(state);
+  const losslessId = `lossless_${String(++state.runtime.lossless_seq).padStart(4, "0")}`;
+  const built = buildLosslessArtifact({ candidate, rawText, cleanText, method, artifactId, losslessId });
+  state.artifact_inventory.push(built.inventory);
+  state.lossless_text_artifacts.push(built.lossless);
+  candidate.fetch_decision = "FETCH";
+  candidate.fetch_decision_reason = "accepted lossless artifact created";
+  candidate.final_status = "ACCEPTED_LOSSLESS";
+}
+
+function buildHybridExtractionManifest(state) {
+  return orderObject({
+    extraction_call_card: buildExtractionCallCard(state),
+    target: state.target,
+    navigation_map: state.navigation_map,
+    collection_summary: buildCollectionSummary(state),
+    candidate_sources: state.candidate_sources.map(stripCandidate),
+    artifact_inventory: state.artifact_inventory,
+    lossless_text_artifacts: state.lossless_text_artifacts,
+    dedupe_records: state.dedupe_records,
+    collection_limitations: state.collection_limitations,
+    downstream_handoff: buildDownstreamHandoff(state)
+  }, S0_HYBRID_EXTRACTION_MANIFEST_TOP_LEVEL_FIELDS);
+}
+
+function buildExtractionForensicLedger(state) {
+  return orderObject({
+    ledger_meta: {
+      ledger_id: `ledger_${state.run.run_id}`,
+      node_id: S0_NODE_ID,
+      run_id: state.run.run_id,
+      contract_version: S0_SOURCE_CONTRACT_VERSION,
+      ledger_type: "EXTRACTION_FORENSIC_LEDGER",
+      started_at: state.started_at,
+      completed_at: state.completed_at,
+      ledger_lock_status: state.collection_limitations.length ? "LOCKED_WITH_WARNINGS" : "LOCKED"
+    },
+    ledger_events: state.ledger_events,
+    candidate_discovery_log: state.candidate_discovery_log,
+    fetch_log: state.fetch_log,
+    dedupe_log: state.dedupe_log,
+    model_review_log: state.model_review_log,
+    validation_repair_log: state.validation_repair_log,
+    terminal_gate_log: state.terminal_gate_log
+  }, S0_EXTRACTION_FORENSIC_LEDGER_TOP_LEVEL_FIELDS);
+}
+
+function buildExtractionCallCard(state) {
+  return {
+    node_id: S0_NODE_ID,
+    contract_version: S0_SOURCE_CONTRACT_VERSION,
+    adapter_version: S0_SOURCE_ADAPTER_VERSION,
+    run_id: state.run.run_id,
+    source_mode: state.run.source_mode,
+    downstream_mode: state.run.downstream_mode,
+    canonical_output: "hybrid_extraction_manifest",
+    search_pool_enabled: state.run.search_pool_enabled,
+    grounding_enabled: state.run.grounding_enabled,
+    deterministic_fetch_enabled: state.run.deterministic_fetch_enabled,
+    output_is_candidate_only: true,
+    generated_at: state.completed_at
+  };
+}
+
+function buildCollectionSummary(state) {
+  const familyCounts = countBy(state.lossless_text_artifacts, "source_family");
+  const subfamilyCounts = countBy(state.lossless_text_artifacts, "source_subfamily");
+
+  return {
+    collection_status: state.collection_limitations.length ? "COMPLETED_WITH_LIMITATIONS" : "COMPLETED",
+    candidate_count: state.candidate_sources.length,
+    accepted_source_count: state.candidate_sources.filter((row) => row.final_status === "ACCEPTED_LOSSLESS").length,
+    lossless_artifact_count: state.lossless_text_artifacts.length,
+    fetch_success_count: state.fetch_log.filter((row) => row.ok).length,
+    fetch_failure_count: state.fetch_log.filter((row) => !row.ok).length,
+    dedupe_suppressed_count: state.dedupe_records.reduce((sum, row) => sum + row.suppressed_candidate_source_ids.length, 0),
+    deferred_count: state.candidate_sources.filter((row) => row.final_status === "DEFERRED").length,
+    scope_rejected_count: state.candidate_sources.filter((row) => row.final_status === "REJECTED").length,
+    family_caps: S0_FAMILY_CAPS,
+    family_counts: familyCounts,
+    subfamily_counts: subfamilyCounts,
+    family_stop_states: Object.fromEntries(S0_SOURCE_FAMILY_ORDER.map((family) => [family, familyCounts[family] ? "HAS_ACCEPTED_SOURCE" : "NO_ACCEPTED_SOURCE_OR_LIMITATION"])),
+    coverage_status_by_family: Object.fromEntries(S0_SOURCE_FAMILY_ORDER.map((family) => [family, familyCounts[family] ? "PARTIAL_OR_SATISFIED" : "UNFILLED_OR_UNAVAILABLE"])),
+    source_runtime_trace: {
+      deterministic_steps_completed: ["SX.0", "SX.1", "SX.2", "SX.3", "SX.4", "SX.5", "SX.6", "SX.7", "SX.12"],
+      model_steps_attempted: state.model_review_log.map((row) => row.review_type)
+    }
+  };
+}
+
+function buildDownstreamHandoff(state) {
+  return {
+    canonical_next_use: state.run.downstream_mode === "MONOLITH_RUNTIME" ? "MONOLITH_MODULE_VI_EVIDENCE_BUFFER" : "PHASE_1_SOURCE_DISCOVERY_EVIDENCE_BOX",
+    candidate_only: true,
+    lossless_text_available: state.lossless_text_artifacts.length > 0,
+    artifact_inventory_ready: true,
+    snippet_only_forbidden_as_accepted_evidence: true,
+    evidence_buffer_materials: {
+      source_text_array: "lossless_text_artifacts[]",
+      artifact_map: "artifact_inventory[]",
+      source_metadata: "candidate_sources[]",
+      limitations: "collection_limitations[]"
+    }
+  };
+}
+
+async function callModelTask({ state, callModel, task, input }) {
+  const payload = buildS0ModelCall({
+    task,
+    input
+  });
+
+  try {
+    const result = await callModel(payload);
+    return parseMaybeJson(result);
+  } catch (error) {
+    state.model_review_log.push({
+      review_type: task,
+      status: "MODEL_CALL_FAILED",
+      error: error?.message || String(error),
+      at: new Date().toISOString()
+    });
+
+    addCollectionLimitation({
+      state,
+      limitationType: "TOOL_LIMITATION",
+      basis: `model hook failed for ${task}`,
+      downstreamEffect: "model-assisted review unavailable"
+    });
+
+    return null;
+  }
+}
+
+function extractUnresolvedSlotsFromReview(state, review) {
+  const unresolved = [];
+
+  for (const item of asArray(review?.subfamily_satisfaction_review)) {
+    if (["THIN", "MISFILLED_SLOT", "UNAVAILABLE_AFTER_SEARCH", "NEEDS_COVERAGE_CHALLENGE"].includes(item.status)) {
+      unresolved.push(item);
+      addCollectionLimitation(state, {
+        limitation_type: item.status === "MISFILLED_SLOT" ? "MISFILLED_SLOT" : "THIN_COVERAGE",
+        affected_family: item.source_family,
+        affected_subfamily: item.source_subfamily,
+        affected_item_ids: item.accepted_source_ids || [],
+        basis: item.basis || item.status,
+        downstream_effect: "coverage may need challenge or downstream caution"
       });
     }
   }
 
-  state.fetch_queue = queue;
-  state.source_candidate_count = state.candidates.length;
-  state.source_fetch_queue_count = state.fetch_queue.length;
-  state.source_deferred_count = state.deferred_candidates.length;
-  state.source_candidate_limit_hit = state.source_candidate_limit_hit || state.deferred_candidates.length > 0;
+  return unresolved;
+}
 
-  if (state.source_candidate_limit_hit) {
-    const limitation = `SOURCE_CANDIDATE_LIMIT_HIT_${state.max_candidates}`;
-    state.collection_limitations.push(limitation);
-    recordEvent(state, "SX.B6_SOURCE_CANDIDATE_LIMIT_HIT", "WARN", {
-      source_candidate_count: state.source_candidate_count,
-      source_fetch_queue_count: state.source_fetch_queue_count,
-      source_deferred_count: state.source_deferred_count,
-      source_max_candidates_used: state.max_candidates
-    });
+function buildSatisfactionPacket(state) {
+  const bySlot = {};
+
+  for (const artifact of state.lossless_text_artifacts) {
+    const key = `${artifact.source_family}:${artifact.source_subfamily}`;
+    bySlot[key] ||= { source_family: artifact.source_family, source_subfamily: artifact.source_subfamily, accepted_source_ids: [], accepted_urls: [] };
+    bySlot[key].accepted_source_ids.push(artifact.candidate_source_id);
+    bySlot[key].accepted_urls.push(artifact.source_url);
   }
 
-  buildBatchPlan(state);
+  return { slots: Object.values(bySlot), collection_summary: { accepted: state.lossless_text_artifacts.length, candidates: state.candidate_sources.length } };
 }
-async function materializeAndDedupe({ run, state, fetchImpl, timeoutMs, startedAt }) { const fetched = []; for (let index = 0; index < state.fetch_queue.length; index += 1) { const candidate = state.fetch_queue[index]; if (candidate._fetched) continue; candidate._fetched = true; if (candidate.inline_text) { fetched.push(buildSourceRecord({ candidate, index, run, startedAt, rawText: candidate.inline_text, cleanText: cleanPlainText(candidate.inline_text), fetchMeta: { method: run.source_mode === "synthetic_demo" ? "synthetic_demo" : "pasted_text", status: run.source_mode === "synthetic_demo" ? "SYNTHETIC" : "PASTED", status_code: null } })); continue; } const fetchedRecord = await fetchWithLadder({ candidate, index, run, state, fetchImpl, timeoutMs, startedAt }); if (fetchedRecord) fetched.push(fetchedRecord); } for (const record of fetched) addFinalSource(state, record); }
-async function fetchWithLadder({ candidate, index, run, state, fetchImpl, timeoutMs, startedAt }) { const methods = ["direct_fetch"]; if (JINA_READER_BASE) methods.push("jina_reader_extract"); for (const method of methods) { const url = method === "jina_reader_extract" ? buildJinaUrl(candidate.candidate_url) : candidate.candidate_url; state.fetch_attempt_log.push({   candidate_url: candidate.candidate_url,   fetch_method: method,   attempted_url: url,   attempted_at: new Date().toISOString(),   source_fetch_timeout_ms_used: timeoutMs }); const result = await fetchText({ url, fetchImpl, timeoutMs, method }); if (!result.ok) {   state.retry_log.push({     candidate_url: candidate.candidate_url,     fetch_method: method,     outcome: result.error || "FETCH_FAILED",     timeout_hit: Boolean(result.timeout_hit),     timeout_ms: result.timeout_ms || timeoutMs   });    if (result.timeout_hit) {     state.collection_limitations.push("SOURCE_FETCH_TIMEOUT_OCCURRED");   }    continue; } const cleanText = cleanExtractedText(result.raw_text, result.content_type); if (countWords(cleanText) < 25) { state.retry_log.push({ candidate_url: candidate.candidate_url, fetch_method: method, outcome: "THIN_EXTRACTION_RETRY_NEXT_METHOD" }); continue; } const source = buildSourceRecord({ candidate, index, run, startedAt, rawText: result.raw_text, cleanText, fetchMeta: { method, status: "FETCHED", status_code: result.status_code, content_type: result.content_type } }); state.fetch_successes.push({ candidate_source_id: source.source_id, candidate_url: candidate.candidate_url, fetch_method: method, http_status: result.status_code, word_count: source.word_count }); return source; } if (candidate.scout?.reason_for_candidate) { const snippet = cleanPlainText(candidate.scout.reason_for_candidate); const source = buildSourceRecord({ candidate, index, run, startedAt, rawText: snippet, cleanText: snippet, fetchMeta: { method: "search_snippet_candidate_capture", status: "SNIPPET_ONLY", status_code: null, content_type: "text/plain" }, snippetOnly: true }); state.fetch_failures.push({ candidate_url: candidate.candidate_url, fetch_status: "SNIPPET_ONLY", failure_basis: "FETCH_FAILED_SNIPPET_CAPTURED" }); return source; } state.fetch_failures.push({   candidate_url: candidate.candidate_url,   fetch_status: "FETCH_FAILED",   failure_basis: "FETCH_LADDER_EXHAUSTED",   source_fetch_timeout_ms_used: timeoutMs }); return null; }
-async function coverageChallenge({ run, state, callModel }) { if (typeof callModel !== "function") { state.collection_limitations.push("COVERAGE_CHALLENGE_SKIPPED_CALL_MODEL_UNAVAILABLE"); return; } const summary = summarizeCoverage(state); const packet = buildCoverageChallengePacket({ run, state, summary }); try { const result = await callModel({ phaseId: "S0_COVERAGE_CHALLENGE", poolName: "search", systemPrompt: packet.systemPrompt, userPrompt: packet.userPrompt, responseMimeType: "application/json", temperature: 0, allowGrounding: true, maxOutputTokens: 8192 }); const parsed = safeParseJson(result.text)?.coverage_challenge || {}; const leads = Array.isArray(parsed.follow_up_candidate_urls) ? parsed.follow_up_candidate_urls : []; for (const lead of leads) if (isAllowedOrHostedCandidate(lead, state.target)) addCandidate(state, candidateFromUrl({ url: lead, discovery_method: "SX.B9_COVERAGE_CHALLENGE_SCOUT", parent: "coverage_challenge" })); state.second_pass_required = Boolean(parsed.requires_second_pass && leads.length); state.coverage_challenge_records.push({ ok: true, possibly_missing_families: parsed.possibly_missing_families || [], follow_up_candidate_urls: leads, follow_up_queries: parsed.follow_up_queries || [], requires_second_pass: state.second_pass_required, model_meta: result.meta || null }); } catch (err) { state.coverage_challenge_records.push({ ok: false, error: err?.message || String(err), candidate_summary: summary }); state.collection_limitations.push("COVERAGE_CHALLENGE_FAILED_OR_UNAVAILABLE"); } recordEvent(state, "SX.B9_COVERAGE_CHALLENGE_SCOUT", "INFO", { second_pass_required: state.second_pass_required }); }
-function addCandidate(state, candidate) { const key = candidate.url_dedup_key; if (state.candidate_map.has(key)) { const retained = state.candidate_map.get(key); retained.discovery_methods = Array.from(new Set([...(retained.discovery_methods || []), ...(candidate.discovery_methods || [])])); state.dedupe_records.push({ dedupe_cluster_id: `sx_dup_${String(state.dedupe_records.length + 1).padStart(3, "0")}`, canonical_candidate_source_id: retained.temp_candidate_id, suppressed_candidate_source_ids: [candidate.temp_candidate_id], dedupe_type: "URL_NORMALIZATION", dedupe_basis: ["same_url_dedup_key"], root_cluster_ids_involved: [retained.root_cluster_id], phase1_visibility: true, not_silently_dropped: true }); return; } state.candidate_map.set(key, candidate); state.candidates.push(candidate); state.candidate_discovery_log.push({ candidate_url: candidate.candidate_url, discovery_methods: candidate.discovery_methods, priority: candidate.priority, source_family_hint: candidate.source_family_hint, root_cluster_id: candidate.root_cluster_id }); ensureRootCluster(state, candidate); }
-function candidateFromUrl({ url, discovery_method, parent, scout = null }) { const normalized = normalizeUrl(url, parent); const info = classifyCandidate(normalized); const root = rootClusterFor(normalized, parent, info.source_family_hint); return { temp_candidate_id: `cand_tmp_${sha256(normalized).slice(0, 10)}`, candidate_url: normalized, original_url: url, normalized_url: normalized, canonical_url: normalized, url_without_tracking_params: normalized, url_dedup_key: urlDedupKey(normalized), fragment_policy: fragmentPolicy(url), source_family_hint: scout?.source_family_hint || info.source_family_hint, priority: scout?.priority_hint || info.priority, root_cluster_id: root.root_cluster_id, root_cluster_type: root.root_cluster_type, root_cluster_seed_url: root.root_cluster_seed_url, discovery_parent_url: parent || null, discovery_methods: [discovery_method], scout }; }
-function textCandidate({ run }) { const hint = run.source_mode === "synthetic_demo" ? "synthetic_demo" : "pasted_public_material"; return { temp_candidate_id: "cand_tmp_pasted_001", candidate_url: run.target_url || "PASTED_PUBLIC_MATERIAL", original_url: run.target_url || "PASTED_PUBLIC_MATERIAL", normalized_url: run.target_url || "PASTED_PUBLIC_MATERIAL", canonical_url: run.target_url || "PASTED_PUBLIC_MATERIAL", url_without_tracking_params: run.target_url || "PASTED_PUBLIC_MATERIAL", url_dedup_key: `text:${sha256(run.pasted_public_material).slice(0, 16)}`, fragment_policy: "NOT_APPLICABLE", source_family_hint: hint, priority: "P1_CORE", scope_class: run.source_mode === "synthetic_demo" ? "SYNTHETIC_DEMO_CANDIDATE" : "PASTED_PUBLIC_MATERIAL_CANDIDATE", root_cluster_id: run.source_mode === "synthetic_demo" ? "rc_synthetic_001" : "rc_pasted_001", root_cluster_type: run.source_mode === "synthetic_demo" ? "SYNTHETIC_ROOT" : "PASTED_TEXT_ROOT", root_cluster_seed_url: run.target_url || hint, discovery_parent_url: null, discovery_methods: [run.source_mode === "synthetic_demo" ? "SYNTHETIC_DEMO_INPUT" : "USER_SUPPLIED_PUBLIC_TEXT"], inline_text: run.pasted_public_material }; }
-function buildSourceRecord({ candidate, index, run, startedAt, rawText, cleanText, fetchMeta, snippetOnly = false }) { const sourceId = `S0_CAND_${String(index + 1).padStart(3, "0")}`; return { source_id: sourceId, candidate_source_id: sourceId, source_url: candidate.candidate_url, original_url: candidate.original_url, normalized_url: candidate.normalized_url, canonical_url: candidate.canonical_url, url_dedup_key: candidate.url_dedup_key, fragment_policy: candidate.fragment_policy, root_cluster_id: candidate.root_cluster_id, root_cluster_type: candidate.root_cluster_type, root_cluster_seed_url: candidate.root_cluster_seed_url, discovery_parent_url: candidate.discovery_parent_url, source_kind: run.source_mode === "synthetic_demo" ? "synthetic_demo_material" : candidate.inline_text ? "user_supplied_public_material" : "public_candidate_url", scope_class: candidate.scope_class || scopeClass(candidate.candidate_url), priority: candidate.priority, source_family_hint: candidate.source_family_hint, discovery_methods: candidate.discovery_methods, fetch_status: snippetOnly ? "SNIPPET_ONLY" : fetchMeta.status || "FETCHED", http_status: fetchMeta.status_code || null, fetch_method: fetchMeta.method, fetched_at: startedAt, raw_html_ref: snippetOnly ? null : `stage0://${sourceId}/raw_html`, raw_text_ref: `stage0://${sourceId}/raw_text`, clean_text_ref: `stage0://${sourceId}/clean_text`, search_snippet_ref: snippetOnly ? `stage0://${sourceId}/search_snippet` : null, content_hash: sha256(rawText), raw_content_hash: sha256(rawText), normalized_text_hash: sha256(normalizeForHash(cleanText)), raw_text: rawText, clean_text: cleanText, raw_char_count: rawText.length, clean_char_count: cleanText.length, char_count: cleanText.length, word_count: countWords(cleanText), extraction_quality: extractionQuality(cleanText, snippetOnly), snippet_only: snippetOnly, phase1_admission_forbidden: snippetOnly, requires_phase1_admission: true, requires_phase1_limitation_review: snippetOnly, custody_status: "candidate_only_pending_phase_1_admission", collection_notes: snippetOnly ? ["SEARCH_SNIPPET_ONLY_LAST_RESORT"] : [] }; }
-function addFinalSource(state, source) { const duplicate = state.final_sources.find((item) => item.normalized_text_hash === source.normalized_text_hash); if (duplicate) { const rec = { dedupe_cluster_id: `sx_dup_${String(state.dedupe_records.length + 1).padStart(3, "0")}`, canonical_candidate_source_id: duplicate.source_id, suppressed_candidate_source_ids: [source.source_id], dedupe_type: "NORMALIZED_TEXT_HASH", dedupe_basis: ["same_normalized_text_hash"], root_cluster_ids_involved: [duplicate.root_cluster_id, source.root_cluster_id], phase1_visibility: true, not_silently_dropped: true }; state.dedupe_records.push(rec); state.dedupe_log.push(rec); return; } state.final_sources.push(source); }
-function buildBatchPlan(state) { const groups = new Map(); for (const candidate of state.fetch_queue) { const key = `${candidate.priority}:${candidate.root_cluster_id}`; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(candidate); } state.batch_plan = Array.from(groups.entries()).map(([key, rows], index) => ({ batch_id: `sx_batch_${String(index + 1).padStart(3, "0")}`, batch_family: batchFamily(rows[0]), root_cluster_id: rows[0].root_cluster_id, root_cluster_seed_url: rows[0].root_cluster_seed_url, priority: rows[0].priority, source_family_target: rows[0].source_family_hint, candidate_url_count: rows.length, fetch_attempted_count: 0, fetch_success_count: 0, fetch_failure_count: 0, deferred_count: 0, batch_status: "PENDING" })); state.batch_execution_log = state.batch_plan.map((b) => ({ ...b })); }
-function ensureRootCluster(state, candidate) { if (state.root_clusters.has(candidate.root_cluster_id)) return; state.root_clusters.set(candidate.root_cluster_id, { root_cluster_id: candidate.root_cluster_id, root_cluster_type: candidate.root_cluster_type, root_cluster_seed_url: candidate.root_cluster_seed_url, discovery_parent_url: candidate.discovery_parent_url }); }
-function assembleManifest({ run, state, startedAt, target = null }) {
-  const sources = state.final_sources;
 
-  state.source_candidate_count = state.candidates.length;
-  state.source_fetch_queue_count = state.fetch_queue.length;
-  state.source_deferred_count = state.deferred_candidates.length;
-  state.source_candidate_limit_hit = Boolean(
-    state.source_candidate_limit_hit ||
-    state.deferred_candidates.length > 0
-  );
+function deterministicUnresolvedSlots(state) {
+  const counts = countBy(state.lossless_text_artifacts, "source_family");
+  return S0_SOURCE_FAMILY_ORDER.filter((family) => !counts[family]).map((family) => ({ source_family: family, source_subfamily: "", status: "UNAVAILABLE_AFTER_SEARCH", basis: "no accepted source in family" }));
+}
 
-  const sourceRuntimeTrace = buildSourceRuntimeTrace(state);
+function buildRemainingCaps(state) {
+  return {
+    family_counts: countBy(state.lossless_text_artifacts, "source_family"),
+    subfamily_counts: countBy(state.lossless_text_artifacts, "source_subfamily"),
+    family_caps: S0_FAMILY_CAPS
+  };
+}
 
-  const lossless = sources.map((source) => ({
-    source_id: source.source_id,
-    source_url: source.source_url,
-    raw_text_ref: source.raw_text_ref,
-    clean_text_ref: source.clean_text_ref,
-    content_hash: source.content_hash,
-    normalized_text_hash: source.normalized_text_hash,
-    word_count: source.word_count,
-    extraction_quality: source.extraction_quality,
-    custody_status: source.custody_status
-  }));
+function missingCandidateFamilies(state) {
+  const counts = countBy(state.candidate_sources.filter((row) => row.final_status !== "REJECTED"), "source_family");
+  return S0_SOURCE_FAMILY_ORDER.filter((family) => !counts[family]);
+}
 
-  if (!sources.length) {
-    state.collection_limitations.push("NO_CANDIDATE_SOURCE_MATERIAL_AVAILABLE_AFTER_STAGE0");
+function rebuildCandidateRoutesByFamily(state) {
+  const routes = blankCandidateRoutesByFamily();
+  for (const candidate of state.candidate_sources) {
+    if (routes[candidate.source_family]) routes[candidate.source_family].push(candidate.canonical_url || candidate.candidate_url);
   }
+  state.navigation_map.candidate_routes_by_family = routes;
+}
 
-  const controlledLimitations = Array.from(new Set(state.collection_limitations));
+function addDedupeRecord(state, recordInput) {
+  const record = {
+    dedupe_record_id: `dedupe_${String(++state.runtime.dedupe_seq).padStart(4, "0")}`,
+    dedupe_type: recordInput.dedupe_type,
+    canonical_candidate_source_id: recordInput.canonical_candidate_source_id || "",
+    suppressed_candidate_source_ids: recordInput.suppressed_candidate_source_ids || [],
+    dedupe_basis: recordInput.dedupe_basis || [],
+    model_review_ref: recordInput.model_review_ref || "",
+    not_silently_dropped: true
+  };
+  state.dedupe_records.push(record);
+  state.dedupe_log.push({ ...record, at: iso() });
+}
 
+function addCollectionLimitation(state, row) {
+  state.collection_limitations.push({
+    limitation_id: `lim_${String(++state.runtime.limitation_seq).padStart(4, "0")}`,
+    limitation_type: row.limitation_type,
+    affected_family: row.affected_family || "",
+    affected_subfamily: row.affected_subfamily || "",
+    affected_item_ids: row.affected_item_ids || [],
+    basis: row.basis || "",
+    downstream_effect: row.downstream_effect || "",
+    forensic_ref: row.forensic_ref || ""
+  });
+}
+
+function addFailureTicket(state, row) {
+  const ticket = {
+    failure_id: `fail_${String(++state.runtime.failure_seq).padStart(4, "0")}`,
+    gate_id: row.gate_id,
+    failed_condition: row.failed_condition,
+    affected_item_ids: row.affected_item_ids || [],
+    failure_severity: row.severity,
+    repair_route: row.repair_route,
+    attempt_count: 0,
+    max_attempts: S0_MAX_REPAIR_ATTEMPTS,
+    final_status: row.final_status || "PASSED_WITH_WARNING"
+  };
+  state.validation_repair_log.push(ticket);
+  return ticket;
+}
+
+function fatalBoundary(state, condition) {
+  addFailureTicket(state, { gate_id: "G1", failed_condition: condition, severity: "FATAL", repair_route: "SCHEMA_REPAIR", final_status: "FATAL" });
+  throw new Error(`S0_BOUNDARY_FATAL: ${condition}`);
+}
+
+function repairTerminalShape(output) {
   return {
-    hybrid_extraction_manifest: {
-      node_id: "S0",
-      adapter_version: ADAPTER_VERSION,
-      source_mode: run.source_mode,
-      run_id: run.run_id,
-      target: target || state.target,
-      target_url: run.target_url || "N/A",
-      company_name: run.company_name || "N/A",
-      generated_at: startedAt,
-
-      extraction_call_card: buildCallCard({ run, state }),
-
-      source_runtime_trace: sourceRuntimeTrace,
-      runtime_limits: sourceRuntimeTrace,
-
-      collection_summary: {
-        candidate_count: sources.length,
-        discovered_candidate_count: state.source_candidate_count,
-        fetch_queue_count: state.source_fetch_queue_count,
-        rejected_count: state.rejected_by_scope.length,
-        deferred_count: state.deferred_candidates.length,
-        fetch_failure_count: state.fetch_failures.length,
-        search_scout_record_count: state.search_scout_records.length,
-        coverage_challenge_record_count: state.coverage_challenge_records.length,
-        source_candidate_limit_hit: state.source_candidate_limit_hit,
-        source_max_candidates_used: state.max_candidates,
-        source_fetch_timeout_ms_used: state.timeout_ms
-      },
-
-      batch_plan: state.batch_plan,
-      root_clusters: Array.from(state.root_clusters.values()),
-      collection_passes: state.collection_passes,
-      candidate_sources: sources,
-      lossless_text_artifacts: lossless,
-      artifact_store_manifest: lossless,
-      fetch_successes: state.fetch_successes,
-      fetch_failures: state.fetch_failures,
-      deferred_candidates: state.deferred_candidates,
-      dedupe_records: state.dedupe_records,
-      rejected_by_scope: state.rejected_by_scope,
-      search_scout_records: state.search_scout_records,
-      coverage_challenge_records: state.coverage_challenge_records,
-      warnings: state.warnings,
-      collection_limitations: controlledLimitations,
-
-      phase_1_instructions: [
-        "Stage 0 material is candidate-only.",
-        "Phase 1 must admit, reject, quarantine, or limitation-route every candidate before downstream use.",
-        "Snippet-only candidates are not admissible as evidence and require limitation review."
-      ]
-    },
-
-    extraction_forensic_ledger: {
-      node_id: "S0",
-      adapter_version: ADAPTER_VERSION,
-      run_id: run.run_id,
-      source_mode: run.source_mode,
-      started_at: startedAt,
-      completed_at: new Date().toISOString(),
-
-      source_runtime_trace: sourceRuntimeTrace,
-      runtime_limits: sourceRuntimeTrace,
-
-      ledger_events: state.ledger_events,
-      batch_execution_log: state.batch_execution_log,
-      candidate_discovery_log: state.candidate_discovery_log,
-      fetch_attempt_log: state.fetch_attempt_log,
-      fetch_success_log: state.fetch_successes,
-      fetch_failure_log: state.fetch_failures,
-      dedupe_log: state.dedupe_log,
-      retry_log: state.retry_log,
-      rejected_by_scope_log: state.rejected_by_scope,
-      deferred_candidate_log: state.deferred_candidates,
-      search_scout_log: state.search_scout_records,
-      coverage_challenge_log: state.coverage_challenge_records,
-      controlled_limitations: controlledLimitations
-    }
+    hybrid_extraction_manifest: orderObject(output.hybrid_extraction_manifest || {}, S0_HYBRID_EXTRACTION_MANIFEST_TOP_LEVEL_FIELDS),
+    extraction_forensic_ledger: orderObject(output.extraction_forensic_ledger || {}, S0_EXTRACTION_FORENSIC_LEDGER_TOP_LEVEL_FIELDS)
   };
 }
-function buildSourceRuntimeTrace(state) {
+
+function orderObject(obj, fields) {
+  const ordered = {};
+  for (const field of fields) ordered[field] = obj[field] ?? defaultValueForField(field);
+  return ordered;
+}
+
+function defaultValueForField(field) {
+  if (field.endsWith("_log") || field.endsWith("s") || field.includes("records") || field.includes("limitations")) return [];
+  return {};
+}
+
+function compactCandidates(candidates) {
+  return candidates.map((row) => ({ candidate_source_id: row.candidate_source_id, candidate_url: row.candidate_url, route_source: row.route_source, route_basis: row.route_basis }));
+}
+
+function stripCandidate(row) {
   return {
-    source_trace_version: "source_runtime_trace_v1",
-    source_max_candidates_used: state.max_candidates,
-    source_fetch_timeout_ms_used: state.timeout_ms,
-    source_candidate_limit_hit: Boolean(state.source_candidate_limit_hit),
-    source_candidate_count: state.source_candidate_count || state.candidates.length,
-    source_fetch_queue_count: state.source_fetch_queue_count || state.fetch_queue.length,
-    source_deferred_count: state.source_deferred_count || state.deferred_candidates.length,
-    fetch_failure_count: state.fetch_failures.length,
-    fetch_timeout_failure_count: state.retry_log.filter((row) => row.timeout_hit === true).length,
-    rejected_by_scope_count: state.rejected_by_scope.length,
-    dedupe_suppressed_count: state.dedupe_records.length,
-    limits_are_operational_not_evidentiary: true
+    candidate_source_id: row.candidate_source_id,
+    candidate_url: row.candidate_url,
+    canonical_url: row.canonical_url,
+    source_family: row.source_family,
+    source_subfamily: row.source_subfamily,
+    route_source: row.route_source,
+    route_basis: row.route_basis,
+    scope_class: row.scope_class,
+    fetch_decision: row.fetch_decision,
+    fetch_decision_reason: row.fetch_decision_reason,
+    final_status: row.final_status
   };
 }
-function buildCallCard({ run, state }) {   const urlMode = run.source_mode === "url" || run.source_mode === "url_plus_text";    return {     runtime_parent: "00_RUNTIME_SPINE.md",     runtime_index: "00_RUNTIME_SPINE_INDEX.md",     extraction_contract: "00_SOURCE_EXTRACTION_CONTRACT.md",     active_stage: 0,     active_layer: "Hybrid Source Extraction",     canonical_output: "hybrid_extraction_manifest",      source_mode: run.source_mode,     target_url: run.target_url || null,      search_pool_enabled: urlMode,     grounding_enabled: urlMode,     deterministic_fetch_enabled: urlMode,     jina_or_reader_enabled: Boolean(JINA_READER_BASE),     browser_render_fallback_enabled: false,      source_max_candidates_used: state.max_candidates,     source_fetch_timeout_ms_used: state.timeout_ms,     source_candidate_limit_hit: Boolean(state.source_candidate_limit_hit),     source_candidate_count: state.source_candidate_count,     source_fetch_queue_count: state.source_fetch_queue_count,     source_deferred_count: state.source_deferred_count,      output_is_candidate_only: true,     phase_1_required_for_admission: true,     failure_route: ["extraction_repair", "source_limitation", "controlled_failure"]   }; }
-function buildSearchScoutPacket({ run, state }) { const q = searchQueries(run, state.target).join("\n"); return { systemPrompt: "You are a grounded search scout for Stage 0 Hybrid Source Extraction. Return candidate public URLs only. Do not analyze the target, infer product facts, evaluate legal gaps, or treat snippets as evidence. Output JSON only.", userPrompt: JSON.stringify({ target: state.target, company_name_candidate: run.company_name, priority_ladder: ["P1_CORE root/product/legal/governance", "P2_SUPPORT security/trust/docs/API", "P3_COMMERCIAL pricing/enterprise", "P4_SIGNAL_ONLY blog/changelog/help only with signal"], required_queries: q, deterministic_candidate_summary: summarizeCoverage(state), output_schema: { search_scout_candidates: [{ candidate_url: "", source_family_hint: "", priority_hint: "", discovery_query: "", reason_for_candidate: "", requires_fetch: true, requires_phase1_admission: true }], follow_up_queries: [] } }, null, 2) }; }
-function buildCoverageChallengePacket({ run, state, summary }) { return { systemPrompt: "You are a grounded coverage challenge scout for Stage 0 Hybrid Source Extraction. Return likely missing source families and follow-up URL leads only. Do not analyze the target or assign absence. Output JSON only.", userPrompt: JSON.stringify({ target: state.target, company_name_candidate: run.company_name, current_candidate_summary: summary, check_family_groups: ["root_homepage", "product_platform", "product_solution", "legal_governance", "subprocessor", "security_trust", "docs_api_developer", "pricing_commercial"], output_schema: { coverage_challenge: { possibly_missing_families: [], follow_up_queries: [], follow_up_candidate_urls: [], reason: "", requires_second_pass: true } } }, null, 2) }; }
-function searchQueries(run, target) { const domain = target?.canonical_domain || ""; const name = run.company_name || domain; return [`site:${domain} product OR products OR platform OR features OR solutions OR "use cases" OR models OR agents OR studio`, `site:${domain} terms OR "terms of service" OR "terms and conditions" OR legal`, `site:${domain} privacy OR "privacy policy" OR DPA OR "data processing agreement" OR subprocessors`, `site:${domain} security OR trust OR compliance OR SOC2 OR GDPR OR "data protection"`, `site:${domain} docs OR API OR developers OR integrations`, `site:${domain} pricing OR enterprise OR "contact sales" OR demo`, `"${name}" "privacy policy"`, `"${name}" "terms of service"`, `"${name}" "data processing agreement"`, `"${name}" subprocessors`, `"${name}" "trust center"`]; }
-async function fetchText({ url, fetchImpl, timeoutMs, method }) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), timeoutMs); try { const response = await fetchImpl(url, { method: "GET", signal: controller.signal, headers: { "user-agent": DEFAULT_USER_AGENT, "accept": "text/html,text/plain,application/xhtml+xml,application/xml;q=0.8,*/*;q=0.5" } }); const rawText = await response.text(); const contentType = response.headers?.get?.("content-type") || ""; return { ok: response.ok, status_code: response.status, raw_text: rawText, content_type: contentType, method, error: response.ok ? null : `HTTP_${response.status}` }; } catch (err) {   const isTimeout = err?.name === "AbortError";   return {     ok: false,     error: isTimeout ? "FETCH_TIMEOUT" : err?.message || String(err),     timeout_hit: isTimeout,     timeout_ms: timeoutMs,     method   }; } finally {   clearTimeout(timeout); } }
-function extractSitemapsFromRobots(text) { return String(text || "").split(/\r?\n/).map((line) => line.match(/^\s*Sitemap:\s*(\S+)/i)?.[1]).filter(Boolean); }
-function extractLocUrls(xml) { return Array.from(String(xml || "").matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)).map((m) => cleanPlainText(m[1])); }
-function extractLinksAndRouteHints(html, base) { const out = new Set(); for (const m of String(html || "").matchAll(/(?:href|to|data-href|data-url)\s*=\s*["']([^"']+)["']/gi)) addMaybe(out, m[1], base); for (const m of String(html || "").matchAll(/["']((?:\/#|#|\/)(?:product|products|platform|features|solutions|use-cases|models|agents|studio|docs|developers|api)[^"'\s<]*)["']/gi)) addMaybe(out, m[1], base); for (const m of String(html || "").matchAll(/<(?:link|meta)[^>]+(?:href|content)=["']([^"']+)["'][^>]*>/gi)) addMaybe(out, m[1], base); return Array.from(out); }
-function addMaybe(set, raw, base) { if (!/^(mailto:|tel:|javascript:)/i.test(raw || "")) { const url = normalizeUrl(raw, base); if (url) set.add(url); } }
-function isAllowedOrHostedCandidate(url, target) { try { if (!target) return false; const h = new URL(url).hostname; return target.allowed_hosts.includes(h) || h.endsWith(`.${target.canonical_domain}`) || HOSTED_GOVERNANCE_RE.test(h); } catch { return false; } }
-function isUsefulCandidate(url) { try { const u = new URL(url); const decodedPath = decodeURIComponent(u.pathname || "/"); if (STATIC_ASSET_RE.test(u.pathname)) return false; if (JUNK_PATH_RE.test(u.pathname)) return false; if (PRIVATE_PATH_RE.test(u.pathname)) return false; if (decodedPath.length > 140) return false; if (/\/@\w+(?:\/)?$/i.test(decodedPath)) return false; if (/\/(?:user|users|people|profile|team)\/[^/]+$/i.test(decodedPath)) return false; if (/\/\d{2,5}$/i.test(decodedPath)) return false; if (/[<>]/.test(decodedPath)) return false; return true; } catch { return false; } }
-function scopeClass(url, target = null) { try { if (url === "PASTED_PUBLIC_MATERIAL") return "PASTED_PUBLIC_MATERIAL_CANDIDATE"; if (!isUsefulCandidate(url)) return "PRIVATE_OR_PROHIBITED"; const u = new URL(url); const h = u.hostname; const full = `${h}${u.pathname}`; if (KILL_HOST_RE.test(h)) return "THIRD_PARTY_NON_GOVERNANCE"; if (/login|signin|signup|account|dashboard|admin|private|app\./i.test(full)) return "PRIVATE_OR_PROHIBITED"; if (target && (target.allowed_hosts.includes(h) || h.endsWith(`.${target.canonical_domain}`))) return "TARGET_DOMAIN_CANDIDATE"; if (HOSTED_GOVERNANCE_RE.test(h)) return "HOSTED_GOVERNANCE_CANDIDATE"; return "THIRD_PARTY_NON_GOVERNANCE"; } catch { return "PRIVATE_OR_PROHIBITED"; } }
-function classifyCandidate(url) { const p = safePath(url); if (p === "/") return { source_family_hint: "root_homepage", priority: "P1_CORE" }; let host = ""; try { host = new URL(normalizeUrl(url)).hostname; } catch {} if (HOSTED_GOVERNANCE_RE.test(host)) return { source_family_hint: "hosted_governance_candidate", priority: "P1_CORE" }; const segments = p.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean); const has = (...terms) => terms.some((term) => segments.includes(term)); const joined = segments.join("-"); if (has("subprocessors", "subprocessor")) return { source_family_hint: "public_legal_path_hint", priority: "P1_CORE" }; if (has("terms", "privacy", "legal", "dpa", "cookie", "aup", "eula", "sla") || joined.includes("terms-of-service") || joined.includes("terms-and-conditions") || joined.includes("privacy-policy") || joined.includes("data-processing-agreement") || joined.includes("acceptable-use")) return { source_family_hint: "public_legal_path_hint", priority: "P1_CORE" }; if (has("product", "products", "platform", "feature", "features", "solution", "solutions", "models", "model", "agents", "agent", "studio", "tools", "workflows", "automation", "automations") || joined.includes("use-cases") || joined.includes("usecases")) return { source_family_hint: "public_product_path_hint", priority: "P1_CORE" }; if (has("docs", "documentation", "developer", "developers", "api", "apis", "reference", "integrations")) return { source_family_hint: "public_docs_api_path_hint", priority: "P2_SUPPORT" }; if (has("trust", "security", "compliance") || joined.includes("trust-center") || joined.includes("security-center")) return { source_family_hint: "public_security_trust_path_hint", priority: "P2_SUPPORT" }; if (has("pricing", "plans", "enterprise", "demo") || joined.includes("contact-sales") || joined.includes("contact-us")) return { source_family_hint: "public_commercial_path_hint", priority: "P3_COMMERCIAL" }; return { source_family_hint: "public_first_party_candidate", priority: "P4_SIGNAL_ONLY" }; }
-function rootClusterFor(url, parent, family) { const type = family === "root_homepage" ? "ROOT_HOME" : family === "public_legal_path_hint" || family === "hosted_governance_candidate" ? "LEGAL_HINT_ROOT" : family === "public_security_trust_path_hint" ? "TRUST_HINT_ROOT" : family === "public_docs_api_path_hint" ? "DOCS_HINT_ROOT" : family === "public_commercial_path_hint" ? "COMMERCIAL_HINT_ROOT" : family === "public_product_path_hint" ? "PRODUCT_HINT_ROOT" : "FIRST_PARTY_ROOT"; return { root_cluster_id: `rc_${type.toLowerCase()}_${sha256(urlDedupKey(parent || url)).slice(0, 6)}`, root_cluster_type: type, root_cluster_seed_url: parent || url }; }
-function batchFamily(c) { if (c.source_family_hint === "root_homepage") return "SX_BATCH_P1_ROOT"; if (c.source_family_hint === "public_product_path_hint") return "SX_BATCH_P1_PUBLIC_PRODUCT_HINT"; if (["public_legal_path_hint", "hosted_governance_candidate"].includes(c.source_family_hint)) return "SX_BATCH_P1_PUBLIC_LEGAL_HINT"; if (c.source_family_hint === "public_security_trust_path_hint") return "SX_BATCH_P2_PUBLIC_SECURITY_TRUST_HINT"; if (c.source_family_hint === "public_docs_api_path_hint") return "SX_BATCH_P2_PUBLIC_DOCS_API_HINT"; if (c.source_family_hint === "public_commercial_path_hint") return "SX_BATCH_P3_PUBLIC_COMMERCIAL_HINT"; return "SX_BATCH_P4_PUBLIC_FIRST_PARTY"; }
-function candidateSort(a, b) { const order = { P1_CORE: 1, P2_SUPPORT: 2, P3_COMMERCIAL: 3, P4_SIGNAL_ONLY: 4 }; const hintOrder = { root_homepage: 1, public_product_path_hint: 2, public_legal_path_hint: 3, hosted_governance_candidate: 3, public_security_trust_path_hint: 4, public_docs_api_path_hint: 5, public_commercial_path_hint: 6, public_first_party_candidate: 7 }; return (order[a.priority] || 9) - (order[b.priority] || 9) || (hintOrder[a.source_family_hint] || 99) - (hintOrder[b.source_family_hint] || 99) || a.candidate_url.localeCompare(b.candidate_url); }
-function summarizeCoverage(state) { const counts = {}; for (const c of state.final_sources) counts[c.source_family_hint] = (counts[c.source_family_hint] || 0) + 1; return { counts, final_candidate_count: state.final_sources.length, failed_count: state.fetch_failures.length, deferred_count: state.deferred_candidates.length }; }
-function recordEvent(state, event_type, severity, details = {}) { state.ledger_events.push({ event_id: `sx_evt_${String(state.ledger_events.length + 1).padStart(4, "0")}`, event_type, severity, at: new Date().toISOString(), details }); }
-function normalizeInput(input) { return { run_id: String(input.run_id || input.runId || createRunId()).trim(), source_mode: String(input.source_mode || input.sourceMode || "text").trim(), target_url: String(input.target_url || input.targetUrl || "").trim(), company_name: String(input.company_name || input.companyName || "").trim(), pasted_public_material: String(input.pasted_public_material || input.pastedPublicMaterial || "").trim(), max_candidate_sources: input.max_candidate_sources || input.maxCandidateSources, fetch_timeout_ms: input.fetch_timeout_ms || input.fetchTimeoutMs }; }
-function normalizeUrl(value, base) { try { const raw = String(value || "").trim(); if (!raw) return ""; const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith("#") || raw.startsWith("/") ? raw : base ? raw : `https://${raw}`; const u = new URL(withScheme, base || undefined); if (!isSemanticHash(u.hash)) u.hash = ""; u.search = stripTrackingParams(u.searchParams); if (u.pathname !== "/") u.pathname = u.pathname.replace(/\/$/, ""); return u.href; } catch { return ""; } }
-function stripTrackingParams(params) { const keep = []; for (const [k, v] of params.entries()) if (!/^(utm_|gclid|fbclid|ref$|source$)/i.test(k)) keep.push(`${encodeURIComponent(k)}=${encodeURIComponent(v)}`); return keep.length ? `?${keep.join("&")}` : ""; }
-function isSemanticHash(hash) { return /#\/?(product|products|platform|features|solutions|use-cases|docs|api|developers)/i.test(hash || ""); }
-function fragmentPolicy(url) { try { const h = new URL(normalizeUrl(url)).hash; if (!h) return "DROP_ANALYTICS_FRAGMENT"; return isSemanticHash(h) ? "PRESERVE_HASH_ROUTE" : "PRESERVE_SEMANTIC_FRAGMENT"; } catch { return "DROP_ANALYTICS_FRAGMENT"; } }
-function urlDedupKey(url) { try { const u = new URL(url); return `${u.hostname.replace(/^www\./, "")}${u.pathname}${isSemanticHash(u.hash) ? u.hash : ""}`.toLowerCase(); } catch { return String(url || "").toLowerCase(); } }
-function safePath(url) { try { const u = new URL(url); return `${u.pathname}${u.hash}` || "/"; } catch { return "/"; } }
-function cleanExtractedText(raw, contentType = "") { if (/html|xml/i.test(contentType) || /<html|<body|<div|<p|<section|<article/i.test(raw)) return cleanHtmlText(raw); return cleanPlainText(raw); }
-function cleanHtmlText(html) { return cleanPlainText(String(html || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<noscript[\s\S]*?<\/noscript>/gi, " ").replace(/<svg[\s\S]*?<\/svg>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"')); }
-function cleanPlainText(value) { return String(value || "").replace(/\r/g, "\n").replace(/[\t ]+/g, " ").replace(/\n{3,}/g, "\n\n").trim(); }
-function extractionQuality(text, snippetOnly) { if (snippetOnly) return "PARTIAL"; const words = countWords(text); if (words >= 500) return "GOOD"; if (words >= 120) return "PARTIAL"; if (words >= 25) return "THIN"; return "EMPTY"; }
-function countWords(text) { return String(text || "").trim().split(/\s+/).filter(Boolean).length; }
-function normalizeForHash(text) { return String(text || "").toLowerCase().replace(/\s+/g, " ").trim(); }
-function sha256(value) { return crypto.createHash("sha256").update(String(value || "")).digest("hex"); }
-function safeParseJson(text) { try { return JSON.parse(String(text || "").replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim()); } catch { return {}; } }
-function positiveInt(value, fallback) { const n = Number(value); return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback; }
-function buildJinaUrl(targetUrl) { return `${JINA_READER_BASE.replace(/\/$/, "")}/${targetUrl}`; }
-function createRunId() { return `run_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`; }
+
+function markDeferred(candidate, reason) {
+  candidate.fetch_decision = "DEFER";
+  candidate.fetch_decision_reason = reason;
+  candidate.final_status = "DEFERRED";
+}
+
+function markRejected(candidate, reason) {
+  candidate.fetch_decision = "REJECT";
+  candidate.fetch_decision_reason = reason;
+  candidate.final_status = "REJECTED";
+}
+
+function findCandidate(state, id) {
+  return state.candidate_sources.find((row) => row.candidate_source_id === id);
+}
+
+function nextArtifactId(state) {
+  return `art_${String(++state.runtime.artifact_seq).padStart(4, "0")}`;
+}
+
+function normalizeRouteSource(routeSource) {
+  if (routeSource === "HASH" || routeSource === "HASH_ROUTE_ROUTE") return "HASH_ROUTE";
+  return routeSource || "ROOT";
+}
+
+function logEvent(state, event, data = {}) {
+  state.ledger_events.push({ event, ...data, at: iso() });
+}
+
+function logModel(state, reviewType, data = {}) {
+  state.model_review_log.push({ review_type: reviewType, ...data, at: iso() });
+}
+
+function countBy(items, key) {
+  const out = {};
+  for (const item of items || []) {
+    const value = item?.[key] || "UNKNOWN";
+    out[value] = (out[value] || 0) + 1;
+  }
+  return out;
+}
+
+function isUrlMode(state) {
+  return ["url", "url_plus_text"].includes(state.run.source_mode);
+}
+
+function parseMaybeJson(value) {
+  if (!value) return value;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return { raw: String(value) };
+  }
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function joinBasis(a, b) {
+  return [a, b].filter(Boolean).join(" | ");
+}
+
+function iso() {
+  return new Date().toISOString();
+}
+
+function isoNow(now) {
+  return now().toISOString();
+}
+
+function randomId(length) {
+  return crypto.randomBytes(Math.ceil(length / 2)).toString("hex").slice(0, length);
+}
+
+function stringOr(value, fallback) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
