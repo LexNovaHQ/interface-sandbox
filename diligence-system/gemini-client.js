@@ -3,15 +3,13 @@ import crypto from "crypto";
 export const SEARCH_MODEL_ORDER = [
   "gemini-2.5-flash-lite",
   "gemini-2.5-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-3-flash"
+  "gemini-3.1-flash-lite"
 ];
 
 export const NON_SEARCH_MODEL_ORDER = [
   "gemini-3.1-flash-lite",
   "gemini-2.5-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-3-flash"
+  "gemini-2.5-flash"
 ];
 
 export const ERROR_CLASSES = Object.freeze({
