@@ -27,6 +27,9 @@ export const CORE_PROMPT_FILES = [
 const EXECUTION_MAP_FILE = "08_PHASE_STACK_EXECUTION_MAP.md";
 const JSON_REPAIR_SYSTEM_PROMPT = "You are a mechanical JSON repair function. You receive malformed JSON-like text emitted by a prior model. Return only valid JSON. Do not add, remove, summarize, infer, or reinterpret content. Do not include markdown. Preserve keys and values as closely as possible. If content is impossible to repair, return {\"repair_failed\":true,\"repair_error\":\"UNREPAIRABLE_JSON\"}.";
 const P6_MODEL_BATCH_SIZE = 15;
+const CLOUD_RUN_TIMEOUT_ASSUMPTION_SECONDS = Number(
+  process.env.CLOUD_RUN_TIMEOUT_ASSUMPTION_SECONDS || 900
+);
 const DEFAULT_GEMINI_TIMEOUT_MS =600000;
 const EXPRESS_JSON_LIMIT = "50mb";
 const SOURCE_MAX_CANDIDATES_DEFAULT = 100;
