@@ -1471,12 +1471,14 @@ async function executeP6Batch({ run, promptStack, phase, upstream, referenceBund
     };
   }
 
-  const ledgerBatch = getP6RegistryLedgerBatch(parsedResult.parsed);
+  const ledgerBatchNormalization = normalizeP6RegistryLedgerBatch(parsedResult.parsed);
+  const ledgerBatch = ledgerBatchNormalization.ledgerBatch;
   const batchValidation = validateP6ModelBatchOutput({ batch, ledgerBatch });
   const summary = {
     batch_id: batch.batch_id,
     expected_registry_row_ids: batch.expected_registry_row_ids,
     returned_registry_row_count: Array.isArray(ledgerBatch) ? ledgerBatch.length : 0,
+    p6_batch_output_shape: ledgerBatchNormalization.diagnostics,
     validation: compactValidation(batchValidation),
     model_meta: lastModelMeta
   };
@@ -1497,12 +1499,13 @@ async function executeP6Batch({ run, promptStack, phase, upstream, referenceBund
       error: `${batch.batch_id}:${batchValidation.errors.join(";")}`,
       validation: batchValidation,
       ledgerBatch,
+      p6BatchOutputShape: ledgerBatchNormalization.diagnostics,
       summary,
       warning: parsedResult.warning,
       lastModelMeta
     };
   }
-  return { ok: true, validation: batchValidation, ledgerBatch, summary, warning: parsedResult.warning, lastModelMeta };
+  return { ok: true, validation: batchValidation, ledgerBatch, p6BatchOutputShape: ledgerBatchNormalization.diagnostics, summary, warning: parsedResult.warning, lastModelMeta };
 }
 
 function buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, scratchpadContext = null }) {
@@ -1615,10 +1618,125 @@ async function parseP6BatchModelJson({ batch, phase, rawText, callModel, modelMe
   };
 }
 
+const P6_LEDGER_BATCH_CANDIDATE_PATHS = [
+  ["p6_model_batch_output", "registry_ledger_batch"],
+  ["registry_ledger_batch"],
+  ["target_exposure_profile", "registry_ledger"],
+  ["registry_ledger"],
+  ["ledger_batch"],
+  ["rows"],
+  ["p6_model_batch_output", "registry_ledger"],
+  ["p6_model_batch_output", "ledger_batch"],
+  ["p6_model_batch_output", "rows"]
+];
+
 function getP6RegistryLedgerBatch(parsed) {
-  if (Array.isArray(parsed?.p6_model_batch_output?.registry_ledger_batch)) return parsed.p6_model_batch_output.registry_ledger_batch;
-  if (Array.isArray(parsed?.registry_ledger_batch)) return parsed.registry_ledger_batch;
-  return null;
+  return normalizeP6RegistryLedgerBatch(parsed).ledgerBatch;
+}
+
+function normalizeP6RegistryLedgerBatch(parsed) {
+  const diagnostics = {
+    normalizer_version: "p6_registry_ledger_batch_normalizer_v1",
+    root_shape: describeP6ValueShape(parsed),
+    root_keys: topLevelKeys(parsed).slice(0, 30),
+    candidate_shapes: [],
+    selected_path: null,
+    normalization_applied: null
+  };
+
+  if (Array.isArray(parsed)) {
+    return {
+      ledgerBatch: parsed,
+      diagnostics: {
+        ...diagnostics,
+        selected_path: "$",
+        normalization_applied: "root_array"
+      }
+    };
+  }
+
+  for (const pathParts of P6_LEDGER_BATCH_CANDIDATE_PATHS) {
+    const value = getP6PathValue(parsed, pathParts);
+    if (value === undefined) continue;
+
+    diagnostics.candidate_shapes.push({
+      path: pathParts.join("."),
+      shape: describeP6ValueShape(value),
+      keys: topLevelKeys(value).slice(0, 30)
+    });
+
+    if (Array.isArray(value)) {
+      return {
+        ledgerBatch: value,
+        diagnostics: {
+          ...diagnostics,
+          selected_path: pathParts.join("."),
+          normalization_applied: "array_at_candidate_path"
+        }
+      };
+    }
+
+    const objectMapRows = p6ObjectMapToLedgerRows(value);
+    if (objectMapRows) {
+      return {
+        ledgerBatch: objectMapRows,
+        diagnostics: {
+          ...diagnostics,
+          selected_path: pathParts.join("."),
+          normalization_applied: "object_map_to_array"
+        }
+      };
+    }
+  }
+
+  return {
+    ledgerBatch: null,
+    diagnostics
+  };
+}
+
+function getP6PathValue(value, pathParts) {
+  let current = value;
+  for (const part of pathParts) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+function p6IsPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function p6ObjectMapToLedgerRows(value) {
+  if (!p6IsPlainObject(value)) return null;
+
+  const entries = Object.entries(value).filter(([, row]) => row !== undefined && row !== null);
+  if (!entries.length) return null;
+
+  if (!entries.every(([, row]) => p6IsPlainObject(row))) return null;
+
+  return entries.map(([key, row]) => {
+    const rowId = getP6LedgerRowId(row);
+    if (rowId) return row;
+
+    const keyLooksLikeThreatId = /^[A-Z]{3}_[A-Z]{3}_(\d{3}|IN\d|LB\d)$/i.test(String(key || "").trim());
+    if (!keyLooksLikeThreatId) return row;
+
+    return {
+      registry_row_id: key,
+      threat_id: key,
+      ...row
+    };
+  });
+}
+
+function describeP6ValueShape(value) {
+  if (Array.isArray(value)) return `array:${value.length}`;
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "object") return `object:${Object.keys(value).length}`;
+  return typeof value;
 }
 
 function validateP6ModelBatchOutput({ batch, ledgerBatch }) {
@@ -2104,6 +2222,37 @@ function createRuntimeTrace({ run, activeRuntime, enabled }) {
   };
 }
 
+function addPromptArtifacts(runtimeTrace, promptStack) {
+  if (!runtimeTrace) return;
+
+  runtimeTrace.artifacts = Array.isArray(runtimeTrace.artifacts)
+    ? runtimeTrace.artifacts
+    : [];
+
+  const manifest = Array.isArray(promptStack?.manifest)
+    ? promptStack.manifest
+    : [];
+
+  runtimeTrace.artifacts.push({
+    artifact_type: "prompt_stack_manifest",
+    artifact_version: "prompt_stack_manifest_v1",
+    status: promptStack?.ok ? "READY" : "NOT_READY",
+    errors: promptStack?.errors || [],
+    counts: {
+      total_items: manifest.length,
+      core_files: manifest.filter((item) => item.kind === "core").length,
+      phase_prompts: manifest.filter((item) => item.kind === "phase_prompt").length,
+      missing_items: manifest.filter((item) => item.present === false).length
+    },
+    manifest: manifest.map((item) => ({
+      kind: item.kind || null,
+      node_id: item.node_id || null,
+      file: item.file || null,
+      present: Boolean(item.present),
+      required_top_level_keys: item.required_top_level_keys || []
+    }))
+  });
+}
 function buildOperationalLimits(overrides = {}) {
   const source = overrides.source || overrides;
 
