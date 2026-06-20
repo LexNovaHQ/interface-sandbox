@@ -28,6 +28,40 @@ GLOBAL_INVARIANTS:
   - prompts_must_not_hardcode_model_names
   - pool_selection_is_runtime_controlled
   - final_readiness_requires_locked_handoff_chain
+  - runtime_scratchpad_sidecar_is_non_canonical
+  - scratchpad_context_may_not_override_locked_handoffs
+  - runtime_scratchpad_update_may_not_replace_required_ledgers_traces_or_handoffs
+  - developer_forensics_sidecar_may_not_create_substantive_findings
+
+SIDECAR_RUNTIME_RULES:
+  scratchpad_context:
+    status: optional_runtime_sidecar_input
+    supplied_by: runtime
+    allowed_consumers: [P1, P2, P3, P4, P5, P6, P7]
+    canonical: false
+    required_for_lock: false
+    may_assist: [model_retention, continuity, limitation_carry_forward, visible_forensic_basis]
+    must_not: [create_new_facts, override_admitted_evidence, override_locked_handoffs, authorize_phase_scope_expansion, replace_required_phase_inputs]
+
+  runtime_scratchpad_update:
+    status: optional_runtime_sidecar_output
+    supplied_by: model_phase_or_runtime
+    allowed_emitters: [S0, P1, P2, P3, P4, P5, P6, P7, RENDERER]
+    canonical: false
+    required_for_lock: false
+    stored_as: scratchpad.json
+    allowed_content: [evidence_refs, working_notes, decisions, gaps, assumptions, contradictions, carry_forward, risk_flags, validation_notes, model_retention_hints, p6_registry_workbench_notes]
+    must_not: [appear_in_canonical_emits, replace_forensic_ledger, replace_trace, replace_handoff, create_final_finding, create_registry_status, expose_hidden_chain_of_thought]
+
+  developer_forensics:
+    status: runtime_diagnostic_sidecar
+    supplied_by: runtime
+    canonical: false
+    required_for_lock: false
+    stored_as: forensics.json
+    allowed_content: [node_start, node_completion, node_failure, transition_gate_result, model_metadata, parse_repair_trace, mechanical_validation_result, reference_bundle_status, artifact_status, p6_batch_coverage, missing_row_ids, unexpected_row_ids]
+    must_not: [create_substantive_diligence_finding, mutate_canonical_artifact, repair_by_substance, suppress_blocking_failure]
+
 
 SOURCE_MODE_RULES:
   allowed_values: [url, text, url_plus_text, synthetic_demo]
@@ -178,6 +212,7 @@ ORCHESTRATION_MANIFEST_SCHEMA:
     handoff_chain_status: COMPLETE | PARTIAL | REPAIR_REQUIRED | CONTROLLED_FAILURE
     ledger_chain_status: COMPLETE | PARTIAL | REPAIR_REQUIRED | CONTROLLED_FAILURE
     artifact_access_status: VALID | VIOLATION | REPAIR_REQUIRED | CONTROLLED_FAILURE
+    sidecar_runtime_records: {scratchpad_present: boolean, forensics_present: boolean, scratchpad_last_updated_at: string | null, latest_failure_present: boolean}
     repair_events: array
     controlled_failures: array
     final_readiness: READY_FOR_RENDER | READY_WITH_LIMITATIONS | REPAIR_REQUIRED | CONTROLLED_FAILURE
