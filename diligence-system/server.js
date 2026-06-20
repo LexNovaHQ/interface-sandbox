@@ -9,6 +9,13 @@ import {
   advanceRun,
   getRunResult
 } from "./run-manager.js";
+import { buildPublicScratchpadView } from "./scratchpad-manager.js";
+import {
+  listArtifacts,
+  readArtifact,
+  readRunForensics,
+  readRunScratchpad
+} from "./run-store.js";
 import { PHASE_POOL_ENV, buildRuntimePool, callGeminiClient, fingerprint } from "./gemini-client.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -132,6 +139,153 @@ app.get("/api/diligence/jobs/:runId", async (req, res) => {
       ok: false,
       error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_STATUS_FAILED",
       message
+    });
+  }
+});
+
+
+app.get("/api/diligence/jobs/:runId/scratchpad", async (req, res) => {
+  try {
+    const jobState = await getRun({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    const scratchpad = await readRunScratchpad({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    return res.json(buildPublicScratchpadView({
+      scratchpad,
+      state: jobState
+    }));
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:") ? 404 : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_SCRATCHPAD_FAILED",
+      message,
+      run_id: req.params.runId
+    });
+  }
+});
+
+
+app.get("/api/diligence/jobs/:runId/forensics", async (req, res) => {
+  try {
+    const jobState = await getRun({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    const forensics = await readRunForensics({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    return res.json({
+      ok: true,
+      run_id: req.params.runId,
+      status: jobState.status,
+      failed_node: jobState.failed_node || null,
+      forensics: forensics || null
+    });
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:") ? 404 : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_FORENSICS_FAILED",
+      message,
+      run_id: req.params.runId
+    });
+  }
+});
+
+
+app.get("/api/diligence/jobs/:runId/artifacts", async (req, res) => {
+  try {
+    const jobState = await getRun({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    const artifacts = await listArtifacts({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    return res.json({
+      ok: true,
+      run_id: req.params.runId,
+      status: jobState.status,
+      artifacts
+    });
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:") ? 404 : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404 ? "DILIGENCE_JOB_NOT_FOUND" : "DILIGENCE_JOB_ARTIFACT_LIST_FAILED",
+      message,
+      run_id: req.params.runId
+    });
+  }
+});
+
+
+app.get("/api/diligence/jobs/:runId/artifacts/:nodeId", async (req, res) => {
+  try {
+    await getRun({
+      runId: req.params.runId,
+      baseDir: __dirname
+    });
+
+    const artifact = await readArtifact({
+      runId: req.params.runId,
+      nodeId: req.params.nodeId,
+      baseDir: __dirname
+    });
+
+    if (!artifact) {
+      return res.status(404).json({
+        ok: false,
+        error: "DILIGENCE_JOB_ARTIFACT_NOT_FOUND",
+        message: `Artifact not found for node ${req.params.nodeId}.`,
+        run_id: req.params.runId,
+        node_id: req.params.nodeId
+      });
+    }
+
+    return res.json({
+      ok: true,
+      run_id: req.params.runId,
+      node_id: req.params.nodeId,
+      artifact
+    });
+  } catch (err) {
+    const message = err?.message || String(err);
+    const status = message.startsWith("RUN_NOT_FOUND:")
+      ? 404
+      : message.startsWith("INVALID_NODE_ID:")
+        ? 400
+        : 500;
+
+    return res.status(status).json({
+      ok: false,
+      error: status === 404
+        ? "DILIGENCE_JOB_NOT_FOUND"
+        : status === 400
+          ? "DILIGENCE_JOB_INVALID_NODE"
+          : "DILIGENCE_JOB_ARTIFACT_READ_FAILED",
+      message,
+      run_id: req.params.runId,
+      node_id: req.params.nodeId
     });
   }
 });
