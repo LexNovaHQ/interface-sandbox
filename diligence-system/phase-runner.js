@@ -11,6 +11,7 @@ import {
 import { runSourceAdapter } from "./source-adapter.js";
 import { loadReferenceBundle, formatReferencesForPrompt, validatePhaseReferences } from "./reference-loader.js";
 import { renderDiligenceReport } from "./renderer.js";
+import { extractAndStripScratchpadSidecar } from "./scratchpad-manager.js";
 const __filename = fileURLToPath(import.meta.url);
 const BASE_DIR = path.dirname(__filename);
 
@@ -261,7 +262,11 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
       jsonRepairWarning = `${phase.node_id}_JSON_REPAIRED_AFTER_PARSE_FAILURE`;
     }
 
-    const phaseParsed = phase.node_id === "P1" ? normalizeP1PhasePackages(parsed.parsed) : parsed.parsed;
+    const sidecar = extractAndStripScratchpadSidecar({
+      nodeId: phase.node_id,
+      parsed: parsed.parsed
+    });
+    const phaseParsed = phase.node_id === "P1" ? normalizeP1PhasePackages(sidecar.canonical_output) : sidecar.canonical_output;
     const validation = validateMechanicalPhaseOutput({ phaseId: phase.node_id, rawText, parsed: phaseParsed, requiredTopLevelKeys: getRequiredKeysForPhase(phase.node_id), context: { s0_candidate_count: upstream.S0?.hybrid_extraction_manifest?.candidate_sources?.length } });
     if (jsonRepairWarning) validation.warnings = [...(validation.warnings || []), jsonRepairWarning];
     mechanicalValidations[phase.node_id] = validation;
@@ -423,7 +428,8 @@ export async function runSingleNode({
   nodeId,
   artifacts = {},
   callModel,
-  baseDir = BASE_DIR
+  baseDir = BASE_DIR,
+  scratchpadContext = null
 } = {}) {
   const run = normalizeInput(input);
 
@@ -543,7 +549,8 @@ export async function runSingleNode({
       modelMetaByPhase,
       parseRepairTraces,
       callModel,
-      baseDir
+      baseDir,
+      scratchpadContext
     });
   }
 
@@ -557,7 +564,8 @@ export async function runSingleNode({
     mechanicalValidations,
     modelMetaByPhase,
     parseRepairTraces,
-    callModel
+    callModel,
+    scratchpadContext
   });
 }
 
@@ -624,7 +632,8 @@ async function runSingleModelPhaseNode({
   mechanicalValidations,
   modelMetaByPhase,
   parseRepairTraces,
-  callModel
+  callModel,
+  scratchpadContext = null
 }) {
   const nodeId = phase.node_id;
   const payload = buildPayload({
@@ -632,7 +641,8 @@ async function runSingleModelPhaseNode({
     promptStack,
     phase,
     upstream,
-    referenceBundle
+    referenceBundle,
+    scratchpadContext
   });
 
   let modelResult;
@@ -691,9 +701,14 @@ async function runSingleModelPhaseNode({
     });
   }
 
+  const sidecar = extractAndStripScratchpadSidecar({
+    nodeId,
+    parsed: parsedResult.parsed
+  });
+
   const phaseParsed = nodeId === "P1"
-    ? normalizeP1PhasePackages(parsedResult.parsed)
-    : parsedResult.parsed;
+    ? normalizeP1PhasePackages(sidecar.canonical_output)
+    : sidecar.canonical_output;
 
   const validation = validateMechanicalPhaseOutput({
     phaseId: nodeId,
@@ -732,6 +747,7 @@ async function runSingleModelPhaseNode({
     mechanicalValidation: validation,
     modelMeta,
     extra: {
+      scratchpad_update: sidecar.scratchpad_update,
       model_meta_by_phase: modelMetaByPhase,
       ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {})
     }
@@ -749,7 +765,8 @@ async function runSingleP6Node({
   modelMetaByPhase,
   parseRepairTraces,
   callModel,
-  baseDir
+  baseDir,
+  scratchpadContext = null
 }) {
   const nodeId = "P6";
 
@@ -767,7 +784,8 @@ async function runSingleP6Node({
       modelMetaByPhase,
       parseRepairTraces,
       runtimeTrace: null,
-      runUntil: null
+      runUntil: null,
+      scratchpadContext
     });
   } catch (err) {
     return singleNodeFailure({
@@ -831,6 +849,35 @@ async function runSingleP6Node({
     });
   }
 
+  const p6ScratchpadUpdate = {
+    node_id: "P6",
+    status: "LOCKED",
+    summary: "P6 registry ledger assembled from routed model batches and deterministic registry rows.",
+    working_notes: [
+      {
+        note: "P6 route plan, model batch plan, registry row ledger, and merged coverage validation completed."
+      }
+    ],
+    decisions: [
+      {
+        note: "P6 canonical output remains target_exposure_profile, exposure_profile_forensic_ledger, and registry_evaluation_trace."
+      }
+    ],
+    validation_notes: [
+      {
+        note: "P6 batch coverage validation completed.",
+        validation: p6BatchResult.coverageValidation || null
+      }
+    ],
+    model_retention_hints: [
+      {
+        note: "Use registry_evaluation_trace.batch_coverage_validation and target_exposure_profile.registry_ledger for downstream final compiler limitations and report support."
+      }
+    ],
+    route_plan_summary: phaseParsed?.exposure_profile_forensic_ledger?.routing_packet_summary || null,
+    model_batch_plan: phaseParsed?.registry_evaluation_trace?.model_batch_plan || []
+  };
+
   return singleNodeEnvelope({
     nodeId,
     output: phaseParsed,
@@ -838,6 +885,7 @@ async function runSingleP6Node({
     mechanicalValidation: validation,
     modelMeta: p6BatchResult.lastModelMeta || null,
     extra: {
+      scratchpad_update: p6ScratchpadUpdate,
       model_meta_by_phase: modelMetaByPhase,
       ...(p6BatchResult.coverageValidation ? { p6_batch_coverage_validation: p6BatchResult.coverageValidation } : {}),
       ...(hasEntries(parseRepairTraces) ? { parse_repair_trace: parseRepairTraces } : {})
@@ -1126,7 +1174,7 @@ function singleNodeFailure({
   };
 }
 
-async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle, baseDir, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, runUntil }) {
+async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle, baseDir, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, runUntil, scratchpadContext = null }) {
   const registryRows = parseP6RegistryRows(referenceBundle);
   if (!registryRows.length) {
     return {
@@ -1219,7 +1267,7 @@ async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle
   }
 
   if (selectedBatch.batch) {
-    const batchResult = await executeP6Batch({ run, promptStack, phase, upstream, referenceBundle, batch: selectedBatch.batch, routePlan, hunterRules, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace });
+    const batchResult = await executeP6Batch({ run, promptStack, phase, upstream, referenceBundle, batch: selectedBatch.batch, routePlan, hunterRules, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, scratchpadContext });
     lastModelMeta = batchResult.lastModelMeta || lastModelMeta;
     if (batchResult.warning) warnings.push(batchResult.warning);
     if (runtimeTrace) runtimeTrace.p6.batch_results_summary = batchResult.summary ? [batchResult.summary] : [];
@@ -1259,7 +1307,7 @@ async function runP6Batched({ run, promptStack, phase, upstream, referenceBundle
 
   const batchResultsSummary = [];
   for (const batch of modelBatches) {
-    const batchResult = await executeP6Batch({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace });
+    const batchResult = await executeP6Batch({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, scratchpadContext });
     lastModelMeta = batchResult.lastModelMeta || lastModelMeta;
     if (batchResult.warning) warnings.push(batchResult.warning);
     if (batchResult.summary) batchResultsSummary.push(batchResult.summary);
@@ -1342,12 +1390,12 @@ function summarizeP6BatchValidation({ batch, ledgerBatch }) {
   };
 }
 
-async function executeP6Batch({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace }) {
+async function executeP6Batch({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, callModel, modelMetaByPhase, parseRepairTraces, runtimeTrace, scratchpadContext = null }) {
   const batchStartedAt = nowIso();
   let modelResult;
   let lastModelMeta = null;
   try {
-    const payload = buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules });
+    const payload = buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, scratchpadContext });
     modelResult = await callModel({
       phaseId: batch.batch_id,
       poolName: phase.pool,
@@ -1423,7 +1471,7 @@ async function executeP6Batch({ run, promptStack, phase, upstream, referenceBund
   return { ok: true, validation: batchValidation, ledgerBatch, summary, warning: parsedResult.warning, lastModelMeta };
 }
 
-function buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules }) {
+function buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundle, batch, routePlan, hunterRules, scratchpadContext = null }) {
   const supplementalReferenceBundle = stripCoreReferences(referenceBundle);
   const batchInstruction = [
     "This is a P6 model-batch invocation. Return only RS6.000 p6_model_batch_output JSON for expected_registry_row_ids. Do not emit the final full P6 envelope. Final P6 envelope is assembled deterministically after all batches.",
@@ -1460,7 +1508,8 @@ function buildP6BatchPayload({ run, promptStack, phase, upstream, referenceBundl
       registry_support_package: buildP6EvidencePackage(upstream),
       admitted_evidence_package_available_to_p6: buildP6EvidencePackage(upstream),
       hunter_engine_rules: hunterRules.rows,
-      route_plan_for_batch: batch.expected_registry_row_ids.map((id) => routePlan.by_id[id]).filter(Boolean)
+      route_plan_for_batch: batch.expected_registry_row_ids.map((id) => routePlan.by_id[id]).filter(Boolean),
+      ...(scratchpadContext ? { scratchpad_context: scratchpadContext } : {})
     }, null, 2)
   };
 }
@@ -1856,7 +1905,7 @@ function findDuplicateValues(values) {
   return Array.from(dupes);
 }
 
-function buildPayload({ run, promptStack, phase, upstream, referenceBundle }) {
+function buildPayload({ run, promptStack, phase, upstream, referenceBundle, scratchpadContext = null }) {
   const supplementalReferenceBundle = stripCoreReferences(referenceBundle);
   return {
     systemPrompt: [promptStack.core["00_RUNTIME_SPINE.md"], promptStack.core["00_RUNTIME_SPINE_INDEX.md"], promptStack.core["00_SOURCE_EXTRACTION_CONTRACT.md"], promptStack.core["08_PHASE_STACK_EXECUTION_MAP.md"], promptStack.core["09_OUTPUT_HANDOFF_CONTRACT.md"], promptStack.core["10_RUNTIME_AUDIT_CHECKLIST.md"], formatReferencesForPrompt(supplementalReferenceBundle), phase.prompt].filter(Boolean).join("\n\n"),
@@ -1866,7 +1915,8 @@ function buildPayload({ run, promptStack, phase, upstream, referenceBundle }) {
       missing_references: referenceBundle.missing_references,
       upstream_outputs: compactUpstreamForPrompt(upstream),
       current_node: phase.node_id,
-      current_prompt_file: phase.file
+      current_prompt_file: phase.file,
+      ...(scratchpadContext ? { scratchpad_context: scratchpadContext } : {})
     }, null, 2)
   };
 }
