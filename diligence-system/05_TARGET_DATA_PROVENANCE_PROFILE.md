@@ -44,6 +44,18 @@ risk score
 registry TRUE/FALSE
 ```
 
+### 0A. Runtime Scratchpad Sidecar Boundary
+
+Phase 05 may receive `scratchpad_context` only as non-canonical runtime memory for continuity, prior limitations, validator-visible run state, and carry-forward reminders. It must not treat `scratchpad_context` as evidence, source authority, source-route proof, legal basis, privacy-law applicability, registry signal, or permission to expand Phase 05 scope.
+
+Phase 05 may emit optional `runtime_scratchpad_update` as a non-canonical runtime sidecar under `M3.S2B`. It is for UI visibility, model-retention memory, and developer/operator observability only. It must not replace `data_provenance_forensic_ledger`, `data_provenance_trace`, or `target_data_provenance_profile`.
+
+Phase 05 `runtime_scratchpad_update` should record: source-gate decisions, deterministic prepass candidate status, Anti-Unknown Protocol decisions, searched routes, expected routes not searched, explicit positive/negative controls, missing signal rows, review route rows, ambiguous semantic-confirmation issues, access failures, limitations, and carry-forward notes for P6/P7.
+
+Phase 05 `runtime_scratchpad_update` must not expose hidden chain-of-thought, private reasoning, legal conclusions, compliance conclusions, law-applicability conclusions, liability findings, registry statuses, risk scores, or final-report prose.
+
+---
+
 ---
 
 ## 1. Execution Split — Locked
@@ -119,6 +131,28 @@ V  = deterministic validator/gate
   }
 }
 ```
+### Optional Non-Canonical Runtime Sidecar
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "Visible data-provenance working ledger summary.",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+
+`runtime_scratchpad_update` is not part of the canonical output contract. The canonical Phase 05 output remains exactly `data_provenance_forensic_ledger`, `data_provenance_trace`, and `target_data_provenance_profile`.
+
 
 ---
 
@@ -1988,10 +2022,11 @@ evidence_basis:
 ```yaml
 G5.001_OBJECT_SCHEMA_GATE:
   pass_if:
-    output contains exactly:
+    canonical output contains exactly:
       - data_provenance_forensic_ledger
       - data_provenance_trace
       - target_data_provenance_profile
+    optional runtime_scratchpad_update, if emitted, is non-canonical sidecar only and is not a fourth canonical output
 
 G5.002_SOURCE_GATE:
   pass_if:
@@ -2103,6 +2138,34 @@ handoff_forbidden_fields:
   - liability findings
   - enforceability conclusions
 ```
+---
+
+## 10A. Final Emission Rule — Optional Runtime Sidecar
+
+Emit valid JSON only. The canonical Phase 05 output contains exactly `data_provenance_forensic_ledger`, `data_provenance_trace`, and `target_data_provenance_profile`.
+
+If runtime sidecar emission is used, `runtime_scratchpad_update` may appear beside the canonical keys as a non-canonical sidecar under `M3.S2B`. It must not replace, rename, weaken, duplicate, or be treated as part of the canonical Phase 05 output.
+
+Optional sidecar shape:
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+
 
 ---
 

@@ -24,6 +24,18 @@ phase_boundary: >
   legal cartography, full data provenance, registry row evaluation, compliance assessment,
   or legal advice.
 atomic_unit: feature/function
+
+optional_runtime_sidecar:
+  may_receive:
+    - scratchpad_context
+  may_emit:
+    - runtime_scratchpad_update
+  canonical: false
+  required_for_lock: false
+  must_not_replace:
+    - feature_profile_forensic_ledger
+    - feature_function_trace
+    - target_feature_profile
 ```
 
 ---
@@ -77,6 +89,16 @@ Every substantive Phase 3 field must have evidence refs or deterministic derivat
 ### HR3.011 — Definitions Must Be Inline
 The archetype definitions, surface definitions, detection tests, exclusion tests, and examples in this prompt are authoritative for this execution. Do not rely on memory or broad semantic similarity.
 
+### HR3.SCRATCHPAD — Runtime Scratchpad Sidecar Boundary
+`P3.SCRATCHPAD.C1` Phase 3 may receive `scratchpad_context` only as non-canonical runtime memory for continuity, visible forensic basis, prior limitations, validator-visible run state, and carry-forward reminders.
+
+`P3.SCRATCHPAD.C2` Phase 3 must not treat `scratchpad_context` as admitted evidence, source authority, permission to expand phase scope, permission to override locked upstream handoffs, or permission to perform another phase's job.
+
+`P3.SCRATCHPAD.C3` Phase 3 may emit optional `runtime_scratchpad_update` only as a non-canonical sidecar under `M3.S2B`. It must not be treated as a canonical handoff, final report, legal conclusion, registry status, or substitute for required forensic ledger, trace, or `target_feature_profile`.
+
+`P3.SCRATCHPAD.C4` `runtime_scratchpad_update` must contain structured visible basis only. It must not expose hidden chain-of-thought, private reasoning, freeform deliberation, or unstated mental reasoning.
+
+
 ---
 
 ## INPUTS_AND_CONTEXT
@@ -97,6 +119,16 @@ required_inputs:
       purpose: Phase 1 admitted product evidence routed to Phase 3
   - full_text_artifact_access:
       purpose: selected full-text artifacts by evidence_ref/source_ref when required
+```
+
+Optional runtime sidecar input:
+
+```yaml
+optional_runtime_inputs:
+  - scratchpad_context:
+      purpose: non-canonical runtime memory for continuity, visible forensic basis, limitations, validation state, and carry-forward notes only
+      canonical: false
+      required_for_lock: false
 ```
 
 If required input is missing, emit controlled failure in `feature_function_trace` and `feature_profile_forensic_ledger`. Do not improvise.
@@ -375,6 +407,44 @@ allowed_event_types:
   - P3_LOCKED
 ```
 
+
+## P3.SCRATCHPAD_RUNTIME_SIDECAR_PROTOCOL
+
+`P3.SP.C1` Phase 3 may consume `scratchpad_context` as runtime sidecar memory only. It may preserve continuity, prior limitations, validator-visible run state, and carry-forward reminders. It may not create new facts, override admitted evidence, override locked upstream handoffs, or authorize phase-scope expansion.
+
+`P3.SP.C2` Phase 3 may emit optional `runtime_scratchpad_update` as a non-canonical runtime sidecar. This sidecar is for UI visibility, model-retention memory, and developer/operator observability only.
+
+`P3.SP.C3` Phase 3 `runtime_scratchpad_update` should record wrappers reviewed, sources reviewed, feature candidates found/omitted/emitted, API-first promotions, degraded root fallbacks, archetype matches/non-matches, surface matches/exclusions, unresolved candidates, evidence refs, limitations, and carry-forward notes for P5/P6/P7.
+
+`P3.SP.C4` Phase 3 `runtime_scratchpad_update` must use structured visible basis only: evidence refs, source refs, artifact refs, field IDs, gate names, controlled labels, controlled status values, limitation codes, and short operational notes.
+
+`P3.SP.C5` Phase 3 `runtime_scratchpad_update` must not replace `feature_profile_forensic_ledger`, `feature_function_trace`, or `target_feature_profile`; must not alter canonical output shape; and must not be used as final report prose.
+
+`P3.SP.C6` If `runtime_scratchpad_update` conflicts with the locked canonical Phase 3 output, the canonical output controls. The conflict must be recorded as a validation note, limitation, repair issue, or developer forensic event.
+
+`P3.SP.C7` Phase 3 `runtime_scratchpad_update` must not contain hidden chain-of-thought, private reasoning, legal conclusions, compliance conclusions, liability findings, recommendations, or registry verdicts.
+
+### Optional Non-Canonical Runtime Sidecar Shape
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "Visible phase 3 working ledger summary.",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+
+---
 ---
 
 ## DERIVATION_LOGIC_PROTOCOL
@@ -1436,3 +1506,34 @@ If any gate fails, do not output `LOCKED`.
 ## FINAL_OUTPUT_INSTRUCTION
 
 When executing Phase 3, output valid JSON only. No markdown. No commentary. No explanatory text outside JSON.
+
+`runtime_scratchpad_update`, if emitted, is an optional non-canonical runtime sidecar under `M3.S2B`. It may appear beside the canonical keys in the model response, but it is not a fourth canonical output, not a handoff, not a final report, and not a substitute for the required ledger/trace/profile keys.
+
+Canonical output keys remain exactly:
+```json
+{
+  "feature_profile_forensic_ledger": {},
+  "feature_function_trace": {},
+  "target_feature_profile": {}
+}
+```
+
+Optional non-canonical sidecar shape:
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+

@@ -119,6 +119,18 @@ Phase 06 requires:
   "prior_phase_forensic_ledgers": {}
 }
 ```
+## 03.1A Optional Runtime Sidecar Input
+
+Phase 06 may receive:
+
+```json
+{
+  "scratchpad_context": {}
+}
+```
+
+`scratchpad_context` is non-canonical runtime memory only. It may assist continuity, batch progress visibility, and limitation carry-forward. It must not create registry facts, override upstream profiles, alter registry metadata, or replace admitted evidence.
+
 
 ## 03.2 Primary Evidence Rule
 
@@ -164,7 +176,7 @@ If primary evidence is missing, inaccessible, not routed, or incomplete, Phase 0
 
 # 04. OUTPUT CONTRACT
 
-Phase 06 must emit exactly the following top-level object:
+Phase 06 must emit the following canonical top-level object:
 
 ```json
 {
@@ -174,7 +186,51 @@ Phase 06 must emit exactly the following top-level object:
 }
 ```
 
+Optional `runtime_scratchpad_update`, if emitted, is a non-canonical runtime sidecar under `M3.S2B`. It is not a fourth canonical output, not a registry ledger, not a trace, not a final report, and not a substitute for any required Phase 06 object.
+
 No markdown report. No prose report. No email. No advice memo. No legal conclusion.
+## 04A. Runtime Scratchpad Sidecar & P6 Registry Workbench
+
+Phase 06 may receive `scratchpad_context` only as non-canonical runtime memory for continuity, prior limitations, validator-visible run state, batch progress, and carry-forward reminders. It must not treat `scratchpad_context` as admitted evidence, registry authority, trigger proof, evaluation proof, or permission to override locked upstream profiles.
+
+Phase 06 may emit optional `runtime_scratchpad_update` as a non-canonical runtime sidecar under `M3.S2B`. It is for UI visibility, model-retention memory, P6 batch observability, and developer/operator diagnostics only. It must not replace `exposure_profile_forensic_ledger`, `registry_evaluation_trace`, or `target_exposure_profile`.
+
+P6 `runtime_scratchpad_update` should record: route plan summary, active archetypes, active surfaces, model batch plan, active batch ID, expected registry row IDs, returned row IDs, missing row IDs, unexpected row IDs, row route reasons, batch validation, merged coverage validation, evidence-path limitations, operator challenge issues, and carry-forward notes for P7.
+
+P6 `runtime_scratchpad_update` must not expose hidden chain-of-thought, private reasoning, legal conclusions, compliance verdicts, liability findings, registry metadata mutation, new registry statuses, or final-report prose.
+
+P6 scratchpad visibility must never weaken the full 98-row ledger requirement. Missing row IDs, duplicate row IDs, unexpected row IDs, or incomplete batch coverage remain validator/terminal-gate issues and must not be suppressed by scratchpad notes.
+
+### Optional Non-Canonical Runtime Sidecar Shape
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "Visible P6 registry workbench summary.",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": [],
+    "p6_registry_workbench": {
+      "route_plan_summary": null,
+      "model_batch_plan": [],
+      "active_batch_id": null,
+      "batches": [],
+      "row_events": [],
+      "coverage_validation": null
+    }
+  }
+}
+```
+
+---
+
 
 ---
 
@@ -1463,6 +1519,8 @@ Do not drop rows.
 Do not mutate registry metadata.
 
 Do not let deterministic systems control model intelligence.
+
+`runtime_scratchpad_update`, if emitted, may appear beside the canonical keys as a non-canonical runtime sidecar only. It must not replace, rename, weaken, duplicate, or be treated as part of the canonical Phase 06 output.
 
 ---
 

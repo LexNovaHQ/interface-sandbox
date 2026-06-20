@@ -25,6 +25,18 @@ phase_boundary: >
   Phase 4 is legal/governance cartography only. It is not legal review, compliance
   review, enforceability review, registry evaluation, data provenance, feature
   extraction, or final report drafting.
+
+optional_runtime_sidecar:
+  may_receive:
+    - scratchpad_context
+  may_emit:
+    - runtime_scratchpad_update
+  canonical: false
+  required_for_lock: false
+  must_not_replace:
+    - legal_cartography_forensic_ledger
+    - legal_cartography_trace
+    - legal_cartography_index
 ```
 
 ---
@@ -66,6 +78,16 @@ Do not create or revise target features, feature archetypes, surfaces, commercia
 
 ### HR4.012 — Navigation Priority Is Not Risk
 Any priority field in Phase 4 is a navigation priority only. It is not legal risk, business risk, exposure severity, or compliance priority.
+
+### HR4.SCRATCHPAD — Runtime Scratchpad Sidecar Boundary
+`P4.SCRATCHPAD.C1` Phase 4 may receive `scratchpad_context` only as non-canonical runtime memory for continuity, visible forensic basis, prior limitations, validator-visible run state, and carry-forward reminders.
+
+`P4.SCRATCHPAD.C2` Phase 4 must not treat `scratchpad_context` as admitted evidence, source authority, permission to expand phase scope, permission to override locked upstream handoffs, or permission to perform another phase's job.
+
+`P4.SCRATCHPAD.C3` Phase 4 may emit optional `runtime_scratchpad_update` only as a non-canonical sidecar under `M3.S2B`. It must not be treated as a canonical handoff, final report, legal conclusion, registry status, or substitute for required forensic ledger, trace, or `legal_cartography_index`.
+
+`P4.SCRATCHPAD.C4` `runtime_scratchpad_update` must contain structured visible basis only. It must not expose hidden chain-of-thought, private reasoning, freeform deliberation, or unstated mental reasoning.
+
 
 ---
 
@@ -428,6 +450,44 @@ allowed_event_types:
   - P4_LOCKED
 ```
 
+
+## P4.SCRATCHPAD_RUNTIME_SIDECAR_PROTOCOL
+
+`P4.SP.C1` Phase 4 may consume `scratchpad_context` as runtime sidecar memory only. It may preserve continuity, prior limitations, validator-visible run state, and carry-forward reminders. It may not create new facts, override admitted evidence, override locked upstream handoffs, or authorize phase-scope expansion.
+
+`P4.SP.C2` Phase 4 may emit optional `runtime_scratchpad_update` as a non-canonical runtime sidecar. This sidecar is for UI visibility, model-retention memory, and developer/operator observability only.
+
+`P4.SP.C3` Phase 4 `runtime_scratchpad_update` should record legal/governance source gate results, hosted-governance admissions, non-legal source blocks, deterministic prepass status, artifact IDs/classes/statuses, macro units, notice units, control refs, absence/access basis, cross-document references, navigation limitations, and carry-forward notes for P5/P6/P7.
+
+`P4.SP.C4` Phase 4 `runtime_scratchpad_update` must use structured visible basis only: evidence refs, source refs, artifact refs, field IDs, gate names, controlled labels, controlled status values, limitation codes, and short operational notes.
+
+`P4.SP.C5` Phase 4 `runtime_scratchpad_update` must not replace `legal_cartography_forensic_ledger`, `legal_cartography_trace`, or `legal_cartography_index`; must not alter canonical output shape; and must not be used as final report prose.
+
+`P4.SP.C6` If `runtime_scratchpad_update` conflicts with the locked canonical Phase 4 output, the canonical output controls. The conflict must be recorded as a validation note, limitation, repair issue, or developer forensic event.
+
+`P4.SP.C7` Phase 4 `runtime_scratchpad_update` must not contain hidden chain-of-thought, private reasoning, legal conclusions, compliance conclusions, liability findings, recommendations, or registry verdicts.
+
+### Optional Non-Canonical Runtime Sidecar Shape
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "Visible phase 4 working ledger summary.",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+
+---
 ---
 
 ## DERIVATION_LOGIC_PROTOCOL
@@ -1311,7 +1371,17 @@ FD4.120:
 2. Confirm `source_discovery_handoff` includes source-family/status metadata.
 3. Confirm legal/governance evidence package exists or absence/access/deferred records exist.
 4. Initialize ledger and trace.
-5. If required inputs are missing, emit controlled failure.
+5. Optional runtime sidecar input:
+
+```yaml
+optional_runtime_inputs:
+  - scratchpad_context:
+      purpose: non-canonical runtime memory for continuity, visible forensic basis, limitations, validation state, and carry-forward notes only
+      canonical: false
+      required_for_lock: false
+```
+
+If required inputs are missing, emit controlled failure.
 
 ### P4.B2_LEGAL_GOVERNANCE_SOURCE_GATE
 1. Admit only legal_governance and admitted hosted_governance sources.
@@ -1525,3 +1595,34 @@ If any terminal gate fails, do not output `LOCKED`.
 ## FINAL_OUTPUT_INSTRUCTION
 
 When executing Phase 4, output valid JSON only. No markdown. No commentary. No explanatory text outside JSON.
+
+`runtime_scratchpad_update`, if emitted, is an optional non-canonical runtime sidecar under `M3.S2B`. It may appear beside the canonical keys in the model response, but it is not a fourth canonical output, not a handoff, not a final report, and not a substitute for the required ledger/trace/profile keys.
+
+Canonical output keys remain exactly:
+```json
+{
+  "legal_cartography_forensic_ledger": {},
+  "legal_cartography_trace": {},
+  "legal_cartography_index": {}
+}
+```
+
+Optional non-canonical sidecar shape:
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+

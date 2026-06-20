@@ -83,12 +83,22 @@ Phase 06 terminal gate result
 ```
 
 If a required core profile is missing, Phase 07 must emit `CONTROLLED_FAILURE` rather than inventing or reconstructing missing analysis.
+Optional runtime sidecar input:
+
+```json
+{
+  "scratchpad_context": {}
+}
+```
+
+`scratchpad_context` is non-canonical runtime memory only. It may assist limitation carry-forward and branch-build continuity, but it must not create new facts, reopen upstream phases, or override locked upstream outputs.
+
 
 ---
 
 ## OUTPUT CONTRACT
 
-Phase 07 must emit exactly this root object:
+Phase 07 must emit this canonical root object:
 
 ```json
 {
@@ -107,6 +117,38 @@ Phase 07 must emit exactly this root object:
   }
 }
 ```
+
+Optional `runtime_scratchpad_update`, if emitted, is a non-canonical runtime sidecar under `M3.S2B`. It is not a fourth canonical output, not a report branch, not a renderer payload, and not a substitute for `final_output_handoff`.
+### Runtime Scratchpad Sidecar Boundary
+
+Phase 07 may receive `scratchpad_context` only as non-canonical runtime memory for continuity, prior limitations, validator-visible run state, and carry-forward reminders. It may use it to preserve visible limitations and review notes only when those limitations are supported by locked upstream outputs.
+
+Phase 07 may emit optional `runtime_scratchpad_update` as a non-canonical runtime sidecar under `M3.S2B`. It is for UI visibility, model-retention memory, and compiler/developer observability only. It must not replace `final_output_forensic_ledger`, `final_compiler_trace`, or `final_output_handoff`.
+
+Phase 07 `runtime_scratchpad_update` should record: required profiles received/missing, branch build progress, cross-profile index issues, normalization events, display ID decisions, vault handoff assembly notes, limitations carried forward, QC gate results, controlled failure basis, and renderer handoff readiness.
+
+Phase 07 `runtime_scratchpad_update` must not create new facts, new findings, new registry statuses, new data provenance facts, new legal controls, legal advice, recommendations, compliance verdicts, liability findings, or final report prose beyond locked `final_output_handoff`.
+
+### Optional Non-Canonical Runtime Sidecar Shape
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "Visible final-compiler working ledger summary.",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+
 
 ### Branch order
 
@@ -148,6 +190,7 @@ No branch may create new substantive findings.
 12. Do not hide limitations, absence records, access failures, or unresolved review routes.
 13. The full registry ledger remains preserved in Branch 1 and Branch 2 appendix material.
 14. Main visible report sections use display exposure IDs such as `EXP-001`, not raw registry IDs as primary labels.
+15. `scratchpad_context` and `runtime_scratchpad_update` are non-canonical runtime sidecars only. They may support continuity and UI observability, but they may not create, alter, or replace final compiler outputs.
 
 ### Final Output Forensic Ledger
 
@@ -1448,3 +1491,5 @@ Phase 07 must emit final JSON only.
 }
 ```
 
+
+Optional `runtime_scratchpad_update`, if emitted, may appear beside the canonical keys as a non-canonical runtime sidecar only. It must not replace, rename, weaken, duplicate, or be treated as part of the canonical Phase 07 output.
