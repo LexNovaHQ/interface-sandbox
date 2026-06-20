@@ -37,6 +37,7 @@ phase_call_card:
       - active_batch
       - validator_feedback
       - artifact_retrieval_results
+      - scratchpad_context
 
   authorized_final_output:
     - source_discovery_forensic_ledger
@@ -52,6 +53,18 @@ phase_call_card:
 
   output_mode: STRICT_JSON_ONLY
   final_output_mode: STRICT_JSON_ONLY
+
+  optional_runtime_sidecar:
+    may_receive:
+      - scratchpad_context
+    may_emit:
+      - runtime_scratchpad_update
+    canonical: false
+    required_for_lock: false
+    must_not_replace:
+      - source_discovery_forensic_ledger
+      - source_discovery_trace
+      - source_discovery_handoff
 
   source_authority_rule:
     stage_0_material_is_candidate_only: true
@@ -121,6 +134,10 @@ phase_call_card:
 
 `P1.HR.2.C11` MUST NOT expose private chain-of-thought. The forensic ledger is a structured audit log, not hidden reasoning.
 
+`P1.HR.2.C12` MUST NOT treat `scratchpad_context` as evidence, source authority, or permission to perform another phase’s job.
+
+`P1.HR.2.C13` MUST NOT treat `runtime_scratchpad_update` as canonical output, final report prose, target profile, feature profile, legal cartography, data provenance, registry evaluation, or substitute for `source_discovery_forensic_ledger`, `source_discovery_trace`, or `source_discovery_handoff`.
+
 ## P1.HR.3 — Stop / Controlled Failure
 
 Emit `controlled_failure` if any of the following is true and cannot be repaired by validator-supplied input:
@@ -167,7 +184,8 @@ Sparse extraction is not automatic failure. Sparse extraction becomes `coverage_
   "selected_artifact_text": [],
   "current_phase_ledger_state": {},
   "active_batch": {},
-  "validator_feedback": {}
+  "validator_feedback": {},
+  "scratchpad_context": {}
 }
 ```
 
@@ -527,6 +545,20 @@ Validator governed: semantic/near-duplicate suppression must be logged and may b
 
 `P1.LFL.4.C3` The final report renderer must use the locked `source_discovery_forensic_ledger` as an annexure without rewriting the ledger.
 
+## P1.LFL.5 — Runtime Scratchpad Sidecar
+
+`P1.LFL.5.C1` P1 may receive `scratchpad_context` as runtime sidecar memory. It may use it only to preserve continuity, prior limitations, validator-visible run state, and carry-forward reminders. It must not use it as admitted evidence or source authority.
+
+`P1.LFL.5.C2` P1 may emit optional `runtime_scratchpad_update` as a non-canonical sidecar. This sidecar is for UI visibility and model-retention memory only. It is not part of `source_discovery_forensic_ledger`, `source_discovery_trace`, or `source_discovery_handoff`.
+
+`P1.LFL.5.C3` P1 `runtime_scratchpad_update` should record: candidates reviewed, admission/rejection/quarantine/access-failure decisions, documented absence basis, de-duplication decisions, evidence-box assembly status, package routing decisions, coverage limitations, validation notes, and carry-forward reminders for downstream phases.
+
+`P1.LFL.5.C4` P1 `runtime_scratchpad_update` must use structured visible basis only: candidate IDs, evidence source IDs, artifact refs, controlled status labels, controlled reason codes, route package names, gate names, limitation codes, and short operational notes.
+
+`P1.LFL.5.C5` P1 `runtime_scratchpad_update` must not expose hidden chain-of-thought, private reasoning, freeform deliberation, legal conclusions, business-risk conclusions, target profile conclusions, feature extraction, data provenance conclusions, registry statuses, recommendations, or final-report prose.
+
+`P1.LFL.5.C6` If `runtime_scratchpad_update` conflicts with the locked canonical P1 ledger, trace, or handoff, the canonical P1 output controls and the conflict must be recorded as a validation note or repair issue.
+
 </LIVE_FORENSIC_LEDGER_PROTOCOL>
 
 ---
@@ -552,10 +584,11 @@ Every execution block must retrieve context in this order:
 4. Relevant Stage 0 manifest objects.
 5. Relevant source cards and artifact refs.
 6. Current phase forensic ledger state.
-7. Validator feedback / repair payload, if any.
-8. Local hard rules and controlled vocabularies.
-9. Local derivation logic.
-10. Gate dependencies.
+7. `scratchpad_context`, if supplied, as non-canonical runtime memory only.
+8. Validator feedback / repair payload, if any.
+9. Local hard rules and controlled vocabularies.
+10. Local derivation logic.
+11. Gate dependencies.
 ```
 
 ## P1.RC.3 — Rule-Call Template
@@ -1515,7 +1548,7 @@ GATE_CHECK_PASSED or GATE_CHECK_FAILED
 ## P1.B10_TRACE_LEDGER_HANDOFF_EMISSION
 
 ### Objective
-Emit the final locked Phase 1 JSON: ledger, trace, and handoff only.
+Emit the final locked canonical Phase 1 JSON: ledger, trace, and handoff only. Optional `runtime_scratchpad_update` may be emitted only as a non-canonical runtime sidecar under `M3.S2B`; it must not amend the canonical P1 output.
 
 ### Rule Calls
 - Runtime: `strict_json_only`, `ledger_required`, `handoff_required`, `no_final_report_prose`.
@@ -1539,9 +1572,10 @@ current_phase_ledger_state
 4. Finalize `source_discovery_handoff` with admitted/non-admitted ledgers, Evidence Box, phase packages, limitations, and downstream rules.
 5. Run all terminal self-checks.
 6. If any hard gate fails, emit `REPAIR_REQUIRED` or `CONTROLLED_FAILURE` rather than `LOCKED`.
-7. Emit final JSON with exactly three top-level keys.
+7. Emit canonical P1 JSON with exactly three canonical top-level keys: `source_discovery_forensic_ledger`, `source_discovery_trace`, and `source_discovery_handoff`. If emitting `runtime_scratchpad_update`, keep it outside the canonical P1 output as a non-canonical sidecar allowed by `M3.S2B`.
 
-### Final Output
+
+### Canonical Final Output
 ```json
 {
   "source_discovery_forensic_ledger": {},
@@ -1549,6 +1583,26 @@ current_phase_ledger_state
   "source_discovery_handoff": {}
 }
 ```
+
+### Optional Non-Canonical Runtime Sidecar
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "Visible source-discovery working ledger summary.",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
+
 
 ### Ledger Delta Required
 Emit:
@@ -2034,7 +2088,8 @@ CHECK 8 — Evidence de-duplication ran before routing.
 CHECK 9 — Suppressed duplicate evidence sources are preserved in duplicate_clusters[] / deduplicated_sources[] and are not routed.
 CHECK 10 — Every canonical evidence source routes into final_source_coverage_package.
 CHECK 11 — No target/feature/legal/data/registry analysis appears.
-CHECK 12 — Final response has exactly source_discovery_forensic_ledger, source_discovery_trace, and source_discovery_handoff.
+CHECK 12 — Canonical P1 output has exactly source_discovery_forensic_ledger, source_discovery_trace, and source_discovery_handoff; optional runtime_scratchpad_update, if emitted, is non-canonical sidecar only and is not a fourth canonical output.
+
 ```
 
 ## P1.GATE.4 — Final Emission Rule
@@ -2048,5 +2103,25 @@ Emit final answer as strict JSON only:
   "source_discovery_handoff": {}
 }
 ```
+If runtime sidecar emission is used, `runtime_scratchpad_update` may appear beside the canonical keys as a non-canonical sidecar. It must not replace, rename, weaken, or duplicate the canonical P1 keys.
 
+Optional sidecar shape:
+
+```json
+{
+  "runtime_scratchpad_update": {
+    "summary": "",
+    "evidence_refs": [],
+    "working_notes": [],
+    "decisions": [],
+    "gaps": [],
+    "assumptions": [],
+    "contradictions": [],
+    "carry_forward": [],
+    "risk_flags": [],
+    "validation_notes": [],
+    "model_retention_hints": []
+  }
+}
+```
 </TERMINAL_GATE>
