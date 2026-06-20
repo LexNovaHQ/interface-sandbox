@@ -16,7 +16,19 @@ import {
   readRunForensics,
   readRunScratchpad
 } from "./run-store.js";
-import { PHASE_POOL_ENV, buildRuntimePool, callGeminiClient, fingerprint } from "./gemini-client.js";
+import {
+  callGeminiClient,
+  classifyGeminiError,
+  ERROR_CLASSES,
+  fingerprint,
+  hasAnyConfiguredBucket,
+  isModelSpecificError,
+  isTerminalError,
+  publicBucketSnapshot,
+  resolveRuntimeBucketChain,
+  ROTATION_DECISIONS,
+  shouldRetrySameKey
+} from "./gemini-client.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -300,8 +312,8 @@ app.post("/api/diligence/jobs/:runId/advance", async (req, res) => {
     if (!hasAnyGeminiKey() && !canAdvanceWithoutGeminiKey(jobState)) {
       return res.status(500).json({
         ok: false,
-        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
-        message: "No Gemini API key is configured for any diligence runtime pool.",
+        error: "KEY_BUCKET_NOT_CONFIGURED",
+        message: "No Gemini key bucket is configured for the diligence runtime.",
         run_id: req.params.runId,
         current_status: jobState.status,
         next_node: jobState.next_node
@@ -358,8 +370,8 @@ app.post("/api/diligence/run", async (req, res) => {
     if (!hasAnyGeminiKey()) {
       return sendDiligenceResponse(req, res, {
         ok: false,
-        error: "GEMINI_API_KEYS_NOT_CONFIGURED",
-        message: "No Gemini API key is configured for any diligence runtime pool.",
+        error: "KEY_BUCKET_NOT_CONFIGURED",
+        message: "No Gemini key bucket is configured for the diligence runtime.",
         runtime_trace: buildServerRuntimeTrace({
           startedAt,
           status: "FAILED_BEFORE_RUN",
@@ -448,72 +460,360 @@ async function callModel({
   maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
   allowGrounding = false
 }) {
-  const pool = buildRuntimePool(poolName);
+  const bucketChain = resolveRuntimeBucketChain({ phaseId, poolName, allowGrounding });
   let lastError = null;
   const attempts = [];
+  let attemptNumber = 0;
 
-  for (let keyIndex = 0; keyIndex < pool.keys.length; keyIndex += 1) {
-    for (let modelIndex = 0; modelIndex < pool.models.length; modelIndex += 1) {
-      const key = pool.keys[keyIndex];
-      const model = pool.models[modelIndex];
-      const startedAt = Date.now();
+  for (let bucketIndex = 0; bucketIndex < bucketChain.length; bucketIndex += 1) {
+    const bucket = bucketChain[bucketIndex];
+    const hasFallbackBucket = bucketIndex < bucketChain.length - 1;
 
-      try {
-        const text = await callGeminiClient({
-          key,
+    if (!bucket.keys.length) {
+      const attempt = {
+        phaseId,
+        phase_id: phaseId,
+        requestedPoolName: poolName,
+        requested_pool_name: poolName,
+        bucketName: bucket.bucketName,
+        bucket_name: bucket.bucketName,
+        model: null,
+        modelIndex: null,
+        model_index: null,
+        keyIndex: null,
+        key_index: null,
+        keyAlias: null,
+        key_alias: null,
+        keyFingerprint: null,
+        key_fingerprint: null,
+        attemptNumber: ++attemptNumber,
+        attempt_number: attemptNumber,
+        ok: false,
+        fallback: Boolean(bucket.fallback),
+        fallback_bucket: Boolean(bucket.fallback),
+        grounding: Boolean(bucket.grounding),
+        grounding_enabled: Boolean(bucket.grounding),
+        error: "KEY_BUCKET_NOT_CONFIGURED",
+        errorClass: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED,
+        error_class: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED,
+        retryAfterSeconds: null,
+        retry_after_seconds: null,
+        decision: hasFallbackBucket ? ROTATION_DECISIONS.FALLBACK_BUCKET : ROTATION_DECISIONS.TERMINAL_FAIL
+      };
+      attempts.push(attempt);
+      lastError = new Error(`KEY_BUCKET_NOT_CONFIGURED:${bucket.bucketName}`);
+      lastError.errorClass = ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED;
+      continue;
+    }
+
+    for (let modelIndex = 0; modelIndex < bucket.models.length; modelIndex += 1) {
+      const model = bucket.models[modelIndex];
+      let rotateModelImmediately = false;
+
+      for (let keyIndex = 0; keyIndex < bucket.keys.length; keyIndex += 1) {
+        const key = bucket.keys[keyIndex];
+        const result = await executeGeminiAttempt({
+          phaseId,
+          poolName,
+          bucket,
           model,
+          modelIndex,
+          key,
+          keyIndex,
+          attemptNumberRef: () => ++attemptNumber,
+          attempts,
           systemPrompt,
           userPrompt,
           responseMimeType,
           temperature,
           maxOutputTokens,
-          timeoutMs: GEMINI_TIMEOUT_MS,
-          allowGrounding
+          retryOrdinal: 0
         });
 
-        const fallbackUsed = keyIndex > 0 || modelIndex > 0;
+        attemptNumber = result.attemptNumber;
 
-        return {
-          text,
-          meta: {
-            phase_id: phaseId,
-            pool_name: poolName,
+        if (result.ok) {
+          return buildCallModelSuccess({
+            result,
+            phaseId,
+            poolName,
+            bucket,
             model,
-            model_index: modelIndex + 1,
-            key_index: keyIndex + 1,
-            key_fingerprint: fingerprint(key),
-            latency_ms: Date.now() - startedAt,
-            grounding_requested: Boolean(allowGrounding),
-            fallback_used: fallbackUsed,
-            fallback_reason: fallbackUsed ? "PRIMARY_MODEL_OR_KEY_FAILED" : null,
-            gemini_timeout_ms: GEMINI_TIMEOUT_MS,
-            gemini_max_output_tokens: maxOutputTokens,
-            attempts
-          }
-        };
-      } catch (err) {
-        lastError = err;
-        attempts.push({
-          model,
-          model_index: modelIndex + 1,
-          key_index: keyIndex + 1,
-          key_fingerprint: fingerprint(key),
-          latency_ms: Date.now() - startedAt,
-          error: err?.message || String(err)
+            modelIndex,
+            key,
+            keyIndex,
+            attempts,
+            maxOutputTokens
+          });
+        }
+
+        lastError = result.error;
+        const classification = classifyGeminiError(result.error);
+        const errorClass = classification.errorClass;
+        const canRetrySameKey = shouldRetrySameKey({
+          errorClass,
+          retryAfterSeconds: classification.retryAfterSeconds,
+          retryAlreadyUsed: false,
+          keyIndex,
+          keyCount: bucket.keys.length
         });
+
+        if (canRetrySameKey) {
+          const waitMs = retryDelayMs(classification.retryAfterSeconds);
+          result.attempt.decision = ROTATION_DECISIONS.RETRY_SAME_KEY_SAME_MODEL;
+          if (waitMs > 0) await sleep(waitMs);
+
+          const retryResult = await executeGeminiAttempt({
+            phaseId,
+            poolName,
+            bucket,
+            model,
+            modelIndex,
+            key,
+            keyIndex,
+            attemptNumberRef: () => ++attemptNumber,
+            attempts,
+            systemPrompt,
+            userPrompt,
+            responseMimeType,
+            temperature,
+            maxOutputTokens,
+            retryOrdinal: 1
+          });
+
+          attemptNumber = retryResult.attemptNumber;
+
+          if (retryResult.ok) {
+            return buildCallModelSuccess({
+              result: retryResult,
+              phaseId,
+              poolName,
+              bucket,
+              model,
+              modelIndex,
+              key,
+              keyIndex,
+              attempts,
+              maxOutputTokens
+            });
+          }
+
+          lastError = retryResult.error;
+          const retryClassification = classifyGeminiError(retryResult.error);
+          const retryErrorClass = retryClassification.errorClass;
+          retryResult.attempt.decision = decideAfterFailedAttempt({
+            errorClass: retryErrorClass,
+            keyIndex,
+            keyCount: bucket.keys.length,
+            hasMoreModels: modelIndex < bucket.models.length - 1,
+            hasFallbackBucket
+          });
+
+          if (isTerminalError(retryErrorClass)) {
+            throw buildFinalModelError({ lastError, attempts, poolName, phaseId });
+          }
+
+          if (isModelSpecificError(retryErrorClass)) {
+            rotateModelImmediately = true;
+            break;
+          }
+        } else {
+          result.attempt.decision = decideAfterFailedAttempt({
+            errorClass,
+            keyIndex,
+            keyCount: bucket.keys.length,
+            hasMoreModels: modelIndex < bucket.models.length - 1,
+            hasFallbackBucket
+          });
+
+          if (isTerminalError(errorClass)) {
+            throw buildFinalModelError({ lastError, attempts, poolName, phaseId });
+          }
+
+          if (isModelSpecificError(errorClass)) {
+            rotateModelImmediately = true;
+            break;
+          }
+        }
+      }
+
+      if (rotateModelImmediately) continue;
+    }
+
+    if (hasFallbackBucket && attempts.length) {
+      const lastAttempt = attempts[attempts.length - 1];
+      if (lastAttempt && !lastAttempt.ok && lastAttempt.decision !== ROTATION_DECISIONS.TERMINAL_FAIL) {
+        lastAttempt.decision = ROTATION_DECISIONS.FALLBACK_BUCKET;
       }
     }
   }
 
+  throw buildFinalModelError({
+    lastError: lastError || new Error(`MODEL_POOL_FAILED:${poolName}`),
+    attempts,
+    poolName,
+    phaseId
+  });
+}
+
+async function executeGeminiAttempt({
+  phaseId,
+  poolName,
+  bucket,
+  model,
+  modelIndex,
+  key,
+  keyIndex,
+  attemptNumberRef,
+  attempts,
+  systemPrompt,
+  userPrompt,
+  responseMimeType,
+  temperature,
+  maxOutputTokens,
+  retryOrdinal = 0
+}) {
+  const startedAt = Date.now();
+  const attemptNumber = attemptNumberRef();
+  const attempt = {
+    phaseId,
+    phase_id: phaseId,
+    requestedPoolName: poolName,
+    requested_pool_name: poolName,
+    bucketName: bucket.bucketName,
+    bucket_name: bucket.bucketName,
+    model,
+    modelIndex: modelIndex + 1,
+    model_index: modelIndex + 1,
+    keyIndex: keyIndex + 1,
+    key_index: keyIndex + 1,
+    keyAlias: `${bucket.bucketName}_${keyIndex + 1}`,
+    key_alias: `${bucket.bucketName}_${keyIndex + 1}`,
+    keyFingerprint: fingerprint(key),
+    key_fingerprint: fingerprint(key),
+    attemptNumber,
+    attempt_number: attemptNumber,
+    retryOrdinal,
+    retry_ordinal: retryOrdinal,
+    ok: false,
+    error: null,
+    errorClass: null,
+    error_class: null,
+    fallback: Boolean(bucket.fallback),
+    fallback_bucket: Boolean(bucket.fallback),
+    grounding: Boolean(bucket.grounding),
+    grounding_enabled: Boolean(bucket.grounding),
+    decision: null
+  };
+  attempts.push(attempt);
+
+  try {
+    const geminiResult = await callGeminiClient({
+      key,
+      model,
+      systemPrompt,
+      userPrompt,
+      responseMimeType,
+      temperature,
+      maxOutputTokens,
+      timeoutMs: GEMINI_TIMEOUT_MS,
+      allowGrounding: bucket.grounding,
+      returnMetadata: true
+    });
+
+    attempt.ok = true;
+    attempt.latencyMs = Date.now() - startedAt;
+    attempt.latency_ms = attempt.latencyMs;
+    attempt.decision = ROTATION_DECISIONS.SUCCESS;
+    attempt.usageMetadata = geminiResult?.usageMetadata || null;
+    attempt.usage_metadata = geminiResult?.usageMetadata || null;
+    attempt.finishReason = geminiResult?.finishReason || null;
+    attempt.finish_reason = geminiResult?.finishReason || null;
+
+    return {
+      ok: true,
+      text: typeof geminiResult === "string" ? geminiResult : geminiResult?.text || "",
+      usageMetadata: geminiResult?.usageMetadata || null,
+      finishReason: geminiResult?.finishReason || null,
+      attempt,
+      attemptNumber
+    };
+  } catch (err) {
+    const classification = classifyGeminiError(err);
+    attempt.ok = false;
+    attempt.error = err?.message || String(err);
+    attempt.errorClass = classification.errorClass;
+    attempt.error_class = classification.errorClass;
+    attempt.retryAfterSeconds = classification.retryAfterSeconds;
+    attempt.retry_after_seconds = classification.retryAfterSeconds;
+    attempt.latencyMs = Date.now() - startedAt;
+    attempt.latency_ms = attempt.latencyMs;
+
+    return {
+      ok: false,
+      error: err,
+      attempt,
+      attemptNumber
+    };
+  }
+}
+
+function buildCallModelSuccess({ result, phaseId, poolName, bucket, model, modelIndex, key, keyIndex, attempts, maxOutputTokens }) {
+  const fallbackUsed = attempts.some((attempt) => attempt.fallback || attempt.decision === ROTATION_DECISIONS.FALLBACK_BUCKET) || attempts.length > 1;
+  return {
+    text: result.text,
+    meta: {
+      phase_id: phaseId,
+      pool_name: poolName,
+      bucket_name: bucket.bucketName,
+      model,
+      model_index: modelIndex + 1,
+      key_index: keyIndex + 1,
+      key_alias: `${bucket.bucketName}_${keyIndex + 1}`,
+      key_fingerprint: fingerprint(key),
+      latency_ms: result.attempt?.latencyMs ?? null,
+      grounding_requested: bucket.grounding,
+      fallback_used: fallbackUsed,
+      fallback_reason: fallbackUsed ? "PRIMARY_MODEL_OR_KEY_FAILED" : null,
+      gemini_timeout_ms: GEMINI_TIMEOUT_MS,
+      gemini_max_output_tokens: maxOutputTokens,
+      usage_metadata: result.usageMetadata || null,
+      finish_reason: result.finishReason || null,
+      model_attempts: attempts,
+      attempts
+    }
+  };
+}
+
+function decideAfterFailedAttempt({ errorClass, keyIndex, keyCount, hasMoreModels, hasFallbackBucket }) {
+  if (isTerminalError(errorClass)) return ROTATION_DECISIONS.TERMINAL_FAIL;
+  if (isModelSpecificError(errorClass)) return hasMoreModels ? ROTATION_DECISIONS.ROTATE_MODEL_SAME_BUCKET : hasFallbackBucket ? ROTATION_DECISIONS.FALLBACK_BUCKET : ROTATION_DECISIONS.TERMINAL_FAIL;
+  if (keyIndex < keyCount - 1) return ROTATION_DECISIONS.ROTATE_KEY_SAME_MODEL;
+  if (hasMoreModels) return ROTATION_DECISIONS.ROTATE_MODEL_SAME_BUCKET;
+  if (hasFallbackBucket) return ROTATION_DECISIONS.FALLBACK_BUCKET;
+  return ROTATION_DECISIONS.TERMINAL_FAIL;
+}
+
+function buildFinalModelError({ lastError, attempts, poolName, phaseId }) {
   const finalError = lastError || new Error(`MODEL_POOL_FAILED:${poolName}`);
   finalError.model_attempts = attempts;
   finalError.pool_name = poolName;
   finalError.phase_id = phaseId;
-  throw finalError;
+  return finalError;
+}
+
+function retryDelayMs(retryAfterSeconds) {
+  const seconds = Number(retryAfterSeconds);
+  if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 20) return 0;
+  return Math.ceil(seconds * 1000) + 250;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function hasAnyGeminiKey() {
-  return Object.keys(PHASE_POOL_ENV).some((pool) => buildRuntimePool(pool).keys.length > 0);
+  return hasAnyConfiguredBucket();
 }
 function canAdvanceWithoutGeminiKey(jobState) {
   if (jobState?.next_node !== "S0") return false;
@@ -804,8 +1104,5 @@ function buildCompactFailure(payload) {
 }
 
 function publicPoolsSnapshot() {
-  return Object.fromEntries(Object.keys(PHASE_POOL_ENV).map((pool) => {
-    const built = buildRuntimePool(pool);
-    return [pool, { key_count: built.keys.length, models: built.models, key_pool: built.keys.map((key, index) => ({ index: index + 1, configured: true, fingerprint: fingerprint(key) })) }];
-  }));
+  return publicBucketSnapshot();
 }

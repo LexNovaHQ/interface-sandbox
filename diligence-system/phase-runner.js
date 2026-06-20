@@ -218,6 +218,9 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
     try {
       modelResult = await callModel({ phaseId: phase.node_id, poolName: phase.pool, systemPrompt: payload.systemPrompt, userPrompt: payload.userPrompt, responseMimeType: "application/json", temperature: 0, allowGrounding: false });
     } catch (err) {
+      lastModelMeta = buildModelCallFailureMeta(err, phase);
+      modelMetaByPhase[phase.node_id] = lastModelMeta;
+      traceModel(runtimeTrace, phase.node_id, lastModelMeta);
       failStage(runtimeTrace, stage, err, "Model call failed");
       return fail({ run, promptStack, runtimeTrace, upstream, phaseOutputs, referenceBundles, mechanicalValidations, completedNodes, modelMetaByPhase, status: `${phase.node_id}_MODEL_CALL_FAILED`, failedNode: phase.node_id, error: err?.message || String(err), lastModelMeta });
     }
@@ -236,7 +239,11 @@ export async function runPhaseStack({ input = {}, callModel, baseDir = BASE_DIR 
       try {
         repairResult = await callModel({ phaseId: repairPhaseId, poolName: "repair", systemPrompt: JSON_REPAIR_SYSTEM_PROMPT, userPrompt: buildJsonRepairUserPrompt({ phase, originalParseError, rawText }), responseMimeType: "application/json", temperature: 0, allowGrounding: false });
       } catch (err) {
+        const repairFailureMeta = buildModelCallFailureMeta(err, { node_id: repairPhaseId, pool: "repair" });
+        modelMetaByPhase[repairPhaseId] = repairFailureMeta;
         repairTrace.repair_error = err?.message || String(err);
+        repairTrace.repair_model_meta = repairFailureMeta;
+        repairTrace.model_attempts = repairFailureMeta.model_attempts;
         parseRepairTraces[phase.node_id] = repairTrace;
         mechanicalValidations[phase.node_id] = { ok: false, phase_id: phase.node_id, errors: [originalParseError], mechanical_only: true };
         failStage(runtimeTrace, stage, originalParseError, "JSON parse failed");
@@ -658,10 +665,16 @@ async function runSingleModelPhaseNode({
       allowGrounding: false
     });
   } catch (err) {
+    const failureModelMeta = buildModelCallFailureMeta(err, phase);
+    modelMetaByPhase[nodeId] = failureModelMeta;
+
     return singleNodeFailure({
       nodeId,
       status: `${nodeId}_MODEL_CALL_FAILED`,
       error: err?.message || String(err),
+      model_meta: failureModelMeta,
+      model_attempts: failureModelMeta.model_attempts,
+      model_meta_by_phase: modelMetaByPhase,
       reference_bundle: summarizeReferenceBundles(referenceBundles),
       mechanical_validations: mechanicalValidations
     });
@@ -1020,12 +1033,17 @@ async function parseSingleNodeJsonWithRepair({
       allowGrounding: false
     });
   } catch (err) {
+    const repairFailureMeta = buildModelCallFailureMeta(err, { node_id: repairPhaseId, pool: "repair" });
+    modelMetaByPhase[repairPhaseId] = repairFailureMeta;
     repairTrace.repair_error = err?.message || String(err);
+    repairTrace.repair_model_meta = repairFailureMeta;
+    repairTrace.model_attempts = repairFailureMeta.model_attempts;
     parseRepairTraces[phase.node_id] = repairTrace;
 
     return {
       ok: false,
-      error: originalParseError
+      error: originalParseError,
+      lastModelMeta: repairFailureMeta
     };
   }
 
@@ -1406,12 +1424,26 @@ async function executeP6Batch({ run, promptStack, phase, upstream, referenceBund
       allowGrounding: false
     });
   } catch (err) {
-    traceEvent(runtimeTrace, { type: "p6_batch", node_id: batch.batch_id, status: "FAILED", summary: "P6 batch model call failed", duration_ms: durationSince(batchStartedAt), errors: [err?.message || String(err)] });
+    lastModelMeta = buildModelCallFailureMeta(err, { node_id: batch.batch_id, pool: phase.pool });
+    modelMetaByPhase[batch.batch_id] = lastModelMeta;
+    traceModel(runtimeTrace, batch.batch_id, lastModelMeta);
+    traceEvent(runtimeTrace, {
+      type: "p6_batch",
+      node_id: batch.batch_id,
+      status: "FAILED",
+      summary: "P6 batch model call failed",
+      duration_ms: durationSince(batchStartedAt),
+      errors: [err?.message || String(err)],
+      model_meta: lastModelMeta,
+      model_attempts: lastModelMeta.model_attempts
+    });
     return {
       ok: false,
       status: "P6_BATCH_MODEL_CALL_FAILED",
       error: `${batch.batch_id}_MODEL_CALL_FAILED:${err?.message || String(err)}`,
-      lastModelMeta
+      lastModelMeta,
+      model_meta: lastModelMeta,
+      model_attempts: lastModelMeta.model_attempts
     };
   }
 
@@ -1551,9 +1583,13 @@ async function parseP6BatchModelJson({ batch, phase, rawText, callModel, modelMe
       allowGrounding: false
     });
   } catch (err) {
+    const repairFailureMeta = buildModelCallFailureMeta(err, { node_id: repairPhaseId, pool: "repair" });
+    modelMetaByPhase[repairPhaseId] = repairFailureMeta;
     repairTrace.repair_error = err?.message || String(err);
+    repairTrace.repair_model_meta = repairFailureMeta;
+    repairTrace.model_attempts = repairFailureMeta.model_attempts;
     parseRepairTraces[batch.batch_id] = repairTrace;
-    return { ok: false, error: originalParseError };
+    return { ok: false, error: originalParseError, lastModelMeta: repairFailureMeta };
   }
 
   const repairModelMeta = compactModelMeta(repairResult?.meta || repairResult || null, { node_id: repairPhaseId, pool: "repair" });
@@ -2535,18 +2571,85 @@ function inboundTransitionForPhase(phaseId) {
 
 function compactModelMeta(meta, phase) {
   const source = meta && typeof meta === "object" ? meta : {};
+  const modelAttempts = Array.isArray(source.model_attempts)
+    ? source.model_attempts
+    : Array.isArray(source.attempts)
+      ? source.attempts
+      : [];
   return {
     phase_id: source.phase_id || phase?.node_id || null,
     pool_name: source.pool_name || phase?.pool || null,
+    bucket_name: source.bucket_name || source.bucketName || null,
     model: source.model || null,
     model_index: source.model_index ?? null,
     key_index: source.key_index ?? null,
     key_fingerprint: source.key_fingerprint || null,
+    key_alias: source.key_alias || null,
     latency_ms: source.latency_ms ?? null,
     grounding_requested: source.grounding_requested ?? null,
-    fallback_used: source.fallback_used ?? Boolean((source.model_index && source.model_index > 1) || (source.key_index && source.key_index > 1)),
-    fallback_reason: source.fallback_reason || null
+    fallback_used: source.fallback_used ?? Boolean(
+      (source.model_index && source.model_index > 1) ||
+      (source.key_index && source.key_index > 1) ||
+      modelAttempts.some((attempt) => attempt?.fallback || attempt?.fallback_bucket || attempt?.decision === "FALLBACK_BUCKET")
+    ),
+    fallback_reason: source.fallback_reason || null,
+    fallback_bucket: source.fallback_bucket || source.fallbackBucket || null,
+    error_class: source.error_class || source.errorClass || null,
+    retry_after_seconds: source.retry_after_seconds ?? source.retryAfterSeconds ?? null,
+    decision: source.decision || null,
+    finish_reason: source.finish_reason || source.finishReason || null,
+    usage_metadata: source.usage_metadata || source.usageMetadata || null,
+    model_attempts: modelAttempts,
+    attempts: modelAttempts,
+    attempt_count: modelAttempts.length,
+    model_call_failed: Boolean(source.model_call_failed),
+    error: source.error || source.message || null
   };
+}
+
+function buildModelCallFailureMeta(err, phase) {
+  const attempts = Array.isArray(err?.model_attempts)
+    ? err.model_attempts
+    : Array.isArray(err?.attempts)
+      ? err.attempts
+      : [];
+
+  const meta = compactModelMeta({
+    phase_id: err?.phase_id || phase?.node_id || null,
+    pool_name: err?.pool_name || phase?.pool || null,
+    bucket_name: err?.bucket_name || err?.bucketName || null,
+    model_attempts: attempts,
+    attempts,
+    fallback_used: err?.fallback_used,
+    error_class: err?.error_class || err?.errorClass || null,
+    retry_after_seconds: err?.retry_after_seconds ?? err?.retryAfterSeconds ?? null,
+    decision: err?.decision || null,
+    error: err?.message || String(err)
+  }, phase);
+
+  meta.model_call_failed = true;
+  meta.error = err?.message || String(err);
+  meta.model_attempts = attempts;
+  meta.attempts = attempts;
+  meta.attempt_count = attempts.length;
+  meta.fallback_used = Boolean(
+    meta.fallback_used ||
+    attempts.some((attempt) => attempt?.fallback || attempt?.fallback_bucket || attempt?.decision === "FALLBACK_BUCKET")
+  );
+
+  const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
+  if (lastAttempt) {
+    meta.bucket_name = meta.bucket_name || lastAttempt.bucketName || lastAttempt.bucket_name || null;
+    meta.model = meta.model || lastAttempt.model || null;
+    meta.model_index = meta.model_index ?? lastAttempt.modelIndex ?? lastAttempt.model_index ?? null;
+    meta.key_index = meta.key_index ?? lastAttempt.keyIndex ?? lastAttempt.key_index ?? null;
+    meta.key_fingerprint = meta.key_fingerprint || lastAttempt.keyFingerprint || lastAttempt.key_fingerprint || null;
+    meta.decision = meta.decision || lastAttempt.decision || null;
+    meta.error_class = meta.error_class || lastAttempt.error_class || lastAttempt.errorClass || null;
+    meta.retry_after_seconds = meta.retry_after_seconds ?? lastAttempt.retry_after_seconds ?? lastAttempt.retryAfterSeconds ?? null;
+  }
+
+  return meta;
 }
 
 function buildCompactFailureObject({ response, upstream, phaseOutputs, mechanicalValidations, modelMetaByPhase }) {
