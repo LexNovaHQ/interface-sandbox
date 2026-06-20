@@ -524,6 +524,35 @@ c. `{phase}_handoff` — the canonical downstream machine-readable payload owned
 
 ---
 
+
+## M3.S2B — Runtime Scratchpad Sidecar & Developer Forensics
+
+`M3.S2B.C1` The runtime scratchpad is a non-canonical sidecar stream used for operator-visible forensic working notes, model-retention memory, UI observability, and developer diagnostics.
+
+`M3.S2B.C2` The runtime scratchpad is not a phase, not a canonical handoff, not a replacement for any required phase forensic ledger, not a replacement for any required phase trace, not a replacement for any canonical handoff, and not the final report.
+
+`M3.S2B.C3` The runtime scratchpad may receive `scratchpad_context` from prior locked runtime state. `scratchpad_context` is structured operational memory only. It may assist retention, continuity, and limitation carry-forward, but it must not create new facts, override admitted evidence, override locked handoffs, or authorize a phase to perform another phase’s job.
+
+`M3.S2B.C4` A model-executed phase may emit an optional `runtime_scratchpad_update` sidecar. This sidecar may record evidence references reviewed, visible basis, decisions made, rejected candidates, documented gaps, assumptions, contradictions, validation notes, carry-forward notes, risk flags, model-retention hints, and phase-local working ledger entries.
+
+`M3.S2B.C5` `runtime_scratchpad_update` must remain outside the canonical phase output. Validators, repair paths, downstream phases, final compiler, and renderer must not treat `runtime_scratchpad_update` as a canonical handoff, canonical field, final finding, registry status, legal conclusion, or report-ready statement.
+
+`M3.S2B.C6` The runtime may persist `scratchpad.json` and `forensics.json` beside the run artifacts for UI observability and failure diagnosis. These files are runtime sidecars and do not amend the Contract Spine, Field Canon, Registry Key, phase prompts, or canonical artifact shape.
+
+`M3.S2B.C7` Developer forensics may record node start, node completion, node failure, transition-gate results, model-call metadata, parse/repair traces, mechanical validation results, reference-bundle state, P6 route plans, P6 batch coverage, missing row IDs, unexpected row IDs, and artifact availability.
+
+`M3.S2B.C8` The runtime scratchpad may expose visible forensic basis. It must not expose hidden chain-of-thought, private reasoning, internal deliberation, or unstated mental reasoning. Permitted entries are structured operational notes, evidence references, route reasons, validation notes, limitations, row statuses, and documented basis.
+
+`M3.S2B.C9` In P6, the scratchpad sidecar may show route plan, active archetypes, active surfaces, active batch ID, expected registry row IDs, returned row IDs, missing row IDs, unexpected row IDs, row status basis, EXCLUDE_IF basis, controlled/not-applicable/insufficient basis, and batch coverage validation. It must not skip required registry rows or alter the 98-row registry ledger requirement.
+
+`M3.S2B.C10` The final report may reference limitations, evidence gaps, review notes, and warnings that are also visible in the scratchpad, but the final report must be compiled from locked canonical upstream outputs and the locked `final_output_handoff`, not from scratchpad alone.
+
+`M3.S2B.C11` If scratchpad content conflicts with a locked canonical handoff, the locked canonical handoff controls. The conflict must be recorded as a limitation, validation issue, repair request, or developer forensic event. The scratchpad must not silently override the handoff.
+
+`M3.S2B.C12` A missing scratchpad entry must not invalidate a canonical phase output if the required phase forensic ledger, trace, handoff, and server validators otherwise pass. A missing required canonical forensic ledger, trace, or handoff remains a lock blocker under `M3.S2A`.
+
+---
+
 ## M3.S3 — Handoff Lifecycle Matrix
 
 Table ID: `T6 — Handoff Lifecycle Matrix`
