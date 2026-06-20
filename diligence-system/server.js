@@ -37,7 +37,7 @@ const PORT = Number(process.env.PORT || 8080);
 const ACTIVE_RUNTIME = "phase_stack_prompt_supremacy";
 
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 600000);
-const GEMINI_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS || 65535);
+const GEMINI_MAX_OUTPUT_TOKENS_CONFIGURED = positiveIntOrNull(process.env.GEMINI_MAX_OUTPUT_TOKENS);
 
 const EXPRESS_JSON_LIMIT = process.env.EXPRESS_JSON_LIMIT || "50mb";
 
@@ -73,7 +73,9 @@ app.get("/health", async (_req, res) => {
     pools: publicPoolsSnapshot(),
 
     gemini_timeout_ms: GEMINI_TIMEOUT_MS,
-    gemini_max_output_tokens: GEMINI_MAX_OUTPUT_TOKENS,
+    gemini_max_output_tokens_configured: GEMINI_MAX_OUTPUT_TOKENS_CONFIGURED,
+    gemini_output_token_cap_sent: false,
+    artificial_model_output_limit_blocking: false,
     express_json_limit: EXPRESS_JSON_LIMIT,
 
     source_max_candidates_used: SOURCE_MAX_CANDIDATES_DEFAULT,
@@ -457,7 +459,8 @@ async function callModel({
   userPrompt,
   responseMimeType = "application/json",
   temperature = 0,
-  maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS,
+  maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS_CONFIGURED,
+  sendMaxOutputTokens = false,
   allowGrounding = false
 }) {
   const bucketChain = resolveRuntimeBucketChain({ phaseId, poolName, allowGrounding });
@@ -527,6 +530,7 @@ async function callModel({
           responseMimeType,
           temperature,
           maxOutputTokens,
+          sendMaxOutputTokens,
           retryOrdinal: 0
         });
 
@@ -542,8 +546,7 @@ async function callModel({
             modelIndex,
             key,
             keyIndex,
-            attempts,
-            maxOutputTokens
+            attempts
           });
         }
 
@@ -578,6 +581,7 @@ async function callModel({
             responseMimeType,
             temperature,
             maxOutputTokens,
+            sendMaxOutputTokens,
             retryOrdinal: 1
           });
 
@@ -593,8 +597,7 @@ async function callModel({
               modelIndex,
               key,
               keyIndex,
-              attempts,
-              maxOutputTokens
+              attempts
             });
           }
 
@@ -671,6 +674,7 @@ async function executeGeminiAttempt({
   responseMimeType,
   temperature,
   maxOutputTokens,
+  sendMaxOutputTokens = false,
   retryOrdinal = 0
 }) {
   const startedAt = Date.now();
@@ -705,6 +709,9 @@ async function executeGeminiAttempt({
     grounding_enabled: Boolean(bucket.grounding),
     decision: null
   };
+  attempt.gemini_max_output_tokens = null;
+  attempt.model_output_token_limit_sent = false;
+  attempt.artificial_output_limit_blocking = false;
   attempts.push(attempt);
 
   try {
@@ -716,6 +723,7 @@ async function executeGeminiAttempt({
       responseMimeType,
       temperature,
       maxOutputTokens,
+      sendMaxOutputTokens,
       timeoutMs: GEMINI_TIMEOUT_MS,
       allowGrounding: bucket.grounding,
       returnMetadata: true
@@ -729,12 +737,20 @@ async function executeGeminiAttempt({
     attempt.usage_metadata = geminiResult?.usageMetadata || null;
     attempt.finishReason = geminiResult?.finishReason || null;
     attempt.finish_reason = geminiResult?.finishReason || null;
+    attempt.provider_warnings = geminiResult?.provider_warnings || [];
+    attempt.output_limit_non_blocking = Boolean(geminiResult?.output_limit_non_blocking);
+    attempt.model_output_token_limit_sent = Boolean(geminiResult?.model_output_token_limit_sent);
+    attempt.artificial_output_limit_blocking = false;
 
     return {
       ok: true,
       text: typeof geminiResult === "string" ? geminiResult : geminiResult?.text || "",
       usageMetadata: geminiResult?.usageMetadata || null,
       finishReason: geminiResult?.finishReason || null,
+      providerWarnings: geminiResult?.provider_warnings || [],
+      outputLimitNonBlocking: Boolean(geminiResult?.output_limit_non_blocking),
+      modelOutputTokenLimitSent: Boolean(geminiResult?.model_output_token_limit_sent),
+      artificialOutputLimitBlocking: false,
       attempt,
       attemptNumber
     };
@@ -758,7 +774,7 @@ async function executeGeminiAttempt({
   }
 }
 
-function buildCallModelSuccess({ result, phaseId, poolName, bucket, model, modelIndex, key, keyIndex, attempts, maxOutputTokens }) {
+function buildCallModelSuccess({ result, phaseId, poolName, bucket, model, modelIndex, key, keyIndex, attempts }) {
   const fallbackUsed = attempts.some((attempt) => attempt.fallback || attempt.decision === ROTATION_DECISIONS.FALLBACK_BUCKET) || attempts.length > 1;
   return {
     text: result.text,
@@ -776,7 +792,11 @@ function buildCallModelSuccess({ result, phaseId, poolName, bucket, model, model
       fallback_used: fallbackUsed,
       fallback_reason: fallbackUsed ? "PRIMARY_MODEL_OR_KEY_FAILED" : null,
       gemini_timeout_ms: GEMINI_TIMEOUT_MS,
-      gemini_max_output_tokens: maxOutputTokens,
+      gemini_max_output_tokens: null,
+      model_output_token_limit_sent: Boolean(result.modelOutputTokenLimitSent),
+      artificial_output_limit_blocking: false,
+      provider_warnings: result.providerWarnings || [],
+      output_limit_non_blocking: Boolean(result.outputLimitNonBlocking),
       usage_metadata: result.usageMetadata || null,
       finish_reason: result.finishReason || null,
       model_attempts: attempts,
@@ -962,7 +982,9 @@ function buildRunInput(req) {
     runtime_limits: {
       ...(body.runtime_limits || {}),
       gemini_timeout_ms: GEMINI_TIMEOUT_MS,
-      gemini_max_output_tokens: GEMINI_MAX_OUTPUT_TOKENS,
+      gemini_max_output_tokens_configured: GEMINI_MAX_OUTPUT_TOKENS_CONFIGURED,
+      gemini_output_token_cap_sent: false,
+      artificial_model_output_limit_blocking: false,
       express_json_limit: EXPRESS_JSON_LIMIT,
       source_max_candidates_used: Number(
         body?.runtime_limits?.source_max_candidates_used ||
@@ -1044,7 +1066,9 @@ function buildRuntimeLimitTrace({
 } = {}) {
   return {
     gemini_timeout_ms: GEMINI_TIMEOUT_MS,
-    gemini_max_output_tokens: GEMINI_MAX_OUTPUT_TOKENS,
+    gemini_max_output_tokens_configured: GEMINI_MAX_OUTPUT_TOKENS_CONFIGURED,
+    gemini_output_token_cap_sent: false,
+    artificial_model_output_limit_blocking: false,
     express_json_limit: EXPRESS_JSON_LIMIT,
     source_max_candidates_used: Number(sourceMaxCandidatesUsed),
     source_fetch_timeout_ms_used: Number(sourceFetchTimeoutMsUsed),
@@ -1105,4 +1129,9 @@ function buildCompactFailure(payload) {
 
 function publicPoolsSnapshot() {
   return publicBucketSnapshot();
+}
+
+function positiveIntOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
 }

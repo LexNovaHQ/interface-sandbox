@@ -180,15 +180,19 @@ export function buildPool({ keys = "", models = "", defaults = [] } = {}) {
   return { keys: keyList, models: modelList.length ? modelList : defaults };
 }
 
-export async function callGeminiClient({ key, model, systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = 65535, timeoutMs = 240000, allowGrounding = false, returnMetadata = false } = {}) {
+export async function callGeminiClient({ key, model, systemPrompt, userPrompt, responseMimeType = "application/json", temperature = 0, maxOutputTokens = null, sendMaxOutputTokens = false, timeoutMs = 240000, allowGrounding = false, returnMetadata = false } = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const generationConfig = { temperature, responseMimeType };
+    if (sendMaxOutputTokens === true && Number.isFinite(Number(maxOutputTokens)) && Number(maxOutputTokens) > 0) {
+      generationConfig.maxOutputTokens = Math.floor(Number(maxOutputTokens));
+    }
     const body = {
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      generationConfig: { temperature, maxOutputTokens, responseMimeType }
+      generationConfig
     };
     if (allowGrounding) body.tools = [{ googleSearch: {} }];
     const response = await fetch(endpoint, {
@@ -204,21 +208,28 @@ export async function callGeminiClient({ key, model, systemPrompt, userPrompt, r
 
     const candidate = payload?.candidates?.[0] || {};
     const finishReason = candidate?.finishReason || null;
+    const normalizedFinishReason = String(finishReason || "").toUpperCase();
     const text = candidate?.content?.parts?.map((part) => part.text || "").join("") || "";
 
-    if (finishReason === "MAX_TOKENS") {
-      throw createClassifiedGeminiError("Gemini output truncated: MAX_TOKENS", ERROR_CLASSES.OUTPUT_TRUNCATED, { finishReason, payload });
-    }
-
-    if (["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"].includes(String(finishReason || "").toUpperCase())) {
+    if (["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"].includes(normalizedFinishReason)) {
       throw createClassifiedGeminiError(`Gemini response blocked: ${finishReason}`, ERROR_CLASSES.SAFETY_BLOCKED, { finishReason, payload });
     }
+
+    const outputLimitNonBlocking = normalizedFinishReason === "MAX_TOKENS";
+    const providerWarnings = outputLimitNonBlocking ? ["GEMINI_FINISH_REASON_MAX_TOKENS_NON_BLOCKING"] : [];
+    let jsonParseFailed = false;
+    let jsonParseError = null;
 
     if (String(responseMimeType || "").toLowerCase().includes("json")) {
       try {
         JSON.parse(text);
       } catch (err) {
-        throw createClassifiedGeminiError(`MODEL_JSON_PARSE_FAILED: ${err?.message || String(err)}`, ERROR_CLASSES.MODEL_JSON_PARSE_FAILED, { finishReason, payload });
+        if (outputLimitNonBlocking) {
+          jsonParseFailed = true;
+          jsonParseError = err?.message || String(err);
+        } else {
+          throw createClassifiedGeminiError(`MODEL_JSON_PARSE_FAILED: ${err?.message || String(err)}`, ERROR_CLASSES.MODEL_JSON_PARSE_FAILED, { finishReason, payload });
+        }
       }
     }
 
@@ -226,7 +237,13 @@ export async function callGeminiClient({ key, model, systemPrompt, userPrompt, r
       text,
       usageMetadata: payload?.usageMetadata || null,
       finishReason,
-      rawCandidateCount: Array.isArray(payload?.candidates) ? payload.candidates.length : 0
+      rawCandidateCount: Array.isArray(payload?.candidates) ? payload.candidates.length : 0,
+      provider_warnings: providerWarnings,
+      output_limit_non_blocking: outputLimitNonBlocking,
+      model_output_token_limit_sent: Boolean(generationConfig.maxOutputTokens),
+      artificial_output_limit_blocking: false,
+      json_parse_failed: jsonParseFailed,
+      json_parse_error: jsonParseError
     };
 
     return returnMetadata ? result : text;
@@ -272,7 +289,6 @@ export function classifyGeminiError(err) {
 export function isModelSpecificError(errorClass) {
   return [
     ERROR_CLASSES.MODEL_NOT_FOUND,
-    ERROR_CLASSES.OUTPUT_TRUNCATED,
     ERROR_CLASSES.MODEL_JSON_PARSE_FAILED
   ].includes(errorClass);
 }

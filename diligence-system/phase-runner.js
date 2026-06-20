@@ -28,7 +28,6 @@ const EXECUTION_MAP_FILE = "08_PHASE_STACK_EXECUTION_MAP.md";
 const JSON_REPAIR_SYSTEM_PROMPT = "You are a mechanical JSON repair function. You receive malformed JSON-like text emitted by a prior model. Return only valid JSON. Do not add, remove, summarize, infer, or reinterpret content. Do not include markdown. Preserve keys and values as closely as possible. If content is impossible to repair, return {\"repair_failed\":true,\"repair_error\":\"UNREPAIRABLE_JSON\"}.";
 const P6_MODEL_BATCH_SIZE = 15;
 const DEFAULT_GEMINI_TIMEOUT_MS =600000;
-const DEFAULT_GEMINI_MAX_OUTPUT_TOKENS = 165535;
 const EXPRESS_JSON_LIMIT = "50mb";
 const SOURCE_MAX_CANDIDATES_DEFAULT = 100;
 const SOURCE_FETCH_TIMEOUT_MS_DEFAULT = 120000;
@@ -2107,7 +2106,9 @@ function buildOperationalLimits(overrides = {}) {
 
   return {
     gemini_timeout_ms: positiveInt(process.env.GEMINI_TIMEOUT_MS, DEFAULT_GEMINI_TIMEOUT_MS),
-    gemini_max_output_tokens: positiveInt(process.env.GEMINI_MAX_OUTPUT_TOKENS, DEFAULT_GEMINI_MAX_OUTPUT_TOKENS),
+    gemini_max_output_tokens_configured: positiveIntOrNull(process.env.GEMINI_MAX_OUTPUT_TOKENS),
+    gemini_output_token_cap_sent: false,
+    artificial_model_output_limit_blocking: false,
     express_json_limit: process.env.EXPRESS_JSON_LIMIT || EXPRESS_JSON_LIMIT,
 
     source_max_candidates_used: Number(
@@ -2401,6 +2402,15 @@ function positiveInt(value, fallback) {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 }
 
+function positiveIntOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
+function collectAttemptWarnings(attempts = []) {
+  return Array.from(new Set(attempts.flatMap((attempt) => Array.isArray(attempt?.provider_warnings) ? attempt.provider_warnings : [])));
+}
+
 function arrayify(value) {
   if (Array.isArray(value)) return value.map(String);
   if (value instanceof Error) return [value.message];
@@ -2598,6 +2608,10 @@ function compactModelMeta(meta, phase) {
     retry_after_seconds: source.retry_after_seconds ?? source.retryAfterSeconds ?? null,
     decision: source.decision || null,
     finish_reason: source.finish_reason || source.finishReason || null,
+    provider_warnings: source.provider_warnings || source.providerWarnings || collectAttemptWarnings(modelAttempts),
+    output_limit_non_blocking: source.output_limit_non_blocking ?? source.outputLimitNonBlocking ?? modelAttempts.some((attempt) => attempt?.output_limit_non_blocking === true),
+    model_output_token_limit_sent: source.model_output_token_limit_sent ?? source.modelOutputTokenLimitSent ?? modelAttempts.some((attempt) => attempt?.model_output_token_limit_sent === true),
+    artificial_output_limit_blocking: source.artificial_output_limit_blocking ?? source.artificialOutputLimitBlocking ?? false,
     usage_metadata: source.usage_metadata || source.usageMetadata || null,
     model_attempts: modelAttempts,
     attempts: modelAttempts,
@@ -2624,6 +2638,10 @@ function buildModelCallFailureMeta(err, phase) {
     error_class: err?.error_class || err?.errorClass || null,
     retry_after_seconds: err?.retry_after_seconds ?? err?.retryAfterSeconds ?? null,
     decision: err?.decision || null,
+    provider_warnings: err?.provider_warnings || err?.providerWarnings || collectAttemptWarnings(attempts),
+    output_limit_non_blocking: err?.output_limit_non_blocking ?? err?.outputLimitNonBlocking,
+    model_output_token_limit_sent: err?.model_output_token_limit_sent ?? err?.modelOutputTokenLimitSent,
+    artificial_output_limit_blocking: err?.artificial_output_limit_blocking ?? err?.artificialOutputLimitBlocking,
     error: err?.message || String(err)
   }, phase);
 
