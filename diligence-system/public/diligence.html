@@ -199,6 +199,41 @@
               <span class="kicker-note">Server response rail</span>
             </div>
             <div id="statusText" class="console mt-5">Checking runtime health...</div>
+            <div id="liveConsole" class="mt-5 space-y-4" data-live-console="root" aria-live="polite">
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="console">
+                  <div class="flex items-center justify-between gap-3">
+                    <strong class="tracking-[.14em] uppercase text-xs">Live Run State</strong>
+                    <button id="liveConsoleRefresh" type="button" class="quiet-link">Refresh</button>
+                  </div>
+                  <div id="liveConsoleStatus" class="mt-3">No active durable run yet.</div>
+                </div>
+
+                <div class="console">
+                  <div class="flex items-center justify-between gap-3">
+                    <strong class="tracking-[.14em] uppercase text-xs">Artifact Availability</strong>
+                    <span id="liveConsoleArtifactCount" class="text-xs opacity-70">0 artifacts</span>
+                  </div>
+                  <div id="liveConsoleArtifacts" class="mt-3">Artifacts will appear after nodes complete.</div>
+                </div>
+              </div>
+
+              <div class="console">
+                <div class="flex items-center justify-between gap-3">
+                  <strong class="tracking-[.14em] uppercase text-xs">Scratchpad Timeline</strong>
+                  <span class="text-xs opacity-70">non-canonical sidecar</span>
+                </div>
+                <div id="liveConsoleTimeline" class="mt-3">Scratchpad events will appear while the run advances.</div>
+              </div>
+
+              <div class="console">
+                <div class="flex items-center justify-between gap-3">
+                  <strong class="tracking-[.14em] uppercase text-xs">Failure Forensics</strong>
+                  <span class="text-xs opacity-70">developer diagnostic sidecar</span>
+                </div>
+                <pre id="liveConsoleForensics" class="mt-3 codebox">No failure forensics recorded.</pre>
+              </div>
+            </div>
           </section>
 
           <section id="result" class="act card-shell reveal hidden">
@@ -249,5 +284,6 @@
   </main>
 
   <script src="/diligence-ui.js"></script>
+  <script src="/diligence-live-console.js"></script>
 </body>
 </html>

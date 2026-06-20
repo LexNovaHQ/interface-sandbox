@@ -1,6 +1,7 @@
 ﻿const state = {
   lastResult: null,
-  health: null
+  health: null,
+  activeRunId: null
 };
 
 const els = {
@@ -127,6 +128,12 @@ async function handleRun(event) {
     }
 
     localStorage.setItem("interface_diligence_active_run_id", createdJob.run_id);
+    state.activeRunId = createdJob.run_id;
+    notifyLiveConsole({
+      type: "job_created",
+      runId: createdJob.run_id,
+      jobState: createdJob
+    });
 
     let jobState = createdJob;
     let finalResult = null;
@@ -162,6 +169,13 @@ async function handleRun(event) {
         setProgress(Number(jobState.progress?.percent || 100));
         setRail("report");
         setStatus(`Job failed at ${jobState.failed_node || nextNode || "unknown node"}: ${jobState.latest_message || diagnostic.error}`);
+        notifyLiveConsole({
+          type: "job_failed",
+          runId: createdJob.run_id,
+          nodeId: jobState.failed_node || nextNode,
+          jobState,
+          diagnostic
+        });
         return;
       }
 
@@ -185,12 +199,25 @@ async function handleRun(event) {
         setProgress(Number(jobState.progress?.percent || 100));
         setRail("report");
         setStatus("Job stopped because next_node was missing.");
+        notifyLiveConsole({
+          type: "job_failed",
+          runId: createdJob.run_id,
+          nodeId: "UNKNOWN_NEXT_NODE",
+          jobState,
+          diagnostic
+        });
         return;
       }
 
       setProgress(Number(jobState.progress?.percent || progressForNode(nextNode)));
       setRail(nextNode === "RENDERER" ? "report" : "runtime");
       setStatus(`${jobNodeLabel(nextNode)}...`);
+      notifyLiveConsole({
+        type: "node_started",
+        runId: createdJob.run_id,
+        nodeId: nextNode,
+        jobState
+      });
 
       const advanceResponse = await fetch(`/api/diligence/jobs/${encodeURIComponent(createdJob.run_id)}/advance`, {
         method: "POST",
@@ -215,6 +242,13 @@ async function handleRun(event) {
         setProgress(Number(advanced.progress?.percent || 100));
         setRail("report");
         setStatus(`Job advance failed at ${advanced.failed_node || nextNode}: ${diagnostic.error || `HTTP_${advanceResponse.status}`}`);
+        notifyLiveConsole({
+          type: "advance_failed",
+          runId: createdJob.run_id,
+          nodeId: advanced.failed_node || nextNode,
+          jobState: advanced,
+          diagnostic
+        });
         return;
       }
 
@@ -240,10 +274,23 @@ async function handleRun(event) {
         setProgress(Number(latestState.progress?.percent || 100));
         setRail("report");
         setStatus(`Job status polling failed: ${diagnostic.error || `HTTP_${statusResponse.status}`}`);
+        notifyLiveConsole({
+          type: "status_poll_failed",
+          runId: createdJob.run_id,
+          nodeId: nextNode,
+          jobState: latestState,
+          diagnostic
+        });
         return;
       }
 
       jobState = latestState;
+      notifyLiveConsole({
+        type: "job_state",
+        runId: createdJob.run_id,
+        nodeId: advanced.completed_node || nextNode,
+        jobState
+      });
 
       setProgress(Number(jobState.progress?.percent || 0));
       setRail(jobState.status === "COMPLETE" ? "report" : "runtime");
@@ -282,6 +329,13 @@ async function handleRun(event) {
       setProgress(100);
       setRail("report");
       setStatus(`Result fetch failed: ${diagnostic.error || `HTTP_${resultResponse.status}`}`);
+      notifyLiveConsole({
+        type: "result_fetch_failed",
+        runId: createdJob.run_id,
+        nodeId: "RESULT",
+        jobState,
+        diagnostic
+      });
       return;
     }
 
@@ -298,6 +352,13 @@ async function handleRun(event) {
     setProgress(100);
     setRail("vault");
     setStatus(`Completed. Run ID: ${finalResult.run_id || createdJob.run_id}`);
+    notifyLiveConsole({
+      type: "job_complete",
+      runId: finalResult.run_id || createdJob.run_id,
+      nodeId: "COMPLETE",
+      jobState,
+      result: finalResult
+    });
   } catch (err) {
     setProgress(0);
 
@@ -309,6 +370,11 @@ async function handleRun(event) {
     state.lastResult = diagnostic;
     renderResult(diagnostic);
     setStatus(`Run failed before a normal response: ${err.message || String(err)}`);
+    notifyLiveConsole({
+      type: "client_error",
+      runId: state.activeRunId,
+      diagnostic
+    });
   } finally {
     setRunning(false);
   }
@@ -532,6 +598,14 @@ function restoreLastResult() {
   try {
     const result = JSON.parse(raw);
     state.lastResult = result;
+    if (result.run_id) {
+      state.activeRunId = result.run_id;
+      notifyLiveConsole({
+        type: "restore_result",
+        runId: result.run_id,
+        result
+      });
+    }
     renderResult(result);
     setStatus(`Restored last run. Run ID: ${result.run_id || "N/A"}`);
     setProgress(100);
@@ -575,6 +649,21 @@ function setRail(activeStage) {
     node.classList.toggle("active", stage === activeStage);
     node.classList.toggle("completed", idx >= 0 && idx < activeIndex);
   });
+}
+
+
+function notifyLiveConsole(detail = {}) {
+  const normalized = detail || {};
+  if (normalized.runId) {
+    state.activeRunId = normalized.runId;
+  }
+
+  try {
+    window.dispatchEvent(new CustomEvent("interface:diligence-job-state", { detail: normalized }));
+  } catch {
+    // Display-only hook. Never interrupt the diligence run.
+  }
+
 }
 
 function escapeHtml(value) {
