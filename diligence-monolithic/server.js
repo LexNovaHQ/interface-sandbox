@@ -72,7 +72,9 @@ const MODEL_TIERS = Object.freeze([
 const FINAL_TERMINAL_ROOT_KEY = "final_output_handoff";
 const M6_URL_FETCH_MANIFEST_ROOT_KEY = "m6_url_fetch_manifest";
 const M6_FETCH_FULFILLMENT_ROOT_KEY = "m6_fetch_fulfillment";
-const M6_MANIFEST_MODEL_TIERS = Object.freeze(MODEL_TIERS.filter((tier) => tier.search_grounding));
+const GEMINI_2_5_MODEL_TIERS = Object.freeze(MODEL_TIERS.filter((tier) => ["gemini-2.5-flash", "gemini-2.5-flash-lite"].includes(tier.model)));
+const FINAL_MONOLITH_MODEL_TIERS = GEMINI_2_5_MODEL_TIERS;
+const M6_MANIFEST_MODEL_TIERS = GEMINI_2_5_MODEL_TIERS;
 const M6_FETCH_TIMEOUT_MS = Number(process.env.M6_FETCH_TIMEOUT_MS || 30000);
 const M6_FETCH_USER_AGENT = String(process.env.M6_FETCH_USER_AGENT || "InterfaceDiligenceMonolith/1.0 (+https://interface-diligence-system)").trim();
 const M6_KNOWN_PATH_BANK = Object.freeze({
@@ -164,6 +166,8 @@ const ROTATION_DECISIONS = Object.freeze({
   SUCCESS: "SUCCESS",
   RETRY_SAME_KEY_SAME_MODEL: "RETRY_SAME_KEY_SAME_MODEL",
   ROTATE_KEY_SAME_MODEL: "ROTATE_KEY_SAME_MODEL",
+  ROTATE_BUCKET_SAME_MODEL: "ROTATE_BUCKET_SAME_MODEL",
+  ROTATE_MODEL_AFTER_ALL_BUCKETS: "ROTATE_MODEL_AFTER_ALL_BUCKETS",
   ROTATE_MODEL_SAME_BUCKET: "ROTATE_MODEL_SAME_BUCKET",
   FALLBACK_BUCKET: "FALLBACK_BUCKET",
   TERMINAL_FAIL: "TERMINAL_FAIL"
@@ -1120,13 +1124,15 @@ async function runDirectMonolithCall({ job, promptBundle, userPromptOverride = n
   const allowGrounding = allowGroundingOverride === null ? isUrlSourceMode(job.execution_payload) : Boolean(allowGroundingOverride);
   const systemPrompt = buildSystemPrompt(promptBundle);
   const userPrompt = userPromptOverride || buildUserPrompt(job.execution_payload);
-  appendEvent(job, NODE.MODEL_CALL, `Gemini monolith call started. Grounding=${allowGrounding}.`);
+  appendEvent(job, NODE.MODEL_CALL, `Gemini monolith call started. Grounding=${allowGrounding}. Rotation=model-first. Models=Gemini 2.5 only.`);
   return await callGeminiWithRotation({
     systemPrompt,
     userPrompt,
     allowGrounding,
     responseMimeType: "application/json",
     temperature: Number(process.env.GEMINI_TEMPERATURE || 0),
+    modelTiers: FINAL_MONOLITH_MODEL_TIERS,
+    rotationPolicy: "MODEL_FIRST_BUCKET_SECOND_KEY_THIRD_FINAL_2_5_ONLY",
     terminalRootKey: FINAL_TERMINAL_ROOT_KEY
   });
 }
@@ -1165,9 +1171,12 @@ async function healthHandler(_req, res) {
     gemini_max_output_tokens_policy: "sent_when_configured_unless_explicitly_disabled; provider rejection retries without blocking",
     gemini_finish_reason_max_tokens_blocks: false,
     gemini_terminal_json_validation_enabled: VALIDATE_MODEL_TERMINAL_JSON,
-    m6_bridge_patch_level: "PATCH_C2_M6_KNOWN_PATH_BANK_NO_FINAL_INJECTION",
+    m6_bridge_patch_level: "PATCH_E_MODEL_FIRST_FINAL_2_5_ONLY_KEY_FINGERPRINT_PROOF",
     m6_bridge_manifest_root_key: M6_URL_FETCH_MANIFEST_ROOT_KEY,
     m6_fetch_fulfillment_root_key: M6_FETCH_FULFILLMENT_ROOT_KEY,
+    gemini_rotation_policy: "MODEL_FIRST_BUCKET_SECOND_KEY_THIRD",
+    final_monolith_model_policy: "GEMINI_2_5_FLASH_THEN_2_5_FLASH_LITE_ONLY_NO_3X_FALLBACK",
+    final_monolith_models: FINAL_MONOLITH_MODEL_TIERS,
     m6_bridge_manifest_models: M6_MANIFEST_MODEL_TIERS,
     m6_fetch_timeout_ms: M6_FETCH_TIMEOUT_MS,
     m6_known_path_bank: M6_KNOWN_PATH_BANK,
@@ -1313,38 +1322,51 @@ async function callGeminiWithRotation({
   responseMimeType = "application/json",
   temperature = 0,
   modelTiers = MODEL_TIERS,
+  rotationPolicy = "MODEL_FIRST_BUCKET_SECOND_KEY_THIRD",
   terminalRootKey = FINAL_TERMINAL_ROOT_KEY
 }) {
   const bucketChain = resolveMonolithBucketChain({ allowGrounding, modelTiers });
+  const activeModelTiers = Array.isArray(modelTiers) && modelTiers.length ? modelTiers : MODEL_TIERS;
   const attempts = [];
   let lastError = null;
   let attemptNumber = 0;
+  const bucketCount = bucketChain.length;
+  const modelCount = activeModelTiers.length;
 
-  for (let bucketIndex = 0; bucketIndex < bucketChain.length; bucketIndex += 1) {
-    const bucket = bucketChain[bucketIndex];
-    const hasFallbackBucket = bucketIndex < bucketChain.length - 1;
+  for (let modelIndex = 0; modelIndex < activeModelTiers.length; modelIndex += 1) {
+    const modelTier = activeModelTiers[modelIndex];
+    const model = modelTier.model;
+    let rotateModelImmediately = false;
 
-    if (!bucket.keys.length) {
-      attempts.push(buildAttemptRecord({
-        bucket,
-        model: null,
-        modelIndex: null,
-        keyIndex: null,
-        attemptNumber: ++attemptNumber,
-        ok: false,
-        error: "KEY_BUCKET_NOT_CONFIGURED",
-        errorClass: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED,
-        decision: hasFallbackBucket ? ROTATION_DECISIONS.FALLBACK_BUCKET : ROTATION_DECISIONS.TERMINAL_FAIL
-      }));
-      lastError = Object.assign(new Error(`KEY_BUCKET_NOT_CONFIGURED:${bucket.bucketName}`), { errorClass: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED });
-      continue;
-    }
-
-    for (let modelIndex = 0; modelIndex < bucket.modelTiers.length; modelIndex += 1) {
-      const modelTier = bucket.modelTiers[modelIndex];
-      const model = modelTier.model;
+    for (let bucketIndex = 0; bucketIndex < bucketChain.length; bucketIndex += 1) {
+      const bucket = bucketChain[bucketIndex];
       const effectiveGrounding = Boolean(allowGrounding && modelTier.search_grounding);
-      let rotateModelImmediately = false;
+
+      if (!bucket.keys.length) {
+        attempts.push(buildAttemptRecord({
+          bucket,
+          model,
+          modelTier,
+          modelIndex,
+          keyIndex: null,
+          attemptNumber: ++attemptNumber,
+          ok: false,
+          error: "KEY_BUCKET_NOT_CONFIGURED",
+          errorClass: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED,
+          grounding: effectiveGrounding,
+          decision: decideAfterFailedAttemptModelFirst({
+            errorClass: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED,
+            keyIndex: -1,
+            keyCount: 0,
+            bucketIndex,
+            bucketCount,
+            modelIndex,
+            modelCount
+          })
+        }));
+        lastError = Object.assign(new Error(`KEY_BUCKET_NOT_CONFIGURED:${bucket.bucketName}`), { errorClass: ERROR_CLASSES.KEY_BUCKET_NOT_CONFIGURED });
+        continue;
+      }
 
       for (let keyIndex = 0; keyIndex < bucket.keys.length; keyIndex += 1) {
         const key = bucket.keys[keyIndex];
@@ -1361,10 +1383,11 @@ async function callGeminiWithRotation({
           keyIndex,
           attemptNumber: ++attemptNumber,
           allowGrounding: effectiveGrounding,
-          terminalRootKey
+          terminalRootKey,
+          rotationPolicy
         });
         attempts.push(first.attempt);
-        if (first.ok) return buildGeminiSuccess(first, attempts, modelTiers, terminalRootKey);
+        if (first.ok) return buildGeminiSuccess(first, attempts, activeModelTiers, terminalRootKey);
 
         lastError = first.error;
         const classification = classifyGeminiError(first.error);
@@ -1389,19 +1412,22 @@ async function callGeminiWithRotation({
             attemptNumber: ++attemptNumber,
             allowGrounding: effectiveGrounding,
             retryOrdinal: 1,
-            terminalRootKey
+            terminalRootKey,
+            rotationPolicy
           });
           attempts.push(retry.attempt);
-          if (retry.ok) return buildGeminiSuccess(retry, attempts, modelTiers, terminalRootKey);
+          if (retry.ok) return buildGeminiSuccess(retry, attempts, activeModelTiers, terminalRootKey);
 
           lastError = retry.error;
           const retryClass = classifyGeminiError(retry.error).errorClass;
-          retry.attempt.decision = decideAfterFailedAttempt({
+          retry.attempt.decision = decideAfterFailedAttemptModelFirst({
             errorClass: retryClass,
             keyIndex,
             keyCount: bucket.keys.length,
-            hasMoreModels: modelIndex < bucket.modelTiers.length - 1,
-            hasFallbackBucket
+            bucketIndex,
+            bucketCount,
+            modelIndex,
+            modelCount
           });
           if (isTerminalError(retryClass)) throwFinalModelError(lastError, attempts);
           if (isModelSpecificError(retryClass)) {
@@ -1409,12 +1435,14 @@ async function callGeminiWithRotation({
             break;
           }
         } else {
-          first.attempt.decision = decideAfterFailedAttempt({
+          first.attempt.decision = decideAfterFailedAttemptModelFirst({
             errorClass,
             keyIndex,
             keyCount: bucket.keys.length,
-            hasMoreModels: modelIndex < bucket.modelTiers.length - 1,
-            hasFallbackBucket
+            bucketIndex,
+            bucketCount,
+            modelIndex,
+            modelCount
           });
           if (isTerminalError(errorClass)) throwFinalModelError(lastError, attempts);
           if (isModelSpecificError(errorClass)) {
@@ -1424,12 +1452,7 @@ async function callGeminiWithRotation({
         }
       }
 
-      if (rotateModelImmediately) continue;
-    }
-
-    const lastAttempt = attempts[attempts.length - 1];
-    if (hasFallbackBucket && lastAttempt && !lastAttempt.ok && lastAttempt.decision !== ROTATION_DECISIONS.TERMINAL_FAIL) {
-      lastAttempt.decision = ROTATION_DECISIONS.FALLBACK_BUCKET;
+      if (rotateModelImmediately) break;
     }
   }
 
@@ -1450,7 +1473,8 @@ async function executeGeminiAttempt({
   attemptNumber,
   allowGrounding,
   retryOrdinal = 0,
-  terminalRootKey = FINAL_TERMINAL_ROOT_KEY
+  terminalRootKey = FINAL_TERMINAL_ROOT_KEY,
+  rotationPolicy = "MODEL_FIRST_BUCKET_SECOND_KEY_THIRD"
 }) {
   const startedAt = Date.now();
   const attempt = buildAttemptRecord({
@@ -1464,6 +1488,16 @@ async function executeGeminiAttempt({
     retryOrdinal,
     grounding: allowGrounding
   });
+
+  attempt.rotation_policy = rotationPolicy;
+  attempt.expected_sent_key_fingerprint = fingerprint(key);
+  attempt.key_fingerprint_verified_before_call = attempt.key_fingerprint === attempt.expected_sent_key_fingerprint;
+  if (!attempt.key_fingerprint_verified_before_call) {
+    throw createClassifiedGeminiError("KEY_ALIAS_SENT_KEY_MISMATCH_BEFORE_CALL", ERROR_CLASSES.UNKNOWN_TERMINAL, {
+      expectedKeyFingerprint: attempt.key_fingerprint,
+      actualSentKeyFingerprint: attempt.expected_sent_key_fingerprint
+    });
+  }
 
   try {
     const result = await callGeminiRest({
@@ -1511,6 +1545,14 @@ async function executeGeminiAttempt({
     attempt.terminal_json_validated = Boolean(VALIDATE_MODEL_TERMINAL_JSON);
     attempt.terminal_json_validation_root_key = terminalRootKey;
     attempt.terminal_json_parse_strategy = validation.public?.strategy || null;
+    attempt.actual_sent_key_fingerprint = result.actualSentKeyFingerprint || null;
+    attempt.sent_key_matches_attempt = attempt.actual_sent_key_fingerprint === attempt.key_fingerprint;
+    if (!attempt.sent_key_matches_attempt) {
+      throw createClassifiedGeminiError("KEY_ALIAS_SENT_KEY_MISMATCH_AFTER_CALL", ERROR_CLASSES.UNKNOWN_TERMINAL, {
+        expectedKeyFingerprint: attempt.key_fingerprint,
+        actualSentKeyFingerprint: attempt.actual_sent_key_fingerprint
+      });
+    }
 
     return { ok: true, text: result.text, meta: { ...result, terminalJsonValidation: validation.public || null }, attempt };
   } catch (err) {
@@ -1520,6 +1562,8 @@ async function executeGeminiAttempt({
     attempt.error = err?.message || String(err);
     attempt.error_class = classification.errorClass;
     attempt.retry_after_seconds = classification.retryAfterSeconds;
+    attempt.actual_sent_key_fingerprint = err?.actualSentKeyFingerprint || attempt.expected_sent_key_fingerprint || null;
+    attempt.sent_key_matches_attempt = attempt.actual_sent_key_fingerprint === attempt.key_fingerprint;
     attempt.finish_reason = err?.finishReason || null;
     attempt.provider_warnings = err?.providerWarnings || [];
     attempt.usage_metadata = err?.usageMetadata || null;
@@ -1548,6 +1592,7 @@ function shouldRetryWithoutMaxOutputTokens({ response, payload, modelOutputToken
 async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMimeType, temperature, allowGrounding, timeoutMs }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const actualSentKeyFingerprint = fingerprint(key);
 
   try {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
@@ -1631,10 +1676,16 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
       maxOutputTokensConfigured: GEMINI_MAX_OUTPUT_TOKENS || null,
       responseMimeTypeRequested: requestedResponseMimeType || null,
       responseMimeTypeSent,
-      responseMimeTypeOmittedForGrounding: omitResponseMimeTypeForGrounding
+      responseMimeTypeOmittedForGrounding: omitResponseMimeTypeForGrounding,
+      actualSentKeyFingerprint
     };
   } catch (err) {
-    if (err?.name === "AbortError") throw createClassifiedGeminiError("GEMINI_TIMEOUT_ABORTED", ERROR_CLASSES.TIMEOUT, { cause: err });
+    if (err?.name === "AbortError") {
+      const timeoutErr = createClassifiedGeminiError("GEMINI_TIMEOUT_ABORTED", ERROR_CLASSES.TIMEOUT, { cause: err });
+      timeoutErr.actualSentKeyFingerprint = actualSentKeyFingerprint;
+      throw timeoutErr;
+    }
+    err.actualSentKeyFingerprint = actualSentKeyFingerprint;
     throw err;
   } finally {
     clearTimeout(timeout);
@@ -1843,6 +1894,9 @@ function buildGeminiSuccess(result, attempts, modelTiers = MODEL_TIERS, terminal
       grounding_requested: last.grounding_requested,
       fallback_used: attempts.length > 1,
       gemini_timeout_ms: GEMINI_TIMEOUT_MS,
+      rotation_policy: last.rotation_policy || null,
+      actual_sent_key_fingerprint: last.actual_sent_key_fingerprint || null,
+      sent_key_matches_attempt: Boolean(last.sent_key_matches_attempt),
       gemini_max_output_tokens: SEND_MAX_OUTPUT_TOKENS ? GEMINI_MAX_OUTPUT_TOKENS : null,
       model_output_token_limit_sent: Boolean(last.model_output_token_limit_sent),
       response_mime_type_requested: last.response_mime_type_requested || null,
@@ -1921,6 +1975,15 @@ function decideAfterFailedAttempt({ errorClass, keyIndex, keyCount, hasMoreModel
   if (keyIndex < keyCount - 1) return ROTATION_DECISIONS.ROTATE_KEY_SAME_MODEL;
   if (hasMoreModels) return ROTATION_DECISIONS.ROTATE_MODEL_SAME_BUCKET;
   if (hasFallbackBucket) return ROTATION_DECISIONS.FALLBACK_BUCKET;
+  return ROTATION_DECISIONS.TERMINAL_FAIL;
+}
+
+function decideAfterFailedAttemptModelFirst({ errorClass, keyIndex, keyCount, bucketIndex, bucketCount, modelIndex, modelCount }) {
+  if (isTerminalError(errorClass)) return ROTATION_DECISIONS.TERMINAL_FAIL;
+  if (isModelSpecificError(errorClass)) return modelIndex < modelCount - 1 ? ROTATION_DECISIONS.ROTATE_MODEL_AFTER_ALL_BUCKETS : ROTATION_DECISIONS.TERMINAL_FAIL;
+  if (keyIndex < keyCount - 1) return ROTATION_DECISIONS.ROTATE_KEY_SAME_MODEL;
+  if (bucketIndex < bucketCount - 1) return ROTATION_DECISIONS.ROTATE_BUCKET_SAME_MODEL;
+  if (modelIndex < modelCount - 1) return ROTATION_DECISIONS.ROTATE_MODEL_AFTER_ALL_BUCKETS;
   return ROTATION_DECISIONS.TERMINAL_FAIL;
 }
 
