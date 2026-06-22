@@ -22,6 +22,7 @@ const RUN_TTL_MS = Number(process.env.MONOLITH_RUN_TTL_MS || 1000 * 60 * 60 * 6)
 const VAULT_ENGINE_URL = String(process.env.VAULT_ENGINE_URL || "").trim();
 const VAULT_ENGINE_TOKEN = String(process.env.VAULT_ENGINE_TOKEN || "").trim();
 const GOOGLE_SEARCH_TOOL_FIELD = String(process.env.GEMINI_GOOGLE_SEARCH_TOOL_FIELD || "googleSearch").trim();
+const GROUNDING_RESPONSE_MIME_POLICY = String(process.env.GEMINI_GROUNDING_RESPONSE_MIME_POLICY || "omit_when_tools_enabled").trim().toLowerCase();
 
 const PROMPT_PATH = path.join(__dirname, "prompts", "diligence_runtime_MONOLITH_FINAL.md");
 const REGISTRY_KEY_PATH = path.join(__dirname, "references", "REGISTRY_KEY_v3_0.md");
@@ -484,6 +485,8 @@ async function healthHandler(_req, res) {
     gemini_max_output_tokens_policy: "sent_when_configured_unless_explicitly_disabled; provider rejection retries without blocking",
     gemini_finish_reason_max_tokens_blocks: false,
     gemini_terminal_json_validation_enabled: VALIDATE_MODEL_TERMINAL_JSON,
+    gemini_grounding_response_mime_policy: "responseMimeType omitted when grounding/tools are enabled unless GEMINI_GROUNDING_RESPONSE_MIME_POLICY=send_with_tools",
+    gemini_fetch_failed_blocks: false,
     express_json_limit: EXPRESS_JSON_LIMIT,
     vault_engine_configured: Boolean(VAULT_ENGINE_URL)
   });
@@ -761,6 +764,9 @@ async function executeGeminiAttempt({
           providerWarnings: result.providerWarnings || [],
           usageMetadata: result.usageMetadata || null,
           modelOutputTokenLimitSent: result.modelOutputTokenLimitSent,
+          responseMimeTypeRequested: result.responseMimeTypeRequested || null,
+          responseMimeTypeSent: result.responseMimeTypeSent,
+          responseMimeTypeOmittedForGrounding: result.responseMimeTypeOmittedForGrounding,
           modelOutputCharCount: String(result.text || "").length,
           modelOutputTailPreview: tailPreview(result.text),
           parseReport: validation.public || null
@@ -775,6 +781,9 @@ async function executeGeminiAttempt({
     attempt.finish_reason = result.finishReason || null;
     attempt.provider_warnings = result.providerWarnings || [];
     attempt.model_output_token_limit_sent = result.modelOutputTokenLimitSent;
+    attempt.response_mime_type_requested = result.responseMimeTypeRequested || null;
+    attempt.response_mime_type_sent = Boolean(result.responseMimeTypeSent);
+    attempt.response_mime_type_omitted_for_grounding = Boolean(result.responseMimeTypeOmittedForGrounding);
     attempt.terminal_json_validated = Boolean(VALIDATE_MODEL_TERMINAL_JSON);
     attempt.terminal_json_parse_strategy = validation.public?.strategy || null;
 
@@ -790,6 +799,9 @@ async function executeGeminiAttempt({
     attempt.provider_warnings = err?.providerWarnings || [];
     attempt.usage_metadata = err?.usageMetadata || null;
     attempt.model_output_token_limit_sent = err?.modelOutputTokenLimitSent;
+    attempt.response_mime_type_requested = err?.responseMimeTypeRequested || undefined;
+    attempt.response_mime_type_sent = err?.responseMimeTypeSent;
+    attempt.response_mime_type_omitted_for_grounding = err?.responseMimeTypeOmittedForGrounding || undefined;
     attempt.model_output_char_count = err?.modelOutputCharCount || undefined;
     attempt.model_output_tail_preview = err?.modelOutputTailPreview || undefined;
     attempt.parse_report = err?.parseReport || undefined;
@@ -814,7 +826,17 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
 
   try {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
-    const generationConfig = { temperature, responseMimeType };
+    const requestedResponseMimeType = nullableString(responseMimeType);
+    const omitResponseMimeTypeForGrounding = Boolean(
+      allowGrounding &&
+      requestedResponseMimeType &&
+      GROUNDING_RESPONSE_MIME_POLICY !== "send_with_tools"
+    );
+    const responseMimeTypeToSend = omitResponseMimeTypeForGrounding ? null : requestedResponseMimeType;
+
+    const generationConfig = { temperature };
+    if (responseMimeTypeToSend) generationConfig.responseMimeType = responseMimeTypeToSend;
+
     const maxOutputTokensConfigured = Boolean(GEMINI_MAX_OUTPUT_TOKENS);
     const shouldSendMaxOutputTokens = Boolean(SEND_MAX_OUTPUT_TOKENS && GEMINI_MAX_OUTPUT_TOKENS);
     if (shouldSendMaxOutputTokens) generationConfig.maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS;
@@ -827,29 +849,34 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
     if (allowGrounding) baseBody.tools = [googleSearchToolPayload()];
 
     let providerWarnings = [];
-    let modelOutputTokenLimitSent = Boolean(generationConfig.maxOutputTokens);
-    let payload = null;
-    let response = await fetch(endpoint, {
-      method: "POST",
-      signal: controller.signal,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(baseBody)
-    });
+    if (omitResponseMimeTypeForGrounding) {
+      providerWarnings.push("GEMINI_RESPONSE_MIME_TYPE_OMITTED_FOR_GROUNDING_TOOL_COMPATIBILITY");
+    }
 
-    payload = await response.json().catch(() => ({}));
+    let modelOutputTokenLimitSent = Boolean(generationConfig.maxOutputTokens);
+    let responseMimeTypeSent = Boolean(generationConfig.responseMimeType);
+    let payload = null;
+
+    let response = await postGeminiGenerateContent({ endpoint, body: baseBody, signal: controller.signal });
+    payload = response.payload;
+
+    if (!response.ok && shouldRetryWithoutResponseMimeType({ payload, allowGrounding, responseMimeTypeSent })) {
+      providerWarnings.push("GEMINI_TOOL_RESPONSE_MIME_UNSUPPORTED_RETRIED_WITHOUT_RESPONSE_MIME_TYPE");
+      const fallbackBody = JSON.parse(JSON.stringify(baseBody));
+      delete fallbackBody.generationConfig.responseMimeType;
+      responseMimeTypeSent = false;
+      response = await postGeminiGenerateContent({ endpoint, body: fallbackBody, signal: controller.signal });
+      payload = response.payload;
+    }
 
     if (!response.ok && shouldRetryWithoutMaxOutputTokens({ response, payload, modelOutputTokenLimitSent })) {
       providerWarnings.push("GEMINI_MAX_OUTPUT_TOKENS_CONFIG_REJECTED_RETRIED_WITHOUT_LIMIT");
       const fallbackBody = JSON.parse(JSON.stringify(baseBody));
       delete fallbackBody.generationConfig.maxOutputTokens;
+      if (!responseMimeTypeSent) delete fallbackBody.generationConfig.responseMimeType;
       modelOutputTokenLimitSent = false;
-      response = await fetch(endpoint, {
-        method: "POST",
-        signal: controller.signal,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(fallbackBody)
-      });
-      payload = await response.json().catch(() => ({}));
+      response = await postGeminiGenerateContent({ endpoint, body: fallbackBody, signal: controller.signal });
+      payload = response.payload;
     }
 
     if (!response.ok) throw createGeminiHttpError({ response, payload });
@@ -876,7 +903,10 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
       finishReason,
       providerWarnings,
       modelOutputTokenLimitSent,
-      maxOutputTokensConfigured: GEMINI_MAX_OUTPUT_TOKENS || null
+      maxOutputTokensConfigured: GEMINI_MAX_OUTPUT_TOKENS || null,
+      responseMimeTypeRequested: requestedResponseMimeType || null,
+      responseMimeTypeSent,
+      responseMimeTypeOmittedForGrounding: omitResponseMimeTypeForGrounding
     };
   } catch (err) {
     if (err?.name === "AbortError") throw createClassifiedGeminiError("GEMINI_TIMEOUT_ABORTED", ERROR_CLASSES.TIMEOUT, { cause: err });
@@ -884,6 +914,25 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function postGeminiGenerateContent({ endpoint, body, signal }) {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    signal,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const payload = await response.json().catch(() => ({}));
+  response.payload = payload;
+  return response;
+}
+
+function shouldRetryWithoutResponseMimeType({ payload, allowGrounding, responseMimeTypeSent }) {
+  if (!allowGrounding || !responseMimeTypeSent) return false;
+  const message = String(payload?.error?.message || "").toLowerCase();
+  return message.includes("tool use with a response mime type") ||
+    (message.includes("response mime type") && message.includes("tool"));
 }
 
 function resolveMonolithBucketChain({ allowGrounding }) {
@@ -1062,6 +1111,9 @@ function buildGeminiSuccess(result, attempts) {
       gemini_timeout_ms: GEMINI_TIMEOUT_MS,
       gemini_max_output_tokens: SEND_MAX_OUTPUT_TOKENS ? GEMINI_MAX_OUTPUT_TOKENS : null,
       model_output_token_limit_sent: Boolean(last.model_output_token_limit_sent),
+      response_mime_type_requested: last.response_mime_type_requested || null,
+      response_mime_type_sent: Boolean(last.response_mime_type_sent),
+      response_mime_type_omitted_for_grounding: Boolean(last.response_mime_type_omitted_for_grounding),
       usage_metadata: last.usage_metadata || null,
       finish_reason: last.finish_reason || null,
       provider_warnings: last.provider_warnings || [],
@@ -1114,6 +1166,7 @@ function classifyGeminiError(err) {
   if (status === 400 && (lower.includes("tool") || lower.includes("google_search") || lower.includes("googlesearch") || lower.includes("grounding"))) return classified(ERROR_CLASSES.TOOL_UNSUPPORTED, retryAfterSeconds);
   if (status === 400 || status === 413 || lower.includes("context") || lower.includes("token limit") || lower.includes("too large") || lower.includes("invalid argument") || lower.includes("malformed")) return classified(ERROR_CLASSES.INPUT_OR_PROMPT_INVALID, retryAfterSeconds);
   if ([408, 499].includes(status) || lower.includes("timeout") || lower.includes("timed out") || lower.includes("aborted")) return classified(ERROR_CLASSES.TIMEOUT, retryAfterSeconds);
+  if (lower.includes("fetch failed") || lower.includes("network") || lower.includes("econnreset") || lower.includes("socket") || lower.includes("und_err") || lower.includes("terminated")) return classified(ERROR_CLASSES.UNKNOWN_RETRYABLE, retryAfterSeconds);
   if ([500, 502, 503, 504].includes(status) || lower.includes("unavailable") || lower.includes("internal") || lower.includes("overloaded") || lower.includes("server error")) return classified(ERROR_CLASSES.PROVIDER_5XX, retryAfterSeconds);
   if (lower.includes("json parse")) return classified(ERROR_CLASSES.MODEL_JSON_PARSE_FAILED, retryAfterSeconds);
   if (lower.includes("safety") || lower.includes("blocked") || lower.includes("prohibited")) return classified(ERROR_CLASSES.SAFETY_BLOCKED, retryAfterSeconds);
