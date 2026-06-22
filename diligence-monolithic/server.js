@@ -12,8 +12,10 @@ const PORT = Number(process.env.PORT || 8080);
 const ACTIVE_RUNTIME = "monolith_job_runtime";
 const EXPRESS_JSON_LIMIT = process.env.EXPRESS_JSON_LIMIT || "50mb";
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 600000);
-const SEND_MAX_OUTPUT_TOKENS = String(process.env.GEMINI_SEND_MAX_OUTPUT_TOKENS || "").toLowerCase() === "true";
 const GEMINI_MAX_OUTPUT_TOKENS = positiveIntOrNull(process.env.GEMINI_MAX_OUTPUT_TOKENS);
+const SEND_MAX_OUTPUT_TOKENS = resolveSendMaxOutputTokens(process.env.GEMINI_SEND_MAX_OUTPUT_TOKENS, GEMINI_MAX_OUTPUT_TOKENS);
+const VALIDATE_MODEL_TERMINAL_JSON = String(process.env.GEMINI_VALIDATE_TERMINAL_JSON || "true").toLowerCase() !== "false";
+const MODEL_OUTPUT_TAIL_PREVIEW_CHARS = Number(process.env.MODEL_OUTPUT_TAIL_PREVIEW_CHARS || 1200);
 const DEBUG_RAW_DEFAULT = String(process.env.DEBUG_RAW_MODEL_OUTPUT || "").toLowerCase() === "true";
 const AUTO_START_DEFAULT = String(process.env.MONOLITH_AUTO_START || "true").toLowerCase() !== "false";
 const RUN_TTL_MS = Number(process.env.MONOLITH_RUN_TTL_MS || 1000 * 60 * 60 * 6);
@@ -280,11 +282,17 @@ async function advanceOneRuntimeNode(job) {
 
     case NODE.TERMINAL_JSON_PARSE: {
       setNode(job, NODE.TERMINAL_JSON_PARSE, NODE.REPORT_RENDER);
-      const parseReport = extractTerminalJson(job.artifacts.raw_model_output || "");
+      const rawOutput = job.artifacts.raw_model_output || "";
+      const parseReport = extractTerminalJson(rawOutput);
       job.artifacts.parse_report = parseReport.public;
       if (!parseReport.ok) {
         const err = new Error(parseReport.error || "Terminal JSON parse failed.");
         err.code = "TERMINAL_JSON_PARSE_FAILED";
+        err.parse_report = parseReport.public;
+        err.model_output_char_count = String(rawOutput).length;
+        err.model_output_tail_preview = tailPreview(rawOutput);
+        err.finish_reason = job.artifacts.model_meta?.finish_reason || undefined;
+        err.provider_warnings = job.artifacts.model_meta?.provider_warnings || undefined;
         throw err;
       }
       job.artifacts.terminal_json = parseReport.value;
@@ -375,7 +383,12 @@ function markJobFailed(job, err) {
   job.error = {
     error: err?.code || err?.errorClass || "MONOLITH_RUN_FAILED",
     message: err?.message || String(err),
-    model_attempts: err?.model_attempts || undefined
+    model_attempts: err?.model_attempts || undefined,
+    parse_report: err?.parse_report || undefined,
+    model_output_char_count: err?.model_output_char_count || undefined,
+    model_output_tail_preview: err?.model_output_tail_preview || undefined,
+    finish_reason: err?.finish_reason || undefined,
+    provider_warnings: err?.provider_warnings || undefined
   };
   appendEvent(job, job.current_node || job.next_node, `FAILED: ${job.error.message}`);
 }
@@ -468,6 +481,9 @@ async function healthHandler(_req, res) {
     gemini_timeout_ms: GEMINI_TIMEOUT_MS,
     gemini_max_output_tokens_configured: GEMINI_MAX_OUTPUT_TOKENS,
     gemini_max_output_tokens_sent: SEND_MAX_OUTPUT_TOKENS,
+    gemini_max_output_tokens_policy: "sent_when_configured_unless_explicitly_disabled; provider rejection retries without blocking",
+    gemini_finish_reason_max_tokens_blocks: false,
+    gemini_terminal_json_validation_enabled: VALIDATE_MODEL_TERMINAL_JSON,
     express_json_limit: EXPRESS_JSON_LIMIT,
     vault_engine_configured: Boolean(VAULT_ENGINE_URL)
   });
@@ -733,6 +749,25 @@ async function executeGeminiAttempt({
       allowGrounding,
       timeoutMs: GEMINI_TIMEOUT_MS
     });
+
+    const validation = VALIDATE_MODEL_TERMINAL_JSON ? extractTerminalJson(result.text) : { ok: true, public: { validation_skipped: true } };
+    if (!validation.ok) {
+      const warningPrefix = result.providerWarnings?.length ? ` Provider warnings: ${result.providerWarnings.join(", ")}.` : "";
+      throw createClassifiedGeminiError(
+        `MODEL_JSON_PARSE_FAILED: ${validation.error || "Model returned non-parseable terminal JSON."}${warningPrefix}`,
+        ERROR_CLASSES.MODEL_JSON_PARSE_FAILED,
+        {
+          finishReason: result.finishReason || null,
+          providerWarnings: result.providerWarnings || [],
+          usageMetadata: result.usageMetadata || null,
+          modelOutputTokenLimitSent: result.modelOutputTokenLimitSent,
+          modelOutputCharCount: String(result.text || "").length,
+          modelOutputTailPreview: tailPreview(result.text),
+          parseReport: validation.public || null
+        }
+      );
+    }
+
     attempt.ok = true;
     attempt.latency_ms = Date.now() - startedAt;
     attempt.decision = ROTATION_DECISIONS.SUCCESS;
@@ -740,8 +775,10 @@ async function executeGeminiAttempt({
     attempt.finish_reason = result.finishReason || null;
     attempt.provider_warnings = result.providerWarnings || [];
     attempt.model_output_token_limit_sent = result.modelOutputTokenLimitSent;
+    attempt.terminal_json_validated = Boolean(VALIDATE_MODEL_TERMINAL_JSON);
+    attempt.terminal_json_parse_strategy = validation.public?.strategy || null;
 
-    return { ok: true, text: result.text, meta: result, attempt };
+    return { ok: true, text: result.text, meta: { ...result, terminalJsonValidation: validation.public || null }, attempt };
   } catch (err) {
     const classification = classifyGeminiError(err);
     attempt.ok = false;
@@ -749,12 +786,26 @@ async function executeGeminiAttempt({
     attempt.error = err?.message || String(err);
     attempt.error_class = classification.errorClass;
     attempt.retry_after_seconds = classification.retryAfterSeconds;
+    attempt.finish_reason = err?.finishReason || null;
+    attempt.provider_warnings = err?.providerWarnings || [];
+    attempt.usage_metadata = err?.usageMetadata || null;
+    attempt.model_output_token_limit_sent = err?.modelOutputTokenLimitSent;
+    attempt.model_output_char_count = err?.modelOutputCharCount || undefined;
+    attempt.model_output_tail_preview = err?.modelOutputTailPreview || undefined;
+    attempt.parse_report = err?.parseReport || undefined;
     return { ok: false, error: err, attempt };
   }
 }
 
 function googleSearchToolPayload() {
   return GOOGLE_SEARCH_TOOL_FIELD === "google_search" ? { google_search: {} } : { googleSearch: {} };
+}
+
+function shouldRetryWithoutMaxOutputTokens({ response, payload, modelOutputTokenLimitSent }) {
+  if (!modelOutputTokenLimitSent) return false;
+  if (Number(response?.status || 0) !== 400) return false;
+  const message = String(payload?.error?.message || "").toLowerCase();
+  return message.includes("maxoutputtokens") || message.includes("max output token") || message.includes("maximum output token") || message.includes("output tokens");
 }
 
 async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMimeType, temperature, allowGrounding, timeoutMs }) {
@@ -764,23 +815,43 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
   try {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
     const generationConfig = { temperature, responseMimeType };
-    if (SEND_MAX_OUTPUT_TOKENS && GEMINI_MAX_OUTPUT_TOKENS) generationConfig.maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS;
+    const maxOutputTokensConfigured = Boolean(GEMINI_MAX_OUTPUT_TOKENS);
+    const shouldSendMaxOutputTokens = Boolean(SEND_MAX_OUTPUT_TOKENS && GEMINI_MAX_OUTPUT_TOKENS);
+    if (shouldSendMaxOutputTokens) generationConfig.maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS;
 
-    const body = {
+    const baseBody = {
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
       generationConfig
     };
-    if (allowGrounding) body.tools = [googleSearchToolPayload()];
+    if (allowGrounding) baseBody.tools = [googleSearchToolPayload()];
 
-    const response = await fetch(endpoint, {
+    let providerWarnings = [];
+    let modelOutputTokenLimitSent = Boolean(generationConfig.maxOutputTokens);
+    let payload = null;
+    let response = await fetch(endpoint, {
       method: "POST",
       signal: controller.signal,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify(baseBody)
     });
 
-    const payload = await response.json().catch(() => ({}));
+    payload = await response.json().catch(() => ({}));
+
+    if (!response.ok && shouldRetryWithoutMaxOutputTokens({ response, payload, modelOutputTokenLimitSent })) {
+      providerWarnings.push("GEMINI_MAX_OUTPUT_TOKENS_CONFIG_REJECTED_RETRIED_WITHOUT_LIMIT");
+      const fallbackBody = JSON.parse(JSON.stringify(baseBody));
+      delete fallbackBody.generationConfig.maxOutputTokens;
+      modelOutputTokenLimitSent = false;
+      response = await fetch(endpoint, {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(fallbackBody)
+      });
+      payload = await response.json().catch(() => ({}));
+    }
+
     if (!response.ok) throw createGeminiHttpError({ response, payload });
 
     const candidate = payload?.candidates?.[0] || {};
@@ -792,12 +863,20 @@ async function callGeminiRest({ key, model, systemPrompt, userPrompt, responseMi
       throw createClassifiedGeminiError(`Gemini response blocked: ${finishReason}`, ERROR_CLASSES.SAFETY_BLOCKED, { finishReason, payload });
     }
 
+    if (normalizedFinishReason === "MAX_TOKENS") {
+      providerWarnings.push("GEMINI_FINISH_REASON_MAX_TOKENS_NON_BLOCKING");
+    }
+    if (maxOutputTokensConfigured && !modelOutputTokenLimitSent) {
+      providerWarnings.push("GEMINI_MAX_OUTPUT_TOKENS_CONFIGURED_BUT_NOT_SENT_NON_BLOCKING");
+    }
+
     return {
       text,
       usageMetadata: payload?.usageMetadata || null,
       finishReason,
-      providerWarnings: normalizedFinishReason === "MAX_TOKENS" ? ["GEMINI_FINISH_REASON_MAX_TOKENS_NON_BLOCKING"] : [],
-      modelOutputTokenLimitSent: Boolean(generationConfig.maxOutputTokens)
+      providerWarnings,
+      modelOutputTokenLimitSent,
+      maxOutputTokensConfigured: GEMINI_MAX_OUTPUT_TOKENS || null
     };
   } catch (err) {
     if (err?.name === "AbortError") throw createClassifiedGeminiError("GEMINI_TIMEOUT_ABORTED", ERROR_CLASSES.TIMEOUT, { cause: err });
@@ -986,6 +1065,7 @@ function buildGeminiSuccess(result, attempts) {
       usage_metadata: last.usage_metadata || null,
       finish_reason: last.finish_reason || null,
       provider_warnings: last.provider_warnings || [],
+      terminal_json_validation: result.meta?.terminalJsonValidation || null,
       model_attempts: attempts,
       model_tiers: MODEL_TIERS
     }
@@ -1058,7 +1138,19 @@ function decideAfterFailedAttempt({ errorClass, keyIndex, keyCount, hasMoreModel
 
 function isModelSpecificError(errorClass) { return [ERROR_CLASSES.MODEL_NOT_FOUND, ERROR_CLASSES.MODEL_JSON_PARSE_FAILED, ERROR_CLASSES.TOOL_UNSUPPORTED].includes(errorClass); }
 function isTerminalError(errorClass) { return [ERROR_CLASSES.SAFETY_BLOCKED, ERROR_CLASSES.INPUT_OR_PROMPT_INVALID, ERROR_CLASSES.UNKNOWN_TERMINAL].includes(errorClass); }
-function throwFinalModelError(lastError, attempts) { const err = lastError || new Error("MODEL_POOL_FAILED:MONOLITH"); err.model_attempts = attempts; throw err; }
+function throwFinalModelError(lastError, attempts) {
+  const err = lastError || new Error("MODEL_POOL_FAILED:MONOLITH");
+  err.model_attempts = attempts;
+  if (attempts?.length) {
+    const lastAttempt = attempts[attempts.length - 1];
+    err.model_output_char_count = lastAttempt?.model_output_char_count || undefined;
+    err.model_output_tail_preview = lastAttempt?.model_output_tail_preview || undefined;
+    err.finish_reason = lastAttempt?.finish_reason || undefined;
+    err.provider_warnings = lastAttempt?.provider_warnings || undefined;
+    err.parse_report = lastAttempt?.parse_report || undefined;
+  }
+  throw err;
+}
 
 function createGeminiHttpError({ response, payload }) {
   const message = payload?.error?.message || `GEMINI_HTTP_${response.status}`;
@@ -1106,6 +1198,17 @@ function relativePath(filePath) { return path.relative(__dirname, filePath).repl
 function wantsDebugRaw(req) { return DEBUG_RAW_DEFAULT || req?.body?.debug_raw === true || String(req?.query?.debug_raw || "").toLowerCase() === "true"; }
 function nullableString(value) { const text = String(value ?? "").trim(); return text ? text : null; }
 function uniqueCsv(value) { return Array.from(new Set(String(value || "").split(",").map((x) => x.trim()).filter(Boolean))); }
+function resolveSendMaxOutputTokens(raw, configuredValue) {
+  const value = String(raw ?? "").trim().toLowerCase();
+  if (["false", "0", "no", "off", "disabled"].includes(value)) return false;
+  if (["true", "1", "yes", "on", "enabled"].includes(value)) return true;
+  return Boolean(configuredValue);
+}
+function tailPreview(value, maxChars = MODEL_OUTPUT_TAIL_PREVIEW_CHARS) {
+  const text = String(value || "");
+  const limit = Number.isFinite(Number(maxChars)) && Number(maxChars) > 0 ? Number(maxChars) : 1200;
+  return text.length > limit ? text.slice(-limit) : text;
+}
 function positiveIntOrNull(value) { const num = Number(value); return Number.isFinite(num) && num > 0 ? Math.floor(num) : null; }
 function fingerprint(value) { return crypto.createHash("sha256").update(String(value || "")).digest("hex").slice(0, 12); }
 function badRequest(message) { const err = new Error(message); err.code = "BAD_REQUEST"; return err; }
