@@ -69,6 +69,63 @@ const MODEL_TIERS = Object.freeze([
   }
 ]);
 
+const FINAL_TERMINAL_ROOT_KEY = "final_output_handoff";
+const M6_URL_FETCH_MANIFEST_ROOT_KEY = "m6_url_fetch_manifest";
+const M6_FETCH_FULFILLMENT_ROOT_KEY = "m6_fetch_fulfillment";
+const M6_MANIFEST_MODEL_TIERS = Object.freeze(MODEL_TIERS.filter((tier) => tier.search_grounding));
+const M6_FETCH_TIMEOUT_MS = Number(process.env.M6_FETCH_TIMEOUT_MS || 30000);
+const M6_FETCH_USER_AGENT = String(process.env.M6_FETCH_USER_AGENT || "InterfaceDiligenceMonolith/1.0 (+https://interface-diligence-system)").trim();
+const M6_KNOWN_PATH_BANK = Object.freeze({
+  TARGET_FAMILY: Object.freeze({
+    T0_ROOT: Object.freeze(["/"]),
+    T1_IDENTITY: Object.freeze(["/about", "/about-us", "/company", "/our-company", "/who-we-are"]),
+    T2_LEGAL_IDENTITY: Object.freeze(["/legal", "/legal-notice", "/imprint", "/contact", "/contact-us"]),
+    T3_OPERATOR_ENTITY: Object.freeze(["/privacy", "/terms", "/dpa", "/legal"]),
+    T4_SUPPORTING_IDENTITY: Object.freeze(["/team", "/careers", "/newsroom", "/press"])
+  }),
+  PRODUCT_FAMILY: Object.freeze({
+    P0_PRODUCT_ROOT: Object.freeze(["/product", "/products", "/platform"]),
+    P1_PRODUCT_SLUG: Object.freeze(["/product/{slug}", "/products/{slug}", "/#/product/{slug}", "/#/products/{slug}"]),
+    P2_PLATFORM_FEATURE_SOLUTION: Object.freeze(["/platform", "/platform/{slug}", "/features", "/features/{slug}", "/solutions", "/solutions/{slug}", "/#/platform/{slug}", "/#/features/{slug}", "/#/solutions/{slug}"]),
+    P3_AI_CAPABILITY_TECHNICAL: Object.freeze(["/models", "/models/{slug}", "/agents", "/agents/{slug}", "/assistant", "/assistants", "/studio", "/api", "/apis", "/developer", "/developers", "/docs", "/integrations", "/connectors", "/actions", "/workflows", "/automation", "/search", "/knowledge", "/vault"]),
+    P4_USE_CASE_INDUSTRY: Object.freeze(["/use-cases", "/use-case/{slug}", "/industries", "/industry/{slug}", "/customers"]),
+    P5_ENTERPRISE_PRICING: Object.freeze(["/pricing", "/enterprise", "/contact-sales", "/plans"])
+  }),
+  LEGAL_FAMILY: Object.freeze({
+    L1_CORE_TERMS_PRIVACY: Object.freeze(["/terms", "/terms-of-use", "/terms-of-service", "/terms-and-conditions", "/legal/terms", "/policies/terms-of-use", "/privacy", "/privacy-policy", "/legal/privacy", "/policies/privacy-policy", "/eula"]),
+    L2_B2B_CONTRACTING: Object.freeze(["/dpa", "/data-processing-agreement", "/legal/dpa", "/legal/data-processing-agreement", "/policies/data-processing-addendum", "/aup", "/acceptable-use", "/acceptable-use-policy", "/legal/acceptable-use-policy", "/sla", "/service-level-agreement", "/service-credit-terms", "/platform-agreement", "/customer-agreement"]),
+    L3_AI_USAGE_GOVERNANCE: Object.freeze(["/usage-policy", "/acceptable-use-policy", "/content-policy", "/ai-policy", "/responsible-ai", "/model-policy", "/safety-policy"]),
+    L4_PRIVACY_ADJACENT_NOTICES: Object.freeze(["/cookie-policy", "/cookies", "/privacy-center", "/do-not-sell", "/data-privacy-framework", "/gdpr", "/ccpa"]),
+    L5_LEGAL_HUB_HOSTED: Object.freeze(["/legal", "/legal-center", "/legal-hub", "/policies", "/terms-and-policies", "/trust", "/trust-center"]),
+    L6_ENTITY_NOTICE: Object.freeze(["/legal-notice", "/imprint", "/contact", "/controller"])
+  }),
+  DATA_FAMILY: Object.freeze({
+    D1_SECURITY_TRUST: Object.freeze(["/security", "/security-center", "/data-security", "/trust", "/trust-center", "/compliance", "/compliance-center", "/soc-2", "/iso-27001"]),
+    D2_SUBPROCESSOR_PRIVACY_CENTER: Object.freeze(["/subprocessors", "/subprocessor", "/privacy-center", "/data-protection", "/gdpr", "/dpa", "/data-processing-agreement"]),
+    D3_DATA_GOVERNANCE_CONTROLS: Object.freeze(["/enterprise-privacy", "/customer-data", "/data-processing", "/data-residency", "/retention", "/deletion", "/data-export", "/data-deletion"]),
+    D4_DOCS_API_DATA_FLOW: Object.freeze(["/docs", "/developer", "/developers", "/api", "/api-reference", "/integrations", "/connectors", "/webhooks", "/actions", "/authentication", "/audit-logs", "/permissions"]),
+    D5_AI_SAFETY_TRANSPARENCY: Object.freeze(["/responsible-ai", "/ai-policy", "/ai-transparency", "/transparency", "/safety", "/model-card", "/model-cards", "/model-details", "/usage-policy"])
+  })
+});
+const M6_PRIMARY_KNOWN_PATH_SUBFAMILIES = Object.freeze({
+  TARGET_FAMILY: Object.freeze(["T0_ROOT", "T1_IDENTITY", "T2_LEGAL_IDENTITY"]),
+  PRODUCT_FAMILY: Object.freeze(["P0_PRODUCT_ROOT", "P2_PLATFORM_FEATURE_SOLUTION", "P3_AI_CAPABILITY_TECHNICAL"]),
+  LEGAL_FAMILY: Object.freeze(["L1_CORE_TERMS_PRIVACY", "L2_B2B_CONTRACTING", "L3_AI_USAGE_GOVERNANCE", "L5_LEGAL_HUB_HOSTED"]),
+  DATA_FAMILY: Object.freeze(["D1_SECURITY_TRUST", "D2_SUBPROCESSOR_PRIVACY_CENTER", "D3_DATA_GOVERNANCE_CONTROLS", "D4_DOCS_API_DATA_FLOW", "D5_AI_SAFETY_TRANSPARENCY"])
+});
+const M6_DATA_FLOW_SIGNALS = Object.freeze([
+  "data", "file", "upload", "storage", "retention", "delete", "export", "webhook", "connector", "integration", "auth", "permission", "audit", "log", "subprocessor", "model", "training", "customer content"
+]);
+const M6_LEGAL_HOST_ALLOWLIST = Object.freeze([
+  "iubenda.com",
+  "termly.io",
+  "termsfeed.com",
+  "onetrust.com",
+  "trustarc.com",
+  "ironcladapp.com",
+  "docusign.com"
+]);
+
 const JOB_STATUS = Object.freeze({
   QUEUED: "QUEUED",
   RUNNING: "RUNNING",
@@ -264,17 +321,7 @@ async function advanceOneRuntimeNode(job) {
     case NODE.MODEL_CALL: {
       setNode(job, NODE.MODEL_CALL, NODE.TERMINAL_JSON_PARSE);
       const promptBundle = job.artifacts.promptBundle || await loadPromptBundle();
-      const allowGrounding = ["url", "url_plus_text"].includes(job.execution_payload.source_mode);
-      const systemPrompt = buildSystemPrompt(promptBundle);
-      const userPrompt = buildUserPrompt(job.execution_payload);
-      appendEvent(job, NODE.MODEL_CALL, `Gemini monolith call started. Grounding=${allowGrounding}.`);
-      const modelResult = await callGeminiWithRotation({
-        systemPrompt,
-        userPrompt,
-        allowGrounding,
-        responseMimeType: "application/json",
-        temperature: Number(process.env.GEMINI_TEMPERATURE || 0)
-      });
+      const modelResult = await runModelCallForJob({ job, promptBundle });
       job.artifacts.raw_model_output = modelResult.text;
       job.artifacts.model_meta = modelResult.meta;
       appendEvent(job, NODE.MODEL_CALL, "Gemini monolith call returned.");
@@ -417,6 +464,10 @@ function buildJobResult(job) {
     vault_push_error: job.artifacts.vault_push_error,
     parse_report: job.artifacts.parse_report,
     model_meta: job.artifacts.model_meta,
+    m6_bridge_meta: job.artifacts.m6_bridge_meta,
+    m6_url_fetch_manifest: job.debug_raw ? job.artifacts.m6_url_fetch_manifest : undefined,
+    m6_url_fetch_manifest_meta: job.debug_raw ? job.artifacts.m6_url_fetch_manifest_meta : undefined,
+    m6_fetch_fulfillment: job.debug_raw ? job.artifacts.m6_fetch_fulfillment : job.artifacts.m6_fetch_fulfillment_summary,
     references_loaded: job.artifacts.references_loaded,
     raw_model_output: job.debug_raw ? job.artifacts.raw_model_output : undefined,
     events: job.events,
@@ -449,6 +500,635 @@ function cleanupExpiredJobs() {
   for (const [runId, job] of jobs.entries()) {
     if (now - Date.parse(job.created_at) > RUN_TTL_MS) jobs.delete(runId);
   }
+}
+
+function isUrlSourceMode(payload) {
+  return ["url", "url_plus_text"].includes(payload?.source_mode);
+}
+
+async function runModelCallForJob({ job, promptBundle }) {
+  if (isUrlSourceMode(job.execution_payload)) {
+    const manifest = await runM6UrlManifestCall({ job, promptBundle });
+    const fulfillment = await fulfillM6UrlFetchManifest({ job, manifest });
+    const bridgeUserPrompt = buildUserPromptWithM6Bridge(job.execution_payload, { manifest, fulfillment });
+
+    job.artifacts.m6_bridge_meta = {
+      ...(job.artifacts.m6_bridge_meta || {}),
+      patch_level: "PATCH_D_M6_BRIDGE_FINAL_INJECTION",
+      final_monolith_still_uses_existing_direct_path: false,
+      final_monolith_uses_m6_bridge: true,
+      final_monolith_grounding: false,
+      final_monolith_bridge_input_present: true,
+      final_monolith_bridge_contract: "manifest_and_fetch_fulfillment_are_raw_candidate_material_only_module_vi_must_verify"
+    };
+
+    appendEvent(job, NODE.MODEL_CALL, "M6 bridge fulfillment will be injected into final monolith call. Final grounding=false.");
+    return await runDirectMonolithCall({
+      job,
+      promptBundle,
+      userPromptOverride: bridgeUserPrompt,
+      allowGroundingOverride: false
+    });
+  }
+
+  return await runDirectMonolithCall({ job, promptBundle });
+}
+
+async function runM6UrlManifestCall({ job, promptBundle }) {
+  const systemPrompt = buildSystemPrompt(promptBundle);
+  const userPrompt = buildM6UrlManifestPrompt(job.execution_payload);
+  appendEvent(job, NODE.MODEL_CALL, "M6 URL fetch manifest call started. Grounding=true. Models=Gemini 2.5 only.");
+
+  const manifestResult = await callGeminiWithRotation({
+    systemPrompt,
+    userPrompt,
+    allowGrounding: true,
+    responseMimeType: null,
+    temperature: Number(process.env.GEMINI_M6_MANIFEST_TEMPERATURE || 0),
+    modelTiers: M6_MANIFEST_MODEL_TIERS,
+    terminalRootKey: M6_URL_FETCH_MANIFEST_ROOT_KEY
+  });
+
+  const parseReport = extractJsonObjectByRoot(manifestResult.text, M6_URL_FETCH_MANIFEST_ROOT_KEY);
+  if (!parseReport.ok) {
+    const err = new Error(parseReport.error || "M6 URL fetch manifest parse failed.");
+    err.code = "M6_URL_FETCH_MANIFEST_PARSE_FAILED";
+    err.parse_report = parseReport.public;
+    err.model_attempts = manifestResult.meta?.model_attempts || undefined;
+    err.model_output_char_count = String(manifestResult.text || "").length;
+    err.model_output_tail_preview = tailPreview(manifestResult.text);
+    err.finish_reason = manifestResult.meta?.finish_reason || undefined;
+    err.provider_warnings = manifestResult.meta?.provider_warnings || undefined;
+    throw err;
+  }
+
+  const manifest = parseReport.value?.m6_url_fetch_manifest;
+  job.artifacts.m6_url_fetch_manifest = manifest;
+  job.artifacts.m6_url_fetch_manifest_raw = manifestResult.text;
+  job.artifacts.m6_url_fetch_manifest_parse_report = parseReport.public;
+  job.artifacts.m6_url_fetch_manifest_meta = manifestResult.meta;
+  job.artifacts.m6_bridge_meta = {
+    enabled: true,
+    patch_level: "PATCH_D_M6_BRIDGE_FINAL_INJECTION",
+    manifest_present: Boolean(manifest),
+    fetch_fulfillment_present: false,
+    manifest_request_count: Array.isArray(manifest?.fetch_requests) ? manifest.fetch_requests.length : 0,
+    manifest_grounding_requested: manifestResult.meta?.grounding_requested ?? true,
+    manifest_model: manifestResult.meta?.model || null,
+    manifest_bucket_name: manifestResult.meta?.bucket_name || null,
+    final_monolith_still_uses_existing_direct_path: true
+  };
+
+  appendEvent(job, NODE.MODEL_CALL, `M6 URL fetch manifest returned. Requests=${job.artifacts.m6_bridge_meta.manifest_request_count}.`);
+  return manifest;
+}
+
+function buildM6UrlManifestPrompt(payload) {
+  return `Execute only the Module VI URL fetch-manifest step for the Interface Diligence monolith.
+
+This is a pre-final mechanical fetch request step. It is NOT the final diligence run.
+
+Hard rules for this request:
+- Use Gemini grounding only for public URL discovery.
+- Grounding is allowed only because this call is restricted to Gemini 2.5 model tiers by the runtime.
+- Do not run Module VII through Module XIV.
+- Do not produce target profile, feature profile, legal cartography, data provenance profile, registry ledger, report, Vault handoff, or final_output_handoff.
+- Do not admit evidence. Do not decide final source family. Do not create route packages.
+- Produce only URLs that Module VI should ask the runtime to fetch for later verification.
+- Treat all URLs as FETCH REQUESTS ONLY, not evidence.
+- Prefer first-party/company-controlled URLs and Module VI M6.T6 known-path candidates.
+- Use only Module VI source-family names: TARGET_FAMILY, PRODUCT_FAMILY, LEGAL_FAMILY, DATA_FAMILY, or UNKNOWN.
+- Use only Module VI source-subfamily names from M6.T6 where known. If unsure, use UNKNOWN.
+- Do not invent concrete {slug} URLs. Product slugs must come from navigation, sitemap, hash route, root review, or search scout.
+- Exclude media, investor databases, aggregators, review sites, and third-party authored sources unless the URL appears to be a company-controlled legal/governance document host linked/controlled by the target.
+- Emit exactly one JSON object with exactly one root key: m6_url_fetch_manifest.
+- No markdown, no code fences, no prose outside JSON.
+
+Required JSON shape:
+{
+  "m6_url_fetch_manifest": {
+    "status": "FETCH_REQUEST_ONLY_NOT_EVIDENCE",
+    "target_url": "string|null",
+    "target_name": "string|null",
+    "grounding_used": true,
+    "grounding_model_policy": "gemini_2_5_only",
+    "fetch_requests": [
+      {
+        "request_id": "REQ_001",
+        "url": "string",
+        "reason": "root|header|footer|sitemap|hash_route|known_path_probe|search_scout|coverage_challenge|hosted_governance_candidate|other",
+        "expected_family": "TARGET_FAMILY|PRODUCT_FAMILY|LEGAL_FAMILY|DATA_FAMILY|UNKNOWN",
+        "expected_subfamily": "M6.T6 subfamily code or UNKNOWN",
+        "route_source_hint": "HEADER|FOOTER|SITEMAP|ROOT|HASH_ROUTE|KNOWN_PATH_PROBE|SEARCH_SCOUT|COVERAGE_CHALLENGE|UNKNOWN",
+        "priority": "P1|P2|P3",
+        "must_fetch": true
+      }
+    ],
+    "known_path_bank_ref": "M6.T6",
+    "known_path_bank": ${JSON.stringify(M6_KNOWN_PATH_BANK, null, 6)},
+    "exclusion_rules": [
+      "first_party_boundary_required",
+      "third_party_legal_or_governance_hosting_exception_only",
+      "no_media",
+      "no_aggregators",
+      "no_investor_databases",
+      "no_review_sites",
+      "search_snippets_are_not_evidence"
+    ],
+    "manifest_warnings": []
+  }
+}
+
+EXECUTION_PAYLOAD:
+${JSON.stringify(payload, null, 2)}`;
+}
+
+
+async function fulfillM6UrlFetchManifest({ job, manifest }) {
+  appendEvent(job, NODE.MODEL_CALL, "M6 fetch fulfillment started. Server will fetch raw candidate text only; no evidence admission.");
+
+  const startedAt = Date.now();
+  const targetUrl = job.execution_payload?.target_url || manifest?.target_url || null;
+  const requestRows = normalizeM6FetchRequests({ manifest, targetUrl });
+  const knownPathRows = buildKnownPathSelfCheckRequests({ targetUrl, existingUrls: requestRows.map((row) => row.url) });
+  const allRows = [...requestRows, ...knownPathRows];
+
+  const fetchResults = [];
+  const fetchFailures = [];
+  const knownPathSelfCheck = {
+    checked_paths: knownPathRows.map((row) => ({ path: row.path, source_family: row.expected_family, source_subfamily: row.expected_subfamily })),
+    additional_candidates_fetched: [],
+    not_found: [],
+    skipped_outside_boundary: []
+  };
+
+  for (const row of allRows) {
+    const boundary = evaluateM6FetchBoundary({ candidateUrl: row.url, targetUrl, expectedFamily: row.expected_family });
+    if (!boundary.allowed) {
+      const skipped = {
+        request_id: row.request_id,
+        url: row.url,
+        path: row.path || null,
+        source_family: row.expected_family,
+        source_subfamily: row.expected_subfamily,
+        reason: boundary.reason,
+        discovered_by: row.discovered_by
+      };
+      if (row.discovered_by === "known_path_self_check") knownPathSelfCheck.skipped_outside_boundary.push(skipped);
+      fetchFailures.push({ ...skipped, error: "M6_FETCH_BOUNDARY_REJECTED" });
+      continue;
+    }
+
+    const fetched = await fetchM6CandidateUrl({ row, targetUrl });
+    if (fetched.ok) {
+      fetchResults.push(fetched.result);
+      if (row.discovered_by === "known_path_self_check") {
+        knownPathSelfCheck.additional_candidates_fetched.push({
+          request_id: row.request_id,
+          path: row.path || null,
+          url: row.url,
+          source_family: row.expected_family,
+          source_subfamily: row.expected_subfamily,
+          status: fetched.result.fetch_status,
+          candidate_id: fetched.result.candidate_id,
+          text_length: fetched.result.text_length
+        });
+      }
+    } else {
+      fetchFailures.push(fetched.failure);
+      if (row.discovered_by === "known_path_self_check") {
+        knownPathSelfCheck.not_found.push({
+          request_id: row.request_id,
+          path: row.path || null,
+          url: row.url,
+          source_family: row.expected_family,
+          source_subfamily: row.expected_subfamily,
+          fetch_status: fetched.failure.fetch_status || null,
+          error: fetched.failure.error || null
+        });
+      }
+    }
+  }
+
+  const fulfillment = {
+    status: "RAW_FETCH_FULFILLMENT_ONLY_NOT_ADMITTED_EVIDENCE",
+    target_url: targetUrl,
+    fetched_at: new Date().toISOString(),
+    fetch_results: fetchResults,
+    fetch_failures: fetchFailures,
+    known_path_self_check: knownPathSelfCheck,
+    bridge_rules: [
+      "server_fetch_is_raw_candidate_material_only",
+      "server_does_not_admit_evidence",
+      "server_family_hint_is_not_final_family",
+      "module_vi_must_verify_admit_classify_package_and_route"
+    ]
+  };
+
+  job.artifacts.m6_fetch_fulfillment = fulfillment;
+  job.artifacts.m6_fetch_fulfillment_summary = summarizeM6FetchFulfillment(fulfillment);
+  job.artifacts.m6_bridge_meta = {
+    ...(job.artifacts.m6_bridge_meta || {}),
+    patch_level: "PATCH_D_M6_BRIDGE_FINAL_INJECTION",
+    fetch_fulfillment_present: true,
+    fetch_result_count: fetchResults.length,
+    fetch_failure_count: fetchFailures.length,
+    known_path_checked_count: knownPathSelfCheck.checked_paths.length,
+    known_path_fetched_count: knownPathSelfCheck.additional_candidates_fetched.length,
+    known_path_not_found_count: knownPathSelfCheck.not_found.length,
+    fetch_runtime_ms: Date.now() - startedAt,
+    final_monolith_still_uses_existing_direct_path: true,
+    m6_fetch_fulfillment_root_key: M6_FETCH_FULFILLMENT_ROOT_KEY
+  };
+
+  appendEvent(job, NODE.MODEL_CALL, `M6 fetch fulfillment completed. Results=${fetchResults.length}. Failures=${fetchFailures.length}. KnownPathFetched=${knownPathSelfCheck.additional_candidates_fetched.length}.`);
+  return fulfillment;
+}
+
+function normalizeM6FetchRequests({ manifest, targetUrl }) {
+  const rows = [];
+  const seen = new Set();
+
+  const addRow = (candidate, fallback = {}) => {
+    const rawUrl = nullableString(candidate?.url || fallback.url);
+    const absoluteUrl = normalizeCandidateUrl(rawUrl, targetUrl);
+    if (!absoluteUrl) return;
+    const canonical = canonicalFetchUrl(absoluteUrl);
+    if (seen.has(canonical)) return;
+    seen.add(canonical);
+    rows.push({
+      request_id: nullableString(candidate?.request_id || fallback.request_id) || `REQ_${String(rows.length + 1).padStart(3, "0")}`,
+      url: absoluteUrl,
+      reason: nullableString(candidate?.reason || fallback.reason) || "manifest_candidate",
+      expected_family: normalizeM6FamilyHint(candidate?.expected_family || fallback.expected_family),
+      expected_subfamily: normalizeM6SubfamilyHint(candidate?.expected_subfamily || fallback.expected_subfamily, candidate?.expected_family || fallback.expected_family),
+      route_source_hint: normalizeM6RouteSourceHint(candidate?.route_source_hint || fallback.route_source_hint),
+      priority: nullableString(candidate?.priority || fallback.priority) || "P2",
+      must_fetch: candidate?.must_fetch === undefined ? Boolean(fallback.must_fetch ?? true) : Boolean(candidate.must_fetch),
+      discovered_by: nullableString(fallback.discovered_by) || "m6_manifest"
+    });
+  };
+
+  if (targetUrl) {
+    addRow({
+      request_id: "REQ_ROOT",
+      url: targetUrl,
+      reason: "root",
+      expected_family: "TARGET_FAMILY",
+      expected_subfamily: "T0_ROOT",
+      route_source_hint: "ROOT",
+      priority: "P1",
+      must_fetch: true
+    }, { discovered_by: "runtime_root_seed" });
+  }
+
+  for (const request of Array.isArray(manifest?.fetch_requests) ? manifest.fetch_requests : []) {
+    addRow(request, { discovered_by: "m6_manifest" });
+  }
+
+  return rows;
+}
+
+function buildKnownPathSelfCheckRequests({ targetUrl, existingUrls = [] }) {
+  if (!targetUrl) return [];
+  const origin = originFromUrl(targetUrl);
+  if (!origin) return [];
+  const seen = new Set(existingUrls.map((url) => canonicalFetchUrl(url)).filter(Boolean));
+  const rows = [];
+
+  for (const record of m6KnownPathRecords({ primaryOnly: true })) {
+    if (isM6KnownPathTemplate(record.path)) continue;
+    if (record.source_subfamily === "D4_DOCS_API_DATA_FLOW" && !hasM6DataFlowSignal(record.path)) continue;
+
+    const url = normalizeCandidateUrl(record.path, origin);
+    const canonical = canonicalFetchUrl(url);
+    if (!url || seen.has(canonical)) continue;
+    seen.add(canonical);
+    rows.push({
+      request_id: `KP_${String(rows.length + 1).padStart(3, "0")}`,
+      url,
+      path: record.path,
+      reason: "m6_known_path_self_check",
+      expected_family: record.source_family,
+      expected_subfamily: record.source_subfamily,
+      route_source_hint: "KNOWN_PATH_PROBE",
+      priority: record.priority,
+      must_fetch: false,
+      discovered_by: "known_path_self_check",
+      known_path_bank_ref: "M6.T6",
+      known_path_primary_self_check: true
+    });
+  }
+
+  return rows;
+}
+
+async function fetchM6CandidateUrl({ row, targetUrl }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), M6_FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(row.url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "user-agent": M6_FETCH_USER_AGENT,
+        "accept": "text/html,application/xhtml+xml,text/plain,application/json;q=0.8,*/*;q=0.2"
+      }
+    });
+
+    const contentType = response.headers?.get?.("content-type") || "";
+    const finalUrl = response.url || row.url;
+    const rawText = await response.text().catch(() => "");
+    const { title, cleanText } = extractM6CleanText(rawText, contentType);
+
+    if (!response.ok || !cleanText) {
+      return {
+        ok: false,
+        failure: {
+          request_id: row.request_id,
+          url: row.url,
+          final_url: finalUrl,
+          fetch_status: response.status,
+          content_type: contentType,
+          discovered_by: row.discovered_by,
+          expected_family: row.expected_family,
+          expected_subfamily: row.expected_subfamily,
+          route_source_hint: row.route_source_hint,
+          error: !response.ok ? `HTTP_${response.status}` : "EMPTY_CLEAN_TEXT"
+        }
+      };
+    }
+
+    const candidateId = `CAND_${fingerprint(`${row.request_id}:${finalUrl}:${cleanText.length}`)}`;
+    return {
+      ok: true,
+      result: {
+        request_id: row.request_id,
+        candidate_id: candidateId,
+        url: row.url,
+        final_url: finalUrl,
+        fetch_status: response.status,
+        content_type: contentType,
+        title,
+        clean_text: cleanText,
+        clean_text_sha256: crypto.createHash("sha256").update(cleanText).digest("hex"),
+        text_length: cleanText.length,
+        server_family_hint: classifyM6ServerFamilyHint({ row, finalUrl, contentType, cleanText }),
+        server_subfamily_hint: classifyM6ServerSubfamilyHint({ row, finalUrl, cleanText }),
+        expected_family_from_manifest: row.expected_family,
+        expected_subfamily_from_manifest: row.expected_subfamily,
+        route_source_hint: row.route_source_hint,
+        discovered_by: row.discovered_by,
+        fetched_at: new Date().toISOString(),
+        server_notes: [
+          "raw_candidate_material_only",
+          "not_admitted_evidence_until_module_vi_verification"
+        ],
+        target_boundary: boundaryDescriptor({ candidateUrl: finalUrl, targetUrl })
+      }
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      failure: {
+        request_id: row.request_id,
+        url: row.url,
+        final_url: null,
+        fetch_status: null,
+        content_type: null,
+        discovered_by: row.discovered_by,
+        expected_family: row.expected_family,
+        expected_subfamily: row.expected_subfamily,
+        route_source_hint: row.route_source_hint,
+        error: err?.name === "AbortError" ? "FETCH_TIMEOUT" : (err?.message || String(err))
+      }
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function extractM6CleanText(rawText, contentType = "") {
+  const text = String(rawText || "");
+  const titleMatch = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = titleMatch ? decodeHtmlEntities(stripTags(titleMatch[1])).trim().slice(0, 240) : null;
+  const looksHtml = String(contentType || "").toLowerCase().includes("html") || /<html|<body|<div|<p|<section/i.test(text);
+  const withoutNoise = looksHtml
+    ? text
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ")
+    : text;
+  const cleanText = decodeHtmlEntities(stripTags(withoutNoise))
+    .replace(/\u0000/g, " ")
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return { title, cleanText };
+}
+
+function stripTags(value) {
+  return String(value || "").replace(/<[^>]+>/g, " ");
+}
+
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_match, code) => {
+      const num = Number(code);
+      return Number.isFinite(num) ? String.fromCharCode(num) : " ";
+    });
+}
+
+function normalizeCandidateUrl(value, baseUrl = null) {
+  const raw = nullableString(value);
+  if (!raw) return null;
+  try {
+    const url = baseUrl ? new URL(raw, baseUrl) : new URL(raw);
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+    url.hash = "";
+    return url.toString();
+  } catch (_err) {
+    return null;
+  }
+}
+
+function canonicalFetchUrl(value) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\/+$/g, "");
+    return url.toString().toLowerCase();
+  } catch (_err) {
+    return null;
+  }
+}
+
+function originFromUrl(value) {
+  try { return new URL(value).origin; } catch (_err) { return null; }
+}
+
+function normalizeHostname(value) {
+  return String(value || "").toLowerCase().replace(/^www\./, "");
+}
+
+function evaluateM6FetchBoundary({ candidateUrl, targetUrl, expectedFamily = "unknown" }) {
+  try {
+    const candidate = new URL(candidateUrl);
+    const target = targetUrl ? new URL(targetUrl) : candidate;
+    const candidateHost = normalizeHostname(candidate.hostname);
+    const targetHost = normalizeHostname(target.hostname);
+    const sameFirstParty = candidateHost === targetHost || candidateHost.endsWith(`.${targetHost}`) || targetHost.endsWith(`.${candidateHost}`);
+    if (sameFirstParty) return { allowed: true, reason: "FIRST_PARTY_DOMAIN_MATCH" };
+
+    const legalHostAllowed = ["LEGAL_FAMILY", "DATA_FAMILY"].includes(normalizeM6FamilyHint(expectedFamily)) && M6_LEGAL_HOST_ALLOWLIST.some((host) => candidateHost === host || candidateHost.endsWith(`.${host}`));
+    if (legalHostAllowed) return { allowed: true, reason: "POTENTIAL_THIRD_PARTY_LEGAL_HOSTING_EXCEPTION_CANDIDATE" };
+
+    return { allowed: false, reason: "OUTSIDE_FIRST_PARTY_BOUNDARY" };
+  } catch (_err) {
+    return { allowed: false, reason: "INVALID_URL" };
+  }
+}
+
+function boundaryDescriptor({ candidateUrl, targetUrl }) {
+  const boundary = evaluateM6FetchBoundary({ candidateUrl, targetUrl });
+  return boundary.reason;
+}
+
+function m6KnownPathRecords({ primaryOnly = false } = {}) {
+  const records = [];
+  for (const [sourceFamily, subfamilies] of Object.entries(M6_KNOWN_PATH_BANK)) {
+    for (const [sourceSubfamily, paths] of Object.entries(subfamilies || {})) {
+      if (primaryOnly && !isM6PrimaryKnownPathSubfamily(sourceFamily, sourceSubfamily)) continue;
+      for (const knownPath of paths || []) {
+        records.push({
+          source_family: sourceFamily,
+          source_subfamily: sourceSubfamily,
+          path: knownPath,
+          priority: sourceFamily === "TARGET_FAMILY" && sourceSubfamily === "T0_ROOT" ? "P1" : "P2"
+        });
+      }
+    }
+  }
+  return records;
+}
+
+function isM6PrimaryKnownPathSubfamily(sourceFamily, sourceSubfamily) {
+  return Boolean(M6_PRIMARY_KNOWN_PATH_SUBFAMILIES[sourceFamily]?.includes(sourceSubfamily));
+}
+
+function isM6KnownPathTemplate(knownPath) {
+  const value = String(knownPath || "");
+  return value.includes("{slug}") || value.includes("/#/");
+}
+
+function hasM6DataFlowSignal(value) {
+  const text = String(value || "").toLowerCase();
+  return M6_DATA_FLOW_SIGNALS.some((signal) => text.includes(signal));
+}
+
+function normalizeM6FamilyHint(value) {
+  const raw = String(value || "UNKNOWN").trim();
+  const upper = raw.toUpperCase();
+  if (["TARGET_FAMILY", "PRODUCT_FAMILY", "LEGAL_FAMILY", "DATA_FAMILY", "UNKNOWN"].includes(upper)) return upper;
+  const lower = raw.toLowerCase();
+  if (["target", "identity", "homepage", "root"].includes(lower)) return "TARGET_FAMILY";
+  if (["product", "commercial", "pricing", "feature", "features", "docs_product"].includes(lower)) return "PRODUCT_FAMILY";
+  if (["legal", "terms", "privacy", "policy", "governance"].includes(lower)) return "LEGAL_FAMILY";
+  if (["data", "security", "trust", "subprocessor", "docs", "developer", "api"].includes(lower)) return "DATA_FAMILY";
+  return "UNKNOWN";
+}
+
+function normalizeM6SubfamilyHint(value, sourceFamily = "UNKNOWN") {
+  const raw = String(value || "UNKNOWN").trim().toUpperCase();
+  if (raw === "UNKNOWN") return "UNKNOWN";
+  const family = normalizeM6FamilyHint(sourceFamily);
+  if (family !== "UNKNOWN" && Object.prototype.hasOwnProperty.call(M6_KNOWN_PATH_BANK[family] || {}, raw)) return raw;
+  for (const subfamilies of Object.values(M6_KNOWN_PATH_BANK)) {
+    if (Object.prototype.hasOwnProperty.call(subfamilies || {}, raw)) return raw;
+  }
+  return "UNKNOWN";
+}
+
+function normalizeM6RouteSourceHint(value) {
+  const raw = String(value || "UNKNOWN").trim().toUpperCase();
+  return ["HEADER", "FOOTER", "SITEMAP", "ROOT", "HASH_ROUTE", "KNOWN_PATH_PROBE", "SEARCH_SCOUT", "COVERAGE_CHALLENGE", "PASTED_TEXT", "SYNTHETIC_DEMO", "UNKNOWN"].includes(raw) ? raw : "UNKNOWN";
+}
+
+function classifyM6ServerFamilyHint({ row, finalUrl, contentType, cleanText }) {
+  const expected = normalizeM6FamilyHint(row?.expected_family);
+  if (expected !== "UNKNOWN") return expected;
+  const lowerUrl = String(finalUrl || "").toLowerCase();
+  const lowerText = String(cleanText || "").slice(0, 5000).toLowerCase();
+  const combined = `${lowerUrl}\n${lowerText}`;
+  if (/privacy policy|terms of service|terms and conditions|data processing agreement|subprocessor|acceptable use|cookie policy|legal center|legal notice|eula/.test(combined)) return "LEGAL_FAMILY";
+  if (/security|trust center|soc 2|iso 27001|compliance|vulnerability disclosure|data residency|retention|deletion|data export|audit logs|permissions|webhooks/.test(combined)) return "DATA_FAMILY";
+  if (/about|company|who we are|contact us|imprint/.test(combined)) return "TARGET_FAMILY";
+  if (/product|platform|features|solutions|use cases|pricing|plans|api|developer|documentation|sdk|quickstart/.test(combined)) return "PRODUCT_FAMILY";
+  return "UNKNOWN";
+}
+
+function classifyM6ServerSubfamilyHint({ row, finalUrl, cleanText }) {
+  const expected = normalizeM6SubfamilyHint(row?.expected_subfamily, row?.expected_family);
+  if (expected !== "UNKNOWN") return expected;
+  const lower = `${String(finalUrl || "").toLowerCase()}\n${String(cleanText || "").slice(0, 3000).toLowerCase()}`;
+  for (const record of m6KnownPathRecords({ primaryOnly: false })) {
+    if (record.path && !isM6KnownPathTemplate(record.path) && lower.includes(record.path.toLowerCase().replace(/^\//, ""))) return record.source_subfamily;
+  }
+  return "UNKNOWN";
+}
+
+function summarizeM6FetchFulfillment(fulfillment) {
+  const results = Array.isArray(fulfillment?.fetch_results) ? fulfillment.fetch_results : [];
+  const failures = Array.isArray(fulfillment?.fetch_failures) ? fulfillment.fetch_failures : [];
+  return {
+    status: fulfillment?.status || null,
+    target_url: fulfillment?.target_url || null,
+    fetched_at: fulfillment?.fetched_at || null,
+    fetch_result_count: results.length,
+    fetch_failure_count: failures.length,
+    total_text_length: results.reduce((sum, row) => sum + Number(row.text_length || 0), 0),
+    fetched_sources: results.map((row) => ({
+      request_id: row.request_id,
+      candidate_id: row.candidate_id,
+      url: row.url,
+      final_url: row.final_url,
+      fetch_status: row.fetch_status,
+      title: row.title,
+      text_length: row.text_length,
+      server_family_hint: row.server_family_hint,
+      server_subfamily_hint: row.server_subfamily_hint,
+      discovered_by: row.discovered_by
+    })),
+    fetch_failures: failures,
+    known_path_self_check: fulfillment?.known_path_self_check || null,
+    bridge_rules: fulfillment?.bridge_rules || []
+  };
+}
+
+async function runDirectMonolithCall({ job, promptBundle, userPromptOverride = null, allowGroundingOverride = null }) {
+  const allowGrounding = allowGroundingOverride === null ? isUrlSourceMode(job.execution_payload) : Boolean(allowGroundingOverride);
+  const systemPrompt = buildSystemPrompt(promptBundle);
+  const userPrompt = userPromptOverride || buildUserPrompt(job.execution_payload);
+  appendEvent(job, NODE.MODEL_CALL, `Gemini monolith call started. Grounding=${allowGrounding}.`);
+  return await callGeminiWithRotation({
+    systemPrompt,
+    userPrompt,
+    allowGrounding,
+    responseMimeType: "application/json",
+    temperature: Number(process.env.GEMINI_TEMPERATURE || 0),
+    terminalRootKey: FINAL_TERMINAL_ROOT_KEY
+  });
 }
 
 async function healthHandler(_req, res) {
@@ -485,6 +1165,13 @@ async function healthHandler(_req, res) {
     gemini_max_output_tokens_policy: "sent_when_configured_unless_explicitly_disabled; provider rejection retries without blocking",
     gemini_finish_reason_max_tokens_blocks: false,
     gemini_terminal_json_validation_enabled: VALIDATE_MODEL_TERMINAL_JSON,
+    m6_bridge_patch_level: "PATCH_C2_M6_KNOWN_PATH_BANK_NO_FINAL_INJECTION",
+    m6_bridge_manifest_root_key: M6_URL_FETCH_MANIFEST_ROOT_KEY,
+    m6_fetch_fulfillment_root_key: M6_FETCH_FULFILLMENT_ROOT_KEY,
+    m6_bridge_manifest_models: M6_MANIFEST_MODEL_TIERS,
+    m6_fetch_timeout_ms: M6_FETCH_TIMEOUT_MS,
+    m6_known_path_bank: M6_KNOWN_PATH_BANK,
+    m6_primary_known_path_subfamilies: M6_PRIMARY_KNOWN_PATH_SUBFAMILIES,
     gemini_grounding_response_mime_policy: "responseMimeType omitted when grounding/tools are enabled unless GEMINI_GROUNDING_RESPONSE_MIME_POLICY=send_with_tools",
     gemini_fetch_failed_blocks: false,
     express_json_limit: EXPRESS_JSON_LIMIT,
@@ -537,6 +1224,32 @@ function buildSystemPrompt(bundle) {
     "# RUNTIME REFERENCE — VAULT_JS_CANONICAL_MAP_v1.md",
     bundle.vaultMap.trim()
   ].filter(Boolean).join("\n\n");
+}
+
+function buildUserPromptWithM6Bridge(payload, { manifest, fulfillment }) {
+  return `Execute one Interface Diligence monolith run using the execution payload and Module VI bridge materials below.
+
+Rules for this request:
+- Run the locked monolith internally from Module I through Module XIV.
+- Final monolith grounding is disabled because Module VI has already requested candidate URLs and the runtime has mechanically fetched them.
+- Treat M6_URL_FETCH_MANIFEST as Module VI's fetch-request plan only. It is not evidence, not a source_discovery_handoff, not a package, not a profile, and not a downstream state object.
+- Treat M6_FETCH_FULFILLMENT as raw candidate material only. It is not admitted evidence until Module VI independently applies its source boundary, evidence firewall, family/subfamily taxonomy, route-source priority, artifact classification, dedupe, absence/access handling, lossless evidence construction, ledger duties, and lock gate.
+- Module VI must verify, admit, reject, classify, index, package, and route any usable material under M6 rules before Phase 2 begins.
+- Server family/subfamily values are hints only. Module VI may confirm, change, reject, defer, or limitation-route them.
+- Search snippets, manifest leads, fetch failures, rejected boundary material, and server hints must not support downstream findings unless Module VI admits the underlying fetched material into source_discovery_handoff.
+- Do not emit m6_url_fetch_manifest or m6_fetch_fulfillment as terminal roots, report branches, compatibility wrappers, or canonical state objects.
+- Emit exactly one terminal JSON object with exactly one root key: final_output_handoff.
+- Do not invent source material, evidence refs, registry rows, registry evaluation rules, or Vault fields.
+- Treat runtime references as named references only; do not create external dependencies not listed in the payload.
+
+EXECUTION_PAYLOAD:
+${JSON.stringify(payload, null, 2)}
+
+M6_URL_FETCH_MANIFEST:
+${JSON.stringify({ m6_url_fetch_manifest: manifest || null }, null, 2)}
+
+M6_FETCH_FULFILLMENT:
+${JSON.stringify({ m6_fetch_fulfillment: fulfillment || null }, null, 2)}`;
 }
 
 function buildUserPrompt(payload) {
@@ -593,8 +1306,16 @@ function normalizeSourceMode(raw, body) {
   throw badRequest("source_mode could not be resolved. Use url, text, url_plus_text, or synthetic_demo.");
 }
 
-async function callGeminiWithRotation({ systemPrompt, userPrompt, allowGrounding, responseMimeType = "application/json", temperature = 0 }) {
-  const bucketChain = resolveMonolithBucketChain({ allowGrounding });
+async function callGeminiWithRotation({
+  systemPrompt,
+  userPrompt,
+  allowGrounding,
+  responseMimeType = "application/json",
+  temperature = 0,
+  modelTiers = MODEL_TIERS,
+  terminalRootKey = FINAL_TERMINAL_ROOT_KEY
+}) {
+  const bucketChain = resolveMonolithBucketChain({ allowGrounding, modelTiers });
   const attempts = [];
   let lastError = null;
   let attemptNumber = 0;
@@ -639,10 +1360,11 @@ async function callGeminiWithRotation({ systemPrompt, userPrompt, allowGrounding
           key,
           keyIndex,
           attemptNumber: ++attemptNumber,
-          allowGrounding: effectiveGrounding
+          allowGrounding: effectiveGrounding,
+          terminalRootKey
         });
         attempts.push(first.attempt);
-        if (first.ok) return buildGeminiSuccess(first, attempts);
+        if (first.ok) return buildGeminiSuccess(first, attempts, modelTiers, terminalRootKey);
 
         lastError = first.error;
         const classification = classifyGeminiError(first.error);
@@ -666,10 +1388,11 @@ async function callGeminiWithRotation({ systemPrompt, userPrompt, allowGrounding
             keyIndex,
             attemptNumber: ++attemptNumber,
             allowGrounding: effectiveGrounding,
-            retryOrdinal: 1
+            retryOrdinal: 1,
+            terminalRootKey
           });
           attempts.push(retry.attempt);
-          if (retry.ok) return buildGeminiSuccess(retry, attempts);
+          if (retry.ok) return buildGeminiSuccess(retry, attempts, modelTiers, terminalRootKey);
 
           lastError = retry.error;
           const retryClass = classifyGeminiError(retry.error).errorClass;
@@ -726,7 +1449,8 @@ async function executeGeminiAttempt({
   keyIndex,
   attemptNumber,
   allowGrounding,
-  retryOrdinal = 0
+  retryOrdinal = 0,
+  terminalRootKey = FINAL_TERMINAL_ROOT_KEY
 }) {
   const startedAt = Date.now();
   const attempt = buildAttemptRecord({
@@ -753,7 +1477,7 @@ async function executeGeminiAttempt({
       timeoutMs: GEMINI_TIMEOUT_MS
     });
 
-    const validation = VALIDATE_MODEL_TERMINAL_JSON ? extractTerminalJson(result.text) : { ok: true, public: { validation_skipped: true } };
+    const validation = VALIDATE_MODEL_TERMINAL_JSON ? extractJsonObjectByRoot(result.text, terminalRootKey) : { ok: true, public: { validation_skipped: true, root_key: terminalRootKey } };
     if (!validation.ok) {
       const warningPrefix = result.providerWarnings?.length ? ` Provider warnings: ${result.providerWarnings.join(", ")}.` : "";
       throw createClassifiedGeminiError(
@@ -785,6 +1509,7 @@ async function executeGeminiAttempt({
     attempt.response_mime_type_sent = Boolean(result.responseMimeTypeSent);
     attempt.response_mime_type_omitted_for_grounding = Boolean(result.responseMimeTypeOmittedForGrounding);
     attempt.terminal_json_validated = Boolean(VALIDATE_MODEL_TERMINAL_JSON);
+    attempt.terminal_json_validation_root_key = terminalRootKey;
     attempt.terminal_json_parse_strategy = validation.public?.strategy || null;
 
     return { ok: true, text: result.text, meta: { ...result, terminalJsonValidation: validation.public || null }, attempt };
@@ -935,7 +1660,7 @@ function shouldRetryWithoutResponseMimeType({ payload, allowGrounding, responseM
     (message.includes("response mime type") && message.includes("tool"));
 }
 
-function resolveMonolithBucketChain({ allowGrounding }) {
+function resolveMonolithBucketChain({ allowGrounding, modelTiers = MODEL_TIERS }) {
   const seenKeys = new Set();
 
   return BUCKET_ORDER.map((bucketName) => {
@@ -947,13 +1672,17 @@ function resolveMonolithBucketChain({ allowGrounding }) {
     return {
       bucketName,
       keys,
-      modelTiers: MODEL_TIERS,
+      modelTiers,
       grounding: Boolean(allowGrounding)
     };
   });
 }
 
 function extractTerminalJson(text) {
+  return extractJsonObjectByRoot(text, FINAL_TERMINAL_ROOT_KEY);
+}
+
+function extractJsonObjectByRoot(text, rootKey = FINAL_TERMINAL_ROOT_KEY) {
   const original = String(text || "").trim();
   const attempts = [];
   const candidates = [
@@ -963,26 +1692,26 @@ function extractTerminalJson(text) {
   ].filter((candidate) => candidate.text);
 
   for (const candidate of candidates) {
-    const parsed = tryParseJson(candidate.text);
-    attempts.push({ strategy: candidate.strategy, ok: parsed.ok, error: parsed.error || null });
-    if (parsed.ok) return { ok: true, value: parsed.value, public: { strategy: candidate.strategy, repair_applied: candidate.strategy !== "raw", attempts } };
+    const parsed = tryParseJson(candidate.text, rootKey);
+    attempts.push({ strategy: candidate.strategy, ok: parsed.ok, error: parsed.error || null, root_key: rootKey });
+    if (parsed.ok) return { ok: true, value: parsed.value, public: { strategy: candidate.strategy, repair_applied: candidate.strategy !== "raw", root_key: rootKey, attempts } };
 
     const repaired = repairJsonShapeOnly(candidate.text);
     if (repaired !== candidate.text) {
-      const repairParsed = tryParseJson(repaired);
-      attempts.push({ strategy: `${candidate.strategy}+shape_repair`, ok: repairParsed.ok, error: repairParsed.error || null });
-      if (repairParsed.ok) return { ok: true, value: repairParsed.value, public: { strategy: `${candidate.strategy}+shape_repair`, repair_applied: true, attempts } };
+      const repairParsed = tryParseJson(repaired, rootKey);
+      attempts.push({ strategy: `${candidate.strategy}+shape_repair`, ok: repairParsed.ok, error: repairParsed.error || null, root_key: rootKey });
+      if (repairParsed.ok) return { ok: true, value: repairParsed.value, public: { strategy: `${candidate.strategy}+shape_repair`, repair_applied: true, root_key: rootKey, attempts } };
     }
   }
 
-  return { ok: false, error: attempts.at(-1)?.error || "No parseable terminal JSON object found.", public: { attempts } };
+  return { ok: false, error: attempts.at(-1)?.error || `No parseable JSON object found for root ${rootKey}.`, public: { root_key: rootKey, attempts } };
 }
 
-function tryParseJson(value) {
+function tryParseJson(value, rootKey = FINAL_TERMINAL_ROOT_KEY) {
   try {
     const parsed = JSON.parse(value);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return { ok: false, error: "Terminal JSON must be one object root." };
-    const rootCheck = validateTerminalRoot(parsed);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return { ok: false, error: "JSON output must be one object root." };
+    const rootCheck = validateJsonRoot(parsed, rootKey);
     if (!rootCheck.ok) return { ok: false, error: rootCheck.error };
     return { ok: true, value: parsed };
   } catch (err) {
@@ -991,15 +1720,20 @@ function tryParseJson(value) {
 }
 
 function validateTerminalRoot(parsed) {
+  return validateJsonRoot(parsed, FINAL_TERMINAL_ROOT_KEY);
+}
+
+function validateJsonRoot(parsed, rootKey = FINAL_TERMINAL_ROOT_KEY) {
   const keys = Object.keys(parsed || {});
-  if (!Object.prototype.hasOwnProperty.call(parsed, "final_output_handoff")) {
-    return { ok: false, error: "TERMINAL_ROOT_INVALID: final_output_handoff root missing." };
+  const rootLabel = rootKey === FINAL_TERMINAL_ROOT_KEY ? "TERMINAL_ROOT_INVALID" : "JSON_ROOT_INVALID";
+  if (!Object.prototype.hasOwnProperty.call(parsed, rootKey)) {
+    return { ok: false, error: `${rootLabel}: ${rootKey} root missing.` };
   }
   if (keys.length !== 1) {
-    return { ok: false, error: `TERMINAL_ROOT_INVALID: expected only final_output_handoff root, received ${keys.join(",")}.` };
+    return { ok: false, error: `${rootLabel}: expected only ${rootKey} root, received ${keys.join(",")}.` };
   }
-  if (!parsed.final_output_handoff || typeof parsed.final_output_handoff !== "object" || Array.isArray(parsed.final_output_handoff)) {
-    return { ok: false, error: "TERMINAL_ROOT_INVALID: final_output_handoff must be an object." };
+  if (!parsed[rootKey] || typeof parsed[rootKey] !== "object" || Array.isArray(parsed[rootKey])) {
+    return { ok: false, error: `${rootLabel}: ${rootKey} must be an object.` };
   }
   return { ok: true };
 }
@@ -1096,7 +1830,7 @@ async function optionalModule(relativePath) {
   catch (_err) { return null; }
 }
 
-function buildGeminiSuccess(result, attempts) {
+function buildGeminiSuccess(result, attempts, modelTiers = MODEL_TIERS, terminalRootKey = FINAL_TERMINAL_ROOT_KEY) {
   const last = result.attempt;
   return {
     text: result.text,
@@ -1118,8 +1852,9 @@ function buildGeminiSuccess(result, attempts) {
       finish_reason: last.finish_reason || null,
       provider_warnings: last.provider_warnings || [],
       terminal_json_validation: result.meta?.terminalJsonValidation || null,
+      terminal_json_validation_root_key: terminalRootKey,
       model_attempts: attempts,
-      model_tiers: MODEL_TIERS
+      model_tiers: modelTiers
     }
   };
 }

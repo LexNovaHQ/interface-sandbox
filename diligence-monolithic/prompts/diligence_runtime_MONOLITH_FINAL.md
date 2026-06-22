@@ -54,7 +54,13 @@ controls:
 
 `M2.S1.C5` Module II may form an internal ignition plan, phase plan, and advance map. These controls are runtime instructions only and must not appear as downstream profiles, report branches, or terminal output branches.
 
-`M2.S1.C6` The model performs the full monolith sequence internally. External code may submit the prompt, provide the input payload, receive the terminal JSON, perform mechanical JSON parsing or formatting repair, and render output. External code must not create evidence, derive fields, assign registry statuses, rewrite locked objects, or create substantive findings.
+`M2.S1.C6` The model performs the full monolith sequence internally. External code may submit the prompt, provide the input payload, receive the terminal JSON, perform mechanical JSON parsing or formatting repair, render output, and, in `url` or `url_plus_text` modes only, perform the Module VI runtime fetch bridge after Module VI creates `m6_url_fetch_manifest`.
+
+`M2.S1.C6A` The Module VI runtime fetch bridge is mechanical transport only. External code may fetch public URLs requested or authorized by Module VI, extract readable public text where feasible, record fetch status, record final URL, record content metadata, record hashes where feasible, and return raw candidate material through `m6_fetch_fulfillment`.
+
+`M2.S1.C6B` External code must not create evidence, admit evidence, classify source family finally, assign source packages, derive target facts, derive feature facts, classify legal substance, infer data provenance substance, assign registry statuses, create challenge findings, rewrite locked objects, create `source_discovery_handoff`, or create final handoff substance.
+
+`M2.S1.C6C` `m6_url_fetch_manifest` and `m6_fetch_fulfillment` are temporary runtime support artifacts only. They are not canonical state objects, not admitted evidence, not downstream handoffs, not report branches, and not terminal output roots.
 
 `M2.S1.C7` Module II treats Modules III, IV, and V as governing constants loaded before substantive execution.
 
@@ -102,15 +108,18 @@ synthetic_demo
 
 `M2.T1.C2` Module VI is responsible for source extraction and evidence indexing under the selected source mode.
 
+`M2.T1.C3` In `url` and `url_plus_text` modes, `m6_url_fetch_manifest` and `m6_fetch_fulfillment` may exist as runtime support artifacts for Module VI only. They are not required upstream source evidence packets and do not replace Module VI source extraction, evidence admission, source-family classification, package routing, or `source_discovery_handoff`.
+
+`M2.T1.C4` `m6_url_fetch_manifest` is created by Module VI as a temporary fetch-request handover to runtime/server. `m6_fetch_fulfillment` is returned by runtime/server as raw candidate material for Module VI review.
 ---
 
 ## M2.S3 — Source Mode Router
 
-`M2.S3.C1` `url` mode means Module VI must perform Gemini-grounded public source extraction from the submitted `target_url`.
+`M2.S3.C1` `url` mode means Module VI must perform Gemini-grounded public source discovery from the submitted `target_url`. Where the Module VI runtime fetch bridge is available, Module VI may first create `m6_url_fetch_manifest`, hand it to runtime/server for mechanical public URL fetching, receive `m6_fetch_fulfillment` as raw candidate material, and then perform Module VI evidence admission, source-family classification, lossless evidence preservation, soft route indexing, and `source_discovery_handoff` locking.
 
 `M2.S3.C2` `text` mode means Module VI must index the submitted `pasted_public_material` only and must not search or browse.
 
-`M2.S3.C3` `url_plus_text` mode means Module VI must perform Gemini-grounded public source extraction from `target_url` and then index submitted public pasted material as additional first-party material where safe.
+`M2.S3.C3` `url_plus_text` mode means Module VI must perform Gemini-grounded public source discovery from `target_url`, may use the Module VI runtime fetch bridge where available, and must then index submitted public pasted material as additional first-party material where safe. Runtime-fetched material and pasted material remain candidate material until Module VI admits them into `source_discovery_handoff`.
 
 `M2.S3.C4` `synthetic_demo` mode means Module VI must index only the supplied synthetic/demo material and must carry a synthetic/demo limitation through terminal emission.
 
@@ -119,6 +128,8 @@ synthetic_demo
 `M2.S3.C6` Module II must not simulate source collection, candidate availability, page content, evidence refs, source routes, document availability, registry references, or downstream objects.
 
 `M2.S3.C7` If source material is unavailable, sparse, inaccessible, or insufficient, Module VI must record absence, access failure, insufficient text, limitation, or controlled failure rather than inventing substitute material.
+
+`M2.S3.C8` Runtime/server fetch fulfillment does not satisfy evidence admission. If source material is unavailable, sparse, inaccessible, insufficient, or bridge-fetched but not admissible, Module VI must record absence, access failure, insufficient text, limitation, or controlled failure rather than inventing substitute material.
 
 ---
 
@@ -148,7 +159,7 @@ synthetic_demo
 
 `M2.S5.C2` Runtime Preparation is not substantive diligence. Runtime Preparation loads Module II, Module III, Module IV, and Module V.
 
-`M2.S5.C3` Phase 1 is Source Extraction and Evidence Indexing. Module VI is Phase 1.
+`M2.S5.C3` Phase 1 is Source Extraction and Evidence Indexing. Module VI is Phase 1. In `url` and `url_plus_text` modes, Phase 1 may include the Module VI runtime fetch bridge sequence: Module VI manifest generation, runtime/server mechanical fetch fulfillment, Module VI raw-candidate review, Module VI evidence admission, and Module VI source handoff lock.
 
 `M2.S5.C4` Phase 1.5 is the Evidence Lock Checkpoint. Phase 1.5 confirms that `source_discovery_handoff` is safe for downstream use or that limitations/failure routing are explicit.
 
@@ -158,7 +169,7 @@ synthetic_demo
 
 `M2.S5.C7` Phase 2 must not begin until Phase 1 has locked `source_discovery_handoff` as `LOCKED` or `LOCKED_WITH_LIMITATIONS`, or has produced a controlled-failure route that Module II permits to proceed.
 
-`M2.S5.C8` No Module after Module VI may search, browse, crawl, scout, probe, collect, discover, or expand source material.
+`M2.S5.C8` No Module after Module VI may search, browse, crawl, scout, probe, fetch, collect, discover, or expand source material. Runtime/server mechanical fetch fulfillment is permitted only inside Phase 1, only for Module VI, only in `url` and `url_plus_text` modes, and only as raw candidate transport before `source_discovery_handoff` locks.
 
 `M2.S5.C9` Thin source coverage does not automatically stop execution. Phase 2 may proceed with explicit limitations where evidence custody remains truthful.
 
@@ -241,7 +252,7 @@ phase_resolution_records:
   step: source_extraction
   module: Module VI
   output: source_discovery_handoff
-  rule: Execute Gemini-grounded extraction and evidence indexing in eligible source modes. Phase 2 is forbidden until this locks or is formally limited.
+  rule: Execute Gemini-grounded source discovery, optional Module VI runtime fetch bridge fulfillment, raw-candidate review, evidence admission, and evidence indexing in eligible source modes. Phase 2 is forbidden until source_discovery_handoff locks or is formally limited.
 - table_id: M2.T2B
   row_index: 6
   execution_phase: PHASE_1_5_EVIDENCE_LOCK_CHECKPOINT
@@ -445,7 +456,7 @@ internal_checkpoint_records:
   row_index: 1
   checkpoint: Module VI source extraction checkpoint
   owner_module: Module VI
-  purpose: Confirm source boundary, source family classification, extraction caps, lossless evidence capture, dedupe, limitations, and soft route indexing.
+  purpose: Confirm source boundary, runtime fetch bridge handling where used, raw-candidate review, source family classification, extraction caps, lossless evidence capture, dedupe, limitations, and soft route indexing.
   canonical_state_object: no
   required_before_lock: source_discovery_handoff
 - table_id: M2.T4
@@ -794,13 +805,15 @@ gate_severity_records:
 
 `M2.S11.C1` The model performs all substantive module reasoning inside the monolith.
 
-`M2.S11.C2` External code may submit the prompt, pass user input, receive terminal JSON, perform mechanical JSON parsing or format repair, and render output.
+`M2.S11.C2` External code may submit the prompt, pass user input, receive terminal JSON, perform mechanical JSON parsing or format repair, render output, and perform Module VI runtime fetch bridge fulfillment where Module VI has created or authorized `m6_url_fetch_manifest` in `url` or `url_plus_text` modes.
 
-`M2.S11.C3` External code must not create evidence, derive target facts, derive feature facts, classify legal substance, infer data provenance substance, assign registry statuses, create challenge findings, rewrite locked objects, or create final handoff substance.
+`M2.S11.C3` External code must not create evidence, admit evidence, classify source family finally, route sources into phase packages, derive target facts, derive feature facts, classify legal substance, infer data provenance substance, assign registry statuses, create challenge findings, rewrite locked objects, create `source_discovery_handoff`, or create final handoff substance.
 
 `M2.S11.C4` Model repair must be scoped to the active Module, object path, field, row, route, gate, handoff branch, or terminal-shape issue.
 
 `M2.S11.C5` Code-side mechanical repair must not change substance.
+
+`M2.S11.C6` Code-side runtime fetch fulfillment must return raw candidate material only. Any candidate returned through `m6_fetch_fulfillment` becomes usable evidence only if Module VI admits it into `source_discovery_handoff`.
 
 ---
 
@@ -1051,7 +1064,7 @@ recommendation prose
 |---|---|---|
 | `MODULE I` | system identity, mandate, target scope, module supremacy | field derivation, registry row logic, handoff branch shape |
 | `MODULE II` | runtime sequence, source-mode branching, phase separation, advance gates, controlled-failure routing | substantive findings, profile fields, registry statuses |
-| `MODULE VI SOURCE EXTRACTION PROTOCOL` | source extraction, source admissibility, Evidence Buffer construction, artifact inventory, source-family classification, soft route indexing, absence/access records, source custody | target profiling, feature profiling, legal cartography analysis, data provenance inference, registry evaluation, final compilation |
+| `MODULE VI SOURCE EXTRACTION PROTOCOL` | source extraction, source admissibility, Module VI runtime fetch bridge authority, `m6_url_fetch_manifest`, `m6_fetch_fulfillment`, Evidence Buffer construction, artifact inventory, source-family classification, soft route indexing, absence/access records, source custody | target profiling, feature profiling, legal cartography analysis, data provenance inference, registry evaluation, final compilation |
 | `MODULE-LOCAL FIELD DERIVATION TABLES` | field meaning, purpose, source route, derivation rule, empty-state rule, evidence requirement, and owner Module as embedded inside each owner Module's FD inventory | source extraction, object custody, registry row canon, terminal rendering |
 | `MODULE IV` | canonical state objects, handoff custody, object ownership, output paths, lock status, downstream consumption | field meaning, field derivation, registry vocabulary |
 | `MODULE V` | working ledger, provenance events, repair/supersession history, limitation carry-forward, auditability | substantive findings, source extraction, source admission, object mutation |
@@ -1065,7 +1078,9 @@ recommendation prose
 
 `M3.T1.C2` Prior drafts, migration notes, examples, debug artifacts, builder comments, implementation scaffolding, and informal planning material create no runtime authority unless promoted into `M3.T1`.
 
-`M3.T1.C3` Source authority belongs to `MODULE VI SOURCE EXTRACTION PROTOCOL` only. No prebuilt source packet, prior extraction layer, implementation artifact, or model memory has independent authority over source admissibility.
+`M3.T1.C3` Source authority belongs to `MODULE VI SOURCE EXTRACTION PROTOCOL` only. No prebuilt source packet, prior extraction layer, implementation artifact, runtime fetch artifact, or model memory has independent authority over source admissibility.
+
+`M3.T1.C4` `m6_url_fetch_manifest` and `m6_fetch_fulfillment` are Module VI runtime support artifacts. They have no independent authority over evidence admission, source-family classification, package routing, field derivation, registry evaluation, final handoff compilation, or terminal emission.
 
 ---
 
@@ -1075,9 +1090,9 @@ recommendation prose
 
 `M3.S2.C2` If the decision concerns runtime order, source mode, phase separation, advance gating, internal checkpoints, repair routing, or controlled-failure routing, apply `MODULE II`.
 
-`M3.S2.C3` If the decision concerns source extraction, source boundary, source admissibility, Evidence Buffer construction, artifact inventory, source-family classification, soft route indexing, absence/access status, insufficient-text status, or lossless evidence custody, apply `MODULE VI SOURCE EXTRACTION PROTOCOL`.
+`M3.S2.C3` If the decision concerns source extraction, source boundary, source admissibility, Module VI runtime fetch bridge use, `m6_url_fetch_manifest`, `m6_fetch_fulfillment`, Evidence Buffer construction, artifact inventory, source-family classification, soft route indexing, absence/access status, insufficient-text status, or lossless evidence custody, apply `MODULE VI SOURCE EXTRACTION PROTOCOL`.
 
-`M3.S2.C4` If the decision concerns whether a source lead, snippet, candidate page, pasted material, hosted governance page, or discovered public page is usable evidence, apply `MODULE VI SOURCE EXTRACTION PROTOCOL` and the Global Evidence Admission Rule.
+`M3.S2.C4` If the decision concerns whether a source lead, snippet, candidate page, pasted material, hosted governance page, runtime-fetched page, or discovered public page is usable evidence, apply `MODULE VI SOURCE EXTRACTION PROTOCOL` and the Global Evidence Admission Rule.
 
 `M3.S2.C5` If the decision concerns field meaning, derivation logic, empty-state handling, evidence requirement, or owner Module, apply `MODULE-LOCAL FIELD DERIVATION TABLES`.
 
@@ -1141,7 +1156,7 @@ recommendation prose
 
 `M3.S5.C4` If a Module requires a rule, value, term, field, object, or path not authorized by a governing reference, mark the relevant authority gap instead of inventing it.
 
-`M3.S5.C5` If a downstream Module needs evidence not present in `source_discovery_handoff`, it must use limitation, absence/access handling, repair routing, or controlled failure. It must not create a new source path or substitute model memory.
+`M3.S5.C5` If a downstream Module needs evidence not present in `source_discovery_handoff`, it must use limitation, absence/access handling, repair routing, or controlled failure. It must not create a new source path, use `m6_fetch_fulfillment` directly, reopen the runtime fetch bridge, or substitute model memory.
 
 ---
 
@@ -1153,7 +1168,7 @@ recommendation prose
 
 `M3.S6.C3` Runtime-order, phase-separation, and source-mode conflicts resolve to `MODULE II`.
 
-`M3.S6.C4` Source-extraction, evidence-admission, source-family, soft-route, absence/access, and source-custody conflicts resolve to `MODULE VI SOURCE EXTRACTION PROTOCOL`.
+`M3.S6.C4` Source-extraction, runtime fetch bridge, `m6_url_fetch_manifest`, `m6_fetch_fulfillment`, evidence-admission, source-family, soft-route, absence/access, and source-custody conflicts resolve to `MODULE VI SOURCE EXTRACTION PROTOCOL`.
 
 `M3.S6.C5` Field-meaning conflicts resolve to `MODULE-LOCAL FIELD DERIVATION TABLES`.
 
@@ -1216,6 +1231,12 @@ recommendation prose
 `M4.S1.C4` Field meaning remains controlled by `MODULE-LOCAL FIELD DERIVATION TABLES`.
 
 `M4.S1.C5` Ledger and retention remain controlled by Module V.
+
+`M4.S1.C6` Module IV also classifies expressly authorized runtime support artifacts that may exist during execution but are not canonical state objects.
+
+`M4.S1.C7` `m6_url_fetch_manifest` and `m6_fetch_fulfillment` are runtime support artifacts only. They are not canonical state objects, not admitted evidence, not downstream handoffs, not report branches, not terminal roots, and not substitutes for `source_discovery_handoff`.
+
+`M4.S1.C8` Module IV custody rules permit runtime support artifacts only where an owner Module expressly authorizes them. For `m6_url_fetch_manifest` and `m6_fetch_fulfillment`, the controlling owner Module is Module VI.
 
 ---
 
@@ -1312,6 +1333,56 @@ canonical_state_custody_records:
 
 ---
 
+### M4.T1A — Non-Canonical Runtime Support Artifact Boundary
+
+```yaml
+runtime_support_artifact_records:
+- table_id: M4.T1A
+  row_index: 1
+  support_artifact: '`m6_url_fetch_manifest`'
+  canonical_state_object: false
+  controlling_module: Module VI
+  mechanical_handler: runtime/server
+  permitted_modes: [url, url_plus_text]
+  purpose: temporary Module VI fetch-request handover for public candidate URLs
+  admitted_evidence: false
+  downstream_handoff: false
+  terminal_root: false
+  may_create_source_discovery_handoff: false
+  first_allowed_use: runtime/server mechanical public URL fetch fulfillment
+  final_authority: Module VI SOURCE EXTRACTION PROTOCOL
+  forbidden_consumers: [Module VII, Module VIII, Module IX, Module X, Module XI, Module XII, Module XIII, Module XIV]
+  allowed_projection: source_call_card, coverage_limitations, non_routed_sources, Module V ledger rows, technical audit projection where material
+- table_id: M4.T1A
+  row_index: 2
+  support_artifact: '`m6_fetch_fulfillment`'
+  canonical_state_object: false
+  controlling_module: Module VI
+  mechanical_handler: runtime/server
+  permitted_modes: [url, url_plus_text]
+  purpose: temporary raw candidate material returned from runtime/server mechanical public URL fetch fulfillment
+  admitted_evidence: false
+  downstream_handoff: false
+  terminal_root: false
+  may_create_source_discovery_handoff: false
+  first_allowed_use: Module VI raw-candidate review, evidence firewall, classification, dedupe, limitation, and admission decision
+  final_authority: Module VI SOURCE EXTRACTION PROTOCOL
+  forbidden_consumers: [Module VII, Module VIII, Module IX, Module X, Module XI, Module XII, Module XIII, Module XIV]
+  allowed_projection: source_call_card, coverage_limitations, non_routed_sources, Module V ledger rows, technical audit projection where material
+```
+`M4.T1A.C1` Runtime support artifacts listed in M4.T1A are not primary state objects and must not be added to M4.T1.
+
+`M4.T1A.C2` Runtime support artifacts have no independent custody authority. They may be used only according to the controlling Module’s rules.
+
+`M4.T1A.C3` For m6_url_fetch_manifest and m6_fetch_fulfillment, Module VI is the only Module that may decide whether returned material becomes admitted evidence.
+
+`M4.T1A.C4` Downstream Modules may not consume m6_url_fetch_manifest or m6_fetch_fulfillment directly. They may consume only the resulting locked source_discovery_handoff, admitted evidence IDs, absence/access records, limitations, and Module V ledger rows.
+
+`M4.T1A.C5` If m6_url_fetch_manifest or m6_fetch_fulfillment appears as a canonical state object, terminal root, downstream profile, substitute handoff, report branch, Vault/Assembly branch, or emitted compatibility wrapper, classify the defect as REPAIRABLE_FAILURE if isolated and removable, or CRITICAL_BLOCKER if it affects evidence custody, downstream routing, or terminal validity.
+
+
+---
+
 ## M4.S2 — Lock Status Rule
 
 `M4.S2.C1` Each canonical state object must carry one lifecycle status.
@@ -1333,6 +1404,10 @@ CONTROLLED_FAILURE
 `M4.S2.C2C` A downstream Module must not copy challenge, handoff, terminal, or checkpoint statuses into canonical upstream state-object `lock_status`.
 
 `M4.S2.C2D` If a non-canonical status appears in a canonical state object’s `lock_status`, route to the owning Module or Module XIII repair depending on where the leak appears.
+
+`M4.S2.C2E` Runtime support artifacts must not carry canonical state-object `lock_status` values. `m6_url_fetch_manifest.status = "FETCH_REQUEST_ONLY_NOT_EVIDENCE"` and `m6_fetch_fulfillment.status = "RAW_FETCH_FULFILLMENT_ONLY_NOT_ADMITTED_EVIDENCE"` are support-artifact status labels only, not canonical lifecycle statuses.
+
+`M4.S2.C2F` A runtime support artifact status must not be copied into `source_discovery_handoff.lock_status` or any downstream canonical state-object `lock_status`.
 
 `M4.S2.C3` A state object locks only when its owner Module marks it `LOCKED` or `LOCKED_WITH_LIMITATIONS`.
 
@@ -1358,6 +1433,12 @@ CONTROLLED_FAILURE
 
 `M4.S3.C6` Module XIII may normalize display labels only inside `final_output_handoff.screen_report_payload`; it may not mutate canonical upstream objects.
 
+`M4.S3.C7` Downstream Modules VII–XIV must not consume `m6_url_fetch_manifest` or `m6_fetch_fulfillment` directly.
+
+`M4.S3.C8` Downstream Modules may consume bridge-derived material only after Module VI has admitted it into `source_discovery_handoff` and assigned valid evidence IDs, absence/access records, limitations, source-family classifications, and package routes.
+
+`M4.S3.C9` Runtime/server mechanical fetch fulfillment is not a downstream Module and does not own custody over evidence. It is a temporary transport function under Module VI authority.
+
 ---
 
 ## M4.S4 — No Alias Rule
@@ -1376,6 +1457,11 @@ CONTROLLED_FAILURE
 | `final_report` | `final_output_handoff` |
 | `evidence_buffer` | `source_discovery_handoff` |
 | `data_profile` | `target_data_provenance_profile` |
+| `m6_url_fetch_manifest` as source object | `source_discovery_handoff` |
+| `m6_fetch_fulfillment` as source object | `source_discovery_handoff` |
+| `runtime_fetch_fulfillment` | `source_discovery_handoff` |
+| `runtime_source_packet` | `source_discovery_handoff` |
+| `server_source_handoff` | `source_discovery_handoff` |
 
 `M4.S4.C4` If an alias appears as the only output for a canonical object, mark repair required or controlled failure depending on recoverability.
 
@@ -1395,6 +1481,10 @@ CONTROLLED_FAILURE
 
 `M4.S4.C12` If an implementation variable, display label, or nested field could be confused with a canonical state object, the owning Module must include a boundary note stating whether it is `CANONICAL_STATE_OBJECT`, `OWNER_AUTHORIZED_NESTED_FIELD`, `DISPLAY_LABEL_ONLY`, or `IMPLEMENTATION_DETAIL_ONLY`.
 
+`M4.S4.C13` `m6_url_fetch_manifest` and `m6_fetch_fulfillment` may appear only as `RUNTIME_SUPPORT_ARTIFACT_ONLY` references where expressly authorized by Module VI, Module II, and Module IV.
+
+`M4.S4.C14` `m6_url_fetch_manifest` and `m6_fetch_fulfillment` must never be used as aliases, replacements, wrappers, compatibility roots, or alternate paths for `source_discovery_handoff`, `lossless_evidence_payload[]`, `evidence_box_manifest[]`, `phase_packages`, or `final_output_handoff`.
+
 ---
 
 ## M4.S5 — Single-Writer Rule
@@ -1413,6 +1503,12 @@ CONTROLLED_FAILURE
 
 `M4.S5.C7` `final_output_handoff` may be written only by Module XIII.
 
+`M4.S5.C8` `source_discovery_handoff` may be created and locked only by Module VI.
+
+`M4.S5.C9` Runtime/server may mechanically create or return `m6_url_fetch_manifest` and `m6_fetch_fulfillment` only as non-canonical support artifacts authorized by Module VI. Runtime/server must not write, lock, replace, repair, or mutate `source_discovery_handoff`.
+
+`M4.S5.C10` A runtime support artifact does not become a state-object writer merely because it contains fetched text, source URLs, status labels, or server family/subfamily hints.
+
 ---
 
 ## M4.S6 — Limitation Carry-Forward Rule
@@ -1426,6 +1522,8 @@ CONTROLLED_FAILURE
 `M4.S6.C4` Module XIII must preserve material limitations in `final_output_handoff.limitations` and in the relevant display/report branches.
 
 `M4.S6.C5` Module XIV must preserve material limitations in terminal JSON.
+
+`M4.S6.C6` Any material limitation arising from `m6_url_fetch_manifest`, `m6_fetch_fulfillment`, runtime fetch failure, partial fetch, access failure, insufficient text, boundary skip, server hint conflict, or known-path self-check gap must carry forward through `source_discovery_handoff.coverage_limitations[]`, Module V ledger rows, and Module XIII final limitations where material.
 
 ---
 
@@ -1466,6 +1564,7 @@ CONTROLLED_FAILURE
   "state_custody_map": {
     "module_id": "M4",
     "canonical_state_objects": [],
+    "runtime_support_artifact_rules": [],
     "owner_module_map": {},
     "first_consumer_map": {},
     "retention_map": {},
@@ -1479,6 +1578,9 @@ CONTROLLED_FAILURE
   }
 }
 ```
+`M4.S8.C2A` `runtime_support_artifact_rules[]` must identify any expressly authorized non-canonical runtime support artifacts, including `m6_url_fetch_manifest` and `m6_fetch_fulfillment` where the Module VI runtime fetch bridge is available.
+
+`M4.S8.C2B` `runtime_support_artifact_rules[]` must state that such artifacts are not canonical state objects, not admitted evidence, not downstream handoffs, not terminal roots, and not substitutes for owner-Module canonical objects.
 
 `M4.S8.C3` Module IV must not emit target facts, feature facts, legal findings, data provenance findings, registry statuses, final handoff branches, rendered report, Vault payload, recommendation prose, or terminal JSON.
 
@@ -1875,7 +1977,11 @@ required_phase_ledger_row_type_records:
 
 `M6.T0A.C1` This duty card applies Module II runtime control and Module V ledger discipline to M6 in prompt-led Gemini execution.
 
-`M6.T0A.C2` This duty card separates model responsibility from mechanical compiler/renderer responsibility only. It does not introduce any external source-collection layer, support artifact, or per-module call wrapper.
+`M6.T0A.C2` This duty card separates model responsibility from mechanical runtime support only. It authorizes one narrow Module VI runtime fetch bridge for `url` and `url_plus_text` modes only. The bridge may create temporary support artifacts named `m6_url_fetch_manifest` and `m6_fetch_fulfillment`, but those artifacts are not canonical state objects, not admitted evidence, not downstream handoffs, not report branches, and not terminal output roots.
+
+`M6.T0A.C2A` The Module VI runtime fetch bridge is a mechanical transport aid controlled by Module VI. It does not create evidence, admit evidence, classify source family finally, assign package routes, derive target/profile/legal/data/registry substance, or create `source_discovery_handoff`.
+
+`M6.T0A.C2B` If the bridge is unavailable, incomplete, or fails to fetch requested material, Module VI must continue through limitation, access-failure, absence, insufficient-text, or controlled-failure handling under this Module. Bridge failure does not authorize source simulation.
 
 ```yaml
 module_duty_card:
@@ -1890,10 +1996,13 @@ module_duty_card:
     - pasted_public_material when source_mode is text or url_plus_text
     - synthetic_demo_payload when source_mode is synthetic_demo
     - Modules III_IV_V governing constants
+    - m6_url_fetch_manifest when produced by the Module VI runtime fetch bridge
+    - m6_fetch_fulfillment when returned by the Module VI runtime fetch bridge
   model_duties:
     - validate_single_target_boundary
     - canonicalize_target_reference
     - use_gemini_search_grounding_in_url_modes
+    - request_runtime_fetch_manifest_in_url_modes_where_bridge_is_available
     - inspect_root_navigation_known_paths_and_search_scout_leads
     - apply_source_firewall_and_hosted_governance_exception
     - classify_candidates_by_family_subfamily_and_route_source
@@ -1908,7 +2017,11 @@ module_duty_card:
     - terminal_json_parse
     - terminal_json_repair_without_substance_change
     - renderer_display_only
+    - module_vi_runtime_fetch_bridge_for_url_and_url_plus_text_modes_only
   forbidden_to_model:
+    - treat_m6_url_fetch_manifest_as_evidence
+    - treat_m6_fetch_fulfillment_as_admitted_evidence
+    - emit_m6_url_fetch_manifest_or_m6_fetch_fulfillment_as_canonical_state_objects
     - use_search_snippets_as_evidence
     - use_third_party_commentary_as_evidence
     - use_prior_model_memory_as_evidence
@@ -1921,7 +2034,6 @@ module_duty_card:
     - emit_trace_debug_or_downstream_profiles
   repair_route: M2.T6 row 1 / Module VI source extraction or indexing defect
 ```
-
 `M6.T0A.C3` If this duty card conflicts with a stricter M6 local rule, the stricter local rule controls.
 
 `M6.T0A.C4` This duty card must not be emitted as a state object, report branch, ledger root, terminal branch, or implementation artifact.
@@ -1939,13 +2051,19 @@ module_duty_card:
 2. Indexing
 ```
 
-`M6.S1A.C3` Extraction means using the submitted target, Gemini search grounding, target-controlled navigation signals, known-path probes, qualifying hosted-governance discovery, and pasted public material to locate admissible public source material.
+`M6.S1A.C3` Extraction means using the submitted target, Gemini search grounding, target-controlled navigation signals, known-path probes, qualifying hosted-governance discovery, pasted public material, and where available the Module VI runtime fetch bridge to locate candidate public source material for Module VI review.
 
 `M6.S1A.C4` Indexing means assigning stable evidence IDs, classifying source family/subfamily, building artifact inventory, preserving observed text, deduping, recording absence/access/insufficient-text states, and assigning soft route packages by reference.
 
 `M6.S1A.C5` Module VI emits one state object only: `source_discovery_handoff`.
 
-`M6.S1A.C6` Module VI is self-contained inside the monolith. It relies only on the execution payload, Gemini-grounded public review, pasted public material where supplied, and Modules III–V governing constants.
+`M6.S1A.C6` Module VI remains self-contained as the sole source-discovery and evidence-admission authority inside the monolith. In `url` and `url_plus_text` modes, Module VI may use the runtime fetch bridge as a mechanical transport aid to fetch public candidate URLs requested or authorized by Module VI.
+
+`M6.S1A.C6A` `m6_url_fetch_manifest` is a temporary fetch-request support artifact only. It is not evidence, not a source package, not a canonical state object, not a downstream handoff, and not a terminal output branch.
+
+`M6.S1A.C6B` `m6_fetch_fulfillment` is a temporary raw-fetch support artifact only. It may contain fetched URL metadata, status, final URL, title, content type, clean text, hashes, text length, fetch failures, and server family/subfamily hints. It is not admitted evidence until Module VI applies the source firewall, classification rules, evidence admission rules, dedupe rules, exact-text preservation rules, package routing rules, limitation rules, and lock gates.
+
+`M6.S1A.C6C` The runtime fetch bridge must not create `source_discovery_handoff`. Only Module VI may create and lock `source_discovery_handoff`.
 
 `M6.S1A.C7` Module VI’s internal extraction doctrine consists of: evidence firewall, source taxonomy, known path bank, route-source priority, caps, exact observed-text preservation, dedupe, absence/access status, and nonblocking limitation handling.
 
@@ -2030,7 +2148,15 @@ module_duty_card:
 
 `M6.S2A.C3` Module VI may also consume Modules III, IV, and V governing constants as preloaded runtime law.
 
-`M6.S2A.C4` Module VI must not require prebuilt extraction artifacts or source material outside the execution payload, pasted public material where supplied, and Gemini-grounded public review.
+`M6.S2A.C4` Module VI must not require prebuilt extraction artifacts or source material outside the execution payload, pasted public material where supplied, Gemini-grounded public review, and the Module VI runtime fetch bridge where expressly available under `M6.S2A.C5–C8`.
+
+`M6.S2A.C5` In `url` and `url_plus_text` modes only, Module VI may receive `m6_url_fetch_manifest` and `m6_fetch_fulfillment` as runtime support artifacts.
+
+`M6.S2A.C6` `m6_url_fetch_manifest` may contain requested candidate URLs, request IDs, route-source hints, expected Module VI family/subfamily hints, priority, known-path basis, and bridge limitation notes. It is a fetch request only.
+
+`M6.S2A.C7` `m6_fetch_fulfillment` may contain fetched candidate URL rows, fetch status, final URL, title, content type, clean text, text/hash metadata, fetch failures, known-path self-check rows, and server family/subfamily hints. It is raw candidate material only.
+
+`M6.S2A.C8` Module VI must independently review every `m6_fetch_fulfillment` candidate before admission. Server hints are non-binding. If a server hint conflicts with Module VI source taxonomy, source substance, or route-source priority, Module VI controls.
 
 ---
 
@@ -2075,7 +2201,8 @@ module_duty_card:
 | multiple unresolved targets | `CONTROLLED_FAILURE` unless target can be unambiguously limited to one target |
 | missing `target_url` in `url` mode | `CONTROLLED_FAILURE` |
 | missing pasted material in `text` mode | `CONTROLLED_FAILURE` |
-| search grounding unavailable in `url` mode | continue only if pasted public material exists; otherwise `LOCKED_WITH_LIMITATIONS` or `CONTROLLED_FAILURE` depending on usable evidence |
+| search grounding unavailable in `url` or `url_plus_text` mode | continue only if pasted public material or runtime-fetch-bridge material supplies usable first-party public candidate material; otherwise `LOCKED_WITH_LIMITATIONS` or `CONTROLLED_FAILURE` depending on usable evidence and recorded limitation |
+| runtime fetch bridge unavailable or failed | continue only if Gemini-grounded review, pasted public material, or other eligible Module VI candidate material supplies usable source material; otherwise record access/tool limitation and route to `LOCKED_WITH_LIMITATIONS` or `CONTROLLED_FAILURE` |
 | no usable public material after extraction and challenge | `CONTROLLED_FAILURE` |
 | sparse but usable public material | `LOCKED_WITH_LIMITATIONS` |
 | legal/data/product family missing after targeted search | record absence/access/coverage limitation; do not fail by default |
@@ -2096,7 +2223,7 @@ module_duty_card:
 
 | Field | Derivation |
 |---|---|
-| `source_call_card` | compact run/source-mode metadata created by Module VI |
+| `source_call_card` | compact run/source-mode metadata created by Module VI, including whether the Module VI runtime fetch bridge was used, whether `m6_url_fetch_manifest` was created, whether `m6_fetch_fulfillment` was received, and whether bridge limitations affect source coverage |
 | `target_ref` | canonical target/domain boundary derived from execution payload and grounded root review |
 | `evidence_box_manifest[]` | metadata index of admitted evidence rows |
 | `lossless_evidence_payload[]` | exact observed source text rows with evidence IDs |
@@ -2670,6 +2797,74 @@ UNKNOWN_NOT_SEARCHED
 
 `M6.S5.C3` Use the complete known path bank in `M6.T6` to generate targeted probes by family.
 
+`M6.S5.C3A` In `url` and `url_plus_text` modes where the runtime fetch bridge is available, Module VI must first create a temporary fetch-request object named `m6_url_fetch_manifest` before final evidence admission begins.
+
+`M6.S5.C3B` `m6_url_fetch_manifest` is the bridge handover object from Module VI to runtime/server fetch fulfillment. It tells the runtime which public candidate URLs Module VI wants mechanically fetched. It is not admitted evidence, not a source package, not a canonical state object, not a downstream handoff, and not a terminal output branch.
+
+`M6.S5.C3C` The manifest subcall must emit only this temporary root:
+
+```json
+{
+  "m6_url_fetch_manifest": {
+    "status": "FETCH_REQUEST_ONLY_NOT_EVIDENCE",
+    "module_id": "M6",
+    "target_url": "",
+    "target_name": "",
+    "source_mode": "url | url_plus_text",
+    "target_boundary": {
+      "root_url": "",
+      "canonical_domain": "",
+      "allowed_hosts": []
+    },
+    "grounding_used": true,
+    "grounding_model_allowed": "gemini-2.5-only",
+    "fetch_requests": [
+      {
+        "request_id": "REQ_001",
+        "url": "",
+        "reason": "ROOT | HEADER | FOOTER | SITEMAP | HASH_ROUTE | KNOWN_PATH_PROBE | SEARCH_SCOUT | COVERAGE_CHALLENGE",
+        "expected_source_family_hint": "TARGET_FAMILY | PRODUCT_FAMILY | LEGAL_FAMILY | DATA_FAMILY | UNKNOWN",
+        "expected_source_subfamily_hint": "",
+        "route_source_hint": "HEADER | FOOTER | SITEMAP | ROOT | HASH_ROUTE | KNOWN_PATH_PROBE | SEARCH_SCOUT | COVERAGE_CHALLENGE",
+        "known_path_basis": "",
+        "priority": "P1 | P2 | P3",
+        "must_fetch": true
+      }
+    ],
+    "known_path_bank_reference": "M6.T6",
+    "data_flow_signal_gate_reference": "M6.T7",
+    "exclusion_rules": [
+      "first_party_boundary_required",
+      "qualifying_hosted_governance_only",
+      "no_search_snippets_as_evidence",
+      "no_third_party_commentary",
+      "no_bruteforced_product_slugs"
+    ],
+    "limitations": []
+  }
+}
+```
+
+`M6.S5.C3D` After emitting `m6_url_fetch_manifest`, the runtime/server may mechanically fetch the requested URLs and return `m6_fetch_fulfillment` to the final monolith call. Runtime/server fetch fulfillment is mechanical transport only.
+
+`M6.S5.C3D1` `m6_fetch_fulfillment` returns raw candidate material to Module VI for review. It does not return admitted evidence.
+
+`M6.S5.C3D2` Module VI must review each returned candidate from `m6_fetch_fulfillment`, apply source boundary, source-family/subfamily classification, evidence firewall, sufficiency review, exact-text preservation, dedupe, and limitation rules, and only then decide whether the candidate becomes admitted evidence.
+
+`M6.S5.C3D3` Only admitted candidates may enter `lossless_evidence_payload[]`, `evidence_box_manifest[]`, `source_family_map`, or `phase_packages`.
+
+`M6.S5.C3D4` Routing occurs only after Module VI admits the candidate as evidence. Server fetch fulfillment must not route material directly into `target_profile_package`, `feature_profile_package`, `legal_cartography_package`, `data_provenance_package`, `registry_support_package`, or `final_source_coverage_package`.
+
+`M6.S5.C3E` Module VI must not treat its own `m6_url_fetch_manifest` as evidence. The manifest is a request list only. Evidence review begins only after Module VI receives and reviews `m6_fetch_fulfillment`.
+
+`M6.S5.C3F` `m6_url_fetch_manifest` must be generated from Module VI authority only: submitted target URL, canonical target boundary, Gemini-grounded root/navigation/sitemap/footer/header/hash-route signals, the complete known path bank in `M6.T6`, discovered product slugs, qualifying hosted-governance candidates, search-scout leads, and coverage challenge.
+
+`M6.S5.C3G` `m6_url_fetch_manifest` must not request brute-forced product slugs. Concrete slug URLs may be requested only when discovered from navigation, sitemap, hash route, root review, or search scout.
+
+`M6.S5.C3H` Runtime code may perform a mechanical known-path self-check against the complete `M6.T6` bank. If Module VI's manifest omits a primary known path that remains within the target boundary, the runtime may fetch that path as raw candidate material and mark it as `known_path_self_check`.
+
+`M6.S5.C3I` Known-path self-check does not admit evidence, satisfy coverage, or override Module VI classification. It only supplies raw candidate material for Module VI review.
+
 `M6.S5.C4` Use Gemini search grounding for missing coverage, not for replacing target-controlled source review.
 
 `M6.S5.C5` Search scout queries must prioritize first-party and company-controlled pages.
@@ -2683,6 +2878,8 @@ UNKNOWN_NOT_SEARCHED
 `M6.S5.C9` Do not fetch or admit weak `/features`, `/solutions`, `/use-cases`, `/blog`, `/customers`, or generic marketing pages merely to fill quota.
 
 `M6.S5.C10` Write Module V row type: `source_candidate_review`.
+
+`M6.S5.C11` If the runtime fetch bridge is used, Module VI must write or preserve Module V ledger rows for: manifest creation, requested URL basis, search-scout basis, known-path basis, omitted primary known paths if any, runtime fetch fulfillment receipt, and known-path self-check additions. These rows must state that `m6_url_fetch_manifest` and `m6_fetch_fulfillment` are temporary support artifacts and not admitted evidence.
 
 ---
 
@@ -2717,6 +2914,12 @@ UNKNOWN_NOT_SEARCHED
 ## M6.S7 — Execution Step 4: Grounded Extraction and Evidence Admission
 
 `M6.S7.C1` For each selected candidate, review the underlying first-party or qualifying hosted-governance page/material.
+
+`M6.S7.C1A` For candidates supplied through `m6_fetch_fulfillment`, Module VI must treat the fetched text as raw candidate material only until the candidate passes the Module VI source boundary, evidence firewall, family/subfamily classification, route-source assignment, sufficiency review, dedupe review, and exact-text preservation requirements.
+
+`M6.S7.C1B` Runtime-fetched `clean_text` may be copied into `raw_text` and/or `clean_text` only after Module VI admits the candidate as evidence and confirms that the text is observed public text from an eligible source. If the text is partial, thin, blocked, malformed, or insufficient, Module VI must route the candidate to `PARTIAL_PRESERVED`, `ACCESS_FAILED`, or `INSUFFICIENT_TEXT` as applicable.
+
+`M6.S7.C1C` Server family, subfamily, artifact, or route hints are non-binding. Module VI must assign final `source_family`, `source_subfamily`, `route_source`, `route_basis`, `artifact_type`, and `artifact_class` under `M6.T5–M6.T9`.
 
 `M6.S7.C2` Admit only if the source passes the source boundary and has sufficient observed public text.
 
@@ -2920,7 +3123,13 @@ UNKNOWN_NOT_SEARCHED
 
 `M6.S13.C2` Lock only if source mode is valid.
 
-`M6.S13.C3` Lock only if search grounding was used in URL modes or tool limitation is explicitly recorded.
+`M6.S13.C3` Lock only if URL-mode public discovery used Gemini search grounding during Module VI manifest generation or direct Module VI public review, or if grounding/tool limitation is explicitly recorded.
+
+`M6.S13.C3A` If the runtime fetch bridge is used, the final monolith call may be non-grounded. This does not violate `M6.S13.C3` if `m6_url_fetch_manifest.grounding_used = true` or an explicit grounding/tool limitation is recorded.
+
+`M6.S13.C3B` If neither Gemini grounding nor a formally recorded grounding/tool limitation exists in `url` or `url_plus_text` mode, Module VI may not set `lock_status = "LOCKED"`.
+
+`M6.S13.C3C` If grounding failed but runtime fetch fulfillment produced usable first-party public material, Module VI may proceed only as `LOCKED_WITH_LIMITATIONS` after recording the grounding limitation, fetch route, and downstream effect.
 
 `M6.S13.C4` Lock only if every admitted evidence row has `evidence_source_id`.
 
@@ -2958,6 +3167,10 @@ UNKNOWN_NOT_SEARCHED
 
 `M6.S14.C1` Module VI emits only `source_discovery_handoff`.
 
+`M6.S14.C1A` `m6_url_fetch_manifest` and `m6_fetch_fulfillment` are runtime support artifacts only. They must not appear as Module VI output roots, canonical state objects, downstream profiles, report branches, Vault/Assembly branches, terminal branches, compatibility wrappers, or substitutes for `source_discovery_handoff`.
+
+`M6.S14.C1B` Module VI may reference bridge use inside `source_call_card`, `coverage_limitations[]`, `non_routed_sources[]`, and Module V ledger rows where material, but the only canonical Module VI output root remains `source_discovery_handoff`.
+
 `M6.S14.C2` `source_discovery_handoff` must contain exactly these top-level fields:
 
 ```json
@@ -2989,14 +3202,30 @@ UNKNOWN_NOT_SEARCHED
 ```json
 {
   "module_id": "M6",
-  "execution_mode": "GEMINI_GROUNDED_MONOLITH",
+  "execution_mode": "GEMINI_GROUNDED_MONOLITH | GEMINI_GROUNDED_MANIFEST_WITH_RUNTIME_FETCH_BRIDGE | TEXT_ONLY_INDEXING | SYNTHETIC_DEMO_INDEXING",
   "source_mode": "url | text | url_plus_text | synthetic_demo",
   "search_grounding_used": true,
+  "search_grounding_scope": "manifest_generation | direct_module_vi_review | not_applicable",
+  "runtime_fetch_bridge_used": true,
+  "runtime_fetch_bridge_scope": "url_modes_only | not_applicable",
+  "m6_url_fetch_manifest_created": true,
+  "m6_fetch_fulfillment_received": true,
+  "bridge_outputs_are_admitted_evidence": false,
+  "server_family_hints_are_binding": false,
+  "module_vi_admission_required_before_routing": true,
   "global_accepted_evidence_cap": 57,
   "caps_are_maximums_not_targets": true,
   "output_root": "source_discovery_handoff"
 }
 ```
+
+`M6.S14.C3A` For `text` and `synthetic_demo` modes, `runtime_fetch_bridge_used`, `m6_url_fetch_manifest_created`, and `m6_fetch_fulfillment_received` may be `false`, and `search_grounding_scope` may be `not_applicable`.
+
+`M6.S14.C3B` For `url` and `url_plus_text` modes where the runtime fetch bridge is available, `search_grounding_scope` must identify whether Gemini grounding was used for manifest generation, direct Module VI public review, or both.
+
+`M6.S14.C3C` `bridge_outputs_are_admitted_evidence` must always be `false`. If this value is `true`, classify it as a `CRITICAL_BLOCKER`.
+
+`M6.S14.C3D` `module_vi_admission_required_before_routing` must always be `true`. Runtime-fetched material may not enter phase packages until Module VI admits it into `source_discovery_handoff`.
 
 `M6.S14.C4` `target_ref` must include:
 
@@ -3027,12 +3256,16 @@ UNKNOWN_NOT_SEARCHED
 * `lossless_payload_is_authoritative_text_source: true`;
 * `module_vi_text_paraphrase_as_evidence_forbidden: true`;
 * `limitations_must_carry_forward: true`;
-* `no_module_after_m6_may_collect_new_sources: true`.
+* `no_module_after_m6_may_collect_new_sources: true`;
+* `runtime_fetch_bridge_outputs_are_not_admitted_evidence: true`;
+* `m6_fetch_fulfillment_requires_module_vi_admission: true`;
+* `server_family_hints_are_non_binding: true`.
 
 `M6.S14.C8` Apply `M6.T0`, `M6.S1C`, `GRK.006`, `GRK.007`, `GRK.015`, and `GRK.016` to the Module VI output boundary.
 
 `M6.S14.C9` Module VI must emit only `source_discovery_handoff`; downstream profiles, report branches, Vault/Assembly branches, final handoff, terminal object, trace, scratchpad, forensic ledger object, debug object, compatibility wrapper, and recommendation prose are forbidden.
 
+`M6.S14.C10` If `m6_url_fetch_manifest` or `m6_fetch_fulfillment` appears as an emitted root, terminal root, report branch, downstream profile, or replacement for any `source_discovery_handoff` field, classify it as a `REPAIRABLE_FAILURE` if isolated and fully removable, or `CRITICAL_BLOCKER` if it affects evidence custody, downstream routing, or terminal validity.
 
 
 # MODULE VII — TARGET PROFILE
