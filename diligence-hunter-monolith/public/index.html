@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interface Diligence Hunter</title>
+  <link rel="stylesheet" href="/ui.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Interface Diligence</p>
+      <h1>Hunter Monolith Runner</h1>
+      <p>One grounded monolith call. No jobs. No server-side source bridge. No fake bucket routing.</p>
+    </section>
+
+    <section class="card">
+      <label>Target URL</label>
+      <input id="targetUrl" value="https://www.sarvam.ai" />
+      <label>Target Name</label>
+      <input id="targetName" value="Sarvam AI" />
+      <label>Optional pasted public material</label>
+      <textarea id="pasted" placeholder="Optional pasted first-party public material"></textarea>
+      <div class="row">
+        <select id="sourceMode">
+          <option value="url">url</option>
+          <option value="url_plus_text">url_plus_text</option>
+          <option value="text">text</option>
+          <option value="synthetic_demo">synthetic_demo</option>
+        </select>
+        <label class="check"><input type="checkbox" id="debugRaw" /> include raw model text</label>
+        <button id="runBtn">Run Diligence</button>
+      </div>
+    </section>
+
+    <section class="card status">
+      <h2>Status</h2>
+      <pre id="status">Idle.</pre>
+    </section>
+
+    <section class="card">
+      <h2>HTML Report</h2>
+      <iframe id="reportFrame"></iframe>
+    </section>
+
+    <section class="card">
+      <h2>JSON Result</h2>
+      <pre id="jsonOut"></pre>
+    </section>
+  </main>
+  <script src="/ui.js"></script>
+</body>
+</html>
