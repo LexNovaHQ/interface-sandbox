@@ -1,0 +1,155 @@
+name: Artifact Backend Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "deploy"
+        type: choice
+        options:
+          - deploy
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Build and syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: diligence-artifact-backend
+        run: npm install
+
+      - name: Syntax check
+        working-directory: diligence-artifact-backend
+        run: npm run check
+
+  deploy:
+    name: Deploy Cloud Run artifact backend
+    needs: check
+    if: inputs.mode == 'deploy'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify deploy context
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$GCP_PROJECT_ID"
+          test -n "$GCP_REGION"
+          test -n "$GCP_ARTIFACT_CLOUD_RUN_SERVICE"
+          test -n "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT"
+          gcloud config set project "$GCP_PROJECT_ID"
+          gcloud config set run/region "$GCP_REGION"
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
+
+      - name: Deploy source to Cloud Run
+        working-directory: diligence-artifact-backend
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+          GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
+          DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
+          SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          PUBLIC_RENDERER_BASE_URL: ${{ secrets.PUBLIC_RENDERER_BASE_URL }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          def quote_yaml(value):
+              value = "" if value is None else str(value)
+              return "'" + value.replace("'", "''") + "'"
+
+          env = {
+              "GCP_PROJECT_ID": os.environ.get("GCP_PROJECT_ID", ""),
+              "GCP_REGION": os.environ.get("GCP_REGION", "asia-south1"),
+              "GCP_CLOUD_RUN_SERVICE": os.environ.get("GCP_ARTIFACT_CLOUD_RUN_SERVICE", "interface-diligence-artifacts"),
+              "FIRESTORE_DATABASE_ID": "(default)",
+              "DRIVE_PARENT_FOLDER_ID": os.environ.get("DRIVE_PARENT_FOLDER_ID", ""),
+              "SHEETS_SPREADSHEET_ID": os.environ.get("SHEETS_SPREADSHEET_ID", ""),
+              "RUNS_SHEET_NAME": "runs",
+              "GPT_ACTION_API_KEY": os.environ.get("GPT_ACTION_API_KEY", ""),
+              "ALLOWED_ORIGIN": os.environ.get("ALLOWED_ORIGIN") or "*",
+              "PUBLIC_RENDERER_BASE_URL": os.environ.get("PUBLIC_RENDERER_BASE_URL", ""),
+              "EXPRESS_JSON_LIMIT": "50mb",
+          }
+
+          missing = [key for key in [
+              "GCP_PROJECT_ID",
+              "GCP_REGION",
+              "GCP_CLOUD_RUN_SERVICE",
+              "DRIVE_PARENT_FOLDER_ID",
+              "SHEETS_SPREADSHEET_ID",
+              "GPT_ACTION_API_KEY",
+          ] if not env.get(key)]
+          if missing:
+              raise SystemExit("Missing artifact backend deploy secret/value(s): " + ", ".join(missing))
+
+          path = Path("/tmp/interface-artifact-backend-env.yaml")
+          path.write_text("\n".join(f"{key}: {quote_yaml(value)}" for key, value in env.items()) + "\n", encoding="utf-8")
+          PY
+
+          gcloud run deploy "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --source . \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --service-account "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
+            --allow-unauthenticated \
+            --env-vars-file /tmp/interface-artifact-backend-env.yaml \
+            --quiet
+
+      - name: Resolve deployed URL
+        id: artifact_backend
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+        run: |
+          set -euo pipefail
+          URL=$(gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format="value(status.url)")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Artifact backend URL: $URL"
+
+      - name: Smoke deployed backend
+        working-directory: diligence-artifact-backend
+        env:
+          ARTIFACT_BACKEND_URL: ${{ steps.artifact_backend.outputs.url }}
+        run: npm run smoke:health
