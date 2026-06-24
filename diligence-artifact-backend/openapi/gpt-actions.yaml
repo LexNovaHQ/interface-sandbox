@@ -1,0 +1,187 @@
+openapi: 3.1.0
+info:
+  title: Interface Diligence Artifact Backend
+  version: 0.1.0
+  description: Save and retrieve per-run diligence artifacts for Custom GPT agents. All reads and writes are scoped by run_id.
+servers:
+  - url: https://YOUR-CLOUD-RUN-URL
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-ln-api-key
+  schemas:
+    CreateRunRequest:
+      type: object
+      required: [target, root_url, source_mode]
+      properties:
+        target:
+          type: string
+        root_url:
+          type: string
+        source_mode:
+          type: string
+          enum: [url, text, url_plus_text, synthetic_demo]
+        created_by:
+          type: string
+          default: operator
+        notes:
+          type: string
+    SaveArtifactRequest:
+      type: object
+      required: [run_id, phase, agent_id, artifact_name, lock_status, artifact]
+      properties:
+        run_id:
+          type: string
+        phase:
+          type: string
+          enum: [M6_M9, M7_M8, M10, M11, M12_M13, M14]
+        agent_id:
+          type: string
+          enum:
+            - agent_1_source_legal
+            - agent_2_target_feature
+            - agent_3_data_privacy
+            - agent_4_exposure_registry
+            - agent_5_challenge_assembly
+            - agent_6_terminal_validator
+            - operator
+        artifact_name:
+          type: string
+          enum:
+            - source_discovery_handoff
+            - legal_cartography_index
+            - target_profile
+            - target_feature_profile
+            - data_provenance_profile
+            - exposure_registry_profile
+            - challenge_gate
+            - final_output_handoff
+            - terminal_validation
+            - renderer_payload
+        lock_status:
+          type: string
+          enum: [CREATED, RUNNING, LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE, COMPLETE]
+        artifact:
+          type: object
+          additionalProperties: true
+    LockPhaseRequest:
+      type: object
+      required: [run_id, phase, agent_id, status]
+      properties:
+        run_id:
+          type: string
+        phase:
+          type: string
+          enum: [M6_M9, M7_M8, M10, M11, M12_M13, M14]
+        agent_id:
+          type: string
+        status:
+          type: string
+          enum: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE, COMPLETE]
+        next_phase:
+          type: string
+          nullable: true
+          enum: [M6_M9, M7_M8, M10, M11, M12_M13, M14]
+        final_report_url:
+          type: string
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Check artifact backend health
+      security: []
+      responses:
+        '200':
+          description: Health status
+  /v1/runs/create:
+    post:
+      operationId: createRun
+      summary: Create a new isolated diligence run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRunRequest'
+      responses:
+        '201':
+          description: Run created
+  /v1/runs/{run_id}:
+    get:
+      operationId: getRun
+      summary: Get one run by exact run_id
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Run status and artifact metadata
+  /v1/artifacts/save:
+    post:
+      operationId: saveArtifact
+      summary: Save one phase artifact under an exact run_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveArtifactRequest'
+      responses:
+        '201':
+          description: Artifact saved
+  /v1/artifacts/{run_id}/{artifact_name}:
+    get:
+      operationId: getArtifact
+      summary: Get one artifact by exact run_id and artifact_name
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: artifact_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: agent_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Artifact payload
+  /v1/phases/lock:
+    post:
+      operationId: lockPhase
+      summary: Mark a phase status and move the run dashboard forward
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LockPhaseRequest'
+      responses:
+        '200':
+          description: Phase locked
+  /v1/renderer/{run_id}:
+    get:
+      operationId: getRendererPayload
+      summary: Get renderer payload by exact run_id
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Renderer payload
