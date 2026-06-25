@@ -9,6 +9,18 @@ export const createRunSchema = z.object({
   notes: z.string().optional().default("")
 });
 
+export const reviewerCreateJobSchema = z.object({
+  target_url: z.string().min(1),
+  target: z.string().optional().default(""),
+  source_mode: z.enum(["url"]).optional().default("url"),
+  created_by: z.string().optional().default("reviewer"),
+  notes: z.string().optional().default("")
+});
+
+export const reviewerAdvanceJobSchema = z.object({
+  max_steps: z.number().int().min(1).max(10).optional().default(1)
+}).optional().default({ max_steps: 1 });
+
 export const saveArtifactSchema = z.object({
   run_id: z.string().min(1),
   phase: z.enum(PHASES),
