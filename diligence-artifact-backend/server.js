@@ -22,6 +22,14 @@ import {
 
 const app = express();
 
+const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
+const AGENT2_REQUIRED_ARTIFACTS = Object.freeze([
+  "target_profile",
+  "target_profile_forensics",
+  "target_feature_profile",
+  "target_feature_profile_forensics"
+]);
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.allowedOrigin === "*" ? true : config.allowedOrigin }));
 app.use(express.json({ limit: config.expressJsonLimit }));
@@ -43,6 +51,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/v1", requireApiKey);
+app.use("/agent2", requireApiKey);
 
 app.post("/v1/runs/create", async (req, res) => {
   try {
@@ -98,63 +107,169 @@ app.get("/v1/runs/:run_id", async (req, res) => {
   }
 });
 
-async function saveArtifactHandler(req, res) {
+app.get("/agent2/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: config.serviceName,
+    agent_id: "agent_2_target_feature",
+    phase: "M7_M8",
+    mode: "gpt_action_artifact_backend"
+  });
+});
+
+app.get("/agent2/runs/:run_id/source-discovery-handoff", async (req, res) => {
   try {
-    requireRuntimeConfig();
-    const body = parseOrThrow(saveArtifactSchema, req.body);
-    assertRunId(body.run_id);
-    assertKnownPhase(body.phase);
-    assertKnownArtifactName(body.artifact_name);
-    assertCanWriteArtifact(body.agent_id, body.artifact_name);
+    const result = await readArtifactObject({
+      run_id: req.params.run_id,
+      artifact_name: "source_discovery_handoff",
+      agent_id: "agent_2_target_feature"
+    });
+    return res.json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
 
-    const run = await getRunRecord(body.run_id);
-    const version = await getNextArtifactVersion(body.run_id, body.artifact_name);
-    const driveResult = await saveJsonArtifactToDrive({
-      run_id: body.run_id,
-      artifact_name: body.artifact_name,
-      version,
-      drive_folder_id: run.drive_folder_id,
-      artifact: body.artifact
+app.get("/agent2/runs/:run_id/legal-cartography-index", async (req, res) => {
+  try {
+    const result = await readArtifactObject({
+      run_id: req.params.run_id,
+      artifact_name: "legal_cartography_index",
+      agent_id: "agent_2_target_feature"
+    });
+    return res.json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+app.post("/agent2/runs/:run_id/target-profile", agent2SaveRoute("target_profile"));
+app.post("/agent2/runs/:run_id/target-profile-forensics", agent2SaveRoute("target_profile_forensics"));
+app.post("/agent2/runs/:run_id/target-feature-profile", agent2SaveRoute("target_feature_profile"));
+app.post("/agent2/runs/:run_id/target-feature-profile-forensics", agent2SaveRoute("target_feature_profile_forensics"));
+
+app.post("/agent2/runs/:run_id/lock-m7-m8", async (req, res) => {
+  try {
+    const lockStatus = req.body?.lock_status || req.body?.status;
+    if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
+
+    if (LOCK_ADVANCE_STATUSES.has(lockStatus)) {
+      const savedArtifacts = Array.isArray(req.body?.saved_artifacts) ? req.body.saved_artifacts : [];
+      const missingFromReceipt = AGENT2_REQUIRED_ARTIFACTS.filter((artifactName) => !savedArtifacts.includes(artifactName));
+      if (missingFromReceipt.length) {
+        throw new Error(`PHASE_LOCK_BLOCKED:M7_M8:missing_saved_artifacts:${missingFromReceipt.join(",")}`);
+      }
+    }
+
+    const result = await lockPhaseObject({
+      run_id: req.params.run_id,
+      phase: "M7_M8",
+      agent_id: "agent_2_target_feature",
+      status: lockStatus,
+      next_phase: LOCK_ADVANCE_STATUSES.has(lockStatus) ? "M10" : null,
+      final_report_url: ""
     });
 
-    const meta = await saveArtifactMetadata({
-      run_id: body.run_id,
-      artifact_name: body.artifact_name,
-      phase: body.phase,
-      agent_id: body.agent_id,
-      lock_status: body.lock_status,
-      version,
-      drive_file_id: driveResult.drive_file_id,
-      drive_web_view_link: driveResult.drive_web_view_link,
-      drive_folder_id: run.drive_folder_id,
-      artifact_size_bytes: driveResult.artifact_size_bytes
-    });
-
-    await updateRunRecord(body.run_id, {
-      current_phase: body.phase,
-      status: body.lock_status
-    });
-
-    return res.status(201).json({
+    return res.json({
       ok: true,
-      run_id: body.run_id,
-      artifact_name: body.artifact_name,
-      version,
-      lock_status: body.lock_status,
-      drive_file_id: meta.drive_file_id,
-      drive_web_view_link: meta.drive_web_view_link,
-      receipt: `${body.artifact_name}_v${version} saved for ${body.run_id}`
+      run_id: result.run_id,
+      phase: result.phase,
+      lock_status: result.status,
+      next_phase: result.next_phase,
+      receipt: `M7_M8 ${result.status} for ${result.run_id}`
     });
   } catch (error) {
     return sendError(res, error);
   }
+});
+
+async function persistArtifact(body) {
+  requireRuntimeConfig();
+  const parsed = parseOrThrow(saveArtifactSchema, body);
+  assertRunId(parsed.run_id);
+  assertKnownPhase(parsed.phase);
+  assertKnownArtifactName(parsed.artifact_name);
+  assertCanWriteArtifact(parsed.agent_id, parsed.artifact_name);
+
+  const run = await getRunRecord(parsed.run_id);
+  const version = await getNextArtifactVersion(parsed.run_id, parsed.artifact_name);
+  const driveResult = await saveJsonArtifactToDrive({
+    run_id: parsed.run_id,
+    artifact_name: parsed.artifact_name,
+    version,
+    drive_folder_id: run.drive_folder_id,
+    artifact: parsed.artifact
+  });
+
+  const meta = await saveArtifactMetadata({
+    run_id: parsed.run_id,
+    artifact_name: parsed.artifact_name,
+    phase: parsed.phase,
+    agent_id: parsed.agent_id,
+    lock_status: parsed.lock_status,
+    version,
+    drive_file_id: driveResult.drive_file_id,
+    drive_web_view_link: driveResult.drive_web_view_link,
+    drive_folder_id: run.drive_folder_id,
+    artifact_size_bytes: driveResult.artifact_size_bytes
+  });
+
+  await updateRunRecord(parsed.run_id, {
+    current_phase: parsed.phase,
+    status: parsed.lock_status
+  });
+
+  return {
+    ok: true,
+    run_id: parsed.run_id,
+    artifact_name: parsed.artifact_name,
+    version,
+    lock_status: parsed.lock_status,
+    drive_file_id: meta.drive_file_id,
+    drive_web_view_link: meta.drive_web_view_link,
+    receipt: `${parsed.artifact_name}_v${version} saved for ${parsed.run_id}`
+  };
+}
+
+async function saveArtifactHandler(req, res) {
+  try {
+    const result = await persistArtifact(req.body);
+    return res.status(201).json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+function agent2SaveRoute(artifactName) {
+  return async (req, res) => {
+    try {
+      const suppliedArtifactName = req.body?.artifact_name;
+      if (suppliedArtifactName && suppliedArtifactName !== artifactName) {
+        throw new Error(`INVALID_ARTIFACT_NAME:${suppliedArtifactName}:expected:${artifactName}`);
+      }
+
+      const result = await persistArtifact({
+        run_id: req.params.run_id,
+        phase: "M7_M8",
+        agent_id: "agent_2_target_feature",
+        artifact_name: artifactName,
+        lock_status: req.body?.lock_status || "LOCKED",
+        artifact: req.body?.artifact
+      });
+      return res.status(201).json(result);
+    } catch (error) {
+      return sendError(res, error);
+    }
+  };
 }
 
 app.post("/v1/artifacts/save", saveArtifactHandler);
 app.post("/v1/artifacts/save-source-discovery", saveArtifactHandler);
 app.post("/v1/artifacts/save-legal-cartography", saveArtifactHandler);
 app.post("/v1/artifacts/save-target-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-target-profile-forensics", saveArtifactHandler);
 app.post("/v1/artifacts/save-target-feature-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-target-feature-profile-forensics", saveArtifactHandler);
 app.post("/v1/artifacts/save-data-provenance-profile", saveArtifactHandler);
 app.post("/v1/artifacts/save-exposure-registry-profile", saveArtifactHandler);
 app.post("/v1/artifacts/save-challenge-gate", saveArtifactHandler);
@@ -162,64 +277,84 @@ app.post("/v1/artifacts/save-final-output-handoff", saveArtifactHandler);
 app.post("/v1/artifacts/save-terminal-validation", saveArtifactHandler);
 app.post("/v1/artifacts/save-renderer-payload", saveArtifactHandler);
 
+async function readArtifactObject({ run_id, artifact_name, agent_id }) {
+  assertRunId(run_id);
+  assertKnownArtifactName(artifact_name);
+  assertCanReadArtifact(agent_id, artifact_name);
+
+  await getRunRecord(run_id);
+  const meta = await getArtifactMetadata(run_id, artifact_name);
+  const artifact = await readJsonArtifactFromDrive(meta.drive_file_id);
+
+  return {
+    ok: true,
+    run_id,
+    artifact_name,
+    version: meta.latest_version || meta.version,
+    lock_status: meta.lock_status,
+    artifact
+  };
+}
+
 app.get("/v1/artifacts/:run_id/:artifact_name", async (req, res) => {
   try {
     const { run_id, artifact_name } = req.params;
     const agentId = resolveAgentId(req);
-    assertRunId(run_id);
-    assertKnownArtifactName(artifact_name);
-    assertCanReadArtifact(agentId, artifact_name);
-
-    await getRunRecord(run_id);
-    const meta = await getArtifactMetadata(run_id, artifact_name);
-    const artifact = await readJsonArtifactFromDrive(meta.drive_file_id);
-
-    return res.json({
-      ok: true,
-      run_id,
-      artifact_name,
-      version: meta.latest_version || meta.version,
-      lock_status: meta.lock_status,
-      artifact
-    });
+    const result = await readArtifactObject({ run_id, artifact_name, agent_id: agentId });
+    return res.json(result);
   } catch (error) {
     return sendError(res, error);
   }
 });
 
-app.post("/v1/phases/lock", async (req, res) => {
-  try {
-    const body = parseOrThrow(lockPhaseSchema, req.body);
-    assertRunId(body.run_id);
-    assertKnownPhase(body.phase);
+async function assertRequiredArtifactsExist(runId, artifactNames) {
+  for (const artifactName of artifactNames) {
+    await getArtifactMetadata(runId, artifactName);
+  }
+}
 
-    const existing = await getRunRecord(body.run_id);
-    const patch = {
-      current_phase: body.next_phase || body.phase,
-      status: body.status,
-      final_report_url: body.final_report_url || existing.final_report_url || ""
-    };
+async function lockPhaseObject(input) {
+  const body = parseOrThrow(lockPhaseSchema, input);
+  assertRunId(body.run_id);
+  assertKnownPhase(body.phase);
 
-    const updated = await updateRunRecord(body.run_id, patch);
-    await updateRunDashboardRow(updated);
-    await logEvent({
-      run_id: body.run_id,
-      event_type: "PHASE_LOCKED",
-      actor: body.agent_id,
-      payload: {
-        phase: body.phase,
-        status: body.status,
-        next_phase: body.next_phase || null
-      }
-    });
+  if (body.phase === "M7_M8" && LOCK_ADVANCE_STATUSES.has(body.status)) {
+    await assertRequiredArtifactsExist(body.run_id, AGENT2_REQUIRED_ARTIFACTS);
+  }
 
-    return res.json({
-      ok: true,
-      run_id: body.run_id,
+  const existing = await getRunRecord(body.run_id);
+  const patch = {
+    current_phase: body.next_phase || body.phase,
+    status: body.status,
+    final_report_url: body.final_report_url || existing.final_report_url || ""
+  };
+
+  const updated = await updateRunRecord(body.run_id, patch);
+  await updateRunDashboardRow(updated);
+  await logEvent({
+    run_id: body.run_id,
+    event_type: "PHASE_LOCKED",
+    actor: body.agent_id,
+    payload: {
       phase: body.phase,
       status: body.status,
       next_phase: body.next_phase || null
-    });
+    }
+  });
+
+  return {
+    ok: true,
+    run_id: body.run_id,
+    phase: body.phase,
+    status: body.status,
+    next_phase: body.next_phase || null
+  };
+}
+
+app.post("/v1/phases/lock", async (req, res) => {
+  try {
+    const result = await lockPhaseObject(req.body);
+    return res.json(result);
   } catch (error) {
     return sendError(res, error);
   }
@@ -258,7 +393,7 @@ function statusForMessage(message) {
   if (message.startsWith("UNAUTHORIZED")) return 401;
   if (message.includes("FORBIDDEN")) return 403;
   if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
-  if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN")) return 400;
+  if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED")) return 400;
   if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500;
   return 500;
 }
