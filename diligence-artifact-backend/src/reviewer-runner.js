@@ -122,7 +122,7 @@ async function runModelPhase({ run, phase, contract }) {
   const result = await callGeminiJson({ prompt, phase });
   const output = result.json;
 
-  validateModelOutput({ phase, output });
+  validateModelOutput({ phase, output, artifacts });
   const phaseLockStatus = resolveModelLockStatus({ phase, output, writes: contract.writes });
 
   for (const artifactName of contract.writes) {
@@ -163,7 +163,7 @@ async function runModelPhase({ run, phase, contract }) {
   });
 }
 
-function validateModelOutput({ phase, output }) {
+function validateModelOutput({ phase, output, artifacts }) {
   if (phase === "M9") {
     const validation = validateM9LegalCartographyIndex(output);
     if (validation.status !== "PASS") {
@@ -173,7 +173,7 @@ function validateModelOutput({ phase, output }) {
   }
 
   if (phase === "M7_M8") {
-    const validation = validateM7M8TargetFeatureOutput(output);
+    const validation = validateM7M8TargetFeatureOutput(output, { artifacts });
     if (validation.status !== "PASS") {
       throw new Error(`M7_M8_VALIDATION_FAILED:${JSON.stringify(validation)}`);
     }
