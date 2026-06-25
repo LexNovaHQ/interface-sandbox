@@ -1,262 +1,338 @@
 openapi: 3.1.0
 info:
-  title: Interface Diligence Agent 2 Artifact Actions
-  version: 0.1.0-agent2
-  description: Narrow Custom GPT Action schema for Agent 2 only. Agent 2 may read Agent 1 M6/M9 artifacts, save M7/M8 artifacts, lock M7_M8, and check backend health.
+  title: Interface Diligence Agent 2 Target Feature Actions
+  version: 1.1.0-agent2
+  description: Narrow backend actions for Agent 2 M7/M8 Target and Product Activity phase. Agent 2 reads M6/M9, saves M7/M8 main and forensics artifacts, then locks M7_M8.
 servers:
   - url: https://interface-diligence-artifacts-461673097382.asia-south1.run.app
 security:
   - ApiKeyAuth: []
+paths:
+  /agent2/health:
+    get:
+      operationId: agent2Health
+      summary: Check Agent 2 backend health.
+      responses:
+        '200':
+          description: Agent 2 health response.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /agent2/runs/{run_id}/source-discovery-handoff:
+    get:
+      operationId: agent2GetSourceDiscoveryHandoff
+      summary: Fetch source_discovery_handoff for Agent 2.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      responses:
+        '200':
+          description: source_discovery_handoff artifact.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactResponse'
+  /agent2/runs/{run_id}/legal-cartography-index:
+    get:
+      operationId: agent2GetLegalCartographyIndex
+      summary: Fetch legal_cartography_index for Agent 2 context and custody.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      responses:
+        '200':
+          description: legal_cartography_index artifact.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactResponse'
+  /agent2/runs/{run_id}/target-profile:
+    post:
+      operationId: agent2SaveTargetProfile
+      summary: Save target_profile artifact.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTargetProfileRequest'
+      responses:
+        '201':
+          description: Save receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveReceipt'
+  /agent2/runs/{run_id}/target-profile-forensics:
+    post:
+      operationId: agent2SaveTargetProfileForensics
+      summary: Save target_profile_forensics artifact.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTargetProfileForensicsRequest'
+      responses:
+        '201':
+          description: Save receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveReceipt'
+  /agent2/runs/{run_id}/target-feature-profile:
+    post:
+      operationId: agent2SaveTargetFeatureProfile
+      summary: Save target_feature_profile artifact.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTargetFeatureProfileRequest'
+      responses:
+        '201':
+          description: Save receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveReceipt'
+  /agent2/runs/{run_id}/target-feature-profile-forensics:
+    post:
+      operationId: agent2SaveTargetFeatureProfileForensics
+      summary: Save target_feature_profile_forensics artifact.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTargetFeatureProfileForensicsRequest'
+      responses:
+        '201':
+          description: Save receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveReceipt'
+  /agent2/runs/{run_id}/lock-m7-m8:
+    post:
+      operationId: agent2LockM7M8
+      summary: Lock Agent 2 phase M7_M8.
+      parameters:
+        - $ref: '#/components/parameters/run_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LockM7M8Request'
+      responses:
+        '200':
+          description: Lock receipt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockReceipt'
 components:
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: x-ln-api-key
+  parameters:
+    run_id:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Existing diligence run ID.
   schemas:
-    Agent2ReadAgentId:
+    LockStatus:
       type: string
       enum:
-        - agent_2_target_feature
-      default: agent_2_target_feature
-    TargetProfileObject:
+        - LOCKED
+        - LOCKED_WITH_LIMITATIONS
+        - REPAIR_REQUIRED
+        - CONTROLLED_FAILURE
+    ArtifactResponse:
       type: object
       required:
-        - target_profile
-      properties:
-        target_profile:
-          type: object
-          description: Full M7 target_profile JSON object.
-          properties:
-            run_id:
-              type: string
-            target:
-              type: string
-            entity_type:
-              type: string
-            target_identity:
-              type: object
-              additionalProperties: true
-            business_context:
-              type: object
-              additionalProperties: true
-            source_limitations:
-              type: array
-              items:
-                type: object
-                additionalProperties: true
-            lock_status:
-              type: string
-          additionalProperties: true
-    TargetFeatureProfileObject:
-      type: object
-      required:
-        - target_feature_profile
-      properties:
-        target_feature_profile:
-          type: object
-          description: Full M8 target_feature_profile JSON object.
-          properties:
-            run_id:
-              type: string
-            target:
-              type: string
-            archetype_derivation:
-              type: object
-              additionalProperties: true
-            features:
-              type: array
-              items:
-                type: object
-                additionalProperties: true
-            source_limitations:
-              type: array
-              items:
-                type: object
-                additionalProperties: true
-            lock_status:
-              type: string
-          additionalProperties: true
-    Agent2SaveTargetProfileRequest:
-      type: object
-      required:
+        - ok
         - run_id
-        - phase
-        - agent_id
         - artifact_name
-        - lock_status
         - artifact
       properties:
+        ok:
+          type: boolean
         run_id:
           type: string
-        phase:
-          type: string
-          enum:
-            - M7_M8
-        agent_id:
-          type: string
-          enum:
-            - agent_2_target_feature
         artifact_name:
           type: string
-          enum:
-            - target_profile
+        version:
+          type: integer
         lock_status:
           type: string
-          enum:
-            - LOCKED
-            - LOCKED_WITH_LIMITATIONS
-            - REPAIR_REQUIRED
-            - CONTROLLED_FAILURE
         artifact:
-          $ref: '#/components/schemas/TargetProfileObject'
-    Agent2SaveTargetFeatureProfileRequest:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
+    SaveReceipt:
       type: object
       required:
+        - ok
         - run_id
-        - phase
-        - agent_id
         - artifact_name
-        - lock_status
-        - artifact
       properties:
+        ok:
+          type: boolean
         run_id:
           type: string
-        phase:
-          type: string
-          enum:
-            - M7_M8
-        agent_id:
-          type: string
-          enum:
-            - agent_2_target_feature
         artifact_name:
           type: string
-          enum:
-            - target_feature_profile
+        version:
+          type: integer
         lock_status:
           type: string
-          enum:
-            - LOCKED
-            - LOCKED_WITH_LIMITATIONS
-            - REPAIR_REQUIRED
-            - CONTROLLED_FAILURE
-        artifact:
-          $ref: '#/components/schemas/TargetFeatureProfileObject'
-    Agent2LockPhaseRequest:
+        receipt:
+          type: string
+      additionalProperties: true
+    LockReceipt:
       type: object
       required:
+        - ok
         - run_id
         - phase
-        - agent_id
-        - status
+        - lock_status
       properties:
+        ok:
+          type: boolean
         run_id:
           type: string
         phase:
-          type: string
-          enum:
-            - M7_M8
-        agent_id:
-          type: string
-          enum:
-            - agent_2_target_feature
-        status:
-          type: string
-          enum:
-            - LOCKED
-            - LOCKED_WITH_LIMITATIONS
-            - REPAIR_REQUIRED
-            - CONTROLLED_FAILURE
+          const: M7_M8
+        lock_status:
+          $ref: '#/components/schemas/LockStatus'
         next_phase:
           type: string
-          enum:
-            - M10
-          default: M10
-        final_report_url:
+          nullable: true
+        receipt:
           type: string
-          default: ""
-paths:
-  /health:
-    get:
-      operationId: agent2Health
-      summary: Check artifact backend health
-      security: []
-      responses:
-        '200':
-          description: Health status
-  /v1/artifacts/{run_id}/source_discovery_handoff:
-    get:
-      operationId: agent2GetSourceDiscoveryHandoff
-      summary: Read Agent 1 source_discovery_handoff by exact run_id
-      parameters:
-        - name: run_id
-          in: path
-          required: true
-          schema:
+      additionalProperties: true
+    SaveTargetProfileRequest:
+      type: object
+      required:
+        - artifact_name
+        - artifact
+      properties:
+        artifact_name:
+          const: target_profile
+        lock_status:
+          $ref: '#/components/schemas/LockStatus'
+        artifact:
+          type: object
+          required:
+            - target_profile
+          properties:
+            target_profile:
+              type: object
+              additionalProperties: true
+          additionalProperties: false
+      additionalProperties: false
+    SaveTargetProfileForensicsRequest:
+      type: object
+      required:
+        - artifact_name
+        - artifact
+      properties:
+        artifact_name:
+          const: target_profile_forensics
+        lock_status:
+          $ref: '#/components/schemas/LockStatus'
+        artifact:
+          type: object
+          required:
+            - target_profile_forensics
+          properties:
+            target_profile_forensics:
+              type: object
+              additionalProperties: true
+          additionalProperties: false
+      additionalProperties: false
+    SaveTargetFeatureProfileRequest:
+      type: object
+      required:
+        - artifact_name
+        - artifact
+      properties:
+        artifact_name:
+          const: target_feature_profile
+        lock_status:
+          $ref: '#/components/schemas/LockStatus'
+        artifact:
+          type: object
+          required:
+            - target_feature_profile
+          properties:
+            target_feature_profile:
+              type: object
+              additionalProperties: true
+          additionalProperties: false
+      additionalProperties: false
+    SaveTargetFeatureProfileForensicsRequest:
+      type: object
+      required:
+        - artifact_name
+        - artifact
+      properties:
+        artifact_name:
+          const: target_feature_profile_forensics
+        lock_status:
+          $ref: '#/components/schemas/LockStatus'
+        artifact:
+          type: object
+          required:
+            - target_feature_profile_forensics
+          properties:
+            target_feature_profile_forensics:
+              type: object
+              additionalProperties: true
+          additionalProperties: false
+      additionalProperties: false
+    LockM7M8Request:
+      type: object
+      required:
+        - phase
+        - lock_status
+        - saved_artifacts
+      properties:
+        phase:
+          const: M7_M8
+        lock_status:
+          $ref: '#/components/schemas/LockStatus'
+        saved_artifacts:
+          type: array
+          minItems: 4
+          items:
+            enum:
+              - target_profile
+              - target_profile_forensics
+              - target_feature_profile
+              - target_feature_profile_forensics
+        limitations:
+          type: array
+          items:
             type: string
-        - name: agent_id
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/Agent2ReadAgentId'
-      responses:
-        '200':
-          description: Source discovery handoff artifact
-  /v1/artifacts/{run_id}/legal_cartography_index:
-    get:
-      operationId: agent2GetLegalCartographyIndex
-      summary: Read Agent 1 legal_cartography_index by exact run_id
-      parameters:
-        - name: run_id
-          in: path
-          required: true
-          schema:
+        repair_required:
+          type: array
+          items:
             type: string
-        - name: agent_id
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/Agent2ReadAgentId'
-      responses:
-        '200':
-          description: Legal cartography index artifact
-  /v1/artifacts/save-target-profile:
-    post:
-      operationId: agent2SaveTargetProfile
-      summary: Save Agent 2 target_profile under an exact run_id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Agent2SaveTargetProfileRequest'
-      responses:
-        '201':
-          description: Target profile artifact saved
-  /v1/artifacts/save-target-feature-profile:
-    post:
-      operationId: agent2SaveTargetFeatureProfile
-      summary: Save Agent 2 target_feature_profile under an exact run_id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Agent2SaveTargetFeatureProfileRequest'
-      responses:
-        '201':
-          description: Target feature profile artifact saved
-  /v1/phases/lock:
-    post:
-      operationId: agent2LockM7M8
-      summary: Lock the Agent 2 M7_M8 phase and route to Agent 3
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Agent2LockPhaseRequest'
-      responses:
-        '200':
-          description: Phase locked
+      additionalProperties: false
