@@ -10,11 +10,7 @@ import { advanceReviewerRun } from "./reviewer-runner.js";
 export const publicReviewerRouter = express.Router();
 
 const windowMs = 60 * 60 * 1000;
-const limits = {
-  create: 5,
-  advance: 80,
-  read: 120
-};
+const limits = { create: 5, advance: 80, read: 120 };
 const buckets = new Map();
 
 publicReviewerRouter.use((req, res, next) => {
@@ -41,7 +37,7 @@ publicReviewerRouter.post("/reviewer/jobs", rateLimit("create"), async (req, res
       root_url: targetUrl,
       source_mode: "url",
       status: "CREATED",
-      current_phase: "URL_MANIFEST",
+      current_phase: "AGENT_1_SCOUT_EXTRACT",
       created_by: "public-reviewer",
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,
@@ -80,12 +76,10 @@ publicReviewerRouter.post("/reviewer/jobs/:run_id/advance", rateLimit("advance")
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
     const maxSteps = Math.min(Number(body.max_steps || 1), 2);
     let result = null;
-
     for (let step = 0; step < maxSteps; step += 1) {
       result = await advanceReviewerRun({ run_id: req.params.run_id });
       if (result.current_phase === "COMPLETE" || result.status === "COMPLETE") break;
     }
-
     return res.json(result);
   } catch (error) {
     return sendError(res, error);
@@ -115,71 +109,16 @@ function rateLimit(kind) {
     const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing;
     current.count += 1;
     buckets.set(key, current);
-
-    if (current.count > limits[kind]) {
-      return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public reviewer ${kind} limit reached.` });
-    }
-
+    if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public reviewer ${kind} limit reached.` });
     return next();
   };
 }
 
-function clientIp(req) {
-  return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim();
-}
-
-function publicRunResponse(run) {
-  return {
-    ok: true,
-    run_id: run.run_id,
-    target: run.target,
-    root_url: run.root_url,
-    status: run.status,
-    current_phase: run.current_phase,
-    final_report_url: run.final_report_url || "",
-    created_at: run.created_at,
-    updated_at: run.updated_at
-  };
-}
-
-function publicArtifactList(artifacts) {
-  return artifacts.map((artifact) => ({
-    artifact_name: artifact.artifact_name,
-    phase: artifact.phase,
-    lock_status: artifact.lock_status,
-    latest_version: artifact.latest_version || artifact.version,
-    updated_at: artifact.updated_at || artifact.created_at
-  }));
-}
-
-function normalizeTargetUrl(value) {
-  const raw = String(value || "").trim();
-  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  const url = new URL(withProtocol);
-  url.hash = "";
-  return url.toString();
-}
-
-function hostFromUrl(value) {
-  return new URL(value).hostname.replace(/^www\./i, "");
-}
-
-function sendError(res, error) {
-  const message = error?.message || String(error);
-  const status = statusForMessage(message);
-  return res.status(status).json({ ok: false, error: publicErrorCode(message), message });
-}
-
-function statusForMessage(message) {
-  if (message.startsWith("UNAUTHORIZED")) return 401;
-  if (message.includes("FORBIDDEN")) return 403;
-  if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
-  if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400;
-  if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500;
-  if (message.startsWith("GEMINI_CALL_FAILED")) return 502;
-  return 500;
-}
-
-function publicErrorCode(message) {
-  return String(message).split(":")[0] || "PUBLIC_REVIEWER_BACKEND_ERROR";
-}
+function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
+function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, status: run.status, current_phase: run.current_phase, final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
+function publicArtifactList(artifacts) { return artifacts.map((artifact) => ({ artifact_name: artifact.artifact_name, phase: artifact.phase, lock_status: artifact.lock_status, latest_version: artifact.latest_version || artifact.version, updated_at: artifact.updated_at || artifact.created_at })); }
+function normalizeTargetUrl(value) { const raw = String(value || "").trim(); const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`; const url = new URL(withProtocol); url.hash = ""; return url.toString(); }
+function hostFromUrl(value) { return new URL(value).hostname.replace(/^www\./i, ""); }
+function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
+function statusForMessage(message) { if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
+function publicErrorCode(message) { return String(message).split(":")[0] || "PUBLIC_REVIEWER_BACKEND_ERROR"; }
