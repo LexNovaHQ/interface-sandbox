@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Interface Diligence Artifact Backend
-  version: 0.1.0
+  version: 0.1.1
   description: Save and retrieve per-run diligence artifacts for Custom GPT agents. All reads and writes are scoped by run_id.
 servers:
-  - url: https://YOUR-CLOUD-RUN-URL
+  - url: https://interface-diligence-artifacts-461673097382.asia-south1.run.app
 security:
   - ApiKeyAuth: []
 components:
@@ -55,7 +55,9 @@ components:
             - source_discovery_handoff
             - legal_cartography_index
             - target_profile
+            - target_profile_forensics
             - target_feature_profile
+            - target_feature_profile_forensics
             - data_provenance_profile
             - exposure_registry_profile
             - challenge_gate
