@@ -129,7 +129,7 @@ jobs:
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
             --service-account "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
-            --allow-unauthenticated \
+            --no-invoker-iam-check \
             --env-vars-file /tmp/interface-artifact-backend-env.yaml \
             --quiet
 
