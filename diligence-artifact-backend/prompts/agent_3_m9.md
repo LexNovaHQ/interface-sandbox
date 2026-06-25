@@ -45,6 +45,32 @@ Never use `m6_authorization_status`.
 Never use `REFERENCED_NOT_AUTHORIZED_BY_M6`.
 Use `source_corpus_status` instead.
 
+## Normalized Vocabulary
+
+Use only these `source_corpus_status` values:
+
+`FOUND_AS_PRIMARY_SOURCE`, `FOUND_EMBEDDED_IN_LEGAL_CORPUS`, `FOUND_AS_LINKED_REFERENCE`, `REFERENCED_BUT_NOT_FETCHED`, `STANDALONE_SOURCE_ABSENT`, `SOURCE_REJECTED_OR_FAILED`, `UNKNOWN_NOT_SEARCHED`.
+
+Use only these row `status` values:
+
+`FOUND_INDEXED`, `FOUND_HOSTED_INDEXED`, `FOUND_EMBEDDED_IN_LEGAL_CORPUS`, `FOUND_THIN`, `STANDALONE_SOURCE_ABSENT`, `ACCESS_FAILED`, `GATED`, `DEFERRED`, `REFERENCED_BUT_NOT_FETCHED`, `SOURCE_REJECTED_OR_FAILED`, `UNKNOWN_NOT_SEARCHED`, `NOT_APPLICABLE_CONTEXTUAL`, `THIN`, `INSUFFICIENT_PUBLIC_MATERIAL`.
+
+Do not use loose runtime words as statuses: `ACTIVE`, `ABSENT`, `REJECTED`, `NOT_FETCHED`.
+
+Use only these `artifact_class` values:
+
+`TERMS_OF_SERVICE`, `CUSTOMER_TERMS`, `EULA`, `ORDER_FORM_TERMS`, `PRIVACY_POLICY`, `COOKIE_POLICY`, `DATA_PROCESSING_AGREEMENT`, `SUBPROCESSOR_LIST`, `DATA_REQUEST_PAGE`, `DATA_RETENTION_POLICY`, `AI_TERMS_POLICY`, `AGENTIC_ADDENDUM`, `HITL_POLICY`, `AI_IMPACT_ASSESSMENT`, `ACCEPTABLE_USE_POLICY`, `CONTENT_POLICY`, `COMMUNITY_GUIDELINES`, `IP_POLICY`, `DMCA_COPYRIGHT_POLICY`, `OPEN_SOURCE_NOTICES`, `SECURITY_POLICY`, `TRUST_CENTER`, `VULNERABILITY_DISCLOSURE`, `STATUS_PAGE`, `SLA_SUPPORT_TERMS`, `SUPPORT_TERMS`, `BILLING_CANCELLATION_TERMS`, `LEGAL_NOTICE_IMPRESSUM`, `NOTICE_PAGE`, `TRANSPARENCY_REPORT`, `HOSTED_LEGAL_ARTIFACT`, `UNKNOWN_LEGAL_ARTIFACT`.
+
+Normalize common drift:
+
+- `LEGAL_HUB` -> `TRUST_CENTER`
+- `DPA` -> `DATA_PROCESSING_AGREEMENT`
+- `SLA` -> `SLA_SUPPORT_TERMS`
+- `ADDITIONAL_TERMS` -> `AI_TERMS_POLICY`
+- `PRIVACY_ADDENDUM` -> `NOTICE_PAGE` or `HOSTED_LEGAL_ARTIFACT`
+- `TERMS_OF_USE` -> `TERMS_OF_SERVICE`
+- security-adjacent plans referenced but not loaded -> `SECURITY_POLICY` or `HOSTED_LEGAL_ARTIFACT`
+
 ## Output Shape
 
 Return exactly:
@@ -100,13 +126,29 @@ Return exactly:
 - `status`
 - `limitation`
 
+`missing_limited_legal_governance_items` rows must use:
+
+- `document_or_artifact`
+- `artifact_class`
+- `source`
+- `source_type`
+- `status`
+- `document_role`
+- `source_family_hint`
+- `host_document`
+- `source_corpus_status`
+- `limitation`
+
 `missing_limited_legal_governance_items` rows must distinguish embedded-found instruments from standalone missing sources.
 
 For embedded annexures, schedules, exhibits, addenda, or attachments inside a loaded host document:
 
 - use the host document URL as source;
 - set `source_corpus_status` to `FOUND_EMBEDDED_IN_LEGAL_CORPUS`;
+- set row `status` to `FOUND_EMBEDDED_IN_LEGAL_CORPUS`;
 - record any absent standalone URL only as a limitation, not as a failure of the embedded instrument.
+
+If a support services annexure or support terms annexure appears in `document_structure_index`, promote it into `document_coverage_index` as a distinct embedded legal instrument using `artifact_class: SLA_SUPPORT_TERMS` or `SUPPORT_TERMS`.
 
 ## Terminal Status
 
