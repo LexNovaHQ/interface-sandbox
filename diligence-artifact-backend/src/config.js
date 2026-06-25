@@ -9,6 +9,10 @@ function csv(name, fallback = "") {
   return env(name, fallback).split(",").map((x) => x.trim()).filter(Boolean);
 }
 
+function bool(name, fallback = "false") {
+  return ["1", "true", "yes", "on"].includes(env(name, fallback).toLowerCase());
+}
+
 export const config = Object.freeze({
   serviceName: SERVICE_NAME,
   port: Number(env("PORT", "8080")),
@@ -23,6 +27,7 @@ export const config = Object.freeze({
   allowedOrigin: env("ALLOWED_ORIGIN", "*"),
   rendererBaseUrl: env("PUBLIC_RENDERER_BASE_URL", ""),
   reviewerPublicBaseUrl: env("REVIEWER_PUBLIC_BASE_URL", ""),
+  publicReviewerEnabled: bool("PUBLIC_REVIEWER_ENABLED", "false"),
   expressJsonLimit: env("EXPRESS_JSON_LIMIT", "50mb"),
   geminiApiKeys: csv("GEMINI_API_KEYS"),
   geminiModel: env("GEMINI_MODEL", "gemini-2.5-flash"),
@@ -40,6 +45,8 @@ export function configStatus() {
     gemini_api_keys_present: config.geminiApiKeys.length > 0,
     gemini_api_key_count: config.geminiApiKeys.length,
     gemini_model: config.geminiModel,
+    public_reviewer_enabled: config.publicReviewerEnabled,
+    reviewer_public_base_url_present: Boolean(config.reviewerPublicBaseUrl),
     runs_sheet_name: config.runsSheetName
   };
 }
