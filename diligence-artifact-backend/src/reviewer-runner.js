@@ -21,7 +21,7 @@ export async function advanceReviewerRun({ run_id }) {
     return { ok: true, run_id, status: "COMPLETE", current_phase: "COMPLETE", advanced: false };
   }
 
-  const phase = run.current_phase || "URL_MANIFEST";
+  const phase = normalizePhase(run.current_phase);
   const contract = getPhaseContract(phase);
 
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
@@ -48,6 +48,11 @@ export async function advanceReviewerRun({ run_id }) {
     current_phase: updated.current_phase,
     final_report_url: updated.final_report_url || ""
   };
+}
+
+function normalizePhase(value) {
+  if (!value || value === "URL_MANIFEST") return "M6";
+  return value;
 }
 
 async function runModelPhase({ run, phase, contract }) {
