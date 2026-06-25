@@ -147,7 +147,7 @@ export const READ_PERMISSIONS = Object.freeze({
   agent_1b_extract: ["deduped_url_manifest"],
   agent_2_m6_bucket_index: AGENT_1_ARTIFACT_NAMES,
   agent_3_m9: ["source_discovery_handoff", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
-  agent_4_m7_m8: ["source_discovery_handoff", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
+  agent_4_m7_m8: ["source_discovery_handoff", "legal_cartography_index", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
   agent_5_m10: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
   agent_6_m11: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
   agent_7_m12: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"],
