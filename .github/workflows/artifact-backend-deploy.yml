@@ -81,10 +81,13 @@ jobs:
           GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
           GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
           GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
           SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
           ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
           PUBLIC_RENDERER_BASE_URL: ${{ secrets.PUBLIC_RENDERER_BASE_URL }}
+          REVIEWER_PUBLIC_BASE_URL: ${{ secrets.REVIEWER_PUBLIC_BASE_URL }}
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -104,8 +107,12 @@ jobs:
               "SHEETS_SPREADSHEET_ID": os.environ.get("SHEETS_SPREADSHEET_ID", ""),
               "RUNS_SHEET_NAME": "runs",
               "GPT_ACTION_API_KEY": os.environ.get("GPT_ACTION_API_KEY", ""),
-              "ALLOWED_ORIGIN": os.environ.get("ALLOWED_ORIGIN") or "*",
+              "GEMINI_API_KEYS": os.environ.get("GEMINI_API_KEYS", ""),
+              "GEMINI_MODEL": os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash",
+              "ALLOWED_ORIGIN": os.environ.get("ALLOWED_ORIGIN") or "https://sandbox.lexnovahq.com",
               "PUBLIC_RENDERER_BASE_URL": os.environ.get("PUBLIC_RENDERER_BASE_URL", ""),
+              "REVIEWER_PUBLIC_BASE_URL": os.environ.get("REVIEWER_PUBLIC_BASE_URL") or "https://sandbox.lexnovahq.com",
+              "PUBLIC_REVIEWER_ENABLED": "true",
               "EXPRESS_JSON_LIMIT": "50mb",
           }
 
@@ -116,6 +123,7 @@ jobs:
               "DRIVE_PARENT_FOLDER_ID",
               "SHEETS_SPREADSHEET_ID",
               "GPT_ACTION_API_KEY",
+              "GEMINI_API_KEYS",
           ] if not env.get(key)]
           if missing:
               raise SystemExit("Missing artifact backend deploy secret/value(s): " + ", ".join(missing))
