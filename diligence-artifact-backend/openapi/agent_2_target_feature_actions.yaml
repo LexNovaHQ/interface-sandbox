@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Interface Diligence Agent 2 Target Feature Actions
-  version: 1.1.0-agent2
-  description: Narrow backend actions for Agent 2 M7/M8 Target and Product Activity phase. Agent 2 reads M6/M9, saves M7/M8 main and forensics artifacts, then locks M7_M8.
+  version: 1.1.1-agent2-gpt-builder-flat
+  description: Flat OpenAPI schema for Agent 2 M7/M8 Target and Product Activity phase. This schema avoids parameter $refs because GPT Builder rejects them.
 servers:
   - url: https://interface-diligence-artifacts-461673097382.asia-south1.run.app
 security:
@@ -19,320 +19,420 @@ paths:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
+                properties:
+                  ok:
+                    type: boolean
+                  service:
+                    type: string
+                  agent_id:
+                    type: string
+                  phase:
+                    type: string
+                  mode:
+                    type: string
   /agent2/runs/{run_id}/source-discovery-handoff:
     get:
       operationId: agent2GetSourceDiscoveryHandoff
       summary: Fetch source_discovery_handoff for Agent 2.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       responses:
         '200':
           description: source_discovery_handoff artifact.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactResponse'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  artifact_name:
+                    type: string
+                  version:
+                    type: integer
+                  lock_status:
+                    type: string
+                  artifact:
+                    type: object
+                    properties:
+                      source_discovery_handoff:
+                        type: object
+                        additionalProperties: true
+                    additionalProperties: true
+                additionalProperties: true
   /agent2/runs/{run_id}/legal-cartography-index:
     get:
       operationId: agent2GetLegalCartographyIndex
       summary: Fetch legal_cartography_index for Agent 2 context and custody.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       responses:
         '200':
           description: legal_cartography_index artifact.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactResponse'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  artifact_name:
+                    type: string
+                  version:
+                    type: integer
+                  lock_status:
+                    type: string
+                  artifact:
+                    type: object
+                    properties:
+                      legal_cartography_index:
+                        type: object
+                        additionalProperties: true
+                    additionalProperties: true
+                additionalProperties: true
   /agent2/runs/{run_id}/target-profile:
     post:
       operationId: agent2SaveTargetProfile
       summary: Save target_profile artifact.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveTargetProfileRequest'
+              type: object
+              required:
+                - artifact_name
+                - artifact
+              properties:
+                artifact_name:
+                  type: string
+                  enum:
+                    - target_profile
+                lock_status:
+                  type: string
+                  enum:
+                    - LOCKED
+                    - LOCKED_WITH_LIMITATIONS
+                    - REPAIR_REQUIRED
+                    - CONTROLLED_FAILURE
+                artifact:
+                  type: object
+                  required:
+                    - target_profile
+                  properties:
+                    target_profile:
+                      type: object
+                      additionalProperties: true
+                  additionalProperties: true
+              additionalProperties: false
       responses:
         '201':
           description: Save receipt.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SaveReceipt'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  artifact_name:
+                    type: string
+                  version:
+                    type: integer
+                  lock_status:
+                    type: string
+                  receipt:
+                    type: string
+                additionalProperties: true
   /agent2/runs/{run_id}/target-profile-forensics:
     post:
       operationId: agent2SaveTargetProfileForensics
       summary: Save target_profile_forensics artifact.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveTargetProfileForensicsRequest'
+              type: object
+              required:
+                - artifact_name
+                - artifact
+              properties:
+                artifact_name:
+                  type: string
+                  enum:
+                    - target_profile_forensics
+                lock_status:
+                  type: string
+                  enum:
+                    - LOCKED
+                    - LOCKED_WITH_LIMITATIONS
+                    - REPAIR_REQUIRED
+                    - CONTROLLED_FAILURE
+                artifact:
+                  type: object
+                  required:
+                    - target_profile_forensics
+                  properties:
+                    target_profile_forensics:
+                      type: object
+                      additionalProperties: true
+                  additionalProperties: true
+              additionalProperties: false
       responses:
         '201':
           description: Save receipt.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SaveReceipt'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  artifact_name:
+                    type: string
+                  version:
+                    type: integer
+                  lock_status:
+                    type: string
+                  receipt:
+                    type: string
+                additionalProperties: true
   /agent2/runs/{run_id}/target-feature-profile:
     post:
       operationId: agent2SaveTargetFeatureProfile
       summary: Save target_feature_profile artifact.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveTargetFeatureProfileRequest'
+              type: object
+              required:
+                - artifact_name
+                - artifact
+              properties:
+                artifact_name:
+                  type: string
+                  enum:
+                    - target_feature_profile
+                lock_status:
+                  type: string
+                  enum:
+                    - LOCKED
+                    - LOCKED_WITH_LIMITATIONS
+                    - REPAIR_REQUIRED
+                    - CONTROLLED_FAILURE
+                artifact:
+                  type: object
+                  required:
+                    - target_feature_profile
+                  properties:
+                    target_feature_profile:
+                      type: object
+                      additionalProperties: true
+                  additionalProperties: true
+              additionalProperties: false
       responses:
         '201':
           description: Save receipt.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SaveReceipt'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  artifact_name:
+                    type: string
+                  version:
+                    type: integer
+                  lock_status:
+                    type: string
+                  receipt:
+                    type: string
+                additionalProperties: true
   /agent2/runs/{run_id}/target-feature-profile-forensics:
     post:
       operationId: agent2SaveTargetFeatureProfileForensics
       summary: Save target_feature_profile_forensics artifact.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveTargetFeatureProfileForensicsRequest'
+              type: object
+              required:
+                - artifact_name
+                - artifact
+              properties:
+                artifact_name:
+                  type: string
+                  enum:
+                    - target_feature_profile_forensics
+                lock_status:
+                  type: string
+                  enum:
+                    - LOCKED
+                    - LOCKED_WITH_LIMITATIONS
+                    - REPAIR_REQUIRED
+                    - CONTROLLED_FAILURE
+                artifact:
+                  type: object
+                  required:
+                    - target_feature_profile_forensics
+                  properties:
+                    target_feature_profile_forensics:
+                      type: object
+                      additionalProperties: true
+                  additionalProperties: true
+              additionalProperties: false
       responses:
         '201':
           description: Save receipt.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SaveReceipt'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  artifact_name:
+                    type: string
+                  version:
+                    type: integer
+                  lock_status:
+                    type: string
+                  receipt:
+                    type: string
+                additionalProperties: true
   /agent2/runs/{run_id}/lock-m7-m8:
     post:
       operationId: agent2LockM7M8
       summary: Lock Agent 2 phase M7_M8.
       parameters:
-        - $ref: '#/components/parameters/run_id'
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Existing diligence run ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LockM7M8Request'
+              type: object
+              required:
+                - phase
+                - lock_status
+                - saved_artifacts
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - M7_M8
+                lock_status:
+                  type: string
+                  enum:
+                    - LOCKED
+                    - LOCKED_WITH_LIMITATIONS
+                    - REPAIR_REQUIRED
+                    - CONTROLLED_FAILURE
+                saved_artifacts:
+                  type: array
+                  minItems: 4
+                  items:
+                    type: string
+                    enum:
+                      - target_profile
+                      - target_profile_forensics
+                      - target_feature_profile
+                      - target_feature_profile_forensics
+                limitations:
+                  type: array
+                  items:
+                    type: string
+                repair_required:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: false
       responses:
         '200':
           description: Lock receipt.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LockReceipt'
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  run_id:
+                    type: string
+                  phase:
+                    type: string
+                  lock_status:
+                    type: string
+                  next_phase:
+                    type: string
+                    nullable: true
+                  receipt:
+                    type: string
+                additionalProperties: true
 components:
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: x-ln-api-key
-  parameters:
-    run_id:
-      name: run_id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Existing diligence run ID.
-  schemas:
-    LockStatus:
-      type: string
-      enum:
-        - LOCKED
-        - LOCKED_WITH_LIMITATIONS
-        - REPAIR_REQUIRED
-        - CONTROLLED_FAILURE
-    ArtifactResponse:
-      type: object
-      required:
-        - ok
-        - run_id
-        - artifact_name
-        - artifact
-      properties:
-        ok:
-          type: boolean
-        run_id:
-          type: string
-        artifact_name:
-          type: string
-        version:
-          type: integer
-        lock_status:
-          type: string
-        artifact:
-          type: object
-          additionalProperties: true
-      additionalProperties: true
-    SaveReceipt:
-      type: object
-      required:
-        - ok
-        - run_id
-        - artifact_name
-      properties:
-        ok:
-          type: boolean
-        run_id:
-          type: string
-        artifact_name:
-          type: string
-        version:
-          type: integer
-        lock_status:
-          type: string
-        receipt:
-          type: string
-      additionalProperties: true
-    LockReceipt:
-      type: object
-      required:
-        - ok
-        - run_id
-        - phase
-        - lock_status
-      properties:
-        ok:
-          type: boolean
-        run_id:
-          type: string
-        phase:
-          const: M7_M8
-        lock_status:
-          $ref: '#/components/schemas/LockStatus'
-        next_phase:
-          type: string
-          nullable: true
-        receipt:
-          type: string
-      additionalProperties: true
-    SaveTargetProfileRequest:
-      type: object
-      required:
-        - artifact_name
-        - artifact
-      properties:
-        artifact_name:
-          const: target_profile
-        lock_status:
-          $ref: '#/components/schemas/LockStatus'
-        artifact:
-          type: object
-          required:
-            - target_profile
-          properties:
-            target_profile:
-              type: object
-              additionalProperties: true
-          additionalProperties: false
-      additionalProperties: false
-    SaveTargetProfileForensicsRequest:
-      type: object
-      required:
-        - artifact_name
-        - artifact
-      properties:
-        artifact_name:
-          const: target_profile_forensics
-        lock_status:
-          $ref: '#/components/schemas/LockStatus'
-        artifact:
-          type: object
-          required:
-            - target_profile_forensics
-          properties:
-            target_profile_forensics:
-              type: object
-              additionalProperties: true
-          additionalProperties: false
-      additionalProperties: false
-    SaveTargetFeatureProfileRequest:
-      type: object
-      required:
-        - artifact_name
-        - artifact
-      properties:
-        artifact_name:
-          const: target_feature_profile
-        lock_status:
-          $ref: '#/components/schemas/LockStatus'
-        artifact:
-          type: object
-          required:
-            - target_feature_profile
-          properties:
-            target_feature_profile:
-              type: object
-              additionalProperties: true
-          additionalProperties: false
-      additionalProperties: false
-    SaveTargetFeatureProfileForensicsRequest:
-      type: object
-      required:
-        - artifact_name
-        - artifact
-      properties:
-        artifact_name:
-          const: target_feature_profile_forensics
-        lock_status:
-          $ref: '#/components/schemas/LockStatus'
-        artifact:
-          type: object
-          required:
-            - target_feature_profile_forensics
-          properties:
-            target_feature_profile_forensics:
-              type: object
-              additionalProperties: true
-          additionalProperties: false
-      additionalProperties: false
-    LockM7M8Request:
-      type: object
-      required:
-        - phase
-        - lock_status
-        - saved_artifacts
-      properties:
-        phase:
-          const: M7_M8
-        lock_status:
-          $ref: '#/components/schemas/LockStatus'
-        saved_artifacts:
-          type: array
-          minItems: 4
-          items:
-            enum:
-              - target_profile
-              - target_profile_forensics
-              - target_feature_profile
-              - target_feature_profile_forensics
-        limitations:
-          type: array
-          items:
-            type: string
-        repair_required:
-          type: array
-          items:
-            type: string
-      additionalProperties: false
