@@ -4,10 +4,6 @@ import { getDriveClient } from "./google.js";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
-function jsonBody(value) {
-  return Readable.from([`${JSON.stringify(value, null, 2)}\n`]);
-}
-
 async function streamToString(stream) {
   let out = "";
   for await (const chunk of stream) {
@@ -19,18 +15,20 @@ async function streamToString(stream) {
 export async function createRunFolder({ run_id }) {
   const drive = getDriveClient();
   const created = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name: run_id,
       mimeType: FOLDER_MIME,
       parents: [config.driveParentFolderId]
     },
-    fields: "id,name,webViewLink"
+    fields: "id,name,webViewLink,driveId"
   });
 
   return {
     drive_folder_id: created.data.id,
     drive_folder_name: created.data.name,
-    drive_folder_link: created.data.webViewLink
+    drive_folder_link: created.data.webViewLink,
+    drive_id: created.data.driveId || ""
   };
 }
 
@@ -46,6 +44,7 @@ export async function saveJsonArtifactToDrive({ run_id, artifact_name, version, 
   const json = `${JSON.stringify(payload, null, 2)}\n`;
 
   const created = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name: filename,
       mimeType: "application/json",
@@ -55,13 +54,14 @@ export async function saveJsonArtifactToDrive({ run_id, artifact_name, version, 
       mimeType: "application/json",
       body: Readable.from([json])
     },
-    fields: "id,name,webViewLink,size"
+    fields: "id,name,webViewLink,size,driveId"
   });
 
   return {
     drive_file_id: created.data.id,
     drive_filename: created.data.name,
     drive_web_view_link: created.data.webViewLink,
+    drive_id: created.data.driveId || "",
     artifact_size_bytes: Buffer.byteLength(json, "utf8")
   };
 }
@@ -69,7 +69,7 @@ export async function saveJsonArtifactToDrive({ run_id, artifact_name, version, 
 export async function readJsonArtifactFromDrive(fileId) {
   const drive = getDriveClient();
   const response = await drive.files.get(
-    { fileId, alt: "media" },
+    { fileId, alt: "media", supportsAllDrives: true },
     { responseType: "stream" }
   );
   const raw = await streamToString(response.data);
