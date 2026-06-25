@@ -8,6 +8,12 @@ import {
   TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
 } from "./constants.js";
 
+const M7_M8_REFERENCE_FILES = Object.freeze([
+  "REGISTRY_KEY_v3_0.md",
+  "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
+  "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"
+]);
+
 export const PHASE_CONTRACTS = Object.freeze({
   AGENT_1A_URL_MANIFEST: {
     type: "deterministic",
@@ -51,9 +57,11 @@ export const PHASE_CONTRACTS = Object.freeze({
     prompt_file: "agent_4_m7_m8.md",
     reads: [
       "source_discovery_handoff",
+      "legal_cartography_index",
       ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES,
       ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES
     ],
+    references: M7_M8_REFERENCE_FILES,
     writes: [
       "target_profile",
       "target_profile_forensics",
