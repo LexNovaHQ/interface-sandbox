@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Interface Diligence Agent 2 Target Feature Actions
-  version: 1.1.1-agent2-gpt-builder-flat
-  description: Flat OpenAPI schema for Agent 2 M7/M8 Target and Product Activity phase. This schema avoids parameter $refs because GPT Builder rejects them.
+  version: 1.1.2-agent2-gpt-builder-flat
+  description: Flat OpenAPI schema for Agent 2 M7/M8 Target and Product Activity phase. This schema includes explicit components.schemas for GPT Builder compatibility.
 servers:
   - url: https://interface-diligence-artifacts-461673097382.asia-south1.run.app
 security:
@@ -436,3 +436,4 @@ components:
       type: apiKey
       in: header
       name: x-ln-api-key
+  schemas: {}
