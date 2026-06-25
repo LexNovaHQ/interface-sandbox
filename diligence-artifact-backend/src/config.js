@@ -5,6 +5,10 @@ function env(name, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
+function csv(name, fallback = "") {
+  return env(name, fallback).split(",").map((x) => x.trim()).filter(Boolean);
+}
+
 export const config = Object.freeze({
   serviceName: SERVICE_NAME,
   port: Number(env("PORT", "8080")),
@@ -18,7 +22,12 @@ export const config = Object.freeze({
   apiKey: env("GPT_ACTION_API_KEY"),
   allowedOrigin: env("ALLOWED_ORIGIN", "*"),
   rendererBaseUrl: env("PUBLIC_RENDERER_BASE_URL", ""),
-  expressJsonLimit: env("EXPRESS_JSON_LIMIT", "50mb")
+  reviewerPublicBaseUrl: env("REVIEWER_PUBLIC_BASE_URL", ""),
+  expressJsonLimit: env("EXPRESS_JSON_LIMIT", "50mb"),
+  geminiApiKeys: csv("GEMINI_API_KEYS"),
+  geminiModel: env("GEMINI_MODEL", "gemini-2.5-flash"),
+  geminiTimeoutMs: Number(env("GEMINI_TIMEOUT_MS", "240000")),
+  sourceFetchTimeoutMs: Number(env("SOURCE_FETCH_TIMEOUT_MS", "30000"))
 });
 
 export function configStatus() {
@@ -28,6 +37,9 @@ export function configStatus() {
     drive_parent_folder_id_present: Boolean(config.driveParentFolderId),
     sheets_spreadsheet_id_present: Boolean(config.sheetsSpreadsheetId),
     api_key_present: Boolean(config.apiKey),
+    gemini_api_keys_present: config.geminiApiKeys.length > 0,
+    gemini_api_key_count: config.geminiApiKeys.length,
+    gemini_model: config.geminiModel,
     runs_sheet_name: config.runsSheetName
   };
 }
@@ -40,5 +52,11 @@ export function requireRuntimeConfig() {
   if (!config.apiKey) missing.push("GPT_ACTION_API_KEY");
   if (missing.length) {
     throw new Error(`MISSING_RUNTIME_CONFIG:${missing.join(",")}`);
+  }
+}
+
+export function requireGeminiConfig() {
+  if (!config.geminiApiKeys.length) {
+    throw new Error("MISSING_RUNTIME_CONFIG:GEMINI_API_KEYS");
   }
 }
