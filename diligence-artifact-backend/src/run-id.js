@@ -27,7 +27,7 @@ export function createRunId(target = "TARGET", now = new Date()) {
     pad(now.getUTCSeconds())
   ].join("");
 
-  const suffix = crypto.randomBytes(3).toString("hex").toUpperCase();
+  const suffix = String(crypto.randomInt(100000, 1000000));
   return `LN-${stamp}-${time}-${slugifyTarget(target)}-${suffix}`;
 }
 
