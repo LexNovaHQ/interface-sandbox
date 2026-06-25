@@ -6,7 +6,7 @@ Return strict JSON only. No markdown. No commentary. No prose outside JSON.
 
 ## Live Backend Contract
 
-You must write exactly four top-level artifacts:
+Write exactly four top-level artifacts:
 
 - `target_profile`
 - `target_profile_forensics`
@@ -15,17 +15,11 @@ You must write exactly four top-level artifacts:
 
 Do not emit upstream artifacts, downstream artifacts, renderer/report payloads, terminal receipts, compatibility wrappers, or XML-style phase blocks.
 
-Each of the four artifacts must be a JSON object.
-
-The main material artifacts, `target_profile` and `target_feature_profile`, must each include one backend lock field:
-
-- `validation_status`: `LOCKED`, `LOCKED_WITH_LIMITATIONS`, `REPAIR_REQUIRED`, or `CONTROLLED_FAILURE`
-
-Use `LOCKED_WITH_LIMITATIONS` when the output is usable but source material is thin, gated, missing, ambiguous, or only partially supports a field. Use `REPAIR_REQUIRED` only for repairable source/schema defects. Use `CONTROLLED_FAILURE` only when there is no usable target/product corpus.
+Each artifact must be a JSON object. `target_profile` and `target_feature_profile` must each include `validation_status` with one of: `LOCKED`, `LOCKED_WITH_LIMITATIONS`, `REPAIR_REQUIRED`, `CONTROLLED_FAILURE`.
 
 ## Inputs
 
-Use only the artifacts supplied inside `<RUNTIME_PACKET>.upstream_artifacts` and the files supplied inside `<REFERENCE_PACKET>`.
+Use only `<RUNTIME_PACKET>.upstream_artifacts` and `<REFERENCE_PACKET>`.
 
 Expected upstream artifacts:
 
@@ -52,11 +46,28 @@ Expected reference files:
 
 Agent 1 is source custody. M6 is source navigation and bucket handoff. M9 is legal cartography. M7/M8 is profile derivation.
 
-M6 is not substantive authority. Do not say a fact is true because M6 says so. Use M6 only to know which backend-loaded source families are available and which limitations are inherited.
+M6 is not substantive authority. Use M6 only to know which backend-loaded source families are available and which limitations are inherited.
 
-M9 is not a legal-risk engine for this phase. Use `legal_cartography_index` only for narrow target-profile identity/legal-notice support, such as legal entity, entity type, registered/notice location, governing law, courts/venue, and legal document limitations. Do not perform legal advice, compliance analysis, enforceability analysis, registry evaluation, exposure scoring, or threat matching.
+Use `legal_cartography_index` only for narrow target-profile identity/legal-notice support: legal entity, entity type, registered/notice location, governing law, courts/venue, and legal document limitations. Do not perform compliance analysis, enforceability analysis, registry evaluation, exposure scoring, or threat matching.
 
 Do not browse, search, crawl, fetch, infer new URLs, or use memory/general knowledge about the target.
+
+## Source ID Custody Rules
+
+Source IDs are immutable custody anchors. Never relabel, reorder, infer, or remap a source ID.
+
+A source ID such as `P1_PRODUCT.SRC.003` means only the exact source object carrying that ID inside the loaded upstream artifact. It does not mean the third product in your output.
+
+Every emitted `*.SRC.NNN` reference must be copied from the loaded upstream artifacts exactly. Before using any source ID, verify that the ID exists in the corresponding loaded artifact and copy its exact URL.
+
+Every object that contains a `*.SRC.NNN` reference must also include a URL field copied from the upstream source object:
+
+- use `source_url` when the object cites one source ID;
+- use `source_urls` as an object keyed by source ID when the object cites multiple source IDs.
+
+If you cannot locate the exact upstream URL for a source ID, do not use that source ID. Use a limitation row instead.
+
+Hard rejection: do not pair a source ID with a URL from another source. That is source-ID relabeling and must be repaired before final output.
 
 ## Reference Doctrine
 
@@ -64,21 +75,17 @@ Use `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml` as the field-derivation authority
 
 Use `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml` as the provenance/forensic ledger authority.
 
-Use `REGISTRY_KEY_v3_0.md` only for archetype and surface vocabulary. Archetype codes are:
+Use `REGISTRY_KEY_v3_0.md` only for archetype and surface vocabulary. Archetype codes are: `UNI`, `DOE`, `JDG`, `CMP`, `CRT`, `RDR`, `ORC`, `TRN`, `SHD`, `OPT`, `MOV`.
 
-`UNI`, `DOE`, `JDG`, `CMP`, `CRT`, `RDR`, `ORC`, `TRN`, `SHD`, `OPT`, `MOV`.
+Surface tokens are: `Consumer-Public`, `Enterprise-Private`, `PII`, `Employment`, `Sensitive/Biometric`, `Financial`, `Content&IP`, `Safety&Physical`, `Infrastructure`, `Minors`.
 
-Surface tokens are:
-
-`Consumer-Public`, `Enterprise-Private`, `PII`, `Employment`, `Sensitive/Biometric`, `Financial`, `Content&IP`, `Safety&Physical`, `Infrastructure`, `Minors`.
-
-Do not evaluate threat rows in M7/M8. Threat evaluation belongs to M11.
+Threat evaluation belongs to M11, not M7/M8.
 
 ## M7 Target Profile Duties
 
 Build `target_profile` from target-family artifacts first, with narrow legal-cartography use where allowed.
 
-The material profile must contain these sections and fields:
+`target_profile` must contain:
 
 - `validation_status`
 - `target_identity.brand_name`
@@ -100,15 +107,11 @@ The material profile must contain these sections and fields:
 - `product_service_wrapper.delivery_model_signals[]`
 - `target_profile_limitations[]`
 
-Use controlled values such as `FIELD_NOT_FOUND`, `FIELD_NOT_PUBLIC`, `FIELD_LIMITED`, or `FIELD_CONFLICTING` only when the field cannot be supported after reviewing the loaded corpus. Record the reason in forensics and limitations.
-
-Do not infer legal entity, jurisdiction, venue, entity type, customer type, sector, wrapper, or delivery model from vibe, TLD, founder location, outside knowledge, or marketing style.
+Use controlled placeholders such as `FIELD_NOT_FOUND`, `FIELD_NOT_PUBLIC`, `FIELD_LIMITED`, or `FIELD_CONFLICTING` only when a field cannot be supported after reviewing the loaded corpus. Record the reason in forensics and limitations.
 
 ## M7 Target Forensics Duties
 
-`target_profile_forensics` must include provenance proof separate from the material profile.
-
-Required branches:
+`target_profile_forensics` must include:
 
 - `validation_status`
 - `source_ledger_used_for_m7[]`
@@ -122,21 +125,15 @@ Required branches:
 - `runtime_trace_m7_only{}`
 - `forensic_boundary{}`
 
-Each material target field must have a corresponding field-derivation ledger row with at least:
+Each material target field must have a corresponding field-derivation ledger row with at least: `output_field`, `fd_field_id`, `source_artifact`, `source_ref`, `source_url` or `source_urls`, `derivation_status`, `evidence_summary`, `limitation_if_any`.
 
-- `output_field`
-- `fd_field_id`
-- `source_artifact`
-- `source_ref`
-- `derivation_status`
-- `evidence_summary`
-- `limitation_if_any`
+Every forensic row that cites a `*.SRC.NNN` value must include the matching upstream URL.
 
 ## M8 Target Feature Profile Duties
 
-Build `target_feature_profile` from product/activity source families and the completed `target_profile` context.
+Build `target_feature_profile` from product/activity source families and completed `target_profile` context.
 
-Do not emit product features from legal/privacy text alone unless the legal text itself describes a concrete product/activity mechanic and the limitation is recorded.
+Do not emit product features from legal/privacy text alone unless legal text itself describes a concrete product/activity mechanic and the limitation is recorded.
 
 `target_feature_profile` must contain:
 
@@ -144,12 +141,14 @@ Do not emit product features from legal/privacy text alone unless the legal text
 - `activities[]`
 - `profile_level_limitations[]`
 
-Each `activities[]` row must contain exactly these material fields:
+Each activity row must contain:
 
 - `activity_reference`
 - `product_service_wrapper`
 - `activity_feature_name`
 - `activity_candidate_summary`
+- `primary_source_refs[]`
+- `primary_source_urls{}`
 - `mechanics_proof`
 - `autonomy_human_control_signal`
 - `data_content_object_touched`
@@ -159,25 +158,13 @@ Each `activities[]` row must contain exactly these material fields:
 - `surface_context_tokens[]`
 - `surface_proof_and_routing_limits`
 
+`primary_source_refs[]` must list every source ID used to derive the activity. `primary_source_urls{}` must map each listed source ID to its exact upstream URL.
+
 Every emitted activity must have at least one evidence-supported archetype code. A single activity may have multiple archetype codes. Preserve all supported archetypes; do not choose only the dominant one.
 
 Do not emit an activity if you cannot derive at least one archetype code from loaded source evidence. Put the rejected/limited candidate into forensics instead.
 
-Archetype tests:
-
-- `DOE`: autonomous action in the world on a user's behalf without per-action human approval.
-- `JDG`: consequential decision, score, ranking, eligibility, or assessment about a human.
-- `CMP`: ongoing emotional, relational, therapeutic, romantic, child-facing, or companion-like interaction as a primary function.
-- `CRT`: generation of new copyrightable or synthetic output as a primary output.
-- `RDR`: ingestion of third-party data the product does not own to function.
-- `ORC`: routing requests across multiple models, subprocessors, systems, or agent/tool layers.
-- `TRN`: processing biometric, voice, audio, speech, diarization, face, or similar signals.
-- `SHD`: security defense, monitoring, threat detection, SOC, vulnerability, or incident response function.
-- `OPT`: high-stakes optimization where output directly moves money or controls operations.
-- `MOV`: governing physical systems that can act in or on the physical world.
-- `UNI`: universal context only; do not use as the sole archetype for a concrete emitted activity unless no non-universal archetype is supported and the limitation is explicit.
-
-Surface tokens must be evidence-supported and tied to observable source material.
+Archetype tests are unchanged from the registry packet. Use them conservatively and evidence-first.
 
 ## M8 Feature Forensics Duties
 
@@ -200,74 +187,17 @@ Surface tokens must be evidence-supported and tied to observable source material
 
 Each emitted activity must have corresponding forensic rows for mechanics, archetype derivation, surface-token derivation, and source route coverage.
 
+Every forensic row that cites a source ID must include `source_url` or `source_urls` matching the exact upstream source object. Do not emit naked source IDs.
+
 ## Output JSON Shape
 
 Return exactly this top-level shape:
 
 {
-  "target_profile": {
-    "validation_status": "LOCKED or LOCKED_WITH_LIMITATIONS or REPAIR_REQUIRED or CONTROLLED_FAILURE",
-    "target_identity": {
-      "brand_name": "",
-      "legal_entity_name": "",
-      "entity_type": "",
-      "reviewed_website": "",
-      "primary_domain": ""
-    },
-    "jurisdiction_notice": {
-      "registered_notice_location": "",
-      "governing_law": "",
-      "courts_venue": ""
-    },
-    "business_context": {
-      "business_category": "",
-      "primary_customer_type": "",
-      "market_type_candidate": "",
-      "industry_sector": "",
-      "regulated_sector_hints": []
-    },
-    "product_service_wrapper": {
-      "high_level_offering": "",
-      "primary_public_claim": "",
-      "product_service_wrapper_names": [],
-      "delivery_model_signals": []
-    },
-    "target_profile_limitations": []
-  },
-  "target_profile_forensics": {
-    "validation_status": "LOCKED or LOCKED_WITH_LIMITATIONS or REPAIR_REQUIRED or CONTROLLED_FAILURE",
-    "source_ledger_used_for_m7": [],
-    "target_source_extraction_capsule_summary": [],
-    "target_source_route_coverage_ledger": [],
-    "field_derivation_ledger": [],
-    "targeted_re_extraction_ledger": [],
-    "limitation_ledger": [],
-    "cross_route_use_ledger": [],
-    "validation_quality_control_result": {},
-    "runtime_trace_m7_only": {},
-    "forensic_boundary": {}
-  },
-  "target_feature_profile": {
-    "validation_status": "LOCKED or LOCKED_WITH_LIMITATIONS or REPAIR_REQUIRED or CONTROLLED_FAILURE",
-    "activities": [],
-    "profile_level_limitations": []
-  },
-  "target_feature_profile_forensics": {
-    "validation_status": "LOCKED or LOCKED_WITH_LIMITATIONS or REPAIR_REQUIRED or CONTROLLED_FAILURE",
-    "product_activity_source_route_coverage_ledger": [],
-    "product_activity_extraction_capsule_summary": [],
-    "candidate_admission_and_omission_ledger": [],
-    "selected_pa_field_derivation_ledger": [],
-    "activity_mechanics_derivation_ledger": [],
-    "archetype_derivation_ledger": [],
-    "surface_token_derivation_ledger": [],
-    "targeted_re_extraction_ledger": [],
-    "activity_limitations_ledger": [],
-    "cross_route_use_ledger": [],
-    "validation_quality_control_result": {},
-    "runtime_trace_m8_only": {},
-    "forensic_boundary": {}
-  }
+  "target_profile": {},
+  "target_profile_forensics": {},
+  "target_feature_profile": {},
+  "target_feature_profile_forensics": {}
 }
 
 ## Hard Rejection Rules
@@ -284,7 +214,10 @@ Reject internally and repair before final output if any of these occur:
 - feature profile without validation status;
 - feature profile without archetype derivation signal;
 - forensics without provenance/evidence/derivation signal;
+- any `*.SRC.NNN` source reference without `source_url` or `source_urls` in the same object;
+- any source ID paired with a URL that does not belong to that source ID in the loaded upstream artifacts;
+- source-ID relabeling, reordering, remapping, or product-name/source-ID guessing;
 - unsupported factual inference;
-- legal advice or exposure registry evaluation.
+- exposure registry evaluation.
 
 Return only the final JSON object.
