@@ -25,6 +25,67 @@ const SOURCE_CORPUS_STATUSES = Object.freeze([
   "UNKNOWN_NOT_SEARCHED"
 ]);
 
+const ROW_STATUSES = Object.freeze([
+  "FOUND_INDEXED",
+  "FOUND_HOSTED_INDEXED",
+  "FOUND_EMBEDDED_IN_LEGAL_CORPUS",
+  "FOUND_THIN",
+  "STANDALONE_SOURCE_ABSENT",
+  "ACCESS_FAILED",
+  "GATED",
+  "DEFERRED",
+  "REFERENCED_BUT_NOT_FETCHED",
+  "SOURCE_REJECTED_OR_FAILED",
+  "UNKNOWN_NOT_SEARCHED",
+  "NOT_APPLICABLE_CONTEXTUAL",
+  "THIN",
+  "INSUFFICIENT_PUBLIC_MATERIAL"
+]);
+
+const ARTIFACT_CLASSES = Object.freeze([
+  "TERMS_OF_SERVICE",
+  "CUSTOMER_TERMS",
+  "EULA",
+  "ORDER_FORM_TERMS",
+  "PRIVACY_POLICY",
+  "COOKIE_POLICY",
+  "DATA_PROCESSING_AGREEMENT",
+  "SUBPROCESSOR_LIST",
+  "DATA_REQUEST_PAGE",
+  "DATA_RETENTION_POLICY",
+  "AI_TERMS_POLICY",
+  "AGENTIC_ADDENDUM",
+  "HITL_POLICY",
+  "AI_IMPACT_ASSESSMENT",
+  "ACCEPTABLE_USE_POLICY",
+  "CONTENT_POLICY",
+  "COMMUNITY_GUIDELINES",
+  "IP_POLICY",
+  "DMCA_COPYRIGHT_POLICY",
+  "OPEN_SOURCE_NOTICES",
+  "SECURITY_POLICY",
+  "TRUST_CENTER",
+  "VULNERABILITY_DISCLOSURE",
+  "STATUS_PAGE",
+  "SLA_SUPPORT_TERMS",
+  "SUPPORT_TERMS",
+  "BILLING_CANCELLATION_TERMS",
+  "LEGAL_NOTICE_IMPRESSUM",
+  "NOTICE_PAGE",
+  "TRANSPARENCY_REPORT",
+  "HOSTED_LEGAL_ARTIFACT",
+  "UNKNOWN_LEGAL_ARTIFACT"
+]);
+
+const SOURCE_TYPES = Object.freeze([
+  "URL",
+  "EMBEDDED_UNIT",
+  "INTERNAL_REFERENCE",
+  "METADATA_ONLY",
+  "REFERENCED_URL",
+  "ABSENT_FAMILY"
+]);
+
 const FORBIDDEN_KEYS = Object.freeze([
   "source_discovery_handoff",
   "target_profile",
@@ -50,6 +111,24 @@ const FORBIDDEN_STRING_VALUES = Object.freeze([
   "M6 authorized",
   "authorized by M6",
   "not authorized by M6"
+]);
+
+const FORBIDDEN_EXACT_STATUS_VALUES = Object.freeze([
+  "ACTIVE",
+  "ABSENT",
+  "REJECTED",
+  "NOT_FETCHED"
+]);
+
+const FORBIDDEN_ARTIFACT_CLASSES = Object.freeze([
+  "LEGAL_HUB",
+  "DPA",
+  "SLA",
+  "ADDITIONAL_TERMS",
+  "PRIVACY_ADDENDUM",
+  "TERMS_OF_USE",
+  "BUSINESS_CONTINUITY_PLAN",
+  "INCIDENT_RESPONSE_PLAN"
 ]);
 
 const SOURCE_FIELD_NAMES = Object.freeze([
@@ -111,20 +190,101 @@ export function validateM9LegalCartographyIndex(output) {
     }
   }
 
-  for (const row of [...asArray(artifact.document_coverage_index), ...asArray(artifact.incorporated_linked_document_map)]) {
-    if (Object.prototype.hasOwnProperty.call(row, "source_corpus_status") && !SOURCE_CORPUS_STATUSES.includes(row.source_corpus_status)) {
-      failures.push(`invalid source_corpus_status: ${row.source_corpus_status || "missing"}`);
-    }
-  }
+  validateCoverageRows(artifact, failures);
+  validateLinkedRows(artifact, failures);
+  validateMissingRows(artifact, failures);
+  validateEmbeddedCoverageCompleteness(artifact, failures);
 
   return failures.length ? fail(failures) : { status: "PASS", failed_gates: [], repair_instructions: [] };
+}
+
+function validateCoverageRows(artifact, failures) {
+  for (const row of asArray(artifact.document_coverage_index)) {
+    validateCommonNormalizedRow(row, failures, "document_coverage_index");
+    if (!row.source_corpus_status) failures.push("document_coverage_index row missing source_corpus_status");
+  }
+}
+
+function validateLinkedRows(artifact, failures) {
+  for (const row of asArray(artifact.incorporated_linked_document_map)) {
+    validateStatus(row, failures, "incorporated_linked_document_map");
+    validateSourceCorpusStatus(row, failures, "incorporated_linked_document_map");
+    if ("artifact_class" in row) validateArtifactClass(row, failures, "incorporated_linked_document_map");
+    rejectForbiddenExactStatus(row, failures, "incorporated_linked_document_map");
+  }
+}
+
+function validateMissingRows(artifact, failures) {
+  for (const row of asArray(artifact.missing_limited_legal_governance_items)) {
+    validateCommonNormalizedRow(row, failures, "missing_limited_legal_governance_items");
+    if (!row.source_corpus_status) failures.push("missing_limited_legal_governance_items row missing source_corpus_status");
+    if (row.source_corpus_status === "ABSENT_AFTER_TARGETED_PROBE") {
+      failures.push("ABSENT_AFTER_TARGETED_PROBE is not a valid source_corpus_status; use STANDALONE_SOURCE_ABSENT");
+    }
+  }
+}
+
+function validateCommonNormalizedRow(row, failures, location) {
+  validateStatus(row, failures, location);
+  validateSourceCorpusStatus(row, failures, location);
+  validateArtifactClass(row, failures, location);
+  validateSourceType(row, failures, location);
+  rejectForbiddenExactStatus(row, failures, location);
+}
+
+function validateStatus(row, failures, location) {
+  if (Object.prototype.hasOwnProperty.call(row, "status") && !ROW_STATUSES.includes(row.status)) {
+    failures.push(`${location} invalid status: ${row.status || "missing"}`);
+  }
+}
+
+function validateSourceCorpusStatus(row, failures, location) {
+  if (Object.prototype.hasOwnProperty.call(row, "source_corpus_status") && !SOURCE_CORPUS_STATUSES.includes(row.source_corpus_status)) {
+    failures.push(`${location} invalid source_corpus_status: ${row.source_corpus_status || "missing"}`);
+  }
+}
+
+function validateArtifactClass(row, failures, location) {
+  if (!Object.prototype.hasOwnProperty.call(row, "artifact_class")) return;
+  if (FORBIDDEN_ARTIFACT_CLASSES.includes(row.artifact_class)) {
+    failures.push(`${location} forbidden artifact_class drift: ${row.artifact_class}`);
+  }
+  if (!ARTIFACT_CLASSES.includes(row.artifact_class)) {
+    failures.push(`${location} invalid artifact_class: ${row.artifact_class || "missing"}`);
+  }
+}
+
+function validateSourceType(row, failures, location) {
+  if (Object.prototype.hasOwnProperty.call(row, "source_type") && !SOURCE_TYPES.includes(row.source_type)) {
+    failures.push(`${location} invalid source_type: ${row.source_type || "missing"}`);
+  }
+}
+
+function rejectForbiddenExactStatus(row, failures, location) {
+  if (FORBIDDEN_EXACT_STATUS_VALUES.includes(row.status)) {
+    failures.push(`${location} forbidden loose status: ${row.status}`);
+  }
+}
+
+function validateEmbeddedCoverageCompleteness(artifact, failures) {
+  const structureNames = asArray(artifact.document_structure_index)
+    .map((row) => String(row.section_name || row.internal_unit || row.document_or_artifact || "").toLowerCase());
+  const coverageNames = asArray(artifact.document_coverage_index)
+    .map((row) => String(row.document_or_artifact || "").toLowerCase());
+
+  const hasSupportAnnexureInStructure = structureNames.some((name) => name.includes("support services") || name.includes("support terms"));
+  const hasSupportAnnexureInCoverage = coverageNames.some((name) => name.includes("support services") || name.includes("support terms"));
+
+  if (hasSupportAnnexureInStructure && !hasSupportAnnexureInCoverage) {
+    failures.push("Support Services / Support Terms annexure appears in structure but is missing from document_coverage_index");
+  }
 }
 
 function fail(failures) {
   return {
     status: "REPAIR_REQUIRED",
     failed_gates: failures,
-    repair_instructions: ["Return exactly one legal_cartography_index object using source_corpus_status and the loaded legal corpus only. M6 is navigation, not legal authority."]
+    repair_instructions: ["Return exactly one legal_cartography_index object using normalized artifact classes, normalized row statuses, source_corpus_status on coverage/linked/missing rows, and the loaded legal corpus only."]
   };
 }
 
