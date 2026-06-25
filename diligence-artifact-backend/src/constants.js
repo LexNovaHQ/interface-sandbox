@@ -52,15 +52,6 @@ export const LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES = Object.freeze(
   ROOT_FAMILY_CODES.map((code) => `lossless_family__${code}`)
 );
 
-// Legacy names retained only so old runs/artifacts remain recognizable.
-// M6_BUCKET_INDEX no longer writes separate bucket artifacts. Bucket views live inside source_discovery_handoff.
-export const BUCKET_ARTIFACT_NAMES = Object.freeze([
-  "bucket_target_profile_urls",
-  "bucket_product_activity_profile_urls",
-  "bucket_data_asset_provenance_profile_urls",
-  "bucket_legal_governance_profile_urls"
-]);
-
 export const LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES = Object.freeze([
   "lossless_family__L1_CORE_TERMS_PRIVACY",
   "lossless_family__L2_B2B_CONTRACTING",
@@ -94,9 +85,7 @@ export const DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES = Object.freeze([
   "lossless_family__D5_AI_SAFETY_TRANSPARENCY"
 ]);
 
-export const AGENT_1A_ARTIFACT_NAMES = Object.freeze([
-  "deduped_url_manifest"
-]);
+export const AGENT_1A_ARTIFACT_NAMES = Object.freeze(["deduped_url_manifest"]);
 
 export const AGENT_1B_ARTIFACT_NAMES = Object.freeze([
   "source_family_index",
@@ -113,7 +102,6 @@ export const ARTIFACT_NAMES = Object.freeze([
   "lossless_source_corpus",
   ...AGENT_1_ARTIFACT_NAMES,
   "source_discovery_handoff",
-  ...BUCKET_ARTIFACT_NAMES,
   "legal_cartography_index",
   "target_profile",
   "target_profile_forensics",
@@ -169,19 +157,13 @@ export const READ_PERMISSIONS = Object.freeze({
 });
 
 export function assertKnownArtifactName(artifactName) {
-  if (!ARTIFACT_NAMES.includes(artifactName)) {
-    throw new Error(`INVALID_ARTIFACT_NAME:${artifactName || "missing"}`);
-  }
+  if (!ARTIFACT_NAMES.includes(artifactName)) throw new Error(`INVALID_ARTIFACT_NAME:${artifactName || "missing"}`);
 }
 
 export function assertKnownPhase(phase) {
-  if (!PHASES.includes(phase)) {
-    throw new Error(`INVALID_PHASE:${phase || "missing"}`);
-  }
+  if (!PHASES.includes(phase)) throw new Error(`INVALID_PHASE:${phase || "missing"}`);
 }
 
 export function assertKnownAgent(agent) {
-  if (!AGENTS.includes(agent)) {
-    throw new Error(`INVALID_AGENT:${agent || "missing"}`);
-  }
+  if (!AGENTS.includes(agent)) throw new Error(`INVALID_AGENT:${agent || "missing"}`);
 }
