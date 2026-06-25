@@ -1,10 +1,10 @@
 export const PHASE_CONTRACTS = Object.freeze({
-  URL_MANIFEST: {
+  M6: {
     type: "model",
-    agent_id: "agent_1_m6_m9",
-    prompt_file: "agent_1_m6_m9.md",
+    agent_id: "agent_1_m6",
+    prompt_file: "agent_1_m6.md",
     reads: [],
-    writes: ["url_manifest"],
+    writes: ["url_manifest", "source_discovery_handoff"],
     next: "LOSSLESS_SOURCE_EXTRACTION"
   },
 
@@ -13,15 +13,15 @@ export const PHASE_CONTRACTS = Object.freeze({
     actor_id: "deterministic_source_extractor",
     reads: ["url_manifest"],
     writes: ["lossless_source_corpus"],
-    next: "M6_M9"
+    next: "M9"
   },
 
-  M6_M9: {
+  M9: {
     type: "model",
-    agent_id: "agent_1_m6_m9",
-    prompt_file: "agent_1_m6_m9.md",
-    reads: ["url_manifest", "lossless_source_corpus"],
-    writes: ["source_discovery_handoff", "legal_cartography_index"],
+    agent_id: "agent_2a_m9",
+    prompt_file: "agent_2a_m9.md",
+    reads: ["lossless_source_corpus", "source_discovery_handoff"],
+    writes: ["legal_cartography_index"],
     next: "M7_M8"
   },
 
