@@ -151,7 +151,16 @@ async function saveArtifactHandler(req, res) {
 }
 
 app.post("/v1/artifacts/save", saveArtifactHandler);
+app.post("/v1/artifacts/save-source-discovery", saveArtifactHandler);
 app.post("/v1/artifacts/save-legal-cartography", saveArtifactHandler);
+app.post("/v1/artifacts/save-target-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-target-feature-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-data-provenance-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-exposure-registry-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-challenge-gate", saveArtifactHandler);
+app.post("/v1/artifacts/save-final-output-handoff", saveArtifactHandler);
+app.post("/v1/artifacts/save-terminal-validation", saveArtifactHandler);
+app.post("/v1/artifacts/save-renderer-payload", saveArtifactHandler);
 
 app.get("/v1/artifacts/:run_id/:artifact_name", async (req, res) => {
   try {
