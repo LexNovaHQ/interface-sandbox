@@ -1,9 +1,9 @@
 export const SERVICE_NAME = "interface-diligence-artifacts";
 
 export const PHASES = Object.freeze([
-  "URL_MANIFEST",
+  "M6",
   "LOSSLESS_SOURCE_EXTRACTION",
-  "M6_M9",
+  "M9",
   "M7_M8",
   "M10",
   "M11",
@@ -40,8 +40,9 @@ export const ARTIFACT_NAMES = Object.freeze([
 ]);
 
 export const AGENTS = Object.freeze([
-  "agent_1_m6_m9",
+  "agent_1_m6",
   "deterministic_source_extractor",
+  "agent_2a_m9",
   "agent_2_m7_m8",
   "agent_3_m10",
   "agent_4_m11",
@@ -52,8 +53,9 @@ export const AGENTS = Object.freeze([
 ]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
-  agent_1_m6_m9: ["url_manifest", "source_discovery_handoff", "legal_cartography_index"],
+  agent_1_m6: ["url_manifest", "source_discovery_handoff"],
   deterministic_source_extractor: ["lossless_source_corpus"],
+  agent_2a_m9: ["legal_cartography_index"],
   agent_2_m7_m8: ["target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics"],
   agent_3_m10: ["data_provenance_profile"],
   agent_4_m11: ["exposure_registry_profile"],
@@ -64,8 +66,9 @@ export const WRITE_PERMISSIONS = Object.freeze({
 });
 
 export const READ_PERMISSIONS = Object.freeze({
-  agent_1_m6_m9: ["url_manifest", "lossless_source_corpus"],
+  agent_1_m6: [],
   deterministic_source_extractor: ["url_manifest"],
+  agent_2a_m9: ["lossless_source_corpus", "source_discovery_handoff"],
   agent_2_m7_m8: ["url_manifest", "lossless_source_corpus", "source_discovery_handoff", "legal_cartography_index"],
   agent_3_m10: ["url_manifest", "lossless_source_corpus", "source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics"],
   agent_4_m11: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile"],
