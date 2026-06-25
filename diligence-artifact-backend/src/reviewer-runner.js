@@ -6,6 +6,7 @@ import { callGeminiJson } from "./gemini-client.js";
 import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "./agent-1-scout-extractor.js";
 import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
 import { validateM9LegalCartographyIndex } from "./m9-validator.js";
+import { validateM7M8TargetFeatureOutput, resolveM7M8LockStatus } from "./m7-m8-validator.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -114,7 +115,8 @@ async function runModelPhase({ run, phase, contract }) {
     phase,
     run,
     artifacts,
-    writes: contract.writes
+    writes: contract.writes,
+    references: contract.references || []
   });
 
   const result = await callGeminiJson({ prompt, phase });
@@ -147,6 +149,7 @@ async function runModelPhase({ run, phase, contract }) {
       phase,
       writes: contract.writes,
       lock_status: phaseLockStatus,
+      reference_files: contract.references || [],
       model_metadata: result.metadata
     }
   });
@@ -161,10 +164,19 @@ async function runModelPhase({ run, phase, contract }) {
 }
 
 function validateModelOutput({ phase, output }) {
-  if (phase !== "M9") return;
-  const validation = validateM9LegalCartographyIndex(output);
-  if (validation.status !== "PASS") {
-    throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+  if (phase === "M9") {
+    const validation = validateM9LegalCartographyIndex(output);
+    if (validation.status !== "PASS") {
+      throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+    }
+    return;
+  }
+
+  if (phase === "M7_M8") {
+    const validation = validateM7M8TargetFeatureOutput(output);
+    if (validation.status !== "PASS") {
+      throw new Error(`M7_M8_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+    }
   }
 }
 
@@ -172,6 +184,9 @@ function resolveModelLockStatus({ phase, output, writes }) {
   if (phase === "M9") {
     const status = output?.legal_cartography_index?.lock_status;
     return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
+  }
+  if (phase === "M7_M8") {
+    return resolveM7M8LockStatus(output);
   }
   const firstArtifact = output?.[writes?.[0]];
   const status = firstArtifact?.lock_status || firstArtifact?.validation_status;
