@@ -3,7 +3,7 @@ import { updateRunDashboardRow } from "./sheets.js";
 import { getPhaseContract } from "./phase-contracts.js";
 import { buildPhasePrompt } from "./prompt-loader.js";
 import { callGeminiJson } from "./gemini-client.js";
-import { buildAgent1ScoutExtractArtifacts } from "./agent-1-scout-extractor.js";
+import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "./agent-1-scout-extractor.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -28,8 +28,10 @@ export async function advanceReviewerRun({ run_id }) {
 
   if (contract.type === "model") {
     await runModelPhase({ run, phase, contract });
-  } else if (phase === "AGENT_1_SCOUT_EXTRACT") {
-    await runAgent1ScoutExtractPhase({ run, phase, contract });
+  } else if (phase === "AGENT_1A_URL_MANIFEST") {
+    await runAgent1aUrlManifestPhase({ run, phase, contract });
+  } else if (phase === "AGENT_1B_EXTRACT") {
+    await runAgent1bExtractPhase({ run, phase, contract });
   } else if (phase === "COMPILER") {
     await runCompilerPhase({ run, phase, contract });
   } else if (phase === "RENDERER") {
@@ -51,14 +53,25 @@ export async function advanceReviewerRun({ run_id }) {
 }
 
 function normalizePhase(value) {
-  if (!value || value === "URL_MANIFEST" || value === "M6") return "AGENT_1_SCOUT_EXTRACT";
+  if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST";
   return value;
 }
 
-async function runAgent1ScoutExtractPhase({ run, phase, contract }) {
-  const output = await buildAgent1ScoutExtractArtifacts({ run });
+async function runAgent1aUrlManifestPhase({ run, phase, contract }) {
+  const output = await buildAgent1aDedupedUrlManifest({ run });
+  await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next });
+}
 
-  for (const artifactName of contract.writes) {
+async function runAgent1bExtractPhase({ run, phase, contract }) {
+  const dedupedManifest = await readArtifactPayload({ run_id: run.run_id, artifact_name: "deduped_url_manifest", agent_id: contract.actor_id });
+  const output = await buildAgent1bExtractArtifacts({ run, deduped_url_manifest: dedupedManifest });
+  await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next });
+}
+
+async function saveDeterministicArtifacts({ run, phase, actor, writes, output }) {
+  for (const artifactName of writes) {
     const artifact = output?.[artifactName];
     if (!artifact || typeof artifact !== "object") {
       throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
@@ -66,7 +79,7 @@ async function runAgent1ScoutExtractPhase({ run, phase, contract }) {
     await saveArtifact(artifactSaveBody({
       run_id: run.run_id,
       phase,
-      agent_id: contract.actor_id,
+      agent_id: actor,
       artifact_name: artifactName,
       artifact,
       lock_status: "LOCKED"
@@ -76,16 +89,8 @@ async function runAgent1ScoutExtractPhase({ run, phase, contract }) {
   await logEvent({
     run_id: run.run_id,
     event_type: "DETERMINISTIC_PHASE_COMPLETED",
-    actor: contract.actor_id,
-    payload: { phase, writes: contract.writes }
-  });
-
-  await lockPhase({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
-    status: "LOCKED",
-    next_phase: contract.next
+    actor,
+    payload: { phase, writes }
   });
 }
 
