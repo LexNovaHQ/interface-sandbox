@@ -10,6 +10,7 @@ import { createRunFolder, readJsonArtifactFromDrive } from "./src/drive.js";
 import { appendRunDashboardRow } from "./src/sheets.js";
 import { createRunRecord, getRunRecord, updateRunRecord, getArtifactMetadata, listArtifactMetadata } from "./src/firestore.js";
 import { reviewerRouter } from "./src/reviewer-routes.js";
+import { publicReviewerRouter } from "./src/public-reviewer-routes.js";
 import { artifactSaveBody, lockPhase, readArtifact, saveArtifact } from "./src/artifact-service.js";
 
 const app = express();
@@ -35,6 +36,7 @@ app.get("/health", (_req, res) => {
   });
 });
 
+app.use("/public", publicReviewerRouter);
 app.use("/v1", requireApiKey);
 app.use("/v1", reviewerRouter);
 app.use("/agent2", requireApiKey);
@@ -261,6 +263,7 @@ function statusForMessage(message) {
   if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
   if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400;
   if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500;
+  if (message.startsWith("GEMINI_CALL_FAILED")) return 502;
   return 500;
 }
 
