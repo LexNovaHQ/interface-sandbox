@@ -5,6 +5,7 @@ import { buildPhasePrompt } from "./prompt-loader.js";
 import { callGeminiJson } from "./gemini-client.js";
 import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "./agent-1-scout-extractor.js";
 import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
+import { validateM9LegalCartographyIndex } from "./m9-validator.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -14,6 +15,8 @@ import {
   readArtifactPayload,
   saveArtifact
 } from "./artifact-service.js";
+
+const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
@@ -117,6 +120,9 @@ async function runModelPhase({ run, phase, contract }) {
   const result = await callGeminiJson({ prompt, phase });
   const output = result.json;
 
+  validateModelOutput({ phase, output });
+  const phaseLockStatus = resolveModelLockStatus({ phase, output, writes: contract.writes });
+
   for (const artifactName of contract.writes) {
     const artifact = output?.[artifactName];
     if (!artifact || typeof artifact !== "object") {
@@ -129,7 +135,7 @@ async function runModelPhase({ run, phase, contract }) {
       agent_id: contract.agent_id,
       artifact_name: artifactName,
       artifact,
-      lock_status: "LOCKED"
+      lock_status: phaseLockStatus
     }));
   }
 
@@ -140,6 +146,7 @@ async function runModelPhase({ run, phase, contract }) {
     payload: {
       phase,
       writes: contract.writes,
+      lock_status: phaseLockStatus,
       model_metadata: result.metadata
     }
   });
@@ -148,9 +155,27 @@ async function runModelPhase({ run, phase, contract }) {
     run_id: run.run_id,
     phase,
     agent_id: contract.agent_id,
-    status: "LOCKED",
-    next_phase: contract.next
+    status: phaseLockStatus,
+    next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase
   });
+}
+
+function validateModelOutput({ phase, output }) {
+  if (phase !== "M9") return;
+  const validation = validateM9LegalCartographyIndex(output);
+  if (validation.status !== "PASS") {
+    throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+  }
+}
+
+function resolveModelLockStatus({ phase, output, writes }) {
+  if (phase === "M9") {
+    const status = output?.legal_cartography_index?.lock_status;
+    return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
+  }
+  const firstArtifact = output?.[writes?.[0]];
+  const status = firstArtifact?.lock_status || firstArtifact?.validation_status;
+  return MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";
 }
 
 async function runCompilerPhase({ run, phase, contract }) {
