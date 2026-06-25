@@ -5,26 +5,28 @@ import { ROOT_FAMILY_CODES, LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES } from "./consta
 const TAXONOMY = Object.freeze([
   { bucket: "target_profile_urls", root_family: "T0_ROOT", paths: ["/"], purpose: "homepage_primary_public_root" },
   { bucket: "target_profile_urls", root_family: "T1_IDENTITY", paths: ["/about", "/about-us", "/company", "/our-company", "/who-we-are"], purpose: "about_company_identity" },
-  { bucket: "target_profile_urls", root_family: "T2_LEGAL_IDENTITY", paths: ["/legal", "/legal-notice", "/imprint", "/contact", "/contact-us"], purpose: "legal_contact_identity" },
+  { bucket: "target_profile_urls", root_family: "T2_LEGAL_IDENTITY", paths: ["/legal", "/legal-notice", "/imprint"], purpose: "legal_identity_notice" },
   { bucket: "target_profile_urls", root_family: "T3_OPERATOR_ENTITY", paths: ["/privacy", "/terms", "/dpa", "/legal"], purpose: "operator_entity_fallback" },
   { bucket: "target_profile_urls", root_family: "T4_SUPPORTING_IDENTITY", paths: ["/team", "/careers", "/newsroom", "/press", "/blog", "/blogs"], purpose: "supporting_company_signals" },
-  { bucket: "product_activity_profile_urls", root_family: "P0_PRODUCT_ROOT", paths: ["/product", "/products", "/platform"], purpose: "product_platform_root" },
-  { bucket: "product_activity_profile_urls", root_family: "P1_PRODUCT_SLUG", dynamic: "product_slug", purpose: "specific_product_pages" },
+
+  { bucket: "product_activity_profile_urls", root_family: "P1_PRODUCT", paths: ["/product", "/products"], dynamic: "product", purpose: "product_root_and_product_slug_pages" },
   { bucket: "product_activity_profile_urls", root_family: "P2_PLATFORM_FEATURE_SOLUTION", paths: ["/platform", "/features", "/solutions"], dynamic: "platform_feature_solution_slug", purpose: "platform_feature_solution_pages" },
   { bucket: "product_activity_profile_urls", root_family: "P3_AI_CAPABILITY_TECHNICAL", paths: ["/models", "/agents", "/assistant", "/assistants", "/studio", "/api", "/apis", "/developer", "/developers", "/docs", "/integrations", "/connectors", "/actions", "/workflows", "/automation", "/search", "/knowledge", "/vault"], dynamic: "ai_capability_technical", purpose: "ai_api_docs_integrations_capability" },
   { bucket: "product_activity_profile_urls", root_family: "P4_USE_CASE_INDUSTRY", paths: ["/use-cases", "/industries", "/customers"], dynamic: "use_case_industry_slug", purpose: "use_case_industry_customer_context" },
   { bucket: "product_activity_profile_urls", root_family: "P5_ENTERPRISE_PRICING", paths: ["/pricing", "/api-pricing", "/enterprise", "/contact-sales", "/plans"], purpose: "pricing_enterprise_plans" },
+
   { bucket: "data_asset_provenance_profile_urls", root_family: "D1_SECURITY_TRUST", paths: ["/security", "/security-center", "/data-security", "/trust", "/trust-center", "/compliance", "/compliance-center", "/soc-2", "/iso-27001"], purpose: "security_trust_compliance" },
   { bucket: "data_asset_provenance_profile_urls", root_family: "D2_SUBPROCESSOR_PRIVACY_CENTER", paths: ["/subprocessors", "/subprocessor", "/privacy-center", "/data-protection", "/gdpr", "/dpa", "/data-processing-agreement"], purpose: "subprocessor_privacy_center_dpa" },
   { bucket: "data_asset_provenance_profile_urls", root_family: "D3_DATA_GOVERNANCE_CONTROLS", paths: ["/enterprise-privacy", "/customer-data", "/data-processing", "/data-residency", "/retention", "/deletion", "/data-export", "/data-deletion"], purpose: "data_governance_controls" },
   { bucket: "data_asset_provenance_profile_urls", root_family: "D4_DOCS_API_DATA_FLOW", dynamic: "docs_api_data_flow", purpose: "docs_api_data_flow_signal" },
   { bucket: "data_asset_provenance_profile_urls", root_family: "D5_AI_SAFETY_TRANSPARENCY", paths: ["/responsible-ai", "/ai-policy", "/ai-transparency", "/transparency", "/safety", "/model-card", "/model-cards", "/model-details", "/usage-policy"], purpose: "ai_safety_transparency" },
+
   { bucket: "legal_governance_profile_urls", root_family: "L1_CORE_TERMS_PRIVACY", paths: ["/terms", "/terms-of-use", "/terms-of-service", "/terms-and-conditions", "/legal/terms", "/policies/terms-of-use", "/privacy", "/privacy-policy", "/legal/privacy", "/policies/privacy-policy", "/eula"], purpose: "core_terms_privacy_eula" },
   { bucket: "legal_governance_profile_urls", root_family: "L2_B2B_CONTRACTING", paths: ["/dpa", "/data-processing-agreement", "/legal/dpa", "/legal/data-processing-agreement", "/policies/data-processing-addendum", "/aup", "/acceptable-use", "/acceptable-use-policy", "/legal/acceptable-use-policy", "/sla", "/service-level-agreement", "/service-credit-terms", "/platform-agreement", "/customer-agreement"], purpose: "b2b_contracting_documents" },
   { bucket: "legal_governance_profile_urls", root_family: "L3_AI_USAGE_GOVERNANCE", paths: ["/usage-policy", "/acceptable-use-policy", "/content-policy", "/ai-policy", "/responsible-ai", "/model-policy", "/safety-policy"], purpose: "ai_usage_governance" },
   { bucket: "legal_governance_profile_urls", root_family: "L4_PRIVACY_ADJACENT_NOTICES", paths: ["/cookie-policy", "/cookies", "/privacy-center", "/do-not-sell", "/data-privacy-framework", "/gdpr", "/ccpa"], purpose: "privacy_adjacent_notices" },
   { bucket: "legal_governance_profile_urls", root_family: "L5_LEGAL_HUB_HOSTED", paths: ["/legal", "/legal-center", "/legal-hub", "/policies", "/terms-and-policies", "/trust", "/trust-center"], purpose: "legal_policy_trust_hub" },
-  { bucket: "legal_governance_profile_urls", root_family: "L6_ENTITY_NOTICE", paths: ["/legal-notice", "/imprint", "/contact", "/controller"], purpose: "entity_notice_controller_contact" }
+  { bucket: "legal_governance_profile_urls", root_family: "L6_ENTITY_NOTICE", paths: ["/legal-notice", "/imprint", "/controller"], purpose: "entity_notice_controller" }
 ]);
 
 const DATA_FLOW_SIGNALS = ["data", "file", "upload", "storage", "retention", "delete", "deletion", "export", "webhook", "connector", "integration", "auth", "authentication", "permission", "audit", "log", "subprocessor", "model", "training", "customer content"];
@@ -36,14 +38,23 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
   const targetHost = new URL(rootUrl).hostname.replace(/^www\./i, "");
   const candidates = new Map();
   const scoutFailures = [];
+  const discoveryLog = [];
 
   addCandidate(candidates, rootUrl, "ROOT");
-  const rootFetch = await safeFetch(rootUrl);
-  if (rootFetch.ok) addScopedAnchors(candidates, rootFetch.lossless_text, rootUrl, targetHost);
-  else scoutFailures.push({ url: rootUrl, stage: "ROOT", error: rootFetch.error });
 
-  await scoutRobotsAndSitemaps({ candidates, scoutFailures, rootUrl, targetHost });
-  await scoutKnownPaths({ candidates, scoutFailures, rootUrl });
+  // Mandatory discovery block: root/header/footer and sitemap routes are completed before any evidence extraction.
+  const rootFetch = await safeFetchRaw(rootUrl);
+  if (rootFetch.ok) {
+    discoveryLog.push({ step: "ROOT_FETCH", status: "PASS", url: rootUrl });
+    addScopedAnchors(candidates, rootFetch.raw_text, rootUrl, targetHost);
+    addLinkedSitemaps(candidates, rootFetch.raw_text, rootUrl, targetHost);
+  } else {
+    discoveryLog.push({ step: "ROOT_FETCH", status: "FAIL", url: rootUrl, error: rootFetch.error });
+    scoutFailures.push({ url: rootUrl, stage: "ROOT", error: rootFetch.error });
+  }
+
+  await scoutSitemaps({ candidates, scoutFailures, discoveryLog, rootUrl, targetHost, rootHtml: rootFetch.raw_text || "" });
+  await scoutKnownPaths({ candidates, scoutFailures, discoveryLog, rootUrl });
 
   const inventories = emptyFamilyArtifacts({ run, rootUrl });
   const sourceIndex = [];
@@ -53,7 +64,7 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
   for (const candidate of [...candidates.values()].sort(sortCandidates)) {
     const matches = classifyCandidate(candidate);
     if (!matches.length) continue;
-    const fetched = candidate.fetch || await safeFetch(candidate.url);
+    const extracted = await fetchBestEvidenceText(candidate.url, rootUrl, targetHost);
 
     for (const match of matches) {
       const sourceNumber = String(++perFamilyCounts[match.root_family]).padStart(3, "0");
@@ -67,24 +78,25 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
         materiality: match.materiality,
         route_found_by: candidate.route_found_by,
         priority_result: candidate.priority_result || "PRIMARY_FOUND",
-        execution_status: fetched.ok ? "executed_bucketed" : "access_failed_recorded_limited"
+        execution_status: extracted.ok ? "executed_bucketed" : "access_failed_recorded_limited"
       };
 
-      if (fetched.ok) {
+      if (extracted.ok) {
         const row = {
           ...baseRow,
           extraction_status: "FETCHED",
-          http_status: fetched.http_status,
-          content_type: fetched.content_type,
-          final_url: fetched.final_url,
-          sha256: sha256(fetched.lossless_text),
-          lossless_text: fetched.lossless_text,
-          extraction_warnings: fetched.extraction_warnings
+          evidence_text_source: extracted.evidence_text_source,
+          http_status: extracted.http_status,
+          content_type: extracted.content_type,
+          final_url: extracted.final_url,
+          sha256: sha256(extracted.lossless_text),
+          lossless_text: extracted.lossless_text,
+          extraction_warnings: extracted.extraction_warnings
         };
         inventories[`lossless_family__${match.root_family}`].sources.push(row);
         sourceIndex.push(withoutLosslessText(row));
       } else {
-        failedSourceIndex.push({ ...baseRow, extraction_status: "FETCH_FAILED", error: fetched.error });
+        failedSourceIndex.push({ ...baseRow, extraction_status: "FETCH_FAILED", error: extracted.error });
       }
     }
   }
@@ -102,7 +114,7 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
       target: run.target,
       target_url: rootUrl,
       generated_by: "agent_1_scout_extract",
-      taxonomy_version: "M6_INTEGRATED_BUCKET_SUBCATEGORY_ROOT_FAMILY_v1",
+      taxonomy_version: "M6_INTEGRATED_PRODUCT_MERGED_CLEAN_TEXT_v2",
       target_boundary: {
         submitted_url: run.root_url || run.target,
         resolved_primary_url: rootUrl,
@@ -112,8 +124,10 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
         lock_status: sourceIndex.length ? "LOCKED_WITH_LIMITATIONS" : "CONTROLLED_FAILURE"
       },
       source_search_rule_applied: {
+        mandatory_discovery_first: "ROOT, HEADER, FOOTER, /sitemap.xml, sitemap-index, and linked sitemaps are completed before evidence extraction.",
         primary_first_rule: "Primary routes were scouted before fallback/context routes according to the integrated M6 taxonomy.",
         discovery_routes_executed: ["ROOT", "HEADER", "FOOTER", "SITEMAP", "KNOWN_PATH_PROBE"],
+        markdown_preference_rule: ".md evidence is preferred first; cleaned HTML is used only when markdown is unavailable or not clear text.",
         no_guessed_slug_rule: "Dynamic slugs were admitted only when discovered from root/header/footer/sitemap routes.",
         downstream_new_url_rule: "Downstream agents may not discover or add new URLs. They may read only saved source IDs and artifacts."
       },
@@ -122,6 +136,7 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
       failed_source_index: failedSourceIndex,
       missing_limited_primary_sources: missingLimited,
       scout_failures: scoutFailures,
+      discovery_log: discoveryLog,
       corpus_forensics: {
         candidate_urls: candidates.size,
         discovered_sources: sourceIndex.length,
@@ -135,15 +150,16 @@ export async function buildAgent1ScoutExtractArtifacts({ run }) {
 
 function emptyFamilyArtifacts({ run, rootUrl }) {
   const out = {};
-  for (const item of TAXONOMY) {
-    out[`lossless_family__${item.root_family}`] = {
+  for (const code of ROOT_FAMILY_CODES) {
+    const item = TAXONOMY.find((entry) => entry.root_family === code);
+    out[`lossless_family__${code}`] = {
       run_id: run.run_id,
       target_url: rootUrl,
-      artifact_name: `lossless_family__${item.root_family}`,
+      artifact_name: `lossless_family__${code}`,
       generated_by: "agent_1_scout_extract",
-      bucket: item.bucket,
-      root_family: item.root_family,
-      purpose: item.purpose,
+      bucket: item?.bucket || "UNMAPPED_BUCKET",
+      root_family: code,
+      purpose: item?.purpose || "unmapped_root_family",
       sources: [],
       missing_limited_primary_sources: [],
       corpus_forensics: { total_sources: 0 }
@@ -166,56 +182,208 @@ function addScopedAnchors(candidates, html, rootUrl, targetHost) {
   }
 }
 
-async function scoutRobotsAndSitemaps({ candidates, scoutFailures, rootUrl, targetHost }) {
+function addLinkedSitemaps(candidates, html, rootUrl, targetHost) {
+  for (const href of extractLinkedSitemaps(html)) {
+    const url = normalizeCandidateUrl(href, rootUrl, targetHost);
+    if (url) addCandidate(candidates, url, "SITEMAP_LINK");
+  }
+}
+
+async function scoutSitemaps({ candidates, scoutFailures, discoveryLog, rootUrl, targetHost, rootHtml }) {
   const origin = new URL(rootUrl).origin;
-  const sitemapUrls = new Set([`${origin}/sitemap.xml`]);
-  const robots = await safeFetch(`${origin}/robots.txt`);
+  const sitemapUrls = new Set([`${origin}/sitemap.xml`, `${origin}/sitemap-index.xml`]);
+
+  for (const href of extractLinkedSitemaps(rootHtml)) {
+    const url = normalizeCandidateUrl(href, rootUrl, targetHost);
+    if (url) sitemapUrls.add(url);
+  }
+
+  const robots = await safeFetchRaw(`${origin}/robots.txt`);
   if (robots.ok) {
-    for (const line of robots.lossless_text.split(/\r?\n/)) {
+    for (const line of robots.raw_text.split(/\r?\n/)) {
       const match = line.match(/^\s*sitemap:\s*(\S+)/i);
       if (match?.[1]) sitemapUrls.add(match[1].trim());
     }
   }
-  for (const sitemapUrl of [...sitemapUrls].slice(0, 6)) {
-    const fetched = await safeFetch(sitemapUrl);
+
+  const visited = new Set();
+  const queue = [...sitemapUrls];
+  while (queue.length && visited.size < 12) {
+    const sitemapUrl = queue.shift();
+    if (!sitemapUrl || visited.has(sitemapUrl)) continue;
+    visited.add(sitemapUrl);
+    const fetched = await safeFetchRaw(sitemapUrl);
     if (!fetched.ok) {
+      discoveryLog.push({ step: "SITEMAP_FETCH", status: "FAIL", url: sitemapUrl, error: fetched.error });
       scoutFailures.push({ url: sitemapUrl, stage: "SITEMAP", error: fetched.error });
       continue;
     }
-    for (const loc of extractSitemapLocs(fetched.lossless_text).slice(0, 180)) {
+    discoveryLog.push({ step: "SITEMAP_FETCH", status: "PASS", url: sitemapUrl });
+    for (const loc of extractSitemapLocs(fetched.raw_text).slice(0, 250)) {
       const url = normalizeCandidateUrl(loc, rootUrl, targetHost);
-      if (url) addCandidate(candidates, url, "SITEMAP");
+      if (!url) continue;
+      if (url.endsWith(".xml") && visited.size < 12) queue.push(url);
+      else addCandidate(candidates, url, "SITEMAP");
     }
   }
 }
 
-async function scoutKnownPaths({ candidates, scoutFailures, rootUrl }) {
+async function scoutKnownPaths({ candidates, scoutFailures, discoveryLog, rootUrl }) {
   const origin = new URL(rootUrl).origin;
   const paths = new Set(TAXONOMY.flatMap((item) => item.paths || []));
   for (const path of paths) {
     const url = new URL(path, origin).toString();
-    const fetched = await safeFetch(url);
-    if (fetched.ok) addCandidate(candidates, url, "KNOWN_PATH_PROBE", fetched);
-    else if (![404, 410].includes(Number(fetched.http_status || 0))) scoutFailures.push({ url, stage: "KNOWN_PATH_PROBE", error: fetched.error, http_status: fetched.http_status || null });
+    const fetched = await safeFetchRaw(url);
+    if (fetched.ok) {
+      discoveryLog.push({ step: "KNOWN_PATH_PROBE", status: "PASS", url });
+      addCandidate(candidates, url, "KNOWN_PATH_PROBE");
+    } else if (![404, 410].includes(Number(fetched.http_status || 0))) {
+      discoveryLog.push({ step: "KNOWN_PATH_PROBE", status: "LIMITED", url, error: fetched.error, http_status: fetched.http_status || null });
+      scoutFailures.push({ url, stage: "KNOWN_PATH_PROBE", error: fetched.error, http_status: fetched.http_status || null });
+    }
   }
 }
 
 function classifyCandidate(candidate) {
   const url = new URL(candidate.url);
   const path = normalizePath(url.pathname);
-  const text = `${url.hostname} ${path} ${candidate.url}`.toLowerCase();
+  const host = url.hostname.toLowerCase();
+  const text = `${host} ${path} ${candidate.url}`.toLowerCase();
   const matches = [];
+
   for (const item of TAXONOMY) {
-    if ((item.paths || []).some((known) => path === normalizePath(known) || path.startsWith(`${normalizePath(known)}/`))) {
-      matches.push(toMatch(item, routeTypeFor(item, path), materialityFor(item)));
+    for (const known of item.paths || []) {
+      const normalized = normalizePath(known);
+      if (path === normalized || path.startsWith(`${normalized}/`)) {
+        if (item.root_family === "L6_ENTITY_NOTICE" && !hasLegalEntitySignal(text)) continue;
+        matches.push(toMatch(item, routeTypeFor(item, path), materialityFor(item)));
+      }
     }
   }
-  if (/^\/(product|products)\/[^/]+\/?$/i.test(path) && candidate.route_found_by !== "KNOWN_PATH_PROBE") matches.push(family("P1_PRODUCT_SLUG", "product_slug", "product_activity"));
+
+  if (/^\/(product|products)(\/[^/]+)?\/?$/i.test(path)) matches.push(family("P1_PRODUCT", path === "/product" || path === "/products" ? "product_root" : "product_slug", "product_activity"));
   if (/^\/(platform|features|solutions)\/[^/]+/i.test(path) && candidate.route_found_by !== "KNOWN_PATH_PROBE") matches.push(family("P2_PLATFORM_FEATURE_SOLUTION", "platform_feature_solution_slug", "product_activity"));
   if (/^\/(use-cases|industries|customers)\/[^/]+/i.test(path) && candidate.route_found_by !== "KNOWN_PATH_PROBE") matches.push(family("P4_USE_CASE_INDUSTRY", "use_case_industry_customer_slug", "use_case_context"));
-  if (hasAnySignal(text, TECHNICAL_ROUTE_SIGNALS) || url.hostname.toLowerCase().startsWith("docs.")) matches.push(family("P3_AI_CAPABILITY_TECHNICAL", "ai_capability_technical", "product_activity"));
-  if ((isDocsOrApiPath(path) || url.hostname.toLowerCase().startsWith("docs.")) && hasAnySignal(text, DATA_FLOW_SIGNALS)) matches.push(family("D4_DOCS_API_DATA_FLOW", "docs_api_data_flow", "data_flow_signal"));
+  if (hasAnySignal(text, TECHNICAL_ROUTE_SIGNALS) || host.startsWith("docs.")) matches.push(family("P3_AI_CAPABILITY_TECHNICAL", "ai_capability_technical", "product_activity"));
+  if ((isDocsOrApiPath(path) || host.startsWith("docs.")) && hasAnySignal(text, DATA_FLOW_SIGNALS)) matches.push(family("D4_DOCS_API_DATA_FLOW", "docs_api_data_flow", "data_flow_signal"));
+
   return dedupeMatches(matches);
+}
+
+async function fetchBestEvidenceText(url, rootUrl, targetHost) {
+  const mdCandidates = markdownCandidateUrls(url);
+  for (const mdUrl of mdCandidates) {
+    const md = await safeFetchRaw(mdUrl);
+    if (md.ok && isClearMarkdownText(md.raw_text, md.content_type)) {
+      return toEvidence(md, "MARKDOWN_DERIVED");
+    }
+  }
+
+  const html = await safeFetchRaw(url);
+  if (!html.ok) return { ok: false, error: html.error, http_status: html.http_status || null };
+
+  for (const href of extractMarkdownAlternates(html.raw_text)) {
+    const mdUrl = normalizeCandidateUrl(href, url || rootUrl, targetHost);
+    if (!mdUrl) continue;
+    const md = await safeFetchRaw(mdUrl);
+    if (md.ok && isClearMarkdownText(md.raw_text, md.content_type)) {
+      return toEvidence(md, "MARKDOWN_ALTERNATE");
+    }
+  }
+
+  const clean = cleanHtmlToText(html.raw_text);
+  if (!clean || clean.length < 40) {
+    return { ok: false, error: "NO_CLEAR_TEXT_AFTER_HTML_CLEAN", http_status: html.http_status || null };
+  }
+  return {
+    ok: true,
+    http_status: html.http_status,
+    content_type: html.content_type,
+    final_url: html.final_url,
+    lossless_text: clean,
+    evidence_text_source: "CLEANED_HTML",
+    extraction_warnings: [...html.extraction_warnings, "RAW_HTML_NOT_STORED"]
+  };
+}
+
+function toEvidence(fetchResult, source) {
+  return {
+    ok: true,
+    http_status: fetchResult.http_status,
+    content_type: fetchResult.content_type,
+    final_url: fetchResult.final_url,
+    lossless_text: normalizeEvidenceText(fetchResult.raw_text),
+    evidence_text_source: source,
+    extraction_warnings: fetchResult.extraction_warnings
+  };
+}
+
+function markdownCandidateUrls(value) {
+  const out = [];
+  try {
+    const url = new URL(value);
+    const path = url.pathname.replace(/\/$/, "");
+    if (path && path !== "/" && !path.endsWith(".md")) {
+      const md = new URL(url.toString());
+      md.pathname = `${path}.md`;
+      out.push(md.toString());
+    }
+    if (path.endsWith(".md")) out.push(url.toString());
+  } catch {
+    return [];
+  }
+  return out;
+}
+
+function isClearMarkdownText(text, contentType) {
+  const value = String(text || "").trim();
+  if (value.length < 80) return false;
+  if (/^<!doctype html/i.test(value) || /<html[\s>]/i.test(value)) return false;
+  const lowerType = String(contentType || "").toLowerCase();
+  return lowerType.includes("markdown") || lowerType.includes("text/plain") || /(^|\n)#{1,3}\s+/.test(value) || value.includes("\n- ") || value.includes("\n## ");
+}
+
+function cleanHtmlToText(html) {
+  const title = extractFirst(html, /<title[^>]*>([\s\S]*?)<\/title>/i);
+  const meta = extractMetaDescription(html);
+  const body = String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<canvas[\s\S]*?<\/canvas>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ");
+  return normalizeEvidenceText([title, meta, decodeEntities(body)].filter(Boolean).join("\n\n"));
+}
+
+function normalizeEvidenceText(text) {
+  return decodeEntities(String(text || ""))
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function decodeEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#39;/gi, "'");
+}
+
+function extractMetaDescription(html) {
+  return extractFirst(html, /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || extractFirst(html, /<meta\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i);
+}
+
+function extractFirst(value, regex) {
+  const match = String(value || "").match(regex);
+  return match?.[1] ? decodeEntities(match[1]).trim() : "";
 }
 
 function family(rootFamily, route_type, materiality) {
@@ -240,6 +408,7 @@ function dedupeMatches(matches) {
 
 function routeTypeFor(item, path) {
   if (item.root_family === "T0_ROOT") return "primary_homepage";
+  if (item.root_family === "P1_PRODUCT") return path === "/product" || path === "/products" ? "product_root" : "product_slug";
   if (item.root_family === "L1_CORE_TERMS_PRIVACY") return path.includes("privacy") ? "privacy_policy" : path.includes("eula") ? "eula" : "terms";
   return item.purpose;
 }
@@ -249,6 +418,10 @@ function materialityFor(item) {
   if (item.bucket === "product_activity_profile_urls") return "product_activity";
   if (item.bucket === "data_asset_provenance_profile_urls") return "data_asset_provenance";
   return "legal_governance";
+}
+
+function hasLegalEntitySignal(value) {
+  return hasAnySignal(value, ["legal-notice", "imprint", "controller", "registered", "grievance", "dpo", "data-protection-officer"]);
 }
 
 function isDocsOrApiPath(path) {
@@ -262,7 +435,7 @@ function hasAnySignal(value, signals) {
 
 function buildMissingLimited(inventories) {
   const rows = [];
-  for (const code of ["T0_ROOT", "P0_PRODUCT_ROOT", "P1_PRODUCT_SLUG", "D1_SECURITY_TRUST", "L1_CORE_TERMS_PRIVACY"]) {
+  for (const code of ["T0_ROOT", "P1_PRODUCT", "D1_SECURITY_TRUST", "L1_CORE_TERMS_PRIVACY"]) {
     const artifact = inventories[`lossless_family__${code}`];
     if (artifact && artifact.sources.length === 0) {
       rows.push({ root_family: code, bucket_affected: artifact.bucket, missing_or_limited_source: code, search_exhausted: true, why_it_matters: "Primary source family was not found or could not be fetched during deterministic Agent 1 scouting.", status: "ABSENT_AFTER_TARGETED_PROBE" });
@@ -276,13 +449,13 @@ function sortCandidates(a, b) {
 }
 
 function priority(routeFoundBy) {
-  return { ROOT: 1, HEADER: 2, FOOTER: 3, SITEMAP: 4, KNOWN_PATH_PROBE: 5 }[routeFoundBy] || 9;
+  return { ROOT: 1, HEADER: 2, FOOTER: 3, SITEMAP: 4, SITEMAP_LINK: 4, KNOWN_PATH_PROBE: 5 }[routeFoundBy] || 9;
 }
 
-function addCandidate(candidates, url, route_found_by, fetch = null) {
+function addCandidate(candidates, url, route_found_by) {
   const clean = stripHash(url);
   if (!clean || candidates.has(clean)) return;
-  candidates.set(clean, { url: clean, route_found_by, priority_result: "PRIMARY_FOUND", fetch });
+  candidates.set(clean, { url: clean, route_found_by, priority_result: "PRIMARY_FOUND" });
 }
 
 function normalizeRootUrl(value) {
@@ -343,6 +516,20 @@ function extractHrefs(html) {
   return out;
 }
 
+function extractLinkedSitemaps(html) {
+  const out = [];
+  const regex = /<link\b[^>]*rel=["'][^"']*sitemap[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>/gi;
+  for (const match of String(html || "").matchAll(regex)) out.push(match[1]);
+  return out;
+}
+
+function extractMarkdownAlternates(html) {
+  const out = [];
+  const regex = /<link\b[^>]*rel=["'][^"']*alternate[^"']*["'][^>]*type=["']text\/markdown["'][^>]*href=["']([^"']+)["'][^>]*>/gi;
+  for (const match of String(html || "").matchAll(regex)) out.push(match[1]);
+  return out;
+}
+
 function extractSitemapLocs(xml) {
   const out = [];
   const regex = /<loc>\s*([^<]+?)\s*<\/loc>/gi;
@@ -350,28 +537,28 @@ function extractSitemapLocs(xml) {
   return out;
 }
 
-async function safeFetch(url) {
+async function safeFetchRaw(url) {
   try {
-    const fetched = await fetchSource(url);
+    const fetched = await fetchRaw(url);
     return { ok: true, ...fetched };
   } catch (error) {
     return { ok: false, url, error: error?.message || String(error), http_status: error?.http_status || null };
   }
 }
 
-async function fetchSource(url) {
+async function fetchRaw(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.sourceFetchTimeoutMs);
   try {
-    const response = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow", headers: { "user-agent": "LexNovaHQ-DiligenceReviewer/0.2 (+deterministic-m6-scout)", "accept": "text/html,application/xhtml+xml,text/plain,application/json,application/xml,text/xml,*/*;q=0.5" } });
+    const response = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow", headers: { "user-agent": "LexNovaHQ-DiligenceReviewer/0.3 (+deterministic-m6-clean-text)", "accept": "text/markdown,text/plain,text/html,application/xhtml+xml,application/json,application/xml,text/xml,*/*;q=0.5" } });
     const contentType = response.headers.get("content-type") || "";
-    const losslessText = await response.text();
+    const rawText = await response.text();
     if (!response.ok) {
       const error = new Error(`HTTP_${response.status}`);
       error.http_status = response.status;
       throw error;
     }
-    return { http_status: response.status, content_type: contentType, final_url: response.url, lossless_text: losslessText, extraction_warnings: buildWarnings(contentType, losslessText) };
+    return { http_status: response.status, content_type: contentType, final_url: response.url, raw_text: rawText, extraction_warnings: buildWarnings(contentType, rawText) };
   } catch (error) {
     if (error?.name === "AbortError") throw new Error("FETCH_TIMEOUT");
     throw error;
