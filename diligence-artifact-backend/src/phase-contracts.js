@@ -1,11 +1,19 @@
-import { AGENT_1_ARTIFACT_NAMES, BUCKET_ARTIFACT_NAMES } from "./constants.js";
+import { AGENT_1A_ARTIFACT_NAMES, AGENT_1B_ARTIFACT_NAMES, BUCKET_ARTIFACT_NAMES } from "./constants.js";
 
 export const PHASE_CONTRACTS = Object.freeze({
-  AGENT_1_SCOUT_EXTRACT: {
+  AGENT_1A_URL_MANIFEST: {
     type: "deterministic",
-    actor_id: "agent_1_scout_extract",
+    actor_id: "agent_1a_url_manifest",
     reads: [],
-    writes: AGENT_1_ARTIFACT_NAMES,
+    writes: AGENT_1A_ARTIFACT_NAMES,
+    next: "AGENT_1B_EXTRACT"
+  },
+
+  AGENT_1B_EXTRACT: {
+    type: "deterministic",
+    actor_id: "agent_1b_extract",
+    reads: ["deduped_url_manifest"],
+    writes: AGENT_1B_ARTIFACT_NAMES,
     next: "M6_BUCKET_INDEX"
   },
 
@@ -13,7 +21,7 @@ export const PHASE_CONTRACTS = Object.freeze({
     type: "model",
     agent_id: "agent_2_m6_bucket_index",
     prompt_file: "agent_2_m6_bucket_index.md",
-    reads: AGENT_1_ARTIFACT_NAMES,
+    reads: AGENT_1B_ARTIFACT_NAMES,
     writes: ["source_discovery_handoff", ...BUCKET_ARTIFACT_NAMES],
     next: "M9"
   },
