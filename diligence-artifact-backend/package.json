@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check src/*.js && node --check scripts/*.mjs",
+    "check": "node scripts/check-syntax.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
   },
