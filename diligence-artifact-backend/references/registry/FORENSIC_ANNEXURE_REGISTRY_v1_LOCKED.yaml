@@ -1,0 +1,146 @@
+schema: csv_to_yaml_table_v1
+source_file: 06_FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.csv
+source_sha256: 594ed294cff9360741e6cee9b62997d419f365ee61a7d8586ae89eb70f0196d9
+encoding: utf-8-sig
+dialect:
+  delimiter: ','
+  quotechar: '"'
+  escapechar: null
+  doublequote: false
+  skipinitialspace: false
+column_count: 12
+row_count: 10
+columns:
+- Field_ID
+- Profile_Section
+- Field_Family
+- Output_Field
+- Covers
+- Mode
+- Source_Basis
+- Conditions
+- Trigger_Outcome
+- Exclude_Fallback
+- Forbidden_Inference
+- Lock_Status
+records:
+- Field_ID: FOR.SRC.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Source ledger
+  Output_Field: Source ledger
+  Covers: Source ID; URL/material ID; source family; source status; access status; title; capture timestamp; admitted/excluded; supported fields; limitations
+  Mode: JOIN / COUNT
+  Source_Basis: source discovery + capture records
+  Conditions: C1 source was discovered or provided; C2 source admission/exclusion status exists; C3 source can be tied to profile fields or limitation.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. COUNT admitted/excluded/access-failed sources deterministically where possible.
+  Exclude_Fallback: FALLBACK_IF source metadata missing -> source_record_incomplete. Exclude search snippets as evidence.
+  Forbidden_Inference: Do not use source ledger to create substantive findings. Do not expose inaccessible/private source contents.
+  Lock_Status: LOCKED
+- Field_ID: FOR.EV.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Evidence ledger
+  Output_Field: Evidence ledger
+  Covers: Evidence ref; quote/summary; source ref; supported field IDs; evidence strength; limitation
+  Mode: JOIN
+  Source_Basis: admitted sources + material FD outcomes
+  Conditions: C1 evidence item comes from admitted source; C2 evidence supports one or more output fields; C3 quote/summary is accurate and source-linked.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF evidence is summary-only or location approximate.
+  Exclude_Fallback: FALLBACK_IF no admitted evidence -> evidence_not_available. EXCLUDE_IF snippet-only or unsupported text.
+  Forbidden_Inference: Do not fabricate quotes. Do not use registry text as target evidence.
+  Lock_Status: LOCKED
+- Field_ID: FOR.FD.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Field derivation ledger
+  Output_Field: Field derivation ledger
+  Covers: Field_ID; output field; profile/section; mode; source basis; derivation outcome; evidence refs; fallback status; limitation reason; guard triggered
+  Mode: JOIN / VALIDATE
+  Source_Basis: Field Derivation Registry + final report outputs + evidence ledger
+  Conditions: C1 report field exists in material FD registry; C2 derivation outcome is DERIVED / DERIVED_WITH_LIMITATION / CANDIDATE_ONLY / FALLBACK / EXCLUDED / CONFLICTING; C3 evidence or fallback reason is recorded.
+  Trigger_Outcome: DERIVED_IF C1 AND C2 AND C3. VALIDATE required fields have outcome and no uncontrolled UNKNOWN.
+  Exclude_Fallback: FALLBACK_IF field missing from registry -> field_registry_gap. Fallback if evidence missing -> unsupported_field_output.
+  Forbidden_Inference: Do not include private chain-of-thought or model scratchpad. Include only auditable outcome metadata.
+  Lock_Status: LOCKED
+- Field_ID: FOR.REG.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Registry evaluation ledger
+  Output_Field: Registry evaluation ledger
+  Covers: Registry row ID; exposure name; route keys; matched activity; matched surface; trigger evaluation; exclude/control evaluation; final status; evidence refs; missing proof; boundary note
+  Mode: JOIN / VALIDATE
+  Source_Basis: active registry + Legal Exposure Profile + evidence ledger
+  Conditions: C1 every active registry row is represented; C2 each row has route/trigger/exclude/status outcome; C3 evidence or absence basis is recorded.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. VALIDATE no missing rows, duplicate rows, malformed statuses, or dropped universal rows.
+  Exclude_Fallback: FALLBACK_IF row count mismatch -> registry_integrity_error. Never silently drop rows.
+  Forbidden_Inference: Do not add new registry rows or legal citations at runtime. Do not treat status as legal verdict.
+  Lock_Status: LOCKED
+- Field_ID: FOR.XREF.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Cross-profile linkage ledger
+  Output_Field: Cross-profile linkage ledger
+  Covers: Exposure row ID; target context ref; activity ref; data/asset flow ref; legal/control location ref; remediation item ref; final assessment ref; link confidence; link limitation
+  Mode: JOIN
+  Source_Basis: all material profiles + Exposure + Redline + Final Assessment
+  Conditions: C1 output item depends on upstream profile refs; C2 refs resolve to existing profile rows/fields; C3 link is specific enough to audit.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF link is broad or approximate.
+  Exclude_Fallback: FALLBACK_IF link target missing -> broken_profile_reference.
+  Forbidden_Inference: Do not create generic links to every profile item. Link only actual dependencies.
+  Lock_Status: LOCKED
+- Field_ID: FOR.LIM.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Limitations and missing proof ledger
+  Output_Field: Limitations ledger
+  Covers: Limitation ID; affected profile; affected field; missing proof; why it matters; requested evidence; downstream effect; priority; owner
+  Mode: SUMMARIZE / JOIN
+  Source_Basis: all profile limitations + Redline request list + Final Assessment limitations
+  Conditions: C1 limitation or missing proof exists; C2 affected field/profile can be identified; C3 downstream effect or request route is recorded where material.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. GROUP duplicate limitations where same proof request resolves multiple fields.
+  Exclude_Fallback: FALLBACK_IF no material limitation -> no limitation row.
+  Forbidden_Inference: Do not transform missing public proof into allegation, violation, concealment, or internal absence.
+  Lock_Status: LOCKED
+- Field_ID: FOR.QC.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Validation and quality-control ledger
+  Output_Field: Validation ledger
+  Covers: Expected registry row count; evaluated row count; missing row count; duplicate row count; invalid status count; evidence ref resolution; source-family purity; required field coverage; fallback count; blockers; warnings
+  Mode: COUNT / VALIDATE
+  Source_Basis: registry evaluation ledger + field derivation ledger + source/evidence ledgers
+  Conditions: C1 validation inputs exist; C2 deterministic checks can be run; C3 blockers/warnings are separated.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. BLOCKER_IF registry rows missing/duplicated, invalid status, unresolved required evidence refs, or required output branch missing.
+  Exclude_Fallback: FALLBACK_IF validation input missing -> validation_incomplete.
+  Forbidden_Inference: Do not let GPT estimate counts or mark validation passed without deterministic check where countable.
+  Lock_Status: LOCKED
+- Field_ID: FOR.RUN.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Runtime trace
+  Output_Field: Runtime trace
+  Covers: Run ID; submitted URL; source mode; registry version; prompt/runtime version; model/runtime mode; phase completion status; artifact IDs; timestamps; validation status
+  Mode: STATIC / JOIN
+  Source_Basis: runtime metadata + report artifacts + validation ledger
+  Conditions: C1 run metadata exists; C2 artifact/phase status exists; C3 trace is sanitized and report-safe.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF some artifact status unavailable.
+  Exclude_Fallback: FALLBACK_IF metadata missing -> runtime_trace_incomplete.
+  Forbidden_Inference: Do not include API keys, secrets, hidden prompts, private chain-of-thought, raw scratchpad, or developer-only data.
+  Lock_Status: LOCKED
+- Field_ID: FOR.REND.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Renderer and export trace
+  Output_Field: Renderer/export trace
+  Covers: screen payload status; vault payload status; report export status; renderer handoff status; appendix availability
+  Mode: JOIN / VALIDATE
+  Source_Basis: final output handoff + renderer/export artifacts
+  Conditions: C1 final output handoff exists; C2 screen/vault/export payload statuses are known; C3 renderer trace is mechanical only.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. VALIDATE renderer consumed approved report branches only.
+  Exclude_Fallback: FALLBACK_IF renderer output missing -> renderer_handoff_incomplete.
+  Forbidden_Inference: Do not allow renderer to create substantive findings, alter statuses, or rewrite registry rows.
+  Lock_Status: LOCKED
+- Field_ID: FOR.BOUND.001
+  Profile_Section: Forensic Annexures
+  Field_Family: Forensic boundary
+  Output_Field: Forensic boundary
+  Covers: Audit-only boundary; no chain-of-thought; no hidden reasoning; no secrets; no substantive legal conclusion
+  Mode: STATIC
+  Source_Basis: forensic architecture lock
+  Conditions: C1 forensic annexure emitted. C2 audit/proof layer must be separated from material report. C3 prohibited content is excluded.
+  Trigger_Outcome: DERIVED_IF C1. Always emit forensic boundary when forensic annexures are exported.
+  Exclude_Fallback: FALLBACK_IF annexure not exported -> boundary retained in technical documentation.
+  Forbidden_Inference: Do not expose model chain-of-thought, hidden scratchpad, secrets, prompt internals, or developer-only logs.
+  Lock_Status: LOCKED

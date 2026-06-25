@@ -1,0 +1,40 @@
+{
+  "package": "AGENT3_REGISTRY_REFERENCE_FILES_PACKAGE_REPAIRED",
+  "repair_scope": "AI_THREAT_REGISTRY.yaml syntax-only repair; all other reference files preserved from uploaded /mnt/data sources",
+  "files": {
+    "03_REGISTRY_EVALUATION_RULES.yaml": {
+      "bytes": 2236,
+      "sha256": "9d0d61bd7543243c262c9297987b4f7d568b21dd97a934a9a24335a325842b17"
+    },
+    "AI_THREAT_REGISTRY.yaml": {
+      "bytes": 206265,
+      "sha256": "cd71194ee586cbb12eedacb07e842d24aabce269b618411ea69a2188ca3bd19a"
+    },
+    "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml": {
+      "bytes": 359231,
+      "sha256": "0a948faefa1535ed7728d9a51cf509fc3541ffc8a7e1efbca197fda0059dc615"
+    },
+    "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml": {
+      "bytes": 9522,
+      "sha256": "c590191a403e01b8553c501db6d4886fa3b6dae7cad9c77f8a03ee2be96692ff"
+    },
+    "REGISTRY_KEY_v3_0.md": {
+      "bytes": 25723,
+      "sha256": "375a7ce1abe8f3298c0385645ef3138cb745973bcb4334b9446117c4069bb982"
+    },
+    "AI_THREAT_REGISTRY_REPAIR_AUDIT.md": {
+      "bytes": 4822,
+      "sha256": "f3cde3994d539cdda61abf22342ecf645ad7c0c07b589f8efb2f466096b308f6"
+    }
+  },
+  "validation": {
+    "AI_THREAT_REGISTRY.yaml": {
+      "strict_yaml_parse": "PASS",
+      "row_count": 98,
+      "changed_lines": 103,
+      "non_syntax_not_changed": [
+        "DOE_FIN_001"
+      ]
+    }
+  }
+}
