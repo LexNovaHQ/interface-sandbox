@@ -26,27 +26,35 @@ const FAMILY_META = Object.freeze({
   L6_ENTITY_NOTICE: ["legal_governance_profile_urls", "entity_notice_controller"]
 });
 
-const KNOWN_PATHS = Object.freeze([
-  "/", "/about", "/about-us", "/company", "/our-company", "/who-we-are",
-  "/legal", "/legal-notice", "/imprint", "/controller", "/team", "/careers", "/newsroom", "/press", "/blog", "/blogs",
-  "/product", "/products", "/platform", "/features", "/solutions", "/models", "/agents", "/assistant", "/assistants", "/studio",
-  "/api", "/apis", "/developer", "/developers", "/docs", "/integrations", "/connectors", "/actions", "/workflows", "/automation",
-  "/use-cases", "/industries", "/customers", "/stories", "/pricing", "/api-pricing", "/enterprise", "/contact-sales", "/plans",
-  "/security", "/security-center", "/data-security", "/trust", "/trust-center", "/compliance", "/compliance-center", "/soc-2", "/iso-27001",
-  "/subprocessors", "/subprocessor", "/privacy-center", "/data-protection", "/gdpr", "/dpa", "/data-processing-agreement",
-  "/enterprise-privacy", "/customer-data", "/data-processing", "/data-residency", "/retention", "/deletion", "/data-export", "/data-deletion",
-  "/responsible-ai", "/ai-policy", "/ai-transparency", "/transparency", "/safety", "/model-card", "/model-cards", "/model-details", "/usage-policy",
-  "/terms", "/terms-of-use", "/terms-of-service", "/terms-and-conditions", "/privacy", "/privacy-policy", "/eula",
-  "/aup", "/acceptable-use", "/acceptable-use-policy", "/sla", "/service-level-agreement", "/service-credit-terms", "/platform-agreement", "/customer-agreement",
-  "/content-policy", "/model-policy", "/safety-policy", "/cookie-policy", "/cookies", "/do-not-sell", "/data-privacy-framework", "/ccpa", "/legal-center", "/legal-hub", "/policies", "/terms-and-policies"
-]);
+const KNOWN_PATHS_BY_FAMILY = Object.freeze({
+  T0_ROOT: ["/"],
+  T1_IDENTITY: ["/about", "/about-us", "/company", "/our-company", "/who-we-are"],
+  T2_LEGAL_IDENTITY: ["/legal", "/legal-notice", "/imprint", "/controller"],
+  T3_OPERATOR_ENTITY: ["/privacy", "/terms", "/dpa", "/legal"],
+  T4_SUPPORTING_IDENTITY: ["/team", "/careers", "/newsroom", "/press", "/blog", "/blogs"],
+  P1_PRODUCT: ["/product", "/products"],
+  P2_PLATFORM_FEATURE_SOLUTION: ["/platform", "/features", "/solutions"],
+  P3_AI_CAPABILITY_TECHNICAL: ["/models", "/agents", "/assistant", "/assistants", "/studio", "/api", "/apis", "/developer", "/developers", "/docs", "/integrations", "/connectors", "/actions", "/workflows", "/automation"],
+  P4_USE_CASE_INDUSTRY: ["/use-cases", "/industries", "/customers", "/stories"],
+  P5_ENTERPRISE_PRICING: ["/pricing", "/api-pricing", "/enterprise", "/contact-sales", "/plans"],
+  D1_SECURITY_TRUST: ["/security", "/security-center", "/data-security", "/trust", "/trust-center", "/compliance", "/compliance-center", "/soc-2", "/iso-27001"],
+  D2_SUBPROCESSOR_PRIVACY_CENTER: ["/subprocessors", "/subprocessor", "/privacy-center", "/data-protection", "/gdpr", "/dpa", "/data-processing-agreement"],
+  D3_DATA_GOVERNANCE_CONTROLS: ["/enterprise-privacy", "/customer-data", "/data-processing", "/data-residency", "/retention", "/deletion", "/data-export", "/data-deletion"],
+  D4_DOCS_API_DATA_FLOW: ["/docs", "/developer", "/developers", "/api", "/apis", "/api-reference", "/integrations", "/connectors", "/webhooks", "/authentication", "/permissions", "/audit-logs"],
+  D5_AI_SAFETY_TRANSPARENCY: ["/responsible-ai", "/ai-policy", "/ai-transparency", "/transparency", "/safety", "/model-card", "/model-cards", "/model-details", "/usage-policy"],
+  L1_CORE_TERMS_PRIVACY: ["/terms", "/terms-of-use", "/terms-of-service", "/terms-and-conditions", "/privacy", "/privacy-policy", "/eula"],
+  L2_B2B_CONTRACTING: ["/dpa", "/data-processing-agreement", "/data-processing-addendum", "/aup", "/acceptable-use", "/acceptable-use-policy", "/sla", "/service-level-agreement", "/service-credit-terms", "/platform-agreement", "/customer-agreement", "/msa", "/order-terms"],
+  L3_AI_USAGE_GOVERNANCE: ["/usage-policy", "/content-policy", "/ai-policy", "/model-policy", "/safety-policy"],
+  L4_PRIVACY_ADJACENT_NOTICES: ["/cookie-policy", "/cookies", "/do-not-sell", "/ccpa", "/gdpr", "/data-privacy-framework"],
+  L5_LEGAL_HUB_HOSTED: ["/legal", "/legal-center", "/legal-hub", "/policies", "/terms-and-policies", "/trust", "/trust-center"],
+  L6_ENTITY_NOTICE: ["/legal-notice", "/imprint", "/controller"]
+});
 
-const LANGUAGE_SEGMENTS = new Set([
-  "arabic", "assamese", "bengali", "bodo", "dogri", "english", "gujarati", "hindi", "kannada", "kashmiri", "konkani", "maithili", "malayalam", "manipuri", "marathi", "nepali", "odia", "punjabi", "sanskrit", "santali", "sindhi", "tamil", "telugu", "urdu",
-  "en", "hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "as", "ur", "sa", "ne", "pa", "or", "od", "kok", "mai", "sd", "ks"
-]);
+const KNOWN_PATHS = Object.freeze([...new Set(Object.values(KNOWN_PATHS_BY_FAMILY).flat())]);
+const LANGUAGE_SEGMENTS = new Set(["arabic", "assamese", "bengali", "bodo", "dogri", "english", "gujarati", "hindi", "kannada", "kashmiri", "konkani", "maithili", "malayalam", "manipuri", "marathi", "nepali", "odia", "punjabi", "sanskrit", "santali", "sindhi", "tamil", "telugu", "urdu", "en", "hi", "bn", "ta", "te", "mr", "gu", "kn", "ml", "as", "ur", "sa", "ne", "pa", "or", "od", "kok", "mai", "sd", "ks"]);
 const SOCIAL_HOST_PARTS = ["linkedin.com", "x.com", "twitter.com", "youtube.com", "github.com", "discord.com", "facebook.com", "instagram.com"];
 const DATA_FLOW_SIGNALS = ["upload", "storage", "retention", "delete", "deletion", "export", "webhook", "connector", "auth", "authentication", "permission", "audit", "log", "subprocessor", "training", "customer-data", "customer content"];
+const API_DATA_FLOW_FAMILY_SEGMENTS = ["speech", "text-to-speech", "speech-to-text", "voice", "audio", "translation", "dubbing", "document", "digitisation", "digitization", "ocr", "vision", "image", "file", "batch", "transcription"];
 
 export async function buildAgent1aDedupedUrlManifest({ run }) {
   const rootUrl = normalizeRootUrl(run.root_url || run.target);
@@ -112,54 +120,10 @@ export async function buildAgent1aDedupedUrlManifest({ run }) {
 
   const sortedRows = [...familyMap.values()].sort((a, b) => a.root_family.localeCompare(b.root_family) || a.canonical_url.localeCompare(b.canonical_url));
   const familyCounters = Object.fromEntries(ROOT_FAMILY_CODES.map((code) => [code, 0]));
-  const manifestSources = sortedRows.map((row) => {
-    const n = String(++familyCounters[row.root_family]).padStart(3, "0");
-    return { manifest_id: `${row.root_family}.URL.${n}`, ...row };
-  });
+  const manifestSources = sortedRows.map((row) => ({ manifest_id: `${row.root_family}.URL.${String(++familyCounters[row.root_family]).padStart(3, "0")}`, ...row }));
   const familyIndex = Object.fromEntries(ROOT_FAMILY_CODES.map((code) => [code, manifestSources.filter((row) => row.root_family === code).map((row) => row.manifest_id)]));
 
-  return {
-    deduped_url_manifest: {
-      run_id: run.run_id,
-      target: run.target,
-      target_url: rootUrl,
-      generated_by: "agent_1a_url_manifest",
-      taxonomy_version: "M6_PHASE_1A_TIERED_DEDUPED_URL_MANIFEST_v2",
-      target_boundary: {
-        submitted_url: run.root_url || run.target,
-        resolved_primary_url: rootUrl,
-        source_mode: run.source_mode || "url",
-        target_controlled_root: new URL(rootUrl).origin,
-        target_host: rootHost,
-        allowed_host_rule: "same root host and target-controlled subdomains only"
-      },
-      source_search_rule_applied: {
-        mandatory_discovery_first: "ROOT, HEADER, FOOTER, /sitemap.xml, sitemap-index, linked sitemaps, robots sitemap references, then known-path probes. No extraction occurs in Phase 1A.",
-        dedupe_rule: "Dedupe happens before extraction using canonical root_family + canonical URL keys. www/non-www variants collapse into one manifest row.",
-        tier_rule: "PRIMARY is extracted by Phase 1B. SECONDARY and CONTEXT_ONLY remain manifest-only. METADATA_ONLY and REJECTED_NOT_EVIDENCE are never extracted.",
-        legal_exception: "Distinct public legal/governance documents are PRIMARY. Only exact aliases, gated docs, and broken pages are excluded.",
-        extraction_boundary: "Phase 1B may extract only rows with admission_tier PRIMARY and extraction_decision EXTRACT."
-      },
-      root_family_artifacts: LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES,
-      family_index: familyIndex,
-      manifest_sources: manifestSources,
-      rejected_candidates: rejectedCandidates,
-      scout_failures: scoutFailures,
-      discovery_log: discoveryLog,
-      dedupe_forensics: {
-        raw_candidate_events_seen: [...candidates.values()].reduce((sum, item) => sum + item.url_variants.length, 0) + rejectedCandidates.length,
-        canonical_candidate_urls: candidates.size,
-        raw_family_match_rows: rawFamilyMatchRows,
-        deduped_manifest_rows: manifestSources.length,
-        primary_rows_for_extraction: manifestSources.filter((row) => row.admission_tier === "PRIMARY").length,
-        manifest_only_rows: manifestSources.filter((row) => ["SECONDARY", "CONTEXT_ONLY"].includes(row.admission_tier)).length,
-        no_extract_rows: manifestSources.filter((row) => ["METADATA_ONLY", "REJECTED_NOT_EVIDENCE"].includes(row.admission_tier)).length,
-        duplicate_candidate_events_removed: [...candidates.values()].reduce((sum, item) => sum + Math.max(0, item.url_variants.length - 1), 0),
-        duplicate_family_matches_collapsed: sortedRows.reduce((sum, row) => sum + row.duplicate_match_count + row.route_type_aliases.length, 0),
-        generated_at: new Date().toISOString()
-      }
-    }
-  };
+  return { deduped_url_manifest: { run_id: run.run_id, target: run.target, target_url: rootUrl, generated_by: "agent_1a_url_manifest", taxonomy_version: "M6_PHASE_1A_TIERED_DEDUPED_URL_MANIFEST_v3", target_boundary: { submitted_url: run.root_url || run.target, resolved_primary_url: rootUrl, source_mode: run.source_mode || "url", target_controlled_root: new URL(rootUrl).origin, target_host: rootHost, allowed_host_rule: "same root host and target-controlled subdomains only" }, source_search_rule_applied: { mandatory_discovery_first: "ROOT, HEADER, FOOTER, /sitemap.xml, sitemap-index, linked sitemaps, robots sitemap references, then known-path probes. No extraction occurs in Phase 1A.", dedupe_rule: "Dedupe happens before extraction using canonical root_family + canonical URL keys. www/non-www variants collapse into one manifest row.", tier_rule: "PRIMARY is extracted by Phase 1B. SECONDARY and CONTEXT_ONLY remain manifest-only. METADATA_ONLY and REJECTED_NOT_EVIDENCE are never extracted.", legal_exception: "Distinct public legal/governance documents are PRIMARY. Only exact aliases, gated docs, and broken pages are excluded.", extraction_boundary: "Phase 1B may extract only rows with admission_tier PRIMARY and extraction_decision EXTRACT." }, root_family_artifacts: LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES, family_index: familyIndex, manifest_sources: manifestSources, rejected_candidates: rejectedCandidates, scout_failures: scoutFailures, discovery_log: discoveryLog, dedupe_forensics: { raw_candidate_events_seen: [...candidates.values()].reduce((sum, item) => sum + item.url_variants.length, 0) + rejectedCandidates.length, canonical_candidate_urls: candidates.size, raw_family_match_rows: rawFamilyMatchRows, deduped_manifest_rows: manifestSources.length, primary_rows_for_extraction: manifestSources.filter((row) => row.admission_tier === "PRIMARY").length, manifest_only_rows: manifestSources.filter((row) => ["SECONDARY", "CONTEXT_ONLY"].includes(row.admission_tier)).length, no_extract_rows: manifestSources.filter((row) => ["METADATA_ONLY", "REJECTED_NOT_EVIDENCE"].includes(row.admission_tier)).length, duplicate_candidate_events_removed: [...candidates.values()].reduce((sum, item) => sum + Math.max(0, item.url_variants.length - 1), 0), duplicate_family_matches_collapsed: sortedRows.reduce((sum, row) => sum + row.duplicate_match_count + row.route_type_aliases.length, 0), generated_at: new Date().toISOString() } } };
 }
 
 export async function buildAgent1bExtractArtifacts({ run, deduped_url_manifest }) {
@@ -170,6 +134,7 @@ export async function buildAgent1bExtractArtifacts({ run, deduped_url_manifest }
   const inventories = emptyFamilyArtifacts({ run, rootUrl });
   const sourceIndex = [];
   const manifestOnlyIndex = [];
+  const metadataOnlyIndex = [];
   const failedSourceIndex = [];
   const extractionCache = new Map();
   const familyCounters = Object.fromEntries(ROOT_FAMILY_CODES.map((code) => [code, 0]));
@@ -179,58 +144,27 @@ export async function buildAgent1bExtractArtifacts({ run, deduped_url_manifest }
     if (!familyArtifact) continue;
 
     if (manifestRow.extraction_decision !== "EXTRACT" || manifestRow.admission_tier !== "PRIMARY") {
-      const indexed = {
-        manifest_id: manifestRow.manifest_id,
-        bucket: manifestRow.bucket,
-        root_family: manifestRow.root_family,
-        canonical_url: manifestRow.canonical_url,
-        fetch_url: manifestRow.fetch_url,
-        route_type: manifestRow.route_type,
-        admission_tier: manifestRow.admission_tier,
-        variant_class: manifestRow.variant_class,
-        extraction_decision: manifestRow.extraction_decision,
-        tier_reason: manifestRow.tier_reason
-      };
-      familyArtifact.manifest_only_sources.push(indexed);
-      manifestOnlyIndex.push(indexed);
+      const indexed = manifestOnlyRecord(manifestRow);
+      if (manifestRow.admission_tier === "METADATA_ONLY" || manifestRow.extraction_decision === "NO_EXTRACT") {
+        familyArtifact.metadata_only_sources.push(indexed);
+        metadataOnlyIndex.push(indexed);
+      } else if (manifestRow.admission_tier === "REJECTED_NOT_EVIDENCE") {
+        familyArtifact.rejected_sources.push({ ...indexed, rejection_reason: manifestRow.tier_reason });
+        failedSourceIndex.push({ ...indexed, extraction_status: "REJECTED_NOT_EVIDENCE", error: manifestRow.tier_reason });
+      } else {
+        familyArtifact.manifest_only_sources.push(indexed);
+        manifestOnlyIndex.push(indexed);
+      }
       continue;
     }
 
     const extracted = await getOrExtract(extractionCache, manifestRow, rootUrl, rootHost);
     const sourceNumber = String(++familyCounters[manifestRow.root_family]).padStart(3, "0");
     const sourceId = `${manifestRow.root_family}.SRC.${sourceNumber}`;
-    const baseRow = {
-      source_id: sourceId,
-      manifest_id: manifestRow.manifest_id,
-      bucket: manifestRow.bucket,
-      root_family: manifestRow.root_family,
-      canonical_url: manifestRow.canonical_url,
-      url: manifestRow.fetch_url,
-      route_type: manifestRow.route_type,
-      route_type_aliases: manifestRow.route_type_aliases || [],
-      materiality: manifestRow.materiality,
-      discovered_by: manifestRow.discovered_by,
-      route_found_by: manifestRow.priority_route_found_by,
-      priority_result: manifestRow.priority_result,
-      admission_tier: manifestRow.admission_tier,
-      variant_class: manifestRow.variant_class,
-      extraction_decision: manifestRow.extraction_decision,
-      tier_reason: manifestRow.tier_reason,
-      execution_status: extracted.ok ? "executed_bucketed" : "access_failed_recorded_limited"
-    };
+    const baseRow = { source_id: sourceId, manifest_id: manifestRow.manifest_id, bucket: manifestRow.bucket, root_family: manifestRow.root_family, canonical_url: manifestRow.canonical_url, url: manifestRow.fetch_url, route_type: manifestRow.route_type, route_type_aliases: manifestRow.route_type_aliases || [], materiality: manifestRow.materiality, discovered_by: manifestRow.discovered_by, route_found_by: manifestRow.priority_route_found_by, priority_result: manifestRow.priority_result, admission_tier: manifestRow.admission_tier, variant_class: manifestRow.variant_class, extraction_decision: manifestRow.extraction_decision, tier_reason: manifestRow.tier_reason, execution_status: extracted.ok ? "executed_bucketed" : "access_failed_recorded_limited" };
 
     if (extracted.ok) {
-      const row = {
-        ...baseRow,
-        extraction_status: "FETCHED",
-        evidence_text_source: extracted.evidence_text_source,
-        http_status: extracted.http_status,
-        content_type: extracted.content_type,
-        final_url: extracted.final_url,
-        sha256: sha256(extracted.lossless_text),
-        lossless_text: extracted.lossless_text,
-        extraction_warnings: extracted.extraction_warnings
-      };
+      const row = { ...baseRow, extraction_status: "FETCHED", evidence_text_source: extracted.evidence_text_source, http_status: extracted.http_status, content_type: extracted.content_type, final_url: extracted.final_url, sha256: sha256(extracted.lossless_text), lossless_text: extracted.lossless_text, extraction_warnings: extracted.extraction_warnings };
       familyArtifact.sources.push(row);
       sourceIndex.push(withoutLosslessText(row));
     } else {
@@ -246,37 +180,15 @@ export async function buildAgent1bExtractArtifacts({ run, deduped_url_manifest }
     artifact.missing_limited_primary_sources = missingLimited.filter((item) => item.root_family === artifact.root_family);
     artifact.corpus_forensics.total_sources = artifact.sources.length;
     artifact.corpus_forensics.manifest_only_sources = artifact.manifest_only_sources.length;
+    artifact.corpus_forensics.metadata_only_sources = artifact.metadata_only_sources.length;
     artifact.corpus_forensics.rejected_sources = artifact.rejected_sources.length;
     artifact.dedupe_forensics = buildFamilyDedupeForensics(deduped_url_manifest, artifact);
   }
 
-  return {
-    source_family_index: {
-      run_id: run.run_id,
-      target: run.target,
-      target_url: rootUrl,
-      generated_by: "agent_1b_extract",
-      taxonomy_version: "M6_PHASE_1B_PRIMARY_ONLY_EXTRACTION_v2",
-      manifest_artifact_required: "deduped_url_manifest",
-      extraction_boundary: "Phase 1B extracted only PRIMARY rows from Phase 1A. SECONDARY and CONTEXT_ONLY remain manifest-only for downstream request.",
-      root_family_artifacts: LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES,
-      discovered_source_index: sourceIndex,
-      manifest_only_index: manifestOnlyIndex,
-      failed_source_index: failedSourceIndex,
-      missing_limited_primary_sources: missingLimited,
-      corpus_forensics: {
-        manifest_rows_read: deduped_url_manifest.manifest_sources.length,
-        primary_rows_seen: deduped_url_manifest.manifest_sources.filter((row) => row.admission_tier === "PRIMARY").length,
-        sources_extracted: sourceIndex.length,
-        manifest_only_rows: manifestOnlyIndex.length,
-        failed_or_rejected_sources: failedSourceIndex.length,
-        extraction_cache_entries: extractionCache.size,
-        generated_at: new Date().toISOString()
-      }
-    },
-    ...inventories
-  };
+  return { source_family_index: { run_id: run.run_id, target: run.target, target_url: rootUrl, generated_by: "agent_1b_extract", taxonomy_version: "M6_PHASE_1B_PRIMARY_ONLY_EXTRACTION_v3", manifest_artifact_required: "deduped_url_manifest", extraction_boundary: "Phase 1B extracted only PRIMARY rows from Phase 1A. SECONDARY and CONTEXT_ONLY remain manifest-only for downstream request. METADATA_ONLY is separately indexed and never extracted.", root_family_artifacts: LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES, discovered_source_index: sourceIndex, manifest_only_index: manifestOnlyIndex, metadata_only_index: metadataOnlyIndex, failed_source_index: failedSourceIndex, missing_limited_primary_sources: missingLimited, corpus_forensics: { manifest_rows_read: deduped_url_manifest.manifest_sources.length, primary_rows_seen: deduped_url_manifest.manifest_sources.filter((row) => row.admission_tier === "PRIMARY").length, sources_extracted: sourceIndex.length, manifest_only_rows: manifestOnlyIndex.length, metadata_only_rows: metadataOnlyIndex.length, failed_or_rejected_sources: failedSourceIndex.length, extraction_cache_entries: extractionCache.size, generated_at: new Date().toISOString() } }, ...inventories };
 }
+
+function manifestOnlyRecord(row) { return { manifest_id: row.manifest_id, bucket: row.bucket, root_family: row.root_family, canonical_url: row.canonical_url, fetch_url: row.fetch_url, route_type: row.route_type, admission_tier: row.admission_tier, variant_class: row.variant_class, extraction_decision: row.extraction_decision, tier_reason: row.tier_reason }; }
 
 function classifyCandidate(candidate, rootHost) {
   const url = new URL(candidate.preferred_fetch_url);
@@ -292,22 +204,18 @@ function classifyCandidate(candidate, rootHost) {
   if (subdomain && path === "/" && !host.startsWith("docs.") && !isAppHost(host)) matches.push(primary("P1_PRODUCT", "target_controlled_product_subdomain", "product_activity", "Target-controlled product subdomain root."));
 
   if (!subdomain && matchAny(path, ["/about", "/about-us", "/company", "/our-company", "/who-we-are"])) matches.push(primary("T1_IDENTITY", "company_identity", "target_identity", "Official company identity page."));
-  if (!subdomain && matchAny(path, ["/legal-notice", "/imprint", "/controller"])) {
-    matches.push(primary("T2_LEGAL_IDENTITY", "legal_identity_notice", "target_identity", "Public legal/entity identity notice."));
-    matches.push(primary("L6_ENTITY_NOTICE", "entity_notice_controller", "legal_governance", "Public entity/controller notice; legal exception."));
-  }
+  if (!subdomain && matchAny(path, ["/legal-notice", "/imprint", "/controller"])) { matches.push(primary("T2_LEGAL_IDENTITY", "legal_identity_notice", "target_identity", "Public legal/entity identity notice.")); matches.push(primary("L6_ENTITY_NOTICE", "entity_notice_controller", "legal_governance", "Public entity/controller notice; legal exception.")); }
   if (!subdomain && matchAny(path, ["/team", "/careers", "/newsroom", "/press"])) matches.push(secondary("T4_SUPPORTING_IDENTITY", "supporting_identity", "target_context", "Supporting identity page; manifest-only by default."));
-  if (!subdomain && isBlogPath(path)) matches.push(context("T4_SUPPORTING_IDENTITY", "blog_or_announcement", "Blog/news context; manifest-only."));
+  if (!subdomain && isBlogPath(path)) matches.push(context("T4_SUPPORTING_IDENTITY", "blog_or_announcement", "target_context", "Blog/news context; manifest-only."));
 
   if (matchAny(path, ["/product", "/products"]) || /^\/(product|products)\/[^/]+\/?$/i.test(path)) matches.push(primary("P1_PRODUCT", path === "/product" || path === "/products" ? "product_root" : "product_slug", "product_activity", "Official product root or product slug page."));
   if (matchAny(path, ["/platform", "/features", "/solutions"])) matches.push(pathDepth(path) <= 1 ? primary("P2_PLATFORM_FEATURE_SOLUTION", "platform_feature_solution_root", "product_activity", "Core platform/feature/solution root page.") : secondary("P2_PLATFORM_FEATURE_SOLUTION", "platform_feature_solution_child", "product_activity", "Feature child page; manifest-only by default."));
-  if (matchAny(path, ["/use-cases", "/industries", "/customers", "/stories"])) matches.push(pathDepth(path) <= 1 ? secondary("P4_USE_CASE_INDUSTRY", "use_case_index", "use_case_context", "Use-case/customer index; manifest-only.") : context("P4_USE_CASE_INDUSTRY", "case_study_or_story", "Customer story/case-study context; manifest-only unless downstream requests."));
+  if (matchAny(path, ["/use-cases", "/industries", "/customers", "/stories"])) matches.push(pathDepth(path) <= 1 ? secondary("P4_USE_CASE_INDUSTRY", "use_case_index", "use_case_context", "Use-case/customer index; manifest-only.") : context("P4_USE_CASE_INDUSTRY", "case_study_or_story", "use_case_context", "Customer story/case-study context; manifest-only unless downstream requests."));
   if (matchAny(path, ["/pricing", "/api-pricing", "/plans"])) matches.push(primary("P5_ENTERPRISE_PRICING", "pricing_or_plans", "commercial_terms", "Pricing/plans page."));
   if (matchAny(path, ["/enterprise", "/contact-sales"])) matches.push(secondary("P5_ENTERPRISE_PRICING", "enterprise_or_sales", "commercial_context", "Enterprise/contact-sales page; manifest-only unless substantive pricing gap."));
 
   classifyTechnical(path, host, segments, matches);
   classifyDataAndLegal(path, matches);
-
   return mergeMatchesByFamily(matches);
 }
 
@@ -322,6 +230,7 @@ function classifyTechnical(path, host, segments, matches) {
     else if (/^\/apis\/[^/]+\/?$/i.test(path) || pathDepth(path) <= 1 || docsHost) matches.push(primary("P3_AI_CAPABILITY_TECHNICAL", "api_docs_or_api_family_root", "product_activity", "API/docs root or API family root."));
     else matches.push(secondary("P3_AI_CAPABILITY_TECHNICAL", "technical_child_page", "technical_support", "Technical child page; manifest-only by default."));
   }
+  if (/^\/apis\/[^/]+\/?$/i.test(path) && hasApiDataFlowFamily(segments[1] || "")) matches.push(primary("D4_DOCS_API_DATA_FLOW", "central_api_family_data_flow", "data_flow_signal", "Central API family page implies data input/output flow and is primary for M10."));
   if (matchAny(path, ["/models"])) matches.push(pathDepth(path) <= 1 ? primary("P3_AI_CAPABILITY_TECHNICAL", "models_overview", "model_capability", "Model overview page.") : secondary("P3_AI_CAPABILITY_TECHNICAL", "model_detail", "model_support", "Model detail page; manifest-only unless only model source."));
   if (matchAny(path, ["/integrations", "/connectors"])) matches.push(pathDepth(path) <= 1 ? primary("P3_AI_CAPABILITY_TECHNICAL", "integrations_root", "product_activity", "Official integrations root page.") : secondary("P3_AI_CAPABILITY_TECHNICAL", "integration_child", "integration_support", "Integration child page; manifest-only by default."));
   if (matchAny(path, ["/changelog", "/release-notes", "/updates"])) matches.push(pathDepth(path) <= 1 ? secondary("P3_AI_CAPABILITY_TECHNICAL", "changelog_index", "technical_context", "Changelog index is secondary manifest-only.") : context("P3_AI_CAPABILITY_TECHNICAL", "changelog_entry", "technical_context", "Individual changelog entry; manifest-only."));
@@ -334,12 +243,8 @@ function classifyDataAndLegal(path, matches) {
   if (matchAny(path, ["/customer-data", "/data-processing", "/enterprise-privacy", "/data-residency", "/retention", "/deletion", "/data-export", "/data-deletion"])) matches.push(primary("D3_DATA_GOVERNANCE_CONTROLS", "data_lifecycle_controls", "data_governance", "Public customer-data/data-lifecycle controls."));
   if (hasDataFlowSignal(path) && isDocsApiOrIntegrationPath(path)) matches.push(isExamplePath(path) ? context("D4_DOCS_API_DATA_FLOW", "data_flow_example", "data_flow_context", "Example data-flow page; manifest-only.") : primary("D4_DOCS_API_DATA_FLOW", "central_docs_api_data_flow", "data_flow_signal", "Central docs/API page showing data flow/control signal."));
   if (matchAny(path, ["/responsible-ai", "/ai-policy", "/ai-transparency", "/transparency", "/safety", "/model-card", "/model-cards", "/model-details"])) matches.push(pathDepth(path) <= 1 ? primary("D5_AI_SAFETY_TRANSPARENCY", "ai_safety_transparency", "ai_governance", "Official AI safety/transparency/model-card source.") : secondary("D5_AI_SAFETY_TRANSPARENCY", "ai_safety_child", "ai_governance_support", "AI safety child page; manifest-only."));
-
   if (matchAny(path, ["/terms", "/terms-of-use", "/terms-of-service", "/terms-and-conditions", "/privacy", "/privacy-policy", "/eula"])) matches.push(primary("L1_CORE_TERMS_PRIVACY", path.includes("privacy") ? "privacy_policy" : path.includes("eula") ? "eula" : "terms", "legal_governance", "Public core legal document; legal exception."));
-  if (matchAny(path, ["/dpa", "/data-processing-agreement", "/data-processing-addendum"])) {
-    matches.push(primary("L2_B2B_CONTRACTING", "dpa_or_data_processing_addendum", "legal_governance", "Public DPA/data-processing document; legal exception."));
-    matches.push(primary("D2_SUBPROCESSOR_PRIVACY_CENTER", "dpa_or_data_processing_addendum", "data_processing", "Public DPA/data-processing document."));
-  }
+  if (matchAny(path, ["/dpa", "/data-processing-agreement", "/data-processing-addendum"])) { matches.push(primary("L2_B2B_CONTRACTING", "dpa_or_data_processing_addendum", "legal_governance", "Public DPA/data-processing document; legal exception.")); matches.push(primary("D2_SUBPROCESSOR_PRIVACY_CENTER", "dpa_or_data_processing_addendum", "data_processing", "Public DPA/data-processing document.")); }
   if (matchAny(path, ["/aup", "/acceptable-use", "/acceptable-use-policy", "/sla", "/service-level-agreement", "/service-credit-terms", "/platform-agreement", "/customer-agreement", "/msa", "/order-terms"])) matches.push(primary("L2_B2B_CONTRACTING", "b2b_contracting_document", "legal_governance", "Public B2B/legal contract document; legal exception."));
   if (matchAny(path, ["/usage-policy", "/content-policy", "/ai-policy", "/model-policy", "/safety-policy"])) matches.push(primary("L3_AI_USAGE_GOVERNANCE", "ai_or_usage_policy", "legal_governance", "Public usage/AI governance policy; legal exception."));
   if (matchAny(path, ["/cookie-policy", "/cookies", "/do-not-sell", "/ccpa", "/gdpr", "/data-privacy-framework"])) matches.push(primary("L4_PRIVACY_ADJACENT_NOTICES", "privacy_adjacent_notice", "legal_governance", "Public privacy-adjacent notice; legal exception."));
@@ -349,94 +254,22 @@ function primary(rootFamily, routeType, materiality, reason) { return row(rootFa
 function secondary(rootFamily, routeType, materiality, reason) { return row(rootFamily, routeType, materiality, "SECONDARY", "SECONDARY_SUPPORT", reason); }
 function context(rootFamily, routeType, materiality, reason) { return row(rootFamily, routeType, materiality, "CONTEXT_ONLY", "CONTEXT", reason); }
 function metadata(rootFamily, routeType, reason) { return row(rootFamily, routeType, "metadata_only", "METADATA_ONLY", "APP_OR_GATED_SHELL", reason); }
-function row(rootFamily, routeType, materiality, tier, variantClass, reason) {
-  const [bucket] = FAMILY_META[rootFamily];
-  return { bucket, root_family: rootFamily, route_type: routeType, materiality, admission_tier: tier, variant_class: variantClass, variant_cluster_id: routeType, variant_rank: tier === "PRIMARY" ? 1 : 99, tier_reason: reason };
-}
+function row(rootFamily, routeType, materiality, tier, variantClass, reason) { const [bucket] = FAMILY_META[rootFamily]; return { bucket, root_family: rootFamily, route_type: routeType, materiality, admission_tier: tier, variant_class: variantClass, variant_cluster_id: routeType, variant_rank: tier === "PRIMARY" ? 1 : 99, tier_reason: reason }; }
 function extractionDecision(tier) { return tier === "PRIMARY" ? "EXTRACT" : ["SECONDARY", "CONTEXT_ONLY"].includes(tier) ? "MANIFEST_ONLY" : "NO_EXTRACT"; }
-
-function mergeMatchesByFamily(matches) {
-  const byFamily = new Map();
-  for (const match of matches) {
-    const existing = byFamily.get(match.root_family);
-    if (!existing) { byFamily.set(match.root_family, { ...match }); continue; }
-    const better = betterTier(match, existing) ? match : existing;
-    better.route_type_aliases = unique([...(existing.route_type_aliases || []), existing.route_type, match.route_type].filter((x) => x !== better.route_type));
-    byFamily.set(match.root_family, better);
-  }
-  return [...byFamily.values()];
-}
+function mergeMatchesByFamily(matches) { const byFamily = new Map(); for (const match of matches) { const existing = byFamily.get(match.root_family); if (!existing) { byFamily.set(match.root_family, { ...match }); continue; } const better = betterTier(match, existing) ? match : existing; better.route_type_aliases = unique([...(existing.route_type_aliases || []), existing.route_type, match.route_type].filter((x) => x !== better.route_type)); byFamily.set(match.root_family, better); } return [...byFamily.values()]; }
 function betterTier(a, b) { return tierRank(a.admission_tier) < tierRank(b.admission_tier); }
 function tierRank(tier) { return { PRIMARY: 1, SECONDARY: 2, CONTEXT_ONLY: 3, METADATA_ONLY: 4, REJECTED_NOT_EVIDENCE: 5 }[tier] || 9; }
-
-function addScopedAnchors(candidates, rejectedCandidates, html, rootUrl, rootHost) {
-  const chunks = [
-    ...extractTagChunks(html, "header").map((chunk) => ({ chunk, by: "HEADER" })),
-    ...extractTagChunks(html, "footer").map((chunk) => ({ chunk, by: "FOOTER" })),
-    { chunk: html, by: "ROOT" }
-  ];
-  for (const scoped of chunks) for (const href of extractHrefs(scoped.chunk)) addCandidate(candidates, rejectedCandidates, normalizeCandidateUrl(href, rootUrl, rootHost), scoped.by, rootHost);
-}
+function addScopedAnchors(candidates, rejectedCandidates, html, rootUrl, rootHost) { const chunks = [...extractTagChunks(html, "header").map((chunk) => ({ chunk, by: "HEADER" })), ...extractTagChunks(html, "footer").map((chunk) => ({ chunk, by: "FOOTER" })), { chunk: html, by: "ROOT" }]; for (const scoped of chunks) for (const href of extractHrefs(scoped.chunk)) addCandidate(candidates, rejectedCandidates, normalizeCandidateUrl(href, rootUrl, rootHost), scoped.by, rootHost); }
 function addLinkedSitemaps(candidates, rejectedCandidates, html, rootUrl, rootHost) { for (const href of extractLinkedSitemaps(html)) addCandidate(candidates, rejectedCandidates, normalizeCandidateUrl(href, rootUrl, rootHost), "SITEMAP_LINK", rootHost); }
-async function scoutSitemaps({ candidates, rejectedCandidates, scoutFailures, discoveryLog, rootUrl, rootHost, rootHtml }) {
-  const origin = new URL(rootUrl).origin;
-  const sitemapUrls = new Set([`${origin}/sitemap.xml`, `${origin}/sitemap-index.xml`]);
-  for (const href of extractLinkedSitemaps(rootHtml)) { const url = normalizeCandidateUrl(href, rootUrl, rootHost); if (url) sitemapUrls.add(url); }
-  const robots = await safeFetchRaw(`${origin}/robots.txt`);
-  if (robots.ok) for (const line of robots.raw_text.split(/\r?\n/)) { const match = line.match(/^\s*sitemap:\s*(\S+)/i); if (match?.[1]) sitemapUrls.add(match[1].trim()); }
-  const visited = new Set();
-  const queue = [...sitemapUrls];
-  while (queue.length && visited.size < 20) {
-    const sitemapUrl = queue.shift();
-    if (!sitemapUrl || visited.has(sitemapUrl)) continue;
-    visited.add(sitemapUrl);
-    const fetched = await safeFetchRaw(sitemapUrl);
-    if (!fetched.ok) { discoveryLog.push({ step: "SITEMAP_FETCH", status: "FAIL", url: sitemapUrl, error: fetched.error }); scoutFailures.push({ url: sitemapUrl, stage: "SITEMAP", error: fetched.error }); continue; }
-    discoveryLog.push({ step: "SITEMAP_FETCH", status: "PASS", url: sitemapUrl });
-    for (const loc of extractSitemapLocs(fetched.raw_text).slice(0, 500)) {
-      const url = normalizeCandidateUrl(loc, rootUrl, rootHost);
-      if (!url) continue;
-      if (url.endsWith(".xml") && visited.size < 20) queue.push(url);
-      else addCandidate(candidates, rejectedCandidates, url, "SITEMAP", rootHost);
-    }
-  }
-}
-async function scoutKnownPaths({ candidates, rejectedCandidates, scoutFailures, discoveryLog, rootUrl, rootHost }) {
-  const origin = new URL(rootUrl).origin;
-  for (const path of KNOWN_PATHS) {
-    const url = new URL(path, origin).toString();
-    const fetched = await safeFetchRaw(url);
-    if (fetched.ok) { discoveryLog.push({ step: "KNOWN_PATH_PROBE", status: "PASS", url }); addCandidate(candidates, rejectedCandidates, url, "KNOWN_PATH_PROBE", rootHost); }
-    else if (![404, 410].includes(Number(fetched.http_status || 0))) { discoveryLog.push({ step: "KNOWN_PATH_PROBE", status: "LIMITED", url, error: fetched.error, http_status: fetched.http_status || null }); scoutFailures.push({ url, stage: "KNOWN_PATH_PROBE", error: fetched.error, http_status: fetched.http_status || null }); }
-  }
-}
-function addCandidate(candidates, rejectedCandidates, url, routeFoundBy, rootHost) {
-  if (!url) return;
-  const normalized = normalizeCandidateForManifest(url, rootHost);
-  if (!normalized) return;
-  const host = new URL(normalized.fetch_url).hostname;
-  if (isSocialHost(host)) { rejectedCandidates.push({ url, route_found_by: routeFoundBy, rejection_reason: "external_social_host" }); return; }
-  const existing = candidates.get(normalized.canonical_url_key);
-  if (existing) { existing.discovered_by = unique([...existing.discovered_by, routeFoundBy]); existing.url_variants = unique([...existing.url_variants, normalized.original_url]); existing.priority_route_found_by = chooseBetterDiscovery(existing.priority_route_found_by, routeFoundBy); return; }
-  candidates.set(normalized.canonical_url_key, { canonical_url: normalized.canonical_url, canonical_url_key: normalized.canonical_url_key, preferred_fetch_url: normalized.fetch_url, discovered_by: [routeFoundBy], priority_route_found_by: routeFoundBy, url_variants: [normalized.original_url] });
-}
+async function scoutSitemaps({ candidates, rejectedCandidates, scoutFailures, discoveryLog, rootUrl, rootHost, rootHtml }) { const origin = new URL(rootUrl).origin; const sitemapUrls = new Set([`${origin}/sitemap.xml`, `${origin}/sitemap-index.xml`]); for (const href of extractLinkedSitemaps(rootHtml)) { const url = normalizeCandidateUrl(href, rootUrl, rootHost); if (url) sitemapUrls.add(url); } const robots = await safeFetchRaw(`${origin}/robots.txt`); if (robots.ok) for (const line of robots.raw_text.split(/\r?\n/)) { const match = line.match(/^\s*sitemap:\s*(\S+)/i); if (match?.[1]) sitemapUrls.add(match[1].trim()); } const visited = new Set(); const queue = [...sitemapUrls]; while (queue.length && visited.size < 20) { const sitemapUrl = queue.shift(); if (!sitemapUrl || visited.has(sitemapUrl)) continue; visited.add(sitemapUrl); const fetched = await safeFetchRaw(sitemapUrl); if (!fetched.ok) { discoveryLog.push({ step: "SITEMAP_FETCH", status: "FAIL", url: sitemapUrl, error: fetched.error }); scoutFailures.push({ url: sitemapUrl, stage: "SITEMAP", error: fetched.error }); continue; } discoveryLog.push({ step: "SITEMAP_FETCH", status: "PASS", url: sitemapUrl }); for (const loc of extractSitemapLocs(fetched.raw_text).slice(0, 500)) { const url = normalizeCandidateUrl(loc, rootUrl, rootHost); if (!url) continue; if (url.endsWith(".xml") && visited.size < 20) queue.push(url); else addCandidate(candidates, rejectedCandidates, url, "SITEMAP", rootHost); } } }
+async function scoutKnownPaths({ candidates, rejectedCandidates, scoutFailures, discoveryLog, rootUrl, rootHost }) { const origin = new URL(rootUrl).origin; for (const path of KNOWN_PATHS) { const url = new URL(path, origin).toString(); const fetched = await safeFetchRaw(url); if (fetched.ok) { discoveryLog.push({ step: "KNOWN_PATH_PROBE", status: "PASS", url }); addCandidate(candidates, rejectedCandidates, url, "KNOWN_PATH_PROBE", rootHost); } else if (![404, 410].includes(Number(fetched.http_status || 0))) { discoveryLog.push({ step: "KNOWN_PATH_PROBE", status: "LIMITED", url, error: fetched.error, http_status: fetched.http_status || null }); scoutFailures.push({ url, stage: "KNOWN_PATH_PROBE", error: fetched.error, http_status: fetched.http_status || null }); } } }
+function addCandidate(candidates, rejectedCandidates, url, routeFoundBy, rootHost) { if (!url) return; const normalized = normalizeCandidateForManifest(url, rootHost); if (!normalized) return; const host = new URL(normalized.fetch_url).hostname; if (isSocialHost(host)) { rejectedCandidates.push({ url, route_found_by: routeFoundBy, rejection_reason: "external_social_host" }); return; } const existing = candidates.get(normalized.canonical_url_key); if (existing) { existing.discovered_by = unique([...existing.discovered_by, routeFoundBy]); existing.url_variants = unique([...existing.url_variants, normalized.original_url]); existing.priority_route_found_by = chooseBetterDiscovery(existing.priority_route_found_by, routeFoundBy); return; } candidates.set(normalized.canonical_url_key, { canonical_url: normalized.canonical_url, canonical_url_key: normalized.canonical_url_key, preferred_fetch_url: normalized.fetch_url, discovered_by: [routeFoundBy], priority_route_found_by: routeFoundBy, url_variants: [normalized.original_url] }); }
 async function getOrExtract(cache, manifestRow, rootUrl, rootHost) { const key = manifestRow.canonical_url_key; if (cache.has(key)) return cache.get(key); const extracted = await fetchBestEvidenceText(manifestRow.fetch_url, rootUrl, rootHost); cache.set(key, extracted); return extracted; }
-async function fetchBestEvidenceText(url, rootUrl, rootHost) {
-  for (const mdUrl of markdownCandidateUrls(url)) { const md = await safeFetchRaw(mdUrl); if (md.ok && isClearMarkdownText(md.raw_text, md.content_type) && !isBadEvidenceText(md.raw_text)) return toEvidence(md, "MARKDOWN_DERIVED"); }
-  const html = await safeFetchRaw(url);
-  if (!html.ok) return { ok: false, error: html.error, http_status: html.http_status || null };
-  for (const href of extractMarkdownAlternates(html.raw_text)) { const mdUrl = normalizeCandidateUrl(href, url || rootUrl, rootHost); const md = mdUrl ? await safeFetchRaw(mdUrl) : { ok: false }; if (md.ok && isClearMarkdownText(md.raw_text, md.content_type) && !isBadEvidenceText(md.raw_text)) return toEvidence(md, "MARKDOWN_ALTERNATE"); }
-  const clean = cleanHtmlToText(html.raw_text);
-  if (!clean || clean.length < 120) return { ok: false, status: "REJECTED_NOT_EVIDENCE", error: "NO_CLEAR_TEXT_AFTER_HTML_CLEAN", http_status: html.http_status || null };
-  if (isBadEvidenceText(clean)) return { ok: false, status: "REJECTED_NOT_EVIDENCE", error: "BAD_OR_PLACEHOLDER_EVIDENCE_TEXT", http_status: html.http_status || null };
-  return { ok: true, http_status: html.http_status, content_type: html.content_type, final_url: html.final_url, lossless_text: clean, evidence_text_source: "CLEANED_HTML", extraction_warnings: [...html.extraction_warnings, "RAW_HTML_NOT_STORED"] };
-}
-
-function emptyFamilyArtifacts({ run, rootUrl }) { const out = {}; for (const code of ROOT_FAMILY_CODES) { const [bucket, purpose] = FAMILY_META[code] || ["UNMAPPED_BUCKET", "unmapped_root_family"]; out[`lossless_family__${code}`] = { run_id: run.run_id, target_url: rootUrl, artifact_name: `lossless_family__${code}`, generated_by: "agent_1b_extract", bucket, root_family: code, purpose, sources: [], manifest_only_sources: [], rejected_sources: [], missing_limited_primary_sources: [], corpus_forensics: { total_sources: 0, manifest_only_sources: 0, rejected_sources: 0 }, dedupe_forensics: {} }; } return out; }
-function buildFamilyDedupeForensics(manifest, artifact) { const rows = manifest.manifest_sources.filter((row) => row.root_family === artifact.root_family); return { manifest_rows_seen: rows.length, primary_rows_seen: rows.filter((row) => row.admission_tier === "PRIMARY").length, manifest_only_rows_seen: rows.filter((row) => ["SECONDARY", "CONTEXT_ONLY"].includes(row.admission_tier)).length, canonical_urls_seen: new Set(rows.map((row) => row.canonical_url_key)).size, canonical_sources_saved: artifact.sources.length, duplicate_rows_allowed: false }; }
-function buildMissingLimited(inventories, manifest) { const rows = []; for (const code of ROOT_FAMILY_CODES) { const artifact = inventories[`lossless_family__${code}`]; const primaryManifestRows = manifest.manifest_sources.filter((row) => row.root_family === code && row.admission_tier === "PRIMARY"); if (artifact && primaryManifestRows.length === 0 && shouldReportEmptyFamily(code)) rows.push({ root_family: code, bucket_affected: artifact.bucket, missing_or_limited_source: code, search_exhausted: true, attempted_manifest_rows: manifest.manifest_sources.filter((row) => row.root_family === code).length, why_it_matters: "No PRIMARY public source was found in Phase 1A for this root family.", status: "ABSENT_AFTER_TARGETED_PROBE" }); } return rows; }
-function shouldReportEmptyFamily(code) { return !["P2_PLATFORM_FEATURE_SOLUTION", "P4_USE_CASE_INDUSTRY", "D2_SUBPROCESSOR_PRIVACY_CENTER", "D3_DATA_GOVERNANCE_CONTROLS", "D5_AI_SAFETY_TRANSPARENCY", "L2_B2B_CONTRACTING", "L3_AI_USAGE_GOVERNANCE", "L4_PRIVACY_ADJACENT_NOTICES", "L6_ENTITY_NOTICE"].includes(code); }
-
+async function fetchBestEvidenceText(url, rootUrl, rootHost) { for (const mdUrl of markdownCandidateUrls(url)) { const md = await safeFetchRaw(mdUrl); if (md.ok && isClearMarkdownText(md.raw_text, md.content_type) && !isBadEvidenceText(md.raw_text)) return toEvidence(md, "MARKDOWN_DERIVED"); } const html = await safeFetchRaw(url); if (!html.ok) return { ok: false, error: html.error, http_status: html.http_status || null }; for (const href of extractMarkdownAlternates(html.raw_text)) { const mdUrl = normalizeCandidateUrl(href, url || rootUrl, rootHost); const md = mdUrl ? await safeFetchRaw(mdUrl) : { ok: false }; if (md.ok && isClearMarkdownText(md.raw_text, md.content_type) && !isBadEvidenceText(md.raw_text)) return toEvidence(md, "MARKDOWN_ALTERNATE"); } const clean = cleanHtmlToText(html.raw_text); if (!clean || clean.length < 120) return { ok: false, status: "REJECTED_NOT_EVIDENCE", error: "NO_CLEAR_TEXT_AFTER_HTML_CLEAN", http_status: html.http_status || null }; if (isBadEvidenceText(clean)) return { ok: false, status: "REJECTED_NOT_EVIDENCE", error: "BAD_OR_PLACEHOLDER_EVIDENCE_TEXT", http_status: html.http_status || null }; return { ok: true, http_status: html.http_status, content_type: html.content_type, final_url: html.final_url, lossless_text: clean, evidence_text_source: "CLEANED_HTML", extraction_warnings: [...html.extraction_warnings, "RAW_HTML_NOT_STORED"] }; }
+function emptyFamilyArtifacts({ run, rootUrl }) { const out = {}; for (const code of ROOT_FAMILY_CODES) { const [bucket, purpose] = FAMILY_META[code] || ["UNMAPPED_BUCKET", "unmapped_root_family"]; out[`lossless_family__${code}`] = { run_id: run.run_id, target_url: rootUrl, artifact_name: `lossless_family__${code}`, generated_by: "agent_1b_extract", bucket, root_family: code, purpose, sources: [], manifest_only_sources: [], metadata_only_sources: [], rejected_sources: [], missing_limited_primary_sources: [], corpus_forensics: { total_sources: 0, manifest_only_sources: 0, metadata_only_sources: 0, rejected_sources: 0 }, dedupe_forensics: {} }; } return out; }
+function buildFamilyDedupeForensics(manifest, artifact) { const rows = manifest.manifest_sources.filter((row) => row.root_family === artifact.root_family); return { manifest_rows_seen: rows.length, primary_rows_seen: rows.filter((row) => row.admission_tier === "PRIMARY").length, manifest_only_rows_seen: rows.filter((row) => ["SECONDARY", "CONTEXT_ONLY"].includes(row.admission_tier)).length, metadata_only_rows_seen: rows.filter((row) => row.admission_tier === "METADATA_ONLY").length, canonical_urls_seen: new Set(rows.map((row) => row.canonical_url_key)).size, canonical_sources_saved: artifact.sources.length, duplicate_rows_allowed: false }; }
+function buildMissingLimited(inventories, manifest) { const rows = []; for (const code of ROOT_FAMILY_CODES) { const artifact = inventories[`lossless_family__${code}`]; const primaryManifestRows = manifest.manifest_sources.filter((row) => row.root_family === code && row.admission_tier === "PRIMARY"); if (artifact && primaryManifestRows.length === 0 && shouldReportEmptyFamily(code)) rows.push({ root_family: code, bucket_affected: artifact.bucket, missing_or_limited_source: code, search_exhausted: true, attempted_paths: KNOWN_PATHS_BY_FAMILY[code] || [], attempted_manifest_rows: manifest.manifest_sources.filter((row) => row.root_family === code).length, why_it_matters: "No PRIMARY public source was found in Phase 1A for this root family.", status: "ABSENT_AFTER_TARGETED_PROBE" }); } return rows; }
+function shouldReportEmptyFamily(code) { return code.startsWith("D") || code.startsWith("L") || ["T0_ROOT", "T1_IDENTITY", "T2_LEGAL_IDENTITY", "P1_PRODUCT", "P3_AI_CAPABILITY_TECHNICAL", "P5_ENTERPRISE_PRICING"].includes(code); }
 function matchAny(path, roots) { return roots.some((root) => path === root || path.startsWith(`${root}/`)); }
 function pathDepth(path) { return path.split("/").filter(Boolean).length; }
 function isAppHost(host) { return /^(app|dashboard|console|account|login)\./i.test(host); }
@@ -446,6 +279,7 @@ function isSdkPath(path) { return /\/(sdk|sdks|python|javascript|node|curl|clien
 function isFaqSupportPath(path) { return /\/(faq|support|help|troubleshooting)($|\/)/i.test(path); }
 function isDocsApiOrIntegrationPath(path) { return /\/(docs|developer|developers|api|apis|api-reference|integrations|connectors|webhooks|authentication|permissions|audit-logs)/i.test(path); }
 function hasDataFlowSignal(path) { return DATA_FLOW_SIGNALS.some((signal) => path.toLowerCase().includes(signal)); }
+function hasApiDataFlowFamily(value) { const normalized = String(value || "").toLowerCase(); return API_DATA_FLOW_FAMILY_SEGMENTS.some((segment) => normalized.includes(segment)); }
 function isLanguageVariant(segments) { return segments.some((segment) => LANGUAGE_SEGMENTS.has(segment.toLowerCase()) || /^[a-z]{2}-[a-z]{2}$/i.test(segment)); }
 function isBadEvidenceText(text) { const value = String(text || "").trim().toLowerCase(); return value.includes("page not found") || value.includes("this page does not exist") || value === "sarvam platform\nbuild powerful multilingual voice and speech applications with sarvam platform.\nsarvam platform"; }
 function sortCandidates(a, b) { return priority(a.priority_route_found_by) - priority(b.priority_route_found_by) || a.canonical_url.localeCompare(b.canonical_url); }
@@ -472,7 +306,7 @@ function decodeEntities(value) { return String(value || "").replace(/&nbsp;/gi, 
 function extractMetaDescription(html) { return extractFirst(html, /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || extractFirst(html, /<meta\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i); }
 function extractFirst(value, regex) { const match = String(value || "").match(regex); return match?.[1] ? decodeEntities(match[1]).trim() : ""; }
 async function safeFetchRaw(url) { try { const fetched = await fetchRaw(url); return { ok: true, ...fetched }; } catch (error) { return { ok: false, url, error: error?.message || String(error), http_status: error?.http_status || null }; } }
-async function fetchRaw(url) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), config.sourceFetchTimeoutMs); try { const response = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow", headers: { "user-agent": "LexNovaHQ-DiligenceReviewer/0.5 (+tiered-primary-extraction)", "accept": "text/markdown,text/plain,text/html,application/xhtml+xml,application/json,application/xml,text/xml,*/*;q=0.5" } }); const contentType = response.headers.get("content-type") || ""; const rawText = await response.text(); if (!response.ok) { const error = new Error(`HTTP_${response.status}`); error.http_status = response.status; throw error; } return { http_status: response.status, content_type: contentType, final_url: response.url, raw_text: rawText, extraction_warnings: buildWarnings(contentType, rawText) }; } catch (error) { if (error?.name === "AbortError") throw new Error("FETCH_TIMEOUT"); throw error; } finally { clearTimeout(timeout); } }
+async function fetchRaw(url) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), config.sourceFetchTimeoutMs); try { const response = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow", headers: { "user-agent": "LexNovaHQ-DiligenceReviewer/0.6 (+tiered-primary-extraction-cleanup)", "accept": "text/markdown,text/plain,text/html,application/xhtml+xml,application/json,application/xml,text/xml,*/*;q=0.5" } }); const contentType = response.headers.get("content-type") || ""; const rawText = await response.text(); if (!response.ok) { const error = new Error(`HTTP_${response.status}`); error.http_status = response.status; throw error; } return { http_status: response.status, content_type: contentType, final_url: response.url, raw_text: rawText, extraction_warnings: buildWarnings(contentType, rawText) }; } catch (error) { if (error?.name === "AbortError") throw new Error("FETCH_TIMEOUT"); throw error; } finally { clearTimeout(timeout); } }
 function buildWarnings(contentType, text) { const warnings = []; const lower = String(contentType || "").toLowerCase(); if (lower.includes("pdf")) warnings.push("PDF_FETCHED_AS_TEXT_NOT_PARSED"); if (String(text || "").length > 900000) warnings.push("LARGE_SOURCE_TEXT"); return warnings; }
 function withoutLosslessText(row) { const { lossless_text: _losslessText, ...rest } = row; return rest; }
 function sha256(value) { return crypto.createHash("sha256").update(String(value || "")).digest("hex"); }
