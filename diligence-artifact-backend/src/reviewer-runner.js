@@ -4,6 +4,7 @@ import { getPhaseContract } from "./phase-contracts.js";
 import { buildPhasePrompt } from "./prompt-loader.js";
 import { callGeminiJson } from "./gemini-client.js";
 import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "./agent-1-scout-extractor.js";
+import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -32,6 +33,8 @@ export async function advanceReviewerRun({ run_id }) {
     await runAgent1aUrlManifestPhase({ run, phase, contract });
   } else if (phase === "AGENT_1B_EXTRACT") {
     await runAgent1bExtractPhase({ run, phase, contract });
+  } else if (phase === "M6_BUCKET_INDEX") {
+    await runM6BucketIndexPhase({ run, phase, contract });
   } else if (phase === "COMPILER") {
     await runCompilerPhase({ run, phase, contract });
   } else if (phase === "RENDERER") {
@@ -68,6 +71,13 @@ async function runAgent1bExtractPhase({ run, phase, contract }) {
   const output = await buildAgent1bExtractArtifacts({ run, deduped_url_manifest: dedupedManifest });
   await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output });
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next });
+}
+
+async function runM6BucketIndexPhase({ run, phase, contract }) {
+  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
+  const output = buildM6SourceDiscoveryHandoff({ run, artifacts });
+  await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output.source_discovery_handoff.source_custody_summary.source_custody_status, next_phase: contract.next });
 }
 
 async function saveDeterministicArtifacts({ run, phase, actor, writes, output }) {
