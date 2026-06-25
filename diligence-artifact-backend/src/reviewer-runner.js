@@ -3,7 +3,7 @@ import { updateRunDashboardRow } from "./sheets.js";
 import { getPhaseContract } from "./phase-contracts.js";
 import { buildPhasePrompt } from "./prompt-loader.js";
 import { callGeminiJson } from "./gemini-client.js";
-import { buildLosslessSourceCorpus } from "./deterministic-source-extractor.js";
+import { buildAgent1ScoutExtractArtifacts } from "./agent-1-scout-extractor.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -28,8 +28,8 @@ export async function advanceReviewerRun({ run_id }) {
 
   if (contract.type === "model") {
     await runModelPhase({ run, phase, contract });
-  } else if (phase === "LOSSLESS_SOURCE_EXTRACTION") {
-    await runLosslessExtractionPhase({ run, phase, contract });
+  } else if (phase === "AGENT_1_SCOUT_EXTRACT") {
+    await runAgent1ScoutExtractPhase({ run, phase, contract });
   } else if (phase === "COMPILER") {
     await runCompilerPhase({ run, phase, contract });
   } else if (phase === "RENDERER") {
@@ -51,8 +51,42 @@ export async function advanceReviewerRun({ run_id }) {
 }
 
 function normalizePhase(value) {
-  if (!value || value === "URL_MANIFEST") return "M6";
+  if (!value || value === "URL_MANIFEST" || value === "M6") return "AGENT_1_SCOUT_EXTRACT";
   return value;
+}
+
+async function runAgent1ScoutExtractPhase({ run, phase, contract }) {
+  const output = await buildAgent1ScoutExtractArtifacts({ run });
+
+  for (const artifactName of contract.writes) {
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") {
+      throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
+    }
+    await saveArtifact(artifactSaveBody({
+      run_id: run.run_id,
+      phase,
+      agent_id: contract.actor_id,
+      artifact_name: artifactName,
+      artifact,
+      lock_status: "LOCKED"
+    }));
+  }
+
+  await logEvent({
+    run_id: run.run_id,
+    event_type: "DETERMINISTIC_PHASE_COMPLETED",
+    actor: contract.actor_id,
+    payload: { phase, writes: contract.writes }
+  });
+
+  await lockPhase({
+    run_id: run.run_id,
+    phase,
+    agent_id: contract.actor_id,
+    status: "LOCKED",
+    next_phase: contract.next
+  });
 }
 
 async function runModelPhase({ run, phase, contract }) {
@@ -99,32 +133,6 @@ async function runModelPhase({ run, phase, contract }) {
     run_id: run.run_id,
     phase,
     agent_id: contract.agent_id,
-    status: "LOCKED",
-    next_phase: contract.next
-  });
-}
-
-async function runLosslessExtractionPhase({ run, phase, contract }) {
-  const urlManifest = await readArtifactPayload({
-    run_id: run.run_id,
-    artifact_name: "url_manifest",
-    agent_id: contract.actor_id
-  });
-
-  const output = await buildLosslessSourceCorpus({ run, url_manifest: urlManifest });
-  await saveArtifact(artifactSaveBody({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
-    artifact_name: "lossless_source_corpus",
-    artifact: output.lossless_source_corpus,
-    lock_status: "LOCKED"
-  }));
-
-  await lockPhase({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
     status: "LOCKED",
     next_phase: contract.next
   });
