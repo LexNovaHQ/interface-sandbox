@@ -15,6 +15,16 @@ const LOCK_STATUSES = Object.freeze([
   "CONTROLLED_FAILURE"
 ]);
 
+const SOURCE_CORPUS_STATUSES = Object.freeze([
+  "FOUND_AS_PRIMARY_SOURCE",
+  "FOUND_EMBEDDED_IN_LEGAL_CORPUS",
+  "FOUND_AS_LINKED_REFERENCE",
+  "REFERENCED_BUT_NOT_FETCHED",
+  "STANDALONE_SOURCE_ABSENT",
+  "SOURCE_REJECTED_OR_FAILED",
+  "UNKNOWN_NOT_SEARCHED"
+]);
+
 const FORBIDDEN_KEYS = Object.freeze([
   "source_discovery_handoff",
   "target_profile",
@@ -29,7 +39,17 @@ const FORBIDDEN_KEYS = Object.freeze([
   "sufficiency_conclusion",
   "enforceability_assessment",
   "risk_conclusion",
-  "registry_evaluation"
+  "registry_evaluation",
+  "m6_authorization_status",
+  "m6_bucket_subcategory"
+]);
+
+const FORBIDDEN_STRING_VALUES = Object.freeze([
+  "REFERENCED_NOT_AUTHORIZED_BY_M6",
+  "M6-authorized",
+  "M6 authorized",
+  "authorized by M6",
+  "not authorized by M6"
 ]);
 
 const SOURCE_FIELD_NAMES = Object.freeze([
@@ -63,12 +83,24 @@ export function validateM9LegalCartographyIndex(output) {
     failures.push("downstream_rules must be an object");
   }
 
+  if (artifact.downstream_rules?.m6_is_navigation_not_legal_authority !== true) {
+    failures.push("downstream_rules.m6_is_navigation_not_legal_authority must be true");
+  }
+
+  if (artifact.downstream_rules?.embedded_legal_instruments_are_indexable !== true) {
+    failures.push("downstream_rules.embedded_legal_instruments_are_indexable must be true");
+  }
+
   if (!LOCK_STATUSES.includes(artifact.lock_status)) {
     failures.push(`invalid lock_status: ${artifact.lock_status || "missing"}`);
   }
 
   for (const forbidden of FORBIDDEN_KEYS) {
     if (containsKey(output, forbidden)) failures.push(`forbidden key present: ${forbidden}`);
+  }
+
+  for (const forbidden of FORBIDDEN_STRING_VALUES) {
+    if (containsStringValue(output, forbidden)) failures.push(`forbidden string value present: ${forbidden}`);
   }
 
   for (const row of collectRows(artifact)) {
@@ -79,6 +111,12 @@ export function validateM9LegalCartographyIndex(output) {
     }
   }
 
+  for (const row of [...asArray(artifact.document_coverage_index), ...asArray(artifact.incorporated_linked_document_map)]) {
+    if (Object.prototype.hasOwnProperty.call(row, "source_corpus_status") && !SOURCE_CORPUS_STATUSES.includes(row.source_corpus_status)) {
+      failures.push(`invalid source_corpus_status: ${row.source_corpus_status || "missing"}`);
+    }
+  }
+
   return failures.length ? fail(failures) : { status: "PASS", failed_gates: [], repair_instructions: [] };
 }
 
@@ -86,12 +124,16 @@ function fail(failures) {
   return {
     status: "REPAIR_REQUIRED",
     failed_gates: failures,
-    repair_instructions: ["Return exactly one legal_cartography_index object using the M9 schema and authorized legal bucket sources only."]
+    repair_instructions: ["Return exactly one legal_cartography_index object using source_corpus_status and the loaded legal corpus only. M6 is navigation, not legal authority."]
   };
 }
 
 function collectRows(artifact) {
-  return REQUIRED_KEYS.slice(0, 5).flatMap((key) => Array.isArray(artifact[key]) ? artifact[key] : []);
+  return REQUIRED_KEYS.slice(0, 5).flatMap((key) => asArray(artifact[key]));
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function hasBadSourceSyntax(value) {
@@ -102,4 +144,10 @@ function containsKey(value, key) {
   if (!value || typeof value !== "object") return false;
   if (Object.prototype.hasOwnProperty.call(value, key)) return true;
   return Object.values(value).some((item) => containsKey(item, key));
+}
+
+function containsStringValue(value, needle) {
+  if (typeof value === "string") return value.includes(needle);
+  if (!value || typeof value !== "object") return false;
+  return Object.values(value).some((item) => containsStringValue(item, needle));
 }
