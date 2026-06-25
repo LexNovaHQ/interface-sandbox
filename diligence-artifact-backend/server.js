@@ -98,7 +98,7 @@ app.get("/v1/runs/:run_id", async (req, res) => {
   }
 });
 
-app.post("/v1/artifacts/save", async (req, res) => {
+async function saveArtifactHandler(req, res) {
   try {
     requireRuntimeConfig();
     const body = parseOrThrow(saveArtifactSchema, req.body);
@@ -148,7 +148,10 @@ app.post("/v1/artifacts/save", async (req, res) => {
   } catch (error) {
     return sendError(res, error);
   }
-});
+}
+
+app.post("/v1/artifacts/save", saveArtifactHandler);
+app.post("/v1/artifacts/save-legal-cartography", saveArtifactHandler);
 
 app.get("/v1/artifacts/:run_id/:artifact_name", async (req, res) => {
   try {
