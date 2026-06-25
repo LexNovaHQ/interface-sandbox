@@ -77,7 +77,7 @@ async function runM6BucketIndexPhase({ run, phase, contract }) {
   const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
   const output = buildM6SourceDiscoveryHandoff({ run, artifacts });
   await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output });
-  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output.source_discovery_handoff.source_custody_summary.source_custody_status, next_phase: contract.next });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output.source_discovery_handoff.status || "LOCKED", next_phase: contract.next });
 }
 
 async function saveDeterministicArtifacts({ run, phase, actor, writes, output }) {
