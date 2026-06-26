@@ -165,17 +165,20 @@ Return to the upstream repair phase identified above. Do not continue this phase
 
 | active_agent_id | terminal_receipt_profile | successful_phase_line | saved_artifacts | next_agent_command |
 |---|---|---|---|---|
-| `agent_1_source_legal` | `agent_1_manual_receipt` | `PHASE LOCKED: M6_M9` | `source_discovery_handoff`, `legal_cartography_index` | backend runner advances to `M7_TARGET_PROFILE` |
+| `agent_1a_url_manifest` | `agent_1a_manual_receipt` | `PHASE LOCKED: AGENT_1A_URL_MANIFEST` | `deduped_url_manifest` | backend runner advances to `AGENT_1B_EXTRACT` |
+| `agent_1b_extract` | `agent_1b_manual_receipt` | `PHASE LOCKED: AGENT_1B_EXTRACT` | `source_family_index`, `lossless_family__*` artifacts | backend runner advances to `M6_BUCKET_INDEX` |
+| `agent_2a_bucket_routing` | `agent_2a_manual_receipt` | `PHASE LOCKED: M6_BUCKET_INDEX` | `source_discovery_handoff` | backend runner advances to `M9` |
+| `agent_2b_m9` | `agent_2b_m9_manual_receipt` | `PHASE LOCKED: M9_LEGAL_CARTOGRAPHY` | `legal_cartography_index` | backend runner advances to `M7_TARGET_PROFILE` |
 | `agent_3_target_feature` / M7 | `agent_3_m7_manual_receipt` | `PHASE LOCKED: M7_TARGET_PROFILE` | `target_profile`, `target_profile_forensics` | backend runner advances to `M8_TARGET_FEATURE_PROFILE` |
 | `agent_3_target_feature` / M8 | `agent_3_m8_manual_receipt` | `PHASE LOCKED: M8_TARGET_FEATURE_PROFILE` | `target_feature_profile`, `target_feature_profile_forensics` | backend runner advances to `M10` |
-| `agent_3_data_privacy` | `agent_3_m10_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M10` | `target_data_provenance_profile`, `target_data_provenance_profile_forensics` | backend runner advances to `M11` |
-| `agent_4_exposure_registry` | `agent_4_m11_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M11` | `target_exposure_profile`, `target_exposure_profile_forensics` | backend runner advances to `M12` |
-| `agent_5_challenge_handoff` | `agent_5_m12_m13_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M12_M13` | `operator_challenge_gate`, `final_output_handoff`, `final_output_handoff_forensics` | backend runner advances to terminal/renderer |
-| `agent_6_terminal_renderer` | `agent_6_final_terminal_PLACEHOLDER` | `PHASE LOCKED: M14` | `renderer_payload`, `terminal_validation_result` | final report/rendered result only; no next phase |
+| `agent_4_data_privacy` | `agent_3_m10_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M10_DATA_PROVENANCE` | `target_data_provenance_profile`, `target_data_provenance_profile_forensics` | backend runner advances to `M11` |
+| `agent_5_exposure_registry` | `agent_4_m11_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M11_EXPOSURE_REGISTRY` | `target_exposure_profile`, `target_exposure_profile_forensics` | backend runner advances to `M12` |
+| `agent_6_challenge_handoff` | `agent_5_m12_m13_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M12_M13` | `operator_challenge_gate`, `final_output_handoff`, `final_output_handoff_forensics` | backend runner advances to terminal/renderer |
+| `agent_7_terminal_renderer` | `agent_6_final_terminal_PLACEHOLDER` | `PHASE LOCKED: M14` | `renderer_payload`, `terminal_validation_result` | final report/rendered result only; no next phase |
 
-`TERM.S4.C1` Agent 1 and Agent 3 Target Feature rows for M7/M8 are active design rows.
+`TERM.S4.C1` Agent 1A, Agent 1B, Agent 2A, Agent 2B, Agent 3, Agent 4, and Agent 5 rows for M7/M8 are active design rows.
 
-`TERM.S4.C2` Data privacy, exposure registry, challenge/handoff, and terminal renderer rows remain placeholders until their module prompts, validators, backend schemas, and terminal contracts are locked.
+`TERM.S4.C2` Agent 6 challenge/handoff and Agent 7 terminal renderer rows remain placeholders until their module prompts, validators, backend schemas, and terminal contracts are locked.
 
 `TERM.S4.C3` Placeholder rows cannot be used for production success receipts unless their active module contracts are present in the prompt payload and validator has not returned `VALIDATOR_PROFILE_NOT_LOCKED_FOR_PRODUCTION`.
 
@@ -268,7 +271,7 @@ markdown report prose
 
 # SECTION 7 — FINAL AGENT BOUNDARY
 
-`TERM.S7.C1` Only `agent_6_terminal_renderer` may emit renderer payload or final report receipt.
+`TERM.S7.C1` Only `agent_7_terminal_renderer` may emit renderer payload or final report receipt.
 
 `TERM.S7.C2` Agent 6 terminal contract is placeholder until M14 is locked.
 
