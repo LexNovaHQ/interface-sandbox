@@ -40,6 +40,7 @@ app.use("/public", publicReviewerRouter);
 app.use("/v1", requireApiKey);
 app.use("/v1", reviewerRouter);
 app.use("/agent2", requireApiKey);
+app.use("/agent3", requireApiKey);
 
 app.post("/v1/runs/create", async (req, res) => {
   try {
@@ -56,7 +57,7 @@ app.post("/v1/runs/create", async (req, res) => {
       root_url: body.root_url,
       source_mode: body.source_mode,
       status: "CREATED",
-      current_phase: "M6_M9",
+      current_phase: "URL_MANIFEST",
       created_by: body.created_by,
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,
@@ -77,7 +78,7 @@ app.post("/v1/runs/create", async (req, res) => {
       status: saved.status,
       current_phase: saved.current_phase,
       drive_folder_link: saved.drive_folder_link,
-      next_action: `Run Agent 1 with run_id ${runId}`
+      next_action: `POST /v1/reviewer/jobs/${runId}/advance`
     });
   } catch (error) {
     return sendError(res, error);
@@ -95,74 +96,44 @@ app.get("/v1/runs/:run_id", async (req, res) => {
   }
 });
 
-app.get("/agent2/health", (_req, res) => {
+app.get("/agent3/health", (_req, res) => {
   res.json({
     ok: true,
     service: config.serviceName,
-    agent_id: "agent_2_target_feature",
+    agent_id: "agent_3_target_feature",
     phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"],
     mode: "artifact_backend_plus_reviewer_runner"
   });
 });
 
-app.get("/agent2/runs/:run_id/source-discovery-handoff", async (req, res) => {
-  try {
-    const result = await readArtifact({
-      run_id: req.params.run_id,
-      artifact_name: "source_discovery_handoff",
-      agent_id: "agent_2_target_feature"
-    });
-    return res.json(result);
-  } catch (error) {
-    return sendError(res, error);
-  }
+app.get("/agent2/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: config.serviceName,
+    agent_id: "agent_3_target_feature",
+    legacy_alias: "agent2",
+    canonical_agent: "agent3",
+    phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"],
+    mode: "artifact_backend_plus_reviewer_runner"
+  });
 });
 
-app.get("/agent2/runs/:run_id/legal-cartography-index", async (req, res) => {
-  try {
-    const result = await readArtifact({
-      run_id: req.params.run_id,
-      artifact_name: "legal_cartography_index",
-      agent_id: "agent_2_target_feature"
-    });
-    return res.json(result);
-  } catch (error) {
-    return sendError(res, error);
-  }
-});
+app.get("/agent3/runs/:run_id/source-discovery-handoff", agent3ReadRoute("source_discovery_handoff"));
+app.get("/agent3/runs/:run_id/legal-cartography-index", agent3ReadRoute("legal_cartography_index"));
+app.get("/agent2/runs/:run_id/source-discovery-handoff", agent3ReadRoute("source_discovery_handoff"));
+app.get("/agent2/runs/:run_id/legal-cartography-index", agent3ReadRoute("legal_cartography_index"));
 
-app.post("/agent2/runs/:run_id/target-profile", agent2SaveRoute("target_profile"));
-app.post("/agent2/runs/:run_id/target-profile-forensics", agent2SaveRoute("target_profile_forensics"));
-app.post("/agent2/runs/:run_id/target-feature-profile", agent2SaveRoute("target_feature_profile"));
-app.post("/agent2/runs/:run_id/target-feature-profile-forensics", agent2SaveRoute("target_feature_profile_forensics"));
+app.post("/agent3/runs/:run_id/target-profile", agent3SaveRoute("target_profile"));
+app.post("/agent3/runs/:run_id/target-profile-forensics", agent3SaveRoute("target_profile_forensics"));
+app.post("/agent3/runs/:run_id/target-feature-profile", agent3SaveRoute("target_feature_profile"));
+app.post("/agent3/runs/:run_id/target-feature-profile-forensics", agent3SaveRoute("target_feature_profile_forensics"));
+app.post("/agent2/runs/:run_id/target-profile", agent3SaveRoute("target_profile"));
+app.post("/agent2/runs/:run_id/target-profile-forensics", agent3SaveRoute("target_profile_forensics"));
+app.post("/agent2/runs/:run_id/target-feature-profile", agent3SaveRoute("target_feature_profile"));
+app.post("/agent2/runs/:run_id/target-feature-profile-forensics", agent3SaveRoute("target_feature_profile_forensics"));
 
-app.post("/agent2/runs/:run_id/lock-m7-m8", async (req, res) => {
-  try {
-    const lockStatus = req.body?.lock_status || req.body?.status;
-    if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
-
-    const result = await lockPhase({
-      run_id: req.params.run_id,
-      phase: "M8_TARGET_FEATURE_PROFILE",
-      agent_id: "agent_2_target_feature",
-      status: lockStatus,
-      next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? "M10" : null,
-      final_report_url: ""
-    });
-
-    return res.json({
-      ok: true,
-      run_id: result.run_id,
-      phase: "M7_M8",
-      backend_phase: result.phase,
-      lock_status: result.status,
-      next_phase: result.next_phase,
-      receipt: `M7_M8 ${result.status} for ${result.run_id}`
-    });
-  } catch (error) {
-    return sendError(res, error);
-  }
-});
+app.post("/agent3/runs/:run_id/lock-m7-m8", agent3LockRoute);
+app.post("/agent2/runs/:run_id/lock-m7-m8", agent3LockRoute);
 
 app.post("/v1/artifacts/save", saveArtifactHandler);
 app.post("/v1/artifacts/save-source-discovery", saveArtifactHandler);
@@ -210,7 +181,22 @@ app.get("/v1/renderer/:run_id", async (req, res) => {
   }
 });
 
-function agent2SaveRoute(artifactName) {
+function agent3ReadRoute(artifactName) {
+  return async (req, res) => {
+    try {
+      const result = await readArtifact({
+        run_id: req.params.run_id,
+        artifact_name: artifactName,
+        agent_id: "agent_3_target_feature"
+      });
+      return res.json(result);
+    } catch (error) {
+      return sendError(res, error);
+    }
+  };
+}
+
+function agent3SaveRoute(artifactName) {
   return async (req, res) => {
     try {
       const suppliedArtifactName = req.body?.artifact_name;
@@ -220,8 +206,8 @@ function agent2SaveRoute(artifactName) {
 
       const result = await saveArtifact(artifactSaveBody({
         run_id: req.params.run_id,
-        phase: agent2PhaseForArtifact(artifactName),
-        agent_id: "agent_2_target_feature",
+        phase: agent3PhaseForArtifact(artifactName),
+        agent_id: "agent_3_target_feature",
         artifact_name: artifactName,
         lock_status: req.body?.lock_status || "LOCKED",
         artifact: req.body?.artifact
@@ -233,7 +219,35 @@ function agent2SaveRoute(artifactName) {
   };
 }
 
-function agent2PhaseForArtifact(artifactName) {
+async function agent3LockRoute(req, res) {
+  try {
+    const lockStatus = req.body?.lock_status || req.body?.status;
+    if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
+
+    const result = await lockPhase({
+      run_id: req.params.run_id,
+      phase: "M8_TARGET_FEATURE_PROFILE",
+      agent_id: "agent_3_target_feature",
+      status: lockStatus,
+      next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? "M10" : null,
+      final_report_url: ""
+    });
+
+    return res.json({
+      ok: true,
+      run_id: result.run_id,
+      phase: "M7_M8",
+      backend_phase: result.phase,
+      lock_status: result.status,
+      next_phase: result.next_phase,
+      receipt: `M7_M8 ${result.status} for ${result.run_id}`
+    });
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+function agent3PhaseForArtifact(artifactName) {
   if (artifactName === "target_profile" || artifactName === "target_profile_forensics") {
     return "M7_TARGET_PROFILE";
   }
