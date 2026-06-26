@@ -4,6 +4,8 @@ export function normalizeM9LegalCartographyIndex(output) {
   const artifact = cloned.legal_cartography_index;
   if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) return cloned;
 
+  scrubLegacyStrings(cloned);
+
   for (const key of ["document_coverage_index", "document_structure_index", "incorporated_linked_document_map", "control_language_locator", "missing_limited_legal_governance_items"]) {
     if (!Array.isArray(artifact[key])) artifact[key] = [];
     normalizeRows(artifact[key]);
@@ -16,6 +18,26 @@ export function normalizeM9LegalCartographyIndex(output) {
   ensureSupportCoverage(artifact);
 
   return cloned;
+}
+
+function scrubLegacyStrings(value) {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    for (const item of value) scrubLegacyStrings(item);
+    return;
+  }
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item === "string") {
+      value[key] = item
+        .replaceAll("REFERENCED_NOT_AUTHORIZED_BY_M6", "REFERENCED_BUT_NOT_FETCHED")
+        .replaceAll("not authorized by M6", "referenced but not fetched")
+        .replaceAll("authorized by M6", "loaded in source corpus")
+        .replaceAll("M6-authorized", "source-corpus")
+        .replaceAll("M6 authorized", "source-corpus");
+    } else {
+      scrubLegacyStrings(item);
+    }
+  }
 }
 
 function normalizeRows(rows) {
