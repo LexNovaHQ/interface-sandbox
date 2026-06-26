@@ -1,0 +1,371 @@
+schema: classification_derivation_matrix_v1
+lock_status: LOCKED
+authority_scope:
+  phase: M7_M8
+  profile_section: Product / Activity Profile
+  governs:
+    - target_feature_profile.activities[].archetype_codes[]
+    - target_feature_profile.activities[].surface_context_tokens[]
+    - target_feature_profile_forensics.archetype_derivation_ledger[]
+    - target_feature_profile_forensics.surface_token_derivation_ledger[]
+  relationship_to_other_references:
+    REGISTRY_KEY_v3_0.md: vocabulary authority for allowed archetype and surface codes
+    FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml: field-level derivation authority and FD-style conditions/trigger/exclusion pattern
+    FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml: provenance and forensic ledger authority
+    AI_THREAT_REGISTRY.yaml: threat-row inventory; not used for M7_M8 threat evaluation
+execution_principles:
+  - Conditions and trigger logic are different. Conditions define tests. trigger_if defines the boolean AND/OR application.
+  - Evaluate every listed condition separately as TRUE, FALSE, or NOT_EVIDENCED.
+  - Apply trigger_if after condition testing.
+  - Apply trigger_with_limitation_if only when directionally supported but partial, indirect, or source-thin.
+  - Apply exclude_if after condition testing. If an exclusion is triggered, final result is EXCLUDED.
+  - Run forbidden_inference after exclusion. If derivation would require forbidden inference, final result is EXCLUDED or NOT_EVIDENCED.
+  - Emit a code only when trigger_result is TRIGGERED or TRIGGERED_WITH_LIMITATION.
+allowed_results:
+  condition_result:
+    - TRUE
+    - FALSE
+    - NOT_EVIDENCED
+  trigger_result:
+    - TRIGGERED
+    - TRIGGERED_WITH_LIMITATION
+    - NOT_TRIGGERED
+    - NOT_EVIDENCED
+    - EXCLUDED
+  exclusion_result:
+    - EXCLUDED
+    - NOT_EXCLUDED
+  forbidden_inference_check:
+    - PASS
+    - FAIL
+  confidence:
+    - HIGH
+    - MEDIUM
+    - LOW
+forensic_row_contract:
+  required_fields:
+    - activity_reference
+    - classification_type
+    - code
+    - conditions
+    - trigger_if
+    - trigger_result
+    - trigger_with_limitation_if
+    - exclude_if
+    - exclusion_result
+    - forbidden_inference_check
+    - confidence
+    - limitation_if_any
+  condition_required_fields:
+    - condition_id
+    - condition_text
+    - result
+    - source_ref
+    - source_url
+    - evidence_summary
+archetype_derivation_matrix:
+  UNI:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: UNI.C1
+        condition_text: Activity exists.
+      - condition_id: UNI.C2
+        condition_text: Activity is tied to reviewed target.
+      - condition_id: UNI.C3
+        condition_text: No narrower archetype is sufficiently proven.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 AND C2 true but mechanics too thin for specific behavior code.
+    exclude_if: Any narrower archetype is clearly proven.
+    forbidden_inference: Do not use UNI as lazy fallback when evidence supports a specific archetype.
+    evidence_minimum: Source proves activity exists.
+  DOE:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: DOE.C1
+        condition_text: Product performs an action on behalf of user/customer.
+      - condition_id: DOE.C2
+        condition_text: Action affects external system, transaction, record, workflow, message, booking, payment, account, or tool.
+      - condition_id: DOE.C3
+        condition_text: Action happens without per-action human approval or source uses strong autonomous execution language.
+      - condition_id: DOE.C4
+        condition_text: Action is part of product function, not incidental marketing.
+    trigger_if: C1 AND C2 AND (C3 OR strong autonomy proof) AND C4
+    trigger_with_limitation_if: C1 AND C2 proven but autonomy/per-action approval unclear.
+    exclude_if: Mere recommendation, draft, dashboard, extraction, content generation, analytics, or agent branding without external action.
+    forbidden_inference: Do not infer real-world action from AI agent branding alone.
+    evidence_minimum: Action verbs such as send, update, book, trigger, process payment, call API, modify record, execute workflow.
+  JDG:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: JDG.C1
+        condition_text: Output is decision, score, ranking, eligibility, verification, screening, approval, denial, risk rating, or assessment.
+      - condition_id: JDG.C2
+        condition_text: Subject is human/customer/employee/patient/applicant/user.
+      - condition_id: JDG.C3
+        condition_text: Output gates or materially affects access, benefit, employment, credit, insurance, healthcare, onboarding, public service, legal status, or similar consequence.
+      - condition_id: JDG.C4
+        condition_text: Decision context is product function, not merely analytics.
+    trigger_if: C1 AND C2 AND C3 AND C4
+    trigger_with_limitation_if: C1 AND C2 proven but consequence/gating is indirect or sector-level.
+    exclude_if: Pure classification of content/language/speaker, diarization, summarization, extraction, routing, or analytics with no human consequence.
+    forbidden_inference: Do not treat any classification as JDG; consequence is required.
+    evidence_minimum: Source proves human subject and consequential/gating use.
+  CMP:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: CMP.C1
+        condition_text: Product is designed for ongoing personal interaction.
+      - condition_id: CMP.C2
+        condition_text: Emotional, therapeutic, romantic, child-facing, coaching, companionship, or relational bond is a primary function.
+      - condition_id: CMP.C3
+        condition_text: Relationship persists across sessions or is marketed as relational.
+      - condition_id: CMP.C4
+        condition_text: User is the interacting subject, not enterprise operator.
+    trigger_if: C1 AND C2 AND (C3 OR explicit companion/therapy/relationship positioning)
+    trigger_with_limitation_if: Relational use case appears but not as primary product function.
+    exclude_if: Customer-support bot, FAQ bot, sales agent, enterprise workflow agent, or one-off companion-bot example.
+    forbidden_inference: Do not infer CMP from chatbot, conversation, or social language alone.
+    evidence_minimum: Source shows companion, therapy, emotional, minors, or relationship as actual product surface.
+  CRT:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: CRT.C1
+        condition_text: Product generates new text, image, audio, video, code, voice, translation, dubbing, summary, structured written output, synthetic media, or other expressive output.
+      - condition_id: CRT.C2
+        condition_text: Generated output is a primary user-facing or workflow-facing result.
+      - condition_id: CRT.C3
+        condition_text: Output is not merely metadata/classification.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 proven but output role is intermediate or limited.
+    exclude_if: Pure extraction, OCR without generated expression, classification, search, analytics-only output.
+    forbidden_inference: Do not treat every JSON/table extraction as copyrightable creation unless transformation/generation is material.
+    evidence_minimum: Source identifies generated output type.
+  RDR:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: RDR.C1
+        condition_text: Product ingests customer, user, enterprise, uploaded, public-web, third-party, document, database, or external corpus data.
+      - condition_id: RDR.C2
+        condition_text: Function depends on reading/analyzing that data.
+      - condition_id: RDR.C3
+        condition_text: Data is not solely target's own static marketing copy.
+      - condition_id: RDR.C4
+        condition_text: Source identifies the input/object.
+    trigger_if: C1 AND C2 AND C4 AND NOT C3-disqualified
+    trigger_with_limitation_if: Input exists but ownership/third-party status is unclear.
+    exclude_if: Generic data language, prompt-only inference, synthetic generation with no external data ingestion.
+    forbidden_inference: Do not infer RDR from AI model or platform alone.
+    evidence_minimum: Source names data/input object such as documents, files, databases, calls, transcripts, websites, records.
+  ORC:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: ORC.C1
+        condition_text: Product uses multiple agents, models, tools, APIs, systems, subprocessors, workflow steps, or integrations.
+      - condition_id: ORC.C2
+        condition_text: Product routes, orchestrates, or hands off between them dynamically or conditionally.
+      - condition_id: ORC.C3
+        condition_text: Orchestration is part of product mechanics, not just deployment stack.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 proven but dynamic routing/conditional orchestration unclear.
+    exclude_if: Single model/API call, generic integrations list, generic platform, manual workflow assembly.
+    forbidden_inference: Do not infer ORC from API, SDK, platform, or workflow language alone.
+    evidence_minimum: Source shows orchestration, routing, multi-agent, model gateway, tool calling, workflow engine, or conditional handoff.
+  TRN:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: TRN.C1
+        condition_text: Input includes audio, speech, voice, speaker identity, voiceprint, diarization, face, biometric, or similar human signal.
+      - condition_id: TRN.C2
+        condition_text: Product analyzes, transforms, identifies, clones, transcribes, synthesizes, or preserves that signal.
+      - condition_id: TRN.C3
+        condition_text: Signal-processing is material to activity.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 proven but identity/biometric sensitivity unclear.
+    exclude_if: Plain text translation, OCR, layout vision, generic image analysis, non-human visual data, document digitization without audio/face/biometric signal.
+    forbidden_inference: Do not treat all vision or language products as TRN.
+    evidence_minimum: Source names audio, speech, voice, diarization, face, biometric, or equivalent human signal.
+  SHD:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: SHD.C1
+        condition_text: Product is deployed for cybersecurity, threat detection, SOC, vulnerability detection, incident response, access/security monitoring, fraud/security monitoring, or system defense.
+      - condition_id: SHD.C2
+        condition_text: Product monitors, detects, blocks, alerts, investigates, remediates, or responds to threats.
+      - condition_id: SHD.C3
+        condition_text: Defense/security purpose is primary or explicit.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 or C2 proven but security-defense role is adjacent/unclear.
+    exclude_if: Compliance review, legal risk review, audit trails, observability, reliability, governance, or risk review without security defense.
+    forbidden_inference: Do not convert risk, compliance, or monitoring into SHD.
+    evidence_minimum: Source shows security-defense purpose and security action.
+  OPT:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: OPT.C1
+        condition_text: Product optimizes pricing, trading, allocation, logistics, resource use, scheduling, lending, supply chain, energy, infrastructure, or operations.
+      - condition_id: OPT.C2
+        condition_text: Output directly moves money, controls operations, or changes high-stakes allocation.
+      - condition_id: OPT.C3
+        condition_text: Optimization is autonomous or materially relied upon.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 proven but direct money/operation effect unclear.
+    exclude_if: Analytics dashboard, forecast, recommendation, manual decision support, generic optimization.
+    forbidden_inference: Do not infer OPT from efficiency/productivity claims.
+    evidence_minimum: Source proves optimization and direct operational/financial effect.
+  MOV:
+    classification_type: ARCHETYPE
+    conditions:
+      - condition_id: MOV.C1
+        condition_text: Product controls, directs, or influences a physical device/system.
+      - condition_id: MOV.C2
+        condition_text: Physical system acts in or on physical world.
+      - condition_id: MOV.C3
+        condition_text: Action can affect physical environment, navigation, vehicle, robot, drone, factory, medical device, climate, or equipment.
+      - condition_id: MOV.C4
+        condition_text: Product output is connected to control path, not only advice.
+    trigger_if: C1 AND C2 AND (C3 OR C4)
+    trigger_with_limitation_if: Physical context exists but control path is indirect.
+    exclude_if: On-device AI alone, mobile app, wearable mention, voice assistant with no physical control, location/navigation content without control.
+    forbidden_inference: Do not infer MOV from edge, device, or automotive language unless control path is shown.
+    evidence_minimum: Source proves physical system and control/governance path.
+surface_derivation_matrix:
+  Consumer-Public:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.CONSUMER_PUBLIC.C1
+        condition_text: Source identifies direct individual, consumer, creator, student, citizen, or end-user audience.
+      - condition_id: SURF.CONSUMER_PUBLIC.C2
+        condition_text: Product is publicly accessible or marketed for public/community/creator/education/public use.
+      - condition_id: SURF.CONSUMER_PUBLIC.C3
+        condition_text: Activity involves direct interaction with those users.
+    trigger_if: (C1 OR C2) AND C3
+    trigger_with_limitation_if: Public-facing use case exists but direct user interaction unclear.
+    exclude_if: Enterprise-only backend/API/internal workflow with no public user interaction.
+    forbidden_inference: Do not infer public surface from public website availability.
+    evidence_minimum: Source proves audience/access model.
+  Enterprise-Private:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.ENTERPRISE_PRIVATE.C1
+        condition_text: Source says enterprise, business, API, customer support, workflow, private cloud, VPC, on-prem, air-gapped, enterprise customers, or sector deployments.
+      - condition_id: SURF.ENTERPRISE_PRIVATE.C2
+        condition_text: Product handles enterprise/customer/employee/internal system data.
+      - condition_id: SURF.ENTERPRISE_PRIVATE.C3
+        condition_text: Product integrates with enterprise systems or private deployment.
+    trigger_if: C1 OR C2 OR C3
+    trigger_with_limitation_if: Enterprise sector named but activity-level tie is thin.
+    exclude_if: Pure consumer/public app with no business/private deployment signal.
+    forbidden_inference: Do not classify all paid SaaS as Enterprise-Private without enterprise/private evidence.
+    evidence_minimum: Source shows B2B/private deployment or enterprise use case.
+  PII:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.PII.C1
+        condition_text: Source names customer data, user data, account/profile/contact data, KYC, onboarding, identity, patient records, employee/candidate data, transcripts tied to people, or personal data.
+      - condition_id: SURF.PII.C2
+        condition_text: Activity processes data about identifiable humans.
+      - condition_id: SURF.PII.C3
+        condition_text: Personal-data object is part of activity mechanics.
+    trigger_if: (C1 OR C2) AND C3
+    trigger_with_limitation_if: Human-data context is likely but object is broad/indirect.
+    exclude_if: Generic text, documents, audio, or content with no identifiability signal.
+    forbidden_inference: Do not use could-contain-PII reasoning as trigger.
+    evidence_minimum: Source identifies personal/customer/user/human data or necessary identifiable-person use case.
+  Employment:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.EMPLOYMENT.C1
+        condition_text: Source mentions hiring, recruitment, candidate screening, HR, employee monitoring, workforce analytics, payroll, performance, workplace, or training assessment.
+      - condition_id: SURF.EMPLOYMENT.C2
+        condition_text: Activity affects applicant/employee/workforce handling.
+      - condition_id: SURF.EMPLOYMENT.C3
+        condition_text: Employment/workforce context is tied to activity.
+    trigger_if: C1 AND C3
+    trigger_with_limitation_if: Workplace use exists but no decision/effect shown.
+    exclude_if: Generic enterprise training, corporate communications, or internal productivity.
+    forbidden_inference: Do not infer Employment from enterprise context alone.
+    evidence_minimum: Source names employment/workforce context.
+  Sensitive/Biometric:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.SENSITIVE_BIOMETRIC.C1
+        condition_text: Source names biometric, voice biometric, voiceprint, face, speaker identity, diarization, health/medical/patient records, children, special-category data, or consent-sensitive audio/voice.
+      - condition_id: SURF.SENSITIVE_BIOMETRIC.C2
+        condition_text: Activity analyzes, extracts, stores, transforms, identifies, or clones that data.
+      - condition_id: SURF.SENSITIVE_BIOMETRIC.C3
+        condition_text: Sensitive class is activity-level, not only sector-level.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: C1 AND C2 proven but source is sector-level rather than activity-level.
+    exclude_if: Generic audio without identity/speaker/biometric use, generic healthcare sector mention, generic document OCR, generic image processing.
+    forbidden_inference: Do not infer sensitive surface merely because sector is sensitive.
+    evidence_minimum: Source proves sensitive class and processing action.
+  Financial:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.FINANCIAL.C1
+        condition_text: Source mentions payments, collections, invoices, banking, insurance claims, KYC for finance, credit, loans, trading, pricing, billing, money movement, payment follow-ups, or cart recovery.
+      - condition_id: SURF.FINANCIAL.C2
+        condition_text: Activity processes or influences financial transaction, financial eligibility, or financial workflow.
+      - condition_id: SURF.FINANCIAL.C3
+        condition_text: Financial context is tied to activity.
+    trigger_if: (C1 OR C2) AND C3
+    trigger_with_limitation_if: Sector-level BFSI/fintech signal without specific data/action.
+    exclude_if: General enterprise/customer support with no finance/payment/credit/insurance signal.
+    forbidden_inference: Do not infer Financial from enterprise customer type alone.
+    evidence_minimum: Source shows money, payments, lending, banking, insurance, claims, credit, pricing, or financial workflow.
+  Content&IP:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.CONTENT_IP.C1
+        condition_text: Activity generates, translates, dubs, transcribes, summarizes, writes, or transforms code/audio/video/text/images/documents.
+      - condition_id: SURF.CONTENT_IP.C2
+        condition_text: Activity ingests, stores, transforms, or outputs third-party/customer content/media/documents.
+      - condition_id: SURF.CONTENT_IP.C3
+        condition_text: Expressive/content object is material to activity.
+    trigger_if: (C1 OR C2) AND C3
+    trigger_with_limitation_if: Content object exists but expressive/IP character is indirect.
+    exclude_if: Pure classification of non-expressive metadata, language ID only, operational telemetry without expressive content.
+    forbidden_inference: Do not infer IP surface from any text field unless content/media/document object is material.
+    evidence_minimum: Source identifies content/media/document/text/audio/video/code or generated output.
+  Safety&Physical:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.SAFETY_PHYSICAL.C1
+        condition_text: Source mentions vehicles, robotics, drones, factory floors, medical devices, navigation, climate/vehicle controls, physical equipment, public safety, physical operations, or clinical action.
+      - condition_id: SURF.SAFETY_PHYSICAL.C2
+        condition_text: System output controls or materially influences physical operation/safety outcome.
+      - condition_id: SURF.SAFETY_PHYSICAL.C3
+        condition_text: Activity creates plausible physical-world effect path.
+    trigger_if: C1 AND C2 AND C3
+    trigger_with_limitation_if: Physical context exists but control/influence path is indirect.
+    exclude_if: On-device/local processing alone, mobile/wearable mention alone, navigation information without control, healthcare document processing without clinical action.
+    forbidden_inference: Do not infer Safety&Physical from hardware/device context alone.
+    evidence_minimum: Source proves physical system or physical safety pathway.
+  Infrastructure:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.INFRASTRUCTURE.C1
+        condition_text: Product is deployed in cloud, telecom, security, public-sector infrastructure, model hosting, identity/auth, observability, API backbone, or operational backbone.
+      - condition_id: SURF.INFRASTRUCTURE.C2
+        condition_text: Product failure could affect downstream systems/users.
+      - condition_id: SURF.INFRASTRUCTURE.C3
+        condition_text: Source frames product as infrastructure/platform dependency rather than ordinary app.
+    trigger_if: (C1 AND C3) OR (C1 AND C2)
+    trigger_with_limitation_if: Platform/infrastructure language exists but dependency role unclear.
+    exclude_if: Ordinary SaaS app, content tool, generic API, or platform claim without backbone role.
+    forbidden_inference: Do not infer Infrastructure from platform language alone.
+    evidence_minimum: Source shows infrastructure role, deployment model, backbone use, critical/system-level dependency.
+  Minors:
+    classification_type: SURFACE
+    conditions:
+      - condition_id: SURF.MINORS.C1
+        condition_text: Source mentions children, minors, students under 18, K-12, schools, youth, parental controls, or child users.
+      - condition_id: SURF.MINORS.C2
+        condition_text: Product is directed to or expected to be used by minors as intended audience.
+      - condition_id: SURF.MINORS.C3
+        condition_text: Activity involves direct interaction or processing about minors.
+    trigger_if: C1 AND (C2 OR C3)
+    trigger_with_limitation_if: Education/student context exists but age/minor status unclear.
+    exclude_if: Generic education, training, language learning, public access, content creation without minors/children/K-12 proof.
+    forbidden_inference: Do not infer minors from students, education, or learning unless age-directed context is shown.
+    evidence_minimum: Source names minors, children, K-12, schools, or clear child-directed use.
