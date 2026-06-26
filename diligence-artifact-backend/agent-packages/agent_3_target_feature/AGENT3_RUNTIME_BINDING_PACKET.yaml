@@ -1,39 +1,119 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v5_agent3_separate_phase_only
+runtime_contract_version: v2_synced_m7_m8_split_save
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target Feature Agent
 active_phase_scope: M7_TARGET_PROFILE_THEN_M8_TARGET_FEATURE_PROFILE
+
 run_mode: PHASED_AGENT
 run_id_required: true
 run_id: "{{run_id}}"
 
-structure_authority:
-  packet_structure_supreme: true
-  no_module_merge: true
-  backend_supports_agent_structure: true
+prompt_assembly_position:
+  runtime_first: true
+  packet_after_runtime: true
+  phase_prompt_after_packet: true
 
 allowed_modules:
   - M7_TARGET_PROFILE
   - M8_TARGET_FEATURE_PROFILE
 
-write_artifacts_in_order:
+read_artifacts:
+  common:
+    - source_discovery_handoff
+    - legal_cartography_index
   M7_TARGET_PROFILE:
+    - source_discovery_handoff
+    - legal_cartography_index
+    - lossless_family__T0_ROOT
+    - lossless_family__T1_IDENTITY
+    - lossless_family__T2_LEGAL_IDENTITY
+    - lossless_family__T3_OPERATOR_ENTITY
+    - lossless_family__T4_SUPPORTING_IDENTITY
+  M8_TARGET_FEATURE_PROFILE:
+    - source_discovery_handoff
     - target_profile
     - target_profile_forensics
+    - lossless_family__P1_PRODUCT
+    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+    - lossless_family__P4_USE_CASE_INDUSTRY
+    - lossless_family__P5_ENTERPRISE_PRICING
+
+required_reference_files:
+  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+  - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
+
+write_artifacts_in_order:
+  M7_TARGET_PROFILE:
+    PHASE_B1_MATERIAL_SAVE_EVENT:
+      - target_profile
+    PHASE_D_FORENSIC_SAVE_EVENT:
+      - target_profile_forensics
   M8_TARGET_FEATURE_PROFILE:
-    - target_feature_profile
-    - target_feature_profile_forensics
+    PHASE_B1_MATERIAL_SAVE_EVENT:
+      - target_feature_profile
+    PHASE_D_FORENSIC_SAVE_EVENT:
+      - target_feature_profile_forensics
 
 phase_locks:
   - M7_TARGET_PROFILE
   - M8_TARGET_FEATURE_PROFILE
 
-sequence_completion_marker: AGENT3_TARGET_FEATURE_SEQUENCE_COMPLETE
-sequence_completion_meaning: "Agent 3 sequence completes only after M7_TARGET_PROFILE and M8_TARGET_FEATURE_PROFILE run as separate backend phases and all four artifacts save in enforced order."
+phase_sequence:
+  - M7_TARGET_PROFILE.PHASE_A_SOURCE_EXTRACTION
+  - M7_TARGET_PROFILE.PHASE_B_PROFILE_DERIVATION
+  - M7_TARGET_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
+  - M7_TARGET_PROFILE.PHASE_C_FORENSIC_DERIVATION
+  - M7_TARGET_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
+  - M8_TARGET_FEATURE_PROFILE.PHASE_A_SOURCE_EXTRACTION
+  - M8_TARGET_FEATURE_PROFILE.PHASE_B_PROFILE_DERIVATION
+  - M8_TARGET_FEATURE_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
+  - M8_TARGET_FEATURE_PROFILE.PHASE_C_FORENSIC_DERIVATION
+  - M8_TARGET_FEATURE_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
 
-backend_permission_profile: agent_3_target_feature
-validator_profile: agent_3_sequential_validator
-phase_packet_contract: agent_3_sequential_phase_packet_contract
-terminal_receipt_profile: agent_3_backend_json_only
+phase_gate_rules:
+  - M7 Phase B1 returns and saves only target_profile.
+  - M7 Phase C may begin only after saved target_profile exists.
+  - M7 Phase D returns and saves only target_profile_forensics.
+  - M8 may begin only after saved target_profile and target_profile_forensics exist.
+  - M8 Phase B1 returns and saves only target_feature_profile.
+  - M8 Phase C may begin only after saved target_feature_profile exists.
+  - M8 Phase D returns and saves only target_feature_profile_forensics.
+  - M10 may begin only after saved target_feature_profile and target_feature_profile_forensics exist.
+  - Production backend execution must not combine a material artifact and its forensic artifact in the same response.
+
+forbidden_modules:
+  - M6_SOURCE_DISCOVERY
+  - M9_LEGAL_CARTOGRAPHY
+  - M10_DATA_PROVENANCE
+  - M11_EXPOSURE_REGISTRY
+  - M12_OPERATOR_CHALLENGE
+  - M13_OUTPUT_HANDOFF
+  - M14_TERMINAL_RENDERER
+
+forbidden_outputs:
+  - source_discovery_handoff
+  - legal_cartography_index
+  - target_data_provenance_profile
+  - target_exposure_profile
+  - operator_challenge_gate
+  - final_output_handoff
+  - renderer_payload
+  - registry_row_evaluation
+  - legal_risk_finding
+  - privacy_readiness_finding
+  - combined_material_and_forensic_response
+  - four_artifact_target_feature_bundle
+  - phase_output_wrapper
+  - terminal_receipt_in_backend_mode
+
+backend_permission_profile: agent_3_target_feature_m7_then_m8_split_save
+validator_profile: agent_3_m7_then_m8_split_save_validator
+phase_packet_contract: agent_3_target_feature_split_phase_packet_contract
+terminal_receipt_profile: agent_3_target_feature_manual_receipt_only
+
+next_agent_command: "backend runner advances to M10 only after M8_TARGET_FEATURE_PROFILE lock"
+stop_condition: "Stop after M8_TARGET_FEATURE_PROFILE lock."
 </RUNTIME_BINDING_PACKET>
