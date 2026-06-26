@@ -80,7 +80,7 @@ export const PHASE_CONTRACTS = Object.freeze({
     agent_id: "agent_3_target_feature",
     prompt_files: [
       ...AGENT_3_RUNTIME_FILES,
-      `${AGENT_3_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_RUNTIME_SYNC_PATCHED.md`,
+      `${AGENT_3_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md`,
       ...AGENT_3_VALIDATION_FILES
     ],
     reads: [
@@ -101,7 +101,7 @@ export const PHASE_CONTRACTS = Object.freeze({
     agent_id: "agent_3_target_feature",
     prompt_files: [
       ...AGENT_3_RUNTIME_FILES,
-      `${AGENT_3_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_RUNTIME_SYNC_PATCHED.md`,
+      `${AGENT_3_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md`,
       ...AGENT_3_VALIDATION_FILES
     ],
     reads: [
