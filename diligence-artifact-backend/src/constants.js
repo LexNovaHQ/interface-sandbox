@@ -7,7 +7,6 @@ export const PHASES = Object.freeze([
   "M9",
   "M7_TARGET_PROFILE",
   "M8_TARGET_FEATURE_PROFILE",
-  "M7_M8",
   "M10",
   "M11",
   "M12",
@@ -144,6 +143,21 @@ export const WRITE_PERMISSIONS = Object.freeze({
   operator: ARTIFACT_NAMES
 });
 
+export const PHASE_WRITE_PERMISSIONS = Object.freeze({
+  AGENT_1A_URL_MANIFEST: AGENT_1A_ARTIFACT_NAMES,
+  AGENT_1B_EXTRACT: AGENT_1B_ARTIFACT_NAMES,
+  M6_BUCKET_INDEX: ["source_discovery_handoff"],
+  M9: ["legal_cartography_index"],
+  M7_TARGET_PROFILE: ["target_profile", "target_profile_forensics"],
+  M8_TARGET_FEATURE_PROFILE: ["target_feature_profile", "target_feature_profile_forensics"],
+  M10: ["data_provenance_profile"],
+  M11: ["exposure_registry_profile"],
+  M12: ["challenge_gate"],
+  COMPILER: ["final_output_handoff"],
+  RENDERER: ["renderer_payload"],
+  COMPLETE: []
+});
+
 export const READ_PERMISSIONS = Object.freeze({
   agent_1a_url_manifest: [],
   agent_1b_extract: ["deduped_url_manifest"],
@@ -167,5 +181,14 @@ export function assertKnownPhase(phase) {
 }
 
 export function assertKnownAgent(agent) {
-  if (!AGENTS.includes(agent)) throw new Error(`INVALID_AGENT:${agent || "missing"}`);
+  if (!AGENTS.includes(agent)) throw new Error(`INVALID_AGENT:${agent}`);
+}
+
+export function assertPhaseCanWriteArtifact(phase, artifactName) {
+  assertKnownPhase(phase);
+  assertKnownArtifactName(artifactName);
+  const allowed = PHASE_WRITE_PERMISSIONS[phase] || [];
+  if (!allowed.includes(artifactName)) {
+    throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifactName}`);
+  }
 }
