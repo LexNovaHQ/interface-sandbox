@@ -7,13 +7,26 @@
   "backend_phase": "M9",
   "active_agent_id": "agent_2b_m9",
   "validator_enum_sync": true,
-  "forbidden_old_values_blocked": [
+  "backend_normalizer_sync": true,
+  "structure_to_coverage_parity_sync": true,
+  "forbidden_old_values_blocked_or_normalized": [
+    "Embedded",
     "EMBEDDED_TEXT",
+    "Family Probe",
     "ABSENT_PROBE",
+    "Referenced",
     "REFERENCED_EXTERNAL",
     "AI_USAGE_GOVERNANCE",
+    "PRIVACY_ADJACENT_NOTICES",
     "REFERENCED_NOT_AUTHORIZED_BY_M6",
-    "ABSENT_AFTER_M6_TARGETED_PROBE"
+    "ABSENT_AFTER_M6_TARGETED_PROBE",
+    "UPLOADED_PUBLIC_MATERIAL",
+    "PASTED_PUBLIC_MATERIAL",
+    "SYNTHETIC_DEMO"
+  ],
+  "latest_live_failure_classes_addressed": [
+    "missing_limited_legal_governance_items invalid artifact_class: PRIVACY_ADJACENT_NOTICES",
+    "Support Services / Support Terms annexure appears in structure but is missing from document_coverage_index"
   ],
   "ready_for_backend_prompt_loading": true
 }
