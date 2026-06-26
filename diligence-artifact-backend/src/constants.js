@@ -119,6 +119,9 @@ export const ARTIFACT_NAMES = Object.freeze([
 export const AGENTS = Object.freeze([
   "agent_1a_url_manifest",
   "agent_1b_extract",
+  "agent_2a_bucket_routing",
+  "agent_2b_m9",
+  "agent_3_target_feature",
   "agent_2_m6_bucket_index",
   "agent_3_m9",
   "agent_2_target_feature",
@@ -134,6 +137,9 @@ export const AGENTS = Object.freeze([
 export const WRITE_PERMISSIONS = Object.freeze({
   agent_1a_url_manifest: AGENT_1A_ARTIFACT_NAMES,
   agent_1b_extract: AGENT_1B_ARTIFACT_NAMES,
+  agent_2a_bucket_routing: ["source_discovery_handoff"],
+  agent_2b_m9: ["legal_cartography_index"],
+  agent_3_target_feature: ["target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics"],
   agent_2_m6_bucket_index: ["source_discovery_handoff"],
   agent_3_m9: ["legal_cartography_index"],
   agent_2_target_feature: ["target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics"],
@@ -149,6 +155,9 @@ export const WRITE_PERMISSIONS = Object.freeze({
 export const READ_PERMISSIONS = Object.freeze({
   agent_1a_url_manifest: [],
   agent_1b_extract: ["deduped_url_manifest"],
+  agent_2a_bucket_routing: AGENT_1_ARTIFACT_NAMES,
+  agent_2b_m9: ["source_discovery_handoff", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
+  agent_3_target_feature: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
   agent_2_m6_bucket_index: AGENT_1_ARTIFACT_NAMES,
   agent_3_m9: ["source_discovery_handoff", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
   agent_2_target_feature: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
