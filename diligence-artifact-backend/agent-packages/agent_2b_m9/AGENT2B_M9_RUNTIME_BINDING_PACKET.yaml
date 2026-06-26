@@ -1,0 +1,70 @@
+<RUNTIME_BINDING_PACKET>
+runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
+runtime_contract_version: v1_agent2b_m9_current
+active_agent_id: agent_2b_m9
+active_agent_name: Interface Legal Cartography Agent
+active_phase_scope: M9_ONLY
+run_mode: PHASED_AGENT
+run_id_required: true
+run_id: "{{run_id}}"
+
+structure_authority:
+  packet_structure_supreme: true
+  no_module_merge: true
+  backend_supports_agent_structure: true
+  backend_must_not_dictate_prompt_structure: true
+
+allowed_modules:
+  - M9_LEGAL_CARTOGRAPHY
+
+read_artifacts:
+  - source_discovery_handoff
+  - lossless_family__L1_CORE_TERMS_PRIVACY
+  - lossless_family__L2_B2B_CONTRACTING
+  - lossless_family__L3_AI_USAGE_GOVERNANCE
+  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+  - lossless_family__L5_LEGAL_HUB_HOSTED
+  - lossless_family__L6_ENTITY_NOTICE
+
+write_artifacts_in_order:
+  - legal_cartography_index
+
+phase_lock:
+  - M9
+phase_lock_meaning: "Agent 2B locks only M9 after legal_cartography_index validates and saves. M6 belongs to Agent 2A and is not executed by this package."
+
+forbidden_modules:
+  - M6_SOURCE_DISCOVERY
+  - M7_TARGET_PROFILE
+  - M8_TARGET_FEATURE_PROFILE
+  - M10_DATA_PROVENANCE
+  - M11_EXPOSURE_REGISTRY
+  - M12_OPERATOR_CHALLENGE
+  - M13_OUTPUT_HANDOFF
+  - M14_TERMINAL_RENDERER
+
+forbidden_outputs:
+  - source_discovery_handoff
+  - target_profile
+  - target_profile_forensics
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - data_provenance_profile
+  - exposure_registry_profile
+  - challenge_gate
+  - final_output_handoff
+  - renderer_payload
+  - legal_advice
+  - compliance_conclusion
+  - sufficiency_conclusion
+  - enforceability_assessment
+  - risk_conclusion
+  - registry_evaluation
+
+backend_permission_profile: agent_2b_m9
+validator_profile: agent_2b_m9_legal_cartography_validator
+phase_packet_contract: agent_2b_m9_phase_packet_contract
+terminal_receipt_profile: agent_2b_m9_same_chat_receipt
+next_agent_command: "@Interface Target Feature Agent Continue run {{run_id}}."
+stop_condition: "Stop after legal_cartography_index saves and M9 locks."
+</RUNTIME_BINDING_PACKET>
