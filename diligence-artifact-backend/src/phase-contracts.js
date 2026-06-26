@@ -18,7 +18,7 @@ const AGENT_3_REFERENCE_FILES = Object.freeze([
 const AGENT_3_PACKAGE_ROOT = "agent-packages/agent_3_target_feature";
 
 const AGENT_3_RUNTIME_FILES = Object.freeze([
-  `${AGENT_3_PACKAGE_ROOT}/AGENT2_RUNTIME_BINDING_PACKET.yaml`,
+  `${AGENT_3_PACKAGE_ROOT}/AGENT3_RUNTIME_BINDING_PACKET.yaml`,
   `${AGENT_3_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`
 ]);
 
@@ -55,7 +55,7 @@ export const PHASE_CONTRACTS = Object.freeze({
   M9: {
     type: "model",
     agent_id: "agent_2b_m9",
-    prompt_file: "agent_3_m9.md",
+    prompt_files: ["agent_3_m9.md", "agent_2b_m9_identity_overlay.md"],
     reads: [
       "source_discovery_handoff",
       ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES
