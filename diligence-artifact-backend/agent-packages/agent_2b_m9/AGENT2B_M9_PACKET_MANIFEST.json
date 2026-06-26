@@ -1,0 +1,32 @@
+{
+  "packet_name": "AGENT2B_M9_LEGAL_CARTOGRAPHY_PROMPT_PACKET",
+  "version": "v1_current_backend_m9_enum_sync",
+  "active_agent_id": "agent_2b_m9",
+  "active_phase_scope": "M9_ONLY",
+  "ignored_from_uploaded_zip": [
+    "AGENT1 runtime identity",
+    "M6 prompt module",
+    "combined Agent1 packet M6 portions"
+  ],
+  "read_artifacts": [
+    "source_discovery_handoff",
+    "lossless_family__L1_CORE_TERMS_PRIVACY",
+    "lossless_family__L2_B2B_CONTRACTING",
+    "lossless_family__L3_AI_USAGE_GOVERNANCE",
+    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
+    "lossless_family__L5_LEGAL_HUB_HOSTED",
+    "lossless_family__L6_ENTITY_NOTICE"
+  ],
+  "write_artifacts_in_order": [
+    "legal_cartography_index"
+  ],
+  "components": [
+    "AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
+    "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+    "04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
+    "00_VALIDATOR_RULES_INTEGRATED.md",
+    "00_TERMINAL_RECEIPT_RULES_INTEGRATED.md",
+    "AGENT2B_M9_PROMPT_STACK_ORDER.md",
+    "AGENT2B_M9_PACKET_VALIDATION.json"
+  ]
+}
