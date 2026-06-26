@@ -45,8 +45,6 @@ export async function advanceReviewerRun({ run_id }) {
       await runCompilerPhase({ run, phase, contract });
     } else if (phase === "RENDERER") {
       await runRendererPhase({ run, phase, contract });
-    } else if (contract.type === "sequence_alias") {
-      throw new Error(`LEGACY_PHASE_DISABLED:${phase}`);
     } else {
       throw new Error(`UNKNOWN_PHASE_TYPE:${phase}:${contract.type}`);
     }
@@ -69,7 +67,6 @@ export async function advanceReviewerRun({ run_id }) {
 
 function normalizePhase(value) {
   if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST";
-  if (value === "M7_M8") throw new Error("LEGACY_PHASE_DISABLED:M7_M8:Use M7_TARGET_PROFILE then M8_TARGET_FEATURE_PROFILE");
   return value;
 }
 
@@ -96,101 +93,50 @@ async function runM6BucketIndexPhase({ run, phase, contract }) {
 async function saveDeterministicArtifacts({ run, phase, actor, writes, output }) {
   for (const artifactName of writes) {
     const artifact = output?.[artifactName];
-    if (!artifact || typeof artifact !== "object") {
-      throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
-    }
-    await saveArtifact(artifactSaveBody({
-      run_id: run.run_id,
-      phase,
-      agent_id: actor,
-      artifact_name: artifactName,
-      artifact,
-      lock_status: "LOCKED"
-    }));
+    if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: actor, artifact_name: artifactName, artifact, lock_status: "LOCKED" }));
   }
 
-  await logEvent({
-    run_id: run.run_id,
-    event_type: "DETERMINISTIC_PHASE_COMPLETED",
-    actor,
-    payload: { phase, writes }
-  });
+  await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PHASE_COMPLETED", actor, payload: { phase, writes } });
 }
 
 async function runModelPhase({ run, phase, contract }) {
   const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
-  const prompt = await buildPhasePrompt({
-    prompt_file: contract.prompt_file,
-    prompt_files: contract.prompt_files,
-    phase,
-    run,
-    artifacts,
-    writes: contract.writes,
-    references: contract.references || []
-  });
-
+  const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] });
   const result = await callGeminiJson({ prompt, phase });
   const output = result.json;
 
-  validateModelOutput({ phase, output, artifacts });
+  validateModelOutput({ phase, output });
   const phaseLockStatus = resolveModelLockStatus({ phase, output, writes: contract.writes });
 
   for (const artifactName of contract.writes) {
     const artifact = output?.[artifactName];
-    if (!artifact || typeof artifact !== "object") {
-      throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
-    }
-
-    await saveArtifact(artifactSaveBody({
-      run_id: run.run_id,
-      phase,
-      agent_id: contract.agent_id,
-      artifact_name: artifactName,
-      artifact,
-      lock_status: phaseLockStatus
-    }));
+    if (!artifact || typeof artifact !== "object") throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
   }
 
   await logEvent({
     run_id: run.run_id,
     event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED",
     actor: contract.agent_id,
-    payload: {
-      phase,
-      writes: contract.writes,
-      lock_status: phaseLockStatus,
-      reference_files: contract.references || [],
-      prompt_files: contract.prompt_files || [contract.prompt_file],
-      model_metadata: result.metadata
-    }
+    payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata }
   });
 
-  await lockPhase({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.agent_id,
-    status: phaseLockStatus,
-    next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase
-  });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
 }
 
 function validateModelOutput({ phase, output }) {
   if (phase === "M9") {
     const validation = validateM9LegalCartographyIndex(output);
-    if (validation.status !== "PASS") {
-      throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
-    }
+    if (validation.status !== "PASS") throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
     return;
   }
-
   if (phase === "M7_TARGET_PROFILE") {
     validateM7TargetProfileOutput(output);
     return;
   }
-
   if (phase === "M8_TARGET_FEATURE_PROFILE") {
     validateM8TargetFeatureOutput(output);
-    return;
   }
 }
 
@@ -198,9 +144,7 @@ function validateM8TargetFeatureOutput(output) {
   validateExactTopLevelKeys(output, ["target_feature_profile", "target_feature_profile_forensics"], "M8_TARGET_FEATURE_PROFILE");
   if (!isPlainObject(output.target_feature_profile)) throw new Error("M8_OUTPUT_INVALID:target_feature_profile must be object");
   if (!isPlainObject(output.target_feature_profile_forensics)) throw new Error("M8_OUTPUT_INVALID:target_feature_profile_forensics must be object");
-  if (containsAnyKey(output.target_feature_profile, ["target_feature_profile_forensics", "source_ledger", "archetype_derivation_ledger", "surface_token_derivation_ledger", "runtime_trace", "validation_status", "lock_status"])) {
-    throw new Error("M8_OUTPUT_INVALID:target_feature_profile contains forensic or status branches");
-  }
+  if (containsAnyKey(output.target_feature_profile, ["target_feature_profile_forensics", "source_ledger", "archetype_derivation_ledger", "surface_token_derivation_ledger", "runtime_trace", "validation_status", "lock_status"])) throw new Error("M8_OUTPUT_INVALID:target_feature_profile contains forensic or status branches");
   if (!Array.isArray(output.target_feature_profile.activities)) throw new Error("M8_OUTPUT_MISSING_FIELD:activities");
   if (!("profile_level_limitations" in output.target_feature_profile)) throw new Error("M8_OUTPUT_MISSING_FIELD:profile_level_limitations");
 }
@@ -211,9 +155,7 @@ function validateExactTopLevelKeys(output, expected, phase) {
   const wanted = [...expected].sort();
   const missing = wanted.filter((key) => !keys.includes(key));
   const extra = keys.filter((key) => !wanted.includes(key));
-  if (missing.length || extra.length) {
-    throw new Error(`${phase}_OUTPUT_KEYS_INVALID:${JSON.stringify({ missing, extra })}`);
-  }
+  if (missing.length || extra.length) throw new Error(`${phase}_OUTPUT_KEYS_INVALID:${JSON.stringify({ missing, extra })}`);
 }
 
 function resolveModelLockStatus({ phase, output, writes }) {
@@ -221,12 +163,8 @@ function resolveModelLockStatus({ phase, output, writes }) {
     const status = output?.legal_cartography_index?.lock_status;
     return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
   }
-  if (phase === "M7_TARGET_PROFILE") {
-    return resolveStatusFromArtifacts(output?.target_profile_forensics, output?.target_profile);
-  }
-  if (phase === "M8_TARGET_FEATURE_PROFILE") {
-    return resolveStatusFromArtifacts(output?.target_feature_profile_forensics, output?.target_feature_profile);
-  }
+  if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.target_profile_forensics, output?.target_profile);
+  if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.target_feature_profile_forensics, output?.target_feature_profile);
   const firstArtifact = output?.[writes?.[0]];
   const status = firstArtifact?.lock_status || firstArtifact?.validation_status;
   return MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";
@@ -243,92 +181,35 @@ function resolveStatusFromArtifacts(...artifacts) {
 async function runCompilerPhase({ run, phase, contract }) {
   const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
   const output = compileFinalOutputHandoff({ run, artifacts });
-
-  await saveArtifact(artifactSaveBody({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
-    artifact_name: "final_output_handoff",
-    artifact: output.final_output_handoff,
-    lock_status: output.final_output_handoff.validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE"
-  }));
-
-  await lockPhase({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
-    status: output.final_output_handoff.validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE",
-    next_phase: contract.next
-  });
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: "final_output_handoff", artifact: output.final_output_handoff, lock_status: output.final_output_handoff.validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE" }));
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output.final_output_handoff.validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE", next_phase: contract.next });
 }
 
 async function runRendererPhase({ run, phase, contract }) {
-  const finalOutput = await readArtifactPayload({
-    run_id: run.run_id,
-    artifact_name: "final_output_handoff",
-    agent_id: contract.actor_id
-  });
-
+  const finalOutput = await readArtifactPayload({ run_id: run.run_id, artifact_name: "final_output_handoff", agent_id: contract.actor_id });
   const output = buildRendererPayload({ run, final_output_handoff: finalOutput });
-  await saveArtifact(artifactSaveBody({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
-    artifact_name: "renderer_payload",
-    artifact: output.renderer_payload,
-    lock_status: "COMPLETE"
-  }));
-
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: "renderer_payload", artifact: output.renderer_payload, lock_status: "COMPLETE" }));
   const finalReportUrl = buildReportUrl(run.run_id);
-  await lockPhase({
-    run_id: run.run_id,
-    phase,
-    agent_id: contract.actor_id,
-    status: "COMPLETE",
-    next_phase: contract.next,
-    final_report_url: finalReportUrl
-  });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "COMPLETE", next_phase: contract.next, final_report_url: finalReportUrl });
 }
 
 async function readArtifactsForPhase({ run_id, reads, agent_id }) {
   const artifacts = {};
-  for (const artifactName of reads) {
-    artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id });
-  }
+  for (const artifactName of reads) artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id });
   return artifacts;
 }
 
 async function markRunning(runId, phase, actor) {
   const updated = await updateRunRecord(runId, { current_phase: phase, status: "RUNNING" });
   await updateRunDashboardRow(updated);
-  await logEvent({
-    run_id: runId,
-    event_type: "PHASE_RUNNING",
-    actor,
-    payload: { phase }
-  });
+  await logEvent({ run_id: runId, event_type: "PHASE_RUNNING", actor, payload: { phase } });
 }
 
 async function markPhaseFailure({ run_id, phase, actor, error }) {
   const updated = await updateRunRecord(run_id, { current_phase: phase, status: "REPAIR_REQUIRED" });
   await updateRunDashboardRow(updated);
-  await logEvent({
-    run_id,
-    event_type: "PHASE_REPAIR_REQUIRED",
-    actor,
-    payload: {
-      phase,
-      error_message: error?.message || String(error)
-    }
-  });
+  await logEvent({ run_id, event_type: "PHASE_REPAIR_REQUIRED", actor, payload: { phase, error_message: error?.message || String(error) } });
 }
 
-function isPlainObject(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function containsAnyKey(value, keys) {
-  if (!value || typeof value !== "object") return false;
-  if (Array.isArray(value)) return value.some((item) => containsAnyKey(item, keys));
-  return Object.keys(value).some((key) => keys.includes(key)) || Object.values(value).some((item) => containsAnyKey(item, keys));
-}
+function isPlainObject(value) { return !!value && typeof value === "object" && !Array.isArray(value); }
+function containsAnyKey(value, keys) { if (!value || typeof value !== "object") return false; if (Array.isArray(value)) return value.some((item) => containsAnyKey(item, keys)); return Object.keys(value).some((key) => keys.includes(key)) || Object.values(value).some((item) => containsAnyKey(item, keys)); }
