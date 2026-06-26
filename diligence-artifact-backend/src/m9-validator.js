@@ -1,3 +1,5 @@
+import { normalizeM9LegalCartographyIndex } from "./m9-normalizer.js";
+
 const REQUIRED_KEYS = Object.freeze([
   "document_coverage_index",
   "document_structure_index",
@@ -140,6 +142,12 @@ const SOURCE_FIELD_NAMES = Object.freeze([
 ]);
 
 export function validateM9LegalCartographyIndex(output) {
+  const normalizedOutput = normalizeM9LegalCartographyIndex(output);
+  if (output && typeof output === "object" && normalizedOutput && normalizedOutput !== output) {
+    Object.keys(output).forEach((key) => delete output[key]);
+    Object.assign(output, normalizedOutput);
+  }
+
   const failures = [];
   const artifact = output?.legal_cartography_index;
 
