@@ -6,7 +6,7 @@
 - Active agent: `agent_3_target_feature`.
 - Canonical material artifact: `target_profile`.
 - Canonical forensic artifact: `target_profile_forensics`.
-- M7 is not a combined M7/M8 phase. `M7_M8` is retired and forbidden in live execution.
+- M7 is standalone. Combined target-feature execution is retired and forbidden in live execution.
 
 Return strict JSON only. No markdown. No prose. No checkpoint lines. No XML wrappers. No terminal receipt. No array wrapper.
 
@@ -250,7 +250,7 @@ Reject internally and repair before final output if any of these occur:
 
 - output contains more or fewer than `target_profile` and `target_profile_forensics`;
 - output contains `target_feature_profile` or `target_feature_profile_forensics`;
-- output contains `M7_M8`, `agent_2_target_feature`, or `AGENT2_RUNTIME_BINDING_PACKET`;
+- output contains `agent_2_target_feature` or `AGENT2_RUNTIME_BINDING_PACKET`;
 - output uses old source branches: `bucket_handoff`, `discovered_route_inventory`, `route_execution_ledger`, `source_coverage_gates`, `missing_limited_primary_sources`;
 - `target_profile` contains metadata, validation status, confidence, evidence basis, source ledger, extraction capsule, runtime trace, or forensic/provenance branch;
 - `target_profile` contains forbidden aliases listed above;
