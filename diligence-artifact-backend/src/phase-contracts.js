@@ -8,11 +8,23 @@ import {
   TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
 } from "./constants.js";
 
-const M7_M8_REFERENCE_FILES = Object.freeze([
+const AGENT_2_REFERENCE_FILES = Object.freeze([
   "REGISTRY_KEY_v3_0.md",
   "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
   "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml",
   "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml"
+]);
+
+const AGENT_2_PACKAGE_ROOT = "agent-packages/agent_2_target_feature";
+
+const AGENT_2_RUNTIME_FILES = Object.freeze([
+  `${AGENT_2_PACKAGE_ROOT}/AGENT2_RUNTIME_BINDING_PACKET.yaml`,
+  `${AGENT_2_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`
+]);
+
+const AGENT_2_VALIDATION_FILES = Object.freeze([
+  `${AGENT_2_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED.md`,
+  `${AGENT_2_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md`
 ]);
 
 export const PHASE_CONTRACTS = Object.freeze({
@@ -49,20 +61,56 @@ export const PHASE_CONTRACTS = Object.freeze({
       ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES
     ],
     writes: ["legal_cartography_index"],
-    next: "M7_M8"
+    next: "M7_TARGET_PROFILE"
   },
 
-  M7_M8: {
+  M7_TARGET_PROFILE: {
     type: "model",
-    agent_id: "agent_4_m7_m8",
-    prompt_file: "agent_4_m7_m8.md",
+    agent_id: "agent_2_target_feature",
+    prompt_files: [
+      ...AGENT_2_RUNTIME_FILES,
+      `${AGENT_2_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_RUNTIME_SYNC_PATCHED.md`,
+      ...AGENT_2_VALIDATION_FILES
+    ],
     reads: [
       "source_discovery_handoff",
       "legal_cartography_index",
-      ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES,
+      ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
+    ],
+    references: AGENT_2_REFERENCE_FILES,
+    writes: [
+      "target_profile",
+      "target_profile_forensics"
+    ],
+    next: "M8_TARGET_FEATURE_PROFILE"
+  },
+
+  M8_TARGET_FEATURE_PROFILE: {
+    type: "model",
+    agent_id: "agent_2_target_feature",
+    prompt_files: [
+      ...AGENT_2_RUNTIME_FILES,
+      `${AGENT_2_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_RUNTIME_SYNC_PATCHED.md`,
+      ...AGENT_2_VALIDATION_FILES
+    ],
+    reads: [
+      "source_discovery_handoff",
+      "target_profile",
+      "target_profile_forensics",
       ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES
     ],
-    references: M7_M8_REFERENCE_FILES,
+    references: AGENT_2_REFERENCE_FILES,
+    writes: [
+      "target_feature_profile",
+      "target_feature_profile_forensics"
+    ],
+    next: "M10"
+  },
+
+  M7_M8: {
+    type: "sequence_alias",
+    agent_id: "agent_2_target_feature",
+    reads: [],
     writes: [
       "target_profile",
       "target_profile_forensics",
