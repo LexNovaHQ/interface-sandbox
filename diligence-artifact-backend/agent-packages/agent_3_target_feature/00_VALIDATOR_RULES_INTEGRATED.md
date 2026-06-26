@@ -7,7 +7,7 @@ This file governs only `agent_3_target_feature` in the current backend.
 
 Required active agent id: `agent_3_target_feature`.
 
-Deprecated labels are forbidden: `agent_2_target_feature`, `Agent 2 / M7`, `Agent 2 / M8`, `Agent 2 sequence lock`, and `AGENT2_RUNTIME_BINDING_PACKET.yaml`.
+M7 and M8 ownership belongs only to Agent 3 in this backend package. Legacy target-feature labels, sequence-lock labels, and legacy binding packets must not control execution.
 
 ## Non-negotiable execution order
 
@@ -23,7 +23,7 @@ M7_TARGET_PROFILE
 → M10
 ```
 
-A single combined M7/M8 model response is invalid.
+A single combined target/feature model response is invalid.
 
 M8 must not start until both saved M7 artifacts exist.
 
@@ -118,23 +118,30 @@ extraction_capsule
 
 Agent 3 may read:
 
-- `source_discovery_handoff`
-- `legal_cartography_index`
-- target-family lossless artifacts for M7
-- saved `target_profile` and `target_profile_forensics` for M8
-- product/activity family lossless artifacts for M8
+```text
+source_discovery_handoff
+legal_cartography_index
+target_profile
+target_profile_forensics
+lossless_family__T0_ROOT
+lossless_family__T1_IDENTITY
+lossless_family__T2_LEGAL_IDENTITY
+lossless_family__T3_OPERATOR_ENTITY
+lossless_family__T4_SUPPORTING_IDENTITY
+lossless_family__P1_PRODUCT
+lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+lossless_family__P3_AI_CAPABILITY_TECHNICAL
+lossless_family__P4_USE_CASE_INDUSTRY
+lossless_family__P5_ENTERPRISE_PRICING
+```
 
 Agent 3 may write only:
 
-- `target_profile`
-- `target_profile_forensics`
-- `target_feature_profile`
-- `target_feature_profile_forensics`
+```text
+target_profile
+target_profile_forensics
+target_feature_profile
+target_feature_profile_forensics
+```
 
-Agent 3 must not write source, legal, data, exposure, challenge, final handoff, compiler, or renderer artifacts.
-
-## Failure routing
-
-If M7 validation fails, repair M7 only and do not run M8.
-
-If M8 validation fails, preserve M7 artifacts, repair M8 only, and do not run M10.
+No other artifacts may be emitted or saved by Agent 3.
