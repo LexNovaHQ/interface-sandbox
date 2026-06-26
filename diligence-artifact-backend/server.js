@@ -99,8 +99,8 @@ app.get("/agent2/health", (_req, res) => {
   res.json({
     ok: true,
     service: config.serviceName,
-    agent_id: "agent_2_m7_m8",
-    phase: "M7_M8",
+    agent_id: "agent_2_target_feature",
+    phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"],
     mode: "artifact_backend_plus_reviewer_runner"
   });
 });
@@ -110,7 +110,7 @@ app.get("/agent2/runs/:run_id/source-discovery-handoff", async (req, res) => {
     const result = await readArtifact({
       run_id: req.params.run_id,
       artifact_name: "source_discovery_handoff",
-      agent_id: "agent_2_m7_m8"
+      agent_id: "agent_2_target_feature"
     });
     return res.json(result);
   } catch (error) {
@@ -123,7 +123,7 @@ app.get("/agent2/runs/:run_id/legal-cartography-index", async (req, res) => {
     const result = await readArtifact({
       run_id: req.params.run_id,
       artifact_name: "legal_cartography_index",
-      agent_id: "agent_2_m7_m8"
+      agent_id: "agent_2_target_feature"
     });
     return res.json(result);
   } catch (error) {
@@ -143,8 +143,8 @@ app.post("/agent2/runs/:run_id/lock-m7-m8", async (req, res) => {
 
     const result = await lockPhase({
       run_id: req.params.run_id,
-      phase: "M7_M8",
-      agent_id: "agent_2_m7_m8",
+      phase: "M8_TARGET_FEATURE_PROFILE",
+      agent_id: "agent_2_target_feature",
       status: lockStatus,
       next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? "M10" : null,
       final_report_url: ""
@@ -153,7 +153,8 @@ app.post("/agent2/runs/:run_id/lock-m7-m8", async (req, res) => {
     return res.json({
       ok: true,
       run_id: result.run_id,
-      phase: result.phase,
+      phase: "M7_M8",
+      backend_phase: result.phase,
       lock_status: result.status,
       next_phase: result.next_phase,
       receipt: `M7_M8 ${result.status} for ${result.run_id}`
@@ -219,8 +220,8 @@ function agent2SaveRoute(artifactName) {
 
       const result = await saveArtifact(artifactSaveBody({
         run_id: req.params.run_id,
-        phase: "M7_M8",
-        agent_id: "agent_2_m7_m8",
+        phase: agent2PhaseForArtifact(artifactName),
+        agent_id: "agent_2_target_feature",
         artifact_name: artifactName,
         lock_status: req.body?.lock_status || "LOCKED",
         artifact: req.body?.artifact
@@ -230,6 +231,13 @@ function agent2SaveRoute(artifactName) {
       return sendError(res, error);
     }
   };
+}
+
+function agent2PhaseForArtifact(artifactName) {
+  if (artifactName === "target_profile" || artifactName === "target_profile_forensics") {
+    return "M7_TARGET_PROFILE";
+  }
+  return "M8_TARGET_FEATURE_PROFILE";
 }
 
 async function saveArtifactHandler(req, res) {

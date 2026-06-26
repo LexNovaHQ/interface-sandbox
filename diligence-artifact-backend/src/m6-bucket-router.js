@@ -6,7 +6,8 @@ const BUCKETS = Object.freeze({
 });
 
 const LEGAL = BUCKETS.legal_governance_profile_urls;
-const TARGET_PRODUCT = [...BUCKETS.target_profile_urls, ...BUCKETS.product_activity_profile_urls];
+const TARGET = BUCKETS.target_profile_urls;
+const PRODUCT = BUCKETS.product_activity_profile_urls;
 const DATA_PRIVACY = [...BUCKETS.data_asset_provenance_profile_urls, "L1_CORE_TERMS_PRIVACY", "L2_B2B_CONTRACTING", "L4_PRIVACY_ADJACENT_NOTICES"];
 
 export function buildM6SourceDiscoveryHandoff({ run, artifacts }) {
@@ -115,7 +116,8 @@ function accessMatrix() {
     },
     agents: {
       M9: { buckets: ["legal_governance_profile_urls"], families: LEGAL, exceptions: ["ENTITY_CONFLICT_CHECK", "LEGAL_REFERENCE_IN_TRUST_CENTER"] },
-      M7_M8: { buckets: ["target_profile_urls", "product_activity_profile_urls"], families: TARGET_PRODUCT, exceptions: ["ENTITY_CONFLICT_CHECK", "PRODUCT_CLAIM_VERIFICATION"] },
+      M7_TARGET_PROFILE: { buckets: ["target_profile_urls"], families: TARGET, exceptions: ["ENTITY_CONFLICT_CHECK"] },
+      M8_TARGET_FEATURE_PROFILE: { buckets: ["product_activity_profile_urls"], families: PRODUCT, required_profiles: ["target_profile", "target_profile_forensics"], exceptions: ["PRODUCT_CLAIM_VERIFICATION"] },
       M10: { buckets: ["data_asset_provenance_profile_urls", "legal_governance_profile_urls"], families: DATA_PRIVACY, exceptions: ["DATA_FLOW_NEEDED_FOR_PRIVACY_ANALYSIS", "BROKEN_OR_THIN_PRIMARY"] },
       M11: { buckets: ["legal_governance_profile_urls"], families: LEGAL, required_profiles: ["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "registry_batch"], exceptions: ["CITATION_VERIFICATION", "VALIDATION_FAILURE"] },
       M12: { buckets: [], families: [], required_profiles: ["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"], exceptions: ["VALIDATION_FAILURE", "CITATION_VERIFICATION"] },

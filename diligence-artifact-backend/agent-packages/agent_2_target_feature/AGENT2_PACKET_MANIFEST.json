@@ -1,0 +1,100 @@
+{
+  "packet_name": "AGENT2_STEP3_RUNTIME_VALIDATOR_TERMINAL_SYNC_PACKET",
+  "status": "LOCKED_FOR_REVIEW",
+  "scope": "Agent 2 Target Feature packet only; M7 and M8 separate; M9 parked outside this packet",
+  "structure_lock": {
+    "packet_structure_supreme": true,
+    "m7_m8_combined_model_call_forbidden": true,
+    "backend_supports_agent_structure_not_reverse": true,
+    "execution_order": [
+      "M7_TARGET_PROFILE",
+      "target_profile",
+      "target_profile_forensics",
+      "M8_TARGET_FEATURE_PROFILE",
+      "target_feature_profile",
+      "target_feature_profile_forensics"
+    ]
+  },
+  "files": [
+    {
+      "file": "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+      "bytes": 24427,
+      "sha256": "8101029d8bd00c18945b862820bacf1210e70abb739a85cc0c1dfffe1dc4c129"
+    },
+    {
+      "file": "00_TERMINAL_RECEIPT_RULES_INTEGRATED.md",
+      "bytes": 4591,
+      "sha256": "5d4826b1423402c6170cd8bc5f0feb3c18aa019dd24792840ce688503ade5350"
+    },
+    {
+      "file": "00_VALIDATOR_RULES_INTEGRATED.md",
+      "bytes": 9501,
+      "sha256": "14e0beda9a1ceadd7b35a4b8fd2b86dac75ac88712dd890dce071c81a64e93ff"
+    },
+    {
+      "file": "02_M7_TARGET_PROFILE_RUNTIME_SYNC_PATCHED.md",
+      "bytes": 72980,
+      "sha256": "af282689b09a2b783edbb97fd8146a35b22891643dc2d00ff2b48a5cb19b8707"
+    },
+    {
+      "file": "03_M8_FEATURE_PROFILE_RUNTIME_SYNC_PATCHED.md",
+      "bytes": 74693,
+      "sha256": "ac44b993a37abd419777f21965aeb39d09a80ceb17d8b8561d8864faee88e316"
+    },
+    {
+      "file": "AGENT2_M7_M8_SYNC_CHANGE_AUDIT.md",
+      "bytes": 3444,
+      "sha256": "b9d1da383482f4c3ca639b2b3df9ce575da93a25218754b77efe8330a7522fea"
+    },
+    {
+      "file": "AGENT2_PACKET_BUILD_AUDIT.md",
+      "bytes": 2034,
+      "sha256": "1e73afe5a9ec2bd32b7150ff94ffc63af9e6a2054ec13749ab3a70f5e3c84899"
+    },
+    {
+      "file": "AGENT2_PACKET_MANIFEST.json",
+      "bytes": 2781,
+      "sha256": "518df04770ff713823ca4b3f47d91eac02ddc7f8b16452f08cafe78225320b4b"
+    },
+    {
+      "file": "AGENT2_PACKET_VALIDATION.json",
+      "bytes": 949,
+      "sha256": "f421daabebaa90fb61a8a2ede4dc5b48316b70de59e002eed30f263cd7a72e86"
+    },
+    {
+      "file": "AGENT2_PROMPT_STACK_ORDER.md",
+      "bytes": 785,
+      "sha256": "5c2a250fecbee525b399e901dacebab6e36d4046b43d0f49810ea80292b15171"
+    },
+    {
+      "file": "AGENT2_RUNTIME_BINDING_PACKET.yaml",
+      "bytes": 4398,
+      "sha256": "f43adcb9a3d924d3dc8e8040c2262c64a4cd0f7b799f13f8c647d4666777ab7a"
+    },
+    {
+      "file": "AGENT2_TARGET_FEATURE_FULL_PROMPT_PACKET.md",
+      "bytes": 191268,
+      "sha256": "037fde94e56e3f41700d9e65b78bb37ed0b0efdb459670bf30f8f647c11dac61"
+    },
+    {
+      "file": "M7_STEP1_CHANGE_AUDIT.md",
+      "bytes": 1977,
+      "sha256": "d198b777a1319f40b2faa9aa93f1fc5ba49d1465c6caf4d5afff6bc4ff950596"
+    },
+    {
+      "file": "M7_STEP1_DIFF.patch",
+      "bytes": 21902,
+      "sha256": "db1a1752ba36e9eb16d3f2dc7af7f63509dfbadf1661ac76286dcfe682dc283e"
+    },
+    {
+      "file": "M7_STEP1_FINAL_SYNC_DIFF.patch",
+      "bytes": 7229,
+      "sha256": "f0852dbf73ab42d7c00f821680c321a3f2ddd79a4ff3e522a3813fc93535067f"
+    },
+    {
+      "file": "M8_STEP2_SYNC_DIFF.patch",
+      "bytes": 26456,
+      "sha256": "1b32422ce41ec0a59f4ea7082b83f9e6136b2b9f23ca0197eb4c419de81b9b4d"
+    }
+  ]
+}
