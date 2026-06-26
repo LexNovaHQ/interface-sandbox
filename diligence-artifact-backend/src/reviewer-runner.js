@@ -18,7 +18,7 @@ import {
 } from "./artifact-service.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
-const AGENT_2_PHASES = new Set(["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"]);
+const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
@@ -153,7 +153,7 @@ async function runModelPhase({ run, phase, contract }) {
 
   await logEvent({
     run_id: run.run_id,
-    event_type: AGENT_2_PHASES.has(phase) ? "AGENT2_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED",
+    event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED",
     actor: contract.agent_id,
     payload: {
       phase,
