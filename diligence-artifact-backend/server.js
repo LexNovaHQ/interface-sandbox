@@ -26,11 +26,7 @@ app.get("/health", (_req, res) => {
     mode: "artifact_backend_plus_reviewer_runner",
     gpt_reasoning_api: false,
     gemini_runner: true,
-    storage: {
-      firestore: "runs/{run_id}",
-      drive: "one_folder_per_run",
-      sheets: "dashboard_only"
-    },
+    storage: { firestore: "runs/{run_id}", drive: "one_folder_per_run", sheets: "dashboard_only" },
     config: configStatus(),
     permissions: publicPermissionMatrix()
   });
@@ -48,37 +44,11 @@ app.post("/v1/runs/create", async (req, res) => {
     const createdAt = nowIso();
     const runId = createRunId(body.target);
     const folder = await createRunFolder({ run_id: runId });
-
-    const run = {
-      ok: true,
-      run_id: runId,
-      target: body.target,
-      root_url: body.root_url,
-      source_mode: body.source_mode,
-      status: "CREATED",
-      current_phase: "URL_MANIFEST",
-      created_by: body.created_by,
-      notes: body.notes || "",
-      drive_folder_id: folder.drive_folder_id,
-      drive_folder_link: folder.drive_folder_link,
-      final_report_url: "",
-      created_at: createdAt,
-      updated_at: createdAt,
-      isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden."
-    };
-
+    const run = { ok: true, run_id: runId, target: body.target, root_url: body.root_url, source_mode: body.source_mode, status: "CREATED", current_phase: "URL_MANIFEST", created_by: body.created_by, notes: body.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
     await createRunRecord(run);
     const sheetRow = await appendRunDashboardRow(run);
     const saved = await updateRunRecord(runId, { sheet_row_number: sheetRow });
-
-    return res.status(201).json({
-      ok: true,
-      run_id: runId,
-      status: saved.status,
-      current_phase: saved.current_phase,
-      drive_folder_link: saved.drive_folder_link,
-      next_action: `POST /v1/reviewer/jobs/${runId}/advance`
-    });
+    return res.status(201).json({ ok: true, run_id: runId, status: saved.status, current_phase: saved.current_phase, drive_folder_link: saved.drive_folder_link, next_action: `POST /v1/reviewer/jobs/${runId}/advance` });
   } catch (error) {
     return sendError(res, error);
   }
@@ -96,24 +66,15 @@ app.get("/v1/runs/:run_id", async (req, res) => {
 });
 
 app.get("/agent3/health", (_req, res) => {
-  res.json({
-    ok: true,
-    service: config.serviceName,
-    agent_id: "agent_3_target_feature",
-    phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"],
-    retired_phases: ["M7_M8"],
-    mode: "artifact_backend_plus_reviewer_runner"
-  });
+  res.json({ ok: true, service: config.serviceName, agent_id: "agent_3_target_feature", phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"], mode: "artifact_backend_plus_reviewer_runner" });
 });
 
 app.get("/agent3/runs/:run_id/source-discovery-handoff", agent3ReadRoute("source_discovery_handoff"));
 app.get("/agent3/runs/:run_id/legal-cartography-index", agent3ReadRoute("legal_cartography_index"));
-
 app.post("/agent3/runs/:run_id/target-profile", agent3SaveRoute("target_profile"));
 app.post("/agent3/runs/:run_id/target-profile-forensics", agent3SaveRoute("target_profile_forensics"));
 app.post("/agent3/runs/:run_id/target-feature-profile", agent3SaveRoute("target_feature_profile"));
 app.post("/agent3/runs/:run_id/target-feature-profile-forensics", agent3SaveRoute("target_feature_profile_forensics"));
-
 app.post("/agent3/runs/:run_id/lock-m7-target-profile", agent3LockPhaseRoute("M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"));
 app.post("/agent3/runs/:run_id/lock-m8-target-feature-profile", agent3LockPhaseRoute("M8_TARGET_FEATURE_PROFILE", "M10"));
 
@@ -166,11 +127,7 @@ app.get("/v1/renderer/:run_id", async (req, res) => {
 function agent3ReadRoute(artifactName) {
   return async (req, res) => {
     try {
-      const result = await readArtifact({
-        run_id: req.params.run_id,
-        artifact_name: artifactName,
-        agent_id: "agent_3_target_feature"
-      });
+      const result = await readArtifact({ run_id: req.params.run_id, artifact_name: artifactName, agent_id: "agent_3_target_feature" });
       return res.json(result);
     } catch (error) {
       return sendError(res, error);
@@ -182,18 +139,8 @@ function agent3SaveRoute(artifactName) {
   return async (req, res) => {
     try {
       const suppliedArtifactName = req.body?.artifact_name;
-      if (suppliedArtifactName && suppliedArtifactName !== artifactName) {
-        throw new Error(`INVALID_ARTIFACT_NAME:${suppliedArtifactName}:expected:${artifactName}`);
-      }
-
-      const result = await saveArtifact(artifactSaveBody({
-        run_id: req.params.run_id,
-        phase: agent3PhaseForArtifact(artifactName),
-        agent_id: "agent_3_target_feature",
-        artifact_name: artifactName,
-        lock_status: req.body?.lock_status || "LOCKED",
-        artifact: req.body?.artifact
-      }));
+      if (suppliedArtifactName && suppliedArtifactName !== artifactName) throw new Error(`INVALID_ARTIFACT_NAME:${suppliedArtifactName}:expected:${artifactName}`);
+      const result = await saveArtifact(artifactSaveBody({ run_id: req.params.run_id, phase: agent3PhaseForArtifact(artifactName), agent_id: "agent_3_target_feature", artifact_name: artifactName, lock_status: req.body?.lock_status || "LOCKED", artifact: req.body?.artifact }));
       return res.status(201).json(result);
     } catch (error) {
       return sendError(res, error);
@@ -206,72 +153,19 @@ function agent3LockPhaseRoute(phase, nextPhase) {
     try {
       const lockStatus = req.body?.lock_status || req.body?.status;
       if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
-
-      const result = await lockPhase({
-        run_id: req.params.run_id,
-        phase,
-        agent_id: "agent_3_target_feature",
-        status: lockStatus,
-        next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? nextPhase : null,
-        final_report_url: ""
-      });
-
-      return res.json({
-        ok: true,
-        run_id: result.run_id,
-        phase: result.phase,
-        lock_status: result.status,
-        next_phase: result.next_phase,
-        receipt: `${phase} ${result.status} for ${result.run_id}`
-      });
+      const result = await lockPhase({ run_id: req.params.run_id, phase, agent_id: "agent_3_target_feature", status: lockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? nextPhase : null, final_report_url: "" });
+      return res.json({ ok: true, run_id: result.run_id, phase: result.phase, lock_status: result.status, next_phase: result.next_phase, receipt: `${phase} ${result.status} for ${result.run_id}` });
     } catch (error) {
       return sendError(res, error);
     }
   };
 }
 
-function agent3PhaseForArtifact(artifactName) {
-  if (artifactName === "target_profile" || artifactName === "target_profile_forensics") {
-    return "M7_TARGET_PROFILE";
-  }
-  return "M8_TARGET_FEATURE_PROFILE";
-}
+function agent3PhaseForArtifact(artifactName) { return artifactName === "target_profile" || artifactName === "target_profile_forensics" ? "M7_TARGET_PROFILE" : "M8_TARGET_FEATURE_PROFILE"; }
+async function saveArtifactHandler(req, res) { try { const result = await saveArtifact(req.body); return res.status(201).json(result); } catch (error) { return sendError(res, error); } }
 
-async function saveArtifactHandler(req, res) {
-  try {
-    const result = await saveArtifact(req.body);
-    return res.status(201).json(result);
-  } catch (error) {
-    return sendError(res, error);
-  }
-}
+if (process.argv[1] && process.argv[1].endsWith("server.js")) app.listen(config.port, () => { console.log(`${config.serviceName} listening on :${config.port}`); });
 
-if (process.argv[1] && process.argv[1].endsWith("server.js")) {
-  app.listen(config.port, () => {
-    console.log(`${config.serviceName} listening on :${config.port}`);
-  });
-}
-
-function sendError(res, error) {
-  const message = error?.message || String(error);
-  const status = statusForMessage(message);
-  return res.status(status).json({
-    ok: false,
-    error: publicErrorCode(message),
-    message
-  });
-}
-
-function statusForMessage(message) {
-  if (message.startsWith("UNAUTHORIZED")) return 401;
-  if (message.includes("FORBIDDEN")) return 403;
-  if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
-  if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SAVE_ORDER_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400;
-  if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500;
-  if (message.startsWith("GEMINI_CALL_FAILED")) return 502;
-  return 500;
-}
-
-function publicErrorCode(message) {
-  return String(message).split(":")[0] || "ARTIFACT_BACKEND_ERROR";
-}
+function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
+function statusForMessage(message) { if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SAVE_ORDER_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
+function publicErrorCode(message) { return String(message).split(":")[0] || "ARTIFACT_BACKEND_ERROR"; }
