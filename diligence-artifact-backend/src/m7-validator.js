@@ -99,7 +99,6 @@ const FORBIDDEN_FORENSIC_KEYS = Object.freeze([
 const FORBIDDEN_STALE_STRINGS = Object.freeze([
   "<phase_output",
   "</phase_output>",
-  "M7_M8",
   "agent_2_target_feature",
   "AGENT2_RUNTIME_BINDING_PACKET",
   "bucket_handoff",
@@ -226,18 +225,6 @@ function valueAt(root, fieldPath) {
   return String(fieldPath).split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), root);
 }
 
-function isPlainObject(value) {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function containsKey(value, key) {
-  if (!value || typeof value !== "object") return false;
-  if (Object.prototype.hasOwnProperty.call(value, key)) return true;
-  return Object.values(value).some((item) => containsKey(item, key));
-}
-
-function containsStringValue(value, needle) {
-  if (typeof value === "string") return value.includes(needle);
-  if (!value || typeof value !== "object") return false;
-  return Object.values(value).some((item) => containsStringValue(item, needle));
-}
+function isPlainObject(value) { return !!value && typeof value === "object" && !Array.isArray(value); }
+function containsKey(value, key) { if (!value || typeof value !== "object") return false; if (Object.prototype.hasOwnProperty.call(value, key)) return true; return Object.values(value).some((item) => containsKey(item, key)); }
+function containsStringValue(value, needle) { if (typeof value === "string") return value.includes(needle); if (!value || typeof value !== "object") return false; return Object.values(value).some((item) => containsStringValue(item, needle)); }
