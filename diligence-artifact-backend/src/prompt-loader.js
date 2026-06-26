@@ -10,8 +10,6 @@ const AGENT_PACKAGE_DIR = path.join(BACKEND_ROOT, "agent-packages");
 
 const SAFE_PROMPT_FILE = /^[a-z0-9_\-.]+\.md$/i;
 const SAFE_PACKAGE_FILE = /^agent-packages\/[a-z0-9_\-.]+\/[A-Z0-9_\-.]+\.(md|yaml|yml|json)$/i;
-const AGENT_3_PACKAGE_PREFIX = "agent-packages/agent_3_target_feature/";
-const LEGACY_AGENT_3_PACKAGE_PREFIX = "agent-packages/agent_2_target_feature/";
 
 export async function loadPromptFile(promptFile) {
   const file = String(promptFile || "");
@@ -28,16 +26,7 @@ export async function loadPromptFile(promptFile) {
 }
 
 async function readAgentPackageFile(file, promptFile) {
-  const resolved = safePackagePath(file, promptFile);
-  try {
-    return await readFile(resolved, "utf8");
-  } catch (error) {
-    if (error?.code === "ENOENT" && file.startsWith(AGENT_3_PACKAGE_PREFIX)) {
-      const legacyFile = file.replace(AGENT_3_PACKAGE_PREFIX, LEGACY_AGENT_3_PACKAGE_PREFIX);
-      return readFile(safePackagePath(legacyFile, promptFile), "utf8");
-    }
-    throw error;
-  }
+  return readFile(safePackagePath(file, promptFile), "utf8");
 }
 
 function safePackagePath(file, promptFile) {
