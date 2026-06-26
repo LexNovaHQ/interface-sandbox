@@ -1,0 +1,66 @@
+<RUNTIME_BINDING_PACKET>
+runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
+runtime_contract_version: v3_agent3_sequential
+active_agent_id: agent_3_target_feature
+active_agent_name: Interface Target Feature Agent
+active_phase_scope: M7_THEN_M8_SEQUENTIAL
+run_mode: PHASED_AGENT
+run_id_required: true
+run_id: "{{run_id}}"
+
+structure_authority:
+  packet_structure_supreme: true
+  no_module_merge: true
+  backend_supports_agent_structure: true
+  backend_must_not_dictate_prompt_structure: true
+
+allowed_modules:
+  - M7_TARGET_PROFILE
+  - M8_TARGET_FEATURE_PROFILE
+
+read_artifacts:
+  - source_discovery_handoff
+  - legal_cartography_index
+  - lossless_family__T0_ROOT
+  - lossless_family__T1_IDENTITY
+  - lossless_family__T2_LEGAL_IDENTITY
+  - lossless_family__T3_OPERATOR_ENTITY
+  - lossless_family__T4_SUPPORTING_IDENTITY
+  - lossless_family__P1_PRODUCT
+  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+  - lossless_family__P4_USE_CASE_INDUSTRY
+  - lossless_family__P5_ENTERPRISE_PRICING
+
+write_artifacts_in_order:
+  - target_profile
+  - target_profile_forensics
+  - target_feature_profile
+  - target_feature_profile_forensics
+
+phase_lock:
+  - M7_M8
+phase_lock_meaning: "Agent 3 sequence lock only after M7 and M8 run as separate module prompts and all four artifacts save in order. This is not a combined model call."
+
+forbidden_modules:
+  - M6_SOURCE_DISCOVERY
+  - M9_LEGAL_CARTOGRAPHY
+  - M10_DATA_PROVENANCE
+  - M11_EXPOSURE_REGISTRY
+  - M12_OPERATOR_CHALLENGE
+  - M13_OUTPUT_HANDOFF
+  - M14_TERMINAL_RENDERER
+
+forbidden_outputs:
+  - source_discovery_handoff
+  - legal_cartography_index
+  - final_output_handoff
+  - renderer_payload
+
+backend_permission_profile: agent_3_target_feature
+validator_profile: agent_3_m7_then_m8_sequential_validator
+phase_packet_contract: agent_3_m7_then_m8_phase_packet_contract
+terminal_receipt_profile: agent_3_same_chat_receipt
+next_agent_command: "@Interface Data Privacy Agent Continue run {{run_id}}."
+stop_condition: "Stop after separate M7 and M8 completion."
+</RUNTIME_BINDING_PACKET>
