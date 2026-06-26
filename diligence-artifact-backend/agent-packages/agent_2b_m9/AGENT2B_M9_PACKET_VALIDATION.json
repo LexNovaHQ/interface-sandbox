@@ -1,0 +1,19 @@
+{
+  "overall_status": "SYNCED_FOR_CURRENT_BACKEND_TEST",
+  "source_package": "AGENT1_SOURCE_LEGAL_PROMPT_PACKET.zip",
+  "renamed_to": "agent_2b_m9",
+  "m6_ignored": true,
+  "m9_included": true,
+  "backend_phase": "M9",
+  "active_agent_id": "agent_2b_m9",
+  "validator_enum_sync": true,
+  "forbidden_old_values_blocked": [
+    "EMBEDDED_TEXT",
+    "ABSENT_PROBE",
+    "REFERENCED_EXTERNAL",
+    "AI_USAGE_GOVERNANCE",
+    "REFERENCED_NOT_AUTHORIZED_BY_M6",
+    "ABSENT_AFTER_M6_TARGETED_PROBE"
+  ],
+  "ready_for_backend_prompt_loading": true
+}
