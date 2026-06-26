@@ -118,19 +118,6 @@ export const PHASE_CONTRACTS = Object.freeze({
     next: "M10"
   },
 
-  M7_M8: {
-    type: "sequence_alias",
-    agent_id: "agent_3_target_feature",
-    reads: [],
-    writes: [
-      "target_profile",
-      "target_profile_forensics",
-      "target_feature_profile",
-      "target_feature_profile_forensics"
-    ],
-    next: "M10"
-  },
-
   M10: {
     type: "model",
     agent_id: "agent_5_m10",
@@ -209,6 +196,9 @@ export const PHASE_CONTRACTS = Object.freeze({
 export function getPhaseContract(phase) {
   const contract = PHASE_CONTRACTS[phase];
   if (!contract) {
+    if (phase === "M7_M8") {
+      throw new Error("LEGACY_PHASE_DISABLED:M7_M8:Use M7_TARGET_PROFILE then M8_TARGET_FEATURE_PROFILE");
+    }
     throw new Error(`INVALID_PHASE_CONTRACT:${phase || "missing"}`);
   }
   return contract;
