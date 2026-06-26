@@ -61,6 +61,13 @@ If the runtime is unable to save `target_profile` before asking the model to bui
 
 For backend/Gemini execution, return strict JSON only. Do not emit markdown, prose, XML-style phase wrappers, checkpoint prose, terminal receipts, audit-log prose, or same-chat control text.
 
+M7 has two backend output artifacts, but they are not emitted together.
+
+- Phase B1 emits and saves only `target_profile`.
+- Phase D emits and saves only `target_profile_forensics`.
+
+A combined response containing both `target_profile` and `target_profile_forensics` in the same backend call is invalid unless the backend is running a deliberately marked same-chat debug simulation. Production backend execution must use the split output contracts in M7.S10.
+
 For same-chat debugging only, the operator may request visible checkpoints. That debug mode is not the production backend terminal contract.
 
 ## Phase-Local Gate
@@ -630,11 +637,23 @@ If Phase B1 finds an inadequate or wrong field:
 
 Do not hard-block the entire M7 phase for ordinary missing public evidence after reinvestigation. Save the material profile with controlled limitation.
 
-### M7.S6D — Save Gate
+### M7.S6D — Save Gate and Phase B1 Material Output Contract
 
 Phase B1 passes only when `target_profile` is schema-valid, substance-valid or controlled-with-limitations, and save-ready.
 
-The backend runner must save `target_profile` as the M7 material artifact before Phase C begins.
+At the Phase B1 backend output boundary, M7 must emit exactly one top-level artifact:
+
+```json
+{
+  "target_profile": {}
+}
+```
+
+Phase B1 must not emit `target_profile_forensics`, `target_feature_profile`, downstream artifacts, phase wrappers, terminal receipts, or report prose.
+
+The backend runner must validate and save `target_profile` as the M7 material artifact before Phase C begins.
+
+Phase C is forbidden until the saved `target_profile` artifact exists in the backend / Drive artifact vault.
 
 ---
 
@@ -784,11 +803,21 @@ If Phase D finds an inadequate forensic row:
 
 After reinvestigation, if the issue remains unresolved because public evidence is insufficient, mark the issue as a warning/limitation and save the forensic output.
 
-### M7.S8D — Save Gate and Handoff
+### M7.S8D — Save Gate, Phase D Forensic Output Contract, and Handoff
 
 Phase D passes only when `target_profile_forensics` is schema-valid, source-linked, registry-linked, and either fully supported or controlled with warnings/limitations.
 
-The backend runner must save `target_profile_forensics` before M8 begins.
+At the Phase D backend output boundary, M7 must emit exactly one top-level artifact:
+
+```json
+{
+  "target_profile_forensics": {}
+}
+```
+
+Phase D must not re-emit `target_profile`, `target_feature_profile`, downstream artifacts, phase wrappers, terminal receipts, or report prose.
+
+The backend runner must validate and save `target_profile_forensics` before M8 begins.
 
 M8 may begin only after both saved artifacts exist:
 
@@ -801,7 +830,10 @@ M8 may begin only after both saved artifacts exist:
 
 Reject internally and repair before final M7 lock if any of these occur:
 
-- more or fewer than two M7 top-level artifacts in backend M7 output;
+- Phase B1 backend output contains anything other than exactly one top-level `target_profile` artifact;
+- Phase D backend output contains anything other than exactly one top-level `target_profile_forensics` artifact;
+- `target_profile` and `target_profile_forensics` are emitted together in one production backend response;
+- either M7 artifact is emitted before its own phase validator/save gate has passed;
 - any upstream artifact copied into output;
 - any downstream artifact copied into output;
 - any XML-style wrapper, markdown, terminal receipt, checkpoint prose, or same-chat control text in backend execution;
@@ -828,9 +860,45 @@ Reject internally and repair before final M7 lock if any of these occur:
 
 ---
 
-## M7.S10 — Final Output Contract
+## M7.S10 — Split Output Contracts
 
-For backend execution, return exactly this top-level JSON shape after both internal save gates are satisfied by the runtime:
+M7 has two output artifacts, but they are saved in separate backend phases. M7 must not return a combined two-artifact object in production backend execution.
+
+### M7.S10A — PHASE B1 Material Output Contract
+
+After Phase B material derivation and Phase B1 validation pass, return exactly this top-level JSON shape:
+
+```json
+{
+  "target_profile": {}
+}
+```
+
+The `target_profile` object must contain exactly the five-parent/eighteen-field schema shown in M7.S6A.
+
+Do not emit `target_profile_forensics`, `target_feature_profile`, `legal_cartography_index`, `target_data_provenance_profile`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, or any compatibility wrapper in the Phase B1 material output.
+
+The backend runner must save this artifact before Phase C begins.
+
+### M7.S10B — PHASE D Forensic Output Contract
+
+After the saved `target_profile` artifact exists, Phase C forensic derivation and Phase D validation may run. After Phase D passes, return exactly this top-level JSON shape:
+
+```json
+{
+  "target_profile_forensics": {}
+}
+```
+
+The `target_profile_forensics` object must contain exactly the required forensic branches shown in M7.S7B.
+
+Do not re-emit `target_profile`, `target_feature_profile`, `legal_cartography_index`, `target_data_provenance_profile`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, or any compatibility wrapper in the Phase D forensic output.
+
+The backend runner must save this artifact before M8 begins.
+
+### M7.S10C — Combined Output Prohibition
+
+The following production backend output shape is forbidden:
 
 ```json
 {
@@ -839,11 +907,7 @@ For backend execution, return exactly this top-level JSON shape after both inter
 }
 ```
 
-The `target_profile` object must contain exactly the five-parent/eighteen-field schema shown in M7.S6A.
-
-The `target_profile_forensics` object must contain exactly the required forensic branches shown in M7.S7B.
-
-Do not emit `target_feature_profile`, `legal_cartography_index`, `target_data_provenance_profile`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, or any compatibility wrapper.
+That shape incorrectly mixes the Phase B1 material artifact and the Phase D forensic artifact into one response. It may be shown only as documentation that M7 ultimately owns two artifacts, not as an executable backend response.
 
 ---
 
@@ -869,3 +933,5 @@ M7 must prefer controlled limitations over false certainty. It must never invent
 `M7.S12.C3` Current M7 lock: no combined target-feature phase identity, no four-artifact output shape, no one-shot M7+M8 execution, no validation status inside `target_profile`, and no shortcut that allows M8 before M7 material and forensic artifacts are saved.
 
 `M7.S12.C4` Added failure-pattern hardening from latest profile audit: forbidden material aliases, required field types, forbidden forensic aliases, 18-row forensic derivation gate, row-count coverage gates, and contradiction checks. These guardrails exist to prevent generic “profile-with-confidence/evidence-basis” schemas from replacing the locked M7 material/forensic schema.
+
+`M7.S12.C5` Output correction: M7 owns two artifacts, but they are not emitted in one production backend response. Phase B1 emits/saves only `target_profile`. Phase D emits/saves only `target_profile_forensics`. A combined two-artifact response is rejected because it skips the material-save-before-forensics gate.
