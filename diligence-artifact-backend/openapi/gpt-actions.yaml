@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Interface Diligence Artifact Backend
-  version: 0.1.1
-  description: Save and retrieve per-run diligence artifacts for Custom GPT agents. All reads and writes are scoped by run_id.
+  version: 0.2.0
+  description: Current action contract for Agent 1A, Agent 1B, Agent 2A, Agent 2B, and Agent 3.
 servers:
   - url: https://interface-diligence-artifacts-461673097382.asia-south1.run.app
 security:
@@ -14,108 +14,104 @@ components:
       in: header
       name: x-ln-api-key
   schemas:
-    CreateRunRequest:
+    CurrentPhase:
+      type: string
+      enum:
+        - AGENT_1A_URL_MANIFEST
+        - AGENT_1B_EXTRACT
+        - M6_BUCKET_INDEX
+        - M9
+        - M7_TARGET_PROFILE
+        - M8_TARGET_FEATURE_PROFILE
+        - M7_M8
+        - M10
+        - M11
+        - M12
+        - COMPILER
+        - RENDERER
+        - COMPLETE
+    CurrentAgentId:
+      type: string
+      enum:
+        - agent_1a_url_manifest
+        - agent_1b_extract
+        - agent_2a_bucket_routing
+        - agent_2b_m9
+        - agent_3_target_feature
+        - agent_5_m10
+        - agent_6_m11
+        - agent_7_m12
+        - compiler
+        - portfolio_renderer
+        - operator
+    LockStatus:
+      type: string
+      enum: [CREATED, RUNNING, LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE, COMPLETE]
+    CreateReviewerJobRequest:
       type: object
-      required: [target, root_url, source_mode]
+      required: [target_url]
       properties:
+        target_url:
+          type: string
         target:
           type: string
-        root_url:
-          type: string
-        source_mode:
-          type: string
-          enum: [url, text, url_plus_text, synthetic_demo]
         created_by:
           type: string
-          default: operator
         notes:
           type: string
-    SaveArtifactRequest:
+    AdvanceReviewerJobRequest:
       type: object
-      required: [run_id, phase, agent_id, artifact_name, lock_status, artifact]
       properties:
-        run_id:
-          type: string
-        phase:
-          type: string
-          enum: [M6_M9, M7_M8, M10, M11, M12_M13, M14]
-        agent_id:
-          type: string
-          enum:
-            - agent_1_source_legal
-            - agent_2_target_feature
-            - agent_3_data_privacy
-            - agent_4_exposure_registry
-            - agent_5_challenge_assembly
-            - agent_6_terminal_validator
-            - operator
-        artifact_name:
-          type: string
-          enum:
-            - source_discovery_handoff
-            - legal_cartography_index
-            - target_profile
-            - target_profile_forensics
-            - target_feature_profile
-            - target_feature_profile_forensics
-            - data_provenance_profile
-            - exposure_registry_profile
-            - challenge_gate
-            - final_output_handoff
-            - terminal_validation
-            - renderer_payload
-        lock_status:
-          type: string
-          enum: [CREATED, RUNNING, LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE, COMPLETE]
-        artifact:
-          type: object
-          additionalProperties: true
-    LockPhaseRequest:
-      type: object
-      required: [run_id, phase, agent_id, status]
-      properties:
-        run_id:
-          type: string
-        phase:
-          type: string
-          enum: [M6_M9, M7_M8, M10, M11, M12_M13, M14]
-        agent_id:
-          type: string
-        status:
-          type: string
-          enum: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE, COMPLETE]
-        next_phase:
-          type: string
-          nullable: true
-          enum: [M6_M9, M7_M8, M10, M11, M12_M13, M14]
-        final_report_url:
-          type: string
+        max_steps:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 1
 paths:
   /health:
     get:
       operationId: health
-      summary: Check artifact backend health
+      summary: Health check
       security: []
       responses:
         '200':
-          description: Health status
-  /v1/runs/create:
+          description: OK
+  /v1/reviewer/jobs:
     post:
-      operationId: createRun
-      summary: Create a new isolated diligence run
+      operationId: createReviewerJob
+      summary: Create reviewer job starting at Agent 1A
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateRunRequest'
+              $ref: '#/components/schemas/CreateReviewerJobRequest'
       responses:
         '201':
-          description: Run created
-  /v1/runs/{run_id}:
+          description: Created
+  /v1/reviewer/jobs/{run_id}/advance:
+    post:
+      operationId: advanceReviewerJob
+      summary: Advance reviewer job through current phase sequence
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdvanceReviewerJobRequest'
+      responses:
+        '200':
+          description: Advanced
+  /v1/reviewer/jobs/{run_id}:
     get:
-      operationId: getRun
-      summary: Get one run by exact run_id
+      operationId: getReviewerJob
+      summary: Get reviewer job status
       parameters:
         - name: run_id
           in: path
@@ -124,24 +120,11 @@ paths:
             type: string
       responses:
         '200':
-          description: Run status and artifact metadata
-  /v1/artifacts/save:
-    post:
-      operationId: saveArtifact
-      summary: Save one phase artifact under an exact run_id
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SaveArtifactRequest'
-      responses:
-        '201':
-          description: Artifact saved
+          description: Status
   /v1/artifacts/{run_id}/{artifact_name}:
     get:
       operationId: getArtifact
-      summary: Get one artifact by exact run_id and artifact_name
+      summary: Get artifact by run and artifact name
       parameters:
         - name: run_id
           in: path
@@ -157,33 +140,14 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/CurrentAgentId'
       responses:
         '200':
-          description: Artifact payload
-  /v1/phases/lock:
-    post:
-      operationId: lockPhase
-      summary: Mark a phase status and move the run dashboard forward
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LockPhaseRequest'
-      responses:
-        '200':
-          description: Phase locked
-  /v1/renderer/{run_id}:
+          description: Artifact
+  /agent3/health:
     get:
-      operationId: getRendererPayload
-      summary: Get renderer payload by exact run_id
-      parameters:
-        - name: run_id
-          in: path
-          required: true
-          schema:
-            type: string
+      operationId: agent3Health
+      summary: Agent 3 health
       responses:
         '200':
-          description: Renderer payload
+          description: OK
