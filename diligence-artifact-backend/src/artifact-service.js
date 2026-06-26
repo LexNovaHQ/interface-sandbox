@@ -1,6 +1,6 @@
 import { config, requireRuntimeConfig } from "./config.js";
 import { assertRunId } from "./run-id.js";
-import { assertKnownArtifactName, assertKnownPhase } from "./constants.js";
+import { assertKnownArtifactName, assertKnownPhase, assertPhaseCanWriteArtifact } from "./constants.js";
 import { assertCanReadArtifact, assertCanWriteArtifact } from "./permissions.js";
 import { saveArtifactSchema, lockPhaseSchema, parseOrThrow } from "./schemas.js";
 import { saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./drive.js";
@@ -17,6 +17,7 @@ import {
 import { getRequiredWritesForPhase } from "./phase-contracts.js";
 
 const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
+const ACCEPTED_PHASE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
 
 export async function saveArtifact(input) {
   requireRuntimeConfig();
@@ -25,6 +26,9 @@ export async function saveArtifact(input) {
   assertKnownPhase(parsed.phase);
   assertKnownArtifactName(parsed.artifact_name);
   assertCanWriteArtifact(parsed.agent_id, parsed.artifact_name);
+  assertPhaseCanWriteArtifact(parsed.phase, parsed.artifact_name);
+
+  await assertArtifactSaveOrder(parsed);
 
   const run = await getRunRecord(parsed.run_id);
   const version = await getNextArtifactVersion(parsed.run_id, parsed.artifact_name);
@@ -54,6 +58,19 @@ export async function saveArtifact(input) {
     status: parsed.lock_status
   });
 
+  await logEvent({
+    run_id: parsed.run_id,
+    event_type: "ARTIFACT_SAVED",
+    actor: parsed.agent_id,
+    payload: {
+      phase: parsed.phase,
+      artifact_name: parsed.artifact_name,
+      version,
+      lock_status: parsed.lock_status,
+      save_order_gate: "PASS"
+    }
+  });
+
   return {
     ok: true,
     run_id: parsed.run_id,
@@ -64,6 +81,61 @@ export async function saveArtifact(input) {
     drive_web_view_link: meta.drive_web_view_link,
     receipt: `${parsed.artifact_name}_v${version} saved for ${parsed.run_id}`
   };
+}
+
+async function assertArtifactSaveOrder(parsed) {
+  const { run_id, phase, artifact_name } = parsed;
+
+  if (artifact_name === "target_profile_forensics") {
+    await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_profile_forensics_requires_target_profile");
+  }
+
+  if (artifact_name === "target_feature_profile") {
+    await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_feature_profile_requires_target_profile");
+    await requireSavedArtifact(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_requires_target_profile_forensics");
+    await requirePhaseAccepted(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_requires_locked_m7");
+  }
+
+  if (artifact_name === "target_feature_profile_forensics") {
+    await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_target_profile");
+    await requireSavedArtifact(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_target_profile_forensics");
+    await requirePhaseAccepted(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_locked_m7");
+    await requireSavedArtifact(run_id, "target_feature_profile", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_target_feature_profile");
+  }
+
+  if (artifact_name === "data_provenance_profile") {
+    await requireSavedArtifact(run_id, "target_feature_profile", "SAVE_ORDER_BLOCKED:data_provenance_requires_target_feature_profile");
+    await requireSavedArtifact(run_id, "target_feature_profile_forensics", "SAVE_ORDER_BLOCKED:data_provenance_requires_target_feature_profile_forensics");
+    await requirePhaseAccepted(run_id, "target_feature_profile_forensics", "SAVE_ORDER_BLOCKED:data_provenance_requires_locked_m8");
+  }
+
+  if (phase === "M7_TARGET_PROFILE" && !["target_profile", "target_profile_forensics"].includes(artifact_name)) {
+    throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
+  }
+
+  if (phase === "M8_TARGET_FEATURE_PROFILE" && !["target_feature_profile", "target_feature_profile_forensics"].includes(artifact_name)) {
+    throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
+  }
+}
+
+async function requireSavedArtifact(runId, artifactName, message) {
+  try {
+    await getArtifactMetadata(runId, artifactName);
+  } catch (_error) {
+    throw new Error(message);
+  }
+}
+
+async function requirePhaseAccepted(runId, artifactName, message) {
+  let meta;
+  try {
+    meta = await getArtifactMetadata(runId, artifactName);
+  } catch (_error) {
+    throw new Error(message);
+  }
+  if (!ACCEPTED_PHASE_STATUSES.has(meta.lock_status)) {
+    throw new Error(`${message}:status:${meta.lock_status || "missing"}`);
+  }
 }
 
 export async function readArtifact({ run_id, artifact_name, agent_id = "operator" }) {
@@ -105,6 +177,18 @@ export async function lockPhase(input) {
   const body = parseOrThrow(lockPhaseSchema, input);
   assertRunId(body.run_id);
   assertKnownPhase(body.phase);
+
+  if (body.phase === "M8_TARGET_FEATURE_PROFILE") {
+    await requireSavedArtifact(body.run_id, "target_profile", "PHASE_LOCK_BLOCKED:M8_requires_target_profile");
+    await requireSavedArtifact(body.run_id, "target_profile_forensics", "PHASE_LOCK_BLOCKED:M8_requires_target_profile_forensics");
+    await requirePhaseAccepted(body.run_id, "target_profile_forensics", "PHASE_LOCK_BLOCKED:M8_requires_locked_m7");
+  }
+
+  if (body.phase === "M10") {
+    await requireSavedArtifact(body.run_id, "target_feature_profile", "PHASE_LOCK_BLOCKED:M10_requires_target_feature_profile");
+    await requireSavedArtifact(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_requires_target_feature_profile_forensics");
+    await requirePhaseAccepted(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_requires_locked_m8");
+  }
 
   if (LOCK_ADVANCE_STATUSES.has(body.status) && body.phase !== "COMPLETE") {
     await assertRequiredArtifactsExist(body.run_id, getRequiredWritesForPhase(body.phase));
