@@ -6,34 +6,57 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
   requireGeminiConfig();
 
   const errors = [];
-  for (let index = 0; index < config.geminiApiKeys.length; index += 1) {
-    const key = config.geminiApiKeys[index];
-    try {
-      const result = await callGeminiOnce({
-        key,
-        model: config.geminiModel,
-        prompt,
-        temperature,
-        maxOutputTokens
-      });
-      return {
-        json: parseJsonFromText(result.text),
-        raw_text: result.text,
-        metadata: {
-          phase,
-          model: config.geminiModel,
-          key_alias: `GEMINI_API_KEYS_${index + 1}`,
-          usage_metadata: result.usageMetadata,
-          finish_reason: result.finishReason
+  const keyCount = config.geminiApiKeys.length;
+  const models = config.geminiModels.length ? config.geminiModels : [config.geminiModel];
+  const rounds = Math.max(1, Number(config.geminiRetryRounds || 1));
+  const keysPerModel = Math.min(keyCount, Math.max(1, Number(config.geminiKeysPerModelPerRound || keyCount)));
+
+  for (let round = 0; round < rounds; round += 1) {
+    for (const model of models) {
+      for (let offset = 0; offset < keysPerModel; offset += 1) {
+        const keyIndex = (round * keysPerModel + offset) % keyCount;
+        const key = config.geminiApiKeys[keyIndex];
+        try {
+          const result = await callGeminiOnce({
+            key,
+            model,
+            prompt,
+            temperature,
+            maxOutputTokens
+          });
+          return {
+            json: parseJsonFromText(result.text),
+            raw_text: result.text,
+            metadata: {
+              phase,
+              model,
+              primary_model: config.geminiModel,
+              fallback_models: models,
+              retry_round: round + 1,
+              key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
+              usage_metadata: result.usageMetadata,
+              finish_reason: result.finishReason
+            }
+          };
+        } catch (error) {
+          errors.push({
+            phase,
+            model,
+            retry_round: round + 1,
+            key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
+            message: error?.message || String(error),
+            status: error?.status || null,
+            provider_error_type: providerErrorType(error)
+          });
+          if (!isRetryableGeminiError(error)) {
+            throw new Error(`GEMINI_CALL_FAILED:${phase}:${JSON.stringify(errors)}`);
+          }
         }
-      };
-    } catch (error) {
-      errors.push({
-        key_alias: `GEMINI_API_KEYS_${index + 1}`,
-        message: error?.message || String(error),
-        status: error?.status || null
-      });
-      if (!isRetryableGeminiError(error)) break;
+      }
+    }
+
+    if (round < rounds - 1) {
+      await sleep(backoffDelay(round));
     }
   }
 
@@ -120,5 +143,30 @@ export function parseJsonFromText(text) {
 function isRetryableGeminiError(error) {
   const status = Number(error?.status || 0);
   const message = String(error?.message || "").toLowerCase();
-  return RETRYABLE_STATUS.has(status) || message.includes("quota") || message.includes("rate") || message.includes("timeout");
+  return RETRYABLE_STATUS.has(status) || message.includes("quota") || message.includes("rate") || message.includes("timeout") || message.includes("high demand") || message.includes("temporarily unavailable");
+}
+
+function providerErrorType(error) {
+  const status = Number(error?.status || 0);
+  const message = String(error?.message || "").toLowerCase();
+  if (status === 503 || message.includes("high demand") || message.includes("temporarily unavailable")) return "PROVIDER_CAPACITY";
+  if (status === 429 || message.includes("quota") || message.includes("rate")) return "RATE_OR_QUOTA";
+  if (status === 408 || message.includes("timeout")) return "TIMEOUT";
+  if (status >= 500) return "PROVIDER_5XX";
+  if (status >= 400) return "CLIENT_OR_CONFIG";
+  return "UNKNOWN";
+}
+
+function backoffDelay(round) {
+  const base = Number(config.geminiRetryBaseDelayMs || 0);
+  const max = Number(config.geminiRetryMaxDelayMs || base);
+  const exponential = base * Math.pow(2, round);
+  const jitter = Math.floor(Math.random() * Math.max(1, base));
+  return Math.min(max, exponential + jitter);
+}
+
+function sleep(ms) {
+  const duration = Math.max(0, Number(ms || 0));
+  if (!duration) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, duration));
 }
