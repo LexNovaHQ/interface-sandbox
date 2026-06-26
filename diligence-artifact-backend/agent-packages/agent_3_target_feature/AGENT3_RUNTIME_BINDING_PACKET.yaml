@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v4_agent3_m7_m8_retired
+runtime_contract_version: v5_agent3_separate_phase_only
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target Feature Agent
 active_phase_scope: M7_TARGET_PROFILE_THEN_M8_TARGET_FEATURE_PROFILE
@@ -12,8 +12,6 @@ structure_authority:
   packet_structure_supreme: true
   no_module_merge: true
   backend_supports_agent_structure: true
-  backend_must_not_dictate_prompt_structure: true
-  retired_combined_phase_disabled: true
 
 allowed_modules:
   - M7_TARGET_PROFILE
@@ -32,10 +30,10 @@ phase_locks:
   - M8_TARGET_FEATURE_PROFILE
 
 sequence_completion_marker: AGENT3_TARGET_FEATURE_SEQUENCE_COMPLETE
-sequence_completion_meaning: "Agent 3 sequence completes only after M7_TARGET_PROFILE and M8_TARGET_FEATURE_PROFILE run as separate backend phases and all four artifacts save in enforced order. No combined model call exists."
+sequence_completion_meaning: "Agent 3 sequence completes only after M7_TARGET_PROFILE and M8_TARGET_FEATURE_PROFILE run as separate backend phases and all four artifacts save in enforced order."
 
 backend_permission_profile: agent_3_target_feature
-validator_profile: agent_3_m7_then_m8_sequential_validator
-phase_packet_contract: agent_3_m7_then_m8_phase_packet_contract
+validator_profile: agent_3_sequential_validator
+phase_packet_contract: agent_3_sequential_phase_packet_contract
 terminal_receipt_profile: agent_3_backend_json_only
 </RUNTIME_BINDING_PACKET>
