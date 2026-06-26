@@ -25,7 +25,7 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             temperature,
             maxOutputTokens: effectiveMaxOutputTokens
           });
-          const parsed = parseJsonFromText(result.text);
+          const parsed = parseGeminiJsonOrThrow(result);
           return {
             json: parsed,
             raw_text: result.text,
@@ -149,6 +149,19 @@ export function parseJsonFromText(text) {
   }
 }
 
+function parseGeminiJsonOrThrow(result) {
+  try {
+    return parseJsonFromText(result.text);
+  } catch (error) {
+    if (result?.finishReason === "MAX_TOKENS") {
+      error.finishReason = "MAX_TOKENS";
+      error.status = 408;
+      error.message = `MODEL_JSON_PARSE_FAILED_AFTER_MAX_TOKENS:${error.message || String(error)}`;
+    }
+    throw error;
+  }
+}
+
 function resolveMaxOutputTokens(requested) {
   if (Number.isFinite(Number(requested)) && Number(requested) > 0) return Math.floor(Number(requested));
   if (Number.isFinite(Number(config.geminiMaxOutputTokens)) && Number(config.geminiMaxOutputTokens) > 0) {
@@ -172,16 +185,16 @@ function buildGeminiWarnings(result) {
 function isRetryableGeminiError(error) {
   const status = Number(error?.status || 0);
   const message = String(error?.message || "").toLowerCase();
-  return RETRYABLE_STATUS.has(status) || message.includes("quota") || message.includes("rate") || message.includes("timeout") || message.includes("high demand") || message.includes("temporarily unavailable");
+  return RETRYABLE_STATUS.has(status) || message.includes("quota") || message.includes("rate") || message.includes("timeout") || message.includes("high demand") || message.includes("temporarily unavailable") || error?.finishReason === "MAX_TOKENS";
 }
 
 function providerErrorType(error) {
   const status = Number(error?.status || 0);
   const message = String(error?.message || "").toLowerCase();
+  if (error?.finishReason === "MAX_TOKENS" || message.includes("max_tokens") || message.includes("max tokens")) return "TOKEN_LIMIT";
   if (status === 503 || message.includes("high demand") || message.includes("temporarily unavailable")) return "PROVIDER_CAPACITY";
   if (status === 429 || message.includes("quota") || message.includes("rate")) return "RATE_OR_QUOTA";
   if (status === 408 || message.includes("timeout")) return "TIMEOUT";
-  if (message.includes("max_tokens") || message.includes("max tokens")) return "TOKEN_LIMIT";
   if (status >= 500) return "PROVIDER_5XX";
   if (status >= 400) return "CLIENT_OR_CONFIG";
   return "UNKNOWN";
