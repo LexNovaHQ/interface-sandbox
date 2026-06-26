@@ -829,6 +829,38 @@ Do not include `target_feature_profile_forensics` in the Phase B1 output. Phase 
 - Do not split activities unless mechanics or routing materially differs.
 - Preserve all supported archetype codes and surface tokens.
 
+
+### M8.S10A — PHASE B1 Material Repair / Targeted Reinvestigation Behavior
+
+Repair in M8 means targeted reinvestigation first, not immediate hard blocking, silent omission, schema-only acceptance, or generic limitation.
+
+If an activity candidate, material field, mechanics proof, archetype test, surface-token test, candidate admission decision, activity split/merge decision, or profile-level limitation is inadequate, unsupported, weak, thin, vague, conflicting, or wrong:
+
+1. do not proceed to Phase C;
+2. run targeted item-specific reinvestigation inside the existing Agent 1/M6-approved Product / Activity source universe and loaded product-family lossless artifacts;
+3. re-apply the governing `PA.*` row, candidate admission rule, mechanics proof rule, archetype matrix row, or surface matrix row that controls the defective item;
+4. if support is found, correct the candidate, field, mechanics proof, archetype result, surface result, limitation, or omission decision;
+5. if support remains insufficient after reinvestigation, omit or limit the candidate/test/field through a controlled limitation or omission reason and record the limitation in `profile_level_limitations[]` where material to downstream use;
+6. write the matching reinvestigation, omission, limitation, derivation, or classification ledger row for later projection into `target_feature_profile_forensics`;
+7. rerun Phase B1 before any forensic derivation begins.
+
+Do not hard-block the entire M8 phase for ordinary public-footprint thinness after targeted reinvestigation. Proceed only after the issue is supported, omitted, or controlled and ledgered.
+
+Only route back to Agent 1 / M6 source repair when the Product / Activity source universe itself, the loaded product-family lossless artifacts, or the classification matrix authority is missing, corrupted, inaccessible, or contradictory in a way M8 cannot repair from loaded artifacts.
+
+Phase B1 may emit and save `target_feature_profile` only when every material activity row is schema-valid and substance-valid, or unresolved defects are controlled through omission/limitation and ledgered for Phase C forensics.
+
+Allowed Phase B1 outcomes are:
+
+- `PASS`
+- `PASS_WITH_WARNING`
+- `PASS_WITH_LIMITATION`
+- `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
+- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe or authority defects
+- `CONTROLLED_FAILURE`
+
+Any earlier repair wording in this module is interpreted under this section: M8 must attempt scoped targeted reinvestigation first, and only source-universe defects may leave M8 as `SOURCE_REPAIR_REQUIRED`.
+
 ---
 
 ## M8.S11 — PHASE C: Forensic Derivation — Evidence Mapping to Forensics
@@ -991,6 +1023,48 @@ If the lock gate finds inadequate or wrong output:
 6. re-run the relevant lock gate.
 
 Do not hard-block the entire M8 phase for ordinary missing public evidence after reinvestigation. Phase B1 must already have saved the material profile; Phase D saves only the forensic profile with controlled limitations where downstream use remains safe.
+
+
+### M8.S14A — PHASE D Forensic Repair / Targeted Reinvestigation Behavior
+
+Repair in Phase D means targeted forensic-row, derivation-ledger, classification-ledger, source-custody, limitation, or validation-quality repair first, not immediate hard blocking or summary-only forensic acceptance.
+
+If `target_feature_profile_forensics` contains an inadequate, missing, unsupported, weak, thin, vague, conflicting, wrong, alias-shaped, summary-only, or source-uncertain forensic row or branch:
+
+1. repair the specific forensic branch, row, activity reference, source reference, classification row, limitation row, or validation-quality result;
+2. if the defect is forensic-only, do not re-emit `target_feature_profile`;
+3. if the defect exposes an underlying material activity, mechanics, archetype, surface, omission, or limitation defect, return to the specific Phase B / Phase B1 item, run targeted reinvestigation, repair or control the material issue, rerun Phase B1, and resave `target_feature_profile` before rebuilding forensics;
+4. do not invent source IDs, source URLs, mechanics proof, archetype support, surface support, candidate support, or limitation reasons to repair forensics;
+5. do not mutate M7, M6, product-family lossless artifacts, registries, or classification authority;
+6. rerun Phase C / Phase D after any material repair;
+7. save `target_feature_profile_forensics` only when the forensic artifact is schema-valid, row-complete, source-linked, registry-linked, classification-matrix-linked, and either fully supported or controlled with limitations.
+
+Phase D must repair or control, at minimum:
+
+- missing `product_activity_source_route_coverage_ledger[]` rows;
+- missing `product_activity_extraction_capsule_summary[]` coverage;
+- missing `candidate_admission_and_omission_ledger[]` rows for admitted or omitted candidates;
+- missing `selected_pa_field_derivation_ledger[]` rows, including the minimum 12 rows per emitted activity;
+- missing `activity_mechanics_derivation_ledger[]` proof;
+- missing 11-row archetype test coverage per mechanically valid emitted activity;
+- missing 10-row surface-token test coverage per emitted activity;
+- missing `targeted_re_extraction_ledger[]` rows for weak fields/tests;
+- missing `activity_limitations_ledger[]` rows for activity or profile limitations;
+- missing `cross_route_use_ledger[]` rows for non-primary or cross-route source use;
+- missing source URL pairing for cited source IDs;
+- forbidden forensic aliases or summary-only forensic branches;
+- validation-quality results that do not report schema, field, row-count, source URL, alias, classification, limitation, and firewall checks.
+
+After reinvestigation, if public evidence remains insufficient, M8 must preserve the controlled limitation or omission and save the forensic output only if downstream use remains truthful and safe.
+
+Allowed Phase D outcomes are:
+
+- `PASS`
+- `PASS_WITH_WARNING`
+- `PASS_WITH_LIMITATION`
+- `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
+- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe or authority defects
+- `CONTROLLED_FAILURE`
 
 ---
 
