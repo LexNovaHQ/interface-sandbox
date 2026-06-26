@@ -945,6 +945,63 @@ Lock only if all conditions pass:
 
 `M10.S17B.C3` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REPAIR_REQUIRED` as appropriate.
 
+### M10.S17C — PHASE B1 Material Repair / Targeted Reinvestigation Behavior
+
+Repair in M10 means targeted field-specific, signal-specific, readiness-row-specific, missing-proof-specific, or source-custody reinvestigation first; not immediate hard blocking.
+
+If a material M10 field, Anti-Unknown status, DAP application row, readiness matrix row, missing-proof request, limitation, or source-coverage item is inadequate, unsupported, weak, thin, vague, conflicting, or wrong:
+
+1. do not proceed to Phase C;
+2. run targeted item-specific reinvestigation inside the existing Agent 1 / Agent 3 / Agent 4 approved source universe, including the primary M10 lossless D-buckets, M6-approved data/privacy/security/control/legal/product/docs/API routes, locked upstream artifacts, M9 navigation refs, and documented absence/access records;
+3. re-derive the affected field or readiness row using the governing selected `DAP.*` row conditions, the Data-Control Source Extraction Capsule, and the Anti-Unknown Protocol;
+4. if the field or signal can be supported, correct the material value or readiness row;
+5. if the field or signal remains unsupported after reinvestigation, emit the correct controlled Anti-Unknown status, missing-proof request, and limitation/warning in `target_data_provenance_profile`;
+6. record the reinvestigation, controlled status, missing-proof route, and limitation in Module V ledger and `target_data_provenance_profile_forensics`;
+7. re-run Phase B1 after the repair.
+
+Do not hard-block the entire M10 phase for ordinary public-footprint thinness after targeted reinvestigation. Save the material profile with controlled limitations where downstream M11 use remains truthful and safe.
+
+Only route back to Agent 1 / M6 source repair when the source universe itself, the primary M10 lossless bucket set, or required approved data/privacy/security/control route custody is missing, corrupted, inaccessible, or contradictory in a way M10 cannot repair from loaded artifacts.
+
+Allowed Phase B1 outcomes:
+
+- `PASS`
+- `PASS_WITH_WARNING`
+- `PASS_WITH_LIMITATION`
+- `CONTROLLED_FAILURE`
+- `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
+- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe defects
+
+Any earlier `REPAIR_REQUIRED` or `REINVESTIGATE_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
+
+### M10.S17D — PHASE D Forensic Repair / Targeted Reinvestigation Behavior
+
+If Phase D finds an inadequate forensic row, missing forensic family, summary-only forensic branch, missing 34-field DAP coverage, missing Anti-Unknown ledger coverage, missing readiness-matrix proof, missing missing-proof linkage, source-ID/source-URL mismatch, legal-firewall leak, registry-firewall leak, or material/forensic contradiction:
+
+1. do not proceed to M11;
+2. repair the specific forensic row, forensic family, source-custody reference, DAP linkage, Anti-Unknown resolution row, readiness-matrix derivation row, missing-proof request ledger row, or validation/QC row;
+3. if the defect is forensic-only, do not re-emit or mutate `target_data_provenance_profile`;
+4. if the defect exposes an underlying material-field, readiness-row, missing-proof, limitation, or Anti-Unknown error, return to targeted reinvestigation for that specific item;
+5. update the material profile only if reinvestigation changes the supported value, status, missing-proof request, readiness row, or limitation;
+6. rerun Phase B1 if the material profile changes;
+7. rebuild the affected forensic rows from the saved material artifact and Module V ledger;
+8. rerun Phase D after forensic repair.
+
+After reinvestigation, if the issue remains unresolved because public evidence is insufficient, mark the issue as a controlled warning/limitation, preserve the correct Anti-Unknown status, ledger the missing proof, and save the forensic output only when the limitation is controlled and row-level proof is complete.
+
+Only route back to Agent 1 / M6 source repair when the source universe itself, the primary M10 lossless bucket set, or required approved data/privacy/security/control route custody is missing, corrupted, inaccessible, or contradictory in a way M10 cannot repair from loaded artifacts.
+
+Allowed Phase D outcomes:
+
+- `PASS`
+- `PASS_WITH_WARNING`
+- `PASS_WITH_LIMITATION`
+- `CONTROLLED_FAILURE`
+- `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
+- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe defects
+
+Any earlier `REPAIR_REQUIRED` or `REINVESTIGATE_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
+
 ---
 
 ## M10.S18 — Split Backend Output Contracts
