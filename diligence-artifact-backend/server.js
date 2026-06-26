@@ -39,7 +39,6 @@ app.get("/health", (_req, res) => {
 app.use("/public", publicReviewerRouter);
 app.use("/v1", requireApiKey);
 app.use("/v1", reviewerRouter);
-app.use("/agent2", requireApiKey);
 app.use("/agent3", requireApiKey);
 
 app.post("/v1/runs/create", async (req, res) => {
@@ -102,38 +101,21 @@ app.get("/agent3/health", (_req, res) => {
     service: config.serviceName,
     agent_id: "agent_3_target_feature",
     phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"],
-    mode: "artifact_backend_plus_reviewer_runner"
-  });
-});
-
-app.get("/agent2/health", (_req, res) => {
-  res.json({
-    ok: true,
-    service: config.serviceName,
-    agent_id: "agent_3_target_feature",
-    legacy_alias: "agent2",
-    canonical_agent: "agent3",
-    phases: ["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"],
+    retired_phases: ["M7_M8"],
     mode: "artifact_backend_plus_reviewer_runner"
   });
 });
 
 app.get("/agent3/runs/:run_id/source-discovery-handoff", agent3ReadRoute("source_discovery_handoff"));
 app.get("/agent3/runs/:run_id/legal-cartography-index", agent3ReadRoute("legal_cartography_index"));
-app.get("/agent2/runs/:run_id/source-discovery-handoff", agent3ReadRoute("source_discovery_handoff"));
-app.get("/agent2/runs/:run_id/legal-cartography-index", agent3ReadRoute("legal_cartography_index"));
 
 app.post("/agent3/runs/:run_id/target-profile", agent3SaveRoute("target_profile"));
 app.post("/agent3/runs/:run_id/target-profile-forensics", agent3SaveRoute("target_profile_forensics"));
 app.post("/agent3/runs/:run_id/target-feature-profile", agent3SaveRoute("target_feature_profile"));
 app.post("/agent3/runs/:run_id/target-feature-profile-forensics", agent3SaveRoute("target_feature_profile_forensics"));
-app.post("/agent2/runs/:run_id/target-profile", agent3SaveRoute("target_profile"));
-app.post("/agent2/runs/:run_id/target-profile-forensics", agent3SaveRoute("target_profile_forensics"));
-app.post("/agent2/runs/:run_id/target-feature-profile", agent3SaveRoute("target_feature_profile"));
-app.post("/agent2/runs/:run_id/target-feature-profile-forensics", agent3SaveRoute("target_feature_profile_forensics"));
 
-app.post("/agent3/runs/:run_id/lock-m7-m8", agent3LockRoute);
-app.post("/agent2/runs/:run_id/lock-m7-m8", agent3LockRoute);
+app.post("/agent3/runs/:run_id/lock-m7-target-profile", agent3LockPhaseRoute("M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"));
+app.post("/agent3/runs/:run_id/lock-m8-target-feature-profile", agent3LockPhaseRoute("M8_TARGET_FEATURE_PROFILE", "M10"));
 
 app.post("/v1/artifacts/save", saveArtifactHandler);
 app.post("/v1/artifacts/save-source-discovery", saveArtifactHandler);
@@ -219,32 +201,33 @@ function agent3SaveRoute(artifactName) {
   };
 }
 
-async function agent3LockRoute(req, res) {
-  try {
-    const lockStatus = req.body?.lock_status || req.body?.status;
-    if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
+function agent3LockPhaseRoute(phase, nextPhase) {
+  return async (req, res) => {
+    try {
+      const lockStatus = req.body?.lock_status || req.body?.status;
+      if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
 
-    const result = await lockPhase({
-      run_id: req.params.run_id,
-      phase: "M8_TARGET_FEATURE_PROFILE",
-      agent_id: "agent_3_target_feature",
-      status: lockStatus,
-      next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? "M10" : null,
-      final_report_url: ""
-    });
+      const result = await lockPhase({
+        run_id: req.params.run_id,
+        phase,
+        agent_id: "agent_3_target_feature",
+        status: lockStatus,
+        next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? nextPhase : null,
+        final_report_url: ""
+      });
 
-    return res.json({
-      ok: true,
-      run_id: result.run_id,
-      phase: "M7_M8",
-      backend_phase: result.phase,
-      lock_status: result.status,
-      next_phase: result.next_phase,
-      receipt: `M7_M8 ${result.status} for ${result.run_id}`
-    });
-  } catch (error) {
-    return sendError(res, error);
-  }
+      return res.json({
+        ok: true,
+        run_id: result.run_id,
+        phase: result.phase,
+        lock_status: result.status,
+        next_phase: result.next_phase,
+        receipt: `${phase} ${result.status} for ${result.run_id}`
+      });
+    } catch (error) {
+      return sendError(res, error);
+    }
+  };
 }
 
 function agent3PhaseForArtifact(artifactName) {
@@ -283,7 +266,7 @@ function statusForMessage(message) {
   if (message.startsWith("UNAUTHORIZED")) return 401;
   if (message.includes("FORBIDDEN")) return 403;
   if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
-  if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400;
+  if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SAVE_ORDER_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400;
   if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500;
   if (message.startsWith("GEMINI_CALL_FAILED")) return 502;
   return 500;
