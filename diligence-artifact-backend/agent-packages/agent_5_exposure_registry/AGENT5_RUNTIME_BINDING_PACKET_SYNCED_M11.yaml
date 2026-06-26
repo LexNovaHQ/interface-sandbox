@@ -1,0 +1,80 @@
+<RUNTIME_BINDING_PACKET>
+runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
+active_agent_id: agent_5_exposure_registry
+active_agent_name: Interface Exposure Registry Agent
+active_phase_scope: M11_EXPOSURE_REGISTRY
+
+run_mode: PHASED_AGENT
+run_id_required: true
+
+allowed_modules:
+  - M11_EXPOSURE_REGISTRY
+
+read_artifacts:
+  - source_discovery_handoff
+  - legal_cartography_index
+  - source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families
+  - lossless_family__L1_CORE_TERMS_PRIVACY
+  - lossless_family__L2_B2B_CONTRACTING
+  - lossless_family__L3_AI_USAGE_GOVERNANCE
+  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+  - lossless_family__L5_LEGAL_HUB_HOSTED
+  - lossless_family__L6_ENTITY_NOTICE
+  - target_profile
+  - target_profile_forensics
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - target_data_provenance_profile
+  - target_data_provenance_profile_forensics
+
+required_registry_imports:
+  - AI_THREAT_REGISTRY.yaml
+  - REGISTRY_KEY_v3_0.md
+  - 03_REGISTRY_EVALUATION_RULES.yaml
+  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+
+write_artifacts_in_order:
+  - target_exposure_profile
+  - target_exposure_profile_forensics
+
+phase_lock:
+  - M11_EXPOSURE_REGISTRY
+
+forbidden_modules:
+  - M6_SOURCE_DISCOVERY
+  - M7_TARGET_PROFILE
+  - M8_TARGET_FEATURE_PROFILE
+  - M9_LEGAL_CARTOGRAPHY
+  - M10_DATA_PROVENANCE
+  - M12_OPERATOR_CHALLENGE
+  - M13_OUTPUT_HANDOFF
+  - M14_TERMINAL_RENDERER
+
+forbidden_outputs:
+  - operator_challenge_gate
+  - final_output_handoff
+  - exposure_summary
+  - material_exposure_findings
+  - controlled_exposure_rows
+  - absent_not_triggered_registry_rows
+  - registry_coverage_matrix
+  - activity_to_exposure_matrix
+  - data_asset_to_exposure_matrix
+  - legal_control_to_exposure_matrix
+  - review_priority_register
+  - report prose
+  - HTML renderer output
+  - legal advice
+  - compliance conclusions
+  - legal applicability conclusions
+  - liability findings
+  - risk-score verdicts
+
+backend_permission_profile: agent_5_read_prior_save_m11_lock
+validator_profile: agent_5_m11_validator
+phase_packet_contract: agent_5_m11_backend_output_contract
+terminal_receipt_profile: agent_5_same_chat_receipt
+
+next_agent_command: "@Interface Challenge Handoff Agent Continue run {{run_id}}."
+</RUNTIME_BINDING_PACKET>
