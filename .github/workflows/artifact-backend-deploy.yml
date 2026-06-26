@@ -83,6 +83,7 @@ jobs:
           GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GEMINI_MODELS: ${{ secrets.GEMINI_MODELS }}
           DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
           SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
           ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
@@ -98,6 +99,9 @@ jobs:
               value = "" if value is None else str(value)
               return "'" + value.replace("'", "''") + "'"
 
+          primary_model = os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash"
+          model_chain = os.environ.get("GEMINI_MODELS") or primary_model
+
           env = {
               "GCP_PROJECT_ID": os.environ.get("GCP_PROJECT_ID", ""),
               "GCP_REGION": os.environ.get("GCP_REGION", "asia-south1"),
@@ -108,7 +112,12 @@ jobs:
               "RUNS_SHEET_NAME": "runs",
               "GPT_ACTION_API_KEY": os.environ.get("GPT_ACTION_API_KEY", ""),
               "GEMINI_API_KEYS": os.environ.get("GEMINI_API_KEYS", ""),
-              "GEMINI_MODEL": os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash",
+              "GEMINI_MODEL": primary_model,
+              "GEMINI_MODELS": model_chain,
+              "GEMINI_RETRY_ROUNDS": os.environ.get("GEMINI_RETRY_ROUNDS", "2"),
+              "GEMINI_KEYS_PER_MODEL_PER_ROUND": os.environ.get("GEMINI_KEYS_PER_MODEL_PER_ROUND", "2"),
+              "GEMINI_RETRY_BASE_DELAY_MS": os.environ.get("GEMINI_RETRY_BASE_DELAY_MS", "750"),
+              "GEMINI_RETRY_MAX_DELAY_MS": os.environ.get("GEMINI_RETRY_MAX_DELAY_MS", "5000"),
               "ALLOWED_ORIGIN": os.environ.get("ALLOWED_ORIGIN") or "https://sandbox.lexnovahq.com",
               "PUBLIC_RENDERER_BASE_URL": os.environ.get("PUBLIC_RENDERER_BASE_URL", ""),
               "REVIEWER_PUBLIC_BASE_URL": os.environ.get("REVIEWER_PUBLIC_BASE_URL") or "https://sandbox.lexnovahq.com",
@@ -124,6 +133,8 @@ jobs:
               "SHEETS_SPREADSHEET_ID",
               "GPT_ACTION_API_KEY",
               "GEMINI_API_KEYS",
+              "GEMINI_MODEL",
+              "GEMINI_MODELS",
           ] if not env.get(key)]
           if missing:
               raise SystemExit("Missing artifact backend deploy secret/value(s): " + ", ".join(missing))
