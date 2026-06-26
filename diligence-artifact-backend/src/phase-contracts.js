@@ -8,23 +8,23 @@ import {
   TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
 } from "./constants.js";
 
-const AGENT_2_REFERENCE_FILES = Object.freeze([
+const AGENT_3_REFERENCE_FILES = Object.freeze([
   "REGISTRY_KEY_v3_0.md",
   "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
   "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml",
   "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml"
 ]);
 
-const AGENT_2_PACKAGE_ROOT = "agent-packages/agent_2_target_feature";
+const AGENT_3_PACKAGE_ROOT = "agent-packages/agent_3_target_feature";
 
-const AGENT_2_RUNTIME_FILES = Object.freeze([
-  `${AGENT_2_PACKAGE_ROOT}/AGENT2_RUNTIME_BINDING_PACKET.yaml`,
-  `${AGENT_2_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`
+const AGENT_3_RUNTIME_FILES = Object.freeze([
+  `${AGENT_3_PACKAGE_ROOT}/AGENT2_RUNTIME_BINDING_PACKET.yaml`,
+  `${AGENT_3_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`
 ]);
 
-const AGENT_2_VALIDATION_FILES = Object.freeze([
-  `${AGENT_2_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED.md`,
-  `${AGENT_2_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md`
+const AGENT_3_VALIDATION_FILES = Object.freeze([
+  `${AGENT_3_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED.md`,
+  `${AGENT_3_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md`
 ]);
 
 export const PHASE_CONTRACTS = Object.freeze({
@@ -46,7 +46,7 @@ export const PHASE_CONTRACTS = Object.freeze({
 
   M6_BUCKET_INDEX: {
     type: "deterministic",
-    actor_id: "agent_2_m6_bucket_index",
+    actor_id: "agent_2a_bucket_routing",
     reads: AGENT_1_ARTIFACT_NAMES,
     writes: ["source_discovery_handoff"],
     next: "M9"
@@ -54,7 +54,7 @@ export const PHASE_CONTRACTS = Object.freeze({
 
   M9: {
     type: "model",
-    agent_id: "agent_3_m9",
+    agent_id: "agent_2b_m9",
     prompt_file: "agent_3_m9.md",
     reads: [
       "source_discovery_handoff",
@@ -66,18 +66,18 @@ export const PHASE_CONTRACTS = Object.freeze({
 
   M7_TARGET_PROFILE: {
     type: "model",
-    agent_id: "agent_2_target_feature",
+    agent_id: "agent_3_target_feature",
     prompt_files: [
-      ...AGENT_2_RUNTIME_FILES,
-      `${AGENT_2_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_RUNTIME_SYNC_PATCHED.md`,
-      ...AGENT_2_VALIDATION_FILES
+      ...AGENT_3_RUNTIME_FILES,
+      `${AGENT_3_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_RUNTIME_SYNC_PATCHED.md`,
+      ...AGENT_3_VALIDATION_FILES
     ],
     reads: [
       "source_discovery_handoff",
       "legal_cartography_index",
       ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
     ],
-    references: AGENT_2_REFERENCE_FILES,
+    references: AGENT_3_REFERENCE_FILES,
     writes: [
       "target_profile",
       "target_profile_forensics"
@@ -87,11 +87,11 @@ export const PHASE_CONTRACTS = Object.freeze({
 
   M8_TARGET_FEATURE_PROFILE: {
     type: "model",
-    agent_id: "agent_2_target_feature",
+    agent_id: "agent_3_target_feature",
     prompt_files: [
-      ...AGENT_2_RUNTIME_FILES,
-      `${AGENT_2_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_RUNTIME_SYNC_PATCHED.md`,
-      ...AGENT_2_VALIDATION_FILES
+      ...AGENT_3_RUNTIME_FILES,
+      `${AGENT_3_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_RUNTIME_SYNC_PATCHED.md`,
+      ...AGENT_3_VALIDATION_FILES
     ],
     reads: [
       "source_discovery_handoff",
@@ -99,7 +99,7 @@ export const PHASE_CONTRACTS = Object.freeze({
       "target_profile_forensics",
       ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES
     ],
-    references: AGENT_2_REFERENCE_FILES,
+    references: AGENT_3_REFERENCE_FILES,
     writes: [
       "target_feature_profile",
       "target_feature_profile_forensics"
@@ -109,7 +109,7 @@ export const PHASE_CONTRACTS = Object.freeze({
 
   M7_M8: {
     type: "sequence_alias",
-    agent_id: "agent_2_target_feature",
+    agent_id: "agent_3_target_feature",
     reads: [],
     writes: [
       "target_profile",
