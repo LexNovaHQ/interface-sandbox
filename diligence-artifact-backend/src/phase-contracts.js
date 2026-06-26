@@ -8,6 +8,16 @@ import {
   TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
 } from "./constants.js";
 
+const AGENT_2B_M9_PACKAGE_ROOT = "agent-packages/agent_2b_m9";
+
+const AGENT_2B_M9_FILES = Object.freeze([
+  `${AGENT_2B_M9_PACKAGE_ROOT}/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml`,
+  `${AGENT_2B_M9_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`,
+  `${AGENT_2B_M9_PACKAGE_ROOT}/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md`,
+  `${AGENT_2B_M9_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED.md`,
+  `${AGENT_2B_M9_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md`
+]);
+
 const AGENT_3_REFERENCE_FILES = Object.freeze([
   "REGISTRY_KEY_v3_0.md",
   "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
@@ -55,7 +65,7 @@ export const PHASE_CONTRACTS = Object.freeze({
   M9: {
     type: "model",
     agent_id: "agent_2b_m9",
-    prompt_files: ["agent_3_m9.md", "agent_2b_m9_identity_overlay.md"],
+    prompt_files: AGENT_2B_M9_FILES,
     reads: [
       "source_discovery_handoff",
       ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES
