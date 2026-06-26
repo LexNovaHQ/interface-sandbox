@@ -6,7 +6,7 @@ import { callGeminiJson } from "./gemini-client.js";
 import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "./agent-1-scout-extractor.js";
 import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
 import { validateM9LegalCartographyIndex } from "./m9-validator.js";
-import { validateM7M8TargetFeatureOutput, resolveM7M8LockStatus } from "./m7-m8-validator.js";
+import { validateM7TargetProfileOutput } from "./m7-validator.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -46,7 +46,7 @@ export async function advanceReviewerRun({ run_id }) {
     } else if (phase === "RENDERER") {
       await runRendererPhase({ run, phase, contract });
     } else if (contract.type === "sequence_alias") {
-      await lockPhase({ run_id, phase, agent_id: contract.agent_id, status: "LOCKED", next_phase: contract.next });
+      throw new Error(`LEGACY_PHASE_DISABLED:${phase}`);
     } else {
       throw new Error(`UNKNOWN_PHASE_TYPE:${phase}:${contract.type}`);
     }
@@ -69,7 +69,7 @@ export async function advanceReviewerRun({ run_id }) {
 
 function normalizePhase(value) {
   if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST";
-  if (value === "M7_M8") return "M7_TARGET_PROFILE";
+  if (value === "M7_M8") throw new Error("LEGACY_PHASE_DISABLED:M7_M8:Use M7_TARGET_PROFILE then M8_TARGET_FEATURE_PROFILE");
   return value;
 }
 
@@ -174,7 +174,7 @@ async function runModelPhase({ run, phase, contract }) {
   });
 }
 
-function validateModelOutput({ phase, output, artifacts }) {
+function validateModelOutput({ phase, output }) {
   if (phase === "M9") {
     const validation = validateM9LegalCartographyIndex(output);
     if (validation.status !== "PASS") {
@@ -191,26 +191,6 @@ function validateModelOutput({ phase, output, artifacts }) {
   if (phase === "M8_TARGET_FEATURE_PROFILE") {
     validateM8TargetFeatureOutput(output);
     return;
-  }
-
-  if (phase === "M7_M8") {
-    const validation = validateM7M8TargetFeatureOutput(output, { artifacts });
-    if (validation.status !== "PASS") {
-      throw new Error(`M7_M8_VALIDATION_FAILED:${JSON.stringify(validation)}`);
-    }
-  }
-}
-
-function validateM7TargetProfileOutput(output) {
-  validateExactTopLevelKeys(output, ["target_profile", "target_profile_forensics"], "M7_TARGET_PROFILE");
-  if (!isPlainObject(output.target_profile)) throw new Error("M7_OUTPUT_INVALID:target_profile must be object");
-  if (!isPlainObject(output.target_profile_forensics)) throw new Error("M7_OUTPUT_INVALID:target_profile_forensics must be object");
-  if (containsAnyKey(output.target_profile, ["target_profile_forensics", "source_ledger", "field_derivation_ledger", "runtime_trace", "validation_status", "lock_status"])) {
-    throw new Error("M7_OUTPUT_INVALID:target_profile contains forensic or status branches");
-  }
-  const required = ["target_identity", "jurisdiction_notice", "business_context", "product_service_wrapper", "target_profile_limitations"];
-  for (const key of required) {
-    if (!(key in output.target_profile)) throw new Error(`M7_OUTPUT_MISSING_FIELD:${key}`);
   }
 }
 
@@ -240,9 +220,6 @@ function resolveModelLockStatus({ phase, output, writes }) {
   if (phase === "M9") {
     const status = output?.legal_cartography_index?.lock_status;
     return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
-  }
-  if (phase === "M7_M8") {
-    return resolveM7M8LockStatus(output);
   }
   if (phase === "M7_TARGET_PROFILE") {
     return resolveStatusFromArtifacts(output?.target_profile_forensics, output?.target_profile);
