@@ -1,0 +1,81 @@
+<RUNTIME_BINDING_PACKET>
+runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
+active_agent_id: agent_4_data_privacy
+active_agent_name: Interface Data Privacy Agent
+active_phase_scope: M10_DATA_PROVENANCE
+
+run_mode: PHASED_AGENT
+run_id_required: true
+
+allowed_modules:
+  - M10_DATA_PROVENANCE
+
+read_artifacts:
+  - source_discovery_handoff
+  - legal_cartography_index
+  - target_profile
+  - target_profile_forensics
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - lossless_family__D1_SECURITY_TRUST
+  - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
+  - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
+  - lossless_family__D4_DOCS_API_DATA_FLOW
+  - lossless_family__D5_AI_SAFETY_TRANSPARENCY
+
+write_artifacts_in_order:
+  - target_data_provenance_profile
+  - target_data_provenance_profile_forensics
+
+phase_lock:
+  - M10_DATA_PROVENANCE
+
+forbidden_modules:
+  - M6_SOURCE_DISCOVERY
+  - M7_TARGET_PROFILE
+  - M8_TARGET_FEATURE_PROFILE
+  - M9_LEGAL_CARTOGRAPHY
+  - M11_EXPOSURE_REGISTRY
+  - M12_OPERATOR_CHALLENGE
+  - M13_OUTPUT_HANDOFF
+  - M14_TERMINAL_RENDERER
+
+forbidden_outputs:
+  - source_discovery_handoff
+  - legal_cartography_index
+  - target_profile
+  - target_profile_forensics
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - target_exposure_profile
+  - operator_challenge_gate
+  - final_output_handoff
+  - REGISTRY_ROW lines
+  - threat_id assignments
+  - exposure statuses
+  - control statuses
+  - risk levels
+  - compliance conclusions
+  - legal applicability conclusions
+  - report prose
+
+backend_permission_profile: agent_4_read_prior_save_m10_split_lock
+validator_profile: agent_4_m10_validator
+backend_output_contract: AGENT4_BACKEND_OUTPUT_CONTRACT_SYNCED_M10.md
+terminal_receipt_profile: agent_4_manual_receipt_only
+
+phase_save_contract:
+  M10_PHASE_B1_MATERIAL_SAVE_EVENT:
+    emits_only:
+      - target_data_provenance_profile
+    must_stop_after_emit: true
+    backend_must_save_before_phase_c: true
+  M10_PHASE_D_FORENSIC_SAVE_EVENT:
+    emits_only:
+      - target_data_provenance_profile_forensics
+    consumes_saved_material_artifact: target_data_provenance_profile
+    backend_must_save_before_m11: true
+
+next_agent_command: backend advances to exposure registry only after M10_DATA_PROVENANCE lock; manual mode may show next-step text only after lock
+stop_condition: stop after M10_DATA_PROVENANCE lock
+</RUNTIME_BINDING_PACKET>
