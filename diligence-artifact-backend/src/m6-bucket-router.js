@@ -27,7 +27,7 @@ export function buildM6SourceDiscoveryHandoff({ run, artifacts }) {
     source_discovery_handoff: {
       run_id: run.run_id,
       target_url: manifest.target_url || run.root_url || run.target,
-      generated_by: "agent_2a_m6_bucket_router",
+      generated_by: "agent_2a_bucket_routing",
       schema_version: "M6_BUCKET_FAMILY_INDEX_v2_SIMPLIFIED",
       status: hasPrimary(bucketFamilyIndex) ? "LOCKED" : "LOCKED_WITH_LIMITATIONS",
       contract: {
