@@ -1,9 +1,9 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v3_agent3_sequential
+runtime_contract_version: v4_agent3_m7_m8_retired
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target Feature Agent
-active_phase_scope: M7_THEN_M8_SEQUENTIAL
+active_phase_scope: M7_TARGET_PROFILE_THEN_M8_TARGET_FEATURE_PROFILE
 run_mode: PHASED_AGENT
 run_id_required: true
 run_id: "{{run_id}}"
@@ -13,23 +13,29 @@ structure_authority:
   no_module_merge: true
   backend_supports_agent_structure: true
   backend_must_not_dictate_prompt_structure: true
+  retired_combined_phase_disabled: true
 
 allowed_modules:
   - M7_TARGET_PROFILE
   - M8_TARGET_FEATURE_PROFILE
 
 write_artifacts_in_order:
-  - target_profile
-  - target_profile_forensics
-  - target_feature_profile
-  - target_feature_profile_forensics
+  M7_TARGET_PROFILE:
+    - target_profile
+    - target_profile_forensics
+  M8_TARGET_FEATURE_PROFILE:
+    - target_feature_profile
+    - target_feature_profile_forensics
 
-phase_lock:
-  - M7_M8
-phase_lock_meaning: "Agent 3 sequence lock only after M7 and M8 run as separate module prompts and all four artifacts save in order. This is not a combined model call."
+phase_locks:
+  - M7_TARGET_PROFILE
+  - M8_TARGET_FEATURE_PROFILE
+
+sequence_completion_marker: AGENT3_TARGET_FEATURE_SEQUENCE_COMPLETE
+sequence_completion_meaning: "Agent 3 sequence completes only after M7_TARGET_PROFILE and M8_TARGET_FEATURE_PROFILE run as separate backend phases and all four artifacts save in enforced order. No combined model call exists."
 
 backend_permission_profile: agent_3_target_feature
 validator_profile: agent_3_m7_then_m8_sequential_validator
 phase_packet_contract: agent_3_m7_then_m8_phase_packet_contract
-terminal_receipt_profile: agent_3_same_chat_receipt
+terminal_receipt_profile: agent_3_backend_json_only
 </RUNTIME_BINDING_PACKET>
