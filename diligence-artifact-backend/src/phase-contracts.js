@@ -39,168 +39,72 @@ const AGENT_3_VALIDATION_FILES = Object.freeze([
 ]);
 
 export const PHASE_CONTRACTS = Object.freeze({
-  AGENT_1A_URL_MANIFEST: {
-    type: "deterministic",
-    actor_id: "agent_1a_url_manifest",
-    reads: [],
-    writes: AGENT_1A_ARTIFACT_NAMES,
-    next: "AGENT_1B_EXTRACT"
-  },
-
-  AGENT_1B_EXTRACT: {
-    type: "deterministic",
-    actor_id: "agent_1b_extract",
-    reads: ["deduped_url_manifest"],
-    writes: AGENT_1B_ARTIFACT_NAMES,
-    next: "M6_BUCKET_INDEX"
-  },
-
-  M6_BUCKET_INDEX: {
-    type: "deterministic",
-    actor_id: "agent_2a_bucket_routing",
-    reads: AGENT_1_ARTIFACT_NAMES,
-    writes: ["source_discovery_handoff"],
-    next: "M9"
-  },
-
+  AGENT_1A_URL_MANIFEST: { type: "deterministic", actor_id: "agent_1a_url_manifest", reads: [], writes: AGENT_1A_ARTIFACT_NAMES, next: "AGENT_1B_EXTRACT" },
+  AGENT_1B_EXTRACT: { type: "deterministic", actor_id: "agent_1b_extract", reads: ["deduped_url_manifest"], writes: AGENT_1B_ARTIFACT_NAMES, next: "M6_BUCKET_INDEX" },
+  M6_BUCKET_INDEX: { type: "deterministic", actor_id: "agent_2a_bucket_routing", reads: AGENT_1_ARTIFACT_NAMES, writes: ["source_discovery_handoff"], next: "M9" },
   M9: {
     type: "model",
     agent_id: "agent_2b_m9",
     prompt_files: AGENT_2B_M9_FILES,
-    reads: [
-      "source_discovery_handoff",
-      ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES
-    ],
+    reads: ["source_discovery_handoff", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
     writes: ["legal_cartography_index"],
     next: "M7_TARGET_PROFILE"
   },
-
   M7_TARGET_PROFILE: {
     type: "model",
     agent_id: "agent_3_target_feature",
-    prompt_files: [
-      ...AGENT_3_RUNTIME_FILES,
-      `${AGENT_3_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md`,
-      ...AGENT_3_VALIDATION_FILES
-    ],
-    reads: [
-      "source_discovery_handoff",
-      "legal_cartography_index",
-      ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
-    ],
+    prompt_files: [...AGENT_3_RUNTIME_FILES, `${AGENT_3_PACKAGE_ROOT}/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md`, ...AGENT_3_VALIDATION_FILES],
+    reads: ["source_discovery_handoff", "legal_cartography_index", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES],
     references: AGENT_3_REFERENCE_FILES,
-    writes: [
-      "target_profile",
-      "target_profile_forensics"
-    ],
+    writes: ["target_profile", "target_profile_forensics"],
     next: "M8_TARGET_FEATURE_PROFILE"
   },
-
   M8_TARGET_FEATURE_PROFILE: {
     type: "model",
     agent_id: "agent_3_target_feature",
-    prompt_files: [
-      ...AGENT_3_RUNTIME_FILES,
-      `${AGENT_3_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md`,
-      ...AGENT_3_VALIDATION_FILES
-    ],
-    reads: [
-      "source_discovery_handoff",
-      "target_profile",
-      "target_profile_forensics",
-      ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES
-    ],
+    prompt_files: [...AGENT_3_RUNTIME_FILES, `${AGENT_3_PACKAGE_ROOT}/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md`, ...AGENT_3_VALIDATION_FILES],
+    reads: ["source_discovery_handoff", "target_profile", "target_profile_forensics", ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
     references: AGENT_3_REFERENCE_FILES,
-    writes: [
-      "target_feature_profile",
-      "target_feature_profile_forensics"
-    ],
+    writes: ["target_feature_profile", "target_feature_profile_forensics"],
     next: "M10"
   },
-
   M10: {
     type: "model",
     agent_id: "agent_5_m10",
     prompt_file: "agent_5_m10.md",
-    reads: [
-      "source_discovery_handoff",
-      "legal_cartography_index",
-      "target_profile",
-      "target_feature_profile",
-      ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES,
-      "lossless_family__L1_CORE_TERMS_PRIVACY",
-      "lossless_family__L2_B2B_CONTRACTING",
-      "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"
-    ],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
     writes: ["data_provenance_profile"],
     next: "M11"
   },
-
   M11: {
     type: "model",
     agent_id: "agent_6_m11",
     prompt_file: "agent_6_m11.md",
-    reads: [
-      "source_discovery_handoff",
-      "legal_cartography_index",
-      "target_profile",
-      "target_feature_profile",
-      "data_provenance_profile",
-      ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES
-    ],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
     writes: ["exposure_registry_profile"],
     next: "M12"
   },
-
   M12: {
     type: "model",
     agent_id: "agent_7_m12",
     prompt_file: "agent_7_m12.md",
-    reads: [
-      "source_discovery_handoff",
-      "legal_cartography_index",
-      "target_profile",
-      "target_feature_profile",
-      "data_provenance_profile",
-      "exposure_registry_profile"
-    ],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"],
     writes: ["challenge_gate"],
     next: "COMPILER"
   },
-
   COMPILER: {
     type: "deterministic",
     actor_id: "compiler",
-    reads: [
-      "source_discovery_handoff",
-      "legal_cartography_index",
-      "target_profile",
-      "target_feature_profile",
-      "data_provenance_profile",
-      "exposure_registry_profile",
-      "challenge_gate"
-    ],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile", "challenge_gate"],
     writes: ["final_output_handoff"],
     next: "RENDERER"
   },
-
-  RENDERER: {
-    type: "deterministic",
-    actor_id: "portfolio_renderer",
-    reads: ["final_output_handoff"],
-    writes: ["renderer_payload"],
-    next: "COMPLETE"
-  }
+  RENDERER: { type: "deterministic", actor_id: "portfolio_renderer", reads: ["final_output_handoff"], writes: ["renderer_payload"], next: "COMPLETE" }
 });
 
 export function getPhaseContract(phase) {
   const contract = PHASE_CONTRACTS[phase];
-  if (!contract) {
-    if (phase === "M7_M8") {
-      throw new Error("LEGACY_PHASE_DISABLED:M7_M8:Use M7_TARGET_PROFILE then M8_TARGET_FEATURE_PROFILE");
-    }
-    throw new Error(`INVALID_PHASE_CONTRACT:${phase || "missing"}`);
-  }
+  if (!contract) throw new Error(`INVALID_PHASE_CONTRACT:${phase || "missing"}`);
   return contract;
 }
 
