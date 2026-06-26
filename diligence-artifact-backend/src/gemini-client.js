@@ -10,6 +10,7 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
   const models = config.geminiModels.length ? config.geminiModels : [config.geminiModel];
   const rounds = Math.max(1, Number(config.geminiRetryRounds || 1));
   const keysPerModel = Math.min(keyCount, Math.max(1, Number(config.geminiKeysPerModelPerRound || keyCount)));
+  const effectiveMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens);
 
   for (let round = 0; round < rounds; round += 1) {
     for (const model of models) {
@@ -22,10 +23,11 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             model,
             prompt,
             temperature,
-            maxOutputTokens
+            maxOutputTokens: effectiveMaxOutputTokens
           });
+          const parsed = parseJsonFromText(result.text);
           return {
-            json: parseJsonFromText(result.text),
+            json: parsed,
             raw_text: result.text,
             metadata: {
               phase,
@@ -34,6 +36,8 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
               fallback_models: models,
               retry_round: round + 1,
               key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
+              max_output_tokens_sent: effectiveMaxOutputTokens || null,
+              warnings: buildGeminiWarnings(result),
               usage_metadata: result.usageMetadata,
               finish_reason: result.finishReason
             }
@@ -44,8 +48,10 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             model,
             retry_round: round + 1,
             key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
+            max_output_tokens_sent: effectiveMaxOutputTokens || null,
             message: error?.message || String(error),
             status: error?.status || null,
+            finish_reason: error?.finishReason || null,
             provider_error_type: providerErrorType(error)
           });
           if (!isRetryableGeminiError(error)) {
@@ -97,13 +103,16 @@ async function callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens
 
     const candidate = payload?.candidates?.[0] || {};
     const text = candidate?.content?.parts?.map((part) => part.text || "").join("") || "";
+    const finishReason = candidate?.finishReason || null;
     if (!text.trim()) {
-      throw new Error("GEMINI_EMPTY_RESPONSE");
+      const emptyError = new Error("GEMINI_EMPTY_RESPONSE");
+      emptyError.finishReason = finishReason;
+      throw emptyError;
     }
 
     return {
       text,
-      finishReason: candidate?.finishReason || null,
+      finishReason,
       usageMetadata: payload?.usageMetadata || null
     };
   } catch (error) {
@@ -140,6 +149,26 @@ export function parseJsonFromText(text) {
   }
 }
 
+function resolveMaxOutputTokens(requested) {
+  if (Number.isFinite(Number(requested)) && Number(requested) > 0) return Math.floor(Number(requested));
+  if (Number.isFinite(Number(config.geminiMaxOutputTokens)) && Number(config.geminiMaxOutputTokens) > 0) {
+    return Math.floor(Number(config.geminiMaxOutputTokens));
+  }
+  return null;
+}
+
+function buildGeminiWarnings(result) {
+  const warnings = [];
+  if (result?.finishReason === "MAX_TOKENS") {
+    warnings.push({
+      code: "GEMINI_FINISH_REASON_MAX_TOKENS",
+      severity: "warning",
+      message: "Gemini reported MAX_TOKENS, but JSON parsed successfully, so the run was not blocked."
+    });
+  }
+  return warnings;
+}
+
 function isRetryableGeminiError(error) {
   const status = Number(error?.status || 0);
   const message = String(error?.message || "").toLowerCase();
@@ -152,6 +181,7 @@ function providerErrorType(error) {
   if (status === 503 || message.includes("high demand") || message.includes("temporarily unavailable")) return "PROVIDER_CAPACITY";
   if (status === 429 || message.includes("quota") || message.includes("rate")) return "RATE_OR_QUOTA";
   if (status === 408 || message.includes("timeout")) return "TIMEOUT";
+  if (message.includes("max_tokens") || message.includes("max tokens")) return "TOKEN_LIMIT";
   if (status >= 500) return "PROVIDER_5XX";
   if (status >= 400) return "CLIENT_OR_CONFIG";
   return "UNKNOWN";
