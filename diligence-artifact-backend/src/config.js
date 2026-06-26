@@ -13,6 +13,13 @@ function bool(name, fallback = "false") {
   return ["1", "true", "yes", "on"].includes(env(name, fallback).toLowerCase());
 }
 
+function numberEnv(name, fallback) {
+  const value = Number(env(name, String(fallback)));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+const geminiModelList = csv("GEMINI_MODELS", env("GEMINI_MODEL", "gemini-2.5-flash"));
+
 export const config = Object.freeze({
   serviceName: SERVICE_NAME,
   port: Number(env("PORT", "8080")),
@@ -30,9 +37,14 @@ export const config = Object.freeze({
   publicReviewerEnabled: bool("PUBLIC_REVIEWER_ENABLED", "false"),
   expressJsonLimit: env("EXPRESS_JSON_LIMIT", "50mb"),
   geminiApiKeys: csv("GEMINI_API_KEYS"),
-  geminiModel: env("GEMINI_MODEL", "gemini-2.5-flash"),
-  geminiTimeoutMs: Number(env("GEMINI_TIMEOUT_MS", "240000")),
-  sourceFetchTimeoutMs: Number(env("SOURCE_FETCH_TIMEOUT_MS", "30000"))
+  geminiModel: geminiModelList[0] || "gemini-2.5-flash",
+  geminiModels: geminiModelList.length ? geminiModelList : ["gemini-2.5-flash"],
+  geminiTimeoutMs: numberEnv("GEMINI_TIMEOUT_MS", 240000),
+  geminiRetryRounds: Math.max(1, numberEnv("GEMINI_RETRY_ROUNDS", 2)),
+  geminiKeysPerModelPerRound: Math.max(1, numberEnv("GEMINI_KEYS_PER_MODEL_PER_ROUND", 2)),
+  geminiRetryBaseDelayMs: Math.max(0, numberEnv("GEMINI_RETRY_BASE_DELAY_MS", 750)),
+  geminiRetryMaxDelayMs: Math.max(0, numberEnv("GEMINI_RETRY_MAX_DELAY_MS", 5000)),
+  sourceFetchTimeoutMs: numberEnv("SOURCE_FETCH_TIMEOUT_MS", 30000)
 });
 
 export function configStatus() {
@@ -45,6 +57,9 @@ export function configStatus() {
     gemini_api_keys_present: config.geminiApiKeys.length > 0,
     gemini_api_key_count: config.geminiApiKeys.length,
     gemini_model: config.geminiModel,
+    gemini_models: config.geminiModels,
+    gemini_retry_rounds: config.geminiRetryRounds,
+    gemini_keys_per_model_per_round: config.geminiKeysPerModelPerRound,
     public_reviewer_enabled: config.publicReviewerEnabled,
     reviewer_public_base_url_present: Boolean(config.reviewerPublicBaseUrl),
     runs_sheet_name: config.runsSheetName
@@ -65,5 +80,8 @@ export function requireRuntimeConfig() {
 export function requireGeminiConfig() {
   if (!config.geminiApiKeys.length) {
     throw new Error("MISSING_RUNTIME_CONFIG:GEMINI_API_KEYS");
+  }
+  if (!config.geminiModels.length) {
+    throw new Error("MISSING_RUNTIME_CONFIG:GEMINI_MODELS");
   }
 }
