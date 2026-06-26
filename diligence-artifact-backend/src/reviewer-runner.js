@@ -7,6 +7,7 @@ import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "./
 import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
 import { validateM9LegalCartographyIndex } from "./m9-validator.js";
 import { validateM7TargetProfileOutput } from "./m7-validator.js";
+import { validateM8TargetFeatureOutput } from "./m8-validator.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -140,24 +141,6 @@ function validateModelOutput({ phase, output }) {
   }
 }
 
-function validateM8TargetFeatureOutput(output) {
-  validateExactTopLevelKeys(output, ["target_feature_profile", "target_feature_profile_forensics"], "M8_TARGET_FEATURE_PROFILE");
-  if (!isPlainObject(output.target_feature_profile)) throw new Error("M8_OUTPUT_INVALID:target_feature_profile must be object");
-  if (!isPlainObject(output.target_feature_profile_forensics)) throw new Error("M8_OUTPUT_INVALID:target_feature_profile_forensics must be object");
-  if (containsAnyKey(output.target_feature_profile, ["target_feature_profile_forensics", "source_ledger", "archetype_derivation_ledger", "surface_token_derivation_ledger", "runtime_trace", "validation_status", "lock_status"])) throw new Error("M8_OUTPUT_INVALID:target_feature_profile contains forensic or status branches");
-  if (!Array.isArray(output.target_feature_profile.activities)) throw new Error("M8_OUTPUT_MISSING_FIELD:activities");
-  if (!("profile_level_limitations" in output.target_feature_profile)) throw new Error("M8_OUTPUT_MISSING_FIELD:profile_level_limitations");
-}
-
-function validateExactTopLevelKeys(output, expected, phase) {
-  if (!isPlainObject(output)) throw new Error(`${phase}_OUTPUT_INVALID:not_object`);
-  const keys = Object.keys(output).sort();
-  const wanted = [...expected].sort();
-  const missing = wanted.filter((key) => !keys.includes(key));
-  const extra = keys.filter((key) => !wanted.includes(key));
-  if (missing.length || extra.length) throw new Error(`${phase}_OUTPUT_KEYS_INVALID:${JSON.stringify({ missing, extra })}`);
-}
-
 function resolveModelLockStatus({ phase, output, writes }) {
   if (phase === "M9") {
     const status = output?.legal_cartography_index?.lock_status;
@@ -210,6 +193,3 @@ async function markPhaseFailure({ run_id, phase, actor, error }) {
   await updateRunDashboardRow(updated);
   await logEvent({ run_id, event_type: "PHASE_REPAIR_REQUIRED", actor, payload: { phase, error_message: error?.message || String(error) } });
 }
-
-function isPlainObject(value) { return !!value && typeof value === "object" && !Array.isArray(value); }
-function containsAnyKey(value, keys) { if (!value || typeof value !== "object") return false; if (Array.isArray(value)) return value.some((item) => containsAnyKey(item, keys)); return Object.keys(value).some((key) => keys.includes(key)) || Object.values(value).some((item) => containsAnyKey(item, keys)); }
