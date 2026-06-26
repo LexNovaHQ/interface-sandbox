@@ -1,6 +1,6 @@
 {
   "package": "AGENT3_REGISTRY_REFERENCE_FILES_PACKAGE_REPAIRED",
-  "repair_scope": "AI_THREAT_REGISTRY.yaml syntax-only repair; all other reference files preserved from uploaded /mnt/data sources",
+  "repair_scope": "AI_THREAT_REGISTRY.yaml syntax-only repair; all other reference files preserved from uploaded /mnt/data sources; classification derivation matrix added as a new locked reference without mutating existing locked registries",
   "files": {
     "03_REGISTRY_EVALUATION_RULES.yaml": {
       "bytes": 2236,
@@ -22,6 +22,10 @@
       "bytes": 25723,
       "sha256": "375a7ce1abe8f3298c0385645ef3138cb745973bcb4334b9446117c4069bb982"
     },
+    "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml": {
+      "bytes": 23066,
+      "sha256": "44e18428aac78e88ba717d4c3219036689ce369660bdc89de042687528c49f62"
+    },
     "AI_THREAT_REGISTRY_REPAIR_AUDIT.md": {
       "bytes": 4822,
       "sha256": "f3cde3994d539cdda61abf22342ecf645ad7c0c07b589f8efb2f466096b308f6"
@@ -35,6 +39,12 @@
       "non_syntax_not_changed": [
         "DOE_FIN_001"
       ]
+    },
+    "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml": {
+      "lock_status": "LOCKED",
+      "archetype_count": 11,
+      "surface_count": 10,
+      "existing_locked_registries_mutated": false
     }
   }
 }
