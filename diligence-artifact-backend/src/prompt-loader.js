@@ -32,7 +32,7 @@ async function readAgentPackageFile(file, promptFile) {
 function safePackagePath(file, promptFile) {
   const resolved = path.resolve(BACKEND_ROOT, file);
   if (!resolved.startsWith(`${AGENT_PACKAGE_DIR}${path.sep}`)) {
-    throw new Error(`UNSAFE_PROMPT_FILE:${promptFile || "missing"}`);
+    throw new Error(`INVALID_PROMPT_PATH:${promptFile || "missing"}`);
   }
   return resolved;
 }
@@ -68,7 +68,6 @@ export async function buildPhasePrompt({ prompt_file, prompt_files, phase, run, 
   sections.push("<RUNTIME_PACKET>");
   sections.push(JSON.stringify(runtimePacket, null, 2));
   sections.push("</RUNTIME_PACKET>");
-  sections.push("Return strict JSON only.");
 
   return sections.join("\n\n");
 }
