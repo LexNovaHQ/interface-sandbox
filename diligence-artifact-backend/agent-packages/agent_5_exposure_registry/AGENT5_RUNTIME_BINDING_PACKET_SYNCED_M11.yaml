@@ -1,30 +1,49 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
+runtime_contract_version: v3_agent5_m11_batched_deterministic_split_material
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
 active_phase_scope: M11_EXPOSURE_REGISTRY
 
 run_mode: PHASED_AGENT
 run_id_required: true
+run_id: "{{run_id}}"
+
+prompt_assembly_position:
+  runtime_first: true
+  packet_after_runtime: true
+  phase_prompt_after_packet: true
+  validator_after_prompt: true
+  adapter_after_validator: true
+  terminal_after_adapter: true
 
 allowed_modules:
   - M11_EXPOSURE_REGISTRY
 
 read_artifacts:
-  - source_discovery_handoff
-  - legal_cartography_index
-  - source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families
-  - lossless_family__L1_CORE_TERMS_PRIVACY
-  - lossless_family__L2_B2B_CONTRACTING
-  - lossless_family__L3_AI_USAGE_GOVERNANCE
-  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-  - lossless_family__L5_LEGAL_HUB_HOSTED
-  - lossless_family__L6_ENTITY_NOTICE
-  - target_profile
-  - target_profile_forensics
-  - target_feature_profile
-  - target_feature_profile_forensics
-  - data_provenance_profile
+  upstream_required:
+    - source_discovery_handoff
+    - legal_cartography_index
+    - target_profile
+    - target_profile_forensics
+    - target_feature_profile
+    - target_feature_profile_forensics
+    - data_provenance_profile
+    - data_provenance_profile_forensics
+  legal_governance_lossless_required:
+    - lossless_family__L1_CORE_TERMS_PRIVACY
+    - lossless_family__L2_B2B_CONTRACTING
+    - lossless_family__L3_AI_USAGE_GOVERNANCE
+    - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+    - lossless_family__L5_LEGAL_HUB_HOSTED
+    - lossless_family__L6_ENTITY_NOTICE
+  m11_own_outputs_required_by_later_boundaries:
+    - exposure_registry_route_plan
+    - exposure_registry_batch__{GROUP}__{NNN}
+    - exposure_registry_batch_validation__{GROUP}__{NNN}
+    - exposure_registry_workpad_98
+    - exposure_registry_controlled_profile
+    - exposure_registry_triggered_profile
 
 required_registry_imports:
   - AI_THREAT_REGISTRY.yaml
@@ -33,11 +52,57 @@ required_registry_imports:
   - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
+m9_legal_cartography_rule:
+  m9_is_builder: true
+  m11_is_builder: false
+  consumed_artifact: legal_cartography_index
+  permitted_use: navigation, custody, document/section/control locator, missing-or-limited legal/governance state
+  forbidden_use: proof-by-title, proof-by-route-label, building a new legal-cartography artifact, mutating M9 output, blind L1-L6 scanning
+
 write_artifacts_in_order:
-  - exposure_registry_profile
+  PHASE_A_ROUTE_PLAN_SAVE_EVENT:
+    - exposure_registry_route_plan
+  PHASE_B_BATCH_EVALUATION_EVENT:
+    emits_model_ledger_only:
+      - m11_batch_registry_ledger
+    backend_save_forbidden_until_m12_batch_validation: true
+  PHASE_B2_BATCH_VALIDATION_SAVE_EVENT:
+    - exposure_registry_batch_validation__{GROUP}__{NNN}
+  PHASE_B2_ACCEPTED_BATCH_SAVE_EVENT:
+    - exposure_registry_batch__{GROUP}__{NNN}
+  PHASE_C_CANONICAL_WORKPAD_SAVE_EVENT:
+    - exposure_registry_workpad_98
+  PHASE_D_CONTROLLED_MATERIAL_SAVE_EVENT:
+    - exposure_registry_controlled_profile
+  PHASE_E_TRIGGERED_MATERIAL_SAVE_EVENT:
+    - exposure_registry_triggered_profile
+  PHASE_F_FORENSIC_SAVE_EVENT:
+    - exposure_registry_profile_forensics
 
 phase_lock:
   - M11_EXPOSURE_REGISTRY
+
+phase_sequence:
+  - M11_PHASE_A_DETERMINISTIC_ROUTE_PLAN_AND_BATCH_PLAN
+  - M11_PHASE_B_AGENTIC_BATCH_EVALUATION
+  - M12_PHASE_B2_AGENTIC_BATCH_VALIDATION
+  - M11_PHASE_B2_DETERMINISTIC_ACCEPTED_BATCH_SAVE
+  - M11_PHASE_C_DETERMINISTIC_WORKPAD_98_MERGE
+  - M11_PHASE_D_DETERMINISTIC_CONTROLLED_PROJECTION
+  - M11_PHASE_E_DETERMINISTIC_TRIGGERED_PROJECTION
+  - M11_PHASE_F_DETERMINISTIC_FORENSICS
+
+phase_gate_rules:
+  - M9 / Agent 2B is the sole builder of legal_cartography_index. Agent 5 consumes it only.
+  - Phase A must save exposure_registry_route_plan before any M11 batch evaluation.
+  - Phase B model call may evaluate only expected_threat_ids supplied for the active batch.
+  - Phase B model call must not save accepted batch artifacts.
+  - M12 batch validation must exist before backend saves any exposure_registry_batch__{GROUP}__{NNN} artifact.
+  - All model-routed batches and paired M12 validations must exist before exposure_registry_workpad_98.
+  - exposure_registry_workpad_98 must exist before controlled or triggered material projections.
+  - exposure_registry_controlled_profile must save before exposure_registry_triggered_profile.
+  - exposure_registry_profile_forensics may be built only after route plan, accepted batches, batch validations, workpad, and both split material profiles are saved.
+  - M12 global challenge may begin only after exposure_registry_profile_forensics is saved.
 
 forbidden_modules:
   - M6_SOURCE_DISCOVERY
@@ -45,7 +110,7 @@ forbidden_modules:
   - M8_TARGET_FEATURE_PROFILE
   - M9_LEGAL_CARTOGRAPHY
   - M10_DATA_PROVENANCE
-  - M12_OPERATOR_CHALLENGE
+  - M12_OPERATOR_CHALLENGE_GLOBAL
   - M13_OUTPUT_HANDOFF
   - M14_TERMINAL_RENDERER
 
@@ -68,11 +133,19 @@ forbidden_outputs:
   - legal applicability conclusions
   - liability findings
   - risk-score verdicts
+  - target_exposure_profile
+  - target_exposure_profile_forensics
+  - exposure_registry_profile
+  - combined_material_and_forensic_response
+  - legal_cartography_index as output
+  - rebuilt legal cartography map
 
-backend_permission_profile: agent_5_read_prior_save_m11_lock
-validator_profile: agent_5_m11_validator
-phase_packet_contract: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
-terminal_receipt_profile: agent_5_same_chat_receipt
+backend_permission_profile: agent_5_m11_batched_deterministic_split_material
+validator_profile: agent_5_m11_batched_validator
+phase_packet_contract: AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11.md
+backend_output_adapter: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
+terminal_receipt_profile: agent_5_m11_batched_manual_receipt
 
-next_agent_command: backend advances to challenge gate only after M11_EXPOSURE_REGISTRY lock
+next_agent_command: backend advances to M12 global challenge only after M11 route plan, accepted batches, workpad, controlled profile, triggered profile, and forensics are locked
+stop_condition: stop after M11_EXPOSURE_REGISTRY lock
 </RUNTIME_BINDING_PACKET>
