@@ -35,6 +35,8 @@ const ART = Object.freeze({
   exposureProfile: "exposure_registry_profile",
   exposureRoutePlan: "exposure_registry_route_plan",
   challengeGate: "challenge_gate",
+  profilesCombined: "profiles_combined",
+  forensicsCombined: "forensics_combined",
   final: "final_" + "output_handoff",
   renderer: "renderer_payload"
 });
@@ -213,10 +215,25 @@ function hasControlledLimitationSignal(value) {
 }
 
 async function runCompilerPhase({ run, phase, contract }) {
-  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
+  const artifacts = await readArtifactsForCompiler({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
   const output = compileFinalOutputHandoff({ run, artifacts });
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: ART.final, artifact: output[ART.final], lock_status: output[ART.final].validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE" }));
-  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output[ART.final].validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE", next_phase: contract.next });
+  const final = output[ART.final];
+  const phaseLockStatus = normalizeCompilerLockStatus(final?.validation_status);
+
+  for (const artifactName of contract.writes) {
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
+  }
+
+  await logEvent({ run_id: run.run_id, event_type: "COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, missing_artifacts: final?.missing_artifacts || [], dynamic_manifest: final?.artifact_manifest?.dynamic_m11_artifacts || {} } });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
+}
+
+function normalizeCompilerLockStatus(status) {
+  if (status === "LOCKED") return "LOCKED";
+  if (status === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS";
+  return "CONTROLLED_FAILURE";
 }
 
 async function runRendererPhase({ run, phase, contract }) {
@@ -235,33 +252,66 @@ async function readArtifactsForPhase({ run_id, reads, agent_id }) {
 
 async function readArtifactsForM12Global({ run_id, reads, agent_id }) {
   const artifacts = await readArtifactsForPhase({ run_id, reads, agent_id });
+  return loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKey: "m12_global_dynamic_artifact_manifest" });
+}
+
+async function readArtifactsForCompiler({ run_id, reads, agent_id }) {
+  const artifacts = {};
+  const missingStaticArtifacts = [];
+  for (const artifactName of reads) {
+    try {
+      artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id });
+    } catch (_error) {
+      artifacts[artifactName] = null;
+      missingStaticArtifacts.push(artifactName);
+    }
+  }
+  artifacts.compiler_missing_static_artifacts = missingStaticArtifacts;
+  return loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKey: "compiler_dynamic_artifact_manifest" });
+}
+
+async function loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKey }) {
   const routePlan = artifacts[ART.exposureRoutePlan]?.exposure_registry_route_plan || artifacts[ART.exposureRoutePlan] || {};
   const batchPlan = Array.isArray(routePlan.batch_plan) ? routePlan.batch_plan : [];
   const m11BatchArtifacts = [];
   const m12BatchValidationArtifacts = [];
+  const missingBatchArtifacts = [];
+  const missingBatchValidationArtifacts = [];
 
   for (const batch of batchPlan) {
     if (!batch?.batch_id) continue;
     const batchArtifactName = `exposure_registry_batch__${batch.batch_id}`;
     const validationArtifactName = `exposure_registry_batch_validation__${batch.batch_id}`;
-    m11BatchArtifacts.push({
-      batch_id: batch.batch_id,
-      artifact_name: batchArtifactName,
-      artifact: await readArtifactPayload({ run_id, artifact_name: batchArtifactName, agent_id })
-    });
-    m12BatchValidationArtifacts.push({
-      batch_id: batch.batch_id,
-      artifact_name: validationArtifactName,
-      artifact: await readArtifactPayload({ run_id, artifact_name: validationArtifactName, agent_id })
-    });
+
+    try {
+      m11BatchArtifacts.push({
+        batch_id: batch.batch_id,
+        artifact_name: batchArtifactName,
+        artifact: await readArtifactPayload({ run_id, artifact_name: batchArtifactName, agent_id })
+      });
+    } catch (_error) {
+      missingBatchArtifacts.push(batchArtifactName);
+    }
+
+    try {
+      m12BatchValidationArtifacts.push({
+        batch_id: batch.batch_id,
+        artifact_name: validationArtifactName,
+        artifact: await readArtifactPayload({ run_id, artifact_name: validationArtifactName, agent_id })
+      });
+    } catch (_error) {
+      missingBatchValidationArtifacts.push(validationArtifactName);
+    }
   }
 
   artifacts.m11_batch_artifacts = m11BatchArtifacts;
   artifacts.m12_batch_validation_artifacts = m12BatchValidationArtifacts;
-  artifacts.m12_global_dynamic_artifact_manifest = {
+  artifacts[manifestKey] = {
     batch_count: batchPlan.length,
     loaded_batch_artifacts: m11BatchArtifacts.length,
     loaded_batch_validation_artifacts: m12BatchValidationArtifacts.length,
+    missing_batch_artifacts: missingBatchArtifacts,
+    missing_batch_validation_artifacts: missingBatchValidationArtifacts,
     batch_ids: batchPlan.map((batch) => batch.batch_id).filter(Boolean)
   };
   return artifacts;
