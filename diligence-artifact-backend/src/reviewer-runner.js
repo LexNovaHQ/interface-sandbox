@@ -19,20 +19,23 @@ import {
 } from "./artifact-service.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const MODEL_LIMITATION_PHASES = new Set(["M9", "M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "M10", "M11", "M12"]);
 const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
-const AGENT3_FORENSIC_PHASES = new Set(["M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
-const AGENT3_FORENSIC_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object", "missing keys", "extra keys", "must be object", "must be array", "must not be empty", "contains material artifact", "source-ref row missing source-url"]);
-const AGENT3_FORENSIC_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "omission"]);
+const VALIDATION_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object", "missing legal_cartography_index object", "missing keys", "extra keys", "must be object", "must be an object", "must be array", "must not be empty", "contains material artifact", "contains forbidden", "forbidden key", "forbidden string", "bad source syntax", "source-ref row missing source-url", "MODEL_OUTPUT_MISSING_ARTIFACT", "DETERMINISTIC_OUTPUT_MISSING_ARTIFACT", "UNKNOWN_PHASE", "INVALID_PHASE_CONTRACT"]);
+const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "limited", "omission", "absent", "insufficient public", "unknown_not_searched", "standalone_source_absent", "source_rejected_or_failed", "access_failed", "gated", "deferred", "coverage"]);
 const ART = Object.freeze({
   legalIndex: "legal_cartography_index",
   targetMain: "target_" + "profile",
   targetForensics: "target_" + "profile_forensics",
   featureMain: "target_" + "feature_profile",
   featureForensics: "target_" + "feature_profile_forensics",
+  dataProfile: "data_provenance_profile",
+  exposureProfile: "exposure_registry_profile",
+  challengeGate: "challenge_gate",
   final: "final_" + "output_handoff",
   renderer: "renderer_payload"
 });
-const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT"]);
+const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT", "ABSENT", "MISSING", "THIN", "WEAK", "UNKNOWN_NOT_SEARCHED", "NOT_EVIDENCED", "SOURCE_REJECTED", "ACCESS_FAILED", "GATED", "INSUFFICIENT_PUBLIC_MATERIAL", "STANDALONE_SOURCE_ABSENT", "REINVESTIGATION", "TARGETED_RE_EXTRACTION", "OMISSION", "CONTROLLED"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
@@ -113,7 +116,7 @@ async function runModelPhase({ run, phase, contract }) {
   const output = result.json;
 
   const validationStatusOverride = validateModelOutput({ phase, output });
-  const phaseLockStatus = validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes });
+  const phaseLockStatus = coerceModelStatus({ phase, status: validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes }), output });
 
   for (const artifactName of contract.writes) {
     const artifact = output?.[artifactName];
@@ -142,36 +145,42 @@ function validateModelOutput({ phase, output }) {
     }
     return "";
   } catch (error) {
-    if (isNonBlockingAgent3ForensicValidationError({ phase, error })) return "LOCKED_WITH_LIMITATIONS";
+    if (isNonBlockingModelValidationError({ phase, error, output })) return "LOCKED_WITH_LIMITATIONS";
     throw error;
   }
 }
 
-function isNonBlockingAgent3ForensicValidationError({ phase, error }) {
-  if (!AGENT3_FORENSIC_PHASES.has(phase)) return false;
+function isNonBlockingModelValidationError({ phase, error, output }) {
+  if (!MODEL_LIMITATION_PHASES.has(phase)) return false;
   const message = String(error?.message || error || "").toLowerCase();
-  if (AGENT3_FORENSIC_CRITICAL_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return false;
-  return AGENT3_FORENSIC_NONBLOCKING_MARKERS.some((marker) => message.includes(marker.toLowerCase()));
+  if (VALIDATION_CRITICAL_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return false;
+  if (VALIDATION_NONBLOCKING_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return true;
+  return hasControlledLimitationSignal(output);
 }
 
 function resolveModelLockStatus({ phase, output, writes }) {
-  if (phase === "M9") {
-    const status = output?.legal_cartography_index?.lock_status;
-    return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
-  }
+  if (phase === "M9") return resolveStatusFromArtifacts(output?.[ART.legalIndex]);
   if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.[ART.targetMain]);
   if (phase === "M7_TARGET_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.targetForensics]);
   if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.[ART.featureMain]);
   if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.featureForensics]);
-  const firstArtifact = output?.[writes?.[0]];
-  const status = firstArtifact?.lock_status || firstArtifact?.validation_status;
-  return MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";
+  if (phase === "M10") return resolveStatusFromArtifacts(output?.[ART.dataProfile]);
+  if (phase === "M11") return resolveStatusFromArtifacts(output?.[ART.exposureProfile]);
+  if (phase === "M12") return resolveStatusFromArtifacts(output?.[ART.challengeGate]);
+  return resolveStatusFromArtifacts(output?.[writes?.[0]]);
+}
+
+function coerceModelStatus({ phase, status, output }) {
+  const normalized = MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";
+  if (MODEL_LIMITATION_PHASES.has(phase) && ["REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(normalized) && hasControlledLimitationSignal(output)) return "LOCKED_WITH_LIMITATIONS";
+  return normalized;
 }
 
 function resolveStatusFromArtifacts(...artifacts) {
   for (const artifact of artifacts) {
     const status = artifact?.lock_status || artifact?.validation_status || artifact?.status;
-    if (MODEL_LOCK_STATUSES.has(status)) return status;
+    if (["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(status)) return status;
+    if (["REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(status)) return hasControlledLimitationSignal(artifact) ? "LOCKED_WITH_LIMITATIONS" : status;
     if (hasControlledLimitationSignal(artifact)) return "LOCKED_WITH_LIMITATIONS";
   }
   return "LOCKED";
@@ -187,6 +196,7 @@ function hasControlledLimitationSignal(value) {
   if (typeof value !== "object") return false;
   if (Array.isArray(value.target_profile_limitations) && value.target_profile_limitations.length) return true;
   if (Array.isArray(value.profile_level_limitations) && value.profile_level_limitations.length) return true;
+  if (Array.isArray(value.missing_limited_legal_governance_items) && value.missing_limited_legal_governance_items.length) return true;
   if (Array.isArray(value.limitation_ledger) && value.limitation_ledger.length) return true;
   if (Array.isArray(value.activity_limitations_ledger) && value.activity_limitations_ledger.length) return true;
   if (Array.isArray(value.targeted_re_extraction_ledger) && value.targeted_re_extraction_ledger.some((row) => hasControlledLimitationSignal(row))) return true;
