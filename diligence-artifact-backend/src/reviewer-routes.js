@@ -10,6 +10,8 @@ import { requestReviewerRunAdvance, runReviewerWorkerOnce } from "./reviewer-asy
 
 export const reviewerRouter = express.Router();
 
+const allowSyncReviewerAdvance = () => ["1", "true", "yes", "on"].includes(String(process.env.ALLOW_SYNC_REVIEWER_ADVANCE || "false").toLowerCase());
+
 reviewerRouter.post("/reviewer/jobs", async (req, res) => {
   try {
     requireRuntimeConfig();
@@ -78,6 +80,7 @@ reviewerRouter.post("/reviewer/jobs/:run_id/advance", async (req, res) => {
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
 
     if (body.sync) {
+      if (!allowSyncReviewerAdvance()) throw new Error("SYNC_ADVANCE_RETIRED:Use async /advance and poll /reviewer/jobs/:run_id instead.");
       const result = await advanceSync({ run_id: req.params.run_id, max_steps: body.max_steps });
       return res.json(result);
     }
@@ -97,6 +100,7 @@ reviewerRouter.post("/reviewer/jobs/:run_id/advance", async (req, res) => {
 reviewerRouter.post("/reviewer/jobs/:run_id/advance-sync", async (req, res) => {
   try {
     assertRunId(req.params.run_id);
+    if (!allowSyncReviewerAdvance()) throw new Error("SYNC_ADVANCE_RETIRED:Use async /advance and poll /reviewer/jobs/:run_id instead.");
     const body = parseOrThrow(reviewerAdvanceJobSchema, { ...(req.body || {}), sync: true });
     const result = await advanceSync({ run_id: req.params.run_id, max_steps: body.max_steps });
     return res.json(result);
@@ -167,6 +171,7 @@ function sendError(res, error) {
 }
 
 function statusForMessage(message) {
+  if (message.startsWith("SYNC_ADVANCE_RETIRED")) return 410;
   if (message.startsWith("UNAUTHORIZED")) return 401;
   if (message.includes("FORBIDDEN")) return 403;
   if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
