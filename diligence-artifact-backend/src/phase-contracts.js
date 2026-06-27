@@ -9,10 +9,12 @@ import {
 } from "./constants.js";
 
 const packetFile = (prefix, suffix = ".yaml") => `${prefix}BINDING_` + `PACKET${suffix}`;
+const SYSTEM_BLOCKING_DOCTRINE_FILE = "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md";
 
 const AGENT_2B_M9_PACKAGE_ROOT = "agent-packages/agent_2b_m9";
 
 const AGENT_2B_M9_FILES = Object.freeze([
+  SYSTEM_BLOCKING_DOCTRINE_FILE,
   `${AGENT_2B_M9_PACKAGE_ROOT}/` + packetFile("AGENT2B_M9_RUNTIME_"),
   `${AGENT_2B_M9_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`,
   `${AGENT_2B_M9_PACKAGE_ROOT}/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md`,
@@ -30,6 +32,7 @@ const AGENT_3_REFERENCE_FILES = Object.freeze([
 const AGENT_3_PACKAGE_ROOT = "agent-packages/agent_3_target_feature";
 
 const AGENT_3_RUNTIME_FILES = Object.freeze([
+  SYSTEM_BLOCKING_DOCTRINE_FILE,
   `${AGENT_3_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`,
   `${AGENT_3_PACKAGE_ROOT}/` + packetFile("AGENT3_RUNTIME_")
 ]);
@@ -42,6 +45,7 @@ const AGENT_3_VALIDATION_FILES = Object.freeze([
 
 const AGENT_4_M10_PACKAGE_ROOT = "agent-packages/agent_4_data_privacy";
 const AGENT_4_M10_FILES = Object.freeze([
+  SYSTEM_BLOCKING_DOCTRINE_FILE,
   `${AGENT_4_M10_PACKAGE_ROOT}/` + packetFile("AGENT4_RUNTIME_", "_SYNCED_M10.yaml"),
   `${AGENT_4_M10_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`,
   `${AGENT_4_M10_PACKAGE_ROOT}/M10_DATA_PROVENANCE.md`,
@@ -52,6 +56,7 @@ const AGENT_4_M10_FILES = Object.freeze([
 
 const AGENT_5_M11_PACKAGE_ROOT = "agent-packages/agent_5_exposure_registry";
 const AGENT_5_M11_FILES = Object.freeze([
+  SYSTEM_BLOCKING_DOCTRINE_FILE,
   `${AGENT_5_M11_PACKAGE_ROOT}/` + packetFile("AGENT5_RUNTIME_", "_SYNCED_M11.yaml"),
   `${AGENT_5_M11_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md`,
   `${AGENT_5_M11_PACKAGE_ROOT}/M11_EXPOSURE_REGISTRY.md`,
@@ -127,7 +132,7 @@ export const PHASE_CONTRACTS = Object.freeze({
   M12: {
     type: "model",
     agent_id: "agent_7_m12",
-    prompt_file: "agent_7_m12.md",
+    prompt_files: [SYSTEM_BLOCKING_DOCTRINE_FILE, "agent_7_m12.md"],
     reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"],
     writes: ["challenge_gate"],
     next: "COMPILER"
