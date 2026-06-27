@@ -72,8 +72,10 @@ export function buildExposureRegistryForensicsFromSavedArtifacts({
 function buildEmissionManifest(workpadRows, controlledRows, triggeredRows) {
   const expectedControlled = workpadRows.filter((row) => row.final_material_status === "CONTROLLED").map((row) => row.Threat_ID);
   const expectedTriggered = workpadRows.filter((row) => row.final_material_status === "TRIGGERED").map((row) => row.Threat_ID);
-  const emittedControlled = extractThreatIdsFromMaterialRows(controlledRows);
-  const emittedTriggered = extractThreatIdsFromMaterialRows(triggeredRows);
+  const emittedControlledList = extractThreatIdsFromMaterialRows(controlledRows);
+  const emittedTriggeredList = extractThreatIdsFromMaterialRows(triggeredRows);
+  const emittedControlled = new Set(emittedControlledList);
+  const emittedTriggered = new Set(emittedTriggeredList);
 
   return {
     expected_active_registry_rows: EXPECTED_ACTIVE_REGISTRY_ROWS,
@@ -84,7 +86,7 @@ function buildEmissionManifest(workpadRows, controlledRows, triggeredRows) {
     expected_triggered_rows: expectedTriggered.length,
     emitted_triggered_rows: triggeredRows.length,
     missing_triggered_threat_ids: expectedTriggered.filter((id) => !emittedTriggered.has(id)),
-    duplicate_emitted_threat_ids: findDuplicates([...emittedControlled, ...emittedTriggered]),
+    duplicate_emitted_threat_ids: findDuplicates([...emittedControlledList, ...emittedTriggeredList]),
     wrong_status_emitted_rows: [],
     all_controlled_rows_emitted: expectedControlled.every((id) => emittedControlled.has(id)),
     all_triggered_rows_emitted: expectedTriggered.every((id) => emittedTriggered.has(id))
