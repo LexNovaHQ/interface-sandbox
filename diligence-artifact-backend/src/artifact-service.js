@@ -1,6 +1,6 @@
 import { config, requireRuntimeConfig } from "./config.js";
 import { assertRunId } from "./run-id.js";
-import { assertKnownArtifactName, assertKnownPhase, assertPhaseCanWriteArtifact } from "./constants.js";
+import { assertKnownArtifactName, assertKnownPhase, assertPhaseCanWriteArtifact, M11_BATCH_ARTIFACT_PATTERN, M11_BATCH_VALIDATION_ARTIFACT_PATTERN } from "./constants.js";
 import { assertCanReadArtifact, assertCanWriteArtifact } from "./permissions.js";
 import { saveArtifactSchema, lockPhaseSchema, parseOrThrow } from "./schemas.js";
 import { saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./drive.js";
@@ -114,6 +114,43 @@ async function assertArtifactSaveOrder(parsed) {
     await requirePhaseAccepted(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:data_provenance_forensics_requires_locked_m10_material");
   }
 
+  if (artifact_name === "exposure_registry_route_plan") {
+    await requireSavedArtifact(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:m11_route_plan_requires_data_provenance_profile");
+    await requireSavedArtifact(run_id, "data_provenance_profile_forensics", "SAVE_ORDER_BLOCKED:m11_route_plan_requires_data_provenance_profile_forensics");
+    await requirePhaseAccepted(run_id, "data_provenance_profile_forensics", "SAVE_ORDER_BLOCKED:m11_route_plan_requires_locked_m10_forensics");
+  }
+
+  if (M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) {
+    await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_batch_validation_requires_route_plan");
+  }
+
+  if (M11_BATCH_ARTIFACT_PATTERN.test(artifact_name)) {
+    await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_batch_requires_route_plan");
+    await requireSavedArtifact(run_id, pairedBatchValidationName(artifact_name), "SAVE_ORDER_BLOCKED:m11_batch_requires_paired_m12_batch_validation");
+  }
+
+  if (artifact_name === "exposure_registry_workpad_98") {
+    await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_workpad_requires_route_plan");
+    await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:m11_workpad_requires_all_batches_and_validations");
+  }
+
+  if (artifact_name === "exposure_registry_controlled_profile") {
+    await requireSavedArtifact(run_id, "exposure_registry_workpad_98", "SAVE_ORDER_BLOCKED:controlled_profile_requires_workpad_98");
+  }
+
+  if (artifact_name === "exposure_registry_triggered_profile") {
+    await requireSavedArtifact(run_id, "exposure_registry_workpad_98", "SAVE_ORDER_BLOCKED:triggered_profile_requires_workpad_98");
+    await requireSavedArtifact(run_id, "exposure_registry_controlled_profile", "SAVE_ORDER_BLOCKED:triggered_profile_requires_controlled_profile_first");
+  }
+
+  if (artifact_name === "exposure_registry_profile_forensics") {
+    await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_forensics_requires_route_plan");
+    await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:m11_forensics_requires_all_batches_and_validations");
+    await requireSavedArtifact(run_id, "exposure_registry_workpad_98", "SAVE_ORDER_BLOCKED:m11_forensics_requires_workpad_98");
+    await requireSavedArtifact(run_id, "exposure_registry_controlled_profile", "SAVE_ORDER_BLOCKED:m11_forensics_requires_controlled_profile");
+    await requireSavedArtifact(run_id, "exposure_registry_triggered_profile", "SAVE_ORDER_BLOCKED:m11_forensics_requires_triggered_profile");
+  }
+
   if (phase === "M7_TARGET_PROFILE" && !["target_profile", "target_profile_forensics"].includes(artifact_name)) {
     throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
   }
@@ -121,6 +158,26 @@ async function assertArtifactSaveOrder(parsed) {
   if (phase === "M8_TARGET_FEATURE_PROFILE" && !["target_feature_profile", "target_feature_profile_forensics"].includes(artifact_name)) {
     throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
   }
+}
+
+async function requireAllPlannedM11BatchesSaved(runId, message) {
+  const routePlan = await readInternalArtifactPayload(runId, "exposure_registry_route_plan");
+  const batches = routePlan?.batch_plan || routePlan?.exposure_registry_route_plan?.batch_plan || [];
+  if (!Array.isArray(batches)) throw new Error(`${message}:batch_plan_missing_or_not_array`);
+  for (const batch of batches) {
+    if (!batch?.batch_id) throw new Error(`${message}:batch_id_missing`);
+    await requireSavedArtifact(runId, `exposure_registry_batch_validation__${batch.batch_id}`, `${message}:missing_validation:${batch.batch_id}`);
+    await requireSavedArtifact(runId, `exposure_registry_batch__${batch.batch_id}`, `${message}:missing_batch:${batch.batch_id}`);
+  }
+}
+
+function pairedBatchValidationName(batchArtifactName) {
+  return batchArtifactName.replace(/^exposure_registry_batch__/, "exposure_registry_batch_validation__");
+}
+
+async function readInternalArtifactPayload(runId, artifactName) {
+  const meta = await getArtifactMetadata(runId, artifactName);
+  return readJsonArtifactFromDrive(meta.drive_file_id);
 }
 
 async function requireSavedArtifact(runId, artifactName, message) {
@@ -174,6 +231,7 @@ export async function listArtifacts(runId) {
 
 export async function assertRequiredArtifactsExist(runId, artifactNames) {
   for (const artifactName of artifactNames) {
+    if (String(artifactName || "").includes("{GROUP}")) continue;
     await getArtifactMetadata(runId, artifactName);
   }
 }
@@ -201,6 +259,15 @@ export async function lockPhase(input) {
     await requirePhaseAccepted(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_locked_m8");
     await requireSavedArtifact(body.run_id, "data_provenance_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_data_provenance_profile");
     await requirePhaseAccepted(body.run_id, "data_provenance_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_locked_m10_material");
+  }
+
+  if (body.phase === "M11" && LOCK_ADVANCE_STATUSES.has(body.status)) {
+    await requireSavedArtifact(body.run_id, "exposure_registry_route_plan", "PHASE_LOCK_BLOCKED:M11_requires_route_plan");
+    await requireAllPlannedM11BatchesSaved(body.run_id, "PHASE_LOCK_BLOCKED:M11_requires_all_batches_and_validations");
+    await requireSavedArtifact(body.run_id, "exposure_registry_workpad_98", "PHASE_LOCK_BLOCKED:M11_requires_workpad_98");
+    await requireSavedArtifact(body.run_id, "exposure_registry_controlled_profile", "PHASE_LOCK_BLOCKED:M11_requires_controlled_profile");
+    await requireSavedArtifact(body.run_id, "exposure_registry_triggered_profile", "PHASE_LOCK_BLOCKED:M11_requires_triggered_profile");
+    await requireSavedArtifact(body.run_id, "exposure_registry_profile_forensics", "PHASE_LOCK_BLOCKED:M11_requires_forensics");
   }
 
   if (LOCK_ADVANCE_STATUSES.has(body.status) && body.phase !== "COMPLETE") {
