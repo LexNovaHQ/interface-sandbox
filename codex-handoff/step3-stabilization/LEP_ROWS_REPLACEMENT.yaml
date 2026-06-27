@@ -1,0 +1,264 @@
+- Field_ID: LEP.REG.001
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Registry inventory and row identity
+  Output_Field: Registry active row inventory
+  Covers: 98 active registry rows; Threat_ID; Threat_Name; Archetype; Surface; Status; FIELD21; FIELD22; FIELD23
+  Mode: PICK_FROM_REGISTRY
+  Source_Basis: AI_THREAT_REGISTRY.yaml active rows
+  Conditions: C1 registry row has Threat_ID; C2 row Status is active/usable under registry rules; C3 row is preserved exactly once in route plan/workpad.
+  Trigger_Outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF non-critical metadata is malformed but Threat_ID and Hunter_Trigger are parseable.
+  Exclude_Fallback: FALLBACK_IF Threat_ID or Hunter_Trigger missing -> registry_integrity_error.
+  Forbidden_Inference: Do not drop, merge, rename, summarize, or invent registry rows.
+  Lock_Status: LOCKED
+- Field_ID: LEP.REG.002
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Registry YAML field canon
+  Output_Field: Registry field canon
+  Covers: canonical 23 YAML keys; no fake Subcat/Registry_Signal/Threat_Signal fields
+  Mode: VALIDATE_SCHEMA
+  Source_Basis: AI_THREAT_REGISTRY.yaml
+  Conditions: C1 required YAML keys loaded; C2 Hunter_Trigger exists; C3 FIELD21/FIELD22/FIELD23 reconcile to Threat_ID decomposition.
+  Trigger_Outcome: PASS_IF C1 AND C2 AND C3. LIMITED_IF non-critical metadata gap exists. FAIL_IF row identity or trigger authority missing.
+  Exclude_Fallback: FALLBACK_IF schema cannot be parsed -> registry_integrity_error.
+  Forbidden_Inference: Do not create non-existent source columns or derive row logic from labels alone.
+  Lock_Status: LOCKED
+- Field_ID: LEP.REG.003
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Hunter trigger authority
+  Output_Field: Hunter_Trigger parse authority
+  Covers: CONDITION_N; TRIGGER_IF; EXCLUDE_IF; parsed trigger/exclude logic
+  Mode: PARSE_TRIGGER
+  Source_Basis: AI_THREAT_REGISTRY.yaml Hunter_Trigger + 03_REGISTRY_EVALUATION_RULES.yaml
+  Conditions: C1 Hunter_Trigger exists; C2 CONDITION_N parsed; C3 TRIGGER_IF and EXCLUDE_IF parsed exactly.
+  Trigger_Outcome: DERIVED_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF malformed trigger authority blocks evaluation.
+  Exclude_Fallback: FALLBACK_IF trigger parse fails -> registry_integrity_error.
+  Forbidden_Inference: Do not rewrite trigger/exclude text or simplify it to make a row fire.
+  Lock_Status: LOCKED
+- Field_ID: LEP.REG.004
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Registry route metadata
+  Output_Field: Registry route metadata
+  Covers: Archetype; Surface; FIELD21; FIELD22; FIELD23; route family; route reason seed
+  Mode: PICK_FROM_REGISTRY
+  Source_Basis: AI_THREAT_REGISTRY.yaml row metadata
+  Conditions: C1 row metadata exists; C2 metadata is used for routing only; C3 material finding is not derived from metadata alone.
+  Trigger_Outcome: DERIVED_IF C1. DERIVED_WITH_LIMITATION_IF metadata partial but row identity intact.
+  Exclude_Fallback: FALLBACK_IF route metadata absent -> route_metadata_limited.
+  Forbidden_Inference: Do not treat archetype/surface/category as proof that a row is triggered.
+  Lock_Status: LOCKED
+- Field_ID: LEP.REG.005
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Registry review metadata
+  Output_Field: Registry review metadata
+  Covers: Pain_Tier; Pain_Category; Pain_Depth; Legal_Pain; FP_Mechanism; FP_Impact; Lex_Nova_Fix; Provenance
+  Mode: PICK_FROM_REGISTRY
+  Source_Basis: AI_THREAT_REGISTRY.yaml row metadata
+  Conditions: C1 metadata exists; C2 metadata is used only for priority/review route/forensics; C3 missing metadata does not drop row.
+  Trigger_Outcome: DERIVED_IF C1. DERIVED_WITH_LIMITATION_IF metadata gap exists.
+  Exclude_Fallback: FALLBACK_IF metadata absent -> review_metadata_limited.
+  Forbidden_Inference: Do not convert registry review metadata into a legal conclusion or exposure finding.
+  Lock_Status: LOCKED
+- Field_ID: LEP.ROUTE.001
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Universal row routing
+  Output_Field: UNI route plan
+  Covers: all UNI rows; mandatory evaluation route; UNI batch sequence
+  Mode: ROUTE_PLAN
+  Source_Basis: exposure_registry_route_plan.route_rows[] + AI_THREAT_REGISTRY.yaml Archetype=UNI
+  Conditions: C1 row Archetype is UNI; C2 active registry row; C3 route plan preserves row in model-routed batch.
+  Trigger_Outcome: EVALUATION_ROUTED_IF C1 AND C2. FAIL_IF UNI row is deterministic not-applicable.
+  Exclude_Fallback: FALLBACK_IF route plan missing -> route_plan_integrity_error.
+  Forbidden_Inference: Do not mark UNI rows not-applicable based on target sector, archetype absence, or surface absence.
+  Lock_Status: LOCKED
+- Field_ID: LEP.ROUTE.002
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Archetype routing
+  Output_Field: Archetype route plan
+  Covers: active archetype_codes from M8; registry Archetype; model-routed rows
+  Mode: ROUTE_PLAN
+  Source_Basis: target_feature_profile.activities[].archetype_codes[] + registry Archetype
+  Conditions: C1 M8 active archetype exists; C2 registry row Archetype matches; C3 row is active.
+  Trigger_Outcome: EVALUATION_ROUTED_IF C1 AND C2 AND C3. DETERMINISTIC_NOT_APPLICABLE_IF no UNI/archetype/surface route applies.
+  Exclude_Fallback: FALLBACK_IF M8 archetype substrate missing -> upstream_feature_profile_gap.
+  Forbidden_Inference: Do not infer archetype from sector/domain if M8 did not derive it.
+  Lock_Status: LOCKED
+- Field_ID: LEP.ROUTE.003
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Surface routing
+  Output_Field: Surface route plan
+  Covers: active surface_context_tokens from M8; registry Surface; model-routed rows
+  Mode: ROUTE_PLAN
+  Source_Basis: target_feature_profile.activities[].surface_context_tokens[] + registry Surface
+  Conditions: C1 M8 active surface exists; C2 registry Surface matches; C3 row is active.
+  Trigger_Outcome: EVALUATION_ROUTED_IF C1 AND C2 AND C3. DETERMINISTIC_NOT_APPLICABLE_IF no UNI/archetype/surface route applies.
+  Exclude_Fallback: FALLBACK_IF M8 surface substrate missing -> upstream_surface_gap.
+  Forbidden_Inference: Do not infer sensitive or regulated surface from company category alone.
+  Lock_Status: LOCKED
+- Field_ID: LEP.ROUTE.004
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Deterministic inactive routing
+  Output_Field: Deterministic not-applicable routing
+  Covers: non-UNI inactive rows; deterministic_not_applicable_rows[]; route reason
+  Mode: ROUTE_PLAN
+  Source_Basis: exposure_registry_route_plan.route_rows[]
+  Conditions: C1 row is non-UNI; C2 no active archetype match; C3 no active surface match.
+  Trigger_Outcome: DETERMINISTIC_NOT_APPLICABLE_IF C1 AND C2 AND C3.
+  Exclude_Fallback: FALLBACK_IF route substrate corrupt -> route_plan_integrity_error.
+  Forbidden_Inference: Do not use deterministic inactive route for UNI rows or for rows with active route match.
+  Lock_Status: LOCKED
+- Field_ID: LEP.ROUTE.005
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Batch plan
+  Output_Field: M11 batch plan
+  Covers: max 8 rows per batch; GROUP__NNN batch_id; expected_threat_ids[]; UNI-first ordering
+  Mode: ROUTE_PLAN
+  Source_Basis: exposure_registry_route_plan.batch_plan[]
+  Conditions: C1 model-routed rows exist; C2 batch size <= 8; C3 expected_threat_ids[] matches route rows exactly.
+  Trigger_Outcome: DERIVED_IF C1 AND C2 AND C3. FAIL_IF missing, duplicate, or oversized batch.
+  Exclude_Fallback: FALLBACK_IF batch plan invalid -> batch_plan_integrity_error.
+  Forbidden_Inference: Do not let the model choose batch contents or reorder expected_threat_ids.
+  Lock_Status: LOCKED
+- Field_ID: LEP.BATCH.001
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Active batch packet
+  Output_Field: M11 active batch packet
+  Covers: m11_batch_packet; registry_rows[]; parsed Hunter_Trigger; expected_threat_ids; legal cartography consumption trace
+  Mode: BUILD_PACKET
+  Source_Basis: exposure_registry_route_plan + AI_THREAT_REGISTRY.yaml + M9 legal_cartography_index + references
+  Conditions: C1 batch_id exists in route plan; C2 registry_rows[] cover expected_threat_ids; C3 parsed Hunter_Trigger and evaluation rules included.
+  Trigger_Outcome: DERIVED_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF packet cannot be built.
+  Exclude_Fallback: FALLBACK_IF packet missing registry logic -> batch_packet_integrity_error.
+  Forbidden_Inference: Do not evaluate rows outside the active packet.
+  Lock_Status: LOCKED
+- Field_ID: LEP.BATCH.002
+  Profile_Section: Legal Exposure Profile
+  Field_Family: M11 batch evaluation
+  Output_Field: M11 batch registry ledger
+  Covers: m11_batch_registry_ledger; one row per expected Threat_ID; seven material fields; trigger_status
+  Mode: EVALUATE_BATCH
+  Source_Basis: active m11_batch_packet + public evidence in locked upstream artifacts
+  Conditions: C1 returned_threat_ids[] equals expected_threat_ids[]; C2 one ledger row per Threat_ID; C3 no extra, grouped, duplicate, or category rows.
+  Trigger_Outcome: PASS_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF shape or coverage fails.
+  Exclude_Fallback: FALLBACK_IF model output malformed -> batch_repair_required.
+  Forbidden_Inference: Do not emit workpad, controlled profile, triggered profile, forensics, challenge_gate, or final handoff from M11 batch.
+  Lock_Status: LOCKED
+- Field_ID: LEP.BATCH.003
+  Profile_Section: Legal Exposure Profile
+  Field_Family: M12 batch validation
+  Output_Field: M12 batch validation custody
+  Covers: exposure_registry_batch_validation__{GROUP}__{NNN}; PASS/PASS_WITH_LIMITATION/REPAIR_REQUIRED/CONTROLLED_FAILURE
+  Mode: VALIDATE_BATCH
+  Source_Basis: M11 batch ledger + active batch packet + registry references + M12_BATCH_VALIDATION.md
+  Conditions: C1 backend structural validation passes; C2 M12 batch validation runs; C3 M12 status is recorded.
+  Trigger_Outcome: ACCEPTABLE_IF status PASS or PASS_WITH_LIMITATION. REPAIR_REQUIRED_IF status REPAIR_REQUIRED or CONTROLLED_FAILURE.
+  Exclude_Fallback: FALLBACK_IF M12 validation missing -> batch_not_accepted.
+  Forbidden_Inference: Do not save accepted batch before paired validation exists.
+  Lock_Status: LOCKED
+- Field_ID: LEP.BATCH.004
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Accepted batch save
+  Output_Field: Accepted M11 batch artifact
+  Covers: exposure_registry_batch__{GROUP}__{NNN}; accepted batch custody; paired validation link
+  Mode: SAVE_GATE
+  Source_Basis: M11 batch ledger + paired M12 batch validation artifact
+  Conditions: C1 paired validation exists; C2 validation status PASS or PASS_WITH_LIMITATION; C3 accepted batch artifact saved after validation.
+  Trigger_Outcome: SAVED_IF C1 AND C2 AND C3. BLOCKED_IF validation missing or failing.
+  Exclude_Fallback: FALLBACK_IF save order violated -> save_order_blocked.
+  Forbidden_Inference: Do not claim acceptance inside model text before backend save receipt exists.
+  Lock_Status: LOCKED
+- Field_ID: LEP.WORKPAD.001
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Canonical 98-row workpad
+  Output_Field: Canonical workpad merge
+  Covers: exposure_registry_workpad_98.registry_rows[]; accepted batches; deterministic not-applicable rows; validation index
+  Mode: MERGE
+  Source_Basis: route plan + accepted batches + paired validations
+  Conditions: C1 all planned accepted batches exist; C2 all paired validations exist; C3 all 98 active Threat_IDs appear exactly once.
+  Trigger_Outcome: PASS_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF missing/duplicate/unaccounted row.
+  Exclude_Fallback: FALLBACK_IF workpad count mismatch -> workpad_integrity_error.
+  Forbidden_Inference: Do not let the model merge, estimate, or summarize the 98-row workpad.
+  Lock_Status: LOCKED
+- Field_ID: LEP.WORKPAD.002
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Status reconciliation
+  Output_Field: Final material status reconciliation
+  Covers: final_material_status; TRIGGERED; CONTROLLED; deterministic non-material statuses; limitations
+  Mode: RECONCILE_STATUS
+  Source_Basis: accepted batch rows + validation artifacts + deterministic route rows
+  Conditions: C1 model-routed rows have accepted batch status; C2 deterministic inactive rows retain non-material status; C3 final_material_status is normalized.
+  Trigger_Outcome: TRIGGERED_OR_CONTROLLED_OR_NON_MATERIAL_IF supported by source row. REPAIR_REQUIRED_IF inconsistent status.
+  Exclude_Fallback: FALLBACK_IF status missing -> workpad_status_gap.
+  Forbidden_Inference: Triggered is not a legal verdict. Controlled is not approval or sufficiency.
+  Lock_Status: LOCKED
+- Field_ID: LEP.MAT.001
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Controlled material projection
+  Output_Field: Controlled exposure registry profile
+  Covers: exposure_registry_controlled_profile.controlled_rows[]; exactly seven material fields
+  Mode: PROJECT_MATERIAL
+  Source_Basis: exposure_registry_workpad_98 rows with final_material_status CONTROLLED
+  Conditions: C1 workpad exists; C2 row final_material_status is CONTROLLED; C3 row emitted exactly once in controlled_rows[].
+  Trigger_Outcome: EMITTED_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF controlled workpad row omitted or wrong-status row emitted.
+  Exclude_Fallback: FALLBACK_IF projection mismatch -> controlled_projection_error.
+  Forbidden_Inference: Do not include TRIGGERED, absent, not-triggered, not-applicable, or review-only rows in controlled_rows[].
+  Lock_Status: LOCKED
+- Field_ID: LEP.MAT.002
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Triggered material projection
+  Output_Field: Triggered exposure registry profile
+  Covers: exposure_registry_triggered_profile.triggered_rows[]; exactly seven material fields
+  Mode: PROJECT_MATERIAL
+  Source_Basis: exposure_registry_workpad_98 rows with final_material_status TRIGGERED
+  Conditions: C1 workpad exists; C2 row final_material_status is TRIGGERED; C3 row emitted exactly once in triggered_rows[].
+  Trigger_Outcome: EMITTED_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF triggered workpad row omitted or wrong-status row emitted.
+  Exclude_Fallback: FALLBACK_IF projection mismatch -> triggered_projection_error.
+  Forbidden_Inference: Do not include CONTROLLED, absent, not-triggered, not-applicable, or review-only rows in triggered_rows[].
+  Lock_Status: LOCKED
+- Field_ID: LEP.FOR.001
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Forensic inventory ledger
+  Output_Field: Full registry inventory ledger
+  Covers: exposure_registry_profile_forensics.full_registry_inventory_ledger; 98 row custody; route/workpad status
+  Mode: FORENSIC_LEDGER
+  Source_Basis: exposure_registry_workpad_98 + route plan
+  Conditions: C1 workpad has 98 rows; C2 every Threat_ID accounted; C3 row route and final status preserved.
+  Trigger_Outcome: DERIVED_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF row accountability mismatch.
+  Exclude_Fallback: FALLBACK_IF inventory mismatch -> forensic_integrity_error.
+  Forbidden_Inference: Do not re-emit material profiles inside forensics.
+  Lock_Status: LOCKED
+- Field_ID: LEP.FOR.002
+  Profile_Section: Legal Exposure Profile
+  Field_Family: LEP selector application ledger
+  Output_Field: LEP selector application ledger
+  Covers: lep_selector_application_ledger; 22 LEP rows; selector coverage; selected row outcomes
+  Mode: FORENSIC_LEDGER
+  Source_Basis: FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml LEP.* rows + saved M11 artifacts
+  Conditions: C1 exactly 22 LEP rows loaded; C2 each LEP row accounted; C3 application outcome recorded.
+  Trigger_Outcome: PASS_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF LEP count or coverage mismatch.
+  Exclude_Fallback: FALLBACK_IF LEP registry malformed -> lep_selector_integrity_error.
+  Forbidden_Inference: Do not use LEP rows as public material output fields.
+  Lock_Status: LOCKED
+- Field_ID: LEP.FOR.003
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Evidence and firewall ledger
+  Output_Field: Evidence binding and firewall ledger
+  Covers: evidence_binding_ledger; legal_firewall_ledger; M9 consumption without rebuild; limitation trace
+  Mode: FORENSIC_LEDGER
+  Source_Basis: accepted batches + M12 validations + M9 legal_cartography_index + locked upstream artifacts
+  Conditions: C1 evidence basis exists or limitation recorded; C2 M9 is consumed not rebuilt; C3 firewall terms checked.
+  Trigger_Outcome: DERIVED_IF C1 AND C2 AND C3. DERIVED_WITH_LIMITATION_IF evidence weak/gated.
+  Exclude_Fallback: FALLBACK_IF proof missing -> evidence_binding_limited.
+  Forbidden_Inference: Do not treat M9 titles, headings, routes, or locator labels as standalone proof unless the row is about source presence/absence/navigation/custody.
+  Lock_Status: LOCKED
+- Field_ID: LEP.FOR.004
+  Profile_Section: Legal Exposure Profile
+  Field_Family: Lock gate and emission manifest
+  Output_Field: Registry lock gate and emission manifest
+  Covers: registry_lock_gate_result; emission_manifest; triggered_controlled_row_assembly_ledger; M12 readiness
+  Mode: FORENSIC_GATE
+  Source_Basis: route plan + batches + validations + workpad + split profiles + forensics
+  Conditions: C1 all required artifacts exist; C2 controlled/triggered projections reconcile; C3 forensics proves custody; C4 challenge gate may begin only after forensics saved.
+  Trigger_Outcome: PASS_IF C1 AND C2 AND C3. REPAIR_REQUIRED_IF any save/order/reconciliation gate fails.
+  Exclude_Fallback: FALLBACK_IF lock gate fails -> repair_smallest_affected_boundary.
+  Forbidden_Inference: Do not advance to M12 global or compiler until backend save-order gates pass.
+  Lock_Status: LOCKED
