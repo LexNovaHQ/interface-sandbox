@@ -5,7 +5,7 @@ import { appendRunDashboardRow, updateRunDashboardRow } from "./sheets.js";
 import { createRunRecord, getRunRecord, updateRunRecord, getArtifactMetadata, listArtifactMetadata } from "./firestore.js";
 import { createRunId, nowIso, assertRunId } from "./run-id.js";
 import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema } from "./schemas.js";
-import { advanceReviewerRun } from "./reviewer-runner.js";
+import { requestReviewerRunAdvance } from "./reviewer-async-runner.js";
 
 export const publicReviewerRouter = express.Router();
 
@@ -38,6 +38,8 @@ publicReviewerRouter.post("/reviewer/jobs", rateLimit("create"), async (req, res
       source_mode: "url",
       status: "CREATED",
       current_phase: "AGENT_1A_URL_MANIFEST",
+      runner_mode: "ASYNC_NODE_RUNNER",
+      runner_state: "IDLE",
       created_by: "public-reviewer",
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,
@@ -74,13 +76,13 @@ publicReviewerRouter.post("/reviewer/jobs/:run_id/advance", rateLimit("advance")
   try {
     assertRunId(req.params.run_id);
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
-    const maxSteps = Math.min(Number(body.max_steps || 1), 2);
-    let result = null;
-    for (let step = 0; step < maxSteps; step += 1) {
-      result = await advanceReviewerRun({ run_id: req.params.run_id });
-      if (result.current_phase === "COMPLETE" || result.status === "COMPLETE") break;
-    }
-    return res.json(result);
+    const result = await requestReviewerRunAdvance({
+      run_id: req.params.run_id,
+      requested_by: "public-reviewer",
+      base_url: baseUrlFromRequest(req),
+      auto_continue: body.auto_continue
+    });
+    return res.status(result.queued ? 202 : 200).json(publicAsyncResponse(result));
   } catch (error) {
     return sendError(res, error);
   }
@@ -115,8 +117,10 @@ function rateLimit(kind) {
 }
 
 function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
-function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, status: run.status, current_phase: run.current_phase, final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
+function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
+function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_state: result.runner_state, poll: `/public/reviewer/jobs/${result.run_id}` }; }
 function publicArtifactList(artifacts) { return artifacts.map((artifact) => ({ artifact_name: artifact.artifact_name, phase: artifact.phase, lock_status: artifact.lock_status, latest_version: artifact.latest_version || artifact.version, updated_at: artifact.updated_at || artifact.created_at })); }
+function baseUrlFromRequest(req) { const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim() || "https"; const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim(); return host ? `${proto}://${host}` : ""; }
 function normalizeTargetUrl(value) { const raw = String(value || "").trim(); const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`; const url = new URL(withProtocol); url.hash = ""; return url.toString(); }
 function hostFromUrl(value) { return new URL(value).hostname.replace(/^www\./i, ""); }
 function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
