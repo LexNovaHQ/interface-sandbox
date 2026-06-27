@@ -3,9 +3,10 @@ import { createRunFolder, readJsonArtifactFromDrive } from "./drive.js";
 import { appendRunDashboardRow, updateRunDashboardRow } from "./sheets.js";
 import { createRunRecord, getRunRecord, updateRunRecord, getArtifactMetadata, listArtifactMetadata } from "./firestore.js";
 import { createRunId, nowIso, assertRunId } from "./run-id.js";
-import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema } from "./schemas.js";
+import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema, reviewerWorkerJobSchema } from "./schemas.js";
 import { requireRuntimeConfig } from "./config.js";
 import { advanceReviewerRun } from "./reviewer-runner.js";
+import { requestReviewerRunAdvance, runReviewerWorkerOnce } from "./reviewer-async-runner.js";
 
 export const reviewerRouter = express.Router();
 
@@ -27,6 +28,8 @@ reviewerRouter.post("/reviewer/jobs", async (req, res) => {
       source_mode: "url",
       status: "CREATED",
       current_phase: "AGENT_1A_URL_MANIFEST",
+      runner_mode: "ASYNC_NODE_RUNNER",
+      runner_state: "IDLE",
       created_by: body.created_by,
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,
@@ -47,8 +50,11 @@ reviewerRouter.post("/reviewer/jobs", async (req, res) => {
       run_id: runId,
       status: saved.status,
       current_phase: saved.current_phase,
+      runner_mode: saved.runner_mode,
+      runner_state: saved.runner_state,
       drive_folder_link: saved.drive_folder_link,
-      next_action: `POST /v1/reviewer/jobs/${runId}/advance`
+      next_action: `POST /v1/reviewer/jobs/${runId}/advance`,
+      poll: `GET /v1/reviewer/jobs/${runId}`
     });
   } catch (error) {
     return sendError(res, error);
@@ -70,13 +76,40 @@ reviewerRouter.post("/reviewer/jobs/:run_id/advance", async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
-    let result = null;
 
-    for (let step = 0; step < body.max_steps; step += 1) {
-      result = await advanceReviewerRun({ run_id: req.params.run_id });
-      if (result.current_phase === "COMPLETE" || result.status === "COMPLETE") break;
+    if (body.sync) {
+      const result = await advanceSync({ run_id: req.params.run_id, max_steps: body.max_steps });
+      return res.json(result);
     }
 
+    const result = await requestReviewerRunAdvance({
+      run_id: req.params.run_id,
+      requested_by: "operator",
+      base_url: baseUrlFromRequest(req),
+      auto_continue: body.auto_continue
+    });
+    return res.status(result.queued ? 202 : 200).json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+reviewerRouter.post("/reviewer/jobs/:run_id/advance-sync", async (req, res) => {
+  try {
+    assertRunId(req.params.run_id);
+    const body = parseOrThrow(reviewerAdvanceJobSchema, { ...(req.body || {}), sync: true });
+    const result = await advanceSync({ run_id: req.params.run_id, max_steps: body.max_steps });
+    return res.json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+reviewerRouter.post("/reviewer/jobs/:run_id/worker", async (req, res) => {
+  try {
+    assertRunId(req.params.run_id);
+    const body = parseOrThrow(reviewerWorkerJobSchema, req.body || {});
+    const result = await runReviewerWorkerOnce({ run_id: req.params.run_id, actor: "async_worker", auto_continue: body.auto_continue });
     return res.json(result);
   } catch (error) {
     return sendError(res, error);
@@ -95,6 +128,15 @@ reviewerRouter.get("/reviewer/report/:run_id", async (req, res) => {
   }
 });
 
+async function advanceSync({ run_id, max_steps }) {
+  let result = null;
+  for (let step = 0; step < max_steps; step += 1) {
+    result = await advanceReviewerRun({ run_id });
+    if (result.current_phase === "COMPLETE" || result.status === "COMPLETE") break;
+  }
+  return result;
+}
+
 function normalizeTargetUrl(value) {
   const raw = String(value || "").trim();
   const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
@@ -105,6 +147,13 @@ function normalizeTargetUrl(value) {
 
 function hostFromUrl(value) {
   return new URL(value).hostname.replace(/^www\./i, "");
+}
+
+function baseUrlFromRequest(req) {
+  const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim() || "https";
+  const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim();
+  if (!host) return "";
+  return `${proto}://${host}`;
 }
 
 function sendError(res, error) {
@@ -123,6 +172,7 @@ function statusForMessage(message) {
   if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404;
   if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400;
   if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500;
+  if (message.startsWith("ASYNC_WORKER_HTTP_FAILED")) return 502;
   return 500;
 }
 
