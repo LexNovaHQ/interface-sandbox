@@ -44,7 +44,7 @@ app.post("/v1/runs/create", async (req, res) => {
     const createdAt = nowIso();
     const runId = createRunId(body.target);
     const folder = await createRunFolder({ run_id: runId });
-    const run = { ok: true, run_id: runId, target: body.target, root_url: body.root_url, source_mode: body.source_mode, status: "CREATED", current_phase: "URL_MANIFEST", created_by: body.created_by, notes: body.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
+    const run = { ok: true, run_id: runId, target: body.target, root_url: body.root_url, source_mode: body.source_mode, status: "CREATED", current_phase: "AGENT_1A_URL_MANIFEST", created_by: body.created_by, notes: body.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
     await createRunRecord(run);
     const sheetRow = await appendRunDashboardRow(run);
     const saved = await updateRunRecord(runId, { sheet_row_number: sheetRow });
