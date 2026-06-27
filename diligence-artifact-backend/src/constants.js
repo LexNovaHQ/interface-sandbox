@@ -100,9 +100,13 @@ export const AGENT_1_ARTIFACT_NAMES = Object.freeze([
   ...AGENT_1B_ARTIFACT_NAMES
 ]);
 
-export const ARTIFACT_NAMES = Object.freeze([
+export const LEGACY_ARTIFACT_NAMES = Object.freeze([
   "url_manifest",
-  "lossless_source_corpus",
+  "lossless_source_corpus"
+]);
+
+export const ARTIFACT_NAMES = Object.freeze([
+  ...LEGACY_ARTIFACT_NAMES,
   ...AGENT_1_ARTIFACT_NAMES,
   "source_discovery_handoff",
   "legal_cartography_index",

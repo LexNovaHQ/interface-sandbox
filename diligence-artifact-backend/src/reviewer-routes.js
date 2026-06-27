@@ -26,7 +26,7 @@ reviewerRouter.post("/reviewer/jobs", async (req, res) => {
       root_url: targetUrl,
       source_mode: "url",
       status: "CREATED",
-      current_phase: "URL_MANIFEST",
+      current_phase: "AGENT_1A_URL_MANIFEST",
       created_by: body.created_by,
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,

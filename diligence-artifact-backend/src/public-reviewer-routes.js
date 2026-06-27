@@ -37,7 +37,7 @@ publicReviewerRouter.post("/reviewer/jobs", rateLimit("create"), async (req, res
       root_url: targetUrl,
       source_mode: "url",
       status: "CREATED",
-      current_phase: "AGENT_1_SCOUT_EXTRACT",
+      current_phase: "AGENT_1A_URL_MANIFEST",
       created_by: "public-reviewer",
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,
