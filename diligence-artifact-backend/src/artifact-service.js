@@ -109,6 +109,11 @@ async function assertArtifactSaveOrder(parsed) {
     await requirePhaseAccepted(run_id, "target_feature_profile_forensics", "SAVE_ORDER_BLOCKED:data_provenance_requires_locked_m8");
   }
 
+  if (artifact_name === "data_provenance_profile_forensics") {
+    await requireSavedArtifact(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:data_provenance_forensics_requires_data_provenance_profile");
+    await requirePhaseAccepted(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:data_provenance_forensics_requires_locked_m10_material");
+  }
+
   if (phase === "M7_TARGET_PROFILE" && !["target_profile", "target_profile_forensics"].includes(artifact_name)) {
     throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
   }
@@ -188,6 +193,14 @@ export async function lockPhase(input) {
     await requireSavedArtifact(body.run_id, "target_feature_profile", "PHASE_LOCK_BLOCKED:M10_requires_target_feature_profile");
     await requireSavedArtifact(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_requires_target_feature_profile_forensics");
     await requirePhaseAccepted(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_requires_locked_m8");
+  }
+
+  if (body.phase === "M10_FORENSICS") {
+    await requireSavedArtifact(body.run_id, "target_feature_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_target_feature_profile");
+    await requireSavedArtifact(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_target_feature_profile_forensics");
+    await requirePhaseAccepted(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_locked_m8");
+    await requireSavedArtifact(body.run_id, "data_provenance_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_data_provenance_profile");
+    await requirePhaseAccepted(body.run_id, "data_provenance_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_locked_m10_material");
   }
 
   if (LOCK_ADVANCE_STATUSES.has(body.status) && body.phase !== "COMPLETE") {

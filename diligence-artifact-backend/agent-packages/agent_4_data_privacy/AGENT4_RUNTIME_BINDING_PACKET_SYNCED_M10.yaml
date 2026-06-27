@@ -17,6 +17,7 @@ read_artifacts:
   - target_profile_forensics
   - target_feature_profile
   - target_feature_profile_forensics
+  - data_provenance_profile
   - lossless_family__D1_SECURITY_TRUST
   - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
   - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
@@ -25,6 +26,7 @@ read_artifacts:
 
 write_artifacts_in_order:
   - data_provenance_profile
+  - data_provenance_profile_forensics
 
 phase_lock:
   - M10_DATA_PROVENANCE
@@ -65,11 +67,20 @@ terminal_receipt_profile: agent_4_manual_receipt_only
 
 phase_save_contract:
   M10_MATERIAL_SAVE_EVENT:
+    backend_phase: M10
     emits_only:
       - data_provenance_profile
     must_stop_after_emit: true
+    backend_must_save_before_m10_forensics: true
+  M10_FORENSIC_SAVE_EVENT:
+    backend_phase: M10_FORENSICS
+    reads_required:
+      - data_provenance_profile
+    emits_only:
+      - data_provenance_profile_forensics
+    must_stop_after_emit: true
     backend_must_save_before_m11: true
 
-next_agent_command: backend advances to exposure registry only after M10_DATA_PROVENANCE lock; manual mode may show next-step text only after lock
+next_agent_command: backend advances to exposure registry only after M10 material and M10 forensics are both locked; manual mode may show next-step text only after lock
 stop_condition: stop after M10_DATA_PROVENANCE lock
 </RUNTIME_BINDING_PACKET>

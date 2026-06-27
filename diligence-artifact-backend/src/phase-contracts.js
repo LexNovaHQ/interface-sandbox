@@ -46,12 +46,12 @@ const AGENT_3_VALIDATION_FILES = Object.freeze([
 const AGENT_4_M10_PACKAGE_ROOT = "agent-packages/agent_4_data_privacy";
 const AGENT_4_M10_FILES = Object.freeze([
   SYSTEM_BLOCKING_DOCTRINE_FILE,
-  `${AGENT_4_M10_PACKAGE_ROOT}/` + packetFile("AGENT4_RUNTIME_", "_SYNCED_M10.yaml"),
   `${AGENT_4_M10_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`,
+  `${AGENT_4_M10_PACKAGE_ROOT}/` + packetFile("AGENT4_RUNTIME_", "_SYNCED_M10.yaml"),
   `${AGENT_4_M10_PACKAGE_ROOT}/M10_DATA_PROVENANCE.md`,
   `${AGENT_4_M10_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED_AGENT4_SYNCED.md`,
-  `${AGENT_4_M10_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT4_SYNCED.md`,
-  `${AGENT_4_M10_PACKAGE_ROOT}/BACKEND_CANONICAL_OUTPUT_ADAPTER.md`
+  `${AGENT_4_M10_PACKAGE_ROOT}/BACKEND_CANONICAL_OUTPUT_ADAPTER.md`,
+  `${AGENT_4_M10_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT4_SYNCED.md`
 ]);
 
 const AGENT_5_M11_PACKAGE_ROOT = "agent-packages/agent_5_exposure_registry";
@@ -119,13 +119,21 @@ export const PHASE_CONTRACTS = Object.freeze({
     prompt_files: AGENT_4_M10_FILES,
     reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
     writes: ["data_provenance_profile"],
+    next: "M10_FORENSICS"
+  },
+  M10_FORENSICS: {
+    type: "model",
+    agent_id: "agent_4_data_privacy",
+    prompt_files: AGENT_4_M10_FILES,
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
+    writes: ["data_provenance_profile_forensics"],
     next: "M11"
   },
   M11: {
     type: "model",
     agent_id: "agent_5_exposure_registry",
     prompt_files: AGENT_5_M11_FILES,
-    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
     writes: ["exposure_registry_profile"],
     next: "M12"
   },

@@ -19,7 +19,7 @@ import {
 } from "./artifact-service.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
-const MODEL_LIMITATION_PHASES = new Set(["M9", "M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "M10", "M11", "M12"]);
+const MODEL_LIMITATION_PHASES = new Set(["M9", "M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "M10", "M10_FORENSICS", "M11", "M12"]);
 const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
 const VALIDATION_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object", "missing legal_cartography_index object", "missing keys", "extra keys", "must be object", "must be an object", "must be array", "must not be empty", "contains material artifact", "contains forbidden", "forbidden key", "forbidden string", "bad source syntax", "source-ref row missing source-url", "MODEL_OUTPUT_MISSING_ARTIFACT", "DETERMINISTIC_OUTPUT_MISSING_ARTIFACT", "UNKNOWN_PHASE", "INVALID_PHASE_CONTRACT"]);
 const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "limited", "omission", "absent", "insufficient public", "unknown_not_searched", "standalone_source_absent", "source_rejected_or_failed", "access_failed", "gated", "deferred", "coverage"]);
@@ -30,6 +30,7 @@ const ART = Object.freeze({
   featureMain: "target_" + "feature_profile",
   featureForensics: "target_" + "feature_profile_forensics",
   dataProfile: "data_provenance_profile",
+  dataForensics: "data_provenance_profile_forensics",
   exposureProfile: "exposure_registry_profile",
   challengeGate: "challenge_gate",
   final: "final_" + "output_handoff",
@@ -165,6 +166,7 @@ function resolveModelLockStatus({ phase, output, writes }) {
   if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.[ART.featureMain]);
   if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.featureForensics]);
   if (phase === "M10") return resolveStatusFromArtifacts(output?.[ART.dataProfile]);
+  if (phase === "M10_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.dataForensics]);
   if (phase === "M11") return resolveStatusFromArtifacts(output?.[ART.exposureProfile]);
   if (phase === "M12") return resolveStatusFromArtifacts(output?.[ART.challengeGate]);
   return resolveStatusFromArtifacts(output?.[writes?.[0]]);
