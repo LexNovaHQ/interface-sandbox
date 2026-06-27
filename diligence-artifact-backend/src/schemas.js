@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ARTIFACT_NAMES, LOCK_STATUSES, PHASES } from "./constants.js";
+import { isKnownArtifactName, LOCK_STATUSES, PHASES } from "./constants.js";
 
 export const createRunSchema = z.object({
   target: z.string().min(1),
@@ -31,7 +31,7 @@ export const saveArtifactSchema = z.object({
   run_id: z.string().min(1),
   phase: z.enum(PHASES),
   agent_id: z.string().min(1),
-  artifact_name: z.enum(ARTIFACT_NAMES),
+  artifact_name: z.string().min(1).refine(isKnownArtifactName, "unknown artifact name"),
   lock_status: z.enum(LOCK_STATUSES),
   artifact: z.record(z.any())
 });
