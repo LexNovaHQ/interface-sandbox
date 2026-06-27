@@ -216,7 +216,7 @@ privacy conclusion
 |---|---|---|
 | `agent_1_source_legal` | `agent_1_m6_m9_validator` | M6 handoff exists; M6 route-universe sections present; M9 legal cartography exists; no downstream profile objects; save order M6 then M9; lock M6_M9 only after both artifacts save. |
 | `agent_3_target_feature` | `agent_3_m7_m8_validator` | M7 checks in Section 4; M8 checks in Section 5; split-save order: M7 Phase B1 `target_profile`, M7 Phase D `target_profile_forensics`, M8 Phase B1 `target_feature_profile`, M8 Phase D `target_feature_profile_forensics`; no M6/M9 mutation; no combined M7/M8 production output. |
-| `agent_4_data_privacy` | `agent_4_m10_validator` | M10 checks in Section 7; split-save order: M10 Phase B1 `target_data_provenance_profile`, M10 Phase D `target_data_provenance_profile_forensics`; upstream custody preserved; primary D lossless bucket inputs verified; no M6/M7/M8/M9 mutation; lock M10_DATA_PROVENANCE only after both artifacts pass. |
+| `agent_4_data_privacy` | `agent_4_m10_validator` | M10 checks in Section 7; split-save order: M10 Phase B1 `data_provenance_profile`, M10 Phase D `data_provenance_profile_forensics`; upstream custody preserved; primary D lossless bucket inputs verified; no M6/M7/M8/M9 mutation; lock M10_DATA_PROVENANCE only after both artifacts pass. |
 | `agent_5_exposure_registry` | `agent_5_m11_validator_PLACEHOLDER` | Placeholder only. Must fail production use until M11 artifact contract is locked. |
 | `agent_6_challenge_handoff` | `agent_6_m12_m13_validator_PLACEHOLDER` | Placeholder only. Must fail production use until M12/M13 artifact contracts are locked. |
 | `agent_7_terminal_renderer` | `agent_7_m14_validator_PLACEHOLDER` | Placeholder only. Must fail production use until M14 renderer/terminal contract is locked. |
@@ -555,7 +555,7 @@ M10.T2A Locked 34-Field Material Selector
 
 ## 7.3 M10 Material Output Gate
 
-`VAL.M10.C10` Validate that `target_data_provenance_profile` exists only in the M10 Phase B1 material save event and contains exactly 34 top-level fields.
+`VAL.M10.C10` Validate that `data_provenance_profile` exists only in the M10 Phase B1 material save event and contains exactly 34 top-level fields.
 
 `VAL.M10.C11` Validate that the 34 top-level fields are the locked M10 fields: `assessment_scope`, `source_coverage`, `individuals_and_relationships`, `role_relationship_readiness`, `data_categories`, `generated_output_and_derived_data_treatment`, `sensitive_special_category_signals`, `children_minors_signal`, `collection_sources_and_activity_data_flows`, `processing_operations_lifecycle`, `purpose_use_signals`, `privacy_notice_visibility`, `lawful_basis_consent_authorization_readiness`, `consent_withdrawal_controls`, `rights_request_routes`, `privacy_governance_contact_accountability_signals`, `contractual_dpa_customer_terms_readiness`, `vendor_subprocessor_partner_inventory`, `processor_subprocessor_governance_controls`, `third_party_disclosure_sharing_controls`, `cross_border_transfer_location_custody`, `retention_deletion_return_export_controls`, `security_access_controls`, `breach_incident_readiness`, `cookies_tracking_marketing_controls`, `ai_model_provider_processing_chain`, `ai_training_finetuning_model_improvement_controls`, `embeddings_vector_memory_controls`, `prompt_output_logging_telemetry_controls`, `automated_decision_profiling_human_review_signal`, `privacy_accountability_documentation_signals`, `law_regulatory_readiness_matrix`, `missing_proof_and_diligence_requests`, and `limitations`.
 
@@ -571,11 +571,11 @@ M10.T2A Locked 34-Field Material Selector
 
 `VAL.M10.C16` Validate that every selected DAP material row has a Module V or forensic workpad outcome with `fd_registry_id`, `fd_field_id`, `fd_profile_section`, `fd_mode`, `fd_outcome`, applicable refs, fallback code where applicable, Anti-Unknown status where applicable, and `forbidden_inference_check`.
 
-`VAL.M10.C17` Validate that `target_data_provenance_profile` is emitted and saved in M10 Phase B1 before M10 Phase C/D can emit `target_data_provenance_profile_forensics`.
+`VAL.M10.C17` Validate that `data_provenance_profile` is emitted and saved in M10 Phase B1 before M10 Phase C/D can emit `data_provenance_profile_forensics`.
 
-`VAL.M10.C18` Validate that `target_data_provenance_profile_forensics` contains data-control source coverage, extraction capsule summary, selected DAP derivation ledger, Anti-Unknown resolution ledger, readiness matrix derivation ledger, missing-proof request ledger, cross-route use ledger, validation/QC result, M10-only runtime trace, and forensic boundary.
+`VAL.M10.C18` Validate that `data_provenance_profile_forensics` contains data-control source coverage, extraction capsule summary, selected DAP derivation ledger, Anti-Unknown resolution ledger, readiness matrix derivation ledger, missing-proof request ledger, cross-route use ledger, validation/QC result, M10-only runtime trace, and forensic boundary.
 
-`VAL.M10.C19` Validate that no source refs, extraction capsule, validation trace, field-derivation ledger, confidence branch, or forensic branch appears as a top-level branch inside `target_data_provenance_profile`.
+`VAL.M10.C19` Validate that no source refs, extraction capsule, validation trace, field-derivation ledger, confidence branch, or forensic branch appears as a top-level branch inside `data_provenance_profile`.
 
 ## 7.5 M10 Legal / Registry Firewall Gate
 
@@ -588,8 +588,8 @@ M10.T2A Locked 34-Field Material Selector
 `VAL.A4.C1` Agent 4 may lock `M10_DATA_PROVENANCE` only if the M10 artifacts exist and were saved through separate backend save events in this exact order:
 
 ```text
-1. M10 Phase B1: target_data_provenance_profile
-2. M10 Phase D: target_data_provenance_profile_forensics
+1. M10 Phase B1: data_provenance_profile
+2. M10 Phase D: data_provenance_profile_forensics
 ```
 
 `VAL.A4.C2` Agent 4 terminal/manual mode may provide exposure-registry continuation only after M10 validation passes or passes with limitations.

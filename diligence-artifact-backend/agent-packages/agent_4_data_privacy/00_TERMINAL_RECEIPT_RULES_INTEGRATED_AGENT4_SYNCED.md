@@ -169,7 +169,7 @@ Copy and paste this into the same chat:
 |---|---|---|---|---|
 | `agent_1_source_legal` | `agent_1_manual_receipt` | `PHASE LOCKED: M6_M9` | `source_discovery_handoff`, `legal_cartography_index` | backend advances to `agent_3_target_feature`; manual mode may show next-step text only after lock |
 | `agent_3_target_feature` | `agent_3_manual_receipt` | `PHASE LOCKED: M7_TARGET_PROFILE` and `PHASE LOCKED: M8_TARGET_FEATURE_PROFILE` | `target_profile`, `target_profile_forensics`, `target_feature_profile`, `target_feature_profile_forensics` | backend advances to `agent_4_data_privacy`; manual mode may show next-step text only after M8 lock |
-| `agent_4_data_privacy` | `agent_4_manual_receipt` | `PHASE LOCKED: M10_DATA_PROVENANCE` | `target_data_provenance_profile`, `target_data_provenance_profile_forensics` | backend advances to exposure registry agent; manual mode may show next-step text only after M10 lock |
+| `agent_4_data_privacy` | `agent_4_manual_receipt` | `PHASE LOCKED: M10_DATA_PROVENANCE` | `data_provenance_profile`, `data_provenance_profile_forensics` | backend advances to exposure registry agent; manual mode may show next-step text only after M10 lock |
 | `agent_5_exposure_registry` | `agent_5_same_chat_receipt_PLACEHOLDER` | `PHASE LOCKED: M11` | `target_exposure_profile`, `target_exposure_profile_forensics` | backend/manual advance to challenge assembly after M11 lock |
 | `agent_6_challenge_handoff` | `agent_6_same_chat_receipt_PLACEHOLDER` | `PHASE LOCKED: M12_M13` | `operator_challenge_gate`, `final_output_handoff`, `final_output_handoff_forensics` | backend/manual advance to terminal renderer after M12/M13 lock |
 | `agent_7_terminal_renderer` | `agent_7_final_terminal_PLACEHOLDER` | `PHASE LOCKED: M14` | `renderer_payload`, `terminal_validation_result` | final report/rendered result only; no next agent |
@@ -250,12 +250,12 @@ ACTIVE AGENT: Interface Data Privacy Agent
 ACTIVE SCOPE: M10_DATA_PROVENANCE
 
 SAVED ARTIFACTS:
-1. target_data_provenance_profile
-2. target_data_provenance_profile_forensics
+1. data_provenance_profile
+2. data_provenance_profile_forensics
 
 VALIDATION:
-- target_data_provenance_profile: PASS
-- target_data_provenance_profile_forensics: PASS
+- data_provenance_profile: PASS
+- data_provenance_profile_forensics: PASS
 - Data-Control Source Extraction Capsule: PASS
 - DAP material selector coverage: PASS
 - Anti-Unknown / missing-proof routing: PASS
@@ -279,15 +279,15 @@ ACTIVE AGENT: Interface Data Privacy Agent
 ACTIVE SCOPE: M10_DATA_PROVENANCE
 
 SAVED ARTIFACTS:
-1. target_data_provenance_profile
-2. target_data_provenance_profile_forensics
+1. data_provenance_profile
+2. data_provenance_profile_forensics
 
 LIMITATIONS:
 - <compact source/evidence/privacy-control limitation>
 
 VALIDATION:
-- target_data_provenance_profile: PASS_WITH_LIMITATION
-- target_data_provenance_profile_forensics: PASS_WITH_LIMITATION
+- data_provenance_profile: PASS_WITH_LIMITATION
+- data_provenance_profile_forensics: PASS_WITH_LIMITATION
 - Data-Control Source Extraction Capsule: PASS_WITH_LIMITATION
 - DAP material selector coverage: PASS_WITH_LIMITATION
 - Anti-Unknown / missing-proof routing: PASS

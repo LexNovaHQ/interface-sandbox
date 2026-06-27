@@ -16,7 +16,7 @@ When `RUNTIME_PACKET.phase_name` is `M10` and `required_output_artifacts` lists 
 
 Rules:
 
-- Do not emit `target_data_provenance_profile` in backend execution.
+- Do not emit `data_provenance_profile` in backend execution.
 - Do not emit `data_provenance_profile_forensics` in the `M10` material phase.
 - After emitting `data_provenance_profile`, stop.
 
@@ -33,14 +33,14 @@ When `RUNTIME_PACKET.phase_name` is `M10_FORENSICS` and `required_output_artifac
 Rules:
 
 - Do not re-emit `data_provenance_profile` in the forensic phase.
-- Do not emit `target_data_provenance_profile_forensics` in backend execution.
+- Do not emit `data_provenance_profile_forensics` in backend execution.
 - After emitting `data_provenance_profile_forensics`, stop.
 
 ## Alias Reconciliation
 
-The older package wording `target_data_provenance_profile` means the backend canonical artifact `data_provenance_profile`.
-The older package wording `target_data_provenance_profile_forensics` means the backend canonical artifact `data_provenance_profile_forensics`.
-Do not emit `target_data_provenance_profile` in backend execution.
+The older package wording `data_provenance_profile` means the backend canonical artifact `data_provenance_profile`.
+The older package wording `data_provenance_profile_forensics` means the backend canonical artifact `data_provenance_profile_forensics`.
+Do not emit `data_provenance_profile` in backend execution.
 Do not emit either M10 forensic root unless the phase contract explicitly lists `data_provenance_profile_forensics` in `required_output_artifacts`.
 
 ## Stop Rule

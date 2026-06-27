@@ -6,11 +6,11 @@
 <phase_call_card>
 phase_id: M10_DATA_PROVENANCE
 module_id: M10
-module_name: TARGET_DATA_PROVENANCE_PROFILE
+module_name: DATA_PROVENANCE_PROFILE
 active_phase_only: true
 active_agent: agent_4_data_privacy
-canonical_material_output: target_data_provenance_profile
-canonical_forensic_output: target_data_provenance_profile_forensics
+canonical_material_output: data_provenance_profile
+canonical_forensic_output: data_provenance_profile_forensics
 
 module_design_lock:
   M10 is a public-footprint Privacy Readiness / Data Provenance Profile module.
@@ -39,13 +39,13 @@ runtime_binding_expectation:
 execution_rule:
   Execute M10 only.
   Read only locked upstream artifacts approved for Agent 4.
-  Build `target_data_provenance_profile` first.
-  Build `target_data_provenance_profile_forensics` only after `target_data_provenance_profile` has been completed, validated, and saved as the M10 material artifact by the backend runner.
+  Build `data_provenance_profile` first.
+  Build `data_provenance_profile_forensics` only after `data_provenance_profile` has been completed, validated, and saved as the M10 material artifact by the backend runner.
   Build the Data-Control Source Extraction Capsule before DAP field application.
   Apply the Anti-Unknown Protocol to every material data/privacy/control/readiness signal.
   Apply only selected DAP material-selector rows mapped to the locked 34-field M10 output.
   Use `law_regulatory_readiness_matrix` as a compact readiness matrix, not as a legal conclusion matrix.
-  Do not use `data_provenance_profile` alias.
+  Do not use `target_data_provenance_profile` legacy alias.
   Do not mutate `source_discovery_handoff`, `target_profile`, `target_feature_profile`, or `legal_cartography_index`.
   Do not perform M6, M7, M8, M9, M11, M12, M13, or M14 work.
   Do not emit registry rows, threat IDs, exposure findings, operator challenge, final output handoff, report prose, or terminal report output.
@@ -53,10 +53,10 @@ execution_rule:
 
 internal_stage_order:
   - PHASE A / M10-A: Data-Control Source Extraction From Agent 1/2/3 Backend Artifacts
-  - PHASE B / M10-B: Material Target Data Provenance Profile Derivation
-  - PHASE B1 / M10-B1: Material Target Data Provenance Profile Validator + Save Gate
-  - PHASE C / M10-C: Target Data Provenance Profile Forensics Derivation
-  - PHASE D / M10-D: Target Data Provenance Profile Forensics Validator + Save Gate
+  - PHASE B / M10-B: Material Data Provenance Profile Derivation
+  - PHASE B1 / M10-B1: Material Data Provenance Profile Validator + Save Gate
+  - PHASE C / M10-C: Data Provenance Profile Forensics Derivation
+  - PHASE D / M10-D: Data Provenance Profile Forensics Validator + Save Gate
 
 phase_boundary_map:
   PHASE_A_SOURCE_EXTRACTION: M10.S3 + M10.S6 source-universe gate
@@ -64,7 +64,7 @@ phase_boundary_map:
   PHASE_B1_PROFILE_VALIDATION_SAVE_GATE: M10.S17 material-profile gates + M10.S18A
   PHASE_C_FORENSIC_DERIVATION: M10.S15 + M10.S16
   PHASE_D_FORENSIC_VALIDATION_SAVE_GATE: M10.S17 forensic gates + M10.S18B
-  sequence_rule: Phase A must pass before Phase B; Phase B must complete all 34 material fields before Phase B1; Phase B1 must validate and mark `target_data_provenance_profile` save-ready before Phase C; Phase C may begin only after `target_data_provenance_profile` is saved; Phase D must validate and save `target_data_provenance_profile_forensics` before M11.
+  sequence_rule: Phase A must pass before Phase B; Phase B must complete all 34 material fields before Phase B1; Phase B1 must validate and mark `data_provenance_profile` save-ready before Phase C; Phase C may begin only after `data_provenance_profile` is saved; Phase D must validate and save `data_provenance_profile_forensics` before M11.
 
 phase_terminal_sequence:
   In backend execution, return strict JSON only.
@@ -73,11 +73,11 @@ phase_terminal_sequence:
   Do not emit terminal receipt text.
   Do not emit audit logs, operator challenge gates, report prose, markdown, or same-chat next-agent instructions.
   M10 has two separate backend terminal events, not one combined response.
-  Phase B1 terminal event returns exactly one top-level key: `target_data_provenance_profile`.
-  The backend runner must validate and save `target_data_provenance_profile` as an artifact before Phase C starts.
-  Phase D terminal event returns exactly one top-level key: `target_data_provenance_profile_forensics`.
-  The backend runner must validate and save `target_data_provenance_profile_forensics` before M11.
-  A response that contains both `target_data_provenance_profile` and `target_data_provenance_profile_forensics` in the same backend call is invalid unless the operator has explicitly invoked a non-production debug bundling mode.
+  Phase B1 terminal event returns exactly one top-level key: `data_provenance_profile`.
+  The backend runner must validate and save `data_provenance_profile` as an artifact before Phase C starts.
+  Phase D terminal event returns exactly one top-level key: `data_provenance_profile_forensics`.
+  The backend runner must validate and save `data_provenance_profile_forensics` before M11.
+  A response that contains both `data_provenance_profile` and `data_provenance_profile_forensics` in the same backend call is invalid unless the operator has explicitly invoked a non-production debug bundling mode.
 
 phase_local_gate:
   Before handoff, verify:
@@ -88,8 +88,8 @@ phase_local_gate:
     - only M6-approved/admitted routes, supplied public material, and locked upstream objects were used.
     - patched M8 activity paths were used: `activity_reference`, `product_service_wrapper`, `activity_feature_name`, `mechanics_proof`, `data_content_object_touched`, `archetype_codes`, `surface_context_tokens`, `surface_proof_and_routing_limits`.
     - DAP registry authority is loaded as derivation authority, not a visible output schema.
-    - exactly the locked 34 M10 top-level fields are present in `target_data_provenance_profile`.
-    - `target_data_provenance_profile_forensics` is separate and emitted only after the main profile has been validated and saved as a backend artifact.
+    - exactly the locked 34 M10 top-level fields are present in `data_provenance_profile`.
+    - `data_provenance_profile_forensics` is separate and emitted only after the main profile has been validated and saved as a backend artifact.
     - every material signal resolves through the Anti-Unknown Protocol.
     - every unresolved, weak, access-failed, not-visible, not-searched, visible-processing-no-control, or conflicting signal creates or references a missing-proof request unless `NOT_APPLICABLE`.
     - `law_regulatory_readiness_matrix` uses the locked nested row schema.
@@ -125,9 +125,9 @@ allowed_inputs:
 
 required_machine_output_by_phase:
   PHASE_B1_MATERIAL_SAVE_EVENT:
-    - target_data_provenance_profile
+    - data_provenance_profile
   PHASE_D_FORENSIC_SAVE_EVENT:
-    - target_data_provenance_profile_forensics
+    - data_provenance_profile_forensics
 
 forbidden_outputs:
   - data_provenance_profile alias
@@ -138,7 +138,7 @@ forbidden_outputs:
   - threat IDs
   - exposure statuses
   - legal/compliance conclusions
-  - profile_meta inside target_data_provenance_profile
+  - profile_meta inside data_provenance_profile
   - provenance_executive_map
   - principal_subject_customer_affected_party_map
   - party_role_map
@@ -158,7 +158,7 @@ forbidden_outputs:
 validator_action:
   action_name: backend_validate_and_save_M10_DATA_PROVENANCE
   phase: M10_DATA_PROVENANCE
-  pass_condition: Phase B1 emits and saves target_data_provenance_profile first with exactly 34 locked fields; only after backend save may Phase C/D emit and save target_data_provenance_profile_forensics; Data-Control Source Extraction Capsule locked + selected DAP row coverage recorded + Anti-Unknown and missing-proof routing complete + readiness matrix controlled
+  pass_condition: Phase B1 emits and saves data_provenance_profile first with exactly 34 locked fields; only after backend save may Phase C/D emit and save data_provenance_profile_forensics; Data-Control Source Extraction Capsule locked + selected DAP row coverage recorded + Anti-Unknown and missing-proof routing complete + readiness matrix controlled
   fail_behavior: repair M10 only; do not advance to M11
 
 repair_policy:
@@ -168,7 +168,7 @@ repair_policy:
   - Do not recompute unrelated upstream objects.
 
 stop_condition:
-  Stop local M10 phase only; return control to the backend runner. The backend runner may advance to M11 only after `target_data_provenance_profile` and `target_data_provenance_profile_forensics` are saved and M10 returns a safe pass/control outcome.
+  Stop local M10 phase only; return control to the backend runner. The backend runner may advance to M11 only after `data_provenance_profile` and `data_provenance_profile_forensics` are saved and M10 returns a safe pass/control outcome.
 </phase_call_card>
 
 `M10.S0.C1` This phase call card is the first executable block for Module X when extracted into a standalone Agent 4 phase prompt.
@@ -185,7 +185,7 @@ stop_condition:
 
 ### M10.S1A — Function
 
-`M10.S1A.C1` Module X converts locked upstream source custody, target context, activity mechanics, and legal/governance navigation into the canonical compact `target_data_provenance_profile` object.
+`M10.S1A.C1` Module X converts locked upstream source custody, target context, activity mechanics, and legal/governance navigation into the canonical compact `data_provenance_profile` object.
 
 `M10.S1A.C2` Module X performs public-footprint privacy readiness and data provenance visibility analysis only.
 
@@ -199,7 +199,7 @@ stop_condition:
 | Which readiness areas appear supported, weak, unavailable, or not searched from public material? | Use controlled readiness rows only. |
 | What evidence is missing for diligence/local counsel/operator review? | Route to `missing_proof_and_diligence_requests`. |
 
-`M10.S1A.C4` Module X emits `target_data_provenance_profile` in the Phase B1 material save event first. Only after the backend has saved that material artifact may Module X emit `target_data_provenance_profile_forensics` in the Phase D forensic save event.
+`M10.S1A.C4` Module X emits `data_provenance_profile` in the Phase B1 material save event first. Only after the backend has saved that material artifact may Module X emit `data_provenance_profile_forensics` in the Phase D forensic save event.
 
 `M10.S1A.C5` Module X working memory is governed by Module V through `data_provenance_ledger`.
 
@@ -218,7 +218,7 @@ stop_condition:
 | Preserve readiness boundary | MUST treat GDPR/DPDP/CCPA/COPPA/EU AI Act/sectoral labels as review categories only. |
 | Preserve explicit negative controls | MUST treat express no-training/no-sale/no-sharing/delete/export/opt-out/retention-limit wording as visible controls where supported. |
 | Preserve upstream limitations | MUST carry forward limitations from M6, M7, M8, and M9. |
-| Save separation | MUST save `target_data_provenance_profile` at Phase B1 before deriving or saving `target_data_provenance_profile_forensics` at Phase D. |
+| Save separation | MUST save `data_provenance_profile` at Phase B1 before deriving or saving `data_provenance_profile_forensics` at Phase D. |
 
 ### M10.S1C — Forbidden Acts
 
@@ -314,7 +314,7 @@ Module X must consume the patched M8 activity card only.
 
 `M10.S3.C2` The extraction capsule is internal working material. It is not the material profile and must not be emitted as a standalone material object.
 
-`M10.S3.C3` The extraction capsule must be summarized only inside `target_data_provenance_profile_forensics` after the material profile is complete.
+`M10.S3.C3` The extraction capsule must be summarized only inside `data_provenance_profile_forensics` after the material profile is complete.
 
 ### M10.S3A — Extraction Parent Matrix
 
@@ -409,7 +409,7 @@ M10-A passes only if:
 
 ## M10.S5 — DAP Material Selector and 34-Field Derivation Matrix
 
-`M10.S5.C1` Module X owns only `target_data_provenance_profile` and `target_data_provenance_profile_forensics`.
+`M10.S5.C1` Module X owns only `data_provenance_profile` and `data_provenance_profile_forensics`.
 
 `M10.S5.C2` Material field authority comes from `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`.
 
@@ -419,7 +419,7 @@ M10-A passes only if:
 
 `M10.S5.C5` For every selected `DAP.*` row, apply `Mode`, `Source_Basis`, `Conditions`, `Trigger_Outcome`, `Exclude_Fallback`, and `Forbidden_Inference`.
 
-`M10.S5.C6` Every populated M10 field must cite applicable `DAP.* Field_ID` in Module V ledger and `target_data_provenance_profile_forensics`.
+`M10.S5.C6` Every populated M10 field must cite applicable `DAP.* Field_ID` in Module V ledger and `data_provenance_profile_forensics`.
 
 `M10.S5.C7` `M10.T2A` is the selected material execution map for Phase B. Each material field written in M10.S6 through M10.S14 must map back to this table and the governing `DAP.*` Field_ID(s).
 
@@ -492,7 +492,7 @@ M10-A passes only if:
 
 `M10.S6.C9` Initialize only `assessment_scope` and `source_coverage` as material fields.
 
-`M10.S6.C10` Do not initialize or emit `target_data_provenance_profile_forensics` in Phase B. Forensics begin only after Phase B1 validates and saves the material profile.
+`M10.S6.C10` Do not initialize or emit `data_provenance_profile_forensics` in Phase B. Forensics begin only after Phase B1 validates and saves the material profile.
 
 `M10.S6.C11` Write Module V ledger rows: `data_input_custody_check`, `data_source_universe_initialization`, `data_source_gate_review`, and `data_dap_selector_initialization`.
 
@@ -500,7 +500,7 @@ M10-A passes only if:
 
 `M10.S6.C12` Do not derive substantive data/control fields before extraction capsule lock.
 
-`M10.S6.C13` Do not initialize `profile_meta` or any metadata branch inside `target_data_provenance_profile`.
+`M10.S6.C13` Do not initialize `profile_meta` or any metadata branch inside `data_provenance_profile`.
 
 ---
 
@@ -784,7 +784,7 @@ Each request must include these human-readable fields:
 
 `M10.S14.C3` Write `limitations` only inside the material profile.
 
-`M10.S14.C4` Write evidence/custody details only to Module V ledger and `target_data_provenance_profile_forensics`.
+`M10.S14.C4` Write evidence/custody details only to Module V ledger and `data_provenance_profile_forensics`.
 
 ### Ledger
 
@@ -802,9 +802,9 @@ Each request must include these human-readable fields:
 
 ## M10.S15 — PHASE C: Data Provenance Forensics Derivation
 
-`M10.S15.C1` `target_data_provenance_profile_forensics` is a separate saved proof artifact. It is not part of `target_data_provenance_profile`.
+`M10.S15.C1` `data_provenance_profile_forensics` is a separate saved proof artifact. It is not part of `data_provenance_profile`.
 
-`M10.S15.C2` Forensics must be built only after `target_data_provenance_profile` has passed Phase B1 and has been saved as a backend artifact. Phase C is forbidden until the saved material artifact exists.
+`M10.S15.C2` Forensics must be built only after `data_provenance_profile` has passed Phase B1 and has been saved as a backend artifact. Phase C is forbidden until the saved material artifact exists.
 
 ### M10.T5 — Forensics Families
 
@@ -886,7 +886,7 @@ Any forensic branch that merely summarizes findings without row-level proof is i
 | `data_evidence_mapping` | Evidence/custody basis. |
 | `data_limitation_carry_forward` | Upstream/local limitations. |
 | `data_quality_check` | Quality and completeness. |
-| `target_data_provenance_profile_forensics_build` | Forensic artifact build. |
+| `data_provenance_profile_forensics_build` | Forensic artifact build. |
 | `data_provenance_lock_check` | Final lock gate. |
 
 `M10.S16.C2` No separate scratchpad object is authorized inside the material profile.
@@ -928,8 +928,8 @@ Lock only if all conditions pass:
 | Extraction gate | Data-Control Source Extraction Capsule completed before field application. |
 | M8 path gate | Patched M8 activity fields used; retired paths rejected. |
 | Shape gate | Exactly 34 top-level fields in material profile. |
-| Material save gate | Phase B1 validates and saves `target_data_provenance_profile` before any forensic derivation begins. |
-| Forensics gate | Separate `target_data_provenance_profile_forensics` emitted only after saved material profile exists. |
+| Material save gate | Phase B1 validates and saves `data_provenance_profile` before any forensic derivation begins. |
+| Forensics gate | Separate `data_provenance_profile_forensics` emitted only after saved material profile exists. |
 | Forensic row-count gate | M10.S15A row-count and coverage gates pass or are repaired/controlled. |
 | DAP gate | Every selected DAP row has workpad outcome. |
 | Anti-Unknown gate | Every material signal has controlled status. |
@@ -955,8 +955,8 @@ If a material M10 field, Anti-Unknown status, DAP application row, readiness mat
 2. run targeted item-specific reinvestigation inside the existing Agent 1 / Agent 3 / Agent 4 approved source universe, including the primary M10 lossless D-buckets, M6-approved data/privacy/security/control/legal/product/docs/API routes, locked upstream artifacts, M9 navigation refs, and documented absence/access records;
 3. re-derive the affected field or readiness row using the governing selected `DAP.*` row conditions, the Data-Control Source Extraction Capsule, and the Anti-Unknown Protocol;
 4. if the field or signal can be supported, correct the material value or readiness row;
-5. if the field or signal remains unsupported after reinvestigation, emit the correct controlled Anti-Unknown status, missing-proof request, and limitation/warning in `target_data_provenance_profile`;
-6. record the reinvestigation, controlled status, missing-proof route, and limitation in Module V ledger and `target_data_provenance_profile_forensics`;
+5. if the field or signal remains unsupported after reinvestigation, emit the correct controlled Anti-Unknown status, missing-proof request, and limitation/warning in `data_provenance_profile`;
+6. record the reinvestigation, controlled status, missing-proof route, and limitation in Module V ledger and `data_provenance_profile_forensics`;
 7. re-run Phase B1 after the repair.
 
 Do not hard-block the entire M10 phase for ordinary public-footprint thinness after targeted reinvestigation. Save the material profile with controlled limitations where downstream M11 use remains truthful and safe.
@@ -980,7 +980,7 @@ If Phase D finds an inadequate forensic row, missing forensic family, summary-on
 
 1. do not proceed to M11;
 2. repair the specific forensic row, forensic family, source-custody reference, DAP linkage, Anti-Unknown resolution row, readiness-matrix derivation row, missing-proof request ledger row, or validation/QC row;
-3. if the defect is forensic-only, do not re-emit or mutate `target_data_provenance_profile`;
+3. if the defect is forensic-only, do not re-emit or mutate `data_provenance_profile`;
 4. if the defect exposes an underlying material-field, readiness-row, missing-proof, limitation, or Anti-Unknown error, return to targeted reinvestigation for that specific item;
 5. update the material profile only if reinvestigation changes the supported value, status, missing-proof request, readiness row, or limitation;
 6. rerun Phase B1 if the material profile changes;
@@ -1014,11 +1014,11 @@ After Phase B material derivation and Phase B1 validation pass, return exactly t
 
 ```json
 {
-  "target_data_provenance_profile": {}
+  "data_provenance_profile": {}
 }
 ```
 
-The `target_data_provenance_profile` object is the clean material Privacy Readiness / Data Provenance Profile. It must contain exactly these 34 top-level fields and no others:
+The `data_provenance_profile` object is the clean material Privacy Readiness / Data Provenance Profile. It must contain exactly these 34 top-level fields and no others:
 
 | Order | Category | Required field |
 |---:|---|---|
@@ -1059,23 +1059,23 @@ The `target_data_provenance_profile` object is the clean material Privacy Readin
 
 `M10.S18A.C1` `law_regulatory_readiness_matrix` must use the nested fields in `M10.T3`.
 
-`M10.S18A.C2` The following are forbidden inside `target_data_provenance_profile`: `profile_meta`, `lock_status`, `trace`, `debug`, `source_refs` as standalone top-level object, `data_provenance_profile`, `target_data_provenance_profile_forensics`, old multi-map branches, legal conclusions, registry conclusions, report prose, final handoff, and compatibility wrappers.
+`M10.S18A.C2` The following are forbidden inside `data_provenance_profile`: `profile_meta`, `lock_status`, `trace`, `debug`, `source_refs` as standalone top-level object, `data_provenance_profile`, `data_provenance_profile_forensics`, old multi-map branches, legal conclusions, registry conclusions, report prose, final handoff, and compatibility wrappers.
 
 `M10.S18A.C3` Scalar fields must be compact readiness statements and must include or be governed by an Anti-Unknown status. Array fields may contain compact strings or compact objects, but every material entry must preserve visibility status, basis summary, and missing-proof route where applicable.
 
-`M10.S18A.C4` Main profile may include controlled visibility status in field values. Detailed evidence, DAP field IDs, source refs, confidence, extraction capsule, and validation proof belong in Module V ledger and `target_data_provenance_profile_forensics`, not as top-level material branches.
+`M10.S18A.C4` Main profile may include controlled visibility status in field values. Detailed evidence, DAP field IDs, source refs, confidence, extraction capsule, and validation proof belong in Module V ledger and `data_provenance_profile_forensics`, not as top-level material branches.
 
-Do not emit `target_data_provenance_profile_forensics`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, terminal receipt, phase wrapper, or compatibility wrapper in the Phase B1 material output.
+Do not emit `data_provenance_profile_forensics`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, terminal receipt, phase wrapper, or compatibility wrapper in the Phase B1 material output.
 
 The backend runner must save this artifact before Phase C begins.
 
 ### M10.S18B — PHASE D Forensic Output Contract
 
-After the saved `target_data_provenance_profile` artifact exists, Phase C forensic derivation and Phase D validation may run. After Phase D passes, return exactly this top-level JSON shape:
+After the saved `data_provenance_profile` artifact exists, Phase C forensic derivation and Phase D validation may run. After Phase D passes, return exactly this top-level JSON shape:
 
 ```json
 {
-  "target_data_provenance_profile_forensics": {
+  "data_provenance_profile_forensics": {
     "data_control_source_coverage_ledger": [],
     "data_control_extraction_capsule_summary": [],
     "selected_dap_field_derivation_ledger": [],
@@ -1090,9 +1090,9 @@ After the saved `target_data_provenance_profile` artifact exists, Phase C forens
 }
 ```
 
-The `target_data_provenance_profile_forensics` object must contain the forensic families in `M10.T5` and the row-count/coverage gates in `M10.S15A`.
+The `data_provenance_profile_forensics` object must contain the forensic families in `M10.T5` and the row-count/coverage gates in `M10.S15A`.
 
-Do not re-emit `target_data_provenance_profile`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, terminal receipt, phase wrapper, or compatibility wrapper in the Phase D forensic output.
+Do not re-emit `data_provenance_profile`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, terminal receipt, phase wrapper, or compatibility wrapper in the Phase D forensic output.
 
 The backend runner must save this artifact before M11 begins.
 
@@ -1102,8 +1102,8 @@ The following production backend output shape is forbidden:
 
 ```json
 {
-  "target_data_provenance_profile": {},
-  "target_data_provenance_profile_forensics": {}
+  "data_provenance_profile": {},
+  "data_provenance_profile_forensics": {}
 }
 ```
 
@@ -1114,13 +1114,13 @@ That shape incorrectly mixes the Phase B1 material artifact and the Phase D fore
 | Order | Action |
 |---:|---|
 | 1 | Complete Data-Control Source Extraction Capsule internally. |
-| 2 | Build `target_data_provenance_profile` through Phase B. |
-| 3 | Validate `target_data_provenance_profile` through Phase B1 material validator. |
-| 4 | Emit and save only `target_data_provenance_profile` as the Phase B1 material artifact. |
-| 5 | Confirm saved `target_data_provenance_profile` exists in the backend / Drive artifact vault. |
-| 6 | Build `target_data_provenance_profile_forensics` through Phase C from the saved material artifact and the Module V workpad. |
-| 7 | Validate `target_data_provenance_profile_forensics` through Phase D forensic validator. |
-| 8 | Emit and save only `target_data_provenance_profile_forensics` as the Phase D forensic artifact. |
+| 2 | Build `data_provenance_profile` through Phase B. |
+| 3 | Validate `data_provenance_profile` through Phase B1 material validator. |
+| 4 | Emit and save only `data_provenance_profile` as the Phase B1 material artifact. |
+| 5 | Confirm saved `data_provenance_profile` exists in the backend / Drive artifact vault. |
+| 6 | Build `data_provenance_profile_forensics` through Phase C from the saved material artifact and the Module V workpad. |
+| 7 | Validate `data_provenance_profile_forensics` through Phase D forensic validator. |
+| 8 | Emit and save only `data_provenance_profile_forensics` as the Phase D forensic artifact. |
 | 9 | Lock M10 only after both artifacts are saved in order. |
 | 10 | Backend runner may advance to M11 only after M10 lock. |
 

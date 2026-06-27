@@ -20,10 +20,17 @@
 ```yaml
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
-active_phase_scope: M11_EXPOSURE_REGISTRY
+active_phase_scope:
+  - M11_EXPOSURE_REGISTRY
+  - M12_BATCH_VALIDATION
+  - M12_GLOBAL_CHALLENGE
 allowed_modules:
   - M11_EXPOSURE_REGISTRY
-phase_lock: M11_EXPOSURE_REGISTRY
+  - M12_BATCH_VALIDATION
+  - M12_GLOBAL_CHALLENGE
+phase_lock:
+  - M11_EXPOSURE_REGISTRY
+  - M12_GLOBAL_CHALLENGE
 ```
 
 Agent 5 may read Agent 1, Agent 2B/M9, Agent 3, Agent 4, registry-reference, and its own prior M11 artifacts only as authorized by the runtime binding packet and backend phase contracts. Agent 5 may not mutate upstream artifacts.
