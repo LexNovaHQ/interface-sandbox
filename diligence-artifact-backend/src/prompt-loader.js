@@ -9,7 +9,7 @@ const PROMPT_DIR = path.join(BACKEND_ROOT, "prompts");
 const AGENT_PACKAGE_DIR = path.join(BACKEND_ROOT, "agent-packages");
 
 const SAFE_PROMPT_FILE = /^[a-z0-9_\-.]+\.md$/i;
-const SAFE_PACKAGE_FILE = /^agent-packages\/[a-z0-9_\-.]+\/[A-Z0-9_\-.]+\.(md|yaml|yml|json)$/i;
+const SAFE_PACKAGE_FILE = /^agent-packages\/(?:[a-z0-9_\-.]+\/)?[A-Z0-9_\-.]+\.(md|yaml|yml|json)$/i;
 
 export async function loadPromptFile(promptFile) {
   const file = String(promptFile || "");
