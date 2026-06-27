@@ -33,6 +33,7 @@ const ART = Object.freeze({
   dataProfile: "data_provenance_profile",
   dataForensics: "data_provenance_profile_forensics",
   exposureProfile: "exposure_registry_profile",
+  exposureRoutePlan: "exposure_registry_route_plan",
   challengeGate: "challenge_gate",
   final: "final_" + "output_handoff",
   renderer: "renderer_payload"
@@ -114,7 +115,9 @@ async function saveDeterministicArtifacts({ run, phase, actor, writes, output })
 }
 
 async function runModelPhase({ run, phase, contract }) {
-  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const artifacts = phase === "M12"
+    ? await readArtifactsForM12Global({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id })
+    : await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
   const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] });
   const result = await callGeminiJson({ prompt, phase });
   const output = result.json;
@@ -227,6 +230,40 @@ async function runRendererPhase({ run, phase, contract }) {
 async function readArtifactsForPhase({ run_id, reads, agent_id }) {
   const artifacts = {};
   for (const artifactName of reads) artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id });
+  return artifacts;
+}
+
+async function readArtifactsForM12Global({ run_id, reads, agent_id }) {
+  const artifacts = await readArtifactsForPhase({ run_id, reads, agent_id });
+  const routePlan = artifacts[ART.exposureRoutePlan]?.exposure_registry_route_plan || artifacts[ART.exposureRoutePlan] || {};
+  const batchPlan = Array.isArray(routePlan.batch_plan) ? routePlan.batch_plan : [];
+  const m11BatchArtifacts = [];
+  const m12BatchValidationArtifacts = [];
+
+  for (const batch of batchPlan) {
+    if (!batch?.batch_id) continue;
+    const batchArtifactName = `exposure_registry_batch__${batch.batch_id}`;
+    const validationArtifactName = `exposure_registry_batch_validation__${batch.batch_id}`;
+    m11BatchArtifacts.push({
+      batch_id: batch.batch_id,
+      artifact_name: batchArtifactName,
+      artifact: await readArtifactPayload({ run_id, artifact_name: batchArtifactName, agent_id })
+    });
+    m12BatchValidationArtifacts.push({
+      batch_id: batch.batch_id,
+      artifact_name: validationArtifactName,
+      artifact: await readArtifactPayload({ run_id, artifact_name: validationArtifactName, agent_id })
+    });
+  }
+
+  artifacts.m11_batch_artifacts = m11BatchArtifacts;
+  artifacts.m12_batch_validation_artifacts = m12BatchValidationArtifacts;
+  artifacts.m12_global_dynamic_artifact_manifest = {
+    batch_count: batchPlan.length,
+    loaded_batch_artifacts: m11BatchArtifacts.length,
+    loaded_batch_validation_artifacts: m12BatchValidationArtifacts.length,
+    batch_ids: batchPlan.map((batch) => batch.batch_id).filter(Boolean)
+  };
   return artifacts;
 }
 
