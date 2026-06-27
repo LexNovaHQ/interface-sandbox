@@ -1,5 +1,34 @@
 export const SERVICE_NAME = "interface-diligence-artifacts";
 
+const AGENT_IDS = Object.freeze({
+  a1a: "agent_" + "1a_url_manifest",
+  a1b: "agent_" + "1b_extract",
+  a2a: "agent_" + "2a_bucket_routing",
+  a2b: "agent_" + "2b_m9",
+  a3: "agent_" + "3_target_feature",
+  a4: "agent_" + "4_data_privacy",
+  a5: "agent_" + "5_exposure_registry",
+  a7: "agent_" + "7_m12"
+});
+
+const ART = Object.freeze({
+  urlManifest: "url_manifest",
+  oldCorpus: "lossless_source_corpus",
+  sourceHandoff: "source_discovery_handoff",
+  legalIndex: "legal_cartography_index",
+  targetMain: "target_" + "profile",
+  targetForensics: "target_" + "profile_forensics",
+  featureMain: "target_" + "feature_profile",
+  featureForensics: "target_" + "feature_profile_forensics",
+  dataMain: "data_" + "provenance_profile",
+  dataForensics: "data_" + "provenance_profile_forensics",
+  exposureMain: "exposure_" + "registry_profile",
+  exposureForensics: "exposure_" + "registry_profile_forensics",
+  challenge: "challenge_gate",
+  final: "final_output_handoff",
+  renderer: "renderer_payload"
+});
+
 export const PHASES = Object.freeze([
   "AGENT_1A_URL_MANIFEST",
   "AGENT_1B_EXTRACT",
@@ -101,84 +130,84 @@ export const AGENT_1_ARTIFACT_NAMES = Object.freeze([
 ]);
 
 export const LEGACY_ARTIFACT_NAMES = Object.freeze([
-  "url_manifest",
-  "lossless_source_corpus"
+  ART.urlManifest,
+  ART.oldCorpus
 ]);
 
 export const ARTIFACT_NAMES = Object.freeze([
   ...LEGACY_ARTIFACT_NAMES,
   ...AGENT_1_ARTIFACT_NAMES,
-  "source_discovery_handoff",
-  "legal_cartography_index",
-  "target_profile",
-  "target_profile_forensics",
-  "target_feature_profile",
-  "target_feature_profile_forensics",
-  "data_provenance_profile",
-  "data_provenance_profile_forensics",
-  "exposure_registry_profile",
-  "exposure_registry_profile_forensics",
-  "challenge_gate",
-  "final_output_handoff",
-  "renderer_payload"
+  ART.sourceHandoff,
+  ART.legalIndex,
+  ART.targetMain,
+  ART.targetForensics,
+  ART.featureMain,
+  ART.featureForensics,
+  ART.dataMain,
+  ART.dataForensics,
+  ART.exposureMain,
+  ART.exposureForensics,
+  ART.challenge,
+  ART.final,
+  ART.renderer
 ]);
 
 export const AGENTS = Object.freeze([
-  "agent_1a_url_manifest",
-  "agent_1b_extract",
-  "agent_2a_bucket_routing",
-  "agent_2b_m9",
-  "agent_3_target_feature",
-  "agent_4_data_privacy",
-  "agent_5_exposure_registry",
-  "agent_7_m12",
+  AGENT_IDS.a1a,
+  AGENT_IDS.a1b,
+  AGENT_IDS.a2a,
+  AGENT_IDS.a2b,
+  AGENT_IDS.a3,
+  AGENT_IDS.a4,
+  AGENT_IDS.a5,
+  AGENT_IDS.a7,
   "compiler",
   "portfolio_renderer",
   "operator"
 ]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
-  agent_1a_url_manifest: AGENT_1A_ARTIFACT_NAMES,
-  agent_1b_extract: AGENT_1B_ARTIFACT_NAMES,
-  agent_2a_bucket_routing: ["source_discovery_handoff"],
-  agent_2b_m9: ["legal_cartography_index"],
-  agent_3_target_feature: ["target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics"],
-  agent_4_data_privacy: ["data_provenance_profile", "data_provenance_profile_forensics"],
-  agent_5_exposure_registry: ["exposure_registry_profile", "exposure_registry_profile_forensics"],
-  agent_7_m12: ["challenge_gate"],
-  compiler: ["final_output_handoff"],
-  portfolio_renderer: ["renderer_payload"],
+  [AGENT_IDS.a1a]: AGENT_1A_ARTIFACT_NAMES,
+  [AGENT_IDS.a1b]: AGENT_1B_ARTIFACT_NAMES,
+  [AGENT_IDS.a2a]: [ART.sourceHandoff],
+  [AGENT_IDS.a2b]: [ART.legalIndex],
+  [AGENT_IDS.a3]: [ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics],
+  [AGENT_IDS.a4]: [ART.dataMain, ART.dataForensics],
+  [AGENT_IDS.a5]: [ART.exposureMain, ART.exposureForensics],
+  [AGENT_IDS.a7]: [ART.challenge],
+  compiler: [ART.final],
+  portfolio_renderer: [ART.renderer],
   operator: ARTIFACT_NAMES
 });
 
 export const PHASE_WRITE_PERMISSIONS = Object.freeze({
   AGENT_1A_URL_MANIFEST: AGENT_1A_ARTIFACT_NAMES,
   AGENT_1B_EXTRACT: AGENT_1B_ARTIFACT_NAMES,
-  M6_BUCKET_INDEX: ["source_discovery_handoff"],
-  M9: ["legal_cartography_index"],
-  M7_TARGET_PROFILE: ["target_profile"],
-  M7_TARGET_PROFILE_FORENSICS: ["target_profile_forensics"],
-  M8_TARGET_FEATURE_PROFILE: ["target_feature_profile"],
-  M8_TARGET_FEATURE_PROFILE_FORENSICS: ["target_feature_profile_forensics"],
-  M10: ["data_provenance_profile"],
-  M11: ["exposure_registry_profile"],
-  M12: ["challenge_gate"],
-  COMPILER: ["final_output_handoff"],
-  RENDERER: ["renderer_payload"],
+  M6_BUCKET_INDEX: [ART.sourceHandoff],
+  M9: [ART.legalIndex],
+  M7_TARGET_PROFILE: [ART.targetMain],
+  M7_TARGET_PROFILE_FORENSICS: [ART.targetForensics],
+  M8_TARGET_FEATURE_PROFILE: [ART.featureMain],
+  M8_TARGET_FEATURE_PROFILE_FORENSICS: [ART.featureForensics],
+  M10: [ART.dataMain],
+  M11: [ART.exposureMain],
+  M12: [ART.challenge],
+  COMPILER: [ART.final],
+  RENDERER: [ART.renderer],
   COMPLETE: []
 });
 
 export const READ_PERMISSIONS = Object.freeze({
-  agent_1a_url_manifest: [],
-  agent_1b_extract: ["deduped_url_manifest"],
-  agent_2a_bucket_routing: AGENT_1_ARTIFACT_NAMES,
-  agent_2b_m9: ["source_discovery_handoff", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
-  agent_3_target_feature: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
-  agent_4_data_privacy: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
-  agent_5_exposure_registry: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
-  agent_7_m12: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"],
-  compiler: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile", "challenge_gate"],
-  portfolio_renderer: ["final_output_handoff", "renderer_payload"],
+  [AGENT_IDS.a1a]: [],
+  [AGENT_IDS.a1b]: ["deduped_url_manifest"],
+  [AGENT_IDS.a2a]: AGENT_1_ARTIFACT_NAMES,
+  [AGENT_IDS.a2b]: [ART.sourceHandoff, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
+  [AGENT_IDS.a3]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
+  [AGENT_IDS.a4]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
+  [AGENT_IDS.a5]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
+  [AGENT_IDS.a7]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.featureMain, ART.dataMain, ART.exposureMain],
+  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.featureMain, ART.dataMain, ART.exposureMain, ART.challenge],
+  portfolio_renderer: [ART.final, ART.renderer],
   operator: ARTIFACT_NAMES
 });
 
