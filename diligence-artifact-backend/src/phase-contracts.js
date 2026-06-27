@@ -2,6 +2,7 @@ import {
   AGENT_1A_ARTIFACT_NAMES,
   AGENT_1B_ARTIFACT_NAMES,
   AGENT_1_ARTIFACT_NAMES,
+  COMPILER_ARTIFACT_NAMES,
   DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES,
   LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES,
   M11_STATIC_ARTIFACT_NAMES,
@@ -187,8 +188,23 @@ export const PHASE_CONTRACTS = Object.freeze({
   COMPILER: {
     type: "deterministic",
     actor_id: "compiler",
-    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "exposure_registry_profile_forensics", "challenge_gate"],
-    writes: ["final_output_handoff"],
+    reads: [
+      "source_discovery_handoff",
+      "legal_cartography_index",
+      "target_profile",
+      "target_profile_forensics",
+      "target_feature_profile",
+      "target_feature_profile_forensics",
+      "data_provenance_profile",
+      "data_provenance_profile_forensics",
+      "exposure_registry_route_plan",
+      "exposure_registry_workpad_98",
+      "exposure_registry_controlled_profile",
+      "exposure_registry_triggered_profile",
+      "exposure_registry_profile_forensics",
+      "challenge_gate"
+    ],
+    writes: COMPILER_ARTIFACT_NAMES,
     next: "RENDERER"
   },
   RENDERER: { type: "deterministic", actor_id: "portfolio_renderer", reads: ["final_output_handoff"], writes: ["renderer_payload"], next: "COMPLETE" }
