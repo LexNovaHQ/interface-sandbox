@@ -1,605 +1,273 @@
-# 00_VALIDATOR_RULES_INTEGRATED
-## Universal Validator Kernel for Phased Interface Diligence Agents
-### Model-Agnostic Validation: Custom GPT, Gemini API, OpenAI API, Claude, Manual Prompt, Backend Runner
+# 00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED
+## Agent 5 / M11 Batched Exposure Registry Validator Contract
 
 ---
 
 # VALIDATOR LOCK
 
-`VAL.RUNTIME.C1` This is the single integrated validator rule file for all phased Interface Diligence agents.
+`A5.VAL.C1` This validator governs Agent 5 / M11 package execution after the batched deterministic M11 prompt upgrade.
 
-`VAL.RUNTIME.C2` Do not create separate full validator overlays per agent.
+`A5.VAL.C2` It validates package-level contracts. Backend structural validators will later enforce these rules mechanically.
 
-`VAL.RUNTIME.C3` Validator customization happens through the prompt-level `RUNTIME_BINDING_PACKET`, the Agent Profile Matrix in `00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`, and the Agent Validation Profile Matrix in this file.
-
-`VAL.RUNTIME.C4` This validator is model-agnostic. It must work when placed inside a Custom GPT, Gemini API prompt, OpenAI API prompt, Claude prompt, manual copy/paste prompt, or backend-composed prompt.
-
-`VAL.RUNTIME.C5` External Custom GPT instructions, descriptions, UI configuration, chat memory, and system-message-only behavior cannot expand or override this validator.
-
-`VAL.RUNTIME.C6` A validator pass is not a prose judgment. It is a contract-state judgment based on exact run_id, active_agent_id, artifact custody, write order, module output contracts, forbidden output checks, extraction/review gates, forensic separation, and repair routing.
+`A5.VAL.C3` If this validator conflicts with `M11_EXPOSURE_REGISTRY.md`, the stricter custody, no-scope-drift, no-legal-advice, no-forensic-clumping, and boundary rule controls.
 
 ---
 
-# SECTION 1 — VALIDATOR INPUT CONTRACT
+# SECTION 1 — REQUIRED INPUT AND ACCESS GATES
 
-## 1.1 Required Inputs
-
-`VAL.S1.C1` Every validator execution must receive or locate the following within the executable prompt payload:
-
-```yaml
-validator_required_inputs:
-  runtime_binding_packet: required
-  resolved_agent_profile_row: required
-  run_id: required unless Agent 1 is creating the run
-  phase_scope: required
-  attempted_artifacts: required
-  attempted_phase_lock: required
-  active_module_outputs: required
-  module_local_gate_results: required
-  backend_save_receipts: required where backend writes are performed
-```
-
-`VAL.S1.C2` If the `RUNTIME_BINDING_PACKET` is absent, malformed, or inconsistent with the Agent Profile Matrix, the validator must return:
-
-```text
-CONTROLLED_FAILURE: RUNTIME_BINDING_PACKET_INVALID
-```
-
-`VAL.S1.C3` If `run_id_required: true` and no exact `run_id` is present, the validator must return:
-
-```text
-CONTROLLED_FAILURE: RUN_ID_REQUIRED_BUT_MISSING
-```
-
-`VAL.S1.C4` The validator must never identify a run by company name, domain, target name, latest run, most recent run, chat memory, or inferred current conversation.
-
-## 1.2 Validator Output Contract
-
-`VAL.S1.C5` The validator must return one of these states only:
-
-```text
-PASS
-PASS_WITH_WARNING
-PASS_WITH_LIMITATION
-REINVESTIGATION_COMPLETED_WITH_LIMITATION
-SOURCE_REPAIR_REQUIRED
-CONTROLLED_FAILURE
-```
-
-`VAL.S1.C6` `PASS` means every required gate for the active agent profile and module validation profile passed.
-
-`VAL.S1.C7` `PASS_WITH_WARNING`, `PASS_WITH_LIMITATION`, and `REINVESTIGATION_COMPLETED_WITH_LIMITATION` mean all required artifacts are usable, limitations or warnings were lawfully produced after targeted re-extraction or inherited upstream limitation, and downstream use will not be materially misleading.
-
-`VAL.S1.C8` `SOURCE_REPAIR_REQUIRED` means the active agent cannot repair from loaded artifacts because the upstream source universe, lossless artifact custody, or mandatory registry/classification authority is missing, corrupted, inaccessible, or contradictory.
-
-`VAL.S1.C9` `CONTROLLED_FAILURE` means the run cannot safely proceed in the current agent because a hard scope, custody, source, binding, hallucination, artifact, order, or permission violation occurred.
-
-`VAL.S1.C10` If the validator returns `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, terminal rules must not provide a next-agent command.
-
----
-
-# SECTION 2 — UNIVERSAL VALIDATOR GATES
-
-## 2.1 Binding and Matrix Gate
-
-`VAL.S2.C1` Validate that `active_agent_id` resolves to exactly one row in `00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md` Section 2 Agent Profile Matrix.
-
-`VAL.S2.C2` Validate that packet fields do not exceed the resolved matrix row for:
-
-```text
-allowed_modules
-read_artifacts
-write_artifacts_in_order
-phase_lock
-next_agent_command
-stop_condition
-```
-
-`VAL.S2.C3` If packet and matrix conflict, return:
-
-```text
-CONTROLLED_FAILURE: RUNTIME_BINDING_CONFLICT
-```
-
-## 2.2 Module Permission Gate
-
-`VAL.S2.C4` Validate that the active agent executed only modules authorized by its Agent Profile Matrix row.
-
-`VAL.S2.C5` Any unauthorized module output is a hard failure.
-
-```text
-CONTROLLED_FAILURE: UNAUTHORIZED_MODULE_EXECUTION
-```
-
-## 2.3 Artifact Custody Gate
-
-`VAL.S2.C6` Validate that every read artifact is authorized for the active agent.
-
-`VAL.S2.C7` Validate that every written artifact is owned by the active agent.
-
-`VAL.S2.C8` Validate that no upstream artifact was mutated, overwritten, backfilled, repaired, or silently regenerated by a downstream agent.
-
-`VAL.S2.C9` Any upstream mutation is a hard failure.
-
-```text
-CONTROLLED_FAILURE: UPSTREAM_ARTIFACT_MUTATION
-```
-
-## 2.4 Backend Save Gate
-
-`VAL.S2.C10` Validate every backend write uses exact `run_id`, exact `agent_id`, exact `phase`, exact `artifact_name`, and the payload key `artifact`.
-
-`VAL.S2.C11` The payload key `content` is forbidden for artifact saves.
-
-`VAL.S2.C12` If backend save receipts are required but absent, return `CONTROLLED_FAILURE` unless the run mode is explicitly offline/manual and backend saving is not being attempted.
-
-## 2.5 Write Order Gate
-
-`VAL.S2.C13` Validate that artifacts are written in the exact `write_artifacts_in_order` sequence resolved from the Agent Profile Matrix.
-
-`VAL.S2.C14` Main material artifacts must be saved before forensic/provenance artifacts.
-
-`VAL.S2.C15` A forensic/provenance artifact saved before the corresponding main artifact is a hard failure.
-
-```text
-CONTROLLED_FAILURE: FORENSICS_BEFORE_MAIN_OUTPUT
-```
-
-## 2.6 Extraction / Review Before Application Gate
-
-`VAL.S2.C16` If a module requires extraction or review before field/registry/application logic, validate the checkpoint or local gate proving it occurred before application.
-
-`VAL.S2.C17` Route existence is not evidence. A module may not pass if it populated fields solely from URL labels, page titles, source route presence, product names, or general model knowledge.
-
-## 2.7 Targeted Re-Extraction Gate
-
-`VAL.S2.C18` Validate that any field, activity, archetype, surface, data signal, readiness row, registry condition, emitted row, or forensic ledger item marked limited, weak, not public, conflicted, not found, omitted, or controlled-with-limitation was assigned only after targeted item-specific re-extraction/review inside the approved source universe, unless the limitation was inherited from an upstream route/source coverage state.
-
-`VAL.S2.C19` Missing targeted reinvestigation for a limited, absent, conflicted, omitted, weak, or controlled-with-limitation item is an internal repair defect unless the affected output is materially unusable, in which case return `CONTROLLED_FAILURE`.
-
-## 2.8 Main / Forensics Separation Gate
-
-`VAL.S2.C20` Validate that material outputs do not contain forensic/provenance payloads.
-
-`VAL.S2.C21` Material outputs must not contain source ledgers, extraction capsules, route coverage ledgers, evidence quotes, full field-derivation ledgers, validation logs, debug notes, chain-of-thought, hidden scratchpad, or runtime trace.
-
-`VAL.S2.C22` Forensic/provenance outputs must contain the proof families required by the active module prompt.
-
-## 2.9 Forbidden Output Gate
-
-`VAL.S2.C23` Validate that the active agent did not emit artifacts, objects, terminal blocks, registry rows, renderer payloads, challenge gates, final handoff JSON, legal conclusions, privacy readiness conclusions, exposure statuses, or remediation routes outside its active profile.
-
-## 2.10 Anti-Hallucination Gate
-
-`VAL.S2.C24` Hard-fail unsupported invention of:
-
-```text
-source URL
-source title
-source content
-legal entity
-jurisdiction
-governing law
-venue
-product capability
-API behavior
-feature mechanics
-autonomy / human-control signal
-archetype
-surface token
-data flow
-registry trigger
-threat ID
-legal conclusion
-privacy conclusion
-```
-
-`VAL.S2.C25` Use of model memory or outside knowledge as source support is forbidden unless the active module expressly permits non-source background reasoning; M7/M8 do not permit it.
-
-## 2.11 Anti-Laziness Gate
-
-`VAL.S2.C26` Hard-fail schema-shaped but unsupported output, generic limitation buckets, placeholder values, empty arrays without limitation, “not enough information” without targeted re-extraction, route labels copied as facts, and route existence treated as field evidence.
-
----
-
-# SECTION 3 — AGENT VALIDATION PROFILE MATRIX
-
-## 3.1 Matrix Rule
-
-`VAL.S3.C1` Agent-specific validation is activated by `active_agent_id`.
-
-`VAL.S3.C2` Agent validation rows may narrow but cannot expand the universal validator gates.
-
-`VAL.S3.C3` Agent 1, Agent 3, Agent 4, and Agent 5 rows are active design rows. Agent 6 through Agent 7 rows are placeholders and must be completed when their module prompts and artifact contracts are locked.
-
-## 3.2 Locked Agent Validation Matrix
-
-| active_agent_id | validator_profile | Required Checks |
-|---|---|---|
-| `agent_1_source_legal` | `agent_1_m6_m9_validator` | M6 handoff exists; M6 route-universe sections present; M9 legal cartography exists; no downstream profile objects; save order M6 then M9; lock M6_M9 only after both artifacts save. |
-| `agent_3_target_feature` | `agent_3_m7_m8_validator` | M7 checks in Section 4; M8 checks in Section 5; four-artifact save order; no M6/M9 mutation; lock target-feature phase only after all M7/M8 artifacts pass. |
-| `agent_4_data_privacy` | `agent_4_m10_validator` | M10 checks in Section 7; two-artifact save order; upstream custody preserved; no M6/M7/M8/M9 mutation; lock M10 only after `target_data_provenance_profile` and `target_data_provenance_profile_forensics` pass. |
-| `agent_5_exposure_registry` | `agent_5_m11_validator` | M11 checks in Section 8; full 98-row registry accountability; 22/22 LEP coverage; all TRIGGERED and CONTROLLED rows emitted; emission manifest reconciled; two-artifact save order; lock M11_EXPOSURE_REGISTRY only after `target_exposure_profile` and `target_exposure_profile_forensics` pass. |
-| `agent_6_challenge_handoff` | `agent_6_m12_m13_validator_PLACEHOLDER` | Placeholder only. Must fail production use until M12/M13 artifact contracts are locked. |
-| `agent_7_terminal_renderer` | `agent_7_m14_validator_PLACEHOLDER` | Placeholder only. Must fail production use until M14 renderer/terminal contract is locked. |
-
----
-
-# SECTION 4 — AGENT 3 / M7 VALIDATION PROFILE
-
-## 4.1 M7 Required Inputs
-
-`VAL.M7.C1` Validate that Agent 3 read-only inputs include:
+`A5.VAL.S1.C1` Validate that Agent 5 receives or can load the required upstream artifacts:
 
 ```text
 source_discovery_handoff
 legal_cartography_index
-TP.* field selector authority
-M7 material selector table
-M6-approved target/legal route families and M6 limitations
-```
-
-`VAL.M7.C2` Validate that M7 did not create, discover, search, browse, follow unapproved links, or use non-M6/M9 sources.
-
-## 4.2 M7 Extraction Gate
-
-`VAL.M7.C3` Validate the exact M7 extraction checkpoint:
-
-```text
-PHASE EXTRACTION COMPLETE: TARGET_PROFILE_SOURCE_CAPSULE 100% ROUTE FAMILY COVERAGE CHECKED
-```
-
-`VAL.M7.C4` Validate that every M6-approved M7 route-family URL was reviewed or explicitly marked broken, gated, duplicate-canonicalized, non-public, outside M7 scope with reason, or returned to M6 repair.
-
-`VAL.M7.C5` Validate that field application occurred only after M7-A Target Source Extraction Capsule locked.
-
-## 4.3 M7 Material Output Gate
-
-`VAL.M7.C6` `target_profile` must contain exactly five parent sections:
-
-```text
-target_identity
-jurisdiction_notice
-business_context
-product_service_wrapper
-target_profile_limitations
-```
-
-`VAL.M7.C7` `target_profile` must contain exactly eighteen material field lines.
-
-`VAL.M7.C8` `target_profile.target_identity` must contain exactly:
-
-```text
-brand_name
-legal_entity_name
-entity_type
-reviewed_website
-primary_domain
-```
-
-`VAL.M7.C9` `target_profile.jurisdiction_notice` must contain exactly:
-
-```text
-registered_notice_location
-governing_law
-courts_venue
-```
-
-`VAL.M7.C10` `target_profile.business_context` must contain exactly:
-
-```text
-business_category
-primary_customer_type
-market_type_candidate
-industry_sector
-regulated_sector_hints
-```
-
-`VAL.M7.C11` `target_profile.product_service_wrapper` must contain exactly:
-
-```text
-high_level_offering
-primary_public_claim
-product_service_wrapper_names
-delivery_model_signals
-```
-
-`VAL.M7.C12` `target_profile.target_profile_limitations` must be present as an array.
-
-`VAL.M7.C13` `target_profile` must not contain `profile_meta`, `lock_status`, `target_profile_forensics`, `source_ledger`, `field_derivation_ledger`, `trace`, `scratchpad`, old flat M7 keys, feature fields, data fields, registry fields, legal-risk fields, or final handoff fields.
-
-## 4.4 M7 FD / Forensics Gate
-
-`VAL.M7.C14` Validate that all populated substantive fields were derived through selected TP.* rows mapped in M7 material selector.
-
-`VAL.M7.C15` Validate that non-selected TP.* rows were not executed as material fields.
-
-`VAL.M7.C16` Validate that `target_profile_forensics` exists only after `target_profile` and contains exactly these proof branches:
-
-```text
-source_ledger_used_for_m7
-target_source_extraction_capsule_summary
-target_source_route_coverage_ledger
-field_derivation_ledger
-targeted_re_extraction_ledger
-limitation_ledger
-cross_route_use_ledger
-validation_quality_control_result
-runtime_trace_m7_only
-forensic_boundary
-```
-
-`VAL.M7.C17` Validate that every selected TP.* row has Module V or forensic outcome with FD field id, source basis, outcome, limitation/fallback where applicable, and forbidden inference check.
-
-## 4.5 M7 Local Status Gate
-
-`VAL.M7.C18` If M7 returns `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, Agent 3 must not proceed to M8.
-
-`VAL.M7.C19` If M7 returns `PASS_WITH_LIMITATION`, Agent 3 may proceed to M8 only if limitations do not block M8 use and are recorded in `target_profile_forensics` and `target_profile_limitations`.
-
----
-
-# SECTION 5 — AGENT 3 / M8 VALIDATION PROFILE
-
-## 5.1 M8 Required Inputs
-
-`VAL.M8.C1` Validate that M8 receives only authorized inputs:
-
-```text
-source_discovery_handoff
-source_discovery_handoff.bucket_family_index.product_activity_profile_urls.families
-source_discovery_handoff.contract.source_text_location
 target_profile
 target_profile_forensics
-loaded product-family artifacts lossless_family__P1_PRODUCT through lossless_family__P5_ENTERPRISE_PRICING
-product-family artifact limitation branches where present
-PA.* field selector authority
+target_feature_profile
+target_feature_profile_forensics
+data_provenance_profile
+data_provenance_profile_forensics
+lossless_family__L1_CORE_TERMS_PRIVACY
+lossless_family__L2_B2B_CONTRACTING
+lossless_family__L3_AI_USAGE_GOVERNANCE
+lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+lossless_family__L5_LEGAL_HUB_HOSTED
+lossless_family__L6_ENTITY_NOTICE
+```
+
+`A5.VAL.S1.C2` Validate that Agent 5 receives or can load the required registry references:
+
+```text
+AI_THREAT_REGISTRY.yaml
+REGISTRY_KEY_v3_0.md
+03_REGISTRY_EVALUATION_RULES.yaml
+FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
 FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
-M7 target_profile limitations affecting product/activity interpretation
 ```
 
-`VAL.M8.C2` Validate that M8 did not execute M6, M9, M10, M11, M12, M13, or M14 work.
+`A5.VAL.S1.C3` Validate that Agent 5 does not mutate, overwrite, regenerate, repair, or backfill any M6, M9, M7, M8, or M10 upstream artifact.
 
-## 5.2 M8 Extraction Gate
+`A5.VAL.S1.C4` Missing `data_provenance_profile_forensics` is a full-sync defect unless the active M11 boundary has a row-scoped controlled limitation expressly permitted by the prompt.
 
-`VAL.M8.C3` Validate the exact M8 extraction checkpoint:
+---
+
+# SECTION 2 — M9 LEGAL CARTOGRAPHY CONSUMPTION GATE
+
+`A5.VAL.S2.C1` Validate that `legal_cartography_index` is consumed as the saved M9 artifact.
+
+`A5.VAL.S2.C2` Reject any Agent 5 output that builds, rebuilds, saves, mutates, replaces, or renames legal cartography.
+
+`A5.VAL.S2.C3` Validate that legal/governance evidence use follows M9 navigation discipline:
 
 ```text
-PHASE EXTRACTION COMPLETE: PRODUCT_ACTIVITY_SOURCE_CAPSULE 100% ROUTE FAMILY COVERAGE CHECKED
+legal_cartography_index -> locator/custody/coverage/missing-state
+lossless L1-L6 or locked upstream proof -> evidentiary proof
 ```
 
-`VAL.M8.C4` Validate that every M6-approved Product / Activity route-family URL was covered before PA application.
+`A5.VAL.S2.C4` Reject proof based only on document titles, route labels, section headings, source labels, or M9 summary rows unless the registry row is only about document presence, absence, navigation, custody, or limitation.
 
-`VAL.M8.C5` Validate that M8-A source extraction used five parents:
+`A5.VAL.S2.C5` Reject blind L1-L6 bucket scanning as a substitute for M9 navigation.
+
+---
+
+# SECTION 3 — REGISTRY AND LEP COMPLETENESS GATE
+
+`A5.VAL.S3.C1` Validate that expected active registry row count is 98 and loaded active registry row count is 98.
+
+`A5.VAL.S3.C2` Validate that every active registry row contains required YAML fields, including `Threat_ID`, `Threat_Name`, `Archetype`, `Surface`, `Hunter_Trigger`, `Lex_Nova_Fix`, `FIELD21`, `FIELD22`, and `FIELD23`.
+
+`A5.VAL.S3.C3` Validate that `FIELD21`, `FIELD22`, and `FIELD23` reconcile to `Threat_ID` decomposition.
+
+`A5.VAL.S3.C4` Validate that every evaluation-routed row applies the row's exact `Hunter_Trigger` and `03_REGISTRY_EVALUATION_RULES.yaml`.
+
+`A5.VAL.S3.C5` Validate 22/22 LEP selector accountability.
+
+---
+
+# SECTION 4 — ROUTE PLAN AND BATCH PLAN GATE
+
+`A5.VAL.S4.C1` `exposure_registry_route_plan` must account for all 98 active Threat_IDs exactly once.
+
+`A5.VAL.S4.C2` Every UNI row must be `EVALUATION_ROUTED` with route reason `UNI_ALWAYS_RUN`.
+
+`A5.VAL.S4.C3` No UNI row may be `NOT_TRIGGERED_NOT_APPLICABLE`.
+
+`A5.VAL.S4.C4` Non-UNI inactive rows may be deterministic not-applicable only if route plan shows no active archetype or surface route.
+
+`A5.VAL.S4.C5` Every model-routed batch must contain max 8 rows.
+
+`A5.VAL.S4.C6` Current 37-row UNI inventory must split into five UNI batches unless registry count is formally amended.
+
+`A5.VAL.S4.C7` Reject grouped, composite, duplicate, missing, unexpected, or category Threat_ID route rows.
+
+---
+
+# SECTION 5 — ACTIVE BATCH MODEL OUTPUT GATE
+
+`A5.VAL.S5.C1` M11 model batch output must have exactly one root:
 
 ```text
-Activity Candidate Extraction
-Mechanics Proof Extraction
-Archetype Signal Extraction
-Surface Signal Extraction
-Routing Limitation Extraction
+m11_batch_registry_ledger
 ```
 
-`VAL.M8.C6` Validate that M8 did not treat product page existence, nav labels, route labels, product names, API names, model names, pricing tiers, or slogans as activities without mechanics proof.
+`A5.VAL.S5.C2` Batch `returned_threat_ids[]` must match backend-provided `expected_threat_ids[]` exactly.
 
-## 5.3 M8 Material Output Gate
+`A5.VAL.S5.C3` `batch_registry_ledger[]` must contain exactly one row per expected Threat_ID and no other rows.
 
-`VAL.M8.C7` `target_feature_profile` must contain exactly two top-level keys:
+`A5.VAL.S5.C4` Each batch row may contain `Threat_ID`, `trigger_status`, and the seven locked material fields only.
+
+`A5.VAL.S5.C5` Batch rows must not emit final material profiles, workpad, forensics, M12 validation, challenge gate, final handoff, renderer, report prose, or terminal receipts.
+
+---
+
+# SECTION 6 — M12 BATCH VALIDATION / ACCEPTED BATCH GATE
+
+`A5.VAL.S6.C1` No accepted batch artifact may exist without paired `exposure_registry_batch_validation__{GROUP}__{NNN}`.
+
+`A5.VAL.S6.C2` No batch may enter `exposure_registry_workpad_98` unless backend mechanical validation and paired M12 batch validation passed, passed with limitation, or controlled-failed safely.
+
+`A5.VAL.S6.C3` M11 model output must not simulate M12 batch validation or claim save/acceptance state.
+
+---
+
+# SECTION 7 — CANONICAL WORKPAD GATE
+
+`A5.VAL.S7.C1` `exposure_registry_workpad_98` must contain exactly 98 active Threat_ID outcomes.
+
+`A5.VAL.S7.C2` Every model-routed row must trace to accepted M11 batch artifact plus paired M12 batch validation artifact.
+
+`A5.VAL.S7.C3` Deterministic not-applicable rows must be non-UNI only.
+
+`A5.VAL.S7.C4` Reject missing, duplicate, unexpected, grouped, composite, or category Threat_ID workpad rows.
+
+---
+
+# SECTION 8 — SPLIT MATERIAL OUTPUT GATES
+
+`A5.VAL.S8.C1` `exposure_registry_controlled_profile` must contain exactly one top-level key:
 
 ```text
-activities
-profile_level_limitations
+controlled_rows
 ```
 
-`VAL.M8.C8` Every emitted activity must contain exactly these 12 keys:
+`A5.VAL.S8.C2` Every controlled row must contain exactly seven fields:
 
 ```text
-activity_reference
-product_service_wrapper
-activity_feature_name
-activity_candidate_summary
-mechanics_proof
-autonomy_human_control_signal
-data_content_object_touched
-external_internal_action_signal
-archetype_codes
-archetype_proof
-surface_context_tokens
-surface_proof_and_routing_limits
+registry_exposure
+target_match
+evaluation_status
+basis_proof
+impact_priority
+review_route
+row_limitations
 ```
 
-`VAL.M8.C9` The key `surface_tokens` is forbidden. The valid key is `surface_context_tokens`.
+`A5.VAL.S8.C3` Every controlled row must have `evaluation_status: CONTROLLED`.
 
-`VAL.M8.C10` Every emitted activity must have mechanics proof, at least one archetype code, archetype proof, a present `surface_context_tokens` array, and surface proof/routing limitation handling.
-
-`VAL.M8.C11` Empty `surface_context_tokens[]` is allowed only if no surface support remains after all ten surface tests and targeted re-extraction, with limitation recorded.
-
-`VAL.M8.C12` `target_feature_profile` must not contain source URLs, evidence quotes, confidence scores, field derivation ledgers, raw extraction fragments, route coverage ledgers, debug notes, validation logs, extraction capsule, chain-of-thought, or forensic material.
-
-## 5.4 M8 Archetype / Surface Gate
-
-`VAL.M8.C13` Validate that every mechanically valid emitted activity was tested against all eleven archetypes:
+`A5.VAL.S8.C4` `exposure_registry_triggered_profile` must contain exactly one top-level key:
 
 ```text
-UNI
-DOE
-JDG
-CMP
-CRT
-RDR
-ORC
-TRN
-SHD
-OPT
-MOV
+triggered_rows
 ```
 
-`VAL.M8.C14` Validate that all evidence-supported archetypes were emitted and unsupported archetypes were rejected or ledgered as close calls where material.
+`A5.VAL.S8.C5` Every triggered row must contain exactly the same seven fields.
 
-`VAL.M8.C15` Validate that no archetype was forced merely to satisfy schema.
+`A5.VAL.S8.C6` Every triggered row must have `evaluation_status: TRIGGERED`.
 
-`VAL.M8.C16` Validate that every emitted activity was tested against all ten surface tokens:
+`A5.VAL.S8.C7` Every final CONTROLLED workpad row must appear in `controlled_rows[]` exactly once.
+
+`A5.VAL.S8.C8` Every final TRIGGERED workpad row must appear in `triggered_rows[]` exactly once.
+
+`A5.VAL.S8.C9` Reject old combined material roots and containers:
 
 ```text
-Consumer-Public
-Enterprise-Private
-PII
-Employment
-Sensitive/Biometric
-Financial
-Content&IP
-Safety&Physical
-Infrastructure
-Minors
+target_exposure_profile
+target_exposure_profile_forensics
+exposure_registry_profile
+triggered_and_controlled_rows
+controlled_exposure_rows
+material_exposure_findings
+exposure_summary
 ```
 
-`VAL.M8.C17` Validate that sensitive, biometric, financial, employment, minors, PII, infrastructure, and safety/physical surfaces are not inferred without explicit support.
+---
 
-## 5.5 M8 FD / Forensics Gate
+# SECTION 9 — FORENSIC GATE
 
-`VAL.M8.C18` Validate that M8 applied PA.* registry authority as derivation authority, not as a 51-row material output schema.
+`A5.VAL.S9.C1` `exposure_registry_profile_forensics` may be built only after route plan, accepted batches, paired batch validations, workpad, controlled profile, and triggered profile are saved.
 
-`VAL.M8.C19` Validate that selected PA rows support the 12-field routing-first activity card.
-
-`VAL.M8.C20` Validate that `target_feature_profile_forensics` exists only after `target_feature_profile` and contains these proof branches:
+`A5.VAL.S9.C2` Forensics must include these proof families:
 
 ```text
-product_activity_source_route_coverage_ledger
-product_activity_extraction_capsule_summary
-candidate_admission_and_omission_ledger
-selected_pa_field_derivation_ledger
-activity_mechanics_derivation_ledger
-archetype_derivation_ledger
-surface_token_derivation_ledger
-targeted_re_extraction_ledger
-activity_limitations_ledger
-cross_route_use_ledger
-validation_quality_control_result
-runtime_trace_m8_only
+registry_input_manifest
+full_registry_inventory_ledger
+lep_selector_application_ledger
+internal_registry_route_plan_ledger
+trigger_review_workspace_ledger
+trigger_adjudication_ledger
+evidence_binding_ledger
+control_exclude_evaluation_ledger
+registry_row_workpad_accountability_ledger
+triggered_controlled_row_assembly_ledger
+emission_manifest
+registry_self_check_result
+registry_lock_gate_result
+legal_firewall_ledger
+runtime_trace_m11_only
 forensic_boundary
 ```
 
-`VAL.M8.C21` Validate that every selected PA.* row has Module V or forensic outcome with FD field id, source basis, outcome, limitation/fallback where applicable, and forbidden inference check.
+`A5.VAL.S9.C3` Forensics must prove 98/98 row coverage, 22/22 LEP coverage, accepted batch + validation custody, controlled/triggered projection reconciliation, and M9 legal-cartography consumption without rebuild.
 
-## 5.6 M8 Local Status Gate
-
-`VAL.M8.C22` If M8 returns `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, Agent 3 must not lock target-feature phase and must not provide the Agent 4 command.
-
-`VAL.M8.C23` If M8 returns `PASS_WITH_LIMITATION`, Agent 3 may lock `target-feature phase` only if limitations are recorded and downstream M10/M11 use remains safe.
+`A5.VAL.S9.C4` Forensics must not re-emit material profiles, challenge gate, final handoff, renderer payload, report prose, or terminal receipts.
 
 ---
 
-# SECTION 6 — AGENT 3 TARGET-FEATURE PHASE VALIDATION
+# SECTION 10 — LEGAL / REGISTRY FIREWALL
 
-`VAL.A3.C1` Agent 3 may lock `target-feature phase` only if all four required artifacts exist and were saved in this exact order:
+`A5.VAL.S10.C1` Reject legal advice, legal applicability, compliance/non-compliance, illegality, liability, violation, breach, enforceability, transfer legality, security adequacy, legal-risk verdicts, risk scores, HIGH_RISK, or LOW_RISK as final findings.
+
+`A5.VAL.S10.C2` Validate that CONTROLLED rows preserve the boundary: visible public control exists, but this does not mean compliant, sufficient, enforceable, legally adequate, solved, or risk-free.
+
+`A5.VAL.S10.C3` Validate that TRIGGERED rows do not state illegality, breach, liability, violation, or non-compliance.
+
+---
+
+# SECTION 11 — LOCK AND REPAIR GATE
+
+`A5.VAL.S11.C1` Agent 5 may lock `M11_EXPOSURE_REGISTRY` only after these saved artifacts exist:
 
 ```text
-1. target_profile
-2. target_profile_forensics
-3. target_feature_profile
-4. target_feature_profile_forensics
+exposure_registry_route_plan
+exposure_registry_workpad_98
+exposure_registry_controlled_profile
+exposure_registry_triggered_profile
+exposure_registry_profile_forensics
 ```
 
-`VAL.A3.C2` Agent 3 may lock only after M7 passes and M8 passes or passes with safe limitations.
-
-`VAL.A3.C3` Agent 3 must not mutate `source_discovery_handoff` or `legal_cartography_index`.
-
-`VAL.A3.C4` Agent 3 must not provide the next-agent command unless phase status is `LOCKED` or `LOCKED_WITH_LIMITATIONS`.
-
-`VAL.A3.C5` If M7 or M8 returns `SOURCE_REPAIR_REQUIRED` due to a missing/corrupt source universe or lossless artifact custody defect, Agent 3 must route back to Agent 1 and must not invent, search, or proceed.
-
----
-
-
-# SECTION 7 — AGENT 4 / M10 VALIDATION PROFILE
-
-## 7.1 M10 Required Inputs
-
-`VAL.M10.C1` Validate that Agent 4 read-only inputs include `source_discovery_handoff`, `legal_cartography_index`, `target_profile`, `target_profile_forensics`, `target_feature_profile`, `target_feature_profile_forensics`, `source_discovery_handoff.bucket_family_index.data_privacy_security_control_urls.families` where present, and primary M10 lossless buckets `lossless_family__D1_SECURITY_TRUST` through `lossless_family__D5_AI_SAFETY_TRANSPARENCY`.
-
-`VAL.M10.C2` Validate that no Agent 4 process mutates `source_discovery_handoff`, `legal_cartography_index`, `target_profile`, `target_profile_forensics`, `target_feature_profile`, or `target_feature_profile_forensics`.
-
-`VAL.M10.C3` Validate that M10 uses the patched M8 activity card fields only: `activity_reference`, `product_service_wrapper`, `activity_feature_name`, `mechanics_proof`, `data_content_object_touched`, `archetype_codes`, `surface_context_tokens`, and `surface_proof_and_routing_limits`.
-
-`VAL.M10.C4` Reject old M8 paths such as `activity_id`, `product_context`, `activity_name`, `mechanics`, `surface_tokens`, `routing_basis`, `activity_inventory`, `activity_mechanics`, or `registry_routing_substrate`.
-
-## 7.2 M10 Extraction and Anti-Unknown Gate
-
-`VAL.M10.C5` Validate that the exact extraction checkpoint appears before DAP application: `PHASE EXTRACTION COMPLETE: DATA_CONTROL_SOURCE_CAPSULE 100% APPROVED DATA-CONTROL ROUTE FAMILY COVERAGE CHECKED`.
-
-`VAL.M10.C6` Validate that the Data-Control Source Extraction Capsule covers the approved data/privacy/security/control route universe or records controlled absence/access/limitation status.
-
-`VAL.M10.C7` Validate that M10 did not browse, search, crawl, reopen, refresh, fetch, re-parse, or expand sources after Agent 1 / M6 lock.
-
-`VAL.M10.C8` Validate that every material data/privacy/control/readiness signal resolves through the locked Anti-Unknown vocabulary: `VISIBLE_CONTROL_PRESENT`, `NOT_VISIBLE_AFTER_TARGETED_SEARCH`, `VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND`, `VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR`, `ACCESS_FAILED`, `UNKNOWN_NOT_SEARCHED`, `CONFLICTING_SIGNALS`, or `NOT_APPLICABLE`.
-
-`VAL.M10.C9` Validate that every non-visible, weak, access-failed, unknown-not-searched, visible-processing-no-control, or conflicting signal creates or references a `missing_proof_and_diligence_requests` row unless `NOT_APPLICABLE`.
-
-## 7.3 M10 Material Output Gate
-
-`VAL.M10.C10` Validate that `target_data_provenance_profile` exists and contains exactly 34 top-level fields.
-
-`VAL.M10.C11` Validate that the 34 top-level fields are the locked M10 fields: `assessment_scope`, `source_coverage`, `individuals_and_relationships`, `role_relationship_readiness`, `data_categories`, `generated_output_and_derived_data_treatment`, `sensitive_special_category_signals`, `children_minors_signal`, `collection_sources_and_activity_data_flows`, `processing_operations_lifecycle`, `purpose_use_signals`, `privacy_notice_visibility`, `lawful_basis_consent_authorization_readiness`, `consent_withdrawal_controls`, `rights_request_routes`, `privacy_governance_contact_accountability_signals`, `contractual_dpa_customer_terms_readiness`, `vendor_subprocessor_partner_inventory`, `processor_subprocessor_governance_controls`, `third_party_disclosure_sharing_controls`, `cross_border_transfer_location_custody`, `retention_deletion_return_export_controls`, `security_access_controls`, `breach_incident_readiness`, `cookies_tracking_marketing_controls`, `ai_model_provider_processing_chain`, `ai_training_finetuning_model_improvement_controls`, `embeddings_vector_memory_controls`, `prompt_output_logging_telemetry_controls`, `automated_decision_profiling_human_review_signal`, `privacy_accountability_documentation_signals`, `law_regulatory_readiness_matrix`, `missing_proof_and_diligence_requests`, and `limitations`.
-
-`VAL.M10.C12` Reject the alias `data_provenance_profile` and all old multi-map branches as material output roots.
-
-`VAL.M10.C13` Validate that `law_regulatory_readiness_matrix` uses the locked nested row schema: readiness area, jurisdiction/framework label, readiness question, triggering profile signals, public evidence status, visible supporting controls, missing or weak controls, Anti-Unknown status, missing-proof refs, source refs, counsel review note, and downstream use limit.
-
-`VAL.M10.C14` Validate that the readiness matrix does not contain legal applicability, compliance, non-compliance, violation, lawful-basis sufficiency, transfer-legality, security-adequacy, liability, legal-risk, or registry-exposure conclusions.
-
-## 7.4 M10 DAP / Forensics Gate
-
-`VAL.M10.C15` Validate that DAP registry authority is used as derivation authority only, not as a visible output schema.
-
-`VAL.M10.C16` Validate that every selected DAP material row has a Module V or forensic workpad outcome with `fd_registry_id`, `fd_field_id`, `fd_profile_section`, `fd_mode`, `fd_outcome`, applicable refs, fallback code where applicable, Anti-Unknown status where applicable, and `forbidden_inference_check`.
-
-`VAL.M10.C17` Validate that `target_data_provenance_profile` is emitted and saved before `target_data_provenance_profile_forensics`.
-
-`VAL.M10.C18` Validate that `target_data_provenance_profile_forensics` contains data-control source coverage, extraction capsule summary, selected DAP derivation ledger, Anti-Unknown resolution ledger, readiness matrix derivation ledger, missing-proof request ledger, cross-route use ledger, validation/QC result, M10-only runtime trace, and forensic boundary.
-
-`VAL.M10.C19` Validate that no source refs, extraction capsule, validation trace, field-derivation ledger, confidence branch, or forensic branch appears as a top-level branch inside `target_data_provenance_profile`.
-
-## 7.5 M10 Legal / Registry Firewall Gate
-
-`VAL.M10.C20` Reject legal advice, legal applicability, legal sufficiency, compliance, non-compliance, lawful-basis conclusion, consent-validity conclusion, liability finding, statutory violation, enforceability, transfer-legality conclusion, security adequacy conclusion, or legal-risk conclusion.
-
-`VAL.M10.C21` Reject registry row evaluation, threat ID assignment, trigger result, TRUE/FALSE condition result, exposure status, control status, risk level, exposure finding, or registry conclusion.
-
-## 7.6 Agent 4 Combined Phase Validation
-
-`VAL.A4.C1` Agent 4 may lock `M10` only if `target_data_provenance_profile` and `target_data_provenance_profile_forensics` are both saved successfully in that order.
-
-`VAL.A4.C2` Agent 4 terminal may provide `@Interface Exposure Registry Agent Continue run <run_id>.` only after M10 validation passes or passes with limitations.
-
-`VAL.A4.C3` If M10 returns `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, Agent 4 must not lock M10 and must not provide the Agent 5 command.
-
-`VAL.A4.C4` If M10 returns `SOURCE_REPAIR_REQUIRED` due to missing/corrupt approved data/control route universe or lossless artifact custody, Agent 4 must route repair to Agent 1 / M6 and must not search, infer, or proceed.
-
----
-# SECTION 8 — PLACEHOLDER PRODUCTION GUARD
-
-`VAL.PG.C1` Agent 6 through Agent 7 validator rows are placeholder rows.
-
-`VAL.PG.C2` If `active_agent_id` is Agent 6 or Agent 7 and no separately locked module contract is present in the prompt payload, return:
+and every model-routed batch has paired saved artifacts:
 
 ```text
-CONTROLLED_FAILURE: VALIDATOR_PROFILE_NOT_LOCKED_FOR_PRODUCTION
+exposure_registry_batch__{GROUP}__{NNN}
+exposure_registry_batch_validation__{GROUP}__{NNN}
 ```
 
-`VAL.PG.C3` This guard prevents fake universal validation for modules that have not been locked.
+`A5.VAL.S11.C2` If a defect is local to one batch, repair only that batch and its M12 validation.
+
+`A5.VAL.S11.C3` If a defect is local to route plan, workpad, controlled projection, triggered projection, or forensics, repair only that boundary.
+
+`A5.VAL.S11.C4` If a required upstream artifact or M9 legal-cartography artifact is missing/corrupt, route to the owning upstream/backend repair. Do not invent, search, or proceed.
 
 ---
 
-# SECTION 9 — VALIDATOR RESULT FORMAT
+# SECTION 12 — VALIDATOR RESULT FORMAT
 
-`VAL.RF.C1` Validator result must be machine-compact and must not expose chain-of-thought.
+Validator result must be machine-compact and must not expose chain-of-thought:
 
 ```json
 {
   "validator_result": {
-    "active_agent_id": "",
-    "phase_scope": "",
+    "active_agent_id": "agent_5_exposure_registry",
+    "phase_scope": "M11_EXPOSURE_REGISTRY",
     "run_id": "",
     "status": "PASS | PASS_WITH_WARNING | PASS_WITH_LIMITATION | REINVESTIGATION_COMPLETED_WITH_LIMITATION | SOURCE_REPAIR_REQUIRED | CONTROLLED_FAILURE",
     "lock_allowed": true,
@@ -614,96 +282,4 @@ CONTROLLED_FAILURE: VALIDATOR_PROFILE_NOT_LOCKED_FOR_PRODUCTION
 }
 ```
 
-`VAL.RF.C2` If status is `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, `lock_allowed` and `next_agent_command_allowed` must be false.
-
-`VAL.RF.C3` If status is `PASS_WITH_WARNING`, `PASS_WITH_LIMITATION`, or `REINVESTIGATION_COMPLETED_WITH_LIMITATION`, `limitations[]` must not be empty.
-
-`VAL.RF.C4` Validator results may be saved in backend only where the active agent's schema permits it. They must not be inserted into material profile artifacts.
-
----
-
-# VALIDATOR FINAL LOCK
-
-`VAL.LOCK.C1` This integrated validator is subordinate to the integrated 00 runtime and the active module output contracts, but it is the governing validation rule file for all phased agents.
-
-`VAL.LOCK.C2` If this validator conflicts with the runtime, the runtime controls scope and permission; the validator controls pass/fail criteria inside that scope.
-
-`VAL.LOCK.C3` If this validator conflicts with an active module contract, the stricter no-hallucination, no-scope-drift, no-forensic-clumping, no-unauthorized-source, no-skipped-extraction, and no-skipped-re-extraction rule controls.
-
-
-# SECTION 8 — AGENT 5 / M11 VALIDATION PROFILE
-
-## 8.1 M11 Required Inputs
-
-`VAL.M11.C1` Validate that Agent 5 read-only inputs include `source_discovery_handoff`, `source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families`, legal/governance lossless buckets `lossless_family__L1_CORE_TERMS_PRIVACY` through `lossless_family__L6_ENTITY_NOTICE`, `legal_cartography_index`, `target_profile`, `target_profile_forensics`, `target_feature_profile`, `target_feature_profile_forensics`, `target_data_provenance_profile`, and `target_data_provenance_profile_forensics`.
-
-`VAL.M11.C2` Validate that Agent 5 has access to `AI_THREAT_REGISTRY.yaml`, `REGISTRY_KEY_v3_0.md`, `03_REGISTRY_EVALUATION_RULES.yaml`, `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`, and `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml`.
-
-`VAL.M11.C3` Validate that M11 does not mutate any M6, M7, M8, M9, or M10 artifact.
-
-## 8.2 Registry and LEP Completeness Gate
-
-`VAL.M11.C4` Validate that expected active registry row count is 98 and loaded active registry row count is 98.
-
-`VAL.M11.C5` Validate that all 22 LEP selector rows have final workpad outcomes.
-
-`VAL.M11.C6` Validate that all 98 active registry rows have exactly one final registry-row workpad outcome.
-
-`VAL.M11.C7` Reject grouped rows, composite Threat_ID rows, category rows, route summary rows, or material public route rows.
-
-## 8.3 M8 Path Sync Gate
-
-`VAL.M11.C8` Validate that active surfaces are derived from `target_feature_profile.activities[].surface_context_tokens[]`.
-
-`VAL.M11.C9` Reject stale M8 paths including `surface_tokens`, `activity_id`, `product_context`, `activity_name`, `mechanics`, `routing_basis`, `activity_inventory`, `activity_mechanics`, and `registry_routing_substrate`.
-
-## 8.4 Triggered / Controlled Emission Gate
-
-`VAL.M11.C10` Validate that every final TRIGGERED row appears in `target_exposure_profile.triggered_and_controlled_rows[]`.
-
-`VAL.M11.C11` Validate that every final CONTROLLED row appears in `target_exposure_profile.triggered_and_controlled_rows[]`.
-
-`VAL.M11.C12` Validate that controlled rows are not hidden inside summaries, matrices, separate `controlled_exposure_rows`, counts, or forensic-only branches.
-
-`VAL.M11.C13` Validate that rows that are controlled + limited are still emitted as CONTROLLED with limitations carried in `row_limitations`.
-
-`VAL.M11.C14` Validate that rows that are triggered + weak/conflicting/review-required are still emitted as TRIGGERED with limitations carried in `row_limitations`.
-
-## 8.5 Main Output Shape Gate
-
-`VAL.M11.C15` Validate that `target_exposure_profile` exists and contains exactly one top-level key: `triggered_and_controlled_rows`.
-
-`VAL.M11.C16` Validate that each emitted row contains exactly seven fields: `registry_exposure`, `target_match`, `evaluation_status`, `basis_proof`, `impact_priority`, `review_route`, and `row_limitations`.
-
-`VAL.M11.C17` Validate that emitted `evaluation_status` values are only `TRIGGERED` or `CONTROLLED`.
-
-`VAL.M11.C18` Reject `exposure_summary`, `material_exposure_findings`, `controlled_exposure_rows`, `absent_not_triggered_registry_rows`, `registry_coverage_matrix`, `activity_to_exposure_matrix`, `data_asset_to_exposure_matrix`, `legal_control_to_exposure_matrix`, `review_priority_register`, and separate `exposure_limitations` branches.
-
-## 8.6 Emission Manifest and Forensics Gate
-
-`VAL.M11.C19` Validate that `target_exposure_profile` is emitted and saved before `target_exposure_profile_forensics`.
-
-`VAL.M11.C20` Validate that `target_exposure_profile_forensics` includes full registry inventory ledger, LEP selector application ledger, internal route plan ledger, trigger adjudication ledger, evidence binding ledger, control/exclude evaluation ledger, registry row workpad accountability ledger, triggered/controlled row assembly ledger, emission manifest, self-check result, lock-gate result, legal firewall ledger, M11-only runtime trace, and forensic boundary.
-
-`VAL.M11.C21` Validate that the emission manifest reports: expected active registry rows = 98, loaded/evaluated/accounted rows = 98, expected/applied LEP rows = 22, missing triggered Threat_IDs = none, missing controlled Threat_IDs = none, duplicate emitted Threat_IDs = none, wrong-status emitted rows = none, all triggered rows emitted = true, and all controlled rows emitted = true.
-
-## 8.7 Legal / Registry Firewall Gate
-
-`VAL.M11.C22` Reject legal advice, legal applicability, compliance/non-compliance, illegality, liability, violation, breach, enforceability, transfer legality, security adequacy, legal-risk verdicts, risk scores, HIGH_RISK, or LOW_RISK as final findings.
-
-`VAL.M11.C23` Validate that `CONTROLLED` rows include the boundary that visible public control exists but does not mean compliant, sufficient, enforceable, legally adequate, solved, or risk-free.
-
-## 8.8 Agent 5 Combined Phase Validation
-
-`VAL.A5.C1` Agent 5 may lock `M11_EXPOSURE_REGISTRY` only if `target_exposure_profile` and `target_exposure_profile_forensics` are both saved successfully in that order.
-
-`VAL.A5.C2` Agent 5 terminal may provide `@Interface Challenge Handoff Agent Continue run <run_id>.` only after M11_EXPOSURE_REGISTRY validation passes or passes with limitations.
-
-`VAL.A5.C3` If M11 returns `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, Agent 5 must not lock M11_EXPOSURE_REGISTRY and must not provide the Agent 6 command.
-
-
-`VAL.A5.C4` M11 material repair means targeted Threat_ID-specific, LEP-specific, evidence-path-specific, emitted-row-specific, or forensic-ledger-specific reinvestigation inside the approved Agent 1 / Agent 3 / Agent 4 source and artifact universe before any limitation or source repair route.
-
-`VAL.A5.C5` Missing TRIGGERED or CONTROLLED emission, seven-column defects, weak evidence basis, wrong emitted status, stale M8 paths, incomplete legal/governance lossless projection, or emission-manifest mismatch must be repaired inside M11 first and must not be solved by downgrading, suppressing, grouping, or summarizing rows.
-
-`VAL.A5.C6` M11 may return `SOURCE_REPAIR_REQUIRED` only when the Agent 1 source universe, legal/governance lossless bucket custody, or mandatory registry/LEP authority is missing, corrupted, inaccessible, or contradictory in a way M11 cannot repair from loaded artifacts.
+If status is `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, `lock_allowed` and `next_agent_command_allowed` must be false.
