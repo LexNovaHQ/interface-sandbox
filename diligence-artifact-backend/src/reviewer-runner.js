@@ -20,6 +20,9 @@ import {
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
+const AGENT3_FORENSIC_PHASES = new Set(["M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
+const AGENT3_FORENSIC_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object", "missing keys", "extra keys", "must be object", "must be array", "must not be empty", "contains material artifact", "source-ref row missing source-url"]);
+const AGENT3_FORENSIC_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "omission"]);
 const ART = Object.freeze({
   legalIndex: "legal_cartography_index",
   targetMain: "target_" + "profile",
@@ -65,15 +68,7 @@ export async function advanceReviewerRun({ run_id }) {
   }
 
   const updated = await getRunRecord(run_id);
-  return {
-    ok: true,
-    run_id,
-    advanced: true,
-    completed_phase: phase,
-    status: updated.status,
-    current_phase: updated.current_phase,
-    final_report_url: updated.final_report_url || ""
-  };
+  return { ok: true, run_id, advanced: true, completed_phase: phase, status: updated.status, current_phase: updated.current_phase, final_report_url: updated.final_report_url || "" };
 }
 
 function normalizePhase(value) {
@@ -117,8 +112,8 @@ async function runModelPhase({ run, phase, contract }) {
   const result = await callGeminiJson({ prompt, phase });
   const output = result.json;
 
-  validateModelOutput({ phase, output });
-  const phaseLockStatus = resolveModelLockStatus({ phase, output, writes: contract.writes });
+  const validationStatusOverride = validateModelOutput({ phase, output });
+  const phaseLockStatus = validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes });
 
   for (const artifactName of contract.writes) {
     const artifact = output?.[artifactName];
@@ -126,29 +121,37 @@ async function runModelPhase({ run, phase, contract }) {
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
   }
 
-  await logEvent({
-    run_id: run.run_id,
-    event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED",
-    actor: contract.agent_id,
-    payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata }
-  });
+  await logEvent({ run_id: run.run_id, event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata } });
 
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
 }
 
 function validateModelOutput({ phase, output }) {
-  if (phase === "M9") {
-    const validation = validateM9LegalCartographyIndex(output);
-    if (validation.status !== "PASS") throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
-    return;
+  try {
+    if (phase === "M9") {
+      const validation = validateM9LegalCartographyIndex(output);
+      if (validation.status !== "PASS") throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+      return "";
+    }
+    if (phase === "M7_TARGET_PROFILE" || phase === "M7_TARGET_PROFILE_FORENSICS") {
+      validateM7TargetProfileOutput(output, { phase });
+      return "";
+    }
+    if (phase === "M8_TARGET_FEATURE_PROFILE" || phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") {
+      validateM8TargetFeatureOutput(output, { phase });
+    }
+    return "";
+  } catch (error) {
+    if (isNonBlockingAgent3ForensicValidationError({ phase, error })) return "LOCKED_WITH_LIMITATIONS";
+    throw error;
   }
-  if (phase === "M7_TARGET_PROFILE" || phase === "M7_TARGET_PROFILE_FORENSICS") {
-    validateM7TargetProfileOutput(output, { phase });
-    return;
-  }
-  if (phase === "M8_TARGET_FEATURE_PROFILE" || phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") {
-    validateM8TargetFeatureOutput(output, { phase });
-  }
+}
+
+function isNonBlockingAgent3ForensicValidationError({ phase, error }) {
+  if (!AGENT3_FORENSIC_PHASES.has(phase)) return false;
+  const message = String(error?.message || error || "").toLowerCase();
+  if (AGENT3_FORENSIC_CRITICAL_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return false;
+  return AGENT3_FORENSIC_NONBLOCKING_MARKERS.some((marker) => message.includes(marker.toLowerCase()));
 }
 
 function resolveModelLockStatus({ phase, output, writes }) {
