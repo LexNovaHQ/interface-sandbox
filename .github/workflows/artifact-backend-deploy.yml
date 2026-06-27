@@ -149,6 +149,7 @@ jobs:
             --region "$GCP_REGION" \
             --service-account "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
             --no-invoker-iam-check \
+            --timeout=1800s \
             --env-vars-file /tmp/interface-artifact-backend-env.yaml \
             --quiet
 
