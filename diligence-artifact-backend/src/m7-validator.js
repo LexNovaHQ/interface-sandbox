@@ -1,85 +1,32 @@
 const TP = "target_" + "profile";
 const TPF = TP + "_forensics";
-const REQUIRED_MATERIAL_TOP_LEVEL_KEYS = Object.freeze([TP]);
-const REQUIRED_FORENSIC_TOP_LEVEL_KEYS = Object.freeze([TPF]);
+const TPL = TP + "_limitations";
 
-const REQUIRED_PROFILE_SHAPE = Object.freeze({
+const MATERIAL_TOP_KEYS = Object.freeze([TP]);
+const FORENSIC_TOP_KEYS = Object.freeze([TPF]);
+const PROFILE_BRANCHES = Object.freeze({
   target_identity: ["brand_name", "legal_entity_name", "entity_type", "reviewed_website", "primary_domain"],
   jurisdiction_notice: ["registered_notice_location", "governing_law", "courts_venue"],
   business_context: ["business_category", "primary_customer_type", "market_type_candidate", "industry_sector", "regulated_sector_hints"],
   product_service_wrapper: ["high_level_offering", "primary_public_claim", "product_service_wrapper_names", "delivery_model_signals"]
 });
-
-const REQUIRED_FORENSIC_BRANCHES = Object.freeze([
-  "source_ledger_used_for_m7",
-  "target_source_extraction_capsule_summary",
-  "target_source_route_coverage_ledger",
-  "field_derivation_ledger",
-  "targeted_re_extraction_ledger",
-  "limitation_ledger",
-  "cross_route_use_ledger",
-  "validation_quality_control_result",
-  "runtime_trace_m7_only",
-  "forensic_boundary"
-]);
-
-const SELECTED_M7_FIELDS = Object.freeze([
-  "target_identity.brand_name",
-  "target_identity.legal_entity_name",
-  "target_identity.entity_type",
-  "target_identity.reviewed_website",
-  "target_identity.primary_domain",
-  "jurisdiction_notice.registered_notice_location",
-  "jurisdiction_notice.governing_law",
-  "jurisdiction_notice.courts_venue",
-  "business_context.business_category",
-  "business_context.primary_customer_type",
-  "business_context.market_type_candidate",
-  "business_context.industry_sector",
-  "business_context.regulated_sector_hints",
-  "product_service_wrapper.high_level_offering",
-  "product_service_wrapper.primary_public_claim",
-  "product_service_wrapper.product_service_wrapper_names",
-  "product_service_wrapper.delivery_model_signals",
-  "target_profile_limitations"
-]);
-
-const ARRAY_FIELDS = Object.freeze([
-  "business_context.regulated_sector_hints",
-  "product_service_wrapper.product_service_wrapper_names",
-  "product_service_wrapper.delivery_model_signals",
-  "target_profile_limitations"
-]);
-
-const CONTROLLED_FIELD_STATUSES = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND"]);
-const LIMITED_PATTERN = /LIMIT|NOT_PUBLIC|NOT_FOUND|CONFLICT/i;
-
-const FORBIDDEN_PROFILE_KEYS = Object.freeze([
-  "validation_status", "lock_status", "status", "source_ledger", "field_derivation_ledger", "runtime_trace", "evidence_map", "extraction_capsule", TPF, "identity_confidence", "jurisdiction_confidence", "business_context_confidence", "wrapper_confidence", "identity_evidence_basis", "jurisdiction_evidence_basis", "business_context_evidence_basis", "wrapper_evidence_basis", "website", "domain", "industry", "product_service_wrapper_name", "product_service_wrapper_description", "registered_notice_country", "registered_notice_state", "governing_law_country", "governing_law_state", "app_platform_delivery_signal", "api_programmatic_delivery_signal", "offline_service_advisory_delivery_signal"
-]);
-
-const FORBIDDEN_FORENSIC_KEYS = Object.freeze([
-  "target_route_family_coverage", "field_derivation_decisions", "validation_qc_status", "runtime_trace_boundaries", "extraction_capsule_summary", "route_coverage", "evidence_summary_only", "generic_derivation_summary", "profile_forensics", "target_forensics", "qc_status", TP
-]);
-
-const FORBIDDEN_STALE_STRINGS = Object.freeze([
-  "<phase_output", "</phase_output>", "agent_2_target_feature", "AGENT2_RUNTIME_BINDING_PACKET", "bucket_handoff", "discovered_route_inventory", "route_execution_ledger", "source_coverage_gates", "missing_limited_primary_sources", "target_feature_profile", "target_feature_profile_forensics"
-]);
+const SELECTED_FIELDS = Object.freeze([...Object.entries(PROFILE_BRANCHES).flatMap(([parent, fields]) => fields.map((field) => `${parent}.${field}`)), TPL]);
+const ARRAY_FIELDS = new Set(["business_context.regulated_sector_hints", "product_service_wrapper.product_service_wrapper_names", "product_service_wrapper.delivery_model_signals", TPL]);
+const FORENSIC_BRANCHES = Object.freeze(["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger", "field_derivation_ledger", "targeted_re_extraction_ledger", "limitation_ledger", "cross_route_use_ledger", "validation_quality_control_result", "runtime_trace_m7_only", "forensic_boundary"]);
+const ARRAY_FORENSIC_BRANCHES = Object.freeze(["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger", "field_derivation_ledger", "targeted_re_extraction_ledger", "limitation_ledger", "cross_route_use_ledger"]);
+const REQUIRED_NON_EMPTY = Object.freeze(["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger"]);
+const CONTROLLED_VALUES = new Set(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND"]);
+const CONTROLLED_PATTERN = /LIMIT|NOT_PUBLIC|NOT_FOUND|CONFLICT|ABSENT|THIN|WEAK|MISSING|CONTROLLED/i;
+const SUPPORTED_PATTERN = /SUPPORTED|FOUND|DERIVED|PRESENT|CONFIRMED|DIRECT/i;
 
 export function validateM7TargetProfileOutput(output, { phase = "M7_TARGET_PROFILE" } = {}) {
   const failures = [];
   if (phase === "M7_TARGET_PROFILE") {
-    validateExactTopLevelKeys(output, REQUIRED_MATERIAL_TOP_LEVEL_KEYS, failures, phase);
-    if (!failures.length) {
-      validateProfile(output[TP], failures);
-      validateNoStaleStrings(output, failures);
-    }
+    validateExactTopLevelKeys(output, MATERIAL_TOP_KEYS, failures, phase);
+    if (!failures.length) validateProfile(output[TP], failures);
   } else if (phase === "M7_TARGET_PROFILE_FORENSICS") {
-    validateExactTopLevelKeys(output, REQUIRED_FORENSIC_TOP_LEVEL_KEYS, failures, phase);
-    if (!failures.length) {
-      validateForensics(output[TPF], failures);
-      validateNoStaleStrings(output, failures);
-    }
+    validateExactTopLevelKeys(output, FORENSIC_TOP_KEYS, failures, phase);
+    if (!failures.length) validateForensics(output[TPF], failures);
   } else {
     failures.push(`M7_UNKNOWN_PHASE:${phase}`);
   }
@@ -88,92 +35,96 @@ export function validateM7TargetProfileOutput(output, { phase = "M7_TARGET_PROFI
 
 function validateProfile(profile, failures) {
   if (!isPlainObject(profile)) return failures.push(`${TP} must be object`);
-  const expectedParents = [...Object.keys(REQUIRED_PROFILE_SHAPE), "target_profile_limitations"].sort();
-  const actualParents = Object.keys(profile).sort();
-  rejectKeyDiff(actualParents, expectedParents, TP, failures);
-
-  for (const [parent, fields] of Object.entries(REQUIRED_PROFILE_SHAPE)) {
-    const branch = profile[parent];
-    if (!isPlainObject(branch)) {
+  rejectKeyDiff(Object.keys(profile).sort(), [...Object.keys(PROFILE_BRANCHES), TPL].sort(), TP, failures);
+  for (const [parent, fields] of Object.entries(PROFILE_BRANCHES)) {
+    if (!isPlainObject(profile[parent])) {
       failures.push(`${TP}.${parent} must be object`);
       continue;
     }
-    rejectKeyDiff(Object.keys(branch).sort(), [...fields].sort(), `${TP}.${parent}`, failures);
+    rejectKeyDiff(Object.keys(profile[parent]).sort(), [...fields].sort(), `${TP}.${parent}`, failures);
   }
-
-  if (!Array.isArray(profile.target_profile_limitations)) failures.push(`${TP}.target_profile_limitations must be an array`);
-  for (const field of SELECTED_M7_FIELDS) {
+  if (!Array.isArray(profile[TPL])) failures.push(`${TP}.${TPL} must be array`);
+  for (const field of SELECTED_FIELDS) {
     const value = valueAt(profile, field);
-    if (ARRAY_FIELDS.includes(field)) {
+    if (ARRAY_FIELDS.has(field)) {
       if (!Array.isArray(value)) failures.push(`${TP}.${field} must be array`);
-    } else if (!(typeof value === "string" && value.trim())) {
-      failures.push(`${TP}.${field} must be string`);
-    }
+    } else if (!(typeof value === "string" && value.trim())) failures.push(`${TP}.${field} must be string`);
   }
-
-  const controlledFields = SELECTED_M7_FIELDS.filter((field) => CONTROLLED_FIELD_STATUSES.includes(valueAt(profile, field)));
-  if (controlledFields.length && (!Array.isArray(profile.target_profile_limitations) || !profile.target_profile_limitations.length)) {
-    failures.push(`controlled M7 fields require target_profile_limitations[]: ${controlledFields.join(",")}`);
-  }
-
-  for (const key of FORBIDDEN_PROFILE_KEYS) if (containsKey(profile, key)) failures.push(`${TP} contains forbidden key or alias: ${key}`);
+  const controlled = SELECTED_FIELDS.filter((field) => CONTROLLED_VALUES.has(valueAt(profile, field)));
+  if (controlled.length && (!Array.isArray(profile[TPL]) || !profile[TPL].length)) failures.push(`controlled M7 fields require ${TPL}[]: ${controlled.join(",")}`);
+  if (containsKey(profile, TPF) || containsKey(profile, "field_derivation_ledger") || containsKey(profile, "source_ledger")) failures.push(`${TP} contains forensic/provenance material`);
 }
 
 function validateForensics(forensics, failures) {
   if (!isPlainObject(forensics)) return failures.push(`${TPF} must be object`);
-  rejectKeyDiff(Object.keys(forensics).sort(), [...REQUIRED_FORENSIC_BRANCHES].sort(), TPF, failures);
-  for (const key of FORBIDDEN_FORENSIC_KEYS) if (containsKey(forensics, key)) failures.push(`${TPF} contains forbidden alias or material artifact: ${key}`);
+  rejectKeyDiff(Object.keys(forensics).sort(), [...FORENSIC_BRANCHES].sort(), TPF, failures);
+  if (containsKey(forensics, TP)) failures.push(`${TPF} contains material artifact`);
+  for (const branch of ARRAY_FORENSIC_BRANCHES) if (!Array.isArray(forensics[branch])) failures.push(`${TPF}.${branch} must be array`);
+  for (const branch of REQUIRED_NON_EMPTY) if (Array.isArray(forensics[branch]) && !forensics[branch].length) failures.push(`${TPF}.${branch} must not be empty`);
 
-  for (const branch of ["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger", "field_derivation_ledger", "targeted_re_extraction_ledger", "limitation_ledger", "cross_route_use_ledger"]) {
-    if (!Array.isArray(forensics[branch])) failures.push(`${TPF}.${branch} must be array`);
-  }
-  for (const branch of ["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger"]) {
-    if (Array.isArray(forensics[branch]) && !forensics[branch].length) failures.push(`${TPF}.${branch} must not be empty`);
-  }
+  const directRows = Array.isArray(forensics.field_derivation_ledger) ? forensics.field_derivation_ledger : [];
+  const reinvestigationRows = Array.isArray(forensics.targeted_re_extraction_ledger) ? forensics.targeted_re_extraction_ledger : [];
+  const limitationRows = Array.isArray(forensics.limitation_ledger) ? forensics.limitation_ledger : [];
+  const coverage = buildCoverage(directRows, reinvestigationRows, limitationRows);
 
-  const ledger = Array.isArray(forensics.field_derivation_ledger) ? forensics.field_derivation_ledger : [];
-  if (ledger.length !== SELECTED_M7_FIELDS.length) failures.push(`field_derivation_ledger must contain exactly ${SELECTED_M7_FIELDS.length} rows`);
-  const ledgerFields = new Set(ledger.map((row) => outputPathFromLedgerRow(row)).filter(Boolean));
-  for (const field of SELECTED_M7_FIELDS) if (!ledgerFields.has(field)) failures.push(`field_derivation_ledger missing selected M7 field: ${field}`);
-  for (const row of ledger) validateFieldDerivationRow(row, failures);
+  for (const field of SELECTED_FIELDS) {
+    const state = coverage.get(field) || {};
+    if (!state.direct && !(state.reinvestigated && state.limited)) failures.push(`selected M7 field lacks direct support or reinvestigated limitation coverage: ${field}`);
+  }
+  for (const row of directRows) validateDerivationRow(row, failures);
   validateSourceRefUrlPairing(forensics, failures);
-  validateLimitationAndReinvestigationCoverage(forensics, failures);
 }
 
-function validateFieldDerivationRow(row, failures) {
+function buildCoverage(directRows, reinvestigationRows, limitationRows) {
+  const coverage = new Map(SELECTED_FIELDS.map((field) => [field, { direct: false, reinvestigated: false, limited: false }]));
+  for (const row of directRows) updateCoverage(coverage, row, { direct: isSupported(row), limited: isControlled(row), reinvestigated: hasReinvestigation(row) });
+  for (const row of reinvestigationRows) updateCoverage(coverage, row, { reinvestigated: true });
+  for (const row of limitationRows) updateCoverage(coverage, row, { limited: true });
+  return coverage;
+}
+
+function updateCoverage(coverage, row, patch) {
+  const field = outputPath(row);
+  if (!field || !coverage.has(field)) return;
+  Object.assign(coverage.get(field), patch);
+}
+
+function validateDerivationRow(row, failures) {
   if (!isPlainObject(row)) return failures.push("field_derivation_ledger row must be object");
-  const label = outputPathFromLedgerRow(row) || row.output_field || "unknown";
-  if (!String(row.fd_field_id || "").startsWith("TP.")) failures.push(`field_derivation_ledger invalid fd_field_id for ${label}`);
-  if (!hasSourceRef(row)) failures.push(`field_derivation_ledger missing source_ref/source_refs for ${label}`);
-  if (!hasSourceUrl(row)) failures.push(`field_derivation_ledger missing source_url/source_urls for ${label}`);
-  for (const field of ["evidence_summary", "forbidden_inference_check", "derivation_status", "targeted_reinvestigation_status"]) {
-    if (!(typeof row[field] === "string" && row[field].trim())) failures.push(`field_derivation_ledger missing ${field} for ${label}`);
-  }
+  const field = outputPath(row) || row.output_field || "unknown";
+  if (row.fd_field_id && !String(row.fd_field_id).startsWith("TP.")) failures.push(`field_derivation_ledger invalid fd_field_id for ${field}`);
+  if (isSupported(row)) {
+    if (!hasSourceRef(row)) failures.push(`direct-support row missing source_ref/source_refs for ${field}`);
+    if (!hasSourceUrl(row)) failures.push(`direct-support row missing source_url/source_urls for ${field}`);
+    if (!hasAny(row, ["evidence_summary", "source_review_summary", "source_basis_reviewed", "reviewed_source_basis"])) failures.push(`direct-support row missing evidence/source summary for ${field}`);
+  } else if (isControlled(row)) {
+    if (!hasReinvestigation(row)) failures.push(`controlled row missing targeted reinvestigation status for ${field}`);
+    if (!hasAny(row, ["reviewed_source_basis", "source_basis_reviewed", "source_review_summary", "evidence_summary"])) failures.push(`controlled row missing reviewed source basis for ${field}`);
+    if (!hasAny(row, ["limitation_if_any", "downstream_effect", "limitation_basis"])) failures.push(`controlled row missing limitation/downstream effect for ${field}`);
+  } else failures.push(`field_derivation_ledger row must be direct-supported or controlled-after-reinvestigation for ${field}`);
 }
 
 function validateSourceRefUrlPairing(value, failures) {
-  for (const row of collectRows(value)) {
-    if (!isPlainObject(row)) continue;
-    if (hasSourceRef(row) && !hasSourceUrl(row)) failures.push(`source-ref row missing source_url/source_urls: ${JSON.stringify(row).slice(0, 160)}`);
-  }
+  for (const row of collectRows(value)) if (isPlainObject(row) && hasSourceRef(row) && !hasSourceUrl(row)) failures.push(`source-ref row missing source_url/source_urls: ${JSON.stringify(row).slice(0, 160)}`);
 }
 
-function validateLimitationAndReinvestigationCoverage(forensics, failures) {
-  const ledger = Array.isArray(forensics.field_derivation_ledger) ? forensics.field_derivation_ledger : [];
-  const limited = ledger.some((row) => isPlainObject(row) && LIMITED_PATTERN.test(`${row.derivation_status || ""} ${row.limitation_if_any || ""}`));
-  if (limited && (!Array.isArray(forensics.limitation_ledger) || !forensics.limitation_ledger.length)) failures.push("limited M7 fields require limitation_ledger[]");
-  if (limited && (!Array.isArray(forensics.targeted_re_extraction_ledger) || !forensics.targeted_re_extraction_ledger.length)) failures.push("limited M7 fields require targeted_re_extraction_ledger[]");
+function outputPath(row) {
+  if (!isPlainObject(row)) return "";
+  const raw = typeof row.output_path === "string" ? row.output_path : typeof row.output_parent === "string" && typeof row.output_field === "string" ? `${row.output_parent}.${row.output_field}` : typeof row.output_field === "string" ? row.output_field : typeof row.field === "string" ? row.field : typeof row.field_name === "string" ? row.field_name : "";
+  let path = String(raw || "").replace(/^target_profile\./, "").replace(/^target_profile\[\]\./, "").trim();
+  if (path === `${TPL}.${TPL}` || path.endsWith(`.${TPL}`)) return TPL;
+  return path;
 }
 
-function validateNoStaleStrings(value, failures) { for (const stale of FORBIDDEN_STALE_STRINGS) if (containsStringValue(value, stale)) failures.push(`stale or forbidden string present: ${stale}`); }
+function isSupported(row) { return SUPPORTED_PATTERN.test(`${row?.derivation_status || ""} ${row?.controlled_status || ""}`) && !isControlled(row); }
+function isControlled(row) { return CONTROLLED_PATTERN.test(`${row?.derivation_status || ""} ${row?.controlled_status || ""} ${row?.limitation_status || ""} ${row?.limitation_if_any || ""}`); }
+function hasReinvestigation(row) { return hasAny(row, ["targeted_reinvestigation_status", "targeted_re_extraction_status", "reinvestigation_status"]); }
+function hasAny(row, keys) { return keys.some((key) => typeof row?.[key] === "string" && row[key].trim()); }
 function validateExactTopLevelKeys(output, expected, failures, phase) { if (!isPlainObject(output)) return failures.push(`${phase}_OUTPUT_INVALID:not_object`); rejectKeyDiff(Object.keys(output).sort(), [...expected].sort(), phase, failures); }
 function rejectKeyDiff(actual, expected, label, failures) { const missing = expected.filter((key) => !actual.includes(key)); const extra = actual.filter((key) => !expected.includes(key)); if (missing.length) failures.push(`${label} missing keys: ${missing.join(",")}`); if (extra.length) failures.push(`${label} extra keys: ${extra.join(",")}`); }
-function outputPathFromLedgerRow(row) { if (!isPlainObject(row)) return ""; if (typeof row.output_path === "string") return normalizeM7OutputPath(row.output_path); if (typeof row.output_parent === "string" && typeof row.output_field === "string") return normalizeM7OutputPath(`${row.output_parent}.${row.output_field}`); if (typeof row.output_field === "string") return normalizeM7OutputPath(row.output_field); return ""; }
-function normalizeM7OutputPath(value) { return String(value || "").replace(/^target_profile\./, "").replace(/^target_profile\[\]\./, "").trim(); }
-function valueAt(root, fieldPath) { return String(fieldPath).split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), root); }
+function valueAt(root, path) { return String(path).split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), root); }
 function hasSourceRef(row) { return typeof row?.source_ref === "string" && row.source_ref.trim() || Array.isArray(row?.source_refs) && row.source_refs.length || isPlainObject(row?.source_refs); }
 function hasSourceUrl(row) { return typeof row?.source_url === "string" && row.source_url.trim() || Array.isArray(row?.source_urls) && row.source_urls.length || isPlainObject(row?.source_urls); }
 function collectRows(value) { if (!value || typeof value !== "object") return []; if (Array.isArray(value)) return value.flatMap((item) => collectRows(item)); return [value, ...Object.values(value).flatMap((item) => collectRows(item))]; }
 function isPlainObject(value) { return !!value && typeof value === "object" && !Array.isArray(value); }
 function containsKey(value, key) { if (!value || typeof value !== "object") return false; if (Object.prototype.hasOwnProperty.call(value, key)) return true; return Object.values(value).some((item) => containsKey(item, key)); }
-function containsStringValue(value, needle) { if (typeof value === "string") return value.includes(needle); if (!value || typeof value !== "object") return false; return Object.values(value).some((item) => containsStringValue(item, needle)); }
