@@ -139,6 +139,7 @@ function collectMissingArtifacts(artifacts) {
 function resolveCompilerValidationStatus({ missingArtifacts, dynamicManifest, artifacts }) {
   if (missingArtifacts.some((row) => row.critical)) return "CONTROLLED_FAILURE";
   const challengeStatus = normalizeStatus(artifacts.challenge_gate?.lock_status || artifacts.challenge_gate?.status || artifacts.challenge_gate?.operator_challenge_gate?.lock_status);
+  if (!challengeStatus) return "CONTROLLED_FAILURE";
   if (challengeStatus === "CONTROLLED_FAILURE" || challengeStatus === "REPAIR_REQUIRED") return "CONTROLLED_FAILURE";
   if (challengeStatus === "LOCKED_WITH_LIMITATIONS" || challengeStatus === "PASS_WITH_LIMITATION") return "LOCKED_WITH_LIMITATIONS";
   if (dynamicManifest.batch_count !== dynamicManifest.loaded_batch_artifacts || dynamicManifest.batch_count !== dynamicManifest.loaded_batch_validation_artifacts) return "CONTROLLED_FAILURE";
