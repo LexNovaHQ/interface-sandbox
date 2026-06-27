@@ -1,3 +1,12 @@
-# M12 integration notes
+# M12 integration patch notes
 
-Patch pending: move M12 ownership into Agent 5 and wire batch validation plus global review.
+Partial commit completed:
+- M12_BATCH_VALIDATION.md added.
+- M12_GLOBAL_CHALLENGE.md stub added.
+
+Remaining:
+- expand global prompt.
+- route M12 phase through agent_5_exposure_registry.
+- allow Agent 5 to write challenge_gate.
+- wire semantic batch validation in m11-orchestrator.js.
+- do not touch compiler or renderer.
