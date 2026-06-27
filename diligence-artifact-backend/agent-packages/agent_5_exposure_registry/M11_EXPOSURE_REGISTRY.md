@@ -7,15 +7,23 @@ module_id: M11
 module_name: REGISTRY_HANDSHAKE_AND_EXPOSURE_PROFILE
 active_phase_only: true
 active_agent: agent_5_exposure_registry
-canonical_material_output: target_exposure_profile
-canonical_forensic_output: target_exposure_profile_forensics
+canonical_route_plan_output: exposure_registry_route_plan
+canonical_batch_output_pattern: exposure_registry_batch__{GROUP}__{NNN}
+canonical_batch_validation_pattern: exposure_registry_batch_validation__{GROUP}__{NNN}
+canonical_workpad_output: exposure_registry_workpad_98
+canonical_material_outputs:
+  - exposure_registry_controlled_profile
+  - exposure_registry_triggered_profile
+canonical_forensic_output: exposure_registry_profile_forensics
 
 module_design_lock:
   M11 is the only registry-evaluation module.
   M11 evaluates all active AI Threat Registry rows against locked upstream artifacts and admitted evidence.
-  M11 emits a reader-facing `target_exposure_profile` containing only triggered and controlled registry rows.
-  M11 preserves full registry-row accountability, all LEP selector outcomes, route planning, trigger/evaluation decisions, evidence binding, self-checks, lock-gates, and emission reconciliation inside a separate forensic artifact.
-  M11 does not issue legal advice, legal applicability conclusions, compliance conclusions, liability findings, breach findings, final legal-risk verdicts, or final report output.
+  M11 execution is batched. No production backend call may require one model call to evaluate all 98 registry rows.
+  M11 model calls evaluate only the Threat_IDs assigned to the active batch instance.
+  M11 preserves full registry-row accountability, all LEP selector outcomes, route planning, trigger/evaluation decisions, evidence binding, self-checks, lock-gates, and emission reconciliation inside persisted workpad/forensic artifacts.
+  M11 material output is split into two deterministic reader-facing artifacts: `exposure_registry_controlled_profile` and `exposure_registry_triggered_profile`.
+  M11 does not issue legal advice, legal applicability conclusions, compliance conclusions, liability findings, breach findings, final legal-risk verdicts, final report output, compiler output, or renderer output.
 
 runtime_binding_expectation:
   active_agent_id: agent_5_exposure_registry
@@ -40,20 +48,34 @@ governing_imports:
 execution_rule:
   Execute M11 only.
   Read only locked upstream artifacts approved for Agent 5.
-  Evaluate all 98 active AI Threat Registry rows.
+  Load and account for all 98 active AI Threat Registry rows.
   Apply all 22 LEP selector rows from the Field Derivation Registry.
-  Preserve exactly one registry-row workpad outcome per active Threat_ID in `target_exposure_profile_forensics` / Module V audit material.
-  Build `target_exposure_profile` first from final TRIGGERED and CONTROLLED rows only.
-  Build `target_exposure_profile_forensics` only after `target_exposure_profile` is complete, validated, and saved as the M11 material artifact by the backend runner.
-  Every final TRIGGERED row must appear in `target_exposure_profile.triggered_and_controlled_rows[]`.
-  Every final CONTROLLED row must appear in `target_exposure_profile.triggered_and_controlled_rows[]`.
-  A row that is CONTROLLED and limited must still be emitted as CONTROLLED with limitation text.
-  A row that is TRIGGERED and weak/conflicting must still be emitted as TRIGGERED with limitation text.
-  Do not emit only summaries, counts, category buckets, matrices, review registers, controlled-only wrappers, or partial material rows.
-  Do not perform M6, M7, M8, M9, M10, M12, M13, or M14 work.
+  For each registry row, treat `AI_THREAT_REGISTRY.yaml` row metadata plus `Hunter_Trigger` as the mandatory row-level derivation authority.
+  The `Hunter_Trigger` column is the registry signal / detection-logic column. It contains the row-specific `CONDITION_N`, `TRIGGER_IF`, and `EXCLUDE_IF` logic.
+  `03_REGISTRY_EVALUATION_RULES.yaml` supplies the mandatory evaluation procedure for applying each row's `Hunter_Trigger`.
+  No M11 batch may derive trigger status, control/exclude status, or final material status from intuition, summary, archetype name, surface label, category label, or prior model memory.
+  Do not evaluate all 98 rows in a single model call.
+  Deterministically create `exposure_registry_route_plan` before any registry-row evaluation.
+  Route UNI rows first.
+  Batch evaluation-routed rows by UNI/archetype/surface grouping with a maximum of 8 rows per model batch.
+  Each model batch must evaluate only its assigned `expected_threat_ids`.
+  Each model batch must produce a row-level registry ledger slice for its assigned Threat_IDs only.
+  Each batch ledger must be challenged by M12 batch validation before it becomes an accepted persisted batch artifact.
+  Each accepted batch must be saved as `exposure_registry_batch__{GROUP}__{NNN}` and paired with `exposure_registry_batch_validation__{GROUP}__{NNN}`.
+  Preserve exactly one final registry-row workpad outcome per active Threat_ID in `exposure_registry_workpad_98` and `exposure_registry_profile_forensics`.
+  Build `exposure_registry_workpad_98` deterministically from accepted batch artifacts, M12 batch validation artifacts, and deterministic not-applicable rows.
+  Build `exposure_registry_controlled_profile` deterministically from `exposure_registry_workpad_98` using only final CONTROLLED rows.
+  Build `exposure_registry_triggered_profile` deterministically from `exposure_registry_workpad_98` using only final TRIGGERED rows.
+  Build `exposure_registry_profile_forensics` only after both split material artifacts are complete, validated, and saved.
+  Every final CONTROLLED row must appear in `exposure_registry_controlled_profile.controlled_rows[]`.
+  Every final TRIGGERED row must appear in `exposure_registry_triggered_profile.triggered_rows[]`.
+  A CONTROLLED row that is limited must still be emitted as CONTROLLED with limitation text.
+  A TRIGGERED row that is weak/conflicting must still be emitted as TRIGGERED with limitation text.
+  Do not emit summaries, counts, category buckets, matrices, review registers, controlled-only wrappers outside the controlled profile, triggered-only wrappers outside the triggered profile, grouped rows, or partial material rows.
+  Do not perform M6, M7, M8, M9, M10, M12 global challenge, M13, M14, compiler, renderer, or report work.
   Do not mutate upstream profiles, registry metadata, registry rows, or source-discovery custody.
-  Do not emit `operator_challenge_gate`, `final_output_handoff`, report prose, HTML, renderer output, or terminal report output.
-  After each local phase output boundary, use the backend validator/save gate required for that phase. Do not use visible same-chat phase packets in backend execution.
+  Do not emit `operator_challenge_gate`, `challenge_gate`, `final_output_handoff`, report prose, HTML, markdown, renderer output, or terminal report output from any M11 batch or M11 material/forensic save boundary.
+  After each local output boundary, use the backend validator/save gate required for that boundary. Do not use visible same-chat phase packets in backend execution.
 
 internal_stage_order:
   - PHASE A / M11-A: Exposure Source, Registry, and Upstream Evidence Extraction Capsule
@@ -61,20 +83,23 @@ internal_stage_order:
     - M11-A2: Input Custody and Upstream Artifact Gate
     - M11-A3: Legal/Governance Lossless Bucket Extraction
     - M11-A4: Full Registry Inventory and LEP Selector Load
-    - M11-A5: Internal Registry Route Planning
-    - M11-A6: Trigger Review Workspace Formation
-  - PHASE B / M11-B: Material Target Exposure Profile Derivation
-    - M11-B1: Model-Led Trigger Adjudication
-    - M11-B2: Evidence Binding
-    - M11-B3: Model-Led Control / Exclude Evaluation
-    - M11-B4: Registry Row Workpad Accountability
-    - M11-B5: Triggered / Controlled Row Assembly
-    - M11-B6: Seven-Column Row Shaping
-  - PHASE B1 / M11-B1: Material Target Exposure Profile Validator + Save Gate
-    - M11-B1A: Emission Manifest Reconciliation
-    - M11-B1B: Registry Self-Check and Material Save Gate
-  - PHASE C / M11-C: Target Exposure Profile Forensics Derivation
-  - PHASE D / M11-D: Target Exposure Profile Forensics Validator + Save Gate
+    - M11-A5: Deterministic Internal Registry Route Planning
+    - M11-A6: Deterministic Batch Plan Formation
+    - M11-A7: Save `exposure_registry_route_plan`
+  - PHASE B / M11-B: Batched Registry Row Evaluation
+    - M11-B1: Batch Packet Formation
+    - M11-B2: Model-Led Trigger Adjudication for active batch only
+    - M11-B3: Evidence Binding for active batch only
+    - M11-B4: Model-Led Control / Exclude Evaluation for active batch only
+    - M11-B5: Batch Registry Ledger Slice Assembly
+    - M11-B6: Batch Mechanical Validation
+  - PHASE B2 / M12-BATCH: External M12 Batch Validation Gate
+    - M12 validates the active batch only.
+    - M11 batch artifacts are not accepted until M12 batch validation passes, passes with limitation, or records controlled failure.
+  - PHASE C / M11-C: Deterministic Canonical 98-Row Workpad Merge
+  - PHASE D / M11-D: Deterministic Controlled Material Projection
+  - PHASE E / M11-E: Deterministic Triggered Material Projection
+  - PHASE F / M11-F: Exposure Profile Forensics Derivation and Save Gate
 
 phase_terminal_sequence:
   In backend execution, return strict JSON only.
@@ -82,12 +107,14 @@ phase_terminal_sequence:
   Do not emit checkpoint prose.
   Do not emit terminal receipt text.
   Do not emit audit logs, operator challenge gates, final handoff JSON, report prose, HTML, markdown, or renderer payload.
-  M11 has two separate backend terminal events, not one combined response.
-  Phase B1 terminal event returns exactly one top-level key: `target_exposure_profile`.
-  The backend runner must validate and save `target_exposure_profile` as an artifact before Phase C starts.
-  Phase D terminal event returns exactly one top-level key: `target_exposure_profile_forensics`.
-  The backend runner must validate and save `target_exposure_profile_forensics` before M12/M13.
-  A response that contains both `target_exposure_profile` and `target_exposure_profile_forensics` in the same backend call is invalid unless the operator has explicitly invoked a non-production debug bundling mode.
+  M11 has multiple backend output boundaries, not one combined response.
+  M11 route-plan boundary saves exactly one artifact: `exposure_registry_route_plan`.
+  M11 batch boundary returns exactly one batch ledger object for the active batch only. The backend persists accepted batch ledgers as `exposure_registry_batch__{GROUP}__{NNN}` only after M12 batch validation.
+  M11 canonical merge boundary saves exactly one artifact: `exposure_registry_workpad_98`.
+  M11 controlled material boundary saves exactly one artifact: `exposure_registry_controlled_profile`.
+  M11 triggered material boundary saves exactly one artifact: `exposure_registry_triggered_profile`.
+  M11 forensic boundary saves exactly one artifact: `exposure_registry_profile_forensics`.
+  A response that contains more than the active boundary artifact is invalid unless the operator has explicitly invoked a non-production debug bundling mode.
 
 phase_local_gate:
   Before handoff, verify:
@@ -96,29 +123,30 @@ phase_local_gate:
     - `AI_THREAT_REGISTRY.yaml`, `REGISTRY_KEY_v3_0.md`, `03_REGISTRY_EVALUATION_RULES.yaml`, and LEP selector authority are loaded.
     - expected active registry row count is 98 and loaded active registry row count is 98.
     - all 22 LEP selector rows have final workpad outcomes.
-    - all 98 active registry rows have exactly one final registry-row workpad outcome.
+    - all 98 active registry rows have exactly one final registry-row workpad outcome in `exposure_registry_workpad_98`.
     - every registry-row workpad outcome contains exactly one Threat_ID.
     - no grouped rows, composite Threat_ID rows, category rows, material-public-route rows, or compact route summaries appear.
     - patched M8 activity paths are used: `activity_reference`, `product_service_wrapper`, `activity_feature_name`, `mechanics_proof`, `data_content_object_touched`, `archetype_codes`, `surface_context_tokens`, `surface_proof_and_routing_limits`.
     - stale M8 paths are rejected: `activity_id`, `product_context`, `activity_name`, `mechanics`, `surface_tokens`, `routing_basis`, `activity_inventory`, `activity_mechanics`, `registry_routing_substrate`.
     - M10 main and M10 forensics are consumed only as locked upstream artifacts; M10 data provenance is not re-derived.
-    - trigger status and evaluation status remain separate in forensic/workpad material.
-    - every final TRIGGERED row appears in `target_exposure_profile.triggered_and_controlled_rows[]`.
-    - every final CONTROLLED row appears in `target_exposure_profile.triggered_and_controlled_rows[]`.
+    - trigger status and evaluation status remain separate in batch ledger/workpad/forensics.
+    - every final CONTROLLED row appears in `exposure_registry_controlled_profile.controlled_rows[]`.
+    - every final TRIGGERED row appears in `exposure_registry_triggered_profile.triggered_rows[]`.
     - the emission manifest shows no missing triggered rows, no missing controlled rows, no duplicate emitted Threat_IDs, and no wrong-status emitted rows.
-    - every emitted row uses exactly the locked seven-column row contract.
-    - `target_exposure_profile` contains no key except `triggered_and_controlled_rows`.
-    - `target_exposure_profile_forensics` is separate and emitted only after the main profile.
+    - every emitted material row uses exactly the locked seven-column row contract.
+    - `exposure_registry_controlled_profile` contains no key except `controlled_rows`.
+    - `exposure_registry_triggered_profile` contains no key except `triggered_rows`.
+    - `exposure_registry_profile_forensics` is separate and emitted only after both split material artifacts are saved.
     - no legal advice, compliance conclusion, legality conclusion, legal applicability conclusion, liability finding, breach finding, enforceability verdict, risk score, or high/low legal-risk verdict appears.
-    - no M12, M13, or M14 canonical object is emitted.
+    - no M12 global challenge, M13, M14, compiler, renderer, or final canonical object is emitted by M11.
 
-  allowed_gate_outcomes:
-    - PASS
-    - PASS_WITH_WARNING
-    - PASS_WITH_LIMITATION
-    - REINVESTIGATION_COMPLETED_WITH_LIMITATION
-    - SOURCE_REPAIR_REQUIRED
-    - CONTROLLED_FAILURE
+allowed_gate_outcomes:
+  - PASS
+  - PASS_WITH_WARNING
+  - PASS_WITH_LIMITATION
+  - REINVESTIGATION_COMPLETED_WITH_LIMITATION
+  - SOURCE_REPAIR_REQUIRED
+  - CONTROLLED_FAILURE
 
 allowed_inputs:
   - source_discovery_handoff
@@ -135,8 +163,8 @@ allowed_inputs:
   - target_profile_forensics
   - target_feature_profile
   - target_feature_profile_forensics
-  - target_data_provenance_profile
-  - target_data_provenance_profile_forensics
+  - data_provenance_profile
+  - data_provenance_profile_forensics
   - AI_THREAT_REGISTRY.yaml
   - REGISTRY_KEY_v3_0.md
   - 03_REGISTRY_EVALUATION_RULES.yaml
@@ -144,62 +172,83 @@ allowed_inputs:
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml forensic authority
   - admitted M6 registry/product/legal/data/control evidence and limitations
 
-required_machine_output_by_phase:
-  PHASE_B1_MATERIAL_SAVE_EVENT:
-    - target_exposure_profile
-  PHASE_D_FORENSIC_SAVE_EVENT:
-    - target_exposure_profile_forensics
+required_machine_output_by_boundary:
+  ROUTE_PLAN_SAVE_EVENT:
+    - exposure_registry_route_plan
+  BATCH_EVALUATION_EVENT:
+    - m11_batch_registry_ledger
+  BATCH_ACCEPTED_SAVE_EVENT:
+    - exposure_registry_batch__{GROUP}__{NNN}
+    - exposure_registry_batch_validation__{GROUP}__{NNN}
+  CANONICAL_98_MERGE_EVENT:
+    - exposure_registry_workpad_98
+  CONTROLLED_MATERIAL_SAVE_EVENT:
+    - exposure_registry_controlled_profile
+  TRIGGERED_MATERIAL_SAVE_EVENT:
+    - exposure_registry_triggered_profile
+  FORENSIC_SAVE_EVENT:
+    - exposure_registry_profile_forensics
 
 forbidden_outputs:
   - operator_challenge_gate
+  - challenge_gate
   - final_output_handoff
   - exposure_summary
   - material_exposure_findings
-  - controlled_exposure_rows
   - absent_not_triggered_registry_rows
   - registry_coverage_matrix
   - activity_to_exposure_matrix
   - data_asset_to_exposure_matrix
   - legal_control_to_exposure_matrix
   - review_priority_register
-  - exposure_limitations as separate profile branch
+  - exposure_limitations as separate material profile branch
   - grouped route rows
   - composite Threat_ID rows
   - material public route summaries
   - compact registry categories
   - old M8 path names
   - legal/compliance verdicts
+  - target_exposure_profile as production backend material root
+  - target_exposure_profile_forensics as production backend forensic root
+  - exposure_registry_profile as production backend combined material root
 
 validator_action:
-  action_name: backend_validate_and_save_M11_EXPOSURE_REGISTRY
+  action_name: backend_validate_and_save_M11_BATCHED_EXPOSURE_REGISTRY
   phase: M11_EXPOSURE_REGISTRY
-  pass_condition: Phase B1 emits and saves target_exposure_profile first with every final TRIGGERED and CONTROLLED row; only after backend save may Phase C/D emit and save target_exposure_profile_forensics with 98/98 registry workpad coverage, 22/22 LEP selector coverage, legal/governance lossless source extraction coverage, and clean emission manifest
-  fail_behavior: repair M11 only; do not advance to M12/M13
+  pass_condition: M11 route plan saved; every model-routed batch evaluated and M12 batch-validated; `exposure_registry_workpad_98` contains 98/98 registry workpad coverage; 22/22 LEP selector coverage preserved; controlled rows projected into `exposure_registry_controlled_profile`; triggered rows projected into `exposure_registry_triggered_profile`; `exposure_registry_profile_forensics` preserves full row-level accountability, legal/governance lossless source extraction coverage where used, clean emission manifest, batch index, and M12 batch validation index.
+  fail_behavior: repair the smallest affected M11 unit only; do not advance to M12 global challenge.
 
 repair_policy:
-  - Repair in M11 means targeted registry-row, evidence-path, LEP-selector, emitted-row, or forensic-ledger reinvestigation first; not immediate hard blocking, silent row suppression, summary substitution, or status downgrade.
-  - If a registry row, route decision, trigger decision, evaluation status, visible-control basis, evidence binding, LEP selector outcome, seven-column emitted row, emission-manifest entry, legal/governance lossless evidence use, or forensic ledger row is inadequate, unsupported, weak, thin, vague, conflicting, or wrong, run targeted item-specific reinvestigation inside the existing Agent 1 / Agent 3 / Agent 4 approved source universe.
+  - Repair in M11 means targeted registry-row, evidence-path, LEP-selector, emitted-row, batch-ledger, workpad, projection, or forensic-ledger reinvestigation first; not immediate hard blocking, silent row suppression, summary substitution, or status downgrade.
+  - If a batch row, route decision, trigger decision, evaluation status, visible-control basis, evidence binding, LEP selector outcome, seven-column emitted row, emission-manifest entry, legal/governance lossless evidence use, or forensic ledger row is inadequate, unsupported, weak, thin, vague, conflicting, or wrong, repair the smallest affected unit.
+  - If the defect is batch-local, rerun only the affected `M11_BATCH_EVALUATE::{GROUP}::{NNN}` and its paired M12 batch validation.
   - Re-evaluate the affected Threat_ID or LEP row using the governing `AI_THREAT_REGISTRY.yaml`, `03_REGISTRY_EVALUATION_RULES.yaml`, `REGISTRY_KEY_v3_0.md`, selected `LEP.*` authority, patched M8 activity paths, M10 data/control substrate, M9 legal/governance navigation, and admitted legal/governance lossless evidence.
-  - If the row can be supported after targeted reinvestigation, emit or repair the supported TRIGGERED or CONTROLLED row using the seven-column contract.
-  - If the row remains weak, access-limited, conflicting, or partially supported after targeted reinvestigation, keep the correct final material status where registry logic requires TRIGGERED or CONTROLLED, add controlled limitation/review-route text in `row_limitations`, and record the limitation in `target_exposure_profile_forensics`.
-  - If the row is not TRIGGERED or CONTROLLED after proper evaluation, preserve it in forensic/workpad accountability only; do not emit it in `target_exposure_profile`.
+  - If a row can be supported after targeted reinvestigation, preserve or repair the supported final material status: `TRIGGERED` or `CONTROLLED`.
+  - If a row remains weak, access-limited, conflicting, or partially supported after targeted reinvestigation, keep the correct final material status where registry logic requires TRIGGERED or CONTROLLED, add controlled limitation/review-route text in `row_limitations`, and record the limitation in `exposure_registry_profile_forensics`.
+  - If the row is not TRIGGERED or CONTROLLED after proper evaluation, preserve it in workpad/forensic accountability only; do not emit it in either split material profile.
   - Proceed only after every weakness, conflict, not-visible state, access failure, review-required state, omission, or limitation is controlled and ledgered.
-  - Do not solve missing emitted rows by downgrading TRIGGERED or CONTROLLED rows merely to avoid emission.
+  - Do not solve missing emitted rows by downgrading, suppressing, grouping, summarizing, or moving the row into a count/category branch.
   - Do not recompute unrelated upstream objects.
   - Only route back to Agent 1 / M6 source repair when the source universe, legal/governance lossless buckets, or admitted evidence custody is missing, corrupted, inaccessible, or contradictory in a way M11 cannot repair from loaded artifacts.
   - Only route back to Agent 3 or Agent 4 when a locked upstream profile artifact itself is missing, malformed, or contradictory in a way M11 cannot repair without mutating that upstream artifact.
 
 stop_condition:
-  Stop local M11 phase only; return control to the backend runner. The backend runner may advance to M12/M13 only after `target_exposure_profile` and `target_exposure_profile_forensics` are saved and M11 returns PASS, PASS_WITH_WARNING, PASS_WITH_LIMITATION, or REINVESTIGATION_COMPLETED_WITH_LIMITATION. If M11 returns SOURCE_REPAIR_REQUIRED or CONTROLLED_FAILURE, do not advance.
+  Stop local M11 execution only; return control to the backend runner.
+  The backend runner may advance to M12 global challenge only after `exposure_registry_workpad_98`, `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, and `exposure_registry_profile_forensics` are saved and M11 returns PASS, PASS_WITH_WARNING, PASS_WITH_LIMITATION, or REINVESTIGATION_COMPLETED_WITH_LIMITATION.
+  If M11 returns SOURCE_REPAIR_REQUIRED or CONTROLLED_FAILURE, do not advance.
 </phase_call_card>
 
-`M11.S0.C1` This M11 module is the standalone Exposure Registry phase for Agent 5. It is not a combined M11/M12/M13 prompt.
+`M11.S0.C1` This M11 module is the standalone Exposure Registry phase for Agent 5. It is not a combined M11/M12-global/M13/compiler/renderer prompt.
 
-`M11.S0.C2` M11 does not authorize merged material/forensic output. The old one-shot `<phase_output>` shape containing both `target_exposure_profile` and `target_exposure_profile_forensics` is expressly rejected for production backend execution.
+`M11.S0.C2` M11 does not authorize one-shot 98-row production evaluation. Production M11 registry evaluation is batched, with a maximum of 8 rows per model batch and with persisted batch artifacts.
 
-`M11.S0.C3` M11 cannot hand off to M12/M13 until `target_exposure_profile` and `target_exposure_profile_forensics` are both saved artifacts and the M11 lock gate has passed.
+`M11.S0.C3` M11 does not authorize merged material/forensic output. The old one-shot `<phase_output>` shape containing material and forensic objects is expressly rejected for production backend execution.
 
-`M11.S0.C4` M11 material exposure-profile derivation and M11 forensic derivation are sequential. The forensic profile is not allowed to be invented from memory, summary, or unsaved material-profile assumptions.
+`M11.S0.C4` M11 cannot hand off to M12 global challenge until `exposure_registry_workpad_98`, `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, and `exposure_registry_profile_forensics` are all saved artifacts and the M11 lock gate has passed.
+
+`M11.S0.C5` M11 batch artifacts cannot remain in model memory. Every accepted batch must be saved as a persisted artifact only after paired M12 batch validation exists.
+
+`M11.S0.C6` M11 material exposure profiles are deterministic projections from `exposure_registry_workpad_98`; the model evaluates registry rows, but the final controlled and triggered material artifacts are not model-assembled from memory.
 
 ---
 
@@ -233,7 +282,7 @@ exposure_summary: controlled_count = 4, controlled_rows_emitted = 0
 Correct rule:
 
 ```text
-Every final CONTROLLED row must appear in target_exposure_profile.triggered_and_controlled_rows[].
+Every final CONTROLLED row must appear in exposure_registry_controlled_profile.controlled_rows[]. Every final TRIGGERED row must appear in exposure_registry_triggered_profile.triggered_rows[].
 ```
 
 ### M11.S0A.3 — Forbidden old M8 routing path
@@ -252,13 +301,13 @@ active_surfaces derived from target_feature_profile.activities[].surface_context
 
 ### M11.S0A.4 — Forbidden output branches
 
-Forbidden branches inside `target_exposure_profile`:
+Forbidden branches inside split material artifacts:
 
 | Forbidden branch | Reason |
 |---|---|
 | `exposure_summary` | summary substitution hides row-level material output |
-| `controlled_exposure_rows` | controlled rows must be inside `triggered_and_controlled_rows[]` |
-| `absent_not_triggered_registry_rows` | audit/workpad only |
+| `controlled_exposure_rows` | use only `exposure_registry_controlled_profile.controlled_rows[]` |
+| `absent_not_triggered_registry_rows` | audit/workpad only; never material output |
 | `registry_coverage_matrix` | forensic only |
 | `review_priority_register` | forensic/workpad only |
 | `activity_to_exposure_matrix` | forensic/workpad only |
@@ -271,7 +320,7 @@ Forbidden branches inside `target_exposure_profile`:
 
 ## M11.S1A — Function
 
-`M11.S1A.C1` Module XI converts locked upstream target, feature, legal, data-provenance, source, registry, and registry-evaluation authorities into the canonical `target_exposure_profile`.
+`M11.S1A.C1` Module XI converts locked upstream target, feature, legal, data-provenance, source, registry, and registry-evaluation authorities into persisted batch ledgers, `exposure_registry_workpad_98`, and the split material artifacts `exposure_registry_controlled_profile` and `exposure_registry_triggered_profile`.
 
 `M11.S1A.C2` Module XI is the only module authorized to evaluate AI Threat Registry rows.
 
@@ -279,7 +328,7 @@ Forbidden branches inside `target_exposure_profile`:
 
 `M11.S1A.C4` Module XI emits reader-facing exposure rows only for final TRIGGERED and CONTROLLED rows.
 
-`M11.S1A.C5` Module XI preserves all non-emitted rows, route decisions, trigger decisions, evidence binding, control/exclude evaluation, limitations, and self-checks in `target_exposure_profile_forensics` / Module V audit material.
+`M11.S1A.C5` Module XI preserves all non-emitted rows, route decisions, trigger decisions, evidence binding, control/exclude evaluation, limitations, batch validation custody, and self-checks in `exposure_registry_workpad_98` and `exposure_registry_profile_forensics` / Module V audit material.
 
 ## M11.S1B — Hard Non-Negotiables
 
@@ -290,10 +339,10 @@ Forbidden branches inside `target_exposure_profile`:
 | UNI routing | Every UNI row is evaluation-routed. UNI rows may not be `NOT_TRIGGERED_NOT_APPLICABLE`. |
 | Active routing source | Active archetypes and surfaces come only from locked M8, not M7 or model memory. |
 | Surface path | Use `surface_context_tokens[]`, never `surface_tokens[]`. |
-| Main output | `target_exposure_profile.triggered_and_controlled_rows[]` only. |
+| Material outputs | `exposure_registry_controlled_profile.controlled_rows[]` for CONTROLLED rows and `exposure_registry_triggered_profile.triggered_rows[]` for TRIGGERED rows only. |
 | Controlled rows | Every final CONTROLLED row must be emitted. |
 | Triggered rows | Every final TRIGGERED row must be emitted. |
-| Forensics | Full 98-row ledger and emission manifest must live in `target_exposure_profile_forensics`. |
+| Forensics | Full 98-row ledger, batch custody, M12 batch validation index, and emission manifest must live in `exposure_registry_profile_forensics`. |
 | Legal firewall | No legal/compliance/liability/violation/adequacy conclusions. |
 | Source firewall | No new discovery, browsing, crawling, source refresh, or unadmitted evidence. |
 | Upstream custody | Do not mutate M6, M7, M8, M9, or M10 artifacts. |
@@ -336,13 +385,53 @@ Forbidden branches inside `target_exposure_profile`:
 | `target_profile_forensics` | Target derivation proof and limitation context. |
 | `target_feature_profile` | Active activities, archetypes, surfaces, feature refs, mechanics/data touchpoints. |
 | `target_feature_profile_forensics` | Activity/archetype/surface derivation proof and limitations. |
-| `target_data_provenance_profile` | Data/privacy/control/missing-proof/readiness substrate. |
-| `target_data_provenance_profile_forensics` | DAP derivation proof, Anti-Unknown outcomes, readiness matrix proof, and missing-proof linkage. |
+| `data_provenance_profile` | Data/privacy/control/missing-proof/readiness substrate. |
+| `data_provenance_profile_forensics` | DAP derivation proof, Anti-Unknown outcomes, readiness matrix proof, and missing-proof linkage. |
 | `AI_THREAT_REGISTRY.yaml` | Locked active registry row inventory. |
 | `REGISTRY_KEY_v3_0.md` | Registry vocabulary, ID syntax, archetype/surface interpretation, row semantics. |
 | `03_REGISTRY_EVALUATION_RULES.yaml` | Trigger/exclude/control/evaluation discipline. |
 | `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml` | LEP field derivation authority. |
 | `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml` | Forensic shape and audit-preservation authority. |
+
+## M11.S2AA — AI Threat Registry YAML Field Canon
+
+`M11.S2AA.C1` M11 must treat the repository `AI_THREAT_REGISTRY.yaml` row keys as the strict registry schema. The active registry row fields are:
+
+```text
+Threat_ID
+Threat_Name
+Lane
+Archetype
+Surface
+Authority_IN
+Authority_EU
+Authority_US
+Velocity
+Pain_Tier
+Pain_Category
+Pain_Depth
+Status
+Effective_Date
+Legal_Pain
+FP_Mechanism
+FP_Impact
+Lex_Nova_Fix
+Hunter_Trigger
+Provenance
+FIELD21
+FIELD22
+FIELD23
+```
+
+`M11.S2AA.C2` `Threat_ID` is the canonical row identifier. `Threat_Name` is the canonical row name. `Archetype` and `Surface` are routing/context fields. `Hunter_Trigger` is the canonical row-level derivation logic field.
+
+`M11.S2AA.C3` `FIELD21`, `FIELD22`, and `FIELD23` are decomposed `Threat_ID` parts: `FIELD21` = archetype/scope segment, `FIELD22` = harm/subcat segment, and `FIELD23` = variant/counter/provenance suffix. They support identity validation, batching, grouping, and forensic reconciliation only. They do not replace `Hunter_Trigger`.
+
+`M11.S2AA.C4` There is no source column named `Subcat`, `Registry_Signal`, `Threat_Signal`, `Condition`, `Trigger_IF`, or `Exclude_IF`. `CONDITION_N`, `TRIGGER_IF`, and `EXCLUDE_IF` are mandatory logical components inside the `Hunter_Trigger` value.
+
+`M11.S2AA.C5` If a row requires harm/subcat grouping, use `FIELD22` or the middle segment of `Threat_ID`. Do not invent or require a non-existent `Subcat` YAML field.
+
+`M11.S2AA.C6` `Hunter_Trigger` plus `03_REGISTRY_EVALUATION_RULES.yaml` are the only source of truth for row-level trigger/exclude/control derivation. `Archetype`, `Surface`, `Threat_Name`, `Pain_Tier`, `Legal_Pain`, `FP_Impact`, `Lex_Nova_Fix`, route reason, or model intuition may support context but may not substitute for applying `Hunter_Trigger`.
 
 ## M11.S2B — Input Failure Handling
 
@@ -355,8 +444,8 @@ Forbidden branches inside `target_exposure_profile`:
 | `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml` missing | `CONTROLLED_FAILURE` |
 | `source_discovery_handoff` missing | `CONTROLLED_FAILURE` |
 | `target_feature_profile` missing | `CONTROLLED_FAILURE` |
-| `target_data_provenance_profile` missing | `CONTROLLED_FAILURE` unless M11 locks with explicit limitations for rows that do not depend on data/privacy/control evidence |
-| `target_data_provenance_profile_forensics` missing | `LOCKED_WITH_LIMITATIONS` only if row evidence can still be bound truthfully; otherwise `CONTROLLED_FAILURE` |
+| `data_provenance_profile` missing | `CONTROLLED_FAILURE` unless M11 locks with explicit limitations for rows that do not depend on data/privacy/control evidence |
+| `data_provenance_profile_forensics` missing | `LOCKED_WITH_LIMITATIONS` only if row evidence can still be bound truthfully; otherwise `CONTROLLED_FAILURE` |
 | admitted evidence missing for a row | Use insufficient evidence, absence, access-failure, row limitation, or review route; do not invent proof |
 | legal/governance lossless bucket missing or corrupt | Route to Agent 1 source/legal repair where the bucket is required for row evidence or visible-control proof; otherwise record a controlled limitation. |
 | legal/governance route exists but full lossless text is unavailable | Use access/text limitation; do not rely on legal_cartography_index summary as a substitute for row-specific evidence. |
@@ -444,22 +533,26 @@ Forbidden branches inside `target_exposure_profile`:
 | `CONFLICTING_SIGNALS` | Admitted evidence conflicts. |
 | `INSUFFICIENT_EVIDENCE` | Evidence too thin to evaluate. |
 | `NOT_VISIBLE_AFTER_TARGETED_SEARCH` | Expected route reviewed; signal/control not visible. |
-| `ACCESS_FAILED` | Relevant source route failed or was text-insufficient. |
+| `ACCESS_FAILED` | Relevant route failed or was text-insufficient. |
 | `NOT_TRIGGERED` | Trigger conditions not met on merits. |
 | `NOT_APPLICABLE_CONTEXTUAL` | Non-UNI row contextually not applicable; audit-only. |
 | `REQUIRES_QUALIFIED_REVIEW` | Qualified review required to resolve. |
 | `CONTROLLED_FAILURE` | Unsafe or unusable module state. |
 
-## M11.S3E — Emitted Material Status
+## M11.S3E — Emitted Material Status and Split Material Projection
 
 | Final emitted status | Emission rule |
 |---|---|
-| `TRIGGERED` | Must be emitted in `triggered_and_controlled_rows[]`. |
-| `CONTROLLED` | Must be emitted in `triggered_and_controlled_rows[]`. |
+| `TRIGGERED` | Must be emitted in `exposure_registry_triggered_profile.triggered_rows[]`. |
+| `CONTROLLED` | Must be emitted in `exposure_registry_controlled_profile.controlled_rows[]`. |
 
 `M11.S3E.C1` Internal evaluation statuses are not the emitted material status.
 
 `M11.S3E.C2` A row with final material status `TRIGGERED` or `CONTROLLED` must be emitted even if it also carries limitation, conflict, weak-evidence, access-failure, or qualified-review context.
+
+`M11.S3E.C3` CONTROLLED and TRIGGERED rows must not be mixed inside one production material artifact.
+
+`M11.S3E.C4` The old combined `triggered_and_controlled_rows[]` production material artifact is retired for backend execution. Its seven-field row contract remains locked and is projected into the split controlled and triggered artifacts.
 
 ## M11.S3F — Forbidden Status / Verdict Terms
 
@@ -498,21 +591,31 @@ The following may not appear as final statuses or verdicts:
 
 ## M11.S4B — Seven-Column Reader-Facing Row Contract
 
-| Column | Machine field | Required content |
-|---|---|---|
-| Registry Exposure | `registry_exposure` | Threat ID, threat name, lane/family, authority anchors, and registry lifecycle/status. |
-| Target Match | `target_match` | Product/activity/data/legal-control context that made the row relevant. |
-| Evaluation Status | `evaluation_status` | `TRIGGERED` or `CONTROLLED` only. |
-| Basis / Proof | `basis_proof` | Trigger basis, visible-control basis, and admitted evidence refs. |
-| Impact / Priority | `impact_priority` | Registry pain/velocity plus derived business review priority. No legal-risk verdict. |
-| Review Route | `review_route` | Normalized `Registry Remediation Route`, missing proof, and next review action. |
-| Row Limitations | `row_limitations` | Weak evidence, not searched, access failed, conflicting signals, public-footprint limits, and controlled-status boundary. |
+The M11 material row field contract is locked. M11 has two material artifacts, but one row schema.
 
-`M11.S4B.C1` Every emitted row must contain exactly these seven fields.
+| Column | Machine field | Required content | Exact registry YAML source / derivation authority |
+|---|---|---|---|
+| Registry Exposure | `registry_exposure` | Threat ID, threat name, lane/family, authority anchors, and registry lifecycle/status. | Copy/project from `Threat_ID`, `Threat_Name`, `Lane`, `Archetype`, `Surface`, `Authority_IN`, `Authority_EU`, `Authority_US`, `Status`, `Effective_Date`, `FIELD21`, `FIELD22`, `FIELD23`. |
+| Target Match | `target_match` | Product/activity/data/legal-control context that made the row relevant. | Use `Archetype`, `Surface`, `FP_Mechanism`, `FIELD21`, `FIELD22` plus locked M8/M10/M9 context. These fields route/contextualize only; they do not decide final material status. |
+| Evaluation Status | `evaluation_status` | `TRIGGERED` or `CONTROLLED` only. | Derived only by applying the row's `Hunter_Trigger` and `03_REGISTRY_EVALUATION_RULES.yaml` to admitted evidence. |
+| Basis / Proof | `basis_proof` | Trigger basis, visible-control basis, and admitted evidence refs. | Must cite the applied `Hunter_Trigger` components: `CONDITION_N`, `TRIGGER_IF`, `EXCLUDE_IF`, plus admitted evidence/control refs. `FP_Mechanism` and `Provenance` may support context only. |
+| Impact / Priority | `impact_priority` | Registry pain/velocity plus derived business review priority. No legal-risk verdict. | Project from `Velocity`, `Pain_Tier`, `Pain_Category`, `Pain_Depth`, `Legal_Pain`, and `FP_Impact`. |
+| Review Route | `review_route` | Normalized registry remediation/review route, missing proof, and next review action. | Project from `Lex_Nova_Fix` plus row-specific missing-proof/control context. Do not invent a new remediation category. |
+| Row Limitations | `row_limitations` | Weak evidence, not searched, access failed, conflicting signals, public-footprint limits, and controlled-status boundary. | Derived from `Hunter_Trigger`, especially `EXCLUDE_IF`, evidence gaps, source limitations, access failures, upstream forensic limitations, and M12 batch validation limitations where applicable. |
 
-`M11.S4B.C2` `CONTROLLED` means visible public control exists. It does not mean compliant, sufficient, enforceable, legally adequate, solved, risk-free, or locally counsel-approved.
+`M11.S4B.C1` Every emitted material row must contain exactly these seven fields.
 
-`M11.S4B.C3` `Registry Remediation Route` is the only public-facing remediation-route label. Legacy registry column names must not appear in emitted output.
+`M11.S4B.C2` The same seven-column row contract applies to both `exposure_registry_controlled_profile.controlled_rows[]` and `exposure_registry_triggered_profile.triggered_rows[]`.
+
+`M11.S4B.C3` `CONTROLLED` means visible public control exists. It does not mean compliant, sufficient, enforceable, legally adequate, solved, risk-free, or locally counsel-approved.
+
+`M11.S4B.C4` `Lex_Nova_Fix` is the registry source for the public-facing remediation/review route. The phrase `Registry Remediation Route` may be used as the display label, but the registry-source field is `Lex_Nova_Fix`.
+
+`M11.S4B.C5` No new material row fields may be added to either split material artifact.
+
+`M11.S4B.C6` The material row fields are projections and derivations. None of the seven material field names are source-column names in `AI_THREAT_REGISTRY.yaml`; validators must check source mapping, not exact source-name equality.
+
+`M11.S4B.C7` `Hunter_Trigger` plus `03_REGISTRY_EVALUATION_RULES.yaml` are the only source of truth for row-level derivation. `Archetype`, `Surface`, `Threat_Name`, `Legal_Pain`, `Pain_Tier`, `FP_Impact`, `Lex_Nova_Fix`, route reason, or model intuition cannot independently produce `TRIGGERED` or `CONTROLLED`.
 
 ---
 
@@ -562,7 +665,7 @@ The following may not appear as final statuses or verdicts:
 
 `M11.S6A.C1` Phase A creates and locks the M11 Exposure Source / Registry Extraction Capsule before any trigger adjudication, control/exclude evaluation, row assembly, or material profile derivation begins.
 
-`M11.S6A.C2` The capsule is internal working material until Phase C. It must not be emitted inside `target_exposure_profile`.
+`M11.S6A.C2` The capsule is internal working material until forensics. It must not be emitted inside `exposure_registry_controlled_profile` or `exposure_registry_triggered_profile`.
 
 `M11.S6A.C3` The capsule must be built only from locked upstream artifacts, loaded legal/governance lossless buckets, M6-admitted evidence/absence/access records, and registry authorities.
 
@@ -570,9 +673,9 @@ The following may not appear as final statuses or verdicts:
 
 | Extraction parent | Required source basis | Required extraction focus |
 |---|---|---|
-| Upstream profile extraction | `target_profile`, `target_profile_forensics`, `target_feature_profile`, `target_feature_profile_forensics`, `target_data_provenance_profile`, `target_data_provenance_profile_forensics` | active target context, activities, archetypes, surfaces, data/control signals, limitations, and proof paths. |
+| Upstream profile extraction | `target_profile`, `target_profile_forensics`, `target_feature_profile`, `target_feature_profile_forensics`, `data_provenance_profile`, `data_provenance_profile_forensics` | active target context, activities, archetypes, surfaces, data/control signals, limitations, and proof paths. |
 | Legal/governance lossless extraction | `lossless_family__L1_CORE_TERMS_PRIVACY` through `lossless_family__L6_ENTITY_NOTICE` | public control wording, legal/governance commitments, policies, DPA/AUP/SLA, AI governance, privacy notices, security/trust controls, absence/access limitations. |
-| Registry authority extraction | `AI_THREAT_REGISTRY.yaml`, `REGISTRY_KEY_v3_0.md`, `03_REGISTRY_EVALUATION_RULES.yaml` | active Threat_ID inventory, trigger/control/exclude logic, archetype/surface routing metadata, registry remediation route vocabulary. |
+| Registry authority extraction | `AI_THREAT_REGISTRY.yaml`, `REGISTRY_KEY_v3_0.md`, `03_REGISTRY_EVALUATION_RULES.yaml` | active Threat_ID inventory, `Hunter_Trigger` trigger/control/exclude logic, archetype/surface routing metadata, `Lex_Nova_Fix` review-route vocabulary. |
 | LEP selector extraction | `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml` selected `LEP.*` rows | 22 LEP selector rows, mode/source/condition/fallback/forbidden-inference duties. |
 | Source custody and limitation extraction | `source_discovery_handoff`, `legal_cartography_index`, lossless family limitation branches | approved route/source universe, source-text location, absence/access/gated/metadata-only records, legal/governance document navigation. |
 
@@ -613,7 +716,7 @@ Phase A passes only if:
 | Loaded active rows | 98 |
 | Row identity | Preserve Threat_ID exactly. |
 | Row order | Preserve registry order where possible. |
-| Row metadata | Preserve threat name, lane, archetype, surface, authority, velocity, pain tier, status, trigger, and remediation-route source. |
+| Row metadata | Preserve exact YAML fields: `Threat_ID`, `Threat_Name`, `Lane`, `Archetype`, `Surface`, `Authority_IN`, `Authority_EU`, `Authority_US`, `Velocity`, `Pain_Tier`, `Pain_Category`, `Pain_Depth`, `Status`, `Effective_Date`, `Legal_Pain`, `FP_Mechanism`, `FP_Impact`, `Lex_Nova_Fix`, `Hunter_Trigger`, `Provenance`, `FIELD21`, `FIELD22`, `FIELD23`. |
 | Duplicates | Forbidden. |
 | Silent skipping | Forbidden. |
 
@@ -649,14 +752,38 @@ Phase A passes only if:
 
 ---
 
+## M11.S8B — PHASE A: Batch Plan Formation
+
+| Batch planning rule | Requirement |
+|---|---|
+| Maximum rows per model batch | 8 |
+| UNI sequencing | UNI batches run first. |
+| UNI split | UNI count is derived from `AI_THREAT_REGISTRY.yaml`; current registry has 37 UNI rows, so UNI must split into `UNI__001` through `UNI__005` at max 8 rows per batch. Future amendments must calculate `ceil(UNI_row_count / 8)`, never assume two UNI batches. |
+| Archetype grouping | One archetype per batch by default. |
+| Two-archetype limit | Two archetypes may be combined only if both groups are small and semantically adjacent. |
+| More than two archetypes | Forbidden. |
+| Filler mixing | Forbidden. Do not mix unrelated archetypes merely to fill a batch. |
+| Surface-triggered rows | Attach to dominant archetype where possible; otherwise preserve explicit surface route reason. |
+| Batch identity | Every batch receives `{GROUP}__{NNN}` identity. |
+| Expected Threat_IDs | Every batch contains explicit `expected_threat_ids[]`. |
+
+`M11.S8B.C1` Batch planning may not decide trigger truth, EXCLUDE_IF truth, control status, evidence sufficiency, or final material status.
+
+`M11.S8B.C2` Batch planning must preserve all model-routed Threat_IDs exactly once across the batch plan.
+
+`M11.S8B.C3` A model-routed Threat_ID cannot enter `exposure_registry_workpad_98` unless its batch artifact and paired M12 batch validation artifact both exist.
+
+---
+
 # M11.S9 — PHASE A: Trigger Review Workspace Formation
 
 | Workspace component | Required content |
 |---|---|
-| Registry row reference | Threat_ID, threat name, lane, archetype, surfaces, registry trigger rule. |
+| Registry row reference | Exact YAML row: `Threat_ID`, `Threat_Name`, `Lane`, `Archetype`, `Surface`, authority fields, pain/impact fields, `Lex_Nova_Fix`, `Hunter_Trigger`, `Provenance`, `FIELD21`, `FIELD22`, `FIELD23`. |
 | Candidate upstream context | M8 activity refs, M10 data/control refs, M9 legal-control refs, M6 admitted source refs. |
 | Candidate evidence paths | Admitted evidence refs, lossless block refs, absence refs, access-failed refs. |
-| Model path authority | May use, expand, or reject candidate routes only inside admitted evidence. |
+| Hunter derivation logic | Parse and apply row-specific `Hunter_Trigger` components: `CONDITION_N`, `TRIGGER_IF`, `EXCLUDE_IF`. |
+| Model path authority | May use, expand, or reject candidate routes only inside admitted evidence while applying `Hunter_Trigger` and `03_REGISTRY_EVALUATION_RULES.yaml`. |
 | Actual path used | Must be recorded after model route selection. |
 | Workspace limitations | Must record sparse evidence, access failure, weak wording, or missing proof. |
 
@@ -670,9 +797,9 @@ Phase A passes only if:
 
 | Trigger task | Required action |
 |---|---|
-| Evaluate row condition fit | Compare registry trigger condition with locked upstream profiles and admitted evidence. |
+| Evaluate row condition fit | Parse the row-specific `Hunter_Trigger` and compare every `CONDITION_N`, `TRIGGER_IF`, and `EXCLUDE_IF` posture with locked upstream profiles and admitted evidence. |
 | Select actual evidence path | Use the actual source/profile path relied on. |
-| Assign trigger status | Use only the locked trigger-status vocabulary. |
+| Assign trigger status | Use only the locked trigger-status vocabulary after applying `Hunter_Trigger` and `03_REGISTRY_EVALUATION_RULES.yaml`. |
 | Assign trigger basis type | Feature, archetype, surface, data, legal-control, absence, access-failed, conflict, insufficient, universal, or review-required context. |
 | Record trigger confidence | high / medium / low / unknown. |
 | Record trigger reason | Concise, no legal verdict. |
@@ -683,6 +810,10 @@ Phase A passes only if:
 `M11.S10.C2` Risk surface alone is insufficient.
 
 `M11.S10.C3` No trigger decision may use model memory or unadmitted evidence.
+
+`M11.S10.C4` No trigger decision may be derived from `Archetype`, `Surface`, `Threat_Name`, `Legal_Pain`, `Pain_Tier`, `FP_Impact`, `Lex_Nova_Fix`, route reason, or model intuition without applying the row-specific `Hunter_Trigger`.
+
+`M11.S10.C5` If `Hunter_Trigger` is missing, malformed, or unparsable for an evaluation-routed row, M11 must controlled-limit or controlled-fail the row according to registry evaluation rules. It must not invent replacement trigger logic.
 
 ---
 
@@ -725,6 +856,8 @@ Phase A passes only if:
 
 `M11.S12.C2` Visible control may support `CONTROLLED`, but not a compliance conclusion.
 
+`M11.S12.C3` EXCLUDE/control evaluation must apply the row-specific `EXCLUDE_IF` posture inside `Hunter_Trigger`; generic policy/control existence is insufficient unless it defeats the row-specific condition under `03_REGISTRY_EVALUATION_RULES.yaml`.
+
 ---
 
 # M11.S13 — PHASE B: Material Profile Derivation — Registry-Row Workpad Accountability
@@ -744,163 +877,310 @@ Phase A passes only if:
 
 ---
 
-# M11.S14 — PHASE B: Material Profile Derivation — Triggered / Controlled Row Assembly
+# M11.S14 — PHASE B: Material Status Assembly and Split Projection Eligibility
 
 ## Emission Rule
 
-| Final material status | Emit in main profile? |
-|---|---|
-| `TRIGGERED` | Yes |
-| `CONTROLLED` | Yes |
-| `LIMITED` only | No |
-| `CANDIDATE_ONLY` only | No |
-| `INSUFFICIENT_EVIDENCE` only | No |
-| `PARTIAL_OR_WEAK_SIGNAL` only | No |
-| `CONFLICTING_SIGNALS` only | No |
-| `REQUIRES_QUALIFIED_REVIEW` only | No |
-| `NOT_TRIGGERED` only | No |
-| `NOT_APPLICABLE_CONTEXTUAL` only | No |
-| `AUDIT_ONLY` only | No |
+| Final material status | Material projection | Emit? |
+|---|---|---|
+| `TRIGGERED` | `exposure_registry_triggered_profile.triggered_rows[]` | Yes |
+| `CONTROLLED` | `exposure_registry_controlled_profile.controlled_rows[]` | Yes |
+| `LIMITED` only | Workpad/forensics only | No |
+| `CANDIDATE_ONLY` only | Workpad/forensics only | No |
+| `INSUFFICIENT_EVIDENCE` only | Workpad/forensics only | No |
+| `PARTIAL_OR_WEAK_SIGNAL` only | Workpad/forensics only | No |
+| `CONFLICTING_SIGNALS` only | Workpad/forensics only | No |
+| `REQUIRES_QUALIFIED_REVIEW` only | Workpad/forensics only | No |
+| `NOT_TRIGGERED` only | Workpad/forensics only | No |
+| `NOT_APPLICABLE_CONTEXTUAL` only | Workpad/forensics only | No |
+| `AUDIT_ONLY` only | Workpad/forensics only | No |
 
-`M11.S14.C1` A row that is both CONTROLLED and LIMITED must still be emitted as CONTROLLED.
+`M11.S14.C1` A row that is both CONTROLLED and LIMITED must still be emitted as CONTROLLED in `exposure_registry_controlled_profile.controlled_rows[]`.
 
-`M11.S14.C2` A row that is TRIGGERED and weak/conflicting/review-required must still be emitted as TRIGGERED.
+`M11.S14.C2` A row that is TRIGGERED and weak/conflicting/review-required must still be emitted as TRIGGERED in `exposure_registry_triggered_profile.triggered_rows[]`.
 
 `M11.S14.C3` Missing emitted triggered/controlled rows cannot be repaired by downgrading the row to avoid emission.
 
-`M11.S14.C4` The main profile may contain no row unless its final material emitted status is TRIGGERED or CONTROLLED.
+`M11.S14.C4` The split material profiles may contain no row unless its final material emitted status is TRIGGERED or CONTROLLED.
+
+`M11.S14.C5` Final material status is derived only from the row-specific `Hunter_Trigger`, `03_REGISTRY_EVALUATION_RULES.yaml`, and admitted evidence as preserved in the accepted batch artifact and paired M12 batch validation artifact.
 
 ---
 
-# M11.S15 — PHASE B: Material Profile Derivation — Seven-Column Row Shaping
+# M11.S15 — PHASE B: Seven-Column Row Shaping and Registry Field Mapping
 
-| Row field | Shaping rule |
-|---|---|
-| `registry_exposure` | Copy registry identity and registry-native context without mutation: Threat_ID, name, lane/family, authority anchors, lifecycle/status. |
-| `target_match` | Explain target-specific route: M8 activity/archetype/surface, M10 data/control, M9 legal-control, and source context that made the row relevant. |
-| `evaluation_status` | Use only `TRIGGERED` or `CONTROLLED`. |
-| `basis_proof` | Summarize trigger basis, visible-control basis, and evidence refs. No long source dump. |
-| `impact_priority` | Use registry pain tier, velocity, pain/impact metadata, and business review priority. No legal-risk verdict. |
-| `review_route` | Use normalized `Registry Remediation Route`, missing-proof route, and next review action. |
-| `row_limitations` | Include weak evidence, absence/not-searched limits, access failure, conflict, public-footprint limit, and controlled-status boundary. |
+| Row field | Shaping rule | Exact registry YAML source / derivation authority |
+|---|---|---|
+| `registry_exposure` | Copy registry identity and registry-native context without mutation. | `Threat_ID`, `Threat_Name`, `Lane`, `Archetype`, `Surface`, `Authority_IN`, `Authority_EU`, `Authority_US`, `Status`, `Effective_Date`, `FIELD21`, `FIELD22`, `FIELD23`. |
+| `target_match` | Explain target-specific route: M8 activity/archetype/surface, M10 data/control, M9 legal-control, and source context that made the row relevant. | `Archetype`, `Surface`, `FP_Mechanism`, `FIELD21`, `FIELD22`, plus locked upstream M8/M10/M9 evidence. |
+| `evaluation_status` | Use only `TRIGGERED` or `CONTROLLED`. | Derived only from row-specific `Hunter_Trigger` plus `03_REGISTRY_EVALUATION_RULES.yaml` applied to admitted evidence. |
+| `basis_proof` | Summarize trigger basis, visible-control basis, and evidence refs. No long source dump. | Must reflect applied `CONDITION_N`, `TRIGGER_IF`, and `EXCLUDE_IF` from `Hunter_Trigger`, plus admitted evidence/control refs. |
+| `impact_priority` | Use registry pain tier, velocity, pain/impact metadata, and business review priority. No legal-risk verdict. | `Velocity`, `Pain_Tier`, `Pain_Category`, `Pain_Depth`, `Legal_Pain`, `FP_Impact`. |
+| `review_route` | Use normalized registry remediation/review route, missing-proof route, and next review action. | `Lex_Nova_Fix` plus row-specific missing-proof/control context. |
+| `row_limitations` | Include weak evidence, absence/not-searched limits, access failure, conflict, public-footprint limit, and controlled-status boundary. | Derived from `Hunter_Trigger`, especially `EXCLUDE_IF`, evidence gaps, source limitations, access failures, upstream limitation ledgers, and M12 batch validation limitations. |
 
 `M11.S15.C1` No emitted row may contain extra keys beyond the seven locked fields.
 
+`M11.S15.C2` The same seven-field row shaping rule applies to `exposure_registry_controlled_profile.controlled_rows[]` and `exposure_registry_triggered_profile.triggered_rows[]`.
+
+`M11.S15.C3` No material row field may be populated by model intuition, category inference, or route labels alone.
+
+`M11.S15.C4` `FIELD21`, `FIELD22`, and `FIELD23` support row identity, grouping, batching, and forensic reconciliation. They are not derivation substitutes for `Hunter_Trigger`.
+
 ---
 
-# M11.S16 — PHASE B1: Emission Manifest Reconciliation and Material Save Gate
+# M11.S16 — PHASE B: Batch Evaluation Output Contract
 
-`M11.S16.C1` Module XI must create a forensic-only emission manifest after row assembly and before lock.
+## M11.S16A — Batch Output Contract
 
-## Emission Manifest Required Checks
+Each M11 batch model call evaluates only the active batch.
 
-| Manifest check | Required result |
-|---|---|
-| active registry rows expected | 98 |
-| active registry rows loaded | 98 |
-| active registry rows evaluated or accounted | 98 |
-| LEP selector rows expected | 22 |
-| LEP selector rows applied | 22 |
-| final triggered Threat_ID list | complete list from final reconciliation |
-| final controlled Threat_ID list | complete list from final reconciliation |
-| emitted triggered Threat_ID list | complete list from main profile |
-| emitted controlled Threat_ID list | complete list from main profile |
-| missing triggered Threat_IDs | none |
-| missing controlled Threat_IDs | none |
-| duplicate emitted Threat_IDs | none |
-| wrong-status emitted rows | none |
-| emitted rows with non-seven-column shape | none |
-| all triggered rows emitted | true |
-| all controlled rows emitted | true |
+The model receives:
 
-`M11.S16.C2` The emission manifest must live inside `target_exposure_profile_forensics`, not inside `target_exposure_profile`.
+- `batch_id`
+- `batch_group`
+- `expected_threat_ids[]`
+- registry rows for the active batch only
+- route reasons for the active batch only
+- locked upstream profiles and forensics
+- legal/governance lossless evidence admitted for M11
+- registry authorities and LEP selector authority
+- for each expected Threat_ID: the exact registry row metadata, including `Hunter_Trigger`
+- for each expected Threat_ID: the parsed `Hunter_Trigger` components: `CONDITION_N`, `TRIGGER_IF`, and `EXCLUDE_IF`
+- the applicable `03_REGISTRY_EVALUATION_RULES.yaml` rules for trigger, exclude/control, insufficiency, limitation, and reconciliation
 
-`M11.S16.C3` The lock gate must fail if the emission manifest does not reconcile.
+The model must derive each batch row by applying the row's own `Hunter_Trigger` and the registry evaluation rules to locked upstream artifacts and admitted evidence.
 
-## M11.S16A — Phase B1 Material Validator + Save Gate
-
-`M11.S16A.C1` Phase B1 validates the completed `target_exposure_profile` before forensics may begin.
-
-`M11.S16A.C2` Phase B1 passes only if:
-
-- `target_exposure_profile` contains exactly one top-level key: `triggered_and_controlled_rows`;
-- every final `TRIGGERED` Threat_ID appears exactly once in `triggered_and_controlled_rows[]`;
-- every final `CONTROLLED` Threat_ID appears exactly once in `triggered_and_controlled_rows[]`;
-- no non-triggered, not-applicable, audit-only, candidate-only, summary-only, or absent row appears in the material profile;
-- every emitted row has exactly the seven locked fields in M11.S15;
-- every emitted row has evidence basis or formal limitation from admitted upstream evidence or legal/governance lossless source text;
-- the emission manifest reconciles with no missing triggered rows, missing controlled rows, duplicate emitted Threat_IDs, or wrong-status emitted rows;
-- no legal/compliance/liability/verdict language appears.
-
-`M11.S16A.C3` At the Phase B1 backend output boundary, M11 must emit exactly one top-level artifact and stop:
+The model must return exactly this top-level JSON shape and stop:
 
 ```json
 {
-  "target_exposure_profile": {
-    "triggered_and_controlled_rows": []
+  "m11_batch_registry_ledger": {
+    "batch_id": "",
+    "batch_group": "",
+    "expected_threat_ids": [],
+    "returned_threat_ids": [],
+    "batch_registry_ledger": [
+      {
+        "Threat_ID": "",
+        "registry_exposure": "",
+        "target_match": "",
+        "trigger_status": "",
+        "evaluation_status": "",
+        "basis_proof": "",
+        "impact_priority": "",
+        "review_route": "",
+        "row_limitations": ""
+      }
+    ]
   }
 }
 ```
 
-`M11.S16A.C4` Phase B1 must not emit `target_exposure_profile_forensics`, upstream artifacts, phase wrappers, terminal receipts, checkpoints, report prose, operator challenge, final handoff, renderer payload, or compatibility wrappers.
+`M11.S16A.C1` `m11_batch_registry_ledger.expected_threat_ids[]` must match the backend-provided expected Threat_IDs for the active batch.
 
-`M11.S16A.C5` The backend runner must validate and save `target_exposure_profile` as the M11 material artifact before Phase C begins. Phase C is forbidden until the saved `target_exposure_profile` artifact exists in the backend / Drive artifact vault.
+`M11.S16A.C2` `m11_batch_registry_ledger.returned_threat_ids[]` must match `expected_threat_ids[]` exactly.
 
-## M11.S16B — Phase B1 Material Repair / Targeted Reinvestigation Behavior
+`M11.S16A.C3` `batch_registry_ledger[]` must contain exactly one row for every expected Threat_ID and no other Threat_ID.
 
-`M11.S16B.C1` If Phase B1 finds an inadequate, unsupported, weak, thin, vague, conflicting, missing, duplicated, wrongly shaped, wrongly emitted, or wrong-status material row, do not proceed to Phase C.
+`M11.S16A.C3A` For every expected Threat_ID, the batch must apply that row's exact `Hunter_Trigger` string from the AI Threat Registry. The batch must parse and apply every `CONDITION_N`, the `TRIGGER_IF` boolean expression, and the `EXCLUDE_IF` posture.
 
-`M11.S16B.C2` Phase B1 repair must identify the exact failing `Threat_ID`, emitted-row field, LEP selector row, evidence path, trigger/evaluation decision, or emission-manifest entry. Generic category repair is forbidden.
+`M11.S16A.C3B` `Hunter_Trigger` plus `03_REGISTRY_EVALUATION_RULES.yaml` are the only source of truth for row-level trigger/exclude/control derivation. Archetype, Surface, Threat_Name, Legal_Pain, Pain_Tier, route reason, or model intuition may support context but may not substitute for `Hunter_Trigger` application.
 
-`M11.S16B.C3` Run targeted Threat_ID-specific or LEP-specific reinvestigation inside the loaded Agent 1 / Agent 3 / Agent 4 approved source universe only, including upstream profiles, upstream forensics, M9 legal/governance navigation, M10 data/control substrate, and admitted legal/governance lossless buckets.
+`M11.S16A.C3C` If `Hunter_Trigger` is missing, malformed, unparsable, or not applicable to the admitted evidence, the row must be marked with a controlled limitation or controlled failure according to registry evaluation rules; the model must not invent replacement trigger logic.
 
-`M11.S16B.C4` Re-apply the governing registry row, evaluation rules, LEP selector authority, patched M8 routing paths, M10 data/control evidence, and admitted evidence basis to the specific failing row.
+`M11.S16A.C4` Batch rows may include `trigger_status` because trigger status is internal workpad material. Reader-facing split material projections must not include `trigger_status`.
 
-`M11.S16B.C5` If support is found, repair the emitted row and preserve the correct final material status: `TRIGGERED` or `CONTROLLED`.
+`M11.S16A.C5` Batch rows must not include any reader-facing material field beyond the locked seven material fields plus batch/workpad-only `Threat_ID` and `trigger_status`.
 
-`M11.S16B.C6` If support remains weak, conflicting, access-limited, not visible, or review-required after targeted reinvestigation, keep the row emitted where final material status remains `TRIGGERED` or `CONTROLLED`, add controlled limitation text in `row_limitations`, and create matching forensic ledger entries.
+`M11.S16A.C6` The batch output must not emit `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, `exposure_registry_profile_forensics`, `challenge_gate`, `final_output_handoff`, renderer payload, report prose, terminal receipts, phase wrappers, checkpoints, or compatibility wrappers.
 
-`M11.S16B.C7` If the row no longer qualifies as `TRIGGERED` or `CONTROLLED` after proper evaluation, remove it from `target_exposure_profile` only if the forensic workpad records the final non-emitted status and the emission manifest still reconciles. Do not use removal as a shortcut to avoid difficult support.
+## M11.S16B — Batch Mechanical Validation Gate
 
-`M11.S16B.C8` Missing triggered or controlled rows cannot be repaired by downgrading, suppressing, grouping, summarizing, or moving the row into a count/category branch. They must be repaired, emitted, or controlled with limitation according to registry logic.
+Before M12 batch validation, backend validation must confirm:
 
-`M11.S16B.C9` After any material repair, rerun emission-manifest reconciliation, registry self-check, seven-column shape validation, legal/firewall validation, and Phase B1 before saving `target_exposure_profile`.
-
----
-
-# M11.S17 — PHASE B1: Registry Self-Check and Material Save Gate
-
-## Required Self-Check Challenges
-
-| Challenge | Required check |
+| Gate | Required result |
 |---|---|
-| Full registry preservation | 98/98 rows accounted exactly once. |
-| UNI always-run | All UNI rows evaluation-routed. |
-| Route integrity | Archetype/surface routing uses patched M8 paths. |
-| Trigger/evaluation separation | Trigger status and evaluation status remain separate. |
-| Model authority | Model evaluated routed rows within admitted evidence only. |
-| Evidence path | Actual evidence path used is recorded. |
-| Supported row evidence | Triggered/controlled rows have basis proof or formal limitation. |
-| Absence/access basis | Not-visible and access-failed outcomes carry basis refs where available. |
-| Legal firewall | No forbidden legal/compliance/verdict language. |
-| Upstream mutation | No upstream artifact mutation. |
-| Registry mutation | No registry metadata mutation. |
-| Triggered/controlled emission | Every triggered and every controlled row emitted. |
-| Final JSON/main profile lock | Main profile contains only `triggered_and_controlled_rows`. |
+| batch root | `m11_batch_registry_ledger` only |
+| expected IDs | present |
+| returned IDs | exact match |
+| missing IDs | none |
+| unexpected IDs | none |
+| duplicate IDs | none |
+| grouped Threat_IDs | none |
+| composite Threat_IDs | none |
+| legal verdict language | none |
+| `Hunter_Trigger` present for each expected Threat_ID | true |
+| `Hunter_Trigger` parsed into `CONDITION_N`, `TRIGGER_IF`, `EXCLUDE_IF` | true |
+| registry evaluation rules applied | true |
+| substituted trigger logic | none |
+| upstream mutation | none |
+| source expansion | none |
 
-`M11.S17.C1` Registry Self-Check output is forensic/workpad material only.
+`M11.S16B.C1` If the batch mechanical validator fails, repair only the affected batch.
 
-`M11.S17.C2` Final lock is impossible unless the self-check passes or is repaired.
-
-
-
-`M11.S17.C3` Registry self-check is part of Phase B1 material validation. It does not authorize forensic derivation until `target_exposure_profile` has been saved.
+`M11.S16B.C2` No failed or unvalidated batch may enter `exposure_registry_workpad_98`.
 
 ---
 
-# M11.S18 — PHASE C: Exposure Profile Forensics Derivation
+# M11.S17 — PHASE B2: M12 Batch Validation Dependency
 
-`M11.S18.C1` Module XI must build `target_exposure_profile_forensics` only after `target_exposure_profile` has passed Phase B1 validation and has been saved as the M11 material artifact by the backend runner.
+`M11.S17.C1` Every M11 batch ledger must be challenged by M12 batch validation before it becomes an accepted persisted artifact.
+
+`M11.S17.C2` M12 batch validation is scoped to one active batch only.
+
+`M11.S17.C3` M12 batch validation may not create new evidence, mutate upstream artifacts, mutate registry metadata, rewrite batch rows silently, emit global challenge output, or emit report prose.
+
+`M11.S17.C3A` M12 batch validation must confirm that every batch row was derived from the row's own `Hunter_Trigger` and the mandatory registry evaluation rules, not from category inference, route summary, or model intuition.
+
+`M11.S17.C4` The paired batch artifacts are:
+
+```text
+exposure_registry_batch__{GROUP}__{NNN}
+exposure_registry_batch_validation__{GROUP}__{NNN}
+```
+
+`M11.S17.C5` A batch is accepted only if M12 batch validation returns `PASS`, `PASS_WITH_LIMITATION`, or controlled `CONTROLLED_FAILURE` that is truthfully ledgered and does not corrupt registry-wide reconciliation.
+
+`M11.S17.C6` If M12 batch validation returns `REPAIR_REQUIRED`, rerun only the affected batch and its paired M12 validation.
+
+`M11.S17.C7` Batch retry limit is a backend policy. After retry exhaustion, the batch may proceed only as controlled failure if the failure is truthfully ledgered and global registry integrity remains usable.
+
+---
+
+# M11.S18 — PHASE C: Deterministic Canonical 98-Row Workpad Merge
+
+`M11.S18.C1` After all model-routed batches are accepted or controlled-limited, M11 must build `exposure_registry_workpad_98` deterministically.
+
+`M11.S18.C2` `exposure_registry_workpad_98` is the canonical internal source of truth for Agent 5 exposure registry output.
+
+`M11.S18.C3` `exposure_registry_workpad_98` must contain exactly 98 active Threat_ID rows, one final workpad outcome per active Threat_ID.
+
+## M11.S18A — Canonical Merge Inputs
+
+The merge reads:
+
+- `exposure_registry_route_plan`
+- all accepted `exposure_registry_batch__{GROUP}__{NNN}` artifacts
+- all paired `exposure_registry_batch_validation__{GROUP}__{NNN}` artifacts
+- deterministic not-applicable route-plan rows
+- registry authorities
+- LEP selector authority
+
+## M11.S18B — Canonical Merge Gates
+
+| Gate | Required result |
+|---|---|
+| active Threat_ID count | 98 |
+| missing Threat_IDs | none |
+| duplicate Threat_IDs | none |
+| unexpected Threat_IDs | none |
+| model-routed rows | all have accepted batch artifact |
+| batch validation | every model-routed row has paired M12 validation |
+| deterministic not-applicable rows | non-UNI only |
+| UNI rows | all model-routed |
+| row order | registry order preserved where possible |
+| legal firewall | pass |
+| upstream mutation | none |
+
+`M11.S18B.C1` A canonical workpad that merely summarizes batch coverage without row-level Threat_ID accountability is inadequate and must be repaired.
+
+`M11.S18B.C2` A row cannot be projected into controlled or triggered material output unless it exists in `exposure_registry_workpad_98`.
+
+---
+
+# M11.S19 — PHASE D/E: Split Material Profile Projections
+
+## M11.S19A — Controlled Material Output Contract
+
+After `exposure_registry_workpad_98` passes canonical merge validation, build `exposure_registry_controlled_profile` deterministically.
+
+Return exactly this top-level JSON shape and stop:
+
+```json
+{
+  "exposure_registry_controlled_profile": {
+    "controlled_rows": [
+      {
+        "registry_exposure": "",
+        "target_match": "",
+        "evaluation_status": "CONTROLLED",
+        "basis_proof": "",
+        "impact_priority": "",
+        "review_route": "",
+        "row_limitations": ""
+      }
+    ]
+  }
+}
+```
+
+`M11.S19A.C1` `controlled_rows[]` contains only rows whose final material status is `CONTROLLED`.
+
+`M11.S19A.C2` Every controlled row must contain exactly the seven locked material fields.
+
+`M11.S19A.C3` `evaluation_status` must be `CONTROLLED` only.
+
+`M11.S19A.C4` No TRIGGERED row may appear in `controlled_rows[]`.
+
+`M11.S19A.C5` `exposure_registry_controlled_profile` must contain no key except `controlled_rows`.
+
+## M11.S19B — Triggered Material Output Contract
+
+After `exposure_registry_controlled_profile` is saved, build `exposure_registry_triggered_profile` deterministically.
+
+Return exactly this top-level JSON shape and stop:
+
+```json
+{
+  "exposure_registry_triggered_profile": {
+    "triggered_rows": [
+      {
+        "registry_exposure": "",
+        "target_match": "",
+        "evaluation_status": "TRIGGERED",
+        "basis_proof": "",
+        "impact_priority": "",
+        "review_route": "",
+        "row_limitations": ""
+      }
+    ]
+  }
+}
+```
+
+`M11.S19B.C1` `triggered_rows[]` contains only rows whose final material status is `TRIGGERED`.
+
+`M11.S19B.C2` Every triggered row must contain exactly the seven locked material fields.
+
+`M11.S19B.C3` `evaluation_status` must be `TRIGGERED` only.
+
+`M11.S19B.C4` No CONTROLLED row may appear in `triggered_rows[]`.
+
+`M11.S19B.C5` `exposure_registry_triggered_profile` must contain no key except `triggered_rows`.
+
+## M11.S19C — Split Material Projection Reconciliation
+
+The split material projections pass only if:
+
+| Gate | Required result |
+|---|---|
+| controlled projection source | `exposure_registry_workpad_98` |
+| triggered projection source | `exposure_registry_workpad_98` |
+| controlled rows | all CONTROLLED |
+| triggered rows | all TRIGGERED |
+| wrong-status rows | none |
+| duplicate emitted Threat_IDs | none |
+| missing CONTROLLED rows | none |
+| missing TRIGGERED rows | none |
+| seven-field shape | exact |
+| row traceability | every row traces to canonical workpad |
+
+---
+
+# M11.S20 — PHASE F: Exposure Profile Forensics Derivation and Save Gate
+
+`M11.S20.C1` Module XI must build `exposure_registry_profile_forensics` only after `exposure_registry_workpad_98`, `exposure_registry_controlled_profile`, and `exposure_registry_triggered_profile` have passed validation and have been saved as artifacts by the backend runner.
 
 ## Required forensic families
 
@@ -915,19 +1195,32 @@ Phase A passes only if:
 | `evidence_binding_ledger` | Source/profile/absence/access/conflict refs actually used. |
 | `control_exclude_evaluation_ledger` | Evaluation status, visible control basis, EXCLUDE_IF/control analysis, limitations. |
 | `registry_row_workpad_accountability_ledger` | One final workpad outcome per active Threat_ID. |
-| `triggered_controlled_row_assembly_ledger` | Final material status reconciliation. |
-| `emission_manifest` | Expected-vs-emitted triggered/controlled reconciliation. |
+| `triggered_controlled_row_assembly_ledger` | Final material status reconciliation across controlled and triggered split artifacts. |
+| `emission_manifest` | Expected-vs-emitted controlled and triggered reconciliation. |
 | `registry_self_check_result` | OCG/self-check challenge outcomes. |
 | `registry_lock_gate_result` | Final TG/lock gate outcomes. |
 | `legal_firewall_ledger` | Confirmation that no legal/compliance/liability/verdict language leaked. |
 | `runtime_trace_m11_only` | Agent/module-only trace, no private reasoning. |
 | `forensic_boundary` | Confirms forensics are proof/custody only, not main material output. |
 
-`M11.S18.C2` Forensics may contain row IDs, internal statuses, route plans, full workpad coverage, and audit manifests. The main material profile may not.
+`M11.S20.C2` Forensics may contain row IDs, internal statuses, route plans, batch plans, batch artifact indexes, M12 batch validation indexes, full workpad coverage, and audit manifests. The split material profiles may not.
 
+## M11.S20A — Additional Forensic Indexes Required by Batched Execution
 
+The forensic artifact must also include, inside the existing forensic families where appropriate:
 
-## M11.S18A — Forensic Row-Count and Coverage Gates
+- route-plan artifact reference;
+- batch-plan inventory;
+- accepted batch artifact index;
+- M12 batch validation artifact index;
+- batch repair ledger;
+- controlled failure ledger;
+- controlled projection reconciliation;
+- triggered projection reconciliation.
+
+These are forensic/custody indexes only. They do not add new reader-facing material row fields.
+
+## M11.S20B — Forensic Row-Count and Coverage Gates
 
 Forensics must be row-complete, not summary-only.
 
@@ -939,161 +1232,21 @@ Minimum row-count and coverage gates:
 - `internal_registry_route_plan_ledger[]` must account for all 98 active Threat_IDs.
 - `trigger_review_workspace_ledger[]` must contain one row for every evaluation-routed Threat_ID.
 - `trigger_adjudication_ledger[]` must contain one row for every evaluation-routed Threat_ID.
-- `evidence_binding_ledger[]` must contain evidence or formal limitation basis for every triggered/controlled material row and every routed row that required evidence review.
+- `evidence_binding_ledger[]` must contain evidence or formal limitation basis for every controlled/triggered material row and every routed row that required evidence review.
 - `control_exclude_evaluation_ledger[]` must contain one row for every evaluation-routed Threat_ID.
-- `triggered_controlled_row_assembly_ledger[]` must reconcile final material status with emitted material rows.
-- `emission_manifest{}` must reconcile all triggered and controlled rows and show no missing, duplicate, or wrong-status emitted Threat_IDs.
+- `triggered_controlled_row_assembly_ledger[]` must reconcile final material status with both split material artifacts.
+- `emission_manifest{}` must reconcile all controlled and triggered rows and show no missing, duplicate, or wrong-status emitted Threat_IDs.
 - legal/governance lossless coverage rows from Phase A must be projected into `registry_input_manifest`, `evidence_binding_ledger`, or row-specific limitation/evidence entries where used.
 
 A forensic artifact that merely summarizes registry coverage without row-level Threat_ID accountability is inadequate and must be repaired.
 
----
+## M11.S20C — Forensic Output Contract
 
-# M11.S19 — PHASE D: Forensic Validation and Lock Gate
-
-## M11.S19A — Critical Blockers
-
-| Blocker | Required result |
-|---|---|
-| Missing registry authority | `CONTROLLED_FAILURE` |
-| Registry count not 98 | `CONTROLLED_FAILURE` unless registry contract amended |
-| Missing LEP selector authority | `CONTROLLED_FAILURE` |
-| Missing required upstream artifact | `CONTROLLED_FAILURE` or controlled limitation only if truthful |
-| New source discovery | `CRITICAL_BLOCKER` |
-| Unadmitted evidence use | `CRITICAL_BLOCKER` |
-| Upstream mutation | `CRITICAL_BLOCKER` |
-| Registry metadata mutation | `CRITICAL_BLOCKER` |
-| Legal/compliance verdict leakage | `CRITICAL_BLOCKER` |
-| Missing triggered row emission | `CRITICAL_BLOCKER` |
-| Missing controlled row emission | `CRITICAL_BLOCKER` |
-| Missing emission manifest | `CRITICAL_BLOCKER` |
-| Stale M8 surface path used | `CRITICAL_BLOCKER` |
-
-## M11.S19B — Lock Conditions
-
-Lock only if all conditions pass:
-
-| Lock condition | Required result |
-|---|---|
-| Active agent scope | Agent 5 / M11 only |
-| Registry row count | 98/98 |
-| LEP selector coverage | 22/22 |
-| Full registry workpad coverage | 98/98 exactly once |
-| Duplicate Threat_IDs | none |
-| UNI rows | all evaluation-routed |
-| Not-applicable rows | non-UNI only |
-| Trigger/evaluation status vocabularies | valid |
-| Evidence refs | present or formally limited for material rows |
-| Emission manifest | reconciled cleanly |
-| Main output root | `target_exposure_profile` only |
-| Main output key | `triggered_and_controlled_rows` only |
-| Emitted row shape | exactly seven fields per row |
-| Forensics artifact | separate and complete |
-| Legal firewall | pass |
-| Registry firewall | pass |
-| Upstream mutation gate | pass |
-
-## M11.S19C — Lock Status
-
-| Outcome | Use |
-|---|---|
-| `LOCKED` | All gates pass. |
-| `LOCKED_WITH_LIMITATIONS` | Usable, truthful, limitations recorded, emission manifest reconciled. |
-| `CONTROLLED_FAILURE` | Unsafe, unusable, missing registry authority/count, or unresolved critical blocker. |
-| `PASS_WITH_WARNING` | All required artifacts are usable and non-blocking warnings are controlled and ledgered. |
-| `REINVESTIGATION_COMPLETED_WITH_LIMITATION` | Targeted M11 reinvestigation was completed; unresolved weakness is controlled, emitted where required, and ledgered. |
-| `SOURCE_REPAIR_REQUIRED` | Upstream source universe, lossless bucket, or admitted evidence custody defect requires Agent 1 / M6 repair. |
-
-
-## M11.S19D — Phase D Forensic Validator + Save Gate
-
-`M11.S19D.C1` Phase D validates `target_exposure_profile_forensics` after Phase C forensic derivation.
-
-`M11.S19D.C2` Phase D passes only if the forensic artifact contains the required forensic families in M11.S18, satisfies the row-count and coverage gates in M11.S18A, preserves 98/98 registry accountability, preserves 22/22 LEP selector coverage, reconciles the emission manifest, and confirms the legal/firewall and upstream-mutation gates.
-
-`M11.S19D.C3` At the Phase D backend output boundary, M11 must emit exactly one top-level artifact and stop:
+After Phase F forensic derivation and validation pass, return exactly this top-level JSON shape and stop:
 
 ```json
 {
-  "target_exposure_profile_forensics": {}
-}
-```
-
-`M11.S19D.C4` Phase D must not re-emit `target_exposure_profile`, upstream artifacts, phase wrappers, terminal receipts, checkpoints, report prose, operator challenge, final handoff, renderer payload, or compatibility wrappers.
-
-`M11.S19D.C5` The backend runner must validate and save `target_exposure_profile_forensics` before M12/M13 begins.
-
-## M11.S19E — Phase D Forensic Repair / Targeted Reinvestigation Behavior
-
-`M11.S19E.C1` If Phase D finds an inadequate, missing, summary-only, inconsistent, non-row-complete, or unsupported forensic branch, repair the exact forensic family or row before save.
-
-`M11.S19E.C2` Forensic repair must identify the exact failing `Threat_ID`, LEP selector row, route-plan row, trigger workspace, adjudication row, evidence-binding row, control/exclude evaluation row, workpad-accountability row, emission-manifest entry, legal-firewall entry, or source-custody entry.
-
-`M11.S19E.C3` If the defect is forensic-only, repair `target_exposure_profile_forensics` without re-emitting `target_exposure_profile`.
-
-`M11.S19E.C4` If the forensic defect exposes a material-row defect, return to the smallest affected Phase B step, repair the affected Threat_ID or emitted row, rerun Phase B1, resave `target_exposure_profile`, then rerun Phase C and Phase D.
-
-`M11.S19E.C5` Forensic repair may not invent evidence, mutate upstream artifacts, mutate registry rows, downgrade triggered/controlled rows, collapse rows into summaries, or hide defects in generic limitation prose.
-
-`M11.S19E.C6` If public evidence remains insufficient after targeted reinvestigation, preserve the insufficiency in the relevant forensic ledger, link it to the emitted row limitation or non-emitted workpad outcome, and mark the final phase state as `REINVESTIGATION_COMPLETED_WITH_LIMITATION` or `PASS_WITH_LIMITATION` where downstream use remains safe.
-
-`M11.S19E.C7` If row-level forensic accountability cannot be restored because the upstream source universe or lossless custody is defective, return `SOURCE_REPAIR_REQUIRED` and route to Agent 1 / M6.
-
----
-
-# M11.S20 — Split Backend Output Contract
-
-M11 owns two artifacts, but they are saved in separate backend phases. M11 must not return a combined material+forensic object in production backend execution.
-
-## M11.S20A — PHASE B1 Material Output Contract
-
-After Phase B material derivation and Phase B1 validation pass, return exactly this top-level JSON shape and stop:
-
-```json
-{
-  "target_exposure_profile": {
-    "triggered_and_controlled_rows": [
-      {
-        "registry_exposure": "",
-        "target_match": "",
-        "evaluation_status": "TRIGGERED | CONTROLLED",
-        "basis_proof": "",
-        "impact_priority": "",
-        "review_route": "",
-        "row_limitations": ""
-      }
-    ]
-  }
-}
-```
-
-The `target_exposure_profile` object must contain exactly one top-level key: `triggered_and_controlled_rows`.
-
-`triggered_and_controlled_rows[]` must contain every final `TRIGGERED` row and every final `CONTROLLED` row, with no missing triggered rows, no missing controlled rows, no duplicate Threat_IDs, and no wrong-status emitted rows.
-
-Every row inside `triggered_and_controlled_rows[]` must contain exactly these seven fields:
-
-| Field | Required content |
-|---|---|
-| `registry_exposure` | Threat ID, threat name, lane/family, authority anchors, lifecycle/status. |
-| `target_match` | Target-specific product/activity/data/legal-control context. |
-| `evaluation_status` | `TRIGGERED` or `CONTROLLED` only. |
-| `basis_proof` | Trigger basis, visible-control basis, admitted evidence refs or formal limitation. |
-| `impact_priority` | Registry pain/velocity plus business review priority. No legal-risk verdict. |
-| `review_route` | Registry Remediation Route, missing proof, next review action. |
-| `row_limitations` | Weak evidence, not searched, access failed, conflict, public-footprint limits, controlled-status boundary. |
-
-Do not emit `target_exposure_profile_forensics`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, upstream artifacts, registry audit ledgers, emission manifest, or compatibility wrappers in the Phase B1 material output.
-
-The backend runner must save `target_exposure_profile` before Phase C begins.
-
-## M11.S20B — PHASE D Forensic Output Contract
-
-After the saved `target_exposure_profile` artifact exists, Phase C forensic derivation and Phase D validation may run. After Phase D passes, return exactly this top-level JSON shape and stop:
-
-```json
-{
-  "target_exposure_profile_forensics": {
+  "exposure_registry_profile_forensics": {
     "registry_input_manifest": {},
     "full_registry_inventory_ledger": [],
     "lep_selector_application_ledger": [],
@@ -1114,28 +1267,31 @@ After the saved `target_exposure_profile` artifact exists, Phase C forensic deri
 }
 ```
 
-`target_exposure_profile_forensics` must preserve full 98-row accountability, 22-row LEP selector coverage, legal/governance lossless source extraction coverage where used, route planning, trigger/evaluation decisions, evidence binding, self-checks, lock-gates, and emission reconciliation.
+`M11.S20C.C1` `exposure_registry_profile_forensics` must preserve full 98-row accountability, 22-row LEP selector coverage, legal/governance lossless source extraction coverage where used, route planning, batch planning, M12 batch validation custody, trigger/evaluation decisions, evidence binding, self-checks, lock-gates, and emission reconciliation.
 
-Do not re-emit `target_exposure_profile`, upstream artifacts, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, or compatibility wrappers in the Phase D forensic output.
+`M11.S20C.C2` Do not re-emit `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, upstream artifacts, `operator_challenge_gate`, `challenge_gate`, `final_output_handoff`, renderer payload, report prose, or compatibility wrappers in the forensic output.
 
-M12/M13 may begin only after both saved artifacts exist:
+`M11.S20C.C3` M12 global challenge may begin only after all saved artifacts exist:
 
-- `target_exposure_profile` saved from Phase B1; and
-- `target_exposure_profile_forensics` saved from Phase D.
+- `exposure_registry_workpad_98`;
+- `exposure_registry_controlled_profile`;
+- `exposure_registry_triggered_profile`; and
+- `exposure_registry_profile_forensics`.
 
-## M11.S20C — Combined Output Prohibition
+## M11.S20D — Combined Output Prohibition
 
 The following production backend output shape is forbidden:
 
 ```json
 {
-  "target_exposure_profile": {},
-  "target_exposure_profile_forensics": {}
+  "exposure_registry_controlled_profile": {},
+  "exposure_registry_triggered_profile": {},
+  "exposure_registry_profile_forensics": {}
 }
 ```
 
-That shape incorrectly mixes the Phase B1 material artifact and the Phase D forensic artifact into one response. It may be shown only as documentation that M11 ultimately owns two artifacts, not as an executable backend response.
+That shape incorrectly mixes separate material and forensic boundaries into one response. It may be shown only as documentation that M11 ultimately owns multiple artifacts, not as an executable backend response.
 
-## M11.S20D — Manual Terminal Boundary
+## M11.S20E — Manual Terminal Boundary
 
 Same-chat next-step receipts belong only to the terminal/receipt layer after backend validation and lock. M11 backend artifact output must not include same-chat commands, checkpoint prose, markdown receipts, report text, or handoff instructions.
