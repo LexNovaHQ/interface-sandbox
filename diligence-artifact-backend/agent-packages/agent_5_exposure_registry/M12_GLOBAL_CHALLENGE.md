@@ -36,6 +36,11 @@ required_inputs:
   - exposure_registry_triggered_profile
   - exposure_registry_profile_forensics
 
+backend_dynamic_inputs:
+  - m11_batch_artifacts[]
+  - m12_batch_validation_artifacts[]
+  - m12_global_dynamic_artifact_manifest
+
 required_machine_output:
   - challenge_gate
 
@@ -88,6 +93,10 @@ The M11 registry gate must check:
 - every Threat_ID appears exactly once.
 - every UNI row was evaluation-routed.
 - every model-routed row has an accepted M11 batch artifact and a paired M12 batch validation artifact.
+- `m11_batch_artifacts[]` count equals route plan batch count.
+- `m12_batch_validation_artifacts[]` count equals route plan batch count.
+- `m12_global_dynamic_artifact_manifest.loaded_batch_artifacts` equals `m12_global_dynamic_artifact_manifest.batch_count`.
+- `m12_global_dynamic_artifact_manifest.loaded_batch_validation_artifacts` equals `m12_global_dynamic_artifact_manifest.batch_count`.
 - every final CONTROLLED workpad row appears in `exposure_registry_controlled_profile.controlled_rows[]`.
 - every final TRIGGERED workpad row appears in `exposure_registry_triggered_profile.triggered_rows[]`.
 - no CONTROLLED row is omitted.
