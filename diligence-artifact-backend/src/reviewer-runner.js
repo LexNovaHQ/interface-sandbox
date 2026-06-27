@@ -8,6 +8,7 @@ import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
 import { validateM9LegalCartographyIndex } from "./m9-validator.js";
 import { validateM7TargetProfileOutput } from "./m7-validator.js";
 import { validateM8TargetFeatureOutput } from "./m8-validator.js";
+import { runM11OrchestratedPhase } from "./m11-orchestrator.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -51,7 +52,9 @@ export async function advanceReviewerRun({ run_id }) {
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
 
   try {
-    if (contract.type === "model") {
+    if (phase === "M11") {
+      await runM11OrchestratedPhase({ run, phase, contract });
+    } else if (contract.type === "model") {
       await runModelPhase({ run, phase, contract });
     } else if (phase === "AGENT_1A_URL_MANIFEST") {
       await runAgent1aUrlManifestPhase({ run, phase, contract });
