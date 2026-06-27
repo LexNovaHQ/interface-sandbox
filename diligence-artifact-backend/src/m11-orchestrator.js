@@ -107,10 +107,13 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
       run,
       phase,
       batch,
+      batchPacket,
       batchOutput,
       structuralValidation,
       routePlan,
-      artifacts
+      artifacts,
+      referencePacket,
+      references: contract.references || []
     });
     const m12Status = validationArtifact.exposure_registry_batch_validation.status;
 
@@ -172,12 +175,12 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const forensicStatus = forensicArtifact.registry_lock_gate_result?.status === "PASS" ? "LOCKED" : "REPAIR_REQUIRED";
 
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.exposureForensics, artifact: forensicArtifact, lock_status: forensicStatus }));
-  await logEvent({ run_id: run.run_id, event_type: "M11_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_count: acceptedBatches.length, workpad_status: workpadStatus, forensic_status: forensicStatus, batch_validation_mode: "m12_batch_prompt" } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_count: acceptedBatches.length, workpad_status: workpadStatus, forensic_status: forensicStatus, batch_validation_mode: "m12_batch_prompt_with_registry_packet" } });
 
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: forensicStatus, next_phase: forensicStatus === "LOCKED" ? contract.next : phase });
 }
 
-async function runM12BatchValidation({ run, phase, batch, batchOutput, structuralValidation, routePlan, artifacts }) {
+async function runM12BatchValidation({ run, phase, batch, batchPacket, batchOutput, structuralValidation, routePlan, artifacts, referencePacket, references }) {
   const prompt = await buildPhasePrompt({
     prompt_files: AGENT_5_M12_BATCH_FILES,
     phase: `${phase}:M12_BATCH:${batch.batch_id}`,
@@ -185,16 +188,21 @@ async function runM12BatchValidation({ run, phase, batch, batchOutput, structura
     artifacts: {
       ...artifacts,
       exposure_registry_route_plan: routePlan,
+      m11_batch_packet: batchPacket?.m11_batch_packet || {},
       m11_batch_registry_ledger: batchOutput,
       backend_structural_validation: structuralValidation,
+      registry_reference_packet: referencePacket,
       m12_batch_context: {
         batch_id: batch.batch_id,
         batch_group: batch.batch_group,
-        expected_threat_ids: batch.expected_threat_ids || []
+        expected_threat_ids: batch.expected_threat_ids || [],
+        registry_rows: batchPacket?.m11_batch_packet?.registry_rows || [],
+        registry_evaluation_rules_text: batchPacket?.m11_batch_packet?.registry_evaluation_rules_text || "",
+        m9_legal_cartography_rule: batchPacket?.m11_batch_packet?.m9_legal_cartography_rule || {}
       }
     },
     writes: [`exposure_registry_batch_validation__${batch.batch_id}`],
-    references: []
+    references
   });
 
   const result = await callGeminiJson({ prompt, phase: `${phase}:M12_BATCH:${batch.batch_id}` });
