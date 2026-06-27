@@ -736,6 +736,8 @@ Every selected material field must have one `field_derivation_ledger` row with a
 - `targeted_reinvestigation_status`
 - `limitation_if_any`
 
+`target_profile_limitations` is a selected M7 material field. It must receive one `field_derivation_ledger` row even when the limitations array is empty. If limitations exist, the row must point to the limitation source basis and corresponding `limitation_ledger` / `targeted_re_extraction_ledger` entries. If no limitations exist, the row must state that no M7 profile-level limitation was required after source review.
+
 #### M7.S7C.1 — Forensic Row-Count and Coverage Gates
 
 Forensic ledgers must be row-complete, not summary-only.
