@@ -1,4 +1,5 @@
-const REQUIRED_TOP_LEVEL_KEYS = Object.freeze(["target_profile", "target_profile_forensics"]);
+const REQUIRED_MATERIAL_TOP_LEVEL_KEYS = Object.freeze(["target_profile"]);
+const REQUIRED_FORENSIC_TOP_LEVEL_KEYS = Object.freeze(["target_profile_forensics"]);
 
 const REQUIRED_PROFILE_SHAPE = Object.freeze({
   target_identity: ["brand_name", "legal_entity_name", "entity_type", "reviewed_website", "primary_domain"],
@@ -49,76 +50,35 @@ const ARRAY_FIELDS = Object.freeze([
 ]);
 
 const FORBIDDEN_PROFILE_KEYS = Object.freeze([
-  "validation_status",
-  "lock_status",
-  "status",
-  "source_ledger",
-  "field_derivation_ledger",
-  "runtime_trace",
-  "source_custody",
-  "evidence_map",
-  "extraction_capsule",
-  "target_profile_forensics",
-  "identity_confidence",
-  "jurisdiction_confidence",
-  "business_context_confidence",
-  "wrapper_confidence",
-  "identity_evidence_basis",
-  "jurisdiction_evidence_basis",
-  "business_context_evidence_basis",
-  "wrapper_evidence_basis",
-  "website",
-  "domain",
-  "industry",
-  "product_service_wrapper_name",
-  "product_service_wrapper_description",
-  "registered_notice_country",
-  "registered_notice_state",
-  "governing_law_country",
-  "governing_law_state",
-  "app_platform_delivery_signal",
-  "api_programmatic_delivery_signal",
-  "offline_service_advisory_delivery_signal"
+  "validation_status", "lock_status", "status", "source_ledger", "field_derivation_ledger", "runtime_trace", "source_custody", "evidence_map", "extraction_capsule", "target_profile_forensics", "identity_confidence", "jurisdiction_confidence", "business_context_confidence", "wrapper_confidence", "identity_evidence_basis", "jurisdiction_evidence_basis", "business_context_evidence_basis", "wrapper_evidence_basis", "website", "domain", "industry", "product_service_wrapper_name", "product_service_wrapper_description", "registered_notice_country", "registered_notice_state", "governing_law_country", "governing_law_state", "app_platform_delivery_signal", "api_programmatic_delivery_signal", "offline_service_advisory_delivery_signal"
 ]);
 
 const FORBIDDEN_FORENSIC_KEYS = Object.freeze([
-  "source_custody",
-  "target_route_family_coverage",
-  "field_derivation_decisions",
-  "validation_qc_status",
-  "runtime_trace_boundaries",
-  "extraction_capsule_summary",
-  "route_coverage",
-  "evidence_summary_only",
-  "generic_derivation_summary",
-  "profile_forensics",
-  "target_forensics",
-  "qc_status"
+  "source_custody", "target_route_family_coverage", "field_derivation_decisions", "validation_qc_status", "runtime_trace_boundaries", "extraction_capsule_summary", "route_coverage", "evidence_summary_only", "generic_derivation_summary", "profile_forensics", "target_forensics", "qc_status", "target_profile"
 ]);
 
 const FORBIDDEN_STALE_STRINGS = Object.freeze([
-  "<phase_output",
-  "</phase_output>",
-  "agent_2_target_feature",
-  "AGENT2_RUNTIME_BINDING_PACKET",
-  "bucket_handoff",
-  "discovered_route_inventory",
-  "route_execution_ledger",
-  "source_coverage_gates",
-  "missing_limited_primary_sources",
-  "target_feature_profile",
-  "target_feature_profile_forensics"
+  "<phase_output", "</phase_output>", "agent_2_target_feature", "AGENT2_RUNTIME_BINDING_PACKET", "bucket_handoff", "discovered_route_inventory", "route_execution_ledger", "source_coverage_gates", "missing_limited_primary_sources", "target_feature_profile", "target_feature_profile_forensics"
 ]);
 
-export function validateM7TargetProfileOutput(output) {
+export function validateM7TargetProfileOutput(output, { phase = "M7_TARGET_PROFILE" } = {}) {
   const failures = [];
-  validateExactTopLevelKeys(output, REQUIRED_TOP_LEVEL_KEYS, failures, "M7_TARGET_PROFILE");
-  if (!failures.length) {
-    validateProfile(output.target_profile, failures);
-    validateForensics(output.target_profile_forensics, failures);
-    validateNoStaleStrings(output, failures);
+  if (phase === "M7_TARGET_PROFILE") {
+    validateExactTopLevelKeys(output, REQUIRED_MATERIAL_TOP_LEVEL_KEYS, failures, phase);
+    if (!failures.length) {
+      validateProfile(output.target_profile, failures);
+      validateNoStaleStrings(output, failures);
+    }
+  } else if (phase === "M7_TARGET_PROFILE_FORENSICS") {
+    validateExactTopLevelKeys(output, REQUIRED_FORENSIC_TOP_LEVEL_KEYS, failures, phase);
+    if (!failures.length) {
+      validateForensics(output.target_profile_forensics, failures);
+      validateNoStaleStrings(output, failures);
+    }
+  } else {
+    failures.push(`M7_UNKNOWN_PHASE:${phase}`);
   }
-  if (failures.length) throw new Error(`M7_TARGET_PROFILE_VALIDATION_FAILED:${JSON.stringify({ failures })}`);
+  if (failures.length) throw new Error(`M7_TARGET_PROFILE_VALIDATION_FAILED:${JSON.stringify({ phase, failures })}`);
 }
 
 function validateProfile(profile, failures) {
@@ -175,7 +135,7 @@ function validateForensics(forensics, failures) {
   if (extra.length) failures.push(`target_profile_forensics extra branches: ${extra.join(",")}`);
 
   for (const key of FORBIDDEN_FORENSIC_KEYS) {
-    if (containsKey(forensics, key)) failures.push(`target_profile_forensics contains forbidden alias: ${key}`);
+    if (containsKey(forensics, key)) failures.push(`target_profile_forensics contains forbidden alias or material artifact: ${key}`);
   }
 
   for (const branch of ["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger", "field_derivation_ledger", "targeted_re_extraction_ledger", "limitation_ledger", "cross_route_use_ledger"]) {
@@ -212,8 +172,8 @@ function validateExactTopLevelKeys(output, expected, failures, phase) {
 function outputPathFromLedgerRow(row) {
   if (!isPlainObject(row)) return "";
   if (typeof row.output_path === "string") return stripPrefix(row.output_path);
-  if (typeof row.output_field === "string") return stripPrefix(row.output_field);
   if (typeof row.output_parent === "string" && typeof row.output_field === "string") return `${row.output_parent}.${row.output_field}`;
+  if (typeof row.output_field === "string") return stripPrefix(row.output_field);
   return "";
 }
 

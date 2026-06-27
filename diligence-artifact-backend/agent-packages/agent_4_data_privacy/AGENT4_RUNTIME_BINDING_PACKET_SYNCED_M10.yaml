@@ -24,8 +24,7 @@ read_artifacts:
   - lossless_family__D5_AI_SAFETY_TRANSPARENCY
 
 write_artifacts_in_order:
-  - target_data_provenance_profile
-  - target_data_provenance_profile_forensics
+  - data_provenance_profile
 
 phase_lock:
   - M10_DATA_PROVENANCE
@@ -47,8 +46,8 @@ forbidden_outputs:
   - target_profile_forensics
   - target_feature_profile
   - target_feature_profile_forensics
-  - target_exposure_profile
-  - operator_challenge_gate
+  - exposure_registry_profile
+  - challenge_gate
   - final_output_handoff
   - REGISTRY_ROW lines
   - threat_id assignments
@@ -59,21 +58,16 @@ forbidden_outputs:
   - legal applicability conclusions
   - report prose
 
-backend_permission_profile: agent_4_read_prior_save_m10_split_lock
+backend_permission_profile: agent_4_read_prior_save_m10_lock
 validator_profile: agent_4_m10_validator
-backend_output_contract: AGENT4_BACKEND_OUTPUT_CONTRACT_SYNCED_M10.md
+backend_output_contract: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 terminal_receipt_profile: agent_4_manual_receipt_only
 
 phase_save_contract:
-  M10_PHASE_B1_MATERIAL_SAVE_EVENT:
+  M10_MATERIAL_SAVE_EVENT:
     emits_only:
-      - target_data_provenance_profile
+      - data_provenance_profile
     must_stop_after_emit: true
-    backend_must_save_before_phase_c: true
-  M10_PHASE_D_FORENSIC_SAVE_EVENT:
-    emits_only:
-      - target_data_provenance_profile_forensics
-    consumes_saved_material_artifact: target_data_provenance_profile
     backend_must_save_before_m11: true
 
 next_agent_command: backend advances to exposure registry only after M10_DATA_PROVENANCE lock; manual mode may show next-step text only after lock

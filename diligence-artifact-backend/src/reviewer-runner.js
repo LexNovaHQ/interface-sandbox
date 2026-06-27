@@ -19,7 +19,7 @@ import {
 } from "./artifact-service.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
-const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M8_TARGET_FEATURE_PROFILE"]);
+const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
@@ -132,12 +132,12 @@ function validateModelOutput({ phase, output }) {
     if (validation.status !== "PASS") throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`);
     return;
   }
-  if (phase === "M7_TARGET_PROFILE") {
-    validateM7TargetProfileOutput(output);
+  if (phase === "M7_TARGET_PROFILE" || phase === "M7_TARGET_PROFILE_FORENSICS") {
+    validateM7TargetProfileOutput(output, { phase });
     return;
   }
-  if (phase === "M8_TARGET_FEATURE_PROFILE") {
-    validateM8TargetFeatureOutput(output);
+  if (phase === "M8_TARGET_FEATURE_PROFILE" || phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") {
+    validateM8TargetFeatureOutput(output, { phase });
   }
 }
 
@@ -146,8 +146,10 @@ function resolveModelLockStatus({ phase, output, writes }) {
     const status = output?.legal_cartography_index?.lock_status;
     return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
   }
-  if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.target_profile_forensics, output?.target_profile);
-  if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.target_feature_profile_forensics, output?.target_feature_profile);
+  if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.target_profile);
+  if (phase === "M7_TARGET_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.target_profile_forensics);
+  if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.target_feature_profile);
+  if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.target_feature_profile_forensics);
   const firstArtifact = output?.[writes?.[0]];
   const status = firstArtifact?.lock_status || firstArtifact?.validation_status;
   return MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";

@@ -24,8 +24,7 @@ read_artifacts:
   - target_profile_forensics
   - target_feature_profile
   - target_feature_profile_forensics
-  - target_data_provenance_profile
-  - target_data_provenance_profile_forensics
+  - data_provenance_profile
 
 required_registry_imports:
   - AI_THREAT_REGISTRY.yaml
@@ -35,8 +34,7 @@ required_registry_imports:
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 write_artifacts_in_order:
-  - target_exposure_profile
-  - target_exposure_profile_forensics
+  - exposure_registry_profile
 
 phase_lock:
   - M11_EXPOSURE_REGISTRY
@@ -52,7 +50,7 @@ forbidden_modules:
   - M14_TERMINAL_RENDERER
 
 forbidden_outputs:
-  - operator_challenge_gate
+  - challenge_gate
   - final_output_handoff
   - exposure_summary
   - material_exposure_findings
@@ -73,8 +71,8 @@ forbidden_outputs:
 
 backend_permission_profile: agent_5_read_prior_save_m11_lock
 validator_profile: agent_5_m11_validator
-phase_packet_contract: agent_5_m11_backend_output_contract
+phase_packet_contract: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 terminal_receipt_profile: agent_5_same_chat_receipt
 
-next_agent_command: "@Interface Challenge Handoff Agent Continue run {{run_id}}."
+next_agent_command: backend advances to challenge gate only after M11_EXPOSURE_REGISTRY lock
 </RUNTIME_BINDING_PACKET>
