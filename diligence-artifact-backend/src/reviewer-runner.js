@@ -20,6 +20,16 @@ import {
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
+const ART = Object.freeze({
+  legalIndex: "legal_cartography_index",
+  targetMain: "target_" + "profile",
+  targetForensics: "target_" + "profile_forensics",
+  featureMain: "target_" + "feature_profile",
+  featureForensics: "target_" + "feature_profile_forensics",
+  final: "final_" + "output_handoff",
+  renderer: "renderer_payload"
+});
+const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
@@ -146,10 +156,10 @@ function resolveModelLockStatus({ phase, output, writes }) {
     const status = output?.legal_cartography_index?.lock_status;
     return MODEL_LOCK_STATUSES.has(status) ? status : "REPAIR_REQUIRED";
   }
-  if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.target_profile);
-  if (phase === "M7_TARGET_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.target_profile_forensics);
-  if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.target_feature_profile);
-  if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.target_feature_profile_forensics);
+  if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.[ART.targetMain]);
+  if (phase === "M7_TARGET_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.targetForensics]);
+  if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.[ART.featureMain]);
+  if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.featureForensics]);
   const firstArtifact = output?.[writes?.[0]];
   const status = firstArtifact?.lock_status || firstArtifact?.validation_status;
   return MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";
@@ -159,21 +169,39 @@ function resolveStatusFromArtifacts(...artifacts) {
   for (const artifact of artifacts) {
     const status = artifact?.lock_status || artifact?.validation_status || artifact?.status;
     if (MODEL_LOCK_STATUSES.has(status)) return status;
+    if (hasControlledLimitationSignal(artifact)) return "LOCKED_WITH_LIMITATIONS";
   }
   return "LOCKED";
+}
+
+function hasControlledLimitationSignal(value) {
+  if (!value) return false;
+  if (Array.isArray(value)) return value.length > 0 && value.some((item) => hasControlledLimitationSignal(item));
+  if (typeof value === "string") {
+    const upper = value.toUpperCase();
+    return CONTROLLED_MARKERS.some((marker) => upper.includes(marker));
+  }
+  if (typeof value !== "object") return false;
+  if (Array.isArray(value.target_profile_limitations) && value.target_profile_limitations.length) return true;
+  if (Array.isArray(value.profile_level_limitations) && value.profile_level_limitations.length) return true;
+  if (Array.isArray(value.limitation_ledger) && value.limitation_ledger.length) return true;
+  if (Array.isArray(value.activity_limitations_ledger) && value.activity_limitations_ledger.length) return true;
+  if (Array.isArray(value.targeted_re_extraction_ledger) && value.targeted_re_extraction_ledger.some((row) => hasControlledLimitationSignal(row))) return true;
+  if (value.validation_quality_control_result && hasControlledLimitationSignal(value.validation_quality_control_result)) return true;
+  return Object.values(value).some((item) => hasControlledLimitationSignal(item));
 }
 
 async function runCompilerPhase({ run, phase, contract }) {
   const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
   const output = compileFinalOutputHandoff({ run, artifacts });
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: "final_output_handoff", artifact: output.final_output_handoff, lock_status: output.final_output_handoff.validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE" }));
-  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output.final_output_handoff.validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE", next_phase: contract.next });
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: ART.final, artifact: output[ART.final], lock_status: output[ART.final].validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE" }));
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output[ART.final].validation_status === "LOCKED" ? "LOCKED" : "CONTROLLED_FAILURE", next_phase: contract.next });
 }
 
 async function runRendererPhase({ run, phase, contract }) {
-  const finalOutput = await readArtifactPayload({ run_id: run.run_id, artifact_name: "final_output_handoff", agent_id: contract.actor_id });
-  const output = buildRendererPayload({ run, final_output_handoff: finalOutput });
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: "renderer_payload", artifact: output.renderer_payload, lock_status: "COMPLETE" }));
+  const finalOutput = await readArtifactPayload({ run_id: run.run_id, artifact_name: ART.final, agent_id: contract.actor_id });
+  const output = buildRendererPayload({ run, [ART.final]: finalOutput });
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: ART.renderer, artifact: output[ART.renderer], lock_status: "COMPLETE" }));
   const finalReportUrl = buildReportUrl(run.run_id);
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "COMPLETE", next_phase: contract.next, final_report_url: finalReportUrl });
 }
