@@ -136,6 +136,8 @@ Each M11 model call evaluates one active batch only and returns exactly:
 
 `A5.M11.CONTRACT.C12` A batch ledger is not an accepted artifact until backend mechanical validation and paired M12 batch validation allow acceptance.
 
+M12 batch validation is Agent 5-owned. The backend persists the M12 semantic output under exposure_registry_batch_validation__{GROUP}__{NNN}. Accepted batch save is forbidden unless semantic M12 status is PASS or PASS_WITH_LIMITATION.
+
 ---
 
 # SECTION 5 — PHASE B2 M12 BATCH VALIDATION + ACCEPTED BATCH SAVE
@@ -152,7 +154,7 @@ The backend saves the accepted M11 batch artifact exactly:
 exposure_registry_batch__{GROUP}__{NNN}
 ```
 
-only after paired M12 batch validation passes, passes with limitation, or records controlled failure safe for registry-wide reconciliation.
+only after paired M12 batch validation returns PASS or PASS_WITH_LIMITATION.
 
 `A5.M11.CONTRACT.C13` The M11 model must not emit or simulate M12 batch validation.
 
@@ -325,6 +327,13 @@ Save order is locked:
 5. exposure_registry_triggered_profile
 6. exposure_registry_profile_forensics
 7. M12 global challenge may begin
+8. challenge_gate
 ```
 
 If any boundary fails, repair the smallest affected boundary only.
+
+---
+
+# SECTION 12 - M12 GLOBAL CHALLENGE
+
+After exposure_registry_profile_forensics is saved, M12 global emits challenge_gate. challenge_gate is the only M12 global backend artifact. Compiler may proceed only if challenge_gate.lock_status is PASS or PASS_WITH_LIMITATION.

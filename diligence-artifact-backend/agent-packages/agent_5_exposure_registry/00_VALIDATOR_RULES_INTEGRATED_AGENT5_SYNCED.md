@@ -121,11 +121,13 @@ m11_batch_registry_ledger
 
 # SECTION 6 — M12 BATCH VALIDATION / ACCEPTED BATCH GATE
 
-`A5.VAL.S6.C1` No accepted batch artifact may exist without paired `exposure_registry_batch_validation__{GROUP}__{NNN}`.
+`A5.VAL.S6.C1` Batch validation artifact must exist before accepted batch artifact.
 
-`A5.VAL.S6.C2` No batch may enter `exposure_registry_workpad_98` unless backend mechanical validation and paired M12 batch validation passed, passed with limitation, or controlled-failed safely.
+`A5.VAL.S6.C2` Batch validation status must be PASS or PASS_WITH_LIMITATION before accepted batch is saved.
 
 `A5.VAL.S6.C3` M11 model output must not simulate M12 batch validation or claim save/acceptance state.
+
+`A5.VAL.S6.C4` M12 batch validation may emit only the exposure_registry_batch_validation root.
 
 ---
 
@@ -283,3 +285,15 @@ Validator result must be machine-compact and must not expose chain-of-thought:
 ```
 
 If status is `SOURCE_REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, `lock_allowed` and `next_agent_command_allowed` must be false.
+
+---
+
+# SECTION 13 - M12 GLOBAL CHALLENGE GATE
+
+`A5.VAL.S13.C1` challenge_gate root must exist after M12 global.
+
+`A5.VAL.S13.C2` challenge_gate may not be emitted by M11.
+
+`A5.VAL.S13.C3` challenge_gate may only be emitted by M12 global.
+
+`A5.VAL.S13.C4` M12 global validation must reject any top-level operator_challenge_gate root; the allowed root is challenge_gate.

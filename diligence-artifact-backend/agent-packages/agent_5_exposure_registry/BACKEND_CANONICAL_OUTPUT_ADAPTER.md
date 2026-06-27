@@ -28,10 +28,22 @@ exposure_registry_triggered_profile
 exposure_registry_profile_forensics
 ```
 
-M12 batch validation is outside M11 model output and uses:
+M12 batch validation is Agent 5-owned, outside M11 model output, and returns this root:
+
+```text
+exposure_registry_batch_validation
+```
+
+The backend persists it as:
 
 ```text
 exposure_registry_batch_validation__{GROUP}__{NNN}
+```
+
+M12 global root:
+
+```text
+challenge_gate
 ```
 
 Accepted batch save artifacts are backend-controlled and use:
@@ -124,13 +136,21 @@ data_asset_to_exposure_matrix
 legal_control_to_exposure_matrix
 review_priority_register
 operator_challenge_gate
-challenge_gate
 final_output_handoff
 renderer_payload
 ```
 
 ---
 
+# M11 / M12 CHALLENGE ROOT RULE
+
+M11 forbidden root: challenge_gate
+M12 batch root: exposure_registry_batch_validation
+M12 batch forbidden root: challenge_gate
+M12 global allowed root: challenge_gate
+
+---
+
 # STOP RULE
 
-After emitting the active boundary root, stop. Do not emit M12 global challenge, compiler, renderer, report prose, terminal receipt text, compatibility wrappers, or additional artifacts.
+After emitting the active boundary root, stop. M11 and M12 batch must not emit M12 global challenge, compiler, renderer, report prose, terminal receipt text, compatibility wrappers, or additional artifacts. M12 global must stop after emitting challenge_gate.

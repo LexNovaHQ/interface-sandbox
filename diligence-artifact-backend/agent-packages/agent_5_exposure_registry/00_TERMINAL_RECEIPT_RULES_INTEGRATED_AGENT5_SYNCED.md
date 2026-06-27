@@ -7,7 +7,7 @@
 
 `A5.TERM.C1` Backend execution for Agent 5 emits strict JSON only at the active boundary. Terminal receipts are manual/same-chat receipts only.
 
-`A5.TERM.C2` Agent 5 terminal receipts must not contain report prose, legal-risk prose, legal conclusions, renderer output, final handoff JSON, hidden chain-of-thought, or M12 global challenge output.
+`A5.TERM.C2` Agent 5 terminal receipts must not contain report prose, legal-risk prose, legal conclusions, renderer output, final handoff JSON, hidden chain-of-thought, or M12 global challenge output during M11/M12 batch boundaries.
 
 `A5.TERM.C3` If validator status is `SOURCE_REPAIR_REQUIRED`, `REPAIR_REQUIRED`, or `CONTROLLED_FAILURE`, do not emit the next-agent command.
 
@@ -23,14 +23,16 @@ Run ID: <run_id>
 
 Saved:
 - exposure_registry_route_plan
-- exposure_registry_batch__{GROUP}__{NNN} / exposure_registry_batch_validation__{GROUP}__{NNN} for every model-routed batch
+- exposure_registry_batch__{GROUP}__{NNN}
+- exposure_registry_batch_validation__{GROUP}__{NNN}
 - exposure_registry_workpad_98
 - exposure_registry_controlled_profile
 - exposure_registry_triggered_profile
 - exposure_registry_profile_forensics
+- challenge_gate
 
 NEXT STEP:
-Backend may advance to M12 global challenge only after Agent 5 package/backend validation confirms every required M11 artifact is saved and locked.
+Backend may advance to COMPILER only after challenge_gate locks with PASS or PASS_WITH_LIMITATION.
 ```
 
 `A5.TERM.S1.C1` Manual terminal receipts may summarize batch count, but must not dump full registry rows.
@@ -49,18 +51,20 @@ Run ID: <run_id>
 
 Saved:
 - exposure_registry_route_plan
-- exposure_registry_batch__{GROUP}__{NNN} / exposure_registry_batch_validation__{GROUP}__{NNN} for every model-routed batch
+- exposure_registry_batch__{GROUP}__{NNN}
+- exposure_registry_batch_validation__{GROUP}__{NNN}
 - exposure_registry_workpad_98
 - exposure_registry_controlled_profile
 - exposure_registry_triggered_profile
 - exposure_registry_profile_forensics
+- challenge_gate
 
 Limitations carried forward:
 - <short limitation 1>
 - <short limitation 2>
 
 NEXT STEP:
-Backend may advance to M12 global challenge only after Agent 5 package/backend validation confirms limitations are ledgered and safe for downstream review.
+Backend may advance to COMPILER only after challenge_gate locks with PASS or PASS_WITH_LIMITATION.
 ```
 
 `A5.TERM.S2.C1` Limitations must be short. Detailed limitation ledgers belong in `exposure_registry_profile_forensics`.
@@ -122,7 +126,6 @@ legal advice
 compliance conclusions
 liability findings
 risk-score verdicts
-challenge_gate
 final_output_handoff
 renderer_payload
 HTML/report prose
@@ -138,6 +141,6 @@ rebuilt legal cartography map
 
 | active_agent_id | terminal_receipt_profile | successful_phase_line | saved_artifacts | next step |
 |---|---|---|---|---|
-| `agent_5_exposure_registry` | `agent_5_m11_batched_manual_receipt` | `PHASE LOCKED: M11_EXPOSURE_REGISTRY` | `exposure_registry_route_plan`, all accepted `exposure_registry_batch__{GROUP}__{NNN}`, all paired `exposure_registry_batch_validation__{GROUP}__{NNN}`, `exposure_registry_workpad_98`, `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, `exposure_registry_profile_forensics` | backend advances to M12 global challenge only after validation |
+| `agent_5_exposure_registry` | `agent_5_m11_batched_manual_receipt` | `PHASE LOCKED: M11_EXPOSURE_REGISTRY` / `M12_GLOBAL_CHALLENGE` | `exposure_registry_route_plan`, all accepted `exposure_registry_batch__{GROUP}__{NNN}`, all paired `exposure_registry_batch_validation__{GROUP}__{NNN}`, `exposure_registry_workpad_98`, `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, `exposure_registry_profile_forensics`, `challenge_gate` | backend advances to COMPILER only after challenge_gate locks |
 
-`A5.TERM.S6.C1` Agent 5 does not provide a same-chat `@Interface Challenge` command unless a separately locked M12 global agent/package exists and backend has confirmed Agent 5 lock.
+`A5.TERM.S6.C1` Agent 5 provides no compiler command until M12 global challenge_gate is saved and locked with PASS or PASS_WITH_LIMITATION.
