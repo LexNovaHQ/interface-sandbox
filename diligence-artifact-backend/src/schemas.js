@@ -18,8 +18,14 @@ export const reviewerCreateJobSchema = z.object({
 });
 
 export const reviewerAdvanceJobSchema = z.object({
-  max_steps: z.number().int().min(1).max(10).optional().default(1)
-}).optional().default({ max_steps: 1 });
+  max_steps: z.number().int().min(1).max(10).optional().default(1),
+  sync: z.boolean().optional().default(false),
+  auto_continue: z.boolean().optional().default(true)
+}).optional().default({ max_steps: 1, sync: false, auto_continue: true });
+
+export const reviewerWorkerJobSchema = z.object({
+  auto_continue: z.boolean().optional().default(true)
+}).optional().default({ auto_continue: true });
 
 export const saveArtifactSchema = z.object({
   run_id: z.string().min(1),
