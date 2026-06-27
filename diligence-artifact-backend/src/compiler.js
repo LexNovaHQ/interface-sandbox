@@ -18,11 +18,6 @@ const FORENSIC_ARTIFACTS = Object.freeze([
   "exposure_registry_profile_forensics"
 ]);
 
-const CRITICAL_ARTIFACTS = Object.freeze([
-  ...MATERIAL_ARTIFACTS,
-  ...FORENSIC_ARTIFACTS
-]);
-
 export function compileFinalOutputHandoff({ run, artifacts }) {
   const compiledAt = new Date().toISOString();
   const missingArtifacts = collectMissingArtifacts(artifacts);
@@ -243,7 +238,7 @@ function isPlainObject(value) {
 
 function hasLimitationSignal(value) {
   const raw = JSON.stringify(value || {}).toUpperCase();
-  return /LOCKED_WITH_LIMITATIONS|PASS_WITH_LIMITATION|LIMITATION|NOT_PUBLIC|ACCESS_FAILED|GATED|INSUFFICIENT|MISSING|CONTROLLED/.test(raw);
+  return /LOCKED_WITH_LIMITATIONS|PASS_WITH_LIMITATION|CONTROLLED_FAILURE|REPAIR_REQUIRED|LIMITATION|NOT_PUBLIC|ACCESS_FAILED|GATED|INSUFFICIENT|MISSING/.test(raw);
 }
 
 function containsPlaceholderPathIds(value) {
