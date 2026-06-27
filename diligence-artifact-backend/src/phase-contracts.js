@@ -4,6 +4,7 @@ import {
   AGENT_1_ARTIFACT_NAMES,
   DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES,
   LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES,
+  M11_STATIC_ARTIFACT_NAMES,
   PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES,
   TARGET_PROFILE_FAMILY_ARTIFACT_NAMES
 } from "./constants.js";
@@ -27,6 +28,14 @@ const AGENT_3_REFERENCE_FILES = Object.freeze([
   "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
   "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml",
   "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml"
+]);
+
+const AGENT_5_REFERENCE_FILES = Object.freeze([
+  "AI_THREAT_REGISTRY.yaml",
+  "REGISTRY_KEY_v3_0.md",
+  "03_REGISTRY_EVALUATION_RULES.yaml",
+  "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
+  "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"
 ]);
 
 const AGENT_3_PACKAGE_ROOT = "agent-packages/agent_3_target_feature";
@@ -61,6 +70,7 @@ const AGENT_5_M11_FILES = Object.freeze([
   `${AGENT_5_M11_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md`,
   `${AGENT_5_M11_PACKAGE_ROOT}/M11_EXPOSURE_REGISTRY.md`,
   `${AGENT_5_M11_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md`,
+  `${AGENT_5_M11_PACKAGE_ROOT}/AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11.md`,
   `${AGENT_5_M11_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT5_SYNCED.md`,
   `${AGENT_5_M11_PACKAGE_ROOT}/BACKEND_CANONICAL_OUTPUT_ADAPTER.md`
 ]);
@@ -130,25 +140,27 @@ export const PHASE_CONTRACTS = Object.freeze({
     next: "M11"
   },
   M11: {
-    type: "model",
+    type: "orchestrated",
+    actor_id: "agent_5_exposure_registry",
     agent_id: "agent_5_exposure_registry",
     prompt_files: AGENT_5_M11_FILES,
     reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
-    writes: ["exposure_registry_profile"],
+    references: AGENT_5_REFERENCE_FILES,
+    writes: M11_STATIC_ARTIFACT_NAMES,
     next: "M12"
   },
   M12: {
     type: "model",
     agent_id: "agent_7_m12",
     prompt_files: [SYSTEM_BLOCKING_DOCTRINE_FILE, "agent_7_m12.md"],
-    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "exposure_registry_profile_forensics"],
     writes: ["challenge_gate"],
     next: "COMPILER"
   },
   COMPILER: {
     type: "deterministic",
     actor_id: "compiler",
-    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile", "challenge_gate"],
+    reads: ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "exposure_registry_profile_forensics", "challenge_gate"],
     writes: ["final_output_handoff"],
     next: "RENDERER"
   },
