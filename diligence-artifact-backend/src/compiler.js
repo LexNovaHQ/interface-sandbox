@@ -72,56 +72,52 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
 
 function buildProfilesCombined({ run, artifacts, compiledAt, missingArtifacts, validation_status }) {
   return {
-    profiles_combined: {
-      run_meta: buildRunMeta({ run, compiledAt }),
-      validation_status,
-      missing_artifacts: missingArtifacts.filter((row) => row.family === "material"),
-      profiles: {
-        source_discovery_handoff: artifacts.source_discovery_handoff || null,
-        legal_cartography_index: artifacts.legal_cartography_index || null,
-        target_profile: artifacts.target_profile || null,
-        target_feature_profile: artifacts.target_feature_profile || null,
-        data_provenance_profile: artifacts.data_provenance_profile || null,
-        exposure_registry_controlled_profile: artifacts.exposure_registry_controlled_profile || null,
-        exposure_registry_triggered_profile: artifacts.exposure_registry_triggered_profile || null,
-        challenge_gate: artifacts.challenge_gate || null
-      },
-      exposure_registry_controlled: artifacts.exposure_registry_controlled_profile || null,
-      exposure_registry_triggered: artifacts.exposure_registry_triggered_profile || null,
-      compiler_boundary: {
-        deterministic_only: true,
-        no_report_prose_generated: true,
-        no_new_findings_created: true,
-        no_vault_prefill_generated: true,
-        old_exposure_registry_profile_retired: true
-      }
+    run_meta: buildRunMeta({ run, compiledAt }),
+    validation_status,
+    missing_artifacts: missingArtifacts.filter((row) => row.family === "material"),
+    profiles: {
+      source_discovery_handoff: artifacts.source_discovery_handoff || null,
+      legal_cartography_index: artifacts.legal_cartography_index || null,
+      target_profile: artifacts.target_profile || null,
+      target_feature_profile: artifacts.target_feature_profile || null,
+      data_provenance_profile: artifacts.data_provenance_profile || null,
+      exposure_registry_controlled_profile: artifacts.exposure_registry_controlled_profile || null,
+      exposure_registry_triggered_profile: artifacts.exposure_registry_triggered_profile || null,
+      challenge_gate: artifacts.challenge_gate || null
+    },
+    exposure_registry_controlled: artifacts.exposure_registry_controlled_profile || null,
+    exposure_registry_triggered: artifacts.exposure_registry_triggered_profile || null,
+    compiler_boundary: {
+      deterministic_only: true,
+      no_report_prose_generated: true,
+      no_new_findings_created: true,
+      no_vault_prefill_generated: true,
+      old_exposure_registry_profile_retired: true
     }
   };
 }
 
 function buildForensicsCombined({ run, artifacts, compiledAt, missingArtifacts, validation_status, dynamicManifest }) {
   return {
-    forensics_combined: {
-      run_meta: buildRunMeta({ run, compiledAt }),
-      validation_status,
-      missing_artifacts: missingArtifacts.filter((row) => row.family === "forensic" || row.family === "dynamic_m11"),
-      forensics: {
-        target_profile_forensics: artifacts.target_profile_forensics || null,
-        target_feature_profile_forensics: artifacts.target_feature_profile_forensics || null,
-        data_provenance_profile_forensics: artifacts.data_provenance_profile_forensics || null,
-        exposure_registry_route_plan: artifacts.exposure_registry_route_plan || null,
-        m11_batch_artifacts: safeArray(artifacts.m11_batch_artifacts),
-        m12_batch_validation_artifacts: safeArray(artifacts.m12_batch_validation_artifacts),
-        exposure_registry_workpad_98: artifacts.exposure_registry_workpad_98 || null,
-        exposure_registry_profile_forensics: artifacts.exposure_registry_profile_forensics || null
-      },
-      dynamic_m11_artifact_manifest: dynamicManifest,
-      compiler_boundary: {
-        deterministic_only: true,
-        no_row_re_evaluation: true,
-        no_forensic_reconstruction: true,
-        source_artifacts_preserved_without_mutation: true
-      }
+    run_meta: buildRunMeta({ run, compiledAt }),
+    validation_status,
+    missing_artifacts: missingArtifacts.filter((row) => row.family === "forensic" || row.family === "dynamic_m11"),
+    forensics: {
+      target_profile_forensics: artifacts.target_profile_forensics || null,
+      target_feature_profile_forensics: artifacts.target_feature_profile_forensics || null,
+      data_provenance_profile_forensics: artifacts.data_provenance_profile_forensics || null,
+      exposure_registry_route_plan: artifacts.exposure_registry_route_plan || null,
+      m11_batch_artifacts: safeArray(artifacts.m11_batch_artifacts),
+      m12_batch_validation_artifacts: safeArray(artifacts.m12_batch_validation_artifacts),
+      exposure_registry_workpad_98: artifacts.exposure_registry_workpad_98 || null,
+      exposure_registry_profile_forensics: artifacts.exposure_registry_profile_forensics || null
+    },
+    dynamic_m11_artifact_manifest: dynamicManifest,
+    compiler_boundary: {
+      deterministic_only: true,
+      no_row_re_evaluation: true,
+      no_forensic_reconstruction: true,
+      source_artifacts_preserved_without_mutation: true
     }
   };
 }
