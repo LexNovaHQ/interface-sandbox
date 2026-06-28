@@ -1,3 +1,5 @@
+import { evaluateThreatTriggerStandard } from "./m11-trigger-standards.js";
+
 const JURISDICTION_FAMILIES = new Set(["BIO", "CNS", "TRD", "HRM", "DEC"]);
 const ABSENCE_ALLOWED = new Set(["UNI_LIA_LB1", "UNI_INF_IN1", "UNI_PRV_IN4", "ORC_PRV_002"]);
 const SPECULATIVE_PREFIXES = ["TRN_BIO", "UNI_CNS", "CMP_HRM", "RDR_INF", "OPT_TRD", "MOV_LIA", "JDG_DEC"];
@@ -13,24 +15,27 @@ export function applyM11FalsePositiveFirewall({ row = {}, routeRow = {} }) {
 
   const threatId = String(row.Threat_ID || routeRow.Threat_ID || "").trim();
   const family = threatId.split("_")[1] || "";
-  const text = [row.registry_exposure, row.target_match, row.basis_proof, row.review_route, row.row_limitations, routeRow.Threat_Name, routeRow.Surface, routeRow.route_reason].join(" ").toLowerCase();
+  const evidenceText = [row.registry_exposure, row.target_match, row.basis_proof, row.review_route, row.row_limitations].join(" ").toLowerCase();
+  const contextText = [evidenceText, routeRow.Threat_Name, routeRow.Surface, routeRow.route_reason].join(" ").toLowerCase();
   const reasons = [];
 
-  const absenceOnly = hasAny(text, ABSENCE_MARKERS) && !hasAny(text, DIRECT_PROOF_MARKERS.filter((marker) => marker !== "policy"));
-  const speculative = hasAny(text, SPECULATION_MARKERS);
-  const directProof = hasAny(text, DIRECT_PROOF_MARKERS);
-  const jurisdictionSpecific = JURISDICTION_FAMILIES.has(family) || hasAny(text, JURISDICTION_MARKERS) || SPECULATIVE_PREFIXES.some((prefix) => threatId.startsWith(prefix));
-  const jurisdictionProven = hasAny(text, JURISDICTION_MARKERS);
-  const absencePermitted = ABSENCE_ALLOWED.has(threatId) || (threatId.startsWith("UNI_") && hasAny(text, GOVERNANCE_GAP_MARKERS));
+  const absenceOnly = hasAny(evidenceText, ABSENCE_MARKERS) && !hasAny(evidenceText, DIRECT_PROOF_MARKERS.filter((marker) => marker !== "policy"));
+  const speculative = hasAny(evidenceText, SPECULATION_MARKERS);
+  const directProof = hasAny(evidenceText, DIRECT_PROOF_MARKERS);
+  const jurisdictionSpecific = JURISDICTION_FAMILIES.has(family) || hasAny(contextText, JURISDICTION_MARKERS) || SPECULATIVE_PREFIXES.some((prefix) => threatId.startsWith(prefix));
+  const jurisdictionProven = hasAny(evidenceText, JURISDICTION_MARKERS);
+  const absencePermitted = ABSENCE_ALLOWED.has(threatId) || (threatId.startsWith("UNI_") && hasAny(evidenceText, GOVERNANCE_GAP_MARKERS));
+  const standard = evaluateThreatTriggerStandard({ threatId, evidenceText, absenceOnly, speculative });
 
   if (!directProof) reasons.push("NO_DIRECT_PUBLIC_PROOF_MARKER");
   if (absenceOnly && !absencePermitted) reasons.push("ABSENCE_ONLY_NOT_TRIGGER_PROOF");
   if (speculative) reasons.push("SPECULATIVE_DEPLOYMENT_LANGUAGE");
   if (jurisdictionSpecific && !jurisdictionProven) reasons.push("JURISDICTION_OR_REGIME_FIT_UNPROVEN");
+  if (!standard.pass) reasons.push(...standard.reasons.map((reason) => `${reason}:${standard.profile}`));
 
   if (!reasons.length) return row;
 
-  const limitation = `False-positive firewall demoted prior TRIGGERED status to CONTROLLED: ${reasons.join("; ")}. Treat as watchlist/controlled limitation unless direct public proof later confirms activity, jurisdiction, and mandatory-control gap.`;
+  const limitation = `False-positive firewall demoted prior TRIGGERED status to CONTROLLED: ${unique(reasons).join("; ")}. Trigger standard profile=${standard.profile}. Treat as watchlist/controlled limitation unless direct public proof later confirms activity, jurisdiction, and mandatory-control gap.`;
   return {
     ...row,
     trigger_status: "CONTROLLED",
@@ -46,4 +51,8 @@ function hasAny(text, markers) {
 function append(existing, addition) {
   const current = String(existing || "").trim();
   return current ? `${current} | ${addition}` : addition;
+}
+
+function unique(items) {
+  return [...new Set(items)];
 }
