@@ -189,7 +189,7 @@ function reviewPath({ profiles = {}, display_id_index = {} }) {
   const ctrl = exposureRows(profiles.exposure_registry_controlled_profile, "controlled_rows");
   const expIds = asArray(display_id_index.exposure_display_ids);
   return {
-    remediation_thesis: "Review path is framed as candidate review routing and confirmation support only. It is not an instruction to change documents or operations.",
+    review_path_thesis: "Review path is framed as candidate review routing and confirmation support only. It is not an instruction to change documents or operations.",
     priority_actions: trig.map((r, i) => ({ action_reference: `ACT-${String(i + 1).padStart(3, "0")}`, linked_finding: expIds[i]?.display_exposure_id || `EXP-${String(i + 1).padStart(3, "0")}`, review_route: reviewRouteLabel(getPath(r, "review_route") || getPath(r, "material_projection.review_route")), visible_signal: safeText(getPath(r, "basis_proof") || getPath(r, "material_projection.basis_proof"), "Visible signal requires qualified review"), downstream_use_limit: "Use as review queue only; qualified reviewer should verify." })),
     document_route: candidateRoutes(trig, "document"),
     data_control_route: candidateRoutes(trig, "data"),
