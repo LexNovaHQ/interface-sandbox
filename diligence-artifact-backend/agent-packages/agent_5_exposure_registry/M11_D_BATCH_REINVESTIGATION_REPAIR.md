@@ -41,9 +41,10 @@ Return exactly one JSON root:
 ```
 
 ## HARD RULES
-- Do not add rows outside the active batch.
-- Do not remove expected Threat_IDs.
-- Do not group Threat_IDs.
-- Do not emit downstream artifacts.
-- Keep final material status only `TRIGGERED` or `CONTROLLED`.
-- If the same result remains after reinvestigation, explain the warning in `row_limitations`.
+
+* Do not add rows outside the active batch.
+* Do not remove expected Threat_IDs.
+* Do not group Threat_IDs.
+* Do not emit downstream artifacts.
+* Keep final material status only `TRIGGERED` or `CONTROLLED`.
+* If the same result remains after reinvestigation, explain the warning in `row_limitations`.
