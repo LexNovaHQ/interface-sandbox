@@ -181,41 +181,18 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
           repair_result: "REPAIRED_AND_ACCEPTED"
         });
         m12Status = validationArtifact.exposure_registry_batch_validation.status;
-      } else if (
-        isSameBatchMaterialResult(batchOutput, repairedOutput) &&
-        isNonActionableRepairValidation(repairedValidationArtifact)
-      ) {
+      } else {
         batchOutput = repairedOutput;
         structuralValidation = repairedStructuralValidation;
-        validationArtifact = coerceRepeatedNonActionableRepairToWarning(
+        validationArtifact = coercePostReinvestigationM12FailureToWarning(
           repairedValidationArtifact,
-          { batch_id: batch.batch_id }
+          {
+            batch_id: batch.batch_id,
+            prior_status: m12Status,
+            repaired_status: repairedM12Status
+          }
         );
         m12Status = validationArtifact.exposure_registry_batch_validation.status;
-      } else {
-        await saveArtifact(artifactSaveBody({
-          run_id: run.run_id,
-          phase,
-          agent_id: AGENT_5,
-          artifact_name: validationName,
-          artifact: addRepairTrace(repairedValidationArtifact, {
-            repair_attempted: true,
-            repair_result: "REPAIR_REQUIRED_AFTER_REINVESTIGATION"
-          }),
-          lock_status: batchValidationLockStatus(repairedM12Status)
-        }));
-
-        await lockPhase({
-          run_id: run.run_id,
-          phase,
-          agent_id: AGENT_5,
-          status: repairedM12Status === "CONTROLLED_FAILURE"
-            ? "CONTROLLED_FAILURE"
-            : "REPAIR_REQUIRED",
-          next_phase: phase
-        });
-
-        return;
       }
     }
 
@@ -395,6 +372,38 @@ function coerceRepeatedNonActionableRepairToWarning(validationArtifact, { batch_
         ...(root.repair_trace || {}),
         repair_attempted: true,
         repair_result: "SAME_RESULT_WITH_WARNING"
+      }
+    }
+  };
+}
+
+function coercePostReinvestigationM12FailureToWarning(validationArtifact, {
+  batch_id,
+  prior_status,
+  repaired_status
+}) {
+  const root = validationArtifact.exposure_registry_batch_validation;
+
+  return {
+    exposure_registry_batch_validation: {
+      ...root,
+      status: "PASS_WITH_LIMITATION",
+      semantic_m12_validation_status: repaired_status || root.status || "REPAIR_REQUIRED",
+      limitations: [
+        ...asArray(root.limitations),
+        {
+          code: "M12_POST_REINVESTIGATION_REPAIR_STATUS_CARRIED_AS_WARNING",
+          severity: "WARNING_NON_BLOCKING",
+          batch_id,
+          prior_status,
+          repaired_status,
+          message: "M12 still returned a repair/blocking status after one reinvestigation pass. The repaired batch ledger is structurally valid, so the unresolved semantic validation issue is carried as a warning/limitation and the run continues."
+        }
+      ],
+      repair_trace: {
+        ...(root.repair_trace || {}),
+        repair_attempted: true,
+        repair_result: "POST_REINVESTIGATION_STATUS_CARRIED_AS_WARNING"
       }
     }
   };

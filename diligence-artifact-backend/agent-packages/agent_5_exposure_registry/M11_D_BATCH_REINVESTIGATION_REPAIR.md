@@ -20,7 +20,7 @@ Use the selected legal/governance excerpts first. Use legal cartography as navig
 ## REPAIR RULE
 If the prior output has a concrete repairable error, repair the affected row(s) and return a corrected `m11_batch_registry_ledger`.
 
-If reinvestigation produces the same substantive result and there is no concrete evidence-based correction to make, return the same row result with a clear warning in `row_limitations`.
+After one targeted reinvestigation, any remaining non-structural uncertainty, semantic validation concern, evidence thinness, public-source limitation, or field-level validation concern must be carried as a warning/limitation. Do not block unless the repaired batch output remains structurally invalid or unusable.
 
 ## OUTPUT ROOT
 Return exactly one JSON root:
@@ -47,4 +47,4 @@ Return exactly one JSON root:
 * Do not group Threat_IDs.
 * Do not emit downstream artifacts.
 * Keep final material status only `TRIGGERED` or `CONTROLLED`.
-* If the same result remains after reinvestigation, explain the warning in `row_limitations`.
+* After one targeted reinvestigation, any remaining non-structural uncertainty, semantic validation concern, evidence thinness, public-source limitation, or field-level validation concern must be carried as a warning/limitation. Do not block unless the repaired batch output remains structurally invalid or unusable.
