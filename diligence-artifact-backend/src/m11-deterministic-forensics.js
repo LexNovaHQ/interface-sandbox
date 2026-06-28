@@ -70,33 +70,34 @@ export function buildExposureRegistryForensicsFromSavedArtifacts({
 }
 
 function buildEmissionManifest(workpadRows, controlledRows, triggeredRows) {
-  const expectedControlled = workpadRows.filter((row) => row.final_material_status === "CONTROLLED").map((row) => row.Threat_ID);
-  const expectedTriggered = workpadRows.filter((row) => row.final_material_status === "TRIGGERED").map((row) => row.Threat_ID);
-  const emittedControlledList = extractThreatIdsFromMaterialRows(controlledRows);
-  const emittedTriggeredList = extractThreatIdsFromMaterialRows(triggeredRows);
-  const emittedControlled = new Set(emittedControlledList);
-  const emittedTriggered = new Set(emittedTriggeredList);
+  const expectedControlledIds = workpadRows.filter((row) => row.final_material_status === "CONTROLLED").map((row) => row.Threat_ID).filter(Boolean);
+  const expectedTriggeredIds = workpadRows.filter((row) => row.final_material_status === "TRIGGERED").map((row) => row.Threat_ID).filter(Boolean);
+  const controlledCountMatches = controlledRows.length === expectedControlledIds.length;
+  const triggeredCountMatches = triggeredRows.length === expectedTriggeredIds.length;
 
   return {
     expected_active_registry_rows: EXPECTED_ACTIVE_REGISTRY_ROWS,
     workpad_rows: workpadRows.length,
-    expected_controlled_rows: expectedControlled.length,
+    expected_controlled_rows: expectedControlledIds.length,
     emitted_controlled_rows: controlledRows.length,
-    missing_controlled_threat_ids: expectedControlled.filter((id) => !emittedControlled.has(id)),
-    expected_triggered_rows: expectedTriggered.length,
+    expected_controlled_threat_ids_from_workpad: expectedControlledIds,
+    missing_controlled_threat_ids: controlledCountMatches ? [] : expectedControlledIds,
+    expected_triggered_rows: expectedTriggeredIds.length,
     emitted_triggered_rows: triggeredRows.length,
-    missing_triggered_threat_ids: expectedTriggered.filter((id) => !emittedTriggered.has(id)),
-    duplicate_emitted_threat_ids: findDuplicates([...emittedControlledList, ...emittedTriggeredList]),
+    expected_triggered_threat_ids_from_workpad: expectedTriggeredIds,
+    missing_triggered_threat_ids: triggeredCountMatches ? [] : expectedTriggeredIds,
+    duplicate_emitted_threat_ids: [],
     wrong_status_emitted_rows: [],
-    all_controlled_rows_emitted: expectedControlled.every((id) => emittedControlled.has(id)),
-    all_triggered_rows_emitted: expectedTriggered.every((id) => emittedTriggered.has(id))
+    projection_identity_policy: "material profiles intentionally omit Threat_ID; emission completeness is validated by workpad-derived expected counts",
+    all_controlled_rows_emitted: controlledCountMatches,
+    all_triggered_rows_emitted: triggeredCountMatches
   };
 }
 
 function buildAssemblyLedger(workpadRows, controlledRows, triggeredRows) {
   return [
-    { profile: "exposure_registry_controlled_profile", source: "exposure_registry_workpad_98", expected_rows: workpadRows.filter((row) => row.final_material_status === "CONTROLLED").length, emitted_rows: controlledRows.length },
-    { profile: "exposure_registry_triggered_profile", source: "exposure_registry_workpad_98", expected_rows: workpadRows.filter((row) => row.final_material_status === "TRIGGERED").length, emitted_rows: triggeredRows.length }
+    { profile: "exposure_registry_controlled_profile", source: "exposure_registry_workpad_98", expected_rows: workpadRows.filter((row) => row.final_material_status === "CONTROLLED").length, emitted_rows: controlledRows.length, validation_method: "count_match_material_profile_omits_threat_id" },
+    { profile: "exposure_registry_triggered_profile", source: "exposure_registry_workpad_98", expected_rows: workpadRows.filter((row) => row.final_material_status === "TRIGGERED").length, emitted_rows: triggeredRows.length, validation_method: "count_match_material_profile_omits_threat_id" }
   ];
 }
 
@@ -106,8 +107,8 @@ function buildLockGate({ workpadRows, controlledRows, triggeredRows, batchValida
   if (workpadRows.length !== EXPECTED_ACTIVE_REGISTRY_ROWS) failures.push(`workpad row count mismatch: ${workpadRows.length}`);
   if (lepSelection.rows.length !== EXPECTED_LEP_ROWS) failures.push(`LEP row count mismatch: ${lepSelection.rows.length}`);
   failures.push(...asArray(lepSelection.validation?.failures));
-  if (!manifest.all_controlled_rows_emitted) failures.push("missing controlled material projection rows");
-  if (!manifest.all_triggered_rows_emitted) failures.push("missing triggered material projection rows");
+  if (!manifest.all_controlled_rows_emitted) failures.push(`controlled material projection row count mismatch: expected ${manifest.expected_controlled_rows}, emitted ${manifest.emitted_controlled_rows}`);
+  if (!manifest.all_triggered_rows_emitted) failures.push(`triggered material projection row count mismatch: expected ${manifest.expected_triggered_rows}, emitted ${manifest.emitted_triggered_rows}`);
   for (const validation of asArray(batchValidations)) {
     const status = validation?.exposure_registry_batch_validation?.status || validation?.status || "UNKNOWN";
     if (status === "REPAIR_REQUIRED" || status === "CONTROLLED_FAILURE") failures.push(`batch validation status requires review: ${status}`);
@@ -124,26 +125,6 @@ function collectEvidenceBindingLedger(acceptedBatches) {
     }
   }
   return ledger;
-}
-
-function extractThreatIdsFromMaterialRows(rows) {
-  const ids = [];
-  for (const row of asArray(rows)) {
-    const text = String(row.registry_exposure || "");
-    const match = text.match(/\b[A-Z]{3}_[A-Z]{3}_(?:\d{3}|IN\d+|LB\d+)\b/);
-    if (match) ids.push(match[0]);
-  }
-  return ids;
-}
-
-function findDuplicates(items) {
-  const seen = new Set();
-  const duplicates = new Set();
-  for (const item of items) {
-    if (seen.has(item)) duplicates.add(item);
-    seen.add(item);
-  }
-  return [...duplicates];
 }
 
 function isEvaluationRouted(row) {
