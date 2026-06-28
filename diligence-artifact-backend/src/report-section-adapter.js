@@ -1,0 +1,263 @@
+import { buildForensicLedgerAppendix, collectLimitations } from "./report-appendix-builder.js";
+import { buildRegistryAuthorityManifest, M10_LOCKED_FIELDS, REPORT_SECTION_KEYS, sectionHeading } from "./report-registry-map.js";
+import { PUBLIC_FOOTPRINT_LIMITATION, REVIEW_READY_BOUNDARY_NOTICE, asArray, getPath, reviewRouteLabel, safeObject, safeText, statusLabel, unique } from "./report-safe-language.js";
+
+export function buildRendererPayloadFromHandoff({ run = {}, handoff = {} } = {}) {
+  const profiles = normalizeProfiles(handoff);
+  const forensics = safeObject(handoff.forensics);
+  const display_id_index = buildDisplayIdIndex(profiles);
+  const sections = buildSections({ run, handoff, profiles, forensics, display_id_index });
+  return {
+    report_shell: buildReportShell({ run, handoff }),
+    display_id_index,
+    sections,
+    section_order: REPORT_SECTION_KEYS,
+    section_list: REPORT_SECTION_KEYS.map((key) => ({ id: key, title: sectionHeading(key), data: sections[key] })),
+    registry_authority: buildRegistryAuthorityManifest(),
+    renderer_contract: buildRendererContract(),
+    raw_final_output_handoff: handoff
+  };
+}
+
+export function buildReportShell({ run = {}, handoff = {} } = {}) {
+  const meta = safeObject(handoff.run_meta);
+  return {
+    report_title: "Interface Public-Footprint Diligence Report",
+    report_subtitle: "Review-Ready support material — qualified review required",
+    target_display_name: safeText(meta.target || run.target || run.root_url, "Target not specified"),
+    target_domain: safeText(meta.target_domain || run.root_url || run.target, "Target domain not specified"),
+    run_id: safeText(meta.run_id || run.run_id, "Run ID not specified"),
+    generated_at: new Date().toISOString(),
+    evidence_cutoff: safeText(meta.evidence_cutoff || handoff.generated_at, "Evidence cutoff not specified"),
+    report_mode: "PUBLIC_FOOTPRINT_REVIEW_READY_SUPPORT",
+    validation_status: statusLabel(handoff.validation_status),
+    qualified_review_notice: REVIEW_READY_BOUNDARY_NOTICE,
+    public_footprint_limitation: PUBLIC_FOOTPRINT_LIMITATION,
+    renderer_version_hint: "phase1_registry_aware_renderer_v1"
+  };
+}
+
+export function buildRendererContract() {
+  return {
+    renderer_may_render: true,
+    renderer_may_sort: true,
+    renderer_may_filter_for_view: true,
+    renderer_may_expand_collapse: true,
+    renderer_may_add_facts: false,
+    renderer_may_change_statuses: false,
+    renderer_may_change_display_ids: false,
+    renderer_may_hide_appendix_rows: false,
+    renderer_may_generate_legal_advice: false,
+    renderer_may_generate_new_recommendations: false,
+    model_used_after_m11: false,
+    registry_authority_required: true
+  };
+}
+
+function buildSections({ run, handoff, profiles, forensics, display_id_index }) {
+  const data = {
+    matter_overview: matter({ run, handoff }),
+    executive_summary: executive({ handoff, profiles, forensics }),
+    target_profile: target(profiles.target_profile),
+    product_activity_ip_profile: activity(profiles.target_feature_profile),
+    data_risk_provenance_controls: dataControls(profiles.data_provenance_profile),
+    legal_document_control_review: legalDocs(profiles.legal_cartography_index),
+    exposure_findings: exposure({ profiles, display_id_index }),
+    implications_review_path: reviewPath({ profiles, display_id_index }),
+    evidence_gaps_clarification_points: gaps({ handoff, profiles, forensics }),
+    methodology_limitations_review_notes: methodology({ handoff, profiles, forensics }),
+    forensic_ledger_appendix: buildForensicLedgerAppendix({ handoff, profiles, forensics, displayIdIndex: display_id_index })
+  };
+  return Object.fromEntries(REPORT_SECTION_KEYS.map((key) => [key, { key, heading: sectionHeading(key), ...safeObject(data[key]) }]));
+}
+
+function matter({ run = {}, handoff = {} }) {
+  const meta = safeObject(handoff.run_meta);
+  return {
+    matter_identity: {
+      run_id: safeText(meta.run_id || run.run_id, "Run ID not specified"),
+      target: safeText(meta.target || run.target || run.root_url, "Target not specified"),
+      target_url: safeText(meta.target_url || run.root_url || run.target, "Target URL not specified"),
+      validation_status: statusLabel(handoff.validation_status)
+    },
+    review_scope: "Public-footprint diligence based on locked backend artifacts and registry-governed field mapping.",
+    evidence_cutoff: safeText(meta.evidence_cutoff || handoff.generated_at, "Evidence cutoff not specified"),
+    reliance_disclaimer: REVIEW_READY_BOUNDARY_NOTICE,
+    qualified_review_required: true,
+    public_footprint_limitation: PUBLIC_FOOTPRINT_LIMITATION
+  };
+}
+
+function executive({ handoff = {}, profiles = {}, forensics = {} }) {
+  const acts = asArray(profiles.target_feature_profile?.activities);
+  const trig = exposureRows(profiles.exposure_registry_triggered_profile, "triggered_rows");
+  const ctrl = exposureRows(profiles.exposure_registry_controlled_profile, "controlled_rows");
+  const legal = safeObject(profiles.legal_cartography_index);
+  const dp = safeObject(profiles.data_provenance_profile);
+  const workpad = asArray(forensics.exposure_registry_workpad_98?.registry_rows || forensics.exposure_registry_workpad_98?.exposure_registry_workpad_98?.registry_rows);
+  return {
+    executive_posture: `Diligence run assembled with status: ${statusLabel(handoff.validation_status)}. Output is limited to visible public-footprint signals and locked backend artifacts.`,
+    target_snapshot: summarizeTarget(profiles.target_profile),
+    product_activity_snapshot: { activity_count: acts.length, archetypes_observed: unique(acts.flatMap((a) => a.archetype_codes || [])), surface_tokens_observed: unique(acts.flatMap((a) => a.surface_context_tokens || [])) },
+    data_posture: { locked_m10_fields_present: M10_LOCKED_FIELDS.filter((f) => Object.prototype.hasOwnProperty.call(dp, f)).length, missing_proof_request_count: asArray(dp.missing_proof_and_diligence_requests).length, readiness_rows: asArray(dp.law_regulatory_readiness_matrix).length },
+    legal_document_posture: { document_coverage_rows: asArray(legal.document_coverage_index).length, legal_unit_rows: asArray(legal.document_structure_index).length, control_locator_rows: asArray(legal.control_language_locator).length, missing_or_limited_rows: asArray(legal.missing_limited_legal_governance_items).length, lock_status: statusLabel(legal.lock_status) },
+    exposure_posture: { triggered_count: trig.length, controlled_count: ctrl.length, full_workpad_rows: workpad.length, old_exposure_registry_profile_used: false },
+    evidence_posture: { missing_artifacts: asArray(handoff.missing_artifacts).map((r) => safeText(r, "Missing artifact recorded")), terminal_checks: safeObject(handoff.terminal_checks) },
+    qualified_review_priorities: qualifiedPriorities({ trig, dp, legal })
+  };
+}
+
+function target(profile = {}) {
+  const t = safeObject(profile.target_profile || profile);
+  return {
+    identity: safeObject(t.target_identity),
+    jurisdiction: safeObject(t.jurisdiction_notice),
+    business_model: safeObject(t.business_context),
+    market_context: { market_type_candidate: safeText(t.business_context?.market_type_candidate, "Market type not visible"), industry_sector: safeText(t.business_context?.industry_sector, "Industry sector not visible"), regulated_sector_hints: asArray(t.business_context?.regulated_sector_hints).map((x) => safeText(x, "")) },
+    product_baseline: safeObject(t.product_service_wrapper),
+    data_touchpoint_summary: "Data touchpoints are summarized in the Data Provenance & Controls section and linked from product activity where visible.",
+    evidence_basis: "Derived from locked M7 target_profile artifact and registry-governed target-profile fields.",
+    limitations: asArray(t.target_profile_limitations).map((x) => safeText(x, "Limitation recorded"))
+  };
+}
+
+function activity(profile = {}) {
+  const p = safeObject(profile.target_feature_profile || profile);
+  const acts = asArray(p.activities);
+  return {
+    product_activity_thesis: acts.length ? `${acts.length} public product/activity signal(s) were mapped from locked M8 activity cards.` : "No activity card was emitted in the locked feature profile; review limitations before reliance.",
+    feature_inventory_summary: { activity_count: acts.length, archetypes_observed: unique(acts.flatMap((a) => a.archetype_codes || [])), surface_tokens_observed: unique(acts.flatMap((a) => a.surface_context_tokens || [])) },
+    feature_table: acts.map((a, i) => ({ activity_display_id: `ACT-${String(i + 1).padStart(3, "0")}`, activity_reference: safeText(a.activity_reference, `activity_${i + 1}`), product_service_wrapper: safeText(a.product_service_wrapper, "Product wrapper not specified"), activity_feature_name: safeText(a.activity_feature_name, "Activity name not specified"), activity_candidate_summary: safeText(a.activity_candidate_summary, "Activity summary not specified"), mechanics_proof: safeText(a.mechanics_proof, "Mechanics proof not specified"), autonomy_human_control_signal: safeText(a.autonomy_human_control_signal, "Autonomy / human-control signal not visible"), data_content_object_touched: safeText(a.data_content_object_touched, "Data/content object not visible"), external_internal_action_signal: safeText(a.external_internal_action_signal, "External/internal action signal not visible"), archetype_codes: asArray(a.archetype_codes), surface_context_tokens: asArray(a.surface_context_tokens), surface_proof_and_routing_limits: safeText(a.surface_proof_and_routing_limits, "Surface proof limitation not specified") })),
+    functional_profile: unique(acts.flatMap((a) => a.archetype_codes || [])),
+    risk_surface_profile: { display_label: "Activity surface profile", surface_context_tokens: unique(acts.flatMap((a) => a.surface_context_tokens || [])) },
+    ip_content_profile: countSignals(acts, /content|output|text|audio|image|video|code|document/i),
+    architecture_profile: countSignals(acts, /workflow|agent|autonomous|action|tool|api|orchestrat/i),
+    commercial_scan: "Commercial implications are limited to public product/activity signals and must be verified before contracting reliance.",
+    evidence_basis: "Derived from locked M8 target_feature_profile.activities[] cards. Old feature_inventory paths are not used.",
+    limitations: asArray(p.profile_level_limitations).map((x) => safeText(x, "Limitation recorded"))
+  };
+}
+
+function dataControls(profile = {}) {
+  const d = safeObject(profile.data_provenance_profile || profile);
+  return {
+    data_risk_thesis: "Data posture is presented as visible provenance/control signals only. This section does not decide privacy compliance, lawful-basis sufficiency, transfer legality, or security adequacy.",
+    data_flow_summary: pick(d, ["source_coverage", "individuals_and_relationships", "data_categories", "sensitive_special_category_signals", "children_minors_signal"]),
+    data_flow_table: rows(d.collection_sources_and_activity_data_flows, "DATAFLOW"),
+    control_review: pick(d, ["privacy_notice_visibility", "lawful_basis_consent_authorization_readiness", "consent_withdrawal_controls", "rights_request_routes", "vendor_subprocessor_partner_inventory", "processor_subprocessor_governance_controls", "cross_border_transfer_location_custody", "retention_deletion_return_export_controls", "security_access_controls", "breach_incident_readiness", "ai_model_provider_processing_chain", "ai_training_finetuning_model_improvement_controls", "embeddings_vector_memory_controls", "prompt_output_logging_telemetry_controls", "automated_decision_profiling_human_review_signal", "privacy_accountability_documentation_signals"]),
+    readiness_matrix: rows(d.law_regulatory_readiness_matrix, "READY"),
+    data_gaps: rows(d.missing_proof_and_diligence_requests, "MISS"),
+    evidence_basis: "Derived from locked M10 34-field data_provenance_profile. Old target_data_provenance_profile and data_flows-only paths are not used.",
+    limitations: asArray(d.limitations).map((x) => safeText(x, "Limitation recorded"))
+  };
+}
+
+function legalDocs(profile = {}) {
+  const l = safeObject(profile.legal_cartography_index || profile);
+  return {
+    legal_document_review_thesis: "Legal/governance materials are mapped as public document and control signals only. This section does not provide document interpretation, clause mandates, compliance conclusions, or enforceability analysis.",
+    document_inventory_summary: { document_coverage_rows: asArray(l.document_coverage_index).length, document_structure_rows: asArray(l.document_structure_index).length, incorporated_link_rows: asArray(l.incorporated_linked_document_map).length, control_locator_rows: asArray(l.control_language_locator).length, missing_limited_rows: asArray(l.missing_limited_legal_governance_items).length, lock_status: statusLabel(l.lock_status) },
+    document_inventory: rows(l.document_coverage_index, "DOC"),
+    legal_unit_index: rows(l.document_structure_index, "UNIT"),
+    document_relationships: rows(l.incorporated_linked_document_map, "REL"),
+    control_signal_matrix: rows(l.control_language_locator, "CTRL"),
+    document_mismatch_signals: rows(l.missing_limited_legal_governance_items, "GOV"),
+    qualified_review_points: rows(l.missing_limited_legal_governance_items, "QRP").map((r) => ({ ...r, review_route: "Qualified reviewer should verify" })),
+    evidence_basis: "Derived from locked M9 legal_cartography_index keys. Old legal_document_inventory/control_signal_map aliases are not the source of truth.",
+    limitations: asArray(l.missing_limited_legal_governance_items).map((x) => safeText(x, "Limited governance item recorded"))
+  };
+}
+
+function exposure({ profiles = {}, display_id_index = {} }) {
+  const trig = exposureRows(profiles.exposure_registry_triggered_profile, "triggered_rows");
+  const ctrl = exposureRows(profiles.exposure_registry_controlled_profile, "controlled_rows");
+  const expIds = asArray(display_id_index.exposure_display_ids);
+  const ctrlIds = asArray(display_id_index.controlled_display_ids);
+  return {
+    exposure_category_groups: groupRows(trig),
+    finding_rows: trig.map((r, i) => findingRow(r, expIds[i]?.display_exposure_id || `EXP-${String(i + 1).padStart(3, "0")}`)),
+    controlled_rows_summary: ctrl.map((r, i) => controlledRow(r, ctrlIds[i]?.display_control_id || `CTRL-${String(i + 1).padStart(3, "0")}`)),
+    severity_summary: priorityRows(trig),
+    control_position_summary: { triggered_count: trig.length, controlled_count: ctrl.length, note: "Triggered rows are visible exposure signals. Controlled rows are visible control-language positions. Neither is a final conclusion." },
+    evidence_basis_summary: "Exposure findings use split M11 material outputs: exposure_registry_triggered_profile and exposure_registry_controlled_profile. Full 98-row workpad is preserved in the forensic appendix.",
+    appendix_crosswalk: expIds.map((r) => ({ display_exposure_id: r.display_exposure_id, ...r.canonical_refs }))
+  };
+}
+
+function reviewPath({ profiles = {}, display_id_index = {} }) {
+  const trig = exposureRows(profiles.exposure_registry_triggered_profile, "triggered_rows");
+  const ctrl = exposureRows(profiles.exposure_registry_controlled_profile, "controlled_rows");
+  const expIds = asArray(display_id_index.exposure_display_ids);
+  return {
+    remediation_thesis: "Review path is framed as candidate review routing and confirmation support only. It is not an instruction to change documents or operations.",
+    priority_actions: trig.map((r, i) => ({ action_reference: `ACT-${String(i + 1).padStart(3, "0")}`, linked_finding: expIds[i]?.display_exposure_id || `EXP-${String(i + 1).padStart(3, "0")}`, review_route: reviewRouteLabel(getPath(r, "review_route") || getPath(r, "material_projection.review_route")), visible_signal: safeText(getPath(r, "basis_proof") || getPath(r, "material_projection.basis_proof"), "Visible signal requires qualified review"), downstream_use_limit: "Use as review queue only; qualified reviewer should verify." })),
+    document_route: candidateRoutes(trig, "document"),
+    data_control_route: candidateRoutes(trig, "data"),
+    operational_control_route: candidateRoutes(trig, "operational"),
+    qualified_review_queue: trig.map((r, i) => ({ linked_finding: expIds[i]?.display_exposure_id || `EXP-${String(i + 1).padStart(3, "0")}`, route: reviewRouteLabel(getPath(r, "review_route") || getPath(r, "material_projection.review_route")) })),
+    quick_wins: ctrl.map((r) => safeText(getPath(r, "basis_proof") || getPath(r, "material_projection.basis_proof"), "Visible control to preserve / verify")),
+    blocked_until_clarified: asArray(profiles.data_provenance_profile?.missing_proof_and_diligence_requests).map((x) => safeText(x, "Confirmation needed")),
+    review_ready_handoff_bridge: { status: "READY_FOR_QUALIFIED_REVIEW_QUEUE", note: "Bridge this section into Vault/Assembly only after deterministic Node 5B mapping is added. Public-footprint facts must be confirmed before document assembly reliance." }
+  };
+}
+
+function gaps({ handoff = {}, profiles = {}, forensics = {} }) {
+  const d = safeObject(profiles.data_provenance_profile);
+  const l = safeObject(profiles.legal_cartography_index);
+  const lim = collectLimitations({ profiles, forensics, handoff });
+  return {
+    open_information_requests: rows(d.missing_proof_and_diligence_requests, "IR"),
+    missing_documents: rows(l.missing_limited_legal_governance_items, "DOCREQ"),
+    missing_factual_confirmations: lim.map((r, i) => ({ confirmation_reference: `FC-${String(i + 1).padStart(3, "0")}`, source: r.source, question: `Confirm or qualify: ${r.display_text}` })),
+    unclear_data_flows: rows(d.collection_sources_and_activity_data_flows, "DATA").filter(unclear),
+    unclear_provider_dependencies: rows(d.vendor_subprocessor_partner_inventory || d.ai_model_provider_processing_chain, "VEND").filter(unclear),
+    evidence_limitations: lim.map((r) => r.display_text),
+    consequence_if_unresolved: "Qualified reviewer may request additional materials or defer reliance until missing proof is resolved.",
+    client_confirmation_questions: lim.map((r, i) => `CQ-${String(i + 1).padStart(3, "0")}: ${r.display_text}`)
+  };
+}
+
+function methodology({ handoff = {}, profiles = {}, forensics = {} }) {
+  return {
+    methodology: ["Public-footprint source discovery and locked artifact assembly.", "Registry-governed material field mapping using the locked Field Derivation Registry.", "Forensic appendix structuring using the locked Forensic Annexure Registry.", "Deterministic rendering only; no model call after M11."],
+    stage_roles: [{ review_step: "M7", purpose: "Target Profile" }, { review_step: "M8", purpose: "Product / Activity Profile" }, { review_step: "M9", purpose: "Legal Document & Control Review" }, { review_step: "M10", purpose: "Data Provenance & Controls" }, { review_step: "M11", purpose: "Exposure Registry split triggered/controlled profiles" }, { review_step: "M12", purpose: "Deterministic quality challenge gate" }, { review_step: "Compiler / Renderer", purpose: "Deterministic assembly and display only" }],
+    status_definitions: [{ status: "Visible exposure signal", meaning: "A public-footprint signal was mapped into a triggered exposure row. It is not a final conclusion." }, { status: "Visible control language found", meaning: "A public control signal was mapped into a controlled row. It should be preserved or verified." }, { status: "Not visible in reviewed public materials", meaning: "The reviewed public footprint did not show the relevant proof." }, { status: "Needs qualified review", meaning: "A qualified reviewer should verify before reliance." }],
+    legal_limitations: [REVIEW_READY_BOUNDARY_NOTICE],
+    evidence_limitations: collectLimitations({ profiles, forensics, handoff }).map((r) => r.display_text),
+    registry_use_note: "The registry is used as an internal review framework and normalization authority. Main report language uses display-safe labels; raw IDs remain in appendix/details.",
+    reviewer_notes: ["No raw registry IDs are used as primary labels in main findings.", "Full workpad and forensics are preserved in appendix material.", "This renderer does not call a model and does not add new findings."],
+    compiler_trace: handoff.compiler_trace || {},
+    terminal_checks: handoff.terminal_checks || {}
+  };
+}
+
+function buildDisplayIdIndex(profiles = {}) {
+  const trig = exposureRows(profiles.exposure_registry_triggered_profile, "triggered_rows");
+  const ctrl = exposureRows(profiles.exposure_registry_controlled_profile, "controlled_rows");
+  return {
+    exposure_display_ids: trig.map((row, i) => ({ display_exposure_id: `EXP-${String(i + 1).padStart(3, "0")}`, normalized_threat_name: safeText(getPath(row, "registry_exposure.threat_name") || row.threat_name || row.Threat_Name, "Exposure signal"), canonical_refs: refs(row) })),
+    controlled_display_ids: ctrl.map((row, i) => ({ display_control_id: `CTRL-${String(i + 1).padStart(3, "0")}`, normalized_control_name: safeText(getPath(row, "registry_exposure.threat_name") || row.threat_name || row.Threat_Name, "Visible control signal"), canonical_refs: refs(row) })),
+    source_display_ids: [], evidence_display_ids: [], document_display_ids: [],
+    feature_display_ids: asArray(profiles.target_feature_profile?.activities).map((a, i) => ({ display_feature_id: `ACT-${String(i + 1).padStart(3, "0")}`, activity_reference: a.activity_reference || "", activity_feature_name: safeText(a.activity_feature_name, "Activity not specified") }))
+  };
+}
+
+function normalizeProfiles(handoff = {}) {
+  const p = safeObject(handoff.profiles || handoff.profile);
+  return { source_discovery_handoff: p.source_discovery_handoff || null, legal_cartography_index: unwrap(p.legal_cartography_index, "legal_cartography_index"), target_profile: unwrap(p.target_profile, "target_profile"), target_feature_profile: unwrap(p.target_feature_profile, "target_feature_profile"), data_provenance_profile: unwrap(p.data_provenance_profile, "data_provenance_profile"), exposure_registry_controlled_profile: unwrap(p.exposure_registry_controlled_profile || handoff.exposure_registry_controlled, "exposure_registry_controlled_profile"), exposure_registry_triggered_profile: unwrap(p.exposure_registry_triggered_profile || handoff.exposure_registry_triggered, "exposure_registry_triggered_profile"), challenge_gate: p.challenge_gate || handoff.challenge_gate || null };
+}
+
+function unwrap(value, key) { const o = safeObject(value); return safeObject(o[key] || o); }
+function pick(o, keys) { return Object.fromEntries(keys.map((k) => [k, o[k] || {}])); }
+function rows(value, prefix) { return asArray(value).map((row, i) => (row && typeof row === "object" && !Array.isArray(row) ? { display_ref: `${prefix}-${String(i + 1).padStart(3, "0")}`, ...row } : { display_ref: `${prefix}-${String(i + 1).padStart(3, "0")}`, value: safeText(row, "Row recorded") })); }
+function exposureRows(profile, key) { const o = safeObject(profile); return asArray(o[key] || o.rows || o.registry_rows); }
+function refs(row = {}) { return { registry_row_id: getPath(row, "registry_exposure.registry_row_id") || getPath(row, "registry_exposure.Threat_ID") || row.registry_row_id || row.Threat_ID || row.threat_id || "", threat_id: getPath(row, "registry_exposure.threat_id") || getPath(row, "registry_exposure.Threat_ID") || row.threat_id || row.Threat_ID || row.registry_row_id || "", ledger_row_id: row.ledger_row_id || row.registry_order || "", evaluation_status: row.evaluation_status || row.final_material_status || "", evidence_refs: asArray(row.evidence_refs || getPath(row, "basis_proof.evidence_refs") || getPath(row, "material_projection.basis_proof.evidence_refs")), source_refs: asArray(row.source_refs || getPath(row, "basis_proof.source_refs") || getPath(row, "material_projection.basis_proof.source_refs")), artifact_refs: asArray(row.artifact_refs), unit_refs: asArray(row.unit_refs) }; }
+function findingRow(row = {}, id) { return { display_exposure_id: id, normalized_threat_name: safeText(getPath(row, "registry_exposure.threat_name") || row.threat_name || row.Threat_Name, "Exposure signal"), normalized_category: safeText(getPath(row, "registry_exposure.category") || getPath(row, "impact_priority.category") || row.category, "Review category not specified"), display_status: statusLabel(row.evaluation_status || row.final_material_status || "TRIGGERED"), plain_english_summary: safeText(getPath(row, "basis_proof") || getPath(row, "material_projection.basis_proof") || row.registry_exposure, "Visible exposure signal recorded"), related_activity: safeText(getPath(row, "target_match") || getPath(row, "material_projection.target_match"), "Related activity not specified"), visible_control_position: safeText(getPath(row, "control_position") || getPath(row, "material_projection.control_position"), "Visible control position requires review"), evidence_preview: { source_label: safeText(getPath(row, "basis_proof.source_label"), "Source reference in appendix"), document_label: safeText(getPath(row, "basis_proof.document_label"), "Document reference in appendix"), evidence_display_id: safeText(getPath(row, "basis_proof.evidence_display_id"), "Evidence reference in appendix") }, qualified_review_flag: true, technical_refs: refs(row) }; }
+function controlledRow(row = {}, id) { return { display_control_id: id, normalized_control_name: safeText(getPath(row, "registry_exposure.threat_name") || row.threat_name || row.Threat_Name, "Visible control signal"), display_status: statusLabel(row.evaluation_status || row.final_material_status || "CONTROLLED"), visible_control_position: safeText(getPath(row, "basis_proof") || getPath(row, "material_projection.basis_proof"), "Visible control language found"), preserve_or_verify: "Preserve / verify before downstream assembly reliance.", technical_refs: refs(row) }; }
+function groupRows(rowsIn = []) { const m = new Map(); for (const r of rowsIn) { const k = safeText(getPath(r, "registry_exposure.category") || getPath(r, "impact_priority.category") || r.category, "Uncategorized review signal"); m.set(k, (m.get(k) || 0) + 1); } return [...m.entries()].map(([category, count]) => ({ category, count })); }
+function priorityRows(rowsIn = []) { const m = new Map(); for (const r of rowsIn) { const k = safeText(getPath(r, "impact_priority") || getPath(r, "material_projection.impact_priority"), "Priority not specified"); m.set(k, (m.get(k) || 0) + 1); } return [...m.entries()].map(([priority, count]) => ({ priority, count })); }
+function qualifiedPriorities({ trig = [], dp = {}, legal = {} }) { const out = []; if (trig.length) out.push(`${trig.length} visible exposure signal(s) require qualified review.`); if (asArray(dp.missing_proof_and_diligence_requests).length) out.push(`${asArray(dp.missing_proof_and_diligence_requests).length} data/control confirmation request(s) require follow-up.`); if (asArray(legal.missing_limited_legal_governance_items).length) out.push(`${asArray(legal.missing_limited_legal_governance_items).length} legal/governance item(s) are missing, limited, or unclear in public materials.`); return out.length ? out : ["No priority queue was deterministically derived from locked artifacts; review appendix limitations before reliance."]; }
+function summarizeTarget(profile = {}) { const t = safeObject(profile.target_profile || profile); return { brand_name: safeText(t.target_identity?.brand_name, "Brand name not visible"), legal_entity_name: safeText(t.target_identity?.legal_entity_name, "Legal entity not visible"), entity_type: safeText(t.target_identity?.entity_type, "Entity type not visible"), reviewed_website: safeText(t.target_identity?.reviewed_website || t.target_identity?.primary_domain, "Reviewed website not visible"), offering: safeText(t.product_service_wrapper?.high_level_offering, "Offering not visible") }; }
+function countSignals(arr, pattern) { const found = asArray(arr).filter((x) => pattern.test(JSON.stringify(x))); return { signal_count: found.length, activity_refs: found.map((x) => x.activity_reference).filter(Boolean) }; }
+function candidateRoutes(arr, type) { return arr.map((r, i) => ({ route_reference: `${type.toUpperCase()}-${String(i + 1).padStart(3, "0")}`, linked_signal: safeText(getPath(r, "registry_exposure.threat_name") || r.threat_name || r.Threat_Name, "Review signal"), candidate_route: reviewRouteLabel(getPath(r, "review_route") || getPath(r, "material_projection.review_route")), route_limit: "Candidate review route only; qualified reviewer should verify." })); }
+function unclear(row) { return /not visible|weak|unclear|access|unknown|missing/i.test(JSON.stringify(row)); }
