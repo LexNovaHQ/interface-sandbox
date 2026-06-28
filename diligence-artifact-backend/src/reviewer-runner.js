@@ -58,6 +58,8 @@ export async function advanceReviewerRun({ run_id }) {
   try {
     if (phase === "M11") {
       await runM11OrchestratedPhase({ run, phase, contract });
+    } else if (phase === "M12") {
+      await runM12DeterministicChallengePhase({ run, phase, contract });
     } else if (contract.type === "model") {
       await runModelPhase({ run, phase, contract });
     } else if (phase === "AGENT_1A_URL_MANIFEST") {
@@ -66,8 +68,6 @@ export async function advanceReviewerRun({ run_id }) {
       await runAgent1bExtractPhase({ run, phase, contract });
     } else if (phase === "M6_BUCKET_INDEX") {
       await runM6BucketIndexPhase({ run, phase, contract });
-    } else if (phase === "M12") {
-      await runM12DeterministicChallengePhase({ run, phase, contract });
     } else if (phase === "COMPILER") {
       await runCompilerPhase({ run, phase, contract });
     } else if (phase === "RENDERER") {
@@ -172,9 +172,7 @@ async function runM12DeterministicChallengePhase({ run, phase, contract }) {
 }
 
 async function runModelPhase({ run, phase, contract }) {
-  const artifacts = phase === "M12"
-    ? await readArtifactsForM12Global({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id })
-    : await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
   const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] });
   const result = await callGeminiJson({ prompt, phase });
   const output = result.json;

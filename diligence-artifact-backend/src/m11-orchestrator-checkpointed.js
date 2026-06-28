@@ -424,12 +424,12 @@ function buildDeterministicM12BatchValidation({
     : [];
 
   const expected = Array.isArray(batch.expected_threat_ids)
-    ? batch.expected_threat_ids
+    ? batch.expected_threat_ids.map(String)
     : [];
 
   const returned = Array.isArray(ledger.returned_threat_ids)
-    ? ledger.returned_threat_ids
-    : rows.map((row) => row.Threat_ID).filter(Boolean);
+    ? ledger.returned_threat_ids.map(String)
+    : rows.map((row) => String(row.Threat_ID || "")).filter(Boolean);
 
   const failures = [];
   const warnings = [];
@@ -447,11 +447,17 @@ function buildDeterministicM12BatchValidation({
   }
 
   for (const row of rows) {
-    const status = String(row.evaluation_status || row.trigger_status || "").toUpperCase();
-    const limitations = String(row.row_limitations || "");
-    if (limitations) warnings.push(`row limitation carried: ${row.Threat_ID || "unknown"}`);
+    const id = String(row.Threat_ID || "").trim();
+    const status = String(row.evaluation_status || row.trigger_status || "").trim().toUpperCase();
+
+    if (!id) failures.push("batch row missing Threat_ID");
+
     if (!["TRIGGERED", "CONTROLLED"].includes(status)) {
-      warnings.push(`non-final semantic status carried as limitation: ${row.Threat_ID || "unknown"}:${status || "blank"}`);
+      warnings.push(`non-final semantic status carried as limitation: ${id || "unknown"}:${status || "blank"}`);
+    }
+
+    if (String(row.row_limitations || "").trim()) {
+      warnings.push(`row limitation carried: ${id || "unknown"}`);
     }
   }
 
