@@ -1,6 +1,8 @@
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config, configStatus, requireRuntimeConfig } from "./src/config.js";
 import { requireApiKey, resolveAgentId } from "./src/auth.js";
 import { createRunId, nowIso, assertRunId } from "./src/run-id.js";
@@ -14,6 +16,9 @@ import { publicReviewerRouter } from "./src/public-reviewer-routes.js";
 import { artifactSaveBody, lockPhase, readArtifact, saveArtifact } from "./src/artifact-service.js";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicUiDir = path.join(__dirname, "public");
 const AGENT3_ID = "agent_" + "3_target_feature";
 const TP = "target_" + "profile";
 const TPF = "target_" + "profile_forensics";
@@ -38,6 +43,12 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/public", publicReviewerRouter);
+app.use(express.static(publicUiDir, { extensions: ["html"], index: false, maxAge: "0", etag: false }));
+app.get("/", (_req, res) => res.sendFile(path.join(publicUiDir, "index.html")));
+app.get("/reviewer", (_req, res) => res.redirect(308, "/reviewer/"));
+app.get("/reviewer/", (_req, res) => res.sendFile(path.join(publicUiDir, "reviewer", "index.html")));
+app.get("/reviewer/report.html", (_req, res) => res.sendFile(path.join(publicUiDir, "reviewer", "report.html")));
+
 app.use("/v1", requireApiKey);
 app.use("/v1", reviewerRouter);
 app.use("/agent3", requireApiKey);
@@ -90,93 +101,47 @@ app.post("/v1/artifacts/save-target-profile", saveArtifactHandler);
 app.post("/v1/artifacts/save-target-profile-forensics", saveArtifactHandler);
 app.post("/v1/artifacts/save-target-feature-profile", saveArtifactHandler);
 app.post("/v1/artifacts/save-target-feature-profile-forensics", saveArtifactHandler);
-app.post("/v1/artifacts/save-data-provenance-profile", saveArtifactHandler);
-app.post("/v1/artifacts/save-exposure-registry-profile", saveArtifactHandler);
+app.post("/v1/artifacts/save-data-provenance", saveArtifactHandler);
+app.post("/v1/artifacts/save-exposure-registry", saveArtifactHandler);
 app.post("/v1/artifacts/save-challenge-gate", saveArtifactHandler);
-app.post("/v1/artifacts/save-final-output-handoff", saveArtifactHandler);
+app.post("/v1/artifacts/save-compiler-payload", saveArtifactHandler);
 app.post("/v1/artifacts/save-renderer-payload", saveArtifactHandler);
-
 app.get("/v1/artifacts/:run_id/:artifact_name", async (req, res) => {
   try {
-    const { run_id, artifact_name } = req.params;
     const agentId = resolveAgentId(req);
-    const result = await readArtifact({ run_id, artifact_name, agent_id: agentId });
-    return res.json(result);
+    const data = await readArtifact({ run_id: req.params.run_id, artifact_name: req.params.artifact_name, agent_id: agentId });
+    return res.json(data);
   } catch (error) {
     return sendError(res, error);
   }
 });
-
 app.post("/v1/phases/lock", async (req, res) => {
   try {
-    const result = await lockPhase(req.body);
-    return res.json(result);
+    const agentId = resolveAgentId(req);
+    const data = await lockPhase({ ...req.body, agent_id: agentId });
+    return res.json(data);
   } catch (error) {
     return sendError(res, error);
   }
 });
-
 app.get("/v1/renderer/:run_id", async (req, res) => {
   try {
-    const runId = req.params.run_id;
-    assertRunId(runId);
-    await getRunRecord(runId);
-    const meta = await getArtifactMetadata(runId, "renderer_payload");
+    assertRunId(req.params.run_id);
+    const meta = await getArtifactMetadata(req.params.run_id, "renderer_payload");
     const rendererPayload = await readJsonArtifactFromDrive(meta.drive_file_id);
-    return res.json({ ok: true, run_id: runId, renderer_payload: rendererPayload });
+    return res.json({ ok: true, run_id: req.params.run_id, renderer_payload: rendererPayload });
   } catch (error) {
     return sendError(res, error);
   }
 });
 
-function agent3ReadRoute(artifactName) {
-  return async (req, res) => {
-    try {
-      const result = await readArtifact({ run_id: req.params.run_id, artifact_name: artifactName, agent_id: AGENT3_ID });
-      return res.json(result);
-    } catch (error) {
-      return sendError(res, error);
-    }
-  };
-}
+function agent3ReadRoute(artifactName) { return async (req, res) => { try { const data = await readArtifact({ run_id: req.params.run_id, artifact_name: artifactName, agent_id: AGENT3_ID }); return res.json(data); } catch (error) { return sendError(res, error); } }; }
+function agent3SaveRoute(artifactName) { return async (req, res) => { try { const body = artifactSaveBody({ ...req.body, artifact_name: artifactName, agent_id: AGENT3_ID }); const data = await saveArtifact(body); return res.json(data); } catch (error) { return sendError(res, error); } }; }
+function agent3LockPhaseRoute(phase, nextPhase) { return async (req, res) => { try { const data = await lockPhase({ run_id: req.params.run_id, phase, next_phase: nextPhase, agent_id: AGENT3_ID }); return res.json(data); } catch (error) { return sendError(res, error); } }; }
+async function saveArtifactHandler(req, res) { try { const agentId = resolveAgentId(req); const body = artifactSaveBody({ ...req.body, agent_id: agentId }); const data = await saveArtifact(body); return res.json(data); } catch (error) { return sendError(res, error); } }
+function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: message.split(":")[0] || "BACKEND_ERROR", message }); }
+function statusForMessage(message) { if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
 
-function agent3SaveRoute(artifactName) {
-  return async (req, res) => {
-    try {
-      const suppliedArtifactName = req.body?.artifact_name;
-      if (suppliedArtifactName && suppliedArtifactName !== artifactName) throw new Error(`INVALID_ARTIFACT_NAME:${suppliedArtifactName}:expected:${artifactName}`);
-      const result = await saveArtifact(artifactSaveBody({ run_id: req.params.run_id, phase: agent3PhaseForArtifact(artifactName), agent_id: AGENT3_ID, artifact_name: artifactName, lock_status: req.body?.lock_status || "LOCKED", artifact: req.body?.artifact }));
-      return res.status(201).json(result);
-    } catch (error) {
-      return sendError(res, error);
-    }
-  };
-}
-
-function agent3LockPhaseRoute(phase, nextPhase) {
-  return async (req, res) => {
-    try {
-      const lockStatus = req.body?.lock_status || req.body?.status;
-      if (!lockStatus) throw new Error("INVALID_REQUEST:lock_status: Required");
-      const result = await lockPhase({ run_id: req.params.run_id, phase, agent_id: AGENT3_ID, status: lockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? nextPhase : null, final_report_url: "" });
-      return res.json({ ok: true, run_id: result.run_id, phase: result.phase, lock_status: result.status, next_phase: result.next_phase, receipt: `${phase} ${result.status} for ${result.run_id}` });
-    } catch (error) {
-      return sendError(res, error);
-    }
-  };
-}
-
-function agent3PhaseForArtifact(artifactName) {
-  if (artifactName === TP) return "M7_TARGET_PROFILE";
-  if (artifactName === TPF) return "M7_TARGET_PROFILE_FORENSICS";
-  if (artifactName === TFP) return "M8_TARGET_FEATURE_PROFILE";
-  if (artifactName === TFPF) return "M8_TARGET_FEATURE_PROFILE_FORENSICS";
-  throw new Error(`INVALID_AGENT3_ARTIFACT:${artifactName}`);
-}
-async function saveArtifactHandler(req, res) { try { const result = await saveArtifact(req.body); return res.status(201).json(result); } catch (error) { return sendError(res, error); } }
-
-if (process.argv[1] && process.argv[1].endsWith("server.js")) app.listen(config.port, () => { console.log(`${config.serviceName} listening on :${config.port}`); });
-
-function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
-function statusForMessage(message) { if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SAVE_ORDER_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
-function publicErrorCode(message) { return String(message).split(":")[0] || "ARTIFACT_BACKEND_ERROR"; }
+app.listen(config.port, () => {
+  console.log(`${config.serviceName} listening on :${config.port}`);
+});
