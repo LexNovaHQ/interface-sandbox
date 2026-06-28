@@ -1,5 +1,5 @@
 import { getRunRecord } from "./firestore.js";
-import { artifactSaveBody, readArtifactPayload, saveArtifact } from "./artifact-service.js";
+import { artifactSaveBody, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
 import { loadReferencePacket } from "./reference-loader.js";
 import { runM11OrchestratedPhase as runCheckpointedM11 } from "./m11-orchestrator-checkpointed.js";
 import { projectControlledProfile, projectTriggeredProfile } from "./m11-deterministic-system.js";
@@ -72,6 +72,16 @@ async function applyPostRunFalsePositiveFirewall({ run, phase, contract }) {
   const forensics = forensicOutput.exposure_registry_profile_forensics;
   const forensicStatus = forensics.registry_lock_gate_result?.status === "PASS" ? "LOCKED_WITH_LIMITATIONS" : "REPAIR_REQUIRED";
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: "exposure_registry_profile_forensics", artifact: forensics, lock_status: forensicStatus }));
+
+  if (ACCEPTED.has(forensicStatus)) {
+    await lockPhase({
+      run_id: run.run_id,
+      phase,
+      agent_id: AGENT_5,
+      status: "LOCKED_WITH_LIMITATIONS",
+      next_phase: contract.next
+    });
+  }
 }
 
 async function readDynamicArtifacts({ run_id, batch_plan, prefix }) {
