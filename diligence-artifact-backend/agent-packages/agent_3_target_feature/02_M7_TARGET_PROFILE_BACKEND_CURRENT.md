@@ -691,6 +691,18 @@ Forensics must derive from:
 | `runtime_trace_m7_only` | `FOR.RUN.001` | M7-only runtime status, artifact refs, phase completion, sanitized run metadata only |
 | `forensic_boundary` | `FOR.BOUND.001` | audit-only boundary, no chain-of-thought, no secrets, no hidden prompts, no legal conclusions |
 
+The following forensic branches are always JSON arrays, even when there is only one row:
+
+- `source_ledger_used_for_m7`
+- `target_source_extraction_capsule_summary`
+- `target_source_route_coverage_ledger`
+- `field_derivation_ledger`
+- `targeted_re_extraction_ledger`
+- `limitation_ledger`
+- `cross_route_use_ledger`
+
+Do not emit any of those branches as a summary object. For example, `target_source_extraction_capsule_summary` must be an array of row objects, not `{ "summary": ... }`.
+
 #### M7.S7B.1 — Forensic Branch Alias Rejection
 
 Forensic branch aliases are prohibited. The model must emit the exact branch names listed in M7.S7B.
@@ -893,6 +905,25 @@ After the saved `target_profile` artifact exists, Phase C forensic derivation an
 ```
 
 The `target_profile_forensics` object must contain exactly the required forensic branches shown in M7.S7B.
+
+Its array-valued branches must use array values. The minimum Phase D shape is:
+
+```json
+{
+  "target_profile_forensics": {
+    "source_ledger_used_for_m7": [],
+    "target_source_extraction_capsule_summary": [],
+    "target_source_route_coverage_ledger": [],
+    "field_derivation_ledger": [],
+    "targeted_re_extraction_ledger": [],
+    "limitation_ledger": [],
+    "cross_route_use_ledger": [],
+    "validation_quality_control_result": {},
+    "runtime_trace_m7_only": {},
+    "forensic_boundary": {}
+  }
+}
+```
 
 Do not re-emit `target_profile`, `target_feature_profile`, `legal_cartography_index`, `target_data_provenance_profile`, `target_exposure_profile`, `operator_challenge_gate`, `final_output_handoff`, renderer payload, report prose, or any compatibility wrapper in the Phase D forensic output.
 

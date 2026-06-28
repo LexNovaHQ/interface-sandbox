@@ -55,6 +55,7 @@ Rules:
 - Do not re-emit `target_profile` in the Phase D forensic response.
 - `target_profile_forensics` must be separate from `target_profile`.
 - `target_profile_forensics` must contain the forensic/provenance branches required by the M7 module.
+- The forensic ledger branches `source_ledger_used_for_m7`, `target_source_extraction_capsule_summary`, `target_source_route_coverage_ledger`, `field_derivation_ledger`, `targeted_re_extraction_ledger`, `limitation_ledger`, and `cross_route_use_ledger` must be JSON arrays, never summary objects.
 - The backend runner must validate and save `target_profile_forensics` before M8 may begin.
 
 ### M7 forbidden combined response shape
