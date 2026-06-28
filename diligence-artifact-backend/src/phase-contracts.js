@@ -78,17 +78,6 @@ const AGENT_5_M11_FILES = Object.freeze([
   `${AGENT_5_M11_PACKAGE_ROOT}/BACKEND_CANONICAL_OUTPUT_ADAPTER.md`
 ]);
 
-const AGENT_5_M12_GLOBAL_FILES = Object.freeze([
-  SYSTEM_BLOCKING_DOCTRINE_FILE,
-  `${AGENT_5_M11_PACKAGE_ROOT}/` + packetFile("AGENT5_RUNTIME_", "_SYNCED_M11.yaml"),
-  `${AGENT_5_M11_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md`,
-  `${AGENT_5_M11_PACKAGE_ROOT}/M12_GLOBAL_CHALLENGE.md`,
-  `${AGENT_5_M11_PACKAGE_ROOT}/AGENT5_M12_SCOPE_OVERRIDE.md`,
-  `${AGENT_5_M11_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md`,
-  `${AGENT_5_M11_PACKAGE_ROOT}/BACKEND_CANONICAL_OUTPUT_ADAPTER.md`,
-  `${AGENT_5_M11_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT5_SYNCED.md`
-]);
-
 export const PHASE_CONTRACTS = Object.freeze({
   AGENT_1A_URL_MANIFEST: { type: "deterministic", actor_id: "agent_1a_url_manifest", reads: [], writes: AGENT_1A_ARTIFACT_NAMES, next: "AGENT_1B_EXTRACT" },
   AGENT_1B_EXTRACT: { type: "deterministic", actor_id: "agent_1b_extract", reads: ["deduped_url_manifest"], writes: AGENT_1B_ARTIFACT_NAMES, next: "M6_BUCKET_INDEX" },
@@ -164,9 +153,8 @@ export const PHASE_CONTRACTS = Object.freeze({
     next: "M12"
   },
   M12: {
-    type: "model",
-    agent_id: "agent_5_exposure_registry",
-    prompt_files: AGENT_5_M12_GLOBAL_FILES,
+    type: "deterministic",
+    actor_id: "agent_5_exposure_registry",
     reads: [
       "source_discovery_handoff",
       "legal_cartography_index",
