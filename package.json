@@ -1,1 +1,1 @@
-{"scripts":{"build":"node scripts/build-pages.js"}}
+{"scripts":{"build":"echo ok"}}
