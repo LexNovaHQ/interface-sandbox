@@ -9,6 +9,7 @@ import { validateM9LegalCartographyIndex } from "./m9-validator.js";
 import { validateM7TargetProfileOutput } from "./m7-validator.js";
 import { validateM8TargetFeatureOutput } from "./m8-validator.js";
 import { runM11OrchestratedPhase } from "./m11-orchestrator.js";
+import { buildM12DeterministicChallengeGate } from "./m12-deterministic-challenge.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import {
@@ -65,6 +66,8 @@ export async function advanceReviewerRun({ run_id }) {
       await runAgent1bExtractPhase({ run, phase, contract });
     } else if (phase === "M6_BUCKET_INDEX") {
       await runM6BucketIndexPhase({ run, phase, contract });
+    } else if (phase === "M12") {
+      await runM12DeterministicChallengePhase({ run, phase, contract });
     } else if (phase === "COMPILER") {
       await runCompilerPhase({ run, phase, contract });
     } else if (phase === "RENDERER") {
@@ -114,6 +117,58 @@ async function saveDeterministicArtifacts({ run, phase, actor, writes, output })
   }
 
   await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PHASE_COMPLETED", actor, payload: { phase, writes } });
+}
+
+async function runM12DeterministicChallengePhase({ run, phase, contract }) {
+  const artifacts = await readArtifactsForM12Global({
+    run_id: run.run_id,
+    reads: contract.reads,
+    agent_id: contract.actor_id
+  });
+
+  const output = buildM12DeterministicChallengeGate({ run, artifacts });
+  const artifact = output.challenge_gate;
+
+  if (!artifact || typeof artifact !== "object") {
+    throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:challenge_gate`);
+  }
+
+  const phaseLockStatus = ["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(artifact.status)
+    ? artifact.status
+    : "LOCKED";
+
+  await saveArtifact(artifactSaveBody({
+    run_id: run.run_id,
+    phase,
+    agent_id: contract.actor_id,
+    artifact_name: "challenge_gate",
+    artifact,
+    lock_status: phaseLockStatus
+  }));
+
+  await logEvent({
+    run_id: run.run_id,
+    event_type: "M12_DETERMINISTIC_CHALLENGE_COMPLETED",
+    actor: contract.actor_id,
+    payload: {
+      phase,
+      writes: contract.writes,
+      lock_status: phaseLockStatus,
+      model_usage: "NONE_DETERMINISTIC",
+      critical_failures: artifact.critical_failures || [],
+      warnings: artifact.warnings || []
+    }
+  });
+
+  await lockPhase({
+    run_id: run.run_id,
+    phase,
+    agent_id: contract.actor_id,
+    status: phaseLockStatus,
+    next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus)
+      ? contract.next
+      : phase
+  });
 }
 
 async function runModelPhase({ run, phase, contract }) {

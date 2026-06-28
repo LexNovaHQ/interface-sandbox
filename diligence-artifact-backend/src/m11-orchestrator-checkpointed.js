@@ -230,10 +230,13 @@ async function runM11Batch({ run, phase, batch, compactPacket }) {
   return (await callGeminiJson({ prompt, phase: `${phase}:${batch.batch_id}` })).json;
 }
 
-async function runM12BatchValidation({ run, phase, batch, compactPacket, batchOutput, structuralValidation, routePlan }) {
-  const prompt = await buildPhasePrompt({ prompt_files: M12_BATCH_PROMPTS, phase: `${phase}:M12_BATCH:${batch.batch_id}`, run, artifacts: { exposure_registry_route_plan_summary: buildRoutePlanSummary(routePlan, batch), m11_batch_packet: compactPacket, m11_batch_registry_ledger: batchOutput, backend_structural_validation: structuralValidation }, writes: [`exposure_registry_batch_validation__${batch.batch_id}`], references: [] });
-  const result = await callGeminiJson({ prompt, phase: `${phase}:M12_BATCH:${batch.batch_id}` });
-  return normalizeM12BatchValidationResult({ batch, result });
+async function runM12BatchValidation({ batch, batchOutput, structuralValidation, routePlan }) {
+  return buildDeterministicM12BatchValidation({
+    batch,
+    batchOutput,
+    structuralValidation,
+    routePlan
+  });
 }
 
 async function runM11BatchRepair({
@@ -407,6 +410,97 @@ function coercePostReinvestigationM12FailureToWarning(validationArtifact, {
       }
     }
   };
+}
+
+function buildDeterministicM12BatchValidation({
+  batch,
+  batchOutput,
+  structuralValidation,
+  routePlan
+}) {
+  const ledger = batchOutput?.m11_batch_registry_ledger || batchOutput || {};
+  const rows = Array.isArray(ledger.batch_registry_ledger)
+    ? ledger.batch_registry_ledger
+    : [];
+
+  const expected = Array.isArray(batch.expected_threat_ids)
+    ? batch.expected_threat_ids
+    : [];
+
+  const returned = Array.isArray(ledger.returned_threat_ids)
+    ? ledger.returned_threat_ids
+    : rows.map((row) => row.Threat_ID).filter(Boolean);
+
+  const failures = [];
+  const warnings = [];
+
+  if (!structuralValidation?.ok) {
+    failures.push(...(structuralValidation.failures || ["backend structural validation failed"]));
+  }
+
+  if (!arraysEqualAsSets(expected, returned)) {
+    failures.push("returned_threat_ids do not match expected_threat_ids");
+  }
+
+  if (rows.length !== expected.length) {
+    failures.push(`batch_registry_ledger length ${rows.length} does not match expected ${expected.length}`);
+  }
+
+  for (const row of rows) {
+    const status = String(row.evaluation_status || row.trigger_status || "").toUpperCase();
+    const limitations = String(row.row_limitations || "");
+    if (limitations) warnings.push(`row limitation carried: ${row.Threat_ID || "unknown"}`);
+    if (!["TRIGGERED", "CONTROLLED"].includes(status)) {
+      warnings.push(`non-final semantic status carried as limitation: ${row.Threat_ID || "unknown"}:${status || "blank"}`);
+    }
+  }
+
+  const status = failures.length
+    ? "REPAIR_REQUIRED"
+    : warnings.length
+      ? "PASS_WITH_LIMITATION"
+      : "PASS";
+
+  return {
+    exposure_registry_batch_validation: {
+      batch_id: batch.batch_id,
+      batch_group: batch.batch_group,
+      status,
+      validation_owner: "backend_deterministic_m12_batch_validator",
+      semantic_m12_validation_status: status,
+      expected_threat_ids: expected,
+      validated_threat_ids: returned,
+      shape_checks: {
+        backend_structural_validation_status: structuralValidation?.status || "UNKNOWN",
+        expected_count: expected.length,
+        returned_count: returned.length,
+        row_count: rows.length,
+        route_plan_status: routePlan?.phase_a_validation?.status || "UNKNOWN"
+      },
+      challenge_checks: {
+        deterministic: true,
+        model_usage: "NONE_DETERMINISTIC",
+        non_blocking_rule: "Only structural batch invalidity blocks before repair. Semantic uncertainty is carried as warning/limitation."
+      },
+      findings: [],
+      failures,
+      repair_directives: failures.length
+        ? failures.map((failure) => ({ failure, directive: "Run M11 batch reinvestigation repair once." }))
+        : [],
+      limitations: warnings,
+      model_metadata: {
+        model_usage: "NONE_DETERMINISTIC"
+      }
+    }
+  };
+}
+
+function arraysEqualAsSets(a, b) {
+  const aa = new Set((Array.isArray(a) ? a : []).map(String));
+  const bb = new Set((Array.isArray(b) ? b : []).map(String));
+  if (aa.size !== bb.size) return false;
+  for (const item of aa) if (!bb.has(item)) return false;
+  return true;
 }
 
 function isSameBatchMaterialResult(a, b) {
