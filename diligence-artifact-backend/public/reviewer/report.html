@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interface Report</title><style>body{font-family:Inter,system-ui,sans-serif;margin:0;background:#0b0d12;color:#f5f7fb}main{max-width:1040px;margin:0 auto;padding:48px 20px}p{color:#aab2c5;line-height:1.5}a{color:#9fc2ff}.card{background:#0f1420;border:1px solid #252c3d;border-radius:16px;padding:22px;margin-top:24px}pre{white-space:pre-wrap;background:#111722;border:1px solid #2c3343;padding:16px;border-radius:10px;overflow:auto}</style></head>
+<body><main><p><a href="/reviewer/">← Back to reviewer</a></p><h1>Interface Report</h1><p id="meta">Loading report...</p><div class="card"><pre id="report">Loading...</pre></div></main><script>
+const runId = new URLSearchParams(location.search).get('run_id') || '';
+const meta = document.getElementById('meta');
+const box = document.getElementById('report');
+load().catch((error) => { meta.textContent = 'Report failed to load.'; box.textContent = error.message; });
+async function load() {
+  if (!runId) throw new Error('Missing run_id in report URL.');
+  const path = '/public/' + 'reviewer' + '/report/' + encodeURIComponent(runId);
+  const response = await fetch(path, { headers: { accept: 'application/json' } });
+  const text = await response.text();
+  if (!response.ok) throw new Error(response.status + ': ' + text);
+  meta.textContent = 'Run: ' + runId;
+  box.textContent = JSON.stringify(JSON.parse(text), null, 2);
+}
+</script></body></html>
