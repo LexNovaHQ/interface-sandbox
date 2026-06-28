@@ -49,7 +49,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     runId: run.run_id
   });
   const routePlan = routePlanOutput[ART.exposureRoutePlan];
-  const routeStatus = routePlan.phase_a_validation?.status === "PASS" ? "LOCKED" : "CONTROLLED_FAILURE";
+  const routeStatus = routePlanLockStatus(routePlan.phase_a_validation?.status);
 
   await saveArtifact(artifactSaveBody({
     run_id: run.run_id,
@@ -60,7 +60,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     lock_status: routeStatus
   }));
 
-  if (routeStatus !== "LOCKED") {
+  if (!isAcceptedRoutePlanLockStatus(routeStatus)) {
     await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
     return;
   }
@@ -173,11 +173,12 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   });
   const forensicArtifact = forensicOutput[ART.exposureForensics];
   const forensicStatus = forensicArtifact.registry_lock_gate_result?.status === "PASS" ? "LOCKED" : "REPAIR_REQUIRED";
+  const finalM11Status = deriveFinalM11Status({ routeStatus, forensicStatus, batchValidations });
 
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.exposureForensics, artifact: forensicArtifact, lock_status: forensicStatus }));
-  await logEvent({ run_id: run.run_id, event_type: "M11_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_count: acceptedBatches.length, workpad_status: workpadStatus, forensic_status: forensicStatus, batch_validation_mode: "m12_batch_prompt_with_registry_packet" } });
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.exposureForensics, artifact: forensicArtifact, lock_status: finalM11Status }));
+  await logEvent({ run_id: run.run_id, event_type: "M11_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_count: acceptedBatches.length, route_status: routeStatus, workpad_status: workpadStatus, forensic_status: finalM11Status, batch_validation_mode: "m12_batch_prompt_with_registry_packet" } });
 
-  await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: forensicStatus, next_phase: forensicStatus === "LOCKED" ? contract.next : phase });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalM11Status, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(finalM11Status) ? contract.next : phase });
 }
 
 async function runM12BatchValidation({ run, phase, batch, batchPacket, batchOutput, structuralValidation, routePlan, artifacts, referencePacket, references }) {
@@ -229,6 +230,23 @@ function normalizeM12BatchValidationResult({ batch, result }) {
       model_metadata: result.metadata || {}
     }
   };
+}
+
+function routePlanLockStatus(status) {
+  if (status === "PASS") return "LOCKED";
+  if (status === "PASS_WITH_LIMITATION") return "LOCKED_WITH_LIMITATIONS";
+  return "CONTROLLED_FAILURE";
+}
+
+function isAcceptedRoutePlanLockStatus(status) {
+  return status === "LOCKED" || status === "LOCKED_WITH_LIMITATIONS";
+}
+
+function deriveFinalM11Status({ routeStatus, forensicStatus, batchValidations }) {
+  if (!["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(forensicStatus)) return forensicStatus;
+  if (routeStatus === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS";
+  if (batchValidations.some((validation) => validation?.exposure_registry_batch_validation?.status === "PASS_WITH_LIMITATION")) return "LOCKED_WITH_LIMITATIONS";
+  return "LOCKED";
 }
 
 function normalizeBatchValidationStatus(status) {
