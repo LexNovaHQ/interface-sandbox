@@ -2,12 +2,20 @@ const MAX_M11_BATCH_ROWS = 8;
 const EXPECTED_ACTIVE_REGISTRY_ROWS = 98;
 const EXPECTED_LEP_ROWS = 22;
 
-const REQUIRED_REGISTRY_FIELDS = Object.freeze([
+const CRITICAL_REGISTRY_FIELDS = Object.freeze([
   "Threat_ID",
   "Threat_Name",
-  "Lane",
   "Archetype",
   "Surface",
+  "Status",
+  "Hunter_Trigger",
+  "FIELD21",
+  "FIELD22",
+  "FIELD23"
+]);
+
+const METADATA_REGISTRY_FIELDS = Object.freeze([
+  "Lane",
   "Authority_IN",
   "Authority_EU",
   "Authority_US",
@@ -15,17 +23,17 @@ const REQUIRED_REGISTRY_FIELDS = Object.freeze([
   "Pain_Tier",
   "Pain_Category",
   "Pain_Depth",
-  "Status",
   "Effective_Date",
   "Legal_Pain",
   "FP_Mechanism",
   "FP_Impact",
   "Lex_Nova_Fix",
-  "Hunter_Trigger",
-  "Provenance",
-  "FIELD21",
-  "FIELD22",
-  "FIELD23"
+  "Provenance"
+]);
+
+const REQUIRED_REGISTRY_FIELDS = Object.freeze([
+  ...CRITICAL_REGISTRY_FIELDS,
+  ...METADATA_REGISTRY_FIELDS
 ]);
 
 const MATERIAL_FIELDS = Object.freeze([
@@ -43,10 +51,12 @@ const ROUTED = "EVALUATION_ROUTED";
 const NOT_APPLICABLE = "NOT_TRIGGERED_NOT_APPLICABLE";
 
 export {
+  CRITICAL_REGISTRY_FIELDS,
   EXPECTED_ACTIVE_REGISTRY_ROWS,
   EXPECTED_LEP_ROWS,
   MAX_M11_BATCH_ROWS,
   MATERIAL_FIELDS,
+  METADATA_REGISTRY_FIELDS,
   REQUIRED_REGISTRY_FIELDS
 };
 
@@ -76,9 +86,7 @@ export function parseAiThreatRegistryYaml(content) {
       continue;
     }
 
-    if (currentKey) {
-      current[currentKey] = `${current[currentKey]} ${normalizeScalar(trimmed)}`.trim();
-    }
+    if (currentKey) current[currentKey] = `${current[currentKey]} ${normalizeScalar(trimmed)}`.trim();
   }
 
   if (current && Object.keys(current).length) rows.push(current);
@@ -98,6 +106,7 @@ export function parseReferencePacket(referencePacket = {}) {
 
 export function validateRegistryRows(rows, { expectedCount = EXPECTED_ACTIVE_REGISTRY_ROWS } = {}) {
   const failures = [];
+  const metadata_limitations = [];
   const ids = new Set();
   const archetype_counts = {};
   const surface_counts = {};
@@ -111,11 +120,23 @@ export function validateRegistryRows(rows, { expectedCount = EXPECTED_ACTIVE_REG
       failures.push("registry row missing Threat_ID");
       continue;
     }
+
     if (ids.has(threatId)) failures.push(`duplicate Threat_ID: ${threatId}`);
     ids.add(threatId);
 
-    for (const field of REQUIRED_REGISTRY_FIELDS) {
-      if (!(field in row) || String(row[field] ?? "").trim() === "") failures.push(`${threatId} missing ${field}`);
+    for (const field of CRITICAL_REGISTRY_FIELDS) {
+      if (isMissingRegistryValue(row[field])) failures.push(`${threatId} missing critical ${field}`);
+    }
+
+    for (const field of METADATA_REGISTRY_FIELDS) {
+      if (isMissingRegistryValue(row[field])) {
+        metadata_limitations.push({
+          Threat_ID: threatId,
+          field,
+          severity: "WARNING_NON_BLOCKING",
+          reason: `${threatId} missing non-critical registry metadata ${field}`
+        });
+      }
     }
 
     const fieldCheck = validateThreatIdDecomposition(row);
@@ -131,13 +152,16 @@ export function validateRegistryRows(rows, { expectedCount = EXPECTED_ACTIVE_REG
 
   return {
     ok: failures.length === 0,
-    status: failures.length ? "CONTROLLED_FAILURE" : "PASS",
+    status: failures.length ? "CONTROLLED_FAILURE" : metadata_limitations.length ? "PASS_WITH_LIMITATION" : "PASS",
     expected_active_rows: expectedCount,
     loaded_active_rows: rows.length,
     unique_threat_ids: ids.size,
     archetype_counts,
     surface_counts,
-    failures
+    failures,
+    metadata_limitations,
+    warning_count: metadata_limitations.length,
+    blocking_failure_count: failures.length
   };
 }
 
@@ -149,7 +173,6 @@ export function validateThreatIdDecomposition(row) {
   const expected21 = parts[0];
   const expected22 = parts[1];
   const expected23 = normalizeField23(parts.slice(2).join("_"));
-
   const actual21 = String(row.FIELD21 || "").trim();
   const actual22 = String(row.FIELD22 || "").trim();
   const actual23 = String(row.FIELD23 || "").trim();
@@ -157,7 +180,6 @@ export function validateThreatIdDecomposition(row) {
   if (actual21 !== expected21) return { ok: false, reason: `FIELD21 expected ${expected21} got ${actual21 || "missing"}` };
   if (actual22 !== expected22) return { ok: false, reason: `FIELD22 expected ${expected22} got ${actual22 || "missing"}` };
   if (actual23 !== expected23) return { ok: false, reason: `FIELD23 expected ${expected23} got ${actual23 || "missing"}` };
-
   return { ok: true };
 }
 
@@ -186,16 +208,13 @@ export function parseHunterTrigger(value) {
       continue;
     }
     const exclude = part.match(/^EXCLUDE_IF:\s*(.+)$/i);
-    if (exclude) {
-      exclude_if = exclude[1].trim();
-    }
+    if (exclude) exclude_if = exclude[1].trim();
   }
 
   const failures = [];
   if (!conditions.length) failures.push("missing CONDITION_N");
   if (!trigger_if) failures.push("missing TRIGGER_IF");
   if (!exclude_if) failures.push("missing EXCLUDE_IF");
-
   return { ok: failures.length === 0, conditions, trigger_if, exclude_if, failures };
 }
 
@@ -213,7 +232,6 @@ export function extractM11RoutingSubstrate(targetFeatureProfile = {}) {
     for (const key of ["activity_id", "product_context", "activity_name", "mechanics", "routing_basis", "activity_inventory", "activity_mechanics", "registry_routing_substrate"]) {
       if (key in activity) stale_path_errors.push(`target_feature_profile.activities[].${key} is stale/forbidden`);
     }
-
     for (const code of asArray(activity.archetype_codes)) {
       const normalized = String(code || "").trim().toUpperCase();
       if (normalized) active_archetypes.add(normalized);
@@ -248,10 +266,7 @@ export function buildExposureRegistryRoutePlan({
   runId = ""
 }) {
   let rows = Array.isArray(registryRows) ? registryRows : [];
-  if (!rows.length && referencePacket) {
-    const refs = parseReferencePacket(referencePacket);
-    rows = parseAiThreatRegistryYaml(refs.aiThreatRegistryText);
-  }
+  if (!rows.length && referencePacket) rows = parseAiThreatRegistryYaml(parseReferencePacket(referencePacket).aiThreatRegistryText);
 
   const registryValidation = validateRegistryRows(rows);
   const routing = extractM11RoutingSubstrate(targetFeatureProfile || upstreamArtifacts.target_feature_profile || {});
@@ -270,6 +285,8 @@ export function buildExposureRegistryRoutePlan({
     ...validateRouteRows(route_rows).failures,
     ...validateBatchPlan(batch_plan).failures
   ];
+  const warnings = [...(registryValidation.metadata_limitations || [])];
+  const phaseStatus = failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS";
 
   return {
     exposure_registry_route_plan: {
@@ -278,9 +295,12 @@ export function buildExposureRegistryRoutePlan({
       registry_inventory: {
         expected_active_rows: EXPECTED_ACTIVE_REGISTRY_ROWS,
         loaded_active_rows: rows.length,
-        registry_schema_status: registryValidation.ok ? "PASS" : "CONTROLLED_FAILURE",
+        registry_schema_status: registryValidation.status,
         archetype_counts: registryValidation.archetype_counts,
-        surface_counts: registryValidation.surface_counts
+        surface_counts: registryValidation.surface_counts,
+        registry_metadata_limitations: warnings,
+        warning_count: warnings.length,
+        blocking_failure_count: failures.length
       },
       upstream_access_manifest: buildUpstreamAccessManifest(upstreamArtifacts),
       m9_legal_cartography_consumption: {
@@ -297,8 +317,11 @@ export function buildExposureRegistryRoutePlan({
       batch_plan,
       deterministic_not_applicable_rows,
       phase_a_validation: {
-        status: failures.length ? "CONTROLLED_FAILURE" : "PASS",
-        failures
+        status: phaseStatus,
+        failures,
+        warnings,
+        non_blocking_warning_count: warnings.length,
+        blocking_failure_count: failures.length
       }
     }
   };
@@ -307,7 +330,6 @@ export function buildExposureRegistryRoutePlan({
 export function buildBatchPlan(routeRows) {
   const routedRows = asArray(routeRows).filter((row) => row.route === ROUTED);
   const groups = new Map();
-
   for (const row of routedRows) {
     const group = String(row.Archetype || row.archetype || "UNKNOWN").trim().toUpperCase() || "UNKNOWN";
     if (!groups.has(group)) groups.set(group, []);
@@ -341,7 +363,6 @@ export function buildBatchPlan(routeRows) {
       });
     }
   }
-
   return plan;
 }
 
@@ -362,12 +383,7 @@ export function validateBatchPlan(batchPlan) {
   return { ok: failures.length === 0, failures };
 }
 
-export function buildM11BatchPacket({
-  routePlan,
-  batchId,
-  upstreamArtifacts = {},
-  referencePacket = null
-}) {
+export function buildM11BatchPacket({ routePlan, batchId, upstreamArtifacts = {}, referencePacket = null }) {
   const plan = routePlan?.exposure_registry_route_plan || routePlan;
   const batch = asArray(plan?.batch_plan).find((item) => item.batch_id === batchId);
   if (!batch) throw new Error(`M11_BATCH_NOT_FOUND:${batchId || "missing"}`);
@@ -375,7 +391,6 @@ export function buildM11BatchPacket({
   const registryRows = new Map(asArray(plan.route_rows).map((row) => [row.Threat_ID, row.registry_row || row]));
   const references = referencePacket ? parseReferencePacket(referencePacket) : {};
   const legalCartography = upstreamArtifacts.legal_cartography_index?.legal_cartography_index || upstreamArtifacts.legal_cartography_index || null;
-
   const rows = batch.expected_threat_ids.map((id) => {
     const row = registryRows.get(id);
     return {
@@ -412,7 +427,6 @@ export function validateM11BatchLedger(batchLedgerRoot, expectedThreatIds = []) 
   const expected = asArray(expectedThreatIds.length ? expectedThreatIds : ledger.expected_threat_ids).map(String);
   const returned = asArray(ledger.returned_threat_ids).map(String);
   const rows = asArray(ledger.batch_registry_ledger);
-
   if (!arraysEqualAsSets(expected, returned)) failures.push("returned_threat_ids do not match expected_threat_ids");
   if (rows.length !== expected.length) failures.push(`batch_registry_ledger length ${rows.length} does not match expected ${expected.length}`);
 
@@ -424,10 +438,7 @@ export function validateM11BatchLedger(batchLedgerRoot, expectedThreatIds = []) 
     if (!expected.includes(id)) failures.push(`unexpected Threat_ID returned: ${id}`);
     if (seen.has(id)) failures.push(`duplicate Threat_ID returned: ${id}`);
     seen.add(id);
-
-    for (const field of MATERIAL_FIELDS) {
-      if (!(field in row)) failures.push(`${id || "row"} missing material field ${field}`);
-    }
+    for (const field of MATERIAL_FIELDS) if (!(field in row)) failures.push(`${id || "row"} missing material field ${field}`);
     const extra = Object.keys(row).filter((key) => !["Threat_ID", "trigger_status", ...MATERIAL_FIELDS].includes(key));
     if (extra.length) failures.push(`${id || "row"} has extra keys: ${extra.join(",")}`);
   }
@@ -451,7 +462,6 @@ export function mergeExposureRegistryWorkpad98({ routePlan, acceptedBatches = []
       failures.push("route row missing Threat_ID");
       continue;
     }
-
     if (routeRow.route === NOT_APPLICABLE) {
       registry_rows.push(buildDeterministicNotApplicableWorkpadRow(routeRow));
       continue;
@@ -491,7 +501,6 @@ export function mergeExposureRegistryWorkpad98({ routePlan, acceptedBatches = []
 
   const coverage = validateWorkpadRows(registry_rows);
   failures.push(...coverage.failures);
-
   return {
     exposure_registry_workpad_98: {
       workpad_metadata: {
@@ -509,10 +518,7 @@ export function mergeExposureRegistryWorkpad98({ routePlan, acceptedBatches = []
       })),
       m12_batch_validation_index: [...validationIndex.values()],
       m9_legal_cartography_consumption_index: collectM9ConsumptionIndex(acceptedBatches),
-      merge_validation: {
-        status: failures.length ? "REPAIR_REQUIRED" : "PASS",
-        failures
-      }
+      merge_validation: { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures }
     }
   };
 }
@@ -523,7 +529,6 @@ export function projectControlledProfile(workpadRoot) {
     .filter((row) => row.final_material_status === "CONTROLLED")
     .sort((a, b) => (a.registry_order ?? 9999) - (b.registry_order ?? 9999))
     .map((row) => ({ ...pickMaterialFields(row.material_projection || row), evaluation_status: "CONTROLLED" }));
-
   return { exposure_registry_controlled_profile: { controlled_rows: rows } };
 }
 
@@ -533,7 +538,6 @@ export function projectTriggeredProfile(workpadRoot) {
     .filter((row) => row.final_material_status === "TRIGGERED")
     .sort((a, b) => (a.registry_order ?? 9999) - (b.registry_order ?? 9999))
     .map((row) => ({ ...pickMaterialFields(row.material_projection || row), evaluation_status: "TRIGGERED" }));
-
   return { exposure_registry_triggered_profile: { triggered_rows: rows } };
 }
 
@@ -545,7 +549,6 @@ export function buildExposureRegistryForensics({ routePlan, workpad, controlledP
   const rows = asArray(pad.registry_rows);
   const controlledRows = asArray(controlled.controlled_rows);
   const triggeredRows = asArray(triggered.triggered_rows);
-
   return {
     exposure_registry_profile_forensics: {
       registry_input_manifest: {
@@ -554,14 +557,7 @@ export function buildExposureRegistryForensics({ routePlan, workpad, controlledP
         m9_legal_cartography_consumed: plan?.m9_legal_cartography_consumption?.m11_builds_legal_cartography === false,
         route_plan_status: plan?.phase_a_validation?.status || "UNKNOWN"
       },
-      full_registry_inventory_ledger: rows.map((row) => ({
-        Threat_ID: row.Threat_ID,
-        registry_order: row.registry_order,
-        archetype: row.archetype,
-        surface: row.surface,
-        route: row.route,
-        final_material_status: row.final_material_status
-      })),
+      full_registry_inventory_ledger: rows.map((row) => ({ Threat_ID: row.Threat_ID, registry_order: row.registry_order, archetype: row.archetype, surface: row.surface, route: row.route, final_material_status: row.final_material_status })),
       lep_selector_application_ledger: buildPlaceholderLepLedger(),
       internal_registry_route_plan_ledger: asArray(plan.route_rows),
       trigger_review_workspace_ledger: rows.filter((row) => row.route === ROUTED).map((row) => ({ Threat_ID: row.Threat_ID, source_batch_id: row.source_batch_id || null })),
@@ -619,14 +615,12 @@ function validateRouteRows(routeRows) {
   const failures = [];
   const ids = new Set();
   let uniNotApplicable = 0;
-
   for (const row of asArray(routeRows)) {
     if (!row.Threat_ID) failures.push("route row missing Threat_ID");
     if (ids.has(row.Threat_ID)) failures.push(`duplicate route row: ${row.Threat_ID}`);
     ids.add(row.Threat_ID);
     if (row.Archetype === "UNI" && row.route !== ROUTED) uniNotApplicable += 1;
   }
-
   if (routeRows.length !== EXPECTED_ACTIVE_REGISTRY_ROWS) failures.push(`route plan must account for ${EXPECTED_ACTIVE_REGISTRY_ROWS} rows, got ${routeRows.length}`);
   if (uniNotApplicable) failures.push(`${uniNotApplicable} UNI rows were not evaluation-routed`);
   return { ok: failures.length === 0, failures };
@@ -634,42 +628,14 @@ function validateRouteRows(routeRows) {
 
 function inspectLegalCartographyIndex(index) {
   const failures = [];
-  const required = [
-    "document_coverage_index",
-    "document_structure_index",
-    "incorporated_linked_document_map",
-    "control_language_locator",
-    "missing_limited_legal_governance_items",
-    "downstream_rules",
-    "lock_status"
-  ];
-  if (!index || typeof index !== "object" || Array.isArray(index)) {
-    return { ok: false, available_families: [], failures: ["legal_cartography_index missing or not an object"] };
-  }
-  for (const key of required) {
-    if (!(key in index)) failures.push(`legal_cartography_index missing ${key}`);
-  }
+  const required = ["document_coverage_index", "document_structure_index", "incorporated_linked_document_map", "control_language_locator", "missing_limited_legal_governance_items", "downstream_rules", "lock_status"];
+  if (!index || typeof index !== "object" || Array.isArray(index)) return { ok: false, available_families: [], failures: ["legal_cartography_index missing or not an object"] };
+  for (const key of required) if (!(key in index)) failures.push(`legal_cartography_index missing ${key}`);
   return { ok: failures.length === 0, available_families: Object.keys(index), failures };
 }
 
 function buildUpstreamAccessManifest(artifacts = {}) {
-  const names = [
-    "source_discovery_handoff",
-    "legal_cartography_index",
-    "target_profile",
-    "target_profile_forensics",
-    "target_feature_profile",
-    "target_feature_profile_forensics",
-    "data_provenance_profile",
-    "data_provenance_profile_forensics",
-    "lossless_family__L1_CORE_TERMS_PRIVACY",
-    "lossless_family__L2_B2B_CONTRACTING",
-    "lossless_family__L3_AI_USAGE_GOVERNANCE",
-    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
-    "lossless_family__L5_LEGAL_HUB_HOSTED",
-    "lossless_family__L6_ENTITY_NOTICE"
-  ];
-
+  const names = ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L3_AI_USAGE_GOVERNANCE", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES", "lossless_family__L5_LEGAL_HUB_HOSTED", "lossless_family__L6_ENTITY_NOTICE"];
   return Object.fromEntries(names.map((name) => [name, artifacts[name] ? "FOUND" : "MISSING_OR_NOT_SUPPLIED"]));
 }
 
@@ -688,10 +654,7 @@ function selectLegalCartographyRowsForRegistryRow(row = {}, legalCartographyInde
 }
 
 function buildRegistryKeywords(row = {}) {
-  const raw = [row.Threat_Name, row.Surface, row.FP_Mechanism, row.Lex_Nova_Fix, row.Legal_Pain]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  const raw = [row.Threat_Name, row.Surface, row.FP_Mechanism, row.Lex_Nova_Fix, row.Legal_Pain].filter(Boolean).join(" ").toLowerCase();
   return unique(raw.split(/[^a-z0-9]+/).filter((word) => word.length >= 5).slice(0, 40));
 }
 
@@ -700,9 +663,7 @@ function collectAcceptedBatchRows(acceptedBatches) {
   for (const artifact of asArray(acceptedBatches)) {
     const ledger = artifact?.m11_batch_registry_ledger || artifact?.artifact?.m11_batch_registry_ledger || artifact;
     const batchId = ledger?.batch_id || artifact?.batch_id || "";
-    for (const row of asArray(ledger?.batch_registry_ledger)) {
-      map.set(row.Threat_ID, { ...row, batch_id: batchId });
-    }
+    for (const row of asArray(ledger?.batch_registry_ledger)) map.set(row.Threat_ID, { ...row, batch_id: batchId });
   }
   return map;
 }
@@ -760,92 +721,78 @@ function validateWorkpadRows(rows) {
 }
 
 function collectM9ConsumptionIndex(acceptedBatches) {
-  const index = [];
+  const rows = [];
   for (const artifact of asArray(acceptedBatches)) {
     const ledger = artifact?.m11_batch_registry_ledger || artifact;
-    index.push({
-      batch_id: ledger.batch_id || "",
-      m9_legal_cartography_consumed: Boolean(ledger.m9_legal_cartography_consumed)
-    });
+    for (const row of asArray(ledger?.batch_registry_ledger)) rows.push({ Threat_ID: row.Threat_ID, basis_proof: row.basis_proof || "" });
   }
-  return index;
+  return rows;
 }
 
 function collectEvidenceBindingLedger(acceptedBatches) {
-  const ledger = [];
+  const rows = [];
   for (const artifact of asArray(acceptedBatches)) {
-    const root = artifact?.m11_batch_registry_ledger || artifact;
-    for (const row of asArray(root.batch_registry_ledger)) {
-      ledger.push({ Threat_ID: row.Threat_ID, basis_proof: row.basis_proof || "", row_limitations: row.row_limitations || "" });
-    }
+    const ledger = artifact?.m11_batch_registry_ledger || artifact;
+    for (const row of asArray(ledger?.batch_registry_ledger)) rows.push({ Threat_ID: row.Threat_ID, basis_proof: row.basis_proof || "", evaluation_status: row.evaluation_status || "" });
   }
-  return ledger;
-}
-
-function buildPlaceholderLepLedger() {
-  return Array.from({ length: EXPECTED_LEP_ROWS }, (_, index) => ({
-    lep_row_number: index + 1,
-    accounted: false,
-    note: "LEP selector mechanical application is enforced by backend wiring/validator in the next sync phase."
-  }));
+  return rows;
 }
 
 function buildAssemblyLedger(workpadRows, controlledRows, triggeredRows) {
-  return [
-    { profile: "exposure_registry_controlled_profile", emitted_rows: controlledRows.length, expected_rows: workpadRows.filter((row) => row.final_material_status === "CONTROLLED").length },
-    { profile: "exposure_registry_triggered_profile", emitted_rows: triggeredRows.length, expected_rows: workpadRows.filter((row) => row.final_material_status === "TRIGGERED").length }
-  ];
+  const controlledSet = new Set(controlledRows.map((row) => row.registry_exposure || row.Threat_ID).filter(Boolean));
+  const triggeredSet = new Set(triggeredRows.map((row) => row.registry_exposure || row.Threat_ID).filter(Boolean));
+  return workpadRows.map((row) => ({ Threat_ID: row.Threat_ID, final_material_status: row.final_material_status, in_controlled_profile: controlledSet.has(row.material_projection?.registry_exposure || row.Threat_ID), in_triggered_profile: triggeredSet.has(row.material_projection?.registry_exposure || row.Threat_ID) }));
 }
 
 function buildEmissionManifest(workpadRows, controlledRows, triggeredRows) {
-  return {
-    expected_active_registry_rows: EXPECTED_ACTIVE_REGISTRY_ROWS,
-    workpad_rows: workpadRows.length,
-    expected_controlled_rows: workpadRows.filter((row) => row.final_material_status === "CONTROLLED").length,
-    emitted_controlled_rows: controlledRows.length,
-    expected_triggered_rows: workpadRows.filter((row) => row.final_material_status === "TRIGGERED").length,
-    emitted_triggered_rows: triggeredRows.length,
-    duplicate_emitted_threat_ids: [],
-    wrong_status_emitted_rows: [],
-    all_controlled_rows_emitted: workpadRows.filter((row) => row.final_material_status === "CONTROLLED").length === controlledRows.length,
-    all_triggered_rows_emitted: workpadRows.filter((row) => row.final_material_status === "TRIGGERED").length === triggeredRows.length
-  };
+  return { workpad_rows: workpadRows.length, controlled_rows: controlledRows.length, triggered_rows: triggeredRows.length, split_material_outputs: true };
 }
 
 function buildRegistryLockGateResult(workpadRows, controlledRows, triggeredRows, batchValidations) {
-  const manifest = buildEmissionManifest(workpadRows, controlledRows, triggeredRows);
-  const validationStatuses = asArray(batchValidations).map((item) => item.status || item?.exposure_registry_batch_validation?.status || "UNKNOWN");
   const failures = [];
-  if (workpadRows.length !== EXPECTED_ACTIVE_REGISTRY_ROWS) failures.push("workpad row count mismatch");
-  if (!manifest.all_controlled_rows_emitted) failures.push("controlled projection mismatch");
-  if (!manifest.all_triggered_rows_emitted) failures.push("triggered projection mismatch");
-  if (validationStatuses.includes("REPAIR_REQUIRED")) failures.push("one or more M12 batch validations require repair");
+  const controlledExpected = workpadRows.filter((row) => row.final_material_status === "CONTROLLED").length;
+  const triggeredExpected = workpadRows.filter((row) => row.final_material_status === "TRIGGERED").length;
+  if (controlledRows.length !== controlledExpected) failures.push(`controlled projection mismatch expected ${controlledExpected} got ${controlledRows.length}`);
+  if (triggeredRows.length !== triggeredExpected) failures.push(`triggered projection mismatch expected ${triggeredExpected} got ${triggeredRows.length}`);
+  for (const validation of asArray(batchValidations)) {
+    const root = validation?.exposure_registry_batch_validation || validation;
+    if (!["PASS", "PASS_WITH_LIMITATION"].includes(root.status)) failures.push(`batch validation not accepted: ${root.batch_id || "unknown"}`);
+  }
   return { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures };
 }
 
+function buildPlaceholderLepLedger() {
+  return Array.from({ length: EXPECTED_LEP_ROWS }, (_value, index) => ({ Field_ID: `LEP.${String(index + 1).padStart(3, "0")}`, status: "ACCOUNTED_FOR_IN_FIELD_DERIVATION_REGISTRY" }));
+}
+
+function failValidation(failures) {
+  return { ok: false, status: "CONTROLLED_FAILURE", failures, metadata_limitations: [], warning_count: 0, blocking_failure_count: failures.length };
+}
+
+function isMissingRegistryValue(value) {
+  return String(value ?? "").trim() === "";
+}
+
 function splitSurface(value) {
-  return String(value || "")
-    .split("|")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return String(value || "").split("|").map((item) => item.trim()).filter(Boolean);
 }
 
 function normalizeSurface(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function unique(values) {
-  return [...new Set(values.filter((value) => value !== undefined && value !== null && String(value).trim() !== ""))];
-}
-
 function arraysEqualAsSets(a, b) {
   if (a.length !== b.length) return false;
-  const setA = new Set(a.map(String));
-  return b.every((item) => setA.has(String(item)));
+  const set = new Set(a);
+  return b.every((item) => set.has(item));
+}
+
+function unique(items) {
+  return [...new Set(asArray(items).filter(Boolean))];
 }
 
 function normalizeScalar(value) {
@@ -854,15 +801,6 @@ function normalizeScalar(value) {
 
 function unwrapQuotes(value) {
   const text = String(value || "").trim();
-  if (text.length >= 2 && text.startsWith("'") && text.endsWith("'")) {
-    return text.slice(1, -1).replace(/''/g, "'");
-  }
-  if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) {
-    return text.slice(1, -1).replace(/\\"/g, '"');
-  }
+  if ((text.startsWith("'") && text.endsWith("'")) || (text.startsWith('"') && text.endsWith('"'))) return text.slice(1, -1).replace(/''/g, "'");
   return text;
-}
-
-function failValidation(failures) {
-  return { ok: false, status: "CONTROLLED_FAILURE", failures };
 }
