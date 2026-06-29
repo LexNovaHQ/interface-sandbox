@@ -307,7 +307,7 @@ export function buildExposureRegistryRoutePlan({
         m9_artifact: "legal_cartography_index",
         m9_is_builder: true,
         m11_builds_legal_cartography: false,
-        selected_locator_policy: "consume_existing_m9_rows_only",
+        selected_locator_policy: "consume_existing_m9_rows_first_with_closest_lossless_fallback_when_m9_silent",
         status: legalCartographyStatus.ok ? "PASS" : "CONTROLLED_FAILURE",
         available_families: legalCartographyStatus.available_families,
         failures: legalCartographyStatus.failures
@@ -580,7 +580,6 @@ function routeRegistryRow(row, routing, index) {
   const archetype = String(row.Archetype || "").trim().toUpperCase();
   const surfaces = splitSurface(row.Surface);
   const activeArchetypes = new Set(asArray(routing.active_archetypes).map((item) => String(item).trim().toUpperCase()));
-  const activeSurfaces = new Set(asArray(routing.active_surfaces).map(normalizeSurface));
   let route = NOT_APPLICABLE;
   let route_reason = "INT_NOT_TRIGGERED_NOT_APPLICABLE";
 
@@ -590,9 +589,6 @@ function routeRegistryRow(row, routing, index) {
   } else if (activeArchetypes.has(archetype)) {
     route = ROUTED;
     route_reason = "ARCHETYPE_TRIGGERED";
-  } else if (surfaces.some((surface) => activeSurfaces.has(normalizeSurface(surface)))) {
-    route = ROUTED;
-    route_reason = "SURFACE_TRIGGERED";
   }
 
   return {
@@ -693,7 +689,7 @@ function buildDeterministicNotApplicableWorkpadRow(routeRow) {
     material_projection: null,
     source_batch_id: null,
     m12_batch_validation_status: "NOT_REQUIRED_DETERMINISTIC_NON_UNI",
-    limitations: "Non-UNI row had no active archetype or surface route in locked M8 routing substrate."
+    limitations: "Non-UNI row had no active archetype in locked M8 routing substrate. Surface context is not an independent route trigger."
   };
 }
 

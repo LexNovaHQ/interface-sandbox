@@ -354,7 +354,6 @@ M11 has two material artifacts but one locked row schema.
 |---|---|
 | `UNI_ALWAYS_RUN` | Universal row; always evaluation-routed. |
 | `ARCHETYPE_TRIGGERED` | Row archetype intersects active M8 archetypes. |
-| `SURFACE_TRIGGERED` | Row surface tags intersect active M8 `surface_context_tokens[]`. |
 | `INT_NOT_TRIGGERED_NOT_APPLICABLE` | Non-UNI row lacks route basis; still preserved in workpad. |
 
 ## Internal trigger statuses
@@ -447,7 +446,7 @@ FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 13. Reject stale M8 paths including `surface_tokens[]`, `activity_inventory`, `activity_mechanics`, and `registry_routing_substrate`.
 14. Route every UNI row as `EVALUATION_ROUTED` with reason `UNI_ALWAYS_RUN`.
 15. Route non-UNI rows where `Archetype` intersects active archetypes as `EVALUATION_ROUTED` with reason `ARCHETYPE_TRIGGERED`.
-16. Route non-UNI rows where `Surface` intersects active surfaces as `EVALUATION_ROUTED` with reason `SURFACE_TRIGGERED`.
+16. Treat `Surface` as context for evidence selection, review routing, and Hunter Trigger support/defeat only; surface never independently routes a non-UNI row.
 17. Route inactive non-UNI rows as `NOT_TRIGGERED_NOT_APPLICABLE` with reason `INT_NOT_TRIGGERED_NOT_APPLICABLE`.
 18. Build batch plan for evaluation-routed rows: max 8 rows per batch, UNI first, one archetype per batch by default, two archetypes max only if small and adjacent.
 19. Save `exposure_registry_route_plan`.

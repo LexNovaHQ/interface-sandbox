@@ -12,13 +12,15 @@ The backend supplies:
 - `m11_batch_packet.registry_rows[]`
 - parsed Hunter Trigger material for those rows
 - selected M9 legal-cartography rows for those rows
-- selected legal/governance lossless evidence excerpts for those rows
+- M9-guided full lossless legal/governance sections or parts for those rows
+- closest relevant full lossless legal/governance sections or parts when M9 is silent or thin
 - backend full-evidence access manifest showing which locked legal/governance lossless packages remain available to the backend
 
 ## EVIDENCE RULE
-Use the selected evidence excerpts first.
-Use M9 legal cartography as the navigation layer for the full backend legal/governance evidence package.
-If the selected excerpts are insufficient, do not fabricate. Return a controlled or limited result and identify the missing evidence route in `row_limitations`.
+Use M9-guided full lossless units first.
+Use M9 legal cartography as the mandatory navigation layer where available. M9 silence is not evidence absence.
+If M9 is silent, use the backend-supplied closest relevant full lossless legal/governance sections or parts.
+If the supplied lossless evidence is insufficient, do not fabricate a trigger. Return CONTROLLED with a limitation and identify the missing evidence route in `row_limitations`.
 
 ## OUTPUT ROOT
 Return exactly one JSON root:
@@ -58,4 +60,4 @@ Each row in `batch_registry_ledger[]` must have exactly these keys plus `Threat_
 - Do not group Threat_IDs.
 - Do not add extra keys.
 - Final material `evaluation_status` must be only `TRIGGERED` or `CONTROLLED`.
-- Evidence gaps, unclear public evidence, gated pages, thin evidence, or insufficient excerpts are controlled limitations, not hallucination permission.
+- Evidence gaps, unclear public evidence, gated pages, thin evidence, or insufficient full lossless units are controlled limitations, not hallucination permission.

@@ -6,6 +6,7 @@ import { artifactSaveBody, lockPhase, readArtifact, readArtifactPayload, saveArt
 import { buildExposureRegistryRoutePlan, buildM11BatchPacket, mergeExposureRegistryWorkpad98, projectControlledProfile, projectTriggeredProfile, validateM11BatchLedger } from "./m11-deterministic-system.js";
 import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-deterministic-forensics.js";
 import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
+import { applyM11FalsePositiveFirewall } from "./m11-false-positive-firewall.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
@@ -54,7 +55,10 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
 
     const batchPacketRoot = buildM11BatchPacket({ routePlan: { [ART.route]: route.artifact }, batchId: batch.batch_id, upstreamArtifacts: artifacts, referencePacket });
     const compactPacket = buildCompactM11BatchPacket({ batchPacket: batchPacketRoot, upstreamArtifacts: artifacts });
-    let batchOutput = await runM11Batch({ run, phase, batch, compactPacket });
+    let batchOutput = applyBatchFalsePositiveDiscipline({
+      batchOutput: await runM11Batch({ run, phase, batch, compactPacket }),
+      routePlan: route.artifact
+    });
     let structuralValidation = validateM11BatchLedger(batchOutput, batch.expected_threat_ids || []);
     const validationName = `exposure_registry_batch_validation__${batch.batch_id}`;
 
@@ -102,7 +106,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         return;
       }
 
-      batchOutput = repairedOutput;
+      batchOutput = applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact });
       structuralValidation = repairedStructuralValidation;
 
       await logEvent({
@@ -165,7 +169,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         phase,
         batch,
         compactPacket,
-        batchOutput: repairedOutput,
+        batchOutput: applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact }),
         structuralValidation: repairedStructuralValidation,
         routePlan: route.artifact
       });
@@ -174,7 +178,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         repairedValidationArtifact.exposure_registry_batch_validation.status;
 
       if (isAcceptedBatchValidationStatus(repairedM12Status)) {
-        batchOutput = repairedOutput;
+        batchOutput = applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact });
         structuralValidation = repairedStructuralValidation;
         validationArtifact = addRepairTrace(repairedValidationArtifact, {
           repair_attempted: true,
@@ -182,7 +186,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         });
         m12Status = validationArtifact.exposure_registry_batch_validation.status;
       } else {
-        batchOutput = repairedOutput;
+        batchOutput = applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact });
         structuralValidation = repairedStructuralValidation;
         validationArtifact = coercePostReinvestigationM12FailureToWarning(
           repairedValidationArtifact,
@@ -211,13 +215,14 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket });
   const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
 
-  await logEvent({ run_id: run.run_id, event_type: "M11_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { checkpoint_resume: true, batch_prompt_mode: "compact_selected_evidence_only", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_status: finalStatus } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { checkpoint_resume: true, batch_prompt_mode: "compact_lossless_units", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_status: finalStatus } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
 }
 
 async function getOrBuildRoutePlan({ run, phase, artifacts, referencePacket }) {
   const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.route });
-  if (existing) return existing;
+  if (existing && !hasSurfaceTriggeredRoutes(existing.artifact)) return existing;
+  if (existing) await logEvent({ run_id: run.run_id, event_type: "M11_ROUTE_PLAN_SURFACE_TRIGGER_CHECKPOINT_REBUILT", actor: AGENT_5, payload: { reason: "Retired surface-only route reason found in checkpoint" } });
   const output = buildExposureRegistryRoutePlan({ upstreamArtifacts: artifacts, targetFeatureProfile: artifacts[ART.featureMain], legalCartographyIndex: artifacts[ART.legalIndex], referencePacket, runId: run.run_id });
   const artifact = output[ART.route];
   const lock_status = routePlanLockStatus(artifact.phase_a_validation?.status);
@@ -459,6 +464,10 @@ function buildDeterministicM12BatchValidation({
     if (String(row.row_limitations || "").trim()) {
       warnings.push(`row limitation carried: ${id || "unknown"}`);
     }
+
+    if (String(row.row_limitations || "").includes("False-positive firewall demoted prior TRIGGERED status to CONTROLLED")) {
+      warnings.push(`false-positive discipline applied before batch save: ${id || "unknown"}`);
+    }
   }
 
   const status = failures.length
@@ -486,7 +495,8 @@ function buildDeterministicM12BatchValidation({
       challenge_checks: {
         deterministic: true,
         model_usage: "NONE_DETERMINISTIC",
-        non_blocking_rule: "Only structural batch invalidity blocks before repair. Semantic uncertainty is carried as warning/limitation."
+        false_positive_discipline: "APPLIED_PRE_SAVE_TO_BATCH_LEDGER",
+        non_blocking_rule: "Structural invalidity blocks before repair. False-positive demotions are applied before the batch artifact is saved and carried as warning/limitation."
       },
       findings: [],
       failures,
@@ -498,6 +508,36 @@ function buildDeterministicM12BatchValidation({
         model_usage: "NONE_DETERMINISTIC"
       }
     }
+  };
+}
+
+function hasSurfaceTriggeredRoutes(routePlan) {
+  const retiredRouteReason = ["SURFACE", "TRIGGERED"].join("_");
+  const rows = Array.isArray(routePlan?.route_rows) ? routePlan.route_rows : [];
+  return rows.some((row) => row.route_reason === retiredRouteReason);
+}
+
+function applyBatchFalsePositiveDiscipline({ batchOutput, routePlan }) {
+  const ledger = batchOutput?.m11_batch_registry_ledger || batchOutput || {};
+  const rows = Array.isArray(ledger.batch_registry_ledger) ? ledger.batch_registry_ledger : [];
+  if (!rows.length) return batchOutput;
+
+  const routeRowsById = new Map((Array.isArray(routePlan?.route_rows) ? routePlan.route_rows : []).map((row) => [row.Threat_ID, row]));
+  const cleanedRows = rows.map((row) => applyM11FalsePositiveFirewall({ row, routeRow: routeRowsById.get(row.Threat_ID) || {} }));
+
+  if (batchOutput?.m11_batch_registry_ledger) {
+    return {
+      ...batchOutput,
+      m11_batch_registry_ledger: {
+        ...batchOutput.m11_batch_registry_ledger,
+        batch_registry_ledger: cleanedRows
+      }
+    };
+  }
+
+  return {
+    ...ledger,
+    batch_registry_ledger: cleanedRows
   };
 }
 
