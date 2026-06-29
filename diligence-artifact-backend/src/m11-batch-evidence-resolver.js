@@ -22,7 +22,7 @@ export function buildCompactM11BatchPacket({ batchPacket, upstreamArtifacts = {}
       navigation_layer: "legal_cartography_index",
       evidence_selection_policy: "m9_guided_full_lossless_units_only",
       fallback_policy: "If M9 is silent or thin for a row, pull the closest relevant full lossless section or part from the loaded legal/governance corpus.",
-      insufficiency_rule: "If the supplied full lossless units are still insufficient, return CONTROLLED with a row-specific limitation."
+      insufficiency_rule: "If the supplied full lossless units are still insufficient, set status_inputs.public_evidence_limitation to yes or partial and record a row-specific limitation. Backend derives the final material status."
     },
     backend_full_lossless_evidence_access_manifest: buildFullEvidenceAccessManifest(upstreamArtifacts),
     legal_governance_evidence_bundle: legalEvidenceBundle
@@ -64,7 +64,7 @@ function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts }) {
       limitations.push({
         Threat_ID: threatId,
         code: "NO_RELEVANT_LOSSLESS_UNIT_FOUND",
-        message: "No M9-guided or closest relevant full lossless unit was found. M11 must return CONTROLLED or limitation."
+        message: "No M9-guided or closest relevant full lossless unit was found. M11 must carry public evidence limitation through status_inputs and row_limitations; backend derives the final material status."
       });
     }
 
