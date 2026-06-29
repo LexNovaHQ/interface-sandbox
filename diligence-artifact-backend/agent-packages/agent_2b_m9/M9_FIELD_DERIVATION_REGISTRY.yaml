@@ -1,0 +1,224 @@
+registry_name: M9_FIELD_DERIVATION_REGISTRY
+version: v1
+owner_agent: agent_2b_m9
+phase: M9
+purpose: >-
+  Defines how M9 semantic labels are derived from the deterministic legal-stack
+  index and loaded legal/governance corpus. This registry is reference material
+  for the canonical M9 package. It is not a separate agent.
+
+source_of_truth:
+  deterministic_structure: legal_cartography_deterministic_map
+  legal_text: lossless_family__L1_CORE_TERMS_PRIVACY through lossless_family__L6_ENTITY_NOTICE
+  final_output: legal_cartography_index
+
+boundary_rules:
+  deterministic_layer:
+    owns:
+      - document identity
+      - document class
+      - section and subsection structure
+      - clause-group structure
+      - annexure schedule appendix addendum exhibit notice detection
+      - source URL and source family
+      - source status
+      - line and character pointers
+      - parent-child unit relationship
+      - missing or limited source status
+    forbidden:
+      - registry row status
+      - product archetype decision
+      - surface gate decision
+      - exposure finding
+      - final legal conclusion
+  semantic_layer:
+    owns:
+      - registry_subcat_relevance
+      - control_language_family
+      - semantic_function
+      - semantic confidence
+      - semantic limitation
+    forbidden:
+      - new deterministic IDs
+      - new source URLs
+      - source status changes
+      - document structure changes
+      - registry row status
+      - final exposure finding
+      - fix or remediation route
+
+allowed_values:
+  registry_subcat_relevance:
+    - CNS
+    - LIA
+    - HAL
+    - INF
+    - PRV
+    - BIO
+    - DEC
+    - HRM
+    - FRD
+    - TRD
+  control_language_family:
+    - FORMATION_CONTRACT
+    - ACTIVITY_SPECIFIC_DISCLOSURE
+    - DATA_PRIVACY
+    - VENDORS_TRANSFER
+    - SECURITY
+    - USE_SAFETY
+    - AGENT_AUTHORITY
+    - IP_CONTENT
+    - COMMERCIAL_LEGAL_ALLOCATION
+    - CONTACT_ROUTES
+    - INDEMNITY
+    - UNKNOWN_CONTROL_LANGUAGE
+  confidence:
+    - CLEAR
+    - PARTIAL
+    - UNCLEAR
+    - THIN
+    - REINVESTIGATE
+  unit_semantic_status:
+    - LOCKED
+    - LOCKED_WITH_LIMITATIONS
+    - REPAIR_REQUIRED
+  downstream_treatment:
+    - USE_AS_NAVIGATION
+    - REVIEW_WITH_LIMITATION
+    - DO_NOT_USE_WITHOUT_REPAIR
+
+field_derivations:
+  document_labels:
+    pointer_required: document_id
+    rows_required_from: legal_cartography_deterministic_map.document_map
+    fields:
+      document_id:
+        derive_from: deterministic.document_id
+        rule: Copy exactly. Never invent.
+      artifact_id:
+        derive_from: deterministic.artifact_id
+        rule: Copy exactly if present; otherwise copy document_id.
+      artifact_class_label:
+        derive_from: deterministic.artifact_class
+        rule: Copy deterministic document class. Do not reclassify unless deterministic class is UNKNOWN_LEGAL_ARTIFACT and corpus title clearly identifies the document class.
+      document_role_label:
+        derive_from: deterministic.document_role plus document title and source family
+        rule: Short plain-English role label for navigation only.
+      confidence:
+        rule: CLEAR when title/source family/class align; PARTIAL when only one signal supports the class; UNCLEAR when class remains unknown.
+      unit_semantic_status:
+        rule: LOCKED when document row is usable; LOCKED_WITH_LIMITATIONS when source is thin or class is uncertain; REPAIR_REQUIRED only for malformed or unattached row.
+      downstream_treatment:
+        rule: USE_AS_NAVIGATION for usable mapped documents; REVIEW_WITH_LIMITATION for uncertain or thin documents.
+
+  unit_subcat_labels:
+    pointer_required: unit_id
+    rows_required_from: legal_cartography_deterministic_map.macro_unit_map
+    fields:
+      unit_id:
+        derive_from: deterministic.unit_id
+        rule: Copy exactly. Never invent.
+      section_id:
+        derive_from: deterministic.section_id
+        rule: Copy exactly. Never invent.
+      document_id:
+        derive_from: deterministic.document_id
+        rule: Copy exactly. Never invent.
+      unit_type:
+        derive_from: deterministic.unit_type
+        rule: Copy deterministic structural type. Semantic layer does not change structure.
+      unit_label:
+        derive_from: deterministic.heading_label
+        rule: Copy or shorten heading label without changing meaning.
+      registry_subcat_relevance:
+        derive_from: deterministic heading label plus nearby loaded corpus text at pointer
+        rule: Assign only subcats directly indicated by the unit heading or mapped text. Empty array is allowed where no subcat is supported.
+      control_language_family:
+        derive_from: deterministic heading label plus nearby loaded corpus text at pointer
+        rule: Assign only control families directly indicated by the unit heading or mapped text. Use UNKNOWN_CONTROL_LANGUAGE only when the unit is legal/governance material but the control family cannot be classified.
+      confidence:
+        rule: CLEAR for direct heading match; PARTIAL for indirect nearby text; UNCLEAR for ambiguous labels; THIN when source text is too limited; REINVESTIGATE when pointer cannot be used.
+      unit_semantic_status:
+        rule: LOCKED when labels are supported; LOCKED_WITH_LIMITATIONS when labels are partial or thin; REPAIR_REQUIRED when required pointer is missing.
+      downstream_treatment:
+        rule: USE_AS_NAVIGATION for locked labels; REVIEW_WITH_LIMITATION for partial or thin labels; DO_NOT_USE_WITHOUT_REPAIR for malformed rows.
+
+  control_family_labels:
+    pointer_required: control_candidate_id
+    rows_required_from: legal_cartography_deterministic_map.control_language_candidate_map
+    fields:
+      control_candidate_id:
+        derive_from: deterministic.control_candidate_id
+        rule: Copy exactly. Never invent a control_candidate_id.
+      unit_id:
+        derive_from: deterministic.unit_id
+        rule: Copy exactly.
+      section_id:
+        derive_from: deterministic.section_id
+        rule: Copy exactly.
+      document_id:
+        derive_from: deterministic.document_id
+        rule: Copy exactly.
+      control_language_family:
+        derive_from: deterministic.control_language_family_candidate plus mapped corpus text
+        rule: Confirm deterministic candidate if supported. If unsupported, use UNKNOWN_CONTROL_LANGUAGE and explain limitation.
+      registry_subcat_relevance:
+        derive_from: confirmed control family and unit text
+        rule: Assign subcats only where the unit is relevant to that subcat. Do not infer row status.
+      confidence:
+        rule: CLEAR where heading and text align; PARTIAL where only heading supports; UNCLEAR where candidate is weak.
+
+  indemnity_labels:
+    pointer_required: indemnity_candidate_id
+    rows_required_from: legal_cartography_deterministic_map.indemnity_candidate_map
+    rule: Label only the indemnity location and confidence. Do not decide enforceability or adequacy.
+
+  cross_reference_labels:
+    pointer_required: cross_reference_id
+    rows_required_from: legal_cartography_deterministic_map.cross_document_reference_map
+    rule: Label the reference relationship and loaded/unloaded status only. Do not fetch or assume content of unloaded references.
+
+  missing_source_labels:
+    pointer_required: missing_id
+    rows_required_from: legal_cartography_deterministic_map.missing_source_map
+    rule: Interpret the missing/limited source status as a cartography limitation only. Do not convert absence into an exposure finding.
+
+subcat_derivation_rules:
+  CNS:
+    derive_when: Unit concerns contract formation, acceptance, consent, user assent, account terms, consumer notice, cancellation, billing disclosure, or dark-pattern-adjacent terms.
+    do_not_derive_when: Unit only mentions general product marketing without legal or governance language.
+  LIA:
+    derive_when: Unit concerns liability limits, warranty disclaimers, indemnity, damages exclusion, allocation of responsibility, governing law, jurisdiction, or dispute terms.
+    do_not_derive_when: Unit only gives support contact details without allocation language.
+  HAL:
+    derive_when: Unit concerns output accuracy, reliance, no professional advice, generated content limits, hallucination-style limitations, or user responsibility for outputs.
+    do_not_derive_when: Unit only concerns generic website use.
+  INF:
+    derive_when: Unit concerns ownership, IP rights, copyright, licenses, user content, output rights, training use, scraping, open-source notices, or takedown process.
+    do_not_derive_when: Unit only names a product feature without IP treatment.
+  PRV:
+    derive_when: Unit concerns personal data, privacy notice, retention, deletion, processing purposes, transfer, subprocessors, security of data, breach notice, or data subject requests.
+    do_not_derive_when: Unit concerns non-personal commercial terms only.
+  BIO:
+    derive_when: Unit concerns biometric data, voice identity, face identity, speaker recognition, sensitive identifiers, consent for biometric capture, retention, or deletion.
+    do_not_derive_when: Unit only mentions audio or image features without identity or biometric governance.
+  DEC:
+    derive_when: Unit concerns automated decisions, human review, impact assessment, high-risk use, eligibility, employment, credit, healthcare, education, or material decision workflows.
+    do_not_derive_when: Unit only describes generic automation without decision impact.
+  HRM:
+    derive_when: Unit concerns minors, children, vulnerable users, mental health, emotional reliance, wellbeing, companion-like use, safety escalation, or harmful interactions.
+    do_not_derive_when: Unit only states age access without safety or wellbeing context.
+  FRD:
+    derive_when: Unit concerns misrepresentation, fabricated evidence, authenticity, disclosure of AI-generated content, impersonation, fraud prevention, deceptive use, or claims substantiation.
+    do_not_derive_when: Unit only states generic acceptable use without deception or authenticity language.
+  TRD:
+    derive_when: Unit concerns trading, pricing, investment, financial transactions, market manipulation, order execution, or automated commercial transaction decisions.
+    do_not_derive_when: Unit only concerns ordinary subscription billing.
+
+validation_rules:
+  - Semantic rows must attach to deterministic IDs.
+  - Semantic layer must not create source URLs or source statuses.
+  - Semantic layer must not output fix-route fields.
+  - Empty subcat array is allowed when no subcat is supported.
+  - Missing or limited source rows must remain limitations, not exposure findings.
+  - Final row status remains owned by M11, not M9.
