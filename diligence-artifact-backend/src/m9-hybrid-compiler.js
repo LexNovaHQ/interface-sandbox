@@ -20,7 +20,7 @@ export function compileM9HybridCartography({ deterministicMap, semanticProfile, 
   const compileNotes = [];
   const quarantinedSemanticRows = [];
   const deterministicIds = collectDeterministicIds(map);
-  const semanticIndexes = buildSemanticIndexes({ semantic, deterministicIds, quarantinedSemanticRows, compileNotes });
+  const semanticIndexes = buildSemanticIndexes({ map, semantic, deterministicIds, quarantinedSemanticRows, compileNotes });
 
   const documentCoverage = compileDocumentCoverage({ map, semanticIndexes });
   const documentStructure = compileDocumentStructure({ map, semanticIndexes });
@@ -209,15 +209,11 @@ function compileControlLocator({ map, semanticIndexes }) {
     }));
   }
 
-  for (const substitute of asArray(semantic.substitute_control_map)) {
-    // never reached directly; substitutes are pulled from semanticIndexes below
-  }
-
   for (const sub of semanticIndexes.substituteControls) {
     controls.push(stripEmpty({
       control_reference_id: `SUBSTITUTE.${sub.missing_or_limited_item_ref || sub.expected_document_route}`,
       control_type: "SUBSTITUTE_CONTROL",
-      control_language_family: first(sub.registry_subcat_relevance) || "UNKNOWN_CONTROL_LANGUAGE",
+      control_language_family: "UNKNOWN_CONTROL_LANGUAGE",
       located_in_document: "Substitute control location map",
       unit_or_heading: asArray(sub.substitute_control_locations).join(" | "),
       source: "",
@@ -254,7 +250,7 @@ function compileMissingLimitedItems({ map, semanticIndexes }) {
   });
 }
 
-function buildSemanticIndexes({ semantic, deterministicIds, quarantinedSemanticRows, compileNotes }) {
+function buildSemanticIndexes({ map, semantic, deterministicIds, quarantinedSemanticRows, compileNotes }) {
   const index = {
     byDocumentId: new Map(),
     byUnitId: new Map(),
@@ -269,6 +265,10 @@ function buildSemanticIndexes({ semantic, deterministicIds, quarantinedSemanticR
     deterministicUnits: new Map(),
     deterministicEmbeddedUnits: new Map()
   };
+
+  for (const row of asArray(map.section_map)) index.deterministicUnits.set(String(row.section_id || row.unit_id), row);
+  for (const row of asArray(map.macro_unit_map)) index.deterministicUnits.set(String(row.unit_id || row.section_id), row);
+  for (const row of asArray(map.embedded_unit_map)) index.deterministicEmbeddedUnits.set(String(row.embedded_unit_id), row);
 
   for (const row of asArray(semantic.artifact_inventory_labels)) attachOne(index.byDocumentId, row.document_id || row.artifact_id, row, deterministicIds, quarantinedSemanticRows);
   for (const row of asArray(semantic.macro_unit_semantic_labels)) {
@@ -303,21 +303,7 @@ function attachOne(map, key, row, deterministicIds, quarantinedRows) {
 
 function collectDeterministicIds(map) {
   const ids = new Set();
-  const arrays = [
-    "document_map",
-    "artifact_inventory_map",
-    "section_map",
-    "macro_unit_map",
-    "embedded_unit_map",
-    "referenced_document_map",
-    "cross_document_reference_map",
-    "missing_source_map",
-    "artifact_absence_access_map",
-    "core_document_stack_slots",
-    "control_language_candidate_map",
-    "indemnity_candidate_map",
-    "notice_candidate_map"
-  ];
+  const arrays = ["document_map", "artifact_inventory_map", "section_map", "macro_unit_map", "embedded_unit_map", "referenced_document_map", "cross_document_reference_map", "missing_source_map", "artifact_absence_access_map", "core_document_stack_slots", "control_language_candidate_map", "indemnity_candidate_map", "notice_candidate_map"];
   const fields = ["document_id", "artifact_id", "unit_id", "section_id", "embedded_unit_id", "reference_id", "cross_reference_id", "missing_id", "absence_id", "slot_id", "control_candidate_id", "indemnity_candidate_id", "notice_id"];
   for (const arrayName of arrays) {
     for (const row of asArray(map[arrayName])) {
