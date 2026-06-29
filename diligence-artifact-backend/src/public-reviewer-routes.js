@@ -12,15 +12,19 @@ export const publicReviewerRouter = express.Router();
 const windowMs = 60 * 60 * 1000;
 const limits = { create: 5, advance: 80, read: 120 };
 const buckets = new Map();
+const jobCreatePaths = ["/reviewer/jobs", "/diligence-system/jobs"];
+const jobReadPaths = ["/reviewer/jobs/:run_id", "/diligence-system/jobs/:run_id"];
+const jobAdvancePaths = ["/reviewer/jobs/:run_id/advance", "/diligence-system/jobs/:run_id/advance"];
+const reportPaths = ["/reviewer/report/:run_id", "/diligence-system/report/:run_id"];
 
 publicReviewerRouter.use((req, res, next) => {
   if (!config.publicReviewerEnabled) {
-    return res.status(404).json({ ok: false, error: "PUBLIC_REVIEWER_DISABLED", message: "Public reviewer routes are disabled." });
+    return res.status(404).json({ ok: false, error: "PUBLIC_DILIGENCE_SYSTEM_DISABLED", message: "Public diligence-system routes are disabled." });
   }
   return next();
 });
 
-publicReviewerRouter.post("/reviewer/jobs", rateLimit("create"), async (req, res) => {
+publicReviewerRouter.post(jobCreatePaths, rateLimit("create"), async (req, res) => {
   try {
     requireRuntimeConfig();
     const body = parseOrThrow(reviewerCreateJobSchema, req.body);
@@ -40,7 +44,7 @@ publicReviewerRouter.post("/reviewer/jobs", rateLimit("create"), async (req, res
       current_phase: "AGENT_1A_URL_MANIFEST",
       runner_mode: "ASYNC_NODE_RUNNER",
       runner_state: "IDLE",
-      created_by: "public-reviewer",
+      created_by: "public-diligence-system",
       notes: body.notes || "",
       drive_folder_id: folder.drive_folder_id,
       drive_folder_link: folder.drive_folder_link,
@@ -61,7 +65,7 @@ publicReviewerRouter.post("/reviewer/jobs", rateLimit("create"), async (req, res
   }
 });
 
-publicReviewerRouter.get("/reviewer/jobs/:run_id", rateLimit("read"), async (req, res) => {
+publicReviewerRouter.get(jobReadPaths, rateLimit("read"), async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
@@ -72,13 +76,13 @@ publicReviewerRouter.get("/reviewer/jobs/:run_id", rateLimit("read"), async (req
   }
 });
 
-publicReviewerRouter.post("/reviewer/jobs/:run_id/advance", rateLimit("advance"), async (req, res) => {
+publicReviewerRouter.post(jobAdvancePaths, rateLimit("advance"), async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
     const result = await requestReviewerRunAdvance({
       run_id: req.params.run_id,
-      requested_by: "public-reviewer",
+      requested_by: "public-diligence-system",
       base_url: baseUrlFromRequest(req),
       auto_continue: body.auto_continue
     });
@@ -88,7 +92,7 @@ publicReviewerRouter.post("/reviewer/jobs/:run_id/advance", rateLimit("advance")
   }
 });
 
-publicReviewerRouter.get("/reviewer/report/:run_id", rateLimit("read"), async (req, res) => {
+publicReviewerRouter.get(reportPaths, rateLimit("read"), async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
@@ -111,18 +115,18 @@ function rateLimit(kind) {
     const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing;
     current.count += 1;
     buckets.set(key, current);
-    if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public reviewer ${kind} limit reached.` });
+    if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public diligence-system ${kind} limit reached.` });
     return next();
   };
 }
 
 function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
 function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
-function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_state: result.runner_state, poll: `/public/reviewer/jobs/${result.run_id}` }; }
+function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_state: result.runner_state, poll: `/public/diligence-system/jobs/${result.run_id}` }; }
 function publicArtifactList(artifacts) { return artifacts.map((artifact) => ({ artifact_name: artifact.artifact_name, phase: artifact.phase, lock_status: artifact.lock_status, latest_version: artifact.latest_version || artifact.version, updated_at: artifact.updated_at || artifact.created_at })); }
 function baseUrlFromRequest(req) { const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim() || "https"; const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim(); return host ? `${proto}://${host}` : ""; }
 function normalizeTargetUrl(value) { const raw = String(value || "").trim(); const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`; const url = new URL(withProtocol); url.hash = ""; return url.toString(); }
 function hostFromUrl(value) { return new URL(value).hostname.replace(/^www\./i, ""); }
 function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
 function statusForMessage(message) { if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
-function publicErrorCode(message) { return String(message).split(":")[0] || "PUBLIC_REVIEWER_BACKEND_ERROR"; }
+function publicErrorCode(message) { return String(message).split(":")[0] || "PUBLIC_DILIGENCE_SYSTEM_BACKEND_ERROR"; }
