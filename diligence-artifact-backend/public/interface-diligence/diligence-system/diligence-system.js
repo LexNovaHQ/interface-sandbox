@@ -10,7 +10,7 @@ const RAIL_PHASES = [
   { id: "FINAL_COMPILER", label: "Final Compiler", sub: "compiled handoff", phases: ["COMPILER"], why: "Compiles the locked profile artifacts into the final report handoff." },
   { id: "REPORT_RENDERER", label: "Report Renderer", sub: "public report", phases: ["RENDERER"], why: "Builds the public report payload from the final handoff." },
   { id: "COMPLETE", label: "Complete", sub: "report ready", phases: ["COMPLETE"], why: "The diligence report is ready to open." },
-  { id: "VAULT_BRIDGE", label: "Vault Bridge", sub: "next layer", phases: [], why: "The completed run can proceed to the future Vault intake layer." }
+  { id: "QUALIFIED_REVIEW", label: "Qualified Review", sub: "next layer", phases: [], why: "The completed run can proceed to the qualified-review handoff layer." }
 ];
 
 const PHASE_TEXT = {
@@ -114,7 +114,8 @@ async function pollOnce() {
     if (isFailed(run)) {
       stopPolling();
       setBusy(false);
-      setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.`, true);
+      const detail = run.runner_last_error ? ` ${run.runner_last_error}` : "";
+      setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.${detail}`, true);
     }
   } catch (error) {
     stopPolling();
@@ -136,6 +137,7 @@ async function api(path, init = {}) {
 function updateState(payload = {}) {
   const run = payload.run || payload;
   const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : [];
+  const artifactCount = artifacts.length || Number(run.artifact_count || 0);
   const phase = run.current_phase || "CREATED";
   const status = run.status || "RUNNING";
   const runner = run.runner_state || "";
@@ -144,10 +146,10 @@ function updateState(payload = {}) {
   els.runIdValue.textContent = run.run_id || currentRunId || "-";
   els.statusValue.textContent = [status, runner].filter(Boolean).join(" / ") || "-";
   els.phaseValue.textContent = phase;
-  els.artifactValue.textContent = String(artifacts.length || 0);
+  els.artifactValue.textContent = String(artifactCount || 0);
   els.activePhaseTitle.textContent = phaseInfo.label;
   els.activePhaseText.textContent = `${PHASE_TEXT[phase] || phaseInfo.why} Current engine phase: ${phase}.`;
-  els.terminalNotice.innerHTML = badgeHtml(status, runner);
+  els.terminalNotice.innerHTML = badgeHtml(status, runner, run.runner_last_error || "");
   renderRail(run);
 }
 
@@ -193,7 +195,7 @@ function isFailed(run = {}) {
 
 function setBusy(value) {
   els.runButton.disabled = Boolean(value);
-  els.runButton.textContent = value ? "Running..." : "Start Public Review";
+  els.runButton.textContent = value ? "Running..." : "Run Diligence";
 }
 
 function setMessage(message, error = false) {
@@ -211,10 +213,11 @@ function stopPolling() {
   pollTimer = null;
 }
 
-function badgeHtml(status, runner) {
+function badgeHtml(status, runner, error = "") {
   const failed = TERMINAL_FAILURES.has(status) || runner === "FAILED";
   const label = [status, runner].filter(Boolean).join(" / ") || "Idle";
-  return `<span class="status-badge ${failed ? "failed" : ""}"><span class="dot"></span>${escapeHtml(label)}</span>`;
+  const detail = failed && error ? ` — ${error}` : "";
+  return `<span class="status-badge ${failed ? "failed" : ""}"><span class="dot"></span>${escapeHtml(label + detail)}</span>`;
 }
 
 function escapeHtml(value) {
