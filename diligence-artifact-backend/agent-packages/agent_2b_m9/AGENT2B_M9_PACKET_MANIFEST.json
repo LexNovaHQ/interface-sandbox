@@ -1,11 +1,8 @@
 {
   "packet_name": "AGENT2B_M9_LEGAL_CARTOGRAPHY_PROMPT_PACKET",
-  "version": "v2_hybrid_internal_layers_same_agent",
+  "version": "v3_field_registry",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "M9_ONLY",
-  "agent_identity_preserved": true,
-  "input_protocol_preserved": true,
-  "final_downstream_artifact_preserved": true,
   "read_artifacts": [
     "source_discovery_handoff",
     "lossless_family__L1_CORE_TERMS_PRIVACY",
@@ -21,12 +18,15 @@
     "legal_cartography_index"
   ],
   "final_downstream_required_artifact": "legal_cartography_index",
+  "reference_documents": [
+    "M9_FIELD_DERIVATION_REGISTRY.yaml"
+  ],
   "components": [
     "AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
     "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
     "M9_STEP1_OUTPUT_CONTRACT_LOCK.md",
     "04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
-    "M9_B_SEMANTIC_CARTOGRAPHY.md",
+    "M9_FIELD_DERIVATION_REGISTRY.yaml",
     "M9_C_REINVESTIGATION.md",
     "M9_HYBRID_COMPILER_CONTRACT.md",
     "00_VALIDATOR_RULES_INTEGRATED.md",
