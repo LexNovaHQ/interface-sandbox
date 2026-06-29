@@ -25,7 +25,7 @@ function buildRendererPayloadFromNormalizedSections({ run = {}, bundle = {}, han
   const sections = Object.fromEntries(
     manifest.section_order.map((sectionId) => {
       const artifactName = `normalized_section__${sectionId}`;
-      return [sectionId, bundle[artifactName] || {}];
+      return [sectionId, bundle[artifactName] || handoff.normalized_sections?.[sectionId] || handoff[artifactName] || {}];
     })
   );
 
