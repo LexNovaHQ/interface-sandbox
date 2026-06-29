@@ -35,7 +35,7 @@ export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSem
     reinvestigationWrapper = await buildOrRunReinvestigation({ run: { ...run, run_id: runId }, artifacts, deterministicWrapper, semanticWrapper, semanticValidation, runReinvestigationModel, logger });
     if (reinvestigationWrapper) {
       await saveM9Artifact({ saveArtifact, artifactName: M9_REINVESTIGATION_ARTIFACT_NAME, artifactWrapper: reinvestigationWrapper, saved, logger, optional: true });
-      notes.push("M9 reinvestigation workpad saved for semantic repair/limitation rows.");
+      notes.push("M9 reinvestigation workpad saved for semantic validation rows.");
     }
   }
 
@@ -55,7 +55,7 @@ export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSem
 
 function shouldRunReinvestigation(validation, semanticWrapper) {
   const semantic = unwrapRoot(semanticWrapper, M9_SEMANTIC_ARTIFACT_NAME);
-  return Boolean(validation?.errors?.length || validation?.warnings?.length || asArray(semantic.semantic_repair_queue).length || semantic.lock_status === "REPAIR_REQUIRED" || semantic.status === "REPAIR_REQUIRED");
+  return Boolean(validation?.errors?.length || validation?.warnings?.length || semantic.lock_status === "REPAIR_REQUIRED");
 }
 
 async function buildOrRunReinvestigation({ run, artifacts, deterministicWrapper, semanticWrapper, semanticValidation, runReinvestigationModel, logger }) {
@@ -65,21 +65,19 @@ async function buildOrRunReinvestigation({ run, artifacts, deterministicWrapper,
     log(logger, "M9 reinvestigation model returned workpad.");
     return normalized;
   }
-  log(logger, "M9 reinvestigation model not supplied; creating deterministic limitation workpad.");
-  return createDeterministicReinvestigationWorkpad({ runId: run.run_id, semanticWrapper, semanticValidation });
+  log(logger, "M9 reinvestigation model not supplied; creating deterministic validation workpad.");
+  return createDeterministicReinvestigationWorkpad({ runId: run.run_id, semanticValidation });
 }
 
-function createDeterministicReinvestigationWorkpad({ runId, semanticWrapper, semanticValidation }) {
-  const semantic = unwrapRoot(semanticWrapper, M9_SEMANTIC_ARTIFACT_NAME);
-  const repairRows = asArray(semantic.semantic_repair_queue);
+function createDeterministicReinvestigationWorkpad({ runId, semanticValidation }) {
   const validationRows = [...asArray(semanticValidation?.errors).map((message) => ({ repair_type: "SEMANTIC_VALIDATION_ERROR", reason: message, blocking: false })), ...asArray(semanticValidation?.warnings).map((message) => ({ repair_type: "SEMANTIC_VALIDATION_WARNING", reason: message, blocking: false }))];
-  const reviewed = [...repairRows, ...validationRows].map((row, index) => ({ repair_id: row.repair_id || `M9_REPAIR_${String(index + 1).padStart(3, "0")}`, repair_type: row.repair_type || "SEMANTIC_REPAIR", target_ref: row.target_ref || row.affected_ref || "", reason: row.reason || row.limitation || "Semantic row requires limitation carry-forward.", blocking: false, disposition: "UNRESOLVED_WITH_LIMITATION" }));
-  return { [M9_REINVESTIGATION_ARTIFACT_NAME]: { run_id: runId, generated_by: "m9_hybrid_orchestrator_deterministic_repair_workpad", schema_version: "M9_REINVESTIGATION_WORKPAD_v1", repair_rows_reviewed: reviewed, repair_rows_resolved: [], repair_rows_unresolved_with_limitations: reviewed, compiler_notes: ["No reinvestigation model callback was supplied. Ordinary semantic repair rows are carried as limitations."], downstream_rules: { m9_reinvestigation_only: true, no_new_url_discovery: true, use_only_loaded_legal_corpus: true, ordinary_repairs_are_non_blocking: true, limitations_must_carry_forward: true }, status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", lock_status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" } };
+  const reviewed = validationRows.map((row, index) => ({ repair_id: `M9_REPAIR_${String(index + 1).padStart(3, "0")}`, repair_type: row.repair_type, target_ref: "legal_cartography_semantic_profile", reason: row.reason, blocking: false, disposition: "UNRESOLVED_WITH_LIMITATION" }));
+  return { [M9_REINVESTIGATION_ARTIFACT_NAME]: { run_id: runId, generated_by: "m9_hybrid_orchestrator_deterministic_repair_workpad", schema_version: "M9_REINVESTIGATION_WORKPAD_v1", repair_rows_reviewed: reviewed, repair_rows_resolved: [], repair_rows_unresolved_with_limitations: reviewed, compiler_notes: ["Semantic validation rows are carried as limitations."], downstream_rules: { m9_reinvestigation_only: true, no_new_url_discovery: true, use_only_loaded_legal_corpus: true, limitations_must_carry_forward: true }, status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", lock_status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" } };
 }
 
 function normalizeSemanticWrapper({ semanticRaw, runId }) {
   const semantic = unwrapRoot(semanticRaw, M9_SEMANTIC_ARTIFACT_NAME);
-  if (!semantic || Object.keys(semantic).length === 0) return { [M9_SEMANTIC_ARTIFACT_NAME]: emptySemanticProfile({ runId, reason: "Semantic model returned empty or malformed output." }) };
+  if (!semantic || Object.keys(semantic).length === 0) return { [M9_SEMANTIC_ARTIFACT_NAME]: emptySemanticProfile({ runId }) };
   if (semanticRaw?.[M9_SEMANTIC_ARTIFACT_NAME]) return semanticRaw;
   if (semanticRaw?.artifact?.[M9_SEMANTIC_ARTIFACT_NAME]) return semanticRaw.artifact;
   return { [M9_SEMANTIC_ARTIFACT_NAME]: semantic };
@@ -87,29 +85,19 @@ function normalizeSemanticWrapper({ semanticRaw, runId }) {
 
 function normalizeReinvestigationWrapper({ raw, runId, semanticValidation }) {
   const workpad = unwrapRoot(raw, M9_REINVESTIGATION_ARTIFACT_NAME);
-  if (!workpad || Object.keys(workpad).length === 0) return createDeterministicReinvestigationWorkpad({ runId, semanticWrapper: { [M9_SEMANTIC_ARTIFACT_NAME]: emptySemanticProfile({ runId, reason: "Reinvestigation returned empty output." }) }, semanticValidation });
+  if (!workpad || Object.keys(workpad).length === 0) return createDeterministicReinvestigationWorkpad({ runId, semanticValidation });
   if (raw?.[M9_REINVESTIGATION_ARTIFACT_NAME]) return raw;
   if (raw?.artifact?.[M9_REINVESTIGATION_ARTIFACT_NAME]) return raw.artifact;
   return { [M9_REINVESTIGATION_ARTIFACT_NAME]: workpad };
 }
 
-function emptySemanticProfile({ runId, reason }) {
+function emptySemanticProfile({ runId }) {
   return {
-    run_id: runId,
-    generated_by: "m9_hybrid_orchestrator_empty_semantic_guard",
-    schema_version: "M9_SEMANTIC_LEGAL_STACK_LABELS_v4",
-    model_used: true,
-    document_labels: [],
-    unit_subcat_labels: [],
-    control_family_labels: [],
-    indemnity_labels: [],
-    cross_reference_labels: [],
-    missing_source_labels: [],
-    semantic_repair_queue: [{ repair_id: "M9_SEMANTIC_EMPTY_OUTPUT", repair_type: "SEMANTIC_EMPTY_OUTPUT", target_ref: "legal_cartography_semantic_profile", reason, blocking: false, recommended_reinvestigation: "Re-run semantic labeling against deterministic semantic_label_queue and loaded legal corpus." }],
-    semantic_integrity_summary: { semantic_queue_total: 0, semantic_queue_required_total: 0, semantic_required_units_labeled: 0, semantic_required_controls_total: 0, semantic_required_controls_labeled: 0, semantic_required_coverage_ratio: 0, semantic_rows_total: 0, semantic_rows_attached_to_deterministic_ids: 0, semantic_rows_repaired_or_omitted: 1, full_text_copied: false, new_sources_created: false, ready_for_compiler: false },
-    downstream_rules: { m9_semantic_layer_only: true, legal_stack_labels_only: true, registry_aware_not_registry_evaluative: true, post_m9_action_routes_forbidden: true, new_source_fetch_forbidden: true, full_legal_text_copy_forbidden: true, use_only_loaded_legal_corpus: true, deterministic_map_is_source_of_pointers: true, semantic_rows_must_attach_to_deterministic_ids: true, coverage_gate_required: true },
-    status: "REPAIR_REQUIRED",
-    lock_status: "REPAIR_REQUIRED"
+    schema_version: "M9_SEMANTIC_NAVIGATION_INDEX_v1",
+    semantic_navigation_index: [],
+    semantic_integrity: { required_queue_count: 0, labeled_queue_count: 0, coverage_ratio: 0, ready_for_compiler: false },
+    lock_status: "REPAIR_REQUIRED",
+    run_id: runId
   };
 }
 
