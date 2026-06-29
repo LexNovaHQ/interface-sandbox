@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import Busboy from "busboy";
 import { saveBinaryFileToDrive, saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./drive.js";
+import { getNextArtifactVersion, saveArtifactMetadata, logEvent } from "./firestore.js";
 
 const MAX_FILES = 4;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
@@ -8,6 +9,8 @@ const MAX_TOTAL_BYTES = 7 * 1024 * 1024;
 const MAX_TEXT = 160000;
 const ACCEPTED = new Set([".pdf", ".docx", ".txt", ".md", ".html", ".htm"]);
 const FAMILY_BUCKET = Object.freeze({ D1_SECURITY_TRUST: "data_asset_provenance_profile_urls", D2_SUBPROCESSOR_PRIVACY_CENTER: "data_asset_provenance_profile_urls", D5_AI_SAFETY_TRANSPARENCY: "data_asset_provenance_profile_urls", L1_CORE_TERMS_PRIVACY: "legal_governance_profile_urls", L2_B2B_CONTRACTING: "legal_governance_profile_urls", L3_AI_USAGE_GOVERNANCE: "legal_governance_profile_urls", L4_PRIVACY_ADJACENT_NOTICES: "legal_governance_profile_urls", L5_LEGAL_HUB_HOSTED: "legal_governance_profile_urls", L6_ENTITY_NOTICE: "legal_governance_profile_urls" });
+const UPLOAD_PHASE = "AGENT_1A_URL_MANIFEST";
+const UPLOAD_ACTOR = "document_source_ingestor";
 
 export function parseMultipartDiligenceJob(req) {
   return new Promise((resolve, reject) => {
@@ -62,7 +65,15 @@ export async function ingestUploadedSourceDocuments({ run, files, drive_folder_i
   const corpusArtifact = { run_id: run.run_id, target: run.target, target_url: run.root_url, source_mode: "url_plus_documents", generated_by: "document_source_ingestor_v1", source_text_location: "uploaded_source_document_corpus.sources[].lossless_text", sources, generated_at: new Date().toISOString() };
   const indexDrive = await saveJsonArtifactToDrive({ run_id: run.run_id, artifact_name: "uploaded_source_document_index", version: 1, drive_folder_id, artifact: indexArtifact });
   const corpusDrive = await saveJsonArtifactToDrive({ run_id: run.run_id, artifact_name: "uploaded_source_document_corpus", version: 1, drive_folder_id, artifact: corpusArtifact });
+  await recordUploadedArtifactMetadata({ run, drive_folder_id, artifact_name: "uploaded_source_document_index", drive: indexDrive });
+  await recordUploadedArtifactMetadata({ run, drive_folder_id, artifact_name: "uploaded_source_document_corpus", drive: corpusDrive });
   return { source_mode: "url_plus_documents", uploaded_source_document_index_drive_file_id: indexDrive.drive_file_id, uploaded_source_document_index_drive_web_view_link: indexDrive.drive_web_view_link, uploaded_source_document_corpus_drive_file_id: corpusDrive.drive_file_id, uploaded_source_document_corpus_drive_web_view_link: corpusDrive.drive_web_view_link, uploaded_source_documents: { document_count: documents.length, extracted_document_count: documents.filter((doc) => doc.extraction_status === "EXTRACTED").length, filenames: documents.map((doc) => doc.filename), root_families: [...new Set(documents.flatMap((doc) => doc.root_families || []))] } };
+}
+
+async function recordUploadedArtifactMetadata({ run, drive_folder_id, artifact_name, drive }) {
+  const version = await getNextArtifactVersion(run.run_id, artifact_name).catch(() => 1);
+  await saveArtifactMetadata({ run_id: run.run_id, artifact_name, phase: UPLOAD_PHASE, agent_id: UPLOAD_ACTOR, lock_status: "LOCKED", version, drive_file_id: drive.drive_file_id, drive_web_view_link: drive.drive_web_view_link, drive_folder_id, artifact_size_bytes: drive.artifact_size_bytes || 0 });
+  await logEvent({ run_id: run.run_id, event_type: "UPLOADED_SOURCE_DOCUMENT_ARTIFACT_REGISTERED", actor: UPLOAD_ACTOR, payload: { artifact_name, version, drive_file_id: drive.drive_file_id } }).catch(() => {});
 }
 
 export async function mergeUploadedDocumentSourcesIntoArtifact({ run, artifactName, artifact }) {
