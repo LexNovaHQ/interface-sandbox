@@ -5,33 +5,12 @@ const ALLOWED_SUBCATS = new Set(["CNS", "LIA", "HAL", "INF", "PRV", "BIO", "DEC"
 const ALLOWED_CONTROL_FAMILIES = new Set(["FORMATION_CONTRACT", "ACTIVITY_SPECIFIC_DISCLOSURE", "DATA_PRIVACY", "VENDORS_TRANSFER", "SECURITY", "USE_SAFETY", "AGENT_AUTHORITY", "IP_CONTENT", "COMMERCIAL_LEGAL_ALLOCATION", "CONTACT_ROUTES", "INDEMNITY", "UNKNOWN_CONTROL_LANGUAGE"]);
 const ALLOWED_CONFIDENCE = new Set(["CLEAR", "PARTIAL", "UNCLEAR"]);
 const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
-const ALLOWED_PROFILE_KEYS = new Set(["schema_version", "semantic_navigation_index", "semantic_integrity", "lock_status"]);
+const ALLOWED_PROFILE_KEYS = new Set(["run_id", "schema_version", "semantic_navigation_index", "semantic_integrity", "lock_status"]);
 const ALLOWED_NAV_ROW_KEYS = new Set(["queue_id", "unit_id", "subcats", "control_families", "confidence"]);
 const ALLOWED_INTEGRITY_KEYS = new Set(["required_queue_count", "labeled_queue_count", "coverage_ratio", "ready_for_compiler"]);
 
-const REMOVED_SEMANTIC_KEYS = Object.freeze([
-  "document_labels",
-  "unit_subcat_labels",
-  "control_family_labels",
-  "indemnity_labels",
-  "cross_reference_labels",
-  "missing_source_labels",
-  "semantic_repair_queue",
-  "semantic_integrity_summary",
-  "downstream_rules",
-  "status"
-]);
-
-const DOWNSTREAM_ROOT_KEYS = Object.freeze([
-  "legal_cartography_index",
-  "target_profile",
-  "target_feature_profile",
-  "data_provenance_profile",
-  "exposure_registry_profile",
-  "challenge_gate",
-  "final_output_handoff",
-  "renderer_payload"
-]);
+const REMOVED_SEMANTIC_KEYS = Object.freeze(["document_labels", "unit_subcat_labels", "control_family_labels", "indemnity_labels", "cross_reference_labels", "missing_source_labels", "semantic_repair_queue", "semantic_integrity_summary", "downstream_rules", "status"]);
+const DOWNSTREAM_ROOT_KEYS = Object.freeze(["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile", "challenge_gate", "final_output_handoff", "renderer_payload"]);
 
 export function validateM9SemanticProfile(rawOutput, deterministicMapWrapper = {}) {
   const errors = [];
@@ -57,10 +36,7 @@ export function validateM9SemanticProfile(rawOutput, deterministicMapWrapper = {
 
 function validateRows(profile, errors) {
   for (const [index, row] of asArray(profile.semantic_navigation_index).entries()) {
-    if (!row || typeof row !== "object" || Array.isArray(row)) {
-      errors.push(`semantic_navigation_index[${index}] must be an object.`);
-      continue;
-    }
+    if (!row || typeof row !== "object" || Array.isArray(row)) { errors.push(`semantic_navigation_index[${index}] must be an object.`); continue; }
     for (const key of Object.keys(row)) if (!ALLOWED_NAV_ROW_KEYS.has(key)) errors.push(`semantic_navigation_index[${index}] unexpected key: ${key}.`);
     if (!row.queue_id || typeof row.queue_id !== "string") errors.push(`semantic_navigation_index[${index}] missing queue_id.`);
     if (!row.unit_id || typeof row.unit_id !== "string") errors.push(`semantic_navigation_index[${index}] missing unit_id.`);
@@ -87,10 +63,7 @@ function validateIntegrity(profile, deterministic, errors, warnings) {
     if (rowQueueIds.has(queueId)) errors.push(`Duplicate semantic queue_id: ${queueId}.`);
     rowQueueIds.add(queueId);
     const expectedUnitId = deterministic.requiredQueueToUnit.get(queueId) || deterministic.optionalQueueToUnit.get(queueId);
-    if (!expectedUnitId) {
-      errors.push(`semantic_navigation_index[${index}] queue_id not found in deterministic semantic_label_queue.`);
-      continue;
-    }
+    if (!expectedUnitId) { errors.push(`semantic_navigation_index[${index}] queue_id not found in deterministic semantic_label_queue.`); continue; }
     if (unitId !== expectedUnitId) errors.push(`semantic_navigation_index[${index}] unit_id does not match deterministic queue row.`);
     if (deterministic.requiredQueueToUnit.has(queueId)) attached += 1;
   }
@@ -120,27 +93,8 @@ function collectDeterministicQueue(wrapper) {
   return out;
 }
 
-function isRequiredQueueRow(row) {
-  return row?.semantic_label_required === true || ["P0", "P1"].includes(row?.priority);
-}
-
-function containsKey(value, key) {
-  if (!value || typeof value !== "object") return false;
-  if (Object.prototype.hasOwnProperty.call(value, key)) return true;
-  if (Array.isArray(value)) return value.some((item) => containsKey(item, key));
-  return Object.values(value).some((item) => containsKey(item, key));
-}
-
-function unwrap(value) {
-  if (!value || typeof value !== "object") return value;
-  if (value.artifact && typeof value.artifact === "object") return value.artifact;
-  return value;
-}
-
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function result(errors, warnings) {
-  return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" };
-}
+function isRequiredQueueRow(row) { return row?.semantic_label_required === true || ["P0", "P1"].includes(row?.priority); }
+function containsKey(value, key) { if (!value || typeof value !== "object") return false; if (Object.prototype.hasOwnProperty.call(value, key)) return true; if (Array.isArray(value)) return value.some((item) => containsKey(item, key)); return Object.values(value).some((item) => containsKey(item, key)); }
+function unwrap(value) { if (!value || typeof value !== "object") return value; if (value.artifact && typeof value.artifact === "object") return value.artifact; return value; }
+function asArray(value) { return Array.isArray(value) ? value : []; }
+function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }
