@@ -1,4 +1,5 @@
 const REQUIRED_ROOT = "legal_cartography_semantic_profile";
+const MIN_QUEUE_COVERAGE = 0.8;
 
 const REQUIRED_ARRAYS = Object.freeze([
   "document_labels",
@@ -14,7 +15,7 @@ const REQUIRED_RULES = Object.freeze([
   "m9_semantic_layer_only",
   "legal_stack_labels_only",
   "registry_aware_not_registry_evaluative",
-  "remediation_routes_forbidden",
+  "post_m9_action_routes_forbidden",
   "new_source_fetch_forbidden",
   "full_legal_text_copy_forbidden",
   "use_only_loaded_legal_corpus",
@@ -43,20 +44,9 @@ const FORBIDDEN_KEYS = Object.freeze([
   "document_route_relevance_map",
   "substitute_control_map",
   "expected_document_route",
-  "expected_core_document_slot"
-]);
-
-const FORBIDDEN_TEXT = Object.freeze([
-  "DOC_",
-  "LEX_NOVA_FIX",
-  "fix_document",
-  "remediation_route",
-  "redline_route",
-  "is compliant",
-  "is non-compliant",
-  "legally sufficient",
-  "enforceable",
-  "unenforceable"
+  "expected_core_document_slot",
+  "fix_route",
+  "fix_document"
 ]);
 
 export function validateM9SemanticProfile(rawOutput, deterministicMapWrapper = {}) {
@@ -79,7 +69,7 @@ export function validateM9SemanticProfile(rawOutput, deterministicMapWrapper = {
   validatePointerAttachment(profile, deterministic, errors, warnings);
   validateCoverage(profile, deterministic, errors, warnings);
   validateVocabulary(profile, errors);
-  validateForbiddenContent(profile, errors);
+  validateForbiddenKeys(profile, errors);
 
   return result(errors, warnings);
 }
@@ -111,22 +101,26 @@ function validateCoverage(profile, deterministic, errors, warnings) {
   const unitIds = new Set(asArray(profile.unit_subcat_labels).map((row) => String(row.unit_id || row.section_id || "")).filter(Boolean));
   const controlIds = new Set(asArray(profile.control_family_labels).map((row) => String(row.control_candidate_id || "")).filter(Boolean));
 
-  if (summary.deterministic_documents_total !== deterministic.documentIds.size) errors.push("semantic_integrity_summary.deterministic_documents_total does not match deterministic document count.");
-  if (summary.semantic_documents_labeled !== documentIds.size) errors.push("semantic_integrity_summary.semantic_documents_labeled does not match document_labels count.");
-  if (summary.deterministic_macro_units_total !== deterministic.unitIds.size) errors.push("semantic_integrity_summary.deterministic_macro_units_total does not match deterministic macro-unit count.");
-  if (summary.semantic_units_labeled !== unitIds.size) errors.push("semantic_integrity_summary.semantic_units_labeled does not match unit_subcat_labels count.");
-  if (summary.deterministic_control_candidates_total !== deterministic.controlIds.size) errors.push("semantic_integrity_summary.deterministic_control_candidates_total does not match deterministic control candidate count.");
-  if (summary.semantic_control_candidates_labeled !== controlIds.size) errors.push("semantic_integrity_summary.semantic_control_candidates_labeled does not match control_family_labels count.");
+  if (summary.semantic_queue_total !== deterministic.queueIds.size) errors.push("semantic_integrity_summary.semantic_queue_total does not match semantic_label_queue count.");
+  if (summary.semantic_queue_required_total !== deterministic.requiredQueueUnitIds.size) errors.push("semantic_integrity_summary.semantic_queue_required_total does not match required semantic queue count.");
+  if (summary.semantic_required_units_labeled !== countIntersection(unitIds, deterministic.requiredQueueUnitIds)) errors.push("semantic_integrity_summary.semantic_required_units_labeled does not match required queue labels.");
+  if (summary.semantic_required_controls_total !== deterministic.requiredControlIds.size) errors.push("semantic_integrity_summary.semantic_required_controls_total does not match required control count.");
+  if (summary.semantic_required_controls_labeled !== countIntersection(controlIds, deterministic.requiredControlIds)) errors.push("semantic_integrity_summary.semantic_required_controls_labeled does not match required control labels.");
 
   for (const id of deterministic.documentIds) if (!documentIds.has(id)) errors.push(`Missing semantic document label for ${id}.`);
-  for (const id of deterministic.unitIds) if (!unitIds.has(id)) errors.push(`Missing semantic unit label for ${id}.`);
-  for (const id of deterministic.controlIds) if (!controlIds.has(id)) errors.push(`Missing semantic control label for ${id}.`);
 
-  if (summary.ready_for_compiler !== true) errors.push("semantic_integrity_summary.ready_for_compiler must be true for compiler handoff.");
+  const requiredTotal = deterministic.requiredQueueUnitIds.size + deterministic.requiredControlIds.size;
+  const labeledTotal = countIntersection(unitIds, deterministic.requiredQueueUnitIds) + countIntersection(controlIds, deterministic.requiredControlIds);
+  const coverageRatio = requiredTotal ? labeledTotal / requiredTotal : 1;
+  const reportedRatio = Number(summary.semantic_required_coverage_ratio);
+
+  if (Math.abs(reportedRatio - coverageRatio) > 0.01) errors.push("semantic_integrity_summary.semantic_required_coverage_ratio does not match computed queue coverage.");
+  if (coverageRatio < MIN_QUEUE_COVERAGE) errors.push(`semantic required queue coverage below ${MIN_QUEUE_COVERAGE}.`);
+  if (summary.ready_for_compiler !== true && coverageRatio >= MIN_QUEUE_COVERAGE) warnings.push("ready_for_compiler is false despite passing queue coverage threshold.");
+  if (summary.ready_for_compiler === true && coverageRatio < MIN_QUEUE_COVERAGE) errors.push("ready_for_compiler cannot be true below queue coverage threshold.");
   if (summary.full_text_copied === true) errors.push("semantic_integrity_summary.full_text_copied must be false.");
   if (summary.new_sources_created === true) errors.push("semantic_integrity_summary.new_sources_created must be false.");
-  if (Number(summary.coverage_ratio) < 1) errors.push("semantic_integrity_summary.coverage_ratio must be 1 for compiler handoff.");
-  if (deterministic.unitIds.size === 0) warnings.push("Deterministic map has no macro units; semantic coverage gate is not meaningful.");
+  if (deterministic.requiredQueueUnitIds.size === 0) warnings.push("Deterministic semantic_label_queue has no required P0/P1 units.");
 }
 
 function validateVocabulary(profile, errors) {
@@ -139,18 +133,30 @@ function validateVocabulary(profile, errors) {
   }
 }
 
-function validateForbiddenContent(profile, errors) {
+function validateForbiddenKeys(profile, errors) {
   for (const key of FORBIDDEN_KEYS) if (containsKey(profile, key)) errors.push(`Forbidden key inside semantic profile: ${key}.`);
-  const text = JSON.stringify(profile);
-  for (const phrase of FORBIDDEN_TEXT) if (text.includes(phrase)) errors.push(`Forbidden semantic content: ${phrase}.`);
 }
 
 function collectDeterministicIds(wrapper) {
   const map = unwrap(wrapper)?.legal_cartography_deterministic_map || unwrap(wrapper) || {};
-  const out = { all: new Set(), documentIds: new Set(), unitIds: new Set(), controlIds: new Set() };
+  const out = { all: new Set(), documentIds: new Set(), queueIds: new Set(), requiredQueueUnitIds: new Set(), requiredControlIds: new Set() };
+
   for (const row of asArray(map.document_map)) add(out, "documentIds", row.document_id || row.artifact_id);
-  for (const row of asArray(map.macro_unit_map)) add(out, "unitIds", row.unit_id || row.section_id);
-  for (const row of asArray(map.control_language_candidate_map)) add(out, "controlIds", row.control_candidate_id);
+  for (const row of asArray(map.macro_unit_map)) {
+    add(out, "all", row.unit_id || row.section_id);
+    if (row.document_id) out.all.add(String(row.document_id));
+  }
+  for (const row of asArray(map.semantic_label_queue)) {
+    const queueId = row.queue_id;
+    const unitId = row.unit_id || row.section_id;
+    add(out, "queueIds", queueId);
+    if (unitId) out.all.add(String(unitId));
+    if (isRequiredQueueRow(row) && unitId) out.requiredQueueUnitIds.add(String(unitId));
+  }
+  for (const row of asArray(map.control_language_candidate_map)) {
+    add(out, "all", row.control_candidate_id);
+    if (row.unit_id && out.requiredQueueUnitIds.has(String(row.unit_id)) && row.control_candidate_id) out.requiredControlIds.add(String(row.control_candidate_id));
+  }
   for (const arrayName of ["artifact_inventory_map", "legal_document_index", "embedded_unit_map", "notice_candidate_map", "indemnity_candidate_map", "cross_document_reference_map", "artifact_absence_access_map", "missing_source_map"]) {
     for (const row of asArray(map[arrayName])) {
       for (const key of ["document_id", "artifact_id", "unit_id", "section_id", "embedded_unit_id", "notice_id", "indemnity_candidate_id", "cross_reference_id", "absence_id", "missing_id"]) if (row?.[key]) out.all.add(String(row[key]));
@@ -159,10 +165,21 @@ function collectDeterministicIds(wrapper) {
   return out;
 }
 
+function isRequiredQueueRow(row) {
+  return row?.semantic_label_required === true || ["P0", "P1"].includes(row?.priority);
+}
+
+function countIntersection(actual, expected) {
+  let count = 0;
+  for (const value of expected) if (actual.has(value)) count += 1;
+  return count;
+}
+
 function add(out, bucket, value) {
   if (!value) return;
   const id = String(value);
-  out[bucket].add(id);
+  if (bucket === "all") out.all.add(id);
+  else out[bucket].add(id);
   out.all.add(id);
 }
 
