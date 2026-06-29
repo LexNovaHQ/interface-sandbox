@@ -328,7 +328,7 @@ export function buildReportUrl(runId) {
   const base = config.reviewerPublicBaseUrl || config.rendererBaseUrl || "";
   if (!base) return "";
   const clean = base.replace(/\/$/, "");
-  return `${clean}/interface-diligence/reviewer/report.html?run_id=${encodeURIComponent(runId)}`;
+  return `${clean}/interface-diligence/diligence-system/report.html?run_id=${encodeURIComponent(runId)}`;
 }
 
 export function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) {
