@@ -43,6 +43,27 @@ const ART = Object.freeze({
 export const M11_BATCH_ARTIFACT_PATTERN = /^exposure_registry_batch__[A-Z0-9]+__\d{3}$/;
 export const M11_BATCH_VALIDATION_ARTIFACT_PATTERN = /^exposure_registry_batch_validation__[A-Z0-9]+__\d{3}$/;
 
+export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([
+  "normalized_section__matter_overview",
+  "normalized_section__executive_summary",
+  "normalized_section__target_profile",
+  "normalized_section__product_activity_ip_profile",
+  "normalized_section__data_provenance_controls",
+  "normalized_section__legal_document_control_review",
+  "normalized_section__exposure_findings",
+  "normalized_section__implications_review_path",
+  "normalized_section__evidence_gaps_clarification_points",
+  "normalized_section__methodology_limitations_review_notes",
+  "normalized_section__forensic_ledger_appendix"
+]);
+
+export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([
+  "normalized_report_manifest",
+  "vault_section_handoff",
+  ART.final,
+  ...NORMALIZED_SECTION_ARTIFACT_NAMES
+]);
+
 export const PHASES = Object.freeze([
   "AGENT_1A_URL_MANIFEST",
   "AGENT_1B_EXTRACT",
@@ -157,16 +178,18 @@ export const M11_DYNAMIC_ARTIFACT_PATTERNS = Object.freeze([
   ART.exposureBatchValidationPattern
 ]);
 
-export const COMPILER_ARTIFACT_NAMES = Object.freeze([
+export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
+
+export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([
   ART.profilesCombined,
-  ART.forensicsCombined,
-  ART.final
+  ART.forensicsCombined
 ]);
 
 export const LEGACY_ARTIFACT_NAMES = Object.freeze([
   ART.urlManifest,
   ART.oldCorpus,
-  ART.exposureLegacy
+  ART.exposureLegacy,
+  ...LEGACY_COMPILER_ARTIFACT_NAMES
 ]);
 
 export const ARTIFACT_NAMES = Object.freeze([
@@ -185,9 +208,7 @@ export const ARTIFACT_NAMES = Object.freeze([
   ART.dataForensics,
   ...M11_STATIC_ARTIFACT_NAMES,
   ART.challenge,
-  ART.profilesCombined,
-  ART.forensicsCombined,
-  ART.final,
+  ...NORMALIZED_COMPILER_ARTIFACT_NAMES,
   ART.renderer
 ]);
 
@@ -246,8 +267,8 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a4]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
   [AGENT_IDS.a5]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
-  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ART.profilesCombined, ART.forensicsCombined, ART.final],
-  portfolio_renderer: [ART.final, ART.renderer],
+  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
+  portfolio_renderer: [ART.final, "normalized_report_manifest", "vault_section_handoff", ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });
 
