@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v1_agent2b_m9_current
+runtime_contract_version: v2_agent2b_m9_hybrid_internal_layers
 active_agent_id: agent_2b_m9
 active_agent_name: Interface Legal Cartography Agent
 active_phase_scope: M9_ONLY
@@ -13,9 +13,17 @@ structure_authority:
   no_module_merge: true
   backend_supports_agent_structure: true
   backend_must_not_dictate_prompt_structure: true
+  current_agent_identity_preserved: true
+  current_input_protocol_preserved: true
+  current_downstream_final_artifact_preserved: true
 
 allowed_modules:
   - M9_LEGAL_CARTOGRAPHY
+
+internal_execution_layers:
+  - M9_A_DETERMINISTIC_LEGAL_MAP
+  - M9_B_SEMANTIC_CARTOGRAPHY_PROFILE
+  - M9_C_DETERMINISTIC_COMPILER
 
 read_artifacts:
   - source_discovery_handoff
@@ -27,11 +35,21 @@ read_artifacts:
   - lossless_family__L6_ENTITY_NOTICE
 
 write_artifacts_in_order:
+  - legal_cartography_deterministic_map
+  - legal_cartography_semantic_profile
+  - legal_cartography_index
+
+internal_artifacts_m9_owned:
+  - legal_cartography_deterministic_map
+  - legal_cartography_semantic_profile
+  - legal_cartography_reinvestigation_workpad
+
+final_downstream_required_artifact:
   - legal_cartography_index
 
 phase_lock:
   - M9
-phase_lock_meaning: "Agent 2B locks only M9 after legal_cartography_index validates and saves. M6 belongs to Agent 2A and is not executed by this package."
+phase_lock_meaning: "Agent 2B locks only M9 after legal_cartography_index validates and saves. M6 belongs to Agent 2A and is not executed by this package. The deterministic and semantic artifacts are M9-owned internal artifacts and must not become downstream-required inputs."
 
 forbidden_modules:
   - M6_SOURCE_DISCOVERY
@@ -66,5 +84,5 @@ validator_profile: agent_2b_m9_legal_cartography_validator
 phase_packet_contract: agent_2b_m9_phase_packet_contract
 terminal_receipt_profile: agent_2b_m9_same_chat_receipt
 next_agent_command: "@Interface Target Feature Agent Continue run {{run_id}}."
-stop_condition: "Stop after legal_cartography_index saves and M9 locks."
+stop_condition: "Stop after legal_cartography_deterministic_map, legal_cartography_semantic_profile, and final legal_cartography_index save, and legal_cartography_index validates and locks M9."
 </RUNTIME_BINDING_PACKET>
