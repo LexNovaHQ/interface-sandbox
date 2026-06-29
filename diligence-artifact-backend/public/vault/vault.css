@@ -1,0 +1,19 @@
+:root { --void:#050505; --surface:#0c0c0c; --border:#242424; --text:#e5e5e5; --muted:rgba(229,229,229,.62); --gold:#C5A059; }
+* { box-sizing: border-box; }
+html { background: var(--void); }
+body { margin:0; min-height:100vh; color:var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at 15% 0%, rgba(197,160,89,.12), transparent 28rem), linear-gradient(180deg,#050505,#070707 60%,#030303); }
+main { width:min(980px, calc(100% - 32px)); margin:0 auto; padding:56px 0 72px; }
+.shell { position:relative; overflow:hidden; border:1px solid var(--border); border-radius:28px; padding:clamp(24px,4vw,48px); background:linear-gradient(180deg,rgba(12,12,12,.96),rgba(7,7,7,.96)); box-shadow:0 24px 80px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.03); }
+.shell::before { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(circle at 14% 0%,rgba(197,160,89,.08),transparent 24rem); }
+.shell > * { position:relative; z-index:1; }
+.eyebrow { color:var(--gold); text-transform:uppercase; letter-spacing:.2em; font-size:.68rem; font-weight:900; }
+h1 { margin:.55rem 0 1rem; color:var(--gold); font-family:Georgia,"Times New Roman",serif; font-size:clamp(2.2rem,5vw,4rem); line-height:.95; font-weight:500; }
+p { color:var(--muted); line-height:1.62; }
+.notice { margin-top:1.35rem; padding:1rem; border:1px solid rgba(197,160,89,.26); border-radius:16px; background:rgba(197,160,89,.055); color:rgba(229,229,229,.78); }
+.kv { width:100%; border-collapse:collapse; margin-top:1.25rem; }
+.kv th { width:32%; text-align:left; color:rgba(229,229,229,.42); font-size:.64rem; letter-spacing:.12em; text-transform:uppercase; vertical-align:top; padding:.65rem .8rem .65rem 0; border-bottom:1px solid rgba(255,255,255,.07); }
+.kv td { color:rgba(245,245,245,.88); vertical-align:top; padding:.65rem 0 .65rem .8rem; border-bottom:1px solid rgba(255,255,255,.07); overflow-wrap:anywhere; }
+.actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:22px; }
+.btn { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:.8rem 1.05rem; border-radius:999px; border:1px solid rgba(197,160,89,.48); color:var(--gold); background:rgba(197,160,89,.06); text-decoration:none; font-size:.72rem; letter-spacing:.11em; text-transform:uppercase; font-weight:900; }
+.btn.secondary { border-color:rgba(229,229,229,.18); color:rgba(229,229,229,.86); background:rgba(255,255,255,.025); }
+.footer { margin-top:28px; color:rgba(229,229,229,.42); font-size:.78rem; }
