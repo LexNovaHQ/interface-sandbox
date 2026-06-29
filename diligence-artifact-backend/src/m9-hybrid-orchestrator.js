@@ -42,6 +42,8 @@ export async function runM9HybridOrchestrator({
   const semanticWrapper = normalizeSemanticWrapper({ semanticRaw, runId });
   const semanticValidation = validateM9SemanticProfile(semanticWrapper, deterministicWrapper);
 
+  await saveM9Artifact({ saveArtifact, artifactName: M9_SEMANTIC_ARTIFACT_NAME, artifactWrapper: semanticWrapper, saved, logger });
+
   let reinvestigationWrapper = null;
   if (shouldRunReinvestigation(semanticValidation, semanticWrapper)) {
     reinvestigationWrapper = await buildOrRunReinvestigation({
@@ -58,8 +60,6 @@ export async function runM9HybridOrchestrator({
       notes.push("M9 reinvestigation workpad saved for semantic repair/limitation rows.");
     }
   }
-
-  await saveM9Artifact({ saveArtifact, artifactName: M9_SEMANTIC_ARTIFACT_NAME, artifactWrapper: semanticWrapper, saved, logger });
 
   const finalWrapper = compileM9HybridCartography({
     deterministicMap: deterministicWrapper,
@@ -86,6 +86,7 @@ export async function runM9HybridOrchestrator({
     phase: "M9",
     artifacts_saved_in_order: saved,
     required_save_order: [...M9_HYBRID_SAVE_ORDER],
+    required_save_order_respected: requiredSaveOrderRespected(saved),
     optional_artifacts_saved: saved.includes(M9_REINVESTIGATION_ARTIFACT_NAME) ? [M9_REINVESTIGATION_ARTIFACT_NAME] : [],
     semantic_validation: semanticValidation,
     final_validation: finalValidation,
@@ -229,6 +230,11 @@ async function saveM9Artifact({ saveArtifact, artifactName, artifactWrapper, sav
   await saveArtifact({ artifactName, artifact: artifactWrapper });
   saved.push(artifactName);
   log(logger, `M9 artifact saved: ${artifactName}`);
+}
+
+function requiredSaveOrderRespected(saved) {
+  const mandatory = saved.filter((name) => M9_HYBRID_SAVE_ORDER.includes(name));
+  return M9_HYBRID_SAVE_ORDER.every((name, index) => mandatory[index] === name);
 }
 
 function assertCallback(callback, name) {
