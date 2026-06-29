@@ -18,6 +18,26 @@ legal_cartography_index
 
 The final M9 artifact name must not change.
 
+## Hybrid Artifact Save Contract
+
+When hybrid M9 is wired, each M9 layer must produce and save its own artifact.
+
+The full hybrid M9 phase must save exactly these three M9-owned artifacts in order:
+
+```text
+legal_cartography_deterministic_map
+legal_cartography_semantic_profile
+legal_cartography_index
+```
+
+The first artifact is produced by the deterministic layer.
+
+The second artifact is produced by the semantic layer.
+
+The third artifact is produced by the deterministic compiler and remains the only downstream-required M9 artifact.
+
+`legal_cartography_index` is the compiled/final artifact. It is not optional.
+
 ## Final Artifact Shape Must Remain Backward-Compatible
 
 The final `legal_cartography_index` must retain these existing top-level arrays/objects:
@@ -36,13 +56,18 @@ No downstream phase may be required to read a new final artifact name.
 
 No downstream phase may be required to read a new top-level M9 root in order to keep working.
 
-## Permitted Internal Hybrid Artifacts
+## Internal Hybrid Artifacts Are M9-Owned
 
-The hybrid M9 system may internally create and save supporting artifacts, including:
+The hybrid M9 system must save supporting artifacts, including:
 
 ```text
 legal_cartography_deterministic_map
 legal_cartography_semantic_profile
+```
+
+The optional repair workpad may also be saved if reinvestigation is needed:
+
+```text
 legal_cartography_reinvestigation_workpad
 ```
 
