@@ -28,6 +28,7 @@
   "validator_enum_sync": true,
   "backend_normalizer_sync": true,
   "structure_to_coverage_parity_sync": true,
+  "semantic_profile_validator_added": true,
   "final_shape_preserved": [
     "document_coverage_index",
     "document_structure_index",
@@ -44,7 +45,8 @@
     "M9_HYBRID_COMPILER_CONTRACT.md"
   ],
   "new_backend_component_added": [
-    "src/m9-deterministic-map.js"
+    "src/m9-deterministic-map.js",
+    "src/m9-semantic-profile-validator.js"
   ],
   "ready_for_backend_prompt_loading": false,
   "ready_after_backend_hybrid_orchestrator_wiring": true,
