@@ -170,11 +170,7 @@ function createDeterministicReinvestigationWorkpad({ runId, semanticWrapper, sem
 
 function normalizeSemanticWrapper({ semanticRaw, runId }) {
   const semantic = unwrapRoot(semanticRaw, M9_SEMANTIC_ARTIFACT_NAME);
-  if (!semantic || Object.keys(semantic).length === 0) {
-    return {
-      [M9_SEMANTIC_ARTIFACT_NAME]: emptySemanticProfile({ runId, reason: "Semantic model returned empty or malformed output." })
-    };
-  }
+  if (!semantic || Object.keys(semantic).length === 0) return { [M9_SEMANTIC_ARTIFACT_NAME]: emptySemanticProfile({ runId, reason: "Semantic model returned empty or malformed output." }) };
   if (semanticRaw?.[M9_SEMANTIC_ARTIFACT_NAME]) return semanticRaw;
   if (semanticRaw?.artifact?.[M9_SEMANTIC_ARTIFACT_NAME]) return semanticRaw.artifact;
   return { [M9_SEMANTIC_ARTIFACT_NAME]: semantic };
@@ -192,29 +188,41 @@ function emptySemanticProfile({ runId, reason }) {
   return {
     run_id: runId,
     generated_by: "m9_hybrid_orchestrator_empty_semantic_guard",
-    schema_version: "M9_SEMANTIC_CARTOGRAPHY_PROFILE_v2",
+    schema_version: "M9_SEMANTIC_LEGAL_STACK_LABELS_v3",
     model_used: true,
-    artifact_inventory_labels: [],
-    macro_unit_semantic_labels: [],
-    notice_semantic_labels: [],
-    control_language_location_labels: [],
-    indemnity_location_labels: [],
-    cross_reference_semantic_labels: [],
-    absence_access_semantic_interpretation: [],
-    document_route_relevance_map: [],
-    substitute_control_map: [],
-    semantic_repair_queue: [{ repair_id: "M9_SEMANTIC_EMPTY_OUTPUT", repair_type: "SEMANTIC_EMPTY_OUTPUT", target_ref: "legal_cartography_semantic_profile", reason, blocking: false, recommended_reinvestigation: "Re-run semantic cartography against deterministic map and loaded legal corpus." }],
-    semantic_integrity_summary: { semantic_rows_total: 0, semantic_rows_attached_to_deterministic_ids: 0, semantic_rows_repaired_or_omitted: 1, full_text_copied: false, new_sources_created: false, ready_for_compiler: false },
+    document_labels: [],
+    unit_subcat_labels: [],
+    control_family_labels: [],
+    indemnity_labels: [],
+    cross_reference_labels: [],
+    missing_source_labels: [],
+    semantic_repair_queue: [{ repair_id: "M9_SEMANTIC_EMPTY_OUTPUT", repair_type: "SEMANTIC_EMPTY_OUTPUT", target_ref: "legal_cartography_semantic_profile", reason, blocking: false, recommended_reinvestigation: "Re-run semantic labeling against deterministic legal stack index and loaded legal corpus." }],
+    semantic_integrity_summary: {
+      deterministic_documents_total: 0,
+      semantic_documents_labeled: 0,
+      deterministic_macro_units_total: 0,
+      semantic_units_labeled: 0,
+      deterministic_control_candidates_total: 0,
+      semantic_control_candidates_labeled: 0,
+      semantic_rows_total: 0,
+      semantic_rows_attached_to_deterministic_ids: 0,
+      semantic_rows_repaired_or_omitted: 1,
+      coverage_ratio: 0,
+      full_text_copied: false,
+      new_sources_created: false,
+      ready_for_compiler: false
+    },
     downstream_rules: {
       m9_semantic_layer_only: true,
+      legal_stack_labels_only: true,
       registry_aware_not_registry_evaluative: true,
-      legal_advice_forbidden: true,
-      new_url_discovery_forbidden: true,
+      remediation_routes_forbidden: true,
+      new_source_fetch_forbidden: true,
       full_legal_text_copy_forbidden: true,
       use_only_loaded_legal_corpus: true,
       deterministic_map_is_source_of_pointers: true,
       semantic_rows_must_attach_to_deterministic_ids: true,
-      reinvestigation_before_blocking: true
+      coverage_gate_required: true
     },
     status: "REPAIR_REQUIRED",
     lock_status: "REPAIR_REQUIRED"
