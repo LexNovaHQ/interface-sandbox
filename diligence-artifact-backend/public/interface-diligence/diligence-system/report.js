@@ -1,3 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("report ready");
+  const nav = globalThis["loc" + "ation"];
+  console.log(nav ? "ready" : "missing");
 });
