@@ -1,32 +1,52 @@
 {
-  "overall_status": "SYNCED_FOR_CURRENT_BACKEND_TEST",
-  "source_package": "AGENT1_SOURCE_LEGAL_PROMPT_PACKET.zip",
-  "renamed_to": "agent_2b_m9",
-  "m6_ignored": true,
-  "m9_included": true,
+  "overall_status": "SYNCED_FOR_HYBRID_PACKAGE_NOT_PIPELINE_WIRED",
   "backend_phase": "M9",
   "active_agent_id": "agent_2b_m9",
+  "active_phase_scope": "M9_ONLY",
+  "agent_identity_preserved": true,
+  "input_protocol_preserved": true,
+  "m6_ignored": true,
+  "m9_included": true,
+  "read_artifacts_preserved": [
+    "source_discovery_handoff",
+    "lossless_family__L1_CORE_TERMS_PRIVACY",
+    "lossless_family__L2_B2B_CONTRACTING",
+    "lossless_family__L3_AI_USAGE_GOVERNANCE",
+    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
+    "lossless_family__L5_LEGAL_HUB_HOSTED",
+    "lossless_family__L6_ENTITY_NOTICE"
+  ],
+  "hybrid_write_artifacts_in_order": [
+    "legal_cartography_deterministic_map",
+    "legal_cartography_semantic_profile",
+    "legal_cartography_index"
+  ],
+  "final_downstream_required_artifact": "legal_cartography_index",
+  "internal_artifacts_are_m9_owned": true,
+  "internal_artifacts_downstream_required": false,
+  "final_validator_contract_preserved": true,
   "validator_enum_sync": true,
   "backend_normalizer_sync": true,
   "structure_to_coverage_parity_sync": true,
-  "forbidden_old_values_blocked_or_normalized": [
-    "Embedded",
-    "EMBEDDED_TEXT",
-    "Family Probe",
-    "ABSENT_PROBE",
-    "Referenced",
-    "REFERENCED_EXTERNAL",
-    "AI_USAGE_GOVERNANCE",
-    "PRIVACY_ADJACENT_NOTICES",
-    "REFERENCED_NOT_AUTHORIZED_BY_M6",
-    "ABSENT_AFTER_M6_TARGETED_PROBE",
-    "UPLOADED_PUBLIC_MATERIAL",
-    "PASTED_PUBLIC_MATERIAL",
-    "SYNTHETIC_DEMO"
+  "final_shape_preserved": [
+    "document_coverage_index",
+    "document_structure_index",
+    "incorporated_linked_document_map",
+    "control_language_locator",
+    "missing_limited_legal_governance_items",
+    "downstream_rules",
+    "lock_status"
   ],
-  "latest_live_failure_classes_addressed": [
-    "missing_limited_legal_governance_items invalid artifact_class: PRIVACY_ADJACENT_NOTICES",
-    "Support Services / Support Terms annexure appears in structure but is missing from document_coverage_index"
+  "new_package_components_added": [
+    "M9_STEP1_OUTPUT_CONTRACT_LOCK.md",
+    "M9_B_SEMANTIC_CARTOGRAPHY.md",
+    "M9_C_REINVESTIGATION.md",
+    "M9_HYBRID_COMPILER_CONTRACT.md"
   ],
-  "ready_for_backend_prompt_loading": true
+  "new_backend_component_added": [
+    "src/m9-deterministic-map.js"
+  ],
+  "ready_for_backend_prompt_loading": false,
+  "ready_after_backend_hybrid_orchestrator_wiring": true,
+  "current_pipeline_behavior_changed": false
 }
