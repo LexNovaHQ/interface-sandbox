@@ -1,14 +1,15 @@
 registry_name: M9_FIELD_DERIVATION_REGISTRY
-version: v1
+version: v2_semantic_label_queue
 owner_agent: agent_2b_m9
 phase: M9
 purpose: >-
-  Defines how M9 semantic labels are derived from the deterministic legal-stack
-  index and loaded legal/governance corpus. This registry is reference material
-  for the canonical M9 package. It is not a separate agent.
+  Defines how M9 semantic labels are derived from the deterministic
+  semantic_label_queue and loaded legal/governance corpus. This registry is
+  reference material for the canonical M9 package. It is not a separate agent.
 
 source_of_truth:
   deterministic_structure: legal_cartography_deterministic_map
+  semantic_queue: legal_cartography_deterministic_map.semantic_label_queue
   legal_text: lossless_family__L1_CORE_TERMS_PRIVACY through lossless_family__L6_ENTITY_NOTICE
   final_output: legal_cartography_index
 
@@ -25,6 +26,9 @@ boundary_rules:
       - line and character pointers
       - parent-child unit relationship
       - missing or limited source status
+      - semantic_label_queue creation
+      - semantic_label_queue priority assignment
+      - page-furniture and sentence-fragment exclusion before semantic labeling
     forbidden:
       - registry row status
       - product archetype decision
@@ -33,8 +37,8 @@ boundary_rules:
       - final legal conclusion
   semantic_layer:
     owns:
-      - registry_subcat_relevance
-      - control_language_family
+      - registry_subcat_relevance for queued units
+      - control_language_family for queued controls
       - semantic_function
       - semantic confidence
       - semantic limitation
@@ -45,180 +49,93 @@ boundary_rules:
       - document structure changes
       - registry row status
       - final exposure finding
-      - fix or remediation route
+      - post-M9 action routing
+
+queue_rules:
+  semantic_label_queue_is_authoritative: true
+  required_priorities:
+    - P0
+    - P1
+  optional_priorities:
+    - P2
+  excluded_priorities:
+    - P3
+  required_coverage_threshold: 0.80
+  ideal_coverage_threshold: 0.90
+  instruction: >-
+    Semantic must label every queue row with priority P0 or P1 unless the row is
+    malformed. P2 rows may be labeled if model budget allows. Raw macro_unit_map
+    is not the semantic coverage source.
 
 allowed_values:
-  registry_subcat_relevance:
-    - CNS
-    - LIA
-    - HAL
-    - INF
-    - PRV
-    - BIO
-    - DEC
-    - HRM
-    - FRD
-    - TRD
-  control_language_family:
-    - FORMATION_CONTRACT
-    - ACTIVITY_SPECIFIC_DISCLOSURE
-    - DATA_PRIVACY
-    - VENDORS_TRANSFER
-    - SECURITY
-    - USE_SAFETY
-    - AGENT_AUTHORITY
-    - IP_CONTENT
-    - COMMERCIAL_LEGAL_ALLOCATION
-    - CONTACT_ROUTES
-    - INDEMNITY
-    - UNKNOWN_CONTROL_LANGUAGE
-  confidence:
-    - CLEAR
-    - PARTIAL
-    - UNCLEAR
-    - THIN
-    - REINVESTIGATE
-  unit_semantic_status:
-    - LOCKED
-    - LOCKED_WITH_LIMITATIONS
-    - REPAIR_REQUIRED
-  downstream_treatment:
-    - USE_AS_NAVIGATION
-    - REVIEW_WITH_LIMITATION
-    - DO_NOT_USE_WITHOUT_REPAIR
+  registry_subcat_relevance: [CNS, LIA, HAL, INF, PRV, BIO, DEC, HRM, FRD, TRD]
+  control_language_family: [FORMATION_CONTRACT, ACTIVITY_SPECIFIC_DISCLOSURE, DATA_PRIVACY, VENDORS_TRANSFER, SECURITY, USE_SAFETY, AGENT_AUTHORITY, IP_CONTENT, COMMERCIAL_LEGAL_ALLOCATION, CONTACT_ROUTES, INDEMNITY, UNKNOWN_CONTROL_LANGUAGE]
+  confidence: [CLEAR, PARTIAL, UNCLEAR, THIN, REINVESTIGATE]
+  unit_semantic_status: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED]
+  downstream_treatment: [USE_AS_NAVIGATION, REVIEW_WITH_LIMITATION, DO_NOT_USE_WITHOUT_REPAIR]
 
 field_derivations:
   document_labels:
-    pointer_required: document_id
     rows_required_from: legal_cartography_deterministic_map.document_map
-    fields:
-      document_id:
-        derive_from: deterministic.document_id
-        rule: Copy exactly. Never invent.
-      artifact_id:
-        derive_from: deterministic.artifact_id
-        rule: Copy exactly if present; otherwise copy document_id.
-      artifact_class_label:
-        derive_from: deterministic.artifact_class
-        rule: Copy deterministic document class. Do not reclassify unless deterministic class is UNKNOWN_LEGAL_ARTIFACT and corpus title clearly identifies the document class.
-      document_role_label:
-        derive_from: deterministic.document_role plus document title and source family
-        rule: Short plain-English role label for navigation only.
-      confidence:
-        rule: CLEAR when title/source family/class align; PARTIAL when only one signal supports the class; UNCLEAR when class remains unknown.
-      unit_semantic_status:
-        rule: LOCKED when document row is usable; LOCKED_WITH_LIMITATIONS when source is thin or class is uncertain; REPAIR_REQUIRED only for malformed or unattached row.
-      downstream_treatment:
-        rule: USE_AS_NAVIGATION for usable mapped documents; REVIEW_WITH_LIMITATION for uncertain or thin documents.
+    pointer_required: document_id
+    rule: Copy deterministic document identifiers and class labels exactly. Add only short role label, confidence, status, and downstream_treatment.
 
   unit_subcat_labels:
+    rows_required_from: legal_cartography_deterministic_map.semantic_label_queue where priority is P0 or P1
     pointer_required: unit_id
-    rows_required_from: legal_cartography_deterministic_map.macro_unit_map
-    fields:
-      unit_id:
-        derive_from: deterministic.unit_id
-        rule: Copy exactly. Never invent.
-      section_id:
-        derive_from: deterministic.section_id
-        rule: Copy exactly. Never invent.
-      document_id:
-        derive_from: deterministic.document_id
-        rule: Copy exactly. Never invent.
-      unit_type:
-        derive_from: deterministic.unit_type
-        rule: Copy deterministic structural type. Semantic layer does not change structure.
-      unit_label:
-        derive_from: deterministic.heading_label
-        rule: Copy or shorten heading label without changing meaning.
-      registry_subcat_relevance:
-        derive_from: deterministic heading label plus nearby loaded corpus text at pointer
-        rule: Assign only subcats directly indicated by the unit heading or mapped text. Empty array is allowed where no subcat is supported.
-      control_language_family:
-        derive_from: deterministic heading label plus nearby loaded corpus text at pointer
-        rule: Assign only control families directly indicated by the unit heading or mapped text. Use UNKNOWN_CONTROL_LANGUAGE only when the unit is legal/governance material but the control family cannot be classified.
-      confidence:
-        rule: CLEAR for direct heading match; PARTIAL for indirect nearby text; UNCLEAR for ambiguous labels; THIN when source text is too limited; REINVESTIGATE when pointer cannot be used.
-      unit_semantic_status:
-        rule: LOCKED when labels are supported; LOCKED_WITH_LIMITATIONS when labels are partial or thin; REPAIR_REQUIRED when required pointer is missing.
-      downstream_treatment:
-        rule: USE_AS_NAVIGATION for locked labels; REVIEW_WITH_LIMITATION for partial or thin labels; DO_NOT_USE_WITHOUT_REPAIR for malformed rows.
+    rule: Copy unit_id, section_id, document_id, unit_type, and heading_label from the queue. Add only registry_subcat_relevance, control_language_family, confidence, unit_semantic_status, downstream_treatment, and boundary_note.
 
   control_family_labels:
+    rows_required_from: legal_cartography_deterministic_map.control_language_candidate_map whose unit_id appears in required semantic_label_queue
     pointer_required: control_candidate_id
-    rows_required_from: legal_cartography_deterministic_map.control_language_candidate_map
-    fields:
-      control_candidate_id:
-        derive_from: deterministic.control_candidate_id
-        rule: Copy exactly. Never invent a control_candidate_id.
-      unit_id:
-        derive_from: deterministic.unit_id
-        rule: Copy exactly.
-      section_id:
-        derive_from: deterministic.section_id
-        rule: Copy exactly.
-      document_id:
-        derive_from: deterministic.document_id
-        rule: Copy exactly.
-      control_language_family:
-        derive_from: deterministic.control_language_family_candidate plus mapped corpus text
-        rule: Confirm deterministic candidate if supported. If unsupported, use UNKNOWN_CONTROL_LANGUAGE and explain limitation.
-      registry_subcat_relevance:
-        derive_from: confirmed control family and unit text
-        rule: Assign subcats only where the unit is relevant to that subcat. Do not infer row status.
-      confidence:
-        rule: CLEAR where heading and text align; PARTIAL where only heading supports; UNCLEAR where candidate is weak.
+    rule: Copy control_candidate_id, unit_id, section_id, and document_id exactly. Confirm or narrow the control_language_family using the queued unit and source pointer. Do not invent new control_candidate_id values.
 
   indemnity_labels:
+    rows_required_from: legal_cartography_deterministic_map.indemnity_candidate_map whose unit_id appears in required semantic_label_queue
     pointer_required: indemnity_candidate_id
-    rows_required_from: legal_cartography_deterministic_map.indemnity_candidate_map
-    rule: Label only the indemnity location and confidence. Do not decide enforceability or adequacy.
+    rule: Label only location and confidence. Do not assess adequacy.
 
   cross_reference_labels:
-    pointer_required: cross_reference_id
     rows_required_from: legal_cartography_deterministic_map.cross_document_reference_map
-    rule: Label the reference relationship and loaded/unloaded status only. Do not fetch or assume content of unloaded references.
+    pointer_required: cross_reference_id
+    rule: Label relationship and loaded/unloaded status only. Do not fetch or assume unloaded content.
 
   missing_source_labels:
-    pointer_required: missing_id
     rows_required_from: legal_cartography_deterministic_map.missing_source_map
-    rule: Interpret the missing/limited source status as a cartography limitation only. Do not convert absence into an exposure finding.
+    pointer_required: missing_id
+    rule: Treat missing/limited source rows as cartography limitations only.
+
+semantic_integrity_summary_required_fields:
+  - semantic_queue_total
+  - semantic_queue_required_total
+  - semantic_required_units_labeled
+  - semantic_required_controls_total
+  - semantic_required_controls_labeled
+  - semantic_required_coverage_ratio
+  - semantic_rows_total
+  - semantic_rows_attached_to_deterministic_ids
+  - semantic_rows_repaired_or_omitted
+  - full_text_copied
+  - new_sources_created
+  - ready_for_compiler
 
 subcat_derivation_rules:
-  CNS:
-    derive_when: Unit concerns contract formation, acceptance, consent, user assent, account terms, consumer notice, cancellation, billing disclosure, or dark-pattern-adjacent terms.
-    do_not_derive_when: Unit only mentions general product marketing without legal or governance language.
-  LIA:
-    derive_when: Unit concerns liability limits, warranty disclaimers, indemnity, damages exclusion, allocation of responsibility, governing law, jurisdiction, or dispute terms.
-    do_not_derive_when: Unit only gives support contact details without allocation language.
-  HAL:
-    derive_when: Unit concerns output accuracy, reliance, no professional advice, generated content limits, hallucination-style limitations, or user responsibility for outputs.
-    do_not_derive_when: Unit only concerns generic website use.
-  INF:
-    derive_when: Unit concerns ownership, IP rights, copyright, licenses, user content, output rights, training use, scraping, open-source notices, or takedown process.
-    do_not_derive_when: Unit only names a product feature without IP treatment.
-  PRV:
-    derive_when: Unit concerns personal data, privacy notice, retention, deletion, processing purposes, transfer, subprocessors, security of data, breach notice, or data subject requests.
-    do_not_derive_when: Unit concerns non-personal commercial terms only.
-  BIO:
-    derive_when: Unit concerns biometric data, voice identity, face identity, speaker recognition, sensitive identifiers, consent for biometric capture, retention, or deletion.
-    do_not_derive_when: Unit only mentions audio or image features without identity or biometric governance.
-  DEC:
-    derive_when: Unit concerns automated decisions, human review, impact assessment, high-risk use, eligibility, employment, credit, healthcare, education, or material decision workflows.
-    do_not_derive_when: Unit only describes generic automation without decision impact.
-  HRM:
-    derive_when: Unit concerns minors, children, vulnerable users, mental health, emotional reliance, wellbeing, companion-like use, safety escalation, or harmful interactions.
-    do_not_derive_when: Unit only states age access without safety or wellbeing context.
-  FRD:
-    derive_when: Unit concerns misrepresentation, fabricated evidence, authenticity, disclosure of AI-generated content, impersonation, fraud prevention, deceptive use, or claims substantiation.
-    do_not_derive_when: Unit only states generic acceptable use without deception or authenticity language.
-  TRD:
-    derive_when: Unit concerns trading, pricing, investment, financial transactions, market manipulation, order execution, or automated commercial transaction decisions.
-    do_not_derive_when: Unit only concerns ordinary subscription billing.
+  CNS: contract formation, user assent, consumer notice, account terms, cancellation, billing disclosure.
+  LIA: liability allocation, warranty, disclaimer, indemnity, damages, governing law, jurisdiction, dispute terms.
+  HAL: output accuracy, reliance, generated-content limitations, no-advice wording, user responsibility for outputs.
+  INF: ownership, IP rights, copyright, licenses, user content, output rights, training use, scraping, takedown.
+  PRV: personal data, privacy notice, retention, deletion, processing purpose, transfer, subprocessors, security, data requests.
+  BIO: biometric or identity-specific audio/visual identifier governance.
+  DEC: automated decisioning, human review, impact assessment, eligibility or material decision workflow.
+  HRM: minors, wellbeing, vulnerable-user, safety escalation, or harmful-interaction governance.
+  FRD: authenticity, misrepresentation, impersonation, deceptive use, AI-generated content disclosure.
+  TRD: trading, pricing, investment, financial transactions, market manipulation, order execution.
 
 validation_rules:
   - Semantic rows must attach to deterministic IDs.
   - Semantic layer must not create source URLs or source statuses.
-  - Semantic layer must not output fix-route fields.
-  - Empty subcat array is allowed when no subcat is supported.
+  - Semantic layer must not output post-M9 action routing fields.
+  - Empty subcat array is allowed only when no subcat is supported for a queued material unit.
   - Missing or limited source rows must remain limitations, not exposure findings.
   - Final row status remains owned by M11, not M9.
+  - ready_for_compiler may be true only when semantic_required_coverage_ratio is at least 0.80.
