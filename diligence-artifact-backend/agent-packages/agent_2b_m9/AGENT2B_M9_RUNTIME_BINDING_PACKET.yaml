@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v2_agent2b_m9_hybrid_internal_layers
+runtime_contract_version: v3_agent2b_m9_canonical_semantic_registry
 active_agent_id: agent_2b_m9
 active_agent_name: Interface Legal Cartography Agent
 active_phase_scope: M9_ONLY
@@ -16,14 +16,19 @@ structure_authority:
   current_agent_identity_preserved: true
   current_input_protocol_preserved: true
   current_downstream_final_artifact_preserved: true
+  agent_package_is_semantic_authority: true
+  semantic_sidecar_prompt_active: false
 
 allowed_modules:
   - M9_LEGAL_CARTOGRAPHY
 
 internal_execution_layers:
-  - M9_A_DETERMINISTIC_LEGAL_MAP
-  - M9_B_SEMANTIC_CARTOGRAPHY_PROFILE
-  - M9_C_DETERMINISTIC_COMPILER
+  - M9_DETERMINISTIC_LEGAL_STACK_INDEX
+  - M9_CANONICAL_SEMANTIC_LABELING
+  - M9_DETERMINISTIC_COMPILER
+
+reference_documents:
+  - M9_FIELD_DERIVATION_REGISTRY.yaml
 
 read_artifacts:
   - source_discovery_handoff
@@ -78,6 +83,9 @@ forbidden_outputs:
   - enforceability_assessment
   - risk_conclusion
   - registry_evaluation
+  - registry_row_status
+  - fix_route
+  - remediation_route
 
 backend_permission_profile: agent_2b_m9
 validator_profile: agent_2b_m9_legal_cartography_validator
