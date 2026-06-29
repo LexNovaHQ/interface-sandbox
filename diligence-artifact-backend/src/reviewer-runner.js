@@ -28,13 +28,8 @@ const VALIDATION_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object
 const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "limited", "omission", "absent", "insufficient public", "unknown_not_searched", "standalone_source_absent", "source_rejected_or_failed", "access_failed", "gated", "deferred", "coverage", "source-ref row missing source-url", "bad source syntax", "must not be empty", "missing source_corpus_status", "missing from document_coverage_index", "invalid status", "invalid source_corpus_status", "invalid artifact_class", "invalid source_type", "invalid lock_status", "forbidden loose status", "forbidden artifact_class drift", "ABSENT_AFTER_TARGETED_PROBE is not a valid source_corpus_status"]);
 const M9_HYBRID_SEMANTIC_PROMPT_FILES = Object.freeze([
   "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md",
-  "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
   "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
-  "agent-packages/agent_2b_m9/M9_STEP1_OUTPUT_CONTRACT_LOCK.md",
-  "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
-  "agent-packages/agent_2b_m9/M9_B_SEMANTIC_CARTOGRAPHY.md",
-  "agent-packages/agent_2b_m9/00_VALIDATOR_RULES_INTEGRATED.md",
-  "agent-packages/agent_2b_m9/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md"
+  "agent-packages/agent_2b_m9/M9_B_SEMANTIC_CARTOGRAPHY.md"
 ]);
 const ART = Object.freeze({
   legalIndex: "legal_cartography_index",
