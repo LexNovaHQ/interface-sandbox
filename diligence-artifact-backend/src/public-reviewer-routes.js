@@ -18,11 +18,10 @@ const jobCreateWithDocumentsPaths = ["/reviewer/jobs-with-documents", "/diligenc
 const jobReadPaths = ["/reviewer/jobs/:run_id", "/diligence-system/jobs/:run_id"];
 const jobAdvancePaths = ["/reviewer/jobs/:run_id/advance", "/diligence-system/jobs/:run_id/advance"];
 const reportPaths = ["/reviewer/report/:run_id", "/diligence-system/report/:run_id"];
+const qualifiedReviewPaths = ["/reviewer/qualified-review/:run_id", "/diligence-system/qualified-review/:run_id"];
 
 publicReviewerRouter.use((req, res, next) => {
-  if (!config.publicReviewerEnabled) {
-    return res.status(404).json({ ok: false, error: "PUBLIC_DILIGENCE_SYSTEM_DISABLED", message: "Public diligence-system routes are disabled." });
-  }
+  if (!config.publicReviewerEnabled) return res.status(404).json({ ok: false, error: "PUBLIC_DILIGENCE_SYSTEM_DISABLED", message: "Public diligence-system routes are disabled." });
   return next();
 });
 
@@ -35,32 +34,11 @@ publicReviewerRouter.post(jobCreatePaths, rateLimit("create"), async (req, res) 
     const target = body.target || hostFromUrl(targetUrl);
     const runId = createRunId(target);
     const folder = await createRunFolder({ run_id: runId });
-
-    const run = {
-      ok: true,
-      run_id: runId,
-      target,
-      root_url: targetUrl,
-      source_mode: "url",
-      status: "CREATED",
-      current_phase: "AGENT_1A_URL_MANIFEST",
-      runner_mode: "ASYNC_NODE_RUNNER",
-      runner_state: "IDLE",
-      created_by: "public-diligence-system",
-      notes: body.notes || "",
-      drive_folder_id: folder.drive_folder_id,
-      drive_folder_link: folder.drive_folder_link,
-      final_report_url: "",
-      created_at: createdAt,
-      updated_at: createdAt,
-      isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden."
-    };
-
+    const run = { ok: true, run_id: runId, target, root_url: targetUrl, source_mode: "url", status: "CREATED", current_phase: "AGENT_1A_URL_MANIFEST", runner_mode: "ASYNC_NODE_RUNNER", runner_state: "IDLE", created_by: "public-diligence-system", notes: body.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
     await createRunRecord(run);
     const sheetRow = await appendRunDashboardRow(run);
     const saved = await updateRunRecord(runId, { sheet_row_number: sheetRow });
     await updateRunDashboardRow(saved);
-
     return res.status(201).json(publicRunResponse(saved));
   } catch (error) {
     return sendError(res, error);
@@ -76,33 +54,13 @@ publicReviewerRouter.post(jobCreateWithDocumentsPaths, rateLimit("create"), asyn
     const target = intake.fields.target || hostFromUrl(targetUrl);
     const runId = createRunId(target);
     const folder = await createRunFolder({ run_id: runId });
-    const baseRun = {
-      ok: true,
-      run_id: runId,
-      target,
-      root_url: targetUrl,
-      source_mode: intake.files.length ? "url_plus_documents" : "url",
-      status: "CREATED",
-      current_phase: "AGENT_1A_URL_MANIFEST",
-      runner_mode: "ASYNC_NODE_RUNNER",
-      runner_state: "IDLE",
-      created_by: "public-diligence-system",
-      notes: intake.fields.notes || "",
-      drive_folder_id: folder.drive_folder_id,
-      drive_folder_link: folder.drive_folder_link,
-      final_report_url: "",
-      created_at: createdAt,
-      updated_at: createdAt,
-      isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden."
-    };
+    const baseRun = { ok: true, run_id: runId, target, root_url: targetUrl, source_mode: intake.files.length ? "url_plus_documents" : "url", status: "CREATED", current_phase: "AGENT_1A_URL_MANIFEST", runner_mode: "ASYNC_NODE_RUNNER", runner_state: "IDLE", created_by: "public-diligence-system", notes: intake.fields.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
     const uploaded = await ingestUploadedSourceDocuments({ run: baseRun, files: intake.files, drive_folder_id: folder.drive_folder_id });
     const run = { ...baseRun, ...uploaded, source_mode: uploaded.source_mode };
-
     await createRunRecord(run);
     const sheetRow = await appendRunDashboardRow(run);
     const saved = await updateRunRecord(runId, { sheet_row_number: sheetRow });
     await updateRunDashboardRow(saved);
-
     return res.status(201).json(publicRunResponse(saved));
   } catch (error) {
     return sendError(res, error);
@@ -124,12 +82,7 @@ publicReviewerRouter.post(jobAdvancePaths, rateLimit("advance"), async (req, res
   try {
     assertRunId(req.params.run_id);
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
-    const result = await requestReviewerRunAdvance({
-      run_id: req.params.run_id,
-      requested_by: "public-diligence-system",
-      base_url: baseUrlFromRequest(req),
-      auto_continue: body.auto_continue
-    });
+    const result = await requestReviewerRunAdvance({ run_id: req.params.run_id, requested_by: "public-diligence-system", base_url: baseUrlFromRequest(req), auto_continue: body.auto_continue });
     return res.status(result.queued ? 202 : 200).json(publicAsyncResponse(result));
   } catch (error) {
     return sendError(res, error);
@@ -140,9 +93,7 @@ publicReviewerRouter.get(reportPaths, rateLimit("read"), async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
-    if (run.status !== "COMPLETE" && run.current_phase !== "COMPLETE") {
-      return res.status(409).json({ ok: false, error: "REPORT_NOT_READY", message: "Renderer payload is not ready for this run." });
-    }
+    if (run.status !== "COMPLETE" && run.current_phase !== "COMPLETE") return res.status(409).json({ ok: false, error: "REPORT_NOT_READY", message: "Renderer payload is not ready for this run." });
     const meta = await getArtifactMetadata(req.params.run_id, "renderer_payload");
     const rendererPayload = await readJsonArtifactFromDrive(meta.drive_file_id);
     return res.json({ ok: true, run_id: req.params.run_id, renderer_payload: rendererPayload });
@@ -151,19 +102,20 @@ publicReviewerRouter.get(reportPaths, rateLimit("read"), async (req, res) => {
   }
 });
 
-function rateLimit(kind) {
-  return (req, res, next) => {
-    const key = `${kind}:${clientIp(req)}`;
-    const now = Date.now();
-    const existing = buckets.get(key) || { count: 0, resetAt: now + windowMs };
-    const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing;
-    current.count += 1;
-    buckets.set(key, current);
-    if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public diligence-system ${kind} limit reached.` });
-    return next();
-  };
-}
+publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, res) => {
+  try {
+    assertRunId(req.params.run_id);
+    const run = await getRunRecord(req.params.run_id);
+    if (run.status !== "COMPLETE" && run.current_phase !== "COMPLETE") return res.status(409).json({ ok: false, error: "QUALIFIED_REVIEW_NOT_READY", message: "Qualified Review handoff is not ready for this run." });
+    const meta = await getArtifactMetadata(req.params.run_id, "qualified_review_handoff");
+    const handoff = await readJsonArtifactFromDrive(meta.drive_file_id);
+    return res.json({ ok: true, run_id: req.params.run_id, qualified_review_handoff: handoff, public_label: "Qualified Review" });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
 
+function rateLimit(kind) { return (req, res, next) => { const key = `${kind}:${clientIp(req)}`; const now = Date.now(); const existing = buckets.get(key) || { count: 0, resetAt: now + windowMs }; const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing; current.count += 1; buckets.set(key, current); if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public diligence-system ${kind} limit reached.` }); return next(); }; }
 function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
 function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, source_mode: run.source_mode || "url", uploaded_source_documents: run.uploaded_source_documents || { document_count: 0 }, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
 function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_state: result.runner_state, poll: `/public/diligence-system/jobs/${result.run_id}` }; }
