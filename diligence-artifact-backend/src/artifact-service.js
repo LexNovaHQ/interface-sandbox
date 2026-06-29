@@ -5,20 +5,13 @@ import { assertCanReadArtifact, assertCanWriteArtifact } from "./permissions.js"
 import { saveArtifactSchema, lockPhaseSchema, parseOrThrow } from "./schemas.js";
 import { saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./drive.js";
 import { updateRunDashboardRow } from "./sheets.js";
-import {
-  getRunRecord,
-  updateRunRecord,
-  getNextArtifactVersion,
-  saveArtifactMetadata,
-  getArtifactMetadata,
-  listArtifactMetadata,
-  logEvent
-} from "./firestore.js";
+import { getRunRecord, updateRunRecord, getNextArtifactVersion, saveArtifactMetadata, getArtifactMetadata, listArtifactMetadata, logEvent } from "./firestore.js";
 import { getRequiredWritesForPhase } from "./phase-contracts.js";
 import { mergeUploadedDocumentSourcesIntoArtifact } from "./document-source-ingestor.js";
 
 const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const ACCEPTED_PHASE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
+const M11_FORENSIC_CONTRACT = "M11_ROW_LEVEL_TRACE_CONTRACT_V1";
 
 export async function saveArtifact(input) {
   requireRuntimeConfig();
@@ -28,122 +21,61 @@ export async function saveArtifact(input) {
   assertKnownArtifactName(parsed.artifact_name);
   assertCanWriteArtifact(parsed.agent_id, parsed.artifact_name);
   assertPhaseCanWriteArtifact(parsed.phase, parsed.artifact_name);
-
   await assertArtifactSaveOrder(parsed);
 
   const run = await getRunRecord(parsed.run_id);
   const version = await getNextArtifactVersion(parsed.run_id, parsed.artifact_name);
-  const driveResult = await saveJsonArtifactToDrive({
-    run_id: parsed.run_id,
-    artifact_name: parsed.artifact_name,
-    version,
-    drive_folder_id: run.drive_folder_id,
-    artifact: parsed.artifact
-  });
+  const driveResult = await saveJsonArtifactToDrive({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, drive_folder_id: run.drive_folder_id, artifact: parsed.artifact });
+  const meta = await saveArtifactMetadata({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, phase: parsed.phase, agent_id: parsed.agent_id, lock_status: parsed.lock_status, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
 
-  const meta = await saveArtifactMetadata({
-    run_id: parsed.run_id,
-    artifact_name: parsed.artifact_name,
-    phase: parsed.phase,
-    agent_id: parsed.agent_id,
-    lock_status: parsed.lock_status,
-    version,
-    drive_file_id: driveResult.drive_file_id,
-    drive_web_view_link: driveResult.drive_web_view_link,
-    drive_folder_id: run.drive_folder_id,
-    artifact_size_bytes: driveResult.artifact_size_bytes
-  });
+  await updateRunRecord(parsed.run_id, { current_phase: parsed.phase, status: parsed.lock_status });
+  await logEvent({ run_id: parsed.run_id, event_type: "ARTIFACT_SAVED", actor: parsed.agent_id, payload: { phase: parsed.phase, artifact_name: parsed.artifact_name, version, lock_status: parsed.lock_status, save_order_gate: "PASS" } });
 
-  await updateRunRecord(parsed.run_id, {
-    current_phase: parsed.phase,
-    status: parsed.lock_status
-  });
-
-  await logEvent({
-    run_id: parsed.run_id,
-    event_type: "ARTIFACT_SAVED",
-    actor: parsed.agent_id,
-    payload: {
-      phase: parsed.phase,
-      artifact_name: parsed.artifact_name,
-      version,
-      lock_status: parsed.lock_status,
-      save_order_gate: "PASS"
-    }
-  });
-
-  return {
-    ok: true,
-    run_id: parsed.run_id,
-    artifact_name: parsed.artifact_name,
-    version,
-    lock_status: parsed.lock_status,
-    drive_file_id: meta.drive_file_id,
-    drive_web_view_link: meta.drive_web_view_link,
-    receipt: `${parsed.artifact_name}_v${version} saved for ${parsed.run_id}`
-  };
+  return { ok: true, run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, lock_status: parsed.lock_status, drive_file_id: meta.drive_file_id, drive_web_view_link: meta.drive_web_view_link, receipt: `${parsed.artifact_name}_v${version} saved for ${parsed.run_id}` };
 }
 
 async function assertArtifactSaveOrder(parsed) {
   const { run_id, phase, artifact_name } = parsed;
-
-  if (artifact_name === "target_profile_forensics") {
-    await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_profile_forensics_requires_target_profile");
-  }
-
+  if (artifact_name === "target_profile_forensics") await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_profile_forensics_requires_target_profile");
   if (artifact_name === "target_feature_profile") {
     await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_feature_profile_requires_target_profile");
     await requireSavedArtifact(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_requires_target_profile_forensics");
     await requirePhaseAccepted(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_requires_locked_m7");
   }
-
   if (artifact_name === "target_feature_profile_forensics") {
     await requireSavedArtifact(run_id, "target_profile", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_target_profile");
     await requireSavedArtifact(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_target_profile_forensics");
     await requirePhaseAccepted(run_id, "target_profile_forensics", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_locked_m7");
     await requireSavedArtifact(run_id, "target_feature_profile", "SAVE_ORDER_BLOCKED:target_feature_profile_forensics_requires_target_feature_profile");
   }
-
   if (artifact_name === "data_provenance_profile") {
     await requireSavedArtifact(run_id, "target_feature_profile", "SAVE_ORDER_BLOCKED:data_provenance_requires_target_feature_profile");
     await requireSavedArtifact(run_id, "target_feature_profile_forensics", "SAVE_ORDER_BLOCKED:data_provenance_requires_target_feature_profile_forensics");
     await requirePhaseAccepted(run_id, "target_feature_profile_forensics", "SAVE_ORDER_BLOCKED:data_provenance_requires_locked_m8");
   }
-
   if (artifact_name === "data_provenance_profile_forensics") {
     await requireSavedArtifact(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:data_provenance_forensics_requires_data_provenance_profile");
     await requirePhaseAccepted(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:data_provenance_forensics_requires_locked_m10_material");
   }
-
   if (artifact_name === "exposure_registry_route_plan") {
     await requireSavedArtifact(run_id, "data_provenance_profile", "SAVE_ORDER_BLOCKED:m11_route_plan_requires_data_provenance_profile");
     await requireSavedArtifact(run_id, "data_provenance_profile_forensics", "SAVE_ORDER_BLOCKED:m11_route_plan_requires_data_provenance_profile_forensics");
     await requirePhaseAccepted(run_id, "data_provenance_profile_forensics", "SAVE_ORDER_BLOCKED:m11_route_plan_requires_locked_m10_forensics");
   }
-
-  if (M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) {
-    await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_batch_validation_requires_route_plan");
-  }
-
+  if (M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_batch_validation_requires_route_plan");
   if (M11_BATCH_ARTIFACT_PATTERN.test(artifact_name)) {
     await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_batch_requires_route_plan");
     await requireSavedArtifact(run_id, pairedBatchValidationName(artifact_name), "SAVE_ORDER_BLOCKED:m11_batch_requires_paired_m12_batch_validation");
   }
-
   if (artifact_name === "exposure_registry_workpad_98") {
     await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_workpad_requires_route_plan");
     await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:m11_workpad_requires_all_batches_and_validations");
   }
-
-  if (artifact_name === "exposure_registry_controlled_profile") {
-    await requireSavedArtifact(run_id, "exposure_registry_workpad_98", "SAVE_ORDER_BLOCKED:controlled_profile_requires_workpad_98");
-  }
-
+  if (artifact_name === "exposure_registry_controlled_profile") await requireSavedArtifact(run_id, "exposure_registry_workpad_98", "SAVE_ORDER_BLOCKED:controlled_profile_requires_workpad_98");
   if (artifact_name === "exposure_registry_triggered_profile") {
     await requireSavedArtifact(run_id, "exposure_registry_workpad_98", "SAVE_ORDER_BLOCKED:triggered_profile_requires_workpad_98");
     await requireSavedArtifact(run_id, "exposure_registry_controlled_profile", "SAVE_ORDER_BLOCKED:triggered_profile_requires_controlled_profile_first");
   }
-
   if (artifact_name === "exposure_registry_profile_forensics") {
     await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:m11_forensics_requires_route_plan");
     await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:m11_forensics_requires_all_batches_and_validations");
@@ -151,7 +83,6 @@ async function assertArtifactSaveOrder(parsed) {
     await requireSavedArtifact(run_id, "exposure_registry_controlled_profile", "SAVE_ORDER_BLOCKED:m11_forensics_requires_controlled_profile");
     await requireSavedArtifact(run_id, "exposure_registry_triggered_profile", "SAVE_ORDER_BLOCKED:m11_forensics_requires_triggered_profile");
   }
-
   if (artifact_name === "challenge_gate") {
     await requireSavedArtifact(run_id, "exposure_registry_route_plan", "SAVE_ORDER_BLOCKED:challenge_gate_requires_route_plan");
     await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:challenge_gate_requires_all_batches_and_validations");
@@ -161,14 +92,8 @@ async function assertArtifactSaveOrder(parsed) {
     await requireSavedArtifact(run_id, "exposure_registry_profile_forensics", "SAVE_ORDER_BLOCKED:challenge_gate_requires_m11_forensics");
     await requirePhaseAccepted(run_id, "exposure_registry_profile_forensics", "SAVE_ORDER_BLOCKED:challenge_gate_requires_locked_m11_forensics");
   }
-
-  if (phase === "M7_TARGET_PROFILE" && !["target_profile", "target_profile_forensics"].includes(artifact_name)) {
-    throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
-  }
-
-  if (phase === "M8_TARGET_FEATURE_PROFILE" && !["target_feature_profile", "target_feature_profile_forensics"].includes(artifact_name)) {
-    throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
-  }
+  if (phase === "M7_TARGET_PROFILE" && !["target_profile", "target_profile_forensics"].includes(artifact_name)) throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
+  if (phase === "M8_TARGET_FEATURE_PROFILE" && !["target_feature_profile", "target_feature_profile_forensics"].includes(artifact_name)) throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifact_name}`);
 }
 
 async function requireAllPlannedM11BatchesSaved(runId, message) {
@@ -181,90 +106,57 @@ async function requireAllPlannedM11BatchesSaved(runId, message) {
     await requireSavedArtifact(runId, `exposure_registry_batch__${batch.batch_id}`, `${message}:missing_batch:${batch.batch_id}`);
   }
 }
-
-function pairedBatchValidationName(batchArtifactName) {
-  return batchArtifactName.replace(/^exposure_registry_batch__/, "exposure_registry_batch_validation__");
-}
-
-async function readInternalArtifactPayload(runId, artifactName) {
-  const meta = await getArtifactMetadata(runId, artifactName);
-  return readJsonArtifactFromDrive(meta.drive_file_id);
-}
+function pairedBatchValidationName(batchArtifactName) { return batchArtifactName.replace(/^exposure_registry_batch__/, "exposure_registry_batch_validation__"); }
+async function readInternalArtifactPayload(runId, artifactName) { const meta = await getArtifactMetadata(runId, artifactName); return readJsonArtifactFromDrive(meta.drive_file_id); }
 
 async function requireSavedArtifact(runId, artifactName, message) {
   try {
-    await getArtifactMetadata(runId, artifactName);
+    const meta = await getArtifactMetadata(runId, artifactName);
+    if (artifactName === "exposure_registry_profile_forensics") await assertM11ForensicsNotStale(runId, meta, message);
   } catch (_error) {
     throw new Error(message);
   }
 }
-
 async function requirePhaseAccepted(runId, artifactName, message) {
   let meta;
   try {
     meta = await getArtifactMetadata(runId, artifactName);
+    if (artifactName === "exposure_registry_profile_forensics") await assertM11ForensicsNotStale(runId, meta, message);
   } catch (_error) {
     throw new Error(message);
   }
-  if (!ACCEPTED_PHASE_STATUSES.has(meta.lock_status)) {
-    throw new Error(`${message}:status:${meta.lock_status || "missing"}`);
-  }
+  if (!ACCEPTED_PHASE_STATUSES.has(meta.lock_status)) throw new Error(`${message}:status:${meta.lock_status || "missing"}`);
 }
 
 export async function readArtifact({ run_id, artifact_name, agent_id = "operator" }) {
   assertRunId(run_id);
   assertKnownArtifactName(artifact_name);
   assertCanReadArtifact(agent_id, artifact_name);
-
   const run = await getRunRecord(run_id);
   const meta = await getArtifactMetadata(run_id, artifact_name);
   const rawArtifact = await readJsonArtifactFromDrive(meta.drive_file_id);
   const artifact = await mergeUploadedDocumentSourcesIntoArtifact({ run, artifactName: artifact_name, artifact: rawArtifact });
-
-  return {
-    ok: true,
-    run_id,
-    artifact_name,
-    version: meta.latest_version || meta.version,
-    lock_status: meta.lock_status,
-    artifact
-  };
+  const lock_status = artifact_name === "exposure_registry_profile_forensics" && isStaleM11ForensicsArtifact(artifact) ? "REPAIR_REQUIRED" : meta.lock_status;
+  return { ok: true, run_id, artifact_name, version: meta.latest_version || meta.version, lock_status, artifact };
 }
-
-export async function readArtifactPayload({ run_id, artifact_name, agent_id = "operator" }) {
-  const result = await readArtifact({ run_id, artifact_name, agent_id });
-  return result.artifact;
-}
-
-export async function listArtifacts(runId) {
-  assertRunId(runId);
-  return listArtifactMetadata(runId);
-}
-
-export async function assertRequiredArtifactsExist(runId, artifactNames) {
-  for (const artifactName of artifactNames) {
-    if (String(artifactName || "").includes("{GROUP}")) continue;
-    await getArtifactMetadata(runId, artifactName);
-  }
-}
+export async function readArtifactPayload({ run_id, artifact_name, agent_id = "operator" }) { const result = await readArtifact({ run_id, artifact_name, agent_id }); return result.artifact; }
+export async function listArtifacts(runId) { assertRunId(runId); return listArtifactMetadata(runId); }
+export async function assertRequiredArtifactsExist(runId, artifactNames) { for (const artifactName of artifactNames) { if (String(artifactName || "").includes("{GROUP}")) continue; await getArtifactMetadata(runId, artifactName); } }
 
 export async function lockPhase(input) {
   const body = parseOrThrow(lockPhaseSchema, input);
   assertRunId(body.run_id);
   assertKnownPhase(body.phase);
-
   if (body.phase === "M8_TARGET_FEATURE_PROFILE") {
     await requireSavedArtifact(body.run_id, "target_profile", "PHASE_LOCK_BLOCKED:M8_requires_target_profile");
     await requireSavedArtifact(body.run_id, "target_profile_forensics", "PHASE_LOCK_BLOCKED:M8_requires_target_profile_forensics");
     await requirePhaseAccepted(body.run_id, "target_profile_forensics", "PHASE_LOCK_BLOCKED:M8_requires_locked_m7");
   }
-
   if (body.phase === "M10") {
     await requireSavedArtifact(body.run_id, "target_feature_profile", "PHASE_LOCK_BLOCKED:M10_requires_target_feature_profile");
     await requireSavedArtifact(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_requires_target_feature_profile_forensics");
     await requirePhaseAccepted(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_requires_locked_m8");
   }
-
   if (body.phase === "M10_FORENSICS") {
     await requireSavedArtifact(body.run_id, "target_feature_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_target_feature_profile");
     await requireSavedArtifact(body.run_id, "target_feature_profile_forensics", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_target_feature_profile_forensics");
@@ -272,7 +164,6 @@ export async function lockPhase(input) {
     await requireSavedArtifact(body.run_id, "data_provenance_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_data_provenance_profile");
     await requirePhaseAccepted(body.run_id, "data_provenance_profile", "PHASE_LOCK_BLOCKED:M10_FORENSICS_requires_locked_m10_material");
   }
-
   if (body.phase === "M11" && LOCK_ADVANCE_STATUSES.has(body.status)) {
     await requireSavedArtifact(body.run_id, "exposure_registry_route_plan", "PHASE_LOCK_BLOCKED:M11_requires_route_plan");
     await requireAllPlannedM11BatchesSaved(body.run_id, "PHASE_LOCK_BLOCKED:M11_requires_all_batches_and_validations");
@@ -280,8 +171,8 @@ export async function lockPhase(input) {
     await requireSavedArtifact(body.run_id, "exposure_registry_controlled_profile", "PHASE_LOCK_BLOCKED:M11_requires_controlled_profile");
     await requireSavedArtifact(body.run_id, "exposure_registry_triggered_profile", "PHASE_LOCK_BLOCKED:M11_requires_triggered_profile");
     await requireSavedArtifact(body.run_id, "exposure_registry_profile_forensics", "PHASE_LOCK_BLOCKED:M11_requires_forensics");
+    await requirePhaseAccepted(body.run_id, "exposure_registry_profile_forensics", "PHASE_LOCK_BLOCKED:M11_requires_locked_forensics");
   }
-
   if (body.phase === "M12" && LOCK_ADVANCE_STATUSES.has(body.status)) {
     await requireSavedArtifact(body.run_id, "exposure_registry_route_plan", "PHASE_LOCK_BLOCKED:M12_requires_route_plan");
     await requireAllPlannedM11BatchesSaved(body.run_id, "PHASE_LOCK_BLOCKED:M12_requires_all_batches_and_validations");
@@ -292,47 +183,25 @@ export async function lockPhase(input) {
     await requirePhaseAccepted(body.run_id, "exposure_registry_profile_forensics", "PHASE_LOCK_BLOCKED:M12_requires_locked_m11_forensics");
     await requireSavedArtifact(body.run_id, "challenge_gate", "PHASE_LOCK_BLOCKED:M12_requires_challenge_gate");
   }
-
-  if (LOCK_ADVANCE_STATUSES.has(body.status) && body.phase !== "COMPLETE") {
-    await assertRequiredArtifactsExist(body.run_id, getRequiredWritesForPhase(body.phase));
-  }
-
+  if (LOCK_ADVANCE_STATUSES.has(body.status) && body.phase !== "COMPLETE") await assertRequiredArtifactsExist(body.run_id, getRequiredWritesForPhase(body.phase));
   const existing = await getRunRecord(body.run_id);
-  const patch = {
-    current_phase: body.next_phase || body.phase,
-    status: body.status,
-    final_report_url: body.final_report_url || existing.final_report_url || ""
-  };
-
+  const patch = { current_phase: body.next_phase || body.phase, status: body.status, final_report_url: body.final_report_url || existing.final_report_url || "" };
   const updated = await updateRunRecord(body.run_id, patch);
   await updateRunDashboardRow(updated);
-  await logEvent({
-    run_id: body.run_id,
-    event_type: "PHASE_LOCKED",
-    actor: body.agent_id,
-    payload: {
-      phase: body.phase,
-      status: body.status,
-      next_phase: body.next_phase || null
-    }
-  });
-
-  return {
-    ok: true,
-    run_id: body.run_id,
-    phase: body.phase,
-    status: body.status,
-    next_phase: body.next_phase || null
-  };
+  await logEvent({ run_id: body.run_id, event_type: "PHASE_LOCKED", actor: body.agent_id, payload: { phase: body.phase, status: body.status, next_phase: body.next_phase || null } });
+  return { ok: true, run_id: body.run_id, phase: body.phase, status: body.status, next_phase: body.next_phase || null };
 }
 
-export function buildReportUrl(runId) {
-  const base = config.reviewerPublicBaseUrl || config.rendererBaseUrl || "";
-  if (!base) return "";
-  const clean = base.replace(/\/$/, "");
-  return `${clean}/interface-diligence/diligence-system/report.html?run_id=${encodeURIComponent(runId)}`;
+async function assertM11ForensicsNotStale(runId, meta, message) {
+  const artifact = await readJsonArtifactFromDrive(meta.drive_file_id);
+  if (isStaleM11ForensicsArtifact(artifact)) {
+    await logEvent({ run_id: runId, event_type: "STALE_M11_FORENSICS_REJECTED", actor: "artifact-service", payload: { artifact_name: "exposure_registry_profile_forensics", version: meta.latest_version || meta.version, reason: "missing deterministic forensic trace contract" } });
+    throw new Error(`${message}:stale_m11_forensics`);
+  }
 }
-
-export function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) {
-  return { run_id, phase, agent_id, artifact_name, lock_status, artifact };
+function isStaleM11ForensicsArtifact(artifact) {
+  const root = artifact?.exposure_registry_profile_forensics || artifact || {};
+  return root.forensic_contract?.contract_name !== M11_FORENSIC_CONTRACT || root.forensic_contract?.model_generated_forensics_allowed !== false || !Array.isArray(root.forensic_trace_index) || !Array.isArray(root.material_profile_trace_index) || root.forensic_boundary?.semantic_forensic_profile_retired !== true;
 }
+export function buildReportUrl(runId) { const base = config.reviewerPublicBaseUrl || config.rendererBaseUrl || ""; if (!base) return ""; const clean = base.replace(/\/$/, ""); return `${clean}/interface-diligence/diligence-system/report.html?run_id=${encodeURIComponent(runId)}`; }
+export function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) { return { run_id, phase, agent_id, artifact_name, lock_status, artifact }; }
