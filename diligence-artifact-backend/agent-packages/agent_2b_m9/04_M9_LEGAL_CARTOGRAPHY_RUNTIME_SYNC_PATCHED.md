@@ -1,29 +1,27 @@
 # MODULE IX — LEGAL / GOVERNANCE CARTOGRAPHY INDEX
 
-## Current System Patch — Agent 2B / M9 Hybrid Upgrade
+## Current System Patch — Agent 2B / M9
 
 This module is active only as `agent_2b_m9`.
 
 M6 is executed by Agent 2A before this module. M9 must not execute M6 and must not emit `source_discovery_handoff`.
 
-Agent identity, input protocol, and downstream final artifact are preserved.
+The `agent_2b_m9` package is the sole prompt authority for M9 semantic instructions. No sidecar semantic prompt file is active.
 
 ## M9 Purpose
 
-M9 is the Legal / Governance Cartography Profile.
-
-It is a public legal/governance/control-document navigation map.
+M9 is a public legal/governance cartography index.
 
 It answers:
 
 1. what legal/governance documents exist;
 2. where each document or artifact is located;
-3. which macro units exist inside those documents;
-4. which annexures, schedules, exhibits, addenda, appendices, notices, or incorporated policies appear;
-5. where control-language appears;
-6. what legal/governance items are missing, gated, thin, inaccessible, referenced but not fetched, or absent from public material.
+3. which sections, subsections, clause groups, annexures, schedules, exhibits, addenda, appendices, notices, or incorporated policies exist;
+4. where candidate control-language appears;
+5. what legal/governance items are missing, gated, thin, inaccessible, referenced but not fetched, or absent from public material;
+6. which mapped units carry semantic subcat/control-family relevance for downstream use.
 
-M9 does not decide clause adequacy, enforceability, compliance, legal sufficiency, registry-row status, redline needs, or final partner assessment.
+M9 does not decide clause adequacy, enforceability, compliance, legal sufficiency, registry-row status, exposure status, redline need, or final assessment.
 
 ## Input Protocol — Preserved
 
@@ -39,21 +37,122 @@ M9 must use only the runtime packet artifacts supplied to M9:
 
 M9 must not browse, crawl, search, fetch new URLs, infer private documents, or create downstream profile substance.
 
-## Hybrid Execution Steps
+## Reference Registry
 
-M9 now has three internal layers:
+M9 semantic derivation must follow:
 
-1. `M9_A_DETERMINISTIC_LEGAL_MAP` creates `legal_cartography_deterministic_map`.
-2. `M9_B_SEMANTIC_CARTOGRAPHY_PROFILE` creates `legal_cartography_semantic_profile`.
-3. `M9_C_DETERMINISTIC_COMPILER` creates the final `legal_cartography_index`.
+```text
+M9_FIELD_DERIVATION_REGISTRY.yaml
+```
 
-The first two artifacts are M9-owned internal artifacts.
+The registry is reference material inside this same `agent_2b_m9` package. It is not a separate agent.
+
+If any semantic field conflicts with the registry, the registry wins.
+
+## Internal Hybrid Execution
+
+M9 has three internal backend-supported layers:
+
+1. deterministic legal-stack index creates `legal_cartography_deterministic_map`;
+2. canonical M9 semantic labeling creates `legal_cartography_semantic_profile` using this file plus `M9_FIELD_DERIVATION_REGISTRY.yaml`;
+3. deterministic compiler creates the final `legal_cartography_index`.
+
+The first two artifacts are M9-owned internal artifacts. They are not downstream-required inputs.
 
 The final downstream-required artifact remains:
 
 ```text
 legal_cartography_index
 ```
+
+## Deterministic Layer Boundary
+
+The deterministic layer owns factual indexing only:
+
+- document identity;
+- document class;
+- source URL;
+- source family;
+- source status;
+- section and subsection structure;
+- clause-group structure;
+- annexure, schedule, appendix, addendum, exhibit, and notice detection;
+- line and character pointer;
+- parent-child unit relationship where visible;
+- missing or limited source status.
+
+The deterministic layer must not decide registry row status, exposure status, product archetype, surface gate, legal conclusion, or semantic subcat meaning.
+
+## Semantic Layer Boundary
+
+The semantic layer labels deterministic rows. It does not recreate the deterministic index.
+
+Semantic may add only:
+
+- `registry_subcat_relevance`;
+- `control_language_family`;
+- `semantic_function` or short unit label;
+- semantic confidence;
+- semantic limitation;
+- downstream navigation treatment.
+
+Semantic must attach every label to a deterministic ID from `legal_cartography_deterministic_map`.
+
+Semantic must not create new document IDs, source URLs, source statuses, section IDs, or control candidate IDs.
+
+Semantic must not output fix-route fields, remediation route fields, registry row status, exposure finding, compliance verdict, sufficiency verdict, enforceability verdict, final handoff, or renderer payload.
+
+## Semantic Artifact Contract
+
+When the expected write artifact is `legal_cartography_semantic_profile`, return strict JSON only:
+
+```json
+{
+  "legal_cartography_semantic_profile": {
+    "run_id": "",
+    "generated_by": "m9_hybrid_semantic_layer",
+    "schema_version": "M9_SEMANTIC_LEGAL_STACK_LABELS_v3",
+    "model_used": true,
+    "document_labels": [],
+    "unit_subcat_labels": [],
+    "control_family_labels": [],
+    "indemnity_labels": [],
+    "cross_reference_labels": [],
+    "missing_source_labels": [],
+    "semantic_repair_queue": [],
+    "semantic_integrity_summary": {},
+    "downstream_rules": {
+      "m9_semantic_layer_only": true,
+      "legal_stack_labels_only": true,
+      "registry_aware_not_registry_evaluative": true,
+      "remediation_routes_forbidden": true,
+      "new_source_fetch_forbidden": true,
+      "full_legal_text_copy_forbidden": true,
+      "use_only_loaded_legal_corpus": true,
+      "deterministic_map_is_source_of_pointers": true,
+      "semantic_rows_must_attach_to_deterministic_ids": true,
+      "coverage_gate_required": true
+    },
+    "status": "LOCKED_WITH_LIMITATIONS",
+    "lock_status": "LOCKED_WITH_LIMITATIONS"
+  }
+}
+```
+
+No other top-level key is allowed in semantic mode.
+
+## Semantic Coverage Discipline
+
+The semantic artifact must follow the registry coverage rules:
+
+- one `document_labels` row for every deterministic `document_map` row;
+- one `unit_subcat_labels` row for every deterministic `macro_unit_map` row;
+- one `control_family_labels` row for every deterministic `control_language_candidate_map` row;
+- one `indemnity_labels` row for every deterministic `indemnity_candidate_map` row where present;
+- one `cross_reference_labels` row for every deterministic `cross_document_reference_map` row where present;
+- one `missing_source_labels` row for every deterministic `missing_source_map` row where present.
+
+If coverage fails, `semantic_integrity_summary.ready_for_compiler` must be false and `lock_status` must be `REPAIR_REQUIRED`.
 
 ## Final Backend Output Contract
 
@@ -90,12 +189,6 @@ M9 may store source pointers, document IDs, section IDs, heading paths, location
 M9 must not store full clause text or full control text as a substitute for the lossless artifacts.
 
 Lossless family artifacts remain the source of truth for legal/governance source text.
-
-## Registry-Aware But Not Registry-Evaluative
-
-M9 may label control-language and document-route relevance using registry subcat and document-route vocabularies.
-
-M9 must not decide registry-row status.
 
 ## Allowed Values
 
@@ -162,16 +255,6 @@ M9 should index loaded legal/governance material when present, including terms, 
 
 If an item is not found in loaded material, route it to `missing_limited_legal_governance_items` with an allowed source type/status. Do not invent a URL. Do not fetch it.
 
-## Repair Discipline
-
-Reinvestigation is the rule for ordinary repair rows.
-
-Blocking is the exception.
-
-Unclear labels, thin sections, ambiguous document classes, fallback units, referenced-but-unloaded material, and possible substitute controls must be routed to M9 reinvestigation first.
-
-After reinvestigation, unresolved ordinary issues must carry limitations and allow `LOCKED_WITH_LIMITATIONS`.
-
 ## Final Self-Check
 
 Before final compile/save, verify:
@@ -183,4 +266,7 @@ Before final compile/save, verify:
 5. `downstream_rules.m6_is_navigation_not_legal_authority` is true;
 6. `downstream_rules.embedded_legal_instruments_are_indexable` is true;
 7. the final artifact remains `legal_cartography_index`;
-8. M7/M8/M10/M11/M12 are not required to read internal M9 artifacts.
+8. M7/M8/M10/M11/M12 are not required to read internal M9 artifacts;
+9. semantic derivation follows `M9_FIELD_DERIVATION_REGISTRY.yaml`.
+
+Return strict JSON only.
