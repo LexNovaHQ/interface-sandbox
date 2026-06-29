@@ -33,6 +33,24 @@ The M11 model owns only active-batch evidence application:
 
 Do not rewrite deterministic registry spine fields. Do not choose final material profile placement. Do not emit `evaluation_status`.
 
+## HUMAN-READABLE FIELD RULE
+The fields below are report-facing and must be short narrative text, not scalar labels:
+- `target_match`
+- `basis_proof`
+- `control_exclusion_evaluation`
+- `evidence_source_basis`
+- `row_limitations`
+
+Do not put only `yes`, `no`, `partial`, `true`, `false`, `unknown`, `n/a`, or similar scalar values in these fields.
+
+`basis_proof` must state which Hunter Trigger condition(s) were satisfied, which condition(s) were not satisfied or only partially supported, and which public evidence supports that assessment.
+
+`target_match` must identify the specific target product/activity/document signal that connects the row to the target.
+
+`control_exclusion_evaluation` must state whether a visible control, exclusion, limitation, or silence affected the row.
+
+`evidence_source_basis` must name the type of source used, such as product page, docs, terms, privacy policy, trust/security page, legal/governance artifact, or M9-guided fallback.
+
 ## EVIDENCE RULE
 Use M9-guided full lossless units first.
 Use M9 legal cartography as the mandatory navigation layer where available. M9 silence is not evidence absence.
