@@ -6,7 +6,6 @@ import { advanceReviewerRun } from "./reviewer-runner.js";
 
 const TERMINAL_PHASES = new Set(["COMPLETE"]);
 const TERMINAL_STATUSES = new Set(["COMPLETE", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
-const ACTIVE_RUNNER_STATES = new Set(["QUEUED", "RUNNING"]);
 const STALE_WORKER_MS = 20 * 60 * 1000;
 
 export async function requestReviewerRunAdvance({ run_id, requested_by = "operator", base_url = "", auto_continue = true }) {
@@ -16,7 +15,7 @@ export async function requestReviewerRunAdvance({ run_id, requested_by = "operat
     return asyncResponse({ run, queued: false, already_running: false, terminal: true });
   }
 
-  if (isActiveRunner(run) && !isStaleRunner(run)) {
+  if (run.runner_state === "RUNNING" && !isStaleRunner(run)) {
     return asyncResponse({ run, queued: false, already_running: true, terminal: false });
   }
 
@@ -32,7 +31,7 @@ export async function requestReviewerRunAdvance({ run_id, requested_by = "operat
     runner_last_error: ""
   });
   await updateRunDashboardRow(updated);
-  await logEvent({ run_id, event_type: "ASYNC_RUNNER_QUEUED", actor: requested_by, payload: { current_phase: updated.current_phase, auto_continue: Boolean(auto_continue) } });
+  await logEvent({ run_id, event_type: "ASYNC_RUNNER_QUEUED", actor: requested_by, payload: { current_phase: updated.current_phase, previous_runner_state: run.runner_state || "IDLE", auto_continue: Boolean(auto_continue) } });
 
   dispatchWorkerSoon({ run_id, base_url: updated.runner_dispatch_base_url, auto_continue: Boolean(auto_continue) });
   return asyncResponse({ run: updated, queued: true, already_running: false, terminal: false });
@@ -105,10 +104,25 @@ export async function runReviewerWorkerOnce({ run_id, actor = "async_worker", au
 
 function dispatchWorkerSoon({ run_id, base_url, auto_continue }) {
   setTimeout(() => {
-    runReviewerWorkerOnce({ run_id, actor: "async_worker", auto_continue: Boolean(auto_continue) }).catch((error) => {
-      logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCH_FAILED", actor: "async_dispatcher", payload: { error_message: error?.message || String(error) } }).catch(() => {});
+    runReviewerWorkerOnce({ run_id, actor: "async_worker", auto_continue: Boolean(auto_continue) }).catch(async (error) => {
+      await markDispatchFailure({ run_id, error });
     });
   }, 0);
+}
+
+async function markDispatchFailure({ run_id, error }) {
+  const message = error?.message || String(error);
+  try {
+    const failed = await updateRunRecord(run_id, {
+      runner_state: "FAILED",
+      runner_last_error: message,
+      runner_failed_at: nowIso()
+    });
+    await updateRunDashboardRow(failed);
+  } catch {
+    // Preserve original dispatch failure logging even if state update fails.
+  }
+  await logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCH_FAILED", actor: "async_dispatcher", payload: { error_message: message } }).catch(() => {});
 }
 
 async function dispatchWorker({ run_id, base_url, auto_continue }) {
@@ -143,10 +157,6 @@ async function clearRunnerState({ run_id, terminal }) {
 
 function isTerminal(run) {
   return TERMINAL_PHASES.has(run?.current_phase) || TERMINAL_STATUSES.has(run?.status);
-}
-
-function isActiveRunner(run) {
-  return ACTIVE_RUNNER_STATES.has(run?.runner_state);
 }
 
 function isStaleRunner(run) {
