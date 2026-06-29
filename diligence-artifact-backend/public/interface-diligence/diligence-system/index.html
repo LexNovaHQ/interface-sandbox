@@ -29,7 +29,7 @@
         <section class="hero">
           <div class="eyebrow">Interface Diligence Engine</div>
           <h1>Legal exposure diligence for AI, technology, data, and digital product businesses.</h1>
-          <p class="hero-copy">Enter a public product or company URL. The system runs source discovery, legal cartography, target and feature profiling, data provenance, exposure registry review, operator challenge, final compilation, and report rendering.</p>
+          <p class="hero-copy">Enter a public product or company URL. Optionally attach public legal, policy, security, data, or regulatory documents. The system saves them as source material, parses them, and routes the extracted text into the downstream diligence corpus.</p>
           <div class="notice"><strong>Boundary:</strong> Public-footprint materials only. Do not submit confidential, privileged, personal, sensitive, or restricted material. This system is for demonstration and qualified-review workflows only and does not provide legal advice.</div>
         </section>
         <section class="console-grid">
@@ -39,6 +39,8 @@
             <form id="runForm" class="form-grid">
               <div><label class="label" for="targetUrl">Target URL</label><input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai" required /></div>
               <div><label class="label" for="targetLabel">Target label <span class="small-muted">optional</span></label><input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" /></div>
+              <div><label class="label" for="sourceDocuments">Source documents <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label><input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" /></div>
+              <div class="notice">Uploaded files are treated as source material for this run. Upload only public or approved review materials.</div>
               <div class="actions"><button class="btn" id="runButton" type="submit">Start Public Review</button><a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a></div>
             </form>
             <p class="log-line" id="statusMessage">Idle. Enter a public URL to start a run.</p>
