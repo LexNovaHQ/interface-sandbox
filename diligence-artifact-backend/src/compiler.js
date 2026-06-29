@@ -23,11 +23,7 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       normalized_report_manifest: output.normalized_report_manifest,
       vault_section_handoff: output.vault_section_handoff,
       normalized_sections,
-      compiler_trace: {
-        compiler_version: "normalized_profiler_compiler_replacement_v1",
-        deterministic_only: true,
-        normalized_section_count: NORMALIZED_SECTION_KEYS.length
-      }
+      compiler_trace: { compiler_version: "normalized_profiler_compiler_replacement_v1", deterministic_only: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length }
     }
   };
 
