@@ -1,12 +1,9 @@
 {
-  "overall_status": "SYNCED_FOR_HYBRID_PACKAGE_NOT_PIPELINE_WIRED",
+  "overall_status": "SYNCED_FOR_M9_FIELD_REGISTRY_TEST",
   "backend_phase": "M9",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "M9_ONLY",
-  "agent_identity_preserved": true,
   "input_protocol_preserved": true,
-  "m6_ignored": true,
-  "m9_included": true,
   "read_artifacts_preserved": [
     "source_discovery_handoff",
     "lossless_family__L1_CORE_TERMS_PRIVACY",
@@ -22,14 +19,11 @@
     "legal_cartography_index"
   ],
   "final_downstream_required_artifact": "legal_cartography_index",
-  "internal_artifacts_are_m9_owned": true,
-  "internal_artifacts_downstream_required": false,
-  "final_validator_contract_preserved": true,
-  "validator_enum_sync": true,
-  "backend_normalizer_sync": true,
-  "structure_to_coverage_parity_sync": true,
-  "semantic_profile_validator_added": true,
-  "hybrid_compiler_added": true,
+  "field_registry_reference": "M9_FIELD_DERIVATION_REGISTRY.yaml",
+  "canonical_package_is_semantic_authority": true,
+  "sidecar_semantic_prompt_removed_from_active_package": true,
+  "deterministic_layer_updated": true,
+  "semantic_field_derivations_defined": true,
   "final_shape_preserved": [
     "document_coverage_index",
     "document_structure_index",
@@ -39,18 +33,12 @@
     "downstream_rules",
     "lock_status"
   ],
-  "new_package_components_added": [
-    "M9_STEP1_OUTPUT_CONTRACT_LOCK.md",
-    "M9_B_SEMANTIC_CARTOGRAPHY.md",
-    "M9_C_REINVESTIGATION.md",
-    "M9_HYBRID_COMPILER_CONTRACT.md"
-  ],
-  "new_backend_component_added": [
+  "active_backend_components": [
     "src/m9-deterministic-map.js",
     "src/m9-semantic-profile-validator.js",
-    "src/m9-hybrid-compiler.js"
+    "src/m9-hybrid-compiler.js",
+    "src/m9-hybrid-orchestrator.js",
+    "src/reviewer-runner.js"
   ],
-  "ready_for_backend_prompt_loading": false,
-  "ready_after_backend_hybrid_orchestrator_wiring": true,
-  "current_pipeline_behavior_changed": false
+  "current_pipeline_behavior_changed_when_flag_false": false
 }
