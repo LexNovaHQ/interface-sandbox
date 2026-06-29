@@ -37,6 +37,9 @@ const ART = Object.freeze({
   profilesCombined: "profiles_combined",
   forensicsCombined: "forensics_combined",
   final: "final_output_handoff",
+  normalizedReportManifest: "normalized_report_manifest",
+  vaultSectionHandoff: "vault_section_handoff",
+  qualifiedReviewHandoff: "qualified_review_handoff",
   renderer: "renderer_payload"
 });
 
@@ -58,8 +61,9 @@ export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([
 ]);
 
 export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([
-  "normalized_report_manifest",
-  "vault_section_handoff",
+  ART.normalizedReportManifest,
+  ART.vaultSectionHandoff,
+  ART.qualifiedReviewHandoff,
   ART.final,
   ...NORMALIZED_SECTION_ARTIFACT_NAMES
 ]);
@@ -82,115 +86,31 @@ export const PHASES = Object.freeze([
   "COMPLETE"
 ]);
 
-export const LOCK_STATUSES = Object.freeze([
-  "CREATED",
-  "RUNNING",
-  "LOCKED",
-  "LOCKED_WITH_LIMITATIONS",
-  "REPAIR_REQUIRED",
-  "CONTROLLED_FAILURE",
-  "COMPLETE"
-]);
+export const LOCK_STATUSES = Object.freeze(["CREATED", "RUNNING", "LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE", "COMPLETE"]);
 
 export const ROOT_FAMILY_CODES = Object.freeze([
-  "T0_ROOT",
-  "T1_IDENTITY",
-  "T2_LEGAL_IDENTITY",
-  "T3_OPERATOR_ENTITY",
-  "T4_SUPPORTING_IDENTITY",
-  "P1_PRODUCT",
-  "P2_PLATFORM_FEATURE_SOLUTION",
-  "P3_AI_CAPABILITY_TECHNICAL",
-  "P4_USE_CASE_INDUSTRY",
-  "P5_ENTERPRISE_PRICING",
-  "D1_SECURITY_TRUST",
-  "D2_SUBPROCESSOR_PRIVACY_CENTER",
-  "D3_DATA_GOVERNANCE_CONTROLS",
-  "D4_DOCS_API_DATA_FLOW",
-  "D5_AI_SAFETY_TRANSPARENCY",
-  "L1_CORE_TERMS_PRIVACY",
-  "L2_B2B_CONTRACTING",
-  "L3_AI_USAGE_GOVERNANCE",
-  "L4_PRIVACY_ADJACENT_NOTICES",
-  "L5_LEGAL_HUB_HOSTED",
-  "L6_ENTITY_NOTICE"
+  "T0_ROOT", "T1_IDENTITY", "T2_LEGAL_IDENTITY", "T3_OPERATOR_ENTITY", "T4_SUPPORTING_IDENTITY",
+  "P1_PRODUCT", "P2_PLATFORM_FEATURE_SOLUTION", "P3_AI_CAPABILITY_TECHNICAL", "P4_USE_CASE_INDUSTRY", "P5_ENTERPRISE_PRICING",
+  "D1_SECURITY_TRUST", "D2_SUBPROCESSOR_PRIVACY_CENTER", "D3_DATA_GOVERNANCE_CONTROLS", "D4_DOCS_API_DATA_FLOW", "D5_AI_SAFETY_TRANSPARENCY",
+  "L1_CORE_TERMS_PRIVACY", "L2_B2B_CONTRACTING", "L3_AI_USAGE_GOVERNANCE", "L4_PRIVACY_ADJACENT_NOTICES", "L5_LEGAL_HUB_HOSTED", "L6_ENTITY_NOTICE"
 ]);
 
-export const LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES = Object.freeze(
-  ROOT_FAMILY_CODES.map((code) => `lossless_family__${code}`)
-);
-
-export const LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES = Object.freeze([
-  "lossless_family__L1_CORE_TERMS_PRIVACY",
-  "lossless_family__L2_B2B_CONTRACTING",
-  "lossless_family__L3_AI_USAGE_GOVERNANCE",
-  "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
-  "lossless_family__L5_LEGAL_HUB_HOSTED",
-  "lossless_family__L6_ENTITY_NOTICE"
-]);
-
-export const TARGET_PROFILE_FAMILY_ARTIFACT_NAMES = Object.freeze([
-  "lossless_family__T0_ROOT",
-  "lossless_family__T1_IDENTITY",
-  "lossless_family__T2_LEGAL_IDENTITY",
-  "lossless_family__T3_OPERATOR_ENTITY",
-  "lossless_family__T4_SUPPORTING_IDENTITY"
-]);
-
-export const PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES = Object.freeze([
-  "lossless_family__P1_PRODUCT",
-  "lossless_family__P2_PLATFORM_FEATURE_SOLUTION",
-  "lossless_family__P3_AI_CAPABILITY_TECHNICAL",
-  "lossless_family__P4_USE_CASE_INDUSTRY",
-  "lossless_family__P5_ENTERPRISE_PRICING"
-]);
-
-export const DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES = Object.freeze([
-  "lossless_family__D1_SECURITY_TRUST",
-  "lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER",
-  "lossless_family__D3_DATA_GOVERNANCE_CONTROLS",
-  "lossless_family__D4_DOCS_API_DATA_FLOW",
-  "lossless_family__D5_AI_SAFETY_TRANSPARENCY"
-]);
+export const LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES = Object.freeze(ROOT_FAMILY_CODES.map((code) => `lossless_family__${code}`));
+export const LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L3_AI_USAGE_GOVERNANCE", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES", "lossless_family__L5_LEGAL_HUB_HOSTED", "lossless_family__L6_ENTITY_NOTICE"]);
+export const TARGET_PROFILE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__T0_ROOT", "lossless_family__T1_IDENTITY", "lossless_family__T2_LEGAL_IDENTITY", "lossless_family__T3_OPERATOR_ENTITY", "lossless_family__T4_SUPPORTING_IDENTITY"]);
+export const PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__P1_PRODUCT", "lossless_family__P2_PLATFORM_FEATURE_SOLUTION", "lossless_family__P3_AI_CAPABILITY_TECHNICAL", "lossless_family__P4_USE_CASE_INDUSTRY", "lossless_family__P5_ENTERPRISE_PRICING"]);
+export const DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__D1_SECURITY_TRUST", "lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER", "lossless_family__D3_DATA_GOVERNANCE_CONTROLS", "lossless_family__D4_DOCS_API_DATA_FLOW", "lossless_family__D5_AI_SAFETY_TRANSPARENCY"]);
 
 export const AGENT_1A_ARTIFACT_NAMES = Object.freeze(["deduped_url_manifest"]);
-
-export const AGENT_1B_ARTIFACT_NAMES = Object.freeze([
-  "source_family_index",
-  ...LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES
-]);
-
-export const AGENT_1_ARTIFACT_NAMES = Object.freeze([
-  ...AGENT_1A_ARTIFACT_NAMES,
-  ...AGENT_1B_ARTIFACT_NAMES
-]);
-
-export const M11_STATIC_ARTIFACT_NAMES = Object.freeze([
-  ART.exposureRoutePlan,
-  ART.exposureWorkpad,
-  ART.exposureControlled,
-  ART.exposureTriggered,
-  ART.exposureForensics
-]);
-
-export const M11_DYNAMIC_ARTIFACT_PATTERNS = Object.freeze([
-  ART.exposureBatchPattern,
-  ART.exposureBatchValidationPattern
-]);
-
+export const AGENT_1B_ARTIFACT_NAMES = Object.freeze(["source_family_index", ...LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES]);
+export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_ARTIFACT_NAMES]);
+export const M11_STATIC_ARTIFACT_NAMES = Object.freeze([ART.exposureRoutePlan, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics]);
+export const M11_DYNAMIC_ARTIFACT_PATTERNS = Object.freeze([ART.exposureBatchPattern, ART.exposureBatchValidationPattern]);
 export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
 
-export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([
-  ART.profilesCombined,
-  ART.forensicsCombined
-]);
-
-export const LEGACY_ARTIFACT_NAMES = Object.freeze([
-  ART.urlManifest,
-  ART.oldCorpus,
-  ART.exposureLegacy,
-  ...LEGACY_COMPILER_ARTIFACT_NAMES
-]);
+export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.profilesCombined, ART.forensicsCombined]);
+export const ARCHIVED_LEGACY_ARTIFACT_NAMES = LEGACY_COMPILER_ARTIFACT_NAMES;
+export const LEGACY_ARTIFACT_NAMES = Object.freeze([ART.urlManifest, ART.oldCorpus, ART.exposureLegacy, ...LEGACY_COMPILER_ARTIFACT_NAMES]);
 
 export const ARTIFACT_NAMES = Object.freeze([
   ...LEGACY_ARTIFACT_NAMES,
@@ -212,19 +132,7 @@ export const ARTIFACT_NAMES = Object.freeze([
   ART.renderer
 ]);
 
-export const AGENTS = Object.freeze([
-  AGENT_IDS.a1a,
-  AGENT_IDS.a1b,
-  AGENT_IDS.a2a,
-  AGENT_IDS.a2b,
-  AGENT_IDS.a3,
-  AGENT_IDS.a4,
-  AGENT_IDS.a5,
-  AGENT_IDS.a7,
-  "compiler",
-  "portfolio_renderer",
-  "operator"
-]);
+export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "compiler", "portfolio_renderer", "operator"]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a1a]: AGENT_1A_ARTIFACT_NAMES,
@@ -268,7 +176,7 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a5]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
-  portfolio_renderer: [ART.final, "normalized_report_manifest", "vault_section_handoff", ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
+  portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });
 
@@ -276,31 +184,8 @@ export function isKnownArtifactName(artifactName) {
   const name = String(artifactName || "");
   return ARTIFACT_NAMES.includes(name) || M11_BATCH_ARTIFACT_PATTERN.test(name) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(name);
 }
-
-export function artifactMatchesPermission(artifactName, permission) {
-  if (permission === artifactName) return true;
-  if (permission === ART.exposureBatchPattern) return M11_BATCH_ARTIFACT_PATTERN.test(artifactName);
-  if (permission === ART.exposureBatchValidationPattern) return M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName);
-  return false;
-}
-
-export function assertKnownArtifactName(artifactName) {
-  if (!isKnownArtifactName(artifactName)) throw new Error(`INVALID_ARTIFACT_NAME:${artifactName || "missing"}`);
-}
-
-export function assertKnownPhase(phase) {
-  if (!PHASES.includes(phase)) throw new Error(`INVALID_PHASE:${phase || "missing"}`);
-}
-
-export function assertKnownAgent(agent) {
-  if (!AGENTS.includes(agent)) throw new Error(`INVALID_AGENT:${agent}`);
-}
-
-export function assertPhaseCanWriteArtifact(phase, artifactName) {
-  assertKnownPhase(phase);
-  assertKnownArtifactName(artifactName);
-  const allowed = PHASE_WRITE_PERMISSIONS[phase] || [];
-  if (!allowed.some((permission) => artifactMatchesPermission(artifactName, permission))) {
-    throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifactName}`);
-  }
-}
+export function artifactMatchesPermission(artifactName, permission) { if (permission === artifactName) return true; if (permission === ART.exposureBatchPattern) return M11_BATCH_ARTIFACT_PATTERN.test(artifactName); if (permission === ART.exposureBatchValidationPattern) return M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName); return false; }
+export function assertKnownArtifactName(artifactName) { if (!isKnownArtifactName(artifactName)) throw new Error(`INVALID_ARTIFACT_NAME:${artifactName || "missing"}`); }
+export function assertKnownPhase(phase) { if (!PHASES.includes(phase)) throw new Error(`INVALID_PHASE:${phase || "missing"}`); }
+export function assertKnownAgent(agent) { if (!AGENTS.includes(agent)) throw new Error(`INVALID_AGENT:${agent}`); }
+export function assertPhaseCanWriteArtifact(phase, artifactName) { assertKnownPhase(phase); assertKnownArtifactName(artifactName); const allowed = PHASE_WRITE_PERMISSIONS[phase] || []; if (!allowed.some((permission) => artifactMatchesPermission(artifactName, permission))) throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifactName}`); }
