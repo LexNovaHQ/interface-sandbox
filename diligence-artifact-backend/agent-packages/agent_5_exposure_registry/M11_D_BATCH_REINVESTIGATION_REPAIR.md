@@ -15,7 +15,7 @@ The backend supplies:
 
 ## DUTY
 You must reinvestigate only the rows and fields identified in the repair context.
-Use the selected legal/governance excerpts first. Use legal cartography as navigation for the backend full lossless evidence package. Do not invent evidence.
+Use M9-guided full lossless legal/governance units first. If M9 is silent or thin, use the backend-supplied closest relevant full lossless section or part. Do not invent evidence.
 
 ## REPAIR RULE
 If the prior output has a concrete repairable error, repair the affected row(s) and return a corrected `m11_batch_registry_ledger`.
@@ -46,5 +46,5 @@ Return exactly one JSON root:
 * Do not remove expected Threat_IDs.
 * Do not group Threat_IDs.
 * Do not emit downstream artifacts.
-* Keep final material status only `TRIGGERED` or `CONTROLLED`.
+* Keep repaired rows in the semantic evidence-application shape only; backend derives final material status and profile placement.
 * After one targeted reinvestigation, any remaining non-structural uncertainty, semantic validation concern, evidence thinness, public-source limitation, or field-level validation concern must be carried as a warning/limitation. Do not block unless the repaired batch output remains structurally invalid or unusable.

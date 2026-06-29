@@ -3,10 +3,9 @@ import { buildPhasePrompt } from "./prompt-loader.js";
 import { loadReferencePacket } from "./reference-loader.js";
 import { callGeminiJson } from "./gemini-client.js";
 import { artifactSaveBody, lockPhase, readArtifact, readArtifactPayload, saveArtifact } from "./artifact-service.js";
-import { buildExposureRegistryRoutePlan, buildM11BatchPacket, mergeExposureRegistryWorkpad98, projectControlledProfile, projectTriggeredProfile, validateM11BatchLedger } from "./m11-deterministic-system.js";
+import { assembleM11AcceptedBatchLedger, buildExposureRegistryRoutePlan, buildM11BatchPacket, mergeExposureRegistryWorkpad98, projectControlledProfile, projectTriggeredProfile, validateM11BatchLedger } from "./m11-deterministic-system.js";
 import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-deterministic-forensics.js";
 import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
-import { applyM11FalsePositiveFirewall } from "./m11-false-positive-firewall.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
@@ -55,10 +54,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
 
     const batchPacketRoot = buildM11BatchPacket({ routePlan: { [ART.route]: route.artifact }, batchId: batch.batch_id, upstreamArtifacts: artifacts, referencePacket });
     const compactPacket = buildCompactM11BatchPacket({ batchPacket: batchPacketRoot, upstreamArtifacts: artifacts });
-    let batchOutput = applyBatchFalsePositiveDiscipline({
-      batchOutput: await runM11Batch({ run, phase, batch, compactPacket }),
-      routePlan: route.artifact
-    });
+    let batchOutput = await runM11Batch({ run, phase, batch, compactPacket });
     let structuralValidation = validateM11BatchLedger(batchOutput, batch.expected_threat_ids || []);
     const validationName = `exposure_registry_batch_validation__${batch.batch_id}`;
 
@@ -106,7 +102,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         return;
       }
 
-      batchOutput = applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact });
+      batchOutput = repairedOutput;
       structuralValidation = repairedStructuralValidation;
 
       await logEvent({
@@ -169,7 +165,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         phase,
         batch,
         compactPacket,
-        batchOutput: applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact }),
+        batchOutput: repairedOutput,
         structuralValidation: repairedStructuralValidation,
         routePlan: route.artifact
       });
@@ -178,7 +174,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         repairedValidationArtifact.exposure_registry_batch_validation.status;
 
       if (isAcceptedBatchValidationStatus(repairedM12Status)) {
-        batchOutput = applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact });
+        batchOutput = repairedOutput;
         structuralValidation = repairedStructuralValidation;
         validationArtifact = addRepairTrace(repairedValidationArtifact, {
           repair_attempted: true,
@@ -186,7 +182,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         });
         m12Status = validationArtifact.exposure_registry_batch_validation.status;
       } else {
-        batchOutput = applyBatchFalsePositiveDiscipline({ batchOutput: repairedOutput, routePlan: route.artifact });
+        batchOutput = repairedOutput;
         structuralValidation = repairedStructuralValidation;
         validationArtifact = coercePostReinvestigationM12FailureToWarning(
           repairedValidationArtifact,
@@ -203,8 +199,9 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: validationName, artifact: validationArtifact, lock_status: batchValidationLockStatus(m12Status) }));
 
     const batchArtifactName = `exposure_registry_batch__${batch.batch_id}`;
-    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: batchArtifactName, artifact: batchOutput, lock_status: m12Status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }));
-    acceptedBatches.push(batchOutput);
+    const acceptedBatchOutput = assembleM11AcceptedBatchLedger({ semanticBatch: batchOutput, batchPacket: batchPacketRoot });
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: batchArtifactName, artifact: acceptedBatchOutput, lock_status: m12Status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }));
+    acceptedBatches.push(acceptedBatchOutput);
     batchValidations.push(validationArtifact);
   }
 
@@ -515,30 +512,6 @@ function hasSurfaceTriggeredRoutes(routePlan) {
   const retiredRouteReason = ["SURFACE", "TRIGGERED"].join("_");
   const rows = Array.isArray(routePlan?.route_rows) ? routePlan.route_rows : [];
   return rows.some((row) => row.route_reason === retiredRouteReason);
-}
-
-function applyBatchFalsePositiveDiscipline({ batchOutput, routePlan }) {
-  const ledger = batchOutput?.m11_batch_registry_ledger || batchOutput || {};
-  const rows = Array.isArray(ledger.batch_registry_ledger) ? ledger.batch_registry_ledger : [];
-  if (!rows.length) return batchOutput;
-
-  const routeRowsById = new Map((Array.isArray(routePlan?.route_rows) ? routePlan.route_rows : []).map((row) => [row.Threat_ID, row]));
-  const cleanedRows = rows.map((row) => applyM11FalsePositiveFirewall({ row, routeRow: routeRowsById.get(row.Threat_ID) || {} }));
-
-  if (batchOutput?.m11_batch_registry_ledger) {
-    return {
-      ...batchOutput,
-      m11_batch_registry_ledger: {
-        ...batchOutput.m11_batch_registry_ledger,
-        batch_registry_ledger: cleanedRows
-      }
-    };
-  }
-
-  return {
-    ...ledger,
-    batch_registry_ledger: cleanedRows
-  };
 }
 
 function arraysEqualAsSets(a, b) {
