@@ -13,16 +13,20 @@ export const publicReviewerRouter = express.Router();
 const windowMs = 60 * 60 * 1000;
 const limits = { create: 5, advance: 80, read: 120 };
 const buckets = new Map();
-const jobCreatePaths = ["/reviewer/jobs", "/diligence-system/jobs"];
-const jobCreateWithDocumentsPaths = ["/reviewer/jobs-with-documents", "/diligence-system/jobs-with-documents"];
-const jobReadPaths = ["/reviewer/jobs/:run_id", "/diligence-system/jobs/:run_id"];
-const jobAdvancePaths = ["/reviewer/jobs/:run_id/advance", "/diligence-system/jobs/:run_id/advance"];
-const reportPaths = ["/reviewer/report/:run_id", "/diligence-system/report/:run_id"];
-const qualifiedReviewPaths = ["/reviewer/qualified-review/:run_id", "/diligence-system/qualified-review/:run_id"];
+const jobCreatePaths = ["/diligence-system/jobs"];
+const jobCreateWithDocumentsPaths = ["/diligence-system/jobs-with-documents"];
+const jobReadPaths = ["/diligence-system/jobs/:run_id"];
+const jobAdvancePaths = ["/diligence-system/jobs/:run_id/advance"];
+const reportPaths = ["/diligence-system/report/:run_id"];
+const qualifiedReviewPaths = ["/diligence-system/qualified-review/:run_id"];
 
 publicReviewerRouter.use((req, res, next) => {
   if (!config.publicReviewerEnabled) return res.status(404).json({ ok: false, error: "PUBLIC_DILIGENCE_SYSTEM_DISABLED", message: "Public diligence-system routes are disabled." });
   return next();
+});
+
+publicReviewerRouter.all(["/reviewer", "/reviewer/*"], (_req, res) => {
+  return res.status(410).json({ ok: false, error: "PUBLIC_REVIEWER_ALIAS_RETIRED", message: "Public reviewer routes are retired. Use /public/diligence-system routes." });
 });
 
 publicReviewerRouter.post(jobCreatePaths, rateLimit("create"), async (req, res) => {
@@ -124,5 +128,5 @@ function baseUrlFromRequest(req) { const proto = String(req.get("x-forwarded-pro
 function normalizeTargetUrl(value) { const raw = String(value || "").trim(); const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`; const url = new URL(withProtocol); url.hash = ""; return url.toString(); }
 function hostFromUrl(value) { return new URL(value).hostname.replace(/^www\./i, ""); }
 function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
-function statusForMessage(message) { if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
+function statusForMessage(message) { if (message.startsWith("PUBLIC_REVIEWER_ALIAS_RETIRED")) return 410; if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("GEMINI_CALL_FAILED")) return 502; return 500; }
 function publicErrorCode(message) { return String(message).split(":")[0] || "PUBLIC_DILIGENCE_SYSTEM_BACKEND_ERROR"; }
