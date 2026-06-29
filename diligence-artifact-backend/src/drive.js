@@ -66,6 +66,32 @@ export async function saveJsonArtifactToDrive({ run_id, artifact_name, version, 
   };
 }
 
+export async function saveBinaryFileToDrive({ drive_folder_id, filename, mime_type, buffer }) {
+  const drive = getDriveClient();
+  const body = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || "");
+  const created = await drive.files.create({
+    supportsAllDrives: true,
+    requestBody: {
+      name: filename,
+      mimeType: mime_type || "application/octet-stream",
+      parents: [drive_folder_id]
+    },
+    media: {
+      mimeType: mime_type || "application/octet-stream",
+      body: Readable.from([body])
+    },
+    fields: "id,name,webViewLink,size,driveId"
+  });
+
+  return {
+    drive_file_id: created.data.id,
+    drive_filename: created.data.name,
+    drive_web_view_link: created.data.webViewLink,
+    drive_id: created.data.driveId || "",
+    file_size_bytes: body.length
+  };
+}
+
 export async function readJsonArtifactFromDrive(fileId) {
   const drive = getDriveClient();
   const response = await drive.files.get(
