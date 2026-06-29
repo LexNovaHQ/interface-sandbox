@@ -17,6 +17,7 @@ export function compileM9HybridCartography({ deterministicMap, semanticProfile, 
   const semantic = unwrapRoot(semanticProfile, "legal_cartography_semantic_profile");
   const repair = unwrapRoot(reinvestigationWorkpad, "legal_cartography_reinvestigation_workpad") || {};
   const labels = buildLabelIndexes(semantic);
+  const semanticCoverage = buildSemanticCoverageSummary({ map, semantic });
 
   const documentCoverage = compileDocumentCoverage({ map, labels });
   const documentStructure = compileDocumentStructure({ map, labels });
@@ -41,10 +42,12 @@ export function compileM9HybridCartography({ deterministicMap, semanticProfile, 
         limitations_must_carry_forward: true,
         deterministic_map_is_source_of_pointers: true,
         semantic_rows_must_attach_to_deterministic_ids: true,
+        semantic_queue_is_authoritative_for_semantic_coverage: true,
         internal_m9_artifacts_not_downstream_required: true,
-        full_legal_text_not_copied: true
+        full_legal_text_not_copied: true,
+        semantic_coverage_summary: semanticCoverage
       },
-      lock_status: resolveFinalLockStatus({ map, semantic, repair, limitations, documentCoverage, documentStructure })
+      lock_status: resolveFinalLockStatus({ map, semantic, repair, limitations, documentCoverage, documentStructure, semanticCoverage })
     })
   };
 }
@@ -196,6 +199,26 @@ function compileMissingLimitedItems({ map, labels }) {
   });
 }
 
+function buildSemanticCoverageSummary({ map, semantic }) {
+  const requiredUnitIds = new Set(asArray(map.semantic_label_queue).filter(isRequiredQueueRow).map((row) => String(row.unit_id || row.section_id || "")).filter(Boolean));
+  const requiredControlIds = new Set(asArray(map.control_language_candidate_map).filter((row) => requiredUnitIds.has(String(row.unit_id || ""))).map((row) => String(row.control_candidate_id || "")).filter(Boolean));
+  const labeledUnitIds = new Set(asArray(semantic.unit_subcat_labels).map((row) => String(row.unit_id || row.section_id || "")).filter(Boolean));
+  const labeledControlIds = new Set(asArray(semantic.control_family_labels).map((row) => String(row.control_candidate_id || "")).filter(Boolean));
+  const requiredTotal = requiredUnitIds.size + requiredControlIds.size;
+  const labeledTotal = countIntersection(labeledUnitIds, requiredUnitIds) + countIntersection(labeledControlIds, requiredControlIds);
+  const ratio = requiredTotal ? Number((labeledTotal / requiredTotal).toFixed(4)) : 1;
+  return {
+    semantic_queue_total: asArray(map.semantic_label_queue).length,
+    semantic_queue_required_total: requiredUnitIds.size,
+    semantic_required_units_labeled: countIntersection(labeledUnitIds, requiredUnitIds),
+    semantic_required_controls_total: requiredControlIds.size,
+    semantic_required_controls_labeled: countIntersection(labeledControlIds, requiredControlIds),
+    semantic_required_coverage_ratio: ratio,
+    ready_for_compiler: ratio >= 0.8,
+    status: ratio >= 0.8 ? "PASS" : "LIMITED"
+  };
+}
+
 function buildLabelIndexes(semantic) {
   const out = { documents: new Map(), units: new Map(), controls: new Map(), indemnities: new Map(), links: new Map(), missing: new Map() };
   for (const row of asArray(semantic.document_labels)) setIfKey(out.documents, row.document_id || row.artifact_id, row);
@@ -207,15 +230,17 @@ function buildLabelIndexes(semantic) {
   return out;
 }
 
-function resolveFinalLockStatus({ map, semantic, repair, limitations, documentCoverage, documentStructure }) {
+function resolveFinalLockStatus({ map, semantic, repair, limitations, documentCoverage, documentStructure, semanticCoverage }) {
   const statuses = [map.lock_status, map.status, semantic.lock_status, semantic.status, repair.lock_status, repair.status].filter(Boolean);
   if (statuses.includes("CONTROLLED_FAILURE")) return "CONTROLLED_FAILURE";
   if (!documentCoverage.length || !documentStructure.length) return "CONTROLLED_FAILURE";
-  if (statuses.includes("REPAIR_REQUIRED")) return "REPAIR_REQUIRED";
-  if (limitations.length || statuses.includes("LOCKED_WITH_LIMITATIONS")) return "LOCKED_WITH_LIMITATIONS";
+  if (statuses.includes("REPAIR_REQUIRED") && semanticCoverage?.ready_for_compiler !== true) return "REPAIR_REQUIRED";
+  if (limitations.length || statuses.includes("LOCKED_WITH_LIMITATIONS") || semanticCoverage?.status === "LIMITED") return "LOCKED_WITH_LIMITATIONS";
   return "LOCKED";
 }
 
+function isRequiredQueueRow(row) { return row?.semantic_label_required === true || ["P0", "P1"].includes(row?.priority); }
+function countIntersection(actual, expected) { let count = 0; for (const value of expected) if (actual.has(value)) count += 1; return count; }
 function keepFinalShape(value) { const output = {}; for (const key of FINAL_KEYS) output[key] = value[key]; if (!ALLOWED_LOCK_STATUS.has(output.lock_status)) output.lock_status = "LOCKED_WITH_LIMITATIONS"; return output; }
 function unwrapRoot(value, root) { if (!value || typeof value !== "object") return {}; const artifact = value.artifact && typeof value.artifact === "object" ? value.artifact : value; return artifact[root] || artifact || {}; }
 function setIfKey(map, key, row) { if (key) map.set(String(key), row); }
