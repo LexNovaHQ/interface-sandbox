@@ -7,11 +7,24 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
   const output = buildNormalizedProfilerOutput({ run, artifacts });
   const final = output.final_output_handoff?.final_output_handoff || {};
   const status = toMachineStatus(final.validation_status || output.normalized_report_manifest?.validation_status || run?.status);
-  const normalized_sections = Object.fromEntries(
-    NORMALIZED_SECTION_KEYS.map((sectionId) => [sectionId, output[`normalized_section__${sectionId}`]])
-  );
 
-  output.normalized_report_manifest = { ...(output.normalized_report_manifest || {}), validation_status: status };
+  for (const sectionId of NORMALIZED_SECTION_KEYS) {
+    const artifactName = `normalized_section__${sectionId}`;
+    const section = output[artifactName] || {};
+    output[artifactName] = {
+      ...section,
+      section_status: status,
+      display_section_status: section.display_section_status || section.section_status || status
+    };
+  }
+
+  const normalized_sections = Object.fromEntries(NORMALIZED_SECTION_KEYS.map((sectionId) => [sectionId, output[`normalized_section__${sectionId}`]]));
+
+  output.normalized_report_manifest = {
+    ...(output.normalized_report_manifest || {}),
+    validation_status: status,
+    section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status }))
+  };
   output.vault_section_handoff = { ...(output.vault_section_handoff || {}), validation_status: status, archived_alias_for: "qualified_review_handoff" };
   output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff });
 
