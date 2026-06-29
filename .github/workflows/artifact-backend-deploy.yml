@@ -1,6 +1,12 @@
 name: Artifact Backend Deploy
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "diligence-artifact-backend/**"
+      - ".github/workflows/artifact-backend-deploy.yml"
   workflow_dispatch:
     inputs:
       mode:
@@ -38,7 +44,7 @@ jobs:
   deploy:
     name: Deploy Cloud Run artifact backend
     needs: check
-    if: inputs.mode == 'deploy'
+    if: github.event_name == 'push' || inputs.mode == 'deploy'
     runs-on: ubuntu-latest
     permissions:
       contents: read
