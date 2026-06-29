@@ -1,6 +1,13 @@
 import { FORENSIC_ANNEXURE_FAMILIES } from "./report-registry-map.js";
 import { asArray, safeObject, safeText, statusLabel } from "./report-safe-language.js";
 
+const APPENDIX_MATERIAL_STATUSES = new Set([
+  "TRIGGERED",
+  "CONTROLLED_BY_VISIBLE_CONTROL",
+  "CONTROLLED_BY_EXCLUSION",
+  "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION"
+]);
+
 export function buildForensicLedgerAppendix({ handoff, profiles, forensics, displayIdIndex }) {
   const workpad = unwrap(forensics.exposure_registry_workpad_98, "exposure_registry_workpad_98");
   const profileForensics = unwrap(forensics.exposure_registry_profile_forensics, "exposure_registry_profile_forensics");
@@ -38,11 +45,17 @@ export function buildForensicLedgerAppendix({ handoff, profiles, forensics, disp
       trigger_status: statusLabel(row.trigger_status),
       limitations: safeText(row.limitations, "No row-specific limitation recorded")
     })),
-    row_level_proof: registryRows.filter((row) => row.final_material_status === "TRIGGERED" || row.final_material_status === "CONTROLLED").map((row) => ({
+    row_level_proof: registryRows.filter((row) => APPENDIX_MATERIAL_STATUSES.has(String(row.final_material_status || "").toUpperCase())).map((row) => ({
       threat_id: row.Threat_ID || "",
       display_exposure_id: triggeredDisplayIds.get(row.Threat_ID) || null,
       material_status: statusLabel(row.final_material_status),
       basis_proof: safeText(row.material_projection?.basis_proof || row.basis_proof, "Basis proof not specified in material projection"),
+      control_exclusion_evaluation: safeText(row.material_projection?.control_exclusion_evaluation || row.control_exclusion_evaluation, "Control/exclusion evaluation not specified"),
+      evidence_source_basis: safeText(row.material_projection?.evidence_source_basis || row.evidence_source_basis, "Evidence/source basis not specified"),
+      fp_mechanism: safeText(row.material_projection?.fp_mechanism || row.fp_mechanism, "FP mechanism not specified"),
+      pain_tier: safeText(row.material_projection?.Pain_Tier || row.Pain_Tier, "Pain tier not specified"),
+      pain_depth: safeText(row.material_projection?.Pain_Depth || row.Pain_Depth, "Pain depth not specified"),
+      pain_category: safeText(row.material_projection?.Pain_Category || row.Pain_Category, "Pain category not specified"),
       review_route: safeText(row.material_projection?.review_route || row.review_route, "Qualified reviewer should verify")
     })),
     condition_trigger_basis: asArray(profileForensics.trigger_adjudication_ledger),
@@ -50,20 +63,8 @@ export function buildForensicLedgerAppendix({ handoff, profiles, forensics, disp
     operator_challenge_trace: profiles.challenge_gate || handoff.challenge_gate || {},
     batch_warnings: collectBatchWarnings({ forensics, routePlan, profileForensics }),
     appendix_limitations: collectLimitations({ profiles, forensics, handoff }),
-    renderer_export_trace: {
-      renderer_generated_by: "report-section-adapter",
-      renderer_deterministic: true,
-      model_used_after_m11: false,
-      old_exposure_registry_profile_used: false,
-      split_exposure_profiles_used: true
-    },
-    forensic_boundary: {
-      no_chain_of_thought: true,
-      no_hidden_scratchpad: true,
-      no_secrets_or_api_keys: true,
-      no_legal_conclusions: true,
-      appendix_only: true
-    }
+    renderer_export_trace: { renderer_generated_by: "report-section-adapter", renderer_deterministic: true, model_used_after_m11: false, old_exposure_registry_profile_used: false, split_exposure_profiles_used: true, m11_four_status_material_rows_supported: true },
+    forensic_boundary: { no_chain_of_thought: true, no_hidden_scratchpad: true, no_secrets_or_api_keys: true, no_legal_conclusions: true, appendix_only: true }
   };
 }
 
@@ -81,44 +82,8 @@ export function collectLimitations({ profiles = {}, forensics = {}, handoff = {}
   return rows;
 }
 
-function pushLimit(rows, source, value) {
-  for (const item of asArray(value)) {
-    rows.push({ source, limitation: typeof item === "string" ? item : safeObject(item), display_text: safeText(item, "Limitation recorded") });
-  }
-}
-
-function collectBatchWarnings({ forensics = {}, routePlan = {}, profileForensics = {} } = {}) {
-  const warnings = [];
-  for (const validation of asArray(forensics.m12_batch_validation_artifacts)) {
-    const root = validation?.exposure_registry_batch_validation || validation?.artifact?.exposure_registry_batch_validation || validation;
-    if (root?.status && !["PASS", "PASS_WITH_LIMITATION"].includes(String(root.status).toUpperCase())) warnings.push(root);
-    warnings.push(...asArray(root?.warnings));
-    warnings.push(...asArray(root?.failures));
-  }
-  warnings.push(...asArray(routePlan?.phase_a_validation?.warnings));
-  warnings.push(...asArray(routePlan?.phase_a_validation?.failures));
-  warnings.push(...asArray(profileForensics?.registry_self_check_result?.failures));
-  return warnings.map((warning) => safeText(warning, "Warning recorded"));
-}
-
-function countSourceRows(sourceDiscovery = {}) {
-  const handoff = unwrap(sourceDiscovery, "source_discovery_handoff");
-  const indexes = [
-    handoff?.source_inventory,
-    handoff?.admitted_sources,
-    handoff?.phase_packages?.final_source_coverage_package?.source_records,
-    handoff?.phase_packages?.target_profile_package?.source_records,
-    handoff?.phase_packages?.feature_profile_package?.source_records
-  ];
-  return indexes.reduce((count, value) => count + asArray(value).length, 0);
-}
-
-function countPresentObjectKeys(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return 0;
-  return Object.keys(value).filter((key) => value[key] !== null && value[key] !== undefined && value[key] !== "").length;
-}
-
-function unwrap(value, key) {
-  const object = safeObject(value);
-  return safeObject(object[key] || object);
-}
+function pushLimit(rows, source, value) { for (const item of asArray(value)) rows.push({ source, limitation: typeof item === "string" ? item : safeObject(item), display_text: safeText(item, "Limitation recorded") }); }
+function collectBatchWarnings({ forensics = {}, routePlan = {}, profileForensics = {} } = {}) { const warnings = []; for (const validation of asArray(forensics.m12_batch_validation_artifacts)) { const root = validation?.exposure_registry_batch_validation || validation?.artifact?.exposure_registry_batch_validation || validation; if (root?.status && !["PASS", "PASS_WITH_LIMITATION"].includes(String(root.status).toUpperCase())) warnings.push(root); warnings.push(...asArray(root?.warnings)); warnings.push(...asArray(root?.failures)); } warnings.push(...asArray(routePlan?.phase_a_validation?.warnings)); warnings.push(...asArray(routePlan?.phase_a_validation?.failures)); warnings.push(...asArray(profileForensics?.registry_self_check_result?.failures)); return warnings.map((warning) => safeText(warning, "Warning recorded")); }
+function countSourceRows(sourceDiscovery = {}) { const handoff = unwrap(sourceDiscovery, "source_discovery_handoff"); const indexes = [handoff?.source_inventory, handoff?.admitted_sources, handoff?.phase_packages?.final_source_coverage_package?.source_records, handoff?.phase_packages?.target_profile_package?.source_records, handoff?.phase_packages?.feature_profile_package?.source_records]; return indexes.reduce((count, value) => count + asArray(value).length, 0); }
+function countPresentObjectKeys(value) { if (!value || typeof value !== "object" || Array.isArray(value)) return 0; return Object.keys(value).filter((key) => value[key] !== null && value[key] !== undefined && value[key] !== "").length; }
+function unwrap(value, key) { const object = safeObject(value); return safeObject(object[key] || object); }
