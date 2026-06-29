@@ -9,7 +9,7 @@ const LEGAL_GOVERNANCE_FAMILY_ARTIFACTS = Object.freeze([
 
 const REGISTRY_SUBCAT_VOCAB = Object.freeze(["CNS", "LIA", "HAL", "INF", "PRV", "BIO", "DEC", "HRM", "FRD", "TRD"]);
 const CONTROL_LANGUAGE_FAMILY_VOCAB = Object.freeze(["FORMATION_CONTRACT", "ACTIVITY_SPECIFIC_DISCLOSURE", "DATA_PRIVACY", "VENDORS_TRANSFER", "SECURITY", "USE_SAFETY", "AGENT_AUTHORITY", "IP_CONTENT", "COMMERCIAL_LEGAL_ALLOCATION", "CONTACT_ROUTES", "INDEMNITY", "UNKNOWN_CONTROL_LANGUAGE"]);
-const MAX_UNITS_PER_SOURCE = 80;
+const MAX_UNITS_PER_SOURCE = 120;
 
 export const M9_DETERMINISTIC_ARTIFACT_NAME = "legal_cartography_deterministic_map";
 
@@ -39,14 +39,15 @@ export function buildM9DeterministicMap({ run = {}, artifacts = {} } = {}) {
   }
 
   const mapStatus = !documentMap.length ? "CONTROLLED_FAILURE" : qualityRepairQueue.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
+
   return {
     [M9_DETERMINISTIC_ARTIFACT_NAME]: {
       run_id: runId,
       target_url: targetUrl,
       generated_by: "m9_hybrid_deterministic_layer",
-      schema_version: "M9_DETERMINISTIC_LEGAL_STACK_INDEX_v3",
+      schema_version: "M9_DETERMINISTIC_LEGAL_STACK_INDEX_v4",
       model_used: false,
-      artifact_role: "Indexes loaded legal documents and their macro headings only. Remedial document routes are outside M9.",
+      artifact_role: "Indexes loaded legal/governance documents, sections, subsections, clause groups, annexures, schedules, notices, and source pointers.",
       active_registry_context: {
         active_registry_domain: "AI_PRODUCT_LEGAL_EXPOSURE",
         registry_row_id_schema: "{ARCHETYPE}_{SUBCAT}_{VARIANT}",
@@ -54,12 +55,13 @@ export function buildM9DeterministicMap({ run = {}, artifacts = {} } = {}) {
         surface_gate_owned_by: "M8_TARGET_FEATURE_PROFILE_AND_M10_DATA_PROVENANCE",
         subcat_relevance_owned_by: "M9_SEMANTIC_LAYER",
         row_status_owned_by: "M11_EXPOSURE_REGISTRY",
-        m9_role: "legal_stack_navigation_and_subcat_labeling_only",
+        m9_role: "legal_stack_navigation_and_semantic_label_support_only",
         registry_application_forbidden_in_layer_1: true
       },
       deterministic_vocabularies: {
         registry_subcat_vocab: [...REGISTRY_SUBCAT_VOCAB],
-        control_language_family_vocab: [...CONTROL_LANGUAGE_FAMILY_VOCAB]
+        control_language_family_vocab: [...CONTROL_LANGUAGE_FAMILY_VOCAB],
+        unit_type_vocab: ["DOCUMENT_TITLE", "SECTION", "SUBSECTION", "CLAUSE_GROUP", "ANNEXURE", "SCHEDULE", "APPENDIX", "ADDENDUM", "EXHIBIT", "NOTICE"]
       },
       source_text_policy: {
         lossless_artifacts_remain_source_of_truth: true,
@@ -93,7 +95,6 @@ export function buildM9DeterministicMap({ run = {}, artifacts = {} } = {}) {
       downstream_rules: {
         m9_deterministic_layer_only: true,
         legal_stack_index_only: true,
-        remedial_document_routes_forbidden: true,
         legal_advice_forbidden: true,
         compliance_conclusions_forbidden: true,
         sufficiency_conclusions_forbidden: true,
@@ -138,7 +139,7 @@ function ingestSource(ctx) {
 
   const documentRow = stripEmpty({ document_id: documentId, artifact_id: documentId, document_or_artifact: title, artifact_class: artifactClass, artifact_family: rootFamily, lossless_artifact_name: artifactName, root_family: rootFamily, source: sourceUrl, source_url: sourceUrl, canonical_url: source.canonical_url || source.url || "", source_type: "URL", source_corpus_status: "FOUND_AS_PRIMARY_SOURCE", status: "FOUND_INDEXED", document_role: source.tier_reason || source.materiality || family.purpose || "Loaded legal/governance source.", version_or_effective_date_signal: extractVersionOrDateSignal(text.slice(0, 1200)), text_pointer: textPointer, limitation: text ? "" : "Loaded source has no lossless_text available." });
   documentMap.push(documentRow);
-  artifactInventoryMap.push({ artifact_id: documentId, document_id: documentId, document_name: title, artifact_class: artifactClass, artifact_family: rootFamily, artifact_status: "FOUND_INDEXED", source_url: sourceUrl, canonical_url: source.canonical_url || source.url || "", lossless_artifact_name: artifactName, classification_basis: "SOURCE_URL|TITLE_OR_FIRST_HEADING|LEGAL_ARTIFACT_CLASS_RULE", boundary_note: "Document inventory only. No remedial route is assigned in M9." });
+  artifactInventoryMap.push({ artifact_id: documentId, document_id: documentId, document_name: title, artifact_class: artifactClass, artifact_family: rootFamily, artifact_status: "FOUND_INDEXED", source_url: sourceUrl, canonical_url: source.canonical_url || source.url || "", lossless_artifact_name: artifactName, classification_basis: "SOURCE_URL|TITLE_OR_FIRST_HEADING|LEGAL_ARTIFACT_CLASS_RULE", boundary_note: "Document inventory only." });
   if (!text) {
     qualityRepairQueue.push(repairRow({ repair_type: "MISSING_LOSSLESS_TEXT", scope: "document", document_id: documentId, source_artifact: artifactName, pointer: sourceId, reason: "Source row exists but lossless_text is empty." }));
     return;
@@ -150,9 +151,9 @@ function ingestSource(ctx) {
 
   for (const unit of units) {
     macroUnitMap.push(unit);
-    if (["ANNEXURE", "SCHEDULE", "APPENDIX", "ADDENDUM", "EXHIBIT"].includes(unit.unit_type)) embeddedUnitMap.push({ embedded_unit_id: unit.unit_id, section_id: unit.section_id, document_id: unit.document_id, host_document_id: unit.document_id, internal_unit: unit.heading_label, unit_type: unit.unit_type, artifact_class: classifyEmbeddedUnit(unit.heading_label), source: sourceUrl, source_type: "EMBEDDED_UNIT", source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", navigation_pointer: unit.location_reference, limitation: "Embedded legal/governance unit indexed inside host document." });
-    if (unit.unit_type === "NOTICE" || /notice|privacy|contact|grievance/i.test(unit.heading_label)) noticeCandidateMap.push({ notice_id: `${unit.unit_id}.NOTICE`, document_id: unit.document_id, unit_id: unit.unit_id, notice_candidate_label: unit.heading_label, source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", navigation_pointer: unit.location_reference, boundary_note: "Notice candidate only. Semantic label belongs to M9-B." });
-    for (const familyLabel of inferControlFamilies(unit.heading_label)) controlLanguageCandidateMap.push({ control_candidate_id: `${unit.unit_id}.${familyLabel}`, document_id: unit.document_id, unit_id: unit.unit_id, section_id: unit.section_id, control_language_family_candidate: familyLabel, source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", navigation_pointer: unit.location_reference, boundary_note: "Control-language candidate only. Semantic confirmation belongs to M9-B." });
+    if (["ANNEXURE", "SCHEDULE", "APPENDIX", "ADDENDUM", "EXHIBIT"].includes(unit.unit_type)) embeddedUnitMap.push({ embedded_unit_id: unit.unit_id, section_id: unit.section_id, document_id: unit.document_id, host_document_id: unit.document_id, internal_unit: unit.heading_label, unit_type: unit.unit_type, artifact_class: classifyEmbeddedUnit(unit.heading_label), source: sourceUrl, source_type: "EMBEDDED_UNIT", source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", navigation_pointer: unit.location_reference, limitation: "Embedded unit indexed inside host document." });
+    if (unit.unit_type === "NOTICE" || /notice|privacy|contact|grievance/i.test(unit.heading_label)) noticeCandidateMap.push({ notice_id: `${unit.unit_id}.NOTICE`, document_id: unit.document_id, unit_id: unit.unit_id, notice_candidate_label: unit.heading_label, source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", navigation_pointer: unit.location_reference, boundary_note: "Notice candidate only. Semantic label belongs to canonical M9 instructions." });
+    for (const familyLabel of inferControlFamilies(unit.heading_label)) controlLanguageCandidateMap.push({ control_candidate_id: `${unit.unit_id}.${familyLabel}`, document_id: unit.document_id, unit_id: unit.unit_id, section_id: unit.section_id, control_language_family_candidate: familyLabel, source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", navigation_pointer: unit.location_reference, boundary_note: "Control-language candidate only. Semantic confirmation belongs to canonical M9 instructions." });
     if (/indemn/i.test(unit.heading_label)) indemnityCandidateMap.push({ indemnity_candidate_id: `${unit.unit_id}.INDEMNITY`, document_id: unit.document_id, unit_id: unit.unit_id, section_id: unit.section_id, indemnity_clause_location: unit.heading_label, source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", navigation_pointer: unit.location_reference, boundary_note: "Indemnity location candidate only." });
   }
 
@@ -162,25 +163,44 @@ function ingestSource(ctx) {
     const url = match[0].replace(/[.,;]+$/, "");
     if (!url || url === sourceUrl) continue;
     refCount += 1;
-    crossDocumentReferenceMap.push({ cross_reference_id: `${documentId}.REF.${String(refCount).padStart(3, "0")}`, from_document_id: documentId, to_document_or_policy: url, to_url_or_label: url, reference_type_candidate: "EXTERNAL_URL_REFERENCE", source_type: "REFERENCED_URL", source_corpus_status: "REFERENCED_BUT_NOT_FETCHED", status: "REFERENCED_BUT_NOT_FETCHED", boundary_note: "Reference extracted from loaded legal/governance text; no new fetch performed." });
+    crossDocumentReferenceMap.push({ cross_reference_id: `${documentId}.REF.${String(refCount).padStart(3, "0")}`, from_document_id: documentId, to_document_or_policy: url, to_url_or_label: url, reference_type_candidate: "EXTERNAL_URL_REFERENCE", source_type: "REFERENCED_URL", source_corpus_status: "REFERENCED_BUT_NOT_FETCHED", status: "REFERENCED_BUT_NOT_FETCHED", boundary_note: "Reference extracted from loaded text; no new fetch performed." });
   }
 }
 
 function extractMacroUnits({ artifactName, sourceId, documentId, text, artifactClass }) {
   const lines = text.split(/\r?\n/);
-  const headings = [];
+  const rawHeadings = [];
   for (let i = 0; i < lines.length; i += 1) {
     const heading = normalizeLine(lines[i]);
     if (!heading) continue;
-    if (i === 0 || isReliableHeading({ heading, previous: normalizeLine(lines[i - 1]), next: normalizeLine(lines[i + 1]), artifactClass })) headings.push({ line: i + 1, heading, char_start: charOffsetForLine(lines, i) });
+    if (i === 0 || isReliableHeading({ heading, previous: normalizeLine(lines[i - 1]), next: normalizeLine(lines[i + 1]), artifactClass })) rawHeadings.push({ line: i + 1, heading, char_start: charOffsetForLine(lines, i) });
   }
-  return headings.slice(0, MAX_UNITS_PER_SOURCE).map((item, index) => {
-    const next = headings[index + 1];
+
+  const selected = rawHeadings.slice(0, MAX_UNITS_PER_SOURCE);
+  const units = selected.map((item, index) => {
+    const next = selected[index + 1];
     const charEnd = next ? Math.max(item.char_start, next.char_start - 1) : text.length;
     const unitId = `${makeId(sourceId)}.UNIT.${String(index + 1).padStart(3, "0")}`;
-    const unitType = inferUnitType(item.heading);
-    return { unit_id: unitId, section_id: unitId, artifact_reference: documentId, document_id: documentId, unit_type: unitType, heading_label: item.heading, heading_level: inferHeadingLevel(item.heading), parent_unit_id: "", child_unit_ids: [], relationship_to_host: "HOSTS_UNIT", source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", lossless_artifact_name: artifactName, location_reference: { lossless_artifact_name: artifactName, source_id: sourceId, text_field: "lossless_text", line_start: item.line, line_end: next ? Math.max(item.line, next.line - 1) : lines.length, char_start: item.char_start, char_end: charEnd, char_count: Math.max(0, charEnd - item.char_start) }, extraction_method: unitType === "SECTION" ? "MACRO_HEADING_SCAN" : `${unitType}_PATTERN`, confidence: "DETERMINISTIC_CANDIDATE", boundary_note: "Macro legal/governance unit pointer only. Semantic subcat labeling belongs to M9-B." };
+    const unitType = index === 0 ? "DOCUMENT_TITLE" : inferUnitType(item.heading);
+    const headingLevel = index === 0 ? 0 : inferHeadingLevel(item.heading, unitType);
+    return { unit_id: unitId, section_id: unitId, artifact_reference: documentId, document_id: documentId, unit_type: unitType, heading_label: item.heading, heading_level: headingLevel, parent_unit_id: "", child_unit_ids: [], relationship_to_host: "HOSTS_UNIT", source_corpus_status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS", status: "FOUND_INDEXED", lossless_artifact_name: artifactName, location_reference: { lossless_artifact_name: artifactName, source_id: sourceId, text_field: "lossless_text", line_start: item.line, line_end: next ? Math.max(item.line, next.line - 1) : lines.length, char_start: item.char_start, char_end: charEnd, char_count: Math.max(0, charEnd - item.char_start) }, extraction_method: unitType === "SECTION" || unitType === "SUBSECTION" || unitType === "CLAUSE_GROUP" ? "HEADING_INDEX" : `${unitType}_PATTERN`, confidence: "DETERMINISTIC_CANDIDATE", boundary_note: "Structural unit pointer only. Semantic labels are added later by canonical M9 instructions." };
   });
+
+  const stack = [];
+  for (const unit of units) {
+    const level = Number(unit.heading_level || 0);
+    if (level > 0) {
+      for (let idx = level; idx < stack.length; idx += 1) stack[idx] = null;
+      const parent = [...stack].slice(0, level).reverse().find(Boolean);
+      if (parent) {
+        unit.parent_unit_id = parent.unit_id;
+        parent.child_unit_ids.push(unit.unit_id);
+        unit.relationship_to_host = "CHILD_UNIT";
+      }
+    }
+    stack[level] = unit;
+  }
+  return units;
 }
 
 function isReliableHeading({ heading, previous, next, artifactClass }) {
@@ -190,7 +210,7 @@ function isReliableHeading({ heading, previous, next, artifactClass }) {
   if (/^[a-z]/.test(heading)) return false;
   if (/^\(?[ivx]+\)?[.)]\s+/i.test(heading)) return false;
   if (/^(annexure|schedule|appendix|exhibit|addendum)\s+[a-z0-9]+\b/i.test(heading)) return true;
-  if (/^(\d+|\d+\.\d+)(\.|\))?\s+[A-Z][A-Za-z]/.test(heading)) return true;
+  if (/^(\d+\.\d+\.\d+|\d+\.\d+|\d+)(\.|\))?\s+[A-Z][A-Za-z]/.test(heading)) return true;
   if (knownLegalHeadingPattern().test(heading)) return true;
   if (artifactClass === "PRIVACY_POLICY" && /privacy|security|retention|deletion|sub-?processors?|eea|uk|swiss/i.test(heading)) return true;
   if (isTitleCaseHeading(heading) && heading.length <= 90 && !looksLikeContinuation(heading, previous, next)) return true;
@@ -199,10 +219,11 @@ function isReliableHeading({ heading, previous, next, artifactClass }) {
 
 function knownLegalHeadingPattern() { return /\b(terms|privacy policy|data retention|deletion|data security|annexure|schedule|appendix|addendum|service level|support services|data processing|sub-?processors?|acceptable use|prohibited use|ownership|intellectual property|confidentiality|warrant(y|ies)|disclaimer|limitation of liability|indemnification|indemnity|governing law|jurisdiction|termination|payment|billing|security|trust center|notice|contact|grievance|definitions|complete agreement)\b/i; }
 function looksLikeContinuation(heading, previous, next) { return Boolean((previous && /[,;:]$/.test(previous)) || (next && /^[a-z]/.test(next)) || (heading.split(/\s+/).length > 12 && !knownLegalHeadingPattern().test(heading))); }
-function inferUnitType(heading) { if (/^annexure\b/i.test(heading)) return "ANNEXURE"; if (/^schedule\b/i.test(heading)) return "SCHEDULE"; if (/^appendix\b/i.test(heading)) return "APPENDIX"; if (/^exhibit\b/i.test(heading)) return "EXHIBIT"; if (/^addendum\b/i.test(heading) || /data processing addendum/i.test(heading)) return "ADDENDUM"; if (/notice|privacy policy|california|eea|uk|swiss|contact|grievance/i.test(heading)) return "NOTICE"; return "SECTION"; }
+function inferUnitType(heading) { if (/^annexure\b/i.test(heading)) return "ANNEXURE"; if (/^schedule\b/i.test(heading)) return "SCHEDULE"; if (/^appendix\b/i.test(heading)) return "APPENDIX"; if (/^exhibit\b/i.test(heading)) return "EXHIBIT"; if (/^addendum\b/i.test(heading) || /data processing addendum/i.test(heading)) return "ADDENDUM"; if (/notice|privacy policy|california|eea|uk|swiss|contact|grievance/i.test(heading)) return "NOTICE"; if (/^\d+\.\d+\.\d+/.test(heading)) return "CLAUSE_GROUP"; if (/^\d+\.\d+/.test(heading)) return "SUBSECTION"; return "SECTION"; }
+function inferHeadingLevel(heading, unitType) { if (unitType === "DOCUMENT_TITLE") return 0; if (["ANNEXURE", "SCHEDULE", "APPENDIX", "ADDENDUM", "EXHIBIT"].includes(unitType)) return 1; if (/^\d+\.\d+\.\d+/.test(heading)) return 3; if (/^\d+\.\d+/.test(heading)) return 2; return 1; }
 function classifyEmbeddedUnit(label) { if (/data processing|dpa/i.test(label)) return "DATA_PROCESSING_AGREEMENT"; if (/service level|sla|support/i.test(label)) return "SLA_SUPPORT_TERMS"; if (/sub-?processor/i.test(label)) return "SUBPROCESSOR_LIST"; if (/privacy|eea|uk|swiss|california|ccpa|cpra/i.test(label)) return "PRIVACY_POLICY"; if (/acceptable use|prohibited use|content policy/i.test(label)) return "ACCEPTABLE_USE_POLICY"; if (/security|trust/i.test(label)) return "SECURITY_POLICY"; if (/intellectual property|copyright|ip/i.test(label)) return "IP_POLICY"; return "HOSTED_LEGAL_ARTIFACT"; }
 function inferControlFamilies(label) { const out = new Set(); if (/terms|agreement|scope|accept|bound/i.test(label)) out.add("FORMATION_CONTRACT"); if (/data|privacy|retention|deletion|sub-?processor|eea|california/i.test(label)) out.add("DATA_PRIVACY"); if (/security|trust|vulnerability|incident/i.test(label)) out.add("SECURITY"); if (/use|prohibited|restriction|scrape|reverse engineer|train/i.test(label)) out.add("USE_SAFETY"); if (/agent|authority|on behalf/i.test(label)) out.add("AGENT_AUTHORITY"); if (/intellectual property|copyright|ownership|license|reverse engineer|output|content/i.test(label)) out.add("IP_CONTENT"); if (/liability|warranty|disclaimer|fees|payment|billing|indirect|consequential/i.test(label)) out.add("COMMERCIAL_LEGAL_ALLOCATION"); if (/contact|support|notice|grievance/i.test(label)) out.add("CONTACT_ROUTES"); if (/indemn/i.test(label)) out.add("INDEMNITY"); return [...out]; }
-function pushMissing(ctx, row) { ctx.missingSourceMap.push(row); ctx.artifactAbsenceAccessMap.push({ absence_id: row.missing_id, missing_or_limited_item: row.missing_or_limited_item, expected_location: row.expected_location, expected_artifact_class: row.artifact_class, source_type: row.source_type, source_corpus_status: row.source_corpus_status, status: row.status, limitation: row.limitation, boundary_note: "Absence/access row only. Remedial routes are outside M9." }); }
+function pushMissing(ctx, row) { ctx.missingSourceMap.push(row); ctx.artifactAbsenceAccessMap.push({ absence_id: row.missing_id, missing_or_limited_item: row.missing_or_limited_item, expected_location: row.expected_location, expected_artifact_class: row.artifact_class, source_type: row.source_type, source_corpus_status: row.source_corpus_status, status: row.status, limitation: row.limitation, boundary_note: "Absence/access row only." }); }
 function missingFamilyRow({ artifactName, reason }) { const family = stripLosslessPrefix(artifactName); return { missing_id: `${family}.ABS.001`, missing_or_limited_item: family, expected_location: "Loaded legal/governance corpus", source_type: "ABSENT_FAMILY", source_corpus_status: "UNKNOWN_NOT_SEARCHED", artifact_class: "UNKNOWN_LEGAL_ARTIFACT", status: "UNKNOWN_NOT_SEARCHED", search_basis: artifactName, limitation: reason }; }
 function missingRowFromSource({ artifactName, row, status }) { const family = stripLosslessPrefix(artifactName); const label = row?.title || row?.url || row?.path || row?.reason || row?.source_id || family; return { missing_id: `${family}.ABS.${hashish(String(label)).slice(0, 8)}`, missing_or_limited_item: label, expected_location: row?.url || row?.path || "Loaded legal/governance corpus", source_type: status === "REFERENCED_BUT_NOT_FETCHED" ? "REFERENCED_URL" : "ABSENT_FAMILY", source_corpus_status: status, artifact_class: inferArtifactClass({ source: row || {}, title: label, sourceUrl: row?.url || "", textHead: "" }), status, search_basis: row?.search_basis || row?.url || row?.path || artifactName, limitation: row?.reason || row?.limitation || row?.status || "Legal/governance source was missing, limited, or not loaded." }; }
 function buildLimitations({ documentMap, macroUnitMap, missingSourceMap, qualityRepairQueue }) { const out = []; if (!documentMap.length) out.push({ limitation_type: "NO_LOADED_LEGAL_DOCUMENTS", limitation: "No loaded legal/governance documents were available for deterministic indexing.", blocking: true }); if (documentMap.length && !macroUnitMap.length) out.push({ limitation_type: "NO_MACRO_UNITS", limitation: "Loaded legal/governance documents were found, but no reliable macro headings were detected.", blocking: false }); if (missingSourceMap.length) out.push({ limitation_type: "MISSING_OR_LIMITED_SOURCES", limitation: `${missingSourceMap.length} legal/governance source rows were missing, limited, rejected, or reference-only.`, blocking: false }); for (const row of qualityRepairQueue) out.push({ limitation_type: row.repair_type, limitation: row.reason, affected_ref: row.pointer || row.document_id || row.source_artifact || "", blocking: false }); return out; }
@@ -212,7 +233,6 @@ function deriveDocumentTitle({ source, text }) { const explicit = source.title |
 function cleanTitle(value) { return String(value || "").replace(/\s+/g, " ").trim().slice(0, 180); }
 function normalizeLine(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
 function isTitleCaseHeading(value) { const words = value.split(/\s+/).filter(Boolean); if (!words.length || words.length > 10) return false; const titleish = words.filter((word) => /^[A-Z0-9][A-Za-z0-9'()/-]*$/.test(word)).length; return titleish / words.length >= 0.65; }
-function inferHeadingLevel(heading) { if (/^\d+\.\d+/.test(heading)) return 2; return 1; }
 function extractVersionOrDateSignal(text) { const match = String(text || "").match(/(updated on|effective date|last updated|version)[:\s]+([^\n.]{4,80})/i); return match ? cleanTitle(`${match[1]} ${match[2]}`) : ""; }
 function charOffsetForLine(lines, targetIndex) { let offset = 0; for (let i = 0; i < targetIndex; i += 1) offset += String(lines[i] || "").length + 1; return offset; }
 function repairRow({ repair_type, scope, source_artifact = "", document_id = "", pointer = "", reason }) { return { repair_type, scope, source_artifact, document_id, pointer, reason, blocking: false }; }
