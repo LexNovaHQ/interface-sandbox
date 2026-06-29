@@ -4,13 +4,9 @@ compatibility_date = "2026-06-29"
 workers_dev = false
 
 routes = [
+  { pattern = "sandbox.lexnovahq.com", zone_name = "lexnovahq.com" },
   { pattern = "sandbox.lexnovahq.com/interface-diligence/diligence-system*", zone_name = "lexnovahq.com" },
   { pattern = "sandbox.lexnovahq.com/public*", zone_name = "lexnovahq.com" },
   { pattern = "sandbox.lexnovahq.com/vault*", zone_name = "lexnovahq.com" },
   { pattern = "sandbox.lexnovahq.com/health", zone_name = "lexnovahq.com" }
 ]
-
-[vars]
-# Replace this before deploy, or set BACKEND_ORIGIN as a Cloudflare Worker environment variable.
-# Example: BACKEND_ORIGIN = "https://interface-diligence-artifacts-xxxxx.a.run.app"
-BACKEND_ORIGIN = "https://REPLACE_WITH_CLOUD_RUN_ORIGIN"

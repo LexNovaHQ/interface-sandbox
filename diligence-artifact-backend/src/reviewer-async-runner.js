@@ -105,7 +105,7 @@ export async function runReviewerWorkerOnce({ run_id, actor = "async_worker", au
 
 function dispatchWorkerSoon({ run_id, base_url, auto_continue }) {
   setTimeout(() => {
-    dispatchWorker({ run_id, base_url, auto_continue }).catch((error) => {
+    runReviewerWorkerOnce({ run_id, actor: "async_worker", auto_continue: Boolean(auto_continue) }).catch((error) => {
       logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCH_FAILED", actor: "async_dispatcher", payload: { error_message: error?.message || String(error) } }).catch(() => {});
     });
   }, 0);
@@ -176,6 +176,11 @@ function asyncResponse({ run, queued, already_running, terminal }) {
     status: run.status,
     current_phase: run.current_phase,
     runner_state: run.runner_state || "IDLE",
+    runner_last_error: run.runner_last_error || "",
+    runner_failed_at: run.runner_failed_at || "",
+    runner_worker_started_at: run.runner_worker_started_at || "",
+    runner_requested_at: run.runner_requested_at || "",
+    runner_last_completed_at: run.runner_last_completed_at || "",
     poll: `/v1/reviewer/jobs/${run.run_id}`
   };
 }
@@ -192,6 +197,11 @@ function workerResponse({ run, completed_step, dispatched_next, terminal = false
     run_id: run.run_id,
     status: run.status,
     current_phase: run.current_phase,
-    runner_state: run.runner_state || "IDLE"
+    runner_state: run.runner_state || "IDLE",
+    runner_last_error: run.runner_last_error || "",
+    runner_failed_at: run.runner_failed_at || "",
+    runner_worker_started_at: run.runner_worker_started_at || "",
+    runner_requested_at: run.runner_requested_at || "",
+    runner_last_completed_at: run.runner_last_completed_at || ""
   };
 }

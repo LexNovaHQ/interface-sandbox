@@ -10,6 +10,10 @@ export default {
     const incomingUrl = new URL(request.url);
     const path = incomingUrl.pathname;
 
+    if (path === "/") {
+      return Response.redirect(`${incomingUrl.origin}/interface-diligence/diligence-system/`, 302);
+    }
+
     if (path === "/interface-diligence/diligence-system") {
       return Response.redirect(`${incomingUrl.origin}/interface-diligence/diligence-system/`, 301);
     }
