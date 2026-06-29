@@ -1,1 +1,3 @@
-console.log("report sync");
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("report ready");
+});
