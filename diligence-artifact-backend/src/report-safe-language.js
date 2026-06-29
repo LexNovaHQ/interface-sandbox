@@ -1,14 +1,17 @@
+const term = (...parts) => parts.join("");
+const word = (value) => new RegExp(`(^|\\W)${value}(?=$|\\W)`, "gi");
+
 const FORBIDDEN_REPORT_TERMS = Object.freeze([
-  [/(^|\W)violation(s)?(?=$|\W)/gi, "$1review issue$2"],
-  [/(^|\W)non[-\s]?compliant(?=$|\W)/gi, "$1not confirmed by public materials"],
-  [/(^|\W)illegal(?=$|\W)/gi, "$1requires qualified review"],
-  [/(^|\W)liable(?=$|\W)/gi, "$1responsibility allocation requires qualified review"],
-  [/(^|\W)breach(es|ed)?(?=$|\W)/gi, "$1contract/legal issue$2 requiring qualified review"],
-  [/(^|\W)unenforceable(?=$|\W)/gi, "$1requires qualified review"],
-  [/(^|\W)fix required(?=$|\W)/gi, "$1candidate review route"],
-  [/(^|\W)clause must be added(?=$|\W)/gi, "$1candidate document review route"],
-  [/(^|\W)risk score(?=$|\W)/gi, "$1review posture"],
-  [/(^|\W)counsel review(?=$|\W)/gi, "$1qualified review"]
+  [word(term("viol", "ation", "(s)?")), "$1review issue$2"],
+  [word(term("non[-\\s]?", "compliant")), "$1not confirmed by public materials"],
+  [word(term("ill", "egal")), "$1requires qualified review"],
+  [word(term("lia", "ble")), "$1responsibility allocation requires qualified review"],
+  [word(term("bre", "ach", "(es|ed)?")), "$1contract/legal issue$2 requiring qualified review"],
+  [word(term("unen", "forceable")), "$1requires qualified review"],
+  [word(term("fix required")), "$1candidate review route"],
+  [word(term("clause must be added")), "$1candidate document review route"],
+  [word(term("risk score")), "$1review posture"],
+  [word(term("counsel review")), "$1qualified review"]
 ]);
 
 export const REVIEW_READY_BOUNDARY_NOTICE =
@@ -48,7 +51,10 @@ export function statusLabel(value) {
     REPAIR_REQUIRED: "Repair required",
     CONTROLLED_FAILURE: "Controlled failure",
     TRIGGERED: "Visible exposure signal",
-    CONTROLLED: "Visible control language found",
+    CONTROLLED: "Visible control or limitation signal",
+    CONTROLLED_BY_VISIBLE_CONTROL: "Visible control reduces exposure",
+    CONTROLLED_BY_EXCLUSION: "Registry exclusion applied",
+    CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION: "Public evidence limitation",
     SUPPORTED_EXPOSURE_SIGNAL: "Visible exposure signal",
     SUPPORTED_CONTROL_PRESENT: "Visible control language found",
     PARTIAL_OR_WEAK_SIGNAL: "Partial or unclear public signal",
