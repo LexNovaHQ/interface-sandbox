@@ -11,7 +11,7 @@ canonical_output_pattern: exposure_registry_batch_validation__{GROUP}__{NNN}
 
 execution_rule:
   Execute M12 batch validation only.
-  Validate one active M11 batch ledger supplied by the backend.
+  Validate one active M11 semantic batch ledger supplied by the backend.
   Do not create new source evidence.
   Do not rewrite the M11 batch ledger.
   Do not emit global challenge output.
@@ -22,8 +22,11 @@ required_inputs:
   - active m11_batch_registry_ledger
   - expected_threat_ids[] for the active batch
   - AI_THREAT_REGISTRY.yaml row metadata for the active batch
+  - backend-prefilled deterministic registry spine for the active batch
+  - parsed Hunter_Trigger material for the active batch
   - 03_REGISTRY_EVALUATION_RULES.yaml
   - legal_cartography_index consumption trace where supplied
+  - M9-guided full lossless evidence units where supplied
   - upstream limitation context where supplied
 
 required_machine_output:
@@ -47,9 +50,9 @@ stop_condition:
 
 ## M12B.S1 — Function
 
-`M12B.S1.C1` M12 batch validation is a challenge-only gate for one M11 batch.
+`M12B.S1.C1` M12 batch validation is a challenge-only gate for one M11 semantic batch.
 
-`M12B.S1.C2` It validates shape, custody, row identity, Threat_ID coverage, forbidden output leakage, and obvious false-green or undertrigger risk within the active batch.
+`M12B.S1.C2` It validates shape, custody, row identity, Threat_ID coverage, semantic evidence application, status-input sufficiency, forbidden output leakage, and obvious false-green or undertrigger risk within the active batch.
 
 `M12B.S1.C3` It must not create new registry findings, new evidence, new statuses, or repaired batch rows. It may only pass, pass with limitation, or require repair of the active batch.
 
@@ -60,11 +63,16 @@ The validator must check:
 1. returned_threat_ids[] equals backend expected_threat_ids[] exactly.
 2. batch_registry_ledger[] has exactly one row per expected Threat_ID.
 3. No missing, duplicate, grouped, composite, category, or unexpected Threat_ID appears.
-4. Every returned row contains the seven locked material fields plus Threat_ID and trigger_status where required by the M11 batch contract.
-5. UNI rows in the batch were not treated as not-applicable.
-6. basis_proof does not rely only on M9 titles, route labels, headings, source labels, or summaries unless the row is about document presence, absence, navigation, custody, or limitation.
-7. Row limitations are row-specific where evidence is weak, missing, gated, access-failed, or controlled.
-8. The M11 batch output did not emit final material profiles, workpad, forensics, global challenge, compiler, renderer, or report output.
+4. Every returned row contains only the semantic row fields permitted by M11_C_BATCH_EVALUATION.
+5. No row emits deterministic registry spine fields as model-authored output.
+6. No row emits final controlled/triggered profile containers or workpad/forensic artifacts.
+7. UNI rows in the batch were not treated as not-applicable.
+8. basis_proof applies row-specific Hunter Trigger conditions, trigger-if, and exclude-if.
+9. control_exclusion_evaluation addresses visible controls and Hunter exclude logic where relevant.
+10. evidence_source_basis binds to M9-guided full lossless units, locked upstream proof, or formal limitation.
+11. status_inputs are present and sufficient for backend final status derivation.
+12. Row limitations are row-specific where evidence is weak, missing, gated, access-failed, M9-silent, or controlled.
+13. The M11 batch output did not emit final material profiles, workpad, forensics, global challenge, compiler, renderer, or report output.
 
 ## M12B.S3 — Output Contract
 
