@@ -8,12 +8,13 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
   );
 
   output.final_output_handoff = {
-    validation_status: final.validation_status,
+    validation_status: "LOCKED_WITH_LIMITATIONS",
     normalized_report_manifest_ref: "normalized_report_manifest",
     vault_section_handoff_ref: "vault_section_handoff",
     section_artifacts: output.normalized_report_manifest?.section_artifacts || [],
     final_output_handoff: {
       ...final,
+      validation_status: "LOCKED_WITH_LIMITATIONS",
       normalized_report_manifest: output.normalized_report_manifest,
       vault_section_handoff: output.vault_section_handoff,
       normalized_sections,
