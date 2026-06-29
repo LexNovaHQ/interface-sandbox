@@ -15,6 +15,8 @@ const ART = Object.freeze({
   urlManifest: "url_manifest",
   oldCorpus: "lossless_source_corpus",
   sourceHandoff: "source_discovery_handoff",
+  uploadedSourceDocumentIndex: "uploaded_source_document_index",
+  uploadedSourceDocumentCorpus: "uploaded_source_document_corpus",
   legalDeterministicMap: "legal_cartography_deterministic_map",
   legalSemanticProfile: "legal_cartography_semantic_profile",
   legalReinvestigationWorkpad: "legal_cartography_reinvestigation_workpad",
@@ -101,6 +103,7 @@ export const TARGET_PROFILE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_fam
 export const PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__P1_PRODUCT", "lossless_family__P2_PLATFORM_FEATURE_SOLUTION", "lossless_family__P3_AI_CAPABILITY_TECHNICAL", "lossless_family__P4_USE_CASE_INDUSTRY", "lossless_family__P5_ENTERPRISE_PRICING"]);
 export const DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__D1_SECURITY_TRUST", "lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER", "lossless_family__D3_DATA_GOVERNANCE_CONTROLS", "lossless_family__D4_DOCS_API_DATA_FLOW", "lossless_family__D5_AI_SAFETY_TRANSPARENCY"]);
 
+export const UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES = Object.freeze([ART.uploadedSourceDocumentIndex, ART.uploadedSourceDocumentCorpus]);
 export const AGENT_1A_ARTIFACT_NAMES = Object.freeze(["deduped_url_manifest"]);
 export const AGENT_1B_ARTIFACT_NAMES = Object.freeze(["source_family_index", ...LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES]);
 export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_ARTIFACT_NAMES]);
@@ -114,6 +117,7 @@ export const LEGACY_ARTIFACT_NAMES = Object.freeze([ART.urlManifest, ART.oldCorp
 
 export const ARTIFACT_NAMES = Object.freeze([
   ...LEGACY_ARTIFACT_NAMES,
+  ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES,
   ...AGENT_1_ARTIFACT_NAMES,
   ART.sourceHandoff,
   ART.legalDeterministicMap,
@@ -132,7 +136,7 @@ export const ARTIFACT_NAMES = Object.freeze([
   ART.renderer
 ]);
 
-export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "compiler", "portfolio_renderer", "operator"]);
+export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "document_source_ingestor", "compiler", "portfolio_renderer", "operator"]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a1a]: AGENT_1A_ARTIFACT_NAMES,
@@ -143,6 +147,7 @@ export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a4]: [ART.dataMain, ART.dataForensics],
   [AGENT_IDS.a5]: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: [ART.exposureBatchValidationPattern, ART.challenge],
+  document_source_ingestor: UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES,
   compiler: COMPILER_ARTIFACT_NAMES,
   portfolio_renderer: [ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
@@ -175,6 +180,7 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a4]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
   [AGENT_IDS.a5]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
+  document_source_ingestor: [],
   compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
   portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
