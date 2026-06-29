@@ -65,7 +65,7 @@ export async function advanceReviewerRun({ run_id }) {
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
 
   try {
-    if (phase === "M9" && isM9HybridEnabled()) {
+    if (phase === "M9") {
       await runM9HybridPhase({ run, phase, contract });
     } else if (phase === "M11") {
       await runM11OrchestratedPhase({ run, phase, contract });
@@ -215,10 +215,6 @@ function unwrapArtifactForSave({ artifactName, artifact }) {
   if (artifact?.[artifactName] && typeof artifact[artifactName] === "object") return artifact[artifactName];
   if (artifact?.artifact?.[artifactName] && typeof artifact.artifact[artifactName] === "object") return artifact.artifact[artifactName];
   return artifact;
-}
-
-function isM9HybridEnabled() {
-  return ["1", "true", "yes", "on"].includes(String(process.env.USE_M9_HYBRID || "").trim().toLowerCase());
 }
 
 async function runM12DeterministicChallengePhase({ run, phase, contract }) {
