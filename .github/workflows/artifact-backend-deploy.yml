@@ -123,6 +123,7 @@ jobs:
               "REVIEWER_PUBLIC_BASE_URL": os.environ.get("REVIEWER_PUBLIC_BASE_URL") or "https://sandbox.lexnovahq.com",
               "PUBLIC_REVIEWER_ENABLED": "true",
               "EXPRESS_JSON_LIMIT": "50mb",
+              "USE_M9_HYBRID": "true",
           }
 
           missing = [key for key in [

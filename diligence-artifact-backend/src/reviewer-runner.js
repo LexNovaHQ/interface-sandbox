@@ -8,6 +8,7 @@ import { buildM6SourceDiscoveryHandoff } from "./m6-bucket-router.js";
 import { validateM9LegalCartographyIndex } from "./m9-validator.js";
 import { validateM7TargetProfileOutput } from "./m7-validator.js";
 import { validateM8TargetFeatureOutput } from "./m8-validator.js";
+import { runM9HybridOrchestrator, M9_FINAL_ARTIFACT_NAME } from "./m9-hybrid-orchestrator.js";
 import { runM11OrchestratedPhase } from "./m11-orchestrator.js";
 import { buildM12DeterministicChallengeGate } from "./m12-deterministic-challenge.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
@@ -25,6 +26,14 @@ const MODEL_LIMITATION_PHASES = new Set(["M9", "M7_TARGET_PROFILE", "M7_TARGET_P
 const TARGET_FEATURE_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
 const VALIDATION_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object", "missing legal_cartography_index object", "missing keys", "extra keys", "must be object", "must be an object", "must be array", "contains material artifact", "contains forbidden", "forbidden key", "forbidden string", "MODEL_OUTPUT_MISSING_ARTIFACT", "DETERMINISTIC_OUTPUT_MISSING_ARTIFACT", "UNKNOWN_PHASE", "INVALID_PHASE_CONTRACT"]);
 const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "limited", "omission", "absent", "insufficient public", "unknown_not_searched", "standalone_source_absent", "source_rejected_or_failed", "access_failed", "gated", "deferred", "coverage", "source-ref row missing source-url", "bad source syntax", "must not be empty", "missing source_corpus_status", "missing from document_coverage_index", "invalid status", "invalid source_corpus_status", "invalid artifact_class", "invalid source_type", "invalid lock_status", "forbidden loose status", "forbidden artifact_class drift", "ABSENT_AFTER_TARGETED_PROBE is not a valid source_corpus_status"]);
+const M9_HYBRID_SEMANTIC_PROMPT_FILES = Object.freeze([
+  "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md",
+  "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
+  "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+  "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
+  "agent-packages/agent_2b_m9/M9_FIELD_DERIVATION_REGISTRY.yaml",
+  "agent-packages/agent_2b_m9/00_VALIDATOR_RULES_INTEGRATED.md"
+]);
 const ART = Object.freeze({
   legalIndex: "legal_cartography_index",
   targetMain: "target_" + "profile",
@@ -56,7 +65,9 @@ export async function advanceReviewerRun({ run_id }) {
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
 
   try {
-    if (phase === "M11") {
+    if (phase === "M9" && isM9HybridEnabled()) {
+      await runM9HybridPhase({ run, phase, contract });
+    } else if (phase === "M11") {
       await runM11OrchestratedPhase({ run, phase, contract });
     } else if (phase === "M12") {
       await runM12DeterministicChallengePhase({ run, phase, contract });
@@ -117,6 +128,97 @@ async function saveDeterministicArtifacts({ run, phase, actor, writes, output })
   }
 
   await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PHASE_COMPLETED", actor, payload: { phase, writes } });
+}
+
+async function runM9HybridPhase({ run, phase, contract }) {
+  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const modelMetadata = [];
+
+  const result = await runM9HybridOrchestrator({
+    run,
+    artifacts,
+    runSemanticModel: async ({ run: modelRun, artifacts: modelArtifacts, expected_artifact_name }) => {
+      const prompt = await buildPhasePrompt({
+        prompt_files: M9_HYBRID_SEMANTIC_PROMPT_FILES,
+        phase,
+        run: modelRun,
+        artifacts: modelArtifacts,
+        writes: [expected_artifact_name],
+        references: contract.references || []
+      });
+      const response = await callGeminiJson({ prompt, phase: "M9_SEMANTIC_CARTOGRAPHY" });
+      modelMetadata.push(response.metadata);
+      return response.json;
+    },
+    saveArtifact: async ({ artifactName, artifact }) => {
+      const unwrapped = unwrapArtifactForSave({ artifactName, artifact });
+      const lockStatus = resolveStatusFromArtifacts(unwrapped);
+      await saveArtifact(artifactSaveBody({
+        run_id: run.run_id,
+        phase,
+        agent_id: contract.agent_id,
+        artifact_name: artifactName,
+        artifact: unwrapped,
+        lock_status: lockStatus
+      }));
+    },
+    validateFinalIndex: validateM9FinalIndexForHybrid,
+    logger: null
+  });
+
+  const finalArtifact = result.final_output?.[M9_FINAL_ARTIFACT_NAME];
+  const phaseLockStatus = coerceModelStatus({
+    phase,
+    status: result.final_validation?.status || resolveStatusFromArtifacts(finalArtifact),
+    output: result.final_output
+  });
+
+  await logEvent({
+    run_id: run.run_id,
+    event_type: "M9_HYBRID_PHASE_COMPLETED",
+    actor: contract.agent_id,
+    payload: {
+      phase,
+      writes: result.artifacts_saved_in_order,
+      required_save_order: result.required_save_order,
+      required_save_order_respected: result.required_save_order_respected,
+      optional_artifacts_saved: result.optional_artifacts_saved,
+      lock_status: phaseLockStatus,
+      semantic_validation_status: result.semantic_validation?.status || "",
+      final_validation_status: result.final_validation?.status || "",
+      model_metadata: modelMetadata
+    }
+  });
+
+  await lockPhase({
+    run_id: run.run_id,
+    phase,
+    agent_id: contract.agent_id,
+    status: phaseLockStatus,
+    next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase
+  });
+}
+
+function validateM9FinalIndexForHybrid(output) {
+  const validation = validateM9LegalCartographyIndex(output);
+  const finalArtifact = output?.[M9_FINAL_ARTIFACT_NAME] || output?.legal_cartography_index;
+  return {
+    ok: validation.status === "PASS",
+    status: validation.status === "PASS" ? resolveStatusFromArtifacts(finalArtifact) : "REPAIR_REQUIRED",
+    errors: validation.status === "PASS" ? [] : [JSON.stringify(validation)],
+    warnings: validation.warnings || [],
+    raw: validation
+  };
+}
+
+function unwrapArtifactForSave({ artifactName, artifact }) {
+  if (artifact?.[artifactName] && typeof artifact[artifactName] === "object") return artifact[artifactName];
+  if (artifact?.artifact?.[artifactName] && typeof artifact.artifact[artifactName] === "object") return artifact.artifact[artifactName];
+  return artifact;
+}
+
+function isM9HybridEnabled() {
+  return ["1", "true", "yes", "on"].includes(String(process.env.USE_M9_HYBRID || "").trim().toLowerCase());
 }
 
 async function runM12DeterministicChallengePhase({ run, phase, contract }) {

@@ -1,11 +1,15 @@
 # 00_VALIDATOR_RULES_INTEGRATED
-## Agent 2B / M9 Current Backend Validator Overlay
+## Agent 2B / M9 Hybrid Validator Overlay
 
-This overlay binds the package to the current backend M9 validator and normalizer. It does not loosen validation. The model must comply with these exact values before returning JSON.
+This overlay binds the final compiled `legal_cartography_index` to the current backend M9 validator and normalizer.
 
-## Required top-level shape
+It does not loosen final artifact validation.
 
-Return exactly one object with one top-level key: `legal_cartography_index`.
+The internal artifacts `legal_cartography_deterministic_map`, `legal_cartography_semantic_profile`, and optional `legal_cartography_reinvestigation_workpad` are M9-owned internal artifacts. They are not the final downstream contract.
+
+## Required final top-level shape
+
+The final compiled artifact must contain exactly one final downstream root: `legal_cartography_index`.
 
 Inside `legal_cartography_index`, use exactly these keys:
 
@@ -38,18 +42,6 @@ Every `source_type` must be one of:
 - `REFERENCED_URL`
 - `ABSENT_FAMILY`
 
-Hard mappings:
-
-- `Embedded`, `EMBEDDED_TEXT`, embedded source fragments, embedded notices, and embedded sections -> `EMBEDDED_UNIT`
-- `Family Probe`, `ABSENT_PROBE`, and absent family checks -> `ABSENT_FAMILY`
-- `Referenced`, `REFERENCED_EXTERNAL`, and external referenced documents with no loaded text -> `REFERENCED_URL`
-- `UPLOADED_PUBLIC_MATERIAL` -> `URL`
-- `PASTED_PUBLIC_MATERIAL` -> `EMBEDDED_UNIT`
-- `SYNTHETIC_DEMO` -> `METADATA_ONLY`
-- loaded public URLs -> `URL`
-- internal cross-references inside a loaded document -> `INTERNAL_REFERENCE`
-- metadata-only listed material -> `METADATA_ONLY`
-
 ## Allowed source_corpus_status values only
 
 Every coverage, linked, and missing row must include `source_corpus_status` using one of:
@@ -61,13 +53,6 @@ Every coverage, linked, and missing row must include `source_corpus_status` usin
 - `STANDALONE_SOURCE_ABSENT`
 - `SOURCE_REJECTED_OR_FAILED`
 - `UNKNOWN_NOT_SEARCHED`
-
-Hard mappings:
-
-- `ABSENT_AFTER_TARGETED_PROBE` and `ABSENT_AFTER_M6_TARGETED_PROBE` -> `STANDALONE_SOURCE_ABSENT`
-- `REFERENCED_EXTERNAL` and `REFERENCED_NOT_AUTHORIZED_BY_M6` -> `REFERENCED_BUT_NOT_FETCHED`
-- `EMBEDDED_TEXT` and `PASTED_PUBLIC_MATERIAL` -> `FOUND_EMBEDDED_IN_LEGAL_CORPUS`
-- `UPLOADED_PUBLIC_MATERIAL` -> `FOUND_AS_PRIMARY_SOURCE`
 
 ## Allowed row status values only
 
@@ -90,14 +75,14 @@ Use only:
 
 Never use `ACTIVE`, `ABSENT`, `REJECTED`, `NOT_FETCHED`, `DUPLICATE_SUPPRESSED`, `ABSENT_AFTER_M6_TARGETED_PROBE`, `REFERENCED_NOT_AUTHORIZED_BY_M6`, or `UPLOADED_ONLY_LIMITATION`.
 
-## Allowed artifact_class values only
+## Artifact class discipline
 
-Use only the backend validator values.
+Use only the backend validator artifact-class values.
 
-Hard mappings:
+Keep these hard mappings:
 
-- `AI_USAGE_GOVERNANCE` -> `AI_TERMS_POLICY` when the item is an AI/usage legal terms document, `CONTENT_POLICY` when it is content/usage restriction material, or `HOSTED_LEGAL_ARTIFACT` if unclear.
-- `PRIVACY_ADJACENT_NOTICES` -> `COOKIE_POLICY` for cookie notices, `DATA_REQUEST_PAGE` for privacy/data request pages, `PRIVACY_POLICY` for privacy-policy material, otherwise `NOTICE_PAGE`.
+- `AI_USAGE_GOVERNANCE` -> `AI_TERMS_POLICY`, `CONTENT_POLICY`, or `HOSTED_LEGAL_ARTIFACT`
+- `PRIVACY_ADJACENT_NOTICES` -> `COOKIE_POLICY`, `DATA_REQUEST_PAGE`, `PRIVACY_POLICY`, or `NOTICE_PAGE`
 - `DPA` -> `DATA_PROCESSING_AGREEMENT`
 - `SLA` -> `SLA_SUPPORT_TERMS`
 - `TERMS_OF_USE` -> `TERMS_OF_SERVICE`
@@ -116,10 +101,16 @@ If `document_structure_index` contains Support Services, Support Terms, support 
 - `source_corpus_status: FOUND_EMBEDDED_IN_LEGAL_CORPUS`
 - `status: FOUND_EMBEDDED_IN_LEGAL_CORPUS`
 
+## Hybrid row enrichment
+
+Final rows may include additional navigation fields such as `document_id`, `section_id`, `lossless_artifact_name`, `heading_path`, `navigation_pointer`, semantic labels, confidence, and boundary notes.
+
+These enrichment fields must not replace the current required fields.
+
 ## Forbidden keys
 
-Do not emit `m6_authorization_status`, `m6_bucket_subcategory`, `legal_stack_summary`, `source_discovery_handoff`, target-profile artifacts, data-provenance artifacts, registry artifacts, final handoff, renderer payload, legal advice, compliance conclusions, sufficiency conclusions, enforceability assessments, risk conclusions, or registry evaluations.
+Do not emit `m6_authorization_status`, `m6_bucket_subcategory`, `legal_stack_summary`, target-profile artifacts, data-provenance artifacts, registry artifacts, final handoff, renderer payload, legal advice, compliance conclusions, sufficiency conclusions, enforceability assessments, risk conclusions, or registry evaluations inside the final compiled `legal_cartography_index`.
 
 ## Final self-check before output
 
-Before returning JSON, verify that no row contains a source_type, source_corpus_status, status, or artifact_class outside the allowed lists above. If a value is uncertain, use the nearest allowed normalized value and carry the uncertainty in `limitation`.
+Before returning/saving the final compiled index, verify that no row contains a source_type, source_corpus_status, status, or artifact_class outside the allowed lists above. If a value is uncertain, use the nearest allowed normalized value and carry the uncertainty in `limitation`.

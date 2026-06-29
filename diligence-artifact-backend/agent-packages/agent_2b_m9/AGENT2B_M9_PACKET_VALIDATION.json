@@ -1,32 +1,53 @@
 {
-  "overall_status": "SYNCED_FOR_CURRENT_BACKEND_TEST",
-  "source_package": "AGENT1_SOURCE_LEGAL_PROMPT_PACKET.zip",
-  "renamed_to": "agent_2b_m9",
-  "m6_ignored": true,
-  "m9_included": true,
+  "overall_status": "SYNCED_FOR_MINIMAL_M9_SEMANTIC_NAVIGATION_TEST",
   "backend_phase": "M9",
   "active_agent_id": "agent_2b_m9",
-  "validator_enum_sync": true,
-  "backend_normalizer_sync": true,
-  "structure_to_coverage_parity_sync": true,
-  "forbidden_old_values_blocked_or_normalized": [
-    "Embedded",
-    "EMBEDDED_TEXT",
-    "Family Probe",
-    "ABSENT_PROBE",
-    "Referenced",
-    "REFERENCED_EXTERNAL",
-    "AI_USAGE_GOVERNANCE",
-    "PRIVACY_ADJACENT_NOTICES",
-    "REFERENCED_NOT_AUTHORIZED_BY_M6",
-    "ABSENT_AFTER_M6_TARGETED_PROBE",
-    "UPLOADED_PUBLIC_MATERIAL",
-    "PASTED_PUBLIC_MATERIAL",
-    "SYNTHETIC_DEMO"
+  "active_phase_scope": "M9_ONLY",
+  "input_protocol_preserved": true,
+  "read_artifacts_preserved": [
+    "source_discovery_handoff",
+    "lossless_family__L1_CORE_TERMS_PRIVACY",
+    "lossless_family__L2_B2B_CONTRACTING",
+    "lossless_family__L3_AI_USAGE_GOVERNANCE",
+    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
+    "lossless_family__L5_LEGAL_HUB_HOSTED",
+    "lossless_family__L6_ENTITY_NOTICE"
   ],
-  "latest_live_failure_classes_addressed": [
-    "missing_limited_legal_governance_items invalid artifact_class: PRIVACY_ADJACENT_NOTICES",
-    "Support Services / Support Terms annexure appears in structure but is missing from document_coverage_index"
+  "hybrid_write_artifacts_in_order": [
+    "legal_cartography_deterministic_map",
+    "legal_cartography_semantic_profile",
+    "legal_cartography_index"
   ],
-  "ready_for_backend_prompt_loading": true
+  "final_downstream_required_artifact": "legal_cartography_index",
+  "field_registry_reference": "M9_FIELD_DERIVATION_REGISTRY.yaml",
+  "canonical_package_is_semantic_authority": true,
+  "sidecar_semantic_prompt_removed_from_active_package": true,
+  "deterministic_layer_updated": true,
+  "semantic_label_queue_added": true,
+  "semantic_output_contract": "semantic_navigation_index_only",
+  "semantic_navigation_index_fields": ["queue_id", "unit_id", "subcats", "control_families", "confidence"],
+  "semantic_coverage_source": "legal_cartography_deterministic_map.semantic_label_queue",
+  "semantic_required_priorities": ["P0", "P1"],
+  "semantic_required_coverage_threshold": 0.8,
+  "semantic_validator_uses_queue_id_coverage": true,
+  "semantic_validator_rejects_removed_bloated_arrays": true,
+  "final_compiler_reads_semantic_navigation_index": true,
+  "final_compiler_carries_semantic_coverage_summary": true,
+  "final_shape_preserved": [
+    "document_coverage_index",
+    "document_structure_index",
+    "incorporated_linked_document_map",
+    "control_language_locator",
+    "missing_limited_legal_governance_items",
+    "downstream_rules",
+    "lock_status"
+  ],
+  "active_backend_components": [
+    "src/m9-deterministic-map.js",
+    "src/m9-semantic-profile-validator.js",
+    "src/m9-hybrid-compiler.js",
+    "src/m9-hybrid-orchestrator.js",
+    "src/reviewer-runner.js"
+  ],
+  "current_pipeline_behavior_changed_when_flag_false": false
 }

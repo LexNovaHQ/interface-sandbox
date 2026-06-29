@@ -1,13 +1,8 @@
 {
   "packet_name": "AGENT2B_M9_LEGAL_CARTOGRAPHY_PROMPT_PACKET",
-  "version": "v1_current_backend_m9_enum_sync",
+  "version": "v3_field_registry",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "M9_ONLY",
-  "ignored_from_uploaded_zip": [
-    "AGENT1 runtime identity",
-    "M6 prompt module",
-    "combined Agent1 packet M6 portions"
-  ],
   "read_artifacts": [
     "source_discovery_handoff",
     "lossless_family__L1_CORE_TERMS_PRIVACY",
@@ -18,12 +13,22 @@
     "lossless_family__L6_ENTITY_NOTICE"
   ],
   "write_artifacts_in_order": [
+    "legal_cartography_deterministic_map",
+    "legal_cartography_semantic_profile",
     "legal_cartography_index"
+  ],
+  "final_downstream_required_artifact": "legal_cartography_index",
+  "reference_documents": [
+    "M9_FIELD_DERIVATION_REGISTRY.yaml"
   ],
   "components": [
     "AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
     "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+    "M9_STEP1_OUTPUT_CONTRACT_LOCK.md",
     "04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
+    "M9_FIELD_DERIVATION_REGISTRY.yaml",
+    "M9_C_REINVESTIGATION.md",
+    "M9_HYBRID_COMPILER_CONTRACT.md",
     "00_VALIDATOR_RULES_INTEGRATED.md",
     "00_TERMINAL_RECEIPT_RULES_INTEGRATED.md",
     "AGENT2B_M9_PROMPT_STACK_ORDER.md",

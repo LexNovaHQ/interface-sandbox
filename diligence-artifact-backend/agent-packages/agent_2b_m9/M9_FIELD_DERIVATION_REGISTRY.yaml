@@ -1,0 +1,82 @@
+registry_name: M9_FIELD_DERIVATION_REGISTRY
+version: v4_minimal_navigation_index
+owner_agent: agent_2b_m9
+phase: M9
+purpose: >-
+  Minimal semantic registry for M9. Semantic is only a navigation-label layer.
+  It maps deterministic queue rows to subcats and control families.
+
+source_of_truth:
+  deterministic_structure: legal_cartography_deterministic_map
+  semantic_queue: legal_cartography_deterministic_map.semantic_label_queue
+  final_output: legal_cartography_index
+
+semantic_output_root: legal_cartography_semantic_profile
+semantic_output_contract:
+  schema_version: M9_SEMANTIC_NAVIGATION_INDEX_v1
+  fields:
+    semantic_navigation_index:
+      type: array
+      row_fields:
+        queue_id: copy_from_semantic_label_queue
+        unit_id: copy_from_semantic_label_queue
+        subcats: derive_allowed_subcats_only
+        control_families: derive_allowed_control_families_only
+        confidence: derive_allowed_confidence_only
+    semantic_integrity:
+      type: object
+      fields:
+        required_queue_count: backend_recomputed
+        labeled_queue_count: backend_recomputed
+        coverage_ratio: backend_recomputed
+        ready_for_compiler: backend_recomputed
+    lock_status: allowed_lock_status
+
+allowed_values:
+  subcats: [CNS, LIA, HAL, INF, PRV, BIO, DEC, HRM, FRD, TRD]
+  control_families: [FORMATION_CONTRACT, ACTIVITY_SPECIFIC_DISCLOSURE, DATA_PRIVACY, VENDORS_TRANSFER, SECURITY, USE_SAFETY, AGENT_AUTHORITY, IP_CONTENT, COMMERCIAL_LEGAL_ALLOCATION, CONTACT_ROUTES, INDEMNITY, UNKNOWN_CONTROL_LANGUAGE]
+  confidence: [CLEAR, PARTIAL, UNCLEAR]
+  lock_status: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE]
+
+coverage_rules:
+  coverage_source: semantic_label_queue
+  required_priorities: [P0, P1]
+  optional_priorities: [P2]
+  excluded_priorities: [P3]
+  required_coverage_threshold: 0.80
+  rule: >-
+    Emit one semantic_navigation_index row for each queue row whose priority is
+    P0 or P1. Do not use macro_unit_map as the semantic coverage source.
+
+subcat_rules:
+  CNS: acceptance, consent, account, eligibility, notice, billing, cancellation, subscription.
+  LIA: liability, warranty, disclaimer, indemnity, termination, dispute, governing law, SLA/support allocation.
+  HAL: output accuracy, reliance, generated-output limitation, no-advice wording.
+  INF: IP, ownership, copyright, license, content, output rights, model training, reverse engineering.
+  PRV: personal data, privacy, retention, deletion, processing, transfer, subprocessor, data rights, data security.
+  BIO: voice, face, speaker identity, biometric or identity-specific audio/visual governance.
+  DEC: automated decisioning, human review, impact assessment, algorithmic transparency.
+  HRM: children, minors, vulnerable users, wellbeing or safety escalation.
+  FRD: authenticity, impersonation, synthetic media, AI-content disclosure, misrepresentation.
+  TRD: trading, investment, pricing, financial transaction, order execution.
+
+control_family_rules:
+  FORMATION_CONTRACT: terms, agreement, acceptance, account, eligibility, consent.
+  ACTIVITY_SPECIFIC_DISCLOSURE: product-specific, AI-specific, output-specific, synthetic-media-specific notice.
+  DATA_PRIVACY: privacy, personal data, retention, deletion, data rights.
+  VENDORS_TRANSFER: subprocessors, vendors, affiliates, transfers.
+  SECURITY: security, breach, trust or security controls.
+  USE_SAFETY: acceptable use, prohibited use, misuse, restrictions, reverse engineering.
+  AGENT_AUTHORITY: delegated authority, agent, on-behalf-of workflow.
+  IP_CONTENT: IP, ownership, license, content, outputs, training.
+  COMMERCIAL_LEGAL_ALLOCATION: payment, termination, liability, warranty, dispute, SLA/support.
+  CONTACT_ROUTES: contact, grievance, notices, support.
+  INDEMNITY: indemnity.
+  UNKNOWN_CONTROL_LANGUAGE: material queue row that cannot be classified.
+
+emission_rules:
+  - Copy queue_id exactly.
+  - Copy unit_id exactly.
+  - Do not emit text, excerpt, quote, summary, description, role label, downstream treatment, or note field.
+  - If uncertain, emit subcats as empty array, control_families as [UNKNOWN_CONTROL_LANGUAGE], and confidence as UNCLEAR.
+  - Backend recomputes integrity fields and does not rely on model counts.
