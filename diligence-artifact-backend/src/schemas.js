@@ -4,7 +4,7 @@ import { isKnownArtifactName, LOCK_STATUSES, PHASES } from "./constants.js";
 export const createRunSchema = z.object({
   target: z.string().min(1),
   root_url: z.string().min(1),
-  source_mode: z.enum(["url", "text", "url_plus_text", "synthetic_demo"]),
+  source_mode: z.enum(["url", "text", "url_plus_text", "url_plus_documents", "synthetic_demo"]),
   created_by: z.string().optional().default("operator"),
   notes: z.string().optional().default("")
 });
@@ -12,7 +12,7 @@ export const createRunSchema = z.object({
 export const reviewerCreateJobSchema = z.object({
   target_url: z.string().min(1),
   target: z.string().optional().default(""),
-  source_mode: z.enum(["url"]).optional().default("url"),
+  source_mode: z.enum(["url", "url_plus_documents"]).optional().default("url"),
   created_by: z.string().optional().default("reviewer"),
   notes: z.string().optional().default("")
 });
