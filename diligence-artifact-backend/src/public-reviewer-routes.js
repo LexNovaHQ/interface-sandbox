@@ -6,6 +6,7 @@ import { createRunRecord, getRunRecord, updateRunRecord, getArtifactMetadata, li
 import { createRunId, nowIso, assertRunId } from "./run-id.js";
 import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema } from "./schemas.js";
 import { requestReviewerRunAdvance } from "./reviewer-async-runner.js";
+import { parseMultipartDiligenceJob, ingestUploadedSourceDocuments } from "./document-source-ingestor.js";
 
 export const publicReviewerRouter = express.Router();
 
@@ -13,6 +14,7 @@ const windowMs = 60 * 60 * 1000;
 const limits = { create: 5, advance: 80, read: 120 };
 const buckets = new Map();
 const jobCreatePaths = ["/reviewer/jobs", "/diligence-system/jobs"];
+const jobCreateWithDocumentsPaths = ["/reviewer/jobs-with-documents", "/diligence-system/jobs-with-documents"];
 const jobReadPaths = ["/reviewer/jobs/:run_id", "/diligence-system/jobs/:run_id"];
 const jobAdvancePaths = ["/reviewer/jobs/:run_id/advance", "/diligence-system/jobs/:run_id/advance"];
 const reportPaths = ["/reviewer/report/:run_id", "/diligence-system/report/:run_id"];
@@ -53,6 +55,48 @@ publicReviewerRouter.post(jobCreatePaths, rateLimit("create"), async (req, res) 
       updated_at: createdAt,
       isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden."
     };
+
+    await createRunRecord(run);
+    const sheetRow = await appendRunDashboardRow(run);
+    const saved = await updateRunRecord(runId, { sheet_row_number: sheetRow });
+    await updateRunDashboardRow(saved);
+
+    return res.status(201).json(publicRunResponse(saved));
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+publicReviewerRouter.post(jobCreateWithDocumentsPaths, rateLimit("create"), async (req, res) => {
+  try {
+    requireRuntimeConfig();
+    const intake = await parseMultipartDiligenceJob(req);
+    const targetUrl = normalizeTargetUrl(intake.fields.target_url);
+    const createdAt = nowIso();
+    const target = intake.fields.target || hostFromUrl(targetUrl);
+    const runId = createRunId(target);
+    const folder = await createRunFolder({ run_id: runId });
+    const baseRun = {
+      ok: true,
+      run_id: runId,
+      target,
+      root_url: targetUrl,
+      source_mode: intake.files.length ? "url_plus_documents" : "url",
+      status: "CREATED",
+      current_phase: "AGENT_1A_URL_MANIFEST",
+      runner_mode: "ASYNC_NODE_RUNNER",
+      runner_state: "IDLE",
+      created_by: "public-diligence-system",
+      notes: intake.fields.notes || "",
+      drive_folder_id: folder.drive_folder_id,
+      drive_folder_link: folder.drive_folder_link,
+      final_report_url: "",
+      created_at: createdAt,
+      updated_at: createdAt,
+      isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden."
+    };
+    const uploaded = await ingestUploadedSourceDocuments({ run: baseRun, files: intake.files, drive_folder_id: folder.drive_folder_id });
+    const run = { ...baseRun, ...uploaded, source_mode: uploaded.source_mode };
 
     await createRunRecord(run);
     const sheetRow = await appendRunDashboardRow(run);
@@ -121,7 +165,7 @@ function rateLimit(kind) {
 }
 
 function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
-function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
+function publicRunResponse(run) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, source_mode: run.source_mode || "url", uploaded_source_documents: run.uploaded_source_documents || { document_count: 0 }, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
 function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_state: result.runner_state, poll: `/public/diligence-system/jobs/${result.run_id}` }; }
 function publicArtifactList(artifacts) { return artifacts.map((artifact) => ({ artifact_name: artifact.artifact_name, phase: artifact.phase, lock_status: artifact.lock_status, latest_version: artifact.latest_version || artifact.version, updated_at: artifact.updated_at || artifact.created_at })); }
 function baseUrlFromRequest(req) { const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim() || "https"; const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim(); return host ? `${proto}://${host}` : ""; }
