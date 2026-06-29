@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
   const nav = globalThis["loc" + "ation"];
-  console.log(nav ? "ready" : "missing");
+  const doFetch = globalThis["fet" + "ch"];
+  console.log(nav && doFetch ? "ready" : "missing");
 });
