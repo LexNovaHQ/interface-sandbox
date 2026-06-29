@@ -15,7 +15,7 @@ export function applyM11FalsePositiveFirewall({ row = {}, routeRow = {} }) {
 
   const threatId = String(row.Threat_ID || routeRow.Threat_ID || "").trim();
   const family = threatId.split("_")[1] || "";
-  const evidenceText = [row.registry_exposure, row.target_match, row.basis_proof, row.review_route, row.row_limitations].join(" ").toLowerCase();
+  const evidenceText = [row.target_match, row.basis_proof, row.control_exclusion_evaluation, row.evidence_source_basis, row.review_route, row.row_limitations].join(" ").toLowerCase();
   const contextText = [evidenceText, routeRow.Threat_Name, routeRow.Surface, routeRow.route_reason].join(" ").toLowerCase();
   const reasons = [];
 
@@ -35,11 +35,11 @@ export function applyM11FalsePositiveFirewall({ row = {}, routeRow = {} }) {
 
   if (!reasons.length) return row;
 
-  const limitation = `False-positive firewall demoted prior TRIGGERED status to CONTROLLED: ${unique(reasons).join("; ")}. Trigger standard profile=${standard.profile}. Treat as watchlist/controlled limitation unless direct public proof later confirms activity, jurisdiction, and mandatory-control gap.`;
+  const limitation = `False-positive discipline changed prior TRIGGERED status to CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION: ${unique(reasons).join("; ")}. Trigger standard profile=${standard.profile}.`;
   return {
     ...row,
-    trigger_status: "CONTROLLED",
-    evaluation_status: "CONTROLLED",
+    trigger_status: "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION",
+    evaluation_status: "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION",
     row_limitations: append(row.row_limitations, limitation)
   };
 }
