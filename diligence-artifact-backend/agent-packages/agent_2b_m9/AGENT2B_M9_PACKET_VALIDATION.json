@@ -1,5 +1,5 @@
 {
-  "overall_status": "SYNCED_FOR_M9_FIELD_REGISTRY_TEST",
+  "overall_status": "SYNCED_FOR_M9_SEMANTIC_QUEUE_TEST",
   "backend_phase": "M9",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "M9_ONLY",
@@ -23,7 +23,13 @@
   "canonical_package_is_semantic_authority": true,
   "sidecar_semantic_prompt_removed_from_active_package": true,
   "deterministic_layer_updated": true,
+  "semantic_label_queue_added": true,
+  "semantic_coverage_source": "legal_cartography_deterministic_map.semantic_label_queue",
+  "semantic_required_priorities": ["P0", "P1"],
+  "semantic_required_coverage_threshold": 0.8,
   "semantic_field_derivations_defined": true,
+  "semantic_validator_uses_queue_coverage": true,
+  "final_compiler_carries_semantic_coverage_summary": true,
   "final_shape_preserved": [
     "document_coverage_index",
     "document_structure_index",
