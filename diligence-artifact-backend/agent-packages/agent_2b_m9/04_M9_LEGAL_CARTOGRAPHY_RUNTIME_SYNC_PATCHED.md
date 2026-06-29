@@ -16,8 +16,8 @@ It identifies:
 
 1. loaded legal/governance documents;
 2. document/source location;
-3. sections, subsections, clause groups, annexures, schedules, exhibits, addenda, appendices, notices, and incorporated policies;
-4. candidate control-language locations;
+3. sections, subsections, annexures, schedules, exhibits, addenda, appendices, notices, and incorporated policies;
+4. candidate control-language locations attached to accepted sections, subsections, or embedded legal units;
 5. missing, limited, gated, thin, referenced, or absent public material;
 6. semantic subcat/control-family labels for the deterministic semantic queue.
 
@@ -69,7 +69,7 @@ The deterministic layer owns factual indexing only:
 
 - document identity and class;
 - source URL, source family, and source status;
-- section, subsection, and clause-group structure;
+- section and subsection structure;
 - annexure, schedule, appendix, addendum, exhibit, and notice detection;
 - line/character pointers;
 - parent-child unit relationship where visible;
@@ -77,7 +77,7 @@ The deterministic layer owns factual indexing only:
 - `semantic_label_queue` creation;
 - page-furniture and sentence-fragment exclusion before semantic labeling.
 
-The deterministic layer must not decide semantic subcat meaning or registry row status.
+The deterministic layer must not create clause-level units, third-level numbered units, paragraph-level units, sentence-fragment units, semantic subcat meaning, or registry row status.
 
 ## Semantic Layer Boundary
 
