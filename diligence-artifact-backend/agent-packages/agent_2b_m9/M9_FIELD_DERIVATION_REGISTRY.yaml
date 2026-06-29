@@ -1,141 +1,82 @@
 registry_name: M9_FIELD_DERIVATION_REGISTRY
-version: v2_semantic_label_queue
+version: v4_minimal_navigation_index
 owner_agent: agent_2b_m9
 phase: M9
 purpose: >-
-  Defines how M9 semantic labels are derived from the deterministic
-  semantic_label_queue and loaded legal/governance corpus. This registry is
-  reference material for the canonical M9 package. It is not a separate agent.
+  Minimal semantic registry for M9. Semantic is only a navigation-label layer.
+  It maps deterministic queue rows to subcats and control families.
 
 source_of_truth:
   deterministic_structure: legal_cartography_deterministic_map
   semantic_queue: legal_cartography_deterministic_map.semantic_label_queue
-  legal_text: lossless_family__L1_CORE_TERMS_PRIVACY through lossless_family__L6_ENTITY_NOTICE
   final_output: legal_cartography_index
 
-boundary_rules:
-  deterministic_layer:
-    owns:
-      - document identity
-      - document class
-      - section and subsection structure
-      - clause-group structure
-      - annexure schedule appendix addendum exhibit notice detection
-      - source URL and source family
-      - source status
-      - line and character pointers
-      - parent-child unit relationship
-      - missing or limited source status
-      - semantic_label_queue creation
-      - semantic_label_queue priority assignment
-      - page-furniture and sentence-fragment exclusion before semantic labeling
-    forbidden:
-      - registry row status
-      - product archetype decision
-      - surface gate decision
-      - exposure finding
-      - final legal conclusion
-  semantic_layer:
-    owns:
-      - registry_subcat_relevance for queued units
-      - control_language_family for queued controls
-      - semantic_function
-      - semantic confidence
-      - semantic limitation
-    forbidden:
-      - new deterministic IDs
-      - new source URLs
-      - source status changes
-      - document structure changes
-      - registry row status
-      - final exposure finding
-      - post-M9 action routing
-
-queue_rules:
-  semantic_label_queue_is_authoritative: true
-  required_priorities:
-    - P0
-    - P1
-  optional_priorities:
-    - P2
-  excluded_priorities:
-    - P3
-  required_coverage_threshold: 0.80
-  ideal_coverage_threshold: 0.90
-  instruction: >-
-    Semantic must label every queue row with priority P0 or P1 unless the row is
-    malformed. P2 rows may be labeled if model budget allows. Raw macro_unit_map
-    is not the semantic coverage source.
+semantic_output_root: legal_cartography_semantic_profile
+semantic_output_contract:
+  schema_version: M9_SEMANTIC_NAVIGATION_INDEX_v1
+  fields:
+    semantic_navigation_index:
+      type: array
+      row_fields:
+        queue_id: copy_from_semantic_label_queue
+        unit_id: copy_from_semantic_label_queue
+        subcats: derive_allowed_subcats_only
+        control_families: derive_allowed_control_families_only
+        confidence: derive_allowed_confidence_only
+    semantic_integrity:
+      type: object
+      fields:
+        required_queue_count: backend_recomputed
+        labeled_queue_count: backend_recomputed
+        coverage_ratio: backend_recomputed
+        ready_for_compiler: backend_recomputed
+    lock_status: allowed_lock_status
 
 allowed_values:
-  registry_subcat_relevance: [CNS, LIA, HAL, INF, PRV, BIO, DEC, HRM, FRD, TRD]
-  control_language_family: [FORMATION_CONTRACT, ACTIVITY_SPECIFIC_DISCLOSURE, DATA_PRIVACY, VENDORS_TRANSFER, SECURITY, USE_SAFETY, AGENT_AUTHORITY, IP_CONTENT, COMMERCIAL_LEGAL_ALLOCATION, CONTACT_ROUTES, INDEMNITY, UNKNOWN_CONTROL_LANGUAGE]
-  confidence: [CLEAR, PARTIAL, UNCLEAR, THIN, REINVESTIGATE]
-  unit_semantic_status: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED]
-  downstream_treatment: [USE_AS_NAVIGATION, REVIEW_WITH_LIMITATION, DO_NOT_USE_WITHOUT_REPAIR]
+  subcats: [CNS, LIA, HAL, INF, PRV, BIO, DEC, HRM, FRD, TRD]
+  control_families: [FORMATION_CONTRACT, ACTIVITY_SPECIFIC_DISCLOSURE, DATA_PRIVACY, VENDORS_TRANSFER, SECURITY, USE_SAFETY, AGENT_AUTHORITY, IP_CONTENT, COMMERCIAL_LEGAL_ALLOCATION, CONTACT_ROUTES, INDEMNITY, UNKNOWN_CONTROL_LANGUAGE]
+  confidence: [CLEAR, PARTIAL, UNCLEAR]
+  lock_status: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE]
 
-field_derivations:
-  document_labels:
-    rows_required_from: legal_cartography_deterministic_map.document_map
-    pointer_required: document_id
-    rule: Copy deterministic document identifiers and class labels exactly. Add only short role label, confidence, status, and downstream_treatment.
+coverage_rules:
+  coverage_source: semantic_label_queue
+  required_priorities: [P0, P1]
+  optional_priorities: [P2]
+  excluded_priorities: [P3]
+  required_coverage_threshold: 0.80
+  rule: >-
+    Emit one semantic_navigation_index row for each queue row whose priority is
+    P0 or P1. Do not use macro_unit_map as the semantic coverage source.
 
-  unit_subcat_labels:
-    rows_required_from: legal_cartography_deterministic_map.semantic_label_queue where priority is P0 or P1
-    pointer_required: unit_id
-    rule: Copy unit_id, section_id, document_id, unit_type, and heading_label from the queue. Add only registry_subcat_relevance, control_language_family, confidence, unit_semantic_status, downstream_treatment, and boundary_note.
+subcat_rules:
+  CNS: acceptance, consent, account, eligibility, notice, billing, cancellation, subscription.
+  LIA: liability, warranty, disclaimer, indemnity, termination, dispute, governing law, SLA/support allocation.
+  HAL: output accuracy, reliance, generated-output limitation, no-advice wording.
+  INF: IP, ownership, copyright, license, content, output rights, model training, reverse engineering.
+  PRV: personal data, privacy, retention, deletion, processing, transfer, subprocessor, data rights, data security.
+  BIO: voice, face, speaker identity, biometric or identity-specific audio/visual governance.
+  DEC: automated decisioning, human review, impact assessment, algorithmic transparency.
+  HRM: children, minors, vulnerable users, wellbeing or safety escalation.
+  FRD: authenticity, impersonation, synthetic media, AI-content disclosure, misrepresentation.
+  TRD: trading, investment, pricing, financial transaction, order execution.
 
-  control_family_labels:
-    rows_required_from: legal_cartography_deterministic_map.control_language_candidate_map whose unit_id appears in required semantic_label_queue
-    pointer_required: control_candidate_id
-    rule: Copy control_candidate_id, unit_id, section_id, and document_id exactly. Confirm or narrow the control_language_family using the queued unit and source pointer. Do not invent new control_candidate_id values.
+control_family_rules:
+  FORMATION_CONTRACT: terms, agreement, acceptance, account, eligibility, consent.
+  ACTIVITY_SPECIFIC_DISCLOSURE: product-specific, AI-specific, output-specific, synthetic-media-specific notice.
+  DATA_PRIVACY: privacy, personal data, retention, deletion, data rights.
+  VENDORS_TRANSFER: subprocessors, vendors, affiliates, transfers.
+  SECURITY: security, breach, trust or security controls.
+  USE_SAFETY: acceptable use, prohibited use, misuse, restrictions, reverse engineering.
+  AGENT_AUTHORITY: delegated authority, agent, on-behalf-of workflow.
+  IP_CONTENT: IP, ownership, license, content, outputs, training.
+  COMMERCIAL_LEGAL_ALLOCATION: payment, termination, liability, warranty, dispute, SLA/support.
+  CONTACT_ROUTES: contact, grievance, notices, support.
+  INDEMNITY: indemnity.
+  UNKNOWN_CONTROL_LANGUAGE: material queue row that cannot be classified.
 
-  indemnity_labels:
-    rows_required_from: legal_cartography_deterministic_map.indemnity_candidate_map whose unit_id appears in required semantic_label_queue
-    pointer_required: indemnity_candidate_id
-    rule: Label only location and confidence. Do not assess adequacy.
-
-  cross_reference_labels:
-    rows_required_from: legal_cartography_deterministic_map.cross_document_reference_map
-    pointer_required: cross_reference_id
-    rule: Label relationship and loaded/unloaded status only. Do not fetch or assume unloaded content.
-
-  missing_source_labels:
-    rows_required_from: legal_cartography_deterministic_map.missing_source_map
-    pointer_required: missing_id
-    rule: Treat missing/limited source rows as cartography limitations only.
-
-semantic_integrity_summary_required_fields:
-  - semantic_queue_total
-  - semantic_queue_required_total
-  - semantic_required_units_labeled
-  - semantic_required_controls_total
-  - semantic_required_controls_labeled
-  - semantic_required_coverage_ratio
-  - semantic_rows_total
-  - semantic_rows_attached_to_deterministic_ids
-  - semantic_rows_repaired_or_omitted
-  - full_text_copied
-  - new_sources_created
-  - ready_for_compiler
-
-subcat_derivation_rules:
-  CNS: contract formation, user assent, consumer notice, account terms, cancellation, billing disclosure.
-  LIA: liability allocation, warranty, disclaimer, indemnity, damages, governing law, jurisdiction, dispute terms.
-  HAL: output accuracy, reliance, generated-content limitations, no-advice wording, user responsibility for outputs.
-  INF: ownership, IP rights, copyright, licenses, user content, output rights, training use, scraping, takedown.
-  PRV: personal data, privacy notice, retention, deletion, processing purpose, transfer, subprocessors, security, data requests.
-  BIO: biometric or identity-specific audio/visual identifier governance.
-  DEC: automated decisioning, human review, impact assessment, eligibility or material decision workflow.
-  HRM: minors, wellbeing, vulnerable-user, safety escalation, or harmful-interaction governance.
-  FRD: authenticity, misrepresentation, impersonation, deceptive use, AI-generated content disclosure.
-  TRD: trading, pricing, investment, financial transactions, market manipulation, order execution.
-
-validation_rules:
-  - Semantic rows must attach to deterministic IDs.
-  - Semantic layer must not create source URLs or source statuses.
-  - Semantic layer must not output post-M9 action routing fields.
-  - Empty subcat array is allowed only when no subcat is supported for a queued material unit.
-  - Missing or limited source rows must remain limitations, not exposure findings.
-  - Final row status remains owned by M11, not M9.
-  - ready_for_compiler may be true only when semantic_required_coverage_ratio is at least 0.80.
+emission_rules:
+  - Copy queue_id exactly.
+  - Copy unit_id exactly.
+  - Do not emit text, excerpt, quote, summary, description, role label, downstream treatment, or note field.
+  - If uncertain, emit subcats as empty array, control_families as [UNKNOWN_CONTROL_LANGUAGE], and confidence as UNCLEAR.
+  - Backend recomputes integrity fields and does not rely on model counts.
