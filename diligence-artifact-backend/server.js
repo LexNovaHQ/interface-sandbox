@@ -1,3 +1,5 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -14,6 +16,9 @@ import { publicReviewerRouter } from "./src/public-reviewer-routes.js";
 import { artifactSaveBody, lockPhase, readArtifact, saveArtifact } from "./src/artifact-service.js";
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicStaticRoot = path.join(__dirname, "public");
 const AGENT3_ID = "agent_" + "3_target_feature";
 const TP = "target_" + "profile";
 const TPF = "target_" + "profile_forensics";
@@ -38,6 +43,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/public", publicReviewerRouter);
+app.use(express.static(publicStaticRoot, { extensions: ["html"] }));
 app.use("/v1", requireApiKey);
 app.use("/v1", reviewerRouter);
 app.use("/agent3", requireApiKey);
