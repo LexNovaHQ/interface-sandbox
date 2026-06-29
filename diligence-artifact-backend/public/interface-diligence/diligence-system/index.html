@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interface Diligence Engine</title>
+  <meta name="description" content="Legal exposure diligence for AI, technology, data, and digital product businesses." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="./diligence-system.css" />
+</head>
+<body>
+  <div class="progress-line" id="progressLine" aria-hidden="true"></div>
+  <header class="topbar no-print">
+    <div class="topbar-inner">
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="Interface Diligence Engine home">
+        <span class="wordmark-title">Interface Diligence Engine</span>
+        <span class="wordmark-subtitle">Public-footprint exposure diligence</span>
+      </a>
+      <div class="topbar-note">Diligence System</div>
+    </div>
+  </header>
+  <div class="mobile-funnel no-print" id="mobileFunnel" aria-label="Run progress">
+    <span class="lbl" id="mobileFunnelLabel">Intake</span>
+  </div>
+  <div class="page-shell">
+    <div class="main-grid">
+      <aside class="rail-wrap no-print" aria-label="Diligence phase rail"><div class="rail" id="phaseRail"></div></aside>
+      <main>
+        <section class="hero">
+          <div class="eyebrow">Interface Diligence Engine</div>
+          <h1>Legal exposure diligence for AI, technology, data, and digital product businesses.</h1>
+          <p class="hero-copy">Enter a public product or company URL. The system runs source discovery, legal cartography, target and feature profiling, data provenance, exposure registry review, operator challenge, final compilation, and report rendering.</p>
+          <div class="notice"><strong>Boundary:</strong> Public-footprint materials only. Do not submit confidential, privileged, personal, sensitive, or restricted material. This system is for demonstration and qualified-review workflows only.</div>
+        </section>
+        <section class="console-grid">
+          <article class="card">
+            <div class="eyebrow">Start run</div>
+            <h2>Submit a target URL</h2>
+            <form id="runForm" class="form-grid">
+              <div><label class="label" for="targetUrl">Target URL</label><input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai" required /></div>
+              <div><label class="label" for="targetLabel">Target label <span class="small-muted">optional</span></label><input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" /></div>
+              <div class="actions"><button class="btn" id="runButton" type="submit">Start Public Review</button><a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a></div>
+            </form>
+            <p class="log-line" id="statusMessage">Idle. Enter a public URL to start a run.</p>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Live state</div>
+            <h2 id="activePhaseTitle">Intake</h2>
+            <p id="activePhaseText">Waiting for a public target URL.</p>
+            <div class="meta-grid">
+              <div class="meta-tile"><div class="k">Run ID</div><div class="v" id="runIdValue">-</div></div>
+              <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
+              <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
+              <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
+            </div>
+            <div class="notice" id="terminalNotice">The rail will update from the backend phase state as the system runs.</div>
+          </article>
+        </section>
+      </main>
+    </div>
+    <div class="footer-note">Public-footprint diligence system. Demonstration and qualified-review workflow.</div>
+  </div>
+  <script src="./diligence-system.js"></script>
+</body>
+</html>
