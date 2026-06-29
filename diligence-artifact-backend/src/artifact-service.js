@@ -15,6 +15,7 @@ import {
   logEvent
 } from "./firestore.js";
 import { getRequiredWritesForPhase } from "./phase-contracts.js";
+import { mergeUploadedDocumentSourcesIntoArtifact } from "./document-source-ingestor.js";
 
 const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const ACCEPTED_PHASE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
@@ -215,9 +216,10 @@ export async function readArtifact({ run_id, artifact_name, agent_id = "operator
   assertKnownArtifactName(artifact_name);
   assertCanReadArtifact(agent_id, artifact_name);
 
-  await getRunRecord(run_id);
+  const run = await getRunRecord(run_id);
   const meta = await getArtifactMetadata(run_id, artifact_name);
-  const artifact = await readJsonArtifactFromDrive(meta.drive_file_id);
+  const rawArtifact = await readJsonArtifactFromDrive(meta.drive_file_id);
+  const artifact = await mergeUploadedDocumentSourcesIntoArtifact({ run, artifactName: artifact_name, artifact: rawArtifact });
 
   return {
     ok: true,
