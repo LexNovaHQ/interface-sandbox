@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interface Diligence Report</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="./diligence-system.css" />
+</head>
+<body>
+  <div class="progress-line" style="width:100%" aria-hidden="true"></div>
+  <header class="topbar no-print">
+    <div class="topbar-inner">
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="Interface Diligence Engine home">
+        <span class="wordmark-title">Interface Diligence Engine</span>
+        <span class="wordmark-subtitle">Public-footprint exposure diligence</span>
+      </a>
+      <div class="topbar-note">Report</div>
+    </div>
+  </header>
+
+  <div class="page-shell">
+    <main>
+      <section class="hero report-shell">
+        <div class="eyebrow">Diligence Report</div>
+        <h1 id="reportTitle">Loading report...</h1>
+        <p class="hero-copy" id="reportSubtitle">Reading the completed renderer payload.</p>
+        <div class="report-actions no-print">
+          <button class="btn" id="downloadPdfButton" type="button">Download PDF</button>
+          <a class="btn secondary" id="vaultButton" href="#">Proceed to Vault</a>
+          <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
+        </div>
+        <div class="notice"><strong>Boundary:</strong> Public-footprint materials only. Demonstration and qualified-review workflow. Human review required before reliance.</div>
+      </section>
+
+      <section class="card" id="reportMetaCard">
+        <div class="eyebrow">Report shell</div>
+        <div id="reportMeta">Loading...</div>
+      </section>
+
+      <div id="reportBody"></div>
+
+      <details class="technical no-print" id="technicalDrawer">
+        <summary>Technical payload</summary>
+        <pre id="technicalPayload">Loading...</pre>
+      </details>
+    </main>
+    <div class="footer-note">Public-footprint diligence system. Demonstration and qualified-review workflow.</div>
+  </div>
+
+  <script src="./report.js"></script>
+</body>
+</html>
