@@ -1,5 +1,7 @@
 import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler.js";
+import { buildQualifiedReviewHandoff } from "./qualified-review-handoff.js";
 import { toMachineStatus } from "./normalized-status.js";
+import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
 
 export function compileFinalOutputHandoff({ run, artifacts }) {
   const output = buildNormalizedProfilerOutput({ run, artifacts });
@@ -10,22 +12,44 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
   );
 
   output.normalized_report_manifest = { ...(output.normalized_report_manifest || {}), validation_status: status };
-  output.vault_section_handoff = { ...(output.vault_section_handoff || {}), validation_status: status };
+  output.vault_section_handoff = { ...(output.vault_section_handoff || {}), validation_status: status, archived_alias_for: "qualified_review_handoff" };
+  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff });
+
+  const legacy_archive = {
+    profiles_combined: "ARCHIVED_LEGACY",
+    forensics_combined: "ARCHIVED_LEGACY",
+    old_compiler_blob: "REPLACED_BY_NORMALIZED_SECTION_ARTIFACTS",
+    active_replacement: "qualified_review_handoff + normalized_section__*"
+  };
 
   output.final_output_handoff = {
     validation_status: status,
     normalized_report_manifest_ref: "normalized_report_manifest",
+    qualified_review_handoff_ref: "qualified_review_handoff",
     vault_section_handoff_ref: "vault_section_handoff",
     section_artifacts: output.normalized_report_manifest?.section_artifacts || [],
     final_output_handoff: {
       ...final,
       validation_status: status,
       normalized_report_manifest: output.normalized_report_manifest,
+      qualified_review_handoff: output.qualified_review_handoff,
       vault_section_handoff: output.vault_section_handoff,
       normalized_sections,
-      compiler_trace: { compiler_version: "normalized_profiler_compiler_replacement_v1", deterministic_only: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length }
+      legacy_archive,
+      compiler_trace: {
+        compiler_version: "normalized_profiler_compiler_replacement_v2",
+        deterministic_only: true,
+        no_new_findings_created: true,
+        no_row_re_evaluation: true,
+        normalized_section_count: NORMALIZED_SECTION_KEYS.length,
+        legacy_artifacts_archived: true,
+        qualified_review_handoff_emitted: true
+      }
     }
   };
+
+  output.normalizer_validation = validateNormalizedProfilerOutput(output);
+  output.final_output_handoff.final_output_handoff.normalizer_validation = output.normalizer_validation;
 
   return output;
 }
