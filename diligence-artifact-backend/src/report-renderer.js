@@ -29,6 +29,7 @@ function buildRendererPayloadFromNormalizedSections({ run = {}, bundle = {}, han
     })
   );
   const qualifiedReviewHandoff = bundle.qualified_review_handoff || handoff.qualified_review_handoff || null;
+  const vaultPayloadHandoff = bundle.vault_section_handoff || handoff.vault_section_handoff || null;
 
   return {
     report_shell: {
@@ -53,7 +54,23 @@ function buildRendererPayloadFromNormalizedSections({ run = {}, bundle = {}, han
       forbidden_actions: ["Download JSON"],
       section_render_mode: "section_cards",
       field_render_mode: "label_value_with_qualified_review_note",
-      raw_json_download_enabled: false
+      raw_json_download_enabled: false,
+      qualified_review_renderer_contract: {
+        renderer_reads: "qualified_review_handoff.question_handoff.questions",
+        ui_route: "qualified-review.html?run_id={run_id}",
+        question_count: qualifiedReviewHandoff?.question_count || qualifiedReviewHandoff?.question_handoff?.question_count || 0,
+        answer_type_driven_inputs: true,
+        demo_market_suggestions_are_not_confirmed_facts: true,
+        reviewer_confirmation_required_before_document_assembly: true
+      },
+      vault_payload_renderer_contract: {
+        artifact_ref: "vault_section_handoff",
+        expected_handoff_type: "vault_payload_handoff",
+        vault_payload_groups: vaultPayloadHandoff?.vault_payload_groups || [],
+        has_vault_payload: Boolean(vaultPayloadHandoff?.vault_payload),
+        has_prefill_suggestions: Boolean(vaultPayloadHandoff?.vault_prefill_suggestions),
+        has_confirmation_questions: Array.isArray(vaultPayloadHandoff?.vault_confirmation_questions)
+      }
     },
     display_id_index: {},
     sections,
@@ -61,7 +78,7 @@ function buildRendererPayloadFromNormalizedSections({ run = {}, bundle = {}, han
     section_list: manifest.section_order.map((sectionId) => ({ id: sectionId, title: sections[sectionId]?.section_title || sectionId, data: sections[sectionId] || {} })),
     normalized_report_manifest: manifest,
     qualified_review_handoff: qualifiedReviewHandoff,
-    vault_section_handoff: bundle.vault_section_handoff || handoff.vault_section_handoff || null,
+    vault_section_handoff: vaultPayloadHandoff,
     renderer_contract: manifest.renderer_contract || {},
     raw_final_output_handoff: handoff,
     renderer_source: "normalized_section_artifacts"
