@@ -34,21 +34,22 @@ async function loadHandoff(id) {
     forbidden_public_actions: Array.isArray(handoff.forbidden_public_actions) ? handoff.forbidden_public_actions.join(", ") : "Download JSON"
   });
 
-  const rows = Array.isArray(handoff.section_intake) ? handoff.section_intake : [];
-  replaceChildren(els.body, [renderSectionIntake(rows)]);
+  const questionHandoff = handoff.question_handoff || {};
+  const questions = Array.isArray(questionHandoff.questions) ? questionHandoff.questions : [];
+  replaceChildren(els.body, [renderQuestionWizard(questionHandoff, questions)]);
 }
 
-function renderSectionIntake(rows) {
+function renderQuestionWizard(questionHandoff, questions) {
   const section = el("section", "report-section");
-  section.append(el("div", "eyebrow", "section intake"), el("h2", "", "Qualified Review Queue"));
-  if (!rows.length) {
-    section.append(el("p", "small-muted", "No section intake rows were emitted."));
+  section.append(el("div", "eyebrow", "question handoff"), el("h2", "", "Qualified Review Questions"));
+  if (!questions.length) {
+    section.append(el("p", "small-muted", "No question-level rows were emitted."));
     return section;
   }
-  rows.forEach(function (row, index) {
+  section.append(el("p", "small-muted", "Question-level handoff loaded. Full wizard renderer pending."));
+  questions.slice(0, 79).forEach(function (q) {
     const block = el("div", "array-block");
-    block.append(el("div", "block-title", "Section " + String(index + 1).padStart(2, "0")));
-    block.append(tableNode(row));
+    block.append(el("div", "block-title", q.question_id || "Question"), tableNode({ question: q.public_question_label || q.question || q.field_key, prefill_status: q.prefill_status, suggested_answer: formatPrimitive(q.suggested_answer), field_type: q.field_type, documents: Array.isArray(q.document_impact) ? q.document_impact.join(", ") : q.document_impact }));
     section.append(block);
   });
   return section;
