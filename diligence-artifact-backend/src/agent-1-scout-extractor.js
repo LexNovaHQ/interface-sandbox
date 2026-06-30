@@ -57,7 +57,6 @@ const DATA_FLOW_SIGNALS = ["upload", "storage", "retention", "delete", "deletion
 const API_DATA_FLOW_FAMILY_SEGMENTS = ["speech", "text-to-speech", "speech-to-text", "voice", "audio", "translation", "dubbing", "document", "digitisation", "digitization", "ocr", "vision", "image", "file", "batch", "transcription"];
 const MAX_FAMILY_ARTIFACT_BYTES = positiveInt(process.env.LN_MAX_FAMILY_ARTIFACT_BYTES, 250000);
 const MAX_SOURCES_PER_FAMILY_ARTIFACT = positiveInt(process.env.LN_MAX_SOURCES_PER_FAMILY_ARTIFACT, 5);
-const MAX_FRAGMENT_TEXT_CHARS = positiveInt(process.env.LN_MAX_SOURCE_FRAGMENT_TEXT_CHARS, Math.max(50000, Math.floor(MAX_FAMILY_ARTIFACT_BYTES / 3)));
 
 export async function buildAgent1aDedupedUrlManifest({ run }) {
   const rootUrl = normalizeRootUrl(run.root_url || run.target);
@@ -202,12 +201,13 @@ export async function buildAgent1bExtractArtifacts({ run, deduped_url_manifest }
       target: run.target,
       target_url: rootUrl,
       generated_by: "agent_1b_extract",
-      taxonomy_version: "M6_PHASE_1B_SPARSE_FAMILY_SHARDS_v4",
+      taxonomy_version: "M6_PHASE_1B_SPARSE_ATOMIC_FAMILY_SHARDS_v5",
       manifest_artifact_required: "deduped_url_manifest",
       extraction_boundary: "Phase 1B extracted only PRIMARY rows from Phase 1A. SECONDARY and CONTEXT_ONLY remain manifest-only for downstream request. METADATA_ONLY is separately indexed and never extracted.",
       sparse_family_artifact_rule: "Every ROOT_FAMILY_CODE is evaluated, but a lossless_family artifact is saved only when that family has extracted material sources. Empty/index-only families are recorded here, not saved as empty artifacts.",
       sharded_family_integrity_rule: "A shard is physical storage only. Downstream must load every required_artifact listed for a family and merge them into one virtual family before relying on the evidence.",
-      cap_policy: { max_family_artifact_bytes: MAX_FAMILY_ARTIFACT_BYTES, max_sources_per_family_artifact: MAX_SOURCES_PER_FAMILY_ARTIFACT, max_fragment_text_chars: MAX_FRAGMENT_TEXT_CHARS },
+      atomic_source_text_rule: "Caps may split between source URLs only. A source row's lossless_text is never cut, truncated, or fragmented to satisfy the cap. If one source exceeds the cap, it is stored whole in its own artifact/shard.",
+      cap_policy: { max_family_artifact_bytes: MAX_FAMILY_ARTIFACT_BYTES, max_sources_per_family_artifact: MAX_SOURCES_PER_FAMILY_ARTIFACT, source_text_cutting_allowed: false, oversized_single_source_allowed: true },
       root_family_artifacts: LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES,
       saved_family_artifacts: savedArtifactNames,
       family_artifact_manifest: familyArtifactManifest,
@@ -224,7 +224,7 @@ export async function buildAgent1bExtractArtifacts({ run, deduped_url_manifest }
 
 function buildSparseFamilyArtifacts(artifact) {
   if (!Array.isArray(artifact.sources) || artifact.sources.length === 0) return [];
-  const sources = artifact.sources.flatMap(splitOversizedSourceIfNeeded);
+  const sources = artifact.sources.map(markOversizedAtomicSourceIfNeeded);
   const normalized = { ...artifact, sources };
   const single = buildFamilyArtifactPayload({ artifact: normalized, artifactName: `lossless_family__${artifact.root_family}`, sources, storageMode: "SINGLE", shardIndex: 1, shardCount: 1, includeContext: true });
   if (sources.length <= MAX_SOURCES_PER_FAMILY_ARTIFACT && byteLength(single) <= MAX_FAMILY_ARTIFACT_BYTES) return [single];
@@ -256,13 +256,13 @@ function buildFamilyArtifactPayload({ artifact, artifactName, sources, storageMo
     shard_index: shardIndex,
     shard_count: shardCount,
     family_virtual_artifact_name: `lossless_family__${artifact.root_family}`,
-    family_shard_integrity: { required_together: storageMode === "SHARD", physical_storage_only: storageMode === "SHARD", downstream_must_resolve_all_shards: storageMode === "SHARD" },
+    family_shard_integrity: { required_together: storageMode === "SHARD", physical_storage_only: storageMode === "SHARD", downstream_must_resolve_all_shards: storageMode === "SHARD", source_text_cutting_allowed: false },
     sources,
     manifest_only_sources: includeContext ? artifact.manifest_only_sources : [],
     metadata_only_sources: includeContext ? artifact.metadata_only_sources : [],
     rejected_sources: includeContext ? artifact.rejected_sources : [],
     missing_limited_primary_sources: includeContext ? artifact.missing_limited_primary_sources : [],
-    corpus_forensics: { ...artifact.corpus_forensics, total_sources: sources.length, family_total_sources: artifact.sources.length, source_fragments_included: sources.filter((source) => source.parent_source_id).length },
+    corpus_forensics: { ...artifact.corpus_forensics, total_sources: sources.length, family_total_sources: artifact.sources.length, oversized_atomic_sources_included: sources.filter((source) => source.oversized_atomic_source === true).length },
     dedupe_forensics: includeContext ? artifact.dedupe_forensics : {}
   };
   payload.artifact_size_estimate_bytes = byteLength(payload);
@@ -304,28 +304,22 @@ function familyManifestEntry({ artifact, shards }) {
     source_ids: shards.flatMap((shard) => shard.sources.map((source) => source.source_id)),
     total_text_bytes: artifact.sources.reduce((sum, source) => sum + Buffer.byteLength(String(source.lossless_text || ""), "utf8"), 0),
     artifact_bytes: shards.map((shard) => ({ artifact_name: shard.artifact_name, bytes: byteLength(shard) })),
-    family_sources_required_together: requiredArtifacts.length > 1
+    family_sources_required_together: requiredArtifacts.length > 1,
+    source_text_cutting_allowed: false,
+    oversized_single_source_allowed: true
   };
 }
 
-function splitOversizedSourceIfNeeded(source) {
-  const text = String(source.lossless_text || "");
-  const sourceBytes = byteLength({ source });
-  if (sourceBytes <= MAX_FAMILY_ARTIFACT_BYTES || text.length <= MAX_FRAGMENT_TEXT_CHARS) return [source];
-  const chunks = chunkText(text, MAX_FRAGMENT_TEXT_CHARS);
-  return chunks.map((chunk, index) => ({
+function markOversizedAtomicSourceIfNeeded(source) {
+  if (byteLength({ source }) <= MAX_FAMILY_ARTIFACT_BYTES) return source;
+  return {
     ...source,
-    source_id: `${source.source_id}.FRAG.${String(index + 1).padStart(3, "0")}`,
-    parent_source_id: source.source_id,
-    source_fragment_index: index + 1,
-    source_fragment_count: chunks.length,
-    lossless_text: chunk,
-    sha256: sha256(chunk),
-    extraction_warnings: unique([...(source.extraction_warnings || []), "SOURCE_TEXT_FRAGMENTED_FOR_ARTIFACT_CAP"])
-  }));
+    oversized_atomic_source: true,
+    oversized_atomic_source_policy: "SOURCE_TEXT_PRESERVED_WHOLE_DESPITE_ARTIFACT_CAP",
+    extraction_warnings: unique([...(source.extraction_warnings || []), "SOURCE_EXCEEDS_ARTIFACT_CAP_STORED_ATOMIC_LOSSLESS"])
+  };
 }
 
-function chunkText(text, maxChars) { const chunks = []; for (let i = 0; i < text.length; i += maxChars) chunks.push(text.slice(i, i + maxChars)); return chunks; }
 function byteLength(value) { return Buffer.byteLength(JSON.stringify(value || {}), "utf8"); }
 function positiveInt(value, fallback) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function manifestOnlyRecord(row) { return { manifest_id: row.manifest_id, bucket: row.bucket, root_family: row.root_family, canonical_url: row.canonical_url, fetch_url: row.fetch_url, route_type: row.route_type, admission_tier: row.admission_tier, variant_class: row.variant_class, extraction_decision: row.extraction_decision, tier_reason: row.tier_reason }; }
@@ -446,7 +440,7 @@ function decodeEntities(value) { return String(value || "").replace(/&nbsp;/gi, 
 function extractMetaDescription(html) { return extractFirst(html, /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || extractFirst(html, /<meta\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i); }
 function extractFirst(value, regex) { const match = String(value || "").match(regex); return match?.[1] ? decodeEntities(match[1]).trim() : ""; }
 async function safeFetchRaw(url) { try { const fetched = await fetchRaw(url); return { ok: true, ...fetched }; } catch (error) { return { ok: false, url, error: error?.message || String(error), http_status: error?.http_status || null }; } }
-async function fetchRaw(url) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), config.sourceFetchTimeoutMs); try { const response = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow", headers: { "user-agent": "LexNovaHQ-DiligenceReviewer/0.7 (+sparse-family-shards)", "accept": "text/markdown,text/plain,text/html,application/xhtml+xml,application/json,application/xml,text/xml,*/*;q=0.5" } }); const contentType = response.headers.get("content-type") || ""; const rawText = await response.text(); if (!response.ok) { const error = new Error(`HTTP_${response.status}`); error.http_status = response.status; throw error; } return { http_status: response.status, content_type: contentType, final_url: response.url, raw_text: rawText, extraction_warnings: buildWarnings(contentType, rawText) }; } catch (error) { if (error?.name === "AbortError") throw new Error("FETCH_TIMEOUT"); throw error; } finally { clearTimeout(timeout); } }
+async function fetchRaw(url) { const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), config.sourceFetchTimeoutMs); try { const response = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow", headers: { "user-agent": "LexNovaHQ-DiligenceReviewer/0.8 (+sparse-atomic-family-shards)", "accept": "text/markdown,text/plain,text/html,application/xhtml+xml,application/json,application/xml,text/xml,*/*;q=0.5" } }); const contentType = response.headers.get("content-type") || ""; const rawText = await response.text(); if (!response.ok) { const error = new Error(`HTTP_${response.status}`); error.http_status = response.status; throw error; } return { http_status: response.status, content_type: contentType, final_url: response.url, raw_text: rawText, extraction_warnings: buildWarnings(contentType, rawText) }; } catch (error) { if (error?.name === "AbortError") throw new Error("FETCH_TIMEOUT"); throw error; } finally { clearTimeout(timeout); } }
 function buildWarnings(contentType, text) { const warnings = []; const lower = String(contentType || "").toLowerCase(); if (lower.includes("pdf")) warnings.push("PDF_FETCHED_AS_TEXT_NOT_PARSED"); if (String(text || "").length > 900000) warnings.push("LARGE_SOURCE_TEXT"); return warnings; }
 function withoutLosslessText(row) { const { lossless_text: _losslessText, ...rest } = row; return rest; }
 function sha256(value) { return crypto.createHash("sha256").update(String(value || "")).digest("hex"); }
