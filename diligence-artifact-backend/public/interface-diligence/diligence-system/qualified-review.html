@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Qualified Review Handoff</title>
+  <title>Qualified Review</title>
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="./diligence-system.css" />
 </head>
@@ -12,10 +12,10 @@
   <header class="topbar no-print">
     <div class="topbar-inner">
       <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="Interface Diligence Engine home">
-        <span class="wordmark-title">Interface Diligence Engine</span>
-        <span class="wordmark-subtitle">Public-footprint exposure diligence</span>
+        <span class="wordmark-title">Qualified Review</span>
+        <span class="wordmark-subtitle">Post-report reviewer confirmation system</span>
       </a>
-      <div class="topbar-note">Qualified Review</div>
+      <div class="topbar-note">Separate System</div>
     </div>
   </header>
 
@@ -23,13 +23,18 @@
     <main>
       <section class="hero report-shell">
         <div class="eyebrow">Qualified Review</div>
-        <h1 id="handoffTitle">Loading Qualified Review handoff...</h1>
-        <p class="hero-copy" id="handoffSubtitle">Reading the completed qualified-review renderer payload.</p>
+        <h1 id="handoffTitle">Loading Qualified Review...</h1>
+        <p class="hero-copy" id="handoffSubtitle">Reading the post-report Qualified Review renderer payload.</p>
         <div class="report-actions no-print">
           <a class="btn secondary" id="backToReport" href="#">Return to Report</a>
-          <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
+          <a class="btn secondary" href="/interface-diligence/diligence-system/">New Diligence Run</a>
         </div>
-        <div class="notice"><strong>Boundary:</strong> This page is a Qualified Review queue. It does not assemble legal documents or convert public-footprint signals into confirmed private facts.</div>
+        <div class="notice"><strong>Boundary:</strong> Qualified Review is a separate post-report system. It opens only after the Diligence Engine report renderer has completed. It does not assemble legal documents or convert public-footprint signals into confirmed private facts.</div>
+      </section>
+
+      <section class="card" id="qualifiedReviewRailCard">
+        <div class="eyebrow">Qualified Review rail</div>
+        <div id="qualifiedReviewRail">Loading...</div>
       </section>
 
       <section class="card" id="handoffMetaCard">
@@ -39,7 +44,7 @@
 
       <div id="handoffBody"></div>
     </main>
-    <div class="footer-note">Public-footprint diligence system. Demonstration and Qualified Review workflow.</div>
+    <div class="footer-note">Qualified Review system. Separate post-report workflow connected by the same run ID.</div>
   </div>
 
   <script src="./qualified-review-system/qualified-review.js"></script>

@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import { config, requireRuntimeConfig } from "./config.js";
 import { createRunFolder, readJsonArtifactFromDrive } from "./drive.js";
 import { appendRunDashboardRow, updateRunDashboardRow } from "./sheets.js";
@@ -110,10 +110,35 @@ publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, re
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
-    if (run.status !== "COMPLETE" && run.current_phase !== "COMPLETE") return res.status(409).json({ ok: false, error: "QUALIFIED_REVIEW_NOT_READY", message: "Qualified Review handoff is not ready for this run." });
-    const meta = await getArtifactMetadata(req.params.run_id, "qualified_review_handoff");
-    const handoff = await readJsonArtifactFromDrive(meta.drive_file_id);
-    return res.json({ ok: true, run_id: req.params.run_id, qualified_review_handoff: handoff, public_label: "Qualified Review" });
+    if (run.status !== "COMPLETE" && run.current_phase !== "COMPLETE") return res.status(409).json({ ok: false, error: "QUALIFIED_REVIEW_NOT_READY", message: "Qualified Review is available only after the diligence report renderer has completed." });
+
+    const reportMeta = await getArtifactMetadata(req.params.run_id, "renderer_payload");
+    const reportPayload = await readJsonArtifactFromDrive(reportMeta.drive_file_id);
+    const handoffMeta = await getArtifactMetadata(req.params.run_id, "qualified_review_handoff");
+    const rendererMeta = await getArtifactMetadata(req.params.run_id, "qualified_review_renderer_payload");
+    const handoff = await readJsonArtifactFromDrive(handoffMeta.drive_file_id);
+    const rendererPayload = await readJsonArtifactFromDrive(rendererMeta.drive_file_id);
+
+    return res.json({
+      ok: true,
+      run_id: req.params.run_id,
+      public_label: "Qualified Review",
+      system_boundary: {
+        source_system: "Interface Diligence Engine",
+        entry_condition: "renderer_payload exists and run is COMPLETE",
+        qualified_review_is_separate_system: true,
+        shares_pipeline_run_id: true,
+        no_document_assembly: true
+      },
+      report_ready: true,
+      report_renderer_ref: "renderer_payload",
+      report_summary: {
+        validation_status: reportPayload?.validation_status || reportPayload?.report_shell?.validation_status || "",
+        report_title: reportPayload?.report_shell?.report_title || "Interface Public-Footprint Diligence Report"
+      },
+      qualified_review_handoff: handoff,
+      qualified_review_renderer_payload: rendererPayload
+    });
   } catch (error) {
     return sendError(res, error);
   }

@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   const POLL_MS = 10000;
   const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
   let runId = "";
@@ -36,7 +36,7 @@
     if (nodes.input) nodes.input.value = id;
     if (writeUrl) setUrl(id);
     setLinks(id, false);
-    message(`Attached to ${id}. Loading live state...`);
+    message(`Attached to ${id}. Loading live Diligence Engine state...`);
     await poll();
     if (runId && !timer) timer = setInterval(poll, POLL_MS);
   }
@@ -49,7 +49,7 @@
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ auto_continue: true })
     });
-    message("Continue requested. Watching live state...");
+    message("Continue requested. Watching live Diligence Engine state...");
     await poll();
     if (!timer) timer = setInterval(poll, POLL_MS);
   }
@@ -63,7 +63,7 @@
       if (isComplete(run)) {
         stop();
         setLinks(runId, true);
-        message("Report ready. Opening report...");
+        message("Diligence report ready. Open the report first; Qualified Review is available from the completed report.");
         setTimeout(() => { window.location.href = `report.html?run_id=${encodeURIComponent(runId)}`; }, 1200);
       } else if (isStopped(run)) {
         stop();
@@ -71,7 +71,7 @@
         message(`Run stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
       } else {
         setLinks(runId, false);
-        message(`Watching ${runId}. Live phase: ${run.current_phase || "unknown"}.`);
+        message(`Watching ${runId}. Live Diligence Engine phase: ${run.current_phase || "unknown"}.`);
       }
     } catch (error) {
       stop();
@@ -96,20 +96,28 @@
 
   function setLinks(id, complete) {
     const encoded = encodeURIComponent(id);
-    const pairs = [
-      [nodes.statusApi, `/public/diligence-system/jobs/${encoded}`],
+    const alwaysPairs = [[nodes.statusApi, `/public/diligence-system/jobs/${encoded}`]];
+    const postReportPairs = [
       [nodes.reportPage, `report.html?run_id=${encoded}`],
       [nodes.reportApi, `/public/diligence-system/report/${encoded}`],
+      [nodes.report, `report.html?run_id=${encoded}`],
       [nodes.qualifiedPage, `qualified-review.html?run_id=${encoded}`],
       [nodes.qualifiedApi, `/public/diligence-system/qualified-review/${encoded}`],
-      [nodes.report, `report.html?run_id=${encoded}`],
       [nodes.qualified, `qualified-review.html?run_id=${encoded}`]
     ];
-    pairs.forEach(([node, href]) => {
+
+    alwaysPairs.forEach(([node, href]) => {
       if (!node) return;
       node.href = href;
       node.classList.remove("hidden");
     });
+
+    postReportPairs.forEach(([node, href]) => {
+      if (!node) return;
+      node.href = href;
+      node.classList.toggle("hidden", !complete);
+    });
+
     nodes.resume?.classList.toggle("hidden", complete);
   }
 

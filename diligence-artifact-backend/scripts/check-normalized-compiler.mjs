@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { compileFinalOutputHandoff } from "../src/compiler.js";
 
 const run = { run_id: "TEST-COMPILER", target: "Example", root_url: "https://example.com", status: "LOCKED" };
@@ -15,13 +15,16 @@ const artifacts = {
 };
 
 const output = compileFinalOutputHandoff({ run, artifacts });
+const final = output.final_output_handoff.final_output_handoff;
+
 assert.ok(output.normalized_report_manifest);
 assert.ok(output.vault_section_handoff);
-assert.ok(output.qualified_review_handoff);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "qualified_review_handoff"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "qualified_review_renderer_payload"), false);
 assert.ok(output.normalized_section__matter_overview);
 assert.ok(output.final_output_handoff);
-assert.ok(output.final_output_handoff.final_output_handoff.normalized_sections);
+assert.ok(final.normalized_sections);
 assert.equal(output.final_output_handoff.validation_status, "LOCKED");
-assert.equal(output.qualified_review_handoff.public_label, "Qualified Review");
-assert.equal(output.final_output_handoff.final_output_handoff.legacy_archive.profiles_combined, "ARCHIVED_LEGACY");
+assert.equal(final.compiler_trace.qualified_review_branch_separate, true);
+assert.equal(final.legacy_archive.profiles_combined, "ARCHIVED_LEGACY");
 console.log("normalized compiler output: PASS");

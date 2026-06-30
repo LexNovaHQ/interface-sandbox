@@ -1,4 +1,4 @@
-const RAIL_PHASES = [
+﻿const RAIL_PHASES = [
   { id: "INTAKE", label: "Intake", sub: "target submitted", phases: ["CREATED"], why: "Creates an isolated run and prepares the backend artifact folder." },
   { id: "SOURCE_DISCOVERY", label: "Source Discovery", sub: "manifest + extraction", phases: ["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX"], why: "Collects and routes public source material into the evidence lanes." },
   { id: "LEGAL_CARTOGRAPHY", label: "Legal Cartography", sub: "document map", phases: ["M9"], why: "Maps visible legal and governance documents without turning them into legal conclusions." },
@@ -7,10 +7,9 @@ const RAIL_PHASES = [
   { id: "DATA_PROVENANCE", label: "Data Provenance", sub: "data/control posture", phases: ["M10", "M10_FORENSICS"], why: "Maps visible data flows, control signals, and unresolved proof requests." },
   { id: "EXPOSURE_REGISTRY", label: "Exposure Registry", sub: "triggered + controlled", phases: ["M11"], why: "Evaluates the registry and emits both triggered and controlled rows." },
   { id: "OPERATOR_CHALLENGE", label: "Operator Challenge", sub: "quality gate", phases: ["M12"], why: "Challenges the exposure profile before final compilation." },
-  { id: "FINAL_COMPILER", label: "Final Compiler", sub: "compiled handoff", phases: ["COMPILER"], why: "Compiles the locked profile artifacts into the final report handoff." },
+  { id: "FINAL_COMPILER", label: "Final Compiler", sub: "compiled handoff", phases: ["NORMALIZED_COMPILER"], why: "Compiles the locked profile artifacts into the final report handoff and the separate Qualified Review handoff branch." },
   { id: "REPORT_RENDERER", label: "Report Renderer", sub: "public report", phases: ["RENDERER"], why: "Builds the public report payload from the final handoff." },
-  { id: "COMPLETE", label: "Complete", sub: "report ready", phases: ["COMPLETE"], why: "The diligence report is ready to open." },
-  { id: "QUALIFIED_REVIEW", label: "Qualified Review", sub: "next layer", phases: [], why: "The completed run can proceed to the qualified-review handoff layer." }
+  { id: "COMPLETE", label: "Complete", sub: "report ready", phases: ["COMPLETE"], why: "The diligence report is ready to open. Qualified Review is a separate post-report page." }
 ];
 
 const PHASE_TEXT = {
@@ -27,7 +26,7 @@ const PHASE_TEXT = {
   M10_FORENSICS: "Checking data provenance forensics.",
   M11: "Evaluating exposure registry.",
   M12: "Running operator challenge gate.",
-  COMPILER: "Compiling final handoff.",
+  NORMALIZED_COMPILER: "Compiling final handoff.",
   RENDERER: "Rendering report payload.",
   COMPLETE: "Report ready."
 };
@@ -88,7 +87,7 @@ async function startRun(event) {
       body: JSON.stringify({ auto_continue: true })
     });
 
-    setMessage("Backend worker queued. Watching phase rail...");
+    setMessage("Backend worker queued. Watching Diligence Engine phase rail...");
     await pollOnce();
     pollTimer = setInterval(pollOnce, POLL_MS);
   } catch (error) {
@@ -132,7 +131,7 @@ async function pollOnce(_options = {}) {
       const href = `report.html?run_id=${encodeURIComponent(currentRunId)}`;
       els.openReportButton.href = href;
       els.openReportButton.classList.remove("hidden");
-      setMessage("Report ready. Opening report...");
+      setMessage("Diligence report ready. Opening report...");
       setTimeout(() => { window.location.href = href; }, 1200);
       return;
     }
@@ -143,7 +142,7 @@ async function pollOnce(_options = {}) {
       setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.${detail}`, true);
       return;
     }
-    setMessage(`Watching run ${currentRunId}. Live phase: ${run.current_phase || "unknown"}.`);
+    setMessage(`Watching run ${currentRunId}. Live Diligence Engine phase: ${run.current_phase || "unknown"}.`);
   } catch (error) {
     stopPolling();
     setBusy(false);
@@ -224,7 +223,7 @@ function renderRail(run = {}) {
   const active = activeIndex(run);
   const failed = isFailed(run);
   const limited = String(run.status || "").includes("LIMITATION");
-  els.phaseRail.innerHTML = `<div class="rail-chip"><span class="pulse"></span> Live phase rail</div>` + RAIL_PHASES.map((phase, index) => {
+  els.phaseRail.innerHTML = `<div class="rail-chip"><span class="pulse"></span> Diligence Engine rail</div>` + RAIL_PHASES.map((phase, index) => {
     let state = "pending";
     if (index < active) state = "complete";
     if (index === active) state = failed ? "failed" : (limited ? "limited" : "active");
@@ -232,7 +231,8 @@ function renderRail(run = {}) {
     return `<div class="rail-stage ${state}"><span class="rail-dot"></span><div><div class="rail-node">${escapeHtml(phase.label)}</div><div class="rail-sub">${escapeHtml(phase.sub)}</div><div class="rail-why">${escapeHtml(phase.why)}</div></div></div>`;
   }).join("");
   renderMobile(active);
-  const pct = Math.max(0, Math.min(100, Math.round((active / (RAIL_PHASES.length - 2)) * 100)));
+  const denominator = Math.max(1, RAIL_PHASES.length - 1);
+  const pct = Math.max(0, Math.min(100, Math.round((active / denominator) * 100)));
   els.progressLine.style.width = `${pct}%`;
 }
 
@@ -278,7 +278,7 @@ function stopPolling() {
 function badgeHtml(status, runner, error = "") {
   const failed = TERMINAL_FAILURES.has(status) || runner === "FAILED";
   const label = [status, runner].filter(Boolean).join(" / ") || "Idle";
-  const detail = failed && error ? ` — ${error}` : "";
+  const detail = failed && error ? ` â€” ${error}` : "";
   return `<span class="status-badge ${failed ? "failed" : ""}"><span class="dot"></span>${escapeHtml(label + detail)}</span>`;
 }
 

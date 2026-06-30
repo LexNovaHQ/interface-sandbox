@@ -44,6 +44,7 @@ const ART = Object.freeze({
   normalizedReportManifest: "normalized_report_manifest",
   vaultSectionHandoff: "vault_section_handoff",
   qualifiedReviewHandoff: "qualified_review_handoff",
+  qualifiedReviewRendererPayload: "qualified_review_renderer_payload",
   renderer: "renderer_payload"
 });
 
@@ -67,9 +68,13 @@ export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([
 export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([
   ART.normalizedReportManifest,
   ART.vaultSectionHandoff,
-  ART.qualifiedReviewHandoff,
   ART.final,
   ...NORMALIZED_SECTION_ARTIFACT_NAMES
+]);
+
+export const QUALIFIED_REVIEW_ARTIFACT_NAMES = Object.freeze([
+  ART.qualifiedReviewHandoff,
+  ART.qualifiedReviewRendererPayload
 ]);
 
 export const PHASES = Object.freeze([
@@ -88,6 +93,8 @@ export const PHASES = Object.freeze([
   "M11",
   "M12",
   "NORMALIZED_COMPILER",
+  "QUALIFIED_REVIEW_HANDOFF",
+  "QUALIFIED_REVIEW_RENDERER",
   "RENDERER",
   "COMPLETE"
 ]);
@@ -149,6 +156,7 @@ export const ARTIFACT_NAMES = Object.freeze([
   ...M11_STATIC_ARTIFACT_NAMES,
   ART.challenge,
   ...NORMALIZED_COMPILER_ARTIFACT_NAMES,
+  ...QUALIFIED_REVIEW_ARTIFACT_NAMES,
   ART.renderer
 ]);
 
@@ -187,6 +195,8 @@ export const PHASE_WRITE_PERMISSIONS = Object.freeze({
   M11: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   M12: [ART.exposureBatchValidationPattern, ART.challenge],
   NORMALIZED_COMPILER: COMPILER_ARTIFACT_NAMES,
+  QUALIFIED_REVIEW_HANDOFF: [ART.qualifiedReviewHandoff],
+  QUALIFIED_REVIEW_RENDERER: [ART.qualifiedReviewRendererPayload],
   RENDERER: [ART.renderer],
   COMPLETE: []
 });

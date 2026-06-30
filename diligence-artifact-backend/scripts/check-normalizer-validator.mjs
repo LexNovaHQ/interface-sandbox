@@ -18,8 +18,8 @@ const artifacts = {
 const output = compileFinalOutputHandoff({ run, artifacts });
 const validation = validateNormalizedProfilerOutput(output);
 assert.equal(validation.status, "PASS", JSON.stringify(validation, null, 2));
-assert.ok(output.qualified_review_handoff);
-assert.equal(output.qualified_review_handoff.public_label, "Qualified Review");
-assert.ok(output.qualified_review_handoff.forbidden_public_actions.includes("Download JSON"));
+assert.equal(Object.prototype.hasOwnProperty.call(output, "qualified_review_handoff"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "qualified_review_renderer_payload"), false);
+assert.equal(output.final_output_handoff.final_output_handoff.compiler_trace.qualified_review_branch_separate, true);
 assert.equal(output.final_output_handoff.final_output_handoff.legacy_archive.profiles_combined, "ARCHIVED_LEGACY");
 console.log("normalizer validator: PASS");
