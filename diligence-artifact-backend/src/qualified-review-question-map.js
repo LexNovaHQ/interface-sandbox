@@ -66,7 +66,7 @@ const QUESTIONS = Object.freeze([
   q(39,"privacy_sensitive_use","personal_data_processing","compliance.processes_pii","Personal data processing","dropdown","Prefill / confirm",["data_provenance_profile.personal_data_processing_signal","data_provenance_profile.data_categories","integrated_dap_report.data_categories_sensitivity_profile"],["DOC_DPA","DOC_PP"],"Confirm whether the product processes personal data.","If yes, DPA and privacy-policy routing should remain active.", ["yes","no"]),
   q(40,"privacy_sensitive_use","eu_uk_exposure","compliance.eu_users","EU / UK exposure","dropdown","Prefill / confirm",["target_profile.business_context.market_scope.eu_uk","data_provenance_profile.territorial_scope.eu_uk","integrated_dap_report.territorial_scope"],["DPA §6.2-6.4","SCCs"],"Confirm whether EU or UK users, customers, or data subjects are in scope.","EU/UK exposure routes SCC and GDPR/UK GDPR mechanics.", ["yes","no"]),
   q(41,"privacy_sensitive_use","california_exposure","compliance.ca_users","California exposure","dropdown","Prefill / confirm",["target_profile.business_context.market_scope.california","data_provenance_profile.territorial_scope.california","integrated_dap_report.territorial_scope"],["DPA §13.x CCPA"],"Confirm whether California users, customers, or consumers are in scope.","California exposure routes service-provider / CCPA terms.", ["yes","no"]),
-  q(42,"privacy_sensitive_use","other_regional_exposure","compliance.other_regions","Other regional exposure","short_answer","Need to fill",["target_profile.business_context.market_scope.other_regions","data_provenance_profile.territorial_scope","integrated_dap_report.territorial_scope"],["regional review flag"],"Confirm other regions that should be considered for the draft stack.","Examples: Canada, Australia, Singapore, UAE, Brazil, India, or global."),
+  q(42,"privacy_sensitive_use","other_regional_exposure","compliance.other_regions","Other regional exposure","select","Need to fill",["target_profile.business_context.market_scope.other_regions","data_provenance_profile.territorial_scope","integrated_dap_report.territorial_scope"],["regional review flag"],"Confirm other regions that should be considered for the draft stack.","Examples: Canada, Australia, Singapore, UAE, Brazil, India, or global.", ["canada","australia","singapore","uae","brazil","india","global","other"]),
   q(43,"privacy_sensitive_use","health_medical_biometric_context","compliance.sens_health","Health / medical / biometric context","select","Prefill / confirm",["data_provenance_profile.sensitive_data_profile.health","data_provenance_profile.sensitive_data_profile.biometric","target_feature_profile.regulated_context_profile"],["AUP §3.1","AUP §3.6"],"Confirm whether health, medical, wellness, biometric, or identity-sensitive context is in scope.","Sensitive-use flags route stricter AUP and disclaimer language.", ["health","medical","wellness","biometric","none"]),
   q(44,"privacy_sensitive_use","financial_data_financial_use","compliance.sens_fin","Financial data / financial use","dropdown","Prefill / confirm",["data_provenance_profile.sensitive_data_profile.financial","target_feature_profile.regulated_context_profile.financial","exposure_registry_triggered_profile.financial_risk_rows"],["AUP §3.2"],"Confirm whether financial data or financial decision context is in scope.","Financial-sensitive use routes AUP financial-surface language.", ["yes","no"]),
   q(45,"privacy_sensitive_use","employment_hr_context","compliance.sens_employment","Employment / HR context","dropdown","Prefill / confirm",["data_provenance_profile.sensitive_data_profile.employee","target_feature_profile.regulated_context_profile.employment"],["AUP §3.4"],"Confirm whether employment, hiring, workforce, or HR use is in scope.","Employment-sensitive use routes bias-audit and HR caution language.", ["yes","no"]),
@@ -75,7 +75,7 @@ const QUESTIONS = Object.freeze([
 
   q(48,"india_privacy_cyber","indian_users","india_privacy_cyber.indian_users","Indian users","dropdown","Prefill / confirm",["extended_dap_india_readiness_profile.india_market_scope_signal","integrated_dap_report.report_boundary_source_coverage.india_scope"],["DPDP applicability screen"],"Confirm whether Indian users, customers, employees, or data principals are in scope.","Public market signals can suggest India exposure, but customer reality controls.", ["yes","no"]),
   q(49,"india_privacy_cyber","indian_operations","india_privacy_cyber.indian_operations","Indian operations","dropdown","Prefill / confirm",["extended_dap_india_readiness_profile.india_operations_signal","integrated_dap_report.territorial_scope.india_operations"],["DPDP / CERT-In operational scope"],"Confirm whether operations, support, hosting, staff, vendors, or service delivery touch India.","Indian operations may affect cyber and privacy readiness.", ["yes","no"]),
-  q(50,"india_privacy_cyber","india_exclusion","india_privacy_cyber.india_exclusion","India exclusion","dropdown","Prefill / confirm",["extended_dap_india_readiness_profile.india_exclusion_or_no_exclusion_signal","legal_cartography_index.control_language_locator.territorial_exclusion"],["India carveout / limitation note"],"Confirm whether India is expressly excluded, limited, or not addressed.","India exclusions should be explicit if relied on.", ["excluded","not_excluded","unclear"]),
+  q(50,"india_privacy_cyber","india_exclusion","india_privacy_cyber.india_exclusion","India exclusion","short_answer","Prefill / confirm",["extended_dap_india_readiness_profile.india_exclusion_or_no_exclusion_signal","legal_cartography_index.control_language_locator.territorial_exclusion"],["India carveout / limitation note"],"Confirm whether India is expressly excluded, limited, or not addressed.","India exclusions should be explicit if relied on."),
   q(51,"india_privacy_cyber","indian_personal_data","india_privacy_cyber.indian_personal_data","Indian personal data","dropdown","Prefill / confirm",["extended_dap_india_readiness_profile.india_personal_data_processing_signal","extended_dap_india_readiness_profile.india_data_principal_population_signal"],["DPDP personal data scope"],"Confirm whether Indian personal data is processed.","DPDP readiness depends on data-principal and processing scope.", ["yes","no"]),
   q(52,"india_privacy_cyber","dpdp_role_mapping","india_privacy_cyber.dpdp_role_mapping","DPDP role mapping","short_answer","Need to fill",["extended_dap_india_readiness_profile.india_role_mapping_candidate","integrated_dap_report.data_relationship_role_map.india_role"],["Data Fiduciary / Processor role"],"Confirm the India DPDP role mapping for the reviewed activity.","Examples: Data Fiduciary, Data Processor, mixed role, or unclear pending counsel review."),
   q(53,"india_privacy_cyber","dpdp_notice_availability","india_privacy_cyber.dpdp_notice_availability","DPDP notice availability","dropdown","Prefill / confirm",["extended_dap_india_readiness_profile.india_dpdp_notice_surface_signal","integrated_dap_report.notice_consent_rights_accountability"],["notice readiness"],"Confirm whether India/DPDP-ready notice language is available.","Public privacy notices may not be DPDP-specific even when privacy notices exist.", ["yes","no","unclear"]),
@@ -115,64 +115,13 @@ export function buildQualifiedReviewQuestionHandoff({ run = {}, artifacts = {} }
   const sectionPages = QUALIFIED_REVIEW_SECTIONS.map((section, index) => {
     const sectionQuestions = questions.filter((question) => question.section_id === section.section_id);
     const prefilled = sectionQuestions.filter((question) => question.prefill_status === "Prefill / confirm").length;
-    return {
-      step: index + 1,
-      section_id: section.section_id,
-      section_title: section.title,
-      questions: sectionQuestions,
-      question_ids: sectionQuestions.map((question) => question.question_id),
-      question_count: sectionQuestions.length,
-      prefilled_count: prefilled,
-      need_to_fill_count: sectionQuestions.length - prefilled,
-      editable: true
-    };
+    return { step: index + 1, section_id: section.section_id, section_title: section.title, questions: sectionQuestions, question_ids: sectionQuestions.map((question) => question.question_id), question_count: sectionQuestions.length, prefilled_count: prefilled, need_to_fill_count: sectionQuestions.length - prefilled, editable: true };
   });
-  return {
-    handoff_type: "qualified_review_question_handoff",
-    handoff_version: "qualified_review_question_handoff_v2_locked_vault_plus_india",
-    map_version: QUALIFIED_REVIEW_QUESTION_MAP_VERSION,
-    run_id: safeText(run.run_id, "UNKNOWN_RUN"),
-    ui_mode: "SECTION_BY_SECTION_WIZARD",
-    vault_payload_groups: [...VAULT_PAYLOAD_GROUPS],
-    question_count: questions.length,
-    sections: QUALIFIED_REVIEW_SECTIONS.map(({ section_id, title, count }) => ({ section_id, title, count })),
-    progress_rail: sectionPages.map((page) => ({ step: page.step, section_id: page.section_id, label: page.section_title, question_count: page.question_count, status: page.need_to_fill_count === 0 ? "READY_FOR_REVIEW" : "NEEDS_CONFIRMATION" })),
-    section_pages: sectionPages,
-    questions,
-    final_review_gate: {
-      requires_zero_assembly_blockers: true,
-      requires_confirmation_before_assembly: true,
-      demo_market_suggestions_are_not_confirmed_facts: true,
-      missing_backend_fields_do_not_block_qualified_review: true
-    },
-    demo_disclaimer_text: DEMO_DISCLAIMER_TEXT,
-    warnings: questions.flatMap((question) => question.warnings)
-  };
+  return { handoff_type: "qualified_review_question_handoff", handoff_version: "qualified_review_question_handoff_v2_locked_vault_plus_india", map_version: QUALIFIED_REVIEW_QUESTION_MAP_VERSION, run_id: safeText(run.run_id, "UNKNOWN_RUN"), ui_mode: "SECTION_BY_SECTION_WIZARD", vault_payload_groups: [...VAULT_PAYLOAD_GROUPS], question_count: questions.length, sections: QUALIFIED_REVIEW_SECTIONS.map(({ section_id, title, count }) => ({ section_id, title, count })), progress_rail: sectionPages.map((page) => ({ step: page.step, section_id: page.section_id, label: page.section_title, question_count: page.question_count, status: page.need_to_fill_count === 0 ? "READY_FOR_REVIEW" : "NEEDS_CONFIRMATION" })), section_pages: sectionPages, questions, final_review_gate: { requires_zero_assembly_blockers: true, requires_confirmation_before_assembly: true, demo_market_suggestions_are_not_confirmed_facts: true, missing_backend_fields_do_not_block_qualified_review: true }, demo_disclaimer_text: DEMO_DISCLAIMER_TEXT, warnings: questions.flatMap((question) => question.warnings) };
 }
 
 function q(questionNumber, sectionId, fieldKey, vaultPath, label, answerType, defaultStatus, mappings, docImpact, helperText, marketNormHelper, options = []) {
-  return Object.freeze({
-    question_id: `QR-${String(questionNumber).padStart(3, "0")}`,
-    question_number: questionNumber,
-    section_id: sectionId,
-    section_title: sectionTitle(sectionId),
-    field_key: fieldKey,
-    vault_path: vaultPath,
-    draft_prep_path: vaultPath,
-    public_question_label: label,
-    answer_type: answerType,
-    allowed_options: Object.freeze(options),
-    backend_field_mappings: Object.freeze(mappings),
-    default_prefill_status: defaultStatus,
-    editable: true,
-    required_for_assembly: true,
-    assembly_blocker: true,
-    document_impact: Object.freeze(docImpact),
-    helper_text: helperText,
-    market_norm_helper: marketNormHelper,
-    review_status: "Needs confirmation",
-    vault_push_policy: VAULT_PUSH_POLICY
-  });
+  return Object.freeze({ question_id: `QR-${String(questionNumber).padStart(3, "0")}`, question_number: questionNumber, section_id: sectionId, section_title: sectionTitle(sectionId), field_key: fieldKey, vault_path: vaultPath, draft_prep_path: vaultPath, public_question_label: label, answer_type: answerType, allowed_options: Object.freeze(options), backend_field_mappings: Object.freeze(mappings), default_prefill_status: defaultStatus, editable: true, required_for_assembly: true, assembly_blocker: true, document_impact: Object.freeze(docImpact), helper_text: helperText, market_norm_helper: marketNormHelper, review_status: "Needs confirmation", vault_push_policy: VAULT_PUSH_POLICY });
 }
 
 function materializeQuestion({ question, artifacts }) {
@@ -180,62 +129,12 @@ function materializeQuestion({ question, artifacts }) {
   const hasBackendEvidence = evidenceSources.length > 0;
   const status = hasBackendEvidence && question.default_prefill_status === "Prefill / confirm" ? "Prefill / confirm" : "Need to fill";
   const suggestionSource = hasBackendEvidence ? "backend_artifact" : "market_norm_demo";
-  return {
-    ...question,
-    prefill_status: status,
-    suggestion_source: suggestionSource,
-    suggested_answer: hasBackendEvidence ? deriveSuggestedAnswer(evidenceSources) : "",
-    demo_market_suggestion: hasBackendEvidence ? "" : question.market_norm_helper,
-    demo_disclaimer: !hasBackendEvidence,
-    demo_disclaimer_text: hasBackendEvidence ? "" : DEMO_DISCLAIMER_TEXT,
-    evidence_sources: evidenceSources,
-    source_artifacts: unique(evidenceSources.map((source) => source.artifact_name)),
-    source_field_hints: [...question.backend_field_mappings],
-    warnings: hasBackendEvidence ? [] : [`${question.question_id}: Need to fill; demo market suggestion only`]
-  };
+  return { ...question, prefill_status: status, suggestion_source: suggestionSource, suggested_answer: hasBackendEvidence ? deriveSuggestedAnswer(evidenceSources) : "", demo_market_suggestion: hasBackendEvidence ? "" : question.market_norm_helper, demo_disclaimer: !hasBackendEvidence, demo_disclaimer_text: hasBackendEvidence ? "" : DEMO_DISCLAIMER_TEXT, evidence_sources: evidenceSources, source_artifacts: unique(evidenceSources.map((source) => source.artifact_name)), source_field_hints: [...question.backend_field_mappings], warnings: hasBackendEvidence ? [] : [`${question.question_id}: Need to fill; demo market suggestion only`] };
 }
 
-function resolveEvidenceSources({ mappings, artifacts }) {
-  const hits = [];
-  for (const mapping of asArray(mappings)) {
-    const [artifactName, ...pathParts] = String(mapping || "").split(".");
-    const artifact = artifacts[artifactName];
-    if (!hasMeaningfulArtifact(artifact)) continue;
-    const value = pathParts.length ? getByPath(artifact, pathParts) : artifact;
-    if (!hasMeaningfulArtifact(value)) continue;
-    hits.push({ artifact_name: artifactName, field_path: mapping, value });
-  }
-  return hits;
-}
-
-function deriveSuggestedAnswer(evidenceSources) {
-  const first = evidenceSources[0]?.value;
-  if (first === undefined || first === null) return "";
-  if (typeof first === "string" || typeof first === "number" || typeof first === "boolean") return String(first);
-  if (Array.isArray(first)) return first.map((item) => safeText(item, "")).filter(Boolean).join(", ");
-  return safeText(first.value || first.answer || first.label || first.name || "", "");
-}
-
-function getByPath(value, pathParts) {
-  let cursor = value;
-  for (const part of pathParts) {
-    if (!cursor || typeof cursor !== "object") return undefined;
-    cursor = cursor[part];
-  }
-  return cursor;
-}
-
-function hasMeaningfulArtifact(value) {
-  if (value === null || value === undefined) return false;
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === "object") return Object.keys(value).length > 0;
-  return Boolean(String(value).trim());
-}
-
-function unique(values) {
-  return [...new Set(values.filter(Boolean))];
-}
-
-function sectionTitle(sectionId) {
-  return QUALIFIED_REVIEW_SECTIONS.find((section) => section.section_id === sectionId)?.title || sectionId;
-}
+function resolveEvidenceSources({ mappings, artifacts }) { const hits = []; for (const mapping of asArray(mappings)) { const [artifactName, ...pathParts] = String(mapping || "").split("."); const artifact = artifacts[artifactName]; if (!hasMeaningfulArtifact(artifact)) continue; const value = pathParts.length ? getByPath(artifact, pathParts) : artifact; if (!hasMeaningfulArtifact(value)) continue; hits.push({ artifact_name: artifactName, field_path: mapping, value }); } return hits; }
+function deriveSuggestedAnswer(evidenceSources) { const first = evidenceSources[0]?.value; if (first === undefined || first === null) return ""; if (["string", "number", "boolean"].includes(typeof first)) return String(first); if (Array.isArray(first)) return first.map((item) => safeText(item, "")).filter(Boolean).join(", "); return safeText(first.value || first.answer || first.label || first.name || "", ""); }
+function getByPath(value, pathParts) { let cursor = value; for (const part of pathParts) { if (!cursor || typeof cursor !== "object") return undefined; cursor = cursor[part]; } return cursor; }
+function hasMeaningfulArtifact(value) { if (value === null || value === undefined) return false; if (Array.isArray(value)) return value.length > 0; if (typeof value === "object") return Object.keys(value).length > 0; return Boolean(String(value).trim()); }
+function unique(values) { return [...new Set(values.filter(Boolean))]; }
+function sectionTitle(sectionId) { return QUALIFIED_REVIEW_SECTIONS.find((section) => section.section_id === sectionId)?.title || sectionId; }
