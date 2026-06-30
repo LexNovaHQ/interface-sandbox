@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   const POLL_MS = 10000;
   const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
   let runId = "";

@@ -1,4 +1,4 @@
-﻿const runId = new URLSearchParams(location.search).get("run_id") || "";
+const runId = new URLSearchParams(location.search).get("run_id") || "";
 const title = document.getElementById("handoffTitle");
 const subtitle = document.getElementById("handoffSubtitle");
 const meta = document.getElementById("handoffMeta");

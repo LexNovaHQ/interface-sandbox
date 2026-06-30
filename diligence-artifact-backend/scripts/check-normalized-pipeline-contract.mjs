@@ -1,9 +1,14 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import {
+  AGENTS,
   PHASES,
   NORMALIZED_SECTION_ARTIFACT_NAMES,
   COMPILER_ARTIFACT_NAMES,
   QUALIFIED_REVIEW_ARTIFACT_NAMES,
+  QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
+  QUALIFIED_REVIEW_SYSTEM_AGENT,
+  READ_PERMISSIONS,
+  WRITE_PERMISSIONS,
   PHASE_WRITE_PERMISSIONS
 } from "../src/constants.js";
 import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
@@ -44,5 +49,15 @@ assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_HANDOFF, ["qualified_r
 assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_RENDERER, ["qualified_review_renderer_payload"]);
 assert.equal(PHASE_CONTRACTS.QUALIFIED_REVIEW_HANDOFF, undefined);
 assert.equal(PHASE_CONTRACTS.QUALIFIED_REVIEW_RENDERER, undefined);
+assert.ok(AGENTS.includes(QUALIFIED_REVIEW_SYSTEM_AGENT));
+assert.deepEqual(WRITE_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT], QUALIFIED_REVIEW_ARTIFACT_NAMES);
+assert.deepEqual(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT], QUALIFIED_REVIEW_READ_ARTIFACT_NAMES);
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("final_output_handoff"));
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("normalized_report_manifest"));
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("target_profile"));
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("target_feature_profile"));
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("data_provenance_profile"));
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("exposure_registry_triggered_profile"));
+assert.ok(READ_PERMISSIONS[QUALIFIED_REVIEW_SYSTEM_AGENT].includes("challenge_gate"));
 
 console.log("normalized pipeline contract: PASS");

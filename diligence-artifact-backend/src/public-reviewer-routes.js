@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import { config, requireRuntimeConfig } from "./config.js";
 import { createRunFolder, readJsonArtifactFromDrive } from "./drive.js";
 import { appendRunDashboardRow, updateRunDashboardRow } from "./sheets.js";

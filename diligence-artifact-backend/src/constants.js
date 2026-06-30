@@ -48,6 +48,8 @@ const ART = Object.freeze({
   renderer: "renderer_payload"
 });
 
+export const QUALIFIED_REVIEW_SYSTEM_AGENT = "qualified_review_system";
+
 export const M11_BATCH_ARTIFACT_PATTERN = /^exposure_registry_batch__[A-Z0-9]+__\d{3}$/;
 export const M11_BATCH_VALIDATION_ARTIFACT_PATTERN = /^exposure_registry_batch_validation__[A-Z0-9]+__\d{3}$/;
 
@@ -132,6 +134,35 @@ export const M11_DYNAMIC_ARTIFACT_PATTERNS = Object.freeze([ART.exposureBatchPat
 export const NORMALIZED_COMPILER_PHASE = "NORMALIZED_COMPILER";
 export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
 
+export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze([
+  "source_family_index",
+  ART.sourceHandoff,
+  ART.legalIndex,
+  ART.targetMain,
+  ART.targetForensics,
+  ART.featureMain,
+  ART.featureForensics,
+  ART.dataMain,
+  ART.dataForensics,
+  ART.extendedDap,
+  ART.integratedDap,
+  ART.exposureRoutePlan,
+  ART.exposureBatchPattern,
+  ART.exposureBatchValidationPattern,
+  ART.exposureWorkpad,
+  ART.exposureControlled,
+  ART.exposureTriggered,
+  ART.exposureForensics,
+  ART.challenge,
+  ...NORMALIZED_COMPILER_ARTIFACT_NAMES,
+  ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES,
+  ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES,
+  ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES,
+  ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES,
+  ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES,
+  ...QUALIFIED_REVIEW_ARTIFACT_NAMES
+]);
+
 export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.profilesCombined, ART.forensicsCombined]);
 export const ARCHIVED_LEGACY_ARTIFACT_NAMES = LEGACY_COMPILER_ARTIFACT_NAMES;
 export const LEGACY_ARTIFACT_NAMES = Object.freeze([ART.urlManifest, ART.oldCorpus, ART.exposureLegacy, ...LEGACY_COMPILER_ARTIFACT_NAMES]);
@@ -160,7 +191,7 @@ export const ARTIFACT_NAMES = Object.freeze([
   ART.renderer
 ]);
 
-export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "document_source_ingestor", "agent_4b_extended_dap", "agent_4c_integrated_dap_compiler", "compiler", "portfolio_renderer", "operator"]);
+export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "document_source_ingestor", "agent_4b_extended_dap", "agent_4c_integrated_dap_compiler", "compiler", QUALIFIED_REVIEW_SYSTEM_AGENT, "portfolio_renderer", "operator"]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a1a]: AGENT_1A_ARTIFACT_NAMES,
@@ -175,6 +206,7 @@ export const WRITE_PERMISSIONS = Object.freeze({
   agent_4b_extended_dap: EXTENDED_DAP_ARTIFACT_NAMES,
   agent_4c_integrated_dap_compiler: INTEGRATED_DAP_ARTIFACT_NAMES,
   compiler: COMPILER_ARTIFACT_NAMES,
+  [QUALIFIED_REVIEW_SYSTEM_AGENT]: QUALIFIED_REVIEW_ARTIFACT_NAMES,
   portfolio_renderer: [ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });
@@ -214,6 +246,7 @@ export const READ_PERMISSIONS = Object.freeze({
   agent_4b_extended_dap: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
   agent_4c_integrated_dap_compiler: [ART.dataMain, ART.dataForensics, ART.extendedDap],
   compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.extendedDap, ART.integratedDap, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
+  [QUALIFIED_REVIEW_SYSTEM_AGENT]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
   portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_FAMILY_ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });

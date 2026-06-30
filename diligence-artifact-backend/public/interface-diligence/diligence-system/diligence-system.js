@@ -1,4 +1,4 @@
-﻿const RAIL_PHASES = [
+const RAIL_PHASES = [
   { id: "INTAKE", label: "Intake", sub: "target submitted", phases: ["CREATED"], why: "Creates an isolated run and prepares the backend artifact folder." },
   { id: "SOURCE_DISCOVERY", label: "Source Discovery", sub: "manifest + extraction", phases: ["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX"], why: "Collects and routes public source material into the evidence lanes." },
   { id: "LEGAL_CARTOGRAPHY", label: "Legal Cartography", sub: "document map", phases: ["M9"], why: "Maps visible legal and governance documents without turning them into legal conclusions." },

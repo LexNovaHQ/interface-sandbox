@@ -1,5 +1,6 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { NORMALIZED_SECTION_KEYS } from "../src/normalized-profiler.js";
+import { assertCanReadArtifact, assertCanWriteArtifact } from "../src/permissions.js";
 import { buildQualifiedReviewSystemArtifacts } from "../src/qualified-review-system/branch.js";
 
 const run = { run_id: "TEST-QR-BRANCH", target: "Example", root_url: "https://example.com", status: "COMPLETE" };
@@ -66,5 +67,16 @@ assert.equal(renderer.source_handoff_ref, "qualified_review_handoff");
 assert.equal(renderer.render_contract.section_wizard, true);
 assert.equal(renderer.render_contract.no_document_assembly, true);
 assert.equal(renderer.render_contract.forbidden_public_actions.includes("Download JSON"), true);
+
+assertCanWriteArtifact("qualified_review_system", "qualified_review_handoff");
+assertCanWriteArtifact("qualified_review_system", "qualified_review_renderer_payload");
+assertCanReadArtifact("qualified_review_system", "final_output_handoff");
+assertCanReadArtifact("qualified_review_system", "normalized_report_manifest");
+assertCanReadArtifact("qualified_review_system", "normalized_section__matter_overview");
+assertCanReadArtifact("qualified_review_system", "target_profile");
+assertCanReadArtifact("qualified_review_system", "target_feature_profile");
+assertCanReadArtifact("qualified_review_system", "data_provenance_profile");
+assertCanReadArtifact("qualified_review_system", "exposure_registry_triggered_profile");
+assertCanReadArtifact("qualified_review_system", "challenge_gate");
 
 console.log("qualified review branch contract: PASS");
