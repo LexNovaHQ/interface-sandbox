@@ -42,5 +42,11 @@ assert.ok(qualifiedReviewWorkflowJs.includes("/responses"));
 assert.ok(qualifiedReviewWorkflowJs.includes("blocking_errors"));
 assert.ok(qualifiedReviewWorkflowJs.includes("sectionDone"));
 assert.ok(qualifiedReviewWorkflowJs.includes("responses.size !== questions.size"));
+assert.ok(qualifiedReviewWorkflowJs.includes("async function persistSubmission"));
+assert.ok(qualifiedReviewWorkflowJs.includes("saveButton"));
+assert.ok(qualifiedReviewWorkflowJs.includes("submitButton"));
+assert.equal(qualifiedReviewWorkflowJs.includes('const save = plain("Save progress"'), false);
+assert.equal(qualifiedReviewWorkflowJs.includes('() => save("save_progress")'), false);
+assert.equal(qualifiedReviewWorkflowJs.includes('() => save("submit_final_gate")'), false);
 
 console.log("public report UI: PASS");
