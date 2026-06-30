@@ -116,13 +116,13 @@ function questionCard(q, index) {
   card.dataset.questionId = id;
 
   const head = el("div", "qr-question-header");
-  head.append(el("div", "qr-question-number", q.question_id || "QR"), el("div", "qr-question-type", titleCase(q.field_type || "review field")));
+  head.append(el("div", "qr-question-number", q.question_id || "QR"), el("div", "qr-question-type", titleCase(q.answer_type || q.field_type || "review field")));
 
   const suggestion = el("div", "qr-prefill-box");
-  suggestion.append(el("div", "qr-mini-label", "Diligence suggestion"), el("p", "", clean(q.suggested_answer) || "No public-source prefill. Reviewer must answer if relevant."));
+  suggestion.append(el("div", "qr-mini-label", q.demo_disclaimer ? "Demo market suggestion" : "Diligence suggestion"), el("p", "", clean(q.suggested_answer) || clean(q.demo_market_suggestion) || "No public-source prefill. Reviewer must answer if relevant."));
 
   const controls = el("div", "qr-control-grid");
-  controls.append(fieldWrap("Review status", selectStatus(a.review_status)), fieldWrap("Confirmed answer", textBox("final_confirmed_answer", a.final_confirmed_answer, "Edit the suggestion or enter the correct private fact.", 4)), fieldWrap("Reviewer note", textBox("reviewer_note", a.reviewer_note, "Reviewer note, limitation, or local-counsel issue.", 2)));
+  controls.append(fieldWrap("Review status", selectStatus(a.review_status)), fieldWrap("Confirmed answer", textBox("final_confirmed_answer", a.final_confirmed_answer, "Edit the suggestion or enter the correct private fact.", q.answer_type === "long_answer" ? 5 : 2)), fieldWrap("Reviewer note", textBox("reviewer_note", a.reviewer_note, "Reviewer note, limitation, or local-counsel issue.", 2)));
 
   card.append(head, el("h3", "qr-question-title", q.public_question_label || q.question || q.field_key || "Qualified Review question"), el("div", prefillClass(q), q.prefill_status || "prefill status unavailable"), suggestion, controls, questionMeta(q));
   card.addEventListener("input", captureCard);
@@ -135,7 +135,7 @@ function questionMeta(q) {
   wrap.append(chipBlock("Documents affected", arr(q.document_impact)));
   const details = el("details", "technical qr-details");
   details.append(el("summary", "", "Info, evidence, and routing"));
-  details.append(tableNode({ helper: q.helper_text, market_norm: q.market_norm_helper, confidence_limitation: q.confidence_limitation, source_artifacts: arr(q.source_artifacts).join(", "), source_field_hints: arr(q.source_field_hints).join(", "), required_for_assembly: q.required_for_assembly, assembly_blocker: q.assembly_blocker }), chipBlock("Evidence sources", evidenceLabels(q.evidence_sources)));
+  details.append(tableNode({ helper: q.helper_text, market_norm: q.market_norm_helper, demo_disclaimer: q.demo_disclaimer_text, vault_path: q.vault_path, confidence_limitation: q.confidence_limitation, source_artifacts: arr(q.source_artifacts).join(", "), source_field_hints: arr(q.source_field_hints).join(", "), required_for_assembly: q.required_for_assembly, assembly_blocker: q.assembly_blocker }), chipBlock("Evidence sources", evidenceLabels(q.evidence_sources)));
   wrap.append(details);
   return wrap;
 }
@@ -176,22 +176,19 @@ function renderFinalGate() {
   if (line) line.style.width = "100%";
 }
 
-function answerFor(q, id) {
-  const saved = answers[id] || {};
-  return { review_status: saved.review_status || q.review_status || "not_started", final_confirmed_answer: saved.final_confirmed_answer || q.final_confirmed_answer || clean(q.suggested_answer) || "", reviewer_note: saved.reviewer_note || q.reviewer_note || "" };
-}
+function answerFor(q, id) { const saved = answers[id] || {}; return { review_status: saved.review_status || q.review_status || "Needs confirmation", final_confirmed_answer: saved.final_confirmed_answer || q.final_confirmed_answer || clean(q.suggested_answer) || "", reviewer_note: saved.reviewer_note || q.reviewer_note || "" }; }
 function sectionQuestions(sectionId) { return questions.filter(function (q) { return (q.section_id || "unmapped_section") === sectionId; }); }
 function sectionStats(sectionId) { return statsFor(sectionQuestions(sectionId)); }
-function statsFor(qs) { let confirmed = 0; let blockers = 0; qs.forEach(function (q) { const id = q.question_id || q.field_key; const a = answers[id] || {}; const status = a.review_status || q.review_status || "not_started"; if (["confirmed", "edited", "not_applicable"].includes(status)) confirmed += 1; if (isBlocking(q)) blockers += 1; }); return { total: qs.length, confirmed, needsReview: Math.max(0, qs.length - confirmed), blockers }; }
-function isBlocking(q) { const id = q.question_id || q.field_key; const a = answers[id] || {}; const status = a.review_status || q.review_status || "not_started"; const value = a.final_confirmed_answer || q.final_confirmed_answer || ""; if (status === "not_applicable") return false; if (q.assembly_blocker !== true && q.required_for_assembly !== true) return false; return !["confirmed", "edited"].includes(status) || !String(value).trim(); }
+function statsFor(qs) { let confirmed = 0; let blockers = 0; qs.forEach(function (q) { const id = q.question_id || q.field_key; const a = answers[id] || {}; const status = a.review_status || q.review_status || "Needs confirmation"; if (["confirmed", "edited", "not_applicable", "Confirmed", "Edited", "Not applicable"].includes(status)) confirmed += 1; if (isBlocking(q)) blockers += 1; }); return { total: qs.length, confirmed, needsReview: Math.max(0, qs.length - confirmed), blockers }; }
+function isBlocking(q) { const id = q.question_id || q.field_key; const a = answers[id] || {}; const status = a.review_status || q.review_status || "Needs confirmation"; const value = a.final_confirmed_answer || q.final_confirmed_answer || ""; if (["not_applicable", "Not applicable"].includes(status)) return false; if (q.assembly_blocker !== true && q.required_for_assembly !== true) return false; return !["confirmed", "edited", "Confirmed", "Edited"].includes(status) || !String(value).trim(); }
 function captureCard(event) { const card = event.currentTarget; const id = card.dataset.questionId; if (!id) return; answers[id] = answers[id] || {}; card.querySelectorAll("[data-qr-input]").forEach(function (input) { answers[id][input.dataset.qrInput] = input.value; }); }
 function captureAll() { document.querySelectorAll(".qr-question-card").forEach(function (card) { captureCard({ currentTarget: card }); }); }
 function moveSection(delta) { activeSection = Math.max(0, Math.min(sections.length - 1, activeSection + delta)); renderWizard(); globalThis.scrollTo({ top: 0, behavior: "smooth" }); }
 function fieldWrap(labelText, child) { const wrap = el("label", "qr-field"); wrap.append(el("span", "qr-mini-label", labelText), child); return wrap; }
 function textBox(key, value, placeholder, rows) { const t = document.createElement("textarea"); t.className = "input qr-answer"; t.rows = rows; t.dataset.qrInput = key; t.value = value; t.placeholder = placeholder; return t; }
-function selectStatus(value) { const s = document.createElement("select"); s.className = "input qr-status"; s.dataset.qrInput = "review_status"; [["not_started","Not started"],["confirmed","Confirmed"],["edited","Edited"],["manual_required","Manual required"],["not_applicable","Not applicable"]].forEach(function (row) { const o = document.createElement("option"); o.value = row[0]; o.textContent = row[1]; o.selected = row[0] === value; s.append(o); }); return s; }
+function selectStatus(value) { const s = document.createElement("select"); s.className = "input qr-status"; s.dataset.qrInput = "review_status"; [["Needs confirmation","Needs confirmation"],["Confirmed","Confirmed"],["Edited","Edited"],["Manual required","Manual required"],["Not applicable","Not applicable"]].forEach(function (row) { const o = document.createElement("option"); o.value = row[0]; o.textContent = row[1]; o.selected = row[0] === value; s.append(o); }); return s; }
 function button(text, className, handler) { const b = el("button", className, text); b.type = "button"; b.addEventListener("click", handler); return b; }
-function prefillClass(q) { const v = String(q.prefill_status || "").toLowerCase(); return "qr-prefill-status " + (v.includes("manual") || v.includes("missing") || v.includes("not_visible") ? "manual" : "prefilled"); }
+function prefillClass(q) { const v = String(q.prefill_status || "").toLowerCase(); return "qr-prefill-status " + (v.includes("need") || v.includes("manual") || v.includes("missing") ? "manual" : "prefilled"); }
 function evidenceLabels(value) { return arr(value).map(function (item) { if (!item || typeof item !== "object") return item; return item.artifact_name || item.source_artifact || item.field_key || item.label || JSON.stringify(item); }); }
 function chipBlock(labelText, values) { const box = el("div", "qr-chip-block"); box.append(el("div", "qr-mini-label", labelText)); const row = el("div", "qr-chip-list"); if (!values.length) row.append(el("span", "qr-chip muted", "Not emitted")); values.forEach(function (value) { row.append(el("span", "qr-chip", clean(value))); }); box.append(row); return box; }
 function statGrid(stats) { const g = el("div", "qr-stat-grid"); g.append(tile("Questions", stats.total), tile("Confirmed", stats.confirmed), tile("Needs review", stats.needsReview), tile("Assembly blockers", stats.blockers)); return g; }
