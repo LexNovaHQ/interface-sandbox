@@ -233,8 +233,26 @@ jobs:
             --region "$GCP_REGION" \
             --format="value(status.url)")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "worker_url=${URL%/}/v1/reviewer/jobs/{run_id}/worker" >> "$GITHUB_OUTPUT"
           echo "Deployed artifact backend URL: $URL"
           echo "Cloud Tasks queue: $CLOUD_TASKS_QUEUE"
+          echo "Cloud Tasks worker URL pinned to Cloud Run origin."
+
+      - name: Pin Cloud Tasks worker URL
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          CLOUD_TASKS_WORKER_URL: ${{ steps.artifact_backend.outputs.worker_url }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUD_TASKS_WORKER_URL"
+          gcloud run services update "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --update-env-vars "CLOUD_TASKS_WORKER_URL=$CLOUD_TASKS_WORKER_URL" \
+            --quiet
+          echo "Pinned Cloud Tasks worker URL to Cloud Run origin."
 
       - name: Smoke deployed backend
         working-directory: diligence-artifact-backend
