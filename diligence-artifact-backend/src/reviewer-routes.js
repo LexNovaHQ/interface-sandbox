@@ -5,7 +5,7 @@ import { createRunRecord, getRunRecord, updateRunRecord, getArtifactMetadata, li
 import { createRunId, nowIso, assertRunId } from "./run-id.js";
 import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema, reviewerWorkerJobSchema } from "./schemas.js";
 import { requireRuntimeConfig } from "./config.js";
-import { advanceReviewerRun } from "./reviewer-runner.js";
+import { advanceReviewerRun } from "./reviewer-runner-normalized.js";
 import { requestReviewerRunAdvance, runReviewerWorkerOnce } from "./reviewer-async-runner.js";
 
 export const reviewerRouter = express.Router();
