@@ -49,7 +49,7 @@ export function semanticTriggerWarnings(row = {}) {
 
 export function cleanM11NarrativeField({ field, value, semanticRow = {}, registryRow = {} }) {
   const text = String(value || "").trim();
-  if (!isThinValue(text)) return text;
+  if (isReadableReportField(text)) return text;
   const inputs = semanticRow.status_inputs || {};
   const conditionSummary = CONDITION_KEYS.map((key) => `${key}=${String(inputs[key] || "partial").trim() || "partial"}`).join("; ");
   const rowName = [registryRow.Threat_ID, registryRow.Threat_Name].filter(Boolean).join(" — ") || "registry row";
@@ -63,6 +63,7 @@ export function cleanM11NarrativeField({ field, value, semanticRow = {}, registr
 function yes(value) { return ["yes", "true", "met", "present"].includes(String(value || "").trim().toLowerCase()); }
 function no(value) { return ["no", "false", "not_met", "not met", "absent"].includes(String(value || "").trim().toLowerCase()); }
 function isThinValue(value) { return THIN_VALUES.has(String(value || "").trim().toLowerCase()); }
+function isReadableReportField(value) { const text = String(value || "").trim(); return text.length >= 20 && !isThinValue(text); }
 function narrativeTooThin(row = {}) { return [row.target_match, row.basis_proof, row.evidence_source_basis].some(isThinValue); }
 function proofText(row = {}) { return [row.target_match, row.basis_proof, row.control_exclusion_evaluation, row.evidence_source_basis, row.row_limitations].join(" ").toLowerCase(); }
 function absenceOnly(row = {}, registryRow = {}) { const text = proofText(row); const absence = ["no evidence", "not found", "does not mention", "does not show", "not visible", "missing", "absent", "not specified", "unable to confirm", "lacks", "does not contain", "no public documentation", "not explicitly documented", "silent on", "no clear public evidence"].some((marker) => text.includes(marker)); const direct = ["states", "provides", "offers", "collects", "processes", "uses", "stores", "shares", "deploys", "requires", "documentation", "api docs", "dashboard", "signup", "checkout"].some((marker) => text.includes(marker)); return absence && !direct && !absenceBasedRow(registryRow); }
