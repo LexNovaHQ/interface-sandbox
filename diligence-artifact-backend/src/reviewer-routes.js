@@ -22,7 +22,7 @@ reviewerRouter.post("/reviewer/jobs", async (req, res) => {
     const runId = createRunId(target);
     const folder = await createRunFolder({ run_id: runId });
 
-    const run = { ok: true, run_id: runId, target, root_url: targetUrl, source_mode: "url", status: "CREATED", current_phase: "AGENT_1A_URL_MANIFEST", runner_mode: "ASYNC_NODE_RUNNER", runner_state: "IDLE", created_by: body.created_by, notes: body.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
+    const run = { ok: true, run_id: runId, target, root_url: targetUrl, source_mode: "url", status: "CREATED", current_phase: "AGENT_1A_URL_MANIFEST", runner_mode: "CLOUD_TASKS_RUNNER", runner_state: "IDLE", created_by: body.created_by, notes: body.notes || "", drive_folder_id: folder.drive_folder_id, drive_folder_link: folder.drive_folder_link, final_report_url: "", created_at: createdAt, updated_at: createdAt, isolation_rule: "Artifacts may be read only by exact run_id and artifact_name. Company/domain lookup is forbidden." };
     await createRunRecord(run);
     const sheetRow = await appendRunDashboardRow(run);
     const saved = await updateRunRecord(runId, { sheet_row_number: sheetRow });
@@ -76,7 +76,8 @@ reviewerRouter.post("/reviewer/jobs/:run_id/worker", async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const body = parseOrThrow(reviewerWorkerJobSchema, req.body || {});
-    const result = await runReviewerWorkerOnce({ run_id: req.params.run_id, actor: "async_worker", auto_continue: body.auto_continue });
+    const actor = req.get("x-cloudtasks-taskname") ? "cloud_tasks_worker" : "manual_worker";
+    const result = await runReviewerWorkerOnce({ run_id: req.params.run_id, actor, auto_continue: body.auto_continue });
     return res.json(result);
   } catch (error) {
     return sendError(res, error);
@@ -108,5 +109,5 @@ function normalizeTargetUrl(value) { const raw = String(value || "").trim(); con
 function hostFromUrl(value) { return new URL(value).hostname.replace(/^www\./i, ""); }
 function baseUrlFromRequest(req) { const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim() || "https"; const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim(); if (!host) return ""; return `${proto}://${host}`; }
 function sendError(res, error) { const message = error?.message || String(error); const status = statusForMessage(message); return res.status(status).json({ ok: false, error: publicErrorCode(message), message }); }
-function statusForMessage(message) { if (message.startsWith("SYNC_ADVANCE_RETIRED")) return 410; if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("ASYNC_WORKER_HTTP_FAILED")) return 502; return 500; }
+function statusForMessage(message) { if (message.startsWith("SYNC_ADVANCE_RETIRED")) return 410; if (message.startsWith("UNAUTHORIZED")) return 401; if (message.includes("FORBIDDEN")) return 403; if (message.startsWith("RUN_NOT_FOUND") || message.startsWith("ARTIFACT_NOT_FOUND")) return 404; if (message.startsWith("INVALID_") || message.startsWith("READ_FORBIDDEN") || message.startsWith("WRITE_FORBIDDEN") || message.startsWith("PHASE_LOCK_BLOCKED") || message.startsWith("SOURCE_EXTRACTION_BLOCKED")) return 400; if (message.startsWith("MISSING_RUNTIME_CONFIG")) return 500; if (message.startsWith("ASYNC_WORKER_HTTP_FAILED")) return 502; if (message.startsWith("CLOUD_TASKS_")) return 500; return 500; }
 function publicErrorCode(message) { return String(message).split(":")[0] || "REVIEWER_BACKEND_ERROR"; }
