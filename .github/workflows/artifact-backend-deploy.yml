@@ -20,6 +20,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+
 jobs:
   check:
     name: Build and syntax check
@@ -79,6 +82,50 @@ jobs:
           gcloud config set run/region "$GCP_REGION"
           gcloud auth list --filter=status:ACTIVE --format="value(account)"
 
+      - name: Ensure Cloud Tasks queue
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+          CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+        run: |
+          set -euo pipefail
+
+          gcloud services enable cloudtasks.googleapis.com \
+            --project "$GCP_PROJECT_ID" \
+            --quiet
+
+          if gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --location "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" >/dev/null 2>&1; then
+            gcloud tasks queues update "$CLOUD_TASKS_QUEUE" \
+              --location "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --max-dispatches-per-second=1 \
+              --max-concurrent-dispatches=1 \
+              --max-attempts=3 \
+              --min-backoff=30s \
+              --max-backoff=300s \
+              --max-retry-duration=1800s
+          else
+            gcloud tasks queues create "$CLOUD_TASKS_QUEUE" \
+              --location "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --max-dispatches-per-second=1 \
+              --max-concurrent-dispatches=1 \
+              --max-attempts=3 \
+              --min-backoff=30s \
+              --max-backoff=300s \
+              --max-retry-duration=1800s
+          fi
+
+          gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
+            --member="serviceAccount:$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
+            --role="roles/cloudtasks.enqueuer" \
+            --quiet
+
+          echo "Cloud Tasks queue ready: $CLOUD_TASKS_QUEUE"
+
       - name: Deploy source to Cloud Run
         working-directory: diligence-artifact-backend
         env:
@@ -95,6 +142,7 @@ jobs:
           ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
           PUBLIC_RENDERER_BASE_URL: ${{ secrets.PUBLIC_RENDERER_BASE_URL }}
           REVIEWER_PUBLIC_BASE_URL: ${{ secrets.REVIEWER_PUBLIC_BASE_URL }}
+          CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -107,10 +155,11 @@ jobs:
 
           primary_model = os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash"
           model_chain = os.environ.get("GEMINI_MODELS") or primary_model
+          region = os.environ.get("GCP_REGION", "asia-south1")
 
           env = {
               "GCP_PROJECT_ID": os.environ.get("GCP_PROJECT_ID", ""),
-              "GCP_REGION": os.environ.get("GCP_REGION", "asia-south1"),
+              "GCP_REGION": region,
               "GCP_CLOUD_RUN_SERVICE": os.environ.get("GCP_ARTIFACT_CLOUD_RUN_SERVICE", "interface-diligence-artifacts"),
               "FIRESTORE_DATABASE_ID": "(default)",
               "DRIVE_PARENT_FOLDER_ID": os.environ.get("DRIVE_PARENT_FOLDER_ID", ""),
@@ -130,6 +179,11 @@ jobs:
               "PUBLIC_REVIEWER_ENABLED": "true",
               "EXPRESS_JSON_LIMIT": "50mb",
               "USE_M9_HYBRID": "true",
+              "CLOUD_TASKS_QUEUE": os.environ.get("CLOUD_TASKS_QUEUE") or "diligence-reviewer-worker",
+              "CLOUD_TASKS_LOCATION": region,
+              "CLOUD_TASKS_DISPATCH_DEADLINE_SECONDS": "1800",
+              "EARLY_PHASE_STALE_MS": "300000",
+              "WORKER_STALE_MS": "1200000",
           }
 
           missing = [key for key in [
@@ -142,6 +196,7 @@ jobs:
               "GEMINI_API_KEYS",
               "GEMINI_MODEL",
               "GEMINI_MODELS",
+              "CLOUD_TASKS_QUEUE",
           ] if not env.get(key)]
           if missing:
               raise SystemExit("Missing artifact backend deploy secret/value(s): " + ", ".join(missing))
@@ -166,6 +221,7 @@ jobs:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GCP_REGION: ${{ secrets.GCP_REGION }}
           GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
         run: |
           set -euo pipefail
           URL=$(gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
@@ -173,7 +229,8 @@ jobs:
             --region "$GCP_REGION" \
             --format="value(status.url)")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-          echo "Artifact backend URL: $URL"
+          echo "Deployed artifact backend URL: $URL"
+          echo "Cloud Tasks queue: $CLOUD_TASKS_QUEUE"
 
       - name: Smoke deployed backend
         working-directory: diligence-artifact-backend
