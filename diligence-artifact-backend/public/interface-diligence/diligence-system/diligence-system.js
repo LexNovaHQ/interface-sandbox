@@ -34,6 +34,7 @@ const PHASE_TEXT = {
 
 const TERMINAL_FAILURES = new Set(["REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const POLL_MS = 10000;
+const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
 let pollTimer = null;
 let currentRunId = "";
 
@@ -59,6 +60,7 @@ const els = {
 
 renderRail({ current_phase: "CREATED", status: "IDLE", runner_state: "IDLE" });
 els.form.addEventListener("submit", startRun);
+attachRunFromUrl();
 
 async function startRun(event) {
   event.preventDefault();
@@ -77,6 +79,7 @@ async function startRun(event) {
       body: JSON.stringify({ target_url: targetUrl, target: target || undefined })
     });
     currentRunId = created.run_id;
+    updateBrowserRunId(currentRunId);
     updateState({ run: created, artifacts: [] });
     setMessage("Run created. Starting backend worker...");
 
@@ -95,7 +98,29 @@ async function startRun(event) {
   }
 }
 
-async function pollOnce() {
+async function attachRunFromUrl() {
+  const runId = runIdFromLocation();
+  if (!runId) return;
+
+  stopPolling();
+  currentRunId = runId;
+  setBusy(true);
+  resetReportLink();
+  setMessage(`Attached to existing run ${runId}. Loading live state...`);
+
+  try {
+    await pollOnce({ fromAttach: true });
+    if (currentRunId && !pollTimer) {
+      pollTimer = setInterval(pollOnce, POLL_MS);
+    }
+  } catch (error) {
+    stopPolling();
+    setBusy(false);
+    setMessage(error.message || String(error), true);
+  }
+}
+
+async function pollOnce(_options = {}) {
   if (!currentRunId) return;
   try {
     const status = await api(`/public/diligence-system/jobs/${encodeURIComponent(currentRunId)}`);
@@ -116,11 +141,14 @@ async function pollOnce() {
       setBusy(false);
       const detail = run.runner_last_error ? ` ${run.runner_last_error}` : "";
       setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.${detail}`, true);
+      return;
     }
+    setMessage(`Watching run ${currentRunId}. Live phase: ${run.current_phase || "unknown"}.`);
   } catch (error) {
     stopPolling();
     setBusy(false);
     setMessage(error.message || String(error), true);
+    throw error;
   }
 }
 
@@ -143,6 +171,10 @@ function updateState(payload = {}) {
   const runner = run.runner_state || "";
   const phaseInfo = phaseInfoFor(phase, status, runner);
 
+  if (run.run_id && !currentRunId) currentRunId = run.run_id;
+  if (run.root_url && els.targetUrl && !els.targetUrl.value.trim()) els.targetUrl.value = run.root_url;
+  if (run.target && els.targetLabel && !els.targetLabel.value.trim()) els.targetLabel.value = run.target;
+
   els.runIdValue.textContent = run.run_id || currentRunId || "-";
   els.statusValue.textContent = [status, runner].filter(Boolean).join(" / ") || "-";
   els.phaseValue.textContent = phase;
@@ -151,6 +183,36 @@ function updateState(payload = {}) {
   els.activePhaseText.textContent = `${PHASE_TEXT[phase] || phaseInfo.why} Current engine phase: ${phase}.`;
   els.terminalNotice.innerHTML = badgeHtml(status, runner, run.runner_last_error || "");
   renderRail(run);
+}
+
+function runIdFromLocation() {
+  const params = new URLSearchParams(window.location.search || "");
+  return sanitizeRunId(params.get("run_id") || params.get("runId") || hashRunId());
+}
+
+function hashRunId() {
+  return String(window.location.hash || "").replace(/^#\/?/, "").trim();
+}
+
+function sanitizeRunId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    decoded = raw;
+  }
+  const normalized = decoded.trim().toUpperCase();
+  return RUN_ID_PATTERN.test(normalized) ? normalized : "";
+}
+
+function updateBrowserRunId(runId) {
+  const sanitized = sanitizeRunId(runId);
+  if (!sanitized || !window.history?.replaceState) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set("run_id", sanitized);
+  window.history.replaceState({}, "", url.toString());
 }
 
 function phaseInfoFor(phase, status, runner) {
@@ -195,7 +257,7 @@ function isFailed(run = {}) {
 
 function setBusy(value) {
   els.runButton.disabled = Boolean(value);
-  els.runButton.textContent = value ? "Running..." : "Run Diligence";
+  els.runButton.textContent = value ? "Monitoring..." : "Run Diligence";
 }
 
 function setMessage(message, error = false) {
