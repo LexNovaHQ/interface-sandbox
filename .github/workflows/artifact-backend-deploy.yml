@@ -91,6 +91,10 @@ jobs:
         run: |
           set -euo pipefail
 
+          gcloud services enable cloudresourcemanager.googleapis.com \
+            --project "$GCP_PROJECT_ID" \
+            --quiet
+
           gcloud services enable cloudtasks.googleapis.com \
             --project "$GCP_PROJECT_ID" \
             --quiet
