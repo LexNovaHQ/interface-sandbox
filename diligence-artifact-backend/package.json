@@ -26,5 +26,5 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {},
-  "private_note": "qualified review contract check is wired into npm check"
+  "qualified_review_contract_check": true
 }
