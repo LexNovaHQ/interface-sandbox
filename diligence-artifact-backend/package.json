@@ -26,5 +26,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {},
-  "qualified_review_contract_check": true
+  "qualified_review_contract_check": true,
+  "comment": "remove this marker in the next cleanup if desired"
 }
