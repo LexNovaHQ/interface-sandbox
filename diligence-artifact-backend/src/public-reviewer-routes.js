@@ -7,11 +7,12 @@ import { createRunId, nowIso, assertRunId } from "./run-id.js";
 import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema } from "./schemas.js";
 import { requestReviewerRunAdvance } from "./reviewer-async-runner.js";
 import { parseMultipartDiligenceJob, ingestUploadedSourceDocuments } from "./document-source-ingestor.js";
+import { saveQualifiedReviewSubmission } from "./qualified-review-system/submission.js";
 
 export const publicReviewerRouter = express.Router();
 
 const windowMs = 60 * 60 * 1000;
-const limits = { create: 5, advance: 80, read: 120 };
+const limits = { create: 5, advance: 80, read: 120, submit: 40 };
 const buckets = new Map();
 const jobCreatePaths = ["/diligence-system/jobs"];
 const jobCreateWithDocumentsPaths = ["/diligence-system/jobs-with-documents"];
@@ -19,6 +20,7 @@ const jobReadPaths = ["/diligence-system/jobs/:run_id"];
 const jobAdvancePaths = ["/diligence-system/jobs/:run_id/advance"];
 const reportPaths = ["/diligence-system/report/:run_id"];
 const qualifiedReviewPaths = ["/diligence-system/qualified-review/:run_id"];
+const qualifiedReviewResponsePaths = ["/diligence-system/qualified-review/:run_id/responses"];
 
 publicReviewerRouter.use((req, res, next) => {
   if (!config.publicReviewerEnabled) return res.status(404).json({ ok: false, error: "PUBLIC_DILIGENCE_SYSTEM_DISABLED", message: "Public diligence-system routes are disabled." });
@@ -144,9 +146,38 @@ publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, re
   }
 });
 
+publicReviewerRouter.post(qualifiedReviewResponsePaths, rateLimit("submit"), async (req, res) => {
+  try {
+    requireRuntimeConfig();
+    assertRunId(req.params.run_id);
+    const run = await getRunRecord(req.params.run_id);
+    if (run.status !== "COMPLETE" && run.current_phase !== "COMPLETE") return res.status(409).json({ ok: false, error: "QUALIFIED_REVIEW_NOT_READY", message: "Qualified Review responses can be saved only after the diligence report renderer has completed." });
+
+    const handoffMeta = await getArtifactMetadata(req.params.run_id, "qualified_review_handoff");
+    const rendererMeta = await getArtifactMetadata(req.params.run_id, "qualified_review_renderer_payload");
+    const handoff = await readJsonArtifactFromDrive(handoffMeta.drive_file_id);
+    const rendererPayload = await readJsonArtifactFromDrive(rendererMeta.drive_file_id);
+    const saved = await saveQualifiedReviewSubmission({ run, handoff, renderer_payload: rendererPayload, request_body: req.body || {} });
+
+    return res.status(201).json({
+      ok: true,
+      run_id: req.params.run_id,
+      artifact_name: saved.artifact_name,
+      version: saved.version,
+      final_gate_status: saved.final_gate_status,
+      validation: saved.validation,
+      drive_file_id: saved.drive_file_id,
+      drive_web_view_link: saved.drive_web_view_link,
+      qualified_review_submission: saved.submission
+    });
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
 function rateLimit(kind) { return (req, res, next) => { const key = `${kind}:${clientIp(req)}`; const now = Date.now(); const existing = buckets.get(key) || { count: 0, resetAt: now + windowMs }; const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing; current.count += 1; buckets.set(key, current); if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public diligence-system ${kind} limit reached.` }); return next(); }; }
 function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
-function publicRunResponse(run, options = {}) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, source_mode: run.source_mode || "url", uploaded_source_documents: run.uploaded_source_documents || { document_count: 0 }, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: safeRunnerDiagnostic(run.runner_last_error), runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_requested_at: run.runner_requested_at || "", runner_last_completed_at: run.runner_last_completed_at || "", runner_task_name: run.runner_task_name || "", artifact_count: Number.isFinite(options.artifact_count) ? options.artifact_count : Number(run.artifact_count || 0), final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at }; }
+function publicRunResponse(run, options = {}) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, source_mode: run.source_mode || "url", uploaded_source_documents: run.uploaded_source_documents || { document_count: 0 }, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: safeRunnerDiagnostic(run.runner_last_error), runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_requested_at: run.runner_requested_at || "", runner_last_completed_at: run.runner_last_completed_at || "", runner_task_name: run.runner_task_name || "", artifact_count: Number.isFinite(options.artifact_count) ? options.artifact_count : Number(run.artifact_count || 0), final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at, qualified_review_submission_status: run.qualified_review_submission_status || "", qualified_review_submission_version: run.qualified_review_submission_version || 0 }; }
 function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_mode: result.runner_mode || "", runner_state: result.runner_state, runner_last_error: safeRunnerDiagnostic(result.runner_last_error), runner_failed_at: result.runner_failed_at || "", runner_worker_started_at: result.runner_worker_started_at || "", runner_worker_heartbeat_at: result.runner_worker_heartbeat_at || "", runner_requested_at: result.runner_requested_at || "", runner_last_completed_at: result.runner_last_completed_at || "", runner_task_name: result.runner_task_name || "", artifact_count: Number(result.artifact_count || 0), poll: `/public/diligence-system/jobs/${result.run_id}` }; }
 function publicArtifactList(artifacts) { return artifacts.map((artifact) => ({ artifact_name: artifact.artifact_name, phase: artifact.phase, lock_status: artifact.lock_status, latest_version: artifact.latest_version || artifact.version, updated_at: artifact.updated_at || artifact.created_at })); }
 function baseUrlFromRequest(req) { const proto = String(req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim() || "https"; const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim(); return host ? `${proto}://${host}` : ""; }
