@@ -61,10 +61,10 @@ function renderQualifiedReviewRail(progressRail, sectionPages, questionSections)
   const pages = questionSections.length ? questionSections : sectionPages.length ? sectionPages : progressRail;
   const steps = [
     { label: "Report handoff", sub: "diligence report rendered", state: "complete" },
-    ...pages.map((page) => ({
+    ...pages.map((page, pageIndex) => ({
       label: page.section_title || page.label || page.section_id || "QR section",
       sub: `${page.question_count || 0} questions`,
-      state: "active"
+      state: pageIndex === 0 ? "active" : "pending"
     })),
     { label: "Final review gate", sub: "confirm / edit all rows", state: "pending" }
   ];
