@@ -20,7 +20,12 @@ export async function requestReviewerRunAdvance({ run_id, requested_by = "operat
     return asyncResponse({ run, queued: false, already_running: true, terminal: false });
   }
 
-  const staleRequeue = run.runner_state === "RUNNING" && isStaleRunner(run);
+  if (run.runner_state === "QUEUED" && !isStaleQueued(run)) {
+    return asyncResponse({ run, queued: true, already_running: true, terminal: false });
+  }
+
+  const staleRunningRequeue = run.runner_state === "RUNNING" && isStaleRunner(run);
+  const staleQueuedRequeue = run.runner_state === "QUEUED" && isStaleQueued(run);
   const requestedAt = nowIso();
   const queued = await updateRunRecord(run_id, {
     status: run.status === "CREATED" ? "RUNNING" : run.status,
@@ -31,10 +36,11 @@ export async function requestReviewerRunAdvance({ run_id, requested_by = "operat
     runner_requested_at: requestedAt,
     runner_dispatch_base_url: base_url || run.runner_dispatch_base_url || "",
     runner_last_error: "",
-    runner_stale_requeue_count: staleRequeue ? Number(run.runner_stale_requeue_count || 0) + 1 : Number(run.runner_stale_requeue_count || 0)
+    runner_stale_requeue_count: staleRunningRequeue || staleQueuedRequeue ? Number(run.runner_stale_requeue_count || 0) + 1 : Number(run.runner_stale_requeue_count || 0),
+    runner_queued_stale_count: staleQueuedRequeue ? Number(run.runner_queued_stale_count || 0) + 1 : Number(run.runner_queued_stale_count || 0)
   });
   await updateRunDashboardRow(queued);
-  await logEvent({ run_id, event_type: staleRequeue ? "ASYNC_RUNNER_STALE_REQUEUED" : "ASYNC_RUNNER_QUEUED", actor: requested_by, payload: { current_phase: queued.current_phase, previous_runner_state: run.runner_state || "IDLE", auto_continue: Boolean(auto_continue), stale_runner: staleRequeue } });
+  await logEvent({ run_id, event_type: staleRunningRequeue || staleQueuedRequeue ? "ASYNC_RUNNER_STALE_REQUEUED" : "ASYNC_RUNNER_QUEUED", actor: requested_by, payload: { current_phase: queued.current_phase, previous_runner_state: run.runner_state || "IDLE", auto_continue: Boolean(auto_continue), stale_runner: staleRunningRequeue, stale_queued: staleQueuedRequeue, previous_task_name: run.runner_task_name || "" } });
 
   try {
     const dispatch = await dispatchWorkerDurably({ run_id, base_url: queued.runner_dispatch_base_url, auto_continue: Boolean(auto_continue) });
@@ -42,10 +48,11 @@ export async function requestReviewerRunAdvance({ run_id, requested_by = "operat
       runner_mode: dispatch.dispatcher,
       runner_task_name: dispatch.task_name || "",
       runner_worker_url: dispatch.worker_url || "",
-      runner_dispatched_at: nowIso()
+      runner_dispatched_at: nowIso(),
+      runner_last_error: ""
     });
     await updateRunDashboardRow(dispatched);
-    await logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCHED", actor: requested_by, payload: { dispatcher: dispatch.dispatcher, task_name: dispatch.task_name || "", worker_url_present: Boolean(dispatch.worker_url) } });
+    await logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCHED", actor: requested_by, payload: { dispatcher: dispatch.dispatcher, task_name: dispatch.task_name || "", worker_url_present: Boolean(dispatch.worker_url), stale_requeue: staleRunningRequeue || staleQueuedRequeue } });
     return asyncResponse({ run: dispatched, queued: true, already_running: false, terminal: false });
   } catch (error) {
     await markDispatchFailure({ run_id, error });
@@ -77,7 +84,7 @@ export async function runReviewerWorkerOnce({ run_id, actor = "cloud_tasks_worke
     runner_last_error: ""
   });
   await updateRunDashboardRow(claimed);
-  await logEvent({ run_id, event_type: "ASYNC_WORKER_STARTED", actor, payload: { phase: claimed.current_phase, worker_attempt: claimed.runner_worker_attempt || 1 } });
+  await logEvent({ run_id, event_type: "ASYNC_WORKER_STARTED", actor, payload: { phase: claimed.current_phase, worker_attempt: claimed.runner_worker_attempt || 1, previous_runner_state: run.runner_state || "" } });
 
   try {
     await heartbeat({ run_id, phase: claimed.current_phase, actor, marker: "BEFORE_PHASE_ADVANCE" });
@@ -98,7 +105,7 @@ export async function runReviewerWorkerOnce({ run_id, actor = "cloud_tasks_worke
       await updateRunDashboardRow(queued);
       await logEvent({ run_id, event_type: "ASYNC_WORKER_STEP_COMPLETED", actor, payload: { completed_phase: result.completed_phase || claimed.current_phase, current_phase: queued.current_phase, status: queued.status, dispatched_next: true } });
       const dispatch = await dispatchWorkerDurably({ run_id, base_url: queued.runner_dispatch_base_url, auto_continue: true });
-      const dispatched = await updateRunRecord(run_id, { runner_mode: dispatch.dispatcher, runner_task_name: dispatch.task_name || "", runner_worker_url: dispatch.worker_url || "", runner_dispatched_at: nowIso() });
+      const dispatched = await updateRunRecord(run_id, { runner_mode: dispatch.dispatcher, runner_task_name: dispatch.task_name || "", runner_worker_url: dispatch.worker_url || "", runner_dispatched_at: nowIso(), runner_last_error: "" });
       await updateRunDashboardRow(dispatched);
       await logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCHED", actor, payload: { dispatcher: dispatch.dispatcher, task_name: dispatch.task_name || "", continuation: true, worker_url_present: Boolean(dispatch.worker_url) } });
       return workerResponse({ run: dispatched, completed_step: true, dispatched_next: true, terminal: false });
@@ -159,10 +166,20 @@ function isStaleRunner(run) {
   if (!Number.isFinite(marker)) return false;
   return Date.now() - marker > staleWindowMs(run);
 }
+function isStaleQueued(run) {
+  if (run.runner_worker_started_at && Date.parse(run.runner_worker_started_at) > Date.parse(run.runner_dispatched_at || run.runner_requested_at || "")) return false;
+  const marker = Date.parse(run.runner_dispatched_at || run.runner_requested_at || "");
+  if (!Number.isFinite(marker)) return false;
+  return Date.now() - marker > queuedStaleWindowMs(run);
+}
 function staleWindowMs(run) {
   if (EARLY_PHASES.has(run.current_phase) && Number(run.artifact_count || 0) === 0) return config.earlyPhaseStaleMs;
   return config.workerStaleMs;
 }
+function queuedStaleWindowMs(run) {
+  if (EARLY_PHASES.has(run.current_phase) && Number(run.artifact_count || 0) === 0) return Math.min(config.earlyPhaseStaleMs, 3 * 60 * 1000);
+  return Math.min(config.workerStaleMs, 5 * 60 * 1000);
+}
 async function clearRunnerState({ run_id, terminal }) { const updated = await updateRunRecord(run_id, { runner_state: terminal ? "COMPLETE" : "IDLE", runner_auto_continue: false }); await updateRunDashboardRow(updated); }
-function asyncResponse({ run, queued, already_running, terminal }) { return { ok: true, queued, already_running, terminal, run_id: run.run_id, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_requested_at: run.runner_requested_at || "", runner_last_completed_at: run.runner_last_completed_at || "", runner_task_name: run.runner_task_name || "", artifact_count: run.artifact_count || 0 }; }
-function workerResponse({ run, completed_step, dispatched_next, terminal, already_running = false }) { return { ok: true, run_id: run.run_id, status: run.status, current_phase: run.current_phase, completed_step, dispatched_next, terminal, already_running, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_task_name: run.runner_task_name || "", artifact_count: run.artifact_count || 0 }; }
+function asyncResponse({ run, queued, already_running, terminal }) { return { ok: true, queued, already_running, terminal, run_id: run.run_id, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_requested_at: run.runner_requested_at || "", runner_dispatched_at: run.runner_dispatched_at || "", runner_last_completed_at: run.runner_last_completed_at || "", runner_task_name: run.runner_task_name || "", artifact_count: run.artifact_count || 0 }; }
+function workerResponse({ run, completed_step, dispatched_next, terminal, already_running = false }) { return { ok: true, run_id: run.run_id, status: run.status, current_phase: run.current_phase, completed_step, dispatched_next, terminal, already_running, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_dispatched_at: run.runner_dispatched_at || "", runner_task_name: run.runner_task_name || "", artifact_count: run.artifact_count || 0 }; }
