@@ -27,6 +27,8 @@ const ART = Object.freeze({
   featureForensics: "target_" + "feature_profile_forensics",
   dataMain: "data_" + "provenance_profile",
   dataForensics: "data_" + "provenance_profile_forensics",
+  extendedDap: "extended_dap_india_readiness_profile",
+  integratedDap: "integrated_dap_report",
   exposureRoutePlan: "exposure_registry_route_plan",
   exposureBatchPattern: "exposure_registry_batch__{GROUP}__{NNN}",
   exposureBatchValidationPattern: "exposure_registry_batch_validation__{GROUP}__{NNN}",
@@ -81,9 +83,11 @@ export const PHASES = Object.freeze([
   "M8_TARGET_FEATURE_PROFILE_FORENSICS",
   "M10",
   "M10_FORENSICS",
+  "AGENT_4B_EXTENDED_DAP_INDIA_READINESS",
+  "AGENT_4C_INTEGRATED_DAP_REPORT",
   "M11",
   "M12",
-  "COMPILER",
+  "NORMALIZED_COMPILER",
   "RENDERER",
   "COMPLETE"
 ]);
@@ -111,8 +115,11 @@ export const UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES = Object.freeze([ART.upload
 export const AGENT_1A_ARTIFACT_NAMES = Object.freeze(["deduped_url_manifest"]);
 export const AGENT_1B_ARTIFACT_NAMES = Object.freeze(["source_family_index", ...LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES]);
 export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_ARTIFACT_NAMES]);
+export const EXTENDED_DAP_ARTIFACT_NAMES = Object.freeze([ART.extendedDap]);
+export const INTEGRATED_DAP_ARTIFACT_NAMES = Object.freeze([ART.integratedDap]);
 export const M11_STATIC_ARTIFACT_NAMES = Object.freeze([ART.exposureRoutePlan, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics]);
 export const M11_DYNAMIC_ARTIFACT_PATTERNS = Object.freeze([ART.exposureBatchPattern, ART.exposureBatchValidationPattern]);
+export const NORMALIZED_COMPILER_PHASE = "NORMALIZED_COMPILER";
 export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
 
 export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.profilesCombined, ART.forensicsCombined]);
@@ -134,13 +141,15 @@ export const ARTIFACT_NAMES = Object.freeze([
   ART.featureForensics,
   ART.dataMain,
   ART.dataForensics,
+  ...EXTENDED_DAP_ARTIFACT_NAMES,
+  ...INTEGRATED_DAP_ARTIFACT_NAMES,
   ...M11_STATIC_ARTIFACT_NAMES,
   ART.challenge,
   ...NORMALIZED_COMPILER_ARTIFACT_NAMES,
   ART.renderer
 ]);
 
-export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "document_source_ingestor", "compiler", "portfolio_renderer", "operator"]);
+export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "document_source_ingestor", "agent_4b_extended_dap", "agent_4c_integrated_dap_compiler", "compiler", "portfolio_renderer", "operator"]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a1a]: AGENT_1A_ARTIFACT_NAMES,
@@ -152,6 +161,8 @@ export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a5]: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: [ART.exposureBatchValidationPattern, ART.challenge],
   document_source_ingestor: UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES,
+  agent_4b_extended_dap: EXTENDED_DAP_ARTIFACT_NAMES,
+  agent_4c_integrated_dap_compiler: INTEGRATED_DAP_ARTIFACT_NAMES,
   compiler: COMPILER_ARTIFACT_NAMES,
   portfolio_renderer: [ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
@@ -168,9 +179,11 @@ export const PHASE_WRITE_PERMISSIONS = Object.freeze({
   M8_TARGET_FEATURE_PROFILE_FORENSICS: [ART.featureForensics],
   M10: [ART.dataMain],
   M10_FORENSICS: [ART.dataForensics],
+  AGENT_4B_EXTENDED_DAP_INDIA_READINESS: EXTENDED_DAP_ARTIFACT_NAMES,
+  AGENT_4C_INTEGRATED_DAP_REPORT: INTEGRATED_DAP_ARTIFACT_NAMES,
   M11: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   M12: [ART.exposureBatchValidationPattern, ART.challenge],
-  COMPILER: COMPILER_ARTIFACT_NAMES,
+  NORMALIZED_COMPILER: COMPILER_ARTIFACT_NAMES,
   RENDERER: [ART.renderer],
   COMPLETE: []
 });
@@ -185,7 +198,9 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a5]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   document_source_ingestor: [],
-  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
+  agent_4b_extended_dap: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
+  agent_4c_integrated_dap_compiler: [ART.dataMain, ART.dataForensics, ART.extendedDap],
+  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.extendedDap, ART.integratedDap, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
   portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });

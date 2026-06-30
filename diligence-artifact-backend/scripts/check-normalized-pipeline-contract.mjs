@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import { PHASES, NORMALIZED_SECTION_ARTIFACT_NAMES, COMPILER_ARTIFACT_NAMES, PHASE_WRITE_PERMISSIONS } from "../src/constants.js";
+import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
+
+assert.ok(PHASES.includes("NORMALIZED_COMPILER"));
+assert.ok(!PHASES.includes("COMPILER"));
+assert.ok(PHASES.includes("AGENT_4B_EXTENDED_DAP_INDIA_READINESS"));
+assert.ok(PHASES.includes("AGENT_4C_INTEGRATED_DAP_REPORT"));
+assert.equal(PHASE_CONTRACTS.M10_FORENSICS.next, "AGENT_4B_EXTENDED_DAP_INDIA_READINESS");
+assert.equal(PHASE_CONTRACTS.AGENT_4B_EXTENDED_DAP_INDIA_READINESS.next, "AGENT_4C_INTEGRATED_DAP_REPORT");
+assert.equal(PHASE_CONTRACTS.AGENT_4C_INTEGRATED_DAP_REPORT.next, "M11");
+assert.deepEqual(PHASE_WRITE_PERMISSIONS.AGENT_4B_EXTENDED_DAP_INDIA_READINESS, ["extended_dap_india_readiness_profile"]);
+assert.deepEqual(PHASE_WRITE_PERMISSIONS.AGENT_4C_INTEGRATED_DAP_REPORT, ["integrated_dap_report"]);
+assert.equal(PHASE_CONTRACTS.M12.next, "NORMALIZED_COMPILER");
+assert.equal(PHASE_CONTRACTS.NORMALIZED_COMPILER.next, "RENDERER");
+assert.ok(PHASE_CONTRACTS.NORMALIZED_COMPILER.reads.includes("extended_dap_india_readiness_profile"));
+assert.ok(PHASE_CONTRACTS.NORMALIZED_COMPILER.reads.includes("integrated_dap_report"));
+assert.deepEqual(PHASE_CONTRACTS.NORMALIZED_COMPILER.writes, COMPILER_ARTIFACT_NAMES);
+assert.deepEqual(PHASE_WRITE_PERMISSIONS.NORMALIZED_COMPILER, COMPILER_ARTIFACT_NAMES);
+for (const artifactName of NORMALIZED_SECTION_ARTIFACT_NAMES) {
+  assert.ok(PHASE_CONTRACTS.NORMALIZED_COMPILER.writes.includes(artifactName));
+  assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes(artifactName));
+}
+assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("normalized_report_manifest"));
+assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_handoff"));
+assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("final_output_handoff"));
+console.log("normalized pipeline contract: PASS");

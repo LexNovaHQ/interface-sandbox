@@ -2,7 +2,7 @@ import { config } from "./config.js";
 import { getRunRecord, updateRunRecord, logEvent } from "./firestore.js";
 import { updateRunDashboardRow } from "./sheets.js";
 import { nowIso } from "./run-id.js";
-import { advanceReviewerRun } from "./reviewer-runner.js";
+import { advanceReviewerRun } from "./reviewer-runner-normalized.js";
 
 const TERMINAL_PHASES = new Set(["COMPLETE"]);
 const TERMINAL_STATUSES = new Set(["COMPLETE", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
@@ -119,99 +119,14 @@ async function markDispatchFailure({ run_id, error }) {
       runner_failed_at: nowIso()
     });
     await updateRunDashboardRow(failed);
-  } catch {
-    // Preserve original dispatch failure logging even if state update fails.
-  }
-  await logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCH_FAILED", actor: "async_dispatcher", payload: { error_message: message } }).catch(() => {});
-}
-
-async function dispatchWorker({ run_id, base_url, auto_continue }) {
-  const base = normalizeBaseUrl(base_url);
-  if (!base) throw new Error("ASYNC_DISPATCH_BASE_URL_MISSING");
-  if (!config.apiKey) throw new Error("ASYNC_DISPATCH_API_KEY_MISSING");
-
-  const url = `${base}/v1/reviewer/jobs/${encodeURIComponent(run_id)}/worker`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-ln-api-key": config.apiKey
-    },
-    body: JSON.stringify({ auto_continue: Boolean(auto_continue) })
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`ASYNC_WORKER_HTTP_FAILED:${response.status}:${text.slice(0, 500)}`);
+    await logEvent({ run_id, event_type: "ASYNC_WORKER_DISPATCH_FAILED", actor: "async_worker", payload: { error_message: message } });
+  } catch (_nested) {
+    // Nothing else to do here; caller can inspect logs from the original failure.
   }
 }
 
-async function clearRunnerState({ run_id, terminal }) {
-  const updated = await updateRunRecord(run_id, {
-    runner_state: terminal ? "COMPLETE" : "IDLE",
-    runner_auto_continue: false,
-    runner_last_completed_at: nowIso()
-  });
-  await updateRunDashboardRow(updated);
-}
-
-function isTerminal(run) {
-  return TERMINAL_PHASES.has(run?.current_phase) || TERMINAL_STATUSES.has(run?.status);
-}
-
-function isStaleRunner(run) {
-  const at = Date.parse(run?.runner_worker_started_at || run?.runner_requested_at || "");
-  return Number.isFinite(at) && Date.now() - at > STALE_WORKER_MS;
-}
-
-function normalizeBaseUrl(value) {
-  const raw = String(value || "").trim().replace(/\/+$/, "");
-  if (!raw) return "";
-  try {
-    const url = new URL(raw);
-    return url.toString().replace(/\/+$/, "");
-  } catch {
-    return "";
-  }
-}
-
-function asyncResponse({ run, queued, already_running, terminal }) {
-  return {
-    ok: true,
-    async: true,
-    queued,
-    already_running,
-    terminal,
-    run_id: run.run_id,
-    status: run.status,
-    current_phase: run.current_phase,
-    runner_state: run.runner_state || "IDLE",
-    runner_last_error: run.runner_last_error || "",
-    runner_failed_at: run.runner_failed_at || "",
-    runner_worker_started_at: run.runner_worker_started_at || "",
-    runner_requested_at: run.runner_requested_at || "",
-    runner_last_completed_at: run.runner_last_completed_at || "",
-    poll: `/v1/reviewer/jobs/${run.run_id}`
-  };
-}
-
-function workerResponse({ run, completed_step, dispatched_next, terminal = false, already_running = false }) {
-  return {
-    ok: true,
-    async: true,
-    worker: true,
-    completed_step,
-    dispatched_next,
-    terminal,
-    already_running,
-    run_id: run.run_id,
-    status: run.status,
-    current_phase: run.current_phase,
-    runner_state: run.runner_state || "IDLE",
-    runner_last_error: run.runner_last_error || "",
-    runner_failed_at: run.runner_failed_at || "",
-    runner_worker_started_at: run.runner_worker_started_at || "",
-    runner_requested_at: run.runner_requested_at || "",
-    runner_last_completed_at: run.runner_last_completed_at || ""
-  };
-}
+function isTerminal(run) { return TERMINAL_PHASES.has(run.current_phase) || TERMINAL_STATUSES.has(run.status); }
+function isStaleRunner(run) { const started = Date.parse(run.runner_worker_started_at || run.runner_requested_at || ""); return Number.isFinite(started) && Date.now() - started > STALE_WORKER_MS; }
+async function clearRunnerState({ run_id, terminal }) { const updated = await updateRunRecord(run_id, { runner_state: terminal ? "COMPLETE" : "IDLE", runner_auto_continue: false }); await updateRunDashboardRow(updated); }
+function asyncResponse({ run, queued, already_running, terminal }) { return { ok: true, queued, already_running, terminal, run_id: run.run_id, status: run.status, current_phase: run.current_phase, runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_requested_at: run.runner_requested_at || "", runner_last_completed_at: run.runner_last_completed_at || "", artifact_count: run.artifact_count || 0 }; }
+function workerResponse({ run, completed_step, dispatched_next, terminal, already_running = false }) { return { ok: true, run_id: run.run_id, status: run.status, current_phase: run.current_phase, completed_step, dispatched_next, terminal, already_running, runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", artifact_count: run.artifact_count || 0 }; }
