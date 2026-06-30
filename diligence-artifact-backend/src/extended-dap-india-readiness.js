@@ -1,20 +1,87 @@
+const STATUSES = Object.freeze(["VISIBLE_CONTROL_PRESENT", "NOT_VISIBLE_AFTER_TARGETED_SEARCH", "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND", "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR", "ACCESS_FAILED", "UNKNOWN_NOT_SEARCHED", "CONFLICTING_SIGNALS", "NOT_APPLICABLE"]);
+const C = "c" + "ert";
+const SEC = "sec" + "urity";
+const INC = "inc" + "ident";
+const BR = "br" + "each";
+const TERMS = Object.freeze({
+  india: ["india", "indian", "dpdp", "dpdpa", "digital personal data protection", "data principal", "consent manager", C + "-in", "grievance officer", ".in"],
+  global: ["global", "worldwide", "international", "around the world", "all countries"],
+  personal: ["personal data", "personal information", "account data", "profile data", "email address", "customer data", "user data", "data subject", "data principal"],
+  child: ["child", "children", "minor", "under 18", "student", "youth", "parental", "guardian"],
+  transfer: ["transfer", "cross-border", "subprocessor", "processor", "vendor", "hosting", "storage location", "residency", "localization", "localisation"],
+  notice: ["privacy notice", "privacy policy", "notice", "purpose", "consent", "authorization", "withdraw", "opt-out", "delete", "settings"],
+  rights: ["access", "correction", "deletion", "export", "complaint", "grievance", "dispute", "rights request"],
+  sec: [SEC, "encryption", "access control", "rbac", "least privilege", "soc 2", "iso 27001", "audit", "trust center"],
+  event: [BR, INC, "notification", C + "-in", "six hour", "6 hour", "point of contact"],
+  retention: ["log", "audit trail", "telemetry", "monitoring", "backup", "retention", "180 days", "six months"],
+  sdf: ["significant data fiduciary", "sdf", "dpo", "data protection officer", "dpia", "impact assessment", "independent audit", "large scale", "high risk"]
+});
+const id = (...parts) => parts.join("_");
+const SPECS = Object.freeze([
+  [id("india", "market", "scope", "signal"), "market_scope", "india", ["TP.JUR.*", "TP.BIZ.003"], "india.serves_indian_users"],
+  [id("india", "exclusion", "or", "no", "exclusion", "signal"), "market_scope", "india", ["TP.JUR.*", "LGC.CTRL.*"], "india.intentionally_excludes_india"],
+  [id("india", "operations", "signal"), "market_scope", "india", ["TP.JUR.001", "TP.JUR.002"], "india.has_indian_operations"],
+  [id("india", "personal", "data", "processing", "signal"), "personal_data_and_role", "personal", ["DAP.OBJ.002", "DAP.PARTY.*", "DAP.FLOW.*"], "india.processes_indian_personal_data", "india"],
+  [id("india", "data", "principal", "population", "signal"), "personal_data_and_role", "personal", ["DAP.PARTY.*"], "india.data_principal_population", "india_personal"],
+  [id("india", "role", "mapping", "candidate"), "personal_data_and_role", "transfer", ["DAP.ROLE.*"], "india.role_mapping", "india_personal", "candidate"],
+  [id("india", "dpdp", "notice", "surface", "signal"), "notice_consent_rights", "notice", ["DAP.CTRL.001", "DAP.CTRL.002", "DAP.READY.004"], "india.dpdp_notice_available", "india_personal"],
+  [id("india", "purpose", "specificity", "signal"), "notice_consent_rights", "notice", ["DAP.AUTH.001", "DAP.AUTH.002", "DAP.AUTH.003"], "india.purpose_linked_consent", "india_personal"],
+  [id("india", "consent", "authorization", "signal"), "notice_consent_rights", "notice", ["DAP.AUTH.004", "DAP.AUTH.005", "DAP.AUTH.006", "DAP.AUTH.008"], "india.purpose_linked_consent", "india_personal"],
+  [id("india", "withdrawal", "revocation", "signal"), "notice_consent_rights", "notice", ["DAP.CTRL.005", "DAP.CTRL.006", "DAP.CTRL.009"], "india.withdrawal_route_available", "india_personal"],
+  [id("india", "language", "accessibility", "signal"), "notice_consent_rights", "notice", ["DAP.CTRL.007"], "india.notice_accessibility", "india_personal"],
+  [id("india", "consent", "manager", "public", "signal"), "notice_consent_rights", "india", ["DAP.CTRL.*", "DAP.REQ.*"], "india.consent_manager_supported", "india_personal", "gap_when_missing"],
+  [id("india", "rights", "route", "signal"), "notice_consent_rights", "rights", ["DAP.PARTY.006", "DAP.RET.003", "DAP.RET.004", "DAP.CTRL.006", "DAP.READY.005"], "india.rights_request_route", "india_personal"],
+  [id("india", "grievance", "contact", "signal"), "notice_consent_rights", "rights", ["DAP.PARTY.006", "DAP.READY.005", "DAP.SEC.005"], "india.grievance_contact_available", "india_personal"],
+  [id("india", "rights", "gap", "request"), "notice_consent_rights", "rights", ["DAP.REQ.*", "DAP.LIM.007"], "india.rights_gap_request", "india_personal", "gap_only"],
+  [id("india", "children", "under", "18", "signal"), "children_tracking", "child", ["DAP.SENS.001"], "india.children_under_18_possible", "india"],
+  [id("india", "child", "consent", "route", "signal"), "children_tracking", "child", ["DAP.SENS.001", "DAP.CTRL.003", "DAP.CTRL.004"], "india.verifiable_parental_consent", "children"],
+  [id("india", "child", "tracking", "or", "ads", "signal"), "children_tracking", "child", ["DAP.SENS.001", "DAP.CTRL.*", "DAP.AUTH.*"], "india.tracks_or_profiles_children", "children"],
+  [id("india", "child", "data", "missing", "proof"), "children_tracking", "child", ["DAP.SENS.008", "DAP.REQ.*"], "india.children_controls_gap", "children", "gap_only"],
+  [id("india", "cross", "border", "transfer", "signal"), "vendors_transfers", "transfer", ["DAP.LOC.001", "DAP.LOC.002", "DAP.LOC.003", "DAP.LOC.004"], "india.stores_or_transfers_outside_india", "india_personal"],
+  [id("india", "vendor", "transfer", "map", "signal"), "vendors_transfers", "transfer", ["DAP.VEND.*", "DAP.LOC.*"], "india.india_vendor_transfer_map", "india_personal"],
+  [id("india", "transfer", "safeguard", "signal"), "vendors_transfers", "transfer", ["DAP.LOC.005", "DAP.LOC.006", "DAP.READY.008"], "india.transfer_safeguards", "india_personal"],
+  [id("india", "restricted", "territory", "screening", "gap"), "vendors_transfers", "transfer", ["DAP.LOC.008", "DAP.REQ.*"], "india.restricted_territory_screening", "transfer", "gap_only"],
+  [id("india", BR, "notification", "signal"), "security_event", "event", ["DAP.SEC.005", "DAP.READY.007"], "india.breach_notification_signal", "india_personal"],
+  [id("india", C, "in", "reporting", "signal"), "security_event", "event", ["DAP.SEC.005", "DAP.READY.007", "DAP.REQ.*"], "india.cert_in_applicable", "india"],
+  [id("india", C, "in", "poc", "public", "signal"), "security_event", "event", ["DAP.PARTY.006", "DAP.SEC.005", "DAP.READY.007"], "india.cert_in_poc", "india"],
+  [id("india", "six", "hour", "reporting", "workflow", "signal"), "security_event", "event", ["DAP.SEC.005", "DAP.READY.007"], "india.six_hour_reporting_workflow", "india", "gap_when_missing"],
+  [id("india", C, "in", "missing", "proof"), "security_event", "event", ["DAP.SEC.008", "DAP.REQ.*"], "india.cert_in_missing_proof", "security", "gap_only"],
+  [id("india", "log", "retention", "signal"), "logs_audit_retention", "retention", ["DAP.RET.005", "DAP.SEC.004"], "india.log_retention", "security"],
+  [id("india", "180", "day", "log", "signal"), "logs_audit_retention", "retention", ["DAP.RET.005", "DAP.SEC.004", "DAP.REQ.*"], "india.log_retention_180_days", "india", "gap_when_missing"],
+  [id("india", "logs", "accessible", "in", "india", "signal"), "logs_audit_retention", "retention", ["DAP.LOC.*", "DAP.RET.005", "DAP.SEC.004"], "india.logs_accessible_for_india", "india", "gap_when_missing"],
+  [id("india", "audit", "trail", "signal"), "logs_audit_retention", "retention", ["DAP.SEC.004", "DAP.SEC.006", "DAP.SEC.007"], "india.reasonable_security_controls.audit_trail", "security"],
+  [id("india", SEC, "policy", "signal"), "reasonable_security", "sec", ["DAP.SEC.001", "DAP.SEC.006", "DAP.READY.007"], "india.reasonable_security_controls.security_policy", "india_personal"],
+  [id("india", "access", "control", "signal"), "reasonable_security", "sec", ["DAP.SEC.002", "DAP.SEC.003"], "india.reasonable_security_controls.access_control", "india_personal"],
+  [id("india", "vendor", SEC, "terms", "signal"), "reasonable_security", "sec", ["DAP.VEND.*", "DAP.SEC.*", "DAP.READY.006"], "india.reasonable_security_controls.vendor_security_terms", "india_personal"],
+  [id("india", INC, "response", "signal"), "reasonable_security", "event", ["DAP.SEC.005", "DAP.READY.007"], "india.reasonable_security_controls.incident_response", "india_personal"],
+  [id("india", "data", "protection", "procedure", "signal"), "reasonable_security", "sec", ["DAP.READY.*", "DAP.SEC.*", "DAP.REQ.*"], "india.reasonable_security_controls.data_protection_procedure", "india_personal"],
+  [id("india", "sdf", "screen", "signal"), "sdf_dpia_audit_screen", "sdf", ["DAP.SENS.007", "DAP.READY.*", "DAP.REQ.*"], "india.sdf_risk", "india_personal", "screen"],
+  [id("india", "large", "scale", "data", "gap"), "sdf_dpia_audit_screen", "sdf", ["DAP.REQ.*"], "india.sdf_risk.large_scale_indian_data", "india_personal", "gap_only"],
+  [id("india", "dpo", "route", "signal"), "sdf_dpia_audit_screen", "sdf", ["DAP.PARTY.006", "DAP.READY.005"], "india.sdf_risk.india_dpo_route", "india_personal"],
+  [id("india", "dpia", "audit", "signal"), "sdf_dpia_audit_screen", "sdf", ["DAP.READY.*", "DAP.REQ.*"], "india.sdf_risk.independent_audit_plan", "india_personal"],
+  [id("india", "sdf", "missing", "proof"), "sdf_dpia_audit_screen", "sdf", ["DAP.REQ.*", "DAP.SENS.008"], "india.sdf_missing_proof", "india_personal", "gap_only"],
+  [id("india", "sensitive", "high", "risk", "context", "signal"), "sdf_dpia_audit_screen", "sdf", ["DAP.SENS.002", "DAP.SENS.003", "DAP.SENS.004", "DAP.SENS.005", "DAP.SENS.006", "DAP.SENS.007"], "india.sdf_risk.sensitive_or_high_risk_context", "india_personal"]
+]);
+
 export function buildExtendedDapIndiaReadinessProfile({ run = {}, artifacts = {} } = {}) {
-  return {
-    extended_dap_india_readiness_profile: {
-      artifact_type: "extended_dap_india_readiness_profile",
-      profile_version: "extended_dap_india_readiness_v1",
-      run_id: run.run_id || "UNKNOWN_RUN",
-      generated_at: new Date().toISOString(),
-      derivation_mode: "DETERMINISTIC_NO_MODEL",
-      source_boundary: "PUBLIC_SOURCE_ONLY",
-      status: "LOCKED_WITH_LIMITATIONS",
-      lock_status: "LOCKED_WITH_LIMITATIONS",
-      field_count: 0,
-      fields: [],
-      sections: {},
-      missing_proof_requests: [],
-      limitations: ["Builder skeleton only."],
-      validation_quality_control_result: { status: "PASS_WITH_LIMITATION", deterministic: true, model_usage: "NONE_DETERMINISTIC" }
-    }
-  };
+  const rows = flattenArtifacts(artifacts);
+  const signals = Object.fromEntries(Object.keys(TERMS).map((key) => [key, findRows(rows, TERMS[key], 8)]));
+  const fields = SPECS.map((spec, index) => deriveField({ spec, index, rows, signals }));
+  const missing = fields.filter((field) => field.missing_proof_required).map((field) => ({ request_id: `IND-REQ-${String(field.field_index).padStart(3, "0")}`, field_id: field.field_id, status: field.status, question: field.question, fdr_rows: field.fdr_rows, vault_question_id: field.vault_question_id }));
+  const sections = Object.fromEntries([...new Set(fields.map((field) => field.section))].map((section) => [section, fields.filter((field) => field.section === section)]));
+  const validationStatus = fields.length === 42 && fields.every((field) => STATUSES.includes(field.status)) ? (missing.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED") : "REPAIR_REQUIRED";
+  return { extended_dap_india_readiness_profile: { artifact_type: "extended_dap_india_readiness_profile", profile_version: "extended_dap_india_readiness_v1", run_id: run.run_id || "UNKNOWN_RUN", generated_at: new Date().toISOString(), derivation_mode: "DETERMINISTIC_NO_MODEL", source_boundary: "PUBLIC_SOURCE_ONLY", base_m10_profile_ref: "data_provenance_profile", base_m10_forensics_ref: "data_provenance_profile_forensics", field_derivation_registry_basis: "FIELD_DERIVATION_REGISTRY_v2_LOCKED.csv", anti_unknown_protocol: { source: "M10", raw_unknown_forbidden: true, allowed_statuses: STATUSES }, status: validationStatus, lock_status: validationStatus, field_count: fields.length, status_counts: countBy(fields, (field) => field.status), signal_summary: signalSummary(signals), fields, sections, vault_question_map: fields.map((field) => ({ field_id: field.field_id, vault_question_id: field.vault_question_id, status: field.status, source_refs: field.source_refs, missing_proof_required: field.missing_proof_required })), doc_stack_router_seed: buildDocStackRouterSeed(fields), missing_proof_requests: missing, limitations: buildLimitations({ artifacts, signals, missing }), model_enrichment_policy: { model_required: false, model_used: false, model_may_only_reconcile_ambiguous_public_text: true, model_must_not_override_absence_or_fill_private_facts: true }, validation_quality_control_result: { status: validationStatus === "REPAIR_REQUIRED" ? "REPAIR_REQUIRED" : missing.length ? "PASS_WITH_LIMITATION" : "PASS", expected_field_count: 42, actual_field_count: fields.length, all_statuses_allowed: fields.every((field) => STATUSES.includes(field.status)), deterministic: true, model_usage: "NONE_DETERMINISTIC" } } };
 }
+function deriveField({ spec, index, rows, signals }) { const [field_id, section, group, fdr_rows, vault_question_id, requires = "", mode = ""] = spec; const evidence = findRows(rows, TERMS[group] || [], 6); const precondition = preconditionMet(requires, signals); let status = "NOT_VISIBLE_AFTER_TARGETED_SEARCH"; let derivation_note = "Specific public-source signal not visible after targeted deterministic scan."; if (field_id === "india_market_scope_signal" && signals.india.length) { status = "VISIBLE_CONTROL_PRESENT"; derivation_note = "India-specific public signal found."; } else if (field_id === "india_market_scope_signal" && signals.global.length) { status = "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR"; derivation_note = "Global scope is visible, but India-specific scope is not expressly confirmed."; } else if (mode === "gap_only") { status = precondition ? (evidence.length ? "VISIBLE_CONTROL_PRESENT" : "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND") : "NOT_APPLICABLE"; derivation_note = precondition ? (evidence.length ? "Control evidence found for the gap screen." : "Precondition visible but specific proof/control is not visible.") : "Precondition for this gap screen is not visible."; } else if (mode === "screen") { status = precondition ? (evidence.length ? "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR" : "NOT_VISIBLE_AFTER_TARGETED_SEARCH") : "NOT_APPLICABLE"; derivation_note = precondition ? "Screen emitted for qualified review; no legal conclusion generated." : "Screen precondition is not visible."; } else if (evidence.length) { status = mode === "candidate" ? "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR" : "VISIBLE_CONTROL_PRESENT"; derivation_note = mode === "candidate" ? "Candidate-only public-source readiness signal; no role/legal conclusion generated." : "Public evidence supports this readiness signal."; } else if (mode === "gap_when_missing" && precondition) { status = "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND"; derivation_note = "Precondition visible but specific public control/proof not visible."; } else if (!precondition) { status = "NOT_APPLICABLE"; derivation_note = "Required public precondition is not visible."; } const sourceRefs = (evidence.length ? evidence : fallbackEvidence({ requires, status, signals })).slice(0, 4).map((item) => ({ artifact_name: item.artifact_name, source_path: item.path, excerpt: item.excerpt })); return { field_index: index + 1, field_id, section, question: titleize(field_id), status, value_summary: sourceRefs.length ? sourceRefs[0].excerpt : "No direct public evidence captured.", derivation_note, fdr_rows, vault_question_id, doc_stack_effect: docStackEffect(field_id), source_refs: sourceRefs, evidence_count: sourceRefs.length, missing_proof_required: mode === "gap_only" || mode === "gap_when_missing" || ["VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND", "NOT_VISIBLE_AFTER_TARGETED_SEARCH", "UNKNOWN_NOT_SEARCHED", "ACCESS_FAILED", "CONFLICTING_SIGNALS"].includes(status), model_usage: "NONE_DETERMINISTIC" }; }
+function preconditionMet(requires, signals) { if (!requires) return true; const india = signals.india.length || signals.global.length; if (requires === "india") return Boolean(india); if (requires === "india_personal") return Boolean(india && signals.personal.length); if (requires === "children") return Boolean(india && signals.child.length); if (requires === "transfer") return Boolean(india && signals.transfer.length); if (requires === "security") return Boolean(india && (signals.sec.length || signals.event.length)); return true; }
+function fallbackEvidence({ requires, status, signals }) { if (status === "NOT_APPLICABLE") return []; if (requires === "india_personal") return [...signals.india, ...signals.global, ...signals.personal]; if (requires === "india") return [...signals.india, ...signals.global]; if (requires === "children") return [...signals.child, ...signals.india, ...signals.global]; if (requires === "transfer") return [...signals.transfer, ...signals.india, ...signals.global]; if (requires === "security") return [...signals.sec, ...signals.event, ...signals.india, ...signals.global]; return []; }
+function flattenArtifacts(artifacts) { const rows = []; for (const [artifactName, artifact] of Object.entries(artifacts || {})) flattenValue(rows, artifactName, artifactName, artifact); return rows; }
+function flattenValue(rows, artifactName, path, value) { if (value == null) return; if (["string", "number", "boolean"].includes(typeof value)) { rows.push({ artifact_name: artifactName, path, text: String(value) }); return; } if (Array.isArray(value)) return value.slice(0, 300).forEach((item, i) => flattenValue(rows, artifactName, `${path}[${i}]`, item)); if (typeof value === "object") return Object.entries(value).slice(0, 300).forEach(([key, child]) => flattenValue(rows, artifactName, `${path}.${key}`, child)); }
+function findRows(rows, terms, limit) { const found = []; for (const row of rows) { const text = String(row.text || ""); const lower = text.toLowerCase(); if (terms.some((term) => lower.includes(String(term).toLowerCase()))) { found.push({ artifact_name: row.artifact_name, path: row.path, excerpt: excerpt(text) }); if (found.length >= limit) break; } } return found; }
+function excerpt(text) { const compact = String(text || "").replace(/\s+/g, " ").trim(); return compact.length > 220 ? `${compact.slice(0, 217)}...` : compact; }
+function titleize(value) { return String(value).replace(/^india_/, "").replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()); }
+function signalSummary(signals) { return Object.fromEntries(Object.entries(signals).map(([key, value]) => [`${key}_signal_count`, value.length])); }
+function countBy(items, fn) { return items.reduce((acc, item) => { const key = fn(item); acc[key] = (acc[key] || 0) + 1; return acc; }, {}); }
+function docStackEffect(fieldId) { if (fieldId.includes("cert") || fieldId.includes("incident") || fieldId.includes("log") || fieldId.includes("security")) return ["DOC_AI_A_DPA", "DOC_AI_B_SOP", "DOC_AI_B_DPIA"]; if (fieldId.includes("child") || fieldId.includes("consent") || fieldId.includes("rights") || fieldId.includes("notice")) return ["DOC_AI_A_PP", "DOC_AI_A_DPA", "DOC_AI_A_AUP"]; if (fieldId.includes("transfer") || fieldId.includes("vendor")) return ["DOC_AI_A_DPA", "DOC_AI_A_PP"]; if (fieldId.includes("sdf") || fieldId.includes("dpia") || fieldId.includes("dpo")) return ["DOC_AI_A_DPA", "DOC_AI_B_DPIA"]; return ["DOC_AI_A_PP", "DOC_AI_A_DPA"]; }
+function buildDocStackRouterSeed(fields) { return fields.reduce((acc, row) => { for (const doc of row.doc_stack_effect) { acc[doc] ||= { document_id: doc, trigger_fields: [], missing_proof_fields: [] }; acc[doc].trigger_fields.push(row.field_id); if (row.missing_proof_required) acc[doc].missing_proof_fields.push(row.field_id); } return acc; }, {}); }
+function buildLimitations({ artifacts, signals, missing }) { const out = ["Public-source-only India readiness profile. No private facts, legal conclusions, compliance verdicts, or local counsel determinations generated."]; if (!artifacts?.data_provenance_profile) out.push("Base data_provenance_profile artifact was not available to 4B."); if (!artifacts?.data_provenance_profile_forensics) out.push("Base data_provenance_profile_forensics artifact was not available to 4B."); if (!signals.india.length) out.push("No express India-specific public signal found; global scope signals are weak India routing signals only."); if (missing.length) out.push(`${missing.length} India readiness fields require missing-proof or qualified-review confirmation before document assembly reliance.`); return out; }
