@@ -26,7 +26,7 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
     section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status }))
   };
   output.vault_section_handoff = { ...(output.vault_section_handoff || {}), validation_status: status, archived_alias_for: "qualified_review_handoff" };
-  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff });
+  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, artifacts, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff });
 
   const legacy_archive = {
     profiles_combined: "ARCHIVED_LEGACY",

@@ -1,9 +1,13 @@
 import { asArray, safeObject, safeText } from "./report-safe-language.js";
+import { buildQualifiedReviewQuestionHandoff } from "./qualified-review-question-map.js";
+import { validateQualifiedReviewQuestionHandoff } from "./qualified-review-handoff-validator.js";
 
 export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_v1";
 
-export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, vault_section_handoff = null } = {}) {
+export function buildQualifiedReviewHandoff({ run = {}, artifacts = {}, normalized_report_manifest = {}, sections = {}, vault_section_handoff = null } = {}) {
   const sectionOrder = asArray(normalized_report_manifest.section_order);
+  const question_handoff = buildQualifiedReviewQuestionHandoff({ run, artifacts });
+  const question_handoff_validation = validateQualifiedReviewQuestionHandoff(question_handoff);
   return {
     handoff_type: "qualified_review_handoff",
     handoff_version: QUALIFIED_REVIEW_HANDOFF_VERSION,
@@ -16,6 +20,17 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
     primary_action_label: "Proceed to Qualified Review",
     secondary_action_label: "Download PDF",
     forbidden_public_actions: ["Download JSON"],
+    question_handoff,
+    question_handoff_validation,
+    question_handoff_contract_status: question_handoff_validation.errors.length ? "STRUCTURE_REPAIR_REQUIRED" : "STRUCTURE_VALID",
+    progress_rail: question_handoff.progress_rail,
+    section_pages: question_handoff.section_pages,
+    final_review_gate: {
+      status: question_handoff_validation.errors.length ? "BLOCKED_ON_STRUCTURE" : "READY_FOR_QUALIFIED_REVIEW",
+      question_count: question_handoff.question_count,
+      required_reviewer_confirmation: true,
+      missing_public_evidence_is_blocking: false
+    },
     intake_boundary: "Use as Review-Ready support material only. Public-footprint facts require qualified reviewer confirmation before document assembly, vault reliance, or client-facing legal work product.",
     section_order: sectionOrder,
     section_intake: sectionOrder.map((sectionId) => sectionIntakeRow({ sectionId, section: sections[sectionId], vault_section_handoff })),
