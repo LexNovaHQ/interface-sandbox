@@ -2,7 +2,7 @@ import { config, requireGeminiConfig } from "./config.js";
 
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 
-export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutputTokens = null } = {}) {
+export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutputTokens = null, repairOnJsonParse = false } = {}) {
   requireGeminiConfig();
 
   const errors = [];
@@ -25,10 +25,20 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             temperature,
             maxOutputTokens: effectiveMaxOutputTokens
           });
-          const parsed = parseGeminiJsonOrThrow(result);
+          const parsed = await parseGeminiJsonWithOptionalRepair({
+            result,
+            key,
+            model,
+            phase,
+            originalPrompt: prompt,
+            temperature,
+            maxOutputTokens: effectiveMaxOutputTokens,
+            repairOnJsonParse
+          });
           return {
-            json: parsed,
+            json: parsed.json,
             raw_text: result.text,
+            repair_raw_text: parsed.repairRawText || "",
             metadata: {
               phase,
               model,
@@ -37,9 +47,11 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
               retry_round: round + 1,
               key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
               max_output_tokens_sent: effectiveMaxOutputTokens || null,
-              warnings: buildGeminiWarnings(result),
+              warnings: [...buildGeminiWarnings(result), ...parsed.warnings],
               usage_metadata: result.usageMetadata,
-              finish_reason: result.finishReason
+              repair_usage_metadata: parsed.repairUsageMetadata || null,
+              finish_reason: result.finishReason,
+              repair_finish_reason: parsed.repairFinishReason || null
             }
           };
         } catch (error) {
@@ -128,24 +140,83 @@ async function callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens
 }
 
 export function parseJsonFromText(text) {
-  const raw = String(text || "").trim();
+  const raw = String(text || "").replace(/^\uFEFF/, "").trim();
   if (!raw) throw new Error("MODEL_JSON_PARSE_FAILED:empty");
 
+  const attempts = [];
+  attempts.push(raw);
+
+  const fencedMatches = [...raw.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)];
+  for (const match of fencedMatches) {
+    if (match?.[1]) attempts.push(match[1].trim());
+  }
+
+  const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  if (unfenced && unfenced !== raw) attempts.push(unfenced);
+
+  const errors = [];
+  for (const candidate of uniqueStrings(attempts)) {
+    try {
+      return JSON.parse(candidate);
+    } catch (error) {
+      errors.push(error?.message || String(error));
+    }
+    const firstJson = extractFirstBalancedJson(candidate);
+    if (firstJson) {
+      try {
+        return JSON.parse(firstJson);
+      } catch (error) {
+        errors.push(error?.message || String(error));
+      }
+    }
+  }
+
+  throw new Error(`MODEL_JSON_PARSE_FAILED:${errors[0] || "no_json_object"}`);
+}
+
+async function parseGeminiJsonWithOptionalRepair({ result, key, model, phase, originalPrompt, temperature, maxOutputTokens, repairOnJsonParse }) {
+  const warnings = [];
   try {
-    return JSON.parse(raw);
-  } catch (_first) {
-    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fenced?.[1]) {
-      return JSON.parse(fenced[1].trim());
+    return { json: parseGeminiJsonOrThrow(result), warnings };
+  } catch (error) {
+    if (result?.finishReason === "MAX_TOKENS") {
+      error.finishReason = "MAX_TOKENS";
+      error.status = 408;
+      error.message = `MODEL_JSON_PARSE_FAILED_AFTER_MAX_TOKENS:${error.message || String(error)}`;
+      throw error;
     }
+    if (!repairOnJsonParse) throw error;
 
-    const start = raw.indexOf("{");
-    const end = raw.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      return JSON.parse(raw.slice(start, end + 1));
+    const repairPrompt = buildJsonRepairPrompt({ phase, originalPrompt, malformedText: result.text, parseError: error?.message || String(error) });
+    const repaired = await callGeminiOnce({
+      key,
+      model,
+      prompt: repairPrompt,
+      temperature: 0,
+      maxOutputTokens
+    });
+    try {
+      const json = parseGeminiJsonOrThrow(repaired);
+      warnings.push({
+        code: "MODEL_JSON_REPAIR_RETRY_USED",
+        severity: "warning",
+        message: "Initial model response was not strict JSON; a single JSON-only repair retry parsed successfully."
+      });
+      return {
+        json,
+        warnings,
+        repairRawText: repaired.text,
+        repairUsageMetadata: repaired.usageMetadata,
+        repairFinishReason: repaired.finishReason
+      };
+    } catch (repairError) {
+      repairError.message = `MODEL_JSON_REPAIR_FAILED:${repairError.message || String(repairError)}`;
+      if (repaired?.finishReason === "MAX_TOKENS") {
+        repairError.finishReason = "MAX_TOKENS";
+        repairError.status = 408;
+      }
+      throw repairError;
     }
-
-    throw new Error("MODEL_JSON_PARSE_FAILED:no_json_object");
   }
 }
 
@@ -160,6 +231,70 @@ function parseGeminiJsonOrThrow(result) {
     }
     throw error;
   }
+}
+
+function extractFirstBalancedJson(value) {
+  const text = String(value || "");
+  const start = findFirstJsonStart(text);
+  if (start < 0) return "";
+
+  const opener = text[start];
+  const closer = opener === "{" ? "}" : "]";
+  const stack = [closer];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start + 1; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") stack.push("}");
+    else if (ch === "[") stack.push("]");
+    else if (ch === "}" || ch === "]") {
+      const expected = stack.pop();
+      if (ch !== expected) return "";
+      if (stack.length === 0) return text.slice(start, i + 1);
+    }
+  }
+  return "";
+}
+
+function findFirstJsonStart(text) {
+  const object = text.indexOf("{");
+  const array = text.indexOf("[");
+  if (object < 0) return array;
+  if (array < 0) return object;
+  return Math.min(object, array);
+}
+
+function buildJsonRepairPrompt({ phase, originalPrompt, malformedText, parseError }) {
+  return [
+    `You are repairing malformed JSON for phase ${phase}.`,
+    "Return exactly one valid JSON object. No markdown. No code fence. No explanation. No trailing prose. No second JSON object.",
+    "Preserve the original keys, values, arrays, and schema intent. Do not add legal analysis. Do not summarize.",
+    `Parser error: ${parseError}`,
+    "Original task context follows for schema reference:",
+    originalPrompt,
+    "Malformed model output to repair follows:",
+    malformedText
+  ].join("\n\n");
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
 function resolveMaxOutputTokens(requested) {
@@ -192,6 +327,7 @@ function providerErrorType(error) {
   const status = Number(error?.status || 0);
   const message = String(error?.message || "").toLowerCase();
   if (error?.finishReason === "MAX_TOKENS" || message.includes("max_tokens") || message.includes("max tokens")) return "TOKEN_LIMIT";
+  if (message.includes("model_json_repair_failed") || message.includes("model_json_parse_failed")) return "MODEL_JSON_PARSE";
   if (status === 503 || message.includes("high demand") || message.includes("temporarily unavailable")) return "PROVIDER_CAPACITY";
   if (status === 429 || message.includes("quota") || message.includes("rate")) return "RATE_OR_QUOTA";
   if (status === 408 || message.includes("timeout")) return "TIMEOUT";
