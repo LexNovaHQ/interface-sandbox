@@ -26,7 +26,7 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
     section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status }))
   };
   output.vault_section_handoff = { ...(output.vault_section_handoff || {}), validation_status: status, archived_alias_for: "qualified_review_handoff" };
-  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff });
+  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff, artifacts });
 
   const legacy_archive = {
     profiles_combined: "ARCHIVED_LEGACY",
@@ -56,7 +56,8 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
         no_row_re_evaluation: true,
         normalized_section_count: NORMALIZED_SECTION_KEYS.length,
         legacy_artifacts_archived: true,
-        qualified_review_handoff_emitted: true
+        qualified_review_handoff_emitted: true,
+        question_level_qualified_review_handoff_emitted: Boolean(output.qualified_review_handoff?.question_handoff?.question_count)
       }
     }
   };
