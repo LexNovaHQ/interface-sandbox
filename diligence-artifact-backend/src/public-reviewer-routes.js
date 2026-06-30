@@ -120,6 +120,7 @@ publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, re
     const rendererMeta = await getArtifactMetadata(req.params.run_id, "qualified_review_renderer_payload");
     const handoff = await readJsonArtifactFromDrive(handoffMeta.drive_file_id);
     const rendererPayload = await readJsonArtifactFromDrive(rendererMeta.drive_file_id);
+    const submission = await readOptionalJsonArtifact(req.params.run_id, "qualified_review_submission");
 
     return res.json({
       ok: true,
@@ -139,7 +140,8 @@ publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, re
         report_title: reportPayload?.report_shell?.report_title || "Interface Public-Footprint Diligence Report"
       },
       qualified_review_handoff: handoff,
-      qualified_review_renderer_payload: rendererPayload
+      qualified_review_renderer_payload: rendererPayload,
+      qualified_review_submission: submission
     });
   } catch (error) {
     return sendError(res, error);
@@ -174,6 +176,16 @@ publicReviewerRouter.post(qualifiedReviewResponsePaths, rateLimit("submit"), asy
     return sendError(res, error);
   }
 });
+
+async function readOptionalJsonArtifact(runId, artifactName) {
+  try {
+    const meta = await getArtifactMetadata(runId, artifactName);
+    return readJsonArtifactFromDrive(meta.drive_file_id);
+  } catch (error) {
+    if (String(error?.message || error).startsWith(`ARTIFACT_NOT_FOUND:${runId}:${artifactName}`)) return null;
+    throw error;
+  }
+}
 
 function rateLimit(kind) { return (req, res, next) => { const key = `${kind}:${clientIp(req)}`; const now = Date.now(); const existing = buckets.get(key) || { count: 0, resetAt: now + windowMs }; const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing; current.count += 1; buckets.set(key, current); if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public diligence-system ${kind} limit reached.` }); return next(); }; }
 function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
