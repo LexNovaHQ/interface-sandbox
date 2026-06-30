@@ -1,9 +1,11 @@
 import { asArray, safeObject, safeText } from "./report-safe-language.js";
+import { buildQualifiedReviewQuestionHandoff } from "./qualified-review-question-map.js";
 
-export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_v1";
+export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_v2_question_level";
 
-export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, vault_section_handoff = null } = {}) {
+export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, vault_section_handoff = null, artifacts = {} } = {}) {
   const sectionOrder = asArray(normalized_report_manifest.section_order);
+  const questionHandoff = buildQualifiedReviewQuestionHandoff({ run, artifacts });
   return {
     handoff_type: "qualified_review_handoff",
     handoff_version: QUALIFIED_REVIEW_HANDOFF_VERSION,
@@ -16,16 +18,24 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
     primary_action_label: "Proceed to Qualified Review",
     secondary_action_label: "Download PDF",
     forbidden_public_actions: ["Download JSON"],
+    ui_mode: "SECTION_BY_SECTION_WIZARD",
     intake_boundary: "Use as Review-Ready support material only. Public-footprint facts require qualified reviewer confirmation before document assembly, vault reliance, or client-facing legal work product.",
     section_order: sectionOrder,
     section_intake: sectionOrder.map((sectionId) => sectionIntakeRow({ sectionId, section: sections[sectionId], vault_section_handoff })),
     qualified_review_queue: buildQualifiedReviewQueue({ sectionOrder, sections }),
+    question_handoff: questionHandoff,
+    question_count: questionHandoff.question_count,
+    progress_rail: questionHandoff.progress_rail,
+    section_pages: questionHandoff.section_pages,
+    final_review_gate: questionHandoff.final_review_gate,
     confirmation_policy: {
       require_confirmation_before_assembly: true,
       preserve_source_artifacts: true,
       preserve_evidence_refs: true,
       no_new_legal_conclusions: true,
-      no_public_signal_as_private_fact: true
+      no_public_signal_as_private_fact: true,
+      all_prefilled_answers_editable: true,
+      confirmed_answers_override_prefill: true
     },
     legacy_vault_alias: vault_section_handoff || null
   };
