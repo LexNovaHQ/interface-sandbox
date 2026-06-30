@@ -1,8 +1,9 @@
 import { asArray, safeObject, safeText } from "./report-safe-language.js";
-import { buildQualifiedReviewQuestionHandoff } from "./qualified-review-question-map.js";
+import { buildQualifiedReviewQuestionHandoff, VAULT_PAYLOAD_GROUPS } from "./qualified-review-question-map.js";
 import { validateQualifiedReviewQuestionHandoff } from "./qualified-review-handoff-validator.js";
 
 export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_v2_question_level";
+export const VAULT_PAYLOAD_HANDOFF_VERSION = "vault_payload_handoff_v2_locked_vault_plus_india";
 
 export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, vault_section_handoff = null, artifacts = {} } = {}) {
   const sectionOrder = asArray(normalized_report_manifest.section_order);
@@ -45,6 +46,65 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
   };
 }
 
+export function buildVaultPayloadHandoff({ run = {}, normalized_report_manifest = {}, qualified_review_handoff = {} } = {}) {
+  const questionHandoff = safeObject(qualified_review_handoff.question_handoff);
+  const groups = asArray(questionHandoff.vault_payload_groups).length ? asArray(questionHandoff.vault_payload_groups) : [...VAULT_PAYLOAD_GROUPS];
+  const payload = Object.fromEntries(groups.map((group) => [group, {}]));
+  const vault_prefill_suggestions = Object.fromEntries(groups.map((group) => [group, {}]));
+  const vault_confirmation_questions = [];
+  for (const question of asArray(questionHandoff.questions)) {
+    if (!question?.vault_path) continue;
+    const path = String(question.vault_path).split(".").filter(Boolean);
+    if (!groups.includes(path[0])) continue;
+    setNested(payload, path, null);
+    if (question.suggestion_source === "backend_artifact" && safeText(question.suggested_answer, "")) {
+      setNested(vault_prefill_suggestions, path, {
+        value: question.suggested_answer,
+        basis: "Diligence artifact prefill; reviewer confirmation required before assembly.",
+        confidence: "review_required",
+        source_field_hints: asArray(question.source_field_hints),
+        evidence_sources: asArray(question.evidence_sources)
+      });
+    }
+    if (question.prefill_status === "Need to fill" || question.suggestion_source === "market_norm_demo") {
+      vault_confirmation_questions.push({
+        question_id: question.question_id,
+        field_path: question.vault_path,
+        field_key: question.field_key,
+        answer_type: question.answer_type,
+        allowed_options: asArray(question.allowed_options),
+        question: question.public_question_label,
+        why_it_matters: question.helper_text,
+        demo_market_suggestion: question.demo_market_suggestion || question.market_norm_helper || "",
+        demo_disclaimer: question.demo_disclaimer === true,
+        demo_disclaimer_text: question.demo_disclaimer_text || "Demo market suggestion — not found in public-source diligence. Confirm or replace before draft preparation.",
+        required_for_assembly: true,
+        assembly_blocker: true
+      });
+    }
+  }
+  return {
+    handoff_type: "vault_payload_handoff",
+    handoff_version: VAULT_PAYLOAD_HANDOFF_VERSION,
+    run_id: safeText(run.run_id || normalized_report_manifest.run_id, "UNKNOWN_RUN"),
+    target: safeText(run.target || normalized_report_manifest.target, "Target not specified"),
+    validation_status: qualified_review_handoff.validation_status || normalized_report_manifest.validation_status || "LOCKED_WITH_LIMITATIONS",
+    vault_payload_groups: groups,
+    vault_payload: payload,
+    vault_prefill_suggestions,
+    vault_confirmation_questions,
+    qualified_review_handoff_ref: "qualified_review_handoff",
+    question_count: questionHandoff.question_count || asArray(questionHandoff.questions).length,
+    confirmation_policy: {
+      public_prefill_is_not_final: true,
+      demo_market_suggestions_are_not_confirmed_facts: true,
+      reviewer_confirmation_required_before_document_assembly: true,
+      confirmed_answer_overrides_prefill_for_draft_preparation: true
+    },
+    assembly_boundary: "Vault payload is a Review-Ready intake object. Public-source and demo-market values cannot be used for draft preparation until reviewer confirmation."
+  };
+}
+
 function sectionIntakeRow({ sectionId, section, vault_section_handoff }) {
   const s = safeObject(section);
   const vaultRow = asArray(safeObject(vault_section_handoff).sections).find((row) => row.section_id === sectionId) || {};
@@ -71,21 +131,21 @@ function buildQualifiedReviewQueue({ sectionOrder, sections }) {
         const note = safeText(field.qualified_review_note, "");
         const limitation = safeText(field.limitation, "");
         if (!note && !limitation) continue;
-        queue.push({
-          section_id: sectionId,
-          section_title: safeText(section.section_title, sectionId),
-          subsection_id: subsection.subsection_id || "",
-          subsection_title: safeText(subsection.subsection_title, "Subsection"),
-          field_id: field.field_id || "",
-          label: safeText(field.label, "Field"),
-          qualified_review_note: note,
-          limitation,
-          source_artifact: field.source_artifact || "",
-          source_path: field.source_path || "",
-          evidence_refs: asArray(field.evidence_refs)
-        });
+        queue.push({ section_id: sectionId, section_title: safeText(section.section_title, sectionId), subsection_id: subsection.subsection_id || "", subsection_title: safeText(subsection.subsection_title, "Subsection"), field_id: field.field_id || "", label: safeText(field.label, "Field"), qualified_review_note: note, limitation, source_artifact: field.source_artifact || "", source_path: field.source_path || "", evidence_refs: asArray(field.evidence_refs) });
       }
     }
   }
   return queue.slice(0, 250);
+}
+
+function setNested(target, path, value) {
+  let cursor = target;
+  for (let i = 0; i < path.length; i += 1) {
+    const key = path[i];
+    if (i === path.length - 1) cursor[key] = value;
+    else {
+      if (!cursor[key] || typeof cursor[key] !== "object" || Array.isArray(cursor[key])) cursor[key] = {};
+      cursor = cursor[key];
+    }
+  }
 }
