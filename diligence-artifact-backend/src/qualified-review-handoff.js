@@ -1,19 +1,23 @@
 import { asArray, safeObject, safeText } from "./report-safe-language.js";
 import { buildQualifiedReviewQuestionHandoff } from "./qualified-review-question-map.js";
+import { validateQualifiedReviewQuestionHandoff } from "./qualified-review-handoff-validator.js";
 
 export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_v2_question_level";
 
 export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, vault_section_handoff = null, artifacts = {} } = {}) {
   const sectionOrder = asArray(normalized_report_manifest.section_order);
   const questionHandoff = buildQualifiedReviewQuestionHandoff({ run, artifacts });
+  const questionValidation = validateQualifiedReviewQuestionHandoff(questionHandoff);
+  const handoffStatus = questionValidation.status === "FAIL" ? "LOCKED_WITH_LIMITATIONS" : safeText(normalized_report_manifest.validation_status, "LOCKED_WITH_LIMITATIONS");
   return {
     handoff_type: "qualified_review_handoff",
     handoff_version: QUALIFIED_REVIEW_HANDOFF_VERSION,
     run_id: safeText(run.run_id || normalized_report_manifest.run_id, "UNKNOWN_RUN"),
     target: safeText(run.target || normalized_report_manifest.target, "Target not specified"),
     target_url: safeText(run.root_url || run.target_url || normalized_report_manifest.target_url, "Target URL not specified"),
-    validation_status: safeText(normalized_report_manifest.validation_status, "LOCKED_WITH_LIMITATIONS"),
-    display_status: safeText(normalized_report_manifest.display_validation_status || normalized_report_manifest.validation_status, "Completed with limitations"),
+    validation_status: handoffStatus,
+    question_handoff_contract_status: questionValidation.status,
+    display_status: safeText(normalized_report_manifest.display_validation_status || handoffStatus, "Completed with limitations"),
     public_label: "Qualified Review",
     primary_action_label: "Proceed to Qualified Review",
     secondary_action_label: "Download PDF",
@@ -24,6 +28,7 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
     section_intake: sectionOrder.map((sectionId) => sectionIntakeRow({ sectionId, section: sections[sectionId], vault_section_handoff })),
     qualified_review_queue: buildQualifiedReviewQueue({ sectionOrder, sections }),
     question_handoff: questionHandoff,
+    question_handoff_validation: questionValidation,
     question_count: questionHandoff.question_count,
     progress_rail: questionHandoff.progress_rail,
     section_pages: questionHandoff.section_pages,
