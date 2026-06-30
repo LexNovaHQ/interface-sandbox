@@ -1,5 +1,5 @@
 import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler.js";
-import { buildQualifiedReviewHandoff } from "./qualified-review-handoff.js";
+import { buildQualifiedReviewHandoff, buildVaultPayloadHandoff } from "./qualified-review-handoff.js";
 import { toMachineStatus } from "./normalized-status.js";
 import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
 
@@ -25,14 +25,17 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
     validation_status: status,
     section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status }))
   };
-  output.vault_section_handoff = { ...(output.vault_section_handoff || {}), validation_status: status, archived_alias_for: "qualified_review_handoff" };
-  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, artifacts, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: output.vault_section_handoff });
+
+  const legacySectionIndex = output.vault_section_handoff || {};
+  output.qualified_review_handoff = buildQualifiedReviewHandoff({ run, artifacts, normalized_report_manifest: output.normalized_report_manifest, sections: normalized_sections, vault_section_handoff: legacySectionIndex });
+  output.vault_section_handoff = buildVaultPayloadHandoff({ run, normalized_report_manifest: output.normalized_report_manifest, qualified_review_handoff: output.qualified_review_handoff });
 
   const legacy_archive = {
     profiles_combined: "ARCHIVED_LEGACY",
     forensics_combined: "ARCHIVED_LEGACY",
     old_compiler_blob: "REPLACED_BY_NORMALIZED_SECTION_ARTIFACTS",
-    active_replacement: "qualified_review_handoff + normalized_section__*"
+    legacy_vault_section_index: legacySectionIndex,
+    active_replacement: "vault_section_handoff + qualified_review_handoff + normalized_section__*"
   };
 
   output.final_output_handoff = {
@@ -50,12 +53,13 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       normalized_sections,
       legacy_archive,
       compiler_trace: {
-        compiler_version: "normalized_profiler_compiler_replacement_v2",
+        compiler_version: "normalized_profiler_compiler_replacement_v3_vault_payload_handoff",
         deterministic_only: true,
         no_new_findings_created: true,
         no_row_re_evaluation: true,
         normalized_section_count: NORMALIZED_SECTION_KEYS.length,
         legacy_artifacts_archived: true,
+        vault_payload_handoff_emitted: true,
         qualified_review_handoff_emitted: true
       }
     }
