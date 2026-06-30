@@ -9,19 +9,21 @@ const ARTIFACT_NAME = "extended_dap_india_readiness_profile";
 const ACTOR = "agent_4b_extended_dap";
 
 export async function runAgent4bExtendedDapPhase({ run, phase, contract }) {
-  const artifacts = await readInputs({ run_id: run.run_id, reads: contract.reads || [] });
-  const output = buildExtendedDapIndiaReadinessProfile({ run, artifacts });
-  const artifact = output?.[ARTIFACT_NAME];
-  if (!artifact || typeof artifact !== "object") throw new Error(`AGENT4B_OUTPUT_MISSING:${ARTIFACT_NAME}`);
-  const lockStatus = acceptedStatus(artifact.lock_status || artifact.status);
-  const version = await getNextArtifactVersion(run.run_id, ARTIFACT_NAME);
-  const driveResult = await saveJsonArtifactToDrive({ run_id: run.run_id, artifact_name: ARTIFACT_NAME, version, drive_folder_id: run.drive_folder_id, artifact });
-  await saveArtifactMetadata({ run_id: run.run_id, artifact_name: ARTIFACT_NAME, phase, agent_id: ACTOR, lock_status: lockStatus, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
-  await logEvent({ run_id: run.run_id, event_type: "AGENT4B_EXTENDED_DAP_COMPLETED", actor: ACTOR, payload: { phase, artifact_name: ARTIFACT_NAME, lock_status: lockStatus, field_count: artifact.field_count, model_usage: "NONE_DETERMINISTIC" } });
-  const nextPhase = ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? contract.next : phase;
-  const updated = await updateRunRecord(run.run_id, { current_phase: nextPhase, status: lockStatus });
-  await updateRunDashboardRow(updated);
-  await logEvent({ run_id: run.run_id, event_type: "PHASE_LOCKED", actor: ACTOR, payload: { phase, status: lockStatus, next_phase: nextPhase } });
+  try {
+    const artifacts = await readInputs({ run_id: run.run_id, reads: contract.reads || [] });
+    const output = buildExtendedDapIndiaReadinessProfile({ run, artifacts });
+    const artifact = output?.[ARTIFACT_NAME];
+    if (!artifact || typeof artifact !== "object") throw new Error(`AGENT4B_OUTPUT_MISSING:${ARTIFACT_NAME}`);
+    const lockStatus = acceptedStatus(artifact.lock_status || artifact.status);
+    const version = await getNextArtifactVersion(run.run_id, ARTIFACT_NAME);
+    const driveResult = await saveJsonArtifactToDrive({ run_id: run.run_id, artifact_name: ARTIFACT_NAME, version, drive_folder_id: run.drive_folder_id, artifact });
+    await saveArtifactMetadata({ run_id: run.run_id, artifact_name: ARTIFACT_NAME, phase, agent_id: ACTOR, lock_status: lockStatus, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
+    await logEvent({ run_id: run.run_id, event_type: "AGENT4B_EXTENDED_DAP_COMPLETED", actor: ACTOR, payload: { phase, artifact_name: ARTIFACT_NAME, lock_status: lockStatus, field_count: artifact.field_count, model_usage: "NONE_DETERMINISTIC" } });
+    return advanceRun({ run, phase, status: lockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(lockStatus) ? contract.next : contract.next, reason: "completed" });
+  } catch (error) {
+    await logEvent({ run_id: run.run_id, event_type: "AGENT4B_EXTENDED_DAP_NONBLOCKING_FAILURE", actor: ACTOR, payload: { phase, artifact_name: ARTIFACT_NAME, error_message: error?.message || String(error) } });
+    return advanceRun({ run, phase, status: "LOCKED_WITH_LIMITATIONS", next_phase: contract.next, reason: "nonblocking_failure" });
+  }
 }
 
 export async function buildAgent4bSidecarNonblocking({ run, dataForensicsArtifact }) {
@@ -41,6 +43,11 @@ export async function buildAgent4bSidecarNonblocking({ run, dataForensicsArtifac
   }
 }
 
+async function advanceRun({ run, phase, status, next_phase, reason }) {
+  const updated = await updateRunRecord(run.run_id, { current_phase: next_phase, status });
+  await updateRunDashboardRow(updated);
+  await logEvent({ run_id: run.run_id, event_type: "PHASE_LOCKED", actor: ACTOR, payload: { phase, status, next_phase, reason } });
+}
 async function readInputs({ run_id, reads }) {
   const artifacts = {};
   const cache = {};
