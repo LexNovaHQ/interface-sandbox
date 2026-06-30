@@ -120,18 +120,18 @@
 
   function nav() {
     const row = div("actions no-print", "");
-    const prev = plain("Previous section", () => { active = Math.max(0, active - 1); applySectionVisibility(); renderState(); });
-    const next = plain("Next section", () => { active = Math.min(sections.length - 1, active + 1); applySectionVisibility(); renderState(); });
-    const save = plain("Save progress", () => save("save_progress"));
-    const submit = plain("Submit final gate", () => save("submit_final_gate"));
-    prev.disabled = active === 0;
-    next.disabled = active >= sections.length - 1 || !sectionDone(sections[active]);
-    submit.disabled = responses.size !== questions.size;
-    row.append(prev, next, save, submit);
+    const prevButton = plain("Previous section", () => { active = Math.max(0, active - 1); applySectionVisibility(); renderState(); });
+    const nextButton = plain("Next section", () => { active = Math.min(sections.length - 1, active + 1); applySectionVisibility(); renderState(); });
+    const saveButton = plain("Save progress", () => persistSubmission("save_progress"));
+    const submitButton = plain("Submit final gate", () => persistSubmission("submit_final_gate"));
+    prevButton.disabled = active === 0;
+    nextButton.disabled = active >= sections.length - 1 || !sectionDone(sections[active]);
+    submitButton.disabled = responses.size !== questions.size;
+    row.append(prevButton, nextButton, saveButton, submitButton);
     return row;
   }
 
-  async function save(reason) {
+  async function persistSubmission(reason) {
     renderState("Saving QR submission to backend...");
     try {
       const payload = await req(submitEndpoint, {
