@@ -1,10 +1,4 @@
-﻿const EXPECTED_SECTION_COUNTS = Object.freeze({
-  entity_commercial: 16,
-  technology_infrastructure: 16,
-  ai_capability: 16,
-  privacy_sensitive_use: 15,
-  india_privacy_cyber: 16
-});
+import { QUALIFIED_REVIEW_LOCKED_COUNTS } from "./qualified-review-map.js";
 
 const REQUIRED_QUESTION_FIELDS = Object.freeze([
   "question_id",
@@ -28,13 +22,13 @@ export function validateQualifiedReviewQuestionHandoff(handoff = {}) {
   const seen = new Set();
 
   if (handoff.handoff_type !== "qualified_review_question_handoff") errors.push("bad handoff_type");
-  if (questions.length !== 79) errors.push(`expected 79 questions, found ${questions.length}`);
+  if (questions.length !== QUALIFIED_REVIEW_LOCKED_COUNTS.question_count) errors.push(`expected ${QUALIFIED_REVIEW_LOCKED_COUNTS.question_count} questions, found ${questions.length}`);
   if (handoff.question_count !== undefined && handoff.question_count !== questions.length) errors.push(`question_count mismatch:${handoff.question_count}:${questions.length}`);
 
-  for (const [sectionId, expectedCount] of Object.entries(EXPECTED_SECTION_COUNTS)) {
-    const actual = questions.filter((question) => question.section_id === sectionId).length;
-    if (actual !== expectedCount) errors.push(`section_count_mismatch:${sectionId}:expected_${expectedCount}:found_${actual}`);
-  }
+  assertCounts(errors, questions, "section_id", QUALIFIED_REVIEW_LOCKED_COUNTS.section_counts, "section_count_mismatch");
+  assertCounts(errors, questions, "answer_type", QUALIFIED_REVIEW_LOCKED_COUNTS.answer_type_counts, "answer_type_count_mismatch");
+  assertCounts(errors, questions, "source_table_default_status", QUALIFIED_REVIEW_LOCKED_COUNTS.source_table_status_counts, "status_count_mismatch");
+  assertCounts(errors, questions, "prefill_source", QUALIFIED_REVIEW_LOCKED_COUNTS.prefill_source_counts, "prefill_source_count_mismatch");
 
   questions.forEach((question, index) => {
     const expectedId = `QR-${String(index + 1).padStart(3, "0")}`;
@@ -52,18 +46,31 @@ export function validateQualifiedReviewQuestionHandoff(handoff = {}) {
     if (!Array.isArray(question.source_artifacts) || !question.source_artifacts.length) errors.push(`${expectedId}:source_artifacts_missing`);
     if (!Array.isArray(question.document_impact) || !question.document_impact.length) errors.push(`${expectedId}:document_impact_missing`);
     if (!question.qualified_review_push_policy?.push_to_qualified_review_on_click) errors.push(`${expectedId}:push_policy_missing`);
+    if (/^Confirm .+ item \d+\.$/i.test(String(question.public_question_label || ""))) errors.push(`${expectedId}:placeholder_public_question_label`);
 
-    if (/^Confirm .+ item \d+\.$/i.test(String(question.public_question_label || ""))) {
-      warnings.push(`${expectedId}:placeholder_public_question_label`);
-    }
+    if (question.section_id === "india_privacy_cyber" && question.writes_to_vault_payload !== false) errors.push(`${expectedId}:india_row_must_not_write_to_vault_payload`);
+    if (question.prefill_source === "market_norm_demo" && question.evidence_status !== "NOT_DERIVED_FROM_DILIGENCE") errors.push(`${expectedId}:bad_demo_evidence_status`);
+    if (question.prefill_source === "backend_artifact" && question.evidence_status !== "DILIGENCE_DERIVED") errors.push(`${expectedId}:bad_backend_evidence_status`);
   });
 
   return {
-    validator_name: "QUALIFIED_REVIEW_VALIDATOR_PARALLEL_V2",
+    validator_name: "QUALIFIED_REVIEW_VALIDATOR_LOCKED_MATRIX_V1",
     status: errors.length ? "FAIL" : "PASS",
     actual_question_count: questions.length,
-    expected_section_counts: EXPECTED_SECTION_COUNTS,
+    expected_section_counts: QUALIFIED_REVIEW_LOCKED_COUNTS.section_counts,
     errors,
     warnings
   };
+}
+
+function assertCounts(errors, questions, field, expectedCounts, label) {
+  const actualCounts = questions.reduce((acc, question) => {
+    const key = question[field];
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  for (const [key, expected] of Object.entries(expectedCounts)) {
+    const actual = actualCounts[key] || 0;
+    if (actual !== expected) errors.push(`${label}:${key}:expected_${expected}:found_${actual}`);
+  }
 }
