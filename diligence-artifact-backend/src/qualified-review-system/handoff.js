@@ -58,18 +58,23 @@ function buildCanonicalMatrixBridge({ questions, validation }) {
     vault_payload_contract: {
       row_count: questions.filter((question) => question.writes_to_vault_payload === true).length,
       expected_row_count: QUALIFIED_REVIEW_LOCKED_COUNTS.vault_payload_row_count,
+      writes_to_vault_payload: true,
+      status: "LOCKED",
+      allowed_roots: ["baseline", "architecture", "archetypes", "compliance", "operational"],
       allowed_root_groups: ["baseline", "architecture", "archetypes", "compliance"],
       status_fields: ["status", "submittedAt"]
     },
     india_contract: {
       row_count: questions.filter((question) => question.writes_to_india_privacy_cyber === true).length,
       expected_row_count: QUALIFIED_REVIEW_LOCKED_COUNTS.india_privacy_cyber_row_count,
-      destination_root: "qualified_review.india_privacy_cyber"
+      destination_root: "qualified_review.india_privacy_cyber",
+      must_not_write_to_vault_payload: true
     },
     prefill_contract: {
       backend_artifact_rows: questions.filter((question) => question.prefill_source === "backend_artifact").length,
       market_norm_demo_rows: questions.filter((question) => question.prefill_source === "market_norm_demo").length,
       missing_backend_evidence_is_nonblocking: true,
+      demo_disclaimer_required: true,
       demo_prefill_requires_disclaimer: true
     },
     draft_prep_contract: {
@@ -78,6 +83,9 @@ function buildCanonicalMatrixBridge({ questions, validation }) {
       routes_are_in_question_handoff: true
     },
     ui_contract: {
+      answer_type_controls: true,
+      demo_disclaimer_required_for_market_norm_rows: true,
+      no_empty_demo_need_to_fill_fields: true,
       answer_type_selects_input_control: true,
       document_impact_shows_document_chips: true,
       no_empty_demo_fields: true

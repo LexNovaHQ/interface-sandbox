@@ -145,7 +145,7 @@ function assertQuestionMatrix(questions) {
     assert.ok(question.source_artifacts.length > 0, `${question.question_id}:source_artifacts_missing`);
     assert.ok(question.field_key, `${question.question_id}:field_key_missing`);
     assert.ok(question.lawyer_question || question.public_question_label, `${question.question_id}:question_text_missing`);
-    assert.notMatch(String(question.public_question_label || ""), /^Confirm .+ item \d+\.$/i);
+    assert.doesNotMatch(String(question.public_question_label || ""), /^Confirm .+ item \d+\.$/i);
     if (question.section_id === "india_privacy_cyber") {
       assert.equal(question.writes_to_vault_payload, false, `${question.question_id}:india_must_not_write_vault`);
       assert.equal(question.writes_to_india_privacy_cyber, true, `${question.question_id}:india_write_flag_missing`);

@@ -7,6 +7,7 @@ const root = process.cwd();
 const files = [
   "server.js",
   ...(await listFiles("src", ".js")),
+  ...(await listFiles("public", ".js")),
   ...(await listFiles("scripts", ".mjs")),
 ];
 
@@ -26,8 +27,18 @@ async function listFiles(directory, extension) {
     withFileTypes: true,
   });
 
-  return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
-    .map((entry) => path.join(directory, entry.name))
-    .sort();
+  const files = [];
+
+  for (const entry of entries) {
+    const relativePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await listFiles(relativePath, extension)));
+      continue;
+    }
+    if (entry.isFile() && entry.name.endsWith(extension)) {
+      files.push(relativePath);
+    }
+  }
+
+  return files.sort();
 }

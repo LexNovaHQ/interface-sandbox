@@ -44,7 +44,11 @@ assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("final_output_handoff"));
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_handoff"), false);
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_renderer_payload"), false);
 
-assert.deepEqual(QUALIFIED_REVIEW_ARTIFACT_NAMES, ["qualified_review_handoff", "qualified_review_renderer_payload"]);
+assert.deepEqual(QUALIFIED_REVIEW_ARTIFACT_NAMES, [
+  "qualified_review_handoff",
+  "qualified_review_renderer_payload",
+  "qualified_review_submission"
+]);
 assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_HANDOFF, ["qualified_review_handoff"]);
 assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_RENDERER, ["qualified_review_renderer_payload"]);
 assert.equal(PHASE_CONTRACTS.QUALIFIED_REVIEW_HANDOFF, undefined);
