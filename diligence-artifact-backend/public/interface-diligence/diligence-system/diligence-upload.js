@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (["REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(run.status) || run.runner_state === "FAILED") {
         busy(false);
-        message(`Run stopped: ${run.status || run.runner_state || "FAILED"}.`, true);
+        message(`Run stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
         return;
       }
     }
@@ -82,7 +82,7 @@ function busy(value) {
   const button = document.getElementById("runButton");
   if (!button) return;
   button.disabled = Boolean(value);
-  button.textContent = value ? "Running..." : "Start Public Review";
+  button.textContent = value ? "Running..." : "Run Diligence";
 }
 
 function message(value, error = false) {
