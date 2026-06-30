@@ -1,0 +1,1 @@
+Qualified Review public renderer assets live here. The active HTML page should load renderer code from this directory, while backend builders live in src/qualified-review-system.
