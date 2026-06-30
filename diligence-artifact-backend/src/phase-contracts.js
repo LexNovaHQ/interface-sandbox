@@ -14,7 +14,7 @@ const AGENT_4_M10_FILES = Object.freeze([SYSTEM_BLOCKING_DOCTRINE_FILE, `${AGENT
 const AGENT_5_M11_PACKAGE_ROOT = "agent-packages/agent_5_exposure_registry";
 const AGENT_5_M11_FILES = Object.freeze([SYSTEM_BLOCKING_DOCTRINE_FILE, `${AGENT_5_M11_PACKAGE_ROOT}/` + packetFile("AGENT5_RUNTIME_", "_SYNCED_M11.yaml"), `${AGENT_5_M11_PACKAGE_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md`, `${AGENT_5_M11_PACKAGE_ROOT}/M11_EXPOSURE_REGISTRY.md`, `${AGENT_5_M11_PACKAGE_ROOT}/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md`, `${AGENT_5_M11_PACKAGE_ROOT}/AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11.md`, `${AGENT_5_M11_PACKAGE_ROOT}/AGENT5_M12_SCOPE_OVERRIDE.md`, `${AGENT_5_M11_PACKAGE_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT5_SYNCED.md`, `${AGENT_5_M11_PACKAGE_ROOT}/BACKEND_CANONICAL_OUTPUT_ADAPTER.md`]);
 const M9_HYBRID_REQUIRED_ARTIFACT_NAMES = Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index"]);
-const NORMALIZED_RENDERER_READS = Object.freeze(["final_output_handoff", "normalized_report_manifest", "qualified_review_handoff", "vault_section_handoff", ...NORMALIZED_SECTION_ARTIFACT_NAMES]);
+const NORMALIZED_RENDERER_READS = Object.freeze(["final_output_handoff", "normalized_report_manifest", ...NORMALIZED_SECTION_ARTIFACT_NAMES]);
 
 export const PHASE_CONTRACTS = Object.freeze({
   AGENT_1A_URL_MANIFEST: { type: "deterministic", dynamic: true, actor_id: "agent_1a_url_manifest", reads: [], writes: AGENT_1A_ARTIFACT_NAMES, next: "AGENT_1B_EXTRACT", contract_note: "Agent 1A writes only the URL manifest. It may list the full root-family taxonomy, but it does not require downstream family artifacts to exist." },
