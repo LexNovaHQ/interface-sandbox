@@ -9,15 +9,14 @@ import { getRunRecord, updateRunRecord, getNextArtifactVersion, saveArtifactMeta
 import { getRequiredWritesForPhase } from "./phase-contracts.js";
 import { mergeUploadedDocumentSourcesIntoArtifact } from "./document-source-ingestor.js";
 import { isStaleDeterministicForensics } from "./deterministic-profile-forensics.js";
-import { buildExtendedDapIndiaReadinessProfile } from "./extended-dap-india-readiness.js";
+import { buildAgent4bSidecarNonblocking } from "./agent4b-phase-runner.js";
 
 const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const ACCEPTED_PHASE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
 const M11_FORENSIC_CONTRACT = "M11_ROW_LEVEL_TRACE_CONTRACT_V1";
 const DETERMINISTIC_PROFILE_FORENSICS = new Set(["target_profile_forensics", "target_feature_profile_forensics", "data_provenance_profile_forensics", "exposure_registry_profile_forensics"]);
 const AGENT_4B_ARTIFACT = "extended_dap_india_readiness_profile";
-const AGENT_4B_PHASE = "AGENT_4B_EXTENDED_DAP_INDIA_READINESS";
-const AGENT_4B = "agent_4b_extended_dap";
+const AGENT_4C_ARTIFACT = "integrated_dap_report";
 
 export async function saveArtifact(input) {
   requireRuntimeConfig();
@@ -32,24 +31,10 @@ export async function saveArtifact(input) {
   const version = await getNextArtifactVersion(parsed.run_id, parsed.artifact_name);
   const driveResult = await saveJsonArtifactToDrive({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, drive_folder_id: run.drive_folder_id, artifact: parsed.artifact });
   const meta = await saveArtifactMetadata({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, phase: parsed.phase, agent_id: parsed.agent_id, lock_status: parsed.lock_status, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
-  if (parsed.artifact_name === "data_provenance_profile_forensics" && ACCEPTED_PHASE_STATUSES.has(parsed.lock_status)) await saveExtendedDapIndiaReadiness({ run, dataForensicsArtifact: parsed.artifact });
+  if (parsed.artifact_name === "data_provenance_profile_forensics" && ACCEPTED_PHASE_STATUSES.has(parsed.lock_status)) await buildAgent4bSidecarNonblocking({ run, dataForensicsArtifact: parsed.artifact });
   await updateRunRecord(parsed.run_id, { current_phase: parsed.phase, status: parsed.lock_status });
   await logEvent({ run_id: parsed.run_id, event_type: "ARTIFACT_SAVED", actor: parsed.agent_id, payload: { phase: parsed.phase, artifact_name: parsed.artifact_name, version, lock_status: parsed.lock_status, save_order_gate: "PASS" } });
   return { ok: true, run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, lock_status: parsed.lock_status, drive_file_id: meta.drive_file_id, drive_web_view_link: meta.drive_web_view_link, receipt: `${parsed.artifact_name}_v${version} saved for ${parsed.run_id}` };
-}
-
-async function saveExtendedDapIndiaReadiness({ run, dataForensicsArtifact }) {
-  const upstreamNames = ["source_discovery_handoff", "legal_cartography_index", "target_profile", "target_profile_forensics", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile"];
-  const artifacts = { data_provenance_profile_forensics: dataForensicsArtifact };
-  for (const name of upstreamNames) { try { artifacts[name] = await readInternalArtifactPayload(run.run_id, name); } catch (_error) { artifacts[name] = null; } }
-  const output = buildExtendedDapIndiaReadinessProfile({ run, artifacts });
-  const artifact = output?.[AGENT_4B_ARTIFACT];
-  if (!artifact || typeof artifact !== "object") throw new Error(`AGENT4B_OUTPUT_MISSING:${AGENT_4B_ARTIFACT}`);
-  const lock_status = ["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(artifact.lock_status || artifact.status) ? (artifact.lock_status || artifact.status) : "LOCKED_WITH_LIMITATIONS";
-  const version = await getNextArtifactVersion(run.run_id, AGENT_4B_ARTIFACT);
-  const driveResult = await saveJsonArtifactToDrive({ run_id: run.run_id, artifact_name: AGENT_4B_ARTIFACT, version, drive_folder_id: run.drive_folder_id, artifact });
-  await saveArtifactMetadata({ run_id: run.run_id, artifact_name: AGENT_4B_ARTIFACT, phase: AGENT_4B_PHASE, agent_id: AGENT_4B, lock_status, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
-  await logEvent({ run_id: run.run_id, event_type: "AGENT4B_EXTENDED_DAP_COMPLETED", actor: AGENT_4B, payload: { artifact_name: AGENT_4B_ARTIFACT, lock_status, field_count: artifact.field_count, model_usage: "NONE_DETERMINISTIC" } });
 }
 
 async function assertArtifactSaveOrder(parsed) {
@@ -75,7 +60,7 @@ function pairedBatchValidationName(batchArtifactName) { return batchArtifactName
 async function readInternalArtifactPayload(runId, artifactName) { const meta = await getArtifactMetadata(runId, artifactName); return readJsonArtifactFromDrive(meta.drive_file_id); }
 async function requireSavedArtifact(runId, artifactName, message) { try { const meta = await getArtifactMetadata(runId, artifactName); if (DETERMINISTIC_PROFILE_FORENSICS.has(artifactName)) await assertForensicsNotStale(runId, artifactName, meta, message); } catch (_error) { throw new Error(message); } }
 async function requirePhaseAccepted(runId, artifactName, message) { let meta; try { meta = await getArtifactMetadata(runId, artifactName); if (DETERMINISTIC_PROFILE_FORENSICS.has(artifactName)) await assertForensicsNotStale(runId, artifactName, meta, message); } catch (_error) { throw new Error(message); } if (!ACCEPTED_PHASE_STATUSES.has(meta.lock_status)) throw new Error(`${message}:status:${meta.lock_status || "missing"}`); }
-export async function readArtifact({ run_id, artifact_name, agent_id = "operator" }) { assertRunId(run_id); if (artifact_name !== AGENT_4B_ARTIFACT) { assertKnownArtifactName(artifact_name); assertCanReadArtifact(agent_id, artifact_name); } const run = await getRunRecord(run_id); const meta = await getArtifactMetadata(run_id, artifact_name); const rawArtifact = await readJsonArtifactFromDrive(meta.drive_file_id); const artifact = await mergeUploadedDocumentSourcesIntoArtifact({ run, artifactName: artifact_name, artifact: rawArtifact }); const lock_status = DETERMINISTIC_PROFILE_FORENSICS.has(artifact_name) && isStaleForensicsArtifact(artifact_name, artifact) ? "REPAIR_REQUIRED" : meta.lock_status; return { ok: true, run_id, artifact_name, version: meta.latest_version || meta.version, lock_status, artifact }; }
+export async function readArtifact({ run_id, artifact_name, agent_id = "operator" }) { assertRunId(run_id); if (![AGENT_4B_ARTIFACT, AGENT_4C_ARTIFACT].includes(artifact_name)) { assertKnownArtifactName(artifact_name); assertCanReadArtifact(agent_id, artifact_name); } const run = await getRunRecord(run_id); const meta = await getArtifactMetadata(run_id, artifact_name); const rawArtifact = await readJsonArtifactFromDrive(meta.drive_file_id); const artifact = await mergeUploadedDocumentSourcesIntoArtifact({ run, artifactName: artifact_name, artifact: rawArtifact }); const lock_status = DETERMINISTIC_PROFILE_FORENSICS.has(artifact_name) && isStaleForensicsArtifact(artifact_name, artifact) ? "REPAIR_REQUIRED" : meta.lock_status; return { ok: true, run_id, artifact_name, version: meta.latest_version || meta.version, lock_status, artifact }; }
 export async function readArtifactPayload({ run_id, artifact_name, agent_id = "operator" }) { const result = await readArtifact({ run_id, artifact_name, agent_id }); if (DETERMINISTIC_PROFILE_FORENSICS.has(artifact_name) && result.lock_status === "REPAIR_REQUIRED") throw new Error(`STALE_FORENSICS_ARTIFACT:${artifact_name}`); return result.artifact; }
 export async function listArtifacts(runId) { assertRunId(runId); return listArtifactMetadata(runId); }
 export async function assertRequiredArtifactsExist(runId, artifactNames) { for (const artifactName of artifactNames) { if (String(artifactName || "").includes("{GROUP}")) continue; await getArtifactMetadata(runId, artifactName); } }
