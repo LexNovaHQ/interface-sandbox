@@ -4,9 +4,11 @@ import { getPhaseContract } from "./phase-contracts.js";
 import { advanceReviewerRun as advanceLegacyReviewerRun } from "./reviewer-runner.js";
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
+import { buildQualifiedReviewSystemArtifacts } from "./qualified-review-system/branch.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
 
-const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan" });
+const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload" });
+const QR_ACTOR = "qualified_review_system";
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
@@ -44,8 +46,20 @@ async function runNormalizedCompilerPhase({ run, phase, contract }) {
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
     saved.push(artifactName);
   }
-  await logEvent({ run_id: run.run_id, event_type: "NORMALIZED_COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, saved_artifacts: saved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, legacy_compiler_phase_retired: true } });
+  const qrSaved = await runQualifiedReviewBranch({ run, normalizedOutput: output, sourceArtifacts: artifacts, lockStatus: phaseLockStatus });
+  await logEvent({ run_id: run.run_id, event_type: "NORMALIZED_COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, saved_artifacts: saved, qualified_review_branch_saved_artifacts: qrSaved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, legacy_compiler_phase_retired: true, qualified_review_branch_separate: true } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
+}
+
+async function runQualifiedReviewBranch({ run, normalizedOutput, sourceArtifacts, lockStatus }) {
+  const qrOutput = buildQualifiedReviewSystemArtifacts({ run, normalized_compiler_output: normalizedOutput, source_artifacts: sourceArtifacts });
+  const saved = [];
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: "QUALIFIED_REVIEW_HANDOFF", agent_id: QR_ACTOR, artifact_name: ART.qrHandoff, artifact: qrOutput[ART.qrHandoff], lock_status: lockStatus }));
+  saved.push(ART.qrHandoff);
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: "QUALIFIED_REVIEW_RENDERER", agent_id: QR_ACTOR, artifact_name: ART.qrRenderer, artifact: qrOutput[ART.qrRenderer], lock_status: lockStatus }));
+  saved.push(ART.qrRenderer);
+  await logEvent({ run_id: run.run_id, event_type: "QUALIFIED_REVIEW_BRANCH_COMPLETED", actor: QR_ACTOR, payload: { saved_artifacts: saved, source_phase: "NORMALIZED_COMPILER", lock_status: lockStatus } });
+  return saved;
 }
 
 function normalizeCompilerLockStatus(status) {
