@@ -45,6 +45,7 @@ const ART = Object.freeze({
   vaultSectionHandoff: "vault_section_handoff",
   qualifiedReviewHandoff: "qualified_review_handoff",
   qualifiedReviewRendererPayload: "qualified_review_renderer_payload",
+  qualifiedReviewSubmission: "qualified_review_submission",
   renderer: "renderer_payload"
 });
 
@@ -76,7 +77,8 @@ export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([
 
 export const QUALIFIED_REVIEW_ARTIFACT_NAMES = Object.freeze([
   ART.qualifiedReviewHandoff,
-  ART.qualifiedReviewRendererPayload
+  ART.qualifiedReviewRendererPayload,
+  ART.qualifiedReviewSubmission
 ]);
 
 export const PHASES = Object.freeze([
@@ -97,6 +99,7 @@ export const PHASES = Object.freeze([
   "NORMALIZED_COMPILER",
   "QUALIFIED_REVIEW_HANDOFF",
   "QUALIFIED_REVIEW_RENDERER",
+  "QUALIFIED_REVIEW_SUBMISSION",
   "RENDERER",
   "COMPLETE"
 ]);
@@ -229,6 +232,7 @@ export const PHASE_WRITE_PERMISSIONS = Object.freeze({
   NORMALIZED_COMPILER: COMPILER_ARTIFACT_NAMES,
   QUALIFIED_REVIEW_HANDOFF: [ART.qualifiedReviewHandoff],
   QUALIFIED_REVIEW_RENDERER: [ART.qualifiedReviewRendererPayload],
+  QUALIFIED_REVIEW_SUBMISSION: [ART.qualifiedReviewSubmission],
   RENDERER: [ART.renderer],
   COMPLETE: []
 });
@@ -247,7 +251,7 @@ export const READ_PERMISSIONS = Object.freeze({
   agent_4c_integrated_dap_compiler: [ART.dataMain, ART.dataForensics, ART.extendedDap],
   compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.extendedDap, ART.integratedDap, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
   [QUALIFIED_REVIEW_SYSTEM_AGENT]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
-  portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
+  portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ART.qualifiedReviewSubmission, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_FAMILY_ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });
 
