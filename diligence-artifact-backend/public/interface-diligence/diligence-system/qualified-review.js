@@ -43,6 +43,7 @@ async function loadHandoff(id) {
     question_contract_status: handoff.question_handoff_contract_status,
     question_count: handoff.question_count || questionHandoff.question_count || questions.length,
     ui_mode: handoff.ui_mode || questionHandoff.ui_mode,
+    vault_groups: arr(questionHandoff.vault_payload_groups).join(", "),
     boundary: handoff.intake_boundary || "Public-source facts require reviewer confirmation."
   });
 
@@ -116,26 +117,48 @@ function questionCard(q, index) {
   card.dataset.questionId = id;
 
   const head = el("div", "qr-question-header");
-  head.append(el("div", "qr-question-number", q.question_id || "QR"), el("div", "qr-question-type", titleCase(q.answer_type || q.field_type || "review field")));
+  head.append(el("div", "qr-question-number", q.question_id || "QR"), el("div", "qr-question-type", titleCase(q.answer_type || "review field")));
 
   const suggestion = el("div", "qr-prefill-box");
   suggestion.append(el("div", "qr-mini-label", q.demo_disclaimer ? "Demo market suggestion" : "Diligence suggestion"), el("p", "", clean(q.suggested_answer) || clean(q.demo_market_suggestion) || "No public-source prefill. Reviewer must answer if relevant."));
 
   const controls = el("div", "qr-control-grid");
-  controls.append(fieldWrap("Review status", selectStatus(a.review_status)), fieldWrap("Confirmed answer", textBox("final_confirmed_answer", a.final_confirmed_answer, "Edit the suggestion or enter the correct private fact.", q.answer_type === "long_answer" ? 5 : 2)), fieldWrap("Reviewer note", textBox("reviewer_note", a.reviewer_note, "Reviewer note, limitation, or local-counsel issue.", 2)));
+  controls.append(fieldWrap("Review status", selectStatus(a.review_status)), fieldWrap("Confirmed answer", answerInput(q, a.final_confirmed_answer)), fieldWrap("Reviewer note", textBox("reviewer_note", a.reviewer_note, "Reviewer note, limitation, or local-counsel issue.", 2)));
 
-  card.append(head, el("h3", "qr-question-title", q.public_question_label || q.question || q.field_key || "Qualified Review question"), el("div", prefillClass(q), q.prefill_status || "prefill status unavailable"), suggestion, controls, questionMeta(q));
+  card.append(head, el("h3", "qr-question-title", q.public_question_label || q.field_key || "Qualified Review question"), el("div", prefillClass(q), q.prefill_status || "prefill status unavailable"), suggestion, controls, questionMeta(q));
   card.addEventListener("input", captureCard);
   card.addEventListener("change", captureCard);
   return card;
 }
 
+function answerInput(q, value) {
+  if (["dropdown", "select"].includes(q.answer_type) && Array.isArray(q.allowed_options) && q.allowed_options.length) {
+    const s = document.createElement("select");
+    s.className = "input qr-answer";
+    s.dataset.qrInput = "final_confirmed_answer";
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "Select...";
+    s.append(blank);
+    q.allowed_options.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item;
+      option.textContent = titleCase(item);
+      option.selected = String(item) === String(value);
+      s.append(option);
+    });
+    return s;
+  }
+  return textBox("final_confirmed_answer", value, "Edit the suggestion or enter the correct private fact.", q.answer_type === "long_answer" ? 5 : 2);
+}
+
 function questionMeta(q) {
   const wrap = el("div", "qr-question-meta");
+  wrap.append(chipBlock("Vault path", arr(q.vault_path)));
   wrap.append(chipBlock("Documents affected", arr(q.document_impact)));
   const details = el("details", "technical qr-details");
   details.append(el("summary", "", "Info, evidence, and routing"));
-  details.append(tableNode({ helper: q.helper_text, market_norm: q.market_norm_helper, demo_disclaimer: q.demo_disclaimer_text, vault_path: q.vault_path, confidence_limitation: q.confidence_limitation, source_artifacts: arr(q.source_artifacts).join(", "), source_field_hints: arr(q.source_field_hints).join(", "), required_for_assembly: q.required_for_assembly, assembly_blocker: q.assembly_blocker }), chipBlock("Evidence sources", evidenceLabels(q.evidence_sources)));
+  details.append(tableNode({ helper: q.helper_text, market_norm: q.market_norm_helper, demo_disclaimer: q.demo_disclaimer_text, answer_type: q.answer_type, vault_path: q.vault_path, source_artifacts: arr(q.source_artifacts).join(", "), source_field_hints: arr(q.source_field_hints).join(", "), required_for_assembly: q.required_for_assembly, assembly_blocker: q.assembly_blocker }), chipBlock("Evidence sources", evidenceLabels(q.evidence_sources)));
   wrap.append(details);
   return wrap;
 }
@@ -161,7 +184,7 @@ function renderFinalGate() {
   if (blockers.length) {
     const list = el("div", "qr-blocker-list");
     list.append(el("div", "block-title", "Unresolved assembly blockers"));
-    blockers.slice(0, 80).forEach(function (q) { list.append(el("p", "small-muted", (q.question_id || "QR") + ": " + (q.public_question_label || q.field_key || "Question"))); });
+    blockers.slice(0, 80).forEach(function (q) { list.append(el("p", "small-muted", (q.question_id || "QR") + ": " + (q.public_question_label || q.field_key || "Question") + " → " + (q.vault_path || "vault path missing"))); });
     p.append(list);
   }
   p.append(el("div", "notice", "Boundary: This page does not produce legal advice or final legal instruments. Draft preparation must use reviewer-confirmed answers and remain subject to local counsel review."));
