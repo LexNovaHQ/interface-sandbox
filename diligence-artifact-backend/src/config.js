@@ -19,12 +19,14 @@ function numberEnv(name, fallback) {
 }
 
 const geminiModelList = csv("GEMINI_MODELS", env("GEMINI_MODEL", "gemini-2.5-flash"));
+const projectId = env("GCP_PROJECT_ID") || env("GOOGLE_CLOUD_PROJECT") || "direct-album-497808-f1";
+const region = env("GCP_REGION", "asia-south1");
 
 export const config = Object.freeze({
   serviceName: SERVICE_NAME,
   port: Number(env("PORT", "8080")),
-  projectId: env("GCP_PROJECT_ID") || env("GOOGLE_CLOUD_PROJECT") || "direct-album-497808-f1",
-  region: env("GCP_REGION", "asia-south1"),
+  projectId,
+  region,
   cloudRunService: env("GCP_CLOUD_RUN_SERVICE", "interface-diligence-artifacts"),
   firestoreDatabaseId: env("FIRESTORE_DATABASE_ID", "(default)"),
   driveParentFolderId: env("DRIVE_PARENT_FOLDER_ID"),
@@ -36,6 +38,12 @@ export const config = Object.freeze({
   reviewerPublicBaseUrl: env("REVIEWER_PUBLIC_BASE_URL", ""),
   publicReviewerEnabled: bool("PUBLIC_REVIEWER_ENABLED", "false"),
   expressJsonLimit: env("EXPRESS_JSON_LIMIT", "50mb"),
+  cloudTasksQueue: env("CLOUD_TASKS_QUEUE", ""),
+  cloudTasksLocation: env("CLOUD_TASKS_LOCATION", region),
+  cloudTasksWorkerUrl: env("CLOUD_TASKS_WORKER_URL", ""),
+  cloudTasksDispatchDeadlineSeconds: Math.max(0, numberEnv("CLOUD_TASKS_DISPATCH_DEADLINE_SECONDS", 1800)),
+  earlyPhaseStaleMs: Math.max(60000, numberEnv("EARLY_PHASE_STALE_MS", 5 * 60 * 1000)),
+  workerStaleMs: Math.max(60000, numberEnv("WORKER_STALE_MS", 20 * 60 * 1000)),
   geminiApiKeys: csv("GEMINI_API_KEYS"),
   geminiModel: geminiModelList[0] || "gemini-2.5-flash",
   geminiModels: geminiModelList.length ? geminiModelList : ["gemini-2.5-flash"],
@@ -55,6 +63,12 @@ export function configStatus() {
     drive_parent_folder_id_present: Boolean(config.driveParentFolderId),
     sheets_spreadsheet_id_present: Boolean(config.sheetsSpreadsheetId),
     api_key_present: Boolean(config.apiKey),
+    cloud_tasks_queue_present: Boolean(config.cloudTasksQueue),
+    cloud_tasks_location: config.cloudTasksLocation,
+    cloud_tasks_worker_url_present: Boolean(config.cloudTasksWorkerUrl),
+    cloud_tasks_dispatch_deadline_seconds: config.cloudTasksDispatchDeadlineSeconds,
+    worker_stale_ms: config.workerStaleMs,
+    early_phase_stale_ms: config.earlyPhaseStaleMs,
     gemini_api_keys_present: config.geminiApiKeys.length > 0,
     gemini_api_key_count: config.geminiApiKeys.length,
     gemini_model: config.geminiModel,
