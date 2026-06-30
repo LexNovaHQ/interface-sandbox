@@ -1,17 +1,20 @@
 import { asArray, safeObject, safeText } from "../report-safe-language.js";
+import { QUALIFIED_REVIEW_LOCKED_COUNTS, QUALIFIED_REVIEW_MAP_VERSION, QUALIFIED_REVIEW_SECTION_MAP } from "./qualified-review-map.js";
 import { buildQualifiedReviewQuestionHandoff } from "./question-map.js";
 import { validateQualifiedReviewQuestionHandoff } from "./qr-validator.js";
 
-export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_parallel_v1";
+export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_locked_matrix_v2";
 
 export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, artifacts = {} } = {}) {
   const sectionOrder = asArray(normalized_report_manifest.section_order);
   const questionHandoff = buildQualifiedReviewQuestionHandoff({ run, artifacts });
   const validation = validateQualifiedReviewQuestionHandoff(questionHandoff);
+  const questions = asArray(questionHandoff.questions);
   const status = validation.status === "FAIL" ? "LOCKED_WITH_LIMITATIONS" : safeText(normalized_report_manifest.validation_status, "LOCKED_WITH_LIMITATIONS");
   return {
     handoff_type: "qualified_review_handoff",
     handoff_version: QUALIFIED_REVIEW_HANDOFF_VERSION,
+    matrix_version: QUALIFIED_REVIEW_MAP_VERSION,
     run_id: safeText(run.run_id || normalized_report_manifest.run_id, "UNKNOWN_RUN"),
     target: safeText(run.target || normalized_report_manifest.target, "Target not specified"),
     target_url: safeText(run.root_url || run.target_url || normalized_report_manifest.target_url, "Target URL not specified"),
@@ -22,25 +25,64 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
     secondary_action_label: "Download PDF",
     forbidden_public_actions: ["Download JSON"],
     ui_mode: "SECTION_BY_SECTION_WIZARD",
-    intake_boundary: "Review-Ready support material. Public-source facts require reviewer confirmation before drafting.",
+    intake_boundary: "Review-Ready support material. All answers require reviewer confirmation before draft preparation.",
     source_branch: "NORMALIZED_COMPILER_TO_QUALIFIED_REVIEW",
+    canonical_matrix_bridge: buildCanonicalMatrixBridge({ questions, validation }),
     section_order: sectionOrder,
     section_intake: sectionOrder.map((sectionId) => sectionIntakeRow({ sectionId, section: sections[sectionId] })),
-    qualified_review_queue: buildQualifiedReviewQueue({ sectionOrder, sections }),
+    normalized_section_signal_queue: buildQualifiedReviewQueue({ sectionOrder, sections }),
+    qualified_review_queue: buildMatrixQueue(questions),
     question_handoff: questionHandoff,
     question_handoff_validation: validation,
     question_count: questionHandoff.question_count,
     progress_rail: questionHandoff.progress_rail,
     section_pages: questionHandoff.section_pages,
-    final_review_gate: { requires_confirmation_before_assembly: true, blocks_draft_preparation_until_confirmed: true },
+    final_review_gate: { requires_confirmation_before_assembly: true, blocks_draft_preparation_until_confirmed: true, required_question_count: questions.length },
     confirmation_policy: {
       require_confirmation_before_assembly: true,
       preserve_source_artifacts: true,
       preserve_evidence_refs: true,
-      no_public_signal_as_private_fact: true,
       all_prefilled_answers_editable: true,
       confirmed_answers_override_prefill: true
     }
+  };
+}
+
+function buildCanonicalMatrixBridge({ questions, validation }) {
+  return {
+    bridge_type: "qualified_review_canonical_matrix_bridge",
+    source_phase: "NORMALIZED_COMPILER",
+    map_version: QUALIFIED_REVIEW_MAP_VERSION,
+    locked_counts: QUALIFIED_REVIEW_LOCKED_COUNTS,
+    sections: QUALIFIED_REVIEW_SECTION_MAP,
+    vault_payload_contract: {
+      row_count: questions.filter((question) => question.writes_to_vault_payload === true).length,
+      expected_row_count: QUALIFIED_REVIEW_LOCKED_COUNTS.vault_payload_row_count,
+      allowed_root_groups: ["baseline", "architecture", "archetypes", "compliance"],
+      status_fields: ["status", "submittedAt"]
+    },
+    india_contract: {
+      row_count: questions.filter((question) => question.writes_to_india_privacy_cyber === true).length,
+      expected_row_count: QUALIFIED_REVIEW_LOCKED_COUNTS.india_privacy_cyber_row_count,
+      destination_root: "qualified_review.india_privacy_cyber"
+    },
+    prefill_contract: {
+      backend_artifact_rows: questions.filter((question) => question.prefill_source === "backend_artifact").length,
+      market_norm_demo_rows: questions.filter((question) => question.prefill_source === "market_norm_demo").length,
+      missing_backend_evidence_is_nonblocking: true,
+      demo_prefill_requires_disclaimer: true
+    },
+    draft_prep_contract: {
+      blocked_until_confirmation: true,
+      route_count: questions.length,
+      routes_are_in_question_handoff: true
+    },
+    ui_contract: {
+      answer_type_selects_input_control: true,
+      document_impact_shows_document_chips: true,
+      no_empty_demo_fields: true
+    },
+    validation
   };
 }
 
@@ -74,4 +116,8 @@ function buildQualifiedReviewQueue({ sectionOrder, sections }) {
     }
   }
   return queue.slice(0, 250);
+}
+
+function buildMatrixQueue(questions) {
+  return questions.map((question) => ({ question_id: question.question_id, question_number: question.question_number, section_id: question.section_id, field_key: question.field_key, lawyer_question: question.lawyer_question || question.public_question_label, answer_type: question.answer_type, prefill_source: question.prefill_source, evidence_status: question.evidence_status, destination_path: question.vault_payload_path || question.qualified_review_path || question.canonical_path, document_impact: asArray(question.document_impact), final_gate_required: true }));
 }
