@@ -19,7 +19,7 @@ export function buildM6SourceDiscoveryHandoff({ run, artifacts }) {
   const bucketFamilyIndex = Object.fromEntries(
     Object.entries(BUCKETS).map(([bucket, families]) => [
       bucket,
-      { families: Object.fromEntries(families.map((family) => [family, familyEntry(family, artifacts, manifest)])) }
+      { families: Object.fromEntries(families.map((family) => [family, familyEntry(family, artifacts, manifest, sourceIndex)])) }
     ])
   );
 
@@ -28,17 +28,19 @@ export function buildM6SourceDiscoveryHandoff({ run, artifacts }) {
       run_id: run.run_id,
       target_url: manifest.target_url || run.root_url || run.target,
       generated_by: "agent_2a_bucket_routing",
-      schema_version: "M6_BUCKET_FAMILY_INDEX_v2_SIMPLIFIED",
+      schema_version: "M6_BUCKET_FAMILY_INDEX_v3_SPARSE_SHARD_AWARE",
       status: hasPrimary(bucketFamilyIndex) ? "LOCKED" : "LOCKED_WITH_LIMITATIONS",
       contract: {
         formal_output: "source_discovery_handoff",
-        purpose: "Index Agent 1B family files by bucket/family and define downstream access.",
+        purpose: "Index Agent 1B sparse family files by bucket/family and define downstream access.",
         agent_1_prevails: true,
         no_new_urls: true,
         no_new_extraction: true,
         no_full_text: true,
         no_separate_bucket_artifacts: true,
-        source_text_location: "lossless_family__{ROOT_FAMILY}.sources[].lossless_text"
+        sparse_family_artifacts: true,
+        sharded_family_integrity_rule: "A shard is a physical storage split only. All required_artifacts listed in source_family_index.family_artifact_manifest[ROOT_FAMILY] must be loaded and merged before downstream reliance.",
+        source_text_location: "resolved_lossless_family__{ROOT_FAMILY}.sources[].lossless_text"
       },
       bucket_family_index: bucketFamilyIndex,
       access_matrix: accessMatrix(),
@@ -46,29 +48,42 @@ export function buildM6SourceDiscoveryHandoff({ run, artifacts }) {
         self: "source_discovery_handoff",
         manifest: "deduped_url_manifest",
         source_index: "source_family_index",
-        family_file_pattern: "lossless_family__{ROOT_FAMILY}"
+        family_file_pattern: "lossless_family__{ROOT_FAMILY}",
+        family_shard_pattern: "lossless_family__{ROOT_FAMILY}__part_{NNN}",
+        family_artifact_manifest: "source_family_index.family_artifact_manifest"
       }
     }
   };
 }
 
-function familyEntry(family, artifacts, manifest) {
+function familyEntry(family, artifacts, manifest, sourceIndex) {
   const file = `lossless_family__${family}`;
-  const artifact = artifacts?.[file] || {};
+  const artifact = artifacts?.[file] || emptyResolvedFamily(family, sourceIndex?.family_artifact_manifest?.[family]);
   const manifestRows = (manifest.manifest_sources || []).filter((row) => row.root_family === family);
+  const familyManifest = sourceIndex?.family_artifact_manifest?.[family] || {};
   return {
     file,
-    primary: (artifact.sources || []).map((source) => primaryRef(source, file)),
+    storage_status: familyManifest.status || artifact.storage_mode || (artifact.sources?.length ? "SINGLE" : "UNSAVED_EMPTY"),
+    virtual_family_file: familyManifest.virtual_artifact_name || file,
+    physical_artifacts: familyManifest.required_artifacts || [],
+    shard_count: familyManifest.shard_count || familyManifest.required_artifacts?.length || 0,
+    shard_resolution_required: Boolean((familyManifest.required_artifacts || []).length > 1),
+    complete: familyManifest.complete !== false,
+    primary: (artifact.sources || []).map((source) => primaryRef(source, file, familyManifest)),
     index_only: indexOnlyRefs(artifact, manifestRows),
     failed_absent: failedAbsentRefs(artifact, manifestRows)
   };
 }
 
-function primaryRef(source, file) {
+function primaryRef(source, file, familyManifest) {
   return clean({
     source_id: source.source_id,
+    parent_source_id: source.parent_source_id,
+    source_fragment_index: source.source_fragment_index,
+    source_fragment_count: source.source_fragment_count,
     manifest_id: source.manifest_id,
     file,
+    physical_artifacts: familyManifest?.required_artifacts || [],
     url: source.canonical_url || source.url || source.final_url,
     route_type: source.route_type,
     doc_hint: docHint(source),
@@ -112,7 +127,8 @@ function accessMatrix() {
     global: {
       default_load: "primary refs in allowed bucket only",
       index_only: "metadata only",
-      cross_bucket: "exception only"
+      cross_bucket: "exception only",
+      shard_rule: "load all physical artifacts for a family as one virtual family"
     },
     agents: {
       M9: { buckets: ["legal_governance_profile_urls"], families: LEGAL, exceptions: ["ENTITY_CONFLICT_CHECK", "LEGAL_REFERENCE_IN_TRUST_CENTER"] },
@@ -128,6 +144,19 @@ function accessMatrix() {
 
 function hasPrimary(index) {
   return Object.values(index).some((bucket) => Object.values(bucket.families).some((family) => family.primary.length));
+}
+
+function emptyResolvedFamily(family, familyManifest = {}) {
+  return {
+    artifact_name: `lossless_family__${family}`,
+    root_family: family,
+    storage_mode: familyManifest.status || "UNSAVED_EMPTY",
+    sources: [],
+    manifest_only_sources: [],
+    metadata_only_sources: [],
+    rejected_sources: [],
+    missing_limited_primary_sources: []
+  };
 }
 
 function docHint(row) {
