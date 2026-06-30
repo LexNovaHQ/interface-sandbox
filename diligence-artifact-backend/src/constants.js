@@ -83,7 +83,7 @@ export const PHASES = Object.freeze([
   "M10_FORENSICS",
   "M11",
   "M12",
-  "COMPILER",
+  "NORMALIZED_COMPILER",
   "RENDERER",
   "COMPLETE"
 ]);
@@ -113,6 +113,7 @@ export const AGENT_1B_ARTIFACT_NAMES = Object.freeze(["source_family_index", ...
 export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_ARTIFACT_NAMES]);
 export const M11_STATIC_ARTIFACT_NAMES = Object.freeze([ART.exposureRoutePlan, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics]);
 export const M11_DYNAMIC_ARTIFACT_PATTERNS = Object.freeze([ART.exposureBatchPattern, ART.exposureBatchValidationPattern]);
+export const NORMALIZED_COMPILER_PHASE = "NORMALIZED_COMPILER";
 export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
 
 export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.profilesCombined, ART.forensicsCombined]);
@@ -170,7 +171,7 @@ export const PHASE_WRITE_PERMISSIONS = Object.freeze({
   M10_FORENSICS: [ART.dataForensics],
   M11: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   M12: [ART.exposureBatchValidationPattern, ART.challenge],
-  COMPILER: COMPILER_ARTIFACT_NAMES,
+  NORMALIZED_COMPILER: COMPILER_ARTIFACT_NAMES,
   RENDERER: [ART.renderer],
   COMPLETE: []
 });
