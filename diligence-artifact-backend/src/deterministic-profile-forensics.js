@@ -1,4 +1,4 @@
-import { buildM8FeatureCoverageForensics, validateFeatureCandidateCoverage } from "./m8-feature-candidate-inventory.js";
+import { buildM8FeatureCoverageForensics, validateFeatureCandidateCoverage } from "./m8-feature-candidate-inventory-index.js";
 
 const CONTRACTS = Object.freeze({
   target_profile_forensics: "M7_DETERMINISTIC_FORENSIC_TRACE_CONTRACT_V1",
