@@ -1,19 +1,29 @@
+import { validateFeatureCandidateInventoryIndex } from "./m8-feature-candidate-inventory-index.js";
+
+const FCI = "feature_candidate_inventory";
 const TFP = "target_" + "feature_profile";
 const TFPF = TFP + "_forensics";
 
 const MATERIAL_TOP_LEVEL_KEYS = Object.freeze([TFP]);
+const INVENTORY_TOP_LEVEL_KEYS = Object.freeze([FCI]);
 const FORENSIC_TOP_LEVEL_KEYS = Object.freeze([TFPF]);
 const ACTIVITY_FIELDS = Object.freeze(["activity_reference", "product_service_wrapper", "activity_feature_name", "activity_candidate_summary", "mechanics_proof", "autonomy_human_control_signal", "data_content_object_touched", "external_internal_action_signal", "archetype_codes", "archetype_proof", "surface_context_tokens", "surface_proof_and_routing_limits"]);
 const ARCHETYPE_CODES = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR", "ORC", "TRN", "SHD", "OPT", "MOV"]);
 const SURFACE_TOKENS = Object.freeze(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
-const FORENSIC_BRANCHES = Object.freeze(["product_activity_source_route_coverage_ledger", "product_activity_extraction_capsule_summary", "candidate_admission_and_omission_ledger", "selected_pa_field_derivation_ledger", "activity_mechanics_derivation_ledger", "archetype_derivation_ledger", "surface_token_derivation_ledger", "targeted_re_extraction_ledger", "activity_limitations_ledger", "cross_route_use_ledger", "validation_quality_control_result", "runtime_trace_m8_only", "forensic_boundary"]);
-const ARRAY_FORENSIC_BRANCHES = FORENSIC_BRANCHES.filter((branch) => !["validation_quality_control_result", "runtime_trace_m8_only", "forensic_boundary"].includes(branch));
-const ROUTE_COVERAGE_BRANCHES = Object.freeze(["product_activity_source_route_coverage_ledger", "product_activity_extraction_capsule_summary", "candidate_admission_and_omission_ledger"]);
-const MATERIAL_BLOCKED_KEYS = Object.freeze(["validation_status", "lock_status", "status", TFPF, "runtime_trace", "source_ledger", "scratchpad", "debug"]);
+const FORENSIC_BRANCHES = Object.freeze(["feature_candidate_inventory_ref", "raw_feature_hit_derivation_ledger", "canonicalization_derivation_ledger", "dedup_decision_ledger", "parent_child_overlap_ledger", "candidate_to_activity_coverage_ledger", "candidate_exclusion_ledger", "semantic_classification_ledger", "product_activity_source_route_coverage_ledger", "product_activity_extraction_capsule_summary", "candidate_admission_and_omission_ledger", "selected_pa_field_derivation_ledger", "activity_mechanics_derivation_ledger", "archetype_derivation_ledger", "surface_token_derivation_ledger", "targeted_re_extraction_ledger", "activity_limitations_ledger", "cross_route_use_ledger", "validation_quality_control_result", "runtime_trace_m8_only", "forensic_boundary"]);
+const ARRAY_FORENSIC_BRANCHES = FORENSIC_BRANCHES.filter((branch) => !["feature_candidate_inventory_ref", "validation_quality_control_result", "runtime_trace_m8_only", "forensic_boundary"].includes(branch));
+const ROUTE_COVERAGE_BRANCHES = Object.freeze(["raw_feature_hit_derivation_ledger", "canonicalization_derivation_ledger", "candidate_to_activity_coverage_ledger"]);
+const MATERIAL_BLOCKED_KEYS = Object.freeze(["validation_status", "lock_status", "status", TFPF, FCI, "runtime_trace", "source_ledger", "scratchpad", "debug"]);
 
 export function validateM8TargetFeatureOutput(output, { phase = "M8_TARGET_FEATURE_PROFILE" } = {}) {
   const failures = [];
-  if (phase === "M8_TARGET_FEATURE_PROFILE") {
+  if (phase === "M8_FEATURE_CANDIDATE_INVENTORY") {
+    validateExactTopLevelKeys(output, INVENTORY_TOP_LEVEL_KEYS, failures, phase);
+    if (!failures.length) {
+      const result = validateFeatureCandidateInventoryIndex(output[FCI]);
+      if (result.status !== "PASS") failures.push(...result.failures);
+    }
+  } else if (phase === "M8_TARGET_FEATURE_PROFILE") {
     validateExactTopLevelKeys(output, MATERIAL_TOP_LEVEL_KEYS, failures, phase);
     if (!failures.length) validateProfile(output[TFP], failures);
   } else if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") {
@@ -48,9 +58,10 @@ function validateActivity(activity, index, failures) {
 function validateForensics(forensics, failures) {
   if (!isPlainObject(forensics)) return failures.push(`${TFPF} must be object`);
   rejectKeyDiff(Object.keys(forensics).sort(), [...FORENSIC_BRANCHES].sort(), TFPF, failures);
-  if (containsAnyKey(forensics, [TFP])) failures.push(`${TFPF} contains material artifact`);
+  if (containsAnyKey(forensics, [TFP, FCI])) failures.push(`${TFPF} contains material artifact or competing inventory`);
   for (const branch of ARRAY_FORENSIC_BRANCHES) if (!Array.isArray(forensics[branch])) failures.push(`${TFPF}.${branch} must be array`);
   for (const branch of ROUTE_COVERAGE_BRANCHES) if (Array.isArray(forensics[branch]) && !forensics[branch].length) failures.push(`${TFPF}.${branch} must not be empty`);
+  if (!isPlainObject(forensics.feature_candidate_inventory_ref) || forensics.feature_candidate_inventory_ref.artifact_name !== FCI) failures.push(`${TFPF}.feature_candidate_inventory_ref must reference ${FCI}`);
 }
 
 function validateExactTopLevelKeys(output, expected, failures, phase) { if (!isPlainObject(output)) return failures.push(`${phase}_OUTPUT_INVALID:not_object`); rejectKeyDiff(Object.keys(output).sort(), [...expected].sort(), phase, failures); }
