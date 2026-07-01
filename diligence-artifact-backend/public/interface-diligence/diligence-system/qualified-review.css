@@ -1,0 +1,6 @@
+.qr-page .page-shell.qr-shell { width: min(1380px, calc(100% - 32px)); padding-top: 28px; }
+.qr-topbar-inner { width: min(1380px, calc(100% - 32px)); gap: 22px; }
+.qr-header-title { color: rgba(245,245,245,.94); font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.1rem, 2vw, 1.45rem); letter-spacing: .04em; white-space: nowrap; }
+.qr-section-tabs { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; min-width: 0; }
+.qr-section-tab { min-height: 34px; border-radius: 999px; border: 1px solid rgba(229,229,229,.14); background: rgba(255,255,255,.025); color: rgba(229,229,229,.68); padding: .45rem .7rem; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 900; }
+.qr-section-tab.active, .qr-section-tab.complete { border-color: rgba(197,160,89,.48); color: var(--gold); background: rgba(197,160,89,.08); }
