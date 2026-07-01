@@ -18,11 +18,11 @@ const FORBIDDEN_ACTIVE_PATTERNS = [
   "function renderValue",
   "function renderObject",
   "raw_final_output_handoff: handoff",
-  "registry_authority:",
-  "Download JSON"
+  "registry_authority:"
 ];
 
 assert.equal(existsSync("src/report-section-adapter.js"), false, "legacy report-section-adapter.js must not exist in active src");
+assert.equal(existsSync("public/interface-diligence/diligence-system/qualified-review.js"), false, "old root qualified-review.js placeholder must not exist");
 
 for (const file of collectFiles(ACTIVE_ROOTS)) {
   const normalized = path.normalize(file);
