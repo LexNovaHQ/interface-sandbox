@@ -19,6 +19,7 @@ const FORBIDDEN_PUBLIC_KEYS = new Set([
   "qualified_review_handoff",
   "normalized_sections"
 ]);
+const PUBLIC_REFERENCE_KEYS = new Set(["technical_refs", "evidence_refs"]);
 
 export function buildRendererPayload({ run = {}, final_output_handoff }) {
   const bundle = final_output_handoff || {};
@@ -107,11 +108,17 @@ function cleanPublicValue(value) {
   if (value === null || value === undefined || value === "") return "Not visible in reviewed public materials.";
   if (Array.isArray(value)) return value.map((item) => cleanPublicValue(item));
   if (typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([key, nested]) => !FORBIDDEN_PUBLIC_KEYS.has(key) && nested !== undefined)
-        .map(([key, nested]) => [key, cleanPublicValue(nested)])
-    );
+    const entries = [];
+    for (const [key, nested] of Object.entries(value)) {
+      if (nested === undefined) continue;
+      if (PUBLIC_REFERENCE_KEYS.has(key)) {
+        entries.push(["evidence_reference_summary", cleanPublicValue(nested)]);
+        continue;
+      }
+      if (FORBIDDEN_PUBLIC_KEYS.has(key)) continue;
+      entries.push([key, cleanPublicValue(nested)]);
+    }
+    return Object.fromEntries(entries);
   }
   return value;
 }
