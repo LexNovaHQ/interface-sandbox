@@ -89,6 +89,7 @@ function buildContext({ run, artifacts }) {
     target_profile: unwrapArtifact(artifacts.target_profile, "target_profile"),
     target_feature_profile: unwrapArtifact(artifacts.target_feature_profile, "target_feature_profile"),
     data_provenance_profile: unwrapArtifact(artifacts.data_provenance_profile, "data_provenance_profile"),
+    integrated_dap_report: unwrapArtifact(artifacts.integrated_dap_report, "integrated_dap_report"),
     exposure_registry_controlled_profile: unwrapArtifact(artifacts.exposure_registry_controlled_profile, "exposure_registry_controlled_profile"),
     exposure_registry_triggered_profile: unwrapArtifact(artifacts.exposure_registry_triggered_profile, "exposure_registry_triggered_profile"),
     challenge_gate: unwrapArtifact(artifacts.challenge_gate, "challenge_gate")
@@ -106,7 +107,10 @@ function buildContext({ run, artifacts }) {
   };
 
   const display_id_index = buildDisplayIdIndex(profiles);
-  const limitations = collectLimitations({ profiles, forensics, handoff: {} });
+  const limitations = [
+    ...collectLimitations({ profiles, forensics, handoff: {} }),
+    ...integratedDapLimitations(profiles.integrated_dap_report)
+  ];
   const validation_status = normalizeStatusForReport(run.validation_status || profiles.challenge_gate?.status || profiles.challenge_gate?.lock_status || "LOCKED_WITH_LIMITATIONS");
 
   return {
@@ -162,7 +166,7 @@ function buildExecutiveSummarySection(context) {
       field("affected_contexts", "Affected contexts observed", normalizeAffectedContexts(activities), "target_feature_profile", "activities[].surface_context_tokens")
     ]),
     subsection("data_and_document_posture", "Data and Document Posture", [
-      field("data_control_visibility", "Data/control visibility posture", dataPosture(data), "data_provenance_profile", "data_provenance_profile"),
+      field("data_control_visibility", "Data/control visibility posture", dataPosture(profiles.integrated_dap_report?.normalized_profile_overlay || data), "integrated_dap_report", "coverage_summary + normalized_profile_overlay"),
       field("legal_document_posture", "Legal/governance document posture", legalPosture(legal), "legal_cartography_index", "legal_cartography_index")
     ]),
     subsection("exposure_posture", "Exposure Posture", [
@@ -201,8 +205,28 @@ function buildProductActivityIpSection(context) {
 }
 
 function buildDataProvenanceControlsSection(context) {
-  const d = context.profiles.data_provenance_profile;
-  return section(context, "data_provenance_controls", DATA_GROUPS.map(([id, title, keys]) => subsection(id, title, keys.map((key) => field(key, normalizeFieldLabel(key), d[key], "data_provenance_profile", key)))), { summary: "Data/control visibility, lifecycle, notices, vendors, transfers, AI-specific controls, readiness, missing proof, and limitations." });
+  const projection = safeObject(context.profiles.integrated_dap_report?.normalized_section_projection);
+  const projectionSubsections = asArray(projection.subsections);
+
+  return section(context, "data_provenance_controls", DATA_GROUPS.map(([id, title, keys]) => {
+    const projectedSubsection = projectionSubsections.find((item) => item?.subsection_id === id);
+    return subsection(id, title, keys.map((key) => {
+      const projectedField = asArray(projectedSubsection?.fields).find((item) => item?.field_id === key);
+      const renderRows = asArray(projectedField?.render_rows);
+      return field(
+        key,
+        normalizeFieldLabel(key),
+        renderRows,
+        "integrated_dap_report",
+        `normalized_section_projection.${id}.${key}`,
+        {
+          limitation: renderRows.length ? "" : "Required integrated DAP projection row missing; 4C-only normalizer source enforced.",
+          qualified_review_note: renderRows.length ? "Integrated DAP projection row; qualified reviewer should verify before reliance." : "4C projection missing for this field; do not fall back to M10 or 4B directly.",
+          technical_refs: { normalized_dap_field_id: key, integrated_field_group: projectedField?.integrated_field_group || "", normalizer_data_source_policy: "INTEGRATED_DAP_REPORT_ONLY" }
+        }
+      );
+    }));
+  }), { summary: "Data/control visibility rendered only from integrated_dap_report.normalized_section_projection. M10 and 4B are component inputs to 4C only and are not direct normalizer sources." });
 }
 
 function buildLegalDocumentControlReviewSection(context) {
@@ -243,21 +267,23 @@ function buildImplicationsReviewPathSection(context) {
     ]),
     subsection("qualified_review_queue", "Qualified Review Queue", [field("qualified_review_queue", "Finding-to-review-route queue", triggeredRows.map((row, index) => ({ linked_finding: `EXP-${String(index + 1).padStart(3, "0")}`, route: reviewRouteLabel(row.review_route || getPath(row, "material_projection.review_route")) })), "exposure_registry_triggered_profile", "triggered_rows")]),
     subsection("visible_controls_to_preserve", "Visible Controls to Preserve or Verify", [field("quick_wins", "Visible controls to preserve or verify", controlledRows.map((row) => safeText(row.control_exclusion_evaluation || row.basis_proof || getPath(row, "material_projection.control_exclusion_evaluation"), "Visible control/exclusion/limitation to preserve or verify")), "exposure_registry_controlled_profile", "controlled_rows")]),
-    subsection("blockers", "Blocked Until Clarified", [field("blocked_until_clarified", "Items blocked until clarified", asArray(d.missing_proof_and_diligence_requests).map((item) => safeText(item, "Confirmation needed")), "data_provenance_profile", "missing_proof_and_diligence_requests")]),
+    subsection("blockers", "Blocked Until Clarified", [field("blocked_until_clarified", "Items blocked until clarified", asArray(context.profiles.integrated_dap_report?.qualified_review_queue).map((item) => safeText(item.review_point || item.action || item, "Confirmation needed")), "integrated_dap_report", "qualified_review_queue")]),
     subsection("handoff_status", "Review-Ready Handoff Status", [field("review_ready_handoff_status", "Review-ready handoff status", "Assembly handoff available after qualified-review confirmation.", "normalized_profiler", "review_ready_handoff_status")])
   ], { summary: "Priority actions, candidate review routes, review queue, visible controls, blockers, and review-ready handoff status." });
 }
 
 function buildEvidenceGapsSection(context) {
-  const d = context.profiles.data_provenance_profile;
+  const integratedDap = context.profiles.integrated_dap_report;
+  const dapRows = asArray(integratedDap.integrated_table_rows);
+  const dapQueue = asArray(integratedDap.qualified_review_queue);
   const l = context.profiles.legal_cartography_index;
   const limitations = dedupeStrings(context.limitations.map((row) => row.display_text));
   return section(context, "evidence_gaps_clarification_points", [
-    subsection("open_information_requests", "Open Information Requests", [field("open_information_requests", "Open information requests", rows(d.missing_proof_and_diligence_requests, "IR"), "data_provenance_profile", "missing_proof_and_diligence_requests")]),
+    subsection("open_information_requests", "Open Information Requests", [field("open_information_requests", "Open information requests", rows(dapQueue, "IR"), "integrated_dap_report", "qualified_review_queue")]),
     subsection("missing_documents", "Missing Documents", [field("missing_documents", "Missing or limited legal/governance materials", rows(l.missing_limited_legal_governance_items, "DOCREQ"), "legal_cartography_index", "missing_limited_legal_governance_items")]),
     subsection("factual_confirmations", "Factual Confirmations", [field("missing_factual_confirmations", "Factual confirmations needed", limitations.map((text, index) => ({ confirmation_reference: `FC-${String(index + 1).padStart(3, "0")}`, question: `Confirm or qualify: ${text}` })), "normalized_profiler", "limitations")]),
-    subsection("unclear_data_flows", "Unclear Data Flows", [field("unclear_data_flows", "Unclear data-flow points", rows(d.collection_sources_and_activity_data_flows, "DATA").filter(unclear), "data_provenance_profile", "collection_sources_and_activity_data_flows")]),
-    subsection("provider_dependencies", "Provider Dependencies", [field("unclear_provider_dependencies", "Unclear vendor/provider dependencies", rows(d.vendor_subprocessor_partner_inventory || d.ai_model_provider_processing_chain, "VEND").filter(unclear), "data_provenance_profile", "vendor_subprocessor_partner_inventory")]),
+    subsection("unclear_data_flows", "Unclear Data Flows", [field("unclear_data_flows", "Unclear data-flow points", rows(dapRows.filter((row) => /flow|processing|collection|purpose/i.test(JSON.stringify(row || {})) && unclear(row)), "DATA"), "integrated_dap_report", "integrated_table_rows")]),
+    subsection("provider_dependencies", "Provider Dependencies", [field("unclear_provider_dependencies", "Unclear vendor/provider dependencies", rows(dapRows.filter((row) => /vendor|processor|provider|transfer|sharing|model provider/i.test(JSON.stringify(row || {})) && unclear(row)), "VEND"), "integrated_dap_report", "integrated_table_rows")]),
     subsection("client_questions", "Client Confirmation Questions", [field("client_confirmation_questions", "Client confirmation questions", limitations.map((text, index) => `CQ-${String(index + 1).padStart(3, "0")}: ${text}`), "normalized_profiler", "limitations")])
   ], { summary: "Open information requests, missing documents, confirmations, unclear flows, provider dependencies, and client questions." });
 }
@@ -506,14 +532,22 @@ function buildSectionVaultMapping(key) {
   return { eligible_for_vault: key !== "methodology_limitations_review_notes" && key !== "forensic_ledger_appendix", vault_category: key, requires_confirmation_before_assembly: true };
 }
 
+function integratedDapLimitations(integrated = {}) {
+  return asArray(integrated.limitations).map((item) => ({
+    source: "integrated_dap_report",
+    limitation: typeof item === "string" ? item : safeObject(item),
+    display_text: safeText(item, "Integrated DAP limitation recorded")
+  }));
+}
+
 function sectionLimitations(context, key) {
   const sourceHints = {
     target_profile: ["target_profile", "m7_forensics"],
     product_activity_ip_profile: ["target_feature_profile", "m8_forensics"],
-    data_provenance_controls: ["data_provenance_profile", "m10_forensics"],
+    data_provenance_controls: ["integrated_dap_report"],
     legal_document_control_review: ["legal_cartography_index"],
     exposure_findings: ["m11_forensics"],
-    evidence_gaps_clarification_points: ["target_profile", "target_feature_profile", "data_provenance_profile", "legal_cartography_index", "compiler", "m7_forensics", "m8_forensics", "m10_forensics", "m11_forensics"]
+    evidence_gaps_clarification_points: ["target_profile", "target_feature_profile", "integrated_dap_report", "legal_cartography_index", "compiler", "m7_forensics", "m8_forensics", "m10_forensics", "m11_forensics"]
   };
   const allowed = sourceHints[key];
   return context.limitations.filter((row) => !allowed || allowed.includes(row.source)).map((row) => safeText(row.display_text, "Limitation recorded"));
