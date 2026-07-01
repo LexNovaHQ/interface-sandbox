@@ -21,7 +21,7 @@ else {
 
       window.__qualifiedReviewPayload = { json, renderer, handoff, questions, questionSections };
       title.textContent = renderer.public_label || handoff.public_label || "Qualified Review";
-      subtitle.textContent = "Review and confirm the working answers for " + (renderer.target || handoff.target || json.run_id || runId) + ".";
+      subtitle.textContent = "Review the prefilled answers, correct what the diligence system could not verify, and lock the inputs before draft preparation.";
       meta.replaceChildren(renderReviewSummary({ json, renderer, handoff, questions }));
       renderSectionTabs(questionSections);
       renderQualifiedReviewRail(questionSections);
@@ -37,9 +37,9 @@ function renderReviewSummary({ json, renderer, handoff, questions }) {
     summaryItem("Company", target),
     summaryItem("Review ID", json.run_id || runId),
     summaryItem("Review date", new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })),
-    summaryItem("Review status", "Review needed"),
+    summaryItem("Status", "Review needed"),
     summaryItem("Questions", String(questions.length)),
-    summaryItem("Reviewer task", "Confirm, edit, or mark not applicable")
+    summaryItem("Task", "Confirm, edit, or mark not applicable")
   );
   return wrap;
 }
@@ -89,10 +89,9 @@ function renderQuestionSections({ questionSections }) {
 
 function renderQuestionCard(q) {
   const block = node("div", "array-block qr-question-card");
-  const badge = q.prefill_source === "market_norm_demo" ? "Demo assumption" : "Diligence prefill";
-  const helper = q.prefill_source === "market_norm_demo"
-    ? "This is a demo assumption. Confirm or replace it before using it."
-    : "This answer was suggested from the diligence review. Confirm or revise it.";
+  const isDemo = q.prefill_source === "market_norm_demo";
+  const badge = isDemo ? "Demo assumption" : "Diligence prefill";
+  const helper = isDemo ? "Demo assumption — edit if inaccurate." : "Suggested from the diligence review — confirm or revise.";
 
   const top = node("div", "qr-question-top");
   top.append(node("div", "block-title", q.question_id || "QR"), node("span", "qr-badge", badge));
@@ -101,10 +100,6 @@ function renderQuestionCard(q) {
   block.append(node("p", "small-muted qr-question-helper", helper));
   block.append(renderAnswerControl(q));
   block.append(renderDocumentImpact(q));
-
-  if (q.demo_disclaimer_required) {
-    block.append(node("div", "notice qr-demo-notice", q.demo_disclaimer_text || "Demo assumption only. This is not evidence from the diligence review."));
-  }
 
   const actions = node("div", "actions no-print qr-card-actions");
   const confirm = node("button", "btn secondary", "Confirm as shown");
@@ -117,12 +112,12 @@ function renderQuestionCard(q) {
 
 function renderAnswerControl(q) {
   const rawValue = q.suggested_answer ?? q.initial_answer_value ?? q.demo_prefill_value ?? "";
-  const label = node("label", "label", "Suggested answer / reviewer answer");
+  const label = node("label", "label", "Answer");
   const type = String(q.answer_type || "short_answer");
   let control;
   if (type === "long_answer") {
     control = document.createElement("textarea");
-    control.rows = 5;
+    control.rows = 4;
     control.value = formatAnswerValue(rawValue);
   } else if ((type === "dropdown" || type === "select") && Array.isArray(q.answer_options) && q.answer_options.length) {
     control = document.createElement("select");
