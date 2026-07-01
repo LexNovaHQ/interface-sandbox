@@ -43,6 +43,7 @@ export function buildExposureRegistryRoutePlan(args) {
     ...plan.registry_inventory,
     m11_schema_upgrade: "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1",
     material_row_field_count: 19,
+    split_profile_roots_clean: true,
     subcategory_code_only: true,
     allowed_subcategories: [...VALID_SUBCATS],
     subcategory_normalization_warnings: warnings
@@ -104,7 +105,7 @@ export function projectControlledProfile(workpadRoot) {
     .filter((row) => CONTROLLED_FINAL_STATUSES.has(row.final_material_status))
     .sort((a, b) => (a.registry_order ?? 9999) - (b.registry_order ?? 9999))
     .map((row) => pickMaterialFields(row.material_projection || row));
-  return { exposure_registry_controlled_profile: { controlled_rows: rows, material_row_field_count: 19, m11_schema_upgrade: "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1" } };
+  return { exposure_registry_controlled_profile: { controlled_rows: rows } };
 }
 
 export function projectTriggeredProfile(workpadRoot) {
@@ -113,7 +114,7 @@ export function projectTriggeredProfile(workpadRoot) {
     .filter((row) => row.final_material_status === S_TRIGGERED)
     .sort((a, b) => (a.registry_order ?? 9999) - (b.registry_order ?? 9999))
     .map((row) => pickMaterialFields(row.material_projection || row));
-  return { exposure_registry_triggered_profile: { triggered_rows: rows, material_row_field_count: 19, m11_schema_upgrade: "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1" } };
+  return { exposure_registry_triggered_profile: { triggered_rows: rows } };
 }
 
 function normalizeRouteRow(row = {}, warnings = []) {
