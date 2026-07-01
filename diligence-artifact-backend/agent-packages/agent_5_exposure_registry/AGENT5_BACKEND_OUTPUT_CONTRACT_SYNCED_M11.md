@@ -1,5 +1,5 @@
 # AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11
-## Backend Output Contract — M11 Three-Layer Material Row Upgrade
+## Backend Output Contract — M11 Threat_Name + Subcategory Material Row Upgrade
 
 # CONTRACT LOCK
 
@@ -17,6 +17,7 @@ Backend-prefilled registry spine fields:
 
 ```text
 Threat_ID
+Threat_Name
 Archetype
 Subcategory
 Surface
@@ -32,6 +33,10 @@ parsed Hunter_Trigger
 route reason
 batch membership
 ```
+
+`Threat_Name` is mandatory. It comes from `AI_THREAT_REGISTRY.Threat_Name` and the model must not rewrite it.
+
+`Subcategory` is code-only inside M11. Display labels are normalizer/compiler scope only. Known legacy `FIN` is normalized to `LIA` as a non-blocking registry-drift warning because the registry key folds financial-agent commitment into the liability harm mechanism.
 
 The M11 model must not rewrite this spine.
 
@@ -53,7 +58,7 @@ row_limitations
 status_inputs
 ```
 
-The model must not assemble the final material row, choose final profile placement, or normalize public wording.
+The model must not assemble the final material row, choose final profile placement, emit `Threat_Name`, normalize `Subcategory`, or normalize public wording.
 
 ## Layer 3 — deterministic final status and projection
 
@@ -100,6 +105,7 @@ Full material row fields:
 
 ```text
 Threat_ID
+Threat_Name
 target_match
 evaluation_status
 basis_proof
@@ -118,6 +124,8 @@ remediation
 review_route
 row_limitations
 ```
+
+Material row field count: `19`.
 
 # CONTROLLED/TRIGGERED PROJECTION CONTRACT
 
@@ -139,7 +147,7 @@ Triggered profile includes only:
 TRIGGERED
 ```
 
-Both profiles emit the full material row contract.
+Both profiles emit the full 19-field material row contract.
 
 # SAVE ORDER
 
@@ -155,4 +163,4 @@ Both profiles emit the full material row contract.
 
 # LEGACY OUTPUT PROHIBITION
 
-Do not emit old combined material roots or old seven-field material rows as the production contract.
+Do not emit old combined material roots, old seven-field material rows, or old eighteen-field material rows without `Threat_Name` as the production contract.
