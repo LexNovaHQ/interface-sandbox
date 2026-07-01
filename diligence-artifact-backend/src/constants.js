@@ -23,6 +23,7 @@ const ART = Object.freeze({
   legalIndex: "legal_cartography_index",
   targetMain: "target_" + "profile",
   targetForensics: "target_" + "profile_forensics",
+  featureCandidateInventory: "feature_candidate_inventory",
   featureMain: "target_" + "feature_profile",
   featureForensics: "target_" + "feature_profile_forensics",
   dataMain: "data_" + "provenance_profile",
@@ -50,7 +51,7 @@ const ART = Object.freeze({
 });
 
 export const QUALIFIED_REVIEW_SYSTEM_AGENT = "qualified_review_system";
-
+export const FEATURE_CANDIDATE_INVENTORY_ARTIFACT_NAMES = Object.freeze([ART.featureCandidateInventory]);
 export const M11_BATCH_ARTIFACT_PATTERN = /^exposure_registry_batch__[A-Z0-9]+__\d{3}$/;
 export const M11_BATCH_VALIDATION_ARTIFACT_PATTERN = /^exposure_registry_batch_validation__[A-Z0-9]+__\d{3}$/;
 
@@ -68,18 +69,8 @@ export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([
   "normalized_section__forensic_ledger_appendix"
 ]);
 
-export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([
-  ART.normalizedReportManifest,
-  ART.vaultSectionHandoff,
-  ART.final,
-  ...NORMALIZED_SECTION_ARTIFACT_NAMES
-]);
-
-export const QUALIFIED_REVIEW_ARTIFACT_NAMES = Object.freeze([
-  ART.qualifiedReviewHandoff,
-  ART.qualifiedReviewRendererPayload,
-  ART.qualifiedReviewSubmission
-]);
+export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.final, ...NORMALIZED_SECTION_ARTIFACT_NAMES]);
+export const QUALIFIED_REVIEW_ARTIFACT_NAMES = Object.freeze([ART.qualifiedReviewHandoff, ART.qualifiedReviewRendererPayload, ART.qualifiedReviewSubmission]);
 
 export const PHASES = Object.freeze([
   "AGENT_1A_URL_MANIFEST",
@@ -88,6 +79,7 @@ export const PHASES = Object.freeze([
   "M9",
   "M7_TARGET_PROFILE",
   "M7_TARGET_PROFILE_FORENSICS",
+  "M8_FEATURE_CANDIDATE_INVENTORY",
   "M8_TARGET_FEATURE_PROFILE",
   "M8_TARGET_FEATURE_PROFILE_FORENSICS",
   "M10",
@@ -116,7 +108,6 @@ export const ROOT_FAMILY_CODES = Object.freeze([
 const ROOT_FAMILY_PATTERN_SOURCE = ROOT_FAMILY_CODES.map(escapeRegExp).join("|");
 export const LOSSLESS_FAMILY_ARTIFACT_PATTERN = new RegExp(`^lossless_family__(${ROOT_FAMILY_PATTERN_SOURCE})(?:__part_\\d{3})?$`);
 export const LOSSLESS_FAMILY_PART_ARTIFACT_PATTERN = new RegExp(`^lossless_family__(${ROOT_FAMILY_PATTERN_SOURCE})__part_\\d{3}$`);
-
 export const LOSSLESS_ROOT_FAMILY_ARTIFACT_NAMES = Object.freeze(ROOT_FAMILY_CODES.map((code) => `lossless_family__${code}`));
 export const LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L3_AI_USAGE_GOVERNANCE", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES", "lossless_family__L5_LEGAL_HUB_HOSTED", "lossless_family__L6_ENTITY_NOTICE"]);
 export const TARGET_PROFILE_FAMILY_ARTIFACT_NAMES = Object.freeze(["lossless_family__T0_ROOT", "lossless_family__T1_IDENTITY", "lossless_family__T2_LEGAL_IDENTITY", "lossless_family__T3_OPERATOR_ENTITY", "lossless_family__T4_SUPPORTING_IDENTITY"]);
@@ -138,32 +129,8 @@ export const NORMALIZED_COMPILER_PHASE = "NORMALIZED_COMPILER";
 export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
 
 export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze([
-  "source_family_index",
-  ART.sourceHandoff,
-  ART.legalIndex,
-  ART.targetMain,
-  ART.targetForensics,
-  ART.featureMain,
-  ART.featureForensics,
-  ART.dataMain,
-  ART.dataForensics,
-  ART.extendedDap,
-  ART.integratedDap,
-  ART.exposureRoutePlan,
-  ART.exposureBatchPattern,
-  ART.exposureBatchValidationPattern,
-  ART.exposureWorkpad,
-  ART.exposureControlled,
-  ART.exposureTriggered,
-  ART.exposureForensics,
-  ART.challenge,
-  ...NORMALIZED_COMPILER_ARTIFACT_NAMES,
-  ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES,
-  ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES,
-  ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES,
-  ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES,
-  ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES,
-  ...QUALIFIED_REVIEW_ARTIFACT_NAMES
+  "source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.extendedDap, ART.integratedDap, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge,
+  ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES
 ]);
 
 export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.profilesCombined, ART.forensicsCombined]);
@@ -171,27 +138,11 @@ export const ARCHIVED_LEGACY_ARTIFACT_NAMES = LEGACY_COMPILER_ARTIFACT_NAMES;
 export const LEGACY_ARTIFACT_NAMES = Object.freeze([ART.urlManifest, ART.oldCorpus, ART.exposureLegacy, ...LEGACY_COMPILER_ARTIFACT_NAMES]);
 
 export const ARTIFACT_NAMES = Object.freeze([
-  ...LEGACY_ARTIFACT_NAMES,
-  ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES,
-  ...AGENT_1_ARTIFACT_NAMES,
-  ART.sourceHandoff,
-  ART.legalDeterministicMap,
-  ART.legalSemanticProfile,
-  ART.legalReinvestigationWorkpad,
-  ART.legalIndex,
-  ART.targetMain,
-  ART.targetForensics,
-  ART.featureMain,
-  ART.featureForensics,
-  ART.dataMain,
-  ART.dataForensics,
-  ...EXTENDED_DAP_ARTIFACT_NAMES,
-  ...INTEGRATED_DAP_ARTIFACT_NAMES,
-  ...M11_STATIC_ARTIFACT_NAMES,
-  ART.challenge,
-  ...NORMALIZED_COMPILER_ARTIFACT_NAMES,
-  ...QUALIFIED_REVIEW_ARTIFACT_NAMES,
-  ART.renderer
+  ...LEGACY_ARTIFACT_NAMES, ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES,
+  ART.sourceHandoff, ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex,
+  ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics,
+  ART.dataMain, ART.dataForensics, ...EXTENDED_DAP_ARTIFACT_NAMES, ...INTEGRATED_DAP_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ART.challenge,
+  ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ART.renderer
 ]);
 
 export const AGENTS = Object.freeze([AGENT_IDS.a1a, AGENT_IDS.a1b, AGENT_IDS.a2a, AGENT_IDS.a2b, AGENT_IDS.a3, AGENT_IDS.a4, AGENT_IDS.a5, AGENT_IDS.a7, "document_source_ingestor", "agent_4b_extended_dap", "agent_4c_integrated_dap_compiler", "compiler", QUALIFIED_REVIEW_SYSTEM_AGENT, "portfolio_renderer", "operator"]);
@@ -201,7 +152,7 @@ export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a1b]: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES,
   [AGENT_IDS.a2a]: [ART.sourceHandoff],
   [AGENT_IDS.a2b]: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex],
-  [AGENT_IDS.a3]: [ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics],
+  [AGENT_IDS.a3]: [ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics],
   [AGENT_IDS.a4]: [ART.dataMain, ART.dataForensics],
   [AGENT_IDS.a5]: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
   [AGENT_IDS.a7]: [ART.exposureBatchValidationPattern, ART.challenge],
@@ -221,6 +172,7 @@ export const PHASE_WRITE_PERMISSIONS = Object.freeze({
   M9: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex],
   M7_TARGET_PROFILE: [ART.targetMain],
   M7_TARGET_PROFILE_FORENSICS: [ART.targetForensics],
+  M8_FEATURE_CANDIDATE_INVENTORY: [ART.featureCandidateInventory],
   M8_TARGET_FEATURE_PROFILE: [ART.featureMain],
   M8_TARGET_FEATURE_PROFILE_FORENSICS: [ART.featureForensics],
   M10: [ART.dataMain],
@@ -242,35 +194,23 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.a1b]: ["deduped_url_manifest"],
   [AGENT_IDS.a2a]: [...AGENT_1_ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_FAMILY_ARTIFACT_NAMES],
   [AGENT_IDS.a2b]: ["source_family_index", ART.sourceHandoff, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
-  [AGENT_IDS.a3]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
-  [AGENT_IDS.a4]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
-  [AGENT_IDS.a5]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
-  [AGENT_IDS.a7]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
+  [AGENT_IDS.a3]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
+  [AGENT_IDS.a4]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics, ART.dataMain, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES"],
+  [AGENT_IDS.a5]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge],
+  [AGENT_IDS.a7]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   document_source_ingestor: [],
-  agent_4b_extended_dap: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
+  agent_4b_extended_dap: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
   agent_4c_integrated_dap_compiler: [ART.dataMain, ART.dataForensics, ART.extendedDap],
-  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.extendedDap, ART.integratedDap, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
+  compiler: [ART.sourceHandoff, ART.legalIndex, ART.targetMain, ART.targetForensics, ART.featureCandidateInventory, ART.featureMain, ART.featureForensics, ART.dataMain, ART.dataForensics, ART.extendedDap, ART.integratedDap, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challenge, ...LEGACY_COMPILER_ARTIFACT_NAMES, ART.final],
   [QUALIFIED_REVIEW_SYSTEM_AGENT]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
   portfolio_renderer: [ART.final, ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.qualifiedReviewHandoff, ART.qualifiedReviewSubmission, ...NORMALIZED_SECTION_ARTIFACT_NAMES, ART.renderer],
   operator: [...ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_FAMILY_ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]
 });
 
-export function isKnownArtifactName(artifactName) {
-  const name = String(artifactName || "");
-  return ARTIFACT_NAMES.includes(name) || LOSSLESS_FAMILY_ARTIFACT_PATTERN.test(name) || M11_BATCH_ARTIFACT_PATTERN.test(name) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(name);
-}
-
-export function artifactMatchesPermission(artifactName, permission) {
-  if (permission === artifactName) return true;
-  if (permission === ART.exposureBatchPattern) return M11_BATCH_ARTIFACT_PATTERN.test(artifactName);
-  if (permission === ART.exposureBatchValidationPattern) return M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName);
-  if (String(permission || "").startsWith("lossless_family__")) return artifactName === permission || artifactName.startsWith(`${permission}__part_`);
-  return false;
-}
-
+export function isKnownArtifactName(artifactName) { const name = String(artifactName || ""); return ARTIFACT_NAMES.includes(name) || LOSSLESS_FAMILY_ARTIFACT_PATTERN.test(name) || M11_BATCH_ARTIFACT_PATTERN.test(name) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(name); }
+export function artifactMatchesPermission(artifactName, permission) { if (permission === artifactName) return true; if (permission === ART.exposureBatchPattern) return M11_BATCH_ARTIFACT_PATTERN.test(artifactName); if (permission === ART.exposureBatchValidationPattern) return M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName); if (String(permission || "").startsWith("lossless_family__")) return artifactName === permission || artifactName.startsWith(`${permission}__part_`); return false; }
 export function assertKnownArtifactName(artifactName) { if (!isKnownArtifactName(artifactName)) throw new Error(`INVALID_ARTIFACT_NAME:${artifactName || "missing"}`); }
 export function assertKnownPhase(phase) { if (!PHASES.includes(phase)) throw new Error(`INVALID_PHASE:${phase || "missing"}`); }
 export function assertKnownAgent(agent) { if (!AGENTS.includes(agent)) throw new Error(`INVALID_AGENT:${agent}`); }
 export function assertPhaseCanWriteArtifact(phase, artifactName) { assertKnownPhase(phase); assertKnownArtifactName(artifactName); const allowed = PHASE_WRITE_PERMISSIONS[phase] || []; if (!allowed.some((permission) => artifactMatchesPermission(artifactName, permission))) throw new Error(`PHASE_WRITE_FORBIDDEN:${phase}:${artifactName}`); }
-
 function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
