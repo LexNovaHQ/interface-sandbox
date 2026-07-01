@@ -98,14 +98,13 @@ function deriveSourceArtifacts(mappings) {
 
 function materializeQuestion({ question, artifacts }) {
   const hits = asArray(question.source_artifacts).filter((artifactName) => hasMeaningfulArtifact(artifacts[artifactName]));
-  const extracted = extractSuggestedAnswer({ question, artifacts });
+  const extracted = sanitizeSuggestedAnswer(extractSuggestedAnswer({ question, artifacts }));
   const isBackend = question.prefill_source === "backend_artifact";
-  const suggestedAnswer = isBackend
-    ? extracted || (hits.length ? `Review source artifacts: ${hits.join(", ")}` : "")
-    : safeText(question.demo_prefill_value, "");
-  const prefillStatus = isBackend ? "DILIGENCE_PREFILL_CONFIRM" : "DEMO_PREFILL_CONFIRM";
+  const suggestedAnswer = isBackend ? extracted : safeText(question.demo_prefill_value, "");
+  const prefillStatus = isBackend && !suggestedAnswer ? "DILIGENCE_REVIEW_NEEDED" : isBackend ? "DILIGENCE_PREFILL_CONFIRM" : "DEMO_PREFILL_CONFIRM";
   const warnings = [];
   if (isBackend && !hits.length) warnings.push(`${question.question_id}:BACKEND_EVIDENCE_NOT_PRESENT_NONBLOCKING`);
+  if (isBackend && hits.length && !suggestedAnswer) warnings.push(`${question.question_id}:BACKEND_PREFILL_VALUE_NOT_EXTRACTED_REVIEW_REQUIRED`);
   if (!isBackend) warnings.push(`${question.question_id}:NOT_DERIVED_FROM_DILIGENCE`);
 
   return {
@@ -141,8 +140,15 @@ function getPath(object, path) {
 
 function formatSuggestedValue(value) {
   if (Array.isArray(value)) return value.map(formatSuggestedValue).filter(Boolean).join(", ");
-  if (value && typeof value === "object") return JSON.stringify(value);
+  if (value && typeof value === "object") return "";
   return safeText(value, "");
+}
+
+function sanitizeSuggestedAnswer(value) {
+  const text = safeText(value, "");
+  if (!text) return "";
+  if (/^Review source artifacts:/i.test(text)) return "";
+  return text;
 }
 
 function hasMeaningfulArtifact(value) {
