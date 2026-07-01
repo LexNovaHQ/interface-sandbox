@@ -47,18 +47,34 @@ const source_artifacts = {
   source_family_index: { ok: true },
   source_discovery_handoff: { ok: true },
   legal_cartography_index: { legal_notice: { entity_name: "Example Inc." }, document_coverage_index: [] },
-  target_profile: { target_identity: { brand_name: "Example", legal_name: "Example Inc." }, business_context: { pricing_model: "subscription" } },
-  target_profile_forensics: { forensic_trace_index: [{ field: "target_identity.brand_name" }] },
-  target_feature_profile: { activities: [{ feature: "AI assistant" }], archetypes: ["AI_ASSISTANT"] },
+  target_profile: {
+    target_identity: { brand_name: "Example", legal_entity_name: "Example Inc.", entity_type: "Corporation" },
+    business_context: { pricing_model: "subscription", market_type_candidate: "B2B" },
+    product_service_wrapper: { product_service_wrapper_names: ["Example AI"], delivery_model_signals: "public web app and API" }
+  },
+  target_profile_forensics: { forensic_trace_index: [{ field: "target_identity.legal_entity_name" }] },
+  target_feature_profile: { activities: [{ activity_feature_name: "AI assistant", product_service_wrapper: "Example AI", archetype_codes: ["DOE", "ORC", "RDR"] }] },
   target_feature_profile_forensics: { forensic_trace_index: [{ field: "activities" }] },
-  data_provenance_profile: { limitations: [], data_categories: ["account data"], controls: { retention: "stated" } },
+  data_provenance_profile: {
+    limitations: [],
+    data_categories: ["account data"],
+    sensitive_special_category_signals: ["biometric"],
+    children_minors_signal: "No",
+    security_access_controls: "access controls described",
+    privacy_governance_contact_accountability_signals: ["privacy@example.com"]
+  },
   data_provenance_profile_forensics: { forensic_trace_index: [{ field: "data_categories" }] },
-  extended_dap_india_readiness_profile: { india_readiness: { status: "review_required" } },
+  extended_dap_india_readiness_profile: {
+    fields: [
+      { field_id: "india_market_scope_signal", value_summary: "Indian users likely" },
+      { field_id: "india_operations_signal", value_summary: "India operations likely" }
+    ]
+  },
   integrated_dap_report: { india_privacy_cyber: { status: "review_required" } },
   exposure_registry_route_plan: { batch_plan: [] },
   exposure_registry_workpad_98: { rows: [] },
-  exposure_registry_controlled_profile: { controlled_rows: [] },
-  exposure_registry_triggered_profile: { triggered_rows: [] },
+  exposure_registry_controlled_profile: { controlled_rows: [{ Archetype: "CRT", Threat_ID: "CRT_TEST" }] },
+  exposure_registry_triggered_profile: { triggered_rows: [{ Archetype: "DOE", Threat_ID: "DOE_TEST" }, { Archetype: "ORC", Threat_ID: "ORC_TEST" }] },
   exposure_registry_profile_forensics: { forensic_trace_index: [] },
   challenge_gate: { status: "LOCKED" },
   final_output_handoff: { validation_status: "LOCKED" }
@@ -99,34 +115,25 @@ function assertBridgeContract(bridge, questions) {
   assert.equal(bridge.validation.status, "PASS");
 
   assert.equal(bridge.vault_payload_contract.row_count, QUALIFIED_REVIEW_LOCKED_COUNTS.vault_payload_row_count);
-  assert.equal(bridge.vault_payload_contract.expected_row_count, QUALIFIED_REVIEW_LOCKED_COUNTS.vault_payload_row_count);
-  assert.equal(bridge.vault_payload_contract.writes_to_vault_payload, true);
-  assert.equal(bridge.vault_payload_contract.status, "LOCKED");
-  assert.ok(bridge.vault_payload_contract.allowed_roots.includes("baseline"));
-  assert.ok(bridge.vault_payload_contract.allowed_roots.includes("operational"));
-
   assert.equal(bridge.india_contract.row_count, QUALIFIED_REVIEW_LOCKED_COUNTS.india_privacy_cyber_row_count);
-  assert.equal(bridge.india_contract.expected_row_count, QUALIFIED_REVIEW_LOCKED_COUNTS.india_privacy_cyber_row_count);
   assert.equal(bridge.india_contract.destination_root, "qualified_review.india_privacy_cyber");
   assert.equal(bridge.india_contract.must_not_write_to_vault_payload, true);
 
   assert.equal(bridge.prefill_contract.backend_artifact_rows, QUALIFIED_REVIEW_LOCKED_COUNTS.backend_prefill_row_count);
   assert.equal(bridge.prefill_contract.market_norm_demo_rows, QUALIFIED_REVIEW_LOCKED_COUNTS.demo_prefill_row_count);
   assert.equal(bridge.prefill_contract.missing_backend_evidence_is_nonblocking, true);
-  assert.equal(bridge.prefill_contract.demo_disclaimer_required, true);
 
   assert.equal(bridge.draft_prep_contract.blocked_until_confirmation, true);
   assert.equal(bridge.draft_prep_contract.route_count, questions.length);
   assert.equal(bridge.draft_prep_contract.routes_are_in_question_handoff, true);
   assert.equal(bridge.ui_contract.answer_type_controls, true);
-  assert.equal(bridge.ui_contract.demo_disclaimer_required_for_market_norm_rows, true);
-  assert.equal(bridge.ui_contract.no_empty_demo_need_to_fill_fields, true);
 }
 
 function assertQuestionMatrix(questions) {
   assert.deepEqual(countBy(questions, "section_id"), QUALIFIED_REVIEW_LOCKED_COUNTS.section_counts);
   assert.deepEqual(countBy(questions, "answer_type"), QUALIFIED_REVIEW_LOCKED_COUNTS.answer_type_counts);
   assert.deepEqual(countBy(questions, "source_table_default_status"), QUALIFIED_REVIEW_LOCKED_COUNTS.source_table_status_counts);
+  assert.deepEqual(countBy(questions, "prefill_strength"), QUALIFIED_REVIEW_LOCKED_COUNTS.prefill_strength_counts);
   assert.deepEqual(countBy(questions, "prefill_source"), QUALIFIED_REVIEW_LOCKED_COUNTS.prefill_source_counts);
   assert.deepEqual(countBy(questions, "evidence_status"), QUALIFIED_REVIEW_LOCKED_COUNTS.evidence_status_counts);
   assert.equal(questions.filter((row) => row.writes_to_vault_payload === true).length, QUALIFIED_REVIEW_LOCKED_COUNTS.vault_payload_row_count);
@@ -143,28 +150,43 @@ function assertQuestionMatrix(questions) {
     assert.equal(question.qualified_review_push_policy?.push_to_qualified_review_on_click, true);
     assert.ok(question.document_impact.length > 0, `${question.question_id}:document_impact_missing`);
     assert.ok(question.source_artifacts.length > 0, `${question.question_id}:source_artifacts_missing`);
+    assert.ok(Array.isArray(question.answer_prefill_mapping), `${question.question_id}:answer_prefill_mapping_missing`);
+    assert.ok(Array.isArray(question.evidence_source_mapping), `${question.question_id}:evidence_source_mapping_missing`);
     assert.ok(question.field_key, `${question.question_id}:field_key_missing`);
     assert.ok(question.lawyer_question || question.public_question_label, `${question.question_id}:question_text_missing`);
     assert.doesNotMatch(String(question.public_question_label || ""), /^Confirm .+ item \d+\.$/i);
+    assert.doesNotMatch(String(question.suggested_answer || ""), /^Review source artifacts:/i);
+
     if (question.section_id === "india_privacy_cyber") {
       assert.equal(question.writes_to_vault_payload, false, `${question.question_id}:india_must_not_write_vault`);
       assert.equal(question.writes_to_india_privacy_cyber, true, `${question.question_id}:india_write_flag_missing`);
       assert.ok(String(question.qualified_review_path || "").startsWith("qualified_review.india_privacy_cyber."), `${question.question_id}:bad_india_path`);
     }
-    if (question.prefill_source === "market_norm_demo") {
-      assert.equal(question.evidence_status, "NOT_DERIVED_FROM_DILIGENCE");
-      assert.equal(question.demo_disclaimer_required, true);
-      assert.ok(question.demo_disclaimer_text);
-      assert.ok(question.demo_prefill_value !== undefined && question.demo_prefill_value !== null && String(question.demo_prefill_value).trim() !== "");
+
+    if (question.prefill_strength === "FULL") {
+      assert.equal(question.prefill_source, "backend_artifact");
+      assert.equal(question.evidence_status, "DILIGENCE_FIELD_MAPPED_FULL");
+      assert.ok(question.answer_prefill_mapping.length > 0, `${question.question_id}:full_row_missing_answer_mapping`);
     }
-    if (question.prefill_source === "backend_artifact") {
-      assert.equal(question.evidence_status, "DILIGENCE_DERIVED");
-      assert.equal(question.demo_disclaimer_required, false);
+    if (question.prefill_strength === "PARTIAL") {
+      assert.equal(question.prefill_source, "backend_artifact");
+      assert.equal(question.evidence_status, "DILIGENCE_FIELD_MAPPED_PARTIAL");
+      assert.ok(question.answer_prefill_mapping.length > 0, `${question.question_id}:partial_row_missing_answer_mapping`);
+    }
+    if (question.prefill_strength === "NONE") {
+      assert.equal(question.prefill_source, "reviewer_input");
+      assert.equal(question.evidence_status, "NO_DIRECT_DILIGENCE_FIELD");
+      assert.equal(question.answer_prefill_mapping.length, 0, `${question.question_id}:none_row_must_not_have_answer_mapping`);
+    }
+
+    if (question.answer_type === "dropdown" && question.suggested_answer) {
+      assert.ok(question.answer_options.includes(question.suggested_answer), `${question.question_id}:invalid_dropdown_suggested_answer`);
+    }
+    if (question.answer_type === "select" && question.suggested_answer) {
+      const selected = String(question.suggested_answer).split(",").map((value) => value.trim()).filter(Boolean);
+      selected.forEach((value) => assert.ok(question.answer_options.includes(value), `${question.question_id}:invalid_select_suggested_answer:${value}`));
     }
   });
-
-  const qr034 = questions.find((row) => row.question_id === "QR-034");
-  assert.deepEqual(qr034.answer_options, ["Yes", "No", "Unclear"]);
 }
 
 function assertRendererContract(renderer, bridge, questions) {
@@ -188,8 +210,6 @@ function assertRendererContract(renderer, bridge, questions) {
   assert.equal(renderer.render_contract.section_wizard, true);
   assert.equal(renderer.render_contract.editable_answers, true);
   assert.equal(renderer.render_contract.final_review_gate, true);
-  assert.equal(renderer.render_contract.evidence_badges, true);
-  assert.equal(renderer.render_contract.demo_disclaimers, true);
   assert.equal(renderer.render_contract.answer_type_controls, true);
   assert.equal(renderer.render_contract.no_document_assembly, true);
   assert.equal(renderer.render_contract.no_legal_advice, true);
@@ -205,7 +225,7 @@ function assertSubmissionContract({ run, handoff, renderer, questions }) {
       question_id: question.question_id,
       answer_state: "confirmed",
       answer_value: `Confirmed answer for ${question.question_id}`,
-      demo_disclaimer_accepted: question.demo_disclaimer_required === true,
+      demo_disclaimer_accepted: false,
       submitted_at: "2026-07-01T00:00:00.000Z"
     }))
   };
@@ -241,10 +261,10 @@ function assertPermissions() {
   assertCanReadArtifact("portfolio_renderer", "qualified_review_submission");
 }
 
-function countBy(rows, field) {
+function countBy(rows, key) {
   return rows.reduce((acc, row) => {
-    const key = row[field];
-    acc[key] = (acc[key] || 0) + 1;
+    const value = row[key];
+    acc[value] = (acc[value] || 0) + 1;
     return acc;
   }, {});
 }

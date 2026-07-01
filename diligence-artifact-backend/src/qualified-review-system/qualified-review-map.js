@@ -1,12 +1,12 @@
-// Qualified Review canonical map derived from the locked integrated QR tables.
-// Source-of-truth corrections applied: row-level counts control over stale summary counts.
+// Qualified Review canonical map derived from the locked 79Q reverse-engineering matrix.
+// Field-driven prefill model: answer_prefill_mapping is separate from evidence_source_mapping.
 // Do not add, remove, reorder, or rename rows without updating QUALIFIED_REVIEW_LOCKED_COUNTS.
 
-export const QUALIFIED_REVIEW_MAP_VERSION = "qualified_review_map_v2_locked_integrated_tables";
+export const QUALIFIED_REVIEW_MAP_VERSION = "qualified_review_map_v3_field_mapped_prefill_split";
 
-export const QUALIFIED_REVIEW_DEMO_DISCLAIMER_TEXT = "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.";
+export const QUALIFIED_REVIEW_DEMO_DISCLAIMER_TEXT = "";
 
-export const QUALIFIED_REVIEW_REVIEWER_ACTION = "Confirm or edit before draft preparation";
+export const QUALIFIED_REVIEW_REVIEWER_ACTION = "Confirm, review, or fill before draft preparation";
 
 export const QUALIFIED_REVIEW_SECTION_MAP = Object.freeze([
   {
@@ -56,27 +56,37 @@ export const QUALIFIED_REVIEW_LOCKED_COUNTS = Object.freeze({
     "india_privacy_cyber": 32
   },
   "answer_type_counts": {
-    "short_answer": 20,
-    "dropdown": 40,
-    "select": 4,
-    "long_answer": 15
+    "short_answer": 19,
+    "long_answer": 30,
+    "dropdown": 26,
+    "select": 4
   },
   "source_table_status_counts": {
-    "Prefill / confirm": 36,
-    "Need to fill": 43
+    "Prefill / confirm": 41,
+    "Review / complete": 33,
+    "Need to fill": 5
+  },
+  "prefill_strength_counts": {
+    "FULL": 41,
+    "PARTIAL": 33,
+    "NONE": 5
   },
   "prefill_source_counts": {
-    "backend_artifact": 36,
-    "market_norm_demo": 43
+    "backend_artifact": 74,
+    "reviewer_input": 5
   },
   "evidence_status_counts": {
-    "DILIGENCE_DERIVED": 36,
-    "NOT_DERIVED_FROM_DILIGENCE": 43
+    "DILIGENCE_FIELD_MAPPED_FULL": 41,
+    "DILIGENCE_FIELD_MAPPED_PARTIAL": 33,
+    "NO_DIRECT_DILIGENCE_FIELD": 5
   },
   "vault_payload_row_count": 47,
   "india_privacy_cyber_row_count": 32,
-  "backend_prefill_row_count": 36,
-  "demo_prefill_row_count": 43
+  "field_mapped_full_row_count": 41,
+  "field_mapped_partial_row_count": 33,
+  "reviewer_input_row_count": 5,
+  "backend_prefill_row_count": 74,
+  "demo_prefill_row_count": 0
 });
 
 export const QUALIFIED_REVIEW_MAP = Object.freeze([
@@ -96,9 +106,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.target_identity.legal_name",
-      "target_profile.target_identity.brand_name",
-      "legal_cartography_index.legal_notice.entity_name"
+      "target_profile.target_identity.legal_entity_name"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
@@ -106,9 +114,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -125,7 +133,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_profile.target_identity.legal_entity_name"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_profile.target_identity.legal_entity_name",
+      "target_profile.target_identity.legal_name",
+      "target_profile.target_identity.brand_name",
+      "legal_cartography_index.legal_notice.entity_name"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-002",
@@ -143,23 +163,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.target_identity.entity_type",
-      "target_profile.jurisdiction_notice.entity_form"
+      "target_profile.target_identity.entity_type"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Delaware C-Corp",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Delaware C-Corp",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Common examples: Delaware C-Corp, LLC, private limited company, sole proprietor.",
-    "demo_market_suggestion": "Delaware C-Corp",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS",
       "DOC_DPA",
@@ -170,7 +189,17 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_profile.target_identity.entity_type"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_profile.target_identity.entity_type",
+      "target_profile.jurisdiction_notice.entity_form"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-003",
@@ -188,23 +217,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.target_identity.registered_address",
-      "legal_cartography_index.legal_notice.address"
+      "target_profile.jurisdiction_notice.registered_notice_location"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "[Company registered business address — replace with official notice address]",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "[Company registered business address — replace with official notice address]",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Use formal registered/business notice address, not support address unless same.",
-    "demo_market_suggestion": "[Company registered business address — replace with official notice address]",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Use formal registered/business notice address, not support address unless same. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS",
       "DOC_DPA",
@@ -214,8 +242,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_profile.jurisdiction_notice.registered_notice_location"
+    ],
+    "answer_extractor": "profile_summary",
+    "evidence_source_mapping": [
+      "target_profile.jurisdiction_notice.registered_notice_location",
+      "target_profile.target_identity.registered_address",
+      "legal_cartography_index.legal_notice.address"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-004",
@@ -233,23 +272,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.control_language_locator.legal_notice_email",
-      "target_profile.contact.legal_email"
+      "data_provenance_profile.privacy_governance_contact_accountability_signals[0]",
+      "legal_cartography_index.control_language_locator[CONTACT_ROUTES]"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "legal@[company-domain].com",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "legal@[company-domain].com",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Common pattern: legal@company.com or founder/legal ops mailbox.",
-    "demo_market_suggestion": "legal@[company-domain].com",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Common pattern: `legal@company.com` or founder/legal ops mailbox.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS notice clause",
       "DOC_DPA notices"
@@ -258,7 +297,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.privacy_governance_contact_accountability_signals[0]",
+      "legal_cartography_index.control_language_locator[CONTACT_ROUTES]"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "data_provenance_profile.privacy_governance_contact_accountability_signals[0]",
+      "legal_cartography_index.control_language_locator[CONTACT_ROUTES]",
+      "legal_cartography_index.control_language_locator.legal_notice_email",
+      "target_profile.contact.legal_email"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-005",
@@ -276,23 +328,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.document_coverage_index.privacy_notice.contact",
-      "data_provenance_profile.privacy_governance_contact_accountability_signals"
+      "data_provenance_profile.privacy_governance_contact_accountability_signals[0]"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "privacy@[company-domain].com",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "privacy@[company-domain].com",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Common pattern: privacy@company.com, dpo@company.com, or support/privacy mailbox.",
-    "demo_market_suggestion": "privacy@[company-domain].com",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Common pattern: `privacy@company.com`, `dpo@company.com`, or support/privacy mailbox.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP",
       "DOC_DPA"
@@ -301,7 +352,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.privacy_governance_contact_accountability_signals[0]"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "data_provenance_profile.privacy_governance_contact_accountability_signals[0]",
+      "legal_cartography_index.document_coverage_index.privacy_notice.contact",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-006",
@@ -319,9 +381,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.product_service_wrapper.products",
-      "target_feature_profile.activities",
-      "source_discovery_handoff.product_sources"
+      "target_profile.product_service_wrapper.product_service_wrapper_names",
+      "target_feature_profile.activities[*].product_service_wrapper"
     ],
     "answer_type": "select",
     "answer_options": [],
@@ -329,9 +390,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -346,7 +407,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_profile.product_service_wrapper.product_service_wrapper_names",
+      "target_feature_profile.activities[*].product_service_wrapper"
+    ],
+    "answer_extractor": "product_service_names",
+    "evidence_source_mapping": [
+      "target_profile.product_service_wrapper.product_service_wrapper_names",
+      "target_feature_profile.activities[*].product_service_wrapper",
+      "target_profile.product_service_wrapper.products",
+      "target_feature_profile.activities",
+      "source_discovery_handoff.product_sources"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-007",
@@ -364,22 +439,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.jurisdiction_notice.country",
-      "legal_cartography_index.control_language_locator.governing_law"
+      "target_profile.jurisdiction_notice.governing_law",
+      "target_profile.jurisdiction_notice.registered_notice_location"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Prefill / confirm",
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Market norm: choose provider home jurisdiction or main commercial contracting jurisdiction.",
+    "helper_text": "Market norm: choose provider home jurisdiction or main commercial contracting jurisdiction. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS governing law",
@@ -388,8 +463,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_profile.jurisdiction_notice.governing_law",
+      "target_profile.jurisdiction_notice.registered_notice_location"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_profile.jurisdiction_notice.governing_law",
+      "target_profile.jurisdiction_notice.registered_notice_location",
+      "target_profile.jurisdiction_notice.country",
+      "legal_cartography_index.control_language_locator.governing_law"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-008",
@@ -407,23 +495,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.control_language_locator.forum",
-      "legal_cartography_index.control_language_locator.dispute_resolution"
+      "target_profile.jurisdiction_notice.courts_venue"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Delaware; arbitration or courts as confirmed by counsel",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Delaware; arbitration or courts as confirmed by counsel",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "For US SaaS, common forums include Delaware, New York, California, Texas. Confirm with counsel.",
-    "demo_market_suggestion": "Delaware; arbitration or courts as confirmed by counsel",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "For US SaaS, common forums include Delaware, New York, California, Texas. Confirm with counsel. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS dispute resolution",
       "DOC_PBK_A"
@@ -431,8 +518,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_profile.jurisdiction_notice.courts_venue"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_profile.jurisdiction_notice.courts_venue",
+      "legal_cartography_index.control_language_locator.forum",
+      "legal_cartography_index.control_language_locator.dispute_resolution"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-009",
@@ -450,8 +548,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.business_context.market_scope",
-      "integrated_dap_report.report_boundary_source_coverage"
+      "target_profile.business_context.market_type_candidate"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -464,9 +561,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -481,7 +578,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_profile.business_context.market_type_candidate"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "target_profile.business_context.market_type_candidate",
+      "target_profile.business_context.market_scope",
+      "integrated_dap_report.report_boundary_source_coverage"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-010",
@@ -499,9 +607,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.delivery_channels.web_app",
-      "target_feature_profile.activities.delivery_mode",
-      "source_discovery_handoff.product_sources"
+      "target_profile.product_service_wrapper.delivery_model_signals"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -513,9 +619,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -528,7 +634,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_profile.product_service_wrapper.delivery_model_signals"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "target_profile.product_service_wrapper.delivery_model_signals",
+      "target_feature_profile.delivery_channels.web_app",
+      "target_feature_profile.activities.delivery_mode",
+      "source_discovery_handoff.product_sources"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-011",
@@ -546,9 +664,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.delivery_channels.api",
-      "target_feature_profile.integrations.api_docs",
-      "source_discovery_handoff.data_sources"
+      "target_profile.product_service_wrapper.delivery_model_signals",
+      "lossless_family__D4_DOCS_API_DATA_FLOW.sources[*]"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -560,9 +677,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -576,7 +693,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_profile.product_service_wrapper.delivery_model_signals",
+      "lossless_family__D4_DOCS_API_DATA_FLOW.sources[*]"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "target_profile.product_service_wrapper.delivery_model_signals",
+      "lossless_family__D4_DOCS_API_DATA_FLOW.sources[*]",
+      "target_feature_profile.delivery_channels.api",
+      "target_feature_profile.integrations.api_docs",
+      "source_discovery_handoff.data_sources"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-012",
@@ -594,23 +725,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.business_context.revenue_model",
-      "source_discovery_handoff.pricing_sources"
+      "lossless_family__P5_ENTERPRISE_PRICING.sources[0].lossless_text"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Subscription SaaS with optional usage-based or enterprise pricing",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Subscription SaaS with optional usage-based or enterprise pricing",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Examples: subscription, usage-based, seat-based, enterprise license, freemium, services + SaaS.",
-    "demo_market_suggestion": "Subscription SaaS with optional usage-based or enterprise pricing",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS payment terms",
       "DOC_SLA"
@@ -619,7 +749,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "lossless_family__P5_ENTERPRISE_PRICING.sources[0].lossless_text"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "lossless_family__P5_ENTERPRISE_PRICING.sources[0].lossless_text",
+      "target_profile.business_context.revenue_model",
+      "source_discovery_handoff.pricing_sources"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-013",
@@ -637,24 +778,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.control_language_locator.liability_cap",
-      "legal_cartography_index.control_language_locator.fees_paid_cap",
-      "target_profile.commercial_terms"
+      "legal_cartography_index.document_structure_index[Section 10: Limitation of Liability]",
+      "lossless_family__L1_CORE_TERMS_PRIVACY Terms §10"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Fees paid in the 12 months before the claim, with optional fixed floor for enterprise deals",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Fees paid in the 12 months before the claim, with optional fixed floor for enterprise deals",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo suggestion: common SaaS cap is fees paid in prior 12 months; confirm actual position.",
-    "demo_market_suggestion": "Fees paid in the 12 months before the claim, with optional fixed floor for enterprise deals",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo suggestion: common SaaS cap is fees paid in prior 12 months; confirm actual position. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS liability cap",
       "DOC_PBK_A"
@@ -662,8 +802,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.document_structure_index[Section 10: Limitation of Liability]",
+      "lossless_family__L1_CORE_TERMS_PRIVACY Terms §10"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "legal_cartography_index.document_structure_index[Section 10: Limitation of Liability]",
+      "lossless_family__L1_CORE_TERMS_PRIVACY Terms §10",
+      "legal_cartography_index.control_language_locator.liability_cap",
+      "legal_cartography_index.control_language_locator.fees_paid_cap",
+      "target_profile.commercial_terms"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-014",
@@ -681,8 +835,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.control_language_locator.beta_preview_terms",
-      "source_discovery_handoff.pricing_sources"
+      "lossless_family__P5_ENTERPRISE_PRICING.sources[0].lossless_text"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -696,9 +849,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -712,7 +865,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "vault_payload_group": "baseline",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "lossless_family__P5_ENTERPRISE_PRICING.sources[0].lossless_text"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "lossless_family__P5_ENTERPRISE_PRICING.sources[0].lossless_text",
+      "legal_cartography_index.control_language_locator.beta_preview_terms",
+      "source_discovery_handoff.pricing_sources"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-015",
@@ -730,29 +894,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.control_language_locator.output_ownership",
-      "legal_cartography_index.control_language_locator.ip_terms",
-      "target_feature_profile.output_profile"
+      "legal_cartography_index.document_structure_index[Your Content and Output; 3.1 Ownership of Your Content]",
+      "data_provenance_profile.generated_output_and_derived_data_treatment"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Full customer ownership",
-      "limited license",
-      "provider retains",
-      "mixed/unclear"
-    ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Customer owns its inputs; output rights granted to customer to the extent legally available, subject to AI-output limitations",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Customer owns its inputs; output rights granted to customer to the extent legally available, subject to AI-output limitations",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Full customer ownership, limited license, provider retains, mixed/unclear.",
-    "demo_market_suggestion": "Customer owns its inputs; output rights granted to customer to the extent legally available, subject to AI-output limitations",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Full customer ownership, limited license, provider retains, mixed/unclear. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS IP/output clause",
       "DOC_IP",
@@ -761,8 +919,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.document_structure_index[Your Content and Output; 3.1 Ownership of Your Content]",
+      "data_provenance_profile.generated_output_and_derived_data_treatment"
+    ],
+    "answer_extractor": "profile_summary",
+    "evidence_source_mapping": [
+      "legal_cartography_index.document_structure_index[Your Content and Output; 3.1 Ownership of Your Content]",
+      "data_provenance_profile.generated_output_and_derived_data_treatment",
+      "legal_cartography_index.control_language_locator.output_ownership",
+      "legal_cartography_index.control_language_locator.ip_terms",
+      "target_feature_profile.output_profile"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-016",
@@ -780,8 +952,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.document_coverage_index.sla",
-      "legal_cartography_index.control_language_locator.service_levels"
+      "legal_cartography_index.document_coverage_index[Annexure A: SLA]",
+      "legal_cartography_index.document_coverage_index[Annexure B: Support Services]"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -790,18 +962,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "Custom SLA",
       "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "No SLA for self-serve/free plans; standard SLA only for paid enterprise plans",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "No SLA for self-serve/free plans; standard SLA only for paid enterprise plans",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: No SLA, Standard SLA, Custom SLA, Unclear.",
-    "demo_market_suggestion": "No SLA for self-serve/free plans; standard SLA only for paid enterprise plans",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: No SLA, Standard SLA, Custom SLA, Unclear. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SLA",
       "DOC_TOS"
@@ -809,8 +981,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.document_coverage_index[Annexure A: SLA]",
+      "legal_cartography_index.document_coverage_index[Annexure B: Support Services]"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "legal_cartography_index.document_coverage_index[Annexure A: SLA]",
+      "legal_cartography_index.document_coverage_index[Annexure B: Support Services]",
+      "legal_cartography_index.document_coverage_index.sla",
+      "legal_cartography_index.control_language_locator.service_levels"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-017",
@@ -828,24 +1013,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.control_language_locator.no_reliance",
-      "legal_cartography_index.control_language_locator.disclaimers",
-      "exposure_registry.reliance_related_rows"
+      "legal_cartography_index.control_language_locator[WARRANTY/DISCLAIMER/NO_RELIANCE candidates]",
+      "data_provenance_profile.automated_decision_profiling_human_review_signal"
     ],
-    "answer_type": "short_answer",
+    "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Assistive output only; no professional, legal, medical, financial, or final decision reliance without human review",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Assistive output only; no professional, legal, medical, financial, or final decision reliance without human review",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo suggestion: most AI SaaS should position output as assistive unless explicitly reviewed.",
-    "demo_market_suggestion": "Assistive output only; no professional, legal, medical, financial, or final decision reliance without human review",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo suggestion: most AI SaaS should position output as assistive unless explicitly reviewed. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS reliance disclaimer",
       "DOC_AUP",
@@ -854,8 +1038,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "baseline"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "baseline",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.control_language_locator[WARRANTY/DISCLAIMER/NO_RELIANCE candidates]",
+      "data_provenance_profile.automated_decision_profiling_human_review_signal"
+    ],
+    "answer_extractor": "profile_summary",
+    "evidence_source_mapping": [
+      "legal_cartography_index.control_language_locator[WARRANTY/DISCLAIMER/NO_RELIANCE candidates]",
+      "data_provenance_profile.automated_decision_profiling_human_review_signal",
+      "legal_cartography_index.control_language_locator.no_reliance",
+      "legal_cartography_index.control_language_locator.disclaimers",
+      "exposure_registry.reliance_related_rows"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-018",
@@ -873,30 +1071,24 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.ai_memory_profile",
       "data_provenance_profile.prompt_output_logging_telemetry_controls",
-      "integrated_dap_report.ai_processing_chain_model_data_controls"
+      "data_provenance_profile.embeddings_vector_memory_controls",
+      "data_provenance_profile.ai_training_finetuning_model_improvement_controls"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "None",
-      "Session-only",
-      "Account/workspace memory",
-      "Vector/embedding memory",
-      "Unclear"
-    ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Session memory plus optional account/workspace memory; no model-weight training on customer data",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Session memory plus optional account/workspace memory; no model-weight training on customer data",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: None, Session-only, Account/workspace memory, Vector/embedding memory, Unclear.",
-    "demo_market_suggestion": "Session memory plus optional account/workspace memory; no model-weight training on customer data",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: None, Session-only, Account/workspace memory, Vector/embedding memory, Unclear. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_PP",
@@ -905,8 +1097,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "architecture"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "architecture",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.prompt_output_logging_telemetry_controls",
+      "data_provenance_profile.embeddings_vector_memory_controls",
+      "data_provenance_profile.ai_training_finetuning_model_improvement_controls"
+    ],
+    "answer_extractor": "profile_summary",
+    "evidence_source_mapping": [
+      "data_provenance_profile.prompt_output_logging_telemetry_controls",
+      "data_provenance_profile.embeddings_vector_memory_controls",
+      "data_provenance_profile.ai_training_finetuning_model_improvement_controls",
+      "target_feature_profile.ai_memory_profile",
+      "integrated_dap_report.ai_processing_chain_model_data_controls"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-019",
@@ -924,31 +1131,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.model_provider_profile",
       "data_provenance_profile.ai_model_provider_processing_chain",
-      "integrated_dap_report.ai_processing_chain_model_data_controls"
+      "target_profile.business_context.business_category"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "OpenAI",
-      "Anthropic",
-      "Google/Gemini",
-      "Open source/self-hosted",
-      "Multiple",
-      "Other"
-    ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Third-party foundation model provider with API-based inference; provider to be confirmed",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Third-party foundation model provider with API-based inference; provider to be confirmed",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "answer_type": "short_answer",
+    "answer_options": [],
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Options: OpenAI, Anthropic, Google/Gemini, Open source/self-hosted, Multiple, Other.",
-    "demo_market_suggestion": "Third-party foundation model provider with API-based inference; provider to be confirmed",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_TOS AI disclosure",
       "DOC_DPA subprocessors"
@@ -957,7 +1156,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "architecture"
+    "vault_payload_group": "architecture",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.ai_model_provider_processing_chain",
+      "target_profile.business_context.business_category"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "data_provenance_profile.ai_model_provider_processing_chain",
+      "target_profile.business_context.business_category",
+      "target_feature_profile.model_provider_profile",
+      "integrated_dap_report.ai_processing_chain_model_data_controls"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-020",
@@ -975,9 +1187,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.document_coverage_index.subprocessors",
-      "data_provenance_profile.vendor_subprocessor_partner_inventory",
-      "integrated_dap_report.contracts_vendors_subprocessors"
+      "data_provenance_profile.vendor_subprocessor_partner_inventory[0]"
     ],
     "answer_type": "select",
     "answer_options": [],
@@ -985,9 +1195,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1001,7 +1211,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "architecture"
+    "vault_payload_group": "architecture",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.vendor_subprocessor_partner_inventory[0]"
+    ],
+    "answer_extractor": "vendor_subprocessor_names",
+    "evidence_source_mapping": [
+      "data_provenance_profile.vendor_subprocessor_partner_inventory[0]",
+      "legal_cartography_index.document_coverage_index.subprocessors",
+      "data_provenance_profile.vendor_subprocessor_partner_inventory",
+      "integrated_dap_report.contracts_vendors_subprocessors"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-021",
@@ -1019,22 +1241,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "legal_cartography_index.document_coverage_index.subprocessor_url",
-      "source_discovery_handoff.legal_sources.subprocessor_page"
+      "legal_cartography_index.document_coverage_index[artifact_class=SUBPROCESSOR_LIST].source"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Prefill / confirm",
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "If none, leave blank or mark no public list.",
+    "helper_text": "If none, leave blank or mark no public list. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA subprocessor clause"
@@ -1042,8 +1263,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "architecture"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "architecture",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.document_coverage_index[artifact_class=SUBPROCESSOR_LIST].source"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "legal_cartography_index.document_coverage_index[artifact_class=SUBPROCESSOR_LIST].source",
+      "legal_cartography_index.document_coverage_index.subprocessor_url",
+      "source_discovery_handoff.legal_sources.subprocessor_page"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-022",
@@ -1061,24 +1293,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "data_provenance_profile.cross_border_transfer_location_custody",
       "data_provenance_profile.vendor_subprocessor_partner_inventory",
-      "source_discovery_handoff.data_sources"
+      "data_provenance_profile.cross_border_transfer_location_custody"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "AWS / GCP / Azure / Vercel / Cloudflare — confirm actual hosting stack",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "AWS / GCP / Azure / Vercel / Cloudflare — confirm actual hosting stack",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo examples: AWS, GCP, Azure, Vercel, Cloudflare, self-hosted.",
-    "demo_market_suggestion": "AWS / GCP / Azure / Vercel / Cloudflare — confirm actual hosting stack",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA Schedule C",
       "DOC_PP"
@@ -1087,7 +1318,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "architecture"
+    "vault_payload_group": "architecture",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.vendor_subprocessor_partner_inventory",
+      "data_provenance_profile.cross_border_transfer_location_custody"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "data_provenance_profile.vendor_subprocessor_partner_inventory",
+      "data_provenance_profile.cross_border_transfer_location_custody",
+      "source_discovery_handoff.data_sources"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-023",
@@ -1105,24 +1348,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.rag_retrieval_profile",
       "data_provenance_profile.embeddings_vector_memory_controls",
-      "data_provenance_profile.ai_training_finetuning_model_improvement_controls"
+      "target_feature_profile.activities[0].mechanics_proof"
     ],
-    "answer_type": "short_answer",
+    "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Vector database or RAG layer used only if document memory / retrieval is enabled; provider to be confirmed",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Vector database or RAG layer used only if document memory / retrieval is enabled; provider to be confirmed",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo examples: Pinecone, Weaviate, Qdrant, pgvector, custom retrieval layer, none.",
-    "demo_market_suggestion": "Vector database or RAG layer used only if document memory / retrieval is enabled; provider to be confirmed",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_PP",
@@ -1132,7 +1374,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "architecture"
+    "vault_payload_group": "architecture",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.embeddings_vector_memory_controls",
+      "target_feature_profile.activities[0].mechanics_proof"
+    ],
+    "answer_extractor": "profile_summary",
+    "evidence_source_mapping": [
+      "data_provenance_profile.embeddings_vector_memory_controls",
+      "target_feature_profile.activities[0].mechanics_proof",
+      "target_feature_profile.rag_retrieval_profile",
+      "data_provenance_profile.ai_training_finetuning_model_improvement_controls"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-024",
@@ -1150,22 +1405,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.DOER",
-      "exposure_registry.triggered_rows.DOER"
+      "target_feature_profile.activities[*].archetype_codes contains DOE",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=DOE]"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
+    "answer_type": "long_answer",
+    "answer_options": [],
     "source_table_default_status": "Prefill / confirm",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1179,7 +1430,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains DOE",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=DOE]"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains DOE",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=DOE]",
+      "target_feature_profile.archetype_profile.DOER",
+      "exposure_registry.triggered_rows.DOER"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-025",
@@ -1197,22 +1461,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.ORCHESTRATOR",
-      "exposure_registry.triggered_rows.ORCHESTRATOR"
+      "target_feature_profile.activities[*].archetype_codes contains ORC",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=ORC]"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
+    "answer_type": "long_answer",
+    "answer_options": [],
     "source_table_default_status": "Prefill / confirm",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1225,7 +1485,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains ORC",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=ORC]"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains ORC",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=ORC]",
+      "target_feature_profile.archetype_profile.ORCHESTRATOR",
+      "exposure_registry.triggered_rows.ORCHESTRATOR"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-026",
@@ -1242,32 +1515,37 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "path_type": "literal_vault_payload",
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
-    "backend_prefill_mapping": [
-      "target_feature_profile.agentic_controls.session_cap",
-      "challenge_gate.agentic_limits"
-    ],
+    "backend_prefill_mapping": [],
     "answer_type": "short_answer",
     "answer_options": [],
     "source_table_default_status": "Need to fill",
     "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Default per-session cap: 25 autonomous actions before pause or review",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Default per-session cap: 25 autonomous actions before pause or review",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo suggestion: set a per-session action cap, e.g. number of actions/API calls before pause.",
-    "demo_market_suggestion": "Default per-session cap: 25 autonomous actions before pause or review",
+    "prefill_source": "reviewer_input",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "reviewer_input_required",
+    "ui_badge": "Reviewer input required",
+    "evidence_status": "NO_DIRECT_DILIGENCE_FIELD",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo suggestion: set a per-session action cap, e.g. number of actions/API calls before pause. No direct diligence field currently answers this question.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AGT Schedule C"
     ],
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Fill before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "NONE",
+    "answer_prefill_mapping": [],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_feature_profile.agentic_controls.session_cap",
+      "challenge_gate.agentic_limits"
+    ],
+    "field_mapping_locked_class": "NO_DIRECT_DILIGENCE_FIELD"
   },
   {
     "question_id": "QR-027",
@@ -1284,32 +1562,37 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "path_type": "literal_vault_payload",
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
-    "backend_prefill_mapping": [
-      "target_feature_profile.agentic_controls.period_cap",
-      "challenge_gate.agentic_limits"
-    ],
+    "backend_prefill_mapping": [],
     "answer_type": "short_answer",
     "answer_options": [],
     "source_table_default_status": "Need to fill",
     "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Default daily cap: 100 autonomous actions or defined spend threshold before pause",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Default daily cap: 100 autonomous actions or defined spend threshold before pause",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo suggestion: set daily/monthly action, spend, or transaction thresholds.",
-    "demo_market_suggestion": "Default daily cap: 100 autonomous actions or defined spend threshold before pause",
+    "prefill_source": "reviewer_input",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "reviewer_input_required",
+    "ui_badge": "Reviewer input required",
+    "evidence_status": "NO_DIRECT_DILIGENCE_FIELD",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo suggestion: set daily/monthly action, spend, or transaction thresholds. No direct diligence field currently answers this question.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AGT Schedule C"
     ],
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Fill before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "NONE",
+    "answer_prefill_mapping": [],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_feature_profile.agentic_controls.period_cap",
+      "challenge_gate.agentic_limits"
+    ],
+    "field_mapping_locked_class": "NO_DIRECT_DILIGENCE_FIELD"
   },
   {
     "question_id": "QR-028",
@@ -1326,32 +1609,37 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "path_type": "literal_vault_payload",
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
-    "backend_prefill_mapping": [
-      "target_feature_profile.agentic_controls.retry_limit",
-      "challenge_gate.agentic_limits"
-    ],
+    "backend_prefill_mapping": [],
     "answer_type": "short_answer",
     "answer_options": [],
     "source_table_default_status": "Need to fill",
     "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Maximum 3 retries per failed action before halt/escalation",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Maximum 3 retries per failed action before halt/escalation",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo suggestion: limit retries to avoid retry storms; common default is low single digits.",
-    "demo_market_suggestion": "Maximum 3 retries per failed action before halt/escalation",
+    "prefill_source": "reviewer_input",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "reviewer_input_required",
+    "ui_badge": "Reviewer input required",
+    "evidence_status": "NO_DIRECT_DILIGENCE_FIELD",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo suggestion: limit retries to avoid retry storms; common default is low single digits. No direct diligence field currently answers this question.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AGT retry storm clause"
     ],
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Fill before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "NONE",
+    "answer_prefill_mapping": [],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_feature_profile.agentic_controls.retry_limit",
+      "challenge_gate.agentic_limits"
+    ],
+    "field_mapping_locked_class": "NO_DIRECT_DILIGENCE_FIELD"
   },
   {
     "question_id": "QR-029",
@@ -1368,32 +1656,37 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "path_type": "literal_vault_payload",
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
-    "backend_prefill_mapping": [
-      "target_feature_profile.agentic_controls.loop_threshold",
-      "challenge_gate.agentic_limits"
-    ],
+    "backend_prefill_mapping": [],
     "answer_type": "short_answer",
     "answer_options": [],
     "source_table_default_status": "Need to fill",
     "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Loop / repeated-action threshold triggers automatic pause and human review",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Loop / repeated-action threshold triggers automatic pause and human review",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo suggestion: define a loop/circuit breaker threshold before automatic pause.",
-    "demo_market_suggestion": "Loop / repeated-action threshold triggers automatic pause and human review",
+    "prefill_source": "reviewer_input",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "reviewer_input_required",
+    "ui_badge": "Reviewer input required",
+    "evidence_status": "NO_DIRECT_DILIGENCE_FIELD",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo suggestion: define a loop/circuit breaker threshold before automatic pause. No direct diligence field currently answers this question.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AGT kill switch / circuit breaker"
     ],
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Fill before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "NONE",
+    "answer_prefill_mapping": [],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "target_feature_profile.agentic_controls.loop_threshold",
+      "challenge_gate.agentic_limits"
+    ],
+    "field_mapping_locked_class": "NO_DIRECT_DILIGENCE_FIELD"
   },
   {
     "question_id": "QR-030",
@@ -1411,23 +1704,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.CREATOR",
-      "target_feature_profile.output_profile",
-      "exposure_registry.triggered_rows.CREATOR"
+      "target_feature_profile.activities[*].archetype_codes contains CRT",
+      "exposure_registry_controlled_profile.controlled_rows[Archetype=CRT]"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
+    "answer_type": "long_answer",
+    "answer_options": [],
     "source_table_default_status": "Prefill / confirm",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1442,7 +1730,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains CRT",
+      "exposure_registry_controlled_profile.controlled_rows[Archetype=CRT]"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains CRT",
+      "exposure_registry_controlled_profile.controlled_rows[Archetype=CRT]",
+      "target_feature_profile.archetype_profile.CREATOR",
+      "target_feature_profile.output_profile",
+      "exposure_registry.triggered_rows.CREATOR"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-031",
@@ -1460,23 +1762,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.READER",
-      "data_provenance_profile.collection_sources_activity_data_flows",
-      "exposure_registry.triggered_rows.READER"
+      "target_feature_profile.activities[*].archetype_codes contains RDR",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=RDR]"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
+    "answer_type": "long_answer",
+    "answer_options": [],
     "source_table_default_status": "Prefill / confirm",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1490,7 +1787,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains RDR",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=RDR]"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains RDR",
+      "exposure_registry_triggered_profile.triggered_rows[Archetype=RDR]",
+      "target_feature_profile.archetype_profile.READER",
+      "data_provenance_profile.collection_sources_activity_data_flows",
+      "exposure_registry.triggered_rows.READER"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-032",
@@ -1508,27 +1819,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.COMPANION",
-      "target_feature_profile.user_interaction_profile",
-      "exposure_registry.triggered_rows.COMPANION"
+      "target_feature_profile.activities[*].activity_feature_name",
+      "target_feature_profile.activities[*].archetype_codes"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
-    "source_table_default_status": "Prefill / confirm",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AUP",
@@ -1537,8 +1843,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].activity_feature_name",
+      "target_feature_profile.activities[*].archetype_codes"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].activity_feature_name",
+      "target_feature_profile.activities[*].archetype_codes",
+      "target_feature_profile.archetype_profile.COMPANION",
+      "target_feature_profile.user_interaction_profile",
+      "exposure_registry.triggered_rows.COMPANION"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-033",
@@ -1556,22 +1876,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.BIOMETRIC_TRANSLATOR",
-      "data_provenance_profile.sensitive_special_category_signals"
+      "target_feature_profile.activities[*].archetype_codes contains TRN",
+      "data_provenance_profile.sensitive_special_category_signals",
+      "exposure_registry_controlled_profile.controlled_rows[Archetype=TRN]"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
+    "answer_type": "long_answer",
+    "answer_options": [],
     "source_table_default_status": "Prefill / confirm",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1586,7 +1903,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains TRN",
+      "data_provenance_profile.sensitive_special_category_signals",
+      "exposure_registry_controlled_profile.controlled_rows[Archetype=TRN]"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes contains TRN",
+      "data_provenance_profile.sensitive_special_category_signals",
+      "exposure_registry_controlled_profile.controlled_rows[Archetype=TRN]",
+      "target_feature_profile.archetype_profile.BIOMETRIC_TRANSLATOR"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-034",
@@ -1604,28 +1935,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.JUDGE",
-      "target_feature_profile.decision_support_profile",
-      "exposure_registry.triggered_rows.JUDGE"
+      "target_feature_profile.activities[*].archetype_codes",
+      "data_provenance_profile.automated_decision_profiling_human_review_signal"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear. HITL becomes downstream effect",
-      "not Vault field"
-    ],
-    "source_table_default_status": "Prefill / confirm",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear. HITL becomes downstream effect, not Vault field.",
+    "helper_text": "Options: Yes, No, Unclear. HITL becomes downstream effect, not Vault field. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AUP",
@@ -1634,8 +1959,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes",
+      "data_provenance_profile.automated_decision_profiling_human_review_signal"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes",
+      "data_provenance_profile.automated_decision_profiling_human_review_signal",
+      "target_feature_profile.archetype_profile.JUDGE",
+      "target_feature_profile.decision_support_profile",
+      "exposure_registry.triggered_rows.JUDGE"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-035",
@@ -1653,27 +1992,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.OPTIMIZER",
-      "target_feature_profile.optimization_profile",
-      "exposure_registry.triggered_rows.OPTIMIZER"
+      "target_feature_profile.activities[*].archetype_codes"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
-    "source_table_default_status": "Prefill / confirm",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AUP",
@@ -1682,8 +2015,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes",
+      "target_feature_profile.archetype_profile.OPTIMIZER",
+      "target_feature_profile.optimization_profile",
+      "exposure_registry.triggered_rows.OPTIMIZER"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-036",
@@ -1701,27 +2046,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.SHIELD",
-      "target_feature_profile.safety_security_profile",
-      "exposure_registry.triggered_rows.SHIELD"
+      "target_feature_profile.activities[*].archetype_codes",
+      "data_provenance_profile.security_access_controls"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
-    "source_table_default_status": "Prefill / confirm",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AUP",
@@ -1730,8 +2070,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes",
+      "data_provenance_profile.security_access_controls"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes",
+      "data_provenance_profile.security_access_controls",
+      "target_feature_profile.archetype_profile.SHIELD",
+      "target_feature_profile.safety_security_profile",
+      "exposure_registry.triggered_rows.SHIELD"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-037",
@@ -1749,27 +2103,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.MOVER",
-      "target_feature_profile.action_execution_profile",
-      "exposure_registry.triggered_rows.MOVER"
+      "target_feature_profile.activities[*].external_internal_action_signal",
+      "data_provenance_profile.cross_border_transfer_location_custody"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
-    "source_table_default_status": "Prefill / confirm",
+    "answer_type": "long_answer",
+    "answer_options": [],
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AGT",
@@ -1778,8 +2127,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].external_internal_action_signal",
+      "data_provenance_profile.cross_border_transfer_location_custody"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].external_internal_action_signal",
+      "data_provenance_profile.cross_border_transfer_location_custody",
+      "target_feature_profile.archetype_profile.MOVER",
+      "target_feature_profile.action_execution_profile",
+      "exposure_registry.triggered_rows.MOVER"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-038",
@@ -1797,23 +2160,17 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_feature_profile.archetype_profile.GENERALIST",
-      "target_feature_profile.activities",
-      "exposure_registry.triggered_rows.GENERALIST"
+      "target_feature_profile.activities[*].archetype_codes"
     ],
-    "answer_type": "dropdown",
-    "answer_options": [
-      "Yes",
-      "No",
-      "Unclear"
-    ],
+    "answer_type": "long_answer",
+    "answer_options": [],
     "source_table_default_status": "Prefill / confirm",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1827,7 +2184,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "archetypes"
+    "vault_payload_group": "archetypes",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[*].archetype_codes"
+    ],
+    "answer_extractor": "archetype_capability_summary",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[*].archetype_codes",
+      "target_feature_profile.archetype_profile.GENERALIST",
+      "target_feature_profile.activities",
+      "exposure_registry.triggered_rows.GENERALIST"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-039",
@@ -1846,8 +2215,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
       "data_provenance_profile.data_categories",
-      "data_provenance_profile.individuals_and_relationships",
-      "integrated_dap_report.data_categories_sensitivity_profile"
+      "data_provenance_profile.individuals_and_relationships"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -1859,9 +2227,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -1875,7 +2243,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "vault_payload_group": "compliance",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.data_categories",
+      "data_provenance_profile.individuals_and_relationships"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "data_provenance_profile.data_categories",
+      "data_provenance_profile.individuals_and_relationships",
+      "integrated_dap_report.data_categories_sensitivity_profile"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-040",
@@ -1893,9 +2273,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.business_context.market_scope.eu_uk",
-      "data_provenance_profile.law_regulatory_readiness_matrix",
-      "integrated_dap_report.governance_readiness_matrix"
+      "legal_cartography_index.document_coverage_index[Annexure A: EEA/UK/Swiss Supplemental Notice]",
+      "data_provenance_profile.law_regulatory_readiness_matrix"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -1903,17 +2282,17 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "No",
       "Unclear"
     ],
-    "source_table_default_status": "Prefill / confirm",
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA SCCs",
@@ -1923,8 +2302,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "compliance",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.document_coverage_index[Annexure A: EEA/UK/Swiss Supplemental Notice]",
+      "data_provenance_profile.law_regulatory_readiness_matrix"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "legal_cartography_index.document_coverage_index[Annexure A: EEA/UK/Swiss Supplemental Notice]",
+      "data_provenance_profile.law_regulatory_readiness_matrix",
+      "target_profile.business_context.market_scope.eu_uk",
+      "integrated_dap_report.governance_readiness_matrix"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-041",
@@ -1942,9 +2334,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.business_context.market_scope.california",
-      "data_provenance_profile.law_regulatory_readiness_matrix",
-      "integrated_dap_report.governance_readiness_matrix"
+      "legal_cartography_index.document_coverage_index[Annexure B: California CCPA/CPRA Notice]",
+      "data_provenance_profile.law_regulatory_readiness_matrix"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -1952,17 +2343,17 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "No",
       "Unclear"
     ],
-    "source_table_default_status": "Prefill / confirm",
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA CCPA/CPRA",
@@ -1971,8 +2362,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "compliance",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "legal_cartography_index.document_coverage_index[Annexure B: California CCPA/CPRA Notice]",
+      "data_provenance_profile.law_regulatory_readiness_matrix"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "legal_cartography_index.document_coverage_index[Annexure B: California CCPA/CPRA Notice]",
+      "data_provenance_profile.law_regulatory_readiness_matrix",
+      "target_profile.business_context.market_scope.california",
+      "integrated_dap_report.governance_readiness_matrix"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-042",
@@ -1990,24 +2394,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "target_profile.business_context.market_scope.other_regions",
       "data_provenance_profile.law_regulatory_readiness_matrix",
-      "integrated_dap_report.governance_readiness_matrix"
+      "target_profile.business_context.regulated_sector_hints"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Canada, Australia, Singapore, Brazil, and other customer/user markets to be confirmed",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Canada, Australia, Singapore, Brazil, and other customer/user markets to be confirmed",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo examples: Canada, Australia, Singapore, Brazil, sector-specific regimes.",
-    "demo_market_suggestion": "Canada, Australia, Singapore, Brazil, and other customer/user markets to be confirmed",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo examples: Canada, Australia, Singapore, Brazil, sector-specific regimes. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_PP",
@@ -2016,8 +2419,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "compliance",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.law_regulatory_readiness_matrix",
+      "target_profile.business_context.regulated_sector_hints"
+    ],
+    "answer_extractor": "profile_text",
+    "evidence_source_mapping": [
+      "data_provenance_profile.law_regulatory_readiness_matrix",
+      "target_profile.business_context.regulated_sector_hints",
+      "target_profile.business_context.market_scope.other_regions",
+      "integrated_dap_report.governance_readiness_matrix"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-043",
@@ -2029,15 +2445,13 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "lawyer_question": "Does the product process health, medical, wellness, clinical, biometric, or similar sensitive data?",
     "public_question_label": "Does the product process health, medical, wellness, clinical, biometric, or similar sensitive data?",
     "canonical_path": "compliance.sens_health + archetypes.sens_bio",
-    "vault_payload_path": "compliance.sens_health + archetypes.sens_bio",
+    "vault_payload_path": "compliance.sens_health` + `archetypes.sens_bio",
     "qualified_review_path": null,
     "path_type": "literal_vault_payload",
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "data_provenance_profile.sensitive_special_category_signals",
-      "target_feature_profile.regulated_context_profile",
-      "exposure_registry.BIO/health rows"
+      "data_provenance_profile.sensitive_special_category_signals"
     ],
     "answer_type": "select",
     "answer_options": [
@@ -2052,9 +2466,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2069,7 +2483,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "vault_payload_group": "compliance",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.sensitive_special_category_signals"
+    ],
+    "answer_extractor": "select_from_profile_signal",
+    "evidence_source_mapping": [
+      "data_provenance_profile.sensitive_special_category_signals",
+      "target_feature_profile.regulated_context_profile",
+      "exposure_registry.BIO/health rows"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-044",
@@ -2087,9 +2512,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "data_provenance_profile.sensitive_special_category_signals",
-      "target_feature_profile.regulated_context_profile.financial",
-      "exposure_registry.financial_risk_rows"
+      "data_provenance_profile.sensitive_special_category_signals"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2101,9 +2524,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2117,7 +2540,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "vault_payload_group": "compliance",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.sensitive_special_category_signals"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "data_provenance_profile.sensitive_special_category_signals",
+      "target_feature_profile.regulated_context_profile.financial",
+      "exposure_registry.financial_risk_rows"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-045",
@@ -2135,9 +2569,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "data_provenance_profile.individuals_and_relationships",
-      "target_feature_profile.regulated_context_profile.employment",
-      "exposure_registry.employment_risk_rows"
+      "target_feature_profile.activities[1].data_content_object_touched",
+      "data_provenance_profile.individuals_and_relationships"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2145,17 +2578,17 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "No",
       "Unclear"
     ],
-    "source_table_default_status": "Prefill / confirm",
+    "source_table_default_status": "Review / complete",
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
-    "helper_text": "Options: Yes, No, Unclear.",
+    "helper_text": "Options: Yes, No, Unclear. Review and complete: diligence fields partially support this answer.",
     "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AUP",
@@ -2166,8 +2599,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": "compliance",
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "target_feature_profile.activities[1].data_content_object_touched",
+      "data_provenance_profile.individuals_and_relationships"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "target_feature_profile.activities[1].data_content_object_touched",
+      "data_provenance_profile.individuals_and_relationships",
+      "target_feature_profile.regulated_context_profile.employment",
+      "exposure_registry.employment_risk_rows"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-046",
@@ -2185,9 +2631,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
     "backend_prefill_mapping": [
-      "data_provenance_profile.children_minors_signal",
-      "extended_dap_india_readiness_profile.india_children_under_18_signal",
-      "integrated_dap_report.children_tracking_profile"
+      "data_provenance_profile.children_minors_signal"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2199,9 +2643,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2216,7 +2660,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "vault_payload_group": "compliance",
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "data_provenance_profile.children_minors_signal"
+    ],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "data_provenance_profile.children_minors_signal",
+      "extended_dap_india_readiness_profile.india_children_under_18_signal",
+      "integrated_dap_report.children_tracking_profile"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-047",
@@ -2233,30 +2688,25 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "path_type": "literal_vault_payload",
     "writes_to_vault_payload": true,
     "writes_to_india_privacy_cyber": false,
-    "backend_prefill_mapping": [
-      "data_provenance_profile.sensitive_special_category_signals",
-      "target_feature_profile.user_context_profile.distress",
-      "exposure_registry.vulnerable_user_rows"
-    ],
+    "backend_prefill_mapping": [],
     "answer_type": "dropdown",
     "answer_options": [
       "Yes",
       "No",
-      "Unclear. If yes",
-      "stronger AUP/HITL language required"
+      "Unclear"
     ],
     "source_table_default_status": "Need to fill",
     "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "No intentional targeting of distressed or vulnerable users; support/escalation language recommended if user harm risk exists",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "No intentional targeting of distressed or vulnerable users; support/escalation language recommended if user harm risk exists",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Yes, No, Unclear. If yes, stronger AUP/HITL language required.",
-    "demo_market_suggestion": "No intentional targeting of distressed or vulnerable users; support/escalation language recommended if user harm risk exists",
+    "prefill_source": "reviewer_input",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "reviewer_input_required",
+    "ui_badge": "Reviewer input required",
+    "evidence_status": "NO_DIRECT_DILIGENCE_FIELD",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Yes, No, Unclear. If yes, stronger AUP/HITL language required. No direct diligence field currently answers this question.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_AUP",
       "DOC_DPIA"
@@ -2264,8 +2714,17 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": "compliance"
+    "reviewer_action": "Fill before draft preparation",
+    "vault_payload_group": "compliance",
+    "prefill_strength": "NONE",
+    "answer_prefill_mapping": [],
+    "answer_extractor": "dropdown_from_profile_signal",
+    "evidence_source_mapping": [
+      "data_provenance_profile.sensitive_special_category_signals",
+      "target_feature_profile.user_context_profile.distress",
+      "exposure_registry.vulnerable_user_rows"
+    ],
+    "field_mapping_locked_class": "NO_DIRECT_DILIGENCE_FIELD"
   },
   {
     "question_id": "QR-048",
@@ -2283,8 +2742,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_market_scope_signal",
-      "integrated_dap_report.report_boundary_source_coverage.india_scope"
+      "extended_dap_india_readiness_profile.fields[field_id=india_market_scope_signal].value_summary"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2296,9 +2754,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2313,7 +2771,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_market_scope_signal].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_market_scope_signal].value_summary",
+      "extended_dap_india_readiness_profile.india_market_scope_signal",
+      "integrated_dap_report.report_boundary_source_coverage.india_scope"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-049",
@@ -2331,8 +2800,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_operations_signal",
-      "integrated_dap_report.territorial_scope.india_operations"
+      "extended_dap_india_readiness_profile.fields[field_id=india_operations_signal].value_summary"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2344,9 +2812,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2361,7 +2829,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_operations_signal].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_operations_signal].value_summary",
+      "extended_dap_india_readiness_profile.india_operations_signal",
+      "integrated_dap_report.territorial_scope.india_operations"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-050",
@@ -2379,8 +2858,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_exclusion_or_no_exclusion_signal",
-      "legal_cartography_index.control_language_locator.territorial_exclusion"
+      "extended_dap_india_readiness_profile.fields[field_id=india_exclusion_or_no_exclusion_signal].value_summary"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2392,9 +2870,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2408,7 +2886,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_exclusion_or_no_exclusion_signal].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_exclusion_or_no_exclusion_signal].value_summary",
+      "extended_dap_india_readiness_profile.india_exclusion_or_no_exclusion_signal",
+      "legal_cartography_index.control_language_locator.territorial_exclusion"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-051",
@@ -2426,8 +2915,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_personal_data_processing_signal",
-      "extended_dap_india_readiness_profile.india_data_principal_population_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_personal_data_processing_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_data_principal_population_signal].value_summary"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2439,9 +2928,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2455,7 +2944,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_personal_data_processing_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_data_principal_population_signal].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_personal_data_processing_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_data_principal_population_signal].value_summary",
+      "extended_dap_india_readiness_profile.india_personal_data_processing_signal",
+      "extended_dap_india_readiness_profile.india_data_principal_population_signal"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-052",
@@ -2473,23 +2975,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_role_mapping_candidate",
-      "integrated_dap_report.data_relationship_role_map.india_role"
+      "extended_dap_india_readiness_profile.fields[field_id=india_role_mapping_candidate].value_summary",
+      "data_provenance_profile.role_relationship_readiness"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Likely Data Fiduciary for direct users and Data Processor for customer-submitted end-user data; confirm actual role split",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Likely Data Fiduciary for direct users and Data Processor for customer-submitted end-user data; confirm actual role split",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo examples: Data Fiduciary, Data Processor, both, unclear. Confirm with counsel.",
-    "demo_market_suggestion": "Likely Data Fiduciary for direct users and Data Processor for customer-submitted end-user data; confirm actual role split",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo examples: Data Fiduciary, Data Processor, both, unclear. Confirm with counsel. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_PP"
@@ -2497,8 +2999,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_role_mapping_candidate].value_summary",
+      "data_provenance_profile.role_relationship_readiness"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_role_mapping_candidate].value_summary",
+      "data_provenance_profile.role_relationship_readiness",
+      "extended_dap_india_readiness_profile.india_role_mapping_candidate",
+      "integrated_dap_report.data_relationship_role_map.india_role"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-053",
@@ -2516,8 +3031,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_dpdp_notice_surface_signal",
-      "integrated_dap_report.notice_consent_rights_accountability"
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpdp_notice_surface_signal].value_summary",
+      "data_provenance_profile.privacy_notice_visibility"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2530,9 +3045,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2545,7 +3060,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpdp_notice_surface_signal].value_summary",
+      "data_provenance_profile.privacy_notice_visibility"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpdp_notice_surface_signal].value_summary",
+      "data_provenance_profile.privacy_notice_visibility",
+      "extended_dap_india_readiness_profile.india_dpdp_notice_surface_signal",
+      "integrated_dap_report.notice_consent_rights_accountability"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-054",
@@ -2563,23 +3091,24 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_consent_authorization_signal",
-      "extended_dap_india_readiness_profile.india_purpose_specificity_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_consent_authorization_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_purpose_specificity_signal].value_summary",
+      "data_provenance_profile.purpose_use_signals"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Processing purposes should be tied to service delivery, account administration, security, support, billing, and user-requested AI processing",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Processing purposes should be tied to service delivery, account administration, security, support, billing, and user-requested AI processing",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo helper: describe purposes and legal/contractual basis in plain terms.",
-    "demo_market_suggestion": "Processing purposes should be tied to service delivery, account administration, security, support, billing, and user-requested AI processing",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP",
       "DOC_DPA"
@@ -2588,7 +3117,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_consent_authorization_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_purpose_specificity_signal].value_summary",
+      "data_provenance_profile.purpose_use_signals"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_consent_authorization_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_purpose_specificity_signal].value_summary",
+      "data_provenance_profile.purpose_use_signals",
+      "extended_dap_india_readiness_profile.india_consent_authorization_signal",
+      "extended_dap_india_readiness_profile.india_purpose_specificity_signal"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-055",
@@ -2606,23 +3150,24 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_withdrawal_revocation_signal",
-      "integrated_dap_report.notice_consent_rights_accountability.withdrawal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_withdrawal_revocation_signal].value_summary",
+      "data_provenance_profile.consent_withdrawal_controls",
+      "data_provenance_profile.rights_request_routes"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Users may withdraw consent or request deletion through privacy email, account settings, or support workflow",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Users may withdraw consent or request deletion through privacy email, account settings, or support workflow",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo helper: describe account setting, email route, support ticket, or manual process.",
-    "demo_market_suggestion": "Users may withdraw consent or request deletion through privacy email, account settings, or support workflow",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP"
     ],
@@ -2630,7 +3175,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_withdrawal_revocation_signal].value_summary",
+      "data_provenance_profile.consent_withdrawal_controls",
+      "data_provenance_profile.rights_request_routes"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_withdrawal_revocation_signal].value_summary",
+      "data_provenance_profile.consent_withdrawal_controls",
+      "data_provenance_profile.rights_request_routes",
+      "extended_dap_india_readiness_profile.india_withdrawal_revocation_signal",
+      "integrated_dap_report.notice_consent_rights_accountability.withdrawal"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-056",
@@ -2648,23 +3208,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_grievance_contact_signal",
-      "integrated_dap_report.notice_consent_rights_accountability.grievance"
+      "extended_dap_india_readiness_profile.fields[field_id=india_grievance_contact_signal].value_summary",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "privacy@[company-domain].com or designated grievance/privacy contact",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "privacy@[company-domain].com or designated grievance/privacy contact",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo examples: privacy email, grievance officer, DPO, legal contact.",
-    "demo_market_suggestion": "privacy@[company-domain].com or designated grievance/privacy contact",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP"
     ],
@@ -2672,7 +3232,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_grievance_contact_signal].value_summary",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_grievance_contact_signal].value_summary",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals",
+      "extended_dap_india_readiness_profile.india_grievance_contact_signal",
+      "integrated_dap_report.notice_consent_rights_accountability.grievance"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-057",
@@ -2690,7 +3263,7 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_consent_manager_public_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_consent_manager_public_signal].value_summary"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2699,18 +3272,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "Not applicable",
       "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Not currently integrated; monitor if Indian Consent Manager ecosystem becomes relevant to product flow",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Not currently integrated; monitor if Indian Consent Manager ecosystem becomes relevant to product flow",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Yes, No, Not applicable, Unclear.",
-    "demo_market_suggestion": "Not currently integrated; monitor if Indian Consent Manager ecosystem becomes relevant to product flow",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Yes, No, Not applicable, Unclear. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP",
       "DOC_DPA"
@@ -2718,8 +3291,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_consent_manager_public_signal].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_consent_manager_public_signal].value_summary",
+      "extended_dap_india_readiness_profile.india_consent_manager_public_signal"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-058",
@@ -2737,8 +3320,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_children_under_18_signal",
-      "integrated_dap_report.children_tracking_profile"
+      "extended_dap_india_readiness_profile.fields[field_id=india_children_under_18_signal].value_summary",
+      "data_provenance_profile.children_minors_signal"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2750,9 +3333,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2766,7 +3349,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_children_under_18_signal].value_summary",
+      "data_provenance_profile.children_minors_signal"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_children_under_18_signal].value_summary",
+      "data_provenance_profile.children_minors_signal",
+      "extended_dap_india_readiness_profile.india_children_under_18_signal",
+      "integrated_dap_report.children_tracking_profile"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-059",
@@ -2784,22 +3380,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_child_consent_route_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_consent_route_signal].value_summary",
+      "data_provenance_profile.children_minors_signal"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "If minors are permitted, require parent/guardian consent workflow before collection or AI interaction",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "If minors are permitted, require parent/guardian consent workflow before collection or AI interaction",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: describe age-gate, guardian consent, school/admin approval, or mark N/A.",
-    "demo_market_suggestion": "If minors are permitted, require parent/guardian consent workflow before collection or AI interaction",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: describe age-gate, guardian consent, school/admin approval, or mark N/A. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP",
       "DOC_AUP"
@@ -2807,8 +3404,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_consent_route_signal].value_summary",
+      "data_provenance_profile.children_minors_signal"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_consent_route_signal].value_summary",
+      "data_provenance_profile.children_minors_signal",
+      "extended_dap_india_readiness_profile.india_child_consent_route_signal"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-060",
@@ -2826,8 +3435,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_child_tracking_or_ads_signal",
-      "integrated_dap_report.cookies_tracking_marketing_profiling"
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_tracking_or_ads_signal].value_summary",
+      "data_provenance_profile.children_minors_signal"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2839,9 +3448,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2855,7 +3464,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_tracking_or_ads_signal].value_summary",
+      "data_provenance_profile.children_minors_signal"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_tracking_or_ads_signal].value_summary",
+      "data_provenance_profile.children_minors_signal",
+      "extended_dap_india_readiness_profile.india_child_tracking_or_ads_signal",
+      "integrated_dap_report.cookies_tracking_marketing_profiling"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-061",
@@ -2873,8 +3495,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_child_tracking_or_ads_signal",
-      "integrated_dap_report.cookies_tracking_marketing_profiling.child_ads"
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_tracking_or_ads_signal].value_summary",
+      "data_provenance_profile.cookies_tracking_marketing_controls"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2883,18 +3505,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "Not applicable",
       "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "No targeted advertising to children or minors",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "No targeted advertising to children or minors",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Options: Yes, No, Not applicable, Unclear.",
-    "demo_market_suggestion": "No targeted advertising to children or minors",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP",
       "DOC_AUP"
@@ -2903,7 +3525,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_tracking_or_ads_signal].value_summary",
+      "data_provenance_profile.cookies_tracking_marketing_controls"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_child_tracking_or_ads_signal].value_summary",
+      "data_provenance_profile.cookies_tracking_marketing_controls",
+      "extended_dap_india_readiness_profile.india_child_tracking_or_ads_signal",
+      "integrated_dap_report.cookies_tracking_marketing_profiling.child_ads"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-062",
@@ -2921,8 +3556,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_cross_border_transfer_signal",
-      "integrated_dap_report.location_cross_border_transfer_retention"
+      "extended_dap_india_readiness_profile.fields[field_id=india_cross_border_transfer_signal].value_summary",
+      "data_provenance_profile.cross_border_transfer_location_custody"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -2934,9 +3569,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -2950,7 +3585,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_cross_border_transfer_signal].value_summary",
+      "data_provenance_profile.cross_border_transfer_location_custody"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_cross_border_transfer_signal].value_summary",
+      "data_provenance_profile.cross_border_transfer_location_custody",
+      "extended_dap_india_readiness_profile.india_cross_border_transfer_signal",
+      "integrated_dap_report.location_cross_border_transfer_retention"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-063",
@@ -2968,30 +3616,40 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_restricted_territory_screening_gap"
+      "extended_dap_india_readiness_profile.fields[field_id=india_restricted_territory_screening_gap].value_summary"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "No automated restricted-territory screening confirmed; legal review required before India-related transfer restrictions are finalized",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "No automated restricted-territory screening confirmed; legal review required before India-related transfer restrictions are finalized",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: describe legal/compliance screen or mark no process.",
-    "demo_market_suggestion": "No automated restricted-territory screening confirmed; legal review required before India-related transfer restrictions are finalized",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: describe legal/compliance screen or mark no process. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA"
     ],
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_restricted_territory_screening_gap].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_restricted_territory_screening_gap].value_summary",
+      "extended_dap_india_readiness_profile.india_restricted_territory_screening_gap"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-064",
@@ -3009,23 +3667,24 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_vendor_transfer_map_signal",
-      "integrated_dap_report.contracts_vendors_subprocessors"
+      "extended_dap_india_readiness_profile.fields[field_id=india_vendor_transfer_map_signal].value_summary",
+      "data_provenance_profile.vendor_subprocessor_partner_inventory",
+      "data_provenance_profile.cross_border_transfer_location_custody"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Map each AI/model/cloud/vendor processor by function, country, data category, and transfer role",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Map each AI/model/cloud/vendor processor by function, country, data category, and transfer role",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo helper: list vendor, function, country/location, and data category.",
-    "demo_market_suggestion": "Map each AI/model/cloud/vendor processor by function, country, data category, and transfer role",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA Schedule C"
     ],
@@ -3033,7 +3692,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_vendor_transfer_map_signal].value_summary",
+      "data_provenance_profile.vendor_subprocessor_partner_inventory",
+      "data_provenance_profile.cross_border_transfer_location_custody"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_vendor_transfer_map_signal].value_summary",
+      "data_provenance_profile.vendor_subprocessor_partner_inventory",
+      "data_provenance_profile.cross_border_transfer_location_custody",
+      "extended_dap_india_readiness_profile.india_vendor_transfer_map_signal",
+      "integrated_dap_report.contracts_vendors_subprocessors"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-065",
@@ -3051,27 +3725,27 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_cert_in_reporting_signal",
-      "integrated_dap_report.security_access_incident_cert_in_readiness"
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_reporting_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_breach_notification_signal].value_summary"
     ],
     "answer_type": "dropdown",
     "answer_options": [
       "Yes",
       "No",
-      "Unclear. Confirm with counsel/technical team"
+      "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Potentially applicable if Indian infrastructure, users, operations, logs, or cyber incident obligations are in scope; confirm with counsel/security team",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Potentially applicable if Indian infrastructure, users, operations, logs, or cyber incident obligations are in scope; confirm with counsel/security team",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Yes, No, Unclear. Confirm with counsel/technical team.",
-    "demo_market_suggestion": "Potentially applicable if Indian infrastructure, users, operations, logs, or cyber incident obligations are in scope; confirm with counsel/security team",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Yes, No, Unclear. Confirm with counsel/technical team. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPIA",
@@ -3080,8 +3754,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_reporting_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_breach_notification_signal].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_reporting_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_breach_notification_signal].value_summary",
+      "extended_dap_india_readiness_profile.india_cert_in_reporting_signal",
+      "integrated_dap_report.security_access_incident_cert_in_readiness"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-066",
@@ -3099,23 +3786,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_cert_in_poc_public_signal",
-      "extended_dap_india_readiness_profile.india_cert_in_missing_proof"
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_poc_public_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_missing_proof].value_summary"
     ],
     "answer_type": "short_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "CTO / security lead / privacy lead to be designated as India cyber escalation contact",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "CTO / security lead / privacy lead to be designated as India cyber escalation contact",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo examples: security lead, CTO, privacy lead, legal ops contact.",
-    "demo_market_suggestion": "CTO / security lead / privacy lead to be designated as India cyber escalation contact",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo examples: security lead, CTO, privacy lead, legal ops contact. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPIA"
@@ -3123,8 +3810,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_poc_public_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_missing_proof].value_summary"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_poc_public_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_cert_in_missing_proof].value_summary",
+      "extended_dap_india_readiness_profile.india_cert_in_poc_public_signal",
+      "extended_dap_india_readiness_profile.india_cert_in_missing_proof"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-067",
@@ -3142,23 +3842,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_six_hour_reporting_workflow_signal",
-      "integrated_dap_report.security_access_incident_cert_in_readiness"
+      "extended_dap_india_readiness_profile.fields[field_id=india_six_hour_reporting_workflow_signal].value_summary",
+      "data_provenance_profile.breach_incident_readiness"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Incident triage should identify India-reportable cyber events and escalate to designated owner within six hours",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Incident triage should identify India-reportable cyber events and escalate to designated owner within six hours",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: describe detection, triage, legal review, escalation, regulator-reporting owner.",
-    "demo_market_suggestion": "Incident triage should identify India-reportable cyber events and escalate to designated owner within six hours",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: describe detection, triage, legal review, escalation, regulator-reporting owner. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPIA"
@@ -3166,8 +3866,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_six_hour_reporting_workflow_signal].value_summary",
+      "data_provenance_profile.breach_incident_readiness"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_six_hour_reporting_workflow_signal].value_summary",
+      "data_provenance_profile.breach_incident_readiness",
+      "extended_dap_india_readiness_profile.india_six_hour_reporting_workflow_signal",
+      "integrated_dap_report.security_access_incident_cert_in_readiness"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-068",
@@ -3185,8 +3898,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_180_day_log_signal",
-      "extended_dap_india_readiness_profile.india_log_retention_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_180_day_log_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_log_retention_signal].value_summary",
+      "data_provenance_profile.prompt_output_logging_telemetry_controls"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -3195,18 +3909,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "Partial",
       "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Security and access logs should be retained for at least 180 days where India cyber obligations apply",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Security and access logs should be retained for at least 180 days where India cyber obligations apply",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Yes, No, Partial, Unclear.",
-    "demo_market_suggestion": "Security and access logs should be retained for at least 180 days where India cyber obligations apply",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Yes, No, Partial, Unclear. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPIA"
@@ -3214,8 +3928,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_180_day_log_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_log_retention_signal].value_summary",
+      "data_provenance_profile.prompt_output_logging_telemetry_controls"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_180_day_log_signal].value_summary",
+      "extended_dap_india_readiness_profile.fields[field_id=india_log_retention_signal].value_summary",
+      "data_provenance_profile.prompt_output_logging_telemetry_controls",
+      "extended_dap_india_readiness_profile.india_180_day_log_signal",
+      "extended_dap_india_readiness_profile.india_log_retention_signal"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-069",
@@ -3233,7 +3962,8 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_logs_accessible_in_india_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_logs_accessible_in_india_signal].value_summary",
+      "data_provenance_profile.security_access_controls"
     ],
     "answer_type": "dropdown",
     "answer_options": [
@@ -3242,18 +3972,18 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
       "Partial",
       "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Relevant logs should be exportable and preserved for India-related cyber/regulatory requests",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Relevant logs should be exportable and preserved for India-related cyber/regulatory requests",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Yes, No, Partial, Unclear.",
-    "demo_market_suggestion": "Relevant logs should be exportable and preserved for India-related cyber/regulatory requests",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Yes, No, Partial, Unclear. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPIA"
@@ -3261,8 +3991,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_logs_accessible_in_india_signal].value_summary",
+      "data_provenance_profile.security_access_controls"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_logs_accessible_in_india_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "extended_dap_india_readiness_profile.india_logs_accessible_in_india_signal"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-070",
@@ -3280,23 +4022,24 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_security_policy_signal",
-      "integrated_dap_report.security_access_incident_cert_in_readiness.security_policy"
+      "extended_dap_india_readiness_profile.fields[field_id=india_security_policy_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "data_provenance_profile.privacy_accountability_documentation_signals"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Written security policy or trust/security posture covering access control, encryption, vendors, incident response, and audit logs",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Written security policy or trust/security posture covering access control, encryption, vendors, incident response, and audit logs",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo helper: summarize security policy, trust center, SOC2/ISO, or mark none.",
-    "demo_market_suggestion": "Written security policy or trust/security posture covering access control, encryption, vendors, incident response, and audit logs",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_PP",
@@ -3306,7 +4049,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_security_policy_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "data_provenance_profile.privacy_accountability_documentation_signals"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_security_policy_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "data_provenance_profile.privacy_accountability_documentation_signals",
+      "extended_dap_india_readiness_profile.india_security_policy_signal",
+      "integrated_dap_report.security_access_incident_cert_in_readiness.security_policy"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-071",
@@ -3324,23 +4082,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_access_control_signal",
+      "extended_dap_india_readiness_profile.fields[field_id=india_access_control_signal].value_summary",
       "data_provenance_profile.security_access_controls"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Role-based access control, MFA for admin accounts, least-privilege permissions, and access logging",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Role-based access control, MFA for admin accounts, least-privilege permissions, and access logging",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo helper: describe RBAC, MFA, admin access, approval, logging.",
-    "demo_market_suggestion": "Role-based access control, MFA for admin accounts, least-privilege permissions, and access logging",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_SOP"
@@ -3349,7 +4107,19 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_access_control_signal].value_summary",
+      "data_provenance_profile.security_access_controls"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_access_control_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "extended_dap_india_readiness_profile.india_access_control_signal"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-072",
@@ -3367,31 +4137,44 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_vendor_security_terms_signal",
-      "integrated_dap_report.contracts_vendors_subprocessors.vendor_security"
+      "extended_dap_india_readiness_profile.fields[field_id=india_vendor_security_terms_signal].value_summary",
+      "data_provenance_profile.processor_subprocessor_governance_controls"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Vendor DPAs/security addenda should include confidentiality, security controls, breach notice, and subprocessor obligations",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Vendor DPAs/security addenda should include confidentiality, security controls, breach notice, and subprocessor obligations",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: confirm vendor security addendum, DPA, audit rights, breach notice.",
-    "demo_market_suggestion": "Vendor DPAs/security addenda should include confidentiality, security controls, breach notice, and subprocessor obligations",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: confirm vendor security addendum, DPA, audit rights, breach notice. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA"
     ],
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_vendor_security_terms_signal].value_summary",
+      "data_provenance_profile.processor_subprocessor_governance_controls"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_vendor_security_terms_signal].value_summary",
+      "data_provenance_profile.processor_subprocessor_governance_controls",
+      "extended_dap_india_readiness_profile.india_vendor_security_terms_signal",
+      "integrated_dap_report.contracts_vendors_subprocessors.vendor_security"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-073",
@@ -3409,23 +4192,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_incident_response_signal",
-      "integrated_dap_report.security_access_incident_cert_in_readiness.incident_response"
+      "extended_dap_india_readiness_profile.fields[field_id=india_incident_response_signal].value_summary",
+      "data_provenance_profile.breach_incident_readiness"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Incident response process should cover detection, triage, containment, legal/privacy review, customer notice, and regulator escalation",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Incident response process should cover detection, triage, containment, legal/privacy review, customer notice, and regulator escalation",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
+    "source_table_default_status": "Prefill / confirm",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
     "helper_text": "Demo helper: describe triage, containment, notice, escalation, owner, timelines.",
-    "demo_market_suggestion": "Incident response process should cover detection, triage, containment, legal/privacy review, customer notice, and regulator escalation",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPA",
@@ -3435,7 +4218,20 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_incident_response_signal].value_summary",
+      "data_provenance_profile.breach_incident_readiness"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_incident_response_signal].value_summary",
+      "data_provenance_profile.breach_incident_readiness",
+      "extended_dap_india_readiness_profile.india_incident_response_signal",
+      "integrated_dap_report.security_access_incident_cert_in_readiness.incident_response"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-074",
@@ -3453,23 +4249,24 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_audit_trail_signal",
-      "data_provenance_profile.security_access_controls"
+      "extended_dap_india_readiness_profile.fields[field_id=india_audit_trail_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "data_provenance_profile.prompt_output_logging_telemetry_controls"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Maintain admin logs, access logs, model/API logs, security events, and incident records where technically available",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Maintain admin logs, access logs, model/API logs, security events, and incident records where technically available",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: describe admin logs, access logs, model logs, security monitoring.",
-    "demo_market_suggestion": "Maintain admin logs, access logs, model/API logs, security events, and incident records where technically available",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: describe admin logs, access logs, model logs, security monitoring. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_SOP",
       "DOC_DPIA"
@@ -3477,8 +4274,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_audit_trail_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "data_provenance_profile.prompt_output_logging_telemetry_controls"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_audit_trail_signal].value_summary",
+      "data_provenance_profile.security_access_controls",
+      "data_provenance_profile.prompt_output_logging_telemetry_controls",
+      "extended_dap_india_readiness_profile.india_audit_trail_signal"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-075",
@@ -3496,23 +4307,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_data_protection_procedure_signal",
-      "integrated_dap_report.governance_readiness_matrix"
+      "extended_dap_india_readiness_profile.fields[field_id=india_data_protection_procedure_signal].value_summary",
+      "data_provenance_profile.privacy_accountability_documentation_signals"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Internal privacy/security procedure with owner, request workflow, incident escalation, vendor review, and periodic review cadence",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Internal privacy/security procedure with owner, request workflow, incident escalation, vendor review, and periodic review cadence",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: describe internal procedure, owner, review cadence, escalation path.",
-    "demo_market_suggestion": "Internal privacy/security procedure with owner, request workflow, incident escalation, vendor review, and periodic review cadence",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: describe internal procedure, owner, review cadence, escalation path. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPA",
       "DOC_PP",
@@ -3521,8 +4332,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_data_protection_procedure_signal].value_summary",
+      "data_provenance_profile.privacy_accountability_documentation_signals"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_data_protection_procedure_signal].value_summary",
+      "data_provenance_profile.privacy_accountability_documentation_signals",
+      "extended_dap_india_readiness_profile.india_data_protection_procedure_signal",
+      "integrated_dap_report.governance_readiness_matrix"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-076",
@@ -3540,27 +4364,27 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_large_scale_data_gap",
-      "extended_dap_india_readiness_profile.india_sdf_screen_signal"
+      "extended_dap_india_readiness_profile.fields[field_id=india_large_scale_data_gap].value_summary",
+      "target_feature_profile.activities[1].data_content_object_touched"
     ],
     "answer_type": "dropdown",
     "answer_options": [
       "Yes",
       "No",
-      "Unclear. Confirm actual volume and user base"
+      "Unclear"
     ],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Unknown; confirm Indian user volume and whether large-scale/high-impact processing is expected",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Unknown; confirm Indian user volume and whether large-scale/high-impact processing is expected",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Options: Yes, No, Unclear. Confirm actual volume and user base.",
-    "demo_market_suggestion": "Unknown; confirm Indian user volume and whether large-scale/high-impact processing is expected",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Options: Yes, No, Unclear. Confirm actual volume and user base. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPIA",
       "India readiness note"
@@ -3568,8 +4392,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_large_scale_data_gap].value_summary",
+      "target_feature_profile.activities[1].data_content_object_touched"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_large_scale_data_gap].value_summary",
+      "target_feature_profile.activities[1].data_content_object_touched",
+      "extended_dap_india_readiness_profile.india_large_scale_data_gap",
+      "extended_dap_india_readiness_profile.india_sdf_screen_signal"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-077",
@@ -3587,8 +4424,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_sensitive_high_risk_context_signal",
-      "integrated_dap_report.governance_readiness_matrix.high_risk_context"
+      "extended_dap_india_readiness_profile.fields[field_id=india_sensitive_high_risk_context_signal].value_summary",
+      "data_provenance_profile.sensitive_special_category_signals",
+      "target_profile.business_context.regulated_sector_hints"
     ],
     "answer_type": "select",
     "answer_options": [
@@ -3605,9 +4443,9 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "backend_prefill_available": true,
     "prefill_source": "backend_artifact",
     "initial_answer_value": null,
-    "initial_answer_value_strategy": "backend_extraction_at_runtime",
-    "ui_badge": "Diligence prefill — confirm",
-    "evidence_status": "DILIGENCE_DERIVED",
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence field prefill — confirm",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_FULL",
     "demo_prefill_value": null,
     "demo_disclaimer_required": false,
     "demo_disclaimer_text": null,
@@ -3622,7 +4460,22 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "required_for_draft_preparation": true,
     "final_gate_required": true,
     "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "vault_payload_group": null,
+    "prefill_strength": "FULL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_sensitive_high_risk_context_signal].value_summary",
+      "data_provenance_profile.sensitive_special_category_signals",
+      "target_profile.business_context.regulated_sector_hints"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_sensitive_high_risk_context_signal].value_summary",
+      "data_provenance_profile.sensitive_special_category_signals",
+      "target_profile.business_context.regulated_sector_hints",
+      "extended_dap_india_readiness_profile.india_sensitive_high_risk_context_signal",
+      "integrated_dap_report.governance_readiness_matrix.high_risk_context"
+    ],
+    "field_mapping_locked_class": "SAFE_PREFILL"
   },
   {
     "question_id": "QR-078",
@@ -3640,23 +4493,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_dpo_route_signal",
-      "extended_dap_india_readiness_profile.india_sdf_missing_proof"
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpo_route_signal].value_summary",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Designate privacy lead / DPO-style owner / grievance coordinator for India privacy escalation",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Designate privacy lead / DPO-style owner / grievance coordinator for India privacy escalation",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: identify privacy lead, DPO, grievance officer, legal/security owner, or mark none.",
-    "demo_market_suggestion": "Designate privacy lead / DPO-style owner / grievance coordinator for India privacy escalation",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: identify privacy lead, DPO, grievance officer, legal/security owner, or mark none. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_PP",
       "DOC_DPA",
@@ -3665,8 +4518,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpo_route_signal].value_summary",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpo_route_signal].value_summary",
+      "data_provenance_profile.privacy_governance_contact_accountability_signals",
+      "extended_dap_india_readiness_profile.india_dpo_route_signal",
+      "extended_dap_india_readiness_profile.india_sdf_missing_proof"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   },
   {
     "question_id": "QR-079",
@@ -3684,23 +4550,23 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "writes_to_vault_payload": false,
     "writes_to_india_privacy_cyber": true,
     "backend_prefill_mapping": [
-      "extended_dap_india_readiness_profile.india_dpia_audit_signal",
-      "integrated_dap_report.governance_readiness_matrix.dpia_audit"
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpia_audit_signal].value_summary",
+      "data_provenance_profile.privacy_accountability_documentation_signals"
     ],
     "answer_type": "long_answer",
     "answer_options": [],
-    "source_table_default_status": "Need to fill",
-    "backend_prefill_available": false,
-    "prefill_source": "market_norm_demo",
-    "initial_answer_value": "Conduct DPIA or independent risk assessment for high-risk, sensitive, large-scale, child, biometric, financial, or decision-impacting processing",
-    "initial_answer_value_strategy": "static_market_norm_demo_value",
-    "ui_badge": "Demo prefill — confirm",
-    "evidence_status": "NOT_DERIVED_FROM_DILIGENCE",
-    "demo_prefill_value": "Conduct DPIA or independent risk assessment for high-risk, sensitive, large-scale, child, biometric, financial, or decision-impacting processing",
-    "demo_disclaimer_required": true,
-    "demo_disclaimer_text": "Demo market-norm assumption only. This answer was not derived from the diligence system or verified public-source evidence. Confirm, edit, or replace before draft preparation.",
-    "helper_text": "Demo helper: describe DPIA, audit, assessment owner, cadence, or mark not yet implemented.",
-    "demo_market_suggestion": "Conduct DPIA or independent risk assessment for high-risk, sensitive, large-scale, child, biometric, financial, or decision-impacting processing",
+    "source_table_default_status": "Review / complete",
+    "backend_prefill_available": true,
+    "prefill_source": "backend_artifact",
+    "initial_answer_value": null,
+    "initial_answer_value_strategy": "field_extraction_at_runtime",
+    "ui_badge": "Diligence signal — review / complete",
+    "evidence_status": "DILIGENCE_FIELD_MAPPED_PARTIAL",
+    "demo_prefill_value": null,
+    "demo_disclaimer_required": false,
+    "demo_disclaimer_text": null,
+    "helper_text": "Demo helper: describe DPIA, audit, assessment owner, cadence, or mark not yet implemented. Review and complete: diligence fields partially support this answer.",
+    "demo_market_suggestion": null,
     "document_impact": [
       "DOC_DPIA",
       "DOC_SOP"
@@ -3708,8 +4574,21 @@ export const QUALIFIED_REVIEW_MAP = Object.freeze([
     "editable": true,
     "required_for_draft_preparation": true,
     "final_gate_required": true,
-    "reviewer_action": "Confirm or edit before draft preparation",
-    "vault_payload_group": null
+    "reviewer_action": "Review and complete before draft preparation",
+    "vault_payload_group": null,
+    "prefill_strength": "PARTIAL",
+    "answer_prefill_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpia_audit_signal].value_summary",
+      "data_provenance_profile.privacy_accountability_documentation_signals"
+    ],
+    "answer_extractor": "india_field_value_summary",
+    "evidence_source_mapping": [
+      "extended_dap_india_readiness_profile.fields[field_id=india_dpia_audit_signal].value_summary",
+      "data_provenance_profile.privacy_accountability_documentation_signals",
+      "extended_dap_india_readiness_profile.india_dpia_audit_signal",
+      "integrated_dap_report.governance_readiness_matrix.dpia_audit"
+    ],
+    "field_mapping_locked_class": "REVIEW_NEEDED_FROM_ARTIFACT"
   }
 ]);
 
@@ -3736,45 +4615,37 @@ export function assertQualifiedReviewMapIntegrity(map = QUALIFIED_REVIEW_MAP) {
     return acc;
   }, {});
 
-  if (questions.length !== QUALIFIED_REVIEW_LOCKED_COUNTS.question_count) {
-    errors.push(`question_count:${questions.length}`);
-  }
+  if (questions.length !== QUALIFIED_REVIEW_LOCKED_COUNTS.question_count) errors.push(`question_count:${questions.length}`);
 
-  const sectionCounts = countBy((question) => question.section_id);
-  for (const [sectionId, expected] of Object.entries(QUALIFIED_REVIEW_LOCKED_COUNTS.section_counts)) {
-    if (sectionCounts[sectionId] !== expected) errors.push(`section_count:${sectionId}:${sectionCounts[sectionId] || 0}:expected_${expected}`);
-  }
+  const checkCounts = (label, actual, expected) => {
+    for (const [key, value] of Object.entries(expected)) {
+      if ((actual[key] || 0) !== value) errors.push(`${label}:${key}:${actual[key] || 0}:expected_${value}`);
+    }
+  };
 
-  const answerTypeCounts = countBy((question) => question.answer_type);
-  for (const [answerType, expected] of Object.entries(QUALIFIED_REVIEW_LOCKED_COUNTS.answer_type_counts)) {
-    if (answerTypeCounts[answerType] !== expected) errors.push(`answer_type_count:${answerType}:${answerTypeCounts[answerType] || 0}:expected_${expected}`);
-  }
-
-  const statusCounts = countBy((question) => question.source_table_default_status);
-  for (const [status, expected] of Object.entries(QUALIFIED_REVIEW_LOCKED_COUNTS.source_table_status_counts)) {
-    if (statusCounts[status] !== expected) errors.push(`status_count:${status}:${statusCounts[status] || 0}:expected_${expected}`);
-  }
-
-  const prefillCounts = countBy((question) => question.prefill_source);
-  for (const [source, expected] of Object.entries(QUALIFIED_REVIEW_LOCKED_COUNTS.prefill_source_counts)) {
-    if (prefillCounts[source] !== expected) errors.push(`prefill_source_count:${source}:${prefillCounts[source] || 0}:expected_${expected}`);
-  }
+  checkCounts("section_count", countBy((question) => question.section_id), QUALIFIED_REVIEW_LOCKED_COUNTS.section_counts);
+  checkCounts("answer_type_count", countBy((question) => question.answer_type), QUALIFIED_REVIEW_LOCKED_COUNTS.answer_type_counts);
+  checkCounts("status_count", countBy((question) => question.source_table_default_status), QUALIFIED_REVIEW_LOCKED_COUNTS.source_table_status_counts);
+  checkCounts("prefill_strength_count", countBy((question) => question.prefill_strength), QUALIFIED_REVIEW_LOCKED_COUNTS.prefill_strength_counts);
+  checkCounts("prefill_source_count", countBy((question) => question.prefill_source), QUALIFIED_REVIEW_LOCKED_COUNTS.prefill_source_counts);
+  checkCounts("evidence_status_count", countBy((question) => question.evidence_status), QUALIFIED_REVIEW_LOCKED_COUNTS.evidence_status_counts);
 
   questions.forEach((question, index) => {
     const expectedId = `QR-${String(index + 1).padStart(3, "0")}`;
     if (question.question_id !== expectedId) errors.push(`sequence:${question.question_id}:expected_${expectedId}`);
+    if (!["FULL", "PARTIAL", "NONE"].includes(question.prefill_strength)) errors.push(`${expectedId}:bad_prefill_strength`);
+    if (!Array.isArray(question.answer_prefill_mapping)) errors.push(`${expectedId}:answer_prefill_mapping_not_array`);
+    if (!Array.isArray(question.evidence_source_mapping)) errors.push(`${expectedId}:evidence_source_mapping_not_array`);
+    if (question.prefill_strength === "NONE" && question.answer_prefill_mapping.length !== 0) errors.push(`${expectedId}:none_must_not_have_answer_mapping`);
+    if (question.prefill_strength !== "NONE" && question.answer_prefill_mapping.length === 0) errors.push(`${expectedId}:field_mapped_row_missing_answer_mapping`);
     if (question.editable !== true) errors.push(`${expectedId}:editable_must_be_true`);
     if (question.required_for_draft_preparation !== true) errors.push(`${expectedId}:required_for_draft_preparation_must_be_true`);
     if (!Array.isArray(question.document_impact) || question.document_impact.length === 0) errors.push(`${expectedId}:document_impact_missing`);
     if (question.section_id === "india_privacy_cyber" && question.writes_to_vault_payload !== false) errors.push(`${expectedId}:india_row_must_not_write_to_vault_payload`);
-    if (question.prefill_source === "market_norm_demo") {
-      if (question.demo_disclaimer_required !== true) errors.push(`${expectedId}:demo_disclaimer_required`);
-      if (question.evidence_status !== "NOT_DERIVED_FROM_DILIGENCE") errors.push(`${expectedId}:bad_demo_evidence_status`);
-      if (!question.demo_prefill_value) errors.push(`${expectedId}:demo_prefill_missing`);
-    }
-    if (question.prefill_source === "backend_artifact" && question.evidence_status !== "DILIGENCE_DERIVED") {
-      errors.push(`${expectedId}:bad_backend_evidence_status`);
-    }
+    if (question.prefill_source === "reviewer_input" && question.prefill_strength !== "NONE") errors.push(`${expectedId}:reviewer_input_only_for_none`);
+    if (question.prefill_source === "backend_artifact" && question.prefill_strength === "NONE") errors.push(`${expectedId}:backend_artifact_cannot_be_none`);
+    if (/^Review source artifacts:/i.test(String(question.initial_answer_value || ""))) errors.push(`${expectedId}:source_placeholder_initial_answer`);
+    if (/^Review source artifacts:/i.test(String(question.demo_prefill_value || ""))) errors.push(`${expectedId}:source_placeholder_demo_answer`);
   });
 
   return {
