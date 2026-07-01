@@ -7,6 +7,7 @@ import { buildRendererPayload } from "./report-renderer.js";
 import { buildQualifiedReviewSystemArtifacts } from "./qualified-review-system/branch.js";
 import { buildFeatureCandidateInventoryIndex, validateFeatureCandidateInventoryIndex } from "./m8-feature-candidate-inventory-index.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
+import { readPhaseArtifactWithResolvedLosslessFamilies } from "./lossless-family-resolver.js";
 
 const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload", featureCandidateInventory: "feature_candidate_inventory" });
 const QR_ACTOR = "qualified_review_system";
@@ -37,16 +38,13 @@ function normalizePhase(value) {
 }
 
 async function runM8FeatureCandidateInventoryPhase({ run, phase, contract }) {
-  const artifacts = {};
-  for (const artifactName of contract.reads) {
-    artifacts[artifactName] = await readArtifactPayload({ run_id: run.run_id, artifact_name: artifactName, agent_id: contract.actor_id });
-  }
+  const artifacts = await readResolvedArtifacts({ run_id: run.run_id, reads: contract.reads || [], agent_id: contract.actor_id, strict: true });
   const productArtifacts = Object.entries(artifacts).filter(([name]) => name.startsWith("lossless_family__")).map(([, artifact]) => artifact);
   const inventory = buildFeatureCandidateInventoryIndex(productArtifacts, { runId: run.run_id });
   const validation = validateFeatureCandidateInventoryIndex(inventory);
   if (validation.status !== "PASS") throw new Error(`M8_FEATURE_CANDIDATE_INVENTORY_VALIDATION_FAILED:${JSON.stringify(validation)}`);
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: ART.featureCandidateInventory, artifact: inventory, lock_status: "LOCKED" }));
-  await logEvent({ run_id: run.run_id, event_type: "M8_FEATURE_CANDIDATE_INVENTORY_COMPLETED", actor: contract.actor_id, payload: { phase, raw_hit_count: inventory.raw_hit_count, canonical_candidate_count: inventory.canonical_candidate_count, derivation_mode: inventory.derivation_mode } });
+  await logEvent({ run_id: run.run_id, event_type: "M8_FEATURE_CANDIDATE_INVENTORY_COMPLETED", actor: contract.actor_id, payload: { phase, raw_hit_count: inventory.raw_hit_count, canonical_candidate_count: inventory.canonical_candidate_count, source_families_indexed: inventory.source_families_indexed || [], derivation_mode: inventory.derivation_mode, shard_resolution_mandatory: true } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next });
 }
 
@@ -63,7 +61,7 @@ async function runNormalizedCompilerPhase({ run, phase, contract }) {
     saved.push(artifactName);
   }
   const qrSaved = await runQualifiedReviewBranch({ run, normalizedOutput: output, sourceArtifacts: artifacts, lockStatus: phaseLockStatus });
-  await logEvent({ run_id: run.run_id, event_type: "NORMALIZED_COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, saved_artifacts: saved, qualified_review_branch_saved_artifacts: qrSaved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, legacy_compiler_phase_retired: true, qualified_review_branch_separate: true } });
+  await logEvent({ run_id: run.run_id, event_type: "NORMALIZED_COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, saved_artifacts: saved, qualified_review_branch_saved_artifacts: qrSaved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, legacy_compiler_phase_retired: true, qualified_review_branch_separate: true, lossless_family_shards_resolved: true } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
 }
 
@@ -94,14 +92,24 @@ async function runRendererPhase({ run, phase, contract }) {
 }
 
 async function readArtifactsForCompiler({ run_id, reads, agent_id }) {
-  const artifacts = {};
-  const missingStaticArtifacts = [];
-  for (const artifactName of reads) {
-    try { artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id }); }
-    catch (_error) { artifacts[artifactName] = null; missingStaticArtifacts.push(artifactName); }
-  }
-  artifacts.normalized_compiler_missing_static_artifacts = missingStaticArtifacts;
+  const artifacts = await readResolvedArtifacts({ run_id, reads, agent_id, strict: false });
+  artifacts.normalized_compiler_missing_static_artifacts = Object.entries(artifacts).filter(([, value]) => value === null).map(([name]) => name);
   return loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKey: "normalized_compiler_dynamic_artifact_manifest" });
+}
+
+async function readResolvedArtifacts({ run_id, reads, agent_id, strict }) {
+  const artifacts = {};
+  const cache = {};
+  for (const artifactName of reads || []) {
+    try {
+      artifacts[artifactName] = await readPhaseArtifactWithResolvedLosslessFamilies({ run_id, artifact_name: artifactName, agent_id, cache });
+      if (artifactName === "source_family_index") cache.source_family_index = artifacts[artifactName];
+    } catch (error) {
+      if (strict) throw error;
+      artifacts[artifactName] = null;
+    }
+  }
+  return artifacts;
 }
 
 async function loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKey }) {
