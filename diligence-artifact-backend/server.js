@@ -43,7 +43,17 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/public", publicReviewerRouter);
-app.use(express.static(publicStaticRoot, { extensions: ["html"] }));
+app.use(express.static(publicStaticRoot, {
+  extensions: ["html"],
+  etag: false,
+  lastModified: false,
+  maxAge: 0,
+  setHeaders(res) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+  }
+}));
 app.use("/v1", requireApiKey);
 app.use("/v1", reviewerRouter);
 app.use("/agent3", requireApiKey);
