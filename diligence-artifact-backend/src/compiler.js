@@ -1,5 +1,5 @@
 import { buildIntegratedDapProjection } from "./integrated-dap-report.js";
-import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler.js";
+import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-section789-v2.js";
 import { toMachineStatus } from "./normalized-status.js";
 import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
 
@@ -45,14 +45,19 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       normalized_sections,
       legacy_archive,
       compiler_trace: {
-        compiler_version: "normalized_profiler_compiler_replacement_v4_integrated_dap_projection",
+        compiler_version: "normalized_profiler_compiler_replacement_v5_section_789_artifact_split",
         deterministic_only: true,
         no_new_findings_created: true,
         no_row_re_evaluation: true,
         normalized_section_count: NORMALIZED_SECTION_KEYS.length,
         legacy_artifacts_archived: true,
         qualified_review_branch_separate: true,
-        data_provenance_controls_source: "integrated_dap_report.normalized_profile_overlay"
+        data_provenance_controls_source: "integrated_dap_report.normalized_profile_overlay",
+        section_789_artifact_split: true,
+        exposure_identity_required: true,
+        threat_name_required: true,
+        subcat_required: true,
+        business_category_removed_from_sections_7_8_9: true
       }
     }
   };
