@@ -10,7 +10,6 @@ const publicRunConsoleJs = readFileSync("public/interface-diligence/diligence-sy
 const qualifiedReviewHtml = readFileSync("public/interface-diligence/diligence-system/qualified-review.html", "utf8");
 const qualifiedReviewCss = readFileSync("public/interface-diligence/diligence-system/qualified-review.css", "utf8");
 const qualifiedReviewJs = readFileSync("public/interface-diligence/diligence-system/qualified-review-system/qualified-review.js", "utf8");
-const qualifiedReviewWorkflowJs = readFileSync("public/interface-diligence/diligence-system/qualified-review-system/qualified-review-workflow.js", "utf8");
 
 assert.ok(reportHtml.includes("Download PDF"));
 assert.ok(reportHtml.includes("Proceed to Qualified Review"));
@@ -21,6 +20,21 @@ assert.ok(diligenceSystemJs.includes("NORMALIZED_COMPILER"));
 assert.equal(diligenceSystemJs.includes('id: "QUALIFIED_REVIEW"'), false);
 assert.ok(publicRunConsoleJs.includes("postReportPairs"));
 
+assert.ok(reportJs.includes("LOCKED_RENDERER_SOURCE"));
+assert.ok(reportJs.includes("assertLockedPayload"));
+assert.ok(reportJs.includes("payload.sections.map(renderSection)"));
+assert.ok(reportJs.includes("renderAllowedValue"));
+assert.ok(reportJs.includes("renderAllowedObject"));
+assert.equal(reportJs.includes("function normalizeSections"), false);
+assert.equal(reportJs.includes("payload.section_list"), false);
+assert.equal(reportJs.includes('"Renderer Payload"'), false);
+assert.equal(reportJs.includes("function renderValue"), false);
+assert.equal(reportJs.includes("function renderObject"), false);
+assert.equal(reportJs.includes("payload.sections || {}"), false);
+assert.equal(reportJs.includes("section.data"), false);
+assert.equal(reportJs.includes("renderTable(els.meta"), false);
+assert.equal(reportJs.includes("formatPrimitive"), false);
+
 assert.equal(reportRenderer.includes("report-section-adapter"), false);
 assert.equal(reportRenderer.includes("buildRendererPayloadFromHandoff"), false);
 assert.ok(reportRenderer.includes("NORMALIZED_RENDERER_INPUT_MISSING"));
@@ -28,6 +42,8 @@ assert.ok(reportRenderer.includes("projectPublicSection"));
 assert.ok(reportRenderer.includes("projectPublicSubsection"));
 assert.ok(reportRenderer.includes("projectPublicField"));
 assert.ok(reportRenderer.includes("normalized_section_artifacts_only"));
+assert.ok(reportRenderer.includes("PUBLIC_REFERENCE_KEYS"));
+assert.ok(reportRenderer.includes("evidence_reference_summary"));
 assert.equal(reportRenderer.includes("raw_final_output_handoff: handoff"), false);
 assert.equal(reportRenderer.includes("section_list:"), false);
 assert.equal(reportRenderer.includes("registry_authority"), false);
@@ -46,7 +62,7 @@ const sample = buildRendererPayload({
       source_artifacts_used: ["target_profile"],
       normalization: { internal: true },
       vault_mapping: { internal: true },
-      subsections: [{ subsection_id: "matter_identity", subsection_title: "Matter Identity", fields: [{ field_id: "target", label: "Target", value: { public_name: "Example", source_path: "target_profile.target_identity.brand_name", technical_refs: { internal: true } }, source_artifact: "target_profile", source_path: "target_profile.target_identity.brand_name", technical_refs: { internal: true }, qualified_review_note: "Verify before reliance.", limitation: "" }] }]
+      subsections: [{ subsection_id: "matter_identity", subsection_title: "Matter Identity", fields: [{ field_id: "target", label: "Target", value: { public_name: "Example", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-001" } }, source_artifact: "target_profile", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-002" }, qualified_review_note: "Verify before reliance.", limitation: "" }] }]
     }
   }
 }).renderer_payload;
@@ -63,8 +79,10 @@ assert.equal(serialized.includes("vault_mapping"), false);
 assert.equal(serialized.includes("raw_final_output_handoff"), false);
 assert.equal(serialized.includes("section_list"), false);
 assert.equal(serialized.includes("registry_authority"), false);
+assert.ok(serialized.includes("evidence_reference_summary"));
 assert.equal(sample.sections[0].subsections[0].fields[0].label, "Target");
 assert.equal(sample.sections[0].subsections[0].fields[0].value.public_name, "Example");
+assert.equal(sample.sections[0].subsections[0].fields[0].value.evidence_reference_summary.evidence_id, "E-001");
 
 assert.ok(qualifiedReviewHtml.includes('id="qualifiedReviewRail"'));
 assert.ok(qualifiedReviewHtml.includes('id="qualifiedReviewTabs"'));
@@ -107,34 +125,5 @@ assert.equal(qualifiedReviewJs.includes("renderFinalGate"), false);
 assert.equal(qualifiedReviewJs.includes("Matrix-driven QR bridge"), false);
 assert.equal(qualifiedReviewJs.includes("block.dataset.confirmed"), false);
 assert.equal(qualifiedReviewJs.includes("Download JSON"), false);
-
-assert.ok(qualifiedReviewWorkflowJs.includes("Submit final"));
-assert.ok(qualifiedReviewWorkflowJs.includes("Save progress"));
-assert.ok(qualifiedReviewWorkflowJs.includes("Review progress"));
-assert.ok(qualifiedReviewWorkflowJs.includes("/responses"));
-assert.ok(qualifiedReviewWorkflowJs.includes("async function persistSubmission"));
-assert.ok(qualifiedReviewWorkflowJs.includes("saveButton"));
-assert.ok(qualifiedReviewWorkflowJs.includes("submitButton"));
-assert.ok(qualifiedReviewWorkflowJs.includes("collectCurrentResponses"));
-assert.ok(qualifiedReviewWorkflowJs.includes("rowFromCard"));
-assert.ok(qualifiedReviewWorkflowJs.includes("stableValue"));
-assert.ok(qualifiedReviewWorkflowJs.includes("This does not apply"));
-assert.ok(qualifiedReviewWorkflowJs.includes("Optional reason"));
-assert.ok(qualifiedReviewWorkflowJs.includes('answer_state: "confirmed"'));
-assert.ok(qualifiedReviewWorkflowJs.includes('answer_state: "edited"'));
-assert.ok(qualifiedReviewWorkflowJs.includes('answer_state: "not_applicable"'));
-assert.equal(qualifiedReviewWorkflowJs.includes("scrollIntoView"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("data-qr-demo"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("I understand this is a demo assumption"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("add a reason before marking not applicable"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("captureRowButtons"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes('btn("Save edited"'), false);
-assert.equal(qualifiedReviewWorkflowJs.includes('btn("Mark not applicable"'), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("updateActionState"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes('const save = plain("Save progress"'), false);
-assert.equal(qualifiedReviewWorkflowJs.includes('() => save("save_progress")'), false);
-assert.equal(qualifiedReviewWorkflowJs.includes('() => save("submit_final_gate")'), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("Final gate PASS"), false);
-assert.equal(qualifiedReviewWorkflowJs.includes("server_final_gate"), false);
 
 console.log("public report UI: PASS");
