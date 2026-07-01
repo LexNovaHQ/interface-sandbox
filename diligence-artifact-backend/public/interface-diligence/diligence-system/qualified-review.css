@@ -16,3 +16,13 @@
 .qr-nav-strip { border-top: 1px solid rgba(197,160,89,.16); border-bottom: 1px solid rgba(197,160,89,.16); padding: 14px 0; margin: 0 0 24px; }
 .qr-work-body-card { padding: 0; }
 .qr-alert-card { margin-top: 22px; }
+.qr-left-rail { padding-top: .6rem; }
+.qr-rail-list { position: relative; display: grid; gap: 4px; margin-top: 14px; padding: .5rem 0 1rem; }
+.qr-rail-list::before { content: ""; position: absolute; left: 17px; top: 24px; bottom: 28px; width: 1px; background: linear-gradient(180deg, rgba(197,160,89,.25), rgba(255,255,255,.08), rgba(197,160,89,.25)); }
+.qr-rail-item { position: relative; width: 100%; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: start; text-align: left; border: 0; background: transparent; color: rgba(229,229,229,.58); border-radius: 14px; padding: .55rem .45rem; }
+.qr-rail-item:hover, .qr-rail-item.active { background: rgba(197,160,89,.06); color: var(--gold); }
+.qr-rail-index { width: 14px; height: 14px; margin: 2px 0 0 10px; border-radius: 999px; border: 1px solid rgba(197,160,89,.45); background: #080808; box-shadow: 0 0 0 5px #050505; color: transparent; }
+.qr-rail-item.complete .qr-rail-index { background: rgba(197,160,89,.45); border-color: rgba(197,160,89,.75); }
+.qr-rail-item.active .qr-rail-index { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 5px #050505, 0 0 22px rgba(197,160,89,.8); }
+.qr-rail-text { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.35; font-weight: 800; }
+.qr-rail-count { color: rgba(229,229,229,.42); font-size: .62rem; }
