@@ -10,7 +10,7 @@ The backend supplies:
 - `m11_batch_packet.batch_id`
 - `m11_batch_packet.expected_threat_ids`
 - `m11_batch_packet.registry_rows[]`
-- backend-prefilled deterministic registry spine for each expected row
+- backend-prefilled deterministic registry spine for each expected row, including mandatory `Threat_Name`
 - parsed Hunter Trigger material for those rows
 - selected M9 legal-cartography rows for those rows
 - M9-guided full lossless legal/governance sections or parts for those rows
@@ -20,7 +20,7 @@ The backend supplies:
 ## SEMANTIC ROLE
 The M11 model does not author the full material row from scratch.
 
-The backend owns deterministic registry spine fields including Threat_ID, Archetype, Subcategory, Surface, authority anchors, pain fields, legal pain, base registry FP mechanism, remediation source, route reason, batch membership, and final status assignment.
+The backend owns deterministic registry spine fields including Threat_ID, Threat_Name, Archetype, Subcategory, Surface, authority anchors, pain fields, legal pain, base registry FP mechanism, remediation source, route reason, batch membership, subcategory normalization, and final status assignment.
 
 The M11 model owns only active-batch evidence application:
 - target_match
@@ -31,7 +31,7 @@ The M11 model owns only active-batch evidence application:
 - row_limitations
 - status_inputs
 
-Do not rewrite deterministic registry spine fields. Do not choose final material profile placement. Do not emit `evaluation_status`.
+Do not rewrite deterministic registry spine fields. Do not emit or rewrite `Threat_Name`. Do not normalize `Subcategory`. Do not choose final material profile placement. Do not emit `evaluation_status`.
 
 ## HUMAN-READABLE FIELD RULE
 The fields below are report-facing and must be short narrative text, not scalar labels:
@@ -53,8 +53,11 @@ Do not put only `yes`, `no`, `partial`, `true`, `false`, `unknown`, `n/a`, or si
 
 ## EVIDENCE RULE
 Use M9-guided full lossless units first.
+
 Use M9 legal cartography as the mandatory navigation layer where available. M9 silence is not evidence absence.
+
 If M9 is silent, use the backend-supplied closest relevant full lossless legal/governance sections or parts.
+
 If the supplied lossless evidence is insufficient, do not fabricate a trigger. Return evidence limitation through `status_inputs` and identify the missing evidence route in `row_limitations`.
 
 ## YES / PARTIAL / NO DISCIPLINE
@@ -141,6 +144,8 @@ Each row in `batch_registry_ledger[]` must have exactly these semantic keys plus
 - Return one row per `expected_threat_ids` item.
 - Do not group Threat_IDs.
 - Do not add deterministic registry spine fields to the model row.
+- Do not add `Threat_Name` to the model row.
+- Do not add or normalize `Subcategory` in the model row.
 - Do not add `evaluation_status` to the model row.
 - Do not add final material profile containers.
 - Do not assign final material profile placement.
