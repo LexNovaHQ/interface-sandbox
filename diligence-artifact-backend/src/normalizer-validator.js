@@ -56,9 +56,11 @@ export function validateNormalizedProfilerOutput(output = {}) {
   }
 
   const serializedSection789 = JSON.stringify(REQUIRED_SECTION_789_ARTIFACTS.map((name) => output[name] || {}));
+  const diagnosisRows = asArray(output.normalized_section__exposure_diagnosis_table?.subsections?.[0]?.fields?.[0]?.value);
+  const actionRows = asArray(output.normalized_section__review_route_action_plan?.subsections?.[1]?.fields?.[0]?.value);
   if (serializedSection789.includes("Business Category")) failures.push("Business Category appears in Section 7/8/9 split artifacts");
-  if (!serializedSection789.includes("Threat_Name")) failures.push("Threat_Name not present in Section 7/8/9 split artifacts");
-  if (!serializedSection789.includes("Subcat")) failures.push("Subcat not present in Section 7/8/9 split artifacts");
+  if ((diagnosisRows.length || actionRows.length) && !serializedSection789.includes("Threat_Name")) failures.push("Threat_Name not present in populated Section 7/8/9 split artifacts");
+  if ((diagnosisRows.length || actionRows.length) && !serializedSection789.includes("Subcat")) failures.push("Subcat not present in populated Section 7/8/9 split artifacts");
 
   for (const artifactName of QUALIFIED_REVIEW_BRANCH_ARTIFACTS) {
     if (Object.prototype.hasOwnProperty.call(output, artifactName)) {
