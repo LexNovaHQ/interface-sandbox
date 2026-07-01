@@ -62,9 +62,13 @@ export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([
   "normalized_section__product_activity_ip_profile",
   "normalized_section__data_provenance_controls",
   "normalized_section__legal_document_control_review",
-  "normalized_section__exposure_findings",
-  "normalized_section__implications_review_path",
-  "normalized_section__evidence_gaps_clarification_points",
+  "normalized_section__exposure_summary_harm_mechanism_workpad_summary",
+  "normalized_section__exposure_diagnosis_table",
+  "normalized_section__exposure_control_discipline",
+  "normalized_section__review_route_action_plan",
+  "normalized_section__control_handoff_readiness",
+  "normalized_section__exposure_clarification_queue",
+  "normalized_section__global_confirmation_queue",
   "normalized_section__methodology_limitations_review_notes",
   "normalized_section__forensic_ledger_appendix"
 ]);
