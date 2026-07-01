@@ -62,6 +62,7 @@
     responses.set(qid, row.value);
     card.dataset.qrState = state;
     card.classList.add("qr-resolved");
+    updateActionState(card, state);
     cardStatus(card, stateLabel(state));
     renderState(`${qid} saved as ${stateLabel(state).toLowerCase()}.`);
   }
@@ -92,6 +93,7 @@
         card.dataset.qrState = saved.answer_state;
         card.classList.add("qr-resolved");
       }
+      updateActionState(card, saved?.answer_state || "");
     });
   }
 
@@ -205,7 +207,6 @@
     const value = answerValue(card, q.answer_type);
     const reason = String(card.querySelector("[data-qr-reason]")?.value || "").trim();
     if (state !== "not_applicable" && !has(value)) return { error: `${q.question_id}: answer required.` };
-    if (state === "not_applicable" && !reason) return { error: `${q.question_id}: add a reason before marking not applicable.` };
     return { value: { question_id: q.question_id, answer_state: state, answer_value: state === "not_applicable" ? null : value, not_applicable_reason: state === "not_applicable" ? reason : "", demo_disclaimer_accepted: q.demo_disclaimer_required === true, submitted_at: new Date().toISOString() } };
   }
 
@@ -219,8 +220,9 @@
   function sectionDone(s) { return (s?.questions || []).length > 0 && s.questions.every((q) => states.has(responses.get(q.question_id)?.answer_state)); }
   function sectionResolved(s) { return (s?.questions || []).filter((q) => states.has(responses.get(q.question_id)?.answer_state)).length; }
   function updateTabs() { document.querySelectorAll("[data-qr-section-index]").forEach((el) => { const index = Number(el.dataset.qrSectionIndex); const s = sections[index]; el.classList.toggle("active", index === active); el.classList.toggle("complete", Boolean(s && sectionDone(s))); }); }
-  function updateCardBadges() { document.querySelectorAll(".array-block").forEach((card) => { const s = responses.get(idFromCard(card)); const status = card.querySelector("[data-qr-status]"); if (status) status.textContent = s ? stateLabel(s.answer_state) : "Needs review"; card.classList.toggle("qr-resolved", Boolean(s)); }); }
-  function fillSaved(card, saved) { const c = answerControl(card); if (c && saved.answer_state !== "not_applicable") setControlValue(c, saved.answer_value); card.dataset.qrState = saved.answer_state; card.classList.add("qr-resolved"); }
+  function updateCardBadges() { document.querySelectorAll(".array-block").forEach((card) => { const s = responses.get(idFromCard(card)); const status = card.querySelector("[data-qr-status]"); if (status) status.textContent = s ? stateLabel(s.answer_state) : "Needs review"; card.classList.toggle("qr-resolved", Boolean(s)); updateActionState(card, s?.answer_state || ""); }); }
+  function updateActionState(card, state) { card.querySelectorAll(".qr-card-actions button").forEach((button) => button.classList.toggle("active", button.dataset.qrState === state)); card.dataset.qrState = state || ""; }
+  function fillSaved(card, saved) { const c = answerControl(card); if (c && saved.answer_state !== "not_applicable") setControlValue(c, saved.answer_value); card.dataset.qrState = saved.answer_state; card.classList.add("qr-resolved"); updateActionState(card, saved.answer_state); }
   function answerControl(card) { return card.querySelector("textarea.input, select.input, input.input:not([data-qr-reason])"); }
   function answerValue(card, type) { const c = answerControl(card); if (!c) return ""; if (type === "select" && c.multiple) return [...c.selectedOptions].map((o) => o.value).filter(Boolean); return String(c.value || "").trim(); }
   function setControlValue(control, value) { if (control.multiple && Array.isArray(value)) { [...control.options].forEach((opt) => { opt.selected = value.map(String).includes(opt.value); }); return; } control.value = fmt(value); }

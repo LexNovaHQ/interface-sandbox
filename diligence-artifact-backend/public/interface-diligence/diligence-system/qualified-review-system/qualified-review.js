@@ -20,7 +20,7 @@ else {
       const questionSections = Array.isArray(renderer.question_sections) ? renderer.question_sections : buildQuestionSections({ sectionPages: renderer.section_pages || handoff.section_pages || [], questions });
 
       window.__qualifiedReviewPayload = { json, renderer, handoff, questions, questionSections };
-      title.textContent = renderer.public_label || handoff.public_label || "Qualified Review";
+      title.textContent = "Qualified Review";
       subtitle.textContent = "Review the prefilled answers, correct what the diligence system could not verify, and lock the inputs before draft preparation.";
       meta.replaceChildren(renderReviewSummary({ json, renderer, handoff, questions }));
       renderSectionTabs(questionSections);
@@ -91,13 +91,13 @@ function renderQuestionCard(q) {
   const block = node("div", "array-block qr-question-card");
   const isDemo = q.prefill_source === "market_norm_demo";
   const badge = isDemo ? "Demo assumption" : "Diligence prefill";
-  const helper = isDemo ? "Demo assumption — edit if inaccurate." : "Suggested from the diligence review — confirm or revise.";
+  const helper = isDemo ? "Suggestion — demo assumption. Edit if inaccurate." : "Suggestion — prefilled from the diligence review. Confirm or revise.";
 
   const top = node("div", "qr-question-top");
   top.append(node("div", "block-title", q.question_id || "QR"), node("span", "qr-badge", badge));
   block.append(top);
   block.append(node("h3", "qr-question-title", q.lawyer_question || q.public_question_label || q.field_key || "Question"));
-  block.append(node("p", "small-muted qr-question-helper", helper));
+  block.append(node("p", "small-muted qr-question-helper qr-instruction", helper));
   block.append(renderAnswerControl(q));
   block.append(renderDocumentImpact(q));
 
@@ -123,6 +123,12 @@ function renderAnswerControl(q) {
     control = document.createElement("select");
     control.multiple = type === "select";
     const selected = new Set(asArray(rawValue).map((value) => String(value)));
+    if (!control.multiple) {
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Select one";
+      control.append(placeholder);
+    }
     q.answer_options.forEach((option) => {
       const opt = document.createElement("option");
       opt.value = String(option);
@@ -130,7 +136,10 @@ function renderAnswerControl(q) {
       if (selected.has(String(option))) opt.selected = true;
       control.append(opt);
     });
-    if (!control.multiple && !control.value && q.answer_options[0]) control.value = String(q.answer_options[0]);
+    if (!control.multiple) {
+      const raw = formatAnswerValue(rawValue);
+      control.value = q.answer_options.map(String).includes(raw) ? raw : "";
+    }
   } else {
     control = document.createElement("input");
     control.type = "text";
@@ -203,7 +212,7 @@ function humanizeImpact(value) {
 }
 
 function asArray(value) { return Array.isArray(value) ? value : value || value === 0 ? [value] : []; }
-function formatAnswerValue(value) { if (Array.isArray(value)) return value.join(", "); if (value && typeof value === "object") return JSON.stringify(value); return String(value ?? ""); }
+function formatAnswerValue(value) { if (Array.isArray(value)) return value.join(", "); if (value && typeof value === "object") return ""; return String(value ?? ""); }
 function titleCase(value) { return String(value || "").replace(/[_-]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()); }
 function showError(message) { title.textContent = "Qualified Review unavailable"; subtitle.textContent = message; meta.textContent = message; if (rail) rail.textContent = message; if (tabs) tabs.replaceChildren(); body.replaceChildren(); }
 function node(tag, cls, text) { const el = document.createElement(tag); if (cls) el.className = cls; if (text !== undefined && text !== "") el.textContent = text; return el; }
