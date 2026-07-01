@@ -39,7 +39,7 @@ function renderReviewSummary({ json, renderer, handoff, questions }) {
     summaryItem("Review date", new Date().toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })),
     summaryItem("Status", "Review needed"),
     summaryItem("Questions", String(questions.length)),
-    summaryItem("Task", "Confirm, edit, or mark not applicable")
+    summaryItem("Task", "Review highlighted answers")
   );
   return wrap;
 }
@@ -79,7 +79,7 @@ function renderQuestionSections({ questionSections }) {
     section.append(
       node("div", "eyebrow", `Section ${index + 1}`),
       node("h2", "", page.section_title || page.section_id || "Qualified Review Section"),
-      node("p", "small-muted", `${page.question_count || page.questions?.length || 0} questions. Confirm the suggested answers or revise them before submission.`)
+      node("p", "small-muted", `${page.question_count || page.questions?.length || 0} questions. Edit only what needs correction; unchanged answers are accepted on submit.`)
     );
     (page.questions || []).forEach((question) => section.append(renderQuestionCard(question)));
     wrapper.append(section);
@@ -91,7 +91,7 @@ function renderQuestionCard(q) {
   const block = node("div", "array-block qr-question-card");
   const isDemo = q.prefill_source === "market_norm_demo";
   const badge = isDemo ? "Demo assumption" : "Diligence prefill";
-  const helper = isDemo ? "Suggestion — demo assumption. Edit if inaccurate." : "Suggestion — prefilled from the diligence review. Confirm or revise.";
+  const helper = isDemo ? "Suggestion — demo assumption. Edit if inaccurate." : "Suggestion — prefilled from the diligence review. Edit only if inaccurate.";
 
   const top = node("div", "qr-question-top");
   top.append(node("div", "block-title", q.question_id || "QR"), node("span", "qr-badge", badge));
@@ -101,12 +101,6 @@ function renderQuestionCard(q) {
   block.append(renderAnswerControl(q));
   block.append(renderDocumentImpact(q));
 
-  const actions = node("div", "actions no-print qr-card-actions");
-  const confirm = node("button", "btn secondary", "Confirm as shown");
-  confirm.type = "button";
-  confirm.dataset.qrState = "confirmed";
-  actions.append(confirm);
-  block.append(actions);
   return block;
 }
 

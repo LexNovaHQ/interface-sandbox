@@ -14,7 +14,8 @@
   let navPanel;
   let drawer;
 
-  document.addEventListener("click", captureRowButtons, true);
+  document.addEventListener("input", handleFormInput, true);
+  document.addEventListener("change", handleFormInput, true);
   document.addEventListener("click", handleSectionNavigation, true);
   boot().catch((error) => fatal(error));
 
@@ -34,37 +35,21 @@
     renderState();
   }
 
+  function handleFormInput(event) {
+    const card = event.target.closest?.(".array-block");
+    if (card) updateCard(card);
+    renderState();
+  }
+
   function handleSectionNavigation(event) {
     const trigger = event.target.closest("[data-qr-section-index]");
-    if (!trigger || trigger.dataset.qrState) return;
+    if (!trigger) return;
     const index = Number(trigger.dataset.qrSectionIndex);
     if (!Number.isInteger(index) || index < 0 || index >= sections.length) return;
     event.preventDefault();
     active = index;
     applySectionVisibility();
     renderState();
-  }
-
-  function captureRowButtons(event) {
-    const button = event.target.closest("button");
-    if (!button) return;
-    const state = button.dataset.qrState || "";
-    if (!states.has(state)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const card = button.closest(".array-block");
-    if (!card) return;
-    const qid = idFromCard(card);
-    const q = questions.get(qid);
-    if (!q) return cardStatus(card, "Question metadata missing.", true);
-    const row = collect(card, q, state);
-    if (row.error) return cardStatus(card, row.error, true);
-    responses.set(qid, row.value);
-    card.dataset.qrState = state;
-    card.classList.add("qr-resolved");
-    updateActionState(card, state);
-    cardStatus(card, stateLabel(state));
-    renderState(`${qid} saved as ${stateLabel(state).toLowerCase()}.`);
   }
 
   function enhanceCards() {
@@ -74,26 +59,25 @@
       const q = questions.get(qid);
       if (!q) return;
       card.dataset.qrWorkflow = "true";
+      card.dataset.qrOriginalValue = stableValue(answerValue(card, q.answer_type));
+
       const saved = responses.get(qid);
-      if (saved) fillSaved(card, saved);
+      const na = document.createElement("input");
+      na.type = "checkbox";
+      na.dataset.qrNa = "true";
+      const naToggle = labelWrap("qr-na-toggle", na, "This does not apply");
+      card.append(naToggle);
 
-      const reason = input("Reason, if this question does not apply");
+      const reason = input("Optional reason");
       reason.dataset.qrReason = "true";
-      reason.value = saved?.not_applicable_reason || "";
-      card.append(field("Not applicable reason", reason, "qr-na-reason"));
+      card.append(field("Reason", reason, "qr-na-reason"));
 
-      const status = div("qr-row-status", saved ? stateLabel(saved.answer_state) : "Needs review");
+      const status = div("qr-row-status", "Needs review");
       status.dataset.qrStatus = "true";
       card.append(status);
 
-      let actions = card.querySelector(".actions");
-      if (!actions) { actions = div("actions no-print qr-card-actions", ""); card.append(actions); }
-      actions.append(btn("Save edited", "edited"), btn("Mark not applicable", "not_applicable"));
-      if (saved) {
-        card.dataset.qrState = saved.answer_state;
-        card.classList.add("qr-resolved");
-      }
-      updateActionState(card, saved?.answer_state || "");
+      if (saved) fillSaved(card, saved);
+      updateCard(card);
     });
   }
 
@@ -114,8 +98,9 @@
   }
 
   function renderState(message = "") {
+    if (!panel || !navPanel || !drawer) return;
     const total = questions.size;
-    const done = [...responses.values()].filter((r) => states.has(r.answer_state)).length;
+    const done = resolvedCount();
     const section = sections[active] || {};
     const sectionDoneCount = sectionResolved(section);
     const status = statusLabel(done, total, submission?.final_gate?.status);
@@ -147,12 +132,17 @@
   }
 
   async function persistSubmission(reason) {
+    const rows = collectCurrentResponses();
+    if (reason === "submit_final_gate" && rows.length !== questions.size) {
+      renderState("Complete every answer or mark it not applicable before submitting.");
+      return;
+    }
     renderState("Saving your review...");
     try {
       const payload = await req(submitEndpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ submitted_by: "public_qualified_review_ui", submitted_by_label: "Qualified Review UI", save_reason: reason, question_responses: [...responses.values()] })
+        body: JSON.stringify({ submitted_by: "public_qualified_review_ui", submitted_by_label: "Qualified Review UI", save_reason: reason, question_responses: rows })
       });
       submission = payload.qualified_review_submission || null;
       hydrate(submission);
@@ -160,6 +150,52 @@
     } catch (error) {
       renderState(`Save failed: ${error.message || error}`);
     }
+  }
+
+  function collectCurrentResponses({ includeIncomplete = false } = {}) {
+    const rows = [];
+    document.querySelectorAll(".array-block").forEach((card) => {
+      const q = questions.get(idFromCard(card));
+      if (!q) return;
+      const row = rowFromCard(card, q);
+      if (row) rows.push(row);
+      else if (includeIncomplete) rows.push(null);
+    });
+    return rows.filter(Boolean);
+  }
+
+  function rowFromCard(card, q) {
+    const na = card.querySelector("[data-qr-na]")?.checked === true;
+    const reason = String(card.querySelector("[data-qr-reason]")?.value || "").trim();
+    if (na) {
+      return { question_id: q.question_id, answer_state: "not_applicable", answer_value: null, not_applicable_reason: reason || "", demo_disclaimer_accepted: q.demo_disclaimer_required === true, submitted_at: new Date().toISOString() };
+    }
+    const value = answerValue(card, q.answer_type);
+    if (!has(value)) return null;
+    const current = stableValue(value);
+    const original = card.dataset.qrOriginalValue || "";
+    if (current === original) {
+      return { question_id: q.question_id, answer_state: "confirmed", answer_value: value, not_applicable_reason: "", demo_disclaimer_accepted: q.demo_disclaimer_required === true, submitted_at: new Date().toISOString() };
+    }
+    return { question_id: q.question_id, answer_state: "edited", answer_value: value, not_applicable_reason: "", demo_disclaimer_accepted: q.demo_disclaimer_required === true, submitted_at: new Date().toISOString() };
+  }
+
+  function stableValue(value) {
+    if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean).join("\u001f");
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") return "";
+    return String(value).trim();
+  }
+
+  function resolvedCount() {
+    return collectCurrentResponses().length;
+  }
+
+  function unresolvedCards() {
+    return [...document.querySelectorAll(".array-block")].filter((card) => {
+      const q = questions.get(idFromCard(card));
+      return q && !rowFromCard(card, q);
+    });
   }
 
   function renderDrawer() {
@@ -203,49 +239,45 @@
     });
   }
 
-  function collect(card, q, state) {
-    const value = answerValue(card, q.answer_type);
-    const reason = String(card.querySelector("[data-qr-reason]")?.value || "").trim();
-    if (state !== "not_applicable" && !has(value)) return { error: `${q.question_id}: answer required.` };
-    return { value: { question_id: q.question_id, answer_state: state, answer_value: state === "not_applicable" ? null : value, not_applicable_reason: state === "not_applicable" ? reason : "", demo_disclaimer_accepted: q.demo_disclaimer_required === true, submitted_at: new Date().toISOString() } };
-  }
-
   function hydrate(saved) {
     if (!saved?.question_responses) return;
     submission = saved;
-    saved.question_responses.forEach((r) => { if (r?.question_id && states.has(r.answer_state)) responses.set(r.question_id, { question_id: r.question_id, answer_state: r.answer_state, answer_value: r.answer_value, not_applicable_reason: r.not_applicable_reason || "", demo_disclaimer_accepted: r.demo_disclaimer_accepted === true, submitted_at: r.submitted_at || new Date().toISOString() }); });
+    responses.clear();
+    saved.question_responses.forEach((r) => {
+      if (r?.question_id && states.has(r.answer_state)) responses.set(r.question_id, { question_id: r.question_id, answer_state: r.answer_state, answer_value: r.answer_value, not_applicable_reason: r.not_applicable_reason || "", demo_disclaimer_accepted: r.demo_disclaimer_accepted === true, submitted_at: r.submitted_at || new Date().toISOString() });
+    });
   }
 
   function buildSections(rows) { const m = new Map(); rows.forEach((q) => { if (!m.has(q.section_id)) m.set(q.section_id, { section_id: q.section_id, section_title: q.section_title, questions: [] }); m.get(q.section_id).questions.push(q); }); return [...m.values()]; }
-  function sectionDone(s) { return (s?.questions || []).length > 0 && s.questions.every((q) => states.has(responses.get(q.question_id)?.answer_state)); }
-  function sectionResolved(s) { return (s?.questions || []).filter((q) => states.has(responses.get(q.question_id)?.answer_state)).length; }
+  function sectionDone(s) { return (s?.questions || []).length > 0 && s.questions.every((q) => { const card = cardByQuestion(q.question_id); return card && rowFromCard(card, q); }); }
+  function sectionResolved(s) { return (s?.questions || []).filter((q) => { const card = cardByQuestion(q.question_id); return card && rowFromCard(card, q); }).length; }
   function updateTabs() { document.querySelectorAll("[data-qr-section-index]").forEach((el) => { const index = Number(el.dataset.qrSectionIndex); const s = sections[index]; el.classList.toggle("active", index === active); el.classList.toggle("complete", Boolean(s && sectionDone(s))); }); }
-  function updateCardBadges() { document.querySelectorAll(".array-block").forEach((card) => { const s = responses.get(idFromCard(card)); const status = card.querySelector("[data-qr-status]"); if (status) status.textContent = s ? stateLabel(s.answer_state) : "Needs review"; card.classList.toggle("qr-resolved", Boolean(s)); updateActionState(card, s?.answer_state || ""); }); }
-  function updateActionState(card, state) { card.querySelectorAll(".qr-card-actions button").forEach((button) => button.classList.toggle("active", button.dataset.qrState === state)); card.dataset.qrState = state || ""; }
-  function fillSaved(card, saved) { const c = answerControl(card); if (c && saved.answer_state !== "not_applicable") setControlValue(c, saved.answer_value); card.dataset.qrState = saved.answer_state; card.classList.add("qr-resolved"); updateActionState(card, saved.answer_state); }
+  function updateCardBadges() { document.querySelectorAll(".array-block").forEach(updateCard); }
+  function updateCard(card) { const q = questions.get(idFromCard(card)); if (!q) return; const row = rowFromCard(card, q); const na = card.querySelector("[data-qr-na]")?.checked === true; const control = answerControl(card); if (control) control.disabled = na; card.dataset.qrNa = String(na); card.classList.toggle("qr-resolved", Boolean(row)); const status = card.querySelector("[data-qr-status]"); if (status) status.textContent = row ? rowStatus(row.answer_state) : "Needs review"; }
+  function fillSaved(card, saved) { const c = answerControl(card); const na = card.querySelector("[data-qr-na]"); const reason = card.querySelector("[data-qr-reason]"); if (na) na.checked = saved.answer_state === "not_applicable"; if (reason) reason.value = saved.not_applicable_reason || ""; if (c && saved.answer_state !== "not_applicable") setControlValue(c, saved.answer_value); card.classList.add("qr-resolved"); }
+  function cardByQuestion(qid) { return [...document.querySelectorAll(".array-block")].find((card) => idFromCard(card) === qid) || null; }
   function answerControl(card) { return card.querySelector("textarea.input, select.input, input.input:not([data-qr-reason])"); }
   function answerValue(card, type) { const c = answerControl(card); if (!c) return ""; if (type === "select" && c.multiple) return [...c.selectedOptions].map((o) => o.value).filter(Boolean); return String(c.value || "").trim(); }
   function setControlValue(control, value) { if (control.multiple && Array.isArray(value)) { [...control.options].forEach((opt) => { opt.selected = value.map(String).includes(opt.value); }); return; } control.value = fmt(value); }
   function idFromCard(card) { return String(card.querySelector(".block-title")?.textContent || "").match(/QR-\d{3}/)?.[0] || ""; }
-  function cardStatus(card, text, bad = false) { const n = card.querySelector("[data-qr-status]"); if (n) { n.textContent = text; n.classList.toggle("failed", bad); } }
+  function rowStatus(state) { return state === "not_applicable" ? "Not applicable" : state === "edited" ? "Edited" : "Prefilled"; }
   function statusLabel(done, total, serverStatus) { if (serverStatus === "PASS") return "Submitted"; if (done === 0) return "Review needed"; if (done === total && total > 0) return "Ready to submit"; return "In progress"; }
-  function stateLabel(state) { return state === "not_applicable" ? "Not applicable" : state === "edited" ? "Edited" : state === "confirmed" ? "Confirmed" : "Needs review"; }
-  function statusMessage(done, total, status) { if (status === "Submitted") return "Review submitted. This review is ready for the next step."; if (status === "Ready to submit") return "All questions are resolved. Submit when ready."; return `Resolve each question before final submission. ${done}/${total} complete.`; }
+  function statusMessage(done, total, status) { if (status === "Submitted") return "Review submitted. This review is ready for the next step."; if (status === "Ready to submit") return "All questions are complete. Submit when ready."; return `Review the fields that need attention. ${done}/${total} complete.`; }
   function progress(done, total) { const pct = total ? Math.round((done / total) * 100) : 0; const wrap = div("qr-progress", ""); wrap.append(div("qr-progress-top", `${pct}% complete`)); const bar = div("qr-progress-track", ""); const fill = div("qr-progress-fill", ""); fill.style.width = `${pct}%`; bar.append(fill); wrap.append(bar); return wrap; }
   function compactStats(o) { const g = div("qr-compact-stats", ""); Object.entries(o).forEach(([k, v]) => { const t = div("qr-compact-stat", ""); t.append(div("qr-stat-label", title(k)), div("qr-stat-value", String(v))); g.append(t); }); return g; }
   function list(titleText, items) { const box = div("qr-alert-list", ""); box.append(div("block-title", titleText)); if (!items.length) box.append(div("small-muted", "None.")); items.forEach((item) => box.append(div("notice", cleanAlert(String(item))))); return box; }
   function field(name, el, cls = "") { const w = div(`form-grid ${cls}`, ""); w.append(label(name), el); return w; }
   function input(ph) { const i = document.createElement("input"); i.className = "input"; i.type = "text"; i.placeholder = ph; return i; }
-  function btn(text, state) { const b = plain(text); b.dataset.qrState = state; return b; }
   function plain(text, fn) { const b = button("btn secondary", text); if (fn) b.addEventListener("click", fn); return b; }
   function button(cls, text) { const b = document.createElement("button"); b.className = cls; b.type = "button"; b.textContent = text || ""; return b; }
   function notice(text, warn) { const n = div("notice qr-workflow-notice", text); n.classList.toggle("ready", !warn); return n; }
   function label(text) { const l = document.createElement("label"); l.className = "label"; l.textContent = text; return l; }
+  function labelWrap(cls, inputEl, text) { const l = document.createElement("label"); l.className = cls; l.append(inputEl, span("", text)); return l; }
   function h(text) { const n = document.createElement("h2"); n.textContent = text; return n; }
-  function span(cls, text) { const n = document.createElement("span"); n.className = cls; n.textContent = text; return n; }
+  function span(cls, text) { const n = document.createElement("span"); if (cls) n.className = cls; n.textContent = text; return n; }
   function div(cls, text) { const n = document.createElement("div"); n.className = cls; n.textContent = text; return n; }
   function title(v) { return String(v).replace(/[_-]+/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()); }
-  function fmt(v) { if (Array.isArray(v)) return v.join(", "); if (v && typeof v === "object") return JSON.stringify(v); return String(v ?? ""); }
+  function fmt(v) { if (Array.isArray(v)) return v.join(", "); if (v && typeof v === "object") return ""; return String(v ?? ""); }
   function has(v) { return Array.isArray(v) ? v.length > 0 : Boolean(String(v ?? "").trim()); }
   function cleanAlert(v) { return v.replace(/_/g, " ").replace(/:/g, ": "); }
   function fatal(e) { const mount = document.getElementById("qrWorkflowPanel") || document.getElementById("handoffBody"); mount?.prepend(notice(`Review workspace failed: ${e.message || e}`, true)); }
