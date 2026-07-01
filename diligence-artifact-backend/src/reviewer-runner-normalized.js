@@ -5,9 +5,10 @@ import { advanceReviewerRun as advanceLegacyReviewerRun } from "./reviewer-runne
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import { buildQualifiedReviewSystemArtifacts } from "./qualified-review-system/branch.js";
+import { buildFeatureCandidateInventoryIndex, validateFeatureCandidateInventoryIndex } from "./m8-feature-candidate-inventory-index.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
 
-const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload" });
+const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload", featureCandidateInventory: "feature_candidate_inventory" });
 const QR_ACTOR = "qualified_review_system";
 
 export async function advanceReviewerRun({ run_id }) {
@@ -15,11 +16,12 @@ export async function advanceReviewerRun({ run_id }) {
   if (run.current_phase === "COMPLETE" || run.status === "COMPLETE") return { ok: true, run_id, status: "COMPLETE", current_phase: "COMPLETE", advanced: false };
   const phase = normalizePhase(run.current_phase);
   if (phase !== run.current_phase) await updateRunRecord(run_id, { current_phase: phase });
-  if (phase !== "NORMALIZED_COMPILER" && phase !== "RENDERER") return advanceLegacyReviewerRun({ run_id });
+  if (!["M8_FEATURE_CANDIDATE_INVENTORY", "NORMALIZED_COMPILER", "RENDERER"].includes(phase)) return advanceLegacyReviewerRun({ run_id });
   const contract = getPhaseContract(phase);
   await markRunning(run_id, phase, contract.actor_id);
   try {
-    if (phase === "NORMALIZED_COMPILER") await runNormalizedCompilerPhase({ run: { ...run, current_phase: phase }, phase, contract });
+    if (phase === "M8_FEATURE_CANDIDATE_INVENTORY") await runM8FeatureCandidateInventoryPhase({ run: { ...run, current_phase: phase }, phase, contract });
+    else if (phase === "NORMALIZED_COMPILER") await runNormalizedCompilerPhase({ run: { ...run, current_phase: phase }, phase, contract });
     else await runRendererPhase({ run: { ...run, current_phase: phase }, phase, contract });
   } catch (error) {
     await markPhaseFailure({ run_id, phase, actor: contract.actor_id, error });
@@ -32,6 +34,20 @@ export async function advanceReviewerRun({ run_id }) {
 function normalizePhase(value) {
   if (value === "COMPILER") return "NORMALIZED_COMPILER";
   return value;
+}
+
+async function runM8FeatureCandidateInventoryPhase({ run, phase, contract }) {
+  const artifacts = {};
+  for (const artifactName of contract.reads) {
+    artifacts[artifactName] = await readArtifactPayload({ run_id: run.run_id, artifact_name: artifactName, agent_id: contract.actor_id });
+  }
+  const productArtifacts = Object.entries(artifacts).filter(([name]) => name.startsWith("lossless_family__")).map(([, artifact]) => artifact);
+  const inventory = buildFeatureCandidateInventoryIndex(productArtifacts, { runId: run.run_id });
+  const validation = validateFeatureCandidateInventoryIndex(inventory);
+  if (validation.status !== "PASS") throw new Error(`M8_FEATURE_CANDIDATE_INVENTORY_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: ART.featureCandidateInventory, artifact: inventory, lock_status: "LOCKED" }));
+  await logEvent({ run_id: run.run_id, event_type: "M8_FEATURE_CANDIDATE_INVENTORY_COMPLETED", actor: contract.actor_id, payload: { phase, raw_hit_count: inventory.raw_hit_count, canonical_candidate_count: inventory.canonical_candidate_count, derivation_mode: inventory.derivation_mode } });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next });
 }
 
 async function runNormalizedCompilerPhase({ run, phase, contract }) {
@@ -70,9 +86,7 @@ function normalizeCompilerLockStatus(status) {
 
 async function runRendererPhase({ run, phase, contract }) {
   const bundle = {};
-  for (const artifactName of contract.reads) {
-    bundle[artifactName] = await readArtifactPayload({ run_id: run.run_id, artifact_name: artifactName, agent_id: contract.actor_id });
-  }
+  for (const artifactName of contract.reads) bundle[artifactName] = await readArtifactPayload({ run_id: run.run_id, artifact_name: artifactName, agent_id: contract.actor_id });
   const output = buildRendererPayload({ run, final_output_handoff: bundle });
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: ART.renderer, artifact: output[ART.renderer], lock_status: "COMPLETE" }));
   const finalReportUrl = buildReportUrl(run.run_id);
