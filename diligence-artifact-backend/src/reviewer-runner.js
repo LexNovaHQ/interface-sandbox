@@ -17,7 +17,7 @@ import { buildM7DeterministicTargetForensics, buildM8DeterministicFeatureForensi
 import { runAgent4bExtendedDapPhase } from "./agent4b-phase-runner.js";
 import { runAgent4cIntegratedDapReportPhase } from "./agent4c-runner.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
-import { artifactMatchesPermission } from "./constants.js";
+import { artifactMatchesPermission, LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES } from "./constants.js";
 import { readPhaseArtifactWithResolvedLosslessFamilies } from "./lossless-family-resolver.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
@@ -29,12 +29,13 @@ const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "m
 const M9_HYBRID_SEMANTIC_PROMPT_FILES = Object.freeze(["agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md", "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md", "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md", "agent-packages/agent_2b_m9/M9_FIELD_DERIVATION_REGISTRY.yaml", "agent-packages/agent_2b_m9/00_VALIDATOR_RULES_INTEGRATED.md"]);
 const ART = Object.freeze({ legalIndex: "legal_cartography_index", targetMain: "target_" + "profile", targetForensics: "target_" + "profile_forensics", featureMain: "target_" + "feature_profile", featureForensics: "target_" + "feature_profile_forensics", dataProfile: "data_provenance_profile", dataForensics: "data_provenance_profile_forensics", exposureProfile: "exposure_registry_profile", exposureRoutePlan: "exposure_registry_route_plan", challengeGate: "challenge_gate", profilesCombined: "profiles_combined", forensicsCombined: "forensics_combined", final: "final_" + "output_handoff", renderer: "renderer_payload" });
 const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT", "ABSENT", "MISSING", "THIN", "WEAK", "UNKNOWN_NOT_SEARCHED", "NOT_EVIDENCED", "SOURCE_REJECTED", "ACCESS_FAILED", "GATED", "INSUFFICIENT_PUBLIC_MATERIAL", "STANDALONE_SOURCE_ABSENT", "REINVESTIGATION", "TARGETED_RE_EXTRACTION", "OMISSION", "CONTROLLED"]);
+const M7_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
   if (run.current_phase === "COMPLETE" || run.status === "COMPLETE") return { ok: true, run_id, status: "COMPLETE", current_phase: "COMPLETE", advanced: false };
   const phase = normalizePhase(run.current_phase);
-  const contract = getPhaseContract(phase);
+  const contract = applyRuntimeReadOverrides(phase, getPhaseContract(phase));
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
   try {
     if (phase === "M9") await runM9HybridPhase({ run, phase, contract });
@@ -50,16 +51,50 @@ export async function advanceReviewerRun({ run_id }) {
     else if (phase === "NORMALIZED_COMPILER" || phase === "COMPILER") await runCompilerPhase({ run, phase, contract });
     else if (phase === "RENDERER") await runRendererPhase({ run, phase, contract });
     else throw new Error(`UNKNOWN_PHASE_TYPE:${phase}:${contract.type}`);
-  } catch (error) { await markPhaseFailure({ run_id, phase, actor: contract.agent_id || contract.actor_id, error }); throw error; }
+  } catch (error) {
+    await markPhaseFailure({ run_id, phase, actor: contract.agent_id || contract.actor_id, error });
+    throw error;
+  }
   const updated = await getRunRecord(run_id);
   return { ok: true, run_id, advanced: true, completed_phase: phase, status: updated.status, current_phase: updated.current_phase, final_report_url: updated.final_report_url || "" };
 }
-function normalizePhase(value) { if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST"; return value; }
+
+function normalizePhase(value) {
+  if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST";
+  return value;
+}
+
+function applyRuntimeReadOverrides(phase, contract) {
+  if (!M7_PHASES.has(phase)) return contract;
+  const reads = [...new Set([...(contract.reads || []), ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES])];
+  return { ...contract, reads, runtime_read_override: "M7_LEGAL_GOVERNANCE_FAMILIES_INCLUDED" };
+}
+
 async function runAgent1aUrlManifestPhase({ run, phase, contract }) { const output = await buildAgent1aDedupedUrlManifest({ run }); await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next }); }
 async function runAgent1bExtractPhase({ run, phase, contract }) { const dedupedManifest = await readArtifactPayload({ run_id: run.run_id, artifact_name: "deduped_url_manifest", agent_id: contract.actor_id }); const output = await buildAgent1bExtractArtifacts({ run, deduped_url_manifest: dedupedManifest }); await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next }); }
 async function runM6BucketIndexPhase({ run, phase, contract }) { const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id }); const output = buildM6SourceDiscoveryHandoff({ run, artifacts }); await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: output.source_discovery_handoff.status || "LOCKED", next_phase: contract.next }); }
-async function saveDeterministicArtifacts({ run, phase, actor, writes, output }) { const saved = new Set(); const outputKeys = Object.keys(output || {}).sort(sortArtifactNames); for (const artifactName of writes) { if (isCanonicalLosslessFamilyName(artifactName)) { const dynamicKeys = outputKeys.filter((key) => artifactMatchesPermission(key, artifactName)); for (const dynamicName of dynamicKeys) await saveDeterministicArtifact({ run, phase, actor, artifactName: dynamicName, artifact: output[dynamicName], saved }); continue; } const artifact = output?.[artifactName]; if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`); await saveDeterministicArtifact({ run, phase, actor, artifactName, artifact, saved }); } if (phase === "AGENT_1B_EXTRACT") { const dynamicFamilyKeys = outputKeys.filter(isLosslessFamilyOutputName); for (const dynamicName of dynamicFamilyKeys) await saveDeterministicArtifact({ run, phase, actor, artifactName: dynamicName, artifact: output[dynamicName], saved }); } await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PHASE_COMPLETED", actor, payload: { phase, writes, saved_artifacts: [...saved] } }); }
+
+async function saveDeterministicArtifacts({ run, phase, actor, writes, output }) {
+  const saved = new Set();
+  const outputKeys = Object.keys(output || {}).sort(sortArtifactNames);
+  for (const artifactName of writes) {
+    if (isCanonicalLosslessFamilyName(artifactName)) {
+      const dynamicKeys = outputKeys.filter((key) => artifactMatchesPermission(key, artifactName));
+      for (const dynamicName of dynamicKeys) await saveDeterministicArtifact({ run, phase, actor, artifactName: dynamicName, artifact: output[dynamicName], saved });
+      continue;
+    }
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
+    await saveDeterministicArtifact({ run, phase, actor, artifactName, artifact, saved });
+  }
+  if (phase === "AGENT_1B_EXTRACT") {
+    const dynamicFamilyKeys = outputKeys.filter(isLosslessFamilyOutputName);
+    for (const dynamicName of dynamicFamilyKeys) await saveDeterministicArtifact({ run, phase, actor, artifactName: dynamicName, artifact: output[dynamicName], saved });
+  }
+  await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PHASE_COMPLETED", actor, payload: { phase, writes, saved_artifacts: [...saved] } });
+}
 async function saveDeterministicArtifact({ run, phase, actor, artifactName, artifact, saved }) { if (saved.has(artifactName)) return; if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`); await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: actor, artifact_name: artifactName, artifact, lock_status: "LOCKED" })); saved.add(artifactName); }
+
 async function runDeterministicProfileForensicsPhase({ run, phase, contract }) {
   const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id || contract.actor_id });
   const output = phase === "M7_TARGET_PROFILE_FORENSICS" ? buildM7DeterministicTargetForensics({ artifacts }) : phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS" ? buildM8DeterministicFeatureForensics({ artifacts }) : buildM10DeterministicDataForensics({ artifacts });
@@ -69,15 +104,48 @@ async function runDeterministicProfileForensicsPhase({ run, phase, contract }) {
   const gate = artifact.forensic_lock_gate_result || artifact.validation_quality_control_result || {};
   const phaseLockStatus = gate.status === "PASS" ? "LOCKED" : gate.status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "REPAIR_REQUIRED";
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id || contract.actor_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
-  await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PROFILE_FORENSICS_COMPLETED", actor: contract.agent_id || contract.actor_id, payload: { phase, artifact_name: artifactName, lock_status: phaseLockStatus, contract: artifact.forensic_contract?.contract_name || "" } });
+  await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_PROFILE_FORENSICS_COMPLETED", actor: contract.agent_id || contract.actor_id, payload: { phase, artifact_name: artifactName, lock_status: phaseLockStatus, contract: artifact.forensic_contract?.contract_name || "", runtime_read_override: contract.runtime_read_override || "" } });
   if (phase === "M10_FORENSICS" && ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus)) { const updated = await updateRunRecord(run.run_id, { current_phase: contract.next, status: phaseLockStatus }); await updateRunDashboardRow(updated); await logEvent({ run_id: run.run_id, event_type: "PHASE_LOCKED", actor: contract.agent_id || contract.actor_id, payload: { phase, status: phaseLockStatus, next_phase: contract.next, gate: "BYPASS_OLD_PHASE_ENUM_FOR_AGENT_4B" } }); return; }
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id || contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
 }
-async function runM9HybridPhase({ run, phase, contract }) { const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id }); const modelMetadata = []; const result = await runM9HybridOrchestrator({ run, artifacts, runSemanticModel: async ({ run: modelRun, artifacts: modelArtifacts, expected_artifact_name }) => { const prompt = await buildPhasePrompt({ prompt_files: M9_HYBRID_SEMANTIC_PROMPT_FILES, phase, run: modelRun, artifacts: modelArtifacts, writes: [expected_artifact_name], references: contract.references || [] }); const response = await callGeminiJson({ prompt, phase: "M9_SEMANTIC_CARTOGRAPHY", repairOnJsonParse: true }); modelMetadata.push(response.metadata); return response.json; }, saveArtifact: async ({ artifactName, artifact }) => { const unwrapped = unwrapArtifactForSave({ artifactName, artifact }); const lockStatus = resolveStatusFromArtifacts(unwrapped); await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact: unwrapped, lock_status: lockStatus })); }, validateFinalIndex: validateM9FinalIndexForHybrid, logger: null }); const finalArtifact = result.final_output?.[M9_FINAL_ARTIFACT_NAME]; const phaseLockStatus = coerceModelStatus({ phase, status: result.final_validation?.status || resolveStatusFromArtifacts(finalArtifact), output: result.final_output }); await logEvent({ run_id: run.run_id, event_type: "M9_HYBRID_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: result.artifacts_saved_in_order, required_save_order: result.required_save_order, required_save_order_respected: result.required_save_order_respected, optional_artifacts_saved: result.optional_artifacts_saved, lock_status: phaseLockStatus, semantic_validation_status: result.semantic_validation?.status || "", final_validation_status: result.final_validation?.status || "", model_metadata: modelMetadata } }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase }); }
-function validateM9FinalIndexForHybrid(output) { const validation = validateM9LegalCartographyIndex(output); const finalArtifact = output?.[M9_FINAL_ARTIFACT_NAME] || output?.legal_cartography_index; return { ok: validation.status === "PASS", status: validation.status === "PASS" ? resolveStatusFromArtifacts(finalArtifact) : "REPAIR_REQUIRED", errors: validation.status === "PASS" ? [] : [JSON.stringify(validation)], warnings: validation.warnings || [], raw: validation }; }
+
+async function runM9HybridPhase({ run, phase, contract }) {
+  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const modelMetadata = [];
+  const result = await runM9HybridOrchestrator({
+    run,
+    artifacts,
+    runSemanticModel: async ({ run: modelRun, artifacts: modelArtifacts, expected_artifact_name }) => {
+      const prompt = await buildPhasePrompt({ prompt_files: M9_HYBRID_SEMANTIC_PROMPT_FILES, phase, run: modelRun, artifacts: modelArtifacts, writes: [expected_artifact_name], references: contract.references || [] });
+      const response = await callGeminiJson({ prompt, phase: "M9_SEMANTIC_CARTOGRAPHY", repairOnJsonParse: true });
+      modelMetadata.push(response.metadata);
+      return response.json;
+    },
+    saveArtifact: async ({ artifactName, artifact }) => {
+      const unwrapped = unwrapArtifactForSave({ artifactName, artifact });
+      const lockStatus = resolveStatusFromArtifacts(unwrapped);
+      await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact: unwrapped, lock_status: lockStatus }));
+    },
+    validateFinalIndex: validateM9FinalIndexForHybrid,
+    logger: null
+  });
+  const finalArtifact = result.final_output?.[M9_FINAL_ARTIFACT_NAME];
+  const phaseLockStatus = coerceModelStatus({ phase, status: result.final_validation?.status || resolveStatusFromArtifacts(finalArtifact), output: result.final_output });
+  await logEvent({ run_id: run.run_id, event_type: "M9_HYBRID_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: result.artifacts_saved_in_order, required_save_order: result.required_save_order, required_save_order_respected: result.required_save_order_respected, optional_artifacts_saved: result.optional_artifacts_saved, lock_status: phaseLockStatus, semantic_validation_status: result.semantic_validation?.status || "", final_validation_status: result.final_validation?.status || "", model_metadata: modelMetadata } });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
+}
+
+function validateM9FinalIndexForHybrid(output) {
+  try {
+    validateM9LegalCartographyIndex(output);
+    return { ok: true, status: resolveStatusFromArtifacts(output?.[M9_FINAL_ARTIFACT_NAME] || output?.legal_cartography_index), errors: [], warnings: [] };
+  } catch (error) {
+    return { ok: false, status: "REPAIR_REQUIRED", errors: [error?.message || String(error)], warnings: [] };
+  }
+}
 function unwrapArtifactForSave({ artifactName, artifact }) { if (artifact?.[artifactName] && typeof artifact[artifactName] === "object") return artifact[artifactName]; if (artifact?.artifact?.[artifactName] && typeof artifact.artifact[artifactName] === "object") return artifact.artifact[artifactName]; return artifact; }
 async function runM12DeterministicChallengePhase({ run, phase, contract }) { const artifacts = await readArtifactsForM12Global({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id }); const output = buildM12DeterministicChallengeGate({ run, artifacts }); const artifact = output.challenge_gate; if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:challenge_gate`); const phaseLockStatus = ["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(artifact.status) ? artifact.status : "LOCKED"; await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: "challenge_gate", artifact, lock_status: phaseLockStatus })); await logEvent({ run_id: run.run_id, event_type: "M12_DETERMINISTIC_CHALLENGE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, model_usage: "NONE_DETERMINISTIC", critical_failures: artifact.critical_failures || [], warnings: artifact.warnings || [] } }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase }); }
-async function runModelPhase({ run, phase, contract }) { const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id }); const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] }); const result = await callGeminiJson({ prompt, phase }); const output = result.json; const validationStatusOverride = validateModelOutput({ phase, output }); const phaseLockStatus = coerceModelStatus({ phase, status: validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes }), output }); for (const artifactName of contract.writes) { const artifact = output?.[artifactName]; if (!artifact || typeof artifact !== "object") throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`); await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus })); } await logEvent({ run_id: run.run_id, event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata } }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase }); }
+async function runModelPhase({ run, phase, contract }) { const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id }); const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] }); const result = await callGeminiJson({ prompt, phase }); const output = result.json; const validationStatusOverride = validateModelOutput({ phase, output }); const phaseLockStatus = coerceModelStatus({ phase, status: validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes }), output }); for (const artifactName of contract.writes) { const artifact = output?.[artifactName]; if (!artifact || typeof artifact !== "object") throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`); await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus })); } await logEvent({ run_id: run.run_id, event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata, runtime_read_override: contract.runtime_read_override || "" } }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase }); }
 function validateModelOutput({ phase, output }) { try { if (phase === "M9") { const validation = validateM9LegalCartographyIndex(output); if (validation.status !== "PASS") throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`); return ""; } if (phase === "M7_TARGET_PROFILE" || phase === "M7_TARGET_PROFILE_FORENSICS") { validateM7TargetProfileOutput(output, { phase }); return ""; } if (phase === "M8_TARGET_FEATURE_PROFILE" || phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") { validateM8TargetFeatureOutput(output, { phase }); } return ""; } catch (error) { if (isNonBlockingModelValidationError({ phase, error, output })) return "LOCKED_WITH_LIMITATIONS"; throw error; } }
 function isNonBlockingModelValidationError({ phase, error, output }) { if (!MODEL_LIMITATION_PHASES.has(phase)) return false; const message = String(error?.message || error || "").toLowerCase(); if (VALIDATION_CRITICAL_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return false; if (VALIDATION_NONBLOCKING_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return true; return hasControlledLimitationSignal(output); }
 function resolveModelLockStatus({ phase, output, writes }) { if (phase === "M9") return resolveStatusFromArtifacts(output?.[ART.legalIndex]); if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.[ART.targetMain]); if (phase === "M7_TARGET_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.targetForensics]); if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.[ART.featureMain]); if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.featureForensics]); if (phase === "M10") return resolveStatusFromArtifacts(output?.[ART.dataProfile]); if (phase === "M10_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.dataForensics]); if (phase === "M11") return resolveStatusFromArtifacts(output?.[ART.exposureProfile]); if (phase === "M12") return resolveStatusFromArtifacts(output?.[ART.challengeGate]); return resolveStatusFromArtifacts(output?.[writes?.[0]]); }
