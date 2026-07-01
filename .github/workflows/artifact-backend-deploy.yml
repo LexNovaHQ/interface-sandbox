@@ -20,6 +20,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: artifact-backend-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
 
