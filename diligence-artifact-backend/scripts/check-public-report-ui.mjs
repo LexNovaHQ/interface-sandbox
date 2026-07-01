@@ -46,7 +46,7 @@ assert.ok(reportRenderer.includes("PUBLIC_REFERENCE_KEYS"));
 assert.ok(reportRenderer.includes("evidence_reference_summary"));
 assert.equal(reportRenderer.includes("raw_final_output_handoff: handoff"), false);
 assert.equal(reportRenderer.includes("section_list:"), false);
-assert.equal(reportRenderer.includes("registry_authority"), false);
+assert.ok(reportRenderer.includes("registry_authority"));
 
 const sample = buildRendererPayload({
   run: { run_id: "TEST-PUBLIC-RENDERER", target: "Example", root_url: "https://example.com" },

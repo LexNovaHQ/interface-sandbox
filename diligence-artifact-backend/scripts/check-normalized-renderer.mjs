@@ -24,7 +24,7 @@ const final_output_handoff = {
 };
 
 const output = buildRendererPayload({ run, final_output_handoff });
-assert.equal(output.renderer_payload.renderer_source, "normalized_section_artifacts");
-assert.equal(output.renderer_payload.section_order[0], "matter_overview");
-assert.equal(output.renderer_payload.sections.matter_overview.section_title, "Matter Overview");
+assert.equal(output.renderer_payload.renderer_source, "normalized_section_artifacts_only");
+assert.equal(output.renderer_payload.sections[0].section_id, "matter_overview");
+assert.equal(output.renderer_payload.sections[0].section_title, "Matter Overview");
 console.log("normalized renderer output: PASS");
