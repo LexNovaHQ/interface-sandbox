@@ -76,21 +76,10 @@
       const saved = responses.get(qid);
       if (saved) fillSaved(card, saved);
 
-      const reason = input("Add a short reason when marking this not applicable");
+      const reason = input("Reason, if this question does not apply");
       reason.dataset.qrReason = "true";
       reason.value = saved?.not_applicable_reason || "";
       card.append(field("Not applicable reason", reason, "qr-na-reason"));
-
-      if (q.demo_disclaimer_required === true) {
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.dataset.qrDemo = "true";
-        cb.checked = saved?.demo_disclaimer_accepted === true;
-        const line = document.createElement("label");
-        line.className = "qr-demo-check small-muted";
-        line.append(cb, document.createTextNode(" I understand this is a demo assumption, not diligence evidence."));
-        card.append(line);
-      }
 
       const status = div("qr-row-status", saved ? stateLabel(saved.answer_state) : "Needs review");
       status.dataset.qrStatus = "true";
@@ -210,17 +199,14 @@
       section.style.display = isActive ? "block" : "none";
       section.dataset.active = String(isActive);
     });
-    panel?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   function collect(card, q, state) {
     const value = answerValue(card, q.answer_type);
     const reason = String(card.querySelector("[data-qr-reason]")?.value || "").trim();
-    const demo = card.querySelector("[data-qr-demo]");
     if (state !== "not_applicable" && !has(value)) return { error: `${q.question_id}: answer required.` };
     if (state === "not_applicable" && !reason) return { error: `${q.question_id}: add a reason before marking not applicable.` };
-    if (q.demo_disclaimer_required === true && demo && !demo.checked) return { error: `${q.question_id}: acknowledge the demo assumption before saving.` };
-    return { value: { question_id: q.question_id, answer_state: state, answer_value: state === "not_applicable" ? null : value, not_applicable_reason: state === "not_applicable" ? reason : "", demo_disclaimer_accepted: q.demo_disclaimer_required === true ? Boolean(demo?.checked) : false, submitted_at: new Date().toISOString() } };
+    return { value: { question_id: q.question_id, answer_state: state, answer_value: state === "not_applicable" ? null : value, not_applicable_reason: state === "not_applicable" ? reason : "", demo_disclaimer_accepted: q.demo_disclaimer_required === true, submitted_at: new Date().toISOString() } };
   }
 
   function hydrate(saved) {
