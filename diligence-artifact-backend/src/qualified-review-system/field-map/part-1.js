@@ -1,0 +1,1 @@
+export const QRFM1=[{"q":"QR-001","t":"s","s":"F","x":"T","p":["dGFyZ2V0X3Byb2ZpbGUudGFyZ2V0X2lkZW50aXR5LmxlZ2FsX2VudGl0eV9uYW1l"]},{"q":"QR-002","t":"s","s":"F","x":"T","p":["dGFyZ2V0X3Byb2ZpbGUudGFyZ2V0X2lkZW50aXR5LmVudGl0eV90eXBl"]}];
