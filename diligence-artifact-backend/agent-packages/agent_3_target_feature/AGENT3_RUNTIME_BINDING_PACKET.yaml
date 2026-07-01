@@ -1,9 +1,9 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v2_synced_m7_m8_split_save
+runtime_contract_version: v3_m8_feature_candidate_inventory_index
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target Feature Agent
-active_phase_scope: M7_TARGET_PROFILE_THEN_M8_TARGET_FEATURE_PROFILE
+active_phase_scope: M7_TARGET_PROFILE_THEN_M8_FEATURE_CANDIDATE_INVENTORY_THEN_M8_TARGET_FEATURE_PROFILE
 
 run_mode: PHASED_AGENT
 run_id_required: true
@@ -16,6 +16,7 @@ prompt_assembly_position:
 
 allowed_modules:
   - M7_TARGET_PROFILE
+  - M8_FEATURE_CANDIDATE_INVENTORY
   - M8_TARGET_FEATURE_PROFILE
 
 read_artifacts:
@@ -30,10 +31,20 @@ read_artifacts:
     - lossless_family__T2_LEGAL_IDENTITY
     - lossless_family__T3_OPERATOR_ENTITY
     - lossless_family__T4_SUPPORTING_IDENTITY
+  M8_FEATURE_CANDIDATE_INVENTORY:
+    - source_discovery_handoff
+    - target_profile
+    - target_profile_forensics
+    - lossless_family__P1_PRODUCT
+    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+    - lossless_family__P4_USE_CASE_INDUSTRY
+    - lossless_family__P5_ENTERPRISE_PRICING
   M8_TARGET_FEATURE_PROFILE:
     - source_discovery_handoff
     - target_profile
     - target_profile_forensics
+    - feature_candidate_inventory
     - lossless_family__P1_PRODUCT
     - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
     - lossless_family__P3_AI_CAPABILITY_TECHNICAL
@@ -51,6 +62,9 @@ write_artifacts_in_order:
       - target_profile
     PHASE_D_FORENSIC_SAVE_EVENT:
       - target_profile_forensics
+  M8_FEATURE_CANDIDATE_INVENTORY:
+    PHASE_A_DETERMINISTIC_INDEX_SAVE_EVENT:
+      - feature_candidate_inventory
   M8_TARGET_FEATURE_PROFILE:
     PHASE_B1_MATERIAL_SAVE_EVENT:
       - target_feature_profile
@@ -59,6 +73,7 @@ write_artifacts_in_order:
 
 phase_locks:
   - M7_TARGET_PROFILE
+  - M8_FEATURE_CANDIDATE_INVENTORY
   - M8_TARGET_FEATURE_PROFILE
 
 phase_sequence:
@@ -67,8 +82,9 @@ phase_sequence:
   - M7_TARGET_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
   - M7_TARGET_PROFILE.PHASE_C_FORENSIC_DERIVATION
   - M7_TARGET_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
-  - M8_TARGET_FEATURE_PROFILE.PHASE_A_SOURCE_EXTRACTION
-  - M8_TARGET_FEATURE_PROFILE.PHASE_B_PROFILE_DERIVATION
+  - M8_FEATURE_CANDIDATE_INVENTORY.PHASE_A_DETERMINISTIC_INDEX_BUILD
+  - M8_FEATURE_CANDIDATE_INVENTORY.PHASE_B_INDEX_VALIDATION_SAVE_GATE
+  - M8_TARGET_FEATURE_PROFILE.PHASE_B_PROFILE_DERIVATION_FROM_INVENTORY
   - M8_TARGET_FEATURE_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
   - M8_TARGET_FEATURE_PROFILE.PHASE_C_FORENSIC_DERIVATION
   - M8_TARGET_FEATURE_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
@@ -77,12 +93,15 @@ phase_gate_rules:
   - M7 Phase B1 returns and saves only target_profile.
   - M7 Phase C may begin only after saved target_profile exists.
   - M7 Phase D returns and saves only target_profile_forensics.
-  - M8 may begin only after saved target_profile and target_profile_forensics exist.
+  - M8 feature candidate inventory may begin only after saved target_profile and target_profile_forensics exist.
+  - M8 feature candidate inventory is deterministic index-only and saves only feature_candidate_inventory.
+  - M8 target feature profile may begin only after saved feature_candidate_inventory exists.
+  - M8 target feature profile uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
   - M8 Phase B1 returns and saves only target_feature_profile.
   - M8 Phase C may begin only after saved target_feature_profile exists.
   - M8 Phase D returns and saves only target_feature_profile_forensics.
-  - M10 may begin only after saved target_feature_profile and target_feature_profile_forensics exist.
-  - Production backend execution must not combine a material artifact and its forensic artifact in the same response.
+  - M10 may begin only after saved feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics exist.
+  - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
 
 forbidden_modules:
   - M6_SOURCE_DISCOVERY
@@ -109,11 +128,11 @@ forbidden_outputs:
   - phase_output_wrapper
   - terminal_receipt_in_backend_mode
 
-backend_permission_profile: agent_3_target_feature_m7_then_m8_split_save
-validator_profile: agent_3_m7_then_m8_split_save_validator
-phase_packet_contract: agent_3_target_feature_split_phase_packet_contract
+backend_permission_profile: agent_3_target_feature_m7_inventory_m8_split_save
+validator_profile: agent_3_m7_inventory_m8_split_save_validator
+phase_packet_contract: agent_3_target_feature_inventory_split_phase_packet_contract
 terminal_receipt_profile: agent_3_target_feature_manual_receipt_only
 
-next_agent_command: "backend runner advances to M10 only after M8_TARGET_FEATURE_PROFILE lock"
+next_agent_command: "backend runner advances to M10 only after M8_TARGET_FEATURE_PROFILE_FORENSICS lock"
 stop_condition: "Stop after M8_TARGET_FEATURE_PROFILE lock."
 </RUNTIME_BINDING_PACKET>
