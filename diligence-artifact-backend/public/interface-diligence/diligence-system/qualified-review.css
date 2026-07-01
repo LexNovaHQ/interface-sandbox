@@ -34,3 +34,12 @@
 .qr-progress-top { color: rgba(229,229,229,.68); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; }
 .qr-progress-track { height: 3px; overflow: hidden; background: rgba(229,229,229,.12); }
 .qr-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), rgba(197,160,89,.35)); box-shadow: 0 0 14px rgba(197,160,89,.45); transition: width .25s ease; }
+.qr-form-section { background: linear-gradient(180deg, rgba(12,12,12,.74), rgba(7,7,7,.68)); border: 1px solid rgba(197,160,89,.12); border-radius: 30px; padding: clamp(22px, 3vw, 34px); box-shadow: 0 24px 80px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.025); }
+.qr-question-card { border: 0; border-top: 1px solid rgba(197,160,89,.13); border-radius: 0; background: transparent; padding: 1.35rem 0; margin: 0; }
+.qr-question-card:first-of-type { border-top: 0; }
+.qr-question-top { display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; margin-bottom: .65rem; }
+.qr-badge { border: 1px solid rgba(197,160,89,.32); color: var(--gold); background: rgba(197,160,89,.06); border-radius: 999px; padding: .32rem .62rem; font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; white-space: nowrap; }
+.qr-question-title { font-size: 1rem; line-height: 1.5; margin: .2rem 0 .3rem; }
+.qr-answer-field { margin-top: 1rem; }
+.qr-answer-input { min-height: 52px; }
+.qr-impact-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
