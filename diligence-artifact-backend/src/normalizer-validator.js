@@ -1,9 +1,18 @@
-import { NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "./normalized-profiler.js";
+import { NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-section789-v2.js";
 import { asArray, safeObject } from "./report-safe-language.js";
 
 const MACHINE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE", "COMPLETE"]);
 const RAW_MAIN_LABEL_TOKENS = Object.freeze(["Threat_ID", "Pain_Tier", "Pain_Depth", "Pain_Category", "Legal_Pain", "archetype_codes", "surface_context_tokens"]);
 const QUALIFIED_REVIEW_BRANCH_ARTIFACTS = Object.freeze(["qualified_review_handoff", "qualified_review_renderer_payload"]);
+const REQUIRED_SECTION_789_ARTIFACTS = Object.freeze([
+  "normalized_section__exposure_summary_harm_mechanism_workpad_summary",
+  "normalized_section__exposure_diagnosis_table",
+  "normalized_section__exposure_control_discipline",
+  "normalized_section__review_route_action_plan",
+  "normalized_section__control_handoff_readiness",
+  "normalized_section__exposure_clarification_queue",
+  "normalized_section__global_confirmation_queue"
+]);
 
 export function validateNormalizedProfilerOutput(output = {}) {
   const failures = [];
@@ -42,12 +51,22 @@ export function validateNormalizedProfilerOutput(output = {}) {
     }
   }
 
+  for (const artifactName of REQUIRED_SECTION_789_ARTIFACTS) {
+    if (!output[artifactName]) failures.push(`${artifactName} missing from Section 7/8/9 split compiler output`);
+  }
+
+  const serializedSection789 = JSON.stringify(REQUIRED_SECTION_789_ARTIFACTS.map((name) => output[name] || {}));
+  if (serializedSection789.includes("Business Category")) failures.push("Business Category appears in Section 7/8/9 split artifacts");
+  if (!serializedSection789.includes("Threat_Name")) failures.push("Threat_Name not present in Section 7/8/9 split artifacts");
+  if (!serializedSection789.includes("Subcat")) failures.push("Subcat not present in Section 7/8/9 split artifacts");
+
   for (const artifactName of QUALIFIED_REVIEW_BRANCH_ARTIFACTS) {
     if (Object.prototype.hasOwnProperty.call(output, artifactName)) {
       failures.push(`${artifactName} emitted by normalized compiler; Qualified Review artifacts must be emitted only by qualified_review_system branch`);
     }
   }
   if (compilerTrace.qualified_review_branch_separate !== true) warnings.push("compiler_trace.qualified_review_branch_separate missing or not true");
+  if (compilerTrace.section_789_artifact_split !== true) failures.push("compiler_trace.section_789_artifact_split missing or not true");
 
   if (output.profiles_combined) failures.push("profiles_combined emitted by normalized compiler");
   if (output.forensics_combined) failures.push("forensics_combined emitted by normalized compiler");
@@ -59,7 +78,7 @@ export function validateNormalizedProfilerOutput(output = {}) {
     failures,
     warnings,
     checked_sections: NORMALIZED_SECTION_ARTIFACT_NAMES.length,
-    validator_version: "normalizer_validator_v2_separate_qr_branch"
+    validator_version: "normalizer_validator_v3_section_789_artifact_split"
   };
 }
 
