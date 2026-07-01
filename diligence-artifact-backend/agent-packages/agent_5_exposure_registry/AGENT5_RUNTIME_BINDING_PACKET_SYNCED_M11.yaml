@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v4_agent5_m11_three_layer_material_row
+runtime_contract_version: v5_agent5_m11_threat_name_subcategory_material_row
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
 active_phase_scope:
@@ -26,6 +26,37 @@ m11_material_row_contract:
   model_must_not_rewrite_registry_spine: true
   model_must_not_choose_profile_placement: true
   model_must_not_emit_final_material_profiles: true
+  material_row_field_count: 19
+  threat_name_required: true
+  threat_name_source: AI_THREAT_REGISTRY.Threat_Name
+  subcategory_code_only_in_m11: true
+  subcategory_display_label_scope: normalizer_compiler_only
+  legacy_subcategory_normalization:
+    FIN: LIA
+  legacy_subcategory_normalization_status: non_blocking_warning_ledgered
+  split_profile_root_discipline:
+    exposure_registry_controlled_profile: controlled_rows_only
+    exposure_registry_triggered_profile: triggered_rows_only
+  full_material_row_fields:
+    - Threat_ID
+    - Threat_Name
+    - target_match
+    - evaluation_status
+    - basis_proof
+    - control_exclusion_evaluation
+    - evidence_source_basis
+    - fp_mechanism
+    - Archetype
+    - Subcategory
+    - Surface
+    - authority_anchors
+    - Pain_Tier
+    - Pain_Depth
+    - Pain_Category
+    - Legal_Pain
+    - remediation
+    - review_route
+    - row_limitations
   final_material_statuses:
     - TRIGGERED
     - CONTROLLED_BY_VISIBLE_CONTROL
@@ -75,6 +106,8 @@ write_artifacts_in_order:
 phase_gate_rules:
   - Phase B model call may evaluate only expected_threat_ids supplied for the active batch.
   - Phase B model call must emit semantic evidence application only.
+  - Threat_Name is backend-owned registry spine and must be carried into every accepted material row.
+  - Subcategory is backend-owned code-only registry spine; FIN is normalized to LIA with a non-blocking drift warning.
   - M12 batch validation must exist before backend saves any exposure_registry_batch__{GROUP}__{NNN} artifact.
   - Backend derives final material status before accepted-batch save.
   - exposure_registry_workpad_98 must exist before controlled or triggered material projections.
@@ -90,6 +123,7 @@ forbidden_outputs_for_m11_and_m12_batch:
   - material_exposure_findings
   - controlled_exposure_rows
   - old seven-field material row as production contract
+  - old eighteen-field material row without Threat_Name as production contract
   - exposure_registry_profile
   - legal_cartography_index as output
   - rebuilt legal cartography map
