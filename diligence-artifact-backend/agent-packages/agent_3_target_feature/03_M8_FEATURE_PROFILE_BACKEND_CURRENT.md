@@ -1,9 +1,7 @@
-
 # MODULE VIII — TARGET FEATURE PROFILE
 
 ## M8.S0 — Phase Call Card
 
-```yaml
 phase_id: M8_TARGET_FEATURE_PROFILE
 module_id: M8
 module_name: TARGET_FEATURE_PROFILE
@@ -12,7 +10,8 @@ active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
 runtime_contract_version: m8_feature_candidate_inventory_index_sync_v1
-M8.S1 — Architecture Lock
+
+## M8.S1 — Architecture Lock
 
 feature_candidate_inventory is the deterministic source of truth for M8 candidate existence.
 
@@ -20,50 +19,44 @@ M8 does not discover, harvest, dedupe, or create the candidate universe.
 
 M8 consumes the saved feature_candidate_inventory as a navigation map and uses P1-P5 lossless artifacts only as evidence for mechanics, grouping, archetype derivation, surface-token derivation, limitations, and profile wording.
 
-The inventory answers only:
+The inventory answers only: what candidate exists, and where M8 should look.
 
-What candidate exists, and where should M8 look?
+M8 answers only: what the evidenced candidate does, which activity mechanics are visible, which archetypes and surfaces are supported, and how the clean material activity row should be written.
 
-M8 answers only:
+Lossless evidence remains exclusively in the lossless_family__P* artifacts. feature_candidate_inventory is not evidence text.
 
-What does the evidenced candidate do, which activity mechanics are visible, which archetypes/surfaces are supported, and how should the clean material activity row be written?
-
-Lossless evidence remains exclusively in the lossless_family__P* artifacts.
-
-feature_candidate_inventory is not evidence text.
-
-M8.S2 — Governing Imports
+## M8.S2 — Governing Imports
 
 M8 is governed by:
 
-00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md
-AGENT3_RUNTIME_BINDING_PACKET.yaml
-03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md
-00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md
-00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
-00_VALIDATOR_RULES_INTEGRATED.md
-FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
-FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
+- 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md
+- AGENT3_RUNTIME_BINDING_PACKET.yaml
+- 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md
+- 00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md
+- 00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
+- 00_VALIDATOR_RULES_INTEGRATED.md
+- FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+- FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+- CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
 
 If any older M8 wording conflicts with 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md, the inventory contract controls.
 
-M8.S3 — Required Inputs
+## M8.S3 — Required Inputs
 
 M8 must consume:
 
-feature_candidate_inventory
-source_discovery_handoff
-target_profile
-target_profile_forensics
-lossless_family__P1_PRODUCT
-lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-lossless_family__P3_AI_CAPABILITY_TECHNICAL
-lossless_family__P4_USE_CASE_INDUSTRY
-lossless_family__P5_ENTERPRISE_PRICING
-FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
-FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
+- feature_candidate_inventory
+- source_discovery_handoff
+- target_profile
+- target_profile_forensics
+- lossless_family__P1_PRODUCT
+- lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+- lossless_family__P3_AI_CAPABILITY_TECHNICAL
+- lossless_family__P4_USE_CASE_INDUSTRY
+- lossless_family__P5_ENTERPRISE_PRICING
+- FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+- FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+- CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
 
 feature_candidate_inventory.candidates[] is the mandatory candidate universe.
 
@@ -71,40 +64,38 @@ feature_candidate_inventory.candidates[].source_pointers[] is used only to navig
 
 P4 may support semantic context, but it does not create candidate existence unless the deterministic inventory has already indexed the candidate.
 
-M8.S4 — Execution Boundary
+## M8.S4 — Execution Boundary
 
 M8_TARGET_FEATURE_PROFILE begins only after saved feature_candidate_inventory exists and is locked.
 
 M8 must not:
 
-discover new sources
-browse
-crawl
-search the web
-fetch new URLs
-use memory or general knowledge about the target
-create candidates outside feature_candidate_inventory
-dedupe candidates
-mutate feature_candidate_inventory
-mutate M7 artifacts
-perform M7 work
-perform M9 work
-perform M10 work
-perform M11 work
-perform M12 work
-perform M13 work
-perform M14 work
-evaluate registry rows
-emit report prose
-emit renderer payloads
-M8.S5 — Candidate Treatment Rules
+- discover new sources
+- browse
+- crawl
+- search the web
+- fetch new URLs
+- use memory or general knowledge about the target
+- create candidates outside feature_candidate_inventory
+- dedupe candidates
+- mutate feature_candidate_inventory
+- mutate M7 artifacts
+- perform M7 work
+- perform M9 work
+- perform M10 work
+- perform M11 work
+- perform M12 work
+- perform M13 work
+- perform M14 work
+- evaluate registry rows
+- emit report prose
+- emit renderer payloads
+
+## M8.S5 — Candidate Treatment Rules
 
 Every canonical candidate in feature_candidate_inventory.candidates[] must be considered.
 
-A candidate requiring product/activity treatment must appear as a visible activity row unless:
-
-1. it was already merged as a duplicate by the deterministic inventory; or
-2. the pointed lossless evidence is too thin to support mechanics after source lookup.
+A candidate requiring product/activity treatment must appear as a visible activity row unless it was already merged as a duplicate by the deterministic inventory or the pointed lossless evidence is too thin to support mechanics after source lookup.
 
 Standalone API candidates should normally become direct activity rows because they are separately addressable developer-facing productized capabilities.
 
@@ -120,7 +111,7 @@ If grouping is necessary under the 12-field material card, the grouped candidate
 
 If M8 sees a public feature in lossless source that is not present in feature_candidate_inventory, M8 must not add that feature as a normal activity. M8 must record a profile-level limitation requiring repair of M8_FEATURE_CANDIDATE_INVENTORY.
 
-M8.S6 — Evidence Rules
+## M8.S6 — Evidence Rules
 
 M8 must derive mechanics from lossless source text reached through the candidate's source pointers.
 
@@ -132,7 +123,7 @@ M8 must not copy lossless excerpts into the material profile.
 
 M8 must not place source URLs, source IDs, source pointers, candidate IDs, or evidence ledgers inside target_feature_profile.
 
-M8.S7 — Archetype and Surface Rules
+## M8.S7 — Archetype and Surface Rules
 
 M8 must apply the selected PA.* material rows from FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml only to the locked 12-field activity card.
 
@@ -140,116 +131,96 @@ M8 must use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as the controlling a
 
 Every mechanically valid emitted activity must be tested against all locked archetype codes:
 
-UNI
-DOE
-JDG
-CMP
-CRT
-RDR
-ORC
-TRN
-SHD
-OPT
-MOV
+- UNI
+- DOE
+- JDG
+- CMP
+- CRT
+- RDR
+- ORC
+- TRN
+- SHD
+- OPT
+- MOV
 
 Every emitted activity must be tested against all locked surface tokens:
 
-Consumer-Public
-Enterprise-Private
-PII
-Employment
-Sensitive/Biometric
-Financial
-Content&IP
-Safety&Physical
-Infrastructure
-Minors
+- Consumer-Public
+- Enterprise-Private
+- PII
+- Employment
+- Sensitive/Biometric
+- Financial
+- Content&IP
+- Safety&Physical
+- Infrastructure
+- Minors
 
 Every emitted activity must have at least one evidence-supported archetype code.
 
 surface_context_tokens must be an array. It may be empty only where no surface token is supported after source lookup.
 
-M8.S8 — Material Output Boundary
+## M8.S8 — Material Output Boundary
 
-The only valid backend output for this phase is:
-
-{
-  "target_feature_profile": {
-    "activities": [],
-    "profile_level_limitations": []
-  }
-}
+The only valid backend output for this phase is target_feature_profile with activities[] and profile_level_limitations[].
 
 M8 must not return:
 
-feature_candidate_inventory
-target_feature_profile_forensics
-target_profile
-target_profile_forensics
-legal_cartography_index
-data_provenance_profile
-exposure_registry_profile
-challenge_gate
-final_output_handoff
-renderer_payload
+- feature_candidate_inventory
+- target_feature_profile_forensics
+- target_profile
+- target_profile_forensics
+- legal_cartography_index
+- data_provenance_profile
+- exposure_registry_profile
+- challenge_gate
+- final_output_handoff
+- renderer_payload
 
 M8 must not include inside target_feature_profile:
 
-candidate_id
-source_candidate_ids
-source_pointers
-source_refs
-source_urls
-source_ids
-evidence excerpts
-confidence fields
-route coverage rows
-derivation ledgers
-validation ledgers
-forensic branches
-lock_status
-validation_status
-profile_meta
-M8.S9 — Activity Row Contract
+- candidate_id
+- source_candidate_ids
+- source_pointers
+- source_refs
+- source_urls
+- source_ids
+- evidence excerpts
+- confidence fields
+- route coverage rows
+- derivation ledgers
+- validation ledgers
+- forensic branches
+- lock_status
+- validation_status
+- profile_meta
+
+## M8.S9 — Activity Row Contract
 
 Each activity row must contain exactly these 12 keys:
 
-activity_reference
-product_service_wrapper
-activity_feature_name
-activity_candidate_summary
-mechanics_proof
-autonomy_human_control_signal
-data_content_object_touched
-external_internal_action_signal
-archetype_codes
-archetype_proof
-surface_context_tokens
-surface_proof_and_routing_limits
+- activity_reference
+- product_service_wrapper
+- activity_feature_name
+- activity_candidate_summary
+- mechanics_proof
+- autonomy_human_control_signal
+- data_content_object_touched
+- external_internal_action_signal
+- archetype_codes
+- archetype_proof
+- surface_context_tokens
+- surface_proof_and_routing_limits
 
 No other activity keys are permitted.
 
-activity_reference must be stable and unique, using:
-
-ACT.001
-ACT.002
-ACT.003
-
-and continuing sequentially.
+activity_reference must be stable and unique, using ACT.001, ACT.002, ACT.003, and continuing sequentially.
 
 activity_feature_name must be specific enough for deterministic downstream matching to the inventory candidate.
 
-Do not use vague names like:
+Do not use vague names like AI platform, API service, enterprise AI, language tool, or automation feature where the inventory candidate is specific.
 
-AI platform
-API service
-enterprise AI
-language tool
-automation feature
-
-where the inventory candidate is specific.
-
-M8.S10 — Field Guidance
+## M8.S10 — Field Guidance
 
 product_service_wrapper should identify the visible product, API family, model family, integration surface, or service wrapper.
 
@@ -273,23 +244,15 @@ surface_context_tokens must be an array of supported surface tokens.
 
 surface_proof_and_routing_limits must explain supported surface tokens and any public-evidence limitations.
 
-M8.S11 — Profile-Level Limitations
+## M8.S11 — Profile-Level Limitations
 
-profile_level_limitations[] may be used only for:
-
-missing source pointer
-missing lossless artifact
-missing source object
-evidence-thin candidate
-inventory repair requirement
-candidate not mechanically supported
-classification not supportable after source lookup
+profile_level_limitations[] may be used only for missing source pointer, missing lossless artifact, missing source object, evidence-thin candidate, inventory repair requirement, candidate not mechanically supported, or classification not supportable after source lookup.
 
 It must not contain forensic ledgers, source excerpts, route coverage rows, or candidate IDs.
 
 Limitations must be business-readable.
 
-M8.S12 — Final Gate
+## M8.S12 — Final Gate
 
 Before returning, verify:
 
@@ -306,9 +269,9 @@ Before returning, verify:
 
 If any condition fails, repair the material output only. Do not emit forensics.
 
-M8.S13 — Final Backend JSON Shape
+## M8.S13 — Final Backend JSON Shape
 
-Return strict JSON only:
+Return strict JSON only with exactly this shape:
 
 {
   "target_feature_profile": {
