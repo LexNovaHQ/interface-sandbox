@@ -5,11 +5,21 @@ This file is the mechanical controller for M11/M12 split-phase execution. It sit
 
 ## UNIVERSAL BLOCKING RULE
 Only critical structural, routing, schema, source-integrity, or evaluation failures block a phase.
-Non-critical metadata gaps, thin public evidence, unavailable public materials, and registry metadata blanks must be carried as limitations or warnings and must not stop the run.
+Non-critical metadata gaps, thin public evidence, unavailable public materials, registry metadata blanks, and known legacy subcategory normalization (`FIN` -> `LIA`) must be carried as limitations or warnings and must not stop the run.
 
 ## CHECKPOINT RULE
 Every saved output artifact is a checkpoint.
-If a checkpoint already exists with `LOCKED` or `LOCKED_WITH_LIMITATIONS`, the backend must reuse it unless a forced rebuild is explicitly requested by backend control state.
+
+If a checkpoint already exists with `LOCKED` or `LOCKED_WITH_LIMITATIONS`, the backend may reuse it only when it satisfies the current M11 schema contract:
+
+```text
+m11_schema_upgrade = THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1
+material_row_field_count = 19 where applicable
+Threat_Name present on accepted/material/profile rows
+Subcategory code-only and within the locked registry vocabulary after known legacy normalization
+```
+
+Old checkpoints using the eighteen-field material row without `Threat_Name`, or raw legacy `FIN` as report subcategory, must be rebuilt rather than reused.
 
 Checkpoint artifacts:
 - `exposure_registry_route_plan`
