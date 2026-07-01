@@ -1,9 +1,11 @@
+import { buildIntegratedDapProjection } from "./integrated-dap-report.js";
 import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler.js";
 import { toMachineStatus } from "./normalized-status.js";
 import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
 
 export function compileFinalOutputHandoff({ run, artifacts }) {
-  const output = buildNormalizedProfilerOutput({ run, artifacts });
+  const compilerArtifacts = withIntegratedDapProjection({ run, artifacts });
+  const output = buildNormalizedProfilerOutput({ run, artifacts: compilerArtifacts });
   const final = output.final_output_handoff?.final_output_handoff || {};
   const status = toMachineStatus(final.validation_status || output.normalized_report_manifest?.validation_status || run?.status);
 
@@ -43,13 +45,14 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       normalized_sections,
       legacy_archive,
       compiler_trace: {
-        compiler_version: "normalized_profiler_compiler_replacement_v3_report_only",
+        compiler_version: "normalized_profiler_compiler_replacement_v4_integrated_dap_projection",
         deterministic_only: true,
         no_new_findings_created: true,
         no_row_re_evaluation: true,
         normalized_section_count: NORMALIZED_SECTION_KEYS.length,
         legacy_artifacts_archived: true,
-        qualified_review_branch_separate: true
+        qualified_review_branch_separate: true,
+        data_provenance_controls_source: "integrated_dap_report.normalized_profile_overlay"
       }
     }
   };
@@ -58,4 +61,25 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
   output.final_output_handoff.final_output_handoff.normalizer_validation = output.normalizer_validation;
 
   return output;
+}
+
+function withIntegratedDapProjection({ run, artifacts = {} }) {
+  const integrated = unwrapIntegratedDap(artifacts.integrated_dap_report);
+  const projection = integrated?.normalized_profile_overlay
+    ? integrated
+    : buildIntegratedDapProjection({ run, artifacts })?.integrated_dap_report;
+  if (!projection?.normalized_profile_overlay) return artifacts;
+  return {
+    ...artifacts,
+    integrated_dap_report: projection,
+    data_provenance_profile: {
+      data_provenance_profile: projection.normalized_profile_overlay
+    }
+  };
+}
+
+function unwrapIntegratedDap(value) {
+  return value?.integrated_dap_report && typeof value.integrated_dap_report === "object"
+    ? value.integrated_dap_report
+    : value?.artifact?.integrated_dap_report || value;
 }
