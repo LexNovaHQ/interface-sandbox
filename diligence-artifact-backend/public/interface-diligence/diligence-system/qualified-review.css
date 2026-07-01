@@ -26,3 +26,11 @@
 .qr-rail-item.active .qr-rail-index { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 5px #050505, 0 0 22px rgba(197,160,89,.8); }
 .qr-rail-text { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.35; font-weight: 800; }
 .qr-rail-count { color: rgba(229,229,229,.42); font-size: .62rem; }
+.qr-summary-grid, .qr-compact-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.qr-summary-item, .qr-compact-stat { border-left: 1px solid rgba(197,160,89,.28); padding: .25rem 0 .25rem .85rem; min-height: 54px; }
+.qr-summary-label, .qr-stat-label { color: rgba(229,229,229,.44); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; }
+.qr-summary-value, .qr-stat-value { color: rgba(245,245,245,.9); margin-top: .28rem; font-size: .86rem; line-height: 1.35; overflow-wrap: anywhere; }
+.qr-progress { margin: 16px 0 12px; }
+.qr-progress-top { color: rgba(229,229,229,.68); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; margin-bottom: 8px; }
+.qr-progress-track { height: 3px; overflow: hidden; background: rgba(229,229,229,.12); }
+.qr-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), rgba(197,160,89,.35)); box-shadow: 0 0 14px rgba(197,160,89,.45); transition: width .25s ease; }
