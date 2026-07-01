@@ -20,3 +20,9 @@
 .qr-progress-track { height: 9px; border-radius: 999px; overflow: hidden; border: 1px solid rgba(197,160,89,.22); background: rgba(255,255,255,.035); }
 .qr-progress-fill { height: 100%; border-radius: 999px; background: var(--gold); box-shadow: 0 0 16px rgba(197,160,89,.45); transition: width .25s ease; }
 .qr-nav-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: center; }
+.qr-rail-list { display: grid; gap: 10px; margin-top: 14px; }
+.qr-rail-item { width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; border: 1px solid rgba(229,229,229,.1); background: rgba(255,255,255,.018); color: rgba(229,229,229,.74); border-radius: 16px; padding: .75rem .8rem; }
+.qr-rail-item.active, .qr-rail-item.complete { border-color: rgba(197,160,89,.42); background: rgba(197,160,89,.07); color: var(--gold); }
+.qr-rail-index { font-size: .62rem; letter-spacing: .13em; font-weight: 900; color: rgba(197,160,89,.8); }
+.qr-rail-text { font-size: .72rem; line-height: 1.25; font-weight: 800; }
+.qr-rail-count { font-size: .62rem; color: rgba(229,229,229,.46); }
