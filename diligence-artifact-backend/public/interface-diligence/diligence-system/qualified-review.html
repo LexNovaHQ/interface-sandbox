@@ -14,50 +14,51 @@
     <div class="topbar-inner qr-topbar-inner">
       <a class="wordmark" href="/interface-diligence/diligence-system/">
         <span class="wordmark-title">Interface</span>
-        <span class="wordmark-subtitle">Review Workspace</span>
+        <span class="wordmark-subtitle">Diligence Engine</span>
       </a>
-      <div class="qr-header-title">Qualified Review</div>
       <nav class="qr-section-tabs" id="qualifiedReviewTabs" aria-label="Review sections"></nav>
     </div>
   </header>
 
   <div class="page-shell qr-shell">
-    <section class="hero report-shell qr-hero">
+    <div class="qr-action-row no-print">
+      <a class="quiet-link" id="backToReport" href="#">Return to Report</a>
+      <a class="btn secondary" href="/interface-diligence/diligence-system/">New Review</a>
+    </div>
+
+    <section class="qr-hero">
       <div class="eyebrow">Qualified Review</div>
       <h1 id="handoffTitle">Loading review workspace...</h1>
       <p class="hero-copy" id="handoffSubtitle">Preparing the reviewer workspace.</p>
-      <div class="report-actions no-print">
-        <a class="btn secondary" id="backToReport" href="#">Return to Report</a>
-        <a class="btn secondary" href="/interface-diligence/diligence-system/">New Review</a>
-      </div>
+      <div class="hairline"></div>
     </section>
 
     <div class="qr-app-layout">
-      <aside class="card qr-left-rail no-print" id="qualifiedReviewRailCard">
+      <aside class="qr-left-rail no-print" id="qualifiedReviewRailCard">
         <div class="eyebrow">Sections</div>
         <div id="qualifiedReviewRail">Loading sections...</div>
       </aside>
 
       <main class="qr-main-workspace">
         <div class="qr-head-grid">
-          <section class="card qr-head-card" id="handoffMetaCard">
+          <section class="qr-panel qr-head-card" id="handoffMetaCard">
             <div class="eyebrow">Review summary</div>
             <div id="handoffMeta">Loading review details...</div>
           </section>
-          <section class="card qr-head-card qr-workflow-card" id="qrWorkflowPanel">
+          <section class="qr-panel qr-head-card qr-workflow-card" id="qrWorkflowPanel">
             <div class="eyebrow">Workflow</div>
             <p class="small-muted">Loading progress...</p>
           </section>
         </div>
 
-        <section class="card qr-navigation-card no-print" id="qrNavigationPanel"></section>
+        <div class="qr-nav-strip no-print" id="qrNavigationPanel"></div>
 
-        <section class="card qr-work-body-card">
+        <section class="qr-work-body-card">
           <div class="eyebrow">Review form</div>
           <div id="handoffBody"></div>
         </section>
 
-        <section class="card qr-alert-card hidden" id="qrValidationDrawer"></section>
+        <section class="qr-panel qr-alert-card hidden" id="qrValidationDrawer"></section>
       </main>
     </div>
 
