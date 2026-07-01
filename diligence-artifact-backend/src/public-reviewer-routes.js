@@ -11,9 +11,6 @@ import { saveQualifiedReviewSubmission } from "./qualified-review-system/submiss
 
 export const publicReviewerRouter = express.Router();
 
-const windowMs = 60 * 60 * 1000;
-const limits = { create: 5, advance: 80, read: 120, submit: 40 };
-const buckets = new Map();
 const jobCreatePaths = ["/diligence-system/jobs"];
 const jobCreateWithDocumentsPaths = ["/diligence-system/jobs-with-documents"];
 const jobReadPaths = ["/diligence-system/jobs/:run_id"];
@@ -31,7 +28,7 @@ publicReviewerRouter.all(["/reviewer", "/reviewer/*"], (_req, res) => {
   return res.status(410).json({ ok: false, error: "PUBLIC_REVIEWER_ALIAS_RETIRED", message: "Public reviewer routes are retired. Use /public/diligence-system routes." });
 });
 
-publicReviewerRouter.post(jobCreatePaths, rateLimit("create"), async (req, res) => {
+publicReviewerRouter.post(jobCreatePaths, async (req, res) => {
   try {
     requireRuntimeConfig();
     const body = parseOrThrow(reviewerCreateJobSchema, req.body);
@@ -51,7 +48,7 @@ publicReviewerRouter.post(jobCreatePaths, rateLimit("create"), async (req, res) 
   }
 });
 
-publicReviewerRouter.post(jobCreateWithDocumentsPaths, rateLimit("create"), async (req, res) => {
+publicReviewerRouter.post(jobCreateWithDocumentsPaths, async (req, res) => {
   try {
     requireRuntimeConfig();
     const intake = await parseMultipartDiligenceJob(req);
@@ -73,7 +70,7 @@ publicReviewerRouter.post(jobCreateWithDocumentsPaths, rateLimit("create"), asyn
   }
 });
 
-publicReviewerRouter.get(jobReadPaths, rateLimit("read"), async (req, res) => {
+publicReviewerRouter.get(jobReadPaths, async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
@@ -84,7 +81,7 @@ publicReviewerRouter.get(jobReadPaths, rateLimit("read"), async (req, res) => {
   }
 });
 
-publicReviewerRouter.post(jobAdvancePaths, rateLimit("advance"), async (req, res) => {
+publicReviewerRouter.post(jobAdvancePaths, async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const body = parseOrThrow(reviewerAdvanceJobSchema, req.body || {});
@@ -95,7 +92,7 @@ publicReviewerRouter.post(jobAdvancePaths, rateLimit("advance"), async (req, res
   }
 });
 
-publicReviewerRouter.get(reportPaths, rateLimit("read"), async (req, res) => {
+publicReviewerRouter.get(reportPaths, async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
@@ -108,7 +105,7 @@ publicReviewerRouter.get(reportPaths, rateLimit("read"), async (req, res) => {
   }
 });
 
-publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, res) => {
+publicReviewerRouter.get(qualifiedReviewPaths, async (req, res) => {
   try {
     assertRunId(req.params.run_id);
     const run = await getRunRecord(req.params.run_id);
@@ -148,7 +145,7 @@ publicReviewerRouter.get(qualifiedReviewPaths, rateLimit("read"), async (req, re
   }
 });
 
-publicReviewerRouter.post(qualifiedReviewResponsePaths, rateLimit("submit"), async (req, res) => {
+publicReviewerRouter.post(qualifiedReviewResponsePaths, async (req, res) => {
   try {
     requireRuntimeConfig();
     assertRunId(req.params.run_id);
@@ -187,8 +184,6 @@ async function readOptionalJsonArtifact(runId, artifactName) {
   }
 }
 
-function rateLimit(kind) { return (req, res, next) => { const key = `${kind}:${clientIp(req)}`; const now = Date.now(); const existing = buckets.get(key) || { count: 0, resetAt: now + windowMs }; const current = existing.resetAt < now ? { count: 0, resetAt: now + windowMs } : existing; current.count += 1; buckets.set(key, current); if (current.count > limits[kind]) return res.status(429).json({ ok: false, error: "PUBLIC_RATE_LIMITED", message: `Public diligence-system ${kind} limit reached.` }); return next(); }; }
-function clientIp(req) { return String(req.get("x-forwarded-for") || req.ip || "unknown").split(",")[0].trim(); }
 function publicRunResponse(run, options = {}) { return { ok: true, run_id: run.run_id, target: run.target, root_url: run.root_url, source_mode: run.source_mode || "url", uploaded_source_documents: run.uploaded_source_documents || { document_count: 0 }, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: safeRunnerDiagnostic(run.runner_last_error), runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_requested_at: run.runner_requested_at || "", runner_last_completed_at: run.runner_last_completed_at || "", runner_task_name: run.runner_task_name || "", artifact_count: Number.isFinite(options.artifact_count) ? options.artifact_count : Number(run.artifact_count || 0), final_report_url: run.final_report_url || "", created_at: run.created_at, updated_at: run.updated_at, qualified_review_submission_status: run.qualified_review_submission_status || "", qualified_review_submission_version: run.qualified_review_submission_version || 0 }; }
 function publicAsyncResponse(result) { return { ok: true, async: true, queued: result.queued, already_running: result.already_running, terminal: result.terminal, run_id: result.run_id, status: result.status, current_phase: result.current_phase, runner_mode: result.runner_mode || "", runner_state: result.runner_state, runner_last_error: safeRunnerDiagnostic(result.runner_last_error), runner_failed_at: result.runner_failed_at || "", runner_worker_started_at: result.runner_worker_started_at || "", runner_worker_heartbeat_at: result.runner_worker_heartbeat_at || "", runner_requested_at: result.runner_requested_at || "", runner_last_completed_at: result.runner_last_completed_at || "", runner_task_name: result.runner_task_name || "", artifact_count: Number(result.artifact_count || 0), poll: `/public/diligence-system/jobs/${result.run_id}` }; }
 function publicArtifactList(artifacts) { return artifacts.map((artifact) => ({ artifact_name: artifact.artifact_name, phase: artifact.phase, lock_status: artifact.lock_status, latest_version: artifact.latest_version || artifact.version, updated_at: artifact.updated_at || artifact.created_at })); }

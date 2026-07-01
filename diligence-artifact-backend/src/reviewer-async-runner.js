@@ -98,6 +98,7 @@ export async function runReviewerWorkerOnce({ run_id, actor = "cloud_tasks_worke
         runner_state: "QUEUED",
         runner_auto_continue: true,
         runner_previous_phase_completed: result.completed_phase || claimed.current_phase,
+        runner_active_phase: activePhaseFor(after),
         runner_last_completed_at: nowIso(),
         runner_worker_heartbeat_at: nowIso(),
         runner_last_error: ""
@@ -115,6 +116,7 @@ export async function runReviewerWorkerOnce({ run_id, actor = "cloud_tasks_worke
       runner_state: isTerminal(after) ? "COMPLETE" : "IDLE",
       runner_auto_continue: false,
       runner_previous_phase_completed: result.completed_phase || claimed.current_phase,
+      runner_active_phase: activePhaseFor(after),
       runner_last_completed_at: nowIso(),
       runner_worker_heartbeat_at: nowIso(),
       runner_last_error: ""
@@ -180,6 +182,7 @@ function queuedStaleWindowMs(run) {
   if (EARLY_PHASES.has(run.current_phase) && Number(run.artifact_count || 0) === 0) return Math.min(config.earlyPhaseStaleMs, 3 * 60 * 1000);
   return Math.min(config.workerStaleMs, 5 * 60 * 1000);
 }
-async function clearRunnerState({ run_id, terminal }) { const updated = await updateRunRecord(run_id, { runner_state: terminal ? "COMPLETE" : "IDLE", runner_auto_continue: false }); await updateRunDashboardRow(updated); }
+async function clearRunnerState({ run_id, terminal }) { const updated = await updateRunRecord(run_id, { runner_state: terminal ? "COMPLETE" : "IDLE", runner_auto_continue: false, runner_active_phase: terminal ? "COMPLETE" : "" }); await updateRunDashboardRow(updated); }
+function activePhaseFor(run) { return isTerminal(run) ? "COMPLETE" : run.current_phase || ""; }
 function asyncResponse({ run, queued, already_running, terminal }) { return { ok: true, queued, already_running, terminal, run_id: run.run_id, status: run.status, current_phase: run.current_phase, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_requested_at: run.runner_requested_at || "", runner_dispatched_at: run.runner_dispatched_at || "", runner_last_completed_at: run.runner_last_completed_at || "", runner_task_name: run.runner_task_name || "", artifact_count: run.artifact_count || 0 }; }
 function workerResponse({ run, completed_step, dispatched_next, terminal, already_running = false }) { return { ok: true, run_id: run.run_id, status: run.status, current_phase: run.current_phase, completed_step, dispatched_next, terminal, already_running, runner_mode: run.runner_mode || "", runner_state: run.runner_state || "", runner_last_error: run.runner_last_error || "", runner_failed_at: run.runner_failed_at || "", runner_worker_started_at: run.runner_worker_started_at || "", runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "", runner_dispatched_at: run.runner_dispatched_at || "", runner_task_name: run.runner_task_name || "", artifact_count: run.artifact_count || 0 }; }
