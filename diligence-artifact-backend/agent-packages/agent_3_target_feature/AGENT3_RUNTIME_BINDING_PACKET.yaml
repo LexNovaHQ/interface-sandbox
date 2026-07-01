@@ -14,6 +14,11 @@ prompt_assembly_position:
   packet_after_runtime: true
   phase_prompt_after_packet: true
 
+prompt_precedence:
+  - 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md controls all M8 candidate-existence, inventory, and dedup rules.
+  - Any legacy wording in 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md that tells M8_TARGET_FEATURE_PROFILE to harvest candidates, build a source extraction capsule, dedupe candidates, or prove route-family coverage inside the model prompt is superseded.
+  - M8_TARGET_FEATURE_PROFILE consumes the saved feature_candidate_inventory and compiles target_feature_profile only.
+
 allowed_modules:
   - M7_TARGET_PROFILE
   - M8_FEATURE_CANDIDATE_INVENTORY
