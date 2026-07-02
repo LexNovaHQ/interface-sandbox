@@ -1,4 +1,4 @@
-import { NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-section10-v3.js";
+import { NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-m9-section6-v4.js";
 import { asArray, safeObject } from "./report-safe-language.js";
 
 const MACHINE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE", "COMPLETE"]);
@@ -14,6 +14,7 @@ const REQUIRED_SECTION_789_ARTIFACTS = Object.freeze([
   "normalized_section__global_confirmation_queue"
 ]);
 const REQUIRED_SECTION_10_ARTIFACT = "normalized_section__methodology_limitations_forensic_annexure";
+const REQUIRED_SECTION_6_ARTIFACT = "normalized_section__legal_document_control_review";
 
 export function validateNormalizedProfilerOutput(output = {}) {
   const failures = [];
@@ -29,10 +30,7 @@ export function validateNormalizedProfilerOutput(output = {}) {
 
   for (const artifactName of NORMALIZED_SECTION_ARTIFACT_NAMES) {
     const section = safeObject(output[artifactName]);
-    if (!Object.keys(section).length) {
-      failures.push(`${artifactName} missing`);
-      continue;
-    }
+    if (!Object.keys(section).length) { failures.push(`${artifactName} missing`); continue; }
     if (section.artifact_name !== artifactName) failures.push(`${artifactName} artifact_name mismatch`);
     if (!section.section_id) failures.push(`${artifactName} missing section_id`);
     if (!section.section_title) failures.push(`${artifactName} missing section_title`);
@@ -54,6 +52,7 @@ export function validateNormalizedProfilerOutput(output = {}) {
 
   for (const artifactName of REQUIRED_SECTION_789_ARTIFACTS) if (!output[artifactName]) failures.push(`${artifactName} missing from Section 7/8/9 split compiler output`);
   if (!output[REQUIRED_SECTION_10_ARTIFACT]) failures.push(`${REQUIRED_SECTION_10_ARTIFACT} missing from merged Section 10 compiler output`);
+  if (!output[REQUIRED_SECTION_6_ARTIFACT]) failures.push(`${REQUIRED_SECTION_6_ARTIFACT} missing from M9 Section 6 compiler output`);
   if (output.normalized_section__methodology_limitations_review_notes) failures.push("old methodology section emitted after Section 10 merge");
   if (output.normalized_section__forensic_ledger_appendix) failures.push("old forensic ledger appendix emitted after Section 10 merge");
 
@@ -64,6 +63,11 @@ export function validateNormalizedProfilerOutput(output = {}) {
   if ((diagnosisRows.length || actionRows.length) && !serializedSection789.includes("Threat_Name")) failures.push("Threat_Name not present in populated Section 7/8/9 split artifacts");
   if ((diagnosisRows.length || actionRows.length) && !serializedSection789.includes("Subcat")) failures.push("Subcat not present in populated Section 7/8/9 split artifacts");
 
+  const serializedSection6 = JSON.stringify(output[REQUIRED_SECTION_6_ARTIFACT] || {});
+  if (!serializedSection6.includes("Legal Coverage Summary")) failures.push("Section 6 missing Legal Coverage Summary");
+  if (!serializedSection6.includes("Core Legal Document Inventory")) failures.push("Section 6 missing Core Legal Document Inventory");
+  if (serializedSection6.includes("document_structure_index") || serializedSection6.includes("control_language_locator")) failures.push("Section 6 appears to render raw M9 technical map names inline");
+
   const serializedSection10 = JSON.stringify(output[REQUIRED_SECTION_10_ARTIFACT] || {});
   if (!serializedSection10.includes("Upstream artifact annexure manifest")) failures.push("merged Section 10 missing annexure manifest");
   if (!serializedSection10.includes("Manifest only")) failures.push("merged Section 10 missing manifest-only display rule");
@@ -73,6 +77,7 @@ export function validateNormalizedProfilerOutput(output = {}) {
   if (compilerTrace.qualified_review_branch_separate !== true) warnings.push("compiler_trace.qualified_review_branch_separate missing or not true");
   if (compilerTrace.section_789_artifact_split !== true) failures.push("compiler_trace.section_789_artifact_split missing or not true");
   if (compilerTrace.section_10_merged_forensic_annexure !== true) failures.push("compiler_trace.section_10_merged_forensic_annexure missing or not true");
+  if (compilerTrace.section_6_m9_summary_not_raw_index !== true) failures.push("compiler_trace.section_6_m9_summary_not_raw_index missing or not true");
   if (compilerTrace.no_separate_section_11 !== true) failures.push("compiler_trace.no_separate_section_11 missing or not true");
 
   if (output.profiles_combined) failures.push("profiles_combined emitted by normalized compiler");
@@ -80,7 +85,7 @@ export function validateNormalizedProfilerOutput(output = {}) {
   if (final.profiles || final.profile || final.forensics) failures.push("final_output_handoff contains legacy merged profile/forensics blob");
   if (!final.legacy_archive || final.legacy_archive.profiles_combined !== "ARCHIVED_LEGACY") warnings.push("final_output_handoff legacy_archive marker missing or incomplete");
 
-  return { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures, warnings, checked_sections: NORMALIZED_SECTION_ARTIFACT_NAMES.length, validator_version: "normalizer_validator_v4_section_10_merged_forensic_annexure" };
+  return { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures, warnings, checked_sections: NORMALIZED_SECTION_ARTIFACT_NAMES.length, validator_version: "normalizer_validator_v5_m9_section6_section10_merged" };
 }
 
 export function assertNormalizedProfilerOutput(output = {}) {
