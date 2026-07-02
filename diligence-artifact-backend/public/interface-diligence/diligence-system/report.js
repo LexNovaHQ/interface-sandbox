@@ -128,55 +128,74 @@ const SECTION_DECK_PROFILES = Object.freeze({
   data_provenance_controls: {
     type: "data-control",
     title: "Data/control review item",
-    primary: ["Review_Point", "Public_Footprint_Status", "Jurisdiction_Layer", "Review_Action"],
-    panels: [
-      { label: "Review point / control signal", keys: ["Review_Point", "Review_Action", "Purpose", "Processing_Operation", "Data_Category", "Data_Categories", "Activity_Data_Flow", "Control_Position"] },
-      { label: "Source / limitation", keys: ["Evidence_Summary", "Source_Layer", "Source_Basis", "Jurisdiction_Layer", "Public_Footprint_Status", "Limitation", "Missing_Proof", "Expected_Source"] }
+    layout: "row-groups",
+    badges: ["Public_Footprint_Status", "Jurisdiction_Layer", "Review_Action"],
+    titleKeys: ["Review_Point", "Purpose", "Processing_Operation"],
+    rowGroups: [
+      { label: "Control identity", grid: "compact-4", keys: ["Review_Point", "Public_Footprint_Status", "Jurisdiction_Layer", "Review_Action"] },
+      { label: "Processing / control position", grid: "wide-2", keys: ["Purpose", "Processing_Operation", "Data_Category", "Data_Categories", "Activity_Data_Flow", "Control_Position"] },
+      { label: "Evidence / limitation", grid: "wide-2", keys: ["Evidence_Summary", "Source_Layer", "Source_Basis", "Limitation", "Missing_Proof", "Expected_Source"] }
     ]
   },
   legal_document_control_review: {
     type: "legal-map",
     title: "Legal/governance document item",
-    primary: ["display_ref", "document_or_artifact", "document_title", "artifact_class", "status", "source_corpus_status"],
-    panels: [
-      { label: "Document / locator", keys: ["document_or_artifact", "document_title", "artifact_class", "internal_unit", "heading_label", "source_url", "navigation_pointer", "expected_location", "canonical_equivalent"] },
-      { label: "Control or missing item", keys: ["missing_or_limited_item", "review_point_type", "reviewer_action", "control_language", "control_position", "status", "source_corpus_status", "limitation", "boundary_note"] }
+    layout: "row-groups",
+    badges: ["display_ref", "artifact_class", "status", "source_corpus_status"],
+    titleKeys: ["document_title", "document_or_artifact", "missing_or_limited_item"],
+    rowGroups: [
+      { label: "Document identity", grid: "compact-4", keys: ["display_ref", "document_or_artifact", "document_title", "artifact_class", "status", "source_corpus_status"] },
+      { label: "Locator", grid: "wide-2", keys: ["internal_unit", "heading_label", "source_url", "navigation_pointer", "expected_location", "canonical_equivalent"] },
+      { label: "Control / missing item", grid: "wide-2", keys: ["missing_or_limited_item", "review_point_type", "reviewer_action", "control_language", "control_position", "limitation", "boundary_note"] }
     ]
   },
   exposure_findings: {
     type: "exposure",
     title: "Exposure findings",
-    primary: ["display_exposure_id", "display_status", "review_priority_tier", "review_category", "review_route", "Exposure_ID", "Threat_ID", "Subcat"],
-    panels: [
-      { label: "Finding / action", keys: ["plain_english_issue", "related_activity", "review_depth", "review_route", "Threat_Name", "Finding", "Harm_Mechanism", "Review_Action"] },
-      { label: "Evidence / basis", keys: ["visible_basis", "evidence_source_basis", "visible_control_position", "activity_pattern", "affected_context", "Basis_Proof", "Evidence_Summary", "Control_Exclusion_Basis", "Limitation"] }
+    layout: "row-groups",
+    badges: ["display_status", "review_priority_tier", "review_category", "review_route"],
+    titleKeys: ["Threat_Name", "plain_english_issue", "Finding"],
+    rowGroups: [
+      { label: "Exposure identity", grid: "compact-4", keys: ["display_exposure_id", "Exposure_ID", "Threat_ID", "Subcat", "display_status", "review_priority_tier", "review_category", "review_route", "review_depth", "Depth", "Status"] },
+      { label: "Finding / issue", grid: "wide-2", keys: ["Threat_Name", "plain_english_issue", "related_activity", "Finding", "Harm_Mechanism"] },
+      { label: "Legal consequence / review action", grid: "wide-2", keys: ["legal_business_consequence", "Legal_Business_Consequence", "Legal Business Consequence", "recommended_review_action", "Recommended_Review_Action", "Recommended Review Action", "Review_Action"] },
+      { label: "Evidence / basis", grid: "wide-2", keys: ["visible_basis", "evidence_source_basis", "visible_control_position", "activity_pattern", "affected_context", "Basis_Proof", "Evidence_Summary", "Control_Exclusion_Basis", "Limitation"] }
     ]
   },
   review_route_handoff_plan: {
     type: "handoff",
     title: "Review route / handoff plan",
-    primary: ["action_reference", "linked_finding", "review_route", "route_reference", "Handoff_State", "Priority"],
-    panels: [
-      { label: "Action / handoff", keys: ["visible_signal", "Review_Action", "Document", "Document_Impact", "Downstream_Document", "Drafting_Action", "review_route"] },
-      { label: "Downstream use limit", keys: ["downstream_use_limit", "Required_Input", "Open_Reviewer_Point", "Limitation", "Next_Action"] }
+    layout: "row-groups",
+    badges: ["Handoff_State", "Priority", "review_route"],
+    titleKeys: ["Review_Action", "Drafting_Action", "Document_Impact", "visible_signal"],
+    rowGroups: [
+      { label: "Handoff identity", grid: "compact-4", keys: ["action_reference", "linked_finding", "review_route", "route_reference", "Handoff_State", "Priority"] },
+      { label: "Drafting action", grid: "wide-2", keys: ["visible_signal", "Review_Action", "Document", "Document_Impact", "Downstream_Document", "Drafting_Action"] },
+      { label: "Use limit / reviewer input", grid: "wide-2", keys: ["downstream_use_limit", "Required_Input", "Open_Reviewer_Point", "Limitation", "Next_Action"] }
     ]
   },
   clarification_missing_source_queue: {
     type: "clarification",
     title: "Clarification / missing source queue",
-    primary: ["confirmation_reference", "display_ref", "Clarification_ID", "Request_ID", "Linked_Exposure_ID", "Exposure_ID", "Blocks_Handoff"],
-    panels: [
-      { label: "Question / missing material", keys: ["question", "Question", "missing_or_limited_item", "Missing_Material", "Clarification_Request", "Review_Point"] },
-      { label: "Expected source / downstream effect", keys: ["expected_location", "Expected_Source_Location", "Evidence_Needed", "Why_It_Matters", "Downstream_Effect", "Limitation"] }
+    layout: "row-groups",
+    badges: ["Blocks_Handoff", "Linked_Exposure_ID", "Exposure_ID"],
+    titleKeys: ["question", "Question", "Clarification_Request", "missing_or_limited_item"],
+    rowGroups: [
+      { label: "Confirmation identity", grid: "compact-4", keys: ["confirmation_reference", "display_ref", "Clarification_ID", "Request_ID", "Linked_Exposure_ID", "Exposure_ID", "Blocks_Handoff"] },
+      { label: "Question / missing material", grid: "wide-2", keys: ["question", "Question", "missing_or_limited_item", "Missing_Material", "Clarification_Request", "Review_Point"] },
+      { label: "Expected source / downstream effect", grid: "wide-2", keys: ["expected_location", "Expected_Source_Location", "Evidence_Needed", "Why_It_Matters", "Downstream_Effect", "Limitation"] }
     ]
   },
   methodology_limitations_public_annexure: {
     type: "methodology",
     title: "Methodology / limitation item",
-    primary: ["review_step", "purpose", "status", "Artifact", "Reference", "Included", "Excluded", "Reason"],
-    panels: [
-      { label: "Method / scope", keys: ["purpose", "Scope", "Methodology", "Included_Source", "Included", "Reason"] },
-      { label: "Boundary / limitation", keys: ["meaning", "Limitation", "Boundary", "Annexure", "Technical_Annexure", "Reviewer_Note"] }
+    layout: "row-groups",
+    badges: ["review_step", "status", "Artifact", "Reference"],
+    titleKeys: ["purpose", "review_step", "Methodology", "Reason"],
+    rowGroups: [
+      { label: "Method identity", grid: "compact-4", keys: ["review_step", "Artifact", "Reference", "status"] },
+      { label: "Method / scope", grid: "wide-2", keys: ["purpose", "Scope", "Methodology", "Included_Source", "Included", "Reason"] },
+      { label: "Boundary / limitation", grid: "wide-2", keys: ["meaning", "Limitation", "Boundary", "Annexure", "Technical_Annexure", "Reviewer_Note", "Excluded"] }
     ]
   }
 });
@@ -511,12 +530,7 @@ function renderDeckInto(block) {
     el("div", "report-deck-count", `${items.length} items · Showing ${items.length ? start + 1 : 0}-${end}`)
   );
   if (items.length > DECK_PAGE_SIZE) {
-    const actions = el("div", "report-deck-actions");
-    const prev = deckButton("Previous", "prev", page <= 0 || expanded);
-    const next = deckButton("Next", "next", page >= pageCount - 1 || expanded);
-    const toggle = deckButton(expanded ? "Collapse" : "Show all", expanded ? "collapse" : "show_all", false);
-    actions.append(prev, next, toggle);
-    header.append(actions);
+    header.append(renderDeckActions(page, pageCount, expanded));
   }
 
   const cards = el("div", "report-deck-cards");
@@ -524,8 +538,23 @@ function renderDeckInto(block) {
     cards.append(renderFindingCard(item, { ...context, ordinal: start + index + 1 }));
   });
 
-  replaceChildren(block, [header, cards]);
+  if (items.length > DECK_PAGE_SIZE) {
+    const footer = el("div", "report-deck-footer");
+    footer.append(renderDeckActions(page, pageCount, expanded));
+    replaceChildren(block, [header, cards, footer]);
+  } else {
+    replaceChildren(block, [header, cards]);
+  }
   updateDeckStatus();
+}
+
+function renderDeckActions(page, pageCount, expanded) {
+  const actions = el("div", "report-deck-actions");
+  const prev = deckButton("Previous", "prev", page <= 0 || expanded);
+  const next = deckButton("Next", "next", page >= pageCount - 1 || expanded);
+  const toggle = deckButton(expanded ? "Collapse" : "Show all", expanded ? "collapse" : "show_all", false);
+  actions.append(prev, next, toggle);
+  return actions;
 }
 
 function deckButton(label, action, disabled) {
@@ -538,6 +567,9 @@ function deckButton(label, action, disabled) {
 
 function renderFindingCard(item, context) {
   const profile = context.profile || defaultDeckProfile(context);
+  if (profile.layout === "row-groups" || Array.isArray(profile.rowGroups)) {
+    return renderRowGroupReportCard(item, context);
+  }
   const card = el("article", "report-finding-card " + (profile.type ? "report-card-" + profile.type : ""));
   const allVisible = visibleEntries(item);
 
@@ -581,6 +613,71 @@ function renderFindingCard(item, context) {
     card.append(details);
   }
   return card;
+}
+
+function renderRowGroupReportCard(item, context) {
+  const profile = context.profile || defaultDeckProfile(context);
+  const cardClass = "report-finding-card report-card-row-groups" + (profile.type ? " report-card-" + profile.type : "");
+  const card = el("article", cardClass);
+  const allVisible = visibleEntries(item);
+
+  if (!allVisible.length) {
+    card.append(el("div", "report-finding-ref", `Item ${context.ordinal || ""}`));
+    card.append(el("p", "small-muted", "No displayable report values emitted for this item."));
+    return card;
+  }
+
+  const used = new Set();
+  const header = el("div", "report-finding-header");
+  const ref = firstValue(item, ["activity_display_id", "display_exposure_id", "display_control_id", "action_reference", "confirmation_reference", "display_ref", "Clarification_ID", "Request_ID", "Threat_ID", "Artifact", "Reference"]) || `Item ${context.ordinal}`;
+  header.append(el("div", "report-finding-ref", normalizeDisplayText(ref, "display_ref")));
+  const chips = el("div", "report-finding-chips");
+  rowsForKeys(item, profile.badges || []).forEach(function (entry) {
+    chips.append(el("span", "report-finding-chip", `${normalizeReportLabel(entry[0])}: ${stringifyCell(entry[1], entry[0])}`));
+  });
+  header.append(chips);
+  card.append(header);
+
+  const titleRow = firstRowForKeys(item, profile.titleKeys || []);
+  if (titleRow) used.add(normalizeKey(titleRow[0]));
+  const title = titleRow?.[1] || firstValue(item, ["plain_english_issue", "activity_summary", "publicly_described_activity", "Review_Point", "question", "Question", "Threat_Name", "Finding", "document_or_artifact", "document_title", "missing_or_limited_item", "Field"]) || profile.title || "Report item";
+  card.append(el("h4", "report-finding-title", normalizeDisplayText(title, "title")));
+
+  const body = el("div", "report-row-card-body");
+  (profile.rowGroups || []).forEach(function (group) {
+    const rows = renderRowGroupRows(item, group.keys || [], used);
+    if (!rows.length) return;
+    markRowsUsed(rows, used);
+    body.append(renderReportRowGroup(group.label || "Report values", rows, group.grid || "wide-2"));
+  });
+
+  const remaining = allVisible.filter(function (entry) { return !used.has(normalizeKey(entry[0])); });
+  if (remaining.length) body.append(renderReportRowGroup("Additional report values", remaining, "wide-2"));
+  if (body.childNodes.length) card.append(body);
+  return card;
+}
+
+function renderRowGroupRows(item, keys, used) {
+  return rowsForKeys(item, keys).filter(function (entry) {
+    return !used.has(normalizeKey(entry[0]));
+  });
+}
+
+function renderReportRowGroup(label, rows, gridClass) {
+  const group = el("div", "report-row-group");
+  group.append(el("div", "report-row-group-label", label));
+  const grid = el("div", "report-row-group-grid " + gridClass);
+  rows.forEach(function (entry) {
+    const cell = el("div", "report-row-cell");
+    cell.append(el("div", "report-row-cell-label", normalizeReportLabel(entry[0])), el("div", "report-row-cell-value", stringifyCell(entry[1], entry[0])));
+    grid.append(cell);
+  });
+  group.append(grid);
+  return group;
+}
+
+function markRowsUsed(rows, used) {
+  rows.forEach(function (entry) { used.add(normalizeKey(entry[0])); });
 }
 
 function buildCardPanels({ item, profile, used }) {
@@ -645,6 +742,10 @@ function rowsForKeys(item, keys) {
     }
   });
   return rows;
+}
+
+function firstRowForKeys(item, keys) {
+  return rowsForKeys(item, keys)[0] || null;
 }
 
 function renderRowsetTable(items) {
