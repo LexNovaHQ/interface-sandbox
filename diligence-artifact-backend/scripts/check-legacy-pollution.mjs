@@ -9,16 +9,16 @@ const ALLOWED_ACTIVE_FILES = new Set([
   path.normalize("src/report-renderer.js")
 ]);
 const FORBIDDEN_ACTIVE_PATTERNS = [
-  "buildRendererPayloadFromHandoff",
-  "report-section-adapter",
-  "function normalizeSections",
-  "payload.section_list",
-  "Renderer Payload",
-  "section.data",
-  "function renderValue",
-  "function renderObject",
-  "raw_final_output_handoff: handoff",
-  "registry_authority:"
+  /buildRendererPayloadFromHandoff/,
+  /report-section-adapter/,
+  /function normalizeSections/,
+  /payload\.section_list/,
+  /Renderer Payload/,
+  /section\.data(?!set)\b/,
+  /function renderValue/,
+  /function renderObject/,
+  /raw_final_output_handoff: handoff/,
+  /registry_authority:/
 ];
 
 assert.equal(existsSync("src/report-section-adapter.js"), false, "legacy report-section-adapter.js must not exist in active src");
@@ -29,7 +29,7 @@ for (const file of collectFiles(ACTIVE_ROOTS)) {
   const text = readFileSync(file, "utf8");
   for (const pattern of FORBIDDEN_ACTIVE_PATTERNS) {
     if (ALLOWED_ACTIVE_FILES.has(normalized)) continue;
-    assert.equal(text.includes(pattern), false, `legacy pollution found in ${file}: ${pattern}`);
+    assert.equal(pattern.test(text), false, `legacy pollution found in ${file}: ${pattern}`);
   }
 }
 

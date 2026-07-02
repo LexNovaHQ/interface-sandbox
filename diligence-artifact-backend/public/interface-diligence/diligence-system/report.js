@@ -230,6 +230,8 @@ if (!runId) {
   fail("Missing run_id in report URL.");
 } else {
   els.qualifiedReview.href = "qualified-review.html?run_id=" + encodeURIComponent(runId);
+  const footerQualifiedReview = document.getElementById("reportFooterQualifiedReviewButton");
+  if (footerQualifiedReview) footerQualifiedReview.href = "qualified-review.html?run_id=" + encodeURIComponent(runId);
   if (els.annexure) {
     els.annexure.href = "technical-annexure.html?run_id=" + encodeURIComponent(runId);
     els.annexure.target = "_blank";
@@ -246,8 +248,8 @@ async function loadReport(id) {
   assertLockedPayload(payload);
   currentPayload = payload;
   const shell = payload.report_shell || {};
-  els.title.textContent = normalizeDisplayText(shell.report_title || "Interface Diligence Report", "report_title");
-  els.subtitle.textContent = normalizeDisplayText(shell.report_subtitle || "Public-Footprint Legal Exposure Diligence", "report_subtitle");
+  els.title.textContent = "Diligence Report";
+  els.subtitle.textContent = "Review the public-footprint diligence findings, evidence-based summaries, and workflow handoff before qualified review.";
   renderShellMeta({
     "Target": shell.target_display_name,
     "Target domain": shell.target_domain,
