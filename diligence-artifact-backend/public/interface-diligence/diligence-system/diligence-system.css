@@ -143,3 +143,22 @@ pre { white-space: pre-wrap; overflow: auto; max-height: 560px; background: #080
   h1, h2, .wordmark-title, .display-title, .eyebrow, .block-title { color: #111 !important; }
   p, .small-muted, .kv th, .kv td { color: #222 !important; }
 }
+
+/* Three-layer deterministic report renderer additions */
+.report-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.report-chip { border: 1px solid rgba(197,160,89,.2); background: rgba(197,160,89,.045); border-radius: 16px; padding: .75rem .85rem; }
+.report-chip .k { display:block; color: rgba(229,229,229,.42); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 900; }
+.report-chip .v { display:block; color: rgba(245,245,245,.92); margin-top: .3rem; font-size: .95rem; line-height: 1.25; overflow-wrap: anywhere; }
+.report-layer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+.report-layer-card { border: 1px solid rgba(229,229,229,.1); background: rgba(255,255,255,.018); border-radius: 16px; padding: .9rem; }
+.notice.compact { margin-top: .65rem; margin-bottom: 1rem; font-size: .78rem; }
+.field-card { border: 1px solid rgba(229,229,229,.08); background: rgba(255,255,255,.016); border-radius: 16px; padding: .95rem; margin: .75rem 0; }
+.field-label { color: var(--gold); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 900; margin-bottom: .5rem; }
+.field-value { margin: 0; color: rgba(245,245,245,.86); }
+.qualified-review-note, .field-limitation { margin: .6rem 0 0; color: rgba(229,229,229,.48); font-size: .76rem; line-height: 1.45; }
+.public-array { display: grid; gap: .7rem; }
+.public-array-row { border: 1px solid rgba(229,229,229,.08); border-radius: 14px; padding: .85rem; background: rgba(255,255,255,.012); }
+.subsection-block { margin-top: 1.15rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,.06); }
+.section-limitations { margin-top: 1.2rem; border: 1px solid rgba(216,179,93,.2); background: rgba(216,179,93,.045); border-radius: 16px; padding: 1rem; }
+.section-limitations ul { margin: .5rem 0 0; padding-left: 1.2rem; }
+

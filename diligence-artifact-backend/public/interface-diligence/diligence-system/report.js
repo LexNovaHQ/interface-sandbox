@@ -7,7 +7,8 @@ const els = {
   meta: document.getElementById("reportMeta"),
   body: document.getElementById("reportBody"),
   pdf: document.getElementById("downloadPdfButton"),
-  qualifiedReview: document.getElementById("qualifiedReviewButton")
+  qualifiedReview: document.getElementById("qualifiedReviewButton"),
+  annexure: document.getElementById("technicalAnnexureButton")
 };
 
 els.pdf.addEventListener("click", function () { window.print(); });
@@ -16,6 +17,7 @@ if (!runId) {
   fail("Missing run_id in report URL.");
 } else {
   els.qualifiedReview.href = "qualified-review.html?run_id=" + encodeURIComponent(runId);
+  if (els.annexure) els.annexure.href = "#public-technical-annexure";
   loadReport(runId).catch(function (error) { fail(error.message || String(error)); });
 }
 
@@ -28,18 +30,20 @@ async function loadReport(id) {
   assertLockedPayload(payload);
   const shell = payload.report_shell || {};
 
-  els.title.textContent = shell.report_title || "Interface Public-Footprint Diligence Report";
-  els.subtitle.textContent = shell.report_subtitle || "Review-Ready support material — qualified review required.";
+  els.title.textContent = shell.report_title || "Interface Diligence Report";
+  els.subtitle.textContent = shell.report_subtitle || "Public-Footprint Legal Exposure Diligence";
   renderShellMeta({
     "Target": shell.target_display_name,
     "Target domain": shell.target_domain,
     "Run ID": shell.run_id || id,
-    "Review status": shell.validation_status,
+    "Review status": shell.status_label || shell.validation_status,
     "Generated at": shell.generated_at,
     "Report mode": shell.report_mode
-  });
+  }, payload.dashboard_tiles || [], payload.report_layers || []);
 
-  replaceChildren(els.body, payload.sections.map(renderSection));
+  const reportSections = payload.sections.map(renderSection);
+  if (payload.public_technical_annexure) reportSections.push(renderTechnicalAnnexure(payload.public_technical_annexure));
+  replaceChildren(els.body, reportSections);
 }
 
 function assertLockedPayload(payload) {
@@ -54,9 +58,10 @@ function assertLockedPayload(payload) {
 function renderSection(section) {
   const node = el("section", "report-section");
   node.id = slug(section.section_id);
-  node.append(el("div", "eyebrow", text(section.section_id, "section")));
+  node.append(el("div", "eyebrow", "Section " + text(section.section_number, text(section.section_id, "section"))));
   node.append(el("h2", "", text(section.section_title, "Section")));
   if (section.reviewer_summary) node.append(el("p", "section-summary", section.reviewer_summary));
+  if (section.display_rule) node.append(el("p", "notice compact", section.display_rule));
   const subsections = Array.isArray(section.subsections) ? section.subsections : [];
   subsections.forEach(function (subsection) { node.append(renderSubsection(subsection)); });
   const limitations = Array.isArray(section.section_limitations) ? section.section_limitations : [];
@@ -107,6 +112,18 @@ function renderAllowedArray(items) {
 function renderAllowedObject(object) {
   const rows = Object.entries(object || {}).filter(function (entry) { return entry[1] !== undefined && entry[1] !== null && entry[1] !== ""; });
   if (!rows.length) return el("p", "small-muted", "No visible values emitted.");
+
+  if (Object.prototype.hasOwnProperty.call(object, "displayed_rows") && Object.prototype.hasOwnProperty.call(object, "suppressed_row_count")) {
+    const details = el("details", "technical");
+    details.open = false;
+    const summary = document.createElement("summary");
+    summary.textContent = "Large rowset — " + String(object.row_count || 0) + " rows, " + String(object.suppressed_row_count || 0) + " hidden from main body";
+    details.append(summary);
+    details.append(renderAllowedArray(object.displayed_rows || []));
+    if (object.display_rule) details.append(el("p", "small-muted", object.display_rule));
+    return details;
+  }
+
   const table = el("table", "kv public-value-table");
   const tbody = document.createElement("tbody");
   rows.forEach(function (entry) {
@@ -121,17 +138,61 @@ function renderAllowedObject(object) {
   return table;
 }
 
+function renderTechnicalAnnexure(annexure) {
+  const node = el("section", "report-section");
+  node.id = "public-technical-annexure";
+  node.append(el("div", "eyebrow", "Layer 2"));
+  node.append(el("h2", "", annexure.title || "Public Technical Annexure"));
+  node.append(el("p", "section-summary", annexure.display_rule || "Public technical annexure manifest."));
+  node.append(renderAllowedValue({
+    Run_ID: annexure.run_id,
+    Expected_Pack: annexure.expected_pack_name,
+    Report_Body_Inlines_Full_Payloads: annexure.report_body_inlines_full_payloads === false ? "No" : "Yes"
+  }));
+  return node;
+}
+
 function renderLimitations(items) {
   const block = el("div", "section-limitations");
   block.append(el("div", "block-title", "Section limitations"));
   const ul = document.createElement("ul");
-  items.forEach(function (item) { ul.append(el("li", "", typeof item === "object" ? JSON.stringify(item) : String(item))); });
+  items.slice(0, 20).forEach(function (item) {
+    const li = document.createElement("li");
+    li.append(renderAllowedValue(item));
+    ul.append(li);
+  });
+  if (items.length > 20) ul.append(el("li", "small-muted", String(items.length - 20) + " additional limitation rows are available in the public technical annexure."));
   block.append(ul);
   return block;
 }
 
-function renderShellMeta(object) {
-  replaceChildren(els.meta, [shellMetaTable(object)]);
+function renderShellMeta(object, tiles, layers) {
+  const children = [shellMetaTable(object)];
+  if (Array.isArray(tiles) && tiles.length) children.push(tileGrid(tiles));
+  if (Array.isArray(layers) && layers.length) children.push(layerGrid(layers));
+  replaceChildren(els.meta, children);
+}
+
+function tileGrid(tiles) {
+  const grid = el("div", "report-dashboard");
+  tiles.forEach(function (tile) {
+    const card = el("div", "report-chip");
+    card.append(el("span", "k", tile.label));
+    card.append(el("strong", "v", String(tile.value)));
+    grid.append(card);
+  });
+  return grid;
+}
+
+function layerGrid(layers) {
+  const grid = el("div", "report-layer-grid");
+  layers.forEach(function (layer) {
+    const card = el("div", "report-layer-card");
+    card.append(el("div", "block-title", layer.label || layer.layer_id));
+    card.append(el("p", "small-muted", layer.purpose || layer.display_rule || ""));
+    grid.append(card);
+  });
+  return grid;
 }
 
 function shellMetaTable(object) {
