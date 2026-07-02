@@ -17,7 +17,7 @@ import { buildM7DeterministicTargetForensics, buildM8DeterministicFeatureForensi
 import { runAgent4bExtendedDapPhase } from "./agent4b-phase-runner.js";
 import { runAgent4cIntegratedDapReportPhase } from "./agent4c-runner.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
-import { artifactMatchesPermission, LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES } from "./constants.js";
+import { artifactMatchesPermission } from "./constants.js";
 import { readPhaseArtifactWithResolvedLosslessFamilies } from "./lossless-family-resolver.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
@@ -29,13 +29,12 @@ const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "m
 const M9_HYBRID_SEMANTIC_PROMPT_FILES = Object.freeze(["agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md", "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md", "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md", "agent-packages/agent_2b_m9/M9_FIELD_DERIVATION_REGISTRY.yaml", "agent-packages/agent_2b_m9/00_VALIDATOR_RULES_INTEGRATED.md"]);
 const ART = Object.freeze({ legalIndex: "legal_cartography_index", targetMain: "target_" + "profile", targetForensics: "target_" + "profile_forensics", featureMain: "target_" + "feature_profile", featureForensics: "target_" + "feature_profile_forensics", dataProfile: "data_provenance_profile", dataForensics: "data_provenance_profile_forensics", exposureProfile: "exposure_registry_profile", exposureRoutePlan: "exposure_registry_route_plan", challengeGate: "challenge_gate", profilesCombined: "profiles_combined", forensicsCombined: "forensics_combined", final: "final_" + "output_handoff", renderer: "renderer_payload" });
 const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT", "ABSENT", "MISSING", "THIN", "WEAK", "UNKNOWN_NOT_SEARCHED", "NOT_EVIDENCED", "SOURCE_REJECTED", "ACCESS_FAILED", "GATED", "INSUFFICIENT_PUBLIC_MATERIAL", "STANDALONE_SOURCE_ABSENT", "REINVESTIGATION", "TARGETED_RE_EXTRACTION", "OMISSION", "CONTROLLED"]);
-const M7_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
   if (run.current_phase === "COMPLETE" || run.status === "COMPLETE") return { ok: true, run_id, status: "COMPLETE", current_phase: "COMPLETE", advanced: false };
   const phase = normalizePhase(run.current_phase);
-  const contract = applyRuntimeReadOverrides(phase, getPhaseContract(phase));
+  const contract = getPhaseContract(phase);
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
   try {
     if (phase === "M9") await runM9HybridPhase({ run, phase, contract });
@@ -62,12 +61,6 @@ export async function advanceReviewerRun({ run_id }) {
 function normalizePhase(value) {
   if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST";
   return value;
-}
-
-function applyRuntimeReadOverrides(phase, contract) {
-  if (!M7_PHASES.has(phase)) return contract;
-  const reads = [...new Set([...(contract.reads || []), ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES])];
-  return { ...contract, reads, runtime_read_override: "M7_LEGAL_GOVERNANCE_FAMILIES_INCLUDED" };
 }
 
 async function runAgent1aUrlManifestPhase({ run, phase, contract }) { const output = await buildAgent1aDedupedUrlManifest({ run }); await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next }); }
