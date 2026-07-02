@@ -1,4 +1,4 @@
-const PUBLIC_RENDERER_VERSION = "locked_three_layer_ten_section_renderer_v2";
+const PUBLIC_RENDERER_VERSION = "locked_three_layer_ten_section_renderer_v3_full_public_tables";
 
 const FORBIDDEN_PUBLIC_KEYS = new Set([
   "artifact_name",
@@ -31,7 +31,6 @@ const FORBIDDEN_PUBLIC_KEYS = new Set([
 ]);
 
 const PUBLIC_REFERENCE_KEYS = new Set(["technical_refs", "evidence_refs"]);
-const MAX_INLINE_ROWS = 25;
 
 const TEN_SECTION_PLAN = Object.freeze([
   { id: "matter_overview", title: "Matter Overview", sources: ["matter_overview"], layer: "layer_1_public_report" },
@@ -112,11 +111,12 @@ export function buildRendererPayload({ run = {}, final_output_handoff }) {
         ],
         forbidden_actions: ["Download JSON"],
         raw_json_download_enabled: false,
-        render_contract: "locked_public_projection_only"
+        render_contract: "locked_public_projection_only",
+        public_tables_render_full_rows: true
       },
       report_layers: [
-        { layer_id: "layer_1_public_report", label: "Public Report", purpose: "Readable 10-section diligence report.", canonical: true, section_count: sections.length },
-        { layer_id: "layer_2_public_technical_annexure", label: "Public Technical Annexure", purpose: "Public auditability layer. Full technical artifacts live outside the main report body.", canonical: false, display_rule: "Manifest only in report body; full payloads are not inlined." },
+        { layer_id: "layer_1_public_report", label: "Public Report", purpose: "Readable 10-section diligence report with full public-projection tables rendered inline using horizontal scrolling where needed.", canonical: true, section_count: sections.length },
+        { layer_id: "layer_2_public_technical_annexure", label: "Public Technical Annexure", purpose: "Public auditability layer. Full technical artifacts and machine-detail payloads live outside the main report body.", canonical: false, display_rule: "The report body renders the full public projection tables; raw technical artifacts remain in the annexure." },
         { layer_id: "layer_3_qualified_review", label: "Qualified Review Workspace", purpose: "Separate reviewer confirmation and handoff workspace.", canonical: false, separate_branch: true }
       ],
       public_technical_annexure: buildPublicTechnicalAnnexure({ runId, sourceSections }),
@@ -241,16 +241,7 @@ function projectPublicField(field = {}) {
 function cleanPublicValue(value) {
   if (value === null || value === undefined || value === "") return "Not visible in reviewed public materials.";
   if (Array.isArray(value)) {
-    const rows = value.filter((item) => !isSuppressedMainReportRow(item)).map((item) => cleanPublicValue(item));
-    if (rows.length > MAX_INLINE_ROWS) {
-      return {
-        row_count: rows.length,
-        displayed_rows: rows.slice(0, MAX_INLINE_ROWS),
-        suppressed_row_count: rows.length - MAX_INLINE_ROWS,
-        display_rule: "Large technical rowset truncated in the main report. Open the public technical annexure for the full artifact payload."
-      };
-    }
-    return rows;
+    return value.filter((item) => !isSuppressedMainReportRow(item)).map((item) => cleanPublicValue(item));
   }
   if (typeof value === "object") {
     const entries = [];
@@ -293,7 +284,7 @@ function assertPublicReportSanitized(sections, { requireLockedTenSectionPlan }) 
     }
   }
   const serialized = JSON.stringify(sections);
-  for (const token of ["trace_id", "field_path", "value_preview", "forensic_trace_present", "technical_annexure_only", "\"display_in_main_report\":false", "normalized_dap_field_id", "integrated_field_group", "row_type"]) {
+  for (const token of ["trace_id", "field_path", "value_preview", "forensic_trace_present", "technical_annexure_only", "\"display_in_main_report\":false", "normalized_dap_field_id", "integrated_field_group", "row_type", "suppressed_row_count", "displayed_rows"]) {
     if (serialized.includes(token)) throw new Error(`PUBLIC_RENDERER_MACHINE_TOKEN_FORBIDDEN:${token}`);
   }
 }
@@ -324,11 +315,12 @@ function buildPublicTechnicalAnnexure({ runId, sourceSections }) {
     layer_id: "layer_2_public_technical_annexure",
     title: "Public Technical Annexure",
     run_id: runId,
-    display_rule: "The report body shows only manifest and summaries. Full preserved diligence artifacts belong in the public technical annexure pack.",
+    display_rule: "The report body renders the full public-projection tables. Raw technical artifacts, forensic payloads, and machine-detail ledgers remain in the public technical annexure pack.",
     source_section_ref: "methodology_limitations_forensic_annexure",
     manifest_summary: cleanPublicValue(section10),
     expected_pack_name: "technical_annexure_pack.zip",
-    report_body_inlines_full_payloads: false
+    report_body_inlines_full_payloads: false,
+    report_body_inlines_full_public_projection_tables: true
   };
 }
 
@@ -371,17 +363,17 @@ function statusLabel(value) {
 }
 
 function summaryForCompositeSection(sectionId) {
-  if (sectionId === "exposure_findings") return "Deterministic exposure summary, triggered findings, controlled evidence rows, and false-positive discipline. Full rowsets remain in the public technical annexure.";
+  if (sectionId === "exposure_findings") return "Deterministic exposure summary, triggered findings, controlled evidence rows, and false-positive discipline. Full public-projection rowsets are rendered inline; raw technical ledgers remain in the annexure.";
   if (sectionId === "review_route_handoff_plan") return "Deterministic review-route and handoff plan derived from locked exposure/action artifacts.";
   if (sectionId === "clarification_missing_source_queue") return "Deterministic clarification and missing-source queue for qualified review.";
   return "";
 }
 
 function displayRuleForSection(sectionId) {
-  if (sectionId === "exposure_findings") return "Triggered and priority rows are visible first; large controlled/workpad rowsets are summarized and capped in the main report.";
-  if (sectionId === "review_route_handoff_plan") return "Action and handoff rows are rendered as reviewer-facing summaries, not legal conclusions.";
-  if (sectionId === "clarification_missing_source_queue") return "Question queues preserve deterministic IDs; large queues are capped in the main report.";
-  if (sectionId === "methodology_limitations_public_annexure") return "Section 10 contains the methodology, limitation ledger, and annexure manifest. Full technical artifacts are not inlined in the report body.";
+  if (sectionId === "exposure_findings") return "Full public-projection exposure tables are rendered inline. Use the horizontal table scroller where columns exceed the page width; raw technical artifacts remain in the public technical annexure.";
+  if (sectionId === "review_route_handoff_plan") return "Action and handoff rows are rendered as reviewer-facing summaries, not legal conclusions. Full public-projection tables remain visible inline.";
+  if (sectionId === "clarification_missing_source_queue") return "Question queues preserve deterministic IDs and are rendered in full as public-projection tables.";
+  if (sectionId === "methodology_limitations_public_annexure") return "Section 10 contains the methodology, limitation ledger, and annexure manifest. Public-projection tables render inline; raw technical artifacts remain in the annexure pack.";
   return "";
 }
 
