@@ -22,7 +22,7 @@ if (!runId) {
     els.annexure.target = "_blank";
     els.annexure.rel = "noopener";
   }
-  loadReport(runId).catch(function (error) { fail(error.message || String(error)); });
+  loadReport(runId).catch(function (error) { renderReportUnavailable(runId, error); });
 }
 
 async function loadReport(id) {
@@ -47,6 +47,41 @@ async function loadReport(id) {
 
   const reportSections = payload.sections.map(renderSection);
   replaceChildren(els.body, reportSections);
+}
+
+async function renderReportUnavailable(id, error) {
+  els.title.textContent = "Report not ready";
+  els.subtitle.textContent = "This run has not produced a renderer payload yet.";
+  const message = error?.message || String(error || "Report not ready");
+  let diagnostic = null;
+  try {
+    const response = await fetch("/public/diligence-system/jobs/" + encodeURIComponent(id));
+    diagnostic = await response.json().catch(function () { return null; });
+  } catch (_error) {
+    diagnostic = null;
+  }
+  const run = diagnostic?.run || {};
+  const metaRows = {
+    "Run ID": id,
+    "Report endpoint": message,
+    "Run status": run.status || "Unknown",
+    "Current phase": run.current_phase || "Unknown",
+    "Runner state": run.runner_state || "Unknown",
+    "Runner last error": run.runner_last_error || "",
+    "Artifact count": run.artifact_count ?? "",
+    "Final report URL": run.final_report_url || "Not generated"
+  };
+  replaceChildren(els.meta, [shellMetaTable(metaRows)]);
+  const block = el("section", "report-section");
+  block.append(el("div", "eyebrow", "Run diagnostic"));
+  block.append(el("h2", "", "Renderer payload is missing"));
+  block.append(el("p", "section-summary", "The report page can only render after the pipeline reaches RENDERER and saves renderer_payload. This URL may point to an old failed run or a run that has not been regenerated after the latest patch."));
+  block.append(renderAllowedValue({
+    Required_state: "current_phase = COMPLETE or status = COMPLETE",
+    Current_state: (run.current_phase || "Unknown") + " / " + (run.status || "Unknown"),
+    Next_action: "Deploy latest main and rerun the pipeline from the failed phase or create a fresh run."
+  }));
+  replaceChildren(els.body, [block]);
 }
 
 function assertLockedPayload(payload) {
