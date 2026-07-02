@@ -60,6 +60,8 @@ assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads.includes("legal_cartography
 assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE_FORENSICS.reads.includes("legal_cartography_index"), false);
 assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
 assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE_FORENSICS.reads.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
+assert.deepEqual(PHASE_CONTRACTS.M7_TARGET_PROFILE.references, ["M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml", "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"]);
+assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE.references.includes("FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml"), false);
 assert.equal(READ_PERMISSIONS.agent_3_target_feature.includes("legal_cartography_index"), false);
 assert.equal(READ_PERMISSIONS.agent_3_target_feature.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
 assert.ok(READ_PERMISSIONS.agent_3_target_feature.includes(M7_LEGAL_SIGNAL_OVERLAY));
@@ -69,6 +71,28 @@ assert.ok(m7Prompt.includes("M7 must not use any artifact whose name starts with
 assert.ok(m7Prompt.includes("legal_cartography_index` is not an active M7 model input"));
 assert.equal(m7Prompt.includes("legal_governance_profile_urls.families` | legal-family route universe"), false);
 assert.equal(m7Prompt.includes("only for the legal-family exception"), false);
+
+const m7Packet = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml"), "utf8");
+assert.ok(m7Packet.includes("m7_deterministic_legal_signal_overlay"));
+assert.equal(m7Packet.includes("common:\n    - source_discovery_handoff\n    - legal_cartography_index"), false);
+assert.equal(m7Packet.includes("M7_TARGET_PROFILE:\n    - source_discovery_handoff\n    - legal_cartography_index"), false);
+
+const m7Runtime = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md"), "utf8");
+assert.ok(m7Runtime.includes("M7 is profile-bucket only"));
+assert.ok(m7Runtime.includes("M7 must not block because legal/governance lossless artifacts are absent"));
+assert.equal(m7Runtime.includes("`legal_cartography_index`, target-family and product-family lossless artifacts authorized by the phase prompt"), false);
+
+const m7Validator = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md"), "utf8");
+assert.ok(m7Validator.includes("M7 must not block merely because legal/governance lossless artifacts are unavailable"));
+assert.equal(m7Validator.includes("M7 read-only inputs include `source_discovery_handoff`, `legal_cartography_index`"), false);
+assert.equal(m7Validator.includes("loaded target/legal lossless family artifacts"), false);
+
+const m7Authority = fs.readFileSync(path.join(repoRoot, "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"), "utf8");
+assert.ok(m7Authority.includes("source_boundary:"));
+assert.ok(m7Authority.includes("m7_deterministic_legal_signal_overlay"));
+assert.ok(m7Authority.includes("M7 must not request legal/governance family artifacts"));
+assert.equal(m7Authority.includes("legal/governance public sources"), false);
+assert.equal(m7Authority.includes("terms OR dispute clause"), false);
 
 for (const [phase, contract] of Object.entries(PHASE_CONTRACTS)) {
   const actor = contract.agent_id || contract.actor_id;
