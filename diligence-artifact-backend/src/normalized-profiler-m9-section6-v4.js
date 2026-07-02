@@ -66,7 +66,7 @@ function applyDapAnnexureDisclaimer(section, integratedDapArtifact) {
     ...base,
     reviewer_summary: appendSentence(base.reviewer_summary, disclaimer),
     subsections: [buildDapAnnexureNoticeSubsection(disclaimer), ...filteredSubsections],
-    section_limitations: uniqueStrings([...(Array.isArray(base.section_limitations) ? base.section_limitations : []), disclaimer]),
+    section_limitations: [],
     source_artifacts_used: uniqueStrings([...sourceArtifacts, "integrated_dap_report"]),
     normalization: {
       ...(base.normalization || {}),

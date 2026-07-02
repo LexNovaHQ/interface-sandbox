@@ -39,9 +39,9 @@ const FIELD_MAP = Object.freeze({
   processor_subprocessor_governance_controls: ["vendors_and_sharing", "Vendor governance controls", ["vendor_and_subprocessor_inventory_visibility", "customer_vendor_relationship_signal"]],
   third_party_disclosure_sharing_controls: ["vendors_and_sharing", "Third-party sharing / disclosure safeguards", ["third_party_sharing_posture", "transfer_safeguard_and_change_notice_gaps"]],
   cross_border_transfer_location_custody: ["transfer_and_retention", "Cross-border transfer and custody", ["cross_border_transfer_and_custody_posture", "hosting_storage_location_visibility", "transfer_safeguard_and_change_notice_gaps"]],
-  retention_deletion_return_export_controls: ["transfer_and_retention", "Retention, deletion, export and India log-retention", ["retention_period_visibility", "deletion_return_export_controls", "india_log_retention_cert_in_review_note"]],
+  retention_deletion_return_export_controls: ["transfer_and_retention", "Retention, deletion, export and India log-retention", ["retention_period_visibility", "deletion_return_export_controls", "cert_in_log_retention_review_note"]],
   security_access_controls: ["security_and_incident_visibility", "Security and access-control posture", ["security_control_visibility", "access_control_and_internal_governance_posture", "security_certification_and_policy_reliance_limits"]],
-  breach_incident_readiness: ["security_and_incident_visibility", "Incident and breach readiness", ["incident_breach_response_visibility", "india_log_retention_cert_in_review_note"]],
+  breach_incident_readiness: ["security_and_incident_visibility", "Incident and breach readiness", ["incident_breach_response_visibility", "cert_in_log_retention_review_note"]],
   ai_model_provider_processing_chain: ["ai_specific_controls", "AI model provider processing chain", ["ai_model_processing_chain_by_activity", "activity_to_data_flow_map"]],
   ai_training_finetuning_model_improvement_controls: ["ai_specific_controls", "Training/fine-tuning/model improvement controls", ["ai_training_profiling_and_automated_decisioning_review_note", "purpose_and_use_mapping"]],
   embeddings_vector_memory_controls: ["ai_specific_controls", "Embeddings/vector memory controls", ["input_output_and_derived_data_treatment", "ai_model_processing_chain_by_activity"]],
@@ -49,7 +49,7 @@ const FIELD_MAP = Object.freeze({
   automated_decision_profiling_human_review_signal: ["automated_decisioning", "Automated decisioning / high-risk human review", ["ai_training_profiling_and_automated_decisioning_review_note", "children_sensitive_and_high_risk_context"]],
   privacy_accountability_documentation_signals: ["readiness_and_gaps", "Privacy accountability documentation / DPIA / audit", ["role_confirmation_needed_for_docs", "security_certification_and_policy_reliance_limits"]],
   law_regulatory_readiness_matrix: ["readiness_and_gaps", "Regulatory readiness matrix", ["jurisdictional_applicability_assumptions", "privacy_notice_surface", "consent_authorization_posture", "cross_border_transfer_and_custody_posture", "incident_breach_response_visibility"]],
-  missing_proof_and_diligence_requests: ["readiness_and_gaps", "Missing proof / qualified review queue", ["role_confirmation_needed_for_docs", "transfer_safeguard_and_change_notice_gaps", "india_log_retention_cert_in_review_note", "children_sensitive_and_high_risk_context"]],
+  missing_proof_and_diligence_requests: ["readiness_and_gaps", "Missing proof / qualified review queue", ["role_confirmation_needed_for_docs", "transfer_safeguard_and_change_notice_gaps", "cert_in_log_retention_review_note", "children_sensitive_and_high_risk_context"]],
   limitations: ["readiness_and_gaps", "Data/control review limitations", ["public_footprint_review_boundary", "role_confirmation_needed_for_docs"]]
 });
 

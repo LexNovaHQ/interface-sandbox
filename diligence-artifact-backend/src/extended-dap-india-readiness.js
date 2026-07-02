@@ -37,7 +37,7 @@ const FIELD_DEFINITIONS = Object.freeze([
   f("retention_period_visibility", "Retention, Deletion, Logs & Portability", "Retention period visibility", ["retention", "retain", "retained", "storage period", "delete after", "backup"], ["DAP.RET.001", "DAP.RET.002"]),
   f("deletion_return_export_controls", "Retention, Deletion, Logs & Portability", "Deletion, return and export controls", ["delete", "deletion", "return", "export", "portability", "download", "erase"], ["DAP.RET.*", "DAP.CTRL.*"]),
   f("logging_telemetry_and_audit_trail_posture", "Retention, Deletion, Logs & Portability", "Logging, telemetry and audit-trail posture", ["log", "logging", "telemetry", "audit trail", "monitoring", "analytics", "diagnostic"], ["DAP.RET.*", "DAP.SEC.*"]),
-  f("india_log_retention_cert_in_review_note", "Retention, Deletion, Logs & Portability", "India log-retention / CERT-In review note", ["cert-in", "six hour", "6 hour", "180 days", "six months", "log retention", "incident report"], ["DAP.READY.*", "DAP.RET.*", "DAP.SEC.*"]),
+  f("cert_in_log_retention_review_note", "Retention, Deletion, Logs & Portability", "India log-retention / CERT-In review note", ["cert-in", "six hour", "6 hour", "180 days", "six months", "log retention", "incident report"], ["DAP.READY.*", "DAP.RET.*", "DAP.SEC.*"]),
 
   f("security_control_visibility", "Security, Access & Incident", "Security-control visibility", ["security", "encryption", "tls", "aes", "soc 2", "iso 27001", "access control", "rbac"], ["DAP.SEC.001", "DAP.SEC.002"]),
   f("access_control_and_internal_governance_posture", "Security, Access & Incident", "Access-control and internal-governance posture", ["access control", "least privilege", "rbac", "employee access", "internal", "policy", "audit"], ["DAP.SEC.*", "DAP.READY.*"]),
@@ -201,7 +201,7 @@ function buildPublicReportSeed(fields) {
     ["notice_rights", "Notice, purpose, consent and rights posture", ["privacy_notice_surface", "purpose_and_use_mapping", "consent_authorization_posture", "withdrawal_deletion_export_routes", "rights_and_grievance_route"]],
     ["vendors_transfers", "Vendor, sharing, transfer and custody posture", ["vendor_and_subprocessor_inventory_visibility", "third_party_sharing_posture", "cross_border_transfer_and_custody_posture", "hosting_storage_location_visibility"]],
     ["retention_security_ai", "Retention, security, incident and AI-control posture", ["retention_period_visibility", "logging_telemetry_and_audit_trail_posture", "security_control_visibility", "incident_breach_response_visibility", "ai_training_profiling_and_automated_decisioning_review_note"]],
-    ["qualified_review", "Qualified-review priorities", ["role_confirmation_needed_for_docs", "transfer_safeguard_and_change_notice_gaps", "india_log_retention_cert_in_review_note", "children_sensitive_and_high_risk_context"]]
+    ["qualified_review", "Qualified-review priorities", ["role_confirmation_needed_for_docs", "transfer_safeguard_and_change_notice_gaps", "cert_in_log_retention_review_note", "children_sensitive_and_high_risk_context"]]
   ];
   return groups.map(([finding_id, title, fieldIds]) => {
     const selected = fields.filter((field) => fieldIds.includes(field.field_id));
