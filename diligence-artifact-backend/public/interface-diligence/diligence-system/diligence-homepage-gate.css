@@ -1,0 +1,194 @@
+/* Homepage legal operating-system gate override.
+   Scope: diligence-system/index.html only. Keeps report/QR renderer surfaces untouched. */
+
+.diligence-gate-page {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(197, 160, 89, .07), transparent 22rem),
+    linear-gradient(180deg, #050505 0%, #060606 46%, #030303 100%);
+}
+
+.diligence-gate-page::before { opacity: .045; }
+
+.gate-shell {
+  width: min(1320px, calc(100% - 32px));
+  padding-top: 18px;
+}
+
+.gate-main-grid { gap: 32px; }
+
+@media (min-width: 1040px) {
+  .gate-main-grid {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+}
+
+.gate-workspace { min-width: 0; }
+
+.gate-hero {
+  border-radius: 10px;
+  padding: clamp(18px, 2.2vw, 28px);
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, rgba(10,10,10,.97), rgba(6,6,6,.97));
+  box-shadow: none;
+}
+
+.gate-hero::before { opacity: .2; }
+
+.gate-hero h1 {
+  font-size: clamp(1.72rem, 3.2vw, 2.9rem);
+  line-height: 1.04;
+  margin: .38rem 0 .62rem;
+  color: rgba(245,245,245,.94);
+}
+
+.gate-hero .hero-copy {
+  max-width: 880px;
+  font-size: .96rem;
+  line-height: 1.58;
+  margin: 0;
+  color: rgba(229,229,229,.72);
+}
+
+.gate-boundary,
+.gate-inline-notice {
+  border-radius: 8px;
+  margin-top: 1rem;
+  padding: .72rem .85rem;
+  font-size: .8rem;
+  line-height: 1.48;
+  background: rgba(197,160,89,.04);
+  border-color: rgba(197,160,89,.22);
+}
+
+.gate-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (min-width: 980px) {
+  .gate-workbench {
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, .72fr);
+  }
+}
+
+.gate-side-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.gate-card {
+  border-radius: 10px;
+  margin-top: 0;
+  padding: clamp(18px, 2.1vw, 26px);
+  background: linear-gradient(180deg, rgba(10,10,10,.97), rgba(6,6,6,.97));
+  box-shadow: none;
+}
+
+.gate-card::before { opacity: .18; }
+
+.gate-primary-card {
+  border-color: rgba(197,160,89,.24);
+}
+
+.gate-card-kicker {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: .82rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(197,160,89,.18);
+}
+
+.gate-card h2 {
+  font-size: clamp(1.18rem, 2vw, 1.62rem);
+  line-height: 1.12;
+  margin: .28rem 0 0;
+}
+
+.gate-step-pill {
+  flex: 0 0 auto;
+  border: 1px solid rgba(197,160,89,.28);
+  color: rgba(197,160,89,.86);
+  background: rgba(197,160,89,.045);
+  border-radius: 999px;
+  padding: .3rem .58rem;
+  font-size: .58rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.gate-form-grid {
+  gap: 13px;
+}
+
+.gate-actions {
+  margin-top: .85rem;
+}
+
+.gate-actions .btn {
+  min-height: 42px;
+  padding: .68rem .95rem;
+}
+
+.gate-meta-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gate-status-card p {
+  margin-top: 0;
+}
+
+.gate-diagnostics {
+  margin-top: 18px;
+  border: 1px solid rgba(229,229,229,.1);
+  border-radius: 10px;
+  padding: .82rem .9rem;
+  background: rgba(255,255,255,.014);
+}
+
+.gate-diagnostics summary {
+  cursor: pointer;
+  color: rgba(229,229,229,.64);
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.gate-diagnostics[open] summary {
+  color: var(--gold);
+}
+
+.gate-endpoint-grid {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.gate-endpoint-grid .btn {
+  min-height: 36px;
+  padding: .52rem .68rem;
+  font-size: .58rem;
+}
+
+.diligence-gate-page .footer-note {
+  margin-top: 28px;
+}
+
+@media (max-width: 720px) {
+  .gate-shell { width: min(100% - 24px, 1320px); }
+  .gate-meta-grid { grid-template-columns: minmax(0, 1fr); }
+  .gate-card-kicker { align-items: flex-start; }
+}
+
+@media print {
+  .gate-hero,
+  .gate-card,
+  .gate-diagnostics {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
