@@ -69,8 +69,7 @@ export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([
   "normalized_section__control_handoff_readiness",
   "normalized_section__exposure_clarification_queue",
   "normalized_section__global_confirmation_queue",
-  "normalized_section__methodology_limitations_review_notes",
-  "normalized_section__forensic_ledger_appendix"
+  "normalized_section__methodology_limitations_forensic_annexure"
 ]);
 
 export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.normalizedReportManifest, ART.vaultSectionHandoff, ART.final, ...NORMALIZED_SECTION_ARTIFACT_NAMES]);
