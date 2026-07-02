@@ -1,34 +1,39 @@
 const RAIL_PHASES = [
-  { id: "INTAKE", label: "Intake", sub: "target submitted", phases: ["CREATED"], why: "Creates an isolated run and prepares the backend artifact folder." },
-  { id: "SOURCE_DISCOVERY", label: "Source Discovery", sub: "manifest + extraction", phases: ["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX"], why: "Collects and routes public source material into the evidence lanes." },
-  { id: "LEGAL_CARTOGRAPHY", label: "Legal Cartography", sub: "document map", phases: ["M9"], why: "Maps visible legal and governance documents without turning them into legal conclusions." },
-  { id: "TARGET_PROFILE", label: "Target Profile", sub: "entity + market", phases: ["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS"], why: "Builds the target profile and records source-level forensics." },
-  { id: "FEATURE_PROFILE", label: "Feature Profile", sub: "product activity", phases: ["M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS"], why: "Identifies product activity, archetypes, and surface signals." },
-  { id: "DATA_PROVENANCE", label: "Data Provenance", sub: "data/control posture", phases: ["M10", "M10_FORENSICS"], why: "Maps visible data flows, control signals, and unresolved proof requests." },
-  { id: "EXPOSURE_REGISTRY", label: "Exposure Registry", sub: "triggered + controlled", phases: ["M11"], why: "Evaluates the registry and emits both triggered and controlled rows." },
-  { id: "OPERATOR_CHALLENGE", label: "Operator Challenge", sub: "quality gate", phases: ["M12"], why: "Challenges the exposure profile before final compilation." },
-  { id: "FINAL_COMPILER", label: "Final Compiler", sub: "compiled handoff", phases: ["NORMALIZED_COMPILER"], why: "Compiles the locked profile artifacts into the final report handoff and the separate Qualified Review handoff branch." },
-  { id: "REPORT_RENDERER", label: "Report Renderer", sub: "public report", phases: ["RENDERER"], why: "Builds the public report payload from the final handoff." },
-  { id: "COMPLETE", label: "Complete", sub: "report ready", phases: ["COMPLETE"], why: "The diligence report is ready to open. Qualified Review is a separate post-report page." }
+  { id: "CREATED", label: "Intake Opened", sub: "matter intake", phases: ["CREATED"], why: "The matter has been opened and the workflow is preparing source collection." },
+  { id: "AGENT_1A_URL_MANIFEST", label: "Public URL Mapping", sub: "source map", phases: ["AGENT_1A_URL_MANIFEST"], why: "Maps the visible public URLs that may support the diligence review." },
+  { id: "AGENT_1B_EXTRACT", label: "Source Extraction", sub: "source capture", phases: ["AGENT_1B_EXTRACT"], why: "Extracts approved public source material for the report record." },
+  { id: "M6_BUCKET_INDEX", label: "Source Routing", sub: "evidence lanes", phases: ["M6_BUCKET_INDEX"], why: "Routes collected sources into target, product, legal, and data review lanes." },
+  { id: "M9", label: "Legal Document Stack Review", sub: "legal/governance stack", phases: ["M9"], why: "Maps visible legal and governance documents for downstream review." },
+  { id: "M7_TARGET_PROFILE", label: "Target Profile Review", sub: "entity profile", phases: ["M7_TARGET_PROFILE"], why: "Builds the target profile from approved public source material." },
+  { id: "M7_TARGET_PROFILE_FORENSICS", label: "Target Profile Forensics", sub: "traceability check", phases: ["M7_TARGET_PROFILE_FORENSICS"], why: "Checks the target profile record for source traceability." },
+  { id: "M8_TARGET_FEATURE_PROFILE", label: "Product Activity Profile", sub: "feature/activity review", phases: ["M8_TARGET_FEATURE_PROFILE"], why: "Builds the product activity profile and visible feature map." },
+  { id: "M8_TARGET_FEATURE_PROFILE_FORENSICS", label: "Product Activity Forensics", sub: "traceability check", phases: ["M8_TARGET_FEATURE_PROFILE_FORENSICS"], why: "Checks the product activity profile for source traceability." },
+  { id: "M10", label: "Data Provenance Review", sub: "data/control posture", phases: ["M10"], why: "Maps visible data provenance, control signals, and proof gaps." },
+  { id: "M10_FORENSICS", label: "Data Provenance Forensics", sub: "traceability check", phases: ["M10_FORENSICS"], why: "Checks the data provenance record for source traceability." },
+  { id: "M11", label: "Exposure Review", sub: "triggered + controlled", phases: ["M11"], why: "Evaluates visible exposure signals and controlled positions." },
+  { id: "M12", label: "Quality Challenge", sub: "quality gate", phases: ["M12"], why: "Challenges the exposure profile before final report preparation." },
+  { id: "NORMALIZED_COMPILER", label: "Report Compilation", sub: "compiled handoff", phases: ["NORMALIZED_COMPILER"], why: "Compiles the locked review artifacts into the report handoff." },
+  { id: "RENDERER", label: "Report Rendering", sub: "public report", phases: ["RENDERER"], why: "Builds the public report page from the compiled handoff." },
+  { id: "COMPLETE", label: "Report Ready", sub: "ready for review", phases: ["COMPLETE"], why: "The diligence report is ready. Qualified Review is the next step." }
 ];
 
 const PHASE_TEXT = {
-  CREATED: "Run created. Preparing source discovery.",
-  AGENT_1A_URL_MANIFEST: "Building the public URL manifest.",
-  AGENT_1B_EXTRACT: "Extracting public source material.",
-  M6_BUCKET_INDEX: "Routing sources into target, product, legal, and data buckets.",
-  M9: "Mapping visible legal and governance documents.",
-  M7_TARGET_PROFILE: "Building target profile.",
-  M7_TARGET_PROFILE_FORENSICS: "Checking target profile forensics.",
-  M8_TARGET_FEATURE_PROFILE: "Building product and feature profile.",
-  M8_TARGET_FEATURE_PROFILE_FORENSICS: "Checking feature profile forensics.",
-  M10: "Building data provenance profile.",
-  M10_FORENSICS: "Checking data provenance forensics.",
-  M11: "Evaluating exposure registry.",
-  M12: "Running operator challenge gate.",
-  NORMALIZED_COMPILER: "Compiling final handoff.",
-  RENDERER: "Rendering report payload.",
-  COMPLETE: "Report ready."
+  CREATED: "The diligence matter has been opened. Preparing source collection.",
+  AGENT_1A_URL_MANIFEST: "Public URL mapping is identifying the visible source map.",
+  AGENT_1B_EXTRACT: "Source extraction is capturing approved public source material.",
+  M6_BUCKET_INDEX: "Source routing is organizing collected material into review lanes.",
+  M9: "Legal document stack review is mapping visible legal and governance materials.",
+  M7_TARGET_PROFILE: "Target profile review is building the entity profile.",
+  M7_TARGET_PROFILE_FORENSICS: "Target profile forensics is checking source traceability.",
+  M8_TARGET_FEATURE_PROFILE: "Product activity profile is mapping visible product features and activity.",
+  M8_TARGET_FEATURE_PROFILE_FORENSICS: "Product activity forensics is checking source traceability.",
+  M10: "Data provenance review is mapping visible data and control signals.",
+  M10_FORENSICS: "Data provenance forensics is checking source traceability.",
+  M11: "Exposure review is evaluating visible exposure and control positions.",
+  M12: "Quality challenge is checking the review record before report preparation.",
+  NORMALIZED_COMPILER: "Report compilation is assembling the locked diligence handoff.",
+  RENDERER: "Report rendering is preparing the public report page.",
+  COMPLETE: "The diligence report is ready."
 };
 
 const TERMINAL_FAILURES = new Set(["REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
@@ -69,6 +74,7 @@ renderRail({ current_phase: "CREATED", status: "IDLE", runner_state: "IDLE" });
 updateRunMonitor({ current_phase: "", status: "IDLE", runner_state: "IDLE" }, 0);
 els.form.addEventListener("submit", startRun);
 attachRunFromUrl();
+window.publicDiligencePhaseFor = publicPhaseFor;
 window.updateDiligenceGateRunMonitor = updateRunMonitor;
 window.setDiligenceGateMonitorAttention = setMonitorAttention;
 
@@ -163,7 +169,8 @@ async function pollOnce(_options = {}) {
       setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.${detail}`, true);
       return;
     }
-    setMessage(`Watching run ${currentRunId}. Current diligence phase: ${run.current_phase || "unknown"}.`);
+    const publicPhase = publicPhaseFor(run.current_phase || "", run.status || "", run.runner_state || "");
+    setMessage(`Watching run ${currentRunId}. Current diligence phase: ${publicPhase.label}.`);
   } catch (error) {
     stopPolling();
     setBusy(false);
@@ -191,7 +198,7 @@ function updateState(payload = {}) {
   const phase = run.current_phase || "CREATED";
   const status = run.status || "RUNNING";
   const runner = run.runner_state || "";
-  const phaseInfo = phaseInfoFor(phase, status, runner);
+  const publicPhase = publicPhaseFor(phase, status, runner);
 
   if (run.run_id && !currentRunId) currentRunId = run.run_id;
   if (run.root_url && els.targetUrl && !els.targetUrl.value.trim()) els.targetUrl.value = run.root_url;
@@ -199,10 +206,10 @@ function updateState(payload = {}) {
 
   els.runIdValue.textContent = run.run_id || currentRunId || "-";
   els.statusValue.textContent = [status, runner].filter(Boolean).join(" / ") || "-";
-  els.phaseValue.textContent = phase;
+  els.phaseValue.textContent = publicPhase.label;
   els.artifactValue.textContent = String(artifactCount || 0);
-  els.activePhaseTitle.textContent = phaseInfo.label;
-  els.activePhaseText.textContent = `${PHASE_TEXT[phase] || phaseInfo.why} Current engine phase: ${phase}.`;
+  els.activePhaseTitle.textContent = publicPhase.label;
+  els.activePhaseText.textContent = publicPhase.description;
   els.terminalNotice.innerHTML = badgeHtml(status, runner, run.runner_last_error || "");
   updateRunMonitor(run, artifactCount);
   renderRail(run);
@@ -241,6 +248,24 @@ function updateBrowserRunId(runId) {
 function phaseInfoFor(phase, status, runner) {
   const index = activeIndex({ current_phase: phase, status, runner_state: runner });
   return RAIL_PHASES[index] || RAIL_PHASES[0];
+}
+
+function publicPhaseFor(phase, status, runner) {
+  if (status === "IDLE" && !phase) {
+    return { label: "Intake", description: "Waiting for a public target URL or existing matter/run ID.", progressLabel: "Waiting for intake." };
+  }
+  const info = phaseInfoFor(phase, status, runner);
+  if (isComplete({ current_phase: phase, status, runner_state: runner })) {
+    return { label: "Report Ready", description: "The diligence report is ready. Opening the report automatically.", progressLabel: "Report ready." };
+  }
+  if (isFailed({ current_phase: phase, status, runner_state: runner })) {
+    return { label: info.label, description: `${info.label} needs attention. Review the status before continuing.`, progressLabel: "Run needs attention." };
+  }
+  return {
+    label: info.label,
+    description: PHASE_TEXT[phase] || info.why || "The diligence workflow is progressing.",
+    progressLabel: `${info.label} in progress.`
+  };
 }
 
 function renderRail(run = {}) {
@@ -338,7 +363,7 @@ function updateRunMonitor(run = {}, artifactCount = 0) {
   const failed = isFailed(run);
   const complete = isComplete(run);
   const live = !idle && !failed && !complete;
-  const phase = run.current_phase || "";
+  const publicPhase = publicPhaseFor(run.current_phase || "", run.status || "", run.runner_state || "");
   const pct = progressPercent(run);
   if (live) startRunClock();
   if (complete || failed) stopRunClock();
@@ -351,7 +376,7 @@ function updateRunMonitor(run = {}, artifactCount = 0) {
   if (els.runProgressText) {
     if (complete) els.runProgressText.textContent = "Report ready. Opening the report automatically.";
     else if (failed) els.runProgressText.textContent = "Run needs attention. Review the status before continuing.";
-    else if (live) els.runProgressText.textContent = `Diligence workflow running${phase ? `: ${phase}` : ""}. Keep this page open.`;
+    else if (live) els.runProgressText.textContent = `Diligence workflow running: ${publicPhase.label}. Keep this page open.`;
     else els.runProgressText.textContent = "Waiting for intake.";
   }
   if (els.lastCheckedValue) {
