@@ -84,12 +84,32 @@ jobs:
             "$URL/v1/reviewer/jobs/$RUN_ID/worker"
           echo
 
-      - name: Verify renderer regenerated
+      - name: Verify renderer regenerated through backend
         env:
           RUN_ID: ${{ inputs.run_id }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCLOUD_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
         run: |
           set -euo pipefail
-          test -n "$GCLOUD_ACCESS_TOKEN"
-          node .github/scripts/operator-renderer-verify.mjs
+          URL=$(gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format="value(status.url)")
+          REPORT_JSON=$(curl --fail-with-body -sS \
+            -H "x-ln-api-key: $GPT_ACTION_API_KEY" \
+            "$URL/v1/reviewer/jobs/$RUN_ID/report")
+          node -e '
+            const payload = JSON.parse(process.env.REPORT_JSON);
+            const root = payload.renderer_payload || payload.artifact?.renderer_payload || payload.artifact || payload;
+            const failures = [];
+            if (root.renderer_source !== "normalized_section_artifacts_only") failures.push(`renderer_source=${root.renderer_source || "<missing>"}`);
+            if (!Array.isArray(root.sections)) failures.push("sections missing");
+            if (Array.isArray(root.sections) && root.sections.length !== 10) failures.push(`section_count=${root.sections.length}`);
+            if (!root.report_shell?.report_title) failures.push("report_title missing");
+            if (JSON.stringify(root).includes("raw_final_output_handoff")) failures.push("raw_final_output_handoff leak");
+            if (JSON.stringify(root).includes("section_list")) failures.push("legacy section_list leak");
+            console.log(JSON.stringify({ ok: failures.length === 0, run_id: process.env.RUN_ID, renderer_source: root.renderer_source || "", section_count: Array.isArray(root.sections) ? root.sections.length : 0, failures }, null, 2));
+            if (failures.length) process.exit(1);
+          '
