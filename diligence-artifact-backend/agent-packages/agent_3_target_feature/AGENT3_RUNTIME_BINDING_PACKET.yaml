@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v3_m8_feature_candidate_inventory_index
+runtime_contract_version: v4_m7_profile_bucket_overlay_m8_feature_candidate_inventory_index
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target Feature Agent
 active_phase_scope: M7_TARGET_PROFILE_THEN_M8_FEATURE_CANDIDATE_INVENTORY_THEN_M8_TARGET_FEATURE_PROFILE
@@ -15,6 +15,9 @@ prompt_assembly_position:
   phase_prompt_after_packet: true
 
 prompt_precedence:
+  - 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md controls all M7 active reads and source authority.
+  - M7_TARGET_PROFILE is profile-bucket only and must not read legal/governance lossless families or raw legal_cartography_index.
+  - M7 may consume m7_deterministic_legal_signal_overlay only for the three allowed overlay fields.
   - 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md controls all M8 candidate-existence, inventory, and dedup rules.
   - Any legacy wording in 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md that tells M8_TARGET_FEATURE_PROFILE to harvest candidates, build a source extraction capsule, dedupe candidates, or prove route-family coverage inside the model prompt is superseded.
   - M8_TARGET_FEATURE_PROFILE consumes the saved feature_candidate_inventory and compiles target_feature_profile only.
@@ -27,10 +30,9 @@ allowed_modules:
 read_artifacts:
   common:
     - source_discovery_handoff
-    - legal_cartography_index
   M7_TARGET_PROFILE:
     - source_discovery_handoff
-    - legal_cartography_index
+    - m7_deterministic_legal_signal_overlay
     - lossless_family__T0_ROOT
     - lossless_family__T1_IDENTITY
     - lossless_family__T2_LEGAL_IDENTITY
@@ -55,6 +57,15 @@ read_artifacts:
     - lossless_family__P3_AI_CAPABILITY_TECHNICAL
     - lossless_family__P4_USE_CASE_INDUSTRY
     - lossless_family__P5_ENTERPRISE_PRICING
+
+forbidden_m7_read_artifacts:
+  - legal_cartography_index
+  - lossless_family__L1_CORE_TERMS_PRIVACY
+  - lossless_family__L2_B2B_CONTRACTING
+  - lossless_family__L3_AI_USAGE_GOVERNANCE
+  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+  - lossless_family__L5_LEGAL_HUB_HOSTED
+  - lossless_family__L6_ENTITY_NOTICE
 
 required_reference_files:
   - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
@@ -82,7 +93,6 @@ phase_locks:
   - M8_TARGET_FEATURE_PROFILE
 
 phase_sequence:
-  - M7_TARGET_PROFILE.PHASE_A_SOURCE_EXTRACTION
   - M7_TARGET_PROFILE.PHASE_B_PROFILE_DERIVATION
   - M7_TARGET_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
   - M7_TARGET_PROFILE.PHASE_C_FORENSIC_DERIVATION
@@ -98,6 +108,7 @@ phase_gate_rules:
   - M7 Phase B1 returns and saves only target_profile.
   - M7 Phase C may begin only after saved target_profile exists.
   - M7 Phase D returns and saves only target_profile_forensics.
+  - M7 must not block because raw legal/governance artifacts are absent; unavailable overlay values become controlled field statuses and limitations.
   - M8 feature candidate inventory may begin only after saved target_profile and target_profile_forensics exist.
   - M8 feature candidate inventory is deterministic index-only and saves only feature_candidate_inventory.
   - M8 target feature profile may begin only after saved feature_candidate_inventory exists.
