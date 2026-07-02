@@ -14,10 +14,11 @@ import { buildM12DeterministicChallengeGate } from "./m12-deterministic-challeng
 import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import { buildM7DeterministicTargetForensics, buildM8DeterministicFeatureForensics, buildM10DeterministicDataForensics } from "./deterministic-profile-forensics.js";
+import { buildM7DeterministicLegalSignalOverlay, applyM7DeterministicLegalSignalOverlay } from "./m7-deterministic-legal-signal-overlay.js";
 import { runAgent4bExtendedDapPhase } from "./agent4b-phase-runner.js";
 import { runAgent4cIntegratedDapReportPhase } from "./agent4c-runner.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
-import { artifactMatchesPermission, LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES } from "./constants.js";
+import { artifactMatchesPermission } from "./constants.js";
 import { readPhaseArtifactWithResolvedLosslessFamilies } from "./lossless-family-resolver.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
@@ -29,13 +30,12 @@ const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "m
 const M9_HYBRID_SEMANTIC_PROMPT_FILES = Object.freeze(["agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md", "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md", "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md", "agent-packages/agent_2b_m9/M9_FIELD_DERIVATION_REGISTRY.yaml", "agent-packages/agent_2b_m9/00_VALIDATOR_RULES_INTEGRATED.md"]);
 const ART = Object.freeze({ legalIndex: "legal_cartography_index", targetMain: "target_" + "profile", targetForensics: "target_" + "profile_forensics", featureMain: "target_" + "feature_profile", featureForensics: "target_" + "feature_profile_forensics", dataProfile: "data_provenance_profile", dataForensics: "data_provenance_profile_forensics", exposureProfile: "exposure_registry_profile", exposureRoutePlan: "exposure_registry_route_plan", challengeGate: "challenge_gate", profilesCombined: "profiles_combined", forensicsCombined: "forensics_combined", final: "final_" + "output_handoff", renderer: "renderer_payload" });
 const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT", "ABSENT", "MISSING", "THIN", "WEAK", "UNKNOWN_NOT_SEARCHED", "NOT_EVIDENCED", "SOURCE_REJECTED", "ACCESS_FAILED", "GATED", "INSUFFICIENT_PUBLIC_MATERIAL", "STANDALONE_SOURCE_ABSENT", "REINVESTIGATION", "TARGETED_RE_EXTRACTION", "OMISSION", "CONTROLLED"]);
-const M7_PHASES = new Set(["M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
   if (run.current_phase === "COMPLETE" || run.status === "COMPLETE") return { ok: true, run_id, status: "COMPLETE", current_phase: "COMPLETE", advanced: false };
   const phase = normalizePhase(run.current_phase);
-  const contract = applyRuntimeReadOverrides(phase, getPhaseContract(phase));
+  const contract = getPhaseContract(phase);
   await markRunning(run_id, phase, contract.agent_id || contract.actor_id);
   try {
     if (phase === "M9") await runM9HybridPhase({ run, phase, contract });
@@ -62,12 +62,6 @@ export async function advanceReviewerRun({ run_id }) {
 function normalizePhase(value) {
   if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return "AGENT_1A_URL_MANIFEST";
   return value;
-}
-
-function applyRuntimeReadOverrides(phase, contract) {
-  if (!M7_PHASES.has(phase)) return contract;
-  const reads = [...new Set([...(contract.reads || []), ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES])];
-  return { ...contract, reads, runtime_read_override: "M7_LEGAL_GOVERNANCE_FAMILIES_INCLUDED" };
 }
 
 async function runAgent1aUrlManifestPhase({ run, phase, contract }) { const output = await buildAgent1aDedupedUrlManifest({ run }); await saveDeterministicArtifacts({ run, phase, actor: contract.actor_id, writes: contract.writes, output }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: "LOCKED", next_phase: contract.next }); }
@@ -146,7 +140,26 @@ function validateM9FinalIndexForHybrid(output) {
 }
 function unwrapArtifactForSave({ artifactName, artifact }) { if (artifact?.[artifactName] && typeof artifact[artifactName] === "object") return artifact[artifactName]; if (artifact?.artifact?.[artifactName] && typeof artifact.artifact[artifactName] === "object") return artifact.artifact[artifactName]; return artifact; }
 async function runM12DeterministicChallengePhase({ run, phase, contract }) { const artifacts = await readArtifactsForM12Global({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id }); const output = buildM12DeterministicChallengeGate({ run, artifacts }); const artifact = output.challenge_gate; if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${phase}:challenge_gate`); const phaseLockStatus = ["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(artifact.status) ? artifact.status : "LOCKED"; await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.actor_id, artifact_name: "challenge_gate", artifact, lock_status: phaseLockStatus })); await logEvent({ run_id: run.run_id, event_type: "M12_DETERMINISTIC_CHALLENGE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, model_usage: "NONE_DETERMINISTIC", critical_failures: artifact.critical_failures || [], warnings: artifact.warnings || [] } }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase }); }
-async function runModelPhase({ run, phase, contract }) { const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id }); const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] }); const result = await callGeminiJson({ prompt, phase }); const output = result.json; const validationStatusOverride = validateModelOutput({ phase, output }); const phaseLockStatus = coerceModelStatus({ phase, status: validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes }), output }); for (const artifactName of contract.writes) { const artifact = output?.[artifactName]; if (!artifact || typeof artifact !== "object") throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`); await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus })); } await logEvent({ run_id: run.run_id, event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata, runtime_read_override: contract.runtime_read_override || "" } }); await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase }); }
+
+async function runModelPhase({ run, phase, contract }) {
+  const artifacts = await readArtifactsForPhase({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const m7LegalSignalOverlay = phase === "M7_TARGET_PROFILE" ? buildM7DeterministicLegalSignalOverlay({ artifacts }) : null;
+  if (m7LegalSignalOverlay) artifacts.m7_deterministic_legal_signal_overlay = m7LegalSignalOverlay;
+  const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase, run, artifacts, writes: contract.writes, references: contract.references || [] });
+  const result = await callGeminiJson({ prompt, phase });
+  const output = result.json;
+  if (m7LegalSignalOverlay) applyM7DeterministicLegalSignalOverlay(output, m7LegalSignalOverlay);
+  const validationStatusOverride = validateModelOutput({ phase, output });
+  const phaseLockStatus = coerceModelStatus({ phase, status: validationStatusOverride || resolveModelLockStatus({ phase, output, writes: contract.writes }), output });
+  for (const artifactName of contract.writes) {
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${phase}:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
+  }
+  await logEvent({ run_id: run.run_id, event_type: TARGET_FEATURE_PHASES.has(phase) ? "AGENT3_MODULE_COMPLETED" : "MODEL_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata, runtime_read_override: contract.runtime_read_override || "", deterministic_legal_signal_overlay_applied: Boolean(m7LegalSignalOverlay) } });
+  await lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
+}
+
 function validateModelOutput({ phase, output }) { try { if (phase === "M9") { const validation = validateM9LegalCartographyIndex(output); if (validation.status !== "PASS") throw new Error(`M9_VALIDATION_FAILED:${JSON.stringify(validation)}`); return ""; } if (phase === "M7_TARGET_PROFILE" || phase === "M7_TARGET_PROFILE_FORENSICS") { validateM7TargetProfileOutput(output, { phase }); return ""; } if (phase === "M8_TARGET_FEATURE_PROFILE" || phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") { validateM8TargetFeatureOutput(output, { phase }); } return ""; } catch (error) { if (isNonBlockingModelValidationError({ phase, error, output })) return "LOCKED_WITH_LIMITATIONS"; throw error; } }
 function isNonBlockingModelValidationError({ phase, error, output }) { if (!MODEL_LIMITATION_PHASES.has(phase)) return false; const message = String(error?.message || error || "").toLowerCase(); if (VALIDATION_CRITICAL_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return false; if (VALIDATION_NONBLOCKING_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return true; return hasControlledLimitationSignal(output); }
 function resolveModelLockStatus({ phase, output, writes }) { if (phase === "M9") return resolveStatusFromArtifacts(output?.[ART.legalIndex]); if (phase === "M7_TARGET_PROFILE") return resolveStatusFromArtifacts(output?.[ART.targetMain]); if (phase === "M7_TARGET_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.targetForensics]); if (phase === "M8_TARGET_FEATURE_PROFILE") return resolveStatusFromArtifacts(output?.[ART.featureMain]); if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.featureForensics]); if (phase === "M10") return resolveStatusFromArtifacts(output?.[ART.dataProfile]); if (phase === "M10_FORENSICS") return resolveStatusFromArtifacts(output?.[ART.dataForensics]); if (phase === "M11") return resolveStatusFromArtifacts(output?.[ART.exposureProfile]); if (phase === "M12") return resolveStatusFromArtifacts(output?.[ART.challengeGate]); return resolveStatusFromArtifacts(output?.[writes?.[0]]); }

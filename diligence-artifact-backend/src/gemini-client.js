@@ -73,10 +73,6 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
           if (!isRetryableGeminiError(error)) {
             throw new Error(`GEMINI_CALL_FAILED:${phase}:${JSON.stringify(errors)}`);
           }
-          const isLastAttempt = round === rounds - 1 && modelIndex === models.length - 1 && offset === keysPerModel - 1;
-          if (!isLastAttempt && retryAfterDelayMs > 0) {
-            await sleep(retryAfterDelayMs);
-          }
         }
       }
     }
