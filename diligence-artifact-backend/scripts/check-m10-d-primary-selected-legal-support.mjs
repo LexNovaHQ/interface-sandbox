@@ -46,4 +46,10 @@ assert.ok(runtimePacket.includes("D1-D5 are the primary field-derivation source 
 assert.ok(runtimePacket.includes("m10_selected_legal_support_packet is secondary support only"));
 assert.equal(runtimePacket.includes("M10_LEAN_INPUT_CONTRACT"), false);
 
+const validator = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_4_data_privacy/00_VALIDATOR_RULES_INTEGRATED_AGENT4_SYNCED.md"), "utf8");
+assert.ok(validator.includes("M10 D-PRIMARY SELECTED-SUPPORT VALIDATOR OVERRIDE"));
+assert.ok(validator.includes("D1-D5 are the primary source for M10 field derivation."));
+assert.ok(validator.includes("m10_selected_legal_support_packet is secondary support only"));
+for (const name of removedReads) assert.ok(validator.includes(`- \`${name}\``));
+
 console.log("m10 D-primary selected legal support: PASS");
