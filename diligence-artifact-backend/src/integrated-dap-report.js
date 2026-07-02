@@ -1,43 +1,7 @@
 const ARTIFACT_NAME = "integrated_dap_report";
-const MATRIX_VERSION = "dap_4c_integrated_field_matrix_v1";
+const MATRIX_VERSION = "dap_4c_substantive_integrated_projection_v1";
 
-const MATRIX = Object.freeze({
-  assessment_scope: ["scope_and_source_coverage", "Assessment scope + India applicability", ["india_market_scope_signal", "india_exclusion_or_no_exclusion_signal", "india_operations_signal"]],
-  source_coverage: ["scope_and_source_coverage", "Source coverage", []],
-  individuals_and_relationships: ["people_and_roles", "Affected persons / data principal population", ["india_data_principal_population_signal"]],
-  role_relationship_readiness: ["people_and_roles", "Data relationship and role allocation", ["india_personal_data_processing_signal", "india_role_mapping_candidate"]],
-  data_categories: ["data_categories_and_outputs", "Data categories and scale signal", ["india_large_scale_data_gap"]],
-  generated_output_and_derived_data_treatment: ["data_categories_and_outputs", "Generated output / derived data", []],
-  sensitive_special_category_signals: ["data_categories_and_outputs", "Sensitive / high-risk data context", ["india_sensitive_high_risk_context_signal"]],
-  children_minors_signal: ["data_categories_and_outputs", "Children/minors data posture", ["india_children_under_18_signal", "india_child_tracking_or_ads_signal", "india_child_data_missing_proof"]],
-  collection_sources_and_activity_data_flows: ["flow_and_lifecycle", "Collection/source of personal data", ["india_personal_data_processing_signal"]],
-  processing_operations_lifecycle: ["flow_and_lifecycle", "Processing lifecycle", ["india_personal_data_processing_signal"]],
-  purpose_use_signals: ["flow_and_lifecycle", "Purpose/use mapping", ["india_purpose_specificity_signal"]],
-  privacy_notice_visibility: ["notice_and_rights", "Privacy notice and accessibility", ["india_dpdp_notice_surface_signal", "india_language_accessibility_signal"]],
-  lawful_basis_consent_authorization_readiness: ["notice_and_rights", "Consent / lawful basis / authorization", ["india_consent_authorization_signal", "india_consent_manager_public_signal", "india_child_consent_route_signal"]],
-  consent_withdrawal_controls: ["notice_and_rights", "Withdrawal / revocation", ["india_withdrawal_revocation_signal"]],
-  rights_request_routes: ["notice_and_rights", "Rights and grievance route", ["india_rights_route_signal", "india_grievance_contact_signal", "india_rights_gap_request"]],
-  privacy_governance_contact_accountability_signals: ["governance_and_contracts", "Privacy governance contact / DPO route", ["india_dpo_route_signal"]],
-  contractual_dpa_customer_terms_readiness: ["governance_and_contracts", "DPA/customer terms and role/vendor contract controls", ["india_role_mapping_candidate", "india_vendor_security_terms_signal"]],
-  vendor_subprocessor_partner_inventory: ["vendors_and_sharing", "Vendor/subprocessor inventory", ["india_vendor_transfer_map_signal"]],
-  processor_subprocessor_governance_controls: ["vendors_and_sharing", "Vendor governance controls", ["india_vendor_security_terms_signal"]],
-  third_party_disclosure_sharing_controls: ["vendors_and_sharing", "Third-party sharing / disclosure safeguards", ["india_transfer_safeguard_signal"]],
-  cross_border_transfer_location_custody: ["transfer_and_retention", "Cross-border transfer and custody", ["india_cross_border_transfer_signal", "india_restricted_territory_screening_gap"]],
-  retention_deletion_return_export_controls: ["transfer_and_retention", "Retention, deletion, export and India log-retention", ["india_log_retention_signal", "india_180_day_log_signal", "india_logs_accessible_in_india_signal"]],
-  security_access_controls: ["security_and_incident_visibility", "Security and access-control posture", ["india_security_policy_signal", "india_access_control_signal", "india_data_protection_procedure_signal", "india_audit_trail_signal"]],
-  breach_incident_readiness: ["security_and_incident_visibility", "Incident and breach readiness", ["india_breach_notification_signal", "india_cert_in_reporting_signal", "india_cert_in_poc_public_signal", "india_six_hour_reporting_workflow_signal", "india_cert_in_missing_proof", "india_incident_response_signal"]],
-  ai_model_provider_processing_chain: ["ai_specific_controls", "AI model provider processing chain", []],
-  ai_training_finetuning_model_improvement_controls: ["ai_specific_controls", "Training/fine-tuning/model improvement controls", []],
-  embeddings_vector_memory_controls: ["ai_specific_controls", "Embeddings/vector memory controls", []],
-  prompt_output_logging_telemetry_controls: ["ai_specific_controls", "Prompt/output logs and telemetry", ["india_log_retention_signal", "india_audit_trail_signal"]],
-  automated_decision_profiling_human_review_signal: ["automated_decisioning", "Automated decisioning / high-risk human review", ["india_sensitive_high_risk_context_signal"]],
-  privacy_accountability_documentation_signals: ["readiness_and_gaps", "Privacy accountability documentation / DPIA / audit", ["india_large_scale_data_gap", "india_dpia_audit_signal", "india_sdf_missing_proof"]],
-  law_regulatory_readiness_matrix: ["readiness_and_gaps", "Regulatory readiness matrix", ["india_dpdp_notice_surface_signal", "india_consent_authorization_signal", "india_cross_border_transfer_signal", "india_breach_notification_signal", "india_security_policy_signal", "india_dpia_audit_signal"]],
-  missing_proof_and_diligence_requests: ["readiness_and_gaps", "Missing proof / qualified review queue", ["india_rights_gap_request", "india_child_data_missing_proof", "india_restricted_territory_screening_gap", "india_cert_in_missing_proof", "india_sdf_missing_proof"]],
-  limitations: ["readiness_and_gaps", "Data/control review limitations", []]
-});
-
-const SUBSECTION_TITLES = Object.freeze({
+const SECTION_TITLES = Object.freeze({
   scope_and_source_coverage: "Scope and Source Coverage",
   people_and_roles: "People and Roles",
   data_categories_and_outputs: "Data Categories and Outputs",
@@ -52,15 +16,40 @@ const SUBSECTION_TITLES = Object.freeze({
   readiness_and_gaps: "Readiness and Gaps"
 });
 
-const STATUS = Object.freeze({
-  VISIBLE_CONTROL_PRESENT: "Visible in reviewed materials",
-  VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR: "Visible but requires confirmation",
-  VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND: "Processing visible; public control proof not visible",
-  NOT_VISIBLE_AFTER_TARGETED_SEARCH: "Not visible in reviewed public materials",
-  UNKNOWN_NOT_SEARCHED: "Not visible in reviewed public materials",
-  ACCESS_FAILED: "Source route could not be accessed",
-  CONFLICTING_SIGNALS: "Conflicting public signals",
-  NOT_APPLICABLE: "Not applicable on reviewed public context"
+const FIELD_MAP = Object.freeze({
+  assessment_scope: ["scope_and_source_coverage", "Assessment scope and public-footprint boundary", ["market_scope_and_india_relevance", "public_footprint_review_boundary", "jurisdictional_applicability_assumptions"]],
+  source_coverage: ["scope_and_source_coverage", "Source coverage and reliance limits", ["public_footprint_review_boundary"]],
+  individuals_and_relationships: ["people_and_roles", "Affected persons / data-principal population", ["affected_person_categories", "customer_user_data_principal_relationship", "enterprise_vs_end_user_population_signal"]],
+  role_relationship_readiness: ["people_and_roles", "Role and relationship posture", ["role_allocation_candidate", "controller_processor_fiduciary_ambiguity", "customer_vendor_relationship_signal", "role_confirmation_needed_for_docs"]],
+  data_categories: ["data_categories_and_outputs", "Data categories and scale signal", ["personal_data_categories_by_activity", "activity_level_data_protection_risk_notes"]],
+  generated_output_and_derived_data_treatment: ["data_categories_and_outputs", "Generated output / derived data", ["input_output_and_derived_data_treatment"]],
+  sensitive_special_category_signals: ["data_categories_and_outputs", "Sensitive / high-risk data context", ["children_sensitive_and_high_risk_context"]],
+  children_minors_signal: ["data_categories_and_outputs", "Children/minors data posture", ["children_sensitive_and_high_risk_context"]],
+  collection_sources_and_activity_data_flows: ["flow_and_lifecycle", "Collection/source of personal data", ["activity_to_data_flow_map", "personal_data_categories_by_activity"]],
+  processing_operations_lifecycle: ["flow_and_lifecycle", "Processing lifecycle", ["activity_to_data_flow_map", "ai_model_processing_chain_by_activity", "input_output_and_derived_data_treatment"]],
+  purpose_use_signals: ["flow_and_lifecycle", "Purpose/use mapping", ["purpose_and_use_mapping", "ai_training_profiling_and_automated_decisioning_review_note"]],
+  privacy_notice_visibility: ["notice_and_rights", "Privacy notice and accessibility", ["privacy_notice_surface", "language_accessibility_and_user_control_notes"]],
+  lawful_basis_consent_authorization_readiness: ["notice_and_rights", "Consent / lawful basis / authorization", ["consent_authorization_posture", "purpose_and_use_mapping"]],
+  consent_withdrawal_controls: ["notice_and_rights", "Withdrawal / revocation", ["withdrawal_deletion_export_routes"]],
+  rights_request_routes: ["notice_and_rights", "Rights and grievance route", ["rights_and_grievance_route", "withdrawal_deletion_export_routes"]],
+  privacy_governance_contact_accountability_signals: ["governance_and_contracts", "Privacy governance contact / DPO route", ["rights_and_grievance_route", "role_confirmation_needed_for_docs"]],
+  contractual_dpa_customer_terms_readiness: ["governance_and_contracts", "DPA/customer terms and role/vendor contract controls", ["role_allocation_candidate", "controller_processor_fiduciary_ambiguity", "customer_vendor_relationship_signal", "role_confirmation_needed_for_docs"]],
+  vendor_subprocessor_partner_inventory: ["vendors_and_sharing", "Vendor/subprocessor inventory", ["vendor_and_subprocessor_inventory_visibility"]],
+  processor_subprocessor_governance_controls: ["vendors_and_sharing", "Vendor governance controls", ["vendor_and_subprocessor_inventory_visibility", "customer_vendor_relationship_signal"]],
+  third_party_disclosure_sharing_controls: ["vendors_and_sharing", "Third-party sharing / disclosure safeguards", ["third_party_sharing_posture", "transfer_safeguard_and_change_notice_gaps"]],
+  cross_border_transfer_location_custody: ["transfer_and_retention", "Cross-border transfer and custody", ["cross_border_transfer_and_custody_posture", "hosting_storage_location_visibility", "transfer_safeguard_and_change_notice_gaps"]],
+  retention_deletion_return_export_controls: ["transfer_and_retention", "Retention, deletion, export and India log-retention", ["retention_period_visibility", "deletion_return_export_controls", "india_log_retention_cert_in_review_note"]],
+  security_access_controls: ["security_and_incident_visibility", "Security and access-control posture", ["security_control_visibility", "access_control_and_internal_governance_posture", "security_certification_and_policy_reliance_limits"]],
+  breach_incident_readiness: ["security_and_incident_visibility", "Incident and breach readiness", ["incident_breach_response_visibility", "india_log_retention_cert_in_review_note"]],
+  ai_model_provider_processing_chain: ["ai_specific_controls", "AI model provider processing chain", ["ai_model_processing_chain_by_activity", "activity_to_data_flow_map"]],
+  ai_training_finetuning_model_improvement_controls: ["ai_specific_controls", "Training/fine-tuning/model improvement controls", ["ai_training_profiling_and_automated_decisioning_review_note", "purpose_and_use_mapping"]],
+  embeddings_vector_memory_controls: ["ai_specific_controls", "Embeddings/vector memory controls", ["input_output_and_derived_data_treatment", "ai_model_processing_chain_by_activity"]],
+  prompt_output_logging_telemetry_controls: ["ai_specific_controls", "Prompt/output logs and telemetry", ["logging_telemetry_and_audit_trail_posture", "ai_training_profiling_and_automated_decisioning_review_note"]],
+  automated_decision_profiling_human_review_signal: ["automated_decisioning", "Automated decisioning / high-risk human review", ["ai_training_profiling_and_automated_decisioning_review_note", "children_sensitive_and_high_risk_context"]],
+  privacy_accountability_documentation_signals: ["readiness_and_gaps", "Privacy accountability documentation / DPIA / audit", ["role_confirmation_needed_for_docs", "security_certification_and_policy_reliance_limits"]],
+  law_regulatory_readiness_matrix: ["readiness_and_gaps", "Regulatory readiness matrix", ["jurisdictional_applicability_assumptions", "privacy_notice_surface", "consent_authorization_posture", "cross_border_transfer_and_custody_posture", "incident_breach_response_visibility"]],
+  missing_proof_and_diligence_requests: ["readiness_and_gaps", "Missing proof / qualified review queue", ["role_confirmation_needed_for_docs", "transfer_safeguard_and_change_notice_gaps", "india_log_retention_cert_in_review_note", "children_sensitive_and_high_risk_context"]],
+  limitations: ["readiness_and_gaps", "Data/control review limitations", ["public_footprint_review_boundary", "role_confirmation_needed_for_docs"]]
 });
 
 export function buildIntegratedDapReport({ run = {}, artifacts = {} } = {}) {
@@ -73,29 +62,29 @@ export function projectIntegratedDapProfileForNormalizedSection({ artifacts = {}
 
 export function buildIntegratedDapProjection({ run = {}, artifacts = {} } = {}) {
   const m10 = unwrap(artifacts.data_provenance_profile, "data_provenance_profile");
+  const m8 = unwrap(artifacts.target_feature_profile, "target_feature_profile");
   const b4 = unwrap(artifacts.extended_dap_india_readiness_profile, "extended_dap_india_readiness_profile");
   const b4Fields = Array.isArray(b4.fields) ? b4.fields : [];
-  const b4ById = Object.fromEntries(b4Fields.map((f) => [f.field_id, f]));
-  const rows = Object.entries(MATRIX).flatMap(([m10Field, config]) => buildRows({ m10Field, config, m10, b4ById }));
-  const normalized_profile_overlay = { ...m10 };
-  for (const [fieldId, fieldRows] of Object.entries(groupBy(rows, (r) => r.normalized_dap_field_id))) normalized_profile_overlay[fieldId] = fieldRows;
-  const subsections = Object.entries(SUBSECTION_TITLES).map(([subsection_id, subsection_title]) => ({
+  const b4ById = Object.fromEntries(b4Fields.map((field) => [field.field_id, field]));
+  const activities = normalizeActivities(m8);
+  const dataCategories = collectDataCategories(m10, b4Fields);
+  const rows = Object.entries(FIELD_MAP).map(([fieldId, [subsection_id, review_point, b4FieldIds]]) => buildIntegratedRow({ fieldId, subsection_id, review_point, b4FieldIds, b4ById, m10, activities, dataCategories }));
+  const subsections = Object.entries(SECTION_TITLES).map(([subsection_id, subsection_title]) => ({
     subsection_id,
     subsection_title,
-    fields: Object.values(groupBy(rows.filter((r) => r.subsection_id === subsection_id), (r) => r.normalized_dap_field_id)).map((render_rows) => ({
-      field_id: render_rows[0].normalized_dap_field_id,
-      integrated_field_group: render_rows[0].integrated_field_group,
-      render_rows
+    fields: rows.filter((row) => row.subsection_id === subsection_id).map((row) => ({
+      field_id: row.normalized_dap_field_id,
+      integrated_field_group: row.integrated_field_group,
+      render_rows: [row]
     }))
   }));
-  const mappedIndia = [...new Set(Object.values(MATRIX).flatMap(([, , ids]) => ids))];
-  const missingIndia = mappedIndia.filter((id) => !b4ById[id]);
-  const review = rows.filter((r) => r.qualified_review_action !== "No action required");
-  const lock = rows.length && !missingIndia.length && Number(b4.field_count || b4Fields.length || 0) === 42 ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
+  const review = rows.filter((row) => row.qualified_review_action !== "No action required");
+  const lock = b4Fields.length === 36 && rows.length === Object.keys(FIELD_MAP).length ? (review.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED") : "LOCKED_WITH_LIMITATIONS";
+  const normalized_profile_overlay = { ...m10, substantive_4b_field_base: b4Fields, integrated_public_findings: rows };
   return {
     [ARTIFACT_NAME]: {
       artifact_type: ARTIFACT_NAME,
-      profile_version: "integrated_dap_projection_v2",
+      profile_version: "integrated_dap_projection_v3_substantive_m8_4b",
       run_id: run.run_id || "UNKNOWN_RUN",
       generated_at: new Date().toISOString(),
       derivation_mode: "DETERMINISTIC_COMPILER_NO_MODEL",
@@ -103,32 +92,110 @@ export function buildIntegratedDapProjection({ run = {}, artifacts = {} } = {}) 
       report_title: "Integrated Data Architecture & Privacy Readiness Projection",
       status: lock,
       lock_status: lock,
-      component_artifacts: ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile"],
+      component_artifacts: ["target_feature_profile", "data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile"],
       matrix_version: MATRIX_VERSION,
-      field_matrix: Object.entries(MATRIX).map(([field_id, [subsection_id, group, india_field_ids]]) => ({ section_id: "data_provenance_controls", subsection_id, normalized_dap_field_id: field_id, integrated_field_group: group, india_field_ids })),
-      coverage_summary: { expected_matrix_rows: Object.keys(MATRIX).length, expected_india_fields: 42, actual_india_fields: Number(b4.field_count || b4Fields.length || 0), mapped_india_fields: mappedIndia.length, missing_india_fields: missingIndia, normalized_subsection_count: subsections.length, row_count: rows.length, qualified_review_queue_count: review.length },
-      normalized_section_projection: { section_id: "data_provenance_controls", section_title: "Data Provenance & Controls", projection_rule: "4C projects M10 and India 4B into the locked normalized DAP subsection spine. 4B is not report-facing as a standalone layer.", subsections },
+      integration_policy: {
+        m8_role: "activity_and_product_context",
+        m10_role: "base_data_provenance_profile",
+        four_b_role: "substantive_data_protection_field_base",
+        public_report_body_uses_analytical_findings_not_machine_signal_rows: true,
+        full_field_base_for_annexure_and_qualified_review: true
+      },
+      field_matrix: Object.entries(FIELD_MAP).map(([field_id, [subsection_id, group, b4_field_ids]]) => ({ section_id: "data_provenance_controls", subsection_id, normalized_dap_field_id: field_id, integrated_field_group: group, b4_field_ids })),
+      coverage_summary: {
+        expected_4b_fields: 36,
+        actual_4b_fields: b4Fields.length,
+        m8_activity_count: activities.length,
+        data_category_count: dataCategories.length,
+        normalized_subsection_count: subsections.length,
+        row_count: rows.length,
+        qualified_review_queue_count: review.length,
+        evidence_strength_counts: countBy(rows, (row) => row.evidence_strength)
+      },
+      normalized_section_projection: { section_id: "data_provenance_controls", section_title: "Data Provenance & Controls", projection_rule: "4C integrates M8 activity context, M10 data provenance, and 4B substantive DAP field base into analytical public report findings. Raw 4B field base remains annexure/QR material.", subsections },
       normalized_profile_overlay,
       integrated_table_rows: rows,
-      qualified_review_queue: review.map((r, i) => ({ queue_id: `DAP-QR-${String(i + 1).padStart(3, "0")}`, subsection_id: r.subsection_id, integrated_field_group: r.integrated_field_group, review_point: r.review_point, jurisdiction_layer: r.jurisdiction_layer, public_footprint_status: r.public_footprint_status, action: r.qualified_review_action })),
-      limitations: limits({ artifacts, b4, missingIndia, rows }),
-      validation_quality_control_result: { status: lock === "LOCKED" ? "PASS" : "PASS_WITH_LIMITATION", deterministic: true, model_usage: "NONE_DETERMINISTIC", normalized_section_spine_only: true, no_standalone_india_report_section: true, substance_preserved: true }
+      qualified_review_queue: review.map((row, i) => ({ queue_id: `DAP-QR-${String(i + 1).padStart(3, "0")}`, subsection_id: row.subsection_id, integrated_field_group: row.integrated_field_group, review_point: row.review_point, jurisdiction_layer: row.jurisdiction_layer, public_footprint_status: row.public_footprint_status, action: row.qualified_review_action })),
+      limitations: limits({ artifacts, b4, rows }),
+      validation_quality_control_result: { status: lock === "LOCKED" ? "PASS" : "PASS_WITH_LIMITATION", deterministic: true, model_usage: "NONE_DETERMINISTIC", normalized_section_spine_only: true, no_standalone_india_report_section: true, substance_preserved: true, integrated_m8_and_4b: true }
     }
   };
 }
 
-function buildRows({ m10Field, config, m10, b4ById }) {
-  const [subsection_id, integrated_field_group, indiaIds] = config;
-  const base = { subsection_id, subsection: SUBSECTION_TITLES[subsection_id], integrated_field_group, normalized_dap_field_id: m10Field };
-  return [globalRow(base, m10[m10Field]), ...indiaIds.map((id) => indiaRow(base, id, b4ById[id]))];
+function buildIntegratedRow({ fieldId, subsection_id, review_point, b4FieldIds, b4ById, m10, activities, dataCategories }) {
+  const fields = b4FieldIds.map((id) => b4ById[id]).filter(Boolean);
+  const strength = aggregateStrength(fields);
+  const finding = fields.length ? fields.map((field) => field.finding).filter(Boolean).join(" ") : fallbackFinding({ fieldId, review_point, m10, dataCategories, activities });
+  const basis = fields.length ? fields.map((field) => field.factual_basis).filter(Boolean).join(" ") : fallbackBasis({ m10, dataCategories, activities });
+  const limitation = fields.map((field) => field.limitation).filter(Boolean).join(" ") || (strength === "not_visible" ? "Specific public-footprint evidence was not visible for this item." : "Qualified review required before reliance.");
+  const action = fields.map((field) => field.qualified_review_action).filter(Boolean).slice(0, 2).join(" ") || "Confirm during Qualified Review before document assembly reliance";
+  return {
+    subsection_id,
+    subsection: SECTION_TITLES[subsection_id],
+    integrated_field_group: review_point,
+    normalized_dap_field_id: fieldId,
+    row_type: "Integrated analytical finding",
+    review_point,
+    jurisdiction_layer: "Global + India public-footprint readiness",
+    public_footprint_status: statusLabel(strength),
+    evidence_summary: finding,
+    factual_basis: basis,
+    linked_m8_activity_ids: unique(fields.flatMap((field) => field.linked_m8_activity_ids || [])),
+    linked_data_categories: unique([...dataCategoriesForField(fields), ...directDataCategoryHints(fieldId, dataCategories)]).slice(0, 8),
+    registry_basis: unique(fields.flatMap((field) => field.registry_basis || [])),
+    evidence_strength: strength,
+    limitation,
+    qualified_review_action: strength === "strong" ? "No action required" : action
+  };
 }
-function globalRow(base, value) { const present = has(value); return { ...base, row_type: "Global baseline", review_point: titleize(base.normalized_dap_field_id), jurisdiction_layer: "General / Global", public_footprint_status: present ? "Visible in reviewed materials" : "Not visible in reviewed public materials", evidence_summary: summarize(value), qualified_review_action: present ? "No action required" : "Add to missing-proof / clarification queue" }; }
-function indiaRow(base, id, f) { const status = f?.status || "NOT_VISIBLE_AFTER_TARGETED_SEARCH"; return { ...base, row_type: "India overlay", review_point: f?.question || titleize(id), jurisdiction_layer: "India", public_footprint_status: STATUS[status] || titleize(status), evidence_summary: f?.value_summary || "No direct public evidence captured.", qualified_review_action: !f || f.missing_proof_required || needsReview(status) ? "Confirm during Qualified Review before document assembly reliance" : "No action required" }; }
-function limits({ artifacts, b4, missingIndia, rows }) { const out = ["4C is a deterministic projection layer only. It does not create a standalone India section, standalone global DAP section, legal opinion, certification, or local counsel determination."]; if (!artifacts?.data_provenance_profile) out.push("Base data provenance profile unavailable or incomplete."); if (!artifacts?.extended_dap_india_readiness_profile) out.push("India readiness component profile unavailable or incomplete."); if (Number(b4?.field_count || 0) !== 42) out.push("India readiness component did not expose the expected 42 fields."); if (missingIndia.length) out.push(`Missing mapped India readiness field(s): ${missingIndia.join(", ")}.`); if (!rows.length) out.push("No integrated DAP projection rows generated."); return out; }
+
+function fallbackFinding({ review_point, dataCategories, activities }) {
+  const activityText = activities.length ? `${activities.length} M8 activity signal(s)` : "no structured M8 activity signal";
+  const dataText = dataCategories.length ? `data categories including ${list(dataCategories.slice(0, 5))}` : "no structured data-category list";
+  return `${review_point}: derived from ${activityText} and ${dataText}; no dedicated 4B substantive field was mapped.`;
+}
+function fallbackBasis({ dataCategories, activities }) {
+  return `M8 activity count: ${activities.length}. Data categories visible: ${dataCategories.length ? list(dataCategories.slice(0, 8)) : "not structured"}.`;
+}
+
+function normalizeActivities(m8) {
+  return (Array.isArray(m8.activities) ? m8.activities : []).map((activity, index) => ({
+    activity_id: activity.activity_display_id || activity.activity_id || `ACT-${String(index + 1).padStart(3, "0")}`,
+    label: clean(activity.activity_feature_name || activity.related_product_service || activity.publicly_described_activity || activity.activity_summary || `Activity ${index + 1}`)
+  }));
+}
+function collectDataCategories(m10, b4Fields) {
+  const values = [];
+  for (const key of ["data_categories", "personal_data_categories_by_activity", "sensitive_special_category_signals", "generated_output_and_derived_data_treatment", "prompt_output_logging_telemetry_controls"]) collectPlainValues(m10?.[key], values);
+  for (const field of b4Fields) for (const item of field.linked_data_categories || []) values.push(item);
+  return unique(values.map(clean).filter(Boolean)).slice(0, 30);
+}
+function dataCategoriesForField(fields) { return unique(fields.flatMap((field) => field.linked_data_categories || [])); }
+function directDataCategoryHints(fieldId, dataCategories) { return fieldId.includes("data") || fieldId.includes("ai") || fieldId.includes("logging") ? dataCategories : []; }
+
+function aggregateStrength(fields) {
+  if (!fields.length) return "not_visible";
+  if (fields.some((field) => field.evidence_strength === "conflicting")) return "conflicting";
+  if (fields.some((field) => field.evidence_strength === "strong")) return "strong";
+  if (fields.some((field) => field.evidence_strength === "partial")) return "partial";
+  if (fields.some((field) => field.evidence_strength === "weak")) return "weak";
+  return "not_visible";
+}
+function statusLabel(strength) {
+  return ({ strong: "Substantively visible in reviewed materials", partial: "Partially visible; requires confirmation", weak: "Weak public signal only", not_visible: "Not visible in reviewed public materials", conflicting: "Conflicting public signals" })[strength] || "Not visible in reviewed public materials";
+}
+function limits({ artifacts, b4, rows }) {
+  const out = ["4C is a deterministic projection layer only. It does not create a legal opinion, compliance certification, DPDP applicability determination, or local counsel conclusion."];
+  if (!artifacts?.data_provenance_profile) out.push("Base data provenance profile unavailable or incomplete.");
+  if (!artifacts?.target_feature_profile) out.push("M8 activity profile unavailable or incomplete.");
+  if (!artifacts?.extended_dap_india_readiness_profile) out.push("4B substantive DAP field base unavailable or incomplete.");
+  if (Number(b4?.field_count || 0) !== 36) out.push("4B substantive field base did not expose the expected 36 fields.");
+  if (!rows.length) out.push("No integrated DAP analytical findings generated.");
+  return out;
+}
 function unwrap(v, k) { return v?.[k] && typeof v[k] === "object" ? v[k] : v?.artifact?.[k] || v || {}; }
-function has(v) { return !(v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)); }
-function summarize(v) { if (!has(v)) return "No direct public evidence captured."; if (Array.isArray(v)) return v.length === 1 ? summarize(v[0]) : `${v.length} public-footprint item(s) captured in the component profile.`; if (typeof v === "object") return trunc(v.summary || v.value || v.finding || v.status || JSON.stringify(v)); return trunc(v); }
-function needsReview(s) { return ["VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND", "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR", "NOT_VISIBLE_AFTER_TARGETED_SEARCH", "UNKNOWN_NOT_SEARCHED", "ACCESS_FAILED", "CONFLICTING_SIGNALS"].includes(s); }
-function titleize(v) { return String(v || "").replace(/^india_/, "").replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()); }
-function trunc(v) { const s = String(v || "").replace(/\s+/g, " ").trim(); return s.length > 260 ? `${s.slice(0, 257)}...` : s; }
-function groupBy(items, fn) { return items.reduce((acc, item) => { const k = fn(item); (acc[k] ||= []).push(item); return acc; }, {}); }
+function collectPlainValues(value, out) { if (value == null) return; if (["string", "number", "boolean"].includes(typeof value)) { const s = clean(value); if (s) out.push(s); return; } if (Array.isArray(value)) return value.slice(0, 200).forEach((item) => collectPlainValues(item, out)); if (typeof value === "object") return Object.values(value).slice(0, 200).forEach((item) => collectPlainValues(item, out)); }
+function countBy(items, fn) { return items.reduce((acc, item) => { const k = fn(item); acc[k] = (acc[k] || 0) + 1; return acc; }, {}); }
+function unique(values) { return [...new Set(values.filter(Boolean))]; }
+function list(values) { return values.filter(Boolean).join(", "); }
+function clean(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
