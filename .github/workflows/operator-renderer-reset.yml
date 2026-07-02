@@ -39,12 +39,7 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install backend dependencies
-        working-directory: diligence-artifact-backend
-        run: npm install
-
       - name: Delete stale renderer artifact and reset run
-        working-directory: diligence-artifact-backend
         env:
           RUN_ID: ${{ inputs.run_id }}
           ARTIFACT_NAME: ${{ inputs.artifact_name }}
@@ -60,102 +55,8 @@ jobs:
           test -n "$GCP_REGION"
           test -n "$GCP_ARTIFACT_CLOUD_RUN_SERVICE"
           test -n "$GPT_ACTION_API_KEY"
-          node --input-type=module <<'NODE'
-          import crypto from "node:crypto";
-          import { google } from "googleapis";
-          import { initializeApp, applicationDefault, getApps } from "firebase-admin/app";
-          import { getFirestore } from "firebase-admin/firestore";
-
-          const runId = process.env.RUN_ID;
-          const artifactName = process.env.ARTIFACT_NAME;
-          const projectId = process.env.GCP_PROJECT_ID;
-
-          if (artifactName !== "renderer_payload") {
-            throw new Error(`REFUSING_UNSUPPORTED_ARTIFACT:${artifactName}`);
-          }
-
-          if (!getApps().length) {
-            initializeApp({ credential: applicationDefault(), projectId });
-          }
-
-          const db = getFirestore();
-          const drive = google.drive({ version: "v3", auth: new google.auth.GoogleAuth({ scopes: ["https://www.googleapis.com/auth/drive"] }) });
-          const runRef = db.collection("runs").doc(runId);
-          const artifactRef = runRef.collection("artifacts").doc(artifactName);
-          const runBeforeSnap = await runRef.get();
-          if (!runBeforeSnap.exists) throw new Error(`RUN_NOT_FOUND:${runId}`);
-          const runBefore = runBeforeSnap.data();
-          const artifactSnap = await artifactRef.get();
-
-          let deletedDriveFileId = "";
-          let deletedLatestVersion = 0;
-
-          if (artifactSnap.exists) {
-            const artifact = artifactSnap.data();
-            deletedDriveFileId = artifact.drive_file_id || "";
-            deletedLatestVersion = Number(artifact.latest_version || artifact.version || 0);
-            if (deletedDriveFileId) {
-              await drive.files.delete({ fileId: deletedDriveFileId, supportsAllDrives: true }).catch((error) => {
-                if (error?.code !== 404) throw error;
-              });
-            }
-            const versionsSnap = await artifactRef.collection("versions").get();
-            const batch = db.batch();
-            versionsSnap.docs.forEach((doc) => batch.delete(doc.ref));
-            batch.delete(artifactRef);
-            await batch.commit();
-          }
-
-          const now = new Date().toISOString();
-          await runRef.set({
-            current_phase: "RENDERER",
-            status: "LOCKED_WITH_LIMITATIONS",
-            runner_state: "IDLE",
-            runner_auto_continue: false,
-            runner_active_phase: "",
-            runner_last_error: "",
-            final_report_url: "",
-            updated_at: now
-          }, { merge: true });
-
-          const eventRef = runRef.collection("events").doc(crypto.randomUUID().replaceAll("-", ""));
-          await eventRef.set({
-            run_id: runId,
-            event_id: eventRef.id,
-            event_type: "OPERATOR_RENDERER_ARTIFACT_RESET",
-            actor: "github-actions-operator",
-            created_at: now,
-            payload: {
-              artifact_name: artifactName,
-              deleted_drive_file_id_present: Boolean(deletedDriveFileId),
-              deleted_latest_version: deletedLatestVersion,
-              prior_status: runBefore.status || "",
-              prior_current_phase: runBefore.current_phase || "",
-              reset_phase: "RENDERER"
-            }
-          });
-
-          const runAfter = (await runRef.get()).data();
-          const artifactAfter = await artifactRef.get();
-          console.log(JSON.stringify({
-            ok: true,
-            run_id: runId,
-            deleted_renderer_payload: artifactSnap.exists,
-            deleted_drive_file_id_present: Boolean(deletedDriveFileId),
-            deleted_latest_version: deletedLatestVersion,
-            before: {
-              status: runBefore.status || "",
-              current_phase: runBefore.current_phase || "",
-              runner_state: runBefore.runner_state || ""
-            },
-            after: {
-              status: runAfter.status || "",
-              current_phase: runAfter.current_phase || "",
-              runner_state: runAfter.runner_state || "",
-              renderer_artifact_exists: artifactAfter.exists
-            }
-          }, null, 2));
-          NODE
+          export GCLOUD_ACCESS_TOKEN="$(gcloud auth print-access-token)"
+          node .github/scripts/operator-renderer-reset.mjs
 
       - name: Rerun renderer once
         env:
@@ -180,38 +81,10 @@ jobs:
           echo
 
       - name: Verify renderer regenerated
-        working-directory: diligence-artifact-backend
         env:
           RUN_ID: ${{ inputs.run_id }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
-          node --input-type=module <<'NODE'
-          import { initializeApp, applicationDefault, getApps } from "firebase-admin/app";
-          import { getFirestore } from "firebase-admin/firestore";
-
-          const runId = process.env.RUN_ID;
-          const projectId = process.env.GCP_PROJECT_ID;
-          if (!getApps().length) initializeApp({ credential: applicationDefault(), projectId });
-          const runRef = getFirestore().collection("runs").doc(runId);
-          const run = (await runRef.get()).data();
-          const renderer = await runRef.collection("artifacts").doc("renderer_payload").get();
-          if (!renderer.exists) throw new Error("RENDERER_ARTIFACT_NOT_REGENERATED");
-          const meta = renderer.data();
-          if (run.status !== "COMPLETE" || run.current_phase !== "COMPLETE") {
-            throw new Error(`RUN_NOT_COMPLETE_AFTER_RENDERER:${run.status}:${run.current_phase}`);
-          }
-          console.log(JSON.stringify({
-            ok: true,
-            run_id: runId,
-            status: run.status,
-            current_phase: run.current_phase,
-            final_report_url: run.final_report_url || "",
-            renderer_payload: {
-              latest_version: meta.latest_version || meta.version || 0,
-              lock_status: meta.lock_status || "",
-              updated_at: meta.updated_at || meta.created_at || "",
-              drive_file_id_present: Boolean(meta.drive_file_id)
-            }
-          }, null, 2));
-          NODE
+          export GCLOUD_ACCESS_TOKEN="$(gcloud auth print-access-token)"
+          node .github/scripts/operator-renderer-verify.mjs
