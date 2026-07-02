@@ -13,7 +13,8 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
   const effectiveMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens);
 
   for (let round = 0; round < rounds; round += 1) {
-    for (const model of models) {
+    for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
+      const model = models[modelIndex];
       for (let offset = 0; offset < keysPerModel; offset += 1) {
         const keyIndex = (round * keysPerModel + offset) % keyCount;
         const key = config.geminiApiKeys[keyIndex];
@@ -55,6 +56,8 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             }
           };
         } catch (error) {
+          const errorType = providerErrorType(error);
+          const retryAfterDelayMs = errorType === "RATE_OR_QUOTA" ? providerRetryAfterDelayMs(error) : 0;
           errors.push({
             phase,
             model,
@@ -64,10 +67,15 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             message: error?.message || String(error),
             status: error?.status || null,
             finish_reason: error?.finishReason || null,
-            provider_error_type: providerErrorType(error)
+            provider_error_type: errorType,
+            retry_after_delay_ms: retryAfterDelayMs || null
           });
           if (!isRetryableGeminiError(error)) {
             throw new Error(`GEMINI_CALL_FAILED:${phase}:${JSON.stringify(errors)}`);
+          }
+          const isLastAttempt = round === rounds - 1 && modelIndex === models.length - 1 && offset === keysPerModel - 1;
+          if (!isLastAttempt && retryAfterDelayMs > 0) {
+            await sleep(retryAfterDelayMs);
           }
         }
       }
@@ -334,6 +342,19 @@ function providerErrorType(error) {
   if (status >= 500) return "PROVIDER_5XX";
   if (status >= 400) return "CLIENT_OR_CONFIG";
   return "UNKNOWN";
+}
+
+function providerRetryAfterDelayMs(error) {
+  const message = String(error?.message || "");
+  const match = message.match(/please retry in\s+([\d.]+)\s*(ms|s)\b/i);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  const unit = match[2].toLowerCase();
+  const rawDelay = unit === "ms" ? value : value * 1000;
+  const buffered = Math.ceil(rawDelay + Number(config.geminiQuotaRetryBufferMs || 0));
+  const max = Number(config.geminiQuotaRetryMaxDelayMs || 0);
+  return max > 0 ? Math.min(max, buffered) : buffered;
 }
 
 function backoffDelay(round) {

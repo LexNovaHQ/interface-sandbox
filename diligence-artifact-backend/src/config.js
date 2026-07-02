@@ -53,6 +53,8 @@ export const config = Object.freeze({
   geminiKeysPerModelPerRound: Math.max(1, numberEnv("GEMINI_KEYS_PER_MODEL_PER_ROUND", 2)),
   geminiRetryBaseDelayMs: Math.max(0, numberEnv("GEMINI_RETRY_BASE_DELAY_MS", 750)),
   geminiRetryMaxDelayMs: Math.max(0, numberEnv("GEMINI_RETRY_MAX_DELAY_MS", 5000)),
+  geminiQuotaRetryMaxDelayMs: Math.max(0, numberEnv("GEMINI_QUOTA_RETRY_MAX_DELAY_MS", 90000)),
+  geminiQuotaRetryBufferMs: Math.max(0, numberEnv("GEMINI_QUOTA_RETRY_BUFFER_MS", 1000)),
   sourceFetchTimeoutMs: numberEnv("SOURCE_FETCH_TIMEOUT_MS", 30000)
 });
 
@@ -76,6 +78,8 @@ export function configStatus() {
     gemini_max_output_tokens: config.geminiMaxOutputTokens || "unset_no_artificial_cap",
     gemini_retry_rounds: config.geminiRetryRounds,
     gemini_keys_per_model_per_round: config.geminiKeysPerModelPerRound,
+    gemini_quota_retry_max_delay_ms: config.geminiQuotaRetryMaxDelayMs,
+    gemini_quota_retry_buffer_ms: config.geminiQuotaRetryBufferMs,
     public_reviewer_enabled: config.publicReviewerEnabled,
     reviewer_public_base_url_present: Boolean(config.reviewerPublicBaseUrl),
     runs_sheet_name: config.runsSheetName
