@@ -17,7 +17,11 @@ if (!runId) {
   fail("Missing run_id in report URL.");
 } else {
   els.qualifiedReview.href = "qualified-review.html?run_id=" + encodeURIComponent(runId);
-  if (els.annexure) els.annexure.href = "#public-technical-annexure";
+  if (els.annexure) {
+    els.annexure.href = "/public/diligence-system/technical-annexure/" + encodeURIComponent(runId);
+    els.annexure.target = "_blank";
+    els.annexure.rel = "noopener";
+  }
   loadReport(runId).catch(function (error) { fail(error.message || String(error)); });
 }
 
@@ -42,7 +46,6 @@ async function loadReport(id) {
   }, payload.dashboard_tiles || [], payload.report_layers || []);
 
   const reportSections = payload.sections.map(renderSection);
-  if (payload.public_technical_annexure) reportSections.push(renderTechnicalAnnexure(payload.public_technical_annexure));
   replaceChildren(els.body, reportSections);
 }
 
@@ -136,20 +139,6 @@ function renderAllowedObject(object) {
   });
   table.append(tbody);
   return table;
-}
-
-function renderTechnicalAnnexure(annexure) {
-  const node = el("section", "report-section");
-  node.id = "public-technical-annexure";
-  node.append(el("div", "eyebrow", "Layer 2"));
-  node.append(el("h2", "", annexure.title || "Public Technical Annexure"));
-  node.append(el("p", "section-summary", annexure.display_rule || "Public technical annexure manifest."));
-  node.append(renderAllowedValue({
-    Run_ID: annexure.run_id,
-    Expected_Pack: annexure.expected_pack_name,
-    Report_Body_Inlines_Full_Payloads: annexure.report_body_inlines_full_payloads === false ? "No" : "Yes"
-  }));
-  return node;
 }
 
 function renderLimitations(items) {
