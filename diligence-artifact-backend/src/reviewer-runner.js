@@ -125,7 +125,7 @@ async function runM9HybridPhase({ run, phase, contract }) {
     logger: null
   });
   const finalArtifact = result.final_output?.[M9_FINAL_ARTIFACT_NAME];
-  const legalSignalOverlay = buildM7DeterministicLegalSignalOverlay({ artifacts: { [ART.legalIndex]: finalArtifact } });
+  const legalSignalOverlay = buildM7DeterministicLegalSignalOverlay({ artifacts: { ...artifacts, [ART.legalIndex]: finalArtifact } });
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: ART.m7LegalSignalOverlay, artifact: legalSignalOverlay, lock_status: "LOCKED" }));
   const phaseLockStatus = coerceModelStatus({ phase, status: result.final_validation?.status || resolveStatusFromArtifacts(finalArtifact), output: result.final_output });
   await logEvent({ run_id: run.run_id, event_type: "M9_HYBRID_PHASE_COMPLETED", actor: contract.agent_id, payload: { phase, writes: [...result.artifacts_saved_in_order, ART.m7LegalSignalOverlay], required_save_order: result.required_save_order, required_save_order_respected: result.required_save_order_respected, optional_artifacts_saved: result.optional_artifacts_saved, lock_status: phaseLockStatus, semantic_validation_status: result.semantic_validation?.status || "", final_validation_status: result.final_validation?.status || "", model_metadata: modelMetadata, m7_legal_signal_overlay_saved: true } });
