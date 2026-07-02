@@ -4,6 +4,7 @@ import { buildRendererPayload } from "../src/report-renderer.js";
 
 const reportHtml = readFileSync("public/interface-diligence/diligence-system/report.html", "utf8");
 const reportJs = readFileSync("public/interface-diligence/diligence-system/report.js", "utf8");
+const reportUiSyncJs = readFileSync("public/interface-diligence/diligence-system/report-ui-sync.js", "utf8");
 const reportTableCss = readFileSync("public/interface-diligence/diligence-system/report-table-overrides.css", "utf8");
 const technicalAnnexureHtml = readFileSync("public/interface-diligence/diligence-system/technical-annexure.html", "utf8");
 const technicalAnnexureJs = readFileSync("public/interface-diligence/diligence-system/technical-annexure.js", "utf8");
@@ -25,8 +26,18 @@ assert.ok(reportHtml.includes('class="report-page"'));
 assert.ok(reportHtml.includes('id="reportRail"'));
 assert.ok(reportHtml.includes('id="reportControlPanel"'));
 assert.ok(reportHtml.includes('id="reportDeckStatus"'));
-assert.ok(reportHtml.includes("report-table-overrides.css?v=report-responsive-tables-20260703"));
+assert.ok(reportHtml.includes("report-table-overrides.css?v=report-readable-cards-20260703"));
 assert.ok(reportHtml.includes("report.js?v=report-ui-panels-20260703"));
+assert.ok(reportHtml.includes("report-ui-sync.js?v=report-readable-cards-20260703"));
+
+assert.ok(reportUiSyncJs.includes("activeSectionFromScroll"));
+assert.ok(reportUiSyncJs.includes("window.addEventListener(\"scroll\""));
+assert.ok(reportUiSyncJs.includes("requestAnimationFrame(syncRailNow)"));
+assert.ok(reportUiSyncJs.includes("classifyCardLayouts"));
+assert.ok(reportUiSyncJs.includes("single-panel"));
+assert.ok(reportUiSyncJs.includes("two-panels"));
+assert.ok(reportUiSyncJs.includes("MutationObserver"));
+assert.ok(reportUiSyncJs.includes("setRailActive"));
 
 assert.ok(reportJs.includes("qualified-review.html?run_id="));
 assert.ok(reportJs.includes("technical-annexure.html?run_id="));
@@ -108,9 +119,15 @@ assert.ok(reportTableCss.includes(".col-wide"));
 assert.ok(reportTableCss.includes(".table-overflow-fallback"));
 assert.ok(reportTableCss.includes("@media (max-width: 760px)"));
 assert.ok(reportTableCss.includes("@media print"));
+assert.ok(reportTableCss.includes(".report-finding-layout.single-panel"));
+assert.ok(reportTableCss.includes(".report-finding-layout.two-panels"));
+assert.ok(reportTableCss.includes("font-size: clamp(.86rem"));
+assert.ok(reportTableCss.includes("grid-template-columns: minmax(92px"));
 assert.equal(reportTableCss.includes("width: max-content"), false);
 assert.equal(reportTableCss.includes("min-width: 960px"), false);
 assert.equal(reportTableCss.includes("max-height: calc(100vh - 112px); overflow: auto"), false);
+assert.equal(reportTableCss.includes("grid-template-columns: minmax(0, 1fr) minmax(300px,.84fr)"), false);
+assert.equal(reportTableCss.includes("font-size: .78rem"), false);
 
 assert.ok(technicalAnnexureHtml.includes("Public Technical Annexure"));
 assert.ok(technicalAnnexureJs.includes("/public/diligence-system/technical-annexure/"));
