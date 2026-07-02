@@ -6,7 +6,7 @@
   <title>Qualified Review</title>
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="./diligence-system.css" />
-  <link rel="stylesheet" href="./qualified-review.css" />
+  <link rel="stylesheet" href="./qualified-review.css?v=qr-single-controller-20260703" />
 </head>
 <body class="qr-page">
   <div class="progress-line" style="width:100%" aria-hidden="true"></div>
@@ -16,7 +16,6 @@
         <span class="wordmark-title">Interface</span>
         <span class="wordmark-subtitle">Diligence Engine</span>
       </a>
-      <nav class="qr-section-tabs" id="qualifiedReviewTabs" aria-label="Review sections"></nav>
     </div>
   </header>
 
@@ -46,7 +45,7 @@
             <div class="eyebrow">Review summary</div>
             <div id="handoffMeta">Loading review details...</div>
           </section>
-          <section class="qr-panel qr-head-card qr-workflow-card" id="qrWorkflowPanel">
+          <section class="qr-panel qr-head-card qr-workflow-card no-print" id="qrWorkflowPanel">
             <div class="eyebrow">Workflow</div>
             <p class="small-muted">Loading progress...</p>
           </section>
@@ -59,14 +58,14 @@
           <div id="handoffBody"></div>
         </section>
 
+        <section class="qr-panel qr-final-gate-card" id="qrFinalGatePanel"></section>
         <section class="qr-panel qr-alert-card hidden" id="qrValidationDrawer"></section>
       </main>
     </div>
 
-    <div class="footer-note qr-footer">Qualified Review workspace. Confirm or revise the answers before moving to the next step.</div>
+    <div class="footer-note qr-footer">Qualified Review workspace. Review each section, attest the section, and proceed only when the final review gate is ready.</div>
   </div>
 
-  <script src="./qualified-review-system/qualified-review.js"></script>
-  <script src="./qualified-review-system/qualified-review-workflow.js"></script>
+  <script src="./qualified-review-system/qualified-review.js?v=qr-single-controller-20260703"></script>
 </body>
 </html>
