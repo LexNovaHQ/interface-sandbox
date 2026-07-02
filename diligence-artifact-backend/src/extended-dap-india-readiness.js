@@ -1,59 +1,322 @@
-const STATUSES = Object.freeze(["VISIBLE_CONTROL_PRESENT", "NOT_VISIBLE_AFTER_TARGETED_SEARCH", "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND", "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR", "ACCESS_FAILED", "UNKNOWN_NOT_SEARCHED", "CONFLICTING_SIGNALS", "NOT_APPLICABLE"]);
-const C = "c" + "ert";
-const SEC = "sec" + "urity";
-const INC = "inc" + "ident";
-const BR = "br" + "each";
-const TERMS = Object.freeze({
-  india: ["india", "indian", "dpdp", "dpdpa", "digital personal data protection", "data principal", "consent manager", C + "-in", "grievance officer", ".in"],
-  global: ["global", "worldwide", "international", "around the world", "all countries"],
-  personal: ["personal data", "personal information", "account data", "profile data", "email address", "customer data", "user data", "data subject", "data principal"],
-  child: ["child", "children", "minor", "under 18", "student", "youth", "parental", "guardian"],
-  transfer: ["transfer", "cross-border", "subprocessor", "processor", "vendor", "hosting", "storage location", "residency", "localization", "localisation"],
-  notice: ["privacy notice", "privacy policy", "notice", "purpose", "consent", "authorization", "withdraw", "opt-out", "delete", "settings"],
-  rights: ["access", "correction", "deletion", "export", "complaint", "grievance", "dispute", "rights request"],
-  sec: [SEC, "encryption", "access control", "rbac", "least privilege", "soc 2", "iso 27001", "audit", "trust center"],
-  event: [BR, INC, "notification", C + "-in", "six hour", "6 hour", "point of contact"],
-  retention: ["log", "audit trail", "telemetry", "monitoring", "backup", "retention", "180 days", "six months"],
-  sdf: ["significant data fiduciary", "sdf", "dpo", "data protection officer", "dpia", "impact assessment", "independent audit", "large scale", "high risk"]
-});
-const FIELD_IDS = Object.freeze([
-  "india_market_scope_signal", "india_exclusion_or_no_exclusion_signal", "india_operations_signal",
-  "india_personal_data_processing_signal", "india_data_principal_population_signal", "india_role_mapping_candidate",
-  "india_dpdp_notice_surface_signal", "india_purpose_specificity_signal", "india_consent_authorization_signal", "india_withdrawal_revocation_signal", "india_language_accessibility_signal", "india_consent_manager_public_signal",
-  "india_rights_route_signal", "india_grievance_contact_signal", "india_rights_gap_request",
-  "india_children_under_18_signal", "india_child_consent_route_signal", "india_child_tracking_or_ads_signal", "india_child_data_missing_proof",
-  "india_cross_border_transfer_signal", "india_vendor_transfer_map_signal", "india_transfer_safeguard_signal", "india_restricted_territory_screening_gap",
-  ["india", BR, "notification", "signal"].join("_"), ["india", C, "in", "reporting", "signal"].join("_"), ["india", C, "in", "poc", "public", "signal"].join("_"), "india_six_hour_reporting_workflow_signal", ["india", C, "in", "missing", "proof"].join("_"),
-  "india_log_retention_signal", "india_180_day_log_signal", "india_logs_accessible_in_india_signal", "india_audit_trail_signal",
-  ["india", SEC, "policy", "signal"].join("_"), "india_access_control_signal", ["india", "vendor", SEC, "terms", "signal"].join("_"), ["india", INC, "response", "signal"].join("_"), "india_data_protection_procedure_signal",
-  "india_large_scale_data_gap", "india_dpo_route_signal", "india_dpia_audit_signal", "india_sdf_missing_proof", "india_sensitive_high_risk_context_signal"
+const EVIDENCE_STRENGTHS = Object.freeze(["strong", "partial", "weak", "not_visible", "conflicting"]);
+const INTERNAL_STATUSES = Object.freeze(["FACTUAL_BASE_STRONG", "FACTUAL_BASE_PARTIAL", "FACTUAL_BASE_WEAK", "NOT_VISIBLE_PUBLIC_FOOTPRINT", "CONFLICTING_PUBLIC_SIGNALS"]);
+
+const FIELD_DEFINITIONS = Object.freeze([
+  f("market_scope_and_india_relevance", "Scope, Market & Applicability", "Market scope and India relevance", ["india", "indian", "global", "worldwide", ".in", "dpdp", "data principal"], ["TP.JUR.*", "DAP.READY.001"]),
+  f("public_footprint_review_boundary", "Scope, Market & Applicability", "Public-footprint review boundary", ["privacy policy", "terms", "trust center", "security", "subprocessor", "dpa", "data processing"], ["DAP.LIM.*", "DAP.REQ.*"]),
+  f("jurisdictional_applicability_assumptions", "Scope, Market & Applicability", "Jurisdictional applicability assumptions", ["india", "global", "jurisdiction", "applicable law", "governing law", "data principal"], ["DAP.READY.001", "DAP.LIM.*"]),
+
+  f("activity_to_data_flow_map", "M8 Activity-to-Data Flow Integration", "Activity-to-data flow map", ["activity", "workflow", "upload", "input", "output", "api", "model", "processing"], ["DAP.FLOW.*", "DAP.OBJ.*"]),
+  f("personal_data_categories_by_activity", "M8 Activity-to-Data Flow Integration", "Personal data categories by activity", ["personal data", "personal information", "email", "name", "phone", "account", "profile", "usage", "device", "location"], ["DAP.OBJ.001", "DAP.OBJ.002", "DAP.PARTY.*"]),
+  f("input_output_and_derived_data_treatment", "M8 Activity-to-Data Flow Integration", "Input, output and derived data treatment", ["input", "prompt", "upload", "output", "generated", "derived", "embedding", "transcript", "telemetry"], ["DAP.OBJ.004", "DAP.OBJ.006", "DAP.FLOW.*"]),
+  f("ai_model_processing_chain_by_activity", "M8 Activity-to-Data Flow Integration", "AI model processing chain by activity", ["model", "ai", "foundation model", "inference", "training", "fine-tuning", "embedding", "api"], ["DAP.DOM.*", "DAP.FLOW.*"]),
+  f("activity_level_data_protection_risk_notes", "M8 Activity-to-Data Flow Integration", "Activity-level data-protection risk notes", ["sensitive", "high risk", "personal data", "children", "biometric", "health", "financial", "automated"], ["DAP.SENS.*", "DAP.READY.*"]),
+
+  f("affected_person_categories", "Affected Persons", "Affected person categories", ["user", "customer", "developer", "employee", "consumer", "data subject", "data principal", "visitor"], ["DAP.PARTY.001", "DAP.PARTY.002"]),
+  f("customer_user_data_principal_relationship", "Affected Persons", "Customer/user/data-principal relationship", ["customer", "end user", "user", "data subject", "data principal", "account", "enterprise"], ["DAP.PARTY.*", "DAP.ROLE.*"]),
+  f("enterprise_vs_end_user_population_signal", "Affected Persons", "Enterprise versus end-user population signal", ["enterprise", "business", "developer", "consumer", "individual", "team", "organization"], ["DAP.PARTY.*", "DAP.ROLE.*"]),
+
+  f("role_allocation_candidate", "Role & Responsibility", "Role allocation candidate", ["controller", "processor", "service provider", "data fiduciary", "data processor", "customer", "vendor", "on behalf"], ["DAP.ROLE.001", "DAP.ROLE.002", "DAP.ROLE.003"]),
+  f("controller_processor_fiduciary_ambiguity", "Role & Responsibility", "Controller/processor/fiduciary ambiguity", ["controller", "processor", "fiduciary", "on behalf", "customer data", "data processing agreement", "dpa"], ["DAP.ROLE.006", "DAP.ROLE.008"]),
+  f("customer_vendor_relationship_signal", "Role & Responsibility", "Customer/vendor relationship signal", ["customer", "vendor", "service provider", "subprocessor", "partner", "supplier", "third party"], ["DAP.ROLE.*", "DAP.VEND.*"]),
+  f("role_confirmation_needed_for_docs", "Role & Responsibility", "Role confirmation needed for documents", ["controller", "processor", "fiduciary", "dpa", "customer data", "on behalf", "instructions"], ["DAP.REQ.*", "DAP.ROLE.008"]),
+
+  f("privacy_notice_surface", "Notice, Purpose, Consent & Rights", "Privacy notice surface", ["privacy policy", "privacy notice", "notice", "personal data", "personal information"], ["DAP.CTRL.001", "DAP.CTRL.002"]),
+  f("purpose_and_use_mapping", "Notice, Purpose, Consent & Rights", "Purpose and use mapping", ["purpose", "use", "process", "provide", "improve", "analytics", "marketing", "training"], ["DAP.AUTH.*", "DAP.FLOW.*"]),
+  f("consent_authorization_posture", "Notice, Purpose, Consent & Rights", "Consent / authorization posture", ["consent", "authorize", "permission", "opt-in", "lawful basis", "instructions"], ["DAP.AUTH.*", "DAP.CTRL.*"]),
+  f("withdrawal_deletion_export_routes", "Notice, Purpose, Consent & Rights", "Withdrawal, deletion and export routes", ["withdraw", "delete", "deletion", "export", "access", "correction", "portability", "settings"], ["DAP.CTRL.*", "DAP.RET.*"]),
+  f("rights_and_grievance_route", "Notice, Purpose, Consent & Rights", "Rights and grievance route", ["rights", "grievance", "complaint", "contact", "dpo", "privacy@", "officer"], ["DAP.PARTY.006", "DAP.CTRL.*", "DAP.READY.005"]),
+  f("language_accessibility_and_user_control_notes", "Notice, Purpose, Consent & Rights", "Language accessibility and user-control notes", ["language", "local language", "settings", "preferences", "dashboard", "account controls", "help center"], ["DAP.CTRL.*", "DAP.READY.*"]),
+
+  f("vendor_and_subprocessor_inventory_visibility", "Vendors, Sharing & Transfers", "Vendor/subprocessor inventory visibility", ["subprocessor", "processor", "vendor", "supplier", "service provider", "third party", "partner"], ["DAP.VEND.001", "DAP.VEND.002"]),
+  f("third_party_sharing_posture", "Vendors, Sharing & Transfers", "Third-party sharing posture", ["share", "disclose", "third party", "partner", "affiliate", "vendor", "service provider"], ["DAP.VEND.*", "DAP.LOC.*"]),
+  f("cross_border_transfer_and_custody_posture", "Vendors, Sharing & Transfers", "Cross-border transfer and custody posture", ["transfer", "cross-border", "international", "worldwide", "location", "region", "hosting", "storage"], ["DAP.LOC.001", "DAP.LOC.002", "DAP.LOC.004"]),
+  f("hosting_storage_location_visibility", "Vendors, Sharing & Transfers", "Hosting/storage location visibility", ["hosting", "hosted", "storage", "data center", "region", "cloud", "aws", "gcp", "azure"], ["DAP.LOC.*", "DAP.VEND.*"]),
+  f("transfer_safeguard_and_change_notice_gaps", "Vendors, Sharing & Transfers", "Transfer safeguard and change-notice gaps", ["safeguard", "standard contractual", "transfer", "subprocessor notice", "change notice", "objection"], ["DAP.LOC.*", "DAP.REQ.*"]),
+
+  f("retention_period_visibility", "Retention, Deletion, Logs & Portability", "Retention period visibility", ["retention", "retain", "retained", "storage period", "delete after", "backup"], ["DAP.RET.001", "DAP.RET.002"]),
+  f("deletion_return_export_controls", "Retention, Deletion, Logs & Portability", "Deletion, return and export controls", ["delete", "deletion", "return", "export", "portability", "download", "erase"], ["DAP.RET.*", "DAP.CTRL.*"]),
+  f("logging_telemetry_and_audit_trail_posture", "Retention, Deletion, Logs & Portability", "Logging, telemetry and audit-trail posture", ["log", "logging", "telemetry", "audit trail", "monitoring", "analytics", "diagnostic"], ["DAP.RET.*", "DAP.SEC.*"]),
+  f("india_log_retention_cert_in_review_note", "Retention, Deletion, Logs & Portability", "India log-retention / CERT-In review note", ["cert-in", "six hour", "6 hour", "180 days", "six months", "log retention", "incident report"], ["DAP.READY.*", "DAP.RET.*", "DAP.SEC.*"]),
+
+  f("security_control_visibility", "Security, Access & Incident", "Security-control visibility", ["security", "encryption", "tls", "aes", "soc 2", "iso 27001", "access control", "rbac"], ["DAP.SEC.001", "DAP.SEC.002"]),
+  f("access_control_and_internal_governance_posture", "Security, Access & Incident", "Access-control and internal-governance posture", ["access control", "least privilege", "rbac", "employee access", "internal", "policy", "audit"], ["DAP.SEC.*", "DAP.READY.*"]),
+  f("incident_breach_response_visibility", "Security, Access & Incident", "Incident/breach response visibility", ["incident", "breach", "notification", "security event", "report", "response plan"], ["DAP.SEC.*", "DAP.READY.*"]),
+  f("security_certification_and_policy_reliance_limits", "Security, Access & Incident", "Security certification and policy reliance limits", ["soc 2", "iso 27001", "certification", "audit", "trust center", "security policy"], ["DAP.SEC.*", "DAP.LIM.*"]),
+
+  f("children_sensitive_and_high_risk_context", "Sensitive, Children & High-Risk", "Children, sensitive and high-risk context", ["children", "minor", "under 18", "biometric", "health", "financial", "sensitive", "high risk"], ["DAP.SENS.*", "DAP.READY.*"]),
+  f("ai_training_profiling_and_automated_decisioning_review_note", "Sensitive, Children & High-Risk", "AI training, profiling and automated-decisioning review note", ["training", "fine-tuning", "model improvement", "profiling", "automated decision", "human review", "inference", "ai"], ["DAP.DOM.*", "DAP.SENS.*", "DAP.READY.*"])
 ]);
 
 export function buildExtendedDapIndiaReadinessProfile({ run = {}, artifacts = {} } = {}) {
   const rows = flattenArtifacts(artifacts);
-  const signals = Object.fromEntries(Object.keys(TERMS).map((key) => [key, findRows(rows, TERMS[key], 8)]));
-  const fields = FIELD_IDS.map((fieldId, index) => deriveField({ fieldId, index, rows, signals }));
-  const missing = fields.filter((field) => field.missing_proof_required).map((field) => ({ request_id: `IND-REQ-${String(field.field_index).padStart(3, "0")}`, field_id: field.field_id, status: field.status, question: field.question, fdr_rows: field.fdr_rows, vault_question_id: field.vault_question_id }));
-  const sections = Object.fromEntries([...new Set(fields.map((field) => field.section))].map((section) => [section, fields.filter((field) => field.section === section)]));
-  const validationStatus = fields.length === 42 && fields.every((field) => STATUSES.includes(field.status)) ? (missing.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED") : "REPAIR_REQUIRED";
-  return { extended_dap_india_readiness_profile: { artifact_type: "extended_dap_india_readiness_profile", profile_version: "extended_dap_india_readiness_v1", run_id: run.run_id || "UNKNOWN_RUN", generated_at: new Date().toISOString(), derivation_mode: "DETERMINISTIC_NO_MODEL", source_boundary: "PUBLIC_SOURCE_ONLY", base_m10_profile_ref: "data_provenance_profile", base_m10_forensics_ref: "data_provenance_profile_forensics", field_derivation_registry_basis: "FIELD_DERIVATION_REGISTRY_v2_LOCKED.csv", anti_unknown_protocol: { source: "M10", raw_unknown_forbidden: true, allowed_statuses: STATUSES }, status: validationStatus, lock_status: validationStatus, field_count: fields.length, status_counts: countBy(fields, (field) => field.status), signal_summary: signalSummary(signals), fields, sections, vault_question_map: fields.map((field) => ({ field_id: field.field_id, vault_question_id: field.vault_question_id, status: field.status, source_refs: field.source_refs, missing_proof_required: field.missing_proof_required })), doc_stack_router_seed: buildDocStackRouterSeed(fields), missing_proof_requests: missing, limitations: buildLimitations({ artifacts, signals, missing }), model_enrichment_policy: { model_required: false, model_used: false, model_may_only_reconcile_ambiguous_public_text: true, model_must_not_override_absence_or_fill_private_facts: true }, validation_quality_control_result: { status: validationStatus === "REPAIR_REQUIRED" ? "REPAIR_REQUIRED" : missing.length ? "PASS_WITH_LIMITATION" : "PASS", expected_field_count: 42, actual_field_count: fields.length, all_statuses_allowed: fields.every((field) => STATUSES.includes(field.status)), deterministic: true, model_usage: "NONE_DETERMINISTIC" } } };
+  const m10 = unwrap(artifacts.data_provenance_profile, "data_provenance_profile");
+  const m8 = unwrap(artifacts.target_feature_profile, "target_feature_profile");
+  const activities = normalizeActivities(m8);
+  const dataCategories = collectDataCategories(m10);
+  const fields = FIELD_DEFINITIONS.map((definition, index) => deriveField({ definition, index, rows, activities, dataCategories, m10 }));
+  const missing = fields.filter((field) => field.missing_proof_required).map((field) => ({
+    request_id: `DAP-REQ-${String(field.field_index).padStart(3, "0")}`,
+    field_id: field.field_id,
+    field_title: field.field_title,
+    field_status: field.status,
+    status: "PROOF_REQUESTED",
+    required_action: field.qualified_review_action,
+    blocking: false,
+    registry_basis: field.registry_basis
+  }));
+  const sections = Object.fromEntries([...new Set(fields.map((field) => field.category))].map((category) => [category, fields.filter((field) => field.category === category)]));
+  const status = fields.some((field) => field.evidence_strength === "conflicting") ? "LOCKED_WITH_LIMITATIONS" : missing.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
+  return {
+    extended_dap_india_readiness_profile: {
+      artifact_type: "extended_dap_india_readiness_profile",
+      profile_version: "extended_dap_india_readiness_v2_substantive_field_base",
+      run_id: run.run_id || "UNKNOWN_RUN",
+      generated_at: new Date().toISOString(),
+      derivation_mode: "DETERMINISTIC_SUBSTANTIVE_FIELD_BASE_NO_MODEL",
+      source_boundary: "PUBLIC_SOURCE_ONLY",
+      base_m10_profile_ref: "data_provenance_profile",
+      m8_activity_profile_ref: "target_feature_profile",
+      registry_family_basis: "DAP.* rows from FIELD_DERIVATION_REGISTRY_v2_LOCKED.csv",
+      output_policy: {
+        machine_signal_statuses_are_internal_only: true,
+        public_report_should_use_finding_factual_basis_limitation_action: true,
+        no_legal_compliance_conclusion: true,
+        no_dpdp_certification: true
+      },
+      status,
+      lock_status: status,
+      field_count: fields.length,
+      expected_field_count: 36,
+      evidence_strength_counts: countBy(fields, (field) => field.evidence_strength),
+      status_counts: countBy(fields, (field) => field.status),
+      activity_count: activities.length,
+      data_category_count: dataCategories.length,
+      fields,
+      sections,
+      public_report_seed: buildPublicReportSeed(fields),
+      missing_proof_requests: missing,
+      limitations: buildLimitations({ artifacts, fields, activities, dataCategories }),
+      validation_quality_control_result: {
+        status: fields.length === 36 && fields.every((field) => EVIDENCE_STRENGTHS.includes(field.evidence_strength)) ? (status === "LOCKED" ? "PASS" : "PASS_WITH_LIMITATION") : "REPAIR_REQUIRED",
+        expected_field_count: 36,
+        actual_field_count: fields.length,
+        substantive_field_base: true,
+        all_evidence_strengths_allowed: fields.every((field) => EVIDENCE_STRENGTHS.includes(field.evidence_strength)),
+        deterministic: true,
+        model_usage: "NONE_DETERMINISTIC"
+      }
+    }
+  };
 }
-function deriveField({ fieldId, index, rows, signals }) { const group = groupFor(fieldId); const evidence = findRows(rows, TERMS[group] || [], 6); const requires = requiresFor(fieldId); const mode = modeFor(fieldId); const precondition = preconditionMet(requires, signals); let status = "NOT_VISIBLE_AFTER_TARGETED_SEARCH"; let derivation_note = "Specific public-source signal not visible after targeted deterministic scan."; if (fieldId === "india_market_scope_signal" && signals.india.length) { status = "VISIBLE_CONTROL_PRESENT"; derivation_note = "India-specific public signal found."; } else if (fieldId === "india_market_scope_signal" && signals.global.length) { status = "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR"; derivation_note = "Global scope visible; India-specific scope not expressly confirmed."; } else if (mode === "gap_only") { status = precondition ? (evidence.length ? "VISIBLE_CONTROL_PRESENT" : "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND") : "NOT_APPLICABLE"; derivation_note = precondition ? (evidence.length ? "Control evidence found for gap screen." : "Precondition visible but proof/control not visible.") : "Precondition for gap screen not visible."; } else if (evidence.length) { status = mode === "candidate" ? "VISIBLE_BUT_CONTROL_WEAK_OR_UNCLEAR" : "VISIBLE_CONTROL_PRESENT"; derivation_note = mode === "candidate" ? "Candidate-only public-source readiness signal; no legal conclusion generated." : "Public evidence supports this readiness signal."; } else if (mode === "gap_when_missing" && precondition) { status = "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND"; derivation_note = "Precondition visible but specific public proof/control not visible."; } else if (!precondition) { status = "NOT_APPLICABLE"; derivation_note = "Required public precondition is not visible."; } const sourceRefs = (evidence.length ? evidence : fallbackEvidence({ requires, status, signals })).slice(0, 4).map((item) => ({ artifact_name: item.artifact_name, source_path: item.path, excerpt: item.excerpt })); return { field_index: index + 1, field_id: fieldId, section: sectionFor(fieldId), question: titleize(fieldId), status, value_summary: sourceRefs.length ? sourceRefs[0].excerpt : "No direct public evidence captured.", derivation_note, fdr_rows: fdrRowsFor(fieldId), vault_question_id: vaultQuestionFor(fieldId), doc_stack_effect: docStackEffect(fieldId), source_refs: sourceRefs, evidence_count: sourceRefs.length, missing_proof_required: mode === "gap_only" || mode === "gap_when_missing" || ["VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND", "NOT_VISIBLE_AFTER_TARGETED_SEARCH", "UNKNOWN_NOT_SEARCHED", "ACCESS_FAILED", "CONFLICTING_SIGNALS"].includes(status), model_usage: "NONE_DETERMINISTIC" }; }
-function sectionFor(x) { if (x.includes("market") || x.includes("operations") || x.includes("exclusion")) return "market_scope"; if (x.includes("role") || x.includes("principal") || x.includes("personal_data")) return "personal_data_and_role"; if (x.includes("notice") || x.includes("purpose") || x.includes("consent") || x.includes("withdrawal") || x.includes("rights") || x.includes("grievance") || x.includes("language")) return "notice_consent_rights"; if (x.includes("child") || x.includes("children")) return "children_tracking"; if (x.includes("transfer") || x.includes("vendor") || x.includes("territory")) return "vendors_transfers"; if (x.includes("cert") || x.includes("breach") || x.includes("six_hour")) return "security_event"; if (x.includes("log") || x.includes("audit_trail")) return "logs_audit_retention"; if (x.includes("security") || x.includes("access_control") || x.includes("procedure") || x.includes("incident_response")) return "reasonable_security"; return "sdf_dpia_audit_screen"; }
-function groupFor(x) { if (x.includes("principal") || x.includes("personal_data")) return "personal"; if (x.includes("child")) return "child"; if (x.includes("transfer") || x.includes("vendor") || x.includes("territory")) return "transfer"; if (x.includes("notice") || x.includes("purpose") || x.includes("consent") || x.includes("withdrawal") || x.includes("language")) return "notice"; if (x.includes("rights") || x.includes("grievance")) return "rights"; if (x.includes("cert") || x.includes("breach") || x.includes("six_hour") || x.includes("incident_response")) return "event"; if (x.includes("log") || x.includes("audit_trail")) return "retention"; if (x.includes("security") || x.includes("access_control") || x.includes("procedure")) return "sec"; if (x.includes("sdf") || x.includes("dpo") || x.includes("dpia") || x.includes("large_scale") || x.includes("sensitive")) return "sdf"; return "india"; }
-function requiresFor(x) { if (x.includes("child")) return "children"; if (x.includes("transfer") || x.includes("vendor") || x.includes("territory")) return "transfer"; if (x.includes("security") || x.includes("incident") || x.includes("log") || x.includes("audit_trail")) return "security"; if (x.includes("personal") || x.includes("principal") || x.includes("role") || x.includes("notice") || x.includes("purpose") || x.includes("consent") || x.includes("rights") || x.includes("grievance") || x.includes("sdf") || x.includes("dpo") || x.includes("dpia") || x.includes("large_scale") || x.includes("sensitive")) return "india_personal"; if (x.includes("cert") || x.includes("six_hour")) return "india"; return ""; }
-function modeFor(x) { if (x.includes("gap") || x.includes("missing_proof")) return "gap_only"; if (x.includes("consent_manager") || x.includes("six_hour") || x.includes("180_day") || x.includes("logs_accessible")) return "gap_when_missing"; if (x.includes("role_mapping")) return "candidate"; return ""; }
-function fdrRowsFor(x) { if (x.includes("role")) return ["DAP.ROLE.*"]; if (x.includes("child")) return ["DAP.SENS.001", "DAP.CTRL.*", "DAP.REQ.*"]; if (x.includes("transfer") || x.includes("vendor") || x.includes("territory")) return ["DAP.VEND.*", "DAP.LOC.*"]; if (x.includes("security") || x.includes("incident") || x.includes("breach") || x.includes("cert") || x.includes("log") || x.includes("audit")) return ["DAP.SEC.*", "DAP.RET.*", "DAP.READY.*", "DAP.REQ.*"]; if (x.includes("sdf") || x.includes("dpo") || x.includes("dpia") || x.includes("sensitive")) return ["DAP.SENS.*", "DAP.READY.*", "DAP.REQ.*"]; if (x.includes("notice") || x.includes("purpose") || x.includes("consent") || x.includes("withdrawal") || x.includes("rights") || x.includes("grievance")) return ["DAP.AUTH.*", "DAP.CTRL.*", "DAP.PARTY.006", "DAP.READY.005"]; if (x.includes("personal") || x.includes("principal")) return ["DAP.OBJ.002", "DAP.PARTY.*", "DAP.FLOW.*"]; return ["TP.JUR.*", "TP.BIZ.003", "LGC.CTRL.*"]; }
-function vaultQuestionFor(x) { return `india.${x.replace(/^india_/, "")}`; }
-function preconditionMet(requires, signals) { if (!requires) return true; const india = signals.india.length || signals.global.length; if (requires === "india") return Boolean(india); if (requires === "india_personal") return Boolean(india && signals.personal.length); if (requires === "children") return Boolean(india && signals.child.length); if (requires === "transfer") return Boolean(india && signals.transfer.length); if (requires === "security") return Boolean(india && (signals.sec.length || signals.event.length)); return true; }
-function fallbackEvidence({ requires, status, signals }) { if (status === "NOT_APPLICABLE") return []; if (requires === "india_personal") return [...signals.india, ...signals.global, ...signals.personal]; if (requires === "india") return [...signals.india, ...signals.global]; if (requires === "children") return [...signals.child, ...signals.india, ...signals.global]; if (requires === "transfer") return [...signals.transfer, ...signals.india, ...signals.global]; if (requires === "security") return [...signals.sec, ...signals.event, ...signals.india, ...signals.global]; return []; }
-function flattenArtifacts(artifacts) { const rows = []; for (const [artifactName, artifact] of Object.entries(artifacts || {})) flattenValue(rows, artifactName, artifactName, artifact); return rows; }
-function flattenValue(rows, artifactName, path, value) { if (value == null) return; if (["string", "number", "boolean"].includes(typeof value)) { rows.push({ artifact_name: artifactName, path, text: String(value) }); return; } if (Array.isArray(value)) return value.slice(0, 300).forEach((item, i) => flattenValue(rows, artifactName, `${path}[${i}]`, item)); if (typeof value === "object") return Object.entries(value).slice(0, 300).forEach(([key, child]) => flattenValue(rows, artifactName, `${path}.${key}`, child)); }
-function findRows(rows, terms, limit) { const found = []; for (const row of rows) { const text = String(row.text || ""); const lower = text.toLowerCase(); if (terms.some((term) => lower.includes(String(term).toLowerCase()))) { found.push({ artifact_name: row.artifact_name, path: row.path, excerpt: excerpt(text) }); if (found.length >= limit) break; } } return found; }
-function excerpt(text) { const compact = String(text || "").replace(/\s+/g, " ").trim(); return compact.length > 220 ? `${compact.slice(0, 217)}...` : compact; }
-function titleize(value) { return String(value).replace(/^india_/, "").replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()); }
-function signalSummary(signals) { return Object.fromEntries(Object.entries(signals).map(([key, value]) => [`${key}_signal_count`, value.length])); }
-function countBy(items, fn) { return items.reduce((acc, item) => { const key = fn(item); acc[key] = (acc[key] || 0) + 1; return acc; }, {}); }
-function docStackEffect(fieldId) { if (fieldId.includes("cert") || fieldId.includes("incident") || fieldId.includes("log") || fieldId.includes("security")) return ["DOC_AI_A_DPA", "DOC_AI_B_SOP", "DOC_AI_B_DPIA"]; if (fieldId.includes("child") || fieldId.includes("consent") || fieldId.includes("rights") || fieldId.includes("notice")) return ["DOC_AI_A_PP", "DOC_AI_A_DPA", "DOC_AI_A_AUP"]; if (fieldId.includes("transfer") || fieldId.includes("vendor")) return ["DOC_AI_A_DPA", "DOC_AI_A_PP"]; if (fieldId.includes("sdf") || fieldId.includes("dpia") || fieldId.includes("dpo")) return ["DOC_AI_A_DPA", "DOC_AI_B_DPIA"]; return ["DOC_AI_A_PP", "DOC_AI_A_DPA"]; }
-function buildDocStackRouterSeed(fields) { return fields.reduce((acc, row) => { for (const doc of row.doc_stack_effect) { acc[doc] ||= { document_id: doc, trigger_fields: [], missing_proof_fields: [] }; acc[doc].trigger_fields.push(row.field_id); if (row.missing_proof_required) acc[doc].missing_proof_fields.push(row.field_id); } return acc; }, {}); }
-function buildLimitations({ artifacts, signals, missing }) { const out = ["Public-source-only India readiness profile. No private facts, legal conclusions, compliance verdicts, or local counsel determinations generated."]; if (!artifacts?.data_provenance_profile) out.push("Base data_provenance_profile artifact was not available to 4B."); if (!artifacts?.data_provenance_profile_forensics) out.push("Base data_provenance_profile_forensics artifact was not available to 4B."); if (!signals.india.length) out.push("No express India-specific public signal found; global scope signals are weak India routing signals only."); if (missing.length) out.push(`${missing.length} India readiness fields require missing-proof or qualified-review confirmation before document assembly reliance.`); return out; }
+
+function f(field_id, category, field_title, terms, registry_basis) {
+  return { field_id, category, field_title, terms, registry_basis };
+}
+
+function deriveField({ definition, index, rows, activities, dataCategories, m10 }) {
+  const evidence = findRows(rows, definition.terms, 5);
+  const linkedActivities = linkActivities(activities, definition.terms);
+  const linkedDataCategories = linkDataCategories(dataCategories, definition.terms);
+  const m10Basis = findM10Basis(m10, definition.terms);
+  const strength = evidenceStrength({ evidence, linkedActivities, linkedDataCategories, m10Basis });
+  const status = statusForStrength(strength);
+  const finding = buildFinding({ definition, evidence, linkedActivities, linkedDataCategories, m10Basis, strength });
+  const limitation = limitationFor({ definition, strength, evidence, linkedActivities });
+  const qualifiedReviewAction = reviewActionFor({ definition, strength, limitation });
+  return {
+    field_index: index + 1,
+    field_id: definition.field_id,
+    field_title: definition.field_title,
+    category: definition.category,
+    finding,
+    factual_basis: factualBasis({ evidence, linkedActivities, linkedDataCategories, m10Basis }),
+    linked_m8_activity_ids: linkedActivities.map((activity) => activity.activity_id),
+    linked_m8_activity_labels: linkedActivities.map((activity) => activity.label),
+    linked_data_categories: linkedDataCategories,
+    registry_basis: definition.registry_basis,
+    source_evidence: evidence.map((row) => ({ artifact_name: row.artifact_name, source_path: row.path, excerpt: row.excerpt })),
+    evidence_strength: strength,
+    limitation,
+    qualified_review_action: qualifiedReviewAction,
+    status,
+    value_summary: finding,
+    question: definition.field_title,
+    missing_proof_required: ["weak", "not_visible", "conflicting"].includes(strength),
+    model_usage: "NONE_DETERMINISTIC"
+  };
+}
+
+function evidenceStrength({ evidence, linkedActivities, linkedDataCategories, m10Basis }) {
+  const score = evidence.length + linkedActivities.length + linkedDataCategories.length + (m10Basis ? 1 : 0);
+  if (evidence.some((row) => /conflict|contradict|inconsistent/i.test(row.excerpt))) return "conflicting";
+  if (score >= 4 && evidence.length >= 2) return "strong";
+  if (score >= 2) return "partial";
+  if (score === 1) return "weak";
+  return "not_visible";
+}
+
+function statusForStrength(strength) {
+  return ({ strong: "FACTUAL_BASE_STRONG", partial: "FACTUAL_BASE_PARTIAL", weak: "FACTUAL_BASE_WEAK", not_visible: "NOT_VISIBLE_PUBLIC_FOOTPRINT", conflicting: "CONFLICTING_PUBLIC_SIGNALS" })[strength] || "NOT_VISIBLE_PUBLIC_FOOTPRINT";
+}
+
+function buildFinding({ definition, evidence, linkedActivities, linkedDataCategories, m10Basis, strength }) {
+  if (strength === "not_visible") return `${definition.field_title}: not substantively visible in the reviewed public materials.`;
+  const parts = [];
+  if (linkedActivities.length) parts.push(`linked to ${linkedActivities.length} public product/activity signal(s)`);
+  if (linkedDataCategories.length) parts.push(`touching ${list(linkedDataCategories.slice(0, 5))}`);
+  if (evidence.length) parts.push(`with public evidence from ${list(unique(evidence.map((row) => row.artifact_name)).slice(0, 3))}`);
+  if (m10Basis) parts.push(`and corroborated by the base data profile`);
+  const posture = strength === "strong" ? "is substantively supported by the public-footprint record" : strength === "partial" ? "is partially supported but requires confirmation before reliance" : "has only a weak public-footprint signal";
+  return `${definition.field_title}: ${posture}${parts.length ? `, ${parts.join(", ")}` : ""}.`;
+}
+
+function factualBasis({ evidence, linkedActivities, linkedDataCategories, m10Basis }) {
+  const basis = [];
+  if (linkedActivities.length) basis.push(`M8 activities: ${list(linkedActivities.map((activity) => activity.label).slice(0, 4))}.`);
+  if (linkedDataCategories.length) basis.push(`Data categories: ${list(linkedDataCategories.slice(0, 6))}.`);
+  if (m10Basis) basis.push(`M10 profile basis: ${trunc(m10Basis)}.`);
+  if (evidence.length) basis.push(`Public evidence: ${trunc(evidence[0].excerpt)}.`);
+  return basis.length ? basis.join(" ") : "No specific public-footprint basis was captured for this field.";
+}
+
+function limitationFor({ definition, strength, evidence, linkedActivities }) {
+  if (strength === "strong") return "No public-footprint limitation identified beyond qualified review before reliance.";
+  if (strength === "partial") return "The public footprint supports the field directionally, but does not fully prove implementation, scope, or operational coverage.";
+  if (strength === "weak") return "Only a weak public signal was found; the field should not be relied on for document assembly without confirmation.";
+  if (strength === "conflicting") return "Public materials contain conflicting or ambiguous signals requiring reviewer resolution.";
+  return `${definition.field_title} was not visible from reviewed public materials${linkedActivities.length || evidence.length ? " with sufficient specificity" : ""}.`;
+}
+
+function reviewActionFor({ definition, strength }) {
+  if (strength === "strong") return `Confirm ${definition.field_title.toLowerCase()} during qualified review before final document reliance.`;
+  if (strength === "partial") return `Confirm implementation scope and evidence for ${definition.field_title.toLowerCase()} before draft preparation.`;
+  return `Request evidence or reviewer confirmation for ${definition.field_title.toLowerCase()} before document assembly reliance.`;
+}
+
+function buildPublicReportSeed(fields) {
+  const groups = [
+    ["processing_scope", "Processing scope and activity-data map", ["activity_to_data_flow_map", "personal_data_categories_by_activity", "input_output_and_derived_data_treatment"]],
+    ["role_population", "Affected persons and role posture", ["affected_person_categories", "customer_user_data_principal_relationship", "role_allocation_candidate", "controller_processor_fiduciary_ambiguity"]],
+    ["notice_rights", "Notice, purpose, consent and rights posture", ["privacy_notice_surface", "purpose_and_use_mapping", "consent_authorization_posture", "withdrawal_deletion_export_routes", "rights_and_grievance_route"]],
+    ["vendors_transfers", "Vendor, sharing, transfer and custody posture", ["vendor_and_subprocessor_inventory_visibility", "third_party_sharing_posture", "cross_border_transfer_and_custody_posture", "hosting_storage_location_visibility"]],
+    ["retention_security_ai", "Retention, security, incident and AI-control posture", ["retention_period_visibility", "logging_telemetry_and_audit_trail_posture", "security_control_visibility", "incident_breach_response_visibility", "ai_training_profiling_and_automated_decisioning_review_note"]],
+    ["qualified_review", "Qualified-review priorities", ["role_confirmation_needed_for_docs", "transfer_safeguard_and_change_notice_gaps", "india_log_retention_cert_in_review_note", "children_sensitive_and_high_risk_context"]]
+  ];
+  return groups.map(([finding_id, title, fieldIds]) => {
+    const selected = fields.filter((field) => fieldIds.includes(field.field_id));
+    return {
+      finding_id,
+      title,
+      field_ids: fieldIds,
+      evidence_strength: aggregateStrength(selected),
+      narrative: selected.map((field) => field.finding).join(" "),
+      limitation: selected.map((field) => field.limitation).filter(Boolean).join(" "),
+      qualified_review_action: selected.map((field) => field.qualified_review_action).filter(Boolean).slice(0, 3).join(" ")
+    };
+  });
+}
+
+function buildLimitations({ artifacts, fields, activities, dataCategories }) {
+  const out = ["4B is a deterministic public-footprint field base. It does not decide DPDP applicability, compliance, adequacy, fiduciary/processor status, or local-law sufficiency."];
+  if (!artifacts?.data_provenance_profile) out.push("Base data provenance profile unavailable or incomplete.");
+  if (!activities.length) out.push("M8 activity profile did not expose activity rows for activity-linked data protection mapping.");
+  if (!dataCategories.length) out.push("Base data profile did not expose structured data categories.");
+  const weak = fields.filter((field) => ["weak", "not_visible", "conflicting"].includes(field.evidence_strength));
+  if (weak.length) out.push(`${weak.length} substantive field(s) require proof or reviewer confirmation before document reliance.`);
+  return out;
+}
+
+function normalizeActivities(m8) {
+  const activities = Array.isArray(m8.activities) ? m8.activities : [];
+  return activities.map((activity, index) => ({
+    activity_id: activity.activity_display_id || activity.activity_id || `ACT-${String(index + 1).padStart(3, "0")}`,
+    label: clean(activity.activity_feature_name || activity.related_product_service || activity.publicly_described_activity || activity.activity_summary || `Activity ${index + 1}`),
+    text: clean(JSON.stringify(activity))
+  }));
+}
+
+function collectDataCategories(m10) {
+  const values = [];
+  for (const key of ["data_categories", "personal_data_categories_by_activity", "sensitive_special_category_signals", "generated_output_and_derived_data_treatment", "ai_model_provider_processing_chain", "prompt_output_logging_telemetry_controls"]) collectPlainValues(m10?.[key], values);
+  return unique(values.map(clean).filter(Boolean)).slice(0, 30);
+}
+
+function linkActivities(activities, terms) {
+  const lowerTerms = terms.map((term) => String(term).toLowerCase());
+  return activities.filter((activity) => lowerTerms.some((term) => activity.text.toLowerCase().includes(term))).slice(0, 6);
+}
+
+function linkDataCategories(categories, terms) {
+  const lowerTerms = terms.map((term) => String(term).toLowerCase());
+  return categories.filter((category) => lowerTerms.some((term) => String(category).toLowerCase().includes(term))).slice(0, 8);
+}
+
+function findM10Basis(m10, terms) {
+  const values = [];
+  collectPlainValues(m10, values);
+  const lowerTerms = terms.map((term) => String(term).toLowerCase());
+  return values.map(clean).find((value) => lowerTerms.some((term) => value.toLowerCase().includes(term))) || "";
+}
+
+function flattenArtifacts(artifacts) {
+  const rows = [];
+  for (const [artifactName, artifact] of Object.entries(artifacts || {})) flattenValue(rows, artifactName, artifactName, artifact);
+  return rows;
+}
+
+function flattenValue(rows, artifactName, path, value) {
+  if (value == null) return;
+  if (["string", "number", "boolean"].includes(typeof value)) {
+    const text = clean(String(value));
+    if (text) rows.push({ artifact_name: artifactName, path, text, excerpt: trunc(text) });
+    return;
+  }
+  if (Array.isArray(value)) return value.slice(0, 400).forEach((item, i) => flattenValue(rows, artifactName, `${path}[${i}]`, item));
+  if (typeof value === "object") return Object.entries(value).slice(0, 400).forEach(([key, child]) => flattenValue(rows, artifactName, `${path}.${key}`, child));
+}
+
+function findRows(rows, terms, limit) {
+  const lowerTerms = terms.map((term) => String(term).toLowerCase()).filter(Boolean);
+  const found = [];
+  for (const row of rows) {
+    const lower = String(row.text || "").toLowerCase();
+    if (!lower || !lowerTerms.some((term) => lower.includes(term))) continue;
+    found.push(row);
+    if (found.length >= limit) break;
+  }
+  return found;
+}
+
+function unwrap(value, key) {
+  if (value?.[key] && typeof value[key] === "object") return value[key];
+  if (value?.artifact?.[key] && typeof value.artifact[key] === "object") return value.artifact[key];
+  return value && typeof value === "object" ? value : {};
+}
+
+function collectPlainValues(value, out) {
+  if (value == null) return;
+  if (["string", "number", "boolean"].includes(typeof value)) {
+    const cleaned = clean(String(value));
+    if (cleaned) out.push(cleaned);
+    return;
+  }
+  if (Array.isArray(value)) return value.slice(0, 200).forEach((item) => collectPlainValues(item, out));
+  if (typeof value === "object") return Object.values(value).slice(0, 200).forEach((item) => collectPlainValues(item, out));
+}
+
+function aggregateStrength(fields) {
+  if (fields.some((field) => field.evidence_strength === "conflicting")) return "conflicting";
+  if (fields.some((field) => field.evidence_strength === "strong")) return "partial";
+  if (fields.some((field) => field.evidence_strength === "partial")) return "partial";
+  if (fields.some((field) => field.evidence_strength === "weak")) return "weak";
+  return "not_visible";
+}
+
+function countBy(items, fn) {
+  return items.reduce((acc, item) => { const key = fn(item); acc[key] = (acc[key] || 0) + 1; return acc; }, {});
+}
+function list(values) { return values.filter(Boolean).join(", "); }
+function unique(values) { return [...new Set(values.filter(Boolean))]; }
+function clean(value) { return String(value || "").replace(/\s+/g, " ").trim(); }
+function trunc(value) { const s = clean(value); return s.length > 260 ? `${s.slice(0, 257)}...` : s; }
