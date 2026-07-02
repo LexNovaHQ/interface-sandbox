@@ -46,12 +46,17 @@ assert.equal(integrated.profile_version, "integrated_dap_projection_v3_substanti
 assert.equal(integrated.coverage_summary.expected_4b_fields, 36);
 assert.equal(integrated.coverage_summary.actual_4b_fields, 36);
 assert.equal(integrated.integration_policy.public_report_body_uses_analytical_findings_not_machine_signal_rows, true);
+assert.ok(integrated.annexure_disclaimer.includes("full 36-field substantive DAP field base"));
+assert.equal(integrated.validation_quality_control_result.annexure_disclaimer_present, true);
+assert.ok(integrated.normalized_section_projection.annexure_disclaimer.includes("Technical Annexure"));
 assert.ok(integrated.integrated_table_rows.length >= 30);
 for (const row of integrated.integrated_table_rows) {
   assert.equal(row.row_type, "Integrated analytical finding");
   assert.ok(row.evidence_summary && !/VISIBLE_CONTROL_PRESENT|NOT_VISIBLE_AFTER_TARGETED_SEARCH|india_/.test(row.evidence_summary), `${row.normalized_dap_field_id}:machine_garbage_in_evidence_summary`);
+  assert.ok(row.evidence_summary.includes("full 36-field substantive DAP field base"), `${row.normalized_dap_field_id}:annexure_disclaimer_missing_from_public_summary`);
   assert.ok(row.factual_basis, `${row.normalized_dap_field_id}:missing_factual_basis`);
   assert.ok(row.limitation, `${row.normalized_dap_field_id}:missing_limitation`);
+  assert.ok(row.annexure_note.includes("Technical Annexure"), `${row.normalized_dap_field_id}:missing_annexure_note`);
 }
 assert.equal(integrated.normalized_section_projection.subsections.length, 12);
 
