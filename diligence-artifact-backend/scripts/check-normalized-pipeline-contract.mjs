@@ -9,7 +9,9 @@ import {
   QUALIFIED_REVIEW_SYSTEM_AGENT,
   READ_PERMISSIONS,
   WRITE_PERMISSIONS,
-  PHASE_WRITE_PERMISSIONS
+  PHASE_WRITE_PERMISSIONS,
+  LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES,
+  artifactMatchesPermission
 } from "../src/constants.js";
 import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
 
@@ -43,6 +45,18 @@ assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("normalized_report_manifest"))
 assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("final_output_handoff"));
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_handoff"), false);
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_renderer_payload"), false);
+
+assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
+assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE_FORENSICS.reads.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
+assert.equal(READ_PERMISSIONS.agent_3_target_feature.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
+
+for (const [phase, contract] of Object.entries(PHASE_CONTRACTS)) {
+  const actor = contract.agent_id || contract.actor_id;
+  const allowed = READ_PERMISSIONS[actor] || [];
+  for (const artifactName of contract.reads || []) {
+    assert.ok(allowed.some((permission) => artifactMatchesPermission(artifactName, permission)), `PHASE_READ_PERMISSION_DRIFT:${phase}:${actor}:${artifactName}`);
+  }
+}
 
 assert.deepEqual(QUALIFIED_REVIEW_ARTIFACT_NAMES, [
   "qualified_review_handoff",
