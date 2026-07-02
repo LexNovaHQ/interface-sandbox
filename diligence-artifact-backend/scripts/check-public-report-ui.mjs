@@ -20,15 +20,25 @@ const qualifiedReviewJs = readFileSync("public/interface-diligence/diligence-sys
 assert.ok(reportHtml.includes("Download PDF"));
 assert.ok(reportHtml.includes("Open Public Technical Annexure"));
 assert.ok(reportHtml.includes("Proceed to Qualified Review"));
+assert.ok(reportHtml.includes("Interface Diligence Engine"));
+assert.ok(reportHtml.includes("Legal Diligence"));
+assert.ok(reportHtml.includes("Diligence Report"));
+assert.ok(reportHtml.includes('id="reportFooterQualifiedReviewButton"'));
+assert.ok(reportHtml.includes("reportClosingActions"));
+assert.ok(reportHtml.includes("Back to Live Run"));
 assert.equal(reportHtml.includes("Proceed to " + "Vault"), false);
 assert.ok(reportHtml.includes("no-store, no-cache"));
 assert.ok(reportHtml.includes('class="report-page"'));
 assert.ok(reportHtml.includes('id="reportRail"'));
 assert.ok(reportHtml.includes('id="reportControlPanel"'));
 assert.ok(reportHtml.includes('id="reportDeckStatus"'));
-assert.ok(reportHtml.includes("report-table-overrides.css?v=report-readable-cards-20260703"));
-assert.ok(reportHtml.includes("report.js?v=report-ui-panels-20260703"));
-assert.ok(reportHtml.includes("report-ui-sync.js?v=report-readable-cards-20260703"));
+assert.ok(reportHtml.includes("report-table-overrides.css?v=unified-chrome-report-20260703"));
+assert.ok(reportHtml.includes("report.js?v=unified-chrome-report-20260703"));
+assert.ok(reportHtml.includes("report-ui-sync.js?v=unified-chrome-report-20260703"));
+assert.equal(reportHtml.includes("Public-footprint exposure diligence"), false);
+assert.equal(reportHtml.includes("Interface Diligence Report"), false);
+assert.equal(reportHtml.includes("DETERMINISTIC REPORT"), false);
+assert.equal(reportHtml.includes("Deterministic Report"), false);
 
 assert.ok(reportUiSyncJs.includes("activeSectionFromScroll"));
 assert.ok(reportUiSyncJs.includes("window.addEventListener(\"scroll\""));
@@ -40,6 +50,7 @@ assert.ok(reportUiSyncJs.includes("MutationObserver"));
 assert.ok(reportUiSyncJs.includes("setRailActive"));
 
 assert.ok(reportJs.includes("qualified-review.html?run_id="));
+assert.ok(reportJs.includes("reportFooterQualifiedReviewButton"));
 assert.ok(reportJs.includes("technical-annexure.html?run_id="));
 assert.ok(reportJs.includes("renderReportUnavailable"));
 assert.ok(reportJs.includes("/public/diligence-system/jobs/"));
@@ -95,6 +106,10 @@ assert.equal(reportJs.includes("payload.sections || {}"), false);
 assert.equal(reportJs.includes("section.data"), false);
 
 assert.ok(reportTableCss.includes(".table-scroll"));
+assert.ok(reportTableCss.includes("report-closing-actions"));
+assert.ok(reportTableCss.includes("report-closing-buttons"));
+assert.ok(reportTableCss.includes(".report-hero h1"));
+assert.ok(reportTableCss.includes(".report-boundary"));
 assert.ok(reportTableCss.includes("overflow: visible"));
 assert.ok(reportTableCss.includes(".report-left-rail { padding-top: .6rem; overflow: visible;"));
 assert.ok(reportTableCss.includes("max-height: none"));
@@ -124,7 +139,7 @@ assert.ok(reportTableCss.includes(".report-finding-layout.two-panels"));
 assert.ok(reportTableCss.includes("font-size: clamp(.86rem"));
 assert.ok(reportTableCss.includes("grid-template-columns: minmax(92px"));
 assert.equal(reportTableCss.includes("width: max-content"), false);
-assert.equal(reportTableCss.includes("min-width: 960px"), false);
+assert.equal(reportTableCss.includes("min-width: 960px;"), false);
 assert.equal(reportTableCss.includes("max-height: calc(100vh - 112px); overflow: auto"), false);
 assert.equal(reportTableCss.includes("grid-template-columns: minmax(0, 1fr) minmax(300px,.84fr)"), false);
 assert.equal(reportTableCss.includes("font-size: .78rem"), false);
@@ -186,6 +201,9 @@ assert.equal(fullPayload.public_report_ui.raw_json_download_enabled, false);
 assert.equal(fullPayload.public_report_ui.public_tables_render_full_rows, true);
 
 assert.ok(qualifiedReviewHtml.includes('id="qualifiedReviewRail"'));
+assert.ok(qualifiedReviewHtml.includes("Legal Diligence"));
+assert.ok(qualifiedReviewHtml.includes("Qualified Review"));
+assert.equal(qualifiedReviewHtml.includes("Public-footprint exposure diligence"), false);
 assert.equal(qualifiedReviewHtml.includes('id="qualifiedReviewTabs"'), false);
 assert.ok(qualifiedReviewHtml.includes('id="qrWorkflowPanel"'));
 assert.ok(qualifiedReviewHtml.includes('id="qrNavigationPanel"'));
@@ -209,6 +227,20 @@ assert.equal(qualifiedReviewJs.includes("Confirm as shown"), false);
 assert.equal(qualifiedReviewJs.includes("Save edited"), false);
 assert.equal(qualifiedReviewJs.includes("Mark not applicable"), false);
 assert.equal(qualifiedReviewJs.includes("Download JSON"), false);
+
+const assemblyEnginePath = "public/interface-diligence/diligence-system/assembly-engine.html";
+if (existsSync(assemblyEnginePath)) {
+  const assemblyEngineHtml = readFileSync(assemblyEnginePath, "utf8");
+  assert.ok(assemblyEngineHtml.includes("Legal Diligence"));
+  assert.ok(assemblyEngineHtml.includes("Assembly System"));
+}
+
+const indexPath = "public/interface-diligence/diligence-system/index.html";
+if (existsSync(indexPath)) {
+  const indexHtml = readFileSync(indexPath, "utf8");
+  assert.ok(indexHtml.includes("Legal Diligence"));
+  assert.ok(indexHtml.includes("Diligence System"));
+}
 
 console.log("public report UI: PASS");
 
