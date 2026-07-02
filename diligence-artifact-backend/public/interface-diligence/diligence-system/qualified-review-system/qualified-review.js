@@ -74,15 +74,15 @@ function renderQualifiedReviewRail(questionSections) {
 function renderQuestionSections({ questionSections }) {
   const wrapper = node("div", "value-list qr-section-stack");
   questionSections.forEach((page, index) => {
-    const section = node("section", "report-section qr-form-section");
-    section.dataset.qrSectionIndex = String(index);
-    section.append(
+    const sectionNode = node("section", "report-section qr-form-section");
+    sectionNode.dataset.qrSectionIndex = String(index);
+    sectionNode.append(
       node("div", "eyebrow", `Section ${index + 1}`),
       node("h2", "", page.section_title || page.section_id || "Qualified Review Section"),
       node("p", "small-muted", `${page.question_count || page.questions?.length || 0} questions. Edit only what needs correction; unchanged answers are accepted on submit.`)
     );
-    (page.questions || []).forEach((question) => section.append(renderQuestionCard(question)));
-    wrapper.append(section);
+    (page.questions || []).forEach((question) => sectionNode.append(renderQuestionCard(question)));
+    wrapper.append(sectionNode);
   });
   return wrapper;
 }

@@ -17,7 +17,7 @@ export function buildForensicLedgerAppendix({ handoff, profiles, forensics, disp
 
   return {
     heading: "Forensic Ledger Appendix",
-    registry_authority: FORENSIC_ANNEXURE_FAMILIES,
+    appendix_registry_families: FORENSIC_ANNEXURE_FAMILIES,
     appendix_notice: "This appendix preserves audit/proof/validation material. It is not legal advice, does not include chain-of-thought, and does not create findings beyond locked upstream artifacts.",
     full_ledger_summary: {
       source_rows: countSourceRows(profiles.source_discovery_handoff),
@@ -63,7 +63,7 @@ export function buildForensicLedgerAppendix({ handoff, profiles, forensics, disp
     operator_challenge_trace: profiles.challenge_gate || handoff.challenge_gate || {},
     batch_warnings: collectBatchWarnings({ forensics, routePlan, profileForensics }),
     appendix_limitations: collectLimitations({ profiles, forensics, handoff }),
-    renderer_export_trace: { renderer_generated_by: "report-section-adapter", renderer_deterministic: true, model_used_after_m11: false, old_exposure_registry_profile_used: false, split_exposure_profiles_used: true, m11_four_status_material_rows_supported: true },
+    renderer_export_trace: { renderer_generated_by: "locked-report-renderer", renderer_deterministic: true, model_used_after_m11: false, old_exposure_registry_profile_used: false, split_exposure_profiles_used: true, m11_four_status_material_rows_supported: true },
     forensic_boundary: { no_chain_of_thought: true, no_hidden_scratchpad: true, no_secrets_or_api_keys: true, no_legal_conclusions: true, appendix_only: true }
   };
 }

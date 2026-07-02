@@ -213,10 +213,11 @@ function buildDataProvenanceControlsSection(context) {
     return subsection(id, title, keys.map((key) => {
       const projectedField = asArray(projectedSubsection?.fields).find((item) => item?.field_id === key);
       const renderRows = asArray(projectedField?.render_rows);
+      const publicRows = renderRows.map(toPublicDapRow);
       return field(
         key,
         normalizeFieldLabel(key),
-        renderRows,
+        publicRows,
         "integrated_dap_report",
         `normalized_section_projection.${id}.${key}`,
         {
@@ -227,6 +228,21 @@ function buildDataProvenanceControlsSection(context) {
       );
     }));
   }), { summary: "Data/control visibility rendered only from integrated_dap_report.normalized_section_projection. M10 and 4B are component inputs to 4C only and are not direct normalizer sources." });
+}
+
+function toPublicDapRow(row = {}) {
+  return withoutBlankValues({
+    Review_Point: safeText(row.review_point, "Review point not specified"),
+    Source_Layer: safeText(row.row_type, ""),
+    Jurisdiction_Layer: safeText(row.jurisdiction_layer, ""),
+    Public_Footprint_Status: safeText(row.public_footprint_status, "Not visible in reviewed public materials"),
+    Evidence_Summary: safeText(row.evidence_summary, "No direct public evidence captured."),
+    Review_Action: safeText(row.qualified_review_action, "Confirm during Qualified Review before document assembly reliance")
+  });
+}
+
+function withoutBlankValues(value = {}) {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== ""));
 }
 
 function buildLegalDocumentControlReviewSection(context) {

@@ -232,10 +232,10 @@
   }
 
   function applySectionVisibility() {
-    document.querySelectorAll("#handoffBody .qr-form-section, #handoffBody .report-section").forEach((section, i) => {
+    document.querySelectorAll("#handoffBody .qr-form-section, #handoffBody .report-section").forEach((sectionNode, i) => {
       const isActive = i === active;
-      section.style.display = isActive ? "block" : "none";
-      section.dataset.active = String(isActive);
+      sectionNode.style.display = isActive ? "block" : "none";
+      sectionNode.dataset.active = String(isActive);
     });
   }
 
