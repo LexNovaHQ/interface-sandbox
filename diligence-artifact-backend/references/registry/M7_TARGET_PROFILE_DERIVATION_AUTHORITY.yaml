@@ -1,0 +1,105 @@
+schema: M7_TARGET_PROFILE_DERIVATION_AUTHORITY_v1
+purpose: Sanitized M7-only derivation authority. This file replaces broad target-profile registry source-basis language inside M7 model prompts.
+phase: M7_TARGET_PROFILE
+active_agent: agent_3_target_feature
+
+source_boundary:
+  allowed_model_sources:
+    - source_discovery_handoff
+    - source_discovery_handoff.bucket_family_index.target_profile_urls.families
+    - lossless_family__T0_ROOT
+    - lossless_family__T1_IDENTITY
+    - lossless_family__T2_LEGAL_IDENTITY
+    - lossless_family__T3_OPERATOR_ENTITY
+    - lossless_family__T4_SUPPORTING_IDENTITY
+    - m7_deterministic_legal_signal_overlay
+  forbidden_model_sources:
+    - legal_cartography_index
+    - source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families
+    - lossless_family__L1_CORE_TERMS_PRIVACY
+    - lossless_family__L2_B2B_CONTRACTING
+    - lossless_family__L3_AI_USAGE_GOVERNANCE
+    - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+    - lossless_family__L5_LEGAL_HUB_HOSTED
+    - lossless_family__L6_ENTITY_NOTICE
+
+controlled_statuses:
+  - FIELD_LIMITED
+  - FIELD_NOT_PUBLIC
+  - FIELD_CONFLICTED
+  - FIELD_NOT_FOUND
+
+overlay_policy:
+  artifact: m7_deterministic_legal_signal_overlay
+  model_may_copy_found_values_only: true
+  model_must_not_read_raw_legal_sources: true
+  allowed_overlay_fields:
+    - target_identity.legal_entity_name
+    - jurisdiction_notice.governing_law
+    - jurisdiction_notice.courts_venue
+
+selected_fields:
+  target_identity.brand_name:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  target_identity.legal_entity_name:
+    source_basis: target_profile_bucket_or_found_overlay_only
+    overlay_allowed: true
+    unsupported_behavior: controlled_status_plus_limitation
+  target_identity.entity_type:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  target_identity.reviewed_website:
+    source_basis: source_discovery_handoff_or_target_profile_bucket
+    unsupported_behavior: controlled_status_plus_limitation
+  target_identity.primary_domain:
+    source_basis: reviewed_website_or_source_discovery_handoff
+    unsupported_behavior: controlled_status_plus_limitation
+  jurisdiction_notice.registered_notice_location:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  jurisdiction_notice.governing_law:
+    source_basis: found_overlay_only
+    overlay_allowed: true
+    unsupported_behavior: controlled_status_plus_limitation
+  jurisdiction_notice.courts_venue:
+    source_basis: found_overlay_only
+    overlay_allowed: true
+    unsupported_behavior: controlled_status_plus_limitation
+  business_context.business_category:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  business_context.primary_customer_type:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  business_context.market_type_candidate:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  business_context.industry_sector:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  business_context.regulated_sector_hints:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: empty_array_plus_limitation_when_material
+  product_service_wrapper.high_level_offering:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  product_service_wrapper.primary_public_claim:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: controlled_status_plus_limitation
+  product_service_wrapper.product_service_wrapper_names:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: empty_array_plus_limitation_when_material
+  product_service_wrapper.delivery_model_signals:
+    source_basis: target_profile_bucket_only
+    unsupported_behavior: empty_array_plus_limitation_when_material
+  target_profile_limitations:
+    source_basis: controlled_statuses_and_source_boundary
+    unsupported_behavior: array_required
+
+hard_rules:
+  - M7 must not request legal/governance family artifacts.
+  - M7 must not request legal_cartography_index.
+  - M7 must not block because legal/governance families are unavailable.
+  - Missing overlay data means controlled field status, not source repair.
+  - Source repair is reserved for missing or corrupted target-profile bucket artifacts.
