@@ -7,8 +7,9 @@
   <meta name="description" content="Legal exposure diligence for AI, technology, data, and digital product businesses." />
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="./diligence-system.css" />
+  <link rel="stylesheet" href="./diligence-homepage-gate.css?v=law-gate-20260703" />
 </head>
-<body>
+<body class="diligence-gate-page">
   <div class="progress-line" id="progressLine" aria-hidden="true"></div>
   <header class="topbar no-print">
     <div class="topbar-inner">
@@ -22,64 +23,104 @@
   <div class="mobile-funnel no-print" id="mobileFunnel" aria-label="Run progress">
     <span class="lbl" id="mobileFunnelLabel">Intake</span>
   </div>
-  <div class="page-shell">
-    <div class="main-grid">
+  <div class="page-shell gate-shell">
+    <div class="main-grid gate-main-grid">
       <aside class="rail-wrap no-print" aria-label="Diligence phase rail"><div class="rail" id="phaseRail"></div></aside>
-      <main>
-        <section class="hero">
-          <div class="eyebrow">Interface Diligence Engine</div>
-          <h1>Legal exposure diligence for AI, technology, data, and digital product businesses.</h1>
-          <p class="hero-copy">Enter a public product or company URL, or attach to an existing run ID created by backend testing. The public console can monitor the live run, resume the worker, open the report, and hand the same run ID into Qualified Review.</p>
-          <div class="notice"><strong>Boundary:</strong> Public-footprint materials only. Do not submit confidential, privileged, personal, sensitive, or restricted material. This system is for demonstration and qualified-review workflows only and does not provide legal advice.</div>
+      <main class="gate-workspace">
+        <section class="hero gate-hero">
+          <div class="eyebrow">Diligence Intake</div>
+          <h1>Start a legal diligence run.</h1>
+          <p class="hero-copy">Submit a public target URL and optional approved source materials. The system will assemble a structured diligence report, then route the same matter into Qualified Review.</p>
+          <div class="notice gate-boundary"><strong>Boundary:</strong> Public or approved review materials only. Do not upload confidential, privileged, personal, sensitive, or restricted material. This is a diligence workflow for qualified review, not legal advice or a compliance certification.</div>
         </section>
-        <section class="console-grid">
-          <article class="card">
-            <div class="eyebrow">Start run</div>
-            <h2>Submit a target URL</h2>
-            <form id="runForm" class="form-grid">
-              <div><label class="label" for="targetUrl">Target URL</label><input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai" required /></div>
-              <div><label class="label" for="targetLabel">Target label <span class="small-muted">optional</span></label><input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" /></div>
-              <div><label class="label" for="sourceDocuments">Source documents <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label><input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" /></div>
-              <div class="notice">Uploaded files are treated as source material for this run. Upload only public or approved review materials.</div>
-              <div class="actions"><button class="btn" id="runButton" type="submit">Run Diligence</button><a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a><a class="btn secondary hidden" id="qualifiedReviewPageButton" href="#">Qualified Review</a></div>
-            </form>
-            <div class="divider" aria-hidden="true"></div>
-            <div class="form-grid" aria-label="Attach existing run">
-              <div class="eyebrow">Attach existing run</div>
-              <h2>Open live run by Run ID</h2>
-              <div><label class="label" for="attachRunId">Run ID</label><input class="input mono" id="attachRunId" name="attachRunId" autocomplete="off" placeholder="LN-20260630-000118-SARVAM-AI-420920" /></div>
-              <div class="actions"><button class="btn secondary" id="attachRunButton" type="button">Open Live Run</button><button class="btn secondary hidden" id="resumeRunButton" type="button">Resume Worker</button></div>
-              <p class="small-muted">You can also open this page with <code>?run_id=LN-...</code>. The console will attach automatically and poll the public status API.</p>
-            </div>
-            <p class="log-line" id="statusMessage">Idle. Enter a public URL or attach an existing run ID.</p>
-          </article>
-          <article class="card">
-            <div class="eyebrow">Live state</div>
-            <h2 id="activePhaseTitle">Intake</h2>
-            <p id="activePhaseText">Waiting for a public target URL or existing run ID.</p>
-            <div class="meta-grid">
-              <div class="meta-tile"><div class="k">Run ID</div><div class="v" id="runIdValue">-</div></div>
-              <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
-              <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
-              <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
-            </div>
-            <div class="notice" id="terminalNotice">The rail will update from the backend phase state as the system runs.</div>
-            <div class="endpoint-panel" id="endpointPanel">
-              <div class="eyebrow">Public run endpoints</div>
-              <p class="small-muted">These domain URLs use the same run ID as the live console.</p>
-              <div class="endpoint-grid">
-                <a class="btn secondary hidden" id="statusApiLink" href="#" target="_blank" rel="noreferrer">Status JSON</a>
-                <a class="btn secondary hidden" id="reportPageLink" href="#">Report Page</a>
-                <a class="btn secondary hidden" id="reportApiLink" href="#" target="_blank" rel="noreferrer">Report API</a>
-                <a class="btn secondary hidden" id="qualifiedReviewPageLink" href="#">Qualified Review Page</a>
-                <a class="btn secondary hidden" id="qualifiedReviewApiLink" href="#" target="_blank" rel="noreferrer">Qualified Review API</a>
+
+        <section class="gate-workbench" aria-label="Diligence matter gate">
+          <article class="card gate-card gate-primary-card">
+            <div class="gate-card-kicker">
+              <div>
+                <div class="eyebrow">New Matter</div>
+                <h2>Target source</h2>
               </div>
+              <span class="gate-step-pill">01</span>
             </div>
+            <form id="runForm" class="form-grid gate-form-grid">
+              <div>
+                <label class="label" for="targetUrl">Public target URL</label>
+                <input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai" required />
+              </div>
+              <div>
+                <label class="label" for="targetLabel">Matter label <span class="small-muted">optional</span></label>
+                <input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" />
+              </div>
+              <div>
+                <label class="label" for="sourceDocuments">Approved source materials <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label>
+                <input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" />
+              </div>
+              <div class="notice gate-inline-notice">Uploaded files become source material for this matter. Upload only public documents or materials already approved for review.</div>
+              <div class="actions gate-actions">
+                <button class="btn" id="runButton" type="submit">Start Diligence Run</button>
+                <a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a>
+                <a class="btn secondary hidden" id="qualifiedReviewPageButton" href="#">Qualified Review</a>
+              </div>
+            </form>
           </article>
+
+          <div class="gate-side-stack">
+            <article class="card gate-card gate-resume-card">
+              <div class="gate-card-kicker">
+                <div>
+                  <div class="eyebrow">Resume Matter</div>
+                  <h2>Resume by matter/run ID</h2>
+                </div>
+                <span class="gate-step-pill">02</span>
+              </div>
+              <div class="form-grid" aria-label="Resume existing matter">
+                <div>
+                  <label class="label" for="attachRunId">Matter / Run ID</label>
+                  <input class="input mono" id="attachRunId" name="attachRunId" autocomplete="off" placeholder="LN-20260630-000118-SARVAM-AI-420920" />
+                </div>
+                <div class="actions gate-actions">
+                  <button class="btn secondary" id="attachRunButton" type="button">Resume Matter</button>
+                  <button class="btn secondary hidden" id="resumeRunButton" type="button">Continue Run</button>
+                </div>
+                <p class="small-muted">A URL containing <code>?run_id=LN-...</code> will attach automatically and continue watching the matter status.</p>
+              </div>
+            </article>
+
+            <article class="card gate-card gate-status-card">
+              <div class="gate-card-kicker">
+                <div>
+                  <div class="eyebrow">Matter Status</div>
+                  <h2 id="activePhaseTitle">Intake</h2>
+                </div>
+                <span class="gate-step-pill">03</span>
+              </div>
+              <p id="activePhaseText">Waiting for a public target URL or existing matter/run ID.</p>
+              <div class="meta-grid gate-meta-grid">
+                <div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div>
+                <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
+                <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
+                <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
+              </div>
+              <div class="notice gate-inline-notice" id="terminalNotice">The matter rail will update as the diligence workflow progresses.</div>
+              <p class="log-line" id="statusMessage">Idle. Enter a public URL or resume an existing matter/run ID.</p>
+              <details class="endpoint-panel gate-diagnostics" id="endpointPanel">
+                <summary>Operator Diagnostics</summary>
+                <p class="small-muted">Technical links for verification and debugging. Not required for the normal review workflow.</p>
+                <div class="endpoint-grid gate-endpoint-grid">
+                  <a class="btn secondary hidden" id="statusApiLink" href="#" target="_blank" rel="noreferrer">Status JSON</a>
+                  <a class="btn secondary hidden" id="reportPageLink" href="#">Report Page</a>
+                  <a class="btn secondary hidden" id="reportApiLink" href="#" target="_blank" rel="noreferrer">Report API</a>
+                  <a class="btn secondary hidden" id="qualifiedReviewPageLink" href="#">Qualified Review Page</a>
+                  <a class="btn secondary hidden" id="qualifiedReviewApiLink" href="#" target="_blank" rel="noreferrer">Qualified Review API</a>
+                </div>
+              </details>
+            </article>
+          </div>
         </section>
       </main>
     </div>
-    <div class="footer-note">Public-footprint diligence system. Demonstration and qualified-review workflow.</div>
+    <div class="footer-note">Public-footprint diligence system. Structured report generation followed by Qualified Review.</div>
   </div>
   <script src="./diligence-system.js"></script>
   <script src="./diligence-upload.js"></script>
