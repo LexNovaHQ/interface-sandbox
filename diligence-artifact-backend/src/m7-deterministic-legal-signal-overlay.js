@@ -11,6 +11,20 @@ const FIELD_RULES = Object.freeze([
     extractors: [extractLegalEntityName]
   },
   {
+    field_path: "target_identity.entity_type",
+    label: "Entity type / corporate form signal",
+    source_keys: ["legal_notice_locator", "document_coverage_index", "document_structure_index", "control_language_locator", "priority_semantic_locator", "qualified_review_locator"],
+    direct_keys: ["entity_type", "corporate_form", "legal_form", "company_type", "entity_form", "contracting_entity_type", "organization_type", "value", "field_value"],
+    extractors: [extractEntityType]
+  },
+  {
+    field_path: "jurisdiction_notice.registered_notice_location",
+    label: "Registered / notice location signal",
+    source_keys: ["legal_notice_locator", "document_coverage_index", "document_structure_index", "control_language_locator", "priority_semantic_locator", "qualified_review_locator", "governing_law_venue_locator", "dispute_resolution_locator"],
+    direct_keys: ["registered_notice_location", "notice_location", "registered_office", "registered_address", "notice_address", "legal_notice_address", "mailing_address", "address", "contact_address", "location", "value", "field_value"],
+    extractors: [extractRegisteredNoticeLocation]
+  },
+  {
     field_path: "jurisdiction_notice.governing_law",
     label: "Governing law signal",
     source_keys: ["governing_law_venue_locator", "dispute_resolution_locator", "control_language_locator", "priority_semantic_locator", "qualified_review_locator", "document_structure_index"],
@@ -59,7 +73,7 @@ export function buildM7DeterministicLegalSignalOverlay({ artifacts = {} } = {}) 
 
   return {
     artifact_name: OVERLAY_NAME,
-    schema_version: "M7_DETERMINISTIC_LEGAL_SIGNAL_OVERLAY_v2",
+    schema_version: "M7_DETERMINISTIC_LEGAL_SIGNAL_OVERLAY_v3",
     source_artifact: "legal_cartography_index",
     model_generated: false,
     reads_lossless_legal_families: false,
@@ -176,6 +190,11 @@ function firstDirectValue(row, keys, rule) {
     const value = cleanSignal(row?.[key]);
     if (!value) continue;
     if (isGenericLocatorLabel(value, rule)) continue;
+    if (rule.field_path === "target_identity.entity_type") {
+      const normalized = normalizeEntityType(value) || extractEntityType(value);
+      if (normalized) return normalized;
+      continue;
+    }
     return value;
   }
   return "";
@@ -187,6 +206,8 @@ function isGenericLocatorLabel(value, rule) {
   if (rule.field_path === "jurisdiction_notice.governing_law") return ["law", "governing law", "applicable law", "governing law signal"].includes(normalized);
   if (rule.field_path === "jurisdiction_notice.courts_venue") return ["venue", "forum", "jurisdiction", "court", "courts", "dispute forum", "courts venue"].includes(normalized);
   if (rule.field_path === "target_identity.legal_entity_name") return ["legal entity", "contracting party", "company name", "operator entity"].includes(normalized);
+  if (rule.field_path === "target_identity.entity_type") return ["entity type", "corporate form", "legal form", "company type", "entity form", "organization type"].includes(normalized);
+  if (rule.field_path === "jurisdiction_notice.registered_notice_location") return ["registered notice location", "notice location", "registered office", "registered address", "notice address", "legal notice address", "mailing address", "address", "contact address", "location"].includes(normalized);
   return false;
 }
 
@@ -195,6 +216,41 @@ function extractLegalEntityName(text) {
     /(?:contracting party|contracting entity|legal entity|company name|provider entity|operator entity)\s*[:\-]\s*([A-Z][A-Za-z0-9&.,'’()\- ]{2,120})/i,
     /(?:owned and operated by|provided by|operated by)\s+([A-Z][A-Za-z0-9&.,'’()\- ]{2,120})/i,
     /©\s*\d{4}\s+([A-Z][A-Za-z0-9&.,'’()\- ]{2,120})/i
+  ]);
+}
+
+function extractEntityType(text) {
+  const direct = firstRegex(text, [
+    /(?:entity type|corporate form|legal form|company type|entity form)\s*[:\-]\s*([A-Za-z .]{2,80})/i,
+    /\b(incorporated|corporation|corp\.?|inc\.?|limited liability company|llc|l\.l\.c\.|limited|ltd\.?|private limited|pvt\.?\s*ltd\.?|llp|l\.l\.p\.|gmbh|s\.a\.|s\.r\.l\.|plc|pte\.?\s*ltd\.?)\b/i
+  ]);
+  return normalizeEntityType(direct);
+}
+
+function normalizeEntityType(value) {
+  const raw = String(value || "").replace(/\s+/g, " ").trim();
+  if (!raw) return "";
+  const text = raw.toLowerCase();
+  if (/\b(private limited|pvt\.?\s*ltd\.?)\b/.test(text)) return "Private limited company";
+  if (/\b(limited liability company|llc|l\.l\.c\.)\b/.test(text)) return "Limited liability company";
+  if (/\b(incorporated|inc\.?)\b/.test(text)) return "Incorporated company";
+  if (/\b(corporation|corp\.?)\b/.test(text)) return "Corporation";
+  if (/\b(limited|ltd\.?)\b/.test(text)) return "Limited company";
+  if (/\b(llp|l\.l\.p\.)\b/.test(text)) return "Limited liability partnership";
+  if (/\bgmbh\b/.test(text)) return "GmbH";
+  if (/\bs\.a\.\b/.test(text)) return "S.A.";
+  if (/\bs\.r\.l\.\b/.test(text)) return "S.R.L.";
+  if (/\bplc\b/.test(text)) return "Public limited company";
+  if (/\bpte\.?\s*ltd\.?\b/.test(text)) return "Private limited company";
+  return "";
+}
+
+function extractRegisteredNoticeLocation(text) {
+  return firstRegex(text, [
+    /(?:registered office|registered address|registered notice address|legal notice address|notice address|mailing address)\s*[:\-]\s*([^.;\n]{6,180})/i,
+    /(?:notices?\s+(?:should|must|may)\s+be\s+sent\s+to|send\s+notices?\s+to)\s+([^.;\n]{6,180})/i,
+    /(?:contact\s+(?:us\s+)?(?:at|address)\s*[:\-]\s*)([^.;\n]{6,180})/i,
+    /(?:located at|principal office(?: is)? at)\s+([^.;\n]{6,180})/i
   ]);
 }
 
@@ -251,7 +307,7 @@ function cleanSignal(value) {
     .replace(/^(the\s+)?/i, "")
     .replace(/\s+(?:and any applicable conflict of laws rules|without regard to conflict of laws principles|excluding its conflict of laws rules|without regard to its conflict of laws).*$/i, "")
     .replace(/[,:;\-–—\s]+$/g, "")
-    .slice(0, 160)
+    .slice(0, 180)
     .trim();
 }
 
