@@ -15,6 +15,17 @@ const REQUIRED_SECTION_789_ARTIFACTS = Object.freeze([
 ]);
 const REQUIRED_SECTION_10_ARTIFACT = "normalized_section__methodology_limitations_forensic_annexure";
 const REQUIRED_SECTION_6_ARTIFACT = "normalized_section__legal_document_control_review";
+const MAIN_REPORT_VALUE_FORBIDDEN_TOKENS = Object.freeze([
+  "trace_id",
+  "field_path",
+  "value_preview",
+  "forensic_trace_present",
+  "technical_annexure_only",
+  "\"display_in_main_report\":false",
+  "normalized_dap_field_id",
+  "integrated_field_group",
+  "row_type"
+]);
 
 export function validateNormalizedProfilerOutput(output = {}) {
   const failures = [];
@@ -35,6 +46,7 @@ export function validateNormalizedProfilerOutput(output = {}) {
     if (!section.section_id) failures.push(`${artifactName} missing section_id`);
     if (!section.section_title) failures.push(`${artifactName} missing section_title`);
     if (!MACHINE_STATUSES.has(String(section.section_status || ""))) failures.push(`${artifactName} section_status is not machine status:${section.section_status || "blank"}`);
+    if (asArray(section.section_limitations).length) failures.push(`${artifactName} section_limitations must be empty; limitation ledger belongs in Section 10 fields/annexure, not report-body section envelopes`);
     if (!Array.isArray(section.subsections) || !section.subsections.length) failures.push(`${artifactName} has no subsections`);
     for (const subsection of asArray(section.subsections)) {
       if (!subsection.subsection_id) failures.push(`${artifactName} subsection missing subsection_id`);
@@ -44,6 +56,11 @@ export function validateNormalizedProfilerOutput(output = {}) {
         if (!field.field_id) failures.push(`${artifactName}.${subsection.subsection_id || "unknown"} field missing field_id`);
         if (!field.label) failures.push(`${artifactName}.${subsection.subsection_id || "unknown"}.${field.field_id || "unknown"} missing lawyer-readable label`);
         if (RAW_MAIN_LABEL_TOKENS.includes(field.label)) failures.push(`${artifactName}.${field.field_id} raw internal label used as primary label:${field.label}`);
+        if (containsNestedSectionShape(field.value)) failures.push(`${artifactName}.${subsection.subsection_id || "unknown"}.${field.field_id || "unknown"} field value contains nested section/subsection objects`);
+        if (artifactName !== REQUIRED_SECTION_10_ARTIFACT) {
+          const serializedFieldValue = JSON.stringify(field.value || "");
+          for (const token of MAIN_REPORT_VALUE_FORBIDDEN_TOKENS) if (serializedFieldValue.includes(token)) failures.push(`${artifactName}.${field.field_id || "unknown"} contains public-report forbidden machine token:${token}`);
+        }
         if (!field.source_artifact) warnings.push(`${artifactName}.${field.field_id || "unknown"} missing source_artifact`);
         if (!field.source_path) warnings.push(`${artifactName}.${field.field_id || "unknown"} missing source_path`);
       }
@@ -79,17 +96,26 @@ export function validateNormalizedProfilerOutput(output = {}) {
   if (compilerTrace.section_10_merged_forensic_annexure !== true) failures.push("compiler_trace.section_10_merged_forensic_annexure missing or not true");
   if (compilerTrace.section_6_m9_summary_not_raw_index !== true) failures.push("compiler_trace.section_6_m9_summary_not_raw_index missing or not true");
   if (compilerTrace.no_separate_section_11 !== true) failures.push("compiler_trace.no_separate_section_11 missing or not true");
+  if (compilerTrace.report_body_section_limitations_removed !== true) warnings.push("compiler_trace.report_body_section_limitations_removed missing or not true");
 
   if (output.profiles_combined) failures.push("profiles_combined emitted by normalized compiler");
   if (output.forensics_combined) failures.push("forensics_combined emitted by normalized compiler");
   if (final.profiles || final.profile || final.forensics) failures.push("final_output_handoff contains legacy merged profile/forensics blob");
   if (!final.legacy_archive || final.legacy_archive.profiles_combined !== "ARCHIVED_LEGACY") warnings.push("final_output_handoff legacy_archive marker missing or incomplete");
 
-  return { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures, warnings, checked_sections: NORMALIZED_SECTION_ARTIFACT_NAMES.length, validator_version: "normalizer_validator_v5_m9_section6_section10_merged" };
+  return { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures, warnings, checked_sections: NORMALIZED_SECTION_ARTIFACT_NAMES.length, validator_version: "normalizer_validator_v6_locked_public_report_cleanup" };
 }
 
 export function assertNormalizedProfilerOutput(output = {}) {
   const validation = validateNormalizedProfilerOutput(output);
   if (validation.status !== "PASS") throw new Error(`NORMALIZER_VALIDATION_FAILED:${JSON.stringify(validation)}`);
   return validation;
+}
+
+function containsNestedSectionShape(value) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some(containsNestedSectionShape);
+  if (Object.prototype.hasOwnProperty.call(value, "subsection_id") && Object.prototype.hasOwnProperty.call(value, "fields")) return true;
+  if (Object.prototype.hasOwnProperty.call(value, "section_id") && Object.prototype.hasOwnProperty.call(value, "subsections")) return true;
+  return Object.values(value).some(containsNestedSectionShape);
 }
