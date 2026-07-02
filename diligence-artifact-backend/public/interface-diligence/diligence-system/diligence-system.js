@@ -36,6 +36,8 @@ const POLL_MS = 10000;
 const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
 let pollTimer = null;
 let currentRunId = "";
+let runSessionStartedAt = 0;
+let elapsedTimer = null;
 
 const els = {
   form: document.getElementById("runForm"),
@@ -54,12 +56,21 @@ const els = {
   phaseRail: document.getElementById("phaseRail"),
   mobileFunnel: document.getElementById("mobileFunnel"),
   mobileFunnelLabel: document.getElementById("mobileFunnelLabel"),
-  progressLine: document.getElementById("progressLine")
+  progressLine: document.getElementById("progressLine"),
+  runLiveBadge: document.getElementById("runLiveBadge"),
+  runProgress: document.getElementById("runProgress"),
+  runProgressFill: document.getElementById("runProgressFill"),
+  runProgressText: document.getElementById("runProgressText"),
+  runElapsedValue: document.getElementById("runElapsedValue"),
+  lastCheckedValue: document.getElementById("lastCheckedValue")
 };
 
 renderRail({ current_phase: "CREATED", status: "IDLE", runner_state: "IDLE" });
+updateRunMonitor({ current_phase: "", status: "IDLE", runner_state: "IDLE" }, 0);
 els.form.addEventListener("submit", startRun);
 attachRunFromUrl();
+window.updateDiligenceGateRunMonitor = updateRunMonitor;
+window.setDiligenceGateMonitorAttention = setMonitorAttention;
 
 async function startRun(event) {
   event.preventDefault();
@@ -68,6 +79,8 @@ async function startRun(event) {
   if (!targetUrl) return setMessage("Enter a public target URL first.", true);
 
   stopPolling();
+  resetRunClock();
+  startRunClock();
   setBusy(true);
   setMessage("Creating isolated diligence run...");
   resetReportLink();
@@ -80,20 +93,22 @@ async function startRun(event) {
     currentRunId = created.run_id;
     updateBrowserRunId(currentRunId);
     updateState({ run: created, artifacts: [] });
-    setMessage("Run created. Starting backend worker...");
+    setMessage("Run created. Starting diligence workflow...");
 
     await api(`/public/diligence-system/jobs/${encodeURIComponent(currentRunId)}/advance`, {
       method: "POST",
       body: JSON.stringify({ auto_continue: true })
     });
 
-    setMessage("Backend worker queued. Watching Diligence Engine phase rail...");
+    setMessage("Workflow queued. Watching the live diligence rail...");
     await pollOnce();
     pollTimer = setInterval(pollOnce, POLL_MS);
   } catch (error) {
     setMessage(error.message || String(error), true);
+    setMonitorAttention(error.message || String(error));
     renderRail({ current_phase: "CREATED", status: "CONTROLLED_FAILURE", runner_state: "FAILED" });
     setBusy(false);
+    stopRunClock();
   }
 }
 
@@ -102,6 +117,8 @@ async function attachRunFromUrl() {
   if (!runId) return;
 
   stopPolling();
+  resetRunClock();
+  startRunClock();
   currentRunId = runId;
   setBusy(true);
   resetReportLink();
@@ -116,6 +133,8 @@ async function attachRunFromUrl() {
     stopPolling();
     setBusy(false);
     setMessage(error.message || String(error), true);
+    setMonitorAttention(error.message || String(error));
+    stopRunClock();
   }
 }
 
@@ -128,6 +147,7 @@ async function pollOnce(_options = {}) {
     if (isComplete(run)) {
       stopPolling();
       setBusy(false);
+      stopRunClock();
       const href = `report.html?run_id=${encodeURIComponent(currentRunId)}`;
       els.openReportButton.href = href;
       els.openReportButton.classList.remove("hidden");
@@ -138,15 +158,18 @@ async function pollOnce(_options = {}) {
     if (isFailed(run)) {
       stopPolling();
       setBusy(false);
+      stopRunClock();
       const detail = run.runner_last_error ? ` ${run.runner_last_error}` : "";
       setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.${detail}`, true);
       return;
     }
-    setMessage(`Watching run ${currentRunId}. Live Diligence Engine phase: ${run.current_phase || "unknown"}.`);
+    setMessage(`Watching run ${currentRunId}. Current diligence phase: ${run.current_phase || "unknown"}.`);
   } catch (error) {
     stopPolling();
     setBusy(false);
     setMessage(error.message || String(error), true);
+    setMonitorAttention(error.message || String(error));
+    stopRunClock();
     throw error;
   }
 }
@@ -181,6 +204,7 @@ function updateState(payload = {}) {
   els.activePhaseTitle.textContent = phaseInfo.label;
   els.activePhaseText.textContent = `${PHASE_TEXT[phase] || phaseInfo.why} Current engine phase: ${phase}.`;
   els.terminalNotice.innerHTML = badgeHtml(status, runner, run.runner_last_error || "");
+  updateRunMonitor(run, artifactCount);
   renderRail(run);
 }
 
@@ -231,8 +255,7 @@ function renderRail(run = {}) {
     return `<div class="rail-stage ${state}"><span class="rail-dot"></span><div><div class="rail-node">${escapeHtml(phase.label)}</div><div class="rail-sub">${escapeHtml(phase.sub)}</div><div class="rail-why">${escapeHtml(phase.why)}</div></div></div>`;
   }).join("");
   renderMobile(active);
-  const denominator = Math.max(1, RAIL_PHASES.length - 1);
-  const pct = Math.max(0, Math.min(100, Math.round((active / denominator) * 100)));
+  const pct = progressPercent(run);
   els.progressLine.style.width = `${pct}%`;
 }
 
@@ -247,6 +270,13 @@ function activeIndex(run = {}) {
   return found >= 0 ? found : 0;
 }
 
+function progressPercent(run = {}) {
+  if (!run || run.status === "IDLE") return 0;
+  if (isComplete(run)) return 100;
+  const denominator = Math.max(1, RAIL_PHASES.length - 1);
+  return Math.max(0, Math.min(98, Math.round((activeIndex(run) / denominator) * 100)));
+}
+
 function isComplete(run = {}) {
   return run.status === "COMPLETE" || run.current_phase === "COMPLETE";
 }
@@ -257,7 +287,7 @@ function isFailed(run = {}) {
 
 function setBusy(value) {
   els.runButton.disabled = Boolean(value);
-  els.runButton.textContent = value ? "Monitoring..." : "Run Diligence";
+  els.runButton.textContent = value ? "Monitoring..." : "Start Diligence Run";
 }
 
 function setMessage(message, error = false) {
@@ -275,10 +305,92 @@ function stopPolling() {
   pollTimer = null;
 }
 
+function startRunClock() {
+  if (!runSessionStartedAt) runSessionStartedAt = Date.now();
+  if (!elapsedTimer) elapsedTimer = setInterval(updateElapsedClock, 1000);
+  updateElapsedClock();
+}
+
+function stopRunClock() {
+  if (elapsedTimer) clearInterval(elapsedTimer);
+  elapsedTimer = null;
+  updateElapsedClock();
+}
+
+function resetRunClock() {
+  stopRunClock();
+  runSessionStartedAt = 0;
+  updateElapsedClock();
+}
+
+function updateElapsedClock() {
+  if (!els.runElapsedValue) return;
+  if (!runSessionStartedAt) {
+    els.runElapsedValue.textContent = "Elapsed: 00:00";
+    return;
+  }
+  const seconds = Math.max(0, Math.floor((Date.now() - runSessionStartedAt) / 1000));
+  els.runElapsedValue.textContent = "Elapsed: " + formatElapsed(seconds);
+}
+
+function updateRunMonitor(run = {}, artifactCount = 0) {
+  const idle = !currentRunId && !run.run_id && (run.status === "IDLE" || !run.current_phase);
+  const failed = isFailed(run);
+  const complete = isComplete(run);
+  const live = !idle && !failed && !complete;
+  const phase = run.current_phase || "";
+  const pct = progressPercent(run);
+  if (live) startRunClock();
+  if (complete || failed) stopRunClock();
+  setLiveBadge(complete ? "Complete" : failed ? "Needs attention" : live ? "Live" : "Idle", complete ? "complete" : failed ? "attention" : live ? "live" : "idle");
+  if (els.runProgress) {
+    els.runProgress.setAttribute("aria-valuenow", String(pct));
+    els.runProgress.classList.toggle("is-live", live);
+  }
+  if (els.runProgressFill) els.runProgressFill.style.width = `${pct}%`;
+  if (els.runProgressText) {
+    if (complete) els.runProgressText.textContent = "Report ready. Opening the report automatically.";
+    else if (failed) els.runProgressText.textContent = "Run needs attention. Review the status before continuing.";
+    else if (live) els.runProgressText.textContent = `Diligence workflow running${phase ? `: ${phase}` : ""}. Keep this page open.`;
+    else els.runProgressText.textContent = "Waiting for intake.";
+  }
+  if (els.lastCheckedValue) {
+    els.lastCheckedValue.textContent = live || complete || failed ? `Last checked: ${formatTime(new Date())}` : "Last checked: —";
+  }
+  if (artifactCount && els.artifactValue) els.artifactValue.textContent = String(artifactCount);
+}
+
+function setMonitorAttention(message) {
+  setLiveBadge("Needs attention", "attention");
+  if (els.runProgress) els.runProgress.classList.remove("is-live");
+  if (els.runProgressText) els.runProgressText.textContent = message || "Run needs attention.";
+  if (els.lastCheckedValue) els.lastCheckedValue.textContent = `Last checked: ${formatTime(new Date())}`;
+}
+
+function setLiveBadge(label, state) {
+  if (!els.runLiveBadge) return;
+  els.runLiveBadge.className = `gate-live-badge ${state || "idle"}`;
+  els.runLiveBadge.innerHTML = `<span class="gate-live-dot"></span>${escapeHtml(label)}`;
+}
+
+function formatElapsed(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+  if (!hours) return `${mm}:${ss}`;
+  return `${String(hours).padStart(2, "0")}:${mm}:${ss}`;
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
 function badgeHtml(status, runner, error = "") {
   const failed = TERMINAL_FAILURES.has(status) || runner === "FAILED";
   const label = [status, runner].filter(Boolean).join(" / ") || "Idle";
-  const detail = failed && error ? ` â€” ${error}` : "";
+  const detail = failed && error ? ` — ${error}` : "";
   return `<span class="status-badge ${failed ? "failed" : ""}"><span class="dot"></span>${escapeHtml(label + detail)}</span>`;
 }
 
