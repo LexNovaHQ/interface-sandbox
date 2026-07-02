@@ -30,26 +30,26 @@
   if (initial) attach(initial, false);
 
   async function attach(id, writeUrl) {
-    if (!id) return message("Enter a valid LN run ID.", true);
+    if (!id) return message("Enter a valid LN matter/run ID.", true);
     stop();
     runId = id;
     if (nodes.input) nodes.input.value = id;
     if (writeUrl) setUrl(id);
     setLinks(id, false);
-    message(`Attached to ${id}. Loading live Diligence Engine state...`);
+    message(`Attached to ${id}. Loading matter status...`);
     await poll();
     if (runId && !timer) timer = setInterval(poll, POLL_MS);
   }
 
   async function resume() {
-    if (!runId) return message("Attach a run ID first.", true);
-    message(`Requesting continue for ${runId}...`);
+    if (!runId) return message("Attach a matter/run ID first.", true);
+    message(`Requesting workflow continuation for ${runId}...`);
     await request(`/public/diligence-system/jobs/${encodeURIComponent(runId)}/advance`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ auto_continue: true })
     });
-    message("Continue requested. Watching live Diligence Engine state...");
+    message("Continuation requested. Watching matter status...");
     await poll();
     if (!timer) timer = setInterval(poll, POLL_MS);
   }
@@ -68,10 +68,10 @@
       } else if (isStopped(run)) {
         stop();
         setLinks(runId, false);
-        message(`Run stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
+        message(`Matter stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
       } else {
         setLinks(runId, false);
-        message(`Watching ${runId}. Live Diligence Engine phase: ${run.current_phase || "unknown"}.`);
+        message(`Watching ${runId}. Current diligence phase: ${run.current_phase || "unknown"}.`);
       }
     } catch (error) {
       stop();
