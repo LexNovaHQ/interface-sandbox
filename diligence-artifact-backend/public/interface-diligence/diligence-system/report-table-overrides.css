@@ -1,0 +1,96 @@
+/* Full public report table rendering lock
+   Purpose: Sections 7-10 must render full public-projection tables without column collapse.
+*/
+.table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  margin: .85rem 0 1.15rem;
+  border: 1px solid rgba(229,229,229,.14);
+  background: rgba(0,0,0,.16);
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll:focus {
+  outline: 2px solid rgba(197,160,89,.42);
+  outline-offset: 2px;
+}
+.table-scroll-note {
+  margin: 0;
+  padding: .55rem .7rem;
+  color: rgba(229,229,229,.54);
+  font-size: .74rem;
+  line-height: 1.35;
+  border-bottom: 1px solid rgba(229,229,229,.1);
+  background: rgba(197,160,89,.035);
+}
+.table-scroll .report-table {
+  width: max-content !important;
+  max-width: none !important;
+  margin: 0 !important;
+  table-layout: auto !important;
+  border-collapse: collapse !important;
+}
+.table-scroll .rowset-table,
+.table-scroll .full-public-table {
+  min-width: 960px;
+}
+.table-scroll .report-table th,
+.table-scroll .report-table td {
+  min-width: 150px;
+  max-width: 340px;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto;
+  vertical-align: top;
+}
+.table-scroll .report-table th {
+  min-width: 150px;
+  line-height: 1.25;
+  letter-spacing: .06em !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+}
+.table-scroll .report-table td {
+  line-height: 1.45;
+}
+.table-scroll .report-table td:first-child,
+.table-scroll .report-table th:first-child {
+  min-width: 180px;
+}
+.rowset-table-scroll {
+  border-left: 3px solid rgba(197,160,89,.55);
+}
+.field-table-scroll .field-table {
+  min-width: 760px;
+}
+.shell-meta-table-scroll .shell-meta-table {
+  min-width: 720px;
+}
+.stale-truncated-table-block {
+  border: 1px solid rgba(216,179,93,.24);
+  background: rgba(216,179,93,.035);
+  padding: .75rem;
+}
+
+@media print {
+  .table-scroll {
+    overflow: visible !important;
+    border: 0 !important;
+  }
+  .table-scroll-note {
+    display: none !important;
+  }
+  .table-scroll .report-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 7.5pt !important;
+  }
+  .table-scroll .report-table th,
+  .table-scroll .report-table td {
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 4pt !important;
+  }
+}
