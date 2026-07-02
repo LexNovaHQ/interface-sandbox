@@ -1,5 +1,6 @@
 const ARTIFACT_NAME = "integrated_dap_report";
 const MATRIX_VERSION = "dap_4c_substantive_integrated_projection_v1";
+const ANNEXURE_DISCLAIMER = "This public section is a curated summary of the Integrated DAP review. The full 36-field substantive DAP field base, evidence matrix, limitations, and qualified-review queue are retained in the Technical Annexure / Qualified Review materials.";
 
 const SECTION_TITLES = Object.freeze({
   scope_and_source_coverage: "Scope and Source Coverage",
@@ -80,7 +81,7 @@ export function buildIntegratedDapProjection({ run = {}, artifacts = {} } = {}) 
   }));
   const review = rows.filter((row) => row.qualified_review_action !== "No action required");
   const lock = b4Fields.length === 36 && rows.length === Object.keys(FIELD_MAP).length ? (review.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED") : "LOCKED_WITH_LIMITATIONS";
-  const normalized_profile_overlay = { ...m10, substantive_4b_field_base: b4Fields, integrated_public_findings: rows };
+  const normalized_profile_overlay = { ...m10, substantive_4b_field_base: b4Fields, integrated_public_findings: rows, annexure_disclaimer: ANNEXURE_DISCLAIMER };
   return {
     [ARTIFACT_NAME]: {
       artifact_type: ARTIFACT_NAME,
@@ -90,6 +91,7 @@ export function buildIntegratedDapProjection({ run = {}, artifacts = {} } = {}) 
       derivation_mode: "DETERMINISTIC_COMPILER_NO_MODEL",
       source_boundary: "PUBLIC_SOURCE_ONLY",
       report_title: "Integrated Data Architecture & Privacy Readiness Projection",
+      annexure_disclaimer: ANNEXURE_DISCLAIMER,
       status: lock,
       lock_status: lock,
       component_artifacts: ["target_feature_profile", "data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile"],
@@ -99,7 +101,8 @@ export function buildIntegratedDapProjection({ run = {}, artifacts = {} } = {}) 
         m10_role: "base_data_provenance_profile",
         four_b_role: "substantive_data_protection_field_base",
         public_report_body_uses_analytical_findings_not_machine_signal_rows: true,
-        full_field_base_for_annexure_and_qualified_review: true
+        full_field_base_for_annexure_and_qualified_review: true,
+        public_report_disclaimer: ANNEXURE_DISCLAIMER
       },
       field_matrix: Object.entries(FIELD_MAP).map(([field_id, [subsection_id, group, b4_field_ids]]) => ({ section_id: "data_provenance_controls", subsection_id, normalized_dap_field_id: field_id, integrated_field_group: group, b4_field_ids })),
       coverage_summary: {
@@ -112,12 +115,18 @@ export function buildIntegratedDapProjection({ run = {}, artifacts = {} } = {}) 
         qualified_review_queue_count: review.length,
         evidence_strength_counts: countBy(rows, (row) => row.evidence_strength)
       },
-      normalized_section_projection: { section_id: "data_provenance_controls", section_title: "Data Provenance & Controls", projection_rule: "4C integrates M8 activity context, M10 data provenance, and 4B substantive DAP field base into analytical public report findings. Raw 4B field base remains annexure/QR material.", subsections },
+      normalized_section_projection: {
+        section_id: "data_provenance_controls",
+        section_title: "Data Provenance & Controls",
+        projection_rule: "4C integrates M8 activity context, M10 data provenance, and 4B substantive DAP field base into analytical public report findings. Raw 4B field base remains annexure/QR material.",
+        annexure_disclaimer: ANNEXURE_DISCLAIMER,
+        subsections
+      },
       normalized_profile_overlay,
       integrated_table_rows: rows,
       qualified_review_queue: review.map((row, i) => ({ queue_id: `DAP-QR-${String(i + 1).padStart(3, "0")}`, subsection_id: row.subsection_id, integrated_field_group: row.integrated_field_group, review_point: row.review_point, jurisdiction_layer: row.jurisdiction_layer, public_footprint_status: row.public_footprint_status, action: row.qualified_review_action })),
       limitations: limits({ artifacts, b4, rows }),
-      validation_quality_control_result: { status: lock === "LOCKED" ? "PASS" : "PASS_WITH_LIMITATION", deterministic: true, model_usage: "NONE_DETERMINISTIC", normalized_section_spine_only: true, no_standalone_india_report_section: true, substance_preserved: true, integrated_m8_and_4b: true }
+      validation_quality_control_result: { status: lock === "LOCKED" ? "PASS" : "PASS_WITH_LIMITATION", deterministic: true, model_usage: "NONE_DETERMINISTIC", normalized_section_spine_only: true, no_standalone_india_report_section: true, substance_preserved: true, integrated_m8_and_4b: true, annexure_disclaimer_present: true }
     }
   };
 }
@@ -138,14 +147,15 @@ function buildIntegratedRow({ fieldId, subsection_id, review_point, b4FieldIds, 
     review_point,
     jurisdiction_layer: "Global + India public-footprint readiness",
     public_footprint_status: statusLabel(strength),
-    evidence_summary: finding,
+    evidence_summary: `${finding} ${ANNEXURE_DISCLAIMER}`,
     factual_basis: basis,
+    annexure_note: ANNEXURE_DISCLAIMER,
     linked_m8_activity_ids: unique(fields.flatMap((field) => field.linked_m8_activity_ids || [])),
     linked_data_categories: unique([...dataCategoriesForField(fields), ...directDataCategoryHints(fieldId, dataCategories)]).slice(0, 8),
     registry_basis: unique(fields.flatMap((field) => field.registry_basis || [])),
     evidence_strength: strength,
     limitation,
-    qualified_review_action: strength === "strong" ? "No action required" : action
+    qualified_review_action: strength === "strong" ? `No immediate action from public summary; review full Integrated DAP annexure before reliance.` : `${action} Review the full Integrated DAP annexure before reliance.`
   };
 }
 
@@ -185,7 +195,7 @@ function statusLabel(strength) {
   return ({ strong: "Substantively visible in reviewed materials", partial: "Partially visible; requires confirmation", weak: "Weak public signal only", not_visible: "Not visible in reviewed public materials", conflicting: "Conflicting public signals" })[strength] || "Not visible in reviewed public materials";
 }
 function limits({ artifacts, b4, rows }) {
-  const out = ["4C is a deterministic projection layer only. It does not create a legal opinion, compliance certification, DPDP applicability determination, or local counsel conclusion."];
+  const out = ["4C is a deterministic projection layer only. It does not create a legal opinion, compliance certification, DPDP applicability determination, or local counsel conclusion.", ANNEXURE_DISCLAIMER];
   if (!artifacts?.data_provenance_profile) out.push("Base data provenance profile unavailable or incomplete.");
   if (!artifacts?.target_feature_profile) out.push("M8 activity profile unavailable or incomplete.");
   if (!artifacts?.extended_dap_india_readiness_profile) out.push("4B substantive DAP field base unavailable or incomplete.");
