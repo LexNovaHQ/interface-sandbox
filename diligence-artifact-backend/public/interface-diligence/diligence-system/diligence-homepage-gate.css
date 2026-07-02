@@ -65,6 +65,7 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+  margin-top: 18px;
 }
 
 @media (min-width: 980px) {
@@ -73,9 +74,15 @@
   }
 }
 
+.gate-left-stack,
 .gate-side-stack {
   display: grid;
   gap: 18px;
+}
+
+@media (min-width:1040px) {
+  .gate-workbench { grid-template-columns: minmax(0,1.08fr) minmax(300px,.62fr); }
+  .gate-side-stack { position: sticky; top: 92px; }
 }
 
 .gate-card {
@@ -88,8 +95,25 @@
 
 .gate-card::before { opacity: .18; }
 
-.gate-primary-card {
+.gate-primary-card,
+.gate-status-card {
   border-color: rgba(197,160,89,.24);
+}
+
+.gate-status-priority {
+  margin-bottom: 0;
+  border-color: rgba(197,160,89,.34);
+  background: linear-gradient(180deg, rgba(11,11,11,.98), rgba(6,6,6,.98));
+}
+
+.gate-status-priority .gate-card-kicker {
+  margin-bottom: .78rem;
+}
+
+@media (min-width: 980px) {
+  .gate-status-priority .gate-meta-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .gate-card-kicker {
@@ -121,25 +145,98 @@
   font-weight: 900;
 }
 
-.gate-form-grid {
-  gap: 13px;
+.gate-form-grid { gap: 13px; }
+.gate-actions { margin-top: .85rem; }
+.gate-actions .btn { min-height: 42px; padding: .68rem .95rem; }
+
+.gate-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gate-status-card p { margin-top: 0; }
+
+.gate-run-monitor {
+  border: 1px solid rgba(197,160,89,.18);
+  border-radius: 10px;
+  padding: .88rem;
+  margin: 1rem 0;
+  background: rgba(197,160,89,.028);
 }
 
-.gate-actions {
-  margin-top: .85rem;
+.gate-run-monitor-head,
+.gate-run-monitor-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.gate-actions .btn {
-  min-height: 42px;
-  padding: .68rem .95rem;
+.gate-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  border: 1px solid rgba(229,229,229,.16);
+  border-radius: 999px;
+  padding: .34rem .66rem;
+  background: rgba(255,255,255,.018);
+  color: rgba(229,229,229,.62);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 900;
 }
 
-.gate-meta-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.gate-live-badge.live { color: var(--gold); border-color: rgba(197,160,89,.38); background: rgba(197,160,89,.06); }
+.gate-live-badge.complete { color: var(--green); border-color: rgba(100,184,146,.38); background: rgba(100,184,146,.06); }
+.gate-live-badge.attention { color: var(--danger); border-color: rgba(214,117,98,.42); background: rgba(214,117,98,.06); }
+
+.gate-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
 }
 
-.gate-status-card p {
-  margin-top: 0;
+.gate-live-badge.live .gate-live-dot { animation: gatePulse 1.15s ease-in-out infinite; }
+
+.gate-run-clock {
+  color: rgba(229,229,229,.52);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .72rem;
+  letter-spacing: .04em;
+}
+
+.gate-run-progress {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(229,229,229,.1);
+  margin: .85rem 0 .65rem;
+}
+
+.gate-run-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg,rgba(197,160,89,.45),rgba(197,160,89,.95));
+  box-shadow: 0 0 16px rgba(197,160,89,.32);
+  transition: width .35s ease;
+}
+
+.gate-run-progress.is-live span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);
+  transform: translateX(-100%);
+  animation: gateSweep 1.8s linear infinite;
+}
+
+.gate-run-monitor-foot {
+  color: rgba(229,229,229,.52);
+  font-size: .72rem;
+  line-height: 1.42;
 }
 
 .gate-diagnostics {
@@ -159,39 +256,34 @@
   font-weight: 900;
 }
 
-.gate-diagnostics[open] summary {
-  color: var(--gold);
-}
+.gate-diagnostics[open] summary { color: var(--gold); }
+.gate-endpoint-grid { gap: 8px; margin-top: 12px; }
+.gate-endpoint-grid .btn { min-height: 36px; padding: .52rem .68rem; font-size: .58rem; }
 
-.gate-endpoint-grid {
-  gap: 8px;
-  margin-top: 12px;
-}
+.gate-guidance-card p { margin: .55rem 0 0; }
+.gate-path-list { list-style:none; display:grid; gap:.88rem; padding:0; margin:1rem 0 0; }
+.gate-path-list li { display:grid; grid-template-columns:34px minmax(0,1fr); gap:.72rem; align-items:start; }
+.gate-path-list li>span { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border:1px solid rgba(197,160,89,.24); border-radius:999px; color:rgba(197,160,89,.82); font-size:.56rem; letter-spacing:.08em; font-weight:900; }
+.gate-path-list strong { color:rgba(245,245,245,.9); font-size:.82rem; }
+.gate-path-list p { color:rgba(229,229,229,.52); font-size:.76rem; line-height:1.45; }
 
-.gate-endpoint-grid .btn {
-  min-height: 36px;
-  padding: .52rem .68rem;
-  font-size: .58rem;
-}
+.diligence-gate-page .footer-note { margin-top: 28px; }
 
-.diligence-gate-page .footer-note {
-  margin-top: 28px;
-}
+@keyframes gatePulse { 0%,100%{opacity:.58;transform:scale(.92)} 50%{opacity:1;transform:scale(1.18)} }
+@keyframes gateSweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 
 @media (max-width: 720px) {
   .gate-shell { width: min(100% - 24px, 1320px); }
   .gate-meta-grid { grid-template-columns: minmax(0, 1fr); }
   .gate-card-kicker { align-items: flex-start; }
+  .gate-run-monitor-head,
+  .gate-run-monitor-foot { align-items:flex-start; }
 }
 
 @media print {
   .gate-hero,
   .gate-card,
-  .gate-diagnostics {
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
+  .gate-diagnostics { border-radius:0!important; box-shadow:none!important; }
+  .gate-run-progress span::after,
+  .gate-live-badge.live .gate-live-dot { animation:none!important; }
 }
-
-/* Run status workflow column + live monitor */
-@media (min-width:1040px){.gate-workbench{grid-template-columns:minmax(0,1.08fr) minmax(300px,.62fr)}.gate-side-stack{position:sticky;top:92px}}.gate-left-stack{display:grid;gap:18px}.gate-status-card{border-color:rgba(197,160,89,.24)}.gate-run-monitor{border:1px solid rgba(197,160,89,.18);border-radius:10px;padding:.88rem;margin:1rem 0;background:rgba(197,160,89,.028)}.gate-run-monitor-head,.gate-run-monitor-foot{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.gate-live-badge{display:inline-flex;align-items:center;gap:.45rem;border:1px solid rgba(229,229,229,.16);border-radius:999px;padding:.34rem .66rem;background:rgba(255,255,255,.018);color:rgba(229,229,229,.62);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:900}.gate-live-badge.live{color:var(--gold);border-color:rgba(197,160,89,.38);background:rgba(197,160,89,.06)}.gate-live-badge.complete{color:var(--green);border-color:rgba(100,184,146,.38);background:rgba(100,184,146,.06)}.gate-live-badge.attention{color:var(--danger);border-color:rgba(214,117,98,.42);background:rgba(214,117,98,.06)}.gate-live-dot{width:7px;height:7px;border-radius:999px;background:currentColor;box-shadow:0 0 10px currentColor}.gate-live-badge.live .gate-live-dot{animation:gatePulse 1.15s ease-in-out infinite}.gate-run-clock{color:rgba(229,229,229,.52);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.72rem;letter-spacing:.04em}.gate-run-progress{position:relative;height:8px;border-radius:999px;overflow:hidden;background:rgba(229,229,229,.1);margin:.85rem 0 .65rem}.gate-run-progress span{position:absolute;inset:0 auto 0 0;width:0%;border-radius:inherit;background:linear-gradient(90deg,rgba(197,160,89,.45),rgba(197,160,89,.95));box-shadow:0 0 16px rgba(197,160,89,.32);transition:width .35s ease}.gate-run-progress.is-live span::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);transform:translateX(-100%);animation:gateSweep 1.8s linear infinite}.gate-run-monitor-foot{color:rgba(229,229,229,.52);font-size:.72rem;line-height:1.42}.gate-guidance-card p{margin:.55rem 0 0}.gate-path-list{list-style:none;display:grid;gap:.88rem;padding:0;margin:1rem 0 0}.gate-path-list li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:.72rem;align-items:start}.gate-path-list li>span{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid rgba(197,160,89,.24);border-radius:999px;color:rgba(197,160,89,.82);font-size:.56rem;letter-spacing:.08em;font-weight:900}.gate-path-list strong{color:rgba(245,245,245,.9);font-size:.82rem}.gate-path-list p{color:rgba(229,229,229,.52);font-size:.76rem;line-height:1.45}@keyframes gatePulse{0%,100%{opacity:.58;transform:scale(.92)}50%{opacity:1;transform:scale(1.18)}}@keyframes gateSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@media(max-width:720px){.gate-run-monitor-head,.gate-run-monitor-foot{align-items:flex-start}}@media print{.gate-run-progress span::after,.gate-live-badge.live .gate-live-dot{animation:none!important}}
