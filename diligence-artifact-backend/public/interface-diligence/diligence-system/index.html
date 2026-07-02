@@ -7,7 +7,7 @@
   <meta name="description" content="Legal exposure diligence for AI, technology, data, and digital product businesses." />
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="./diligence-system.css" />
-  <link rel="stylesheet" href="./diligence-homepage-gate.css?v=law-gate-20260703" />
+  <link rel="stylesheet" href="./diligence-homepage-gate.css?v=run-status-20260703" />
 </head>
 <body class="diligence-gate-page">
   <div class="progress-line" id="progressLine" aria-hidden="true"></div>
@@ -35,37 +35,37 @@
         </section>
 
         <section class="gate-workbench" aria-label="Diligence matter gate">
-          <article class="card gate-card gate-primary-card">
-            <div class="gate-card-kicker">
-              <div>
-                <div class="eyebrow">New Matter</div>
-                <h2>Target source</h2>
+          <div class="gate-left-stack">
+            <article class="card gate-card gate-primary-card">
+              <div class="gate-card-kicker">
+                <div>
+                  <div class="eyebrow">New Matter</div>
+                  <h2>Target source</h2>
+                </div>
+                <span class="gate-step-pill">01</span>
               </div>
-              <span class="gate-step-pill">01</span>
-            </div>
-            <form id="runForm" class="form-grid gate-form-grid">
-              <div>
-                <label class="label" for="targetUrl">Public target URL</label>
-                <input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai" required />
-              </div>
-              <div>
-                <label class="label" for="targetLabel">Matter label <span class="small-muted">optional</span></label>
-                <input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" />
-              </div>
-              <div>
-                <label class="label" for="sourceDocuments">Approved source materials <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label>
-                <input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" />
-              </div>
-              <div class="notice gate-inline-notice">Uploaded files become source material for this matter. Upload only public documents or materials already approved for review.</div>
-              <div class="actions gate-actions">
-                <button class="btn" id="runButton" type="submit">Start Diligence Run</button>
-                <a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a>
-                <a class="btn secondary hidden" id="qualifiedReviewPageButton" href="#">Qualified Review</a>
-              </div>
-            </form>
-          </article>
+              <form id="runForm" class="form-grid gate-form-grid">
+                <div>
+                  <label class="label" for="targetUrl">Public target URL</label>
+                  <input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai" required />
+                </div>
+                <div>
+                  <label class="label" for="targetLabel">Matter label <span class="small-muted">optional</span></label>
+                  <input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" />
+                </div>
+                <div>
+                  <label class="label" for="sourceDocuments">Approved source materials <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label>
+                  <input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" />
+                </div>
+                <div class="notice gate-inline-notice">Uploaded files become source material for this matter. Upload only public documents or materials already approved for review.</div>
+                <div class="actions gate-actions">
+                  <button class="btn" id="runButton" type="submit">Start Diligence Run</button>
+                  <a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a>
+                  <a class="btn secondary hidden" id="qualifiedReviewPageButton" href="#">Qualified Review</a>
+                </div>
+              </form>
+            </article>
 
-          <div class="gate-side-stack">
             <article class="card gate-card gate-resume-card">
               <div class="gate-card-kicker">
                 <div>
@@ -90,19 +90,32 @@
             <article class="card gate-card gate-status-card">
               <div class="gate-card-kicker">
                 <div>
-                  <div class="eyebrow">Matter Status</div>
+                  <div class="eyebrow">Run Status</div>
                   <h2 id="activePhaseTitle">Intake</h2>
                 </div>
                 <span class="gate-step-pill">03</span>
               </div>
               <p id="activePhaseText">Waiting for a public target URL or existing matter/run ID.</p>
+              <div class="gate-run-monitor" aria-label="Live diligence run status">
+                <div class="gate-run-monitor-head">
+                  <span class="gate-live-badge idle" id="runLiveBadge"><span class="gate-live-dot"></span>Idle</span>
+                  <span class="gate-run-clock" id="runElapsedValue">Elapsed: 00:00</span>
+                </div>
+                <div class="gate-run-progress" id="runProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                  <span id="runProgressFill" style="width:0%"></span>
+                </div>
+                <div class="gate-run-monitor-foot">
+                  <span id="runProgressText">Waiting for intake.</span>
+                  <span id="lastCheckedValue">Last checked: —</span>
+                </div>
+              </div>
               <div class="meta-grid gate-meta-grid">
                 <div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div>
                 <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
                 <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
                 <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
               </div>
-              <div class="notice gate-inline-notice" id="terminalNotice">The matter rail will update as the diligence workflow progresses.</div>
+              <div class="notice gate-inline-notice" id="terminalNotice">The matter rail will update as the diligence workflow progresses. Keep this page open until the report opens automatically.</div>
               <p class="log-line" id="statusMessage">Idle. Enter a public URL or resume an existing matter/run ID.</p>
               <details class="endpoint-panel gate-diagnostics" id="endpointPanel">
                 <summary>Operator Diagnostics</summary>
@@ -117,6 +130,23 @@
               </details>
             </article>
           </div>
+
+          <aside class="gate-side-stack" aria-label="Diligence workflow guidance">
+            <article class="card gate-card gate-guidance-card">
+              <div class="eyebrow">Review Path</div>
+              <h2>What happens next</h2>
+              <ol class="gate-path-list">
+                <li><span>01</span><div><strong>Source capture</strong><p>Public and approved source materials are collected into the diligence run.</p></div></li>
+                <li><span>02</span><div><strong>Structured report</strong><p>The system assembles a public diligence report from the locked artifacts.</p></div></li>
+                <li><span>03</span><div><strong>Qualified Review</strong><p>The same matter/run ID moves into reviewer confirmation before any downstream drafting.</p></div></li>
+              </ol>
+            </article>
+            <article class="card gate-card gate-guidance-card">
+              <div class="eyebrow">Operating Rule</div>
+              <h2>Do not close during review</h2>
+              <p class="small-muted">Large source sets can take several minutes. The live badge, elapsed timer, progress bar, and last-checked signal show that the diligence workflow is still moving.</p>
+            </article>
+          </aside>
         </section>
       </main>
     </div>
