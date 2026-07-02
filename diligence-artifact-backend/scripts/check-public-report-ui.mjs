@@ -25,7 +25,7 @@ assert.ok(reportHtml.includes('class="report-page"'));
 assert.ok(reportHtml.includes('id="reportRail"'));
 assert.ok(reportHtml.includes('id="reportControlPanel"'));
 assert.ok(reportHtml.includes('id="reportDeckStatus"'));
-assert.ok(reportHtml.includes("report-table-overrides.css?v=report-ui-normalize-20260703"));
+assert.ok(reportHtml.includes("report-table-overrides.css?v=report-responsive-tables-20260703"));
 assert.ok(reportHtml.includes("report.js?v=report-ui-panels-20260703"));
 
 assert.ok(reportJs.includes("qualified-review.html?run_id="));
@@ -84,7 +84,9 @@ assert.equal(reportJs.includes("payload.sections || {}"), false);
 assert.equal(reportJs.includes("section.data"), false);
 
 assert.ok(reportTableCss.includes(".table-scroll"));
-assert.ok(reportTableCss.includes("overflow-x: auto"));
+assert.ok(reportTableCss.includes("overflow: visible"));
+assert.ok(reportTableCss.includes(".report-left-rail { padding-top: .6rem; overflow: visible;"));
+assert.ok(reportTableCss.includes("max-height: none"));
 assert.ok(reportTableCss.includes("writing-mode: horizontal-tb"));
 assert.ok(reportTableCss.includes("word-break: normal"));
 assert.ok(reportTableCss.includes("report-app-layout"));
@@ -99,7 +101,16 @@ assert.ok(reportTableCss.includes("report-rail-item.active"));
 assert.ok(reportTableCss.includes("report-rail-count"));
 assert.ok(reportTableCss.includes("grid-template-columns: 260px"));
 assert.ok(reportTableCss.includes("position: sticky"));
+assert.ok(reportTableCss.includes("table-layout: auto"));
+assert.ok(reportTableCss.includes("min-width: 0 !important"));
+assert.ok(reportTableCss.includes(".col-tight"));
+assert.ok(reportTableCss.includes(".col-wide"));
+assert.ok(reportTableCss.includes(".table-overflow-fallback"));
+assert.ok(reportTableCss.includes("@media (max-width: 760px)"));
 assert.ok(reportTableCss.includes("@media print"));
+assert.equal(reportTableCss.includes("width: max-content"), false);
+assert.equal(reportTableCss.includes("min-width: 960px"), false);
+assert.equal(reportTableCss.includes("max-height: calc(100vh - 112px); overflow: auto"), false);
 
 assert.ok(technicalAnnexureHtml.includes("Public Technical Annexure"));
 assert.ok(technicalAnnexureJs.includes("/public/diligence-system/technical-annexure/"));
