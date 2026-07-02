@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "../src/normalized-profiler-section789-v2.js";
+import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "../src/normalized-profiler-section10-v3.js";
 
 const run = { run_id: "TEST-NORMALIZED", target: "Example", root_url: "https://example.com", status: "LOCKED_WITH_LIMITATIONS" };
 const artifacts = {
@@ -42,8 +42,13 @@ assert.ok(output.normalized_section__review_route_action_plan);
 assert.ok(output.normalized_section__control_handoff_readiness);
 assert.ok(output.normalized_section__exposure_clarification_queue);
 assert.ok(output.normalized_section__global_confirmation_queue);
+assert.ok(output.normalized_section__methodology_limitations_forensic_annexure);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "normalized_section__forensic_ledger_appendix"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "normalized_section__methodology_limitations_review_notes"), false);
 assert.ok(JSON.stringify(output.normalized_section__exposure_diagnosis_table).includes("Threat_Name"));
 assert.ok(JSON.stringify(output.normalized_section__exposure_diagnosis_table).includes("Subcat"));
+assert.ok(JSON.stringify(output.normalized_section__methodology_limitations_forensic_annexure).includes("Manifest only"));
 assert.equal(JSON.stringify(output.normalized_section__exposure_diagnosis_table).includes("Business Category"), false);
 assert.equal(output.final_output_handoff.final_output_handoff.terminal_checks.normalized_sections_emitted, NORMALIZED_SECTION_KEYS.length);
+assert.equal(output.final_output_handoff.final_output_handoff.terminal_checks.no_separate_section_11, true);
 console.log("normalized profiler shape: PASS");
