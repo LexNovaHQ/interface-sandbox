@@ -165,7 +165,7 @@ function renderFieldsTable(fields) {
     tbody.append(tr);
   });
   table.append(tbody);
-  return table;
+  return wrapTable(table, "field-table-scroll");
 }
 
 function renderReportValue(value) {
@@ -206,8 +206,8 @@ function renderKeyValueTable(object) {
 }
 
 function renderTruncatedRowset(object) {
-  const block = el("div", "truncated-table-block");
-  block.append(el("p", "small-muted", "Large table: " + String(object.row_count || 0) + " entries. " + String(object.suppressed_row_count || 0) + " additional entries are preserved in the public technical annexure."));
+  const block = el("div", "truncated-table-block stale-truncated-table-block");
+  block.append(el("p", "small-muted", "This renderer payload was produced before the full-table renderer patch and contains a pre-truncated rowset. Regenerate the report from RENDERER to show the full public table inline."));
   block.append(renderArrayValue(object.displayed_rows || []));
   if (object.display_rule) block.append(el("p", "small-muted", object.display_rule));
   return block;
@@ -215,7 +215,8 @@ function renderTruncatedRowset(object) {
 
 function renderRowsetTable(items) {
   const columns = deriveColumns(items);
-  const table = el("table", "report-table rowset-table");
+  const table = el("table", "report-table rowset-table full-public-table");
+  table.style.minWidth = Math.max(960, columns.length * 170) + "px";
   const thead = document.createElement("thead");
   const header = document.createElement("tr");
   columns.forEach(function (column) { header.append(el("th", "", titleCase(column))); });
@@ -227,7 +228,17 @@ function renderRowsetTable(items) {
     tbody.append(tr);
   });
   table.append(thead, tbody);
-  return table;
+  return wrapTable(table, "rowset-table-scroll", "Full public table — scroll horizontally to view all columns.");
+}
+
+function wrapTable(table, className, captionText) {
+  const block = el("div", "table-scroll " + (className || ""));
+  block.setAttribute("tabindex", "0");
+  block.setAttribute("role", "region");
+  block.setAttribute("aria-label", captionText || "Scrollable report table");
+  if (captionText) block.append(el("p", "table-scroll-note", captionText));
+  block.append(table);
+  return block;
 }
 
 function isTableValue(value) { return Array.isArray(value) && value.length > 0 && value.every(function (item) { return item && typeof item === "object" && !Array.isArray(item); }); }
@@ -235,11 +246,11 @@ function isTruncatedRowset(value) { return value && typeof value === "object" &&
 function isSuppressedRow(value) { return Boolean(value && typeof value === "object" && !Array.isArray(value) && (value.display_in_main_report === false || value.technical_annexure_only === true)); }
 
 function deriveColumns(items) {
-  const priority = ["display_ref", "display_exposure_id", "Exposure_ID", "Threat_ID", "Threat_Name", "Subcat", "Status", "Priority", "Pain_Tier", "Pain_Depth", "Review_Route", "Document", "Field", "Review_Action", "Limitation"];
+  const priority = ["display_ref", "display_exposure_id", "Exposure_ID", "Threat_ID", "Threat_Name", "Subcat", "Status", "Priority", "Pain_Tier", "Pain_Depth", "Review_Route", "Document", "Locator_ID", "Unit_Heading", "Field", "Review_Point", "Jurisdiction_Layer", "Public_Footprint_Status", "Evidence_Summary", "Review_Action", "Limitation"];
   const seen = new Set();
   const columns = [];
   priority.forEach(function (key) { if (!FORBIDDEN_VISIBLE_KEYS.has(key) && items.some(function (item) { return Object.prototype.hasOwnProperty.call(item, key); })) { seen.add(key); columns.push(key); } });
-  items.forEach(function (item) { Object.keys(item || {}).forEach(function (key) { if (!FORBIDDEN_VISIBLE_KEYS.has(key) && !seen.has(key) && columns.length < 10) { seen.add(key); columns.push(key); } }); });
+  items.forEach(function (item) { Object.keys(item || {}).forEach(function (key) { if (!FORBIDDEN_VISIBLE_KEYS.has(key) && !seen.has(key)) { seen.add(key); columns.push(key); } }); });
   return columns.length ? columns : Object.keys(items[0] || {}).filter(function (key) { return !FORBIDDEN_VISIBLE_KEYS.has(key); });
 }
 
@@ -262,7 +273,7 @@ function renderShellMeta(object, tiles) {
   replaceChildren(els.meta, children);
 }
 function reportMetaTable(title, rows) { const block = el("div", "report-meta-table-block"); block.append(el("div", "block-title", title)); block.append(renderRowsetTable(rows)); return block; }
-function shellMetaTable(object) { const rows = Object.entries(object || {}).filter(function (entry) { return entry[1] !== undefined && entry[1] !== null && entry[1] !== ""; }); if (!rows.length) return el("p", "small-muted", "No visible values emitted."); const table = el("table", "report-table kv shell-meta-table"); const tbody = document.createElement("tbody"); rows.forEach(function (entry) { const tr = document.createElement("tr"); tr.append(el("th", "", entry[0]), el("td", "", String(entry[1]))); tbody.append(tr); }); table.append(tbody); return table; }
+function shellMetaTable(object) { const rows = Object.entries(object || {}).filter(function (entry) { return entry[1] !== undefined && entry[1] !== null && entry[1] !== ""; }); if (!rows.length) return el("p", "small-muted", "No visible values emitted."); const table = el("table", "report-table kv shell-meta-table"); const tbody = document.createElement("tbody"); rows.forEach(function (entry) { const tr = document.createElement("tr"); tr.append(el("th", "", entry[0]), el("td", "", String(entry[1]))); tbody.append(tr); }); table.append(tbody); return wrapTable(table, "shell-meta-table-scroll"); }
 function replaceChildren(target, children) { while (target.firstChild) target.removeChild(target.firstChild); children.forEach(function (child) { target.append(child); }); }
 function queryParam(name) { const query = String(window.location.search || "").replace(/^\?/, ""); return query.split("&").map(function (part) { return part.split("="); }).filter(function (pair) { return decodeURIComponent(pair[0] || "") === name; }).map(function (pair) { return decodeURIComponent(pair[1] || ""); })[0] || ""; }
 function titleCase(value) { return String(value || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, function (match) { return match.toUpperCase(); }); }
