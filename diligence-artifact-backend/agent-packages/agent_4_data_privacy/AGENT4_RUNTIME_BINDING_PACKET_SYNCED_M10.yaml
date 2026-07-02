@@ -15,14 +15,20 @@ read_artifacts:
   - legal_cartography_index
   - target_profile
   - target_profile_forensics
+  - feature_candidate_inventory
   - target_feature_profile
   - target_feature_profile_forensics
-  - data_provenance_profile
+
+forbidden_model_inputs:
   - lossless_family__D1_SECURITY_TRUST
   - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
   - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
   - lossless_family__D4_DOCS_API_DATA_FLOW
   - lossless_family__D5_AI_SAFETY_TRANSPARENCY
+  - lossless_family__L1_CORE_TERMS_PRIVACY
+  - lossless_family__L2_B2B_CONTRACTING
+  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+  - any raw lossless_family__* artifact
 
 write_artifacts_in_order:
   - data_provenance_profile
@@ -36,6 +42,8 @@ forbidden_modules:
   - M7_TARGET_PROFILE
   - M8_TARGET_FEATURE_PROFILE
   - M9_LEGAL_CARTOGRAPHY
+  - AGENT_4B_EXTENDED_DAP_INDIA_READINESS
+  - AGENT_4C_INTEGRATED_DAP_REPORT
   - M11_EXPOSURE_REGISTRY
   - M12_OPERATOR_CHALLENGE
   - M13_OUTPUT_HANDOFF
@@ -46,6 +54,7 @@ forbidden_outputs:
   - legal_cartography_index
   - target_profile
   - target_profile_forensics
+  - feature_candidate_inventory
   - target_feature_profile
   - target_feature_profile_forensics
   - exposure_registry_profile
@@ -60,7 +69,7 @@ forbidden_outputs:
   - legal applicability conclusions
   - report prose
 
-backend_permission_profile: agent_4_read_prior_save_m10_lock
+backend_permission_profile: agent_4_read_prior_save_m10_lock_lean_input
 validator_profile: agent_4_m10_validator
 backend_output_contract: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 terminal_receipt_profile: agent_4_manual_receipt_only
@@ -81,6 +90,6 @@ phase_save_contract:
     must_stop_after_emit: true
     backend_must_save_before_m11: true
 
-next_agent_command: backend advances to exposure registry only after M10 material and M10 forensics are both locked; manual mode may show next-step text only after lock
+next_agent_command: backend advances to deterministic 4B only after M10 material and M10 forensics are both locked; manual mode may show next-step text only after lock
 stop_condition: stop after M10_DATA_PROVENANCE lock
 </RUNTIME_BINDING_PACKET>
