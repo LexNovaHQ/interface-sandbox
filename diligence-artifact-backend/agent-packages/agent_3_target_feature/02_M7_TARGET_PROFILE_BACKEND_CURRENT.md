@@ -20,6 +20,8 @@ M7 must not use `source_discovery_handoff.bucket_family_index.legal_governance_p
 
 M7 must not use raw `legal_cartography_index` as model evidence. Any M9-derived support must come only through `m7_deterministic_legal_signal_overlay`.
 
+`legal_cartography_index` is not an active M7 model input.
+
 The overlay may affect only these fields when the overlay status is `FOUND`:
 
 - `target_identity.legal_entity_name`
