@@ -4,6 +4,8 @@ import { buildRendererPayload } from "../src/report-renderer.js";
 
 const reportHtml = readFileSync("public/interface-diligence/diligence-system/report.html", "utf8");
 const reportJs = readFileSync("public/interface-diligence/diligence-system/report.js", "utf8");
+const technicalAnnexureHtml = readFileSync("public/interface-diligence/diligence-system/technical-annexure.html", "utf8");
+const technicalAnnexureJs = readFileSync("public/interface-diligence/diligence-system/technical-annexure.js", "utf8");
 const reportRenderer = readFileSync("src/report-renderer.js", "utf8");
 const serverJs = readFileSync("server.js", "utf8");
 const publicRoutesJs = readFileSync("src/public-reviewer-routes.js", "utf8");
@@ -22,10 +24,20 @@ assert.ok(reportHtml.includes("no-store, no-cache"));
 assert.ok(reportHtml.includes("report.js?v=locked-report-20260701"));
 assert.ok(reportHtml.includes("diligence-system.css?v=locked-report-20260701"));
 assert.ok(reportJs.includes("qualified-review.html?run_id="));
-assert.ok(reportJs.includes("/public/diligence-system/technical-annexure/"));
+assert.ok(reportJs.includes("technical-annexure.html?run_id="));
 assert.equal(reportJs.includes("#public-technical-annexure"), false);
 assert.equal(reportJs.includes("reportSections.push(renderTechnicalAnnexure"), false);
+assert.equal(reportJs.includes("/public/diligence-system/technical-annexure/"), false);
 assert.equal(reportJs.includes("vault" + "/intake"), false);
+assert.ok(technicalAnnexureHtml.includes("Public Technical Annexure"));
+assert.ok(technicalAnnexureHtml.includes("technical-annexure.js?v=locked-report-20260701"));
+assert.ok(technicalAnnexureHtml.includes("Back to Report"));
+assert.ok(technicalAnnexureHtml.includes("Open Manifest JSON"));
+assert.ok(technicalAnnexureJs.includes("/public/diligence-system/technical-annexure/"));
+assert.ok(technicalAnnexureJs.includes("layer_2_public_technical_annexure"));
+assert.ok(technicalAnnexureJs.includes("report_body_inlines_full_payloads"));
+assert.ok(technicalAnnexureJs.includes("included_in_public_annexure_manifest"));
+assert.ok(technicalAnnexureJs.includes("Private reviewer submission"));
 assert.ok(serverJs.includes("etag: false"));
 assert.ok(serverJs.includes("lastModified: false"));
 assert.ok(serverJs.includes("Cache-Control"));
@@ -93,25 +105,8 @@ assert.equal(sample.sections[0].subsections[0].fields[0].label, "Target");
 assert.equal(sample.sections[0].subsections[0].fields[0].value.public_name, "Example");
 assert.equal(sample.sections[0].subsections[0].fields[0].value.evidence_reference_summary.evidence_id, "E-001");
 
-const fullOrder = [
-  "matter_overview",
-  "executive_summary",
-  "target_profile",
-  "product_activity_ip_profile",
-  "data_provenance_controls",
-  "legal_document_control_review",
-  "exposure_summary_harm_mechanism_workpad_summary",
-  "exposure_diagnosis_table",
-  "exposure_control_discipline",
-  "review_route_action_plan",
-  "control_handoff_readiness",
-  "exposure_clarification_queue",
-  "global_confirmation_queue",
-  "methodology_limitations_forensic_annexure"
-];
-const fullInput = {
-  normalized_report_manifest: { run_id: "TEST-FULL-RENDERER", target: "Example", target_url: "https://example.com", validation_status: "LOCKED_WITH_LIMITATIONS", section_order: fullOrder }
-};
+const fullOrder = ["matter_overview", "executive_summary", "target_profile", "product_activity_ip_profile", "data_provenance_controls", "legal_document_control_review", "exposure_summary_harm_mechanism_workpad_summary", "exposure_diagnosis_table", "exposure_control_discipline", "review_route_action_plan", "control_handoff_readiness", "exposure_clarification_queue", "global_confirmation_queue", "methodology_limitations_forensic_annexure"];
+const fullInput = { normalized_report_manifest: { run_id: "TEST-FULL-RENDERER", target: "Example", target_url: "https://example.com", validation_status: "LOCKED_WITH_LIMITATIONS", section_order: fullOrder } };
 for (const sectionId of fullOrder) fullInput[`normalized_section__${sectionId}`] = sampleSection(sectionId, sectionTitle(sectionId));
 fullInput.normalized_section__exposure_diagnosis_table.subsections[0].fields[0].value = Array.from({ length: 30 }, (_, index) => ({ Exposure_ID: `EXP-${index + 1}`, Threat_Name: "Example threat", Subcat: "PRV" }));
 const fullPayload = buildRendererPayload({ run: { run_id: "TEST-FULL-RENDERER", target: "Example", root_url: "https://example.com" }, final_output_handoff: fullInput }).renderer_payload;
@@ -124,7 +119,6 @@ assert.ok(fullPayload.report_layers.some((layer) => layer.layer_id === "layer_3_
 assert.ok(fullPayload.public_report_ui.primary_actions.some((action) => action.id === "open_public_technical_annexure"));
 assert.equal(fullPayload.public_report_ui.raw_json_download_enabled, false);
 assert.equal(fullPayload.public_technical_annexure.report_body_inlines_full_payloads, false);
-assert.equal(JSON.stringify(fullPayload).includes("Download JSON"), true);
 assert.equal(fullPayload.sections.some((section) => section.section_id === "public_technical_annexure"), false);
 assert.ok(JSON.stringify(fullPayload).includes("suppressed_row_count"));
 
@@ -173,20 +167,6 @@ assert.equal(qualifiedReviewJs.includes("Download JSON"), false);
 console.log("public report UI: PASS");
 
 function sampleSection(section_id, section_title) {
-  return {
-    section_id,
-    artifact_name: `normalized_section__${section_id}`,
-    section_title,
-    section_order: 1,
-    section_status: "LOCKED",
-    reviewer_summary: "Summary",
-    source_artifacts_used: ["target_profile"],
-    normalization: { internal: true },
-    vault_mapping: { internal: true },
-    subsections: [{ subsection_id: `${section_id}_subsection`, subsection_title: "Sample", fields: [{ field_id: "target", label: "Target", value: { public_name: "Example", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-001" } }, source_artifact: "target_profile", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-002" }, qualified_review_note: "Verify before reliance.", limitation: "" }] }]
-  };
+  return { section_id, artifact_name: `normalized_section__${section_id}`, section_title, section_order: 1, section_status: "LOCKED", reviewer_summary: "Summary", source_artifacts_used: ["target_profile"], normalization: { internal: true }, vault_mapping: { internal: true }, subsections: [{ subsection_id: `${section_id}_subsection`, subsection_title: "Sample", fields: [{ field_id: "target", label: "Target", value: { public_name: "Example", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-001" } }, source_artifact: "target_profile", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-002" }, qualified_review_note: "Verify before reliance.", limitation: "" }] }] };
 }
-
-function sectionTitle(sectionId) {
-  return sectionId.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
+function sectionTitle(sectionId) { return sectionId.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
