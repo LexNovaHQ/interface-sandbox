@@ -116,47 +116,68 @@ const REVIEW_ROUTE_LABELS = Object.freeze({
 });
 
 const SECTION_DECK_PROFILES = Object.freeze({
+  product_activity_ip_profile: {
+    type: "activity",
+    title: "Product/activity item",
+    primary: ["activity_display_id", "related_product_service", "publicly_described_activity", "activity_patterns", "affected_contexts"],
+    panels: [
+      { label: "Activity / mechanics", keys: ["activity_summary", "how_it_appears_to_work", "automation_and_human_review_signal", "external_or_internal_effect"] },
+      { label: "Context / proof", keys: ["data_content_or_asset_affected", "activity_pattern_proof", "affected_context_proof_and_limits", "activity_patterns", "affected_contexts"] }
+    ]
+  },
   data_provenance_controls: {
     type: "data-control",
     title: "Data/control review item",
     primary: ["Review_Point", "Public_Footprint_Status", "Jurisdiction_Layer", "Review_Action"],
-    left: ["Review_Point", "Review_Action", "Purpose", "Processing_Operation", "Data_Category"],
-    right: ["Evidence_Summary", "Source_Layer", "Jurisdiction_Layer", "Public_Footprint_Status", "Limitation"]
+    panels: [
+      { label: "Review point / control signal", keys: ["Review_Point", "Review_Action", "Purpose", "Processing_Operation", "Data_Category", "Data_Categories", "Activity_Data_Flow", "Control_Position"] },
+      { label: "Source / limitation", keys: ["Evidence_Summary", "Source_Layer", "Source_Basis", "Jurisdiction_Layer", "Public_Footprint_Status", "Limitation", "Missing_Proof", "Expected_Source"] }
+    ]
   },
   legal_document_control_review: {
     type: "legal-map",
     title: "Legal/governance document item",
     primary: ["display_ref", "document_or_artifact", "document_title", "artifact_class", "status", "source_corpus_status"],
-    left: ["document_or_artifact", "document_title", "internal_unit", "heading_label", "missing_or_limited_item", "review_point_type", "reviewer_action"],
-    right: ["source_url", "navigation_pointer", "expected_location", "limitation", "boundary_note", "canonical_equivalent"]
+    panels: [
+      { label: "Document / locator", keys: ["document_or_artifact", "document_title", "artifact_class", "internal_unit", "heading_label", "source_url", "navigation_pointer", "expected_location", "canonical_equivalent"] },
+      { label: "Control or missing item", keys: ["missing_or_limited_item", "review_point_type", "reviewer_action", "control_language", "control_position", "status", "source_corpus_status", "limitation", "boundary_note"] }
+    ]
   },
   exposure_findings: {
     type: "exposure",
     title: "Exposure findings",
     primary: ["display_exposure_id", "display_status", "review_priority_tier", "review_category", "review_route", "Exposure_ID", "Threat_ID", "Subcat"],
-    left: ["plain_english_issue", "related_activity", "review_depth", "review_route", "Threat_Name", "Finding", "Harm_Mechanism", "Review_Action"],
-    right: ["visible_basis", "evidence_source_basis", "visible_control_position", "activity_pattern", "affected_context", "Basis_Proof", "Evidence_Summary", "Control_Exclusion_Basis", "Limitation"]
+    panels: [
+      { label: "Finding / action", keys: ["plain_english_issue", "related_activity", "review_depth", "review_route", "Threat_Name", "Finding", "Harm_Mechanism", "Review_Action"] },
+      { label: "Evidence / basis", keys: ["visible_basis", "evidence_source_basis", "visible_control_position", "activity_pattern", "affected_context", "Basis_Proof", "Evidence_Summary", "Control_Exclusion_Basis", "Limitation"] }
+    ]
   },
   review_route_handoff_plan: {
     type: "handoff",
     title: "Review route / handoff plan",
     primary: ["action_reference", "linked_finding", "review_route", "route_reference", "Handoff_State", "Priority"],
-    left: ["visible_signal", "Review_Action", "Document", "Document_Impact", "Downstream_Document", "Drafting_Action"],
-    right: ["downstream_use_limit", "Required_Input", "Open_Reviewer_Point", "Limitation", "Next_Action"]
+    panels: [
+      { label: "Action / handoff", keys: ["visible_signal", "Review_Action", "Document", "Document_Impact", "Downstream_Document", "Drafting_Action", "review_route"] },
+      { label: "Downstream use limit", keys: ["downstream_use_limit", "Required_Input", "Open_Reviewer_Point", "Limitation", "Next_Action"] }
+    ]
   },
   clarification_missing_source_queue: {
     type: "clarification",
     title: "Clarification / missing source queue",
     primary: ["confirmation_reference", "display_ref", "Clarification_ID", "Request_ID", "Linked_Exposure_ID", "Exposure_ID", "Blocks_Handoff"],
-    left: ["question", "Question", "missing_or_limited_item", "Missing_Material", "Clarification_Request", "Review_Point"],
-    right: ["expected_location", "Expected_Source_Location", "Evidence_Needed", "Why_It_Matters", "Downstream_Effect", "Limitation"]
+    panels: [
+      { label: "Question / missing material", keys: ["question", "Question", "missing_or_limited_item", "Missing_Material", "Clarification_Request", "Review_Point"] },
+      { label: "Expected source / downstream effect", keys: ["expected_location", "Expected_Source_Location", "Evidence_Needed", "Why_It_Matters", "Downstream_Effect", "Limitation"] }
+    ]
   },
   methodology_limitations_public_annexure: {
     type: "methodology",
     title: "Methodology / limitation item",
     primary: ["review_step", "purpose", "status", "Artifact", "Reference", "Included", "Excluded", "Reason"],
-    left: ["purpose", "Scope", "Methodology", "Included_Source", "Included", "Reason"],
-    right: ["meaning", "Limitation", "Boundary", "Annexure", "Technical_Annexure", "Reviewer_Note"]
+    panels: [
+      { label: "Method / scope", keys: ["purpose", "Scope", "Methodology", "Included_Source", "Included", "Reason"] },
+      { label: "Boundary / limitation", keys: ["meaning", "Limitation", "Boundary", "Annexure", "Technical_Annexure", "Reviewer_Note"] }
+    ]
   }
 });
 
@@ -333,6 +354,7 @@ function setActiveRailItem(sectionId) {
     item.classList.toggle("active", active);
     item.setAttribute("aria-current", active ? "true" : "false");
   });
+  updateDeckStatus();
 }
 
 function renderSection(section) {
@@ -515,24 +537,21 @@ function deckButton(label, action, disabled) {
 function renderFindingCard(item, context) {
   const profile = context.profile || defaultDeckProfile(context);
   const card = el("article", "report-finding-card " + (profile.type ? "report-card-" + profile.type : ""));
-  const primaryRows = rowsForKeys(item, profile.primary);
   const allVisible = visibleEntries(item);
-  const primaryKeys = new Set(primaryRows.map((entry) => normalizeKey(entry[0])));
-  let leftRows = rowsForKeys(item, profile.left).filter((entry) => !primaryKeys.has(normalizeKey(entry[0])));
-  let rightRows = rowsForKeys(item, profile.right).filter((entry) => !primaryKeys.has(normalizeKey(entry[0])));
-  let used = new Set([].concat(primaryRows, leftRows, rightRows).map((entry) => normalizeKey(entry[0])));
-  let remaining = allVisible.filter(function (entry) { return !used.has(normalizeKey(entry[0])); });
 
-  if (!leftRows.length && !rightRows.length && remaining.length) {
-    const split = Math.ceil(remaining.length / 2);
-    leftRows = remaining.slice(0, split);
-    rightRows = remaining.slice(split);
-    used = new Set([].concat(primaryRows, leftRows, rightRows).map((entry) => normalizeKey(entry[0])));
-    remaining = allVisible.filter(function (entry) { return !used.has(normalizeKey(entry[0])); });
+  if (!allVisible.length) {
+    card.append(el("div", "report-finding-ref", `Item ${context.ordinal || ""}`));
+    card.append(el("p", "small-muted", "No displayable report values emitted for this item."));
+    return card;
   }
 
+  const primaryRows = rowsForKeys(item, profile.primary);
+  const used = new Set(primaryRows.map((entry) => normalizeKey(entry[0])));
+  const panels = buildCardPanels({ item, profile, used });
+  const remaining = allVisible.filter(function (entry) { return !used.has(normalizeKey(entry[0])); });
+
   const header = el("div", "report-finding-header");
-  const ref = firstValue(item, ["display_exposure_id", "display_control_id", "action_reference", "confirmation_reference", "display_ref", "Clarification_ID", "Request_ID", "Threat_ID", "Artifact", "Reference"]) || `Item ${context.ordinal}`;
+  const ref = firstValue(item, ["activity_display_id", "display_exposure_id", "display_control_id", "action_reference", "confirmation_reference", "display_ref", "Clarification_ID", "Request_ID", "Threat_ID", "Artifact", "Reference"]) || `Item ${context.ordinal}`;
   header.append(el("div", "report-finding-ref", normalizeDisplayText(ref, "display_ref")));
   const chips = el("div", "report-finding-chips");
   primaryRows.forEach(function (entry) {
@@ -541,12 +560,14 @@ function renderFindingCard(item, context) {
   header.append(chips);
   card.append(header);
 
-  const title = firstValue(item, ["plain_english_issue", "Review_Point", "question", "Question", "Threat_Name", "Finding", "document_or_artifact", "document_title", "missing_or_limited_item", "Field"]) || profile.title || "Report item";
+  const title = firstValue(item, ["plain_english_issue", "activity_summary", "publicly_described_activity", "Review_Point", "question", "Question", "Threat_Name", "Finding", "document_or_artifact", "document_title", "missing_or_limited_item", "Field"]) || profile.title || "Report item";
   card.append(el("h4", "report-finding-title", normalizeDisplayText(title, "title")));
 
-  const layout = el("div", "report-finding-layout");
-  layout.append(renderDetailPanelRows("Finding / action", leftRows), renderDetailPanelRows("Evidence / basis", rightRows));
-  card.append(layout);
+  if (panels.length) {
+    const layout = el("div", "report-finding-layout");
+    panels.forEach(function (panel) { layout.append(renderDetailPanelRows(panel.label, panel.rows)); });
+    card.append(layout);
+  }
 
   if (remaining.length) {
     const details = el("div", "report-detail-grid");
@@ -560,13 +581,43 @@ function renderFindingCard(item, context) {
   return card;
 }
 
+function buildCardPanels({ item, profile, used }) {
+  const definitions = Array.isArray(profile.panels) && profile.panels.length
+    ? profile.panels
+    : [
+        { label: "Finding / action", keys: profile.left || [] },
+        { label: "Evidence / basis", keys: profile.right || [] }
+      ];
+  const allVisible = visibleEntries(item);
+  const panels = definitions.map((definition) => {
+    const rows = rowsForKeys(item, definition.keys || []).filter(function (entry) {
+      const normalized = normalizeKey(entry[0]);
+      if (used.has(normalized)) return false;
+      used.add(normalized);
+      return true;
+    });
+    return { label: definition.label || "Details", rows };
+  });
+
+  const emptyPanels = panels.filter((panel) => !panel.rows.length);
+  for (const panel of emptyPanels) {
+    const remaining = allVisible.filter(function (entry) { return !used.has(normalizeKey(entry[0])); });
+    if (!remaining.length) break;
+    const emptyLeft = emptyPanels.filter((candidate) => !candidate.rows.length).length || 1;
+    const take = Math.max(1, Math.ceil(remaining.length / emptyLeft));
+    panel.rows = remaining.slice(0, take);
+    panel.rows.forEach((entry) => used.add(normalizeKey(entry[0])));
+  }
+
+  const nonEmpty = panels.filter((panel) => panel.rows.length);
+  if (nonEmpty.length) return nonEmpty;
+  const fallback = allVisible.filter(function (entry) { return !used.has(normalizeKey(entry[0])); });
+  return fallback.length ? [{ label: profile.fallback_label || "Details", rows: fallback }] : [];
+}
+
 function renderDetailPanelRows(label, rows) {
   const panel = el("div", "report-context-panel");
   panel.append(el("div", "report-context-label", label));
-  if (!rows.length) {
-    panel.append(el("div", "small-muted", "No additional display value emitted for this panel."));
-    return panel;
-  }
   rows.forEach(function (entry) {
     const row = el("div", "report-context-row");
     row.append(el("span", "report-context-key", normalizeReportLabel(entry[0])), el("span", "report-context-value", stringifyCell(entry[1], entry[0])));
@@ -673,7 +724,7 @@ function isTruncatedRowset(value) { return value && typeof value === "object" &&
 function isSuppressedRow(value) { return Boolean(value && typeof value === "object" && !Array.isArray(value) && (value.display_in_main_report === false || value.technical_annexure_only === true)); }
 
 function deriveColumns(items) {
-  const priority = ["display_ref", "display_exposure_id", "display_control_id", "action_reference", "confirmation_reference", "Review_Point", "Public_Footprint_Status", "display_status", "plain_english_issue", "review_route", "document_or_artifact", "document_title", "artifact_class", "source_url", "Exposure_ID", "Threat_ID", "Threat_Name", "Subcat", "Status", "Priority", "Pain_Tier", "Pain_Depth", "Review_Route", "Document", "Locator_ID", "Unit_Heading", "Field", "Review_Point", "Jurisdiction_Layer", "Evidence_Summary", "Review_Action", "Limitation"];
+  const priority = ["display_ref", "activity_display_id", "display_exposure_id", "display_control_id", "action_reference", "confirmation_reference", "Review_Point", "Public_Footprint_Status", "display_status", "plain_english_issue", "review_route", "document_or_artifact", "document_title", "artifact_class", "source_url", "Exposure_ID", "Threat_ID", "Threat_Name", "Subcat", "Status", "Priority", "Pain_Tier", "Pain_Depth", "Review_Route", "Document", "Locator_ID", "Unit_Heading", "Field", "Review_Point", "Jurisdiction_Layer", "Evidence_Summary", "Review_Action", "Limitation"];
   const seen = new Set();
   const columns = [];
   priority.forEach(function (key) { if (!FORBIDDEN_VISIBLE_KEYS.has(key) && items.some(function (item) { return hasKey(item, key); })) { seen.add(normalizeKey(key)); columns.push(findActualKey(items.find((item) => hasKey(item, key)), key) || key); } });
@@ -725,9 +776,12 @@ function defaultDeckProfile(context = {}) {
   return {
     type: "default",
     title: context.field?.label || context.subsection?.subsection_title || "Report items",
-    primary: ["display_ref", "display_exposure_id", "display_control_id", "Threat_ID", "Threat_Name", "display_status", "Status", "Priority", "Document", "Field"],
-    left: ["plain_english_issue", "Finding", "Review_Point", "Question", "Document", "Field", "Review_Action"],
-    right: ["Evidence_Summary", "visible_basis", "evidence_source_basis", "Basis_Proof", "Expected_Source_Location", "Limitation", "Reviewer_Note"]
+    primary: ["display_ref", "activity_display_id", "display_exposure_id", "display_control_id", "Threat_ID", "Threat_Name", "display_status", "Status", "Priority", "Document", "Field"],
+    panels: [
+      { label: "Report item", keys: ["plain_english_issue", "activity_summary", "Finding", "Review_Point", "Question", "Document", "Field", "Review_Action"] },
+      { label: "Source / context", keys: ["Evidence_Summary", "visible_basis", "evidence_source_basis", "Basis_Proof", "Expected_Source_Location", "Limitation", "Reviewer_Note"] }
+    ],
+    fallback_label: "Details"
   };
 }
 
