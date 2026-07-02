@@ -44,10 +44,8 @@ function getClient() {
   return client;
 }
 
-function workerUrl({ run_id, base_url }) {
+function workerUrl({ run_id }) {
   const explicit = config.cloudTasksWorkerUrl.replace(/\/$/, "");
   if (explicit) return explicit.replace(/\{run_id\}/g, encodeURIComponent(run_id));
-  const base = String(base_url || config.reviewerPublicBaseUrl || config.rendererBaseUrl || "").replace(/\/$/, "");
-  if (!base) throw new Error("CLOUD_TASKS_WORKER_URL_MISSING:provide CLOUD_TASKS_WORKER_URL or request base_url");
-  return `${base}/v1/reviewer/jobs/${encodeURIComponent(run_id)}/worker`;
+  throw new Error("CLOUD_TASKS_WORKER_URL_MISSING:provide CLOUD_TASKS_WORKER_URL pinned to the Cloud Run /v1/reviewer/jobs/{run_id}/worker endpoint");
 }
