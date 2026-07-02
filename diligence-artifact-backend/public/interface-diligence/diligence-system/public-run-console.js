@@ -75,6 +75,7 @@
       }
     } catch (error) {
       stop();
+      window.setDiligenceGateMonitorAttention?.(error.message || String(error));
       message(error.message || String(error), true);
     }
   }
@@ -92,6 +93,7 @@
     if (nodes.statusValue) nodes.statusValue.textContent = [run.status, run.runner_state].filter(Boolean).join(" / ") || "-";
     if (nodes.phase) nodes.phase.textContent = run.current_phase || "-";
     if (nodes.artifacts) nodes.artifacts.textContent = String(count || 0);
+    window.updateDiligenceGateRunMonitor?.(run, count);
   }
 
   function setLinks(id, complete) {
