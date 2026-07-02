@@ -1,0 +1,96 @@
+#data-provenance-controls .report-fact-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 16px !important;
+}
+
+#data-provenance-controls .report-fact-item {
+  width: 100%;
+  padding: clamp(1rem, 1.5vw, 1.25rem) clamp(1rem, 1.8vw, 1.45rem);
+}
+
+#data-provenance-controls .report-fact-label {
+  margin-bottom: .65rem;
+}
+
+#data-provenance-controls .report-fact-value {
+  font-size: clamp(.9rem, .96vw, .98rem);
+  line-height: 1.66;
+}
+
+#data-provenance-controls .public-value-table,
+#data-provenance-controls .public-value-table tbody,
+#data-provenance-controls .public-value-table tr,
+#data-provenance-controls .public-value-table th,
+#data-provenance-controls .public-value-table td {
+  display: block;
+  width: 100% !important;
+}
+
+#data-provenance-controls .public-value-table tr {
+  padding: .82rem 0;
+  border-top: 1px solid rgba(229,229,229,.075);
+}
+
+#data-provenance-controls .public-value-table tr:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+#data-provenance-controls .public-value-table th {
+  padding: 0 0 .32rem 0 !important;
+  color: rgba(229,229,229,.5);
+  font-size: .62rem;
+  line-height: 1.35;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#data-provenance-controls .public-value-table td {
+  padding: 0 !important;
+  color: rgba(245,245,245,.88);
+  font-size: clamp(.9rem, .96vw, .98rem);
+  line-height: 1.66;
+}
+
+#data-provenance-controls .report-row-group-grid,
+#data-provenance-controls .report-row-group-grid.compact-4,
+#data-provenance-controls .report-row-group-grid.compact-3,
+#data-provenance-controls .report-row-group-grid.wide-2 {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+#data-provenance-controls .report-row-cell {
+  padding: .72rem 0;
+}
+
+#data-provenance-controls .report-row-cell:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+#data-provenance-controls .report-row-cell-label {
+  margin-bottom: .32rem;
+}
+
+#data-provenance-controls .report-row-cell-value {
+  font-size: clamp(.9rem, .96vw, .98rem);
+  line-height: 1.66;
+}
+
+@media (min-width: 980px) {
+  #data-provenance-controls .public-value-table tr,
+  #data-provenance-controls .report-row-cell {
+    display: grid;
+    grid-template-columns: minmax(150px, .18fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  #data-provenance-controls .public-value-table th,
+  #data-provenance-controls .public-value-table td,
+  #data-provenance-controls .report-row-cell-label,
+  #data-provenance-controls .report-row-cell-value {
+    padding: 0 !important;
+  }
+}
