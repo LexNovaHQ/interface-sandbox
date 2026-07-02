@@ -1,5 +1,5 @@
 import { buildIntegratedDapProjection } from "./integrated-dap-report.js";
-import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-section789-v2.js";
+import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-section10-v3.js";
 import { toMachineStatus } from "./normalized-status.js";
 import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
 
@@ -45,7 +45,7 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       normalized_sections,
       legacy_archive,
       compiler_trace: {
-        compiler_version: "normalized_profiler_compiler_replacement_v5_section_789_artifact_split",
+        compiler_version: "normalized_profiler_compiler_replacement_v6_section_10_merged_forensic_annexure",
         deterministic_only: true,
         no_new_findings_created: true,
         no_row_re_evaluation: true,
@@ -54,6 +54,9 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
         qualified_review_branch_separate: true,
         data_provenance_controls_source: "integrated_dap_report.normalized_profile_overlay",
         section_789_artifact_split: true,
+        section_10_merged_forensic_annexure: true,
+        no_separate_section_11: true,
+        full_forensic_payload_rendered_inline: false,
         exposure_identity_required: true,
         threat_name_required: true,
         subcat_required: true,
