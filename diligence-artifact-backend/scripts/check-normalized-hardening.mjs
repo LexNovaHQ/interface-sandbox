@@ -3,7 +3,7 @@ import "./check-normalizer-validator.mjs";
 import "./check-public-report-ui.mjs";
 import "./check-normalized-pipeline-contract.mjs";
 import "./check-m7-legal-signal-overlay.mjs";
-import "./check-m10-lean-input.mjs";
+import "./check-m10-d-primary-selected-legal-support.mjs";
 import "./check-substantive-dap-integration.mjs";
 import "./check-qualified-review-branch.mjs";
 import "./check-dynamic-family-read-firewall.mjs";
