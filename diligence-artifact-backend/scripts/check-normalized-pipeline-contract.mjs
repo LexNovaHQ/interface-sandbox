@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   AGENTS,
   PHASES,
@@ -11,9 +14,14 @@ import {
   WRITE_PERMISSIONS,
   PHASE_WRITE_PERMISSIONS,
   LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES,
+  TARGET_PROFILE_FAMILY_ARTIFACT_NAMES,
   artifactMatchesPermission
 } from "../src/constants.js";
 import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "..");
+const M7_LEGAL_SIGNAL_OVERLAY = "m7_deterministic_legal_signal_overlay";
 
 assert.ok(PHASES.includes("NORMALIZED_COMPILER"));
 assert.ok(!PHASES.includes("COMPILER"));
@@ -46,9 +54,21 @@ assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("final_output_handoff"));
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_handoff"), false);
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_renderer_payload"), false);
 
+assert.deepEqual(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads, ["source_discovery_handoff", M7_LEGAL_SIGNAL_OVERLAY, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES]);
+assert.deepEqual(PHASE_CONTRACTS.M7_TARGET_PROFILE_FORENSICS.reads, ["source_discovery_handoff", M7_LEGAL_SIGNAL_OVERLAY, "target_profile", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES]);
+assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads.includes("legal_cartography_index"), false);
+assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE_FORENSICS.reads.includes("legal_cartography_index"), false);
 assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
 assert.equal(PHASE_CONTRACTS.M7_TARGET_PROFILE_FORENSICS.reads.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
+assert.equal(READ_PERMISSIONS.agent_3_target_feature.includes("legal_cartography_index"), false);
 assert.equal(READ_PERMISSIONS.agent_3_target_feature.some((name) => LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES.includes(name)), false);
+assert.ok(READ_PERMISSIONS.agent_3_target_feature.includes(M7_LEGAL_SIGNAL_OVERLAY));
+
+const m7Prompt = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md"), "utf8");
+assert.ok(m7Prompt.includes("M7 must not use any artifact whose name starts with `lossless_family__L`"));
+assert.ok(m7Prompt.includes("legal_cartography_index` is not an active M7 model input"));
+assert.equal(m7Prompt.includes("legal_governance_profile_urls.families` | legal-family route universe"), false);
+assert.equal(m7Prompt.includes("only for the legal-family exception"), false);
 
 for (const [phase, contract] of Object.entries(PHASE_CONTRACTS)) {
   const actor = contract.agent_id || contract.actor_id;
