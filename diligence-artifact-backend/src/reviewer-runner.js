@@ -121,10 +121,11 @@ async function runM9HybridPhase({ run, phase, contract }) {
       modelMetadata.push(response.metadata);
       return response.json;
     },
-    saveArtifact: async ({ artifactName, artifact }) => {
-      const unwrapped = unwrapArtifactForSave({ artifactName, artifact });
+    saveArtifact: async ({ artifactName, artifact_name, artifact }) => {
+      const resolvedArtifactName = artifactName || artifact_name;
+      const unwrapped = unwrapArtifactForSave({ artifactName: resolvedArtifactName, artifact });
       const lockStatus = resolveStatusFromArtifacts(unwrapped);
-      await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: artifactName, artifact: unwrapped, lock_status: lockStatus }));
+      await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id, artifact_name: resolvedArtifactName, artifact: unwrapped, lock_status: lockStatus }));
     },
     validateFinalIndex: validateM9FinalIndexForHybrid,
     logger: null
