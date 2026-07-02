@@ -18,7 +18,7 @@ if (!runId) {
 } else {
   els.qualifiedReview.href = "qualified-review.html?run_id=" + encodeURIComponent(runId);
   if (els.annexure) {
-    els.annexure.href = "/public/diligence-system/technical-annexure/" + encodeURIComponent(runId);
+    els.annexure.href = "technical-annexure.html?run_id=" + encodeURIComponent(runId);
     els.annexure.target = "_blank";
     els.annexure.rel = "noopener";
   }
