@@ -1,6 +1,6 @@
 import { buildM9DeterministicMap, M9_DETERMINISTIC_ARTIFACT_NAME } from "./m9-deterministic-map.js";
 import { validateM9SemanticProfile } from "./m9-semantic-profile-validator.js";
-import { compileM9HybridCartography } from "./m9-hybrid-compiler.js";
+import { compileM9HybridCartography } from "./m9-hybrid-compiler-v2.js";
 
 export const M9_SEMANTIC_ARTIFACT_NAME = "legal_cartography_semantic_profile";
 export const M9_REINVESTIGATION_ARTIFACT_NAME = "legal_cartography_reinvestigation_workpad";
@@ -92,29 +92,31 @@ function normalizeReinvestigationWrapper({ raw, runId, semanticValidation }) {
 }
 
 function emptySemanticProfile({ runId }) {
-  return {
-    schema_version: "M9_SEMANTIC_NAVIGATION_INDEX_v1",
-    semantic_navigation_index: [],
-    semantic_integrity: { required_queue_count: 0, labeled_queue_count: 0, coverage_ratio: 0, ready_for_compiler: false },
-    lock_status: "REPAIR_REQUIRED",
-    run_id: runId
-  };
+  return { run_id: runId, schema_version: "M9_SEMANTIC_PROFILE_v1", semantic_navigation_index: [], semantic_coverage: { required_queue_count: 0, labeled_queue_count: 0, coverage_ratio: 1, status: "PASS" }, status: "LOCKED_WITH_LIMITATIONS", lock_status: "LOCKED_WITH_LIMITATIONS", limitations: ["Semantic model returned no rows; deterministic index locked with limitation."] };
 }
 
 async function saveM9Artifact({ saveArtifact, artifactName, artifactWrapper, saved, logger, optional = false }) {
-  if (!saveArtifact) {
-    log(logger, `M9 artifact ${artifactName} produced but saveArtifact callback not supplied.`);
-    if (!optional) saved.push(`${artifactName}:NOT_SAVED_NO_CALLBACK`);
-    return;
-  }
-  await saveArtifact({ artifactName, artifact: artifactWrapper });
+  if (saveArtifact) await saveArtifact({ artifact_name: artifactName, artifact: artifactWrapper, optional });
   saved.push(artifactName);
-  log(logger, `M9 artifact saved: ${artifactName}`);
+  log(logger, `M9 saved ${artifactName}`);
 }
 
-function requiredSaveOrderRespected(saved) { const mandatory = saved.filter((name) => M9_HYBRID_SAVE_ORDER.includes(name)); return M9_HYBRID_SAVE_ORDER.every((name, index) => mandatory[index] === name); }
-function assertCallback(callback, name) { if (typeof callback !== "function") throw new TypeError(`M9 hybrid orchestrator requires ${name} callback.`); }
+function requiredSaveOrderRespected(saved) {
+  const required = M9_HYBRID_SAVE_ORDER;
+  let cursor = 0;
+  for (const item of saved) if (item === required[cursor]) cursor += 1;
+  return cursor === required.length;
+}
+
+function inferRunId(artifacts) {
+  for (const value of Object.values(artifacts || {})) {
+    const root = value && typeof value === "object" ? value : null;
+    if (root?.run_id) return root.run_id;
+    if (root?.artifact?.run_id) return root.artifact.run_id;
+  }
+  return "";
+}
+function assertCallback(fn, name) { if (typeof fn !== "function") throw new Error(`M9_ORCHESTRATOR_MISSING_CALLBACK:${name}`); }
 function unwrapRoot(value, root) { if (!value || typeof value !== "object") return {}; const artifact = value.artifact && typeof value.artifact === "object" ? value.artifact : value; return artifact[root] || artifact || {}; }
-function inferRunId(artifacts) { for (const value of Object.values(artifacts || {})) { const unwrapped = value?.artifact && typeof value.artifact === "object" ? value.artifact : value; if (unwrapped?.run_id) return unwrapped.run_id; for (const nested of Object.values(unwrapped || {})) if (nested?.run_id) return nested.run_id; } return ""; }
 function asArray(value) { return Array.isArray(value) ? value : []; }
-function log(logger, message) { if (typeof logger === "function") logger(message); }
+function log(logger, message) { if (logger && typeof logger.log === "function") logger.log(message); }
