@@ -1,6 +1,24 @@
 (() => {
   const POLL_MS = 10000;
   const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
+  const FALLBACK_PHASE_LABELS = {
+    CREATED: "Intake Opened",
+    AGENT_1A_URL_MANIFEST: "Public URL Mapping",
+    AGENT_1B_EXTRACT: "Source Extraction",
+    M6_BUCKET_INDEX: "Source Routing",
+    M9: "Legal Document Stack Review",
+    M7_TARGET_PROFILE: "Target Profile Review",
+    M7_TARGET_PROFILE_FORENSICS: "Target Profile Forensics",
+    M8_TARGET_FEATURE_PROFILE: "Product Activity Profile",
+    M8_TARGET_FEATURE_PROFILE_FORENSICS: "Product Activity Forensics",
+    M10: "Data Provenance Review",
+    M10_FORENSICS: "Data Provenance Forensics",
+    M11: "Exposure Review",
+    M12: "Quality Challenge",
+    NORMALIZED_COMPILER: "Report Compilation",
+    RENDERER: "Report Rendering",
+    COMPLETE: "Report Ready"
+  };
   let runId = "";
   let timer = null;
 
@@ -71,7 +89,7 @@
         message(`Matter stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
       } else {
         setLinks(runId, false);
-        message(`Watching ${runId}. Current diligence phase: ${run.current_phase || "unknown"}.`);
+        message(`Watching ${runId}. Current diligence phase: ${publicPhaseLabel(run)}.`);
       }
     } catch (error) {
       stop();
@@ -91,9 +109,15 @@
     const count = Array.isArray(artifacts) ? artifacts.length : Number(run.artifact_count || 0);
     if (nodes.runId) nodes.runId.textContent = run.run_id || runId || "-";
     if (nodes.statusValue) nodes.statusValue.textContent = [run.status, run.runner_state].filter(Boolean).join(" / ") || "-";
-    if (nodes.phase) nodes.phase.textContent = run.current_phase || "-";
+    if (nodes.phase) nodes.phase.textContent = publicPhaseLabel(run);
     if (nodes.artifacts) nodes.artifacts.textContent = String(count || 0);
     window.updateDiligenceGateRunMonitor?.(run, count);
+  }
+
+  function publicPhaseLabel(run = {}) {
+    const phase = run.current_phase || "";
+    const normalized = window.publicDiligencePhaseFor?.(phase, run.status || "", run.runner_state || "");
+    return normalized?.label || FALLBACK_PHASE_LABELS[phase] || "Workflow Check";
   }
 
   function setLinks(id, complete) {
