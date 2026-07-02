@@ -81,12 +81,22 @@ assert.equal(integrated.normalized_section_projection.subsections.length, 12);
 
 const normalized = buildNormalizedProfilerOutput({ run, artifacts: { ...artifacts, integrated_dap_report: integrated, extended_dap_india_readiness_profile: b4 } });
 const section5 = normalized.normalized_section__data_provenance_controls;
-assert.equal(section5.subsections[0]?.subsection_id, "dap_annexure_notice");
-assert.ok(section5.subsections[0]?.fields?.[0]?.value.includes("full 36-field substantive DAP field base"));
-assert.ok(section5.reviewer_summary.includes("full 36-field substantive DAP field base"));
-assert.equal(section5.normalization.section_5_dap_annexure_disclaimer_present, true);
-assert.equal(normalized.normalized_report_manifest.renderer_contract.section_5_dap_annexure_disclaimer_present, true);
-assert.equal(normalized.final_output_handoff.final_output_handoff.terminal_checks.section_5_dap_annexure_disclaimer_present, true);
-assert.equal(normalized.final_output_handoff.final_output_handoff.normalized_sections.data_provenance_controls.subsections[0].subsection_id, "dap_annexure_notice");
+assert.equal(section5.subsections[0]?.subsection_id, "integrated_dap_report_notice");
+assert.ok(section5.subsections[0]?.fields?.[0]?.value?.public_report_body.includes("Full 36-field Integrated DAP report shown below"));
+assert.ok(section5.reviewer_summary.includes("full 36-field Integrated DAP report"));
+assert.equal(section5.normalization.section_5_full_36_field_dap_report_present, true);
+assert.equal(section5.normalization.public_section_is_curated_summary_only, false);
+assert.equal(section5.normalization.full_integrated_dap_retained_in_report_body, true);
+assert.equal(normalized.normalized_report_manifest.renderer_contract.section_5_full_36_field_dap_report_present, true);
+assert.equal(normalized.final_output_handoff.final_output_handoff.terminal_checks.section_5_full_36_field_dap_report_present, true);
+assert.equal(normalized.final_output_handoff.final_output_handoff.normalized_sections.data_provenance_controls.subsections[0].subsection_id, "integrated_dap_report_notice");
+const publicDapFields = section5.subsections.slice(1).flatMap((subsection) => subsection.fields || []);
+assert.equal(publicDapFields.length, 36);
+for (const field of publicDapFields) {
+  assert.ok(field.value.finding, `${field.field_id}:missing_public_finding`);
+  assert.ok(field.value.factual_basis, `${field.field_id}:missing_public_factual_basis`);
+  assert.ok(field.value.qualified_review_action, `${field.field_id}:missing_public_review_action`);
+  assert.ok(field.limitation, `${field.field_id}:missing_public_limitation`);
+}
 
 console.log("substantive DAP integration: PASS");
