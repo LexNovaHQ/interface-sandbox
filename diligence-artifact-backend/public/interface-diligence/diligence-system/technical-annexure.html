@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Public Technical Annexure</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
+</head>
+<body>
+  <div class="progress-line" style="width:100%" aria-hidden="true"></div>
+  <header class="topbar no-print">
+    <div class="topbar-inner">
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="Interface Diligence Engine home">
+        <span class="wordmark-title">Interface Diligence Engine</span>
+        <span class="wordmark-subtitle">Public technical annexure</span>
+      </a>
+      <div class="topbar-note">Layer 2</div>
+    </div>
+  </header>
+
+  <div class="page-shell">
+    <main>
+      <section class="hero report-shell">
+        <div class="eyebrow">Public Technical Annexure</div>
+        <h1 id="annexureTitle">Loading annexure...</h1>
+        <p class="hero-copy" id="annexureSubtitle">Manifest view for preserved public diligence artifacts.</p>
+        <div class="report-actions no-print">
+          <a class="btn" id="backToReportButton" href="#">Back to Report</a>
+          <a class="btn secondary" id="manifestJsonButton" href="#" target="_blank" rel="noopener">Open Manifest JSON</a>
+          <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
+        </div>
+        <div class="notice"><strong>Boundary:</strong> This is the public auditability layer. It shows artifact manifest metadata only. It excludes platform secrets, provider telemetry, raw infrastructure logs, and private reviewer submissions.</div>
+      </section>
+
+      <section class="card" id="annexureMetaCard">
+        <div class="eyebrow">Annexure manifest</div>
+        <div id="annexureMeta">Loading...</div>
+      </section>
+
+      <section class="report-section">
+        <div class="eyebrow">Artifact index</div>
+        <h2>Public Artifact Manifest</h2>
+        <p class="section-summary">Artifacts marked excluded are deliberately outside the public technical annexure layer.</p>
+        <div id="artifactTable">Loading...</div>
+      </section>
+    </main>
+    <div class="footer-note">Layer 2 of the deterministic diligence report: public technical annexure manifest.</div>
+  </div>
+
+  <script src="./technical-annexure.js?v=locked-report-20260701" defer></script>
+</body>
+</html>
