@@ -54,7 +54,7 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
 }
 
 function normalizeSectionEnvelope(sectionValue, key, index, validation_status) {
-  const sectionObject = safeObject(sectionValue);
+  const sectionObject = stripReportBodySectionLimitations(safeObject(sectionValue));
   return {
     ...sectionObject,
     section_id: key,
@@ -63,15 +63,22 @@ function normalizeSectionEnvelope(sectionValue, key, index, validation_status) {
     section_order: index + 1,
     section_status: validation_status,
     display_section_status: sectionObject.display_section_status || sectionObject.section_status || validation_status,
+    section_limitations: [],
     normalization: {
       ...(sectionObject.normalization || {}),
       profiler_version: NORMALIZED_PROFILER_VERSION,
       normalization_map_version: NORMALIZATION_MAP_VERSION,
       section_10_merged_forensic_annexure: true,
       separate_section_11_removed: true,
-      full_forensic_payload_rendered_inline: false
+      full_forensic_payload_rendered_inline: false,
+      report_body_section_limitations_removed: true,
+      limitation_ledger_routed_to_section_10: true
     }
   };
+}
+
+function stripReportBodySectionLimitations(sectionObject) {
+  return { ...sectionObject, section_limitations: [] };
 }
 
 function buildNormalizedReportManifest({ run, base, sections, validation_status }) {
@@ -118,8 +125,8 @@ function buildFinalOutputHandoff({ base, normalized_report_manifest, vault_secti
       normalized_sections,
       renderer_contract: normalized_report_manifest.renderer_contract,
       vault_contract: normalized_report_manifest.vault_contract,
-      terminal_checks: { ...(baseFinal.terminal_checks || {}), normalized_section_count: NORMALIZED_SECTION_KEYS.length, normalized_sections_emitted: NORMALIZED_SECTION_KEYS.length, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, legacy_blob_replaced_by_section_artifacts: true },
-      compiler_trace: { ...(baseFinal.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v6_section_10_merged_forensic_annexure", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, forensic_annexure_manifest_only: true, exposure_identity_required: true, threat_name_required: true, subcat_required: true, business_category_removed_from_sections_7_8_9: true, qualified_review_branch_separate: true },
+      terminal_checks: { ...(baseFinal.terminal_checks || {}), normalized_section_count: NORMALIZED_SECTION_KEYS.length, normalized_sections_emitted: NORMALIZED_SECTION_KEYS.length, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, legacy_blob_replaced_by_section_artifacts: true, report_body_section_limitations_removed: true },
+      compiler_trace: { ...(baseFinal.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v6_section_10_merged_forensic_annexure", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, forensic_annexure_manifest_only: true, exposure_identity_required: true, threat_name_required: true, subcat_required: true, business_category_removed_from_sections_7_8_9: true, qualified_review_branch_separate: true, report_body_section_limitations_removed: true, limitation_ledger_routed_to_section_10: true },
       legacy_archive: baseFinal.legacy_archive || { profiles_combined: "ARCHIVED_LEGACY", forensics_combined: "ARCHIVED_LEGACY", old_compiler_blob: "REPLACED_BY_NORMALIZED_SECTION_ARTIFACTS", active_replacement: "normalized_report_manifest + normalized_section__*" },
       vault_section_handoff
     }

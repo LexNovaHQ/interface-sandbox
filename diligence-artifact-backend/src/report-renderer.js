@@ -1,4 +1,4 @@
-const PUBLIC_RENDERER_VERSION = "locked_three_layer_ten_section_renderer_v1";
+const PUBLIC_RENDERER_VERSION = "locked_three_layer_ten_section_renderer_v2";
 
 const FORBIDDEN_PUBLIC_KEYS = new Set([
   "artifact_name",
@@ -18,7 +18,16 @@ const FORBIDDEN_PUBLIC_KEYS = new Set([
   "normalized_report_manifest",
   "vault_section_handoff",
   "qualified_review_handoff",
-  "normalized_sections"
+  "normalized_sections",
+  "trace_id",
+  "field_path",
+  "value_preview",
+  "forensic_trace_present",
+  "technical_annexure_only",
+  "display_in_main_report",
+  "normalized_dap_field_id",
+  "integrated_field_group",
+  "row_type"
 ]);
 
 const PUBLIC_REFERENCE_KEYS = new Set(["technical_refs", "evidence_refs"]);
@@ -37,10 +46,12 @@ const TEN_SECTION_PLAN = Object.freeze([
   { id: "methodology_limitations_public_annexure", title: "Methodology, Limitations & Public Technical Annexure", sources: ["methodology_limitations_forensic_annexure"], layer: "layer_2_public_technical_annexure" }
 ]);
 
+const LOCKED_TEN_SECTION_IDS = Object.freeze(TEN_SECTION_PLAN.map((plan) => plan.id));
+
 export function buildRendererPayload({ run = {}, final_output_handoff }) {
   const bundle = final_output_handoff || {};
   const handoff = bundle?.final_output_handoff?.final_output_handoff || bundle?.final_output_handoff || bundle || {};
-  const manifest = bundle.normalized_report_manifest || handoff.normalized_report_manifest;
+  const manifest = unwrapArtifact(bundle.normalized_report_manifest || handoff.normalized_report_manifest);
 
   if (!manifest || !Array.isArray(manifest.section_order) || !manifest.section_order.length) {
     throw new Error("NORMALIZED_RENDERER_INPUT_MISSING:normalized_report_manifest.section_order required");
@@ -48,13 +59,14 @@ export function buildRendererPayload({ run = {}, final_output_handoff }) {
 
   const sourceSections = loadSourceSections({ manifest, bundle, handoff });
   const fullNormalizedSetAvailable = TEN_SECTION_PLAN.every((plan) => plan.sources.every((sourceId) => sourceSections[sourceId]));
-  const sections = fullNormalizedSetAvailable
+  const rawSections = fullNormalizedSetAvailable
     ? TEN_SECTION_PLAN.map((plan, index) => buildTenSection(plan, index, sourceSections))
-    : manifest.section_order.map((sectionId) => {
+    : manifest.section_order.map((sectionId, index) => {
         const section = sourceSections[sectionId];
         if (!section || typeof section !== "object") throw new Error(`NORMALIZED_RENDERER_SECTION_MISSING:normalized_section__${sectionId}`);
-        return projectPublicSection(section);
+        return { ...projectPublicSection(section), section_number: index + 1, report_layer: "layer_1_public_report" };
       });
+  const sections = sanitizeSectionsForPublicReport(rawSections, { requireLockedTenSectionPlan: fullNormalizedSetAvailable });
 
   const generatedAt = new Date().toISOString();
   const runId = run.run_id || handoff?.run_meta?.run_id || manifest.run_id || "UNKNOWN_RUN";
@@ -117,26 +129,71 @@ function loadSourceSections({ manifest, bundle, handoff }) {
   const out = {};
   for (const sectionId of manifest.section_order) {
     const artifactKey = `normalized_section__${sectionId}`;
-    out[sectionId] = bundle[artifactKey] || handoff.normalized_sections?.[sectionId] || handoff[artifactKey];
+    const candidates = [
+      bundle[artifactKey],
+      handoff.normalized_sections?.[sectionId],
+      handoff[artifactKey],
+      bundle.artifacts?.[artifactKey]
+    ];
+    const section = candidates.map(unwrapNormalizedSection).find((candidate) => candidate && typeof candidate === "object" && (candidate.section_id || Array.isArray(candidate.subsections)));
+    if (section) out[sectionId] = section;
   }
   return out;
+}
+
+function unwrapNormalizedSection(value) {
+  let current = value;
+  for (let i = 0; i < 4; i += 1) {
+    if (!current || typeof current !== "object") return current;
+    if (current.section_id || Array.isArray(current.subsections)) return current;
+    if (current.artifact && typeof current.artifact === "object") {
+      current = current.artifact;
+      continue;
+    }
+    if (current.normalized_section && typeof current.normalized_section === "object") {
+      current = current.normalized_section;
+      continue;
+    }
+    return current;
+  }
+  return current;
+}
+
+function unwrapArtifact(value) {
+  let current = value;
+  for (let i = 0; i < 4; i += 1) {
+    if (!current || typeof current !== "object") return current;
+    if (current.artifact && typeof current.artifact === "object") {
+      current = current.artifact;
+      continue;
+    }
+    return current;
+  }
+  return current;
 }
 
 function buildTenSection(plan, index, sourceSections) {
   const parts = plan.sources.map((sourceId) => sourceSections[sourceId]).filter(Boolean);
   if (parts.length === 1) {
     const section = projectPublicSection(parts[0]);
-    return { ...section, section_id: plan.id, section_title: plan.title, section_number: index + 1, source_section_refs: plan.sources, report_layer: plan.layer };
+    return {
+      ...section,
+      section_id: plan.id,
+      section_title: plan.title,
+      section_number: index + 1,
+      section_limitations: [],
+      source_section_refs: plan.sources,
+      report_layer: plan.layer,
+      display_rule: displayRuleForSection(plan.id) || section.display_rule || ""
+    };
   }
 
   const subsections = [];
-  const limitations = [];
   for (const part of parts) {
     const projected = projectPublicSection(part);
     for (const subsection of asArray(projected.subsections)) {
       subsections.push({ ...subsection, source_section_ref: projected.section_id });
     }
-    limitations.push(...asArray(projected.section_limitations));
   }
 
   return {
@@ -145,7 +202,7 @@ function buildTenSection(plan, index, sourceSections) {
     section_title: plan.title,
     reviewer_summary: summaryForCompositeSection(plan.id),
     subsections,
-    section_limitations: limitations,
+    section_limitations: [],
     source_section_refs: plan.sources,
     report_layer: plan.layer,
     display_rule: displayRuleForSection(plan.id)
@@ -153,12 +210,13 @@ function buildTenSection(plan, index, sourceSections) {
 }
 
 function projectPublicSection(section = {}) {
+  const unwrapped = unwrapNormalizedSection(section) || {};
   return {
-    section_id: text(section.section_id, "section"),
-    section_title: text(section.section_title, "Section"),
-    reviewer_summary: text(section.reviewer_summary, ""),
-    subsections: asArray(section.subsections).map(projectPublicSubsection),
-    section_limitations: asArray(section.section_limitations).map((item) => cleanPublicValue(item))
+    section_id: text(unwrapped.section_id, "section"),
+    section_title: text(unwrapped.section_title, "Section"),
+    reviewer_summary: text(unwrapped.reviewer_summary, ""),
+    subsections: asArray(unwrapped.subsections).map(projectPublicSubsection),
+    section_limitations: []
   };
 }
 
@@ -173,7 +231,7 @@ function projectPublicSubsection(subsection = {}) {
 function projectPublicField(field = {}) {
   return {
     field_id: text(field.field_id, "field"),
-    label: text(field.label, "Field"),
+    label: text(field.label || field.field_label, "Field"),
     value: cleanPublicValue(field.value),
     qualified_review_note: text(field.qualified_review_note, ""),
     limitation: text(field.limitation, "")
@@ -183,7 +241,7 @@ function projectPublicField(field = {}) {
 function cleanPublicValue(value) {
   if (value === null || value === undefined || value === "") return "Not visible in reviewed public materials.";
   if (Array.isArray(value)) {
-    const rows = value.map((item) => cleanPublicValue(item));
+    const rows = value.filter((item) => !isSuppressedMainReportRow(item)).map((item) => cleanPublicValue(item));
     if (rows.length > MAX_INLINE_ROWS) {
       return {
         row_count: rows.length,
@@ -197,7 +255,7 @@ function cleanPublicValue(value) {
   if (typeof value === "object") {
     const entries = [];
     for (const [key, nested] of Object.entries(value)) {
-      if (nested === undefined) continue;
+      if (nested === undefined || nested === null || nested === "") continue;
       if (PUBLIC_REFERENCE_KEYS.has(key)) {
         entries.push(["evidence_reference_summary", cleanPublicValue(nested)]);
         continue;
@@ -209,6 +267,43 @@ function cleanPublicValue(value) {
   }
   if (typeof value === "string") return statusLabel(value);
   return value;
+}
+
+function isSuppressedMainReportRow(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && (value.display_in_main_report === false || value.technical_annexure_only === true));
+}
+
+function sanitizeSectionsForPublicReport(sections, { requireLockedTenSectionPlan }) {
+  const sanitized = sections.map((section) => ({ ...section, section_limitations: [] }));
+  assertPublicReportSanitized(sanitized, { requireLockedTenSectionPlan });
+  return sanitized;
+}
+
+function assertPublicReportSanitized(sections, { requireLockedTenSectionPlan }) {
+  if (requireLockedTenSectionPlan) {
+    const actualIds = sections.map((section) => section.section_id);
+    if (JSON.stringify(actualIds) !== JSON.stringify(LOCKED_TEN_SECTION_IDS)) throw new Error(`PUBLIC_RENDERER_SECTION_ORDER_MISMATCH:${JSON.stringify(actualIds)}`);
+  }
+  for (const section of sections) {
+    if (asArray(section.section_limitations).length) throw new Error(`PUBLIC_RENDERER_SECTION_LIMITATIONS_FORBIDDEN:${section.section_id}`);
+    for (const subsection of asArray(section.subsections)) {
+      for (const field of asArray(subsection.fields)) {
+        if (containsNestedSectionShape(field.value)) throw new Error(`PUBLIC_RENDERER_NESTED_SECTION_VALUE_FORBIDDEN:${section.section_id}.${subsection.subsection_id}.${field.field_id}`);
+      }
+    }
+  }
+  const serialized = JSON.stringify(sections);
+  for (const token of ["trace_id", "field_path", "value_preview", "forensic_trace_present", "technical_annexure_only", "\"display_in_main_report\":false", "normalized_dap_field_id", "integrated_field_group", "row_type"]) {
+    if (serialized.includes(token)) throw new Error(`PUBLIC_RENDERER_MACHINE_TOKEN_FORBIDDEN:${token}`);
+  }
+}
+
+function containsNestedSectionShape(value) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some(containsNestedSectionShape);
+  if (Object.prototype.hasOwnProperty.call(value, "subsection_id") && Object.prototype.hasOwnProperty.call(value, "fields")) return true;
+  if (Object.prototype.hasOwnProperty.call(value, "section_id") && Object.prototype.hasOwnProperty.call(value, "subsections")) return true;
+  return Object.values(value).some(containsNestedSectionShape);
 }
 
 function buildDashboardTiles({ sections, sourceSections, validationStatus }) {
@@ -243,15 +338,16 @@ function findNumber(value, keys) {
 }
 
 function findByKey(value, wanted) {
-  if (!value || typeof value !== "object") return undefined;
-  if (Array.isArray(value)) {
-    for (const item of value) {
+  const clean = unwrapNormalizedSection(value);
+  if (!clean || typeof clean !== "object") return undefined;
+  if (Array.isArray(clean)) {
+    for (const item of clean) {
       const found = findByKey(item, wanted);
       if (found !== undefined) return found;
     }
     return undefined;
   }
-  for (const [key, nested] of Object.entries(value)) {
+  for (const [key, nested] of Object.entries(clean)) {
     if (wanted.has(String(key).toLowerCase())) return nested;
     const found = findByKey(nested, wanted);
     if (found !== undefined) return found;
@@ -285,6 +381,7 @@ function displayRuleForSection(sectionId) {
   if (sectionId === "exposure_findings") return "Triggered and priority rows are visible first; large controlled/workpad rowsets are summarized and capped in the main report.";
   if (sectionId === "review_route_handoff_plan") return "Action and handoff rows are rendered as reviewer-facing summaries, not legal conclusions.";
   if (sectionId === "clarification_missing_source_queue") return "Question queues preserve deterministic IDs; large queues are capped in the main report.";
+  if (sectionId === "methodology_limitations_public_annexure") return "Section 10 contains the methodology, limitation ledger, and annexure manifest. Full technical artifacts are not inlined in the report body.";
   return "";
 }
 
