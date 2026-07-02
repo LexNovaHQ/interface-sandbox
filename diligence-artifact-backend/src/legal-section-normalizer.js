@@ -4,7 +4,7 @@ import { NORMALIZATION_MAP_VERSION } from "./report-normalization-map.js";
 export const LEGAL_SECTION_NORMALIZER_VERSION = "legal_section_normalizer_v1_m9_summary_priority_locators";
 
 const PRIMARY_CLASSES = new Set(["EULA", "PRIVACY_POLICY", "TERMS_OF_SERVICE", "TRUST_CENTER", "CUSTOMER_TERMS", "AI_TERMS_POLICY", "SECURITY_POLICY"]);
-const NOTE = "The full M9 legal cartography index, document structure map, control locator, semantic navigation profile, source pointers, and missing-source ledger are preserved in the public technical annexure pack. This report renders only normalized summaries and priority locators.";
+const NOTE = "The full M9 legal cartography pack, legal unit map, control locator pack, semantic navigation profile, source pointers, and missing-source ledger are preserved in the public technical annexure pack. This report renders only normalized summaries and priority locators.";
 
 export function buildLegalDocumentGovernanceMapSection({ legalCartographyIndex = {}, sectionStatus = "LOCKED_WITH_LIMITATIONS" } = {}) {
   const legal = safeObject(legalCartographyIndex.legal_cartography_index || legalCartographyIndex);
@@ -24,16 +24,16 @@ export function buildLegalDocumentGovernanceMapSection({ legalCartographyIndex =
     reviewer_summary: "Normalized legal/governance coverage, document inventory, embedded instruments, grouped navigation, priority locators, and true missing-source items. Full M9 maps are annexure-only.",
     subsections: [
       subsection("legal_coverage_summary", "Legal Coverage Summary", [field("legal_coverage_summary", "Legal coverage summary", summary({ coverage, structure, semantic, controls, missing, legal }), "legal_cartography_index", "summary_counts")]),
-      subsection("core_legal_document_inventory", "Core Legal Document Inventory", [field("core_legal_documents", "Core legal documents", coreDocs(coverage), "legal_cartography_index", "document_coverage_index")]),
-      subsection("embedded_legal_instruments", "Embedded Legal Instruments", [field("embedded_legal_instruments", "Embedded legal instruments", embeddedDocs(coverage), "legal_cartography_index", "document_coverage_index")]),
-      subsection("legal_control_navigation_summary", "Legal / Control Navigation Summary", [field("legal_control_navigation_summary", "Grouped legal/control navigation summary", controlSummary({ semantic, controls }), "legal_cartography_index", "semantic_navigation_index + control_language_locator")]),
-      subsection("priority_legal_review_locators", "Priority Legal Review Locators", [field("priority_legal_review_locators", "Priority legal review locators", priorityRows(priority), "legal_cartography_index", "qualified_review_locator + priority_semantic_locator")]),
-      subsection("missing_limited_legal_governance_sources", "Missing or Limited Legal-Governance Sources", [field("missing_limited_legal_governance_sources", "True missing or limited legal-governance sources", missingRows(missing), "legal_cartography_index", "missing_limited_legal_governance_items")]),
+      subsection("core_legal_document_inventory", "Core Legal Document Inventory", [field("core_legal_documents", "Core legal documents", coreDocs(coverage), "legal_cartography_index", "document_coverage")]),
+      subsection("embedded_legal_instruments", "Embedded Legal Instruments", [field("embedded_legal_instruments", "Embedded legal instruments", embeddedDocs(coverage), "legal_cartography_index", "embedded_document_coverage")]),
+      subsection("legal_control_navigation_summary", "Legal / Control Navigation Summary", [field("legal_control_navigation_summary", "Grouped legal/control navigation summary", controlSummary({ semantic, controls }), "legal_cartography_index", "m9_navigation_summary")]),
+      subsection("priority_legal_review_locators", "Priority Legal Review Locators", [field("priority_legal_review_locators", "Priority legal review locators", priorityRows(priority), "legal_cartography_index", "m9_priority_locators")]),
+      subsection("missing_limited_legal_governance_sources", "Missing or Limited Legal-Governance Sources", [field("missing_limited_legal_governance_sources", "True missing or limited legal-governance sources", missingRows(missing), "legal_cartography_index", "m9_missing_source_summary")]),
       subsection("technical_annexure_note", "Technical Annexure Note", [field("technical_annexure_note", "Technical annexure note", NOTE, "legal_cartography_index", "technical_annexure_boundary")])
     ],
     section_limitations: missing.map((row) => ({ limitation: safeText(row.limitation || row.missing_or_limited_item, "Missing or limited legal/governance source."), source_artifact: "legal_cartography_index" })),
     source_artifacts_used: ["legal_cartography_index"],
-    normalization: { profiler_version: LEGAL_SECTION_NORMALIZER_VERSION, normalization_map_version: NORMALIZATION_MAP_VERSION, m9_is_index_only: true, renders_raw_document_structure_index: false, renders_raw_control_language_locator: false, full_m9_payload_annexure_only: true, legal_conclusion_generated: false },
+    normalization: { profiler_version: LEGAL_SECTION_NORMALIZER_VERSION, normalization_map_version: NORMALIZATION_MAP_VERSION, m9_is_index_only: true, section_6_uses_m9_summary_view: true, full_m9_payload_annexure_only: true, legal_conclusion_generated: false },
     vault_mapping: { eligible_for_vault: true, vault_category: "legal_document_control_review", requires_confirmation_before_assembly: true }
   };
 }
