@@ -1,17 +1,28 @@
 import assert from "node:assert/strict";
 import { buildExtendedDapIndiaReadinessProfile } from "../src/extended-dap-india-readiness.js";
 import { buildIntegratedDapReport } from "../src/integrated-dap-report.js";
+import { buildNormalizedProfilerOutput } from "../src/normalized-profiler-m9-section6-v4.js";
 
 const run = { run_id: "TEST-DAP-SUBSTANTIVE", target: "Example AI", root_url: "https://example.com" };
 const artifacts = {
+  target_profile: {
+    target_identity: { brand_name: "Example AI", legal_entity_name: "Example AI, Inc.", entity_type: "FIELD_LIMITED", reviewed_website: "https://example.com", primary_domain: "example.com" },
+    jurisdiction_notice: { registered_notice_location: "FIELD_LIMITED", governing_law: "FIELD_LIMITED", courts_venue: "FIELD_LIMITED" },
+    business_context: { business_category: "AI product", primary_customer_type: "Business users", market_type_candidate: "B2B", industry_sector: "Technology", regulated_sector_hints: [] },
+    product_service_wrapper: { high_level_offering: "AI assistant", primary_public_claim: "AI assistant", product_service_wrapper_names: [], delivery_model_signals: [] },
+    target_profile_limitations: []
+  },
   target_feature_profile: {
     activities: [
       {
         activity_display_id: "ACT-001",
         activity_feature_name: "AI assistant workflow",
-        activity_summary: "Users submit prompts, documents and account data to an AI assistant. The service returns generated outputs and uses cloud model processing."
+        activity_candidate_summary: "Users submit prompts, documents and account data to an AI assistant. The service returns generated outputs and uses cloud model processing.",
+        archetype_codes: ["AI_ASSISTANT"],
+        surface_context_tokens: ["user_content", "generated_output"]
       }
-    ]
+    ],
+    profile_level_limitations: []
   },
   data_provenance_profile: {
     data_categories: ["name", "email address", "account data", "user prompts", "generated outputs", "usage telemetry"],
@@ -22,8 +33,16 @@ const artifacts = {
     rights_request_routes: "A contact route for privacy requests is visible."
   },
   legal_cartography_index: {
-    document_coverage_index: [{ document_type: "Privacy Policy", status: "FOUND_INDEXED" }]
+    document_coverage_index: [{ document_type: "Privacy Policy", status: "FOUND_INDEXED" }],
+    document_structure_index: [],
+    incorporated_linked_document_map: [],
+    control_language_locator: [],
+    missing_limited_legal_governance_items: [],
+    lock_status: "LOCKED_WITH_LIMITATIONS"
   },
+  exposure_registry_controlled_profile: { controlled_rows: [] },
+  exposure_registry_triggered_profile: { triggered_rows: [] },
+  challenge_gate: { status: "LOCKED_WITH_LIMITATIONS" },
   lossless_family__L4_PRIVACY_ADJACENT_NOTICES: {
     clean_text: "The privacy policy describes personal information including name, email, account data, prompts, usage information, vendors, transfers, retention, deletion requests, access requests and grievance contact routes."
   },
@@ -59,5 +78,15 @@ for (const row of integrated.integrated_table_rows) {
   assert.ok(row.annexure_note.includes("Technical Annexure"), `${row.normalized_dap_field_id}:missing_annexure_note`);
 }
 assert.equal(integrated.normalized_section_projection.subsections.length, 12);
+
+const normalized = buildNormalizedProfilerOutput({ run, artifacts: { ...artifacts, integrated_dap_report: integrated, extended_dap_india_readiness_profile: b4 } });
+const section5 = normalized.normalized_section__data_provenance_controls;
+assert.equal(section5.subsections[0]?.subsection_id, "dap_annexure_notice");
+assert.ok(section5.subsections[0]?.fields?.[0]?.value.includes("full 36-field substantive DAP field base"));
+assert.ok(section5.reviewer_summary.includes("full 36-field substantive DAP field base"));
+assert.equal(section5.normalization.section_5_dap_annexure_disclaimer_present, true);
+assert.equal(normalized.normalized_report_manifest.renderer_contract.section_5_dap_annexure_disclaimer_present, true);
+assert.equal(normalized.final_output_handoff.final_output_handoff.terminal_checks.section_5_dap_annexure_disclaimer_present, true);
+assert.equal(normalized.final_output_handoff.final_output_handoff.normalized_sections.data_provenance_controls.subsections[0].subsection_id, "dap_annexure_notice");
 
 console.log("substantive DAP integration: PASS");
