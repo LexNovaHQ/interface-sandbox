@@ -9,12 +9,12 @@
   <title>Interface Diligence Report</title>
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
-  <link rel="stylesheet" href="./report-table-overrides.css?v=full-public-tables-20260702" />
+  <link rel="stylesheet" href="./report-table-overrides.css?v=report-deck-workspace-20260703" />
 </head>
-<body>
+<body class="report-page">
   <div class="progress-line" style="width:100%" aria-hidden="true"></div>
   <header class="topbar no-print">
-    <div class="topbar-inner">
+    <div class="topbar-inner report-topbar-inner">
       <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="Interface Diligence Engine home">
         <span class="wordmark-title">Interface Diligence Engine</span>
         <span class="wordmark-subtitle">Public-footprint exposure diligence</span>
@@ -23,31 +23,47 @@
     </div>
   </header>
 
-  <div class="page-shell">
-    <main>
-      <section class="hero report-shell">
+  <div class="page-shell report-shell-page">
+    <section class="hero report-shell report-hero">
+      <div class="report-hero-copy">
         <div class="eyebrow">Diligence Report</div>
         <h1 id="reportTitle">Loading report...</h1>
         <p class="hero-copy" id="reportSubtitle">Rendering the locked three-layer public report projection.</p>
-        <div class="report-actions no-print">
-          <button class="btn" id="downloadPdfButton" type="button">Download PDF</button>
-          <a class="btn secondary" id="technicalAnnexureButton" href="#public-technical-annexure">Open Public Technical Annexure</a>
-          <a class="btn secondary" id="qualifiedReviewButton" href="#">Proceed to Qualified Review</a>
-          <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
+      </div>
+      <div class="notice report-boundary"><strong>Boundary:</strong> Public and uploaded source materials only. Review-ready diligence signals, not legal advice, not a compliance certification, and not a final legal opinion. Qualified review is required before reliance.</div>
+    </section>
+
+    <div class="report-app-layout">
+      <aside class="report-left-rail no-print" id="reportRailCard">
+        <div class="eyebrow">Report sections</div>
+        <div id="reportRail">Loading sections...</div>
+      </aside>
+
+      <main class="report-main-workspace">
+        <div class="report-head-grid">
+          <section class="card report-meta-card" id="reportMetaCard">
+            <div class="eyebrow">Report shell</div>
+            <div id="reportMeta">Loading...</div>
+          </section>
+          <section class="card report-control-card no-print" id="reportControlPanel">
+            <div class="eyebrow">Report controls</div>
+            <div class="report-actions no-print">
+              <button class="btn" id="downloadPdfButton" type="button">Download PDF</button>
+              <a class="btn secondary" id="technicalAnnexureButton" href="#public-technical-annexure">Open Public Technical Annexure</a>
+              <a class="btn secondary" id="qualifiedReviewButton" href="#">Proceed to Qualified Review</a>
+              <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
+            </div>
+            <div id="reportDeckStatus" class="report-deck-status small-muted">Report decks load after the renderer payload is available.</div>
+          </section>
         </div>
-        <div class="notice"><strong>Boundary:</strong> Public and uploaded source materials only. Review-ready diligence signals, not legal advice, not a compliance certification, and not a final legal opinion. Qualified review is required before reliance.</div>
-      </section>
 
-      <section class="card" id="reportMetaCard">
-        <div class="eyebrow">Report shell</div>
-        <div id="reportMeta">Loading...</div>
-      </section>
+        <div id="reportBody"></div>
+      </main>
+    </div>
 
-      <div id="reportBody"></div>
-    </main>
     <div class="footer-note">Public-footprint diligence system. Three-layer deterministic report: public report, public technical annexure, qualified review workspace.</div>
   </div>
 
-  <script src="./report.js?v=locked-report-20260701" defer></script>
+  <script src="./report.js?v=report-deck-workspace-20260703" defer></script>
 </body>
 </html>
