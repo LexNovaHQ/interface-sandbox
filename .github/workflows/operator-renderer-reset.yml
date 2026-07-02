@@ -100,6 +100,7 @@ jobs:
           REPORT_JSON=$(curl --fail-with-body -sS \
             -H "x-ln-api-key: $GPT_ACTION_API_KEY" \
             "$URL/v1/reviewer/jobs/$RUN_ID/report")
+          export REPORT_JSON
           node -e '
             const payload = JSON.parse(process.env.REPORT_JSON);
             const root = payload.renderer_payload || payload.artifact?.renderer_payload || payload.artifact || payload;
