@@ -7,7 +7,7 @@
   <meta name="description" content="Legal exposure diligence for AI, technology, data, and digital product businesses." />
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="./diligence-system.css" />
-  <link rel="stylesheet" href="./diligence-homepage-gate.css?v=run-status-20260703" />
+  <link rel="stylesheet" href="./diligence-homepage-gate.css?v=run-status-top-20260703" />
 </head>
 <body class="diligence-gate-page">
   <div class="progress-line" id="progressLine" aria-hidden="true"></div>
@@ -33,6 +33,49 @@
           <p class="hero-copy">Submit a public target URL and optional approved source materials. The system will assemble a structured diligence report, then route the same matter into Qualified Review.</p>
           <div class="notice gate-boundary"><strong>Boundary:</strong> Public or approved review materials only. Do not upload confidential, privileged, personal, sensitive, or restricted material. This is a diligence workflow for qualified review, not legal advice or a compliance certification.</div>
         </section>
+
+        <article class="card gate-card gate-status-card gate-status-priority">
+          <div class="gate-card-kicker">
+            <div>
+              <div class="eyebrow">Run Status</div>
+              <h2 id="activePhaseTitle">Intake</h2>
+            </div>
+            <span class="gate-step-pill">Live</span>
+          </div>
+          <p id="activePhaseText">Waiting for a public target URL or existing matter/run ID.</p>
+          <div class="gate-run-monitor" aria-label="Live diligence run status">
+            <div class="gate-run-monitor-head">
+              <span class="gate-live-badge idle" id="runLiveBadge"><span class="gate-live-dot"></span>Idle</span>
+              <span class="gate-run-clock" id="runElapsedValue">Elapsed: 00:00</span>
+            </div>
+            <div class="gate-run-progress" id="runProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="runProgressFill" style="width:0%"></span>
+            </div>
+            <div class="gate-run-monitor-foot">
+              <span id="runProgressText">Waiting for intake.</span>
+              <span id="lastCheckedValue">Last checked: —</span>
+            </div>
+          </div>
+          <div class="meta-grid gate-meta-grid">
+            <div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div>
+            <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
+            <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
+            <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
+          </div>
+          <div class="notice gate-inline-notice" id="terminalNotice">The matter rail will update as the diligence workflow progresses. Keep this page open until the report opens automatically.</div>
+          <p class="log-line" id="statusMessage">Idle. Enter a public URL or resume an existing matter/run ID.</p>
+          <details class="endpoint-panel gate-diagnostics" id="endpointPanel">
+            <summary>Operator Diagnostics</summary>
+            <p class="small-muted">Technical links for verification and debugging. Not required for the normal review workflow.</p>
+            <div class="endpoint-grid gate-endpoint-grid">
+              <a class="btn secondary hidden" id="statusApiLink" href="#" target="_blank" rel="noreferrer">Status JSON</a>
+              <a class="btn secondary hidden" id="reportPageLink" href="#">Report Page</a>
+              <a class="btn secondary hidden" id="reportApiLink" href="#" target="_blank" rel="noreferrer">Report API</a>
+              <a class="btn secondary hidden" id="qualifiedReviewPageLink" href="#">Qualified Review Page</a>
+              <a class="btn secondary hidden" id="qualifiedReviewApiLink" href="#" target="_blank" rel="noreferrer">Qualified Review API</a>
+            </div>
+          </details>
+        </article>
 
         <section class="gate-workbench" aria-label="Diligence matter gate">
           <div class="gate-left-stack">
@@ -65,7 +108,9 @@
                 </div>
               </form>
             </article>
+          </div>
 
+          <aside class="gate-side-stack" aria-label="Diligence workflow guidance">
             <article class="card gate-card gate-resume-card">
               <div class="gate-card-kicker">
                 <div>
@@ -86,52 +131,6 @@
                 <p class="small-muted">A URL containing <code>?run_id=LN-...</code> will attach automatically and continue watching the matter status.</p>
               </div>
             </article>
-
-            <article class="card gate-card gate-status-card">
-              <div class="gate-card-kicker">
-                <div>
-                  <div class="eyebrow">Run Status</div>
-                  <h2 id="activePhaseTitle">Intake</h2>
-                </div>
-                <span class="gate-step-pill">03</span>
-              </div>
-              <p id="activePhaseText">Waiting for a public target URL or existing matter/run ID.</p>
-              <div class="gate-run-monitor" aria-label="Live diligence run status">
-                <div class="gate-run-monitor-head">
-                  <span class="gate-live-badge idle" id="runLiveBadge"><span class="gate-live-dot"></span>Idle</span>
-                  <span class="gate-run-clock" id="runElapsedValue">Elapsed: 00:00</span>
-                </div>
-                <div class="gate-run-progress" id="runProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                  <span id="runProgressFill" style="width:0%"></span>
-                </div>
-                <div class="gate-run-monitor-foot">
-                  <span id="runProgressText">Waiting for intake.</span>
-                  <span id="lastCheckedValue">Last checked: —</span>
-                </div>
-              </div>
-              <div class="meta-grid gate-meta-grid">
-                <div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div>
-                <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
-                <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
-                <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
-              </div>
-              <div class="notice gate-inline-notice" id="terminalNotice">The matter rail will update as the diligence workflow progresses. Keep this page open until the report opens automatically.</div>
-              <p class="log-line" id="statusMessage">Idle. Enter a public URL or resume an existing matter/run ID.</p>
-              <details class="endpoint-panel gate-diagnostics" id="endpointPanel">
-                <summary>Operator Diagnostics</summary>
-                <p class="small-muted">Technical links for verification and debugging. Not required for the normal review workflow.</p>
-                <div class="endpoint-grid gate-endpoint-grid">
-                  <a class="btn secondary hidden" id="statusApiLink" href="#" target="_blank" rel="noreferrer">Status JSON</a>
-                  <a class="btn secondary hidden" id="reportPageLink" href="#">Report Page</a>
-                  <a class="btn secondary hidden" id="reportApiLink" href="#" target="_blank" rel="noreferrer">Report API</a>
-                  <a class="btn secondary hidden" id="qualifiedReviewPageLink" href="#">Qualified Review Page</a>
-                  <a class="btn secondary hidden" id="qualifiedReviewApiLink" href="#" target="_blank" rel="noreferrer">Qualified Review API</a>
-                </div>
-              </details>
-            </article>
-          </div>
-
-          <aside class="gate-side-stack" aria-label="Diligence workflow guidance">
             <article class="card gate-card gate-guidance-card">
               <div class="eyebrow">Review Path</div>
               <h2>What happens next</h2>
