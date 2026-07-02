@@ -1,0 +1,1 @@
+export const LEGAL_SECTION_NORMALIZER_VERSION = "legal_section_normalizer_v1_m9_summary_priority_locators";
