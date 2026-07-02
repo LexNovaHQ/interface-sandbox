@@ -51,6 +51,8 @@ for (const artifactName of NORMALIZED_SECTION_ARTIFACT_NAMES) {
 
 assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("normalized_report_manifest"));
 assert.ok(PHASE_CONTRACTS.RENDERER.reads.includes("final_output_handoff"));
+assert.deepEqual(PHASE_CONTRACTS.RENDERER.writes, ["renderer_payload"]);
+assert.deepEqual(PHASE_WRITE_PERMISSIONS.RENDERER, ["renderer_payload"]);
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_handoff"), false);
 assert.equal(PHASE_CONTRACTS.RENDERER.reads.includes("qualified_review_renderer_payload"), false);
 
@@ -99,6 +101,12 @@ for (const [phase, contract] of Object.entries(PHASE_CONTRACTS)) {
   const allowed = READ_PERMISSIONS[actor] || [];
   for (const artifactName of contract.reads || []) {
     assert.ok(allowed.some((permission) => artifactMatchesPermission(artifactName, permission)), `PHASE_READ_PERMISSION_DRIFT:${phase}:${actor}:${artifactName}`);
+  }
+  for (const artifactName of contract.writes || []) {
+    const allowedWrites = WRITE_PERMISSIONS[actor] || [];
+    const phaseWrites = PHASE_WRITE_PERMISSIONS[phase] || [];
+    assert.ok(allowedWrites.some((permission) => artifactMatchesPermission(artifactName, permission)), `PHASE_WRITE_PERMISSION_DRIFT:${phase}:${actor}:${artifactName}`);
+    assert.ok(phaseWrites.includes(artifactName), `PHASE_WRITE_CONTRACT_DRIFT:${phase}:${artifactName}`);
   }
 }
 
