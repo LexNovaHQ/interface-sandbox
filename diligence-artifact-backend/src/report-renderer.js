@@ -133,12 +133,9 @@ function buildTenSection(plan, index, sourceSections) {
   const limitations = [];
   for (const part of parts) {
     const projected = projectPublicSection(part);
-    subsections.push({
-      subsection_id: projected.section_id,
-      subsection_title: projected.section_title,
-      source_section_ref: projected.section_id,
-      fields: [{ field_id: `${projected.section_id}_summary`, label: projected.section_title, value: projected.subsections, qualified_review_note: "", limitation: "" }]
-    });
+    for (const subsection of asArray(projected.subsections)) {
+      subsections.push({ ...subsection, source_section_ref: projected.section_id });
+    }
     limitations.push(...asArray(projected.section_limitations));
   }
 

@@ -47,7 +47,8 @@ function renderMeta(payload) {
       "Manifest only": payload.manifest_only ? "Yes" : "No",
       "Full payloads inline": payload.report_body_inlines_full_payloads ? "Yes" : "No",
       "Artifact rows": payload.artifact_count,
-      "Exclusion rule": payload.exclusion_rule
+      "Exclusion rule": payload.exclusion_rule,
+      "Private reviewer submission": "Excluded from public technical annexure"
     })
   ]);
 }
