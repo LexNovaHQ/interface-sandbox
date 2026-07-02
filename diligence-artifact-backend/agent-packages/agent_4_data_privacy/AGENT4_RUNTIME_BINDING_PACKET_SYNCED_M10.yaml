@@ -13,22 +13,31 @@ allowed_modules:
 read_artifacts:
   - source_discovery_handoff
   - legal_cartography_index
-  - target_profile
-  - target_profile_forensics
-  - feature_candidate_inventory
   - target_feature_profile
-  - target_feature_profile_forensics
-
-forbidden_model_inputs:
   - lossless_family__D1_SECURITY_TRUST
   - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
   - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
   - lossless_family__D4_DOCS_API_DATA_FLOW
   - lossless_family__D5_AI_SAFETY_TRANSPARENCY
-  - lossless_family__L1_CORE_TERMS_PRIVACY
-  - lossless_family__L2_B2B_CONTRACTING
-  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-  - any raw lossless_family__* artifact
+  - m10_selected_legal_support_packet
+
+m10_source_order:
+  primary:
+    - D1-D5 data-control families
+  activity_spine:
+    - target_feature_profile
+  navigation:
+    - legal_cartography_index
+  secondary_support:
+    - m10_selected_legal_support_packet
+
+m10_use_rules:
+  - D1-D5 are the primary field-derivation source for M10.
+  - target_feature_profile supplies the activity and product spine.
+  - legal_cartography_index supplies navigation and locator context.
+  - m10_selected_legal_support_packet is secondary support only when D-family material cannot support a M10 field.
+  - M10 must not use whole L-family artifacts.
+  - M10 must not use target_profile, target_profile_forensics, feature_candidate_inventory, or target_feature_profile_forensics.
 
 write_artifacts_in_order:
   - data_provenance_profile
@@ -69,7 +78,7 @@ forbidden_outputs:
   - legal applicability conclusions
   - report prose
 
-backend_permission_profile: agent_4_read_prior_save_m10_lock_lean_input
+backend_permission_profile: agent_4_read_d_primary_selected_l_support_m10_lock
 validator_profile: agent_4_m10_validator
 backend_output_contract: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 terminal_receipt_profile: agent_4_manual_receipt_only
