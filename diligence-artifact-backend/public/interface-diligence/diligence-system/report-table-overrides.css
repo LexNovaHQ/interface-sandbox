@@ -13,10 +13,15 @@
 .report-left-rail { padding-top: .6rem; }
 .report-rail-list { position: relative; display: grid; gap: 8px; margin-top: 16px; padding: .6rem 0 1.4rem; }
 .report-rail-list::before { content: ""; position: absolute; left: 17px; top: 24px; bottom: 28px; width: 1px; background: linear-gradient(180deg, rgba(197,160,89,.25), rgba(255,255,255,.08), rgba(197,160,89,.25)); }
-.report-rail-item { position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: start; text-decoration: none; color: rgba(229,229,229,.58); border-radius: 14px; padding: .72rem .45rem; }
-.report-rail-item:hover { background: rgba(197,160,89,.06); color: var(--gold); }
+.report-rail-item { position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: start; text-decoration: none; color: rgba(229,229,229,.58); border-radius: 14px; padding: .72rem .45rem; transition: background .18s ease, color .18s ease, transform .18s ease; }
+.report-rail-item:hover, .report-rail-item.active { background: rgba(197,160,89,.06); color: var(--gold); }
+.report-rail-item.active { transform: translateX(2px); }
 .report-rail-index { width: 14px; height: 14px; margin: 2px 0 0 10px; border-radius: 999px; border: 1px solid rgba(197,160,89,.45); background: #080808; box-shadow: 0 0 0 5px #050505; color: transparent; }
+.report-rail-item.active .report-rail-index { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 5px #050505, 0 0 22px rgba(197,160,89,.8); }
+.report-rail-copy { display: grid; gap: 4px; min-width: 0; }
 .report-rail-text { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.35; font-weight: 800; }
+.report-rail-count { color: rgba(229,229,229,.42); font-size: .62rem; line-height: 1.35; }
+.report-rail-item.active .report-rail-count { color: rgba(229,229,229,.68); }
 .report-control-card .report-actions { display: grid; gap: 10px; margin-top: 14px; }
 .report-control-card .btn { justify-content: center; text-align: center; }
 .report-deck-status { margin-top: 14px; line-height: 1.45; }
