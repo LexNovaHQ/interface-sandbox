@@ -8,6 +8,7 @@ const REQUIRED_KEYS = Object.freeze([
   "semantic_navigation_index",
   "priority_semantic_locator",
   "qualified_review_locator",
+  "qualified_review_legal_signals",
   "legal_notice_locator",
   "dispute_resolution_locator",
   "governing_law_venue_locator",
@@ -17,7 +18,7 @@ const REQUIRED_KEYS = Object.freeze([
   "lock_status"
 ]);
 
-const ARRAY_KEYS = REQUIRED_KEYS.filter((key) => !["downstream_rules", "lock_status"].includes(key));
+const ARRAY_KEYS = REQUIRED_KEYS.filter((key) => !["downstream_rules", "lock_status", "qualified_review_legal_signals"].includes(key));
 
 const LOCK_STATUSES = Object.freeze(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const SOURCE_CORPUS_STATUSES = Object.freeze(["FOUND_AS_PRIMARY_SOURCE", "FOUND_EMBEDDED_IN_LEGAL_CORPUS", "FOUND_AS_LINKED_REFERENCE", "REFERENCED_BUT_NOT_FETCHED", "STANDALONE_SOURCE_ABSENT", "SOURCE_REJECTED_OR_FAILED", "UNKNOWN_NOT_SEARCHED"]);
@@ -48,6 +49,7 @@ export function validateM9LegalCartographyIndex(output) {
   if (extra.length) failures.push(`extra keys: ${extra.join(",")}`);
 
   for (const key of ARRAY_KEYS) if (!Array.isArray(artifact[key])) failures.push(`${key} must be an array`);
+  if (!artifact.qualified_review_legal_signals || typeof artifact.qualified_review_legal_signals !== "object" || Array.isArray(artifact.qualified_review_legal_signals)) failures.push("qualified_review_legal_signals must be an object");
   if (!artifact.downstream_rules || typeof artifact.downstream_rules !== "object" || Array.isArray(artifact.downstream_rules)) failures.push("downstream_rules must be an object");
   if (artifact.downstream_rules?.m6_is_navigation_not_legal_authority !== true) failures.push("downstream_rules.m6_is_navigation_not_legal_authority must be true");
   if (artifact.downstream_rules?.embedded_legal_instruments_are_indexable !== true) failures.push("downstream_rules.embedded_legal_instruments_are_indexable must be true");
@@ -113,18 +115,10 @@ function validateSourceCorpusStatus(row, failures, location) { if (Object.protot
 function validateArtifactClass(row, failures, location) { if (!Object.prototype.hasOwnProperty.call(row, "artifact_class")) return; if (FORBIDDEN_ARTIFACT_CLASSES.includes(row.artifact_class)) failures.push(`${location} forbidden artifact_class drift: ${row.artifact_class}`); if (!ARTIFACT_CLASSES.includes(row.artifact_class)) failures.push(`${location} invalid artifact_class: ${row.artifact_class || "missing"}`); }
 function validateSourceType(row, failures, location) { if (Object.prototype.hasOwnProperty.call(row, "source_type") && !SOURCE_TYPES.includes(row.source_type)) failures.push(`${location} invalid source_type: ${row.source_type || "missing"}`); }
 function rejectForbiddenExactStatus(row, failures, location) { if (FORBIDDEN_EXACT_STATUS_VALUES.includes(row.status)) failures.push(`${location} forbidden loose status: ${row.status}`); }
-
-function validateEmbeddedCoverageCompleteness(artifact, failures) {
-  const structureNames = asArray(artifact.document_structure_index).map((row) => String(row.section_name || row.internal_unit || row.document_or_artifact || "").toLowerCase());
-  const coverageNames = asArray(artifact.document_coverage_index).map((row) => String(row.document_or_artifact || "").toLowerCase());
-  const hasSupportAnnexureInStructure = structureNames.some((name) => name.includes("support services") || name.includes("support terms"));
-  const hasSupportAnnexureInCoverage = coverageNames.some((name) => name.includes("support services") || name.includes("support terms"));
-  if (hasSupportAnnexureInStructure && !hasSupportAnnexureInCoverage) failures.push("Support Services / Support Terms annexure appears in structure but is missing from document_coverage_index");
-}
-
+function validateEmbeddedCoverageCompleteness(artifact, failures) { const structureNames = asArray(artifact.document_structure_index).map((row) => String(row.section_name || row.internal_unit || row.document_or_artifact || "").toLowerCase()); const coverageNames = asArray(artifact.document_coverage_index).map((row) => String(row.document_or_artifact || "").toLowerCase()); const hasSupportAnnexureInStructure = structureNames.some((name) => name.includes("support services") || name.includes("support terms")); const hasSupportAnnexureInCoverage = coverageNames.some((name) => name.includes("support services") || name.includes("support terms")); if (hasSupportAnnexureInStructure && !hasSupportAnnexureInCoverage) failures.push("Support Services / Support Terms annexure appears in structure but is missing from document_coverage_index"); }
 function fail(failures) { return { status: "REPAIR_REQUIRED", failed_gates: failures, repair_instructions: ["Return exactly one legal_cartography_index object using normalized artifact classes, normalized row statuses, source_corpus_status on coverage/linked/missing rows, semantic/navigation locator arrays, and the loaded legal corpus only."] }; }
 function collectRows(artifact) { return ARRAY_KEYS.flatMap((key) => asArray(artifact[key])); }
 function asArray(value) { return Array.isArray(value) ? value : []; }
-function hasBadSourceSyntax(value) { return /\[[^\]]+\]\([^)]*\)/.test(value) || value.includes("%22") || value.includes("") || value.startsWith("mailto:"); }
+function hasBadSourceSyntax(value) { return /\[[^\]]+\]\([^)]*\)/.test(value) || value.includes("%22") || value.startsWith("mailto:"); }
 function containsKey(value, key) { if (!value || typeof value !== "object") return false; if (Object.prototype.hasOwnProperty.call(value, key)) return true; return Object.values(value).some((item) => containsKey(item, key)); }
 function containsStringValue(value, needle) { if (typeof value === "string") return value.includes(needle); if (!value || typeof value !== "object") return false; return Object.values(value).some((item) => containsStringValue(item, needle)); }
