@@ -38,6 +38,10 @@ m10_use_rules:
   - m10_selected_legal_support_packet is secondary support only when D-family material cannot support a M10 field.
   - M10 must not use whole L-family artifacts.
   - M10 must not use target_profile, target_profile_forensics, feature_candidate_inventory, or target_feature_profile_forensics.
+  - M10_QR_CONTACT_CONSENT_MANAGER_ADDENDUM.md controls nested QR contact_routes and consent_manager_readiness derivation without expanding the 34 top-level material field lock.
+
+m10_material_nested_derivation_addenda:
+  - M10_QR_CONTACT_CONSENT_MANAGER_ADDENDUM.md
 
 write_artifacts_in_order:
   - data_provenance_profile
