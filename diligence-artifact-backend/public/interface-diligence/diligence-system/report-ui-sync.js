@@ -7,12 +7,23 @@
   function slug(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
 
   function injectDensity(){
-    if(document.getElementById("reportDensityStylesheet"))return;
-    const link=document.createElement("link");
-    link.id="reportDensityStylesheet";
-    link.rel="stylesheet";
-    link.href="./report-density.css?v=compact-report-20260703";
-    document.head.append(link);
+    if(!document.getElementById("reportDensityStylesheet")){
+      const link=document.createElement("link");
+      link.id="reportDensityStylesheet";
+      link.rel="stylesheet";
+      link.href="./report-density.css?v=compact-report-20260703";
+      document.head.append(link);
+    }
+    injectTierTableSync();
+  }
+
+  function injectTierTableSync(){
+    if(document.getElementById("reportExposureTierTableScript"))return;
+    const script=document.createElement("script");
+    script.id="reportExposureTierTableScript";
+    script.src="./report-exposure-tier-tables.js?v=20260703";
+    script.defer=true;
+    document.head.append(script);
   }
 
   function activeSection(){
