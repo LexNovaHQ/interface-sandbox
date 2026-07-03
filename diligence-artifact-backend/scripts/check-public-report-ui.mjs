@@ -20,9 +20,10 @@ const qualifiedReviewJs = readFileSync("public/interface-diligence/diligence-sys
 assert.ok(reportHtml.includes("Download PDF"));
 assert.ok(reportHtml.includes("Open Public Technical Annexure"));
 assert.ok(reportHtml.includes("Proceed to Qualified Review"));
-assert.ok(reportHtml.includes("Interface Diligence Engine"));
-assert.ok(reportHtml.includes("Legal Diligence"));
-assert.ok(reportHtml.includes("Diligence Report"));
+assert.ok(reportHtml.includes("The Interface"));
+assert.ok(reportHtml.includes("Law × Technology · AI Governance · Privacy · Systems"));
+assert.ok(reportHtml.includes("engine-nav"));
+assert.ok(reportHtml.includes("Diligence</a>"));
 assert.ok(reportHtml.includes('id="reportFooterQualifiedReviewButton"'));
 assert.ok(reportHtml.includes("reportClosingActions"));
 assert.ok(reportHtml.includes("Back to Live Run"));
