@@ -71,3 +71,15 @@ Use `LOCKED_WITH_LIMITATIONS` when the index is usable but contains unresolved o
 Use `REPAIR_REQUIRED` only for repairable schema or source-discipline problems.
 
 Use `CONTROLLED_FAILURE` only when the legal/governance corpus or source custody is unusable.
+
+## Qualified Review Legal Signals Addendum
+
+The compiler may add one optional downstream object inside `legal_cartography_index`:
+
+```text
+qualified_review_legal_signals
+```
+
+This object is index-only. It may expose navigation-backed signals for legal notice/contact, liability-cap basis, and SLA/support posture. It must not copy full clause text, compute legal effect, produce legal advice, or evaluate enforceability.
+
+The object must be compiler-built from existing M9 map rows, semantic locators, keyword locators, and loaded-corpus navigation pointers. The semantic model must not emit this object directly.
