@@ -7,7 +7,7 @@ const LEGAL_FAMILIES = Object.freeze([
 const MAX_ROWS = 36;
 const MAX_PER_FAMILY = 12;
 const MAX_EXCERPT = 520;
-const MATCH_TERMS = Object.freeze(["privacy", "data", "processing", "security", "retention", "deletion", "vendor", "subprocessor", "transfer", "cookie", "rights", "consent", "incident", "breach", "training", "model", "log", "output", "upload"]);
+const MATCH_TERMS = Object.freeze(["privacy", "data", "processing", "security", "retention", "deletion", "vendor", "subprocessor", "transfer", "cookie", "rights", "consent", "withdrawal", "revocation", "opt-out", "preferences", "consent manager", "consent management", "grievance", "redressal", "privacy officer", "contact", "incident", "breach", "training", "model", "log", "output", "upload", "dpdp", "data principal"]);
 
 export function buildM10SelectedLegalSupportPacket({ artifacts = {} } = {}) {
   const legalIndex = unwrap(artifacts.legal_cartography_index, "legal_cartography_index");
@@ -36,13 +36,14 @@ export function buildM10SelectedLegalSupportPacket({ artifacts = {} } = {}) {
   }
   return {
     artifact_name: ARTIFACT_NAME,
-    schema_version: "M10_SELECTED_LEGAL_SUPPORT_PACKET_v1",
+    schema_version: "M10_SELECTED_LEGAL_SUPPORT_PACKET_v2_CONTACT_CONSENT_MANAGER",
     model_generated: false,
     source_policy: {
       d_families_are_primary_for_m10: true,
       legal_support_is_secondary_fallback: true,
       full_l_family_payloads_excluded_from_m10_prompt: true,
-      legal_cartography_index_is_navigation_authority: true
+      legal_cartography_index_is_navigation_authority: true,
+      qr_contact_and_consent_manager_terms_supported: true
     },
     selected_rows: rows,
     selector_stats: {
@@ -50,7 +51,8 @@ export function buildM10SelectedLegalSupportPacket({ artifacts = {} } = {}) {
       max_rows: MAX_ROWS,
       max_rows_per_family: MAX_PER_FAMILY,
       source_families_considered: LEGAL_FAMILIES,
-      locator_term_count: locatorTerms.length
+      locator_term_count: locatorTerms.length,
+      contact_consent_term_count: MATCH_TERMS.length
     },
     limitations: rows.length ? [] : ["No M10 legal-support rows selected from L1/L2/L4 using the legal cartography navigation selector."]
   };
