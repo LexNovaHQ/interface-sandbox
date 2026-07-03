@@ -225,7 +225,9 @@ assert.equal(fullPayload.public_report_ui.raw_json_download_enabled, false);
 assert.equal(fullPayload.public_report_ui.public_tables_render_full_rows, true);
 
 assert.ok(qualifiedReviewHtml.includes('id="qualifiedReviewRail"'));
-assert.ok(qualifiedReviewHtml.includes("Legal Diligence"));
+assert.ok(qualifiedReviewHtml.includes("The Interface"));
+assert.ok(qualifiedReviewHtml.includes("Law × Technology · AI Governance · Privacy · Systems"));
+assert.ok(qualifiedReviewHtml.includes("engine-nav"));
 assert.ok(qualifiedReviewHtml.includes("Qualified Review"));
 assert.equal(qualifiedReviewHtml.includes("Public-footprint exposure diligence"), false);
 assert.equal(qualifiedReviewHtml.includes('id="qualifiedReviewTabs"'), false);
@@ -262,8 +264,9 @@ if (existsSync(assemblyEnginePath)) {
 const indexPath = "public/interface-diligence/diligence-system/index.html";
 if (existsSync(indexPath)) {
   const indexHtml = readFileSync(indexPath, "utf8");
-  assert.ok(indexHtml.includes("Legal Diligence"));
-  assert.ok(indexHtml.includes("Diligence System"));
+  assert.ok(indexHtml.includes("The Interface"));
+  assert.ok(indexHtml.includes("Law × Technology · AI Governance · Privacy · Systems"));
+  assert.ok(indexHtml.includes("engine-nav"));
 }
 
 console.log("public report UI: PASS");
