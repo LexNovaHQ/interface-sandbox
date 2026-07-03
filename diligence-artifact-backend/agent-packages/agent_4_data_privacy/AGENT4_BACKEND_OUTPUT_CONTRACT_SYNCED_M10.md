@@ -71,6 +71,61 @@ Rules:
 - `data_provenance_profile` must contain exactly the 34 locked material fields listed above.
 - The backend must validate and save `data_provenance_profile` before M10 forensics may begin.
 
+## M10 QR nested material objects
+
+The 34 top-level field contract remains locked. M10 must not add top-level `contact_routes` or top-level `consent_manager_readiness`.
+
+M10 may emit these nested material derivation objects inside existing locked fields:
+
+```text
+data_provenance_profile.privacy_governance_contact_accountability_signals[].contact_routes
+```
+
+```text
+data_provenance_profile.consent_withdrawal_controls[].consent_manager_readiness
+```
+
+```text
+data_provenance_profile.law_regulatory_readiness_matrix[] where readiness_area = "consent_manager_readiness"
+```
+
+`contact_routes` must use this exact nested shape when emitted:
+
+```json
+{
+  "contact_routes": {
+    "privacy_contact_email": "",
+    "grievance_contact_email": "",
+    "dpo_or_privacy_officer_contact": "",
+    "rights_request_contact_route": "",
+    "evidence_basis": [],
+    "anti_unknown_status": "",
+    "limitation": ""
+  }
+}
+```
+
+`consent_manager_readiness` must use this exact nested shape when emitted:
+
+```json
+{
+  "consent_manager_readiness": {
+    "applicability_signal": "",
+    "public_flow_visible": "",
+    "consent_collection_artefact_route": "",
+    "withdrawal_revocation_grievance_route": "",
+    "third_party_route_signal": "",
+    "evidence_basis": [],
+    "anti_unknown_status": "",
+    "limitation_private_confirmation_required": ""
+  }
+}
+```
+
+These nested objects are material values. They are not forensic-only notes, not report-only summaries, and not QR placeholders.
+
+They must be derived only from M10-approved sources and governed by `DAP.CONTACT.*` and `DAP.CM.*` registry authority. They must not contain legal applicability, compliance, adequacy, transfer-legality, lawful-basis sufficiency, liability, or registry/exposure conclusions.
+
 ## M10 forensic response shape
 
 For backend phase `M10_FORENSICS`, consume the saved `data_provenance_profile` artifact and return exactly one plain top-level JSON object:
