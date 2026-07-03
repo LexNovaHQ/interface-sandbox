@@ -115,3 +115,81 @@ M10 must not use these as active inputs:
 ## 2.4 Failure / limitation rule
 
 If D-family material and the selected support packet cannot support a field, M10 must emit a controlled limitation or missing-proof request. It must not request whole legal-family artifacts and must not block only because whole legal-family artifacts are absent.
+
+---
+
+# SECTION 3 — M10 QR CONTACT ROUTES AND CONSENT MANAGER VALIDATOR LOCK
+
+## 3.1 34-field preservation
+
+M10 must preserve the locked 34 top-level material fields in `data_provenance_profile`.
+
+The validator must reject top-level material fields named:
+
+- `contact_routes`
+- `consent_manager_readiness`
+
+These are authorized only as nested material objects inside existing 34-field homes.
+
+## 3.2 Authorized nested homes
+
+`contact_routes` may appear only inside:
+
+```text
+data_provenance_profile.privacy_governance_contact_accountability_signals[].contact_routes
+```
+
+`consent_manager_readiness` may appear only inside:
+
+```text
+data_provenance_profile.consent_withdrawal_controls[].consent_manager_readiness
+```
+
+A readiness row for consent-manager review may appear only inside:
+
+```text
+data_provenance_profile.law_regulatory_readiness_matrix[]
+```
+
+using:
+
+```text
+readiness_area: consent_manager_readiness
+```
+
+## 3.3 Required nested shape
+
+When emitted, `contact_routes` must contain:
+
+- `privacy_contact_email`
+- `grievance_contact_email`
+- `dpo_or_privacy_officer_contact`
+- `rights_request_contact_route`
+- `evidence_basis`
+- `anti_unknown_status`
+- `limitation`
+
+When emitted, `consent_manager_readiness` must contain:
+
+- `applicability_signal`
+- `public_flow_visible`
+- `consent_collection_artefact_route`
+- `withdrawal_revocation_grievance_route`
+- `third_party_route_signal`
+- `evidence_basis`
+- `anti_unknown_status`
+- `limitation_private_confirmation_required`
+
+`evidence_basis` must be an array of short business-readable basis notes. It must not contain source URLs, copied excerpts, forensic rows, trace, or source IDs.
+
+## 3.4 Registry and source boundary
+
+`contact_routes` must be governed by `DAP.CONTACT.001` through `DAP.CONTACT.005`.
+
+`consent_manager_readiness` must be governed by `DAP.CM.001` through `DAP.CM.007`.
+
+Both objects must use only the M10 active read set defined in Section 2.
+
+## 3.5 Forbidden conclusions
+
+The nested objects must not state legal applicability, compliance, non-compliance, violation, lawful-basis sufficiency, DPA sufficiency, security adequacy, transfer legality, liability, risk level, threat ID, registry row status, or exposure status.
