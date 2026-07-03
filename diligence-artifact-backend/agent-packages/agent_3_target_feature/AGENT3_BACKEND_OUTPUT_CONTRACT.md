@@ -93,11 +93,20 @@ Rules:
 - Do not wrap the object inside `phase_output`, `output`, `result`, `data`, `M8`, `M8_TARGET_FEATURE_PROFILE`, or `M8_TARGET_FEATURE_PROFILE_MAIN`.
 - Do not return `[ { "target_feature_profile": {} } ]`.
 - Do not include `target_feature_profile_forensics` in the Phase B1 material response.
-- Do not put source ledgers, archetype ledgers, surface-token ledgers, derivation ledgers, runtime trace, validation status, lock status, confidence, source URLs, evidence basis, extraction capsule, or forensic/provenance material inside `target_feature_profile`.
+- Do not put source ledgers, archetype ledgers, surface-token ledgers, derivation ledgers, runtime trace, validation status, lock status, confidence, source URLs, source IDs, source pointers, copied excerpts, extraction capsule, or forensic/provenance material inside `target_feature_profile`.
+- `target_feature_profile.commercial_availability_posture.evidence_basis[]` is allowed only as short business-readable source-basis notes. It must not contain source URLs, source IDs, source pointers, copied source text, confidence fields, or forensic/provenance material.
 - `target_feature_profile` must contain exactly:
   - `activities`
+  - `commercial_availability_posture`
   - `profile_level_limitations`
 - `target_feature_profile.activities` must be an array.
+- `target_feature_profile.commercial_availability_posture` must be an object with exactly:
+  - `posture`
+  - `free_trial_freemium_signal`
+  - `beta_pilot_early_access_signal`
+  - `paid_production_enterprise_plan_signal`
+  - `evidence_basis`
+  - `limitation`
 - Every emitted activity must use the M8 locked 12-field activity card.
 - The backend runner must validate and save `target_feature_profile` before Phase C/D forensic execution begins.
 
