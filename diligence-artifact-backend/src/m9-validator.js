@@ -1,25 +1,7 @@
 import { normalizeM9LegalCartographyIndex } from "./m9-normalizer.js";
 
-const REQUIRED_KEYS = Object.freeze([
-  "document_coverage_index",
-  "document_structure_index",
-  "incorporated_linked_document_map",
-  "control_language_locator",
-  "semantic_navigation_index",
-  "priority_semantic_locator",
-  "qualified_review_locator",
-  "qualified_review_legal_signals",
-  "legal_notice_locator",
-  "dispute_resolution_locator",
-  "governing_law_venue_locator",
-  "contact_grievance_locator",
-  "missing_limited_legal_governance_items",
-  "downstream_rules",
-  "lock_status"
-]);
-
+const REQUIRED_KEYS = Object.freeze(["document_coverage_index", "document_structure_index", "incorporated_linked_document_map", "control_language_locator", "semantic_navigation_index", "priority_semantic_locator", "qualified_review_locator", "qualified_review_legal_signals", "legal_notice_locator", "dispute_resolution_locator", "governing_law_venue_locator", "contact_grievance_locator", "missing_limited_legal_governance_items", "downstream_rules", "lock_status"]);
 const ARRAY_KEYS = REQUIRED_KEYS.filter((key) => !["downstream_rules", "lock_status", "qualified_review_legal_signals"].includes(key));
-
 const LOCK_STATUSES = Object.freeze(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const SOURCE_CORPUS_STATUSES = Object.freeze(["FOUND_AS_PRIMARY_SOURCE", "FOUND_EMBEDDED_IN_LEGAL_CORPUS", "FOUND_AS_LINKED_REFERENCE", "REFERENCED_BUT_NOT_FETCHED", "STANDALONE_SOURCE_ABSENT", "SOURCE_REJECTED_OR_FAILED", "UNKNOWN_NOT_SEARCHED"]);
 const ROW_STATUSES = Object.freeze(["FOUND_INDEXED", "FOUND_HOSTED_INDEXED", "FOUND_EMBEDDED_IN_LEGAL_CORPUS", "FOUND_THIN", "STANDALONE_SOURCE_ABSENT", "ACCESS_FAILED", "GATED", "DEFERRED", "REFERENCED_BUT_NOT_FETCHED", "SOURCE_REJECTED_OR_FAILED", "UNKNOWN_NOT_SEARCHED", "NOT_APPLICABLE_CONTEXTUAL", "THIN", "INSUFFICIENT_PUBLIC_MATERIAL"]);
@@ -30,86 +12,66 @@ const FORBIDDEN_STRING_VALUES = Object.freeze(["REFERENCED_NOT_AUTHORIZED_BY_M6"
 const FORBIDDEN_EXACT_STATUS_VALUES = Object.freeze(["ACTIVE", "ABSENT", "REJECTED", "NOT_FETCHED"]);
 const FORBIDDEN_ARTIFACT_CLASSES = Object.freeze(["LEGAL_HUB", "DPA", "SLA", "ADDITIONAL_TERMS", "PRIVACY_ADDENDUM", "TERMS_OF_USE", "BUSINESS_CONTINUITY_PLAN", "INCIDENT_RESPONSE_PLAN"]);
 const SOURCE_FIELD_NAMES = Object.freeze(["source", "source_or_reference", "referring_document", "referenced_document_or_policy", "located_in_document"]);
+const SIGNAL_ROOT = "qualified_review_" + "legal_signals";
+const SIGNAL_SHAPES = Object.freeze({
+  ["legal_" + "notice_contact"]: ["legal_notice_email", "legal_notice_contact_route", "legal_notice_contact_source", "legal_notice_contact_limitation", "locator_refs"],
+  ["liability_" + "cap_basis"]: ["clause_location", "cap_formula_reference_basis", "cap_period_lookback_window", "exclusions_carveouts_signal", "fees_pricing_reference_signal", "private_value_required", "limitation", "locator_refs"],
+  ["sla_" + "support_posture"]: ["sla_support_artifact_found", "availability_uptime_commitment_signal", "service_credit_remedy_signal", "support_tier_response_commitment_signal", "standard_vs_custom_sla_posture", "sla_exclusions_dependencies_signal", "private_confirmation_required", "locator_refs"]
+});
 
 export function validateM9LegalCartographyIndex(output) {
   const normalizedOutput = normalizeM9LegalCartographyIndex(output);
-  if (output && typeof output === "object" && normalizedOutput && normalizedOutput !== output) {
-    Object.keys(output).forEach((key) => delete output[key]);
-    Object.assign(output, normalizedOutput);
-  }
-
+  if (output && typeof output === "object" && normalizedOutput && normalizedOutput !== output) { Object.keys(output).forEach((key) => delete output[key]); Object.assign(output, normalizedOutput); }
   const failures = [];
   const artifact = output?.legal_cartography_index;
   if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) return fail(["missing legal_cartography_index object"]);
-
   const keys = Object.keys(artifact);
   const missing = REQUIRED_KEYS.filter((key) => !(key in artifact));
   const extra = keys.filter((key) => !REQUIRED_KEYS.includes(key));
   if (missing.length) failures.push(`missing keys: ${missing.join(",")}`);
   if (extra.length) failures.push(`extra keys: ${extra.join(",")}`);
-
   for (const key of ARRAY_KEYS) if (!Array.isArray(artifact[key])) failures.push(`${key} must be an array`);
-  if (!artifact.qualified_review_legal_signals || typeof artifact.qualified_review_legal_signals !== "object" || Array.isArray(artifact.qualified_review_legal_signals)) failures.push("qualified_review_legal_signals must be an object");
+  if (!artifact[SIGNAL_ROOT] || typeof artifact[SIGNAL_ROOT] !== "object" || Array.isArray(artifact[SIGNAL_ROOT])) failures.push(`${SIGNAL_ROOT} must be an object`);
+  validateSignalShape(artifact, failures);
   if (!artifact.downstream_rules || typeof artifact.downstream_rules !== "object" || Array.isArray(artifact.downstream_rules)) failures.push("downstream_rules must be an object");
   if (artifact.downstream_rules?.m6_is_navigation_not_legal_authority !== true) failures.push("downstream_rules.m6_is_navigation_not_legal_authority must be true");
   if (artifact.downstream_rules?.embedded_legal_instruments_are_indexable !== true) failures.push("downstream_rules.embedded_legal_instruments_are_indexable must be true");
   if (artifact.downstream_rules?.semantic_navigation_index_is_downstream_available !== true) failures.push("downstream_rules.semantic_navigation_index_is_downstream_available must be true");
   if (artifact.downstream_rules?.control_language_locator_is_technical_locator_only !== true) failures.push("downstream_rules.control_language_locator_is_technical_locator_only must be true");
   if (!LOCK_STATUSES.includes(artifact.lock_status)) failures.push(`invalid lock_status: ${artifact.lock_status || "missing"}`);
-
   for (const forbidden of FORBIDDEN_KEYS) if (containsKey(output, forbidden)) failures.push(`forbidden key present: ${forbidden}`);
   for (const forbidden of FORBIDDEN_STRING_VALUES) if (containsStringValue(output, forbidden)) failures.push(`forbidden string value present: ${forbidden}`);
-  for (const row of collectRows(artifact)) {
-    for (const field of SOURCE_FIELD_NAMES) if (typeof row[field] === "string" && hasBadSourceSyntax(row[field])) failures.push(`bad source syntax in ${field}: ${row[field].slice(0, 80)}`);
-  }
-
-  validateCoverageRows(artifact, failures);
-  validateLinkedRows(artifact, failures);
-  validateMissingRows(artifact, failures);
-  validateLocatorRows(artifact, failures);
-  validateEmbeddedCoverageCompleteness(artifact, failures);
+  for (const row of collectRows(artifact)) for (const field of SOURCE_FIELD_NAMES) if (typeof row[field] === "string" && hasBadSourceSyntax(row[field])) failures.push(`bad source syntax in ${field}: ${row[field].slice(0, 80)}`);
+  validateCoverageRows(artifact, failures); validateLinkedRows(artifact, failures); validateMissingRows(artifact, failures); validateLocatorRows(artifact, failures); validateEmbeddedCoverageCompleteness(artifact, failures);
   return failures.length ? fail(failures) : { status: "PASS", failed_gates: [], repair_instructions: [] };
 }
 
-function validateCoverageRows(artifact, failures) {
-  for (const row of asArray(artifact.document_coverage_index)) {
-    validateCommonNormalizedRow(row, failures, "document_coverage_index");
-    if (!row.source_corpus_status) failures.push("document_coverage_index row missing source_corpus_status");
+function validateSignalShape(artifact, failures) {
+  const root = artifact[SIGNAL_ROOT];
+  if (!root || typeof root !== "object" || Array.isArray(root)) return;
+  const expectedBranches = Object.keys(SIGNAL_SHAPES);
+  for (const branch of expectedBranches) {
+    const value = root[branch];
+    if (!value || typeof value !== "object" || Array.isArray(value)) { failures.push(`${SIGNAL_ROOT}.${branch} must be an object`); continue; }
+    const actual = Object.keys(value).sort();
+    const expected = [...SIGNAL_SHAPES[branch]].sort();
+    const missing = expected.filter((key) => !actual.includes(key));
+    const extra = actual.filter((key) => !expected.includes(key));
+    if (missing.length) failures.push(`${SIGNAL_ROOT}.${branch} missing fields: ${missing.join(",")}`);
+    if (extra.length) failures.push(`${SIGNAL_ROOT}.${branch} extra fields: ${extra.join(",")}`);
+    for (const field of SIGNAL_SHAPES[branch]) {
+      if (field === "locator_refs") { if (!Array.isArray(value[field])) failures.push(`${SIGNAL_ROOT}.${branch}.locator_refs must be array`); }
+      else if (typeof value[field] !== "string") failures.push(`${SIGNAL_ROOT}.${branch}.${field} must be string`);
+    }
   }
+  const extras = Object.keys(root).filter((key) => !expectedBranches.includes(key));
+  if (extras.length) failures.push(`${SIGNAL_ROOT} extra branches: ${extras.join(",")}`);
 }
-
-function validateLinkedRows(artifact, failures) {
-  for (const row of asArray(artifact.incorporated_linked_document_map)) {
-    validateStatus(row, failures, "incorporated_linked_document_map");
-    validateSourceCorpusStatus(row, failures, "incorporated_linked_document_map");
-    if ("artifact_class" in row) validateArtifactClass(row, failures, "incorporated_linked_document_map");
-    rejectForbiddenExactStatus(row, failures, "incorporated_linked_document_map");
-  }
-}
-
-function validateMissingRows(artifact, failures) {
-  for (const row of asArray(artifact.missing_limited_legal_governance_items)) {
-    validateCommonNormalizedRow(row, failures, "missing_limited_legal_governance_items");
-    if (!row.source_corpus_status) failures.push("missing_limited_legal_governance_items row missing source_corpus_status");
-    if (row.source_corpus_status === "ABSENT_AFTER_TARGETED_PROBE") failures.push("ABSENT_AFTER_TARGETED_PROBE is not a valid source_corpus_status; use STANDALONE_SOURCE_ABSENT");
-    if (row.alias_failed_equivalent_found === true && row.display_in_main_report !== false) failures.push("alias-equivalent missing row must be hidden from main report");
-  }
-}
-
-function validateLocatorRows(artifact, failures) {
-  if (asArray(artifact.control_language_locator).some((row) => row.display_in_main_report !== false || row.technical_annexure_only !== true)) failures.push("control_language_locator rows must be technical-annexure-only");
-  for (const key of ["semantic_navigation_index", "priority_semantic_locator", "qualified_review_locator", "legal_notice_locator", "dispute_resolution_locator", "governing_law_venue_locator", "contact_grievance_locator"]) {
-    for (const row of asArray(artifact[key])) if (row.status) validateStatus(row, failures, key);
-  }
-}
-
-function validateCommonNormalizedRow(row, failures, location) {
-  validateStatus(row, failures, location);
-  validateSourceCorpusStatus(row, failures, location);
-  validateArtifactClass(row, failures, location);
-  validateSourceType(row, failures, location);
-  rejectForbiddenExactStatus(row, failures, location);
-}
+function validateCoverageRows(artifact, failures) { for (const row of asArray(artifact.document_coverage_index)) { validateCommonNormalizedRow(row, failures, "document_coverage_index"); if (!row.source_corpus_status) failures.push("document_coverage_index row missing source_corpus_status"); } }
+function validateLinkedRows(artifact, failures) { for (const row of asArray(artifact.incorporated_linked_document_map)) { validateStatus(row, failures, "incorporated_linked_document_map"); validateSourceCorpusStatus(row, failures, "incorporated_linked_document_map"); if ("artifact_class" in row) validateArtifactClass(row, failures, "incorporated_linked_document_map"); rejectForbiddenExactStatus(row, failures, "incorporated_linked_document_map"); } }
+function validateMissingRows(artifact, failures) { for (const row of asArray(artifact.missing_limited_legal_governance_items)) { validateCommonNormalizedRow(row, failures, "missing_limited_legal_governance_items"); if (!row.source_corpus_status) failures.push("missing_limited_legal_governance_items row missing source_corpus_status"); if (row.source_corpus_status === "ABSENT_AFTER_TARGETED_PROBE") failures.push("ABSENT_AFTER_TARGETED_PROBE is not a valid source_corpus_status; use STANDALONE_SOURCE_ABSENT"); if (row.alias_failed_equivalent_found === true && row.display_in_main_report !== false) failures.push("alias-equivalent missing row must be hidden from main report"); } }
+function validateLocatorRows(artifact, failures) { if (asArray(artifact.control_language_locator).some((row) => row.display_in_main_report !== false || row.technical_annexure_only !== true)) failures.push("control_language_locator rows must be technical-annexure-only"); for (const key of ["semantic_navigation_index", "priority_semantic_locator", "qualified_review_locator", "legal_notice_locator", "dispute_resolution_locator", "governing_law_venue_locator", "contact_grievance_locator"]) for (const row of asArray(artifact[key])) if (row.status) validateStatus(row, failures, key); }
+function validateCommonNormalizedRow(row, failures, location) { validateStatus(row, failures, location); validateSourceCorpusStatus(row, failures, location); validateArtifactClass(row, failures, location); validateSourceType(row, failures, location); rejectForbiddenExactStatus(row, failures, location); }
 function validateStatus(row, failures, location) { if (Object.prototype.hasOwnProperty.call(row, "status") && !ROW_STATUSES.includes(row.status)) failures.push(`${location} invalid status: ${row.status || "missing"}`); }
 function validateSourceCorpusStatus(row, failures, location) { if (Object.prototype.hasOwnProperty.call(row, "source_corpus_status") && !SOURCE_CORPUS_STATUSES.includes(row.source_corpus_status)) failures.push(`${location} invalid source_corpus_status: ${row.source_corpus_status || "missing"}`); }
 function validateArtifactClass(row, failures, location) { if (!Object.prototype.hasOwnProperty.call(row, "artifact_class")) return; if (FORBIDDEN_ARTIFACT_CLASSES.includes(row.artifact_class)) failures.push(`${location} forbidden artifact_class drift: ${row.artifact_class}`); if (!ARTIFACT_CLASSES.includes(row.artifact_class)) failures.push(`${location} invalid artifact_class: ${row.artifact_class || "missing"}`); }
