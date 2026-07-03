@@ -294,3 +294,133 @@ Return strict JSON only with exactly this shape:
     "profile_level_limitations": []
   }
 }
+
+## M8.S14 — QR Commercial Availability Posture Addendum
+
+This addendum is the only authorized M8 material-output expansion for Qualified Review commercial posture. It is additive and does not modify, weaken, or expand the locked 12-field activity card in M8.S9.
+
+If this addendum conflicts with older wording in M8.S7, M8.S8, M8.S11, M8.S12, or M8.S13 that says the material profile contains only `activities[]` and `profile_level_limitations[]`, this addendum supersedes that older wording only to permit one additional profile-level object:
+
+```text
+target_feature_profile.commercial_availability_posture
+```
+
+No other profile-level material object is authorized by this addendum.
+
+### M8.S14A — Registry Authority
+
+M8 may derive `commercial_availability_posture` only through the locked `PA.COM.*` registry family:
+
+- `PA.COM.001` — commercial availability posture
+- `PA.COM.002` — free trial / freemium signal
+- `PA.COM.003` — beta / pilot / early-access signal
+- `PA.COM.004` — paid production / enterprise plan signal
+- `PA.COM.005` — commercial availability evidence basis
+- `PA.COM.006` — commercial availability limitation
+
+M8 must not derive this object from memory, market knowledge, external browsing, unapproved URLs, or pricing labels alone.
+
+### M8.S14B — Source Access and Evidence Boundary
+
+M8 may use only the source families already authorized for M8:
+
+- `feature_candidate_inventory`
+- `lossless_family__P1_PRODUCT`
+- `lossless_family__P2_PLATFORM_FEATURE_SOLUTION`
+- `lossless_family__P3_AI_CAPABILITY_TECHNICAL`
+- `lossless_family__P4_USE_CASE_INDUSTRY`
+- `lossless_family__P5_ENTERPRISE_PRICING`
+- locked `target_profile` and `target_profile_forensics` as context only
+
+P5 pricing material may support commercial availability posture, free trial/freemium posture, paid production posture, plan posture, or limitation posture. P5 must not create product/activity mechanics and must not create a normal `activities[]` row unless the deterministic inventory already requires that candidate to be treated and product/API/model/source evidence supports it.
+
+The material profile must not include source URLs, source IDs, source pointers, copied excerpts, confidence fields, derivation ledgers, or forensic material inside `commercial_availability_posture`. `evidence_basis[]` must be a short business-readable source-basis summary only, such as `Pricing page referenced paid API/model plans` or `Product/signup material referenced waitlist/private access`.
+
+### M8.S14C — Material Object Contract
+
+When this addendum is active, `target_feature_profile` must contain exactly these three top-level material keys:
+
+```text
+activities
+commercial_availability_posture
+profile_level_limitations
+```
+
+`commercial_availability_posture` must be a profile-level object with exactly these six keys:
+
+```json
+{
+  "posture": "",
+  "free_trial_freemium_signal": "",
+  "beta_pilot_early_access_signal": "",
+  "paid_production_enterprise_plan_signal": "",
+  "evidence_basis": [],
+  "limitation": ""
+}
+```
+
+### M8.S14D — Field Guidance
+
+`posture` must state the best public-footprint posture in plain English, using only visible evidence. Permitted answer families are: production/commercially available, beta/pilot/early access, free trial/freemium/free tier, paid production/enterprise, hybrid/unclear mixed posture, not publicly visible, or field limited.
+
+`free_trial_freemium_signal` must state whether the public material shows a free trial, freemium plan, free tier, free credits, free developer access, or no visible free/freemium signal.
+
+`beta_pilot_early_access_signal` must state whether the public material shows beta, pilot, preview, waitlist, private access, early access, limited availability, or no visible beta/pilot signal.
+
+`paid_production_enterprise_plan_signal` must state whether the public material shows paid production use, API pricing, paid plans, enterprise plan, request-demo enterprise access, sales-assisted commercial use, or no visible paid-production signal.
+
+`evidence_basis[]` must be a short array of business-readable basis notes. It must not include source URLs, source IDs, source pointers, copied source text, or forensic ledger rows.
+
+`limitation` must state any commercial-availability uncertainty, including private order-form dependency, pricing not reviewed, gated pricing, source not found, mixed product posture, or reviewer confirmation needed. If no material limitation exists, use `No material commercial availability limitation identified from reviewed public material.`
+
+### M8.S14E — Final Backend JSON Shape Addendum
+
+Return strict JSON only. When this addendum is active, the M8 material response shape is:
+
+```json
+{
+  "target_feature_profile": {
+    "activities": [
+      {
+        "activity_reference": "ACT.001",
+        "product_service_wrapper": "",
+        "activity_feature_name": "",
+        "activity_candidate_summary": "",
+        "mechanics_proof": "",
+        "autonomy_human_control_signal": "",
+        "data_content_object_touched": "",
+        "external_internal_action_signal": "",
+        "archetype_codes": [],
+        "archetype_proof": "",
+        "surface_context_tokens": [],
+        "surface_proof_and_routing_limits": ""
+      }
+    ],
+    "commercial_availability_posture": {
+      "posture": "",
+      "free_trial_freemium_signal": "",
+      "beta_pilot_early_access_signal": "",
+      "paid_production_enterprise_plan_signal": "",
+      "evidence_basis": [],
+      "limitation": ""
+    },
+    "profile_level_limitations": []
+  }
+}
+```
+
+The commercial availability object does not authorize new activity keys, new candidates, source discovery, legal analysis, privacy analysis, registry evaluation, or final QR/report output.
+
+### M8.S14F — Final Gate Addendum
+
+Before returning the M8 material response, verify:
+
+1. Output has exactly one top-level key: `target_feature_profile`.
+2. `target_feature_profile` has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
+3. Every activity still has exactly the locked 12 keys from M8.S9.
+4. `commercial_availability_posture` has exactly the six keys in M8.S14C.
+5. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
+6. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
+7. No forensic output is emitted.
+
+If any condition fails, repair the material output only. Do not emit forensics.
