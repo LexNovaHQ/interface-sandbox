@@ -1,4 +1,93 @@
 (() => {
+  const LANES = {
+    "ai-product-data": { label: "AI Product & Data Legal Exposure", short: "AI Product & Data", active: true, state: "Active demo registry" },
+    "saas-privacy-security": { label: "SaaS Privacy & Security", short: "SaaS Privacy & Security", active: false, state: "Not activated in demo" },
+    "fintech-platforms": { label: "FinTech Platforms", short: "FinTech Platforms", active: false, state: "Not activated in demo" },
+    "healthtech-digital-care": { label: "Health" + "Tech & Digital Care", short: "Health" + "Tech", active: false, state: "Not activated in demo" },
+    "employment-hr-tech": { label: "Employment / HR Tech", short: "HR Tech", active: false, state: "Not activated in demo" },
+    "adtech-martech-consumer-data": { label: "AdTech, MarTech & Consumer Data", short: "AdTech / MarTech", active: false, state: "Not activated in demo" },
+    "digital-platforms-marketplaces": { label: "Digital Platforms & Marketplaces", short: "Digital Platforms", active: false, state: "Not activated in demo" },
+    "banking-finance-technology": { label: "Banking / Finance Technology", short: "Finance Tech", active: false, state: "Not activated in demo" }
+  };
+
+  injectRegistrySelector();
+
+  function injectRegistrySelector() {
+    const form = document.getElementById("runForm");
+    if (!form || document.getElementById("registryLane")) return;
+
+    const block = document.createElement("div");
+    block.className = "registry-selector-block";
+    block.innerHTML = `<label class="label" for="registryLane">Active Vertical Registry</label><div class="registry-select-wrap"><select class="input registry-select" id="registryLane" name="registryLane" autocomplete="off"><option value="ai-product-data" selected>AI Product & Data Legal Exposure — active demo</option><option value="saas-privacy-security">SaaS Privacy & Security — not activated in demo</option><option value="fintech-platforms">FinTech Platforms — not activated in demo</option><option value="healthtech-digital-care">HealthTech & Digital Care — not activated in demo</option><option value="employment-hr-tech">Employment / HR Tech — not activated in demo</option><option value="adtech-martech-consumer-data">AdTech, MarTech & Consumer Data — not activated in demo</option><option value="digital-platforms-marketplaces">Digital Platforms & Marketplaces — not activated in demo</option><option value="banking-finance-technology">Banking / Finance Technology — not activated in demo</option></select></div><div class="registry-lane-state active" id="registryLaneState">Active demo registry</div><p class="registry-lane-description" id="registryLaneDescription">This demo uses the AI Product & Data exposure registry. Other TMT registry lanes use the same diligence architecture but are not activated in this demo environment.</p>`;
+    form.prepend(block);
+
+    const live = document.getElementById("runLiveBadge");
+    if (live && !document.getElementById("activeRegistryBadge")) {
+      const badge = document.createElement("span");
+      badge.id = "activeRegistryBadge";
+      badge.className = "registry-live-badge active";
+      live.insertAdjacentElement("afterend", badge);
+    }
+
+    const sideStack = document.querySelector(".gate-side-stack");
+    if (sideStack && !document.querySelector(".gate-registry-card")) {
+      const card = document.createElement("article");
+      card.className = "card gate-card gate-registry-card";
+      card.innerHTML = `<div class="eyebrow">Registry Architecture</div><h2>Vertical registry engine</h2><p class="small-muted">The report architecture stays stable. The active registry swaps in the exposure taxonomy, public triggers, visible-control rules, and remediation routes for the selected domain.</p><div class="registry-mini-list"><span>Target profile</span><span>Activity profile</span><span>Data / asset provenance</span><span>Legal document stack</span><span>Exposure registry</span><span>Review-ready route</span></div>`;
+      sideStack.querySelector(".gate-resume-card")?.insertAdjacentElement("afterend", card);
+    }
+
+    form.addEventListener("submit", guardInactiveRegistry, true);
+    document.getElementById("registryLane")?.addEventListener("change", syncRegistryLane);
+    window.getActiveRegistryLane = getActiveRegistryLane;
+    syncRegistryLane();
+  }
+
+  function getActiveRegistryLane() {
+    const value = document.getElementById("registryLane")?.value || "ai-product-data";
+    return { id: value, ...(LANES[value] || LANES["ai-product-data"]) };
+  }
+
+  function syncRegistryLane() {
+    const lane = getActiveRegistryLane();
+    const state = document.getElementById("registryLaneState");
+    const description = document.getElementById("registryLaneDescription");
+    const badge = document.getElementById("activeRegistryBadge");
+    const runButton = document.getElementById("runButton");
+    if (state) {
+      state.textContent = lane.state;
+      state.className = `registry-lane-state ${lane.active ? "active" : "inactive"}`;
+    }
+    if (description) {
+      description.textContent = lane.active
+        ? "This demo uses the AI Product & Data exposure registry. Other TMT registry lanes use the same diligence architecture but are not activated in this demo environment."
+        : `${lane.label} uses the same vertical diligence architecture, but this registry lane is not activated in the current demo environment.`;
+    }
+    if (badge) {
+      badge.textContent = `Registry: ${lane.short} — ${lane.active ? "Active" : "Not activated"}`;
+      badge.className = `registry-live-badge ${lane.active ? "active" : "inactive"}`;
+    }
+    if (runButton && !document.getElementById("runIdValue")?.textContent?.startsWith("LN-")) {
+      runButton.disabled = !lane.active;
+      runButton.textContent = lane.active ? "Start Diligence Run" : "Registry Not Activated in Demo";
+    }
+  }
+
+  function guardInactiveRegistry(event) {
+    const lane = getActiveRegistryLane();
+    if (lane.active) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const status = document.getElementById("statusMessage");
+    if (status) {
+      status.textContent = `${lane.label} is not activated in this demo. Select AI Product & Data to run the live registry.`;
+      status.style.color = "var(--danger)";
+    }
+    syncRegistryLane();
+  }
+})();
+
+(() => {
   const POLL_MS = 10000;
   const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
   const FALLBACK_PHASE_LABELS = {
