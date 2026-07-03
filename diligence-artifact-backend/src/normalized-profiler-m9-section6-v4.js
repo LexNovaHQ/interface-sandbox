@@ -1,5 +1,6 @@
 import { buildNormalizedProfilerOutput as buildBaseOutput, NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-section10-v3.js";
 import { buildLegalDocumentGovernanceMapSection } from "./legal-section-normalizer.js";
+import { buildM10ContactConsentSubsection } from "./m10-contact-consent-section-normalizer.js";
 import { safeObject } from "./report-safe-language.js";
 
 export { NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS };
@@ -28,13 +29,14 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
     renderer_contract: {
       ...(output.normalized_report_manifest?.renderer_contract || {}),
       section_4_commercial_availability_posture_subsection_present: true,
+      section_5_contact_consent_readiness_subsection_present: true,
       section_5_full_36_field_dap_report_present: true,
       section_5_dap_annexure_disclaimer_present: true,
       section_6_m9_summary_not_raw_index: true
     },
     section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => {
       if (row.section_id === "product_activity_ip_profile") return { ...row, title: section4.section_title, status: section4.section_status, commercial_availability_posture_subsection_present: true };
-      if (row.section_id === "data_provenance_controls") return { ...row, title: section5.section_title, status: section5.section_status, full_36_field_dap_report_present: true, annexure_disclaimer_present: true };
+      if (row.section_id === "data_provenance_controls") return { ...row, title: section5.section_title, status: section5.section_status, full_36_field_dap_report_present: true, annexure_disclaimer_present: true, contact_consent_readiness_subsection_present: true };
       if (row.section_id === "legal_document_control_review") return { ...row, title: section6.section_title, status: section6.section_status };
       return row;
     })
@@ -49,14 +51,16 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
       terminal_checks: {
         ...(final.terminal_checks || {}),
         section_4_commercial_availability_posture_subsection_present: true,
+        section_5_contact_consent_readiness_subsection_present: true,
         section_5_full_36_field_dap_report_present: true,
         section_5_dap_annexure_disclaimer_present: true,
         section_6_m9_summary_not_raw_index: true
       },
       compiler_trace: {
         ...(final.compiler_trace || {}),
-        compiler_version: "normalized_profiler_compiler_replacement_v10_section4_commercial_posture_section5_full_dap_section6_m9_summary",
+        compiler_version: "normalized_profiler_compiler_replacement_v11_section4_commercial_section5_contact_consent_full_dap_section6_m9_summary",
         section_4_commercial_availability_posture_subsection_present: true,
+        section_5_contact_consent_readiness_subsection_present: true,
         section_5_full_36_field_dap_report_present: true,
         section_5_dap_annexure_disclaimer_present: true,
         section_6_m9_summary_not_raw_index: true
@@ -125,18 +129,22 @@ function buildFullIntegratedDapSection(section, artifacts) {
   const base = safeObject(section);
   const b4 = unwrapArtifact(artifacts.extended_dap_india_readiness_profile, "extended_dap_india_readiness_profile");
   const integrated = unwrapArtifact(artifacts.integrated_dap_report, "integrated_dap_report");
+  const m10 = unwrapArtifact(artifacts.data_provenance_profile, "data_provenance_profile");
   const fields = Array.isArray(b4.fields) ? b4.fields : [];
   const sourceArtifacts = Array.isArray(base.source_artifacts_used) ? base.source_artifacts_used : [];
   const fullSubsections = fields.length ? buildDapSubsections(fields) : fallbackSubsections(base, integrated);
   return {
     ...base,
     section_title: "Data Provenance & Controls",
-    reviewer_summary: buildDapReviewerSummary({ base, fields, integrated }),
-    subsections: [buildDapReportNoticeSubsection({ fields, integrated }), ...fullSubsections],
+    reviewer_summary: appendSentence(buildDapReviewerSummary({ base, fields, integrated }), "Privacy contact routes and consent-manager readiness are projected as a dedicated qualified-review subsection."),
+    subsections: [buildDapReportNoticeSubsection({ fields, integrated }), buildM10ContactConsentSubsection(m10), ...fullSubsections],
     section_limitations: [],
     source_artifacts_used: uniqueStrings([...sourceArtifacts, "data_provenance_profile", "extended_dap_india_readiness_profile", "integrated_dap_report"]),
     normalization: {
       ...(base.normalization || {}),
+      section_5_contact_consent_readiness_subsection_present: true,
+      contact_routes_source: "data_provenance_profile.privacy_governance_contact_accountability_signals[].contact_routes",
+      consent_manager_readiness_source: "data_provenance_profile.consent_withdrawal_controls[].consent_manager_readiness",
       section_5_full_36_field_dap_report_present: fields.length === 36,
       section_5_dap_annexure_disclaimer_present: true,
       public_section_is_curated_summary_only: false,
