@@ -5,17 +5,21 @@ import { safeObject } from "./report-safe-language.js";
 export { NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS };
 
 const DAP_PUBLIC_REPORT_NOTICE = "Section 5 presents the full 36-field Integrated DAP report derived from the public-footprint review. The Technical Annexure retains the underlying evidence matrix, source rows, limitations ledger, and qualified-review queue.";
+const COMMERCIAL_AVAILABILITY_QR_NOTE = "Commercial availability posture is a public-footprint signal for QR-014. Confirm beta, pilot, free trial, freemium, paid-production, and private order-form posture during qualified review before document reliance.";
 
 export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {}) {
   const output = buildBaseOutput({ run, artifacts });
   const status = output.normalized_report_manifest?.validation_status || run.validation_status || run.status || "LOCKED_WITH_LIMITATIONS";
+  const section4 = buildProductCommercialAvailabilitySection(output.normalized_section__product_activity_ip_profile, artifacts);
   const section6 = buildLegalDocumentGovernanceMapSection({ legalCartographyIndex: artifacts.legal_cartography_index, sectionStatus: status });
   const section5 = buildFullIntegratedDapSection(output.normalized_section__data_provenance_controls, artifacts);
+  output.normalized_section__product_activity_ip_profile = section4;
   output.normalized_section__data_provenance_controls = section5;
   output.normalized_section__legal_document_control_review = section6;
 
   const final = output.final_output_handoff?.final_output_handoff || {};
   const normalizedSections = safeObject(final.normalized_sections);
+  normalizedSections.product_activity_ip_profile = section4;
   normalizedSections.data_provenance_controls = section5;
   normalizedSections.legal_document_control_review = section6;
 
@@ -23,11 +27,13 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
     ...(output.normalized_report_manifest || {}),
     renderer_contract: {
       ...(output.normalized_report_manifest?.renderer_contract || {}),
+      section_4_commercial_availability_posture_subsection_present: true,
       section_5_full_36_field_dap_report_present: true,
       section_5_dap_annexure_disclaimer_present: true,
       section_6_m9_summary_not_raw_index: true
     },
     section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => {
+      if (row.section_id === "product_activity_ip_profile") return { ...row, title: section4.section_title, status: section4.section_status, commercial_availability_posture_subsection_present: true };
       if (row.section_id === "data_provenance_controls") return { ...row, title: section5.section_title, status: section5.section_status, full_36_field_dap_report_present: true, annexure_disclaimer_present: true };
       if (row.section_id === "legal_document_control_review") return { ...row, title: section6.section_title, status: section6.section_status };
       return row;
@@ -42,13 +48,15 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
       normalized_report_manifest: output.normalized_report_manifest,
       terminal_checks: {
         ...(final.terminal_checks || {}),
+        section_4_commercial_availability_posture_subsection_present: true,
         section_5_full_36_field_dap_report_present: true,
         section_5_dap_annexure_disclaimer_present: true,
         section_6_m9_summary_not_raw_index: true
       },
       compiler_trace: {
         ...(final.compiler_trace || {}),
-        compiler_version: "normalized_profiler_compiler_replacement_v9_full_36_field_dap_section5_m9_summary_section6",
+        compiler_version: "normalized_profiler_compiler_replacement_v10_section4_commercial_posture_section5_full_dap_section6_m9_summary",
+        section_4_commercial_availability_posture_subsection_present: true,
         section_5_full_36_field_dap_report_present: true,
         section_5_dap_annexure_disclaimer_present: true,
         section_6_m9_summary_not_raw_index: true
@@ -57,6 +65,60 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
   };
 
   return output;
+}
+
+function buildProductCommercialAvailabilitySection(section, artifacts) {
+  const base = safeObject(section);
+  const targetFeatureProfile = unwrapArtifact(artifacts.target_feature_profile, "target_feature_profile");
+  const posture = normalizeCommercialAvailabilityPosture(targetFeatureProfile.commercial_availability_posture);
+  const baseSubsections = Array.isArray(base.subsections) ? base.subsections.filter((subsection) => subsection?.subsection_id !== "commercial_availability_posture") : [];
+  const commercialSubsection = {
+    subsection_id: "commercial_availability_posture",
+    subsection_title: "Commercial Availability Posture",
+    fields: [
+      {
+        field_id: "commercial_availability_posture",
+        label: "Commercial availability posture",
+        value: posture,
+        source_artifact: "target_feature_profile",
+        source_path: "commercial_availability_posture",
+        limitation: text(posture.limitation, "Commercial availability posture requires qualified review confirmation."),
+        qualified_review_note: COMMERCIAL_AVAILABILITY_QR_NOTE,
+        technical_refs: {
+          qr_row: "QR-014",
+          registry_fields: ["PA.COM.001", "PA.COM.002", "PA.COM.003", "PA.COM.004", "PA.COM.005", "PA.COM.006"]
+        }
+      }
+    ]
+  };
+  const subsections = baseSubsections.length ? [baseSubsections[0], commercialSubsection, ...baseSubsections.slice(1)] : [commercialSubsection];
+  const sourceArtifacts = Array.isArray(base.source_artifacts_used) ? base.source_artifacts_used : [];
+  return {
+    ...base,
+    section_title: base.section_title || "Product, Activity & IP Profile",
+    reviewer_summary: appendSentence(base.reviewer_summary, "Commercial availability posture is projected as a dedicated subsection for qualified review."),
+    subsections,
+    source_artifacts_used: uniqueStrings([...sourceArtifacts, "target_feature_profile"]),
+    normalization: {
+      ...(base.normalization || {}),
+      section_4_commercial_availability_posture_subsection_present: true,
+      commercial_availability_posture_source: "target_feature_profile.commercial_availability_posture",
+      commercial_availability_registry_family: "PA.COM.*",
+      qr_row_supported: "QR-014"
+    }
+  };
+}
+
+function normalizeCommercialAvailabilityPosture(value) {
+  const posture = safeObject(value);
+  return {
+    posture: text(posture.posture, "Not visible in reviewed public materials."),
+    free_trial_freemium_signal: text(posture.free_trial_freemium_signal, "No visible free trial, freemium, free-tier, free-credit, or free developer-access signal found in reviewed public materials."),
+    beta_pilot_early_access_signal: text(posture.beta_pilot_early_access_signal, "No visible beta, pilot, preview, waitlist, private access, early access, or limited-availability signal found in reviewed public materials."),
+    paid_production_enterprise_plan_signal: text(posture.paid_production_enterprise_plan_signal, "No visible paid-production, API pricing, paid-plan, enterprise-plan, request-demo, or sales-assisted commercial signal found in reviewed public materials."),
+    evidence_basis: arrayOrDash(posture.evidence_basis),
+    limitation: text(posture.limitation, "Commercial availability posture requires qualified review confirmation before draft reliance.")
+  };
 }
 
 function buildFullIntegratedDapSection(section, artifacts) {
