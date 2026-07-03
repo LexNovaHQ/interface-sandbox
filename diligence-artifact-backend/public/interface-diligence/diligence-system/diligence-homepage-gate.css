@@ -18,7 +18,45 @@
 
 @media (min-width: 1040px) {
   .gate-main-grid {
-    grid-template-columns: 230px minmax(0, 1fr);
+    grid-template-columns: 292px minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .diligence-gate-page .rail-wrap {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-self: start;
+  }
+
+  .diligence-gate-page .rail {
+    padding: .5rem .2rem 2rem;
+  }
+
+  .diligence-gate-page .rail-stage {
+    min-height: 40px;
+    gap: .5rem;
+  }
+
+  .diligence-gate-page .rail-node {
+    font-size: .66rem;
+    letter-spacing: .115em;
+    line-height: 1.18;
+  }
+
+  .diligence-gate-page .rail-sub {
+    font-size: .58rem;
+    line-height: 1.18;
+  }
+
+  .diligence-gate-page .rail-why {
+    max-width: 172px;
+    font-size: .62rem;
+    padding: .5rem .58rem;
+  }
+
+  .diligence-gate-page .rail-chip {
+    margin-left: 2.55rem;
   }
 }
 
