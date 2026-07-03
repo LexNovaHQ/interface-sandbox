@@ -1,1 +1,1 @@
-export { assertNormalizedProfilerOutput, validateNormalizedProfilerOutput } from "./normalizer-validator-section10-v4.js";
+export { assertNormalizedProfilerOutput, validateNormalizedProfilerOutput } from "./normalizer-validator-new-field-sync-v5.js";
