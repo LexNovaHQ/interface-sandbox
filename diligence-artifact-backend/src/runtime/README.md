@@ -6,13 +6,17 @@ Pass 1 rule: these files are additive and dormant. They do not replace, delete, 
 
 Pass 2 rule: runtime-owned config, provider, prompt, and storage services are now present. Production still does not switch to this tree until the explicit entrypoint migration pass.
 
+Pass 3 rule: async runner and Cloud Tasks dispatch logic are runtime-owned in `src/runtime/services/async.service.js`.
+
+Pass 4 rule: pipeline advancement is runtime-owned in `src/runtime/services/pipeline.service.js`. The runtime surface uses central phase language. Compatibility internal job IDs are retained only where the existing artifact permission layer still requires them.
+
 ## Runtime boundary
 
-`src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, and contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
+`src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, async runner, central pipeline dispatcher, and contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
 
 ## Central phase rule
 
-Central phases are named by product substance, not by legacy micro-phase labels. Existing micro-phases remain as internal jobs during migration.
+Central phases are named by product substance, not by legacy micro-phase labels. Existing micro-phases remain as internal job IDs during migration and must not be used as the public runtime architecture.
 
 ## Current migration state
 
@@ -22,6 +26,8 @@ Central phases are named by product substance, not by legacy micro-phase labels.
 - `src/runtime/services/provider.service.js` owns Gemini provider logic for the central tree.
 - `src/runtime/services/prompts.service.js` owns prompt/package/reference loading for the central tree.
 - `src/runtime/services/storage/*` owns Google client, Drive, Firestore, and Sheets logic for the central tree.
+- `src/runtime/services/async.service.js` owns queueing, worker lifecycle, stale handling, retry scheduling, and Cloud Tasks dispatch.
+- `src/runtime/services/pipeline.service.js` owns central phase dispatch and no longer imports the old normalized/legacy runner files.
 - Gemini provider keys must never be committed. `GEMINI_API_KEYS` stays in Cloud Run/env/secret config.
 
 ## Target folders
@@ -34,6 +40,8 @@ src/runtime/
   errors.js
   routes/
   services/
+    async.service.js
+    pipeline.service.js
     provider.service.js
     prompts.service.js
     storage/
@@ -46,7 +54,7 @@ src/runtime/
 
 ## Remaining bridges
 
-The central runtime still bridges to the existing async runner, normalized runner, artifact-service, schemas, auth, run-id, and permissions until those are migrated in later passes.
+The central runtime still bridges to existing artifact-service, schemas, auth, run-id, permissions, and specialist phase helper/orchestrator modules until those are migrated in later passes.
 
 ## Non-negotiable boundaries
 
