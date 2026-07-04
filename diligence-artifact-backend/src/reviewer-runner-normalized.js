@@ -9,7 +9,7 @@ import { buildFeatureCandidateInventoryIndex, validateFeatureCandidateInventoryI
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
 import { readPhaseArtifactWithResolvedLosslessFamilies } from "./lossless-family-resolver.js";
 
-const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload", featureCandidateInventory: "feature_candidate_inventory" });
+const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload", qrSectionArtifacts: ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber"], featureCandidateInventory: "feature_candidate_inventory" });
 const QR_ACTOR = "qualified_review_system";
 
 export async function advanceReviewerRun({ run_id }) {
@@ -32,10 +32,7 @@ export async function advanceReviewerRun({ run_id }) {
   return { ok: true, run_id, advanced: true, completed_phase: phase, status: updated.status, current_phase: updated.current_phase, final_report_url: updated.final_report_url || "" };
 }
 
-function normalizePhase(value) {
-  if (value === "COMPILER") return "NORMALIZED_COMPILER";
-  return value;
-}
+function normalizePhase(value) { if (value === "COMPILER") return "NORMALIZED_COMPILER"; return value; }
 
 async function runM8FeatureCandidateInventoryPhase({ run, phase, contract }) {
   const artifacts = await readResolvedArtifacts({ run_id: run.run_id, reads: contract.reads || [], agent_id: contract.actor_id, strict: true });
@@ -61,7 +58,7 @@ async function runNormalizedCompilerPhase({ run, phase, contract }) {
     saved.push(artifactName);
   }
   const qrSaved = await runQualifiedReviewBranch({ run, normalizedOutput: output, sourceArtifacts: artifacts, lockStatus: phaseLockStatus });
-  await logEvent({ run_id: run.run_id, event_type: "NORMALIZED_COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, saved_artifacts: saved, qualified_review_branch_saved_artifacts: qrSaved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, legacy_compiler_phase_retired: true, qualified_review_branch_separate: true, lossless_family_shards_resolved: true } });
+  await logEvent({ run_id: run.run_id, event_type: "NORMALIZED_COMPILER_PHASE_COMPLETED", actor: contract.actor_id, payload: { phase, writes: contract.writes, saved_artifacts: saved, qualified_review_branch_saved_artifacts: qrSaved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, legacy_compiler_phase_retired: true, qualified_review_branch_separate: true, qualified_review_section_artifacts_saved: qrSaved.filter((name) => name.startsWith("qr_artifact__")), qualified_review_section_artifact_save_count: qrSaved.filter((name) => name.startsWith("qr_artifact__")).length, lossless_family_shards_resolved: true } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: contract.actor_id, status: phaseLockStatus, next_phase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : phase });
 }
 
@@ -70,17 +67,19 @@ async function runQualifiedReviewBranch({ run, normalizedOutput, sourceArtifacts
   const saved = [];
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: "QUALIFIED_REVIEW_HANDOFF", agent_id: QR_ACTOR, artifact_name: ART.qrHandoff, artifact: qrOutput[ART.qrHandoff], lock_status: lockStatus }));
   saved.push(ART.qrHandoff);
+  for (const artifactName of ART.qrSectionArtifacts) {
+    const artifact = qrOutput?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`QR_SECTION_ARTIFACT_MISSING:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: "QUALIFIED_REVIEW_HANDOFF", agent_id: QR_ACTOR, artifact_name: artifactName, artifact, lock_status: lockStatus }));
+    saved.push(artifactName);
+  }
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: "QUALIFIED_REVIEW_RENDERER", agent_id: QR_ACTOR, artifact_name: ART.qrRenderer, artifact: qrOutput[ART.qrRenderer], lock_status: lockStatus }));
   saved.push(ART.qrRenderer);
   await logEvent({ run_id: run.run_id, event_type: "QUALIFIED_REVIEW_BRANCH_COMPLETED", actor: QR_ACTOR, payload: { saved_artifacts: saved, source_phase: "NORMALIZED_COMPILER", lock_status: lockStatus } });
   return saved;
 }
 
-function normalizeCompilerLockStatus(status) {
-  if (status === "LOCKED") return "LOCKED";
-  if (status === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS";
-  return "CONTROLLED_FAILURE";
-}
+function normalizeCompilerLockStatus(status) { if (status === "LOCKED") return "LOCKED"; if (status === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS"; return "CONTROLLED_FAILURE"; }
 
 async function runRendererPhase({ run, phase, contract }) {
   const bundle = {};
@@ -123,10 +122,8 @@ async function loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKe
     if (!batch?.batch_id) continue;
     const batchArtifactName = `exposure_registry_batch__${batch.batch_id}`;
     const validationArtifactName = `exposure_registry_batch_validation__${batch.batch_id}`;
-    try { m11BatchArtifacts.push({ batch_id: batch.batch_id, artifact_name: batchArtifactName, artifact: await readArtifactPayload({ run_id, artifact_name: batchArtifactName, agent_id }) }); }
-    catch (_error) { missingBatchArtifacts.push(batchArtifactName); }
-    try { m12BatchValidationArtifacts.push({ batch_id: batch.batch_id, artifact_name: validationArtifactName, artifact: await readArtifactPayload({ run_id, artifact_name: validationArtifactName, agent_id }) }); }
-    catch (_error) { missingBatchValidationArtifacts.push(validationArtifactName); }
+    try { m11BatchArtifacts.push({ batch_id: batch.batch_id, artifact_name: batchArtifactName, artifact: await readArtifactPayload({ run_id, artifact_name: batchArtifactName, agent_id }) }); } catch (_error) { missingBatchArtifacts.push(batchArtifactName); }
+    try { m12BatchValidationArtifacts.push({ batch_id: batch.batch_id, artifact_name: validationArtifactName, artifact: await readArtifactPayload({ run_id, artifact_name: validationArtifactName, agent_id }) }); } catch (_error) { missingBatchValidationArtifacts.push(validationArtifactName); }
   }
   artifacts.m11_batch_artifacts = m11BatchArtifacts;
   artifacts.m12_batch_validation_artifacts = m12BatchValidationArtifacts;
@@ -134,14 +131,5 @@ async function loadDynamicM11Artifacts({ run_id, agent_id, artifacts, manifestKe
   return artifacts;
 }
 
-async function markRunning(runId, phase, actor) {
-  const updated = await updateRunRecord(runId, { current_phase: phase, status: "RUNNING" });
-  await updateRunDashboardRow(updated);
-  await logEvent({ run_id: runId, event_type: "PHASE_RUNNING", actor, payload: { phase } });
-}
-
-async function markPhaseFailure({ run_id, phase, actor, error }) {
-  const updated = await updateRunRecord(run_id, { current_phase: phase, status: "REPAIR_REQUIRED" });
-  await updateRunDashboardRow(updated);
-  await logEvent({ run_id, event_type: "PHASE_REPAIR_REQUIRED", actor, payload: { phase, error_message: error?.message || String(error) } });
-}
+async function markRunning(runId, phase, actor) { const updated = await updateRunRecord(runId, { current_phase: phase, status: "RUNNING" }); await updateRunDashboardRow(updated); await logEvent({ run_id: runId, event_type: "PHASE_RUNNING", actor, payload: { phase } }); }
+async function markPhaseFailure({ run_id, phase, actor, error }) { const updated = await updateRunRecord(run_id, { current_phase: phase, status: "REPAIR_REQUIRED" }); await updateRunDashboardRow(updated); await logEvent({ run_id, event_type: "PHASE_REPAIR_REQUIRED", actor, payload: { phase, error_message: error?.message || String(error) } }); }
