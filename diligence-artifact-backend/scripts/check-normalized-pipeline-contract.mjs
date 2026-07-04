@@ -112,10 +112,20 @@ for (const [phase, contract] of Object.entries(PHASE_CONTRACTS)) {
 
 assert.deepEqual(QUALIFIED_REVIEW_ARTIFACT_NAMES, [
   "qualified_review_handoff",
+  "qr_artifact__entity_commercial",
+  "qr_artifact__technology_infrastructure",
+  "qr_artifact__ai_capability_product_behavior",
+  "qr_artifact__dap_privacy_india_cyber",
   "qualified_review_renderer_payload",
   "qualified_review_submission"
 ]);
-assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_HANDOFF, ["qualified_review_handoff"]);
+assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_HANDOFF, [
+  "qualified_review_handoff",
+  "qr_artifact__entity_commercial",
+  "qr_artifact__technology_infrastructure",
+  "qr_artifact__ai_capability_product_behavior",
+  "qr_artifact__dap_privacy_india_cyber"
+]);
 assert.deepEqual(PHASE_WRITE_PERMISSIONS.QUALIFIED_REVIEW_RENDERER, ["qualified_review_renderer_payload"]);
 assert.equal(PHASE_CONTRACTS.QUALIFIED_REVIEW_HANDOFF, undefined);
 assert.equal(PHASE_CONTRACTS.QUALIFIED_REVIEW_RENDERER, undefined);
