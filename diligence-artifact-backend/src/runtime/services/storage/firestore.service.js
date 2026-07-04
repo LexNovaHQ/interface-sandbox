@@ -1,7 +1,7 @@
 import { initializeApp, getApps, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { config } from "../../config.js";
-import { assertRunId, nowIso } from "../../../run-id.js";
+import { assertRunId, nowIso } from "../../utils/run-id.js";
 
 let cachedDb = null;
 
