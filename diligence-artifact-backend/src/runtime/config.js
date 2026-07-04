@@ -1,4 +1,4 @@
-import { SERVICE_NAME } from "../constants.js";
+const SERVICE_NAME = "interface-diligence-artifacts";
 
 function env(name, fallback = "") {
   const value = process.env[name];
