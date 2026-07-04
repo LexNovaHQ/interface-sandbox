@@ -1,32 +1,596 @@
-import { getRunRecord, updateRunRecord } from "./storage/firestore.service.js";
-import { advanceReviewerRun } from "../../reviewer-runner-normalized.js";
+import { config } from "../config.js";
+import { getRunRecord, updateRunRecord, logEvent } from "./storage/firestore.service.js";
+import { updateRunDashboardRow } from "./storage/sheets.service.js";
+import { getInternalJobContract, normalizeInternalJobId } from "../contracts/internal-job.contract.js";
 import { centralPhaseStatusForInternalJob } from "../contracts/central-phase.contract.js";
+import { saveRuntimeArtifact as saveArtifact, readRuntimeArtifactPayload as readArtifactPayload, lockRuntimePhase as lockPhase } from "./artifacts.service.js";
+import { buildPhasePrompt } from "./prompts.service.js";
+import { callProviderJson } from "./provider.service.js";
+import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "../../agent-1-scout-extractor.js";
+import { buildM6SourceDiscoveryHandoff as buildSourceDiscoveryHandoff } from "../../m6-bucket-router.js";
+import { validateM9LegalCartographyIndex as validateLegalCartographyIndex } from "../../m9-validator.js";
+import { validateM7TargetProfileOutput as validateTargetProfileOutput } from "../../m7-validator.js";
+import { validateM8TargetFeatureOutput as validateActivityProfileOutput } from "../../m8-validator.js";
+import { runM9HybridOrchestrator as runLegalCartographyHybridOrchestrator, M9_FINAL_ARTIFACT_NAME as LEGAL_CARTOGRAPHY_FINAL_ARTIFACT_NAME } from "../../m9-hybrid-orchestrator.js";
+import { runM11OrchestratedPhase as runExposureProfileOrchestrator } from "../../m11-orchestrator.js";
+import { buildM12DeterministicChallengeGate as buildOperatorChallengeGate } from "../../m12-deterministic-challenge.js";
+import { compileFinalOutputHandoff } from "../../compiler.js";
+import { buildRendererPayload } from "../../report-renderer.js";
+import { buildM7DeterministicTargetForensics as buildTargetProfileForensics, buildM8DeterministicFeatureForensics as buildActivityProfileForensics, buildM10DeterministicDataForensics as buildDataProvenanceForensics } from "../../deterministic-profile-forensics.js";
+import { buildM7DeterministicLegalSignalOverlay as buildTargetLegalSignalOverlay, applyM7DeterministicLegalSignalOverlay as applyTargetLegalSignalOverlay } from "../../m7-deterministic-legal-signal-overlay.js";
+import { buildM10SelectedLegalSupportPacket as buildDataSelectedLegalSupportPacket } from "../../m10-selected-legal-support.js";
+import { runAgent4bExtendedDapPhase as runExtendedDataReadinessJob } from "../../agent4b-phase-runner.js";
+import { runAgent4cIntegratedDapReportPhase as runIntegratedDataReportJob } from "../../agent4c-runner.js";
+import { buildFeatureCandidateInventoryIndex as buildActivityCandidateInventoryIndex, validateFeatureCandidateInventoryIndex as validateActivityCandidateInventoryIndex } from "../../m8-feature-candidate-inventory-index.js";
+import { artifactMatchesPermission } from "../../constants.js";
+
+const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT", "ABSENT", "MISSING", "THIN", "WEAK", "UNKNOWN_NOT_SEARCHED", "NOT_EVIDENCED", "SOURCE_REJECTED", "ACCESS_FAILED", "GATED", "INSUFFICIENT_PUBLIC_MATERIAL", "STANDALONE_SOURCE_ABSENT", "REINVESTIGATION", "TARGETED_RE_EXTRACTION", "OMISSION", "CONTROLLED"]);
+const VALIDATION_CRITICAL_MARKERS = Object.freeze(["OUTPUT_INVALID", "not_object", "missing legal_cartography_index object", "missing keys", "extra keys", "must be object", "must be an object", "must be array", "contains material artifact", "contains forbidden", "forbidden key", "forbidden string", "MODEL_OUTPUT_MISSING_ARTIFACT", "DETERMINISTIC_OUTPUT_MISSING_ARTIFACT", "UNKNOWN_PHASE", "INVALID_PHASE_CONTRACT"]);
+const VALIDATION_NONBLOCKING_MARKERS = Object.freeze(["lacks direct support", "missing selected", "direct-support row missing", "controlled row missing", "requires at least", "missing row", "missing evidence", "missing reviewed source", "missing limitation", "weak", "thin", "not public", "not found", "not evidenced", "limitation", "limited", "omission", "absent", "insufficient public", "unknown_not_searched", "standalone_source_absent", "source_rejected_or_failed", "access_failed", "gated", "deferred", "coverage", "source-ref row missing source-url", "bad source syntax", "must not be empty", "missing source_corpus_status", "missing from document_coverage_index", "invalid status", "invalid source_corpus_status", "invalid artifact_class", "invalid source_type", "invalid lock_status", "forbidden loose status", "forbidden artifact_class drift", "ABSENT_AFTER_TARGETED_PROBE is not a valid source_corpus_status"]);
+
+const JOB = Object.freeze({
+  sourceUrlManifest: "AGENT_1A_URL_MANIFEST",
+  sourceExtract: "AGENT_1B_EXTRACT",
+  sourceDiscoveryHandoff: "M6_BUCKET_INDEX",
+  legalCartographyIndex: "M9",
+  targetProfileReview: "M7_TARGET_PROFILE",
+  targetProfileForensics: "M7_TARGET_PROFILE_FORENSICS",
+  activityCandidateInventory: "M8_FEATURE_CANDIDATE_INVENTORY",
+  activityProfileReview: "M8_TARGET_FEATURE_PROFILE",
+  activityProfileForensics: "M8_TARGET_FEATURE_PROFILE_FORENSICS",
+  dataProvenanceProfile: "M10",
+  dataProvenanceForensics: "M10_FORENSICS",
+  extendedDataReadiness: "AGENT_4B_EXTENDED_DAP_INDIA_READINESS",
+  integratedDataReport: "AGENT_4C_INTEGRATED_DAP_REPORT",
+  exposureProfile: "M11",
+  operatorChallenge: "M12",
+  compiler: "NORMALIZED_COMPILER",
+  reportRenderer: "NORMALIZED_REPORT_RENDERER",
+  reportRendererCompatibility: "RENDERER",
+  complete: "COMPLETE"
+});
+
+const ART = Object.freeze({
+  legalIndex: "legal_cartography_index",
+  targetLegalSignalOverlay: "m7_deterministic_legal_signal_overlay",
+  dataSelectedLegalSupport: "m10_selected_legal_support_packet",
+  targetMain: "target_profile",
+  targetForensics: "target_profile_forensics",
+  activityCandidateInventory: "feature_candidate_inventory",
+  activityMain: "target_feature_profile",
+  activityForensics: "target_feature_profile_forensics",
+  dataProfile: "data_provenance_profile",
+  dataForensics: "data_provenance_profile_forensics",
+  exposureRoutePlan: "exposure_registry_route_plan",
+  exposureProfile: "exposure_registry_profile",
+  challengeGate: "challenge_gate",
+  final: "final_output_handoff",
+  renderer: "renderer_payload"
+});
+
+const LEGAL_CARTOGRAPHY_SEMANTIC_PROMPT_FILES = Object.freeze([
+  "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md",
+  "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
+  "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+  "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
+  "agent-packages/agent_2b_m9/M9_FIELD_DERIVATION_REGISTRY.yaml",
+  "agent-packages/agent_2b_m9/00_VALIDATOR_RULES_INTEGRATED.md"
+]);
+
+const MODEL_LIMITATION_JOBS = new Set([JOB.legalCartographyIndex, JOB.targetProfileReview, JOB.targetProfileForensics, JOB.activityProfileReview, JOB.activityProfileForensics, JOB.dataProvenanceProfile, JOB.dataProvenanceForensics, JOB.exposureProfile, JOB.operatorChallenge]);
+const TARGET_ACTIVITY_REVIEW_JOBS = new Set([JOB.targetProfileReview, JOB.targetProfileForensics, JOB.activityProfileReview, JOB.activityProfileForensics]);
+const DETERMINISTIC_PROFILE_FORENSIC_JOBS = new Set([JOB.targetProfileForensics, JOB.activityProfileForensics, JOB.dataProvenanceForensics]);
+
+export const PIPELINE_SERVICE_STATUS = Object.freeze({
+  central_runtime_service: "pipeline.service",
+  migration_status: "runtime_owned_central_phase_pipeline",
+  old_runner_bridge_removed: true,
+  central_phase_language: true,
+  compatibility_internal_job_ids_retained: true
+});
 
 export function decorateRunWithCentralPhase(run = {}) {
-  const currentPhase = run.current_phase || "";
-  const central = centralPhaseStatusForInternalJob(currentPhase === "RENDERER" ? "NORMALIZED_REPORT_RENDERER" : currentPhase);
+  const internalJobId = normalizeRuntimeJobId(run.current_phase || "");
+  const central = centralPhaseStatusForInternalJob(internalJobId);
   return {
     ...run,
     central_phase: run.central_phase || central.central_phase_id,
     central_phase_label: run.central_phase_label || central.central_phase_label,
-    active_internal_job: currentPhase
+    active_internal_job: run.current_phase || ""
   };
 }
 
 export async function advanceCentralPipelineRun({ run_id } = {}) {
-  const result = await advanceReviewerRun({ run_id });
   const run = await getRunRecord(run_id);
-  const decorated = decorateRunWithCentralPhase(run);
+  if (run.current_phase === JOB.complete || run.status === "COMPLETE") return { ok: true, run_id, status: "COMPLETE", current_phase: JOB.complete, advanced: false };
+
+  const internalJobId = normalizeRuntimeJobId(run.current_phase);
+  const persistencePhase = persistencePhaseForInternalJob(internalJobId);
+  const central = centralPhaseStatusForInternalJob(internalJobId);
+  if (persistencePhase !== run.current_phase || run.central_phase !== central.central_phase_id || run.central_phase_label !== central.central_phase_label) {
+    await updateRunRecord(run_id, {
+      current_phase: persistencePhase,
+      central_phase: central.central_phase_id,
+      central_phase_label: central.central_phase_label,
+      active_internal_job: internalJobId
+    });
+  }
+
+  const contract = getInternalJobContract(internalJobId === JOB.reportRenderer ? JOB.reportRendererCompatibility : internalJobId);
+  const actor = actorForContract(contract);
+  const runtimeRun = { ...run, current_phase: persistencePhase, central_phase: central.central_phase_id, central_phase_label: central.central_phase_label };
+  await markCentralRunning({ runId: run_id, persistencePhase, internalJobId, central, actor });
+
+  try {
+    if (internalJobId === JOB.sourceUrlManifest) await runSourceUrlManifestJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.sourceExtract) await runSourceExtractionJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.sourceDiscoveryHandoff) await runSourceDiscoveryHandoffJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.activityCandidateInventory) await runActivityCandidateInventoryJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.legalCartographyIndex) await runLegalCartographyIndexJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.exposureProfile) await runExposureProfileJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.operatorChallenge) await runOperatorChallengeJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.extendedDataReadiness) await runExtendedDataReadinessJob({ run: runtimeRun, phase: persistencePhase, contract });
+    else if (internalJobId === JOB.integratedDataReport) await runIntegratedDataReportJob({ run: runtimeRun, phase: persistencePhase, contract });
+    else if (DETERMINISTIC_PROFILE_FORENSIC_JOBS.has(internalJobId)) await runDeterministicProfileForensicsJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.compiler) await runCompilerJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (internalJobId === JOB.reportRenderer) await runReportRendererJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else if (contract.type === "model") await runModelProfileJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
+    else throw new Error(`UNKNOWN_CENTRAL_PIPELINE_JOB:${central.central_phase_id}:${internalJobId}:${contract.type}`);
+  } catch (error) {
+    await markCentralFailure({ run_id, persistencePhase, internalJobId, central, actor, error });
+    throw error;
+  }
+
+  const updated = await getRunRecord(run_id);
+  const decorated = decorateRunWithCentralPhase(updated);
   await updateRunRecord(run_id, {
     central_phase: decorated.central_phase,
     central_phase_label: decorated.central_phase_label,
     active_internal_job: decorated.active_internal_job
   });
-  return { ...result, central_phase: decorated.central_phase, central_phase_label: decorated.central_phase_label, active_internal_job: decorated.active_internal_job };
+  return {
+    ok: true,
+    run_id,
+    advanced: true,
+    completed_phase: persistencePhase,
+    completed_internal_job: internalJobId,
+    completed_central_phase: central.central_phase_id,
+    completed_central_phase_label: central.central_phase_label,
+    status: updated.status,
+    current_phase: updated.current_phase,
+    central_phase: decorated.central_phase,
+    central_phase_label: decorated.central_phase_label,
+    active_internal_job: decorated.active_internal_job,
+    final_report_url: updated.final_report_url || ""
+  };
 }
 
-export const PIPELINE_SERVICE_STATUS = Object.freeze({
-  central_runtime_service: "pipeline.service",
-  migration_status: "bridge_to_existing_reviewer_runner_normalized",
-  old_runner_files_untouched: true
-});
+function normalizeRuntimeJobId(value) {
+  if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return JOB.sourceUrlManifest;
+  if (value === "COMPILER") return JOB.compiler;
+  if (value === JOB.reportRendererCompatibility) return JOB.reportRenderer;
+  return normalizeInternalJobId(value);
+}
+
+function persistencePhaseForInternalJob(internalJobId) {
+  if (internalJobId === JOB.reportRenderer) return JOB.reportRendererCompatibility;
+  return internalJobId;
+}
+
+function actorForContract(contract = {}) {
+  return contract.agent_id || contract.actor_id || "pipeline_service";
+}
+
+async function runSourceUrlManifestJob({ run, persistencePhase, contract, central }) {
+  const output = await buildAgent1aDedupedUrlManifest({ run });
+  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output, central });
+  await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central });
+}
+
+async function runSourceExtractionJob({ run, persistencePhase, contract, central }) {
+  const dedupedManifest = await readArtifactPayload({ run_id: run.run_id, artifact_name: "deduped_url_manifest", agent_id: contract.actor_id });
+  const output = await buildAgent1bExtractArtifacts({ run, deduped_url_manifest: dedupedManifest });
+  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output, central });
+  await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central });
+}
+
+async function runSourceDiscoveryHandoffJob({ run, persistencePhase, contract, central }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
+  const output = buildSourceDiscoveryHandoff({ run, artifacts });
+  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output, central });
+  await lockCentralPhase({ run, persistencePhase, contract, status: output.source_discovery_handoff?.status || "LOCKED", nextPhase: contract.next, central });
+}
+
+async function runActivityCandidateInventoryJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads || [], agent_id: contract.actor_id, strict: true });
+  const productArtifacts = Object.entries(artifacts).filter(([name]) => name.startsWith("lossless_family__")).map(([, artifact]) => artifact);
+  const inventory = buildActivityCandidateInventoryIndex(productArtifacts, { runId: run.run_id });
+  const validation = validateActivityCandidateInventoryIndex(inventory);
+  if (validation.status !== "PASS") throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.actor_id, artifact_name: ART.activityCandidateInventory, artifact: inventory, lock_status: "LOCKED" }));
+  await logCentralEvent({ run_id: run.run_id, event_type: "ACTIVITY_CANDIDATE_INVENTORY_COMPLETED", actor: contract.actor_id, persistencePhase, internalJobId, central, payload: { raw_hit_count: inventory.raw_hit_count, canonical_candidate_count: inventory.canonical_candidate_count, source_families_indexed: inventory.source_families_indexed || [], derivation_mode: inventory.derivation_mode, shard_resolution_mandatory: true } });
+  await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central });
+}
+
+async function runLegalCartographyIndexJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const modelMetadata = [];
+  const result = await runLegalCartographyHybridOrchestrator({
+    run,
+    artifacts,
+    runSemanticModel: async ({ run: modelRun, artifacts: modelArtifacts, expected_artifact_name }) => {
+      const prompt = await buildPhasePrompt({ prompt_files: LEGAL_CARTOGRAPHY_SEMANTIC_PROMPT_FILES, phase: internalJobId, run: modelRun, artifacts: modelArtifacts, writes: [expected_artifact_name], references: contract.references || [] });
+      const response = await callProviderJson({ prompt, phase: "LEGAL_CARTOGRAPHY_SEMANTIC_PROFILE", repairOnJsonParse: true });
+      modelMetadata.push(response.metadata);
+      return response.json;
+    },
+    saveArtifact: async ({ artifactName, artifact_name, artifact }) => {
+      const resolvedArtifactName = artifactName || artifact_name;
+      const unwrapped = unwrapArtifactForSave({ artifactName: resolvedArtifactName, artifact });
+      const lockStatus = resolveStatusFromArtifacts(unwrapped);
+      await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.agent_id, artifact_name: resolvedArtifactName, artifact: unwrapped, lock_status: lockStatus }));
+    },
+    validateFinalIndex: validateLegalCartographyFinalIndex,
+    logger: null
+  });
+  const finalArtifact = result.final_output?.[LEGAL_CARTOGRAPHY_FINAL_ARTIFACT_NAME];
+  const postLegalArtifacts = { ...artifacts, [ART.legalIndex]: finalArtifact };
+  const targetLegalSignalOverlay = buildTargetLegalSignalOverlay({ artifacts: postLegalArtifacts });
+  const dataSelectedLegalSupport = buildDataSelectedLegalSupportPacket({ artifacts: postLegalArtifacts });
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.agent_id, artifact_name: ART.targetLegalSignalOverlay, artifact: targetLegalSignalOverlay, lock_status: "LOCKED" }));
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.agent_id, artifact_name: ART.dataSelectedLegalSupport, artifact: dataSelectedLegalSupport, lock_status: "LOCKED" }));
+  const phaseLockStatus = coerceModelStatus({ internalJobId, status: result.final_validation?.status || resolveStatusFromArtifacts(finalArtifact), output: result.final_output });
+  await logCentralEvent({ run_id: run.run_id, event_type: "LEGAL_CARTOGRAPHY_INDEX_COMPLETED", actor: contract.agent_id, persistencePhase, internalJobId, central, payload: { writes: [...result.artifacts_saved_in_order, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport], required_save_order: result.required_save_order, required_save_order_respected: result.required_save_order_respected, optional_artifacts_saved: result.optional_artifacts_saved, lock_status: phaseLockStatus, semantic_validation_status: result.semantic_validation?.status || "", final_validation_status: result.final_validation?.status || "", model_metadata: modelMetadata, target_legal_signal_overlay_saved: true, data_selected_legal_support_saved: true, data_selected_legal_support_rows: dataSelectedLegalSupport.selector_stats?.selected_row_count || 0 } });
+  await lockCentralPhase({ run, persistencePhase, contract, status: phaseLockStatus, nextPhase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : persistencePhase, central });
+}
+
+async function runDeterministicProfileForensicsJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads, agent_id: actorForContract(contract) });
+  const output = internalJobId === JOB.targetProfileForensics ? buildTargetProfileForensics({ artifacts }) : internalJobId === JOB.activityProfileForensics ? buildActivityProfileForensics({ artifacts }) : buildDataProvenanceForensics({ artifacts });
+  const artifactName = contract.writes?.[0];
+  const artifact = output?.[artifactName];
+  if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${central.central_phase_id}:${artifactName}`);
+  const gate = artifact.forensic_lock_gate_result || artifact.validation_quality_control_result || {};
+  const phaseLockStatus = gate.status === "PASS" ? "LOCKED" : gate.status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "REPAIR_REQUIRED";
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: actorForContract(contract), artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
+  await logCentralEvent({ run_id: run.run_id, event_type: "PROFILE_FORENSICS_COMPLETED", actor: actorForContract(contract), persistencePhase, internalJobId, central, payload: { artifact_name: artifactName, lock_status: phaseLockStatus, contract: artifact.forensic_contract?.contract_name || "", runtime_read_override: contract.runtime_read_override || "" } });
+  if (internalJobId === JOB.dataProvenanceForensics && ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus)) {
+    const updated = await updateRunRecord(run.run_id, { current_phase: contract.next, status: phaseLockStatus });
+    await updateRunDashboardRow(updated);
+    await logCentralEvent({ run_id: run.run_id, event_type: "CENTRAL_PHASE_LOCKED", actor: actorForContract(contract), persistencePhase, internalJobId, central, payload: { status: phaseLockStatus, next_phase: contract.next, gate: "DATA_FORENSICS_ACCEPTED_FOR_EXTENDED_DATA_READINESS" } });
+    return;
+  }
+  await lockCentralPhase({ run, persistencePhase, contract, status: phaseLockStatus, nextPhase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : persistencePhase, central });
+}
+
+async function runModelProfileJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id });
+  const targetLegalSignalOverlay = internalJobId === JOB.targetProfileReview ? artifacts[ART.targetLegalSignalOverlay] : null;
+  const prompt = await buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files, phase: internalJobId, run, artifacts, writes: contract.writes, references: contract.references || [] });
+  const result = await callProviderJson({ prompt, phase: central.central_phase_id });
+  const output = result.json;
+  if (targetLegalSignalOverlay) applyTargetLegalSignalOverlay(output, targetLegalSignalOverlay);
+  const validationStatusOverride = validateModelOutput({ internalJobId, output });
+  const phaseLockStatus = coerceModelStatus({ internalJobId, status: validationStatusOverride || resolveModelLockStatus({ internalJobId, output, writes: contract.writes }), output });
+  for (const artifactName of contract.writes) {
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`MODEL_OUTPUT_MISSING_ARTIFACT:${central.central_phase_id}:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.agent_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
+  }
+  await logCentralEvent({ run_id: run.run_id, event_type: TARGET_ACTIVITY_REVIEW_JOBS.has(internalJobId) ? "PROFILE_REVIEW_COMPLETED" : "MODEL_CENTRAL_PHASE_COMPLETED", actor: contract.agent_id, persistencePhase, internalJobId, central, payload: { writes: contract.writes, lock_status: phaseLockStatus, reference_files: contract.references || [], prompt_files: contract.prompt_files || [contract.prompt_file], model_metadata: result.metadata, runtime_read_override: contract.runtime_read_override || "", deterministic_legal_signal_overlay_applied: Boolean(targetLegalSignalOverlay) } });
+  await lockCentralPhase({ run, persistencePhase, contract, status: phaseLockStatus, nextPhase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : persistencePhase, central });
+}
+
+async function runExposureProfileJob({ run, persistencePhase, internalJobId, contract, central }) {
+  await runExposureProfileOrchestrator({ run, phase: persistencePhase, contract });
+  await logCentralEvent({ run_id: run.run_id, event_type: "EXPOSURE_PROFILE_ORCHESTRATOR_COMPLETED", actor: actorForContract(contract), persistencePhase, internalJobId, central, payload: { orchestrator: "exposure_profile", central_phase_id: central.central_phase_id } });
+}
+
+async function runOperatorChallengeJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const artifacts = await readArtifactsForOperatorChallenge({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
+  const output = buildOperatorChallengeGate({ run, artifacts });
+  const artifact = output.challenge_gate;
+  if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${central.central_phase_id}:challenge_gate`);
+  const phaseLockStatus = ["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(artifact.status) ? artifact.status : "LOCKED";
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.actor_id, artifact_name: ART.challengeGate, artifact, lock_status: phaseLockStatus }));
+  await logCentralEvent({ run_id: run.run_id, event_type: "OPERATOR_CHALLENGE_COMPLETED", actor: contract.actor_id, persistencePhase, internalJobId, central, payload: { writes: contract.writes, lock_status: phaseLockStatus, model_usage: "NONE_DETERMINISTIC", critical_failures: artifact.critical_failures || [], warnings: artifact.warnings || [] } });
+  await lockCentralPhase({ run, persistencePhase, contract, status: phaseLockStatus, nextPhase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : persistencePhase, central });
+}
+
+async function runCompilerJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const artifacts = await readArtifactsForCompiler({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
+  const output = compileFinalOutputHandoff({ run, artifacts });
+  const final = output[ART.final];
+  const phaseLockStatus = normalizeCompilerLockStatus(final?.validation_status);
+  const saved = [];
+  for (const artifactName of contract.writes) {
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${central.central_phase_id}:${artifactName}`);
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.actor_id, artifact_name: artifactName, artifact, lock_status: phaseLockStatus }));
+    saved.push(artifactName);
+  }
+  await logCentralEvent({ run_id: run.run_id, event_type: "COMPILER_COMPLETED", actor: contract.actor_id, persistencePhase, internalJobId, central, payload: { writes: contract.writes, saved_artifacts: saved, lock_status: phaseLockStatus, normalized_section_artifacts_saved: saved.filter((name) => name.startsWith("normalized_section__")), normalized_section_artifact_save_count: saved.filter((name) => name.startsWith("normalized_section__")).length, missing_artifacts: final?.missing_artifacts || [], dynamic_manifest: final?.artifact_manifest?.dynamic_m11_artifacts || {}, qualified_review_not_run_inside_compiler: true } });
+  await lockCentralPhase({ run, persistencePhase, contract, status: phaseLockStatus, nextPhase: ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(phaseLockStatus) ? contract.next : persistencePhase, central });
+}
+
+async function runReportRendererJob({ run, persistencePhase, internalJobId, contract, central }) {
+  const bundle = {};
+  for (const artifactName of contract.reads) bundle[artifactName] = await readArtifactPayload({ run_id: run.run_id, artifact_name: artifactName, agent_id: contract.actor_id });
+  const output = buildRendererPayload({ run, final_output_handoff: bundle, [ART.final]: bundle[ART.final] });
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: contract.actor_id, artifact_name: ART.renderer, artifact: output[ART.renderer], lock_status: "COMPLETE" }));
+  const finalReportUrl = buildReportUrl(run.run_id);
+  await logCentralEvent({ run_id: run.run_id, event_type: "REPORT_RENDERER_COMPLETED", actor: contract.actor_id, persistencePhase, internalJobId, central, payload: { final_report_url_present: Boolean(finalReportUrl), renderer_payload_saved: true } });
+  await lockCentralPhase({ run, persistencePhase, contract, status: "COMPLETE", nextPhase: contract.next, final_report_url: finalReportUrl, central });
+}
+
+async function saveDeterministicArtifacts({ run, persistencePhase, actor, writes, output, central }) {
+  const saved = new Set();
+  const outputKeys = Object.keys(output || {}).sort(sortArtifactNames);
+  for (const artifactName of writes) {
+    if (isCanonicalLosslessFamilyName(artifactName)) {
+      const dynamicKeys = outputKeys.filter((key) => artifactMatchesPermission(key, artifactName));
+      for (const dynamicName of dynamicKeys) await saveDeterministicArtifact({ run, persistencePhase, actor, artifactName: dynamicName, artifact: output[dynamicName], saved });
+      continue;
+    }
+    const artifact = output?.[artifactName];
+    if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${central.central_phase_id}:${artifactName}`);
+    await saveDeterministicArtifact({ run, persistencePhase, actor, artifactName, artifact, saved });
+  }
+  if (persistencePhase === JOB.sourceExtract) {
+    const dynamicFamilyKeys = outputKeys.filter(isLosslessFamilyOutputName);
+    for (const dynamicName of dynamicFamilyKeys) await saveDeterministicArtifact({ run, persistencePhase, actor, artifactName: dynamicName, artifact: output[dynamicName], saved });
+  }
+  await logEvent({ run_id: run.run_id, event_type: "DETERMINISTIC_CENTRAL_JOB_COMPLETED", actor, payload: { phase: persistencePhase, central_phase: central.central_phase_id, central_phase_label: central.central_phase_label, writes, saved_artifacts: [...saved] } });
+}
+
+async function saveDeterministicArtifact({ run, persistencePhase, actor, artifactName, artifact, saved }) {
+  if (saved.has(artifactName)) return;
+  if (!artifact || typeof artifact !== "object") throw new Error(`DETERMINISTIC_OUTPUT_MISSING_ARTIFACT:${persistencePhase}:${artifactName}`);
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase: persistencePhase, agent_id: actor, artifact_name: artifactName, artifact, lock_status: "LOCKED" }));
+  saved.add(artifactName);
+}
+
+function validateLegalCartographyFinalIndex(output) {
+  try {
+    validateLegalCartographyIndex(output);
+    return { ok: true, status: resolveStatusFromArtifacts(output?.[LEGAL_CARTOGRAPHY_FINAL_ARTIFACT_NAME] || output?.legal_cartography_index), errors: [], warnings: [] };
+  } catch (error) {
+    return { ok: false, status: "REPAIR_REQUIRED", errors: [error?.message || String(error)], warnings: [] };
+  }
+}
+
+function validateModelOutput({ internalJobId, output }) {
+  try {
+    if (internalJobId === JOB.legalCartographyIndex) {
+      const validation = validateLegalCartographyIndex(output);
+      if (validation.status !== "PASS") throw new Error(`LEGAL_CARTOGRAPHY_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+      return "";
+    }
+    if (internalJobId === JOB.targetProfileReview || internalJobId === JOB.targetProfileForensics) {
+      validateTargetProfileOutput(output, { phase: internalJobId });
+      return "";
+    }
+    if (internalJobId === JOB.activityProfileReview || internalJobId === JOB.activityProfileForensics) validateActivityProfileOutput(output, { phase: internalJobId });
+    return "";
+  } catch (error) {
+    if (isNonBlockingModelValidationError({ internalJobId, error, output })) return "LOCKED_WITH_LIMITATIONS";
+    throw error;
+  }
+}
+
+function isNonBlockingModelValidationError({ internalJobId, error, output }) {
+  if (!MODEL_LIMITATION_JOBS.has(internalJobId)) return false;
+  const message = String(error?.message || error || "").toLowerCase();
+  if (VALIDATION_CRITICAL_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return false;
+  if (VALIDATION_NONBLOCKING_MARKERS.some((marker) => message.includes(marker.toLowerCase()))) return true;
+  return hasControlledLimitationSignal(output);
+}
+
+function resolveModelLockStatus({ internalJobId, output, writes }) {
+  if (internalJobId === JOB.legalCartographyIndex) return resolveStatusFromArtifacts(output?.[ART.legalIndex]);
+  if (internalJobId === JOB.targetProfileReview) return resolveStatusFromArtifacts(output?.[ART.targetMain]);
+  if (internalJobId === JOB.targetProfileForensics) return resolveStatusFromArtifacts(output?.[ART.targetForensics]);
+  if (internalJobId === JOB.activityProfileReview) return resolveStatusFromArtifacts(output?.[ART.activityMain]);
+  if (internalJobId === JOB.activityProfileForensics) return resolveStatusFromArtifacts(output?.[ART.activityForensics]);
+  if (internalJobId === JOB.dataProvenanceProfile) return resolveStatusFromArtifacts(output?.[ART.dataProfile]);
+  if (internalJobId === JOB.dataProvenanceForensics) return resolveStatusFromArtifacts(output?.[ART.dataForensics]);
+  if (internalJobId === JOB.exposureProfile) return resolveStatusFromArtifacts(output?.[ART.exposureProfile]);
+  if (internalJobId === JOB.operatorChallenge) return resolveStatusFromArtifacts(output?.[ART.challengeGate]);
+  return resolveStatusFromArtifacts(output?.[writes?.[0]]);
+}
+
+function coerceModelStatus({ internalJobId, status, output }) {
+  const normalized = MODEL_LOCK_STATUSES.has(status) ? status : "LOCKED";
+  if (MODEL_LIMITATION_JOBS.has(internalJobId) && ["REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(normalized) && hasControlledLimitationSignal(output)) return "LOCKED_WITH_LIMITATIONS";
+  return normalized;
+}
+
+function resolveStatusFromArtifacts(...artifacts) {
+  for (const artifact of artifacts) {
+    const status = artifact?.lock_status || artifact?.validation_status || artifact?.status;
+    if (["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(status)) return status;
+    if (["REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(status)) return hasControlledLimitationSignal(artifact) ? "LOCKED_WITH_LIMITATIONS" : status;
+    if (hasControlledLimitationSignal(artifact)) return "LOCKED_WITH_LIMITATIONS";
+  }
+  return "LOCKED";
+}
+
+function hasControlledLimitationSignal(value) {
+  if (!value) return false;
+  if (Array.isArray(value)) return value.length > 0 && value.some((item) => hasControlledLimitationSignal(item));
+  if (typeof value === "string") {
+    const upper = value.toUpperCase();
+    return CONTROLLED_MARKERS.some((marker) => upper.includes(marker));
+  }
+  if (typeof value !== "object") return false;
+  if (Array.isArray(value.target_profile_limitations) && value.target_profile_limitations.length) return true;
+  if (Array.isArray(value.profile_level_limitations) && value.profile_level_limitations.length) return true;
+  if (Array.isArray(value.missing_limited_legal_governance_items) && value.missing_limited_legal_governance_items.length) return true;
+  if (Array.isArray(value.limitation_ledger) && value.limitation_ledger.length) return true;
+  if (Array.isArray(value.activity_limitations_ledger) && value.activity_limitations_ledger.length) return true;
+  if (Array.isArray(value.targeted_re_extraction_ledger) && value.targeted_re_extraction_ledger.some((row) => hasControlledLimitationSignal(row))) return true;
+  if (value.validation_quality_control_result && hasControlledLimitationSignal(value.validation_quality_control_result)) return true;
+  return Object.values(value).some((item) => hasControlledLimitationSignal(item));
+}
+
+function normalizeCompilerLockStatus(status) {
+  if (status === "LOCKED") return "LOCKED";
+  if (status === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS";
+  return "CONTROLLED_FAILURE";
+}
+
+async function readArtifactsForCentralJob({ run_id, reads, agent_id, strict = true }) {
+  const artifacts = {};
+  const cache = {};
+  for (const artifactName of reads || []) {
+    try {
+      artifacts[artifactName] = await readArtifactWithResolvedLosslessFamilies({ run_id, artifact_name: artifactName, agent_id, cache });
+      if (artifactName === "source_family_index") cache.source_family_index = artifacts[artifactName];
+    } catch (error) {
+      if (strict) throw error;
+      artifacts[artifactName] = null;
+    }
+  }
+  return artifacts;
+}
+
+async function readArtifactWithResolvedLosslessFamilies({ run_id, artifact_name, agent_id, cache = {} }) {
+  if (!isCanonicalLosslessFamilyName(artifact_name)) return readArtifactPayload({ run_id, artifact_name, agent_id });
+  return resolveLosslessFamily({ run_id, artifact_name, agent_id, cache });
+}
+
+async function resolveLosslessFamily({ run_id, artifact_name, agent_id, cache }) {
+  const family = artifact_name.replace(/^lossless_family__/, "");
+  const index = await getSourceFamilyIndex({ run_id, agent_id, cache });
+  const entry = index?.family_artifact_manifest?.[family];
+  const required = Array.isArray(entry?.required_artifacts) ? entry.required_artifacts.filter(Boolean) : [];
+  if (!entry) {
+    try { return await readArtifactPayload({ run_id, artifact_name, agent_id }); }
+    catch { return emptyLosslessFamily({ artifact_name, family, reason: "INDEX_ENTRY_MISSING" }); }
+  }
+  if (!required.length) return emptyLosslessFamily({ artifact_name, family, reason: entry.status || "UNSAVED_EMPTY", entry });
+  const parts = [];
+  for (const name of required) parts.push(await readArtifactPayload({ run_id, artifact_name: name, agent_id }));
+  const ordered = parts.map((artifact, index) => ({ artifact, index })).sort((a, b) => Number(a.artifact.shard_index || a.index + 1) - Number(b.artifact.shard_index || b.index + 1));
+  if (ordered.some(({ artifact }) => artifact.root_family && artifact.root_family !== family)) throw new Error(`FAMILY_PART_MISMATCH:${family}`);
+  if (required.length > 1 && ordered.some(({ artifact }) => Number(artifact.shard_count || required.length) !== required.length)) throw new Error(`FAMILY_PART_COUNT_MISMATCH:${family}`);
+  const base = ordered[0]?.artifact || {};
+  const merged = {
+    ...base,
+    artifact_name,
+    storage_mode: required.length > 1 ? "RESOLVED_FAMILY_PARTS" : base.storage_mode || "SINGLE",
+    physical_artifact_names: required,
+    family_part_resolution: { status: "COMPLETE", family, required_artifacts: required, loaded_artifacts: required, required_together: required.length > 1 },
+    sources: ordered.flatMap(({ artifact }) => artifact.sources || []),
+    manifest_only_sources: ordered.flatMap(({ artifact }) => artifact.manifest_only_sources || []),
+    metadata_only_sources: ordered.flatMap(({ artifact }) => artifact.metadata_only_sources || []),
+    rejected_sources: ordered.flatMap(({ artifact }) => artifact.rejected_sources || []),
+    missing_limited_primary_sources: ordered.flatMap(({ artifact }) => artifact.missing_limited_primary_sources || [])
+  };
+  merged.corpus_forensics = { ...(base.corpus_forensics || {}), total_sources: merged.sources.length, resolved_physical_artifacts: required.length, source_fragments_loaded: merged.sources.filter((source) => source.parent_source_id).length };
+  merged.dedupe_forensics = ordered.find(({ artifact }) => Object.keys(artifact.dedupe_forensics || {}).length)?.artifact.dedupe_forensics || base.dedupe_forensics || {};
+  return merged;
+}
+
+async function getSourceFamilyIndex({ run_id, agent_id, cache }) {
+  if (cache.source_family_index !== undefined) return cache.source_family_index;
+  try { cache.source_family_index = await readArtifactPayload({ run_id, artifact_name: "source_family_index", agent_id }); }
+  catch { cache.source_family_index = null; }
+  return cache.source_family_index;
+}
+
+function emptyLosslessFamily({ artifact_name, family, reason, entry = {} }) {
+  return { artifact_name, root_family: family, bucket: entry.bucket || "", storage_mode: entry.status || "UNSAVED_EMPTY", sources: [], manifest_only_sources: [], metadata_only_sources: [], rejected_sources: [], missing_limited_primary_sources: [], family_part_resolution: { status: "UNSAVED_EMPTY", reason, required_artifacts: [] }, corpus_forensics: { total_sources: 0 } };
+}
+
+async function readArtifactsForOperatorChallenge({ run_id, reads, agent_id }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id, reads, agent_id });
+  return loadDynamicExposureArtifacts({ run_id, agent_id, artifacts, manifestKey: "operator_challenge_dynamic_artifact_manifest" });
+}
+
+async function readArtifactsForCompiler({ run_id, reads, agent_id }) {
+  const artifacts = await readArtifactsForCentralJob({ run_id, reads, agent_id, strict: false });
+  artifacts.normalized_compiler_missing_static_artifacts = Object.entries(artifacts).filter(([, value]) => value === null).map(([name]) => name);
+  return loadDynamicExposureArtifacts({ run_id, agent_id, artifacts, manifestKey: "compiler_dynamic_artifact_manifest" });
+}
+
+async function loadDynamicExposureArtifacts({ run_id, agent_id, artifacts, manifestKey }) {
+  const routePlan = artifacts[ART.exposureRoutePlan]?.exposure_registry_route_plan || artifacts[ART.exposureRoutePlan] || {};
+  const batchPlan = Array.isArray(routePlan.batch_plan) ? routePlan.batch_plan : [];
+  const exposureBatchArtifacts = [];
+  const challengeBatchValidationArtifacts = [];
+  const missingBatchArtifacts = [];
+  const missingBatchValidationArtifacts = [];
+  for (const batch of batchPlan) {
+    if (!batch?.batch_id) continue;
+    const batchArtifactName = `exposure_registry_batch__${batch.batch_id}`;
+    const validationArtifactName = `exposure_registry_batch_validation__${batch.batch_id}`;
+    try { exposureBatchArtifacts.push({ batch_id: batch.batch_id, artifact_name: batchArtifactName, artifact: await readArtifactPayload({ run_id, artifact_name: batchArtifactName, agent_id }) }); } catch (_error) { missingBatchArtifacts.push(batchArtifactName); }
+    try { challengeBatchValidationArtifacts.push({ batch_id: batch.batch_id, artifact_name: validationArtifactName, artifact: await readArtifactPayload({ run_id, artifact_name: validationArtifactName, agent_id }) }); } catch (_error) { missingBatchValidationArtifacts.push(validationArtifactName); }
+  }
+  artifacts.m11_batch_artifacts = exposureBatchArtifacts;
+  artifacts.m12_batch_validation_artifacts = challengeBatchValidationArtifacts;
+  artifacts[manifestKey] = { batch_count: batchPlan.length, loaded_batch_artifacts: exposureBatchArtifacts.length, loaded_batch_validation_artifacts: challengeBatchValidationArtifacts.length, missing_batch_artifacts: missingBatchArtifacts, missing_batch_validation_artifacts: missingBatchValidationArtifacts, batch_ids: batchPlan.map((batch) => batch.batch_id).filter(Boolean) };
+  return artifacts;
+}
+
+async function markCentralRunning({ runId, persistencePhase, internalJobId, central, actor }) {
+  const updated = await updateRunRecord(runId, { current_phase: persistencePhase, status: "RUNNING", central_phase: central.central_phase_id, central_phase_label: central.central_phase_label, active_internal_job: internalJobId });
+  await updateRunDashboardRow(updated);
+  await logCentralEvent({ run_id: runId, event_type: "CENTRAL_PHASE_RUNNING", actor, persistencePhase, internalJobId, central, payload: {} });
+}
+
+async function markCentralFailure({ run_id, persistencePhase, internalJobId, central, actor, error }) {
+  const updated = await updateRunRecord(run_id, { current_phase: persistencePhase, status: "REPAIR_REQUIRED", central_phase: central.central_phase_id, central_phase_label: central.central_phase_label, active_internal_job: internalJobId });
+  await updateRunDashboardRow(updated);
+  await logCentralEvent({ run_id, event_type: "CENTRAL_PHASE_REPAIR_REQUIRED", actor, persistencePhase, internalJobId, central, payload: { error_message: error?.message || String(error) } });
+}
+
+async function lockCentralPhase({ run, persistencePhase, contract, status, nextPhase, final_report_url = "", central }) {
+  return lockPhase({ run_id: run.run_id, phase: persistencePhase, agent_id: actorForContract(contract), status, next_phase: nextPhase, final_report_url });
+}
+
+async function logCentralEvent({ run_id, event_type, actor, persistencePhase, internalJobId, central, payload = {} }) {
+  await logEvent({
+    run_id,
+    event_type,
+    actor,
+    payload: {
+      phase: persistencePhase,
+      internal_job_id: internalJobId,
+      central_phase: central.central_phase_id,
+      central_phase_label: central.central_phase_label,
+      ...payload
+    }
+  });
+}
+
+function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) {
+  return { run_id, phase, agent_id, artifact_name, lock_status, artifact };
+}
+
+function buildReportUrl(runId) {
+  const base = config.reviewerPublicBaseUrl || config.rendererBaseUrl || "";
+  if (!base) return "";
+  const clean = base.replace(/\/$/, "");
+  return `${clean}/interface-diligence/diligence-system/report.html?run_id=${encodeURIComponent(runId)}`;
+}
+
+function unwrapArtifactForSave({ artifactName, artifact }) {
+  if (artifact?.[artifactName] && typeof artifact[artifactName] === "object") return artifact[artifactName];
+  if (artifact?.artifact?.[artifactName] && typeof artifact.artifact[artifactName] === "object") return artifact.artifact[artifactName];
+  return artifact;
+}
+
+function isCanonicalLosslessFamilyName(value) {
+  return /^lossless_family__[A-Z0-9_]+$/.test(String(value || ""));
+}
+
+function isLosslessFamilyOutputName(value) {
+  return /^lossless_family__[A-Z0-9_]+(?:__part_\d{3})?$/.test(String(value || ""));
+}
+
+function sortArtifactNames(a, b) {
+  return a.localeCompare(b, undefined, { numeric: true });
+}
