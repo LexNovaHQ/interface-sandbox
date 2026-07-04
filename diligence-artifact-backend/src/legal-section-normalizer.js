@@ -35,7 +35,7 @@ export function buildLegalDocumentGovernanceMapSection({ legalCartographyIndex =
     section_limitations: missing.map((row) => ({ limitation: safeText(row.limitation || row.missing_or_limited_item, "Missing or limited legal/governance source."), source_artifact: "legal_cartography_index" })),
     source_artifacts_used: ["legal_cartography_index"],
     normalization: { profiler_version: LEGAL_SECTION_NORMALIZER_VERSION, normalization_map_version: NORMALIZATION_MAP_VERSION, m9_is_index_only: true, section_6_uses_m9_summary_view: true, qualified_review_legal_signals_present: true, full_m9_payload_annexure_only: true, legal_conclusion_generated: false },
-    vault_mapping: { eligible_for_vault: true, vault_category: "legal_document_control_review", requires_confirmation_before_assembly: true }
+    review_ready_mapping: { eligible_for_review: true, review_category: "legal_document_control_review", requires_confirmation_before_assembly: true }
   };
 }
 

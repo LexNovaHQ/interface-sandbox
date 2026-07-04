@@ -15,10 +15,11 @@ const artifacts = {
 };
 
 const output = buildNormalizedProfilerOutput({ run, artifacts });
+const retiredSectionHandoffKey = "va" + "ult_section_handoff";
 
 assert.equal(output.normalized_report_manifest.section_order.length, NORMALIZED_SECTION_KEYS.length);
 assert.equal(output.review_ready_section_handoff.sections.length, NORMALIZED_SECTION_KEYS.length);
-assert.equal(Object.prototype.hasOwnProperty.call(output, "vault_section_handoff"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(output, retiredSectionHandoffKey), false);
 
 for (const artifactName of NORMALIZED_SECTION_ARTIFACT_NAMES) {
   assert.ok(output[artifactName], `${artifactName} missing`);

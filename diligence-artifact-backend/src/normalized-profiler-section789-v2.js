@@ -69,13 +69,13 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
   const orderedSections = Object.fromEntries(NORMALIZED_SECTION_KEYS.map((key, index) => [key, normalizeSectionEnvelope(sections[key], key, index, context)]));
   const namedSections = Object.fromEntries(NORMALIZED_SECTION_KEYS.map((key) => [`normalized_section__${key}`, orderedSections[key]]));
   const normalized_report_manifest = buildNormalizedReportManifest({ context, sections: orderedSections });
-  const vault_section_handoff = buildVaultSectionHandoff({ context, sections: orderedSections });
-  const final_output_handoff = buildFinalOutputHandoff({ base, context, normalized_report_manifest, vault_section_handoff, sections: orderedSections });
+  const review_ready_section_handoff = buildReviewReadySectionHandoff({ context, sections: orderedSections });
+  const final_output_handoff = buildFinalOutputHandoff({ base, context, normalized_report_manifest, review_ready_section_handoff, sections: orderedSections });
 
   return {
     ...base,
     normalized_report_manifest,
-    vault_section_handoff,
+    review_ready_section_handoff,
     final_output_handoff,
     ...namedSections
   };
@@ -486,7 +486,7 @@ function handoffMeaning(state) {
 
 function formatSubcat(value) {
   const code = normalizeSubcatCode(value);
-  return code ? `${code} — ${SUBCAT_LABELS[code] || "Unmapped harm mechanism"}` : "Subcat not specified";
+  return code ? `${code} Ã¢â‚¬â€ ${SUBCAT_LABELS[code] || "Unmapped harm mechanism"}` : "Subcat not specified";
 }
 
 function normalizeSubcatCode(value) {
@@ -539,7 +539,7 @@ function section(context, key, subsections, summary) {
       exposure_identity_required: true,
       legal_conclusion_generated: false
     },
-    vault_mapping: { eligible_for_vault: true, vault_category: key, requires_confirmation_before_assembly: true }
+    review_ready_mapping: { eligible_for_review: true, review_category: key, requires_confirmation_before_assembly: true }
   };
 }
 
@@ -592,22 +592,22 @@ function buildNormalizedReportManifest({ context, sections }) {
     section_order: NORMALIZED_SECTION_KEYS,
     section_artifacts: NORMALIZED_SECTION_KEYS.map((key) => ({ section_id: key, artifact_name: `normalized_section__${key}`, title: sections[key]?.section_title || key, status: sections[key]?.section_status || context.validation_status })),
     renderer_contract: { renderer_may_render: true, renderer_may_sort: false, renderer_may_filter_for_view: true, renderer_may_add_facts: false, renderer_may_change_statuses: false, renderer_may_generate_legal_advice: false, model_used_after_m12: false, section_789_artifact_split: true },
-    vault_contract: { vault_may_prefill_review_ready_objects: true, vault_must_preserve_source_refs: true, vault_must_not_treat_public_signals_as_confirmed_private_facts: true, qualified_review_required_before_assembly_reliance: true }
+    review_ready_contract: { may_prefill_review_ready_objects: true, must_preserve_source_refs: true, must_not_treat_public_signals_as_confirmed_private_facts: true, qualified_review_required_before_assembly_reliance: true }
   };
 }
 
-function buildVaultSectionHandoff({ context, sections }) {
+function buildReviewReadySectionHandoff({ context, sections }) {
   return {
-    handoff_type: "vault_section_handoff",
+    handoff_type: "review_ready_section_handoff",
     profiler_version: NORMALIZED_PROFILER_VERSION,
     run_id: context.run.run_id || "UNKNOWN_RUN",
     validation_status: context.validation_status,
-    sections: NORMALIZED_SECTION_KEYS.map((key) => ({ section_id: key, artifact_name: `normalized_section__${key}`, section_title: sections[key]?.section_title || key, eligible_for_vault: sections[key]?.vault_mapping?.eligible_for_vault !== false, vault_category: sections[key]?.vault_mapping?.vault_category || key, requires_confirmation_before_assembly: true })),
+    sections: NORMALIZED_SECTION_KEYS.map((key) => ({ section_id: key, artifact_name: `normalized_section__${key}`, section_title: sections[key]?.section_title || key, eligible_for_review: sections[key]?.review_ready_mapping?.eligible_for_review !== false, review_category: sections[key]?.review_ready_mapping?.review_category || key, requires_confirmation_before_assembly: true })),
     assembly_boundary: "Use section artifacts as Review-Ready support material only. Public-footprint facts require qualified-review confirmation before document assembly reliance."
   };
 }
 
-function buildFinalOutputHandoff({ base, context, normalized_report_manifest, vault_section_handoff, sections }) {
+function buildFinalOutputHandoff({ base, context, normalized_report_manifest, review_ready_section_handoff, sections }) {
   const baseFinal = safeObject(base.final_output_handoff?.final_output_handoff || base.final_output_handoff);
   const normalized_sections = Object.fromEntries(NORMALIZED_SECTION_KEYS.map((key) => [key, sections[key]]));
   return {
@@ -615,16 +615,16 @@ function buildFinalOutputHandoff({ base, context, normalized_report_manifest, va
       ...baseFinal,
       validation_status: context.validation_status,
       normalized_report_manifest_ref: "normalized_report_manifest",
-      vault_section_handoff_ref: "vault_section_handoff",
+      review_ready_section_handoff_ref: "review_ready_section_handoff",
       section_artifacts: normalized_report_manifest.section_artifacts,
       normalized_report_manifest,
       normalized_sections,
       renderer_contract: normalized_report_manifest.renderer_contract,
-      vault_contract: normalized_report_manifest.vault_contract,
+      review_ready_contract: normalized_report_manifest.review_ready_contract,
       terminal_checks: { ...(baseFinal.terminal_checks || {}), normalized_section_count: NORMALIZED_SECTION_KEYS.length, normalized_sections_emitted: NORMALIZED_SECTION_KEYS.length, section_789_artifact_split: true, legacy_blob_replaced_by_section_artifacts: true },
       compiler_trace: { ...(baseFinal.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v5_section_789_artifact_split", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, section_789_artifact_split: true, exposure_identity_required: true, threat_name_required: true, subcat_required: true, business_category_removed_from_sections_7_8_9: true, qualified_review_branch_separate: true },
       legacy_archive: baseFinal.legacy_archive || { profiles_combined: "ARCHIVED_LEGACY", forensics_combined: "ARCHIVED_LEGACY", old_compiler_blob: "REPLACED_BY_NORMALIZED_SECTION_ARTIFACTS", active_replacement: "normalized_report_manifest + normalized_section__*" },
-      vault_section_handoff
+      review_ready_section_handoff
     }
   };
 }

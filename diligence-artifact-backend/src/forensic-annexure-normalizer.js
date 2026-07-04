@@ -5,7 +5,7 @@ export const FORENSIC_ANNEXURE_NORMALIZER_VERSION = "forensic_annexure_normalize
 
 const REVIEW_READY_BOUNDARY_NOTICE = "This is a public-footprint diligence artifact and Review-Ready Draft support material. It is not legal advice, does not decide compliance, liability, enforceability, or legal sufficiency, and requires local counsel / qualified reviewer review before reliance.";
 const PUBLIC_FOOTPRINT_LIMITATION = "This report is limited to reviewed public materials, admitted source artifacts, and locked backend diligence outputs. It does not verify private implementation, customer contracts, internal controls, or non-public operating facts.";
-const DISPLAY_RULE = "Manifest only — full payload preserved as backend artifact";
+const DISPLAY_RULE = "Manifest only Ã¢â‚¬â€ full payload preserved as backend artifact";
 
 const ANNEXURE_ARTIFACTS = Object.freeze([
   ["source_family_index", "A1", "Source Discovery", "AGENT_1B_EXTRACT", "source index"],
@@ -57,7 +57,7 @@ export function buildMethodologyLimitationsForensicAnnexureSection({ run = {}, a
       full_forensic_payload_rendered_inline: false,
       legal_conclusion_generated: false
     },
-    vault_mapping: { eligible_for_vault: false, vault_category: "methodology_limitations_forensic_annexure", requires_confirmation_before_assembly: true }
+    review_ready_mapping: { eligible_for_review: false, review_category: "methodology_limitations_forensic_annexure", requires_confirmation_before_assembly: true }
   };
   return section;
 }

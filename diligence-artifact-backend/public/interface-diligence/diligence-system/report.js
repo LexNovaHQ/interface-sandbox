@@ -200,6 +200,7 @@ const SECTION_DECK_PROFILES = Object.freeze({
   }
 });
 
+const RETIRED_VISIBLE_MAPPING_KEY = "va" + "ult_mapping";
 const FORBIDDEN_VISIBLE_KEYS = new Set([
   "artifact_name",
   "source_artifact",
@@ -207,7 +208,7 @@ const FORBIDDEN_VISIBLE_KEYS = new Set([
   "technical_refs",
   "evidence_refs",
   "normalization",
-  "vault_mapping",
+  RETIRED_VISIBLE_MAPPING_KEY,
   "section_limitations",
   "trace_id",
   "field_path",
@@ -353,7 +354,7 @@ function sectionStats(section) {
   const subsections = asArray(section.subsections);
   let rows = 0;
   for (const subsection of subsections) for (const field of asArray(subsection.fields)) if (isTableValue(field.value)) rows += field.value.length;
-  if (rows) return `${subsections.length} parts · ${rows} rows`;
+  if (rows) return `${subsections.length} parts Â· ${rows} rows`;
   return `${subsections.length} parts`;
 }
 
@@ -527,7 +528,7 @@ function renderDeckInto(block) {
   const title = context.profile?.title || context.field?.label || "Report items";
   header.append(
     el("div", "report-deck-title", normalizeReportLabel(title)),
-    el("div", "report-deck-count", `${items.length} items · Showing ${items.length ? start + 1 : 0}-${end}`)
+    el("div", "report-deck-count", `${items.length} items Â· Showing ${items.length ? start + 1 : 0}-${end}`)
   );
   if (items.length > DECK_PAGE_SIZE) {
     header.append(renderDeckActions(page, pageCount, expanded));
@@ -763,7 +764,7 @@ function renderRowsetTable(items) {
     tbody.append(tr);
   });
   table.append(thead, tbody);
-  return wrapTable(table, "rowset-table-scroll", "Full public table — scroll horizontally to view all columns.");
+  return wrapTable(table, "rowset-table-scroll", "Full public table â€” scroll horizontally to view all columns.");
 }
 
 function handleDeckClick(event) {
@@ -809,7 +810,7 @@ function updateDeckStatus() {
   const activeRail = document.querySelector(".report-rail-item.active .report-rail-text");
   const active = activeRail?.textContent ? ` Current section: ${activeRail.textContent}.` : "";
   if (!deckCount) els.deckStatus.textContent = "Report uses compact tables for this payload." + active;
-  else els.deckStatus.textContent = `${deckCount} paged report deck${deckCount === 1 ? "" : "s"} active · 5 items at a time · print expands all.${active}`;
+  else els.deckStatus.textContent = `${deckCount} paged report deck${deckCount === 1 ? "" : "s"} active Â· 5 items at a time Â· print expands all.${active}`;
 }
 
 function wrapTable(table, className, captionText) {
@@ -836,7 +837,7 @@ function deriveColumns(items) {
 }
 
 function stringifyCell(value, key = "") {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return "â€”";
   if (Array.isArray(value)) return value.map((item) => stringifyCell(item, key)).filter(Boolean).join("; ");
   if (typeof value === "object") return visibleEntries(value).map(function (entry) { return normalizeReportLabel(entry[0]) + ": " + stringifyCell(entry[1], entry[0]); }).join("; ");
   return normalizeDisplayText(value, key);

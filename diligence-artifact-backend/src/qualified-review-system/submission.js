@@ -180,7 +180,7 @@ function materializeResponseRow({ question, submitted, receivedAt }) {
     source_artifacts: Array.isArray(question.source_artifacts) ? question.source_artifacts : [],
     source_artifacts_present: Array.isArray(question.source_artifacts_present) ? question.source_artifacts_present : [],
     source_field_hints: Array.isArray(question.source_field_hints) ? question.source_field_hints : [],
-    destination: question.writes_to_vault_payload ? "vault_payload" : "qualified_review",
+    destination: question.writes_to_vault_payload ? "review_ready_payload" : "qualified_review",
     destination_path: destinationPath,
     vault_payload_path: question.vault_payload_path || null,
     qualified_review_path: question.qualified_review_path || null,

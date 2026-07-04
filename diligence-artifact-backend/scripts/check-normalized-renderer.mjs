@@ -55,7 +55,7 @@ assert.equal(JSON.stringify(section7.subsections.map((subsection) => subsection.
 console.log("normalized renderer output: PASS");
 
 function sampleSection(section_id, section_title) {
-  return { section_id, artifact_name: `normalized_section__${section_id}`, section_title, section_order: 1, section_status: "LOCKED", reviewer_summary: "Summary", section_limitations: ["FORBIDDEN SECTION LIMITATION"], source_artifacts_used: ["target_profile"], normalization: { internal: true }, vault_mapping: { internal: true }, subsections: [subsection(`${section_id}_subsection`, "Sample", "Target", { public_name: "Example", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-001" } })] };
+  return { section_id, artifact_name: `normalized_section__${section_id}`, section_title, section_order: 1, section_status: "LOCKED", reviewer_summary: "Summary", section_limitations: ["FORBIDDEN SECTION LIMITATION"], source_artifacts_used: ["target_profile"], normalization: { internal: true }, review_ready_mapping: { internal: true }, subsections: [subsection(`${section_id}_subsection`, "Sample", "Target", { public_name: "Example", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-001" } })] };
 }
 function subsection(subsection_id, subsection_title, label, value) {
   return { subsection_id, subsection_title, fields: [{ field_id: `${subsection_id}_field`, label, value, source_artifact: "target_profile", source_path: "target_profile.target_identity.brand_name", technical_refs: { evidence_id: "E-002" }, qualified_review_note: "Verify before reliance.", limitation: "" }] };

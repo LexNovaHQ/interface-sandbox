@@ -40,7 +40,6 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
   const final_output_handoff = buildFinalOutputHandoff({ base, normalized_report_manifest, review_ready_section_handoff, sections: orderedSections, validation_status });
 
   const output = { ...base, normalized_report_manifest, review_ready_section_handoff, final_output_handoff, ...namedSections };
-  delete output.vault_section_handoff;
   delete output.normalized_section__methodology_limitations_review_notes;
   delete output.normalized_section__forensic_ledger_appendix;
   return output;

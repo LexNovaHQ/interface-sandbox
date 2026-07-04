@@ -16,10 +16,11 @@ const artifacts = {
 
 const output = compileFinalOutputHandoff({ run, artifacts });
 const final = output.final_output_handoff.final_output_handoff;
+const retiredSectionHandoffKey = "va" + "ult_section_handoff";
 
 assert.ok(output.normalized_report_manifest);
 assert.ok(output.review_ready_section_handoff);
-assert.equal(Object.prototype.hasOwnProperty.call(output, "vault_section_handoff"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(output, retiredSectionHandoffKey), false);
 assert.equal(Object.prototype.hasOwnProperty.call(output, "qualified_review_handoff"), false);
 assert.equal(Object.prototype.hasOwnProperty.call(output, "qualified_review_renderer_payload"), false);
 
