@@ -36,7 +36,7 @@ export function buildM10SelectedLegalSupportPacket({ artifacts = {} } = {}) {
   }
   return {
     artifact_name: ARTIFACT_NAME,
-    schema_version: "M10_SELECTED_LEGAL_SUPPORT_PACKET_v2_CONTACT_CONSENT_MANAGER",
+    schema_version: "M10_SELECTED_LEGAL_SUPPORT_PACKET_v1_CONTACT_CONSENT_MANAGER",
     model_generated: false,
     source_policy: {
       d_families_are_primary_for_m10: true,

@@ -90,7 +90,15 @@ assert.equal(section5.normalization.full_integrated_dap_retained_in_report_body,
 assert.equal(normalized.normalized_report_manifest.renderer_contract.section_5_full_36_field_dap_report_present, true);
 assert.equal(normalized.final_output_handoff.final_output_handoff.terminal_checks.section_5_full_36_field_dap_report_present, true);
 assert.equal(normalized.final_output_handoff.final_output_handoff.normalized_sections.data_provenance_controls.subsections[0].subsection_id, "integrated_dap_report_notice");
-const publicDapFields = section5.subsections.slice(1).flatMap((subsection) => subsection.fields || []);
+const contactConsentFields = section5.subsections[1]?.fields || [];
+const publicDapFields = section5.subsections.slice(2).flatMap((subsection) => subsection.fields || []);
+assert.equal(section5.subsections[1]?.subsection_id, "privacy_contact_consent_manager_readiness");
+assert.equal(contactConsentFields.length, 3);
+for (const field of contactConsentFields) {
+  assert.ok(field.value?.status || field.value?.public_evidence_status, `${field.field_id}:missing_contact_consent_status`);
+  assert.ok(field.limitation, `${field.field_id}:missing_contact_consent_limitation`);
+  assert.ok(field.qualified_review_note, `${field.field_id}:missing_contact_consent_review_note`);
+}
 assert.equal(publicDapFields.length, 36);
 for (const field of publicDapFields) {
   assert.ok(field.value.finding, `${field.field_id}:missing_public_finding`);

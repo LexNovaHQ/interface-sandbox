@@ -52,20 +52,44 @@ function ensureDownstreamRules(artifact) {
   artifact.downstream_rules.semantic_navigation_index_is_downstream_available = true;
   artifact.downstream_rules.control_language_locator_is_technical_locator_only = true;
   artifact.downstream_rules.qualified_review_legal_signals_index_only = true;
+  artifact.downstream_rules.qualified_review_legal_signals_true_derived_object = true;
 }
 
 function ensureQualifiedReviewLegalSignals(artifact) {
   const existing = artifact.qualified_review_legal_signals && typeof artifact.qualified_review_legal_signals === "object" && !Array.isArray(artifact.qualified_review_legal_signals) ? artifact.qualified_review_legal_signals : {};
   const refs = firstLocatorRefs(artifact);
   artifact.qualified_review_legal_signals = {
+    signal_object_version: stringOr(existing.signal_object_version, "m9_qualified_review_legal_signals_true_derived_v1"),
+    derivation_mode: stringOr(existing.derivation_mode, "compiler_true_derived_from_m9_deterministic_maps"),
+    source_boundary: stringOr(existing.source_boundary, "Derived only from M9 deterministic legal signal maps and loaded-corpus navigation pointers; M9 remains index-only."),
+    full_clause_text_copied: existing.full_clause_text_copied === true ? false : false,
+    legal_advice_generated: existing.legal_advice_generated === true ? false : false,
+    compliance_conclusion_generated: existing.compliance_conclusion_generated === true ? false : false,
+    enforceability_conclusion_generated: existing.enforceability_conclusion_generated === true ? false : false,
     legal_notice_contact: normalizeSignalBranch(existing.legal_notice_contact, {
+      signal_key: "legal_notice_contact",
+      question_id: "QR-004",
+      field_key: "legal_notice_email",
+      reviewer_question: "What email address should receive contractual/legal notices?",
+      signal_status: "NOT_DERIVED",
       legal_notice_email: "",
       legal_notice_contact_route: refs[0] || "",
       legal_notice_contact_source: refs[0] || "",
       legal_notice_contact_limitation: refs.length ? "Index locator available; verify before reliance." : "No M9 legal notice/contact signal derived from loaded legal corpus.",
-      locator_refs: refs
+      derived_answer_summary: refs.length ? "Legal notice/contact locator is available for qualified-review confirmation." : "No legal notice/contact route signal was derived.",
+      evidence_basis: [],
+      locator_refs: refs,
+      registry_basis: [],
+      source_path: "legal_cartography_deterministic_map.legal_notice_contact_signal_map",
+      primary_locator: {},
+      downstream_use_limit: "Use as an index-backed question prefill candidate only; verify against the loaded legal source before reliance."
     }),
     liability_cap_basis: normalizeSignalBranch(existing.liability_cap_basis, {
+      signal_key: "liability_cap_basis",
+      question_id: "QR-013",
+      field_key: "acv_liability_reference",
+      reviewer_question: "What contract value or pricing level should guide liability caps?",
+      signal_status: "NOT_DERIVED",
       clause_location: refs[0] || "",
       cap_formula_reference_basis: "Confirm from loaded legal source at locator.",
       cap_period_lookback_window: "Confirm from loaded legal source at locator.",
@@ -73,9 +97,20 @@ function ensureQualifiedReviewLegalSignals(artifact) {
       fees_pricing_reference_signal: "Confirm from loaded legal source at locator.",
       private_value_required: "Confirm during qualified review.",
       limitation: refs.length ? "Index locator available; M9 does not compute legal effect or cap amount." : "No liability cap signal derived from loaded legal corpus.",
-      locator_refs: refs
+      derived_answer_summary: refs.length ? "Liability-cap basis locator is available for qualified-review confirmation." : "No liability-cap basis locator was derived.",
+      evidence_basis: [],
+      locator_refs: refs,
+      registry_basis: [],
+      source_path: "legal_cartography_deterministic_map.liability_cap_signal_map",
+      primary_locator: {},
+      downstream_use_limit: "Use as an index-backed question prefill candidate only; do not compute legal effect, cap amount, enforceability, or risk."
     }),
     sla_support_posture: normalizeSignalBranch(existing.sla_support_posture, {
+      signal_key: "sla_support_posture",
+      question_id: "QR-016",
+      field_key: "sla_posture",
+      reviewer_question: "Will the company offer no SLA, a standard SLA, or a custom SLA?",
+      signal_status: "NOT_DERIVED",
       sla_support_artifact_found: refs.length ? "Locator available." : "No SLA/support signal derived from loaded legal corpus.",
       availability_uptime_commitment_signal: "Confirm from loaded legal source at locator.",
       service_credit_remedy_signal: "Confirm from loaded legal source at locator.",
@@ -83,8 +118,27 @@ function ensureQualifiedReviewLegalSignals(artifact) {
       standard_vs_custom_sla_posture: "Confirm during qualified review.",
       sla_exclusions_dependencies_signal: "Confirm from loaded legal source at locator.",
       private_confirmation_required: "Confirm during qualified review.",
-      locator_refs: refs
-    })
+      derived_answer_summary: refs.length ? "SLA/support posture locator is available for qualified-review confirmation." : "No SLA/support posture locator was derived.",
+      evidence_basis: [],
+      locator_refs: refs,
+      registry_basis: [],
+      source_path: "legal_cartography_deterministic_map.sla_support_signal_map",
+      primary_locator: {},
+      downstream_use_limit: "Use as an index-backed question prefill candidate only; qualified review must confirm the final SLA posture."
+    }),
+    question_rows: Array.isArray(existing.question_rows) ? existing.question_rows : [],
+    question_index: existing.question_index && typeof existing.question_index === "object" && !Array.isArray(existing.question_index) ? existing.question_index : {},
+    coverage_summary: existing.coverage_summary && typeof existing.coverage_summary === "object" && !Array.isArray(existing.coverage_summary) ? existing.coverage_summary : { required_question_count: 3, derived_question_count: 0, legal_notice_contact_source_count: 0, liability_cap_basis_source_count: 0, sla_support_posture_source_count: 0 },
+    downstream_rules: {
+      ...(existing.downstream_rules && typeof existing.downstream_rules === "object" && !Array.isArray(existing.downstream_rules) ? existing.downstream_rules : {}),
+      qualified_review_legal_signals_true_derived_object: true,
+      index_only: true,
+      full_clause_text_copied: false,
+      legal_advice_generated: false,
+      compliance_conclusion_generated: false,
+      enforceability_conclusion_generated: false,
+      reviewer_confirmation_required: true
+    }
   };
 }
 
@@ -92,8 +146,14 @@ function normalizeSignalBranch(value, fallback) {
   const branch = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const out = { ...fallback, ...branch };
   if (!Array.isArray(out.locator_refs)) out.locator_refs = [];
-  for (const [key, value] of Object.entries(out)) if (key !== "locator_refs" && typeof value !== "string") out[key] = String(value ?? "");
+  for (const key of ["evidence_basis", "registry_basis"]) if (!Array.isArray(out[key])) out[key] = [];
+  if (!out.primary_locator || typeof out.primary_locator !== "object" || Array.isArray(out.primary_locator)) out.primary_locator = {};
+  for (const [key, value] of Object.entries(out)) if (!["locator_refs", "evidence_basis", "registry_basis", "primary_locator"].includes(key) && typeof value !== "string") out[key] = String(value ?? "");
   return out;
+}
+
+function stringOr(value, fallback) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
 function firstLocatorRefs(artifact) {

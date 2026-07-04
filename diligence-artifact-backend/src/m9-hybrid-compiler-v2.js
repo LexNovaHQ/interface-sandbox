@@ -7,6 +7,8 @@ const LOCATORS = Object.freeze({
   governing_law_venue_locator: ["governing law", "venue", "jurisdiction", "arbitration"],
   contact_grievance_locator: ["contact", "grievance", "redressal", "data protection officer", "privacy governance"]
 });
+const QR_SIGNAL_VERSION = "m9_qualified_review_legal_signals_true_derived_v1";
+const QR_SOURCE_BOUNDARY = "Derived only from M9 deterministic legal signal maps and loaded-corpus navigation pointers; M9 remains index-only.";
 
 export function compileM9HybridCartography(args = {}) {
   const output = compileBaseM9HybridCartography(args);
@@ -26,7 +28,7 @@ export function enhanceLegalCartographyIndex({ index = {}, map = {}, semantic = 
   for (const [key, keywords] of Object.entries(LOCATORS)) index[key] = buildKeywordLocator({ documentStructure: index.document_structure_index, keywords, locatorType: key.replace(/_locator$/, "").toUpperCase() });
   index.qualified_review_locator = buildQualifiedReviewLocator(index);
   index.qualified_review_legal_signals = buildQrLegalSignalsFromMap({ index, map });
-  index.downstream_rules = { ...(index.downstream_rules || {}), semantic_navigation_index_is_downstream_available: true, control_language_locator_is_technical_locator_only: true, qualified_review_locator_is_not_all_control_candidates: true, qualified_review_legal_signals_index_only: true, qualified_review_legal_signals_are_derived_from_m9_deterministic_maps: true, alias_missing_sources_with_canonical_equivalent_are_non_blocking: true, report_should_render_summary_not_raw_m9_maps: true };
+  index.downstream_rules = { ...(index.downstream_rules || {}), semantic_navigation_index_is_downstream_available: true, control_language_locator_is_technical_locator_only: true, qualified_review_locator_is_not_all_control_candidates: true, qualified_review_legal_signals_index_only: true, qualified_review_legal_signals_true_derived_object: true, qualified_review_legal_signals_are_derived_from_m9_deterministic_maps: true, alias_missing_sources_with_canonical_equivalent_are_non_blocking: true, report_should_render_summary_not_raw_m9_maps: true };
   return index;
 }
 
@@ -42,15 +44,156 @@ function buildKeywordLocator({ documentStructure, keywords, locatorType }) { con
 function buildQualifiedReviewLocator(index) { const missing = asArray(index.missing_limited_legal_governance_items).filter((row) => row.display_in_main_report !== false).map((row, index) => stripEmpty({ locator_id: `M9-QRL-MISS-${String(index + 1).padStart(3, "0")}`, locator_type: "MISSING_OR_LIMITED_SOURCE", artifact_or_unit: row.missing_or_limited_item, expected_location: row.expected_location, status: row.status, blocking: row.blocking !== false, reviewer_action: "Verify whether the missing or limited legal/governance source exists before reliance." })); const priority = asArray(index.priority_semantic_locator).slice(0, 25).map((row, index) => stripEmpty({ locator_id: `M9-QRL-SEM-${String(index + 1).padStart(3, "0")}`, locator_type: "PRIORITY_SEMANTIC_NAVIGATION", document_id: row.document_id, unit_id: row.unit_id, heading_label: row.heading_label, subcats: row.subcats, control_families: row.control_families, navigation_pointer: row.navigation_pointer, reviewer_action: "Use as legal/governance locator; M9 is index-only." })); const locatorRows = ["legal_notice_locator", "dispute_resolution_locator", "governing_law_venue_locator", "contact_grievance_locator"].flatMap((key) => asArray(index[key])).slice(0, 20).map((row, index) => stripEmpty({ locator_id: `M9-QRL-LOC-${String(index + 1).padStart(3, "0")}`, locator_type: row.locator_type, document_id: row.document_id, unit_id: row.unit_id, heading_label: row.heading_label, navigation_pointer: row.navigation_pointer, reviewer_action: "Use as legal/governance locator; M9 is index-only." })); return [...missing, ...priority, ...locatorRows]; }
 
 function buildQrLegalSignalsFromMap({ index, map }) {
-  const notice = firstRow(map.legal_notice_contact_signal_map);
-  const liability = firstRow(map.liability_cap_signal_map);
-  const sla = firstRow(map.sla_support_signal_map);
+  const noticeRows = asArray(map.legal_notice_contact_signal_map);
+  const liabilityRows = asArray(map.liability_cap_signal_map);
+  const slaRows = asArray(map.sla_support_signal_map);
+  const notice = firstRow(noticeRows);
+  const liability = firstRow(liabilityRows);
+  const sla = firstRow(slaRows);
   const fallbackRefs = asArray(index.qualified_review_locator).slice(0, 12).map((row) => row.locator_id || row.unit_id || row.document_id || "").filter(Boolean);
+  const legalNoticeContact = buildSignalBranch({
+    sourceRows: noticeRows,
+    row: notice,
+    fallbackRefs,
+    signalKey: "legal_notice_contact",
+    questionId: "QR-004",
+    fieldKey: "legal_notice_email",
+    reviewerQuestion: "What email address should receive contractual/legal notices?",
+    sourceMapName: "legal_notice_contact_signal_map",
+    values: {
+      legal_notice_email: firstString(notice.legal_notice_emails),
+      legal_notice_contact_route: valueOr(notice.legal_notice_contact_route, notice.heading_label || ""),
+      legal_notice_contact_source: valueOr(notice.legal_notice_contact_source, notice.document_id || ""),
+      legal_notice_contact_limitation: valueOr(notice.legal_notice_contact_limitation, notice.signal_id ? "M9 derived legal notice/contact signal from loaded legal corpus." : "No M9 legal notice/contact signal derived from loaded legal corpus."),
+      derived_answer_summary: valueOr(notice.derived_answer_summary, notice.signal_id ? "Legal notice/contact route signal is available for qualified-review confirmation." : "No legal notice/contact route signal was derived."),
+      downstream_use_limit: "Use as an index-backed question prefill candidate only; verify against the loaded legal source before reliance."
+    }
+  });
+  const liabilityCapBasis = buildSignalBranch({
+    sourceRows: liabilityRows,
+    row: liability,
+    fallbackRefs,
+    signalKey: "liability_cap_basis",
+    questionId: "QR-013",
+    fieldKey: "acv_liability_reference",
+    reviewerQuestion: "What contract value or pricing level should guide liability caps?",
+    sourceMapName: "liability_cap_signal_map",
+    values: {
+      clause_location: valueOr(liability.clause_location, liability.heading_label || ""),
+      cap_formula_reference_basis: valueOr(liability.cap_formula_reference_basis, liability.signal_id ? "Locator found; cap formula requires source confirmation." : "No liability cap signal derived from loaded legal corpus."),
+      cap_period_lookback_window: valueOr(liability.cap_period_lookback_window, ""),
+      exclusions_carveouts_signal: valueOr(liability.exclusions_carveouts_signal, ""),
+      fees_pricing_reference_signal: valueOr(liability.fees_pricing_reference_signal, ""),
+      private_value_required: valueOr(liability.private_value_required, liability.signal_id ? "Confirm during qualified review." : ""),
+      limitation: valueOr(liability.limitation, liability.signal_id ? "M9 supplies deterministic legal-signal map only; qualified review controls reliance." : "No liability cap signal derived from loaded legal corpus."),
+      derived_answer_summary: valueOr(liability.derived_answer_summary, liability.signal_id ? "Liability-cap basis locator is available for qualified-review confirmation." : "No liability-cap basis locator was derived."),
+      downstream_use_limit: "Use as an index-backed question prefill candidate only; do not compute legal effect, cap amount, enforceability, or risk."
+    }
+  });
+  const slaSupportPosture = buildSignalBranch({
+    sourceRows: slaRows,
+    row: sla,
+    fallbackRefs,
+    signalKey: "sla_support_posture",
+    questionId: "QR-016",
+    fieldKey: "sla_posture",
+    reviewerQuestion: "Will the company offer no SLA, a standard SLA, or a custom SLA?",
+    sourceMapName: "sla_support_signal_map",
+    values: {
+      sla_support_artifact_found: valueOr(sla.sla_support_artifact_found, sla.signal_id ? "SLA/support signal found in loaded legal corpus." : "No SLA/support signal derived from loaded legal corpus."),
+      availability_uptime_commitment_signal: valueOr(sla.availability_uptime_commitment_signal, ""),
+      service_credit_remedy_signal: valueOr(sla.service_credit_remedy_signal, ""),
+      support_tier_response_commitment_signal: valueOr(sla.support_tier_response_commitment_signal, ""),
+      standard_vs_custom_sla_posture: valueOr(sla.standard_vs_custom_sla_posture, ""),
+      sla_exclusions_dependencies_signal: valueOr(sla.sla_exclusions_dependencies_signal, ""),
+      private_confirmation_required: valueOr(sla.private_confirmation_required, sla.signal_id ? "Qualified review must confirm controlling SLA/support terms." : ""),
+      derived_answer_summary: valueOr(sla.derived_answer_summary, sla.signal_id ? "SLA/support posture locator is available for qualified-review confirmation." : "No SLA/support posture locator was derived."),
+      downstream_use_limit: "Use as an index-backed question prefill candidate only; qualified review must confirm the final SLA posture."
+    }
+  });
+  const questionRows = [questionRow(legalNoticeContact), questionRow(liabilityCapBasis), questionRow(slaSupportPosture)];
   return {
-    legal_notice_contact: { legal_notice_email: firstString(notice.legal_notice_emails), legal_notice_contact_route: valueOr(notice.legal_notice_contact_route, notice.heading_label || ""), legal_notice_contact_source: valueOr(notice.legal_notice_contact_source, notice.document_id || ""), legal_notice_contact_limitation: valueOr(notice.legal_notice_contact_limitation, notice.signal_id ? "M9 derived legal notice/contact signal from loaded legal corpus." : "No M9 legal notice/contact signal derived from loaded legal corpus."), locator_refs: refs(map.legal_notice_contact_signal_map, fallbackRefs) },
-    liability_cap_basis: { clause_location: valueOr(liability.clause_location, liability.heading_label || ""), cap_formula_reference_basis: valueOr(liability.cap_formula_reference_basis, liability.signal_id ? "Locator found; cap formula requires source confirmation." : "No liability cap signal derived from loaded legal corpus."), cap_period_lookback_window: valueOr(liability.cap_period_lookback_window, ""), exclusions_carveouts_signal: valueOr(liability.exclusions_carveouts_signal, ""), fees_pricing_reference_signal: valueOr(liability.fees_pricing_reference_signal, ""), private_value_required: valueOr(liability.private_value_required, liability.signal_id ? "Confirm during qualified review." : ""), limitation: valueOr(liability.limitation, liability.signal_id ? "M9 supplies deterministic legal-signal map only; qualified review controls reliance." : "No liability cap signal derived from loaded legal corpus."), locator_refs: refs(map.liability_cap_signal_map, fallbackRefs) },
-    sla_support_posture: { sla_support_artifact_found: valueOr(sla.sla_support_artifact_found, sla.signal_id ? "SLA/support signal found in loaded legal corpus." : "No SLA/support signal derived from loaded legal corpus."), availability_uptime_commitment_signal: valueOr(sla.availability_uptime_commitment_signal, ""), service_credit_remedy_signal: valueOr(sla.service_credit_remedy_signal, ""), support_tier_response_commitment_signal: valueOr(sla.support_tier_response_commitment_signal, ""), standard_vs_custom_sla_posture: valueOr(sla.standard_vs_custom_sla_posture, ""), sla_exclusions_dependencies_signal: valueOr(sla.sla_exclusions_dependencies_signal, ""), private_confirmation_required: valueOr(sla.private_confirmation_required, sla.signal_id ? "Qualified review must confirm controlling SLA/support terms." : ""), locator_refs: refs(map.sla_support_signal_map, fallbackRefs) }
+    signal_object_version: QR_SIGNAL_VERSION,
+    derivation_mode: "compiler_true_derived_from_m9_deterministic_maps",
+    source_boundary: QR_SOURCE_BOUNDARY,
+    full_clause_text_copied: false,
+    legal_advice_generated: false,
+    compliance_conclusion_generated: false,
+    enforceability_conclusion_generated: false,
+    legal_notice_contact: legalNoticeContact,
+    liability_cap_basis: liabilityCapBasis,
+    sla_support_posture: slaSupportPosture,
+    question_rows: questionRows,
+    question_index: Object.fromEntries(questionRows.map((row) => [row.question_id, row])),
+    coverage_summary: {
+      required_question_count: 3,
+      derived_question_count: questionRows.filter((row) => row.signal_status === "DERIVED").length,
+      legal_notice_contact_source_count: noticeRows.length,
+      liability_cap_basis_source_count: liabilityRows.length,
+      sla_support_posture_source_count: slaRows.length
+    },
+    downstream_rules: {
+      qualified_review_legal_signals_true_derived_object: true,
+      index_only: true,
+      full_clause_text_copied: false,
+      legal_advice_generated: false,
+      compliance_conclusion_generated: false,
+      enforceability_conclusion_generated: false,
+      reviewer_confirmation_required: true
+    }
   };
+}
+
+function buildSignalBranch({ sourceRows, row, fallbackRefs, signalKey, questionId, fieldKey, reviewerQuestion, sourceMapName, values }) {
+  const locatorRefs = refs(sourceRows, fallbackRefs);
+  const primaryLocator = locatorFromRow(row, locatorRefs[0] || "");
+  return {
+    signal_key: signalKey,
+    question_id: questionId,
+    field_key: fieldKey,
+    reviewer_question: reviewerQuestion,
+    signal_status: sourceRows.length ? "DERIVED" : "NOT_DERIVED",
+    ...values,
+    evidence_basis: evidenceBasis(sourceRows),
+    locator_refs: locatorRefs,
+    registry_basis: asArray(row.registry_basis || row.registry_refs || row.registry_references),
+    source_path: `legal_cartography_deterministic_map.${sourceMapName}`,
+    primary_locator: primaryLocator,
+    downstream_use_limit: values.downstream_use_limit
+  };
+}
+
+function questionRow(branch) {
+  return {
+    question_id: branch.question_id,
+    field_key: branch.field_key,
+    reviewer_question: branch.reviewer_question,
+    signal_key: branch.signal_key,
+    signal_status: branch.signal_status,
+    primary_locator: branch.primary_locator,
+    locator_refs: branch.locator_refs,
+    downstream_use_limit: branch.downstream_use_limit
+  };
+}
+
+function evidenceBasis(rows) {
+  return asArray(rows).map((row) => stripEmpty({
+    signal_id: row.signal_id,
+    document_id: row.document_id,
+    unit_id: row.unit_id || row.section_id,
+    heading_label: row.heading_label,
+    navigation_pointer: row.navigation_pointer || row.location_reference || null
+  }));
+}
+
+function locatorFromRow(row, fallbackRef) {
+  return stripEmpty({
+    locator_ref: row.signal_id || row.locator_id || row.unit_id || fallbackRef,
+    document_id: row.document_id,
+    unit_id: row.unit_id || row.section_id,
+    heading_label: row.heading_label,
+    navigation_pointer: row.navigation_pointer || row.location_reference || null
+  });
 }
 
 function firstRow(rows) { return asArray(rows)[0] || {}; }

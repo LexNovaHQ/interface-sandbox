@@ -17,9 +17,18 @@ Inside `legal_cartography_index`, use exactly these keys:
 - `document_structure_index`
 - `incorporated_linked_document_map`
 - `control_language_locator`
+- `qualified_review_legal_signals`
 - `missing_limited_legal_governance_items`
 - `downstream_rules`
 - `lock_status`
+
+`qualified_review_legal_signals` must be an object with exactly three branches: `legal_notice_contact`, `liability_cap_basis`, and `sla_support_posture`.
+
+It must include exactly three `question_rows`, one each for `QR-004`, `QR-013`, and `QR-016`.
+
+`question_index` must include keys `QR-004`, `QR-013`, and `QR-016`.
+
+The object must not copy full clause text, generate legal advice, generate compliance conclusions, or generate enforceability conclusions. `full_clause_text_copied`, `legal_advice_generated`, `compliance_conclusion_generated`, and `enforceability_conclusion_generated` must be `false`.
 
 ## Required downstream_rules booleans
 

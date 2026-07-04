@@ -14,10 +14,14 @@ const FORBIDDEN_ARTIFACT_CLASSES = Object.freeze(["LEGAL_HUB", "DPA", "SLA", "AD
 const SOURCE_FIELD_NAMES = Object.freeze(["source", "source_or_reference", "referring_document", "referenced_document_or_policy", "located_in_document"]);
 const SIGNAL_ROOT = "qualified_review_" + "legal_signals";
 const SIGNAL_SHAPES = Object.freeze({
-  ["legal_" + "notice_contact"]: ["legal_notice_email", "legal_notice_contact_route", "legal_notice_contact_source", "legal_notice_contact_limitation", "locator_refs"],
-  ["liability_" + "cap_basis"]: ["clause_location", "cap_formula_reference_basis", "cap_period_lookback_window", "exclusions_carveouts_signal", "fees_pricing_reference_signal", "private_value_required", "limitation", "locator_refs"],
-  ["sla_" + "support_posture"]: ["sla_support_artifact_found", "availability_uptime_commitment_signal", "service_credit_remedy_signal", "support_tier_response_commitment_signal", "standard_vs_custom_sla_posture", "sla_exclusions_dependencies_signal", "private_confirmation_required", "locator_refs"]
+  ["legal_" + "notice_contact"]: ["signal_key", "question_id", "field_key", "reviewer_question", "signal_status", "legal_notice_email", "legal_notice_contact_route", "legal_notice_contact_source", "legal_notice_contact_limitation", "derived_answer_summary", "evidence_basis", "locator_refs", "registry_basis", "source_path", "primary_locator", "downstream_use_limit"],
+  ["liability_" + "cap_basis"]: ["signal_key", "question_id", "field_key", "reviewer_question", "signal_status", "clause_location", "cap_formula_reference_basis", "cap_period_lookback_window", "exclusions_carveouts_signal", "fees_pricing_reference_signal", "private_value_required", "limitation", "derived_answer_summary", "evidence_basis", "locator_refs", "registry_basis", "source_path", "primary_locator", "downstream_use_limit"],
+  ["sla_" + "support_posture"]: ["signal_key", "question_id", "field_key", "reviewer_question", "signal_status", "sla_support_artifact_found", "availability_uptime_commitment_signal", "service_credit_remedy_signal", "support_tier_response_commitment_signal", "standard_vs_custom_sla_posture", "sla_exclusions_dependencies_signal", "private_confirmation_required", "derived_answer_summary", "evidence_basis", "locator_refs", "registry_basis", "source_path", "primary_locator", "downstream_use_limit"]
 });
+const SIGNAL_ROOT_KEYS = Object.freeze(["signal_object_version", "derivation_mode", "source_boundary", "full_clause_text_copied", "legal_advice_generated", "compliance_conclusion_generated", "enforceability_conclusion_generated", "legal_notice_contact", "liability_cap_basis", "sla_support_posture", "question_rows", "question_index", "coverage_summary", "downstream_rules"]);
+const SIGNAL_QUESTION_IDS = Object.freeze(["QR-004", "QR-013", "QR-016"]);
+const SIGNAL_ARRAY_FIELDS = new Set(["evidence_basis", "locator_refs", "registry_basis"]);
+const SIGNAL_OBJECT_FIELDS = new Set(["primary_locator"]);
 
 export function validateM9LegalCartographyIndex(output) {
   const normalizedOutput = normalizeM9LegalCartographyIndex(output);
@@ -38,6 +42,7 @@ export function validateM9LegalCartographyIndex(output) {
   if (artifact.downstream_rules?.embedded_legal_instruments_are_indexable !== true) failures.push("downstream_rules.embedded_legal_instruments_are_indexable must be true");
   if (artifact.downstream_rules?.semantic_navigation_index_is_downstream_available !== true) failures.push("downstream_rules.semantic_navigation_index_is_downstream_available must be true");
   if (artifact.downstream_rules?.control_language_locator_is_technical_locator_only !== true) failures.push("downstream_rules.control_language_locator_is_technical_locator_only must be true");
+  if (artifact.downstream_rules?.qualified_review_legal_signals_true_derived_object !== true) failures.push("downstream_rules.qualified_review_legal_signals_true_derived_object must be true");
   if (!LOCK_STATUSES.includes(artifact.lock_status)) failures.push(`invalid lock_status: ${artifact.lock_status || "missing"}`);
   for (const forbidden of FORBIDDEN_KEYS) if (containsKey(output, forbidden)) failures.push(`forbidden key present: ${forbidden}`);
   for (const forbidden of FORBIDDEN_STRING_VALUES) if (containsStringValue(output, forbidden)) failures.push(`forbidden string value present: ${forbidden}`);
@@ -49,6 +54,13 @@ export function validateM9LegalCartographyIndex(output) {
 function validateSignalShape(artifact, failures) {
   const root = artifact[SIGNAL_ROOT];
   if (!root || typeof root !== "object" || Array.isArray(root)) return;
+  const rootKeys = Object.keys(root);
+  const missingRoot = SIGNAL_ROOT_KEYS.filter((key) => !rootKeys.includes(key));
+  const extraRoot = rootKeys.filter((key) => !SIGNAL_ROOT_KEYS.includes(key));
+  if (missingRoot.length) failures.push(`${SIGNAL_ROOT} missing root fields: ${missingRoot.join(",")}`);
+  if (extraRoot.length) failures.push(`${SIGNAL_ROOT} extra root fields: ${extraRoot.join(",")}`);
+  for (const key of ["signal_object_version", "derivation_mode", "source_boundary"]) if (typeof root[key] !== "string") failures.push(`${SIGNAL_ROOT}.${key} must be string`);
+  for (const key of ["full_clause_text_copied", "legal_advice_generated", "compliance_conclusion_generated", "enforceability_conclusion_generated"]) if (root[key] !== false) failures.push(`${SIGNAL_ROOT}.${key} must be false`);
   const expectedBranches = Object.keys(SIGNAL_SHAPES);
   for (const branch of expectedBranches) {
     const value = root[branch];
@@ -60,12 +72,25 @@ function validateSignalShape(artifact, failures) {
     if (missing.length) failures.push(`${SIGNAL_ROOT}.${branch} missing fields: ${missing.join(",")}`);
     if (extra.length) failures.push(`${SIGNAL_ROOT}.${branch} extra fields: ${extra.join(",")}`);
     for (const field of SIGNAL_SHAPES[branch]) {
-      if (field === "locator_refs") { if (!Array.isArray(value[field])) failures.push(`${SIGNAL_ROOT}.${branch}.locator_refs must be array`); }
+      if (SIGNAL_ARRAY_FIELDS.has(field)) { if (!Array.isArray(value[field])) failures.push(`${SIGNAL_ROOT}.${branch}.${field} must be array`); }
+      else if (SIGNAL_OBJECT_FIELDS.has(field)) { if (!value[field] || typeof value[field] !== "object" || Array.isArray(value[field])) failures.push(`${SIGNAL_ROOT}.${branch}.${field} must be object`); }
       else if (typeof value[field] !== "string") failures.push(`${SIGNAL_ROOT}.${branch}.${field} must be string`);
     }
   }
-  const extras = Object.keys(root).filter((key) => !expectedBranches.includes(key));
-  if (extras.length) failures.push(`${SIGNAL_ROOT} extra branches: ${extras.join(",")}`);
+  if (!Array.isArray(root.question_rows) || root.question_rows.length !== 3) failures.push(`${SIGNAL_ROOT}.question_rows must contain exactly 3 rows`);
+  for (const questionId of SIGNAL_QUESTION_IDS) {
+    if (!asArray(root.question_rows).some((row) => row?.question_id === questionId)) failures.push(`${SIGNAL_ROOT}.question_rows missing ${questionId}`);
+    if (!root.question_index || typeof root.question_index !== "object" || Array.isArray(root.question_index) || !root.question_index[questionId]) failures.push(`${SIGNAL_ROOT}.question_index missing ${questionId}`);
+  }
+  if (!root.coverage_summary || typeof root.coverage_summary !== "object" || Array.isArray(root.coverage_summary)) failures.push(`${SIGNAL_ROOT}.coverage_summary must be object`);
+  if (root.coverage_summary?.required_question_count !== 3) failures.push(`${SIGNAL_ROOT}.coverage_summary.required_question_count must be 3`);
+  if (typeof root.coverage_summary?.derived_question_count !== "number") failures.push(`${SIGNAL_ROOT}.coverage_summary.derived_question_count must be number`);
+  if (!root.downstream_rules || typeof root.downstream_rules !== "object" || Array.isArray(root.downstream_rules)) failures.push(`${SIGNAL_ROOT}.downstream_rules must be object`);
+  if (root.downstream_rules?.qualified_review_legal_signals_true_derived_object !== true) failures.push(`${SIGNAL_ROOT}.downstream_rules.qualified_review_legal_signals_true_derived_object must be true`);
+  if (root.downstream_rules?.full_clause_text_copied !== false) failures.push(`${SIGNAL_ROOT}.downstream_rules.full_clause_text_copied must be false`);
+  if (root.downstream_rules?.legal_advice_generated !== false) failures.push(`${SIGNAL_ROOT}.downstream_rules.legal_advice_generated must be false`);
+  if (root.downstream_rules?.compliance_conclusion_generated !== false) failures.push(`${SIGNAL_ROOT}.downstream_rules.compliance_conclusion_generated must be false`);
+  if (root.downstream_rules?.enforceability_conclusion_generated !== false) failures.push(`${SIGNAL_ROOT}.downstream_rules.enforceability_conclusion_generated must be false`);
 }
 function validateCoverageRows(artifact, failures) { for (const row of asArray(artifact.document_coverage_index)) { validateCommonNormalizedRow(row, failures, "document_coverage_index"); if (!row.source_corpus_status) failures.push("document_coverage_index row missing source_corpus_status"); } }
 function validateLinkedRows(artifact, failures) { for (const row of asArray(artifact.incorporated_linked_document_map)) { validateStatus(row, failures, "incorporated_linked_document_map"); validateSourceCorpusStatus(row, failures, "incorporated_linked_document_map"); if ("artifact_class" in row) validateArtifactClass(row, failures, "incorporated_linked_document_map"); rejectForbiddenExactStatus(row, failures, "incorporated_linked_document_map"); } }
