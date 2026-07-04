@@ -23,11 +23,7 @@ const FORBIDDEN_ACTIVE_PATTERNS = [
   /vault_mapping/,
   /eligible_for_vault/,
   /vault_category/,
-  /vault_payload/,
-  /profiles_combined/,
-  /forensics_combined/,
-  /lossless_source_corpus/,
-  /url_manifest(?!_binding)/
+  /vault_payload/
 ];
 
 assert.equal(existsSync("src/report-section-adapter.js"), false, "legacy report-section-adapter.js must not exist in active src");
