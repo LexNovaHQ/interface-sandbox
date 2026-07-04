@@ -14,9 +14,11 @@ Pass 5 rule: artifact save/read/lock logic is runtime-owned in `src/runtime/serv
 
 Pass 6 rule: runtime auth, request schemas, and run-id utilities are now runtime-owned. Runtime app/routes/services should not import old `auth.js`, `schemas.js`, or `run-id.js`.
 
+Pass 7 rule: runtime pipeline and artifact-permission contracts are now present. `internal-job.contract.js` uses runtime `pipeline.contract.js`; `artifacts.service.js` uses runtime `artifact-permissions.contract.js`.
+
 ## Runtime boundary
 
-`src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, async runner, central pipeline dispatcher, artifact service, auth, runtime request schemas, run-id utilities, and contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
+`src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, async runner, central pipeline dispatcher, artifact service, auth, runtime request schemas, run-id utilities, pipeline contracts, artifact-permission contracts, and central phase contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
 
 ## Central phase rule
 
@@ -29,13 +31,15 @@ Central phases are named by product substance, not by legacy micro-phase labels.
 - `src/runtime/config.js` is a working config copy. It reads environment variables only.
 - `src/runtime/auth.js` owns central runtime API-key auth.
 - `src/runtime/contracts/schemas.contract.js` owns central runtime request validation.
+- `src/runtime/contracts/pipeline.contract.js` owns central runtime pipeline contracts and replaces old `phase-contracts.js` inside runtime.
+- `src/runtime/contracts/artifact-permissions.contract.js` owns runtime artifact identity, read/write permissions, dynamic artifact patterns, and internal-job write gates.
 - `src/runtime/utils/run-id.js` owns central runtime run-id creation/validation/time helpers.
 - `src/runtime/services/provider.service.js` owns Gemini provider logic for the central tree.
 - `src/runtime/services/prompts.service.js` owns prompt/package/reference loading for the central tree.
 - `src/runtime/services/storage/*` owns Google client, Drive, Firestore, and Sheets logic for the central tree.
 - `src/runtime/services/async.service.js` owns queueing, worker lifecycle, stale handling, retry scheduling, and Cloud Tasks dispatch.
 - `src/runtime/services/pipeline.service.js` owns central phase dispatch and no longer imports the old normalized/legacy runner files.
-- `src/runtime/services/artifacts.service.js` owns artifact save/read/lock logic and no longer imports the old artifact service.
+- `src/runtime/services/artifacts.service.js` owns artifact save/read/lock logic and no longer imports the old artifact service, old permissions, or old constants.
 - Gemini provider keys must never be committed. `GEMINI_API_KEYS` stays in Cloud Run/env/secret config.
 
 ## Target folders
@@ -60,6 +64,11 @@ src/runtime/
       firestore.service.js
       sheets.service.js
   contracts/
+    artifact-permissions.contract.js
+    central-phase.contract.js
+    http.contract.js
+    internal-job.contract.js
+    pipeline.contract.js
     schemas.contract.js
   utils/
     run-id.js
@@ -67,7 +76,7 @@ src/runtime/
 
 ## Remaining bridges
 
-The central runtime still uses existing permissions, constants, and specialist phase helper/orchestrator modules until those are migrated in later passes.
+The central runtime still uses specialist phase helper/orchestrator modules until those are migrated under `src/phases/`. `pipeline.service.js` still has one compatibility import from old `constants.js` for `artifactMatchesPermission`; that should be removed in the next cleanup pass with a full-file replacement or when the phase helper extraction begins.
 
 ## Non-negotiable boundaries
 
