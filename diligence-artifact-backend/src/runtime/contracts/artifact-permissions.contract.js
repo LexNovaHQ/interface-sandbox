@@ -6,6 +6,7 @@ const ART = Object.freeze({
   legalSemanticProfile: "legal_cartography_semantic_profile",
   legalReinvestigationWorkpad: "legal_cartography_reinvestigation_workpad",
   legalIndex: "legal_cartography_index",
+  legalSignalDerivationProfile: "legal_signal_derivation_profile",
   targetLegalSignalOverlay: "m7_deterministic_legal_signal_overlay",
   dataSelectedLegalSupport: "m10_selected_legal_support_packet",
   targetProfile: "target_profile",
@@ -86,6 +87,7 @@ export const AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES = Object.freeze([...AGENT_
 export const AGENT_1B_ARTIFACT_NAMES = AGENT_1B_REQUIRED_ARTIFACT_NAMES;
 export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_REQUIRED_ARTIFACT_NAMES]);
 
+export const LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAMES = Object.freeze([ART.legalSignalDerivationProfile]);
 export const M7_DETERMINISTIC_LEGAL_SIGNAL_ARTIFACT_NAMES = Object.freeze([ART.targetLegalSignalOverlay]);
 export const M10_SELECTED_LEGAL_SUPPORT_ARTIFACT_NAMES = Object.freeze([ART.dataSelectedLegalSupport]);
 export const FEATURE_CANDIDATE_INVENTORY_ARTIFACT_NAMES = Object.freeze([ART.activityInventory]);
@@ -106,9 +108,9 @@ export const DILIGENCE_QA_ARTIFACT_NAMES = Object.freeze([ART.diligenceQaComplet
 export const ARCHIVED_LEGACY_ARTIFACT_NAMES = Object.freeze([ART.archivedUrlManifest, ART.archivedLosslessSourceCorpus, ART.archivedExposureProfile, ART.archivedProfilesCombined, ART.archivedForensicsCombined]);
 export const LEGACY_ARTIFACT_NAMES = ARCHIVED_LEGACY_ARTIFACT_NAMES;
 
-export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze(["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ART.extendedDataReadiness, ART.integratedDataReport, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES]);
+export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze(["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ART.extendedDataReadiness, ART.integratedDataReport, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES]);
 
-export const ARTIFACT_NAMES = Object.freeze([...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES, ART.sourceHandoff, ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ...EXTENDED_DAP_ARTIFACT_NAMES, ...INTEGRATED_DAP_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES, ART.rendererPayload]);
+export const ARTIFACT_NAMES = Object.freeze([...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES, ART.sourceHandoff, ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ...EXTENDED_DAP_ARTIFACT_NAMES, ...INTEGRATED_DAP_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES, ART.rendererPayload]);
 
 export const AGENTS = Object.freeze([...Object.values(AGENT_IDS)]);
 
@@ -116,7 +118,7 @@ export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceUrlManifest]: AGENT_1A_ARTIFACT_NAMES,
   [AGENT_IDS.sourceExtractor]: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES,
   [AGENT_IDS.sourceDiscovery]: [ART.sourceHandoff],
-  [AGENT_IDS.legalCartography]: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport],
+  [AGENT_IDS.legalCartography]: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.legalSignalDerivationProfile],
   [AGENT_IDS.targetActivity]: [ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics],
   [AGENT_IDS.dataProvenance]: [ART.dataProfile, ART.dataForensics],
   [AGENT_IDS.exposureRegistry]: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate],
@@ -137,14 +139,14 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceExtractor]: ["deduped_url_manifest"],
   [AGENT_IDS.sourceDiscovery]: [...AGENT_1_ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_FAMILY_ARTIFACT_NAMES],
   [AGENT_IDS.legalCartography]: ["source_family_index", ART.sourceHandoff, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
-  [AGENT_IDS.targetActivity]: ["source_family_index", ART.sourceHandoff, ART.targetLegalSignalOverlay, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
-  [AGENT_IDS.dataProvenance]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.dataSelectedLegalSupport, ART.activityProfile, ART.dataProfile, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES],
+  [AGENT_IDS.targetActivity]: ["source_family_index", ART.sourceHandoff, ART.legalSignalDerivationProfile, ART.targetLegalSignalOverlay, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...PRODUCT_ACTIVITY_FAMILY_ARTIFACT_NAMES],
+  [AGENT_IDS.dataProvenance]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.dataSelectedLegalSupport, ART.activityProfile, ART.dataProfile, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES],
   [AGENT_IDS.exposureRegistry]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate],
   [AGENT_IDS.operatorChallenge]: ["source_family_index", ART.sourceHandoff, ART.legalIndex, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
   [AGENT_IDS.documentSourceIngestor]: [],
   [AGENT_IDS.extendedDataReadiness]: [ART.sourceHandoff, ART.legalIndex, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES],
   [AGENT_IDS.integratedDataReport]: [ART.dataProfile, ART.dataForensics, ART.extendedDataReadiness],
-  [AGENT_IDS.compiler]: [ART.sourceHandoff, ART.legalIndex, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ART.extendedDataReadiness, ART.integratedDataReport, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate, ART.finalOutputHandoff],
+  [AGENT_IDS.compiler]: [ART.sourceHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics, ART.extendedDataReadiness, ART.integratedDataReport, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate, ART.finalOutputHandoff],
   [AGENT_IDS.qualifiedReview]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
   [AGENT_IDS.diligenceQaGate]: [ART.rendererPayload, ART.qualifiedReviewRendererPayload, ART.qualifiedReviewValidationManifest],
   [AGENT_IDS.assemblyEngine]: [ART.qualifiedReviewSubmission],
@@ -156,7 +158,7 @@ export const INTERNAL_JOB_WRITE_PERMISSIONS = Object.freeze({
   AGENT_1A_URL_MANIFEST: AGENT_1A_ARTIFACT_NAMES,
   AGENT_1B_EXTRACT: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES,
   M6_BUCKET_INDEX: [ART.sourceHandoff],
-  M9: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.targetLegalSignalOverlay, ART.dataSelectedLegalSupport],
+  M9: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.legalSignalDerivationProfile],
   M7_TARGET_PROFILE: [ART.targetProfile],
   M7_TARGET_PROFILE_FORENSICS: [ART.targetForensics],
   M8_FEATURE_CANDIDATE_INVENTORY: [ART.activityInventory],
@@ -227,7 +229,9 @@ export const ARTIFACT_PERMISSION_CONTRACT_STATUS = Object.freeze({
   central_runtime_contract: "artifact-permissions.contract",
   old_constants_dependency_removed_from_runtime: true,
   old_permissions_dependency_removed_from_runtime: true,
-  compatibility_internal_job_ids_retained: true
+  compatibility_internal_job_ids_retained: true,
+  legal_signal_derivation_profile_m9_owned: true,
+  m9_no_longer_writes_m7_or_m10_support_artifacts: true
 });
 
 function escapeRegExp(value) {
