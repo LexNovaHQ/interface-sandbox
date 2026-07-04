@@ -1,8 +1,12 @@
 {
-  "overall_status": "SYNCED_FOR_MINIMAL_M9_SEMANTIC_NAVIGATION_TEST",
+  "overall_status": "SYNCED_FOR_PHASE2_JOB_SPLIT_CONTRACT_LOCK",
   "backend_phase": "M9",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "M9_ONLY",
+  "phase_2_internal_jobs": [
+    "LEGAL_CARTOGRAPHY_INDEX",
+    "LEGAL_SIGNAL_DERIVATION"
+  ],
   "input_protocol_preserved": true,
   "read_artifacts_preserved": [
     "source_discovery_handoff",
@@ -13,41 +17,52 @@
     "lossless_family__L5_LEGAL_HUB_HOSTED",
     "lossless_family__L6_ENTITY_NOTICE"
   ],
-  "hybrid_write_artifacts_in_order": [
+  "write_artifacts_in_order": [
     "legal_cartography_deterministic_map",
     "legal_cartography_semantic_profile",
-    "legal_cartography_index"
+    "legal_cartography_index",
+    "legal_signal_derivation_profile"
   ],
-  "final_downstream_required_artifact": "legal_cartography_index",
+  "final_downstream_required_artifacts": [
+    "legal_cartography_index",
+    "legal_signal_derivation_profile"
+  ],
   "field_registry_reference": "M9_FIELD_DERIVATION_REGISTRY.yaml",
+  "legal_signal_derivation_contract": "M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md",
   "canonical_package_is_semantic_authority": true,
   "sidecar_semantic_prompt_removed_from_active_package": true,
-  "deterministic_layer_updated": true,
-  "semantic_label_queue_added": true,
   "semantic_output_contract": "semantic_navigation_index_only",
-  "semantic_navigation_index_fields": ["queue_id", "unit_id", "subcats", "control_families", "confidence"],
+  "semantic_navigation_index_fields": [
+    "queue_id",
+    "unit_id",
+    "subcats",
+    "control_families",
+    "confidence"
+  ],
   "semantic_coverage_source": "legal_cartography_deterministic_map.semantic_label_queue",
-  "semantic_required_priorities": ["P0", "P1"],
+  "semantic_required_priorities": [
+    "P0",
+    "P1"
+  ],
   "semantic_required_coverage_threshold": 0.8,
-  "semantic_validator_uses_queue_id_coverage": true,
-  "semantic_validator_rejects_removed_bloated_arrays": true,
-  "final_compiler_reads_semantic_navigation_index": true,
-  "final_compiler_carries_semantic_coverage_summary": true,
+  "job_b_deterministic_only": true,
+  "job_b_required_field_count": 21,
+  "review_question_shapes_allowed_in_m9": false,
+  "m7_m10_integration_deferred": true,
   "final_shape_preserved": [
     "document_coverage_index",
     "document_structure_index",
     "incorporated_linked_document_map",
     "control_language_locator",
+    "semantic_navigation_index",
+    "priority_semantic_locator",
+    "legal_notice_locator",
+    "dispute_resolution_locator",
+    "governing_law_venue_locator",
+    "contact_grievance_locator",
     "missing_limited_legal_governance_items",
     "downstream_rules",
     "lock_status"
-  ],
-  "active_backend_components": [
-    "src/m9-deterministic-map.js",
-    "src/m9-semantic-profile-validator.js",
-    "src/m9-hybrid-compiler.js",
-    "src/m9-hybrid-orchestrator.js",
-    "src/reviewer-runner.js"
   ],
   "current_pipeline_behavior_changed_when_flag_false": false
 }
