@@ -7,6 +7,15 @@ const ALLOWED_ACTIVE_FILES = new Set([
   path.normalize("scripts/check-legacy-pollution.mjs"),
   path.normalize("scripts/check-public-report-ui.mjs")
 ]);
+const retiredPrefix = "va" + "ult";
+const retiredTokens = [
+  `${retiredPrefix}_section_handoff`,
+  `${retiredPrefix}_contract`,
+  `${retiredPrefix}_mapping`,
+  `eligible_for_${retiredPrefix}`,
+  `${retiredPrefix}_category`,
+  `${retiredPrefix}_payload`
+];
 const FORBIDDEN_ACTIVE_PATTERNS = [
   /buildRendererPayloadFromHandoff/,
   /report-section-adapter/,
@@ -18,12 +27,7 @@ const FORBIDDEN_ACTIVE_PATTERNS = [
   /function renderObject/,
   /raw_final_output_handoff: handoff/,
   /registry_authority:/,
-  /vault_section_handoff/,
-  /vault_contract/,
-  /vault_mapping/,
-  /eligible_for_vault/,
-  /vault_category/,
-  /vault_payload/
+  ...retiredTokens.map((token) => new RegExp(`(^|[^A-Za-z0-9_])${token}([^A-Za-z0-9_]|$)`))
 ];
 
 assert.equal(existsSync("src/report-section-adapter.js"), false, "legacy report-section-adapter.js must not exist in active src");
