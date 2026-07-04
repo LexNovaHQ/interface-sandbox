@@ -40,14 +40,20 @@ export function validateQualifiedReviewQuestionHandoff(handoff = {}) {
     if (!Array.isArray(question.evidence_source_mapping)) errors.push(`${expectedId}:evidence_source_mapping_missing`);
     if (!question.qualified_review_push_policy?.push_to_qualified_review_on_click) errors.push(`${expectedId}:push_policy_missing`);
     if (!question.suggested_answer) errors.push(`${expectedId}:final_prefill_missing`);
+    if (!["FULL", "PARTIAL", "DEMO"].includes(question.prefill_strength)) errors.push(`${expectedId}:bad_prefill_strength:${question.prefill_strength}`);
 
     if (PRIVATE_IDS.has(question.question_id)) {
       if (question.prefill_source !== "private_demo_assumption") errors.push(`${expectedId}:private_row_bad_prefill_source`);
       if (question.normalized_section_value_found !== false) errors.push(`${expectedId}:private_row_must_not_claim_normalized_value`);
+      if (question.demo_disclaimer_required !== true) errors.push(`${expectedId}:private_row_demo_disclaimer_required`);
+      if (!question.suggested_answer) errors.push(`${expectedId}:private_row_suggested_answer_missing`);
     } else if (question.prefill_source === "diligence_normalized_section") {
-      if (!question.normalized_section_value_found) errors.push(`${expectedId}:diligence_prefill_without_normalized_value`);
+      if (question.normalized_section_value_found !== true) errors.push(`${expectedId}:diligence_prefill_without_normalized_value`);
+      if (question.evidence_mode !== "normalized_section_field") errors.push(`${expectedId}:diligence_bad_evidence_mode`);
     } else if (question.prefill_source === "market_norm_demo") {
       if (question.demo_disclaimer_required !== true) errors.push(`${expectedId}:demo_disclaimer_required`);
+      if (!question.suggested_answer) errors.push(`${expectedId}:demo_suggested_answer_missing`);
+      if (question.evidence_mode !== "demo_not_evidence") errors.push(`${expectedId}:demo_bad_evidence_mode`);
       warnings.push(`${expectedId}:demo_fallback_used`);
     } else {
       errors.push(`${expectedId}:bad_prefill_source:${question.prefill_source}`);

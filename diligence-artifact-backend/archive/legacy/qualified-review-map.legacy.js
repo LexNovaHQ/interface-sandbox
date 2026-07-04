@@ -1,3 +1,8 @@
+// LEGACY ARCHIVE ONLY.
+// Retired by QR matrix compiler.
+// Runtime QR source of truth is src/qualified-review-system/matrix/qualified-review-matrix.yml.
+// Do not import this file from runtime code.
+
 // Qualified Review canonical map derived from the locked 79Q reverse-engineering matrix.
 // Field-driven prefill model: answer_prefill_mapping is separate from evidence_source_mapping.
 // Do not add, remove, reorder, or rename rows without updating QUALIFIED_REVIEW_LOCKED_COUNTS.

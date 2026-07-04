@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { buildQualifiedReviewSystemArtifacts } from "../src/qualified-review-system/branch.js";
 import { NORMALIZED_SECTION_KEYS } from "../src/normalized-profiler.js";
+
+const EXPECTED_QR_ARTIFACT_KEYS = [
+  "qr_artifact__entity_commercial",
+  "qr_artifact__technology_infrastructure",
+  "qr_artifact__ai_capability_product_behavior",
+  "qr_artifact__dap_privacy_india_cyber"
+];
+const LEGACY_MAP_FILE = "qualified-review" + "-map.js";
 
 const run = { run_id: "TEST-QR-MATRIX", target: "Example", root_url: "https://example.com", status: "COMPLETE" };
 const normalized_report_manifest = { run_id: run.run_id, target: run.target, target_url: run.root_url, validation_status: "LOCKED", section_order: NORMALIZED_SECTION_KEYS };
@@ -20,9 +29,21 @@ const questions = handoff.question_handoff.questions;
 assert.equal(handoff.question_handoff_validation.status, "PASS");
 assert.equal(questions.length, 79);
 assert.equal(handoff.section_pages.length, 4);
-assert.equal(Object.keys(handoff.qr_artifacts).length, 4);
+assert.deepEqual(Object.keys(handoff.qr_artifacts).sort(), EXPECTED_QR_ARTIFACT_KEYS.slice().sort());
 assert.equal(questions.every((q) => q.suggested_answer), true);
 assert.equal(questions.filter((q) => q.prefill_source === "private_demo_assumption").length, 5);
+assert.equal(questions.some((q) => q.prefill_source === "backend_artifact"), false);
+assert.equal(questions.some((q) => q.prefill_source === "reviewer_input"), false);
+assert.equal(questions.some((q) => q.source_table_default_status === "Need to fill"), false);
 assert.equal(renderer.questions.length, 79);
 assert.equal(renderer.question_sections.length, 4);
+assert.equal(renderer.render_contract.matrix_source, "qualified-review-matrix.yml");
+
+for (const question of questions) {
+  assert.notEqual(question.source_dependency, LEGACY_MAP_FILE);
+}
+
+const compilerSource = readFileSync(new URL("../src/qualified-review-system/matrix-artifact-compiler.js", import.meta.url), "utf8");
+assert.equal(compilerSource.includes(LEGACY_MAP_FILE), false);
+
 console.log("qualified review matrix compiler: PASS");

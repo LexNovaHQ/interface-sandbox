@@ -1,4 +1,4 @@
-export const QUALIFIED_REVIEW_RENDERER_VERSION = "qualified_review_renderer_locked_matrix_v2";
+export const QUALIFIED_REVIEW_RENDERER_VERSION = "qualified_review_renderer_matrix_artifacts_v1";
 
 export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review_handoff = {} } = {}) {
   const questionHandoff = qualified_review_handoff.question_handoff || {};
@@ -19,10 +19,12 @@ export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review
     question_count: questions.length,
     section_count: sectionPages.length,
     bridge_contract: bridge,
+    qr_artifacts: qualified_review_handoff.qr_artifacts || {},
+    matrix_manifest: qualified_review_handoff.qualified_review_matrix_manifest || {},
     render_contract: {
       read_artifact: "qualified_review_renderer_payload",
       handoff_artifact: "qualified_review_handoff",
-      matrix_source: "qualified-review-map.js",
+      matrix_source: "qualified-review-matrix.yml",
       section_wizard: true,
       editable_answers: true,
       final_review_gate: true,
@@ -51,10 +53,14 @@ export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review
 }
 
 function buildSummaryCounts({ questions, bridge }) {
+  const prefill = bridge.prefill_contract || {};
   return {
     total_questions: questions.length,
-    backend_artifact_rows: questions.filter((question) => question.prefill_source === "backend_artifact").length,
-    market_norm_demo_rows: questions.filter((question) => question.prefill_source === "market_norm_demo").length,
+    diligence_normalized_section_rows: prefill.diligence_normalized_section_rows ?? questions.filter((question) => question.prefill_source === "diligence_normalized_section").length,
+    backend_artifact_rows: prefill.diligence_normalized_section_rows ?? questions.filter((question) => question.prefill_source === "diligence_normalized_section").length,
+    market_norm_demo_rows: prefill.market_norm_demo_rows ?? questions.filter((question) => question.prefill_source === "market_norm_demo").length,
+    private_demo_assumption_rows: prefill.private_demo_assumption_rows ?? questions.filter((question) => question.prefill_source === "private_demo_assumption").length,
+    all_questions_prefilled: prefill.all_questions_prefilled ?? questions.every((question) => Boolean(question.suggested_answer)),
     vault_payload_rows: bridge.vault_payload_contract?.row_count ?? questions.filter((question) => question.writes_to_vault_payload === true).length,
     india_privacy_cyber_rows: bridge.india_contract?.row_count ?? questions.filter((question) => question.writes_to_india_privacy_cyber === true).length
   };
@@ -68,8 +74,10 @@ function buildQuestionSections({ sectionPages, questions }) {
       section_id: page.section_id,
       section_title: page.section_title || page.title || page.section_id,
       question_count: rows.length,
-      backend_artifact_rows: rows.filter((question) => question.prefill_source === "backend_artifact").length,
+      diligence_normalized_section_rows: rows.filter((question) => question.prefill_source === "diligence_normalized_section").length,
+      backend_artifact_rows: rows.filter((question) => question.prefill_source === "diligence_normalized_section").length,
       market_norm_demo_rows: rows.filter((question) => question.prefill_source === "market_norm_demo").length,
+      private_demo_assumption_rows: rows.filter((question) => question.prefill_source === "private_demo_assumption").length,
       questions: rows
     };
   });
