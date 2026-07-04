@@ -3,11 +3,11 @@ import { getRunRecord, updateRunRecord, logEvent } from "./storage/firestore.ser
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { getInternalJobContract, normalizeInternalJobId } from "../contracts/internal-job.contract.js";
 import { centralPhaseStatusForInternalJob } from "../contracts/central-phase.contract.js";
+import { artifactMatchesPermission } from "../contracts/artifact-permissions.contract.js";
 import { saveRuntimeArtifact as saveArtifact, readRuntimeArtifactPayload as readArtifactPayload, lockRuntimePhase as lockPhase } from "./artifacts.service.js";
 import { buildPhasePrompt } from "./prompts.service.js";
 import { callProviderJson } from "./provider.service.js";
-import { buildAgent1aDedupedUrlManifest, buildAgent1bExtractArtifacts } from "../../agent-1-scout-extractor.js";
-import { buildM6SourceDiscoveryHandoff as buildSourceDiscoveryHandoff } from "../../m6-bucket-router.js";
+import { runSourceUrlManifestJob as runSourceUrlManifestPhaseJob, runSourceExtractionJob as runSourceExtractionPhaseJob, runSourceFamilyHandoffJob as runSourceFamilyHandoffPhaseJob } from "../../phases/01-source-discovery/source-discovery.runner.js";
 import { validateM9LegalCartographyIndex as validateLegalCartographyIndex } from "../../m9-validator.js";
 import { validateM7TargetProfileOutput as validateTargetProfileOutput } from "../../m7-validator.js";
 import { validateM8TargetFeatureOutput as validateActivityProfileOutput } from "../../m8-validator.js";
@@ -22,7 +22,6 @@ import { buildM10SelectedLegalSupportPacket as buildDataSelectedLegalSupportPack
 import { runAgent4bExtendedDapPhase as runExtendedDataReadinessJob } from "../../agent4b-phase-runner.js";
 import { runAgent4cIntegratedDapReportPhase as runIntegratedDataReportJob } from "../../agent4c-runner.js";
 import { buildFeatureCandidateInventoryIndex as buildActivityCandidateInventoryIndex, validateFeatureCandidateInventoryIndex as validateActivityCandidateInventoryIndex } from "../../m8-feature-candidate-inventory-index.js";
-import { artifactMatchesPermission } from "../../constants.js";
 
 const MODEL_LOCK_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const CONTROLLED_MARKERS = Object.freeze(["FIELD_LIMITED", "FIELD_NOT_PUBLIC", "FIELD_CONFLICTED", "FIELD_NOT_FOUND", "LIMITATION", "LIMITED", "WARNING", "NOT_PUBLIC", "NOT_FOUND", "CONFLICT", "ABSENT", "MISSING", "THIN", "WEAK", "UNKNOWN_NOT_SEARCHED", "NOT_EVIDENCED", "SOURCE_REJECTED", "ACCESS_FAILED", "GATED", "INSUFFICIENT_PUBLIC_MATERIAL", "STANDALONE_SOURCE_ABSENT", "REINVESTIGATION", "TARGETED_RE_EXTRACTION", "OMISSION", "CONTROLLED"]);
@@ -86,6 +85,7 @@ export const PIPELINE_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "pipeline.service",
   migration_status: "runtime_owned_central_phase_pipeline",
   old_runner_bridge_removed: true,
+  source_discovery_phase_runner_wired: true,
   central_phase_language: true,
   compatibility_internal_job_ids_retained: true
 });
@@ -183,23 +183,23 @@ function actorForContract(contract = {}) {
 }
 
 async function runSourceUrlManifestJob({ run, persistencePhase, contract, central }) {
-  const output = await buildAgent1aDedupedUrlManifest({ run });
-  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output, central });
+  const result = await runSourceUrlManifestPhaseJob({ run });
+  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output: result.output, central });
   await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central });
 }
 
 async function runSourceExtractionJob({ run, persistencePhase, contract, central }) {
   const dedupedManifest = await readArtifactPayload({ run_id: run.run_id, artifact_name: "deduped_url_manifest", agent_id: contract.actor_id });
-  const output = await buildAgent1bExtractArtifacts({ run, deduped_url_manifest: dedupedManifest });
-  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output, central });
+  const result = await runSourceExtractionPhaseJob({ run, artifacts: { deduped_url_manifest: dedupedManifest } });
+  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output: result.output, central });
   await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central });
 }
 
 async function runSourceDiscoveryHandoffJob({ run, persistencePhase, contract, central }) {
   const artifacts = await readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads, agent_id: contract.actor_id });
-  const output = buildSourceDiscoveryHandoff({ run, artifacts });
-  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output, central });
-  await lockCentralPhase({ run, persistencePhase, contract, status: output.source_discovery_handoff?.status || "LOCKED", nextPhase: contract.next, central });
+  const result = await runSourceFamilyHandoffPhaseJob({ run, artifacts });
+  await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output: result.output, central });
+  await lockCentralPhase({ run, persistencePhase, contract, status: result.output.source_discovery_handoff?.status || "LOCKED", nextPhase: contract.next, central });
 }
 
 async function runActivityCandidateInventoryJob({ run, persistencePhase, internalJobId, contract, central }) {
