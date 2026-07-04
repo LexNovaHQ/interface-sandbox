@@ -1,0 +1,188 @@
+const BUCKETS = Object.freeze({
+  target_profile_urls: ["T0_ROOT", "T1_IDENTITY", "T2_LEGAL_IDENTITY", "T3_OPERATOR_ENTITY", "T4_SUPPORTING_IDENTITY"],
+  product_activity_profile_urls: ["P1_PRODUCT", "P2_PLATFORM_FEATURE_SOLUTION", "P3_AI_CAPABILITY_TECHNICAL", "P4_USE_CASE_INDUSTRY", "P5_ENTERPRISE_PRICING"],
+  data_asset_provenance_profile_urls: ["D1_SECURITY_TRUST", "D2_SUBPROCESSOR_PRIVACY_CENTER", "D3_DATA_GOVERNANCE_CONTROLS", "D4_DOCS_API_DATA_FLOW", "D5_AI_SAFETY_TRANSPARENCY"],
+  legal_governance_profile_urls: ["L1_CORE_TERMS_PRIVACY", "L2_B2B_CONTRACTING", "L3_AI_USAGE_GOVERNANCE", "L4_PRIVACY_ADJACENT_NOTICES", "L5_LEGAL_HUB_HOSTED", "L6_ENTITY_NOTICE"]
+});
+
+const LEGAL = BUCKETS.legal_governance_profile_urls;
+const TARGET = BUCKETS.target_profile_urls;
+const PRODUCT = BUCKETS.product_activity_profile_urls;
+const DATA_PRIVACY = [...BUCKETS.data_asset_provenance_profile_urls, "L1_CORE_TERMS_PRIVACY", "L2_B2B_CONTRACTING", "L4_PRIVACY_ADJACENT_NOTICES"];
+
+export function buildSourceFamilyHandoffArtifact({ run, artifacts }) {
+  const manifest = artifacts?.deduped_url_manifest;
+  const sourceIndex = artifacts?.source_family_index;
+  if (!manifest?.manifest_sources?.length) throw new Error("SOURCE_FAMILY_HANDOFF_BLOCKED:deduped_url_manifest_missing_or_empty");
+  if (!sourceIndex?.discovered_source_index) throw new Error("SOURCE_FAMILY_HANDOFF_BLOCKED:source_family_index_missing_or_invalid");
+
+  const bucketFamilyIndex = Object.fromEntries(
+    Object.entries(BUCKETS).map(([bucket, families]) => [
+      bucket,
+      { families: Object.fromEntries(families.map((family) => [family, familyEntry(family, artifacts, manifest, sourceIndex)])) }
+    ])
+  );
+
+  return {
+    source_discovery_handoff: {
+      run_id: run.run_id,
+      target_url: manifest.target_url || run.root_url || run.target,
+      generated_by: "source_discovery_family_handoff",
+      schema_version: "SOURCE_DISCOVERY_BUCKET_FAMILY_INDEX_v3_SPARSE_SHARD_AWARE",
+      legacy_schema_version: "M6_BUCKET_FAMILY_INDEX_v3_SPARSE_SHARD_AWARE",
+      status: hasPrimary(bucketFamilyIndex) ? "LOCKED" : "LOCKED_WITH_LIMITATIONS",
+      contract: {
+        formal_output: "source_discovery_handoff",
+        purpose: "Index Source Discovery sparse family files by bucket/family and define downstream access.",
+        source_discovery_prevails: true,
+        legacy_agent_1_prevails: true,
+        no_new_urls: true,
+        no_new_extraction: true,
+        no_full_text: true,
+        no_separate_bucket_artifacts: true,
+        sparse_family_artifacts: true,
+        sharded_family_integrity_rule: "A shard is a physical storage split only. All required_artifacts listed in source_family_index.family_artifact_manifest[ROOT_FAMILY] must be loaded and merged before downstream reliance.",
+        source_text_location: "resolved_lossless_family__{ROOT_FAMILY}.sources[].lossless_text"
+      },
+      bucket_family_index: bucketFamilyIndex,
+      access_matrix: accessMatrix(),
+      canonical_artifacts: {
+        self: "source_discovery_handoff",
+        manifest: "deduped_url_manifest",
+        source_index: "source_family_index",
+        family_file_pattern: "lossless_family__{ROOT_FAMILY}",
+        family_shard_pattern: "lossless_family__{ROOT_FAMILY}__part_{NNN}",
+        family_artifact_manifest: "source_family_index.family_artifact_manifest"
+      }
+    }
+  };
+}
+
+function familyEntry(family, artifacts, manifest, sourceIndex) {
+  const file = `lossless_family__${family}`;
+  const artifact = artifacts?.[file] || emptyResolvedFamily(family, sourceIndex?.family_artifact_manifest?.[family]);
+  const manifestRows = (manifest.manifest_sources || []).filter((row) => row.root_family === family);
+  const familyManifest = sourceIndex?.family_artifact_manifest?.[family] || {};
+  return {
+    file,
+    storage_status: familyManifest.status || artifact.storage_mode || (artifact.sources?.length ? "SINGLE" : "UNSAVED_EMPTY"),
+    virtual_family_file: familyManifest.virtual_artifact_name || file,
+    physical_artifacts: familyManifest.required_artifacts || [],
+    shard_count: familyManifest.shard_count || familyManifest.required_artifacts?.length || 0,
+    shard_resolution_required: Boolean((familyManifest.required_artifacts || []).length > 1),
+    complete: familyManifest.complete !== false,
+    primary: (artifact.sources || []).map((source) => primaryRef(source, file, familyManifest)),
+    index_only: indexOnlyRefs(artifact, manifestRows),
+    failed_absent: failedAbsentRefs(artifact, manifestRows)
+  };
+}
+
+function primaryRef(source, file, familyManifest) {
+  return clean({
+    source_id: source.source_id,
+    parent_source_id: source.parent_source_id,
+    source_fragment_index: source.source_fragment_index,
+    source_fragment_count: source.source_fragment_count,
+    manifest_id: source.manifest_id,
+    file,
+    physical_artifacts: familyManifest?.required_artifacts || [],
+    url: source.canonical_url || source.url || source.final_url,
+    route_type: source.route_type,
+    doc_hint: docHint(source),
+    text_field: "lossless_text"
+  });
+}
+
+function indexOnlyRefs(artifact, manifestRows) {
+  const rows = [...(artifact.manifest_only_sources || []), ...(artifact.metadata_only_sources || [])];
+  const source = rows.length ? rows : manifestRows.filter((row) => ["SECONDARY", "CONTEXT_ONLY", "METADATA_ONLY"].includes(row.admission_tier));
+  return source.map((row) => clean({
+    manifest_id: row.manifest_id,
+    url: row.canonical_url || row.fetch_url,
+    tier: row.admission_tier,
+    route_type: row.route_type,
+    reason: row.tier_reason
+  }));
+}
+
+function failedAbsentRefs(artifact, manifestRows) {
+  const failed = (artifact.rejected_sources || []).map((row) => clean({
+    source_id: row.source_id,
+    manifest_id: row.manifest_id,
+    url: row.canonical_url || row.url || row.fetch_url,
+    status: row.extraction_status || row.status || "FAILED_PRIMARY_EXTRACTION",
+    reason: row.error || row.rejection_reason
+  }));
+  const absent = (artifact.missing_limited_primary_sources || []).map((row) => clean({
+    status: row.status || "ABSENT_AFTER_TARGETED_PROBE",
+    missing: row.missing_or_limited_source,
+    attempted_paths: row.attempted_paths
+  }));
+  const rejected = manifestRows
+    .filter((row) => row.admission_tier === "REJECTED_NOT_EVIDENCE")
+    .map((row) => clean({ manifest_id: row.manifest_id, url: row.canonical_url || row.fetch_url, status: "REJECTED_NOT_EVIDENCE", reason: row.tier_reason }));
+  return [...failed, ...absent, ...rejected];
+}
+
+function accessMatrix() {
+  return {
+    global: {
+      default_load: "primary refs in allowed bucket only",
+      index_only: "metadata only",
+      cross_bucket: "exception only",
+      shard_rule: "load all physical artifacts for a family as one virtual family"
+    },
+    central_phases: {
+      LEGAL_CARTOGRAPHY_INDEX: { buckets: ["legal_governance_profile_urls"], families: LEGAL, exceptions: ["ENTITY_CONFLICT_CHECK", "LEGAL_REFERENCE_IN_TRUST_CENTER"] },
+      TARGET_PROFILE_REVIEW: { buckets: ["target_profile_urls"], families: TARGET, exceptions: ["ENTITY_CONFLICT_CHECK"] },
+      ACTIVITY_PROFILE_REVIEW: { buckets: ["product_activity_profile_urls"], families: PRODUCT, required_profiles: ["target_profile", "target_profile_forensics"], exceptions: ["PRODUCT_CLAIM_VERIFICATION"] },
+      DATA_PROVENANCE_PROFILE: { buckets: ["data_asset_provenance_profile_urls", "legal_governance_profile_urls"], families: DATA_PRIVACY, exceptions: ["DATA_FLOW_NEEDED_FOR_PRIVACY_ANALYSIS", "BROKEN_OR_THIN_PRIMARY"] },
+      EXPOSURE_PROFILE: { buckets: ["legal_governance_profile_urls"], families: LEGAL, required_profiles: ["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "registry_batch"], exceptions: ["CITATION_VERIFICATION", "VALIDATION_FAILURE"] },
+      OPERATOR_CHALLENGE: { buckets: [], families: [], required_profiles: ["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"], exceptions: ["VALIDATION_FAILURE", "CITATION_VERIFICATION"] },
+      COMPILER: { buckets: [], families: [], required_profiles: ["locked_outputs_only"] }
+    },
+    compatibility_agents: {
+      M9: { buckets: ["legal_governance_profile_urls"], families: LEGAL, exceptions: ["ENTITY_CONFLICT_CHECK", "LEGAL_REFERENCE_IN_TRUST_CENTER"] },
+      M7_TARGET_PROFILE: { buckets: ["target_profile_urls"], families: TARGET, exceptions: ["ENTITY_CONFLICT_CHECK"] },
+      M8_TARGET_FEATURE_PROFILE: { buckets: ["product_activity_profile_urls"], families: PRODUCT, required_profiles: ["target_profile", "target_profile_forensics"], exceptions: ["PRODUCT_CLAIM_VERIFICATION"] },
+      M10: { buckets: ["data_asset_provenance_profile_urls", "legal_governance_profile_urls"], families: DATA_PRIVACY, exceptions: ["DATA_FLOW_NEEDED_FOR_PRIVACY_ANALYSIS", "BROKEN_OR_THIN_PRIMARY"] },
+      M11: { buckets: ["legal_governance_profile_urls"], families: LEGAL, required_profiles: ["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "registry_batch"], exceptions: ["CITATION_VERIFICATION", "VALIDATION_FAILURE"] },
+      M12: { buckets: [], families: [], required_profiles: ["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "exposure_registry_profile"], exceptions: ["VALIDATION_FAILURE", "CITATION_VERIFICATION"] },
+      COMPILER: { buckets: [], families: [], required_profiles: ["locked_outputs_only"] }
+    }
+  };
+}
+
+function hasPrimary(index) {
+  return Object.values(index).some((bucket) => Object.values(bucket.families).some((family) => family.primary.length));
+}
+
+function emptyResolvedFamily(family, familyManifest = {}) {
+  return {
+    artifact_name: `lossless_family__${family}`,
+    root_family: family,
+    storage_mode: familyManifest.status || "UNSAVED_EMPTY",
+    sources: [],
+    manifest_only_sources: [],
+    metadata_only_sources: [],
+    rejected_sources: [],
+    missing_limited_primary_sources: []
+  };
+}
+
+function docHint(row) {
+  const value = `${row.route_type || ""} ${row.canonical_url || ""} ${row.url || ""}`.toLowerCase();
+  if (value.includes("privacy")) return "privacy_policy";
+  if (value.includes("terms")) return "terms_of_service";
+  if (value.includes("eula")) return "eula";
+  if (value.includes("dpa") || value.includes("data-processing")) return "dpa";
+  if (value.includes("aup") || value.includes("acceptable-use")) return "aup";
+  if (value.includes("sla") || value.includes("service-level")) return "sla";
+  if (value.includes("trust")) return "trust_center";
+  if (value.includes("legal-notice") || value.includes("imprint")) return "entity_notice";
+  return undefined;
+}
+
+function clean(value) {
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined && item !== null && item !== ""));
+}
