@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
-import { config } from "../config.js";
+import { config } from "./config.js";
 import { requireApiKey } from "../auth.js";
 import { healthRouter } from "./routes/health.routes.js";
 import { operatorRouter } from "./routes/operator.routes.js";
