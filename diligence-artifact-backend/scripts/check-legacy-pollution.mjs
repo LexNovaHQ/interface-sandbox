@@ -5,8 +5,7 @@ import path from "node:path";
 const ACTIVE_ROOTS = ["src", "public/interface-diligence/diligence-system", "scripts"];
 const ALLOWED_ACTIVE_FILES = new Set([
   path.normalize("scripts/check-legacy-pollution.mjs"),
-  path.normalize("scripts/check-public-report-ui.mjs"),
-  path.normalize("src/report-renderer.js")
+  path.normalize("scripts/check-public-report-ui.mjs")
 ]);
 const FORBIDDEN_ACTIVE_PATTERNS = [
   /buildRendererPayloadFromHandoff/,
@@ -18,7 +17,17 @@ const FORBIDDEN_ACTIVE_PATTERNS = [
   /function renderValue/,
   /function renderObject/,
   /raw_final_output_handoff: handoff/,
-  /registry_authority:/
+  /registry_authority:/,
+  /vault_section_handoff/,
+  /vault_contract/,
+  /vault_mapping/,
+  /eligible_for_vault/,
+  /vault_category/,
+  /vault_payload/,
+  /profiles_combined/,
+  /forensics_combined/,
+  /lossless_source_corpus/,
+  /url_manifest(?!_binding)/
 ];
 
 assert.equal(existsSync("src/report-section-adapter.js"), false, "legacy report-section-adapter.js must not exist in active src");
