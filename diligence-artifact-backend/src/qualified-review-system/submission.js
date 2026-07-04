@@ -5,9 +5,11 @@ import { nowIso } from "../run-id.js";
 export const QUALIFIED_REVIEW_SUBMISSION_ARTIFACT = "qualified_review_submission";
 export const QUALIFIED_REVIEW_SUBMISSION_PHASE = "QUALIFIED_REVIEW_SUBMISSION";
 export const QUALIFIED_REVIEW_SUBMISSION_ACTOR = "qualified_review_system";
-export const QUALIFIED_REVIEW_SUBMISSION_VERSION = "qualified_review_submission_v1";
+export const QUALIFIED_REVIEW_SUBMISSION_VERSION = "qualified_review_submission_matrix_v2";
 
 const ALLOWED_STATES = Object.freeze(["confirmed", "edited", "not_applicable"]);
+const DAP_SECTION_ID = "dap_privacy_india_cyber";
+const LEGACY_INDIA_SECTION_ID = "india_privacy_cyber";
 
 export async function saveQualifiedReviewSubmission({ run, handoff = {}, renderer_payload = {}, request_body = {} } = {}) {
   const submission = buildQualifiedReviewSubmission({ run, handoff, renderer_payload, request_body });
@@ -59,6 +61,7 @@ export function buildQualifiedReviewSubmission({ run = {}, handoff = {}, rendere
   const receivedAt = nowIso();
   const submittedBy = cleanText(request_body.submitted_by || "public_qualified_review_ui");
   const submittedByLabel = cleanText(request_body.submitted_by_label || "Public Qualified Review UI");
+  const saveReason = cleanText(request_body.save_reason || "");
   const responseIndex = indexSubmittedRows(submittedRows);
   const duplicateIds = duplicateQuestionIds(submittedRows);
   const blockingErrors = [];
@@ -81,9 +84,13 @@ export function buildQualifiedReviewSubmission({ run = {}, handoff = {}, rendere
     if (id && !questions.some((question) => question.question_id === id)) blockingErrors.push(`UNKNOWN_RESPONSE:${id}`);
   }
 
+  duplicateDestinationPaths(questionResponses).forEach((path) => blockingErrors.push(`DUPLICATE_DESTINATION_PATH:${path}`));
+
   const resolvedCount = questionResponses.filter((row) => row.resolved_for_final_gate).length;
   const finalGateStatus = questions.length === 79 && resolvedCount === questions.length && blockingErrors.length === 0 ? "PASS" : "INCOMPLETE";
   const assemblerInput = buildAssemblerInput({ finalGateStatus, questionResponses });
+  const sectionCounts = countBy(questionResponses, "section_id");
+  const prefillCounts = countBy(questionResponses, "prefill_source");
 
   return {
     artifact_type: QUALIFIED_REVIEW_SUBMISSION_ARTIFACT,
@@ -93,13 +100,19 @@ export function buildQualifiedReviewSubmission({ run = {}, handoff = {}, rendere
     target_url: run.root_url || run.target_url || handoff.target_url || renderer_payload.target_url || "Target URL not specified",
     source_handoff_ref: "qualified_review_handoff",
     source_renderer_ref: "qualified_review_renderer_payload",
+    source_matrix_manifest_ref: "qualified_review_matrix_manifest",
+    source_qr_artifacts_ref: "qr_artifacts",
     matrix_version: handoff.matrix_version || renderer_payload.matrix_version || questionHandoff.handoff_version || "",
     submitted_at: receivedAt,
     submitted_by: submittedBy,
     submitted_by_label: submittedByLabel,
+    save_reason: saveReason,
     submitted_response_count: submittedRows.length,
     emitted_question_response_count: questionResponses.length,
     expected_question_count: 79,
+    section_counts: sectionCounts,
+    prefill_source_counts: prefillCounts,
+    qr_artifact_summary: summarizeQrArtifacts(handoff.qr_artifacts),
     final_gate: {
       status: finalGateStatus,
       ready_for_assembly: finalGateStatus === "PASS",
@@ -110,15 +123,17 @@ export function buildQualifiedReviewSubmission({ run = {}, handoff = {}, rendere
     },
     validation: {
       status: finalGateStatus,
-      validator_name: "QUALIFIED_REVIEW_SUBMISSION_VALIDATOR_V1",
+      validator_name: "QUALIFIED_REVIEW_SUBMISSION_MATRIX_VALIDATOR_V2",
       blocking_errors: blockingErrors,
       warnings
     },
     question_responses: questionResponses,
     assembler_input: assemblerInput,
     boundary: {
+      internal_demo_submission: true,
       all_answers_reviewer_confirmed_or_marked_na_required: true,
       demo_prefill_is_not_evidence: true,
+      private_demo_assumption_is_not_evidence: true,
       confirmed_answer_overrides_prefill_for_assembly: true,
       assembler_must_check_final_gate_pass: true
     }
@@ -132,13 +147,15 @@ function materializeResponseRow({ question, submitted, receivedAt }) {
   const answerValue = cleanAnswer(submitted?.answer_value ?? submitted?.value ?? submitted?.reviewer_answer ?? "");
   const destinationPath = question.vault_payload_path || question.qualified_review_path || question.canonical_path || "";
   const hasSubmission = Boolean(submitted);
+  const demoLike = question.prefill_source === "market_norm_demo" || question.prefill_source === "private_demo_assumption" || question.demo_disclaimer_required === true;
+  const isDapSection = question.section_id === DAP_SECTION_ID || question.section_id === LEGACY_INDIA_SECTION_ID;
 
   if (!hasSubmission) errors.push("RESPONSE_MISSING");
   if (hasSubmission && !ALLOWED_STATES.includes(answerState)) errors.push(`INVALID_ANSWER_STATE:${answerState || "missing"}`);
   if (hasSubmission && answerState !== "not_applicable" && !hasMeaningfulAnswer(answerValue)) errors.push("ANSWER_VALUE_REQUIRED");
   if (answerState === "not_applicable" && !cleanText(submitted?.not_applicable_reason || submitted?.reason || "")) warnings.push("NOT_APPLICABLE_REASON_MISSING");
-  if (question.prefill_source === "market_norm_demo" && submitted?.demo_disclaimer_accepted !== true) warnings.push("DEMO_DISCLAIMER_NOT_EXPLICITLY_ACCEPTED");
-  if (question.section_id === "india_privacy_cyber" && question.writes_to_vault_payload === true) errors.push("INDIA_ROW_CANNOT_WRITE_TO_VAULT_PAYLOAD");
+  if (demoLike && hasSubmission && submitted?.demo_disclaimer_accepted !== true) warnings.push("DEMO_DISCLAIMER_NOT_EXPLICITLY_ACCEPTED");
+  if (isDapSection && question.writes_to_vault_payload === true) errors.push("DAP_PRIVACY_INDIA_CYBER_ROW_CANNOT_WRITE_TO_VAULT_PAYLOAD");
 
   const resolved = hasSubmission && ALLOWED_STATES.includes(answerState) && (answerState === "not_applicable" || hasMeaningfulAnswer(answerValue));
   return {
@@ -146,6 +163,7 @@ function materializeResponseRow({ question, submitted, receivedAt }) {
     question_number: question.question_number,
     section_id: question.section_id,
     section_title: question.section_title,
+    section_artifact: question.section_artifact || "",
     field_key: question.field_key,
     lawyer_question: question.lawyer_question || question.public_question_label || "",
     answer_type: question.answer_type,
@@ -156,12 +174,19 @@ function materializeResponseRow({ question, submitted, receivedAt }) {
     source_prefill_value: question.suggested_answer || question.initial_answer_value || question.demo_prefill_value || "",
     prefill_source: question.prefill_source,
     evidence_status: question.evidence_status,
+    evidence_mode: question.evidence_mode || "",
+    normalized_section_selector: question.normalized_section_selector || "",
+    normalized_selector_used: question.normalized_selector_used || "",
+    source_artifacts: Array.isArray(question.source_artifacts) ? question.source_artifacts : [],
     source_artifacts_present: Array.isArray(question.source_artifacts_present) ? question.source_artifacts_present : [],
     source_field_hints: Array.isArray(question.source_field_hints) ? question.source_field_hints : [],
     destination: question.writes_to_vault_payload ? "vault_payload" : "qualified_review",
     destination_path: destinationPath,
     vault_payload_path: question.vault_payload_path || null,
     qualified_review_path: question.qualified_review_path || null,
+    canonical_path: question.canonical_path || null,
+    writes_to_vault_payload: question.writes_to_vault_payload === true,
+    writes_to_india_privacy_cyber: question.writes_to_india_privacy_cyber === true,
     document_impact: Array.isArray(question.document_impact) ? question.document_impact : [],
     demo_disclaimer_required: question.demo_disclaimer_required === true,
     demo_disclaimer_accepted: submitted?.demo_disclaimer_accepted === true,
@@ -178,20 +203,43 @@ function buildAssemblerInput({ finalGateStatus, questionResponses }) {
     if (!row.destination_path) continue;
     routes[row.destination_path] = {
       question_id: row.question_id,
+      question_number: row.question_number,
+      section_id: row.section_id,
+      section_title: row.section_title,
+      section_artifact: row.section_artifact,
       field_key: row.field_key,
+      answer_type: row.answer_type,
       answer_state: row.answer_state,
       answer_value: row.answer_value,
+      not_applicable_reason: row.not_applicable_reason,
+      source_prefill_value: row.source_prefill_value,
       prefill_source: row.prefill_source,
       evidence_status: row.evidence_status,
+      evidence_mode: row.evidence_mode,
+      normalized_section_selector: row.normalized_section_selector,
+      normalized_selector_used: row.normalized_selector_used,
+      source_artifacts: row.source_artifacts,
+      source_field_hints: row.source_field_hints,
+      destination: row.destination,
+      vault_payload_path: row.vault_payload_path,
+      qualified_review_path: row.qualified_review_path,
+      canonical_path: row.canonical_path,
+      writes_to_vault_payload: row.writes_to_vault_payload,
+      writes_to_india_privacy_cyber: row.writes_to_india_privacy_cyber,
       document_impact: row.document_impact,
+      demo_disclaimer_required: row.demo_disclaimer_required,
+      demo_disclaimer_accepted: row.demo_disclaimer_accepted,
       ready_for_assembly: row.resolved_for_final_gate
     };
   }
   return {
     artifact_name: QUALIFIED_REVIEW_SUBMISSION_ARTIFACT,
+    artifact_version: QUALIFIED_REVIEW_SUBMISSION_VERSION,
     final_gate_status: finalGateStatus,
     ready_for_assembly: finalGateStatus === "PASS",
+    route_count: Object.keys(routes).length,
     routes_by_destination_path: routes,
+    routes_by_question_id: Object.fromEntries(questionResponses.map((row) => [row.question_id, { destination_path: row.destination_path, answer_state: row.answer_state, answer_value: row.answer_value, ready_for_assembly: row.resolved_for_final_gate }])),
     question_response_index: Object.fromEntries(questionResponses.map((row) => [row.question_id, { destination_path: row.destination_path, answer_state: row.answer_state, answer_value: row.answer_value, ready_for_assembly: row.resolved_for_final_gate }]))
   };
 }
@@ -216,6 +264,30 @@ function duplicateQuestionIds(rows) {
     seen.add(id);
   }
   return [...dupes];
+}
+
+function duplicateDestinationPaths(rows) {
+  const seen = new Set();
+  const dupes = new Set();
+  for (const row of rows) {
+    const path = cleanText(row?.destination_path || "");
+    if (!path) continue;
+    if (seen.has(path)) dupes.add(path);
+    seen.add(path);
+  }
+  return [...dupes];
+}
+
+function summarizeQrArtifacts(qrArtifacts = {}) {
+  return Object.entries(qrArtifacts || {}).map(([artifact_name, artifact]) => ({ artifact_name, section_id: artifact?.section_id || "", section_title: artifact?.section_title || "", question_count: Number(artifact?.question_count || 0) }));
+}
+
+function countBy(rows, key) {
+  return rows.reduce((acc, row) => {
+    const value = row?.[key] || "UNKNOWN";
+    acc[value] = (acc[value] || 0) + 1;
+    return acc;
+  }, {});
 }
 
 function normalizeState(value) {
