@@ -1,4 +1,4 @@
-import { getRunRecord, updateRunRecord } from "../../firestore.js";
+import { getRunRecord, updateRunRecord } from "./storage/firestore.service.js";
 import { advanceReviewerRun } from "../../reviewer-runner-normalized.js";
 import { centralPhaseStatusForInternalJob } from "../contracts/central-phase.contract.js";
 
