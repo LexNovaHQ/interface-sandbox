@@ -10,9 +10,11 @@ Pass 3 rule: async runner and Cloud Tasks dispatch logic are runtime-owned in `s
 
 Pass 4 rule: pipeline advancement is runtime-owned in `src/runtime/services/pipeline.service.js`. The runtime surface uses central phase language. Compatibility internal job IDs are retained only where the existing artifact permission layer still requires them.
 
+Pass 5 rule: artifact save/read/lock logic is runtime-owned in `src/runtime/services/artifacts.service.js`. The service is central-phase aware while still respecting compatibility artifact permissions and save-order gates.
+
 ## Runtime boundary
 
-`src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, async runner, central pipeline dispatcher, and contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
+`src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, async runner, central pipeline dispatcher, artifact service, and contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
 
 ## Central phase rule
 
@@ -28,6 +30,7 @@ Central phases are named by product substance, not by legacy micro-phase labels.
 - `src/runtime/services/storage/*` owns Google client, Drive, Firestore, and Sheets logic for the central tree.
 - `src/runtime/services/async.service.js` owns queueing, worker lifecycle, stale handling, retry scheduling, and Cloud Tasks dispatch.
 - `src/runtime/services/pipeline.service.js` owns central phase dispatch and no longer imports the old normalized/legacy runner files.
+- `src/runtime/services/artifacts.service.js` owns artifact save/read/lock logic and no longer imports the old artifact service.
 - Gemini provider keys must never be committed. `GEMINI_API_KEYS` stays in Cloud Run/env/secret config.
 
 ## Target folders
@@ -40,6 +43,7 @@ src/runtime/
   errors.js
   routes/
   services/
+    artifacts.service.js
     async.service.js
     pipeline.service.js
     provider.service.js
@@ -54,7 +58,7 @@ src/runtime/
 
 ## Remaining bridges
 
-The central runtime still bridges to existing artifact-service, schemas, auth, run-id, permissions, and specialist phase helper/orchestrator modules until those are migrated in later passes.
+The central runtime still uses existing schemas, auth, run-id, permissions, constants, and specialist phase helper/orchestrator modules until those are migrated in later passes.
 
 ## Non-negotiable boundaries
 
