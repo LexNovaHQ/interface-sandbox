@@ -1,6 +1,7 @@
 import cloudTasks from "@google-cloud/tasks";
 import { config } from "../config.js";
 import { nowIso } from "../utils/run-id.js";
+import { centralPhaseStatusForInternalJob } from "../contracts/central-phase.contract.js";
 import { getRunRecord, updateRunRecord, logEvent } from "./storage/firestore.service.js";
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { advanceCentralPipelineRun } from "./pipeline.service.js";
@@ -8,14 +9,15 @@ import { advanceCentralPipelineRun } from "./pipeline.service.js";
 const { CloudTasksClient } = cloudTasks;
 const TERMINAL_PHASES = new Set(["COMPLETE"]);
 const TERMINAL_STATUSES = new Set(["COMPLETE", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
-const EARLY_PHASES = new Set(["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX"]);
+const SOURCE_DISCOVERY_CENTRAL_PHASE = "SOURCE_DISCOVERY";
 
 let cloudTasksClient;
 
 export const ASYNC_RUNTIME_MODE = Object.freeze({
   runner_mode: "CLOUD_TASKS_RUNNER",
   central_runtime_service: "async.service",
-  migration_status: "runtime_owned_async_and_cloud_tasks_logic"
+  migration_status: "runtime_owned_async_and_cloud_tasks_logic",
+  source_discovery_stale_window_uses_central_phase_contract: true
 });
 
 export function cloudTasksDispatcherConfigured() {
@@ -417,13 +419,26 @@ function isRetryDue(run) {
 }
 
 function staleWindowMs(run) {
-  if (EARLY_PHASES.has(run.current_phase) && Number(run.artifact_count || 0) === 0) return config.earlyPhaseStaleMs;
+  if (sourceDiscoveryStartupWindowApplies(run)) return config.earlyPhaseStaleMs;
   return config.workerStaleMs;
 }
 
 function queuedStaleWindowMs(run) {
-  if (EARLY_PHASES.has(run.current_phase) && Number(run.artifact_count || 0) === 0) return Math.min(config.earlyPhaseStaleMs, 3 * 60 * 1000);
+  if (sourceDiscoveryStartupWindowApplies(run)) return Math.min(config.earlyPhaseStaleMs, 3 * 60 * 1000);
   return Math.min(config.workerStaleMs, 5 * 60 * 1000);
+}
+
+function sourceDiscoveryStartupWindowApplies(run) {
+  return centralPhaseForRun(run) === SOURCE_DISCOVERY_CENTRAL_PHASE && Number(run.artifact_count || 0) === 0;
+}
+
+function centralPhaseForRun(run = {}) {
+  if (run.central_phase) return run.central_phase;
+  try {
+    return centralPhaseStatusForInternalJob(run.current_phase || "").central_phase_id || "";
+  } catch (_error) {
+    return "";
+  }
 }
 
 async function clearRunnerState({ run_id, terminal }) {
