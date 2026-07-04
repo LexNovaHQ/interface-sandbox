@@ -18,7 +18,6 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
 
   const normalized_sections = Object.fromEntries(NORMALIZED_SECTION_KEYS.map((sectionId) => [sectionId, output[`normalized_section__${sectionId}`]]));
   output.normalized_report_manifest = { ...(output.normalized_report_manifest || {}), validation_status: status, section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status })) };
-  const legacy_archive = { profiles_combined: "ARCHIVED_LEGACY", forensics_combined: "ARCHIVED_LEGACY", old_compiler_blob: "REPLACED_BY_NORMALIZED_SECTION_ARTIFACTS", active_replacement: "normalized_report_manifest + normalized_section__*" };
 
   output.final_output_handoff = {
     validation_status: status,
@@ -29,8 +28,7 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       validation_status: status,
       normalized_report_manifest: output.normalized_report_manifest,
       normalized_sections,
-      legacy_archive,
-      compiler_trace: { ...(final.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v8_exposure_tier_sorted", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length, section_6_m9_summary_not_raw_index: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, exposure_tier_carry_forward: true, exposure_tier_sort_locked: true }
+      compiler_trace: { ...(final.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v8_exposure_tier_sorted", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length, section_6_m9_summary_not_raw_index: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, exposure_tier_carry_forward: true, exposure_tier_sort_locked: true, archived_legacy_outputs_not_emitted: true }
     }
   };
   output.normalizer_validation = validateNormalizedProfilerOutput(output);

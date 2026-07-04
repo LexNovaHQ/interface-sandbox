@@ -1,21 +1,27 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildQualifiedReviewSystemArtifacts } from "../src/qualified-review-system/branch.js";
+import { loadQualifiedReviewMatrix } from "../src/qualified-review-system/qualified-review-matrix-loader.js";
 import { NORMALIZED_SECTION_KEYS } from "../src/normalized-profiler.js";
+import { NORMALIZED_SECTION_ARTIFACT_NAMES } from "../src/constants.js";
 
-const EXPECTED_QR_ARTIFACT_KEYS = [
-  "qr_artifact__entity_commercial",
-  "qr_artifact__technology_infrastructure",
-  "qr_artifact__ai_capability_product_behavior",
-  "qr_artifact__dap_privacy_india_cyber"
-];
+const EXPECTED_QR_ARTIFACT_KEYS = ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber"];
 const LEGACY_MAP_FILE = "qualified-review" + "-map.js";
+const ALLOWED_ROOTS = new Set([...NORMALIZED_SECTION_ARTIFACT_NAMES, "PRIVATE_INPUT", "MARKET_NORM"]);
+
+const matrix = loadQualifiedReviewMatrix();
+assert.equal(matrix.questions.length, 79);
+for (const row of matrix.questions) {
+  for (const selector of [row.selector, row.secondary_selector].filter(Boolean)) {
+    const root = String(selector).split(".")[0];
+    assert.equal(ALLOWED_ROOTS.has(root), true, `${row.question_id}: bad selector root ${root}`);
+  }
+}
 
 const run = { run_id: "TEST-QR-MATRIX", target: "Example", root_url: "https://example.com", status: "COMPLETE" };
 const normalized_report_manifest = { run_id: run.run_id, target: run.target, target_url: run.root_url, validation_status: "LOCKED", section_order: NORMALIZED_SECTION_KEYS };
 const normalized_compiler_output = { normalized_report_manifest };
 for (const sectionId of NORMALIZED_SECTION_KEYS) normalized_compiler_output[`normalized_section__${sectionId}`] = { section_id: sectionId, artifact_name: `normalized_section__${sectionId}`, section_title: sectionId, subsections: [] };
-
 function sub(id, fields) { return { subsection_id: id, fields: fields.map(([field_id, value]) => ({ field_id, value })) }; }
 normalized_compiler_output.normalized_section__target_profile.subsections = [sub("target_identity", [["legal_entity_name", "Example Inc."], ["entity_type", "Corporation"]]), sub("jurisdiction_notice", [["registered_notice_location", "Delaware"], ["governing_law", "Delaware"], ["courts_venue", "Delaware courts"]]), sub("business_context", [["market_type_candidate", "B2B"]]), sub("product_service_wrapper", [["delivery_model_signals", "Web app and API"], ["product_service_wrapper_names", ["Example AI"]]])];
 normalized_compiler_output.normalized_section__product_activity_ip_profile.subsections = [sub("commercial_availability_posture", [["commercial_availability_posture", { posture: "Paid production" }]]), sub("activity_inventory", [["activities", [{ activity_display_id: "ACT-001", publicly_described_activity: "AI assistant" }]]]), sub("activity_mechanics", [["mechanics", [{ activity_display_id: "ACT-001", data_content_or_asset_affected: "User prompts" }]]]), sub("activity_pattern", [["activity_patterns", [{ activity_display_id: "ACT-001", activity_patterns: ["RDR", "CRT"] }]]])];
@@ -30,20 +36,17 @@ assert.equal(handoff.question_handoff_validation.status, "PASS");
 assert.equal(questions.length, 79);
 assert.equal(handoff.section_pages.length, 4);
 assert.deepEqual(Object.keys(handoff.qr_artifacts).sort(), EXPECTED_QR_ARTIFACT_KEYS.slice().sort());
+for (const key of EXPECTED_QR_ARTIFACT_KEYS) assert.ok(output[key], `standalone output missing ${key}`);
 assert.equal(questions.every((q) => q.suggested_answer), true);
 assert.equal(questions.filter((q) => q.prefill_source === "private_demo_assumption").length, 5);
+assert.equal(questions.filter((q) => q.prefill_source === "diligence_normalized_section").length >= 40, true);
 assert.equal(questions.some((q) => q.prefill_source === "backend_artifact"), false);
 assert.equal(questions.some((q) => q.prefill_source === "reviewer_input"), false);
 assert.equal(questions.some((q) => q.source_table_default_status === "Need to fill"), false);
 assert.equal(renderer.questions.length, 79);
 assert.equal(renderer.question_sections.length, 4);
 assert.equal(renderer.render_contract.matrix_source, "qualified-review-matrix.yml");
-
-for (const question of questions) {
-  assert.notEqual(question.source_dependency, LEGACY_MAP_FILE);
-}
-
+for (const question of questions) assert.notEqual(question.source_dependency, LEGACY_MAP_FILE);
 const compilerSource = readFileSync(new URL("../src/qualified-review-system/matrix-artifact-compiler.js", import.meta.url), "utf8");
 assert.equal(compilerSource.includes(LEGACY_MAP_FILE), false);
-
 console.log("qualified review matrix compiler: PASS");
