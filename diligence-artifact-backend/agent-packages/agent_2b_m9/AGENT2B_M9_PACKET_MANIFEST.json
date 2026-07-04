@@ -1,37 +1,13 @@
 {
   "packet_name": "AGENT2B_M9_LEGAL_CARTOGRAPHY_PROMPT_PACKET",
-  "version": "v3_field_registry",
+  "version": "v4_phase2_job_split",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "M9_ONLY",
-  "read_artifacts": [
-    "source_discovery_handoff",
-    "lossless_family__L1_CORE_TERMS_PRIVACY",
-    "lossless_family__L2_B2B_CONTRACTING",
-    "lossless_family__L3_AI_USAGE_GOVERNANCE",
-    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
-    "lossless_family__L5_LEGAL_HUB_HOSTED",
-    "lossless_family__L6_ENTITY_NOTICE"
-  ],
-  "write_artifacts_in_order": [
-    "legal_cartography_deterministic_map",
-    "legal_cartography_semantic_profile",
-    "legal_cartography_index"
-  ],
-  "final_downstream_required_artifact": "legal_cartography_index",
-  "reference_documents": [
-    "M9_FIELD_DERIVATION_REGISTRY.yaml"
-  ],
-  "components": [
-    "AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
-    "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
-    "M9_STEP1_OUTPUT_CONTRACT_LOCK.md",
-    "04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
-    "M9_FIELD_DERIVATION_REGISTRY.yaml",
-    "M9_C_REINVESTIGATION.md",
-    "M9_HYBRID_COMPILER_CONTRACT.md",
-    "00_VALIDATOR_RULES_INTEGRATED.md",
-    "00_TERMINAL_RECEIPT_RULES_INTEGRATED.md",
-    "AGENT2B_M9_PROMPT_STACK_ORDER.md",
-    "AGENT2B_M9_PACKET_VALIDATION.json"
-  ]
+  "phase_2_internal_jobs": ["LEGAL_CARTOGRAPHY_INDEX", "LEGAL_SIGNAL_DERIVATION"],
+  "read_artifacts": ["source_discovery_handoff", "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L3_AI_USAGE_GOVERNANCE", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES", "lossless_family__L5_LEGAL_HUB_HOSTED", "lossless_family__L6_ENTITY_NOTICE"],
+  "write_artifacts_in_order": ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"],
+  "final_downstream_required_artifacts": ["legal_cartography_index", "legal_signal_derivation_profile"],
+  "reference_documents": ["M9_FIELD_DERIVATION_REGISTRY.yaml", "M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md"],
+  "components": ["AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml", "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md", "M9_STEP1_OUTPUT_CONTRACT_LOCK.md", "04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md", "M9_FIELD_DERIVATION_REGISTRY.yaml", "M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md", "M9_C_REINVESTIGATION.md", "M9_HYBRID_COMPILER_CONTRACT.md", "00_VALIDATOR_RULES_INTEGRATED.md", "00_TERMINAL_RECEIPT_RULES_INTEGRATED.md", "AGENT2B_M9_PROMPT_STACK_ORDER.md", "AGENT2B_M9_PACKET_VALIDATION.json"],
+  "m7_m10_integration_deferred": true
 }
