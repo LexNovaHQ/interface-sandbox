@@ -1,6 +1,6 @@
 import cloudTasks from "@google-cloud/tasks";
 import { config } from "../config.js";
-import { nowIso } from "../../run-id.js";
+import { nowIso } from "../utils/run-id.js";
 import { getRunRecord, updateRunRecord, logEvent } from "./storage/firestore.service.js";
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { advanceCentralPipelineRun } from "./pipeline.service.js";
