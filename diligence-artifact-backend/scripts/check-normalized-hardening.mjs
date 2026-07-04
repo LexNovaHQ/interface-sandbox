@@ -6,6 +6,7 @@ import "./check-m7-legal-signal-overlay.mjs";
 import "./check-m10-d-primary-selected-legal-support.mjs";
 import "./check-substantive-dap-integration.mjs";
 import "./check-qualified-review-branch.mjs";
+import "./check-qualified-review-matrix-compiler.mjs";
 import "./check-m9-qualified-review-legal-signals.mjs";
 import "./check-dynamic-family-read-firewall.mjs";
 import "./check-legacy-pollution.mjs";

@@ -1,20 +1,20 @@
 import { asArray, safeObject, safeText } from "../report-safe-language.js";
-import { QUALIFIED_REVIEW_LOCKED_COUNTS, QUALIFIED_REVIEW_MAP_VERSION, QUALIFIED_REVIEW_SECTION_MAP } from "./qualified-review-map.js";
-import { buildQualifiedReviewQuestionHandoff } from "./question-map.js";
+import { buildQualifiedReviewMatrixArtifacts } from "./matrix-artifact-compiler.js";
 import { validateQualifiedReviewQuestionHandoff } from "./qr-validator.js";
 
-export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_locked_matrix_v2";
+export const QUALIFIED_REVIEW_HANDOFF_VERSION = "qualified_review_handoff_matrix_artifacts_v1";
 
 export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manifest = {}, sections = {}, artifacts = {} } = {}) {
   const sectionOrder = asArray(normalized_report_manifest.section_order);
-  const questionHandoff = buildQualifiedReviewQuestionHandoff({ run, artifacts });
+  const compiled = buildQualifiedReviewMatrixArtifacts({ run, normalized_report_manifest, sections, artifacts });
+  const questions = asArray(compiled.questions);
+  const questionHandoff = buildQuestionHandoff({ run, compiled });
   const validation = validateQualifiedReviewQuestionHandoff(questionHandoff);
-  const questions = asArray(questionHandoff.questions);
   const status = validation.status === "FAIL" ? "LOCKED_WITH_LIMITATIONS" : safeText(normalized_report_manifest.validation_status, "LOCKED_WITH_LIMITATIONS");
   return {
     handoff_type: "qualified_review_handoff",
     handoff_version: QUALIFIED_REVIEW_HANDOFF_VERSION,
-    matrix_version: QUALIFIED_REVIEW_MAP_VERSION,
+    matrix_version: compiled.qualified_review_matrix_manifest.matrix_version,
     run_id: safeText(run.run_id || normalized_report_manifest.run_id, "UNKNOWN_RUN"),
     target: safeText(run.target || normalized_report_manifest.target, "Target not specified"),
     target_url: safeText(run.root_url || run.target_url || normalized_report_manifest.target_url, "Target URL not specified"),
@@ -26,8 +26,10 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
     forbidden_public_actions: ["Download JSON"],
     ui_mode: "SECTION_BY_SECTION_WIZARD",
     intake_boundary: "Review-Ready support material. All answers require reviewer confirmation before draft preparation.",
-    source_branch: "NORMALIZED_COMPILER_TO_QUALIFIED_REVIEW",
-    canonical_matrix_bridge: buildCanonicalMatrixBridge({ questions, validation }),
+    source_branch: "NORMALIZED_SECTIONS_TO_QR_MATRIX_ARTIFACTS",
+    qualified_review_matrix_manifest: compiled.qualified_review_matrix_manifest,
+    qr_artifacts: compiled.qr_artifacts,
+    canonical_matrix_bridge: buildCanonicalMatrixBridge({ questions, validation, compiled }),
     section_order: sectionOrder,
     section_intake: sectionOrder.map((sectionId) => sectionIntakeRow({ sectionId, section: sections[sectionId] })),
     normalized_section_signal_queue: buildQualifiedReviewQueue({ sectionOrder, sections }),
@@ -43,71 +45,50 @@ export function buildQualifiedReviewHandoff({ run = {}, normalized_report_manife
       preserve_source_artifacts: true,
       preserve_evidence_refs: true,
       all_prefilled_answers_editable: true,
-      confirmed_answers_override_prefill: true
+      confirmed_answers_override_prefill: true,
+      demo_prefill_is_not_evidence: true
     }
   };
 }
 
-function buildCanonicalMatrixBridge({ questions, validation }) {
+function buildQuestionHandoff({ run, compiled }) {
+  const questions = asArray(compiled.questions);
+  const sectionPages = asArray(compiled.section_pages);
+  return {
+    handoff_type: "qualified_review_question_handoff",
+    handoff_version: compiled.qualified_review_matrix_manifest.matrix_version,
+    run_id: safeText(run.run_id, "UNKNOWN_RUN"),
+    ui_mode: "SECTION_BY_SECTION_WIZARD",
+    question_count: questions.length,
+    sections: sectionPages.map((page) => ({ section_id: page.section_id, title: page.section_title })),
+    progress_rail: sectionPages.map((page, index) => ({ step: index + 1, section_id: page.section_id, label: page.section_title, question_count: page.question_count, status: "NEEDS_CONFIRMATION" })),
+    section_pages: sectionPages,
+    questions,
+    warnings: questions.flatMap((question) => asArray(question.warnings))
+  };
+}
+
+function buildCanonicalMatrixBridge({ questions, validation, compiled }) {
+  const manifest = compiled.qualified_review_matrix_manifest || {};
   return {
     bridge_type: "qualified_review_canonical_matrix_bridge",
     source_phase: "NORMALIZED_COMPILER",
-    map_version: QUALIFIED_REVIEW_MAP_VERSION,
-    locked_counts: QUALIFIED_REVIEW_LOCKED_COUNTS,
-    sections: QUALIFIED_REVIEW_SECTION_MAP,
-    vault_payload_contract: {
-      row_count: questions.filter((question) => question.writes_to_vault_payload === true).length,
-      expected_row_count: QUALIFIED_REVIEW_LOCKED_COUNTS.vault_payload_row_count,
-      writes_to_vault_payload: true,
-      status: "LOCKED",
-      allowed_roots: ["baseline", "architecture", "archetypes", "compliance", "operational"],
-      allowed_root_groups: ["baseline", "architecture", "archetypes", "compliance"],
-      status_fields: ["status", "submittedAt"]
-    },
-    india_contract: {
-      row_count: questions.filter((question) => question.writes_to_india_privacy_cyber === true).length,
-      expected_row_count: QUALIFIED_REVIEW_LOCKED_COUNTS.india_privacy_cyber_row_count,
-      destination_root: "qualified_review.india_privacy_cyber",
-      must_not_write_to_vault_payload: true
-    },
-    prefill_contract: {
-      backend_artifact_rows: questions.filter((question) => question.prefill_source === "backend_artifact").length,
-      market_norm_demo_rows: questions.filter((question) => question.prefill_source === "market_norm_demo").length,
-      missing_backend_evidence_is_nonblocking: true,
-      demo_disclaimer_required: true,
-      demo_prefill_requires_disclaimer: true
-    },
-    draft_prep_contract: {
-      blocked_until_confirmation: true,
-      route_count: questions.length,
-      routes_are_in_question_handoff: true
-    },
-    ui_contract: {
-      answer_type_controls: true,
-      demo_disclaimer_required_for_market_norm_rows: true,
-      no_empty_demo_need_to_fill_fields: true,
-      answer_type_selects_input_control: true,
-      document_impact_shows_document_chips: true,
-      no_empty_demo_fields: true
-    },
+    map_version: manifest.matrix_version,
+    locked_counts: { question_count: questions.length, section_counts: countBy(questions, "section_id"), answer_type_counts: countBy(questions, "answer_type") },
+    sections: asArray(compiled.section_pages).map((page, index) => ({ section_id: page.section_id, section_number: index + 1, section_title: page.section_title, question_count: page.question_count })),
+    qr_artifact_contract: { artifact_count: Object.keys(safeObject(compiled.qr_artifacts)).length, artifacts: manifest.section_artifacts || [], status: "LOCKED" },
+    vault_payload_contract: { row_count: questions.filter((question) => question.writes_to_vault_payload === true).length, writes_to_vault_payload: true, status: "LOCKED", allowed_roots: ["baseline", "architecture", "archetypes", "compliance", "operational"], allowed_root_groups: ["baseline", "architecture", "archetypes", "compliance"], status_fields: ["status", "submittedAt"] },
+    india_contract: { row_count: questions.filter((question) => question.writes_to_india_privacy_cyber === true).length, destination_root: "qualified_review.india_privacy_cyber", must_not_write_to_vault_payload: true },
+    prefill_contract: { diligence_normalized_section_rows: questions.filter((question) => question.prefill_source === "diligence_normalized_section").length, market_norm_demo_rows: questions.filter((question) => question.prefill_source === "market_norm_demo").length, private_demo_assumption_rows: questions.filter((question) => question.prefill_source === "private_demo_assumption").length, all_questions_prefilled: questions.every((question) => Boolean(question.suggested_answer)), missing_backend_evidence_is_nonblocking: true, demo_disclaimer_required: true, demo_prefill_requires_disclaimer: true, demo_prefill_is_not_evidence: true },
+    draft_prep_contract: { blocked_until_confirmation: true, route_count: questions.length, routes_are_in_question_handoff: true },
+    ui_contract: { answer_type_controls: true, demo_disclaimer_required_for_market_norm_rows: true, no_empty_demo_need_to_fill_fields: true, answer_type_selects_input_control: true, document_impact_shows_document_chips: true, no_empty_demo_fields: true },
     validation
   };
 }
 
 function sectionIntakeRow({ sectionId, section }) {
   const s = safeObject(section);
-  return {
-    section_id: sectionId,
-    artifact_name: s.artifact_name || `normalized_section__${sectionId}`,
-    section_title: safeText(s.section_title, sectionId),
-    eligible_for_qualified_review: s.qualified_review_mapping?.eligible !== false,
-    qualified_review_category: s.qualified_review_mapping?.category || sectionId,
-    requires_confirmation_before_assembly: true,
-    source_artifacts_used: asArray(s.source_artifacts_used),
-    section_limitations: asArray(s.section_limitations),
-    subsection_count: asArray(s.subsections).length,
-    field_count: asArray(s.subsections).reduce((sum, sub) => sum + asArray(sub.fields).length, 0)
-  };
+  return { section_id: sectionId, artifact_name: s.artifact_name || `normalized_section__${sectionId}`, section_title: safeText(s.section_title, sectionId), eligible_for_qualified_review: s.qualified_review_mapping?.eligible !== false, qualified_review_category: s.qualified_review_mapping?.category || sectionId, requires_confirmation_before_assembly: true, source_artifacts_used: asArray(s.source_artifacts_used), section_limitations: asArray(s.section_limitations), subsection_count: asArray(s.subsections).length, field_count: asArray(s.subsections).reduce((sum, sub) => sum + asArray(sub.fields).length, 0) };
 }
 
 function buildQualifiedReviewQueue({ sectionOrder, sections }) {
@@ -126,6 +107,5 @@ function buildQualifiedReviewQueue({ sectionOrder, sections }) {
   return queue.slice(0, 250);
 }
 
-function buildMatrixQueue(questions) {
-  return questions.map((question) => ({ question_id: question.question_id, question_number: question.question_number, section_id: question.section_id, field_key: question.field_key, lawyer_question: question.lawyer_question || question.public_question_label, answer_type: question.answer_type, prefill_source: question.prefill_source, evidence_status: question.evidence_status, destination_path: question.vault_payload_path || question.qualified_review_path || question.canonical_path, document_impact: asArray(question.document_impact), final_gate_required: true }));
-}
+function buildMatrixQueue(questions) { return questions.map((question) => ({ question_id: question.question_id, question_number: question.question_number, section_id: question.section_id, field_key: question.field_key, lawyer_question: question.lawyer_question || question.public_question_label, answer_type: question.answer_type, prefill_source: question.prefill_source, evidence_status: question.evidence_status, destination_path: question.vault_payload_path || question.qualified_review_path || question.canonical_path, document_impact: asArray(question.document_impact), final_gate_required: true })); }
+function countBy(rows, key) { return asArray(rows).reduce((acc, row) => { const value = row[key]; acc[value] = (acc[value] || 0) + 1; return acc; }, {}); }

@@ -1,26 +1,25 @@
-import {
-  QUALIFIED_REVIEW_MAP_VERSION,
-  QUALIFIED_REVIEW_SECTION_MAP,
-  QUALIFIED_REVIEW_QUESTIONS as CANONICAL_QUALIFIED_REVIEW_QUESTIONS
-} from "./qualified-review-map.js";
+import { loadQualifiedReviewMatrix } from "./qualified-review-matrix-loader.js";
 
-export const QUALIFIED_REVIEW_QUESTION_MAP_VERSION = QUALIFIED_REVIEW_MAP_VERSION;
+const MATRIX = loadQualifiedReviewMatrix();
+const PRIVATE_IDS = new Set(["QR-026", "QR-027", "QR-028", "QR-029", "QR-047"]);
+
+export const QUALIFIED_REVIEW_QUESTION_MAP_VERSION = MATRIX.matrix.version;
 
 export const QUALIFIED_REVIEW_SECTIONS = Object.freeze(
-  QUALIFIED_REVIEW_SECTION_MAP.map((section) => ({
+  MATRIX.sections.map((section) => ({
     section_id: section.section_id,
     title: section.section_title,
     count: section.question_count
   }))
 );
 
-export const QUALIFIED_REVIEW_QUESTIONS = Object.freeze(
-  CANONICAL_QUALIFIED_REVIEW_QUESTIONS.map(normalizeCanonicalQuestionDefinition)
+const QUESTION_DEFINITIONS = Object.freeze(
+  MATRIX.questions.map(normalizeCanonicalQuestionDefinition)
 );
 
 export function buildQualifiedReviewQuestionHandoff({ run = {}, artifacts = {} } = {}) {
   const artifactBag = safeObject(artifacts);
-  const questions = QUALIFIED_REVIEW_QUESTIONS.map((question) => materializeQuestion({ question, artifacts: artifactBag }));
+  const questions = QUESTION_DEFINITIONS.map((question) => materializeQuestion({ question, artifacts: artifactBag }));
   const sectionPages = QUALIFIED_REVIEW_SECTIONS.map((section) => {
     const sectionQuestions = questions.filter((question) => question.section_id === section.section_id);
     const prefilled = sectionQuestions.filter((question) => question.prefill_status === "DILIGENCE_PREFILL_CONFIRM").length;
@@ -56,16 +55,20 @@ export function buildQualifiedReviewQuestionHandoff({ run = {}, artifacts = {} }
 }
 
 function normalizeCanonicalQuestionDefinition(question) {
-  const answerMappings = asArray(question.answer_prefill_mapping);
-  const evidenceMappings = asArray(question.evidence_source_mapping);
-  const isFieldMapped = question.prefill_strength === "FULL" || question.prefill_strength === "PARTIAL";
+  const answerMappings = [question.selector, question.secondary_selector].filter(Boolean);
+  const evidenceMappings = answerMappings;
+  const prefillStrength = question.current_prefill_strength || (PRIVATE_IDS.has(question.question_id) ? "NONE" : "FULL");
+  const isFieldMapped = prefillStrength === "FULL" || prefillStrength === "PARTIAL";
   const sourceArtifacts = deriveSourceArtifacts([...answerMappings, ...evidenceMappings]);
 
   return Object.freeze({
     ...question,
+    prefill_strength: prefillStrength,
+    answer_prefill_mapping: answerMappings,
+    evidence_source_mapping: evidenceMappings,
     answer_options: normalizeAnswerOptions(question),
     evidence_mode: isFieldMapped ? "profile_field" : "reviewer_input",
-    field_type: question.prefill_strength === "FULL" ? "diligence_field_prefilled" : question.prefill_strength === "PARTIAL" ? "diligence_field_partial" : "reviewer_input_required",
+    field_type: prefillStrength === "FULL" ? "diligence_field_prefilled" : prefillStrength === "PARTIAL" ? "diligence_field_partial" : "reviewer_input_required",
     source_artifacts: sourceArtifacts.length ? sourceArtifacts : ["reviewer_input"],
     source_field_hints: answerMappings,
     evidence_field_hints: evidenceMappings,
