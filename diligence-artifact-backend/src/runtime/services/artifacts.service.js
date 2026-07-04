@@ -1,4 +1,4 @@
-import { assertRunId } from "../../run-id.js";
+import { assertRunId } from "../utils/run-id.js";
 import { assertKnownArtifactName, assertPhaseCanWriteArtifact, M11_BATCH_ARTIFACT_PATTERN, M11_BATCH_VALIDATION_ARTIFACT_PATTERN } from "../../constants.js";
 import { assertCanReadArtifact, assertCanWriteArtifact } from "../../permissions.js";
 import { isStaleDeterministicForensics } from "../../deterministic-profile-forensics.js";
@@ -46,8 +46,6 @@ export const ARTIFACTS_SERVICE_STATUS = Object.freeze({
   central_phase_aware: true,
   compatibility_permission_ids_retained: true
 });
-
-const gateHelpers = { requireSavedArtifact, requirePhaseAccepted };
 
 export async function saveRuntimeArtifact(input) {
   return saveArtifact(input);
