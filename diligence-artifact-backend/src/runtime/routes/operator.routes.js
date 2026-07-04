@@ -1,8 +1,8 @@
 import express from "express";
 import { parseOrThrow, reviewerCreateJobSchema, reviewerAdvanceJobSchema, reviewerWorkerJobSchema } from "../../schemas.js";
 import { assertRunId } from "../../run-id.js";
-import { requireRuntimeConfig } from "../../config.js";
-import { getRunRecord, listArtifactMetadata } from "../../firestore.js";
+import { requireRuntimeConfig } from "../config.js";
+import { getRunRecord, listArtifactMetadata } from "../services/storage/firestore.service.js";
 import { sendError } from "../errors.js";
 import { CENTRAL_PHASES } from "../contracts/central-phase.contract.js";
 import { listInternalJobContracts } from "../contracts/internal-job.contract.js";
