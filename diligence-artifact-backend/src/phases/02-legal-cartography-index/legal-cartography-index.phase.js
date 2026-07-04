@@ -2,8 +2,24 @@ export const LEGAL_CARTOGRAPHY_INDEX_PHASE = Object.freeze({
   order: 2,
   phase_id: "LEGAL_CARTOGRAPHY_INDEX",
   public_label: "Legal Cartography and Index",
-  implementation_status: "MIGRATION_TARGET",
-  responsibility: "Create the legal document map, semantic legal profile, final legal cartography index, and deterministic support overlays for downstream profile work.",
-  material_outputs: ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "m7_deterministic_legal_signal_overlay", "m10_selected_legal_support_packet"],
-  runtime_boundary: "Runtime orchestrates. This phase owns legal cartography product logic after helper migration."
+  implementation_status: "CONTRACT_LOCKED_IMPLEMENTATION_PENDING",
+  responsibility: "Own legal cartography navigation and deterministic legal signal derivation as two separate internal jobs: Legal Cartography Index and Legal Signal Derivation.",
+  internal_jobs: Object.freeze([
+    "LEGAL_CARTOGRAPHY_INDEX",
+    "LEGAL_SIGNAL_DERIVATION"
+  ]),
+  material_outputs: Object.freeze([
+    "legal_cartography_deterministic_map",
+    "legal_cartography_semantic_profile",
+    "legal_cartography_index",
+    "legal_signal_derivation_profile"
+  ]),
+  forbidden_outputs: Object.freeze([
+    "m7_deterministic_legal_signal_overlay",
+    "m10_selected_legal_support_packet",
+    "qualified_review_handoff",
+    "qualified_review_renderer_payload",
+    "renderer_payload"
+  ]),
+  runtime_boundary: "Runtime orchestrates. This phase owns legal cartography product logic after helper migration. M7, M10, and Qualified Review integrations are deferred to their own phases."
 });
