@@ -1,5 +1,5 @@
 import express from "express";
-import { assertRunId } from "../../run-id.js";
+import { assertRunId } from "../utils/run-id.js";
 import { getRunRecord, getArtifactMetadata } from "../services/storage/firestore.service.js";
 import { readJsonArtifactFromDrive } from "../services/storage/drive.service.js";
 import { sendError } from "../errors.js";
@@ -32,6 +32,7 @@ publicRouter.get("/diligence-system/jobs/:run_id/qualified-review", async (req, 
       run_status: run.status,
       current_phase: run.current_phase,
       central_phase: run.central_phase || "",
+      central_phase_label: run.central_phase_label || "",
       qualified_review_renderer_payload: rendererPayload,
       qualified_review_validation_manifest: validationManifest,
       qualified_review_section_artifacts: sectionArtifacts
