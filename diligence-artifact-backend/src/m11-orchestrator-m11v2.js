@@ -72,7 +72,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const triggered = await getOrBuildProjection({ run, phase, artifactName: ART.triggered, isCurrent: isM11V2Projection, build: () => projectTriggeredProfile({ [ART.workpad]: workpad.artifact })[ART.triggered] });
   const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket });
   const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
-  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
 }
 
@@ -140,13 +140,20 @@ async function getOrBuildProjection({ run, phase, artifactName, isCurrent, build
 
 async function getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket }) {
   const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.forensics });
-  if (existing && isM11V2Forensics(existing.artifact)) return existing;
+  if (existing && isM11V2Forensics(existing.artifact)) return { ...existing, diagnostic_status: existing.artifact?.forensic_lock_gate_result?.status || existing.artifact?.registry_lock_gate_result?.status || existing.lock_status };
   const output = buildExposureRegistryForensicsFromSavedArtifacts({ routePlan: { [ART.route]: route.artifact }, acceptedBatches, batchValidations, workpad: { [ART.workpad]: workpad.artifact }, controlledProfile: { [ART.controlled]: controlled.artifact }, triggeredProfile: { [ART.triggered]: triggered.artifact }, fieldDerivationRegistryText: referencePacket.files?.["FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml"]?.content || "" });
   const artifact = output[ART.forensics];
-  const status = artifact.forensic_lock_gate_result?.status || artifact.registry_lock_gate_result?.status || "REPAIR_REQUIRED";
-  const lock_status = status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "REPAIR_REQUIRED";
+  const diagnostic_status = artifact.forensic_lock_gate_result?.status || artifact.registry_lock_gate_result?.status || "REPAIR_REQUIRED";
+  const lock_status = diagnostic_status === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
+  if (diagnostic_status !== "PASS" && diagnostic_status !== "PASS_WITH_LIMITATION") {
+    artifact.non_blocking_forensic_repair = {
+      status: diagnostic_status,
+      policy: "FORENSICS_DIAGNOSTIC_ONLY_DOES_NOT_BLOCK_M11_TO_M12",
+      note: "Forensic repair requirements are preserved for audit but do not block controlled/triggered profile handoff."
+    };
+  }
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.forensics, artifact, lock_status }));
-  return { artifact, lock_status };
+  return { artifact, lock_status, diagnostic_status };
 }
 
 async function readAcceptedCheckpoint({ run_id, artifact_name }) {
@@ -172,7 +179,7 @@ async function readArtifactsForM11({ run_id, reads, agent_id }) {
 
 function routePlanLockStatus(status) { return status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "CONTROLLED_FAILURE"; }
 function isAccepted(status) { return ACCEPTED.has(status); }
-function deriveFinalM11Status({ routeStatus, forensicStatus, batchValidations }) { if (!isAccepted(forensicStatus)) return forensicStatus; if (routeStatus === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS"; return batchValidations.some((v) => v?.exposure_registry_batch_validation?.status === "PASS_WITH_LIMITATION") ? "LOCKED_WITH_LIMITATIONS" : "LOCKED"; }
+function deriveFinalM11Status({ routeStatus, forensicStatus, batchValidations }) { if (routeStatus === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS"; if (forensicStatus === "LOCKED_WITH_LIMITATIONS" || !isAccepted(forensicStatus)) return "LOCKED_WITH_LIMITATIONS"; return batchValidations.some((v) => v?.exposure_registry_batch_validation?.status === "PASS_WITH_LIMITATION") ? "LOCKED_WITH_LIMITATIONS" : "LOCKED"; }
 function isAcceptedBatchValidationStatus(status) { return status === "PASS" || status === "PASS_WITH_LIMITATION"; }
 function batchValidationLockStatus(status) { return status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : status === "CONTROLLED_FAILURE" ? "CONTROLLED_FAILURE" : "REPAIR_REQUIRED"; }
 function hasSurfaceTriggeredRoutes(routePlan) { const retired = ["SURFACE", "TRIGGERED"].join("_"); return (Array.isArray(routePlan?.route_rows) ? routePlan.route_rows : []).some((row) => row.route_reason === retired); }

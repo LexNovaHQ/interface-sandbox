@@ -9,5 +9,6 @@ import "./check-qualified-review-branch.mjs";
 import "./check-qualified-review-matrix-compiler.mjs";
 import "./check-m9-qualified-review-legal-signals.mjs";
 import "./check-dynamic-family-read-firewall.mjs";
+import "./check-m11-forensics-nonblocking.mjs";
 import "./check-legacy-pollution.mjs";
 console.log("normalized hardening aggregate: PASS");
