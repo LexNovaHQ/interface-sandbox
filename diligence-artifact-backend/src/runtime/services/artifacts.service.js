@@ -1,6 +1,5 @@
 import { assertRunId } from "../utils/run-id.js";
-import { assertKnownArtifactName, assertPhaseCanWriteArtifact, M11_BATCH_ARTIFACT_PATTERN, M11_BATCH_VALIDATION_ARTIFACT_PATTERN } from "../../constants.js";
-import { assertCanReadArtifact, assertCanWriteArtifact } from "../../permissions.js";
+import { assertKnownArtifactName, assertInternalJobCanWriteArtifact as assertPhaseCanWriteArtifact, M11_BATCH_ARTIFACT_PATTERN, M11_BATCH_VALIDATION_ARTIFACT_PATTERN, assertCanReadArtifact, assertCanWriteArtifact } from "../contracts/artifact-permissions.contract.js";
 import { isStaleDeterministicForensics } from "../../deterministic-profile-forensics.js";
 import { buildExtendedDapIndiaReadinessProfile } from "../../extended-dap-india-readiness.js";
 import { config, requireRuntimeConfig } from "../config.js";
@@ -17,7 +16,6 @@ const ACCEPTED_ARTIFACT_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]
 const FORENSIC_CONTRACT_EXPOSURE = "M11_ROW_LEVEL_TRACE_CONTRACT_V1";
 const DETERMINISTIC_PROFILE_FORENSICS = new Set(["target_profile_forensics", "target_feature_profile_forensics", "data_provenance_profile_forensics", "exposure_registry_profile_forensics"]);
 const EXTENDED_DATA_READINESS_ARTIFACT = "extended_dap_india_readiness_profile";
-const INTEGRATED_DATA_REPORT_ARTIFACT = "integrated_dap_report";
 const EXTENDED_DATA_READINESS_ACTOR = "agent_4b_extended_dap";
 const RUNTIME_ARTIFACT_EXTRAS = new Set(["qualified_review_validation_manifest", "diligence_qa_completion_receipt"]);
 
@@ -43,6 +41,7 @@ export const ARTIFACTS_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "artifacts.service",
   migration_status: "runtime_owned_central_artifact_service",
   old_artifact_service_bridge_removed: true,
+  old_constants_permissions_dependency_removed: true,
   central_phase_aware: true,
   compatibility_permission_ids_retained: true
 });
