@@ -1,0 +1,54 @@
+name: Operator Reviewer Resume
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Reviewer run id to resume"
+        required: true
+        type: string
+      phase:
+        description: "Phase to reopen before advancing"
+        required: true
+        default: "M11"
+        type: string
+      auto_continue:
+        description: "Let the async runner continue after the reopened phase"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  resume:
+    name: Reopen failed checkpoint and advance
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACT_BACKEND_URL: ${{ vars.ARTIFACT_BACKEND_URL || 'https://interface-diligence-artifacts-24qnalslaa-el.a.run.app' }}
+      GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
+      RUN_ID: ${{ inputs.run_id }}
+      PHASE: ${{ inputs.phase }}
+      AUTO_CONTINUE: ${{ inputs.auto_continue }}
+    steps:
+      - name: Validate inputs
+        run: |
+          test -n "$ARTIFACT_BACKEND_URL"
+          test -n "$GPT_ACTION_API_KEY"
+          test -n "$RUN_ID"
+          test -n "$PHASE"
+
+      - name: Reopen checkpoint
+        run: |
+          curl -fsS -X POST "$ARTIFACT_BACKEND_URL/v1/phases/lock" \
+            -H "content-type: application/json" \
+            -H "x-ln-api-key: $GPT_ACTION_API_KEY" \
+            --data "{\"run_id\":\"$RUN_ID\",\"phase\":\"$PHASE\",\"agent_id\":\"operator\",\"status\":\"RUNNING\",\"next_phase\":\"$PHASE\",\"final_report_url\":\"\"}"
+
+      - name: Queue advance
+        run: |
+          curl -fsS -X POST "$ARTIFACT_BACKEND_URL/v1/reviewer/jobs/$RUN_ID/advance" \
+            -H "content-type: application/json" \
+            -H "x-ln-api-key: $GPT_ACTION_API_KEY" \
+            --data "{\"auto_continue\":$AUTO_CONTINUE}"
