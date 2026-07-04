@@ -16,6 +16,10 @@ Pass 6 rule: runtime auth, request schemas, and run-id utilities are now runtime
 
 Pass 7 rule: runtime pipeline and artifact-permission contracts are now present. `internal-job.contract.js` uses runtime `pipeline.contract.js`; `artifacts.service.js` uses runtime `artifact-permissions.contract.js`.
 
+Pass 8 rule: additive `src/phases/` central product-phase tree exists.
+
+Pass 9F rule: Source Discovery is phase-owned under `src/phases/01-source-discovery/`. The new runtime/phase path is cut off from old `agent-1-scout-extractor.js` and `m6-bucket-router.js` helpers.
+
 ## Runtime boundary
 
 `src/runtime/` owns the application shell, routes, central services, config facade, provider/prompt services, storage services, async runner, central pipeline dispatcher, artifact service, auth, runtime request schemas, run-id utilities, pipeline contracts, artifact-permission contracts, and central phase contracts. Product work belongs under `src/phases/`, not inside HTTP routes or top-level server files.
@@ -38,8 +42,9 @@ Central phases are named by product substance, not by legacy micro-phase labels.
 - `src/runtime/services/prompts.service.js` owns prompt/package/reference loading for the central tree.
 - `src/runtime/services/storage/*` owns Google client, Drive, Firestore, and Sheets logic for the central tree.
 - `src/runtime/services/async.service.js` owns queueing, worker lifecycle, stale handling, retry scheduling, and Cloud Tasks dispatch.
-- `src/runtime/services/pipeline.service.js` owns central phase dispatch and no longer imports the old normalized/legacy runner files.
+- `src/runtime/services/pipeline.service.js` owns central phase dispatch and routes Source Discovery through `src/phases/01-source-discovery/source-discovery.runner.js`.
 - `src/runtime/services/artifacts.service.js` owns artifact save/read/lock logic and no longer imports the old artifact service, old permissions, or old constants.
+- `src/phases/01-source-discovery/` owns URL manifest, source extraction, and source family handoff implementation logic.
 - Gemini provider keys must never be committed. `GEMINI_API_KEYS` stays in Cloud Run/env/secret config.
 
 ## Target folders
@@ -76,7 +81,7 @@ src/runtime/
 
 ## Remaining bridges
 
-The central runtime still uses specialist phase helper/orchestrator modules until those are migrated under `src/phases/`. `pipeline.service.js` still has one compatibility import from old `constants.js` for `artifactMatchesPermission`; that should be removed in the next cleanup pass with a full-file replacement or when the phase helper extraction begins.
+The central runtime still uses specialist phase helper/orchestrator modules outside Source Discovery until those are migrated under `src/phases/`.
 
 ## Non-negotiable boundaries
 
