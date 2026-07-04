@@ -1,4 +1,4 @@
-import { config } from "../config.js";
+import { config } from "./config.js";
 import { createRuntimeApp } from "./app.js";
 
 export function startRuntimeServer() {
