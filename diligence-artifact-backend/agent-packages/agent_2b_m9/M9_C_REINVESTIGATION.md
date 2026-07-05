@@ -1,24 +1,26 @@
-# M9-C — Reinvestigation Rules
+# Legal Cartography and Index — Reinvestigation Rules
 
-This file belongs to `agent_2b_m9` only.
+This file belongs to the Legal Cartography and Index phase.
 
-Reinvestigation is row-level repair for the M9 hybrid path. It is not a new phase, not a new agent, and not a downstream dependency.
+The backend package path retains its existing internal identifier.
+
+Reinvestigation is row-level repair for the Legal Cartography and Index hybrid path. It is not a new phase, not a new agent, and not a downstream dependency.
 
 ## Purpose
 
-Use reinvestigation when the deterministic or semantic M9 layers produce weak, thin, unclear, or ambiguous map rows.
+Use reinvestigation when deterministic or semantic Legal Cartography and Index layers produce weak, thin, unclear, or ambiguous map rows.
 
 The goal is to repair navigation quality without blocking the pipeline for ordinary quality gaps.
 
 ## Optional Artifact
 
-If reinvestigation is run, it may save this M9-owned workpad:
+If reinvestigation is run, it may save this internal workpad:
 
 ```text
 legal_cartography_reinvestigation_workpad
 ```
 
-This workpad is optional and internal to M9. It must not become a required input for M7, M8, M10, M11, M12, compiler, renderer, or public UI.
+This workpad is optional and internal to Legal Cartography and Index. It must not become a required input for Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Renderer, or public UI.
 
 ## Inputs
 
@@ -60,15 +62,15 @@ After reinvestigation, unresolved ordinary issues carry limitations and allow `L
 
 ## Critical Blocking Classes
 
-Blocking is allowed only for critical M9 failures:
+Blocking is allowed only for critical Legal Cartography and Index failures:
 
 ```text
-no usable legal/governance corpus
-missing all legal/governance lossless artifacts
+no usable legal-governance corpus
+missing all legal-governance lossless artifacts
 source custody corruption
 malformed final legal_cartography_index
 semantic claim cannot be safely attached or rejected by compiler
-M9 boundary breach
+Legal Cartography and Index boundary breach
 artifact save failure
 ```
 
@@ -80,14 +82,14 @@ If used, return strict JSON only:
 {
   "legal_cartography_reinvestigation_workpad": {
     "run_id": "",
-    "generated_by": "m9_hybrid_reinvestigation_layer",
-    "schema_version": "M9_REINVESTIGATION_WORKPAD_v1",
+    "generated_by": "legal_cartography_reinvestigation_layer",
+    "schema_version": "LEGAL_CARTOGRAPHY_REINVESTIGATION_WORKPAD_v1",
     "repair_rows_reviewed": [],
     "repair_rows_resolved": [],
     "repair_rows_unresolved_with_limitations": [],
     "compiler_notes": [],
     "downstream_rules": {
-      "m9_reinvestigation_only": true,
+      "legal_cartography_reinvestigation_only": true,
       "no_new_url_discovery": true,
       "use_only_loaded_legal_corpus": true,
       "ordinary_repairs_are_non_blocking": true,
