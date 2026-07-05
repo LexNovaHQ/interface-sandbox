@@ -11,22 +11,34 @@ M7 active inputs are limited to:
 - `lossless_family__T2_LEGAL_IDENTITY`
 - `lossless_family__T3_OPERATOR_ENTITY`
 - `lossless_family__T4_SUPPORTING_IDENTITY`
-- `m7_deterministic_legal_signal_overlay`
+- `legal_signal_derivation_profile`
 - the selected `TP.*` rows from `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`
 
 M7 must not use any artifact whose name starts with `lossless_family__L`.
 
 M7 must not use `source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families`.
 
-M7 must not use raw `legal_cartography_index` as model evidence. Any M9-derived support must come only through `m7_deterministic_legal_signal_overlay`.
+M7 must not use raw `legal_cartography_index` as model evidence.
+
+M7 may use `legal_signal_derivation_profile` only for M7-owned legal notice / jurisdiction fields:
+
+- `LGC.NOT.010`
+- `LGC.NOT.011`
+- `LGC.NOT.012`
+- `LGC.NOT.013`
+- `TP.JUR.003`
+- `TP.JUR.004`
+- `TP.JUR.005`
+- `TP.JUR.007`
+- `TP.JUR.008`
 
 `legal_cartography_index` is not an active M7 model input.
 
-The overlay may affect only these fields when the overlay status is `FOUND`:
+The direct legal signal profile may affect only these branches when supported by controlled field status and evidence:
 
-- `target_identity.legal_entity_name`
-- `jurisdiction_notice.governing_law`
-- `jurisdiction_notice.courts_venue`
+- `target_identity`
+- `jurisdiction_notice`
+- `target_profile_limitations`
 
 M7 must return strict JSON with exactly one top-level key: `target_profile`.
 
