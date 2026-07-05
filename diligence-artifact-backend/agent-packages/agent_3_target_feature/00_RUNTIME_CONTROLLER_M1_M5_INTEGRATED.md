@@ -1,6 +1,6 @@
-# 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
+# Target and Activity Profile Runtime Controller
 
-## Universal runtime kernel for Agent 3
+## Runtime kernel
 
 This file governs `agent_3_target_feature` only when assembled with `AGENT3_RUNTIME_BINDING_PACKET.yaml` and an active phase prompt.
 
@@ -8,66 +8,88 @@ The backend phase contract is the canonical permission source. Prompt text canno
 
 ## Runtime execution rule
 
-1. Read the runtime binding packet before the active module prompt.
+1. Read the runtime binding packet before the active phase prompt.
 2. Execute only the active phase selected by the backend runner.
-3. Read only artifacts listed in the backend phase contract for that phase.
-4. Write only artifacts listed in the backend phase contract for that phase.
+3. Read only artifacts listed in the backend phase contract for that active phase.
+4. Write only artifacts listed in the backend phase contract for that active phase.
 5. Save material artifacts before forensic artifacts.
-6. Do not emit downstream objects or renderer/final handoff artifacts.
+6. Do not emit downstream objects, final handoff artifacts, renderer payloads, Qualified Review artifacts, or same-chat receipts in backend mode.
 
-## Agent 3 active scope
+## Active phase ownership
 
-Agent 3 owns:
+This package currently covers these compatibility surfaces until each phase is migrated into its own phase folder:
 
-- `M7_TARGET_PROFILE`
-- `M7_TARGET_PROFILE_FORENSICS`
-- `M8_FEATURE_CANDIDATE_INVENTORY`
-- `M8_TARGET_FEATURE_PROFILE`
-- `M8_TARGET_FEATURE_PROFILE_FORENSICS`
+- Target Profile Review
+- Target Profile Forensics
+- Activity Profile Review
+- Activity Profile Forensics
 
-Agent 3 does not own M6, M9, M10, M11, M12, compiler, or renderer work.
+The package does not own Source Discovery, Legal Cartography and Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
 
-## M7 read authority
+## Target Profile Review read authority
 
-M7 is profile-bucket only.
+Target Profile Review is target-family primary.
 
-M7 may read only:
+Target Profile Review may read only:
 
 - `source_discovery_handoff`
-- `m7_deterministic_legal_signal_overlay`
 - `lossless_family__T0_ROOT`
 - `lossless_family__T1_IDENTITY`
 - `lossless_family__T2_LEGAL_IDENTITY`
 - `lossless_family__T3_OPERATOR_ENTITY`
 - `lossless_family__T4_SUPPORTING_IDENTITY`
+- `legal_signal_derivation_profile`
 
-M7 must not read or request:
+Target Profile Review must not read or request:
 
 - `legal_cartography_index`
+- `m7_deterministic_legal_signal_overlay`
 - any artifact whose name starts with `lossless_family__L`
 - `source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families`
 - legal/governance route buckets
 - raw legal/governance source text
+- product/activity family artifacts
+- data-provenance family artifacts
 
-M7 must not block because legal/governance lossless artifacts are absent. Missing deterministic overlay values become controlled field statuses and limitations.
+Target Profile Review must not block because legal/governance lossless artifacts are absent. Missing or limited direct legal signal rows become controlled field statuses and limitation rows.
 
-## M7 deterministic overlay rule
+## Direct legal signal rule
 
-`m7_deterministic_legal_signal_overlay` is the only M9-derived material available to M7.
+`legal_signal_derivation_profile` is the only Legal Cartography and Index-derived material available to Target Profile Review.
 
-M7 may use it only for:
+Target Profile Review may use it only for owned legal notice and jurisdiction signal rows:
 
-- `target_identity.legal_entity_name`
-- `jurisdiction_notice.governing_law`
-- `jurisdiction_notice.courts_venue`
+- `LGC.NOT.010`
+- `LGC.NOT.011`
+- `LGC.NOT.012`
+- `LGC.NOT.013`
+- `TP.JUR.003`
+- `TP.JUR.004`
+- `TP.JUR.005`
+- `TP.JUR.007`
+- `TP.JUR.008`
 
-M7 must not derive those values directly from legal/governance artifacts.
+Target Profile Review must not use `privacy_grievance_contact_signal_map` or `consent_manager_signal_map` for material derivation.
 
-## M8 read authority
+Target Profile Review must treat direct signal rows as bounded field signals, not legal advice, not legal sufficiency, and not permission to inspect legal-family source text.
 
-M8 may read target profile artifacts and product/activity lossless families as authorized by the backend phase contract.
+## Direct legal signal status handling
 
-M8 must not use M7 to backdoor legal/governance source material.
+```text
+DERIVED -> use value only if the target_profile schema permits.
+DERIVED_WITH_LIMITATION -> use value only with target_profile_limitations entry.
+LOCATOR_FOUND_VALUE_NOT_VISIBLE -> do not invent value; record controlled limitation.
+SOURCE_NOT_PUBLIC -> do not invent value; record controlled limitation.
+SOURCE_CONFLICT -> do not choose a winner; record conflict limitation.
+NOT_APPLICABLE_CONTEXTUAL -> controlled not applicable where schema permits.
+NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN -> do not invent value; record controlled limitation.
+```
+
+## Activity Profile Review read authority
+
+Activity Profile Review may read target profile artifacts, feature candidate inventory, and product/activity families as authorized by the backend phase contract.
+
+Activity Profile Review must not use Target Profile Review to backdoor legal/governance source material.
 
 ## Runtime stop rules
 
