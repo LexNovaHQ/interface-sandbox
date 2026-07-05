@@ -25,6 +25,7 @@ assert.deepEqual(contract.reads, expectedReads);
 assert.deepEqual(contract.writes, ["target_profile"]);
 assert.deepEqual(contract.references, ["M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml", "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"]);
 assert.equal(contract.next, "M7_TARGET_PROFILE_FORENSICS");
+assert.equal(contract.reads.includes("legal_signal_derivation_profile"), true);
 
 for (const forbidden of [
   "legal_cartography_index",
@@ -81,17 +82,16 @@ assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_production_entrypoin
 assert.equal(PIPELINE_CONTRACT_STATUS.global_production_deployment_switched, false);
 
 const pipelineSource = read("src/runtime/services/pipeline.service.js");
-assert.ok(pipelineSource.includes("import { validateM7TargetProfileOutput as validateTargetProfileOutput }"));
-assert.ok(pipelineSource.includes("readArtifactsForCentralJob({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id })"));
-assert.ok(pipelineSource.includes("buildPhasePrompt({ prompt_file: contract.prompt_file, prompt_files: contract.prompt_files"));
-assert.ok(pipelineSource.includes("validateTargetProfileOutput(output, { phase: internalJobId })"));
-assert.ok(pipelineSource.includes("for (const artifactName of contract.writes)"));
-assert.ok(pipelineSource.includes("artifact_name: artifactName"));
+assert.ok(pipelineSource.includes("runTargetProfileReviewPhase"));
+assert.ok(pipelineSource.includes("target_profile_review_phase_runner_wired: true"));
+assert.ok(pipelineSource.includes("internalJobId === JOB.targetProfileReview) await runTargetProfileReviewRuntimeJob"));
+assert.ok(pipelineSource.includes("async function runTargetProfileReviewRuntimeJob"));
+assert.ok(pipelineSource.includes("TARGET_PROFILE_REVIEW_PHASE_RUNNER_COMPLETED"));
+assert.ok(pipelineSource.includes("target_profile_review_phase_runner_used: true"));
 assert.ok(pipelineSource.includes("legal_signal_derivation_profile_supplied_directly"));
 
 const phaseContractsSource = read("src/phase-contracts.js");
 assert.ok(phaseContractsSource.includes("M7_TARGET_PROFILE"));
-assert.ok(phaseContractsSource.includes("legal_signal_derivation_profile"));
 assert.equal(/M7_TARGET_PROFILE:[^\n]+legal_cartography_index/.test(phaseContractsSource), false);
 assert.equal(/M7_TARGET_PROFILE:[^\n]+m7_deterministic_legal_signal_overlay/.test(phaseContractsSource), false);
 
