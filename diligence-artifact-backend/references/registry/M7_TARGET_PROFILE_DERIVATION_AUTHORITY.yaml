@@ -1,7 +1,8 @@
-schema: M7_TARGET_PROFILE_DERIVATION_AUTHORITY_v2_DIRECT_SIGNAL
-purpose: Sanitized M7-only derivation authority. This file replaces broad target-profile registry source-basis language inside M7 model prompts.
-phase: M7_TARGET_PROFILE
+schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v3_DIRECT_SIGNAL
+purpose: Sanitized Target Profile Review derivation authority. This file replaces broad target-profile registry source-basis language inside Target Profile Review prompts.
+phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
+compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review.
 
 source_boundary:
   allowed_model_sources:
@@ -34,6 +35,8 @@ direct_legal_signal_policy:
   artifact: legal_signal_derivation_profile
   model_may_use_supported_field_rows_only: true
   model_must_not_read_raw_legal_sources: true
+  direct_signal_is_not_legal_advice: true
+  direct_signal_is_not_legal_sufficiency: true
   allowed_field_ids:
     - LGC.NOT.010
     - LGC.NOT.011
@@ -48,6 +51,14 @@ direct_legal_signal_policy:
     - target_identity
     - jurisdiction_notice
     - target_profile_limitations
+  status_translation:
+    DERIVED: use_value_if_schema_permits
+    DERIVED_WITH_LIMITATION: use_value_with_target_profile_limitation
+    LOCATOR_FOUND_VALUE_NOT_VISIBLE: no_value_record_controlled_limitation
+    SOURCE_NOT_PUBLIC: no_value_record_controlled_limitation
+    SOURCE_CONFLICT: no_winner_record_conflict_limitation
+    NOT_APPLICABLE_CONTEXTUAL: controlled_not_applicable_where_schema_permits
+    NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN: no_value_record_controlled_limitation
 
 selected_fields:
   target_identity.brand_name:
@@ -110,9 +121,9 @@ selected_fields:
     unsupported_behavior: array_required
 
 hard_rules:
-  - M7 must not request legal/governance family artifacts.
-  - M7 must not request legal_cartography_index.
-  - M7 must not request m7_deterministic_legal_signal_overlay.
-  - M7 must not block because legal/governance families are unavailable.
+  - Target Profile Review must not request legal/governance family artifacts.
+  - Target Profile Review must not request legal_cartography_index.
+  - Target Profile Review must not request m7_deterministic_legal_signal_overlay.
+  - Target Profile Review must not block because legal/governance families are unavailable.
   - Missing direct legal signal data means controlled field status, not source repair.
   - Source repair is reserved for missing or corrupted target-profile bucket artifacts.
