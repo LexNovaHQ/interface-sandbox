@@ -24,8 +24,8 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
   phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY",
   public_label: "Activity Candidate Inventory",
   compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY",
-  implementation_status: "CONTRACT_LOCKED_DETERMINISTIC_INDEX_MIGRATION_PENDING",
-  production_entrypoint_switched: false,
+  implementation_status: "PHASE_RUNNER_CUTOVER_STAGED",
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "NONE_DETERMINISTIC",
   deterministic_job: Object.freeze({
