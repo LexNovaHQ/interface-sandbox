@@ -12,7 +12,7 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
   const output = buildBaseOutput({ run, artifacts });
   const status = output.normalized_report_manifest?.validation_status || run.validation_status || run.status || "LOCKED_WITH_LIMITATIONS";
   const section4 = buildProductCommercialAvailabilitySection(output.normalized_section__product_activity_ip_profile, artifacts);
-  const section6 = buildLegalDocumentGovernanceMapSection({ legalCartographyIndex: artifacts.legal_cartography_index, sectionStatus: status });
+  const section6 = buildLegalDocumentGovernanceMapSection({ legalCartographyIndex: artifacts.legal_cartography_index, legalSignalDerivationProfile: artifacts.legal_signal_derivation_profile, sectionStatus: status });
   const section5 = buildFullIntegratedDapSection(output.normalized_section__data_provenance_controls, artifacts);
   output.normalized_section__product_activity_ip_profile = section4;
   output.normalized_section__data_provenance_controls = section5;
@@ -32,12 +32,13 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
       section_5_contact_consent_readiness_subsection_present: true,
       section_5_full_36_field_dap_report_present: true,
       section_5_dap_annexure_disclaimer_present: true,
-      section_6_m9_summary_not_raw_index: true
+      section_6_legal_cartography_summary_not_raw_index: true,
+      section_6_legal_signal_derivation_profile_summary_present: true
     },
     section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => {
       if (row.section_id === "product_activity_ip_profile") return { ...row, title: section4.section_title, status: section4.section_status, commercial_availability_posture_subsection_present: true };
       if (row.section_id === "data_provenance_controls") return { ...row, title: section5.section_title, status: section5.section_status, full_36_field_dap_report_present: true, annexure_disclaimer_present: true, contact_consent_readiness_subsection_present: true };
-      if (row.section_id === "legal_document_control_review") return { ...row, title: section6.section_title, status: section6.section_status };
+      if (row.section_id === "legal_document_control_review") return { ...row, title: section6.section_title, status: section6.section_status, legal_signal_derivation_profile_summary_present: true };
       return row;
     })
   };
@@ -54,16 +55,18 @@ export function buildNormalizedProfilerOutput({ run = {}, artifacts = {} } = {})
         section_5_contact_consent_readiness_subsection_present: true,
         section_5_full_36_field_dap_report_present: true,
         section_5_dap_annexure_disclaimer_present: true,
-        section_6_m9_summary_not_raw_index: true
+        section_6_legal_cartography_summary_not_raw_index: true,
+        section_6_legal_signal_derivation_profile_summary_present: true
       },
       compiler_trace: {
         ...(final.compiler_trace || {}),
-        compiler_version: "normalized_profiler_compiler_replacement_v11_section4_commercial_section5_contact_consent_full_dap_section6_m9_summary",
+        compiler_version: "normalized_profiler_compiler_replacement_v12_section4_commercial_section5_contact_consent_full_dap_section6_legal_signal_profile",
         section_4_commercial_availability_posture_subsection_present: true,
         section_5_contact_consent_readiness_subsection_present: true,
         section_5_full_36_field_dap_report_present: true,
         section_5_dap_annexure_disclaimer_present: true,
-        section_6_m9_summary_not_raw_index: true
+        section_6_legal_cartography_summary_not_raw_index: true,
+        section_6_legal_signal_derivation_profile_summary_present: true
       }
     }
   };
@@ -244,39 +247,19 @@ function fallbackSubsections(base, integrated) {
           qualified_review_action: row.qualified_review_action || "Confirm during qualified review before reliance."
         },
         limitation: row.limitation || "Qualified review required before reliance.",
-        qualified_review_note: row.qualified_review_action || "Confirm during qualified review before reliance."
+        qualified_review_note: row.qualified_review_action || "Confirm during qualified review before reliance.",
+        source_artifact: "integrated_dap_report",
+        source_path: `integrated_table_rows.${index}`
       }))
     }];
   }
   return Array.isArray(base.subsections) ? base.subsections : [];
 }
 
-function unwrapArtifact(value, key) {
-  if (value?.[key] && typeof value[key] === "object") return value[key];
-  if (value?.artifact?.[key] && typeof value.artifact[key] === "object") return value.artifact[key];
-  return value && typeof value === "object" ? value : {};
-}
-
-function appendSentence(value, sentence) {
-  const base = typeof value === "string" ? value.trim() : "";
-  if (!base) return sentence;
-  if (base.includes(sentence)) return base;
-  return `${base} ${sentence}`.trim();
-}
-
-function uniqueStrings(values) {
-  return [...new Set(values.filter((value) => typeof value === "string" && value.trim()).map((value) => value.trim()))];
-}
-
-function arrayOrDash(value) {
-  return Array.isArray(value) && value.length ? value : ["—"];
-}
-
-function text(value, fallback) {
-  const out = String(value ?? "").trim();
-  return out || fallback;
-}
-
-function slug(value) {
-  return String(value || "dap").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "dap";
-}
+function unwrapArtifact(value, key) { return value?.[key] && typeof value[key] === "object" ? value[key] : value?.artifact?.[key] || value || {}; }
+function safeText(value, fallback) { return typeof value === "string" && value.trim() ? value.trim() : fallback; }
+function text(value, fallback) { return safeText(value, fallback); }
+function arrayOrDash(value) { return Array.isArray(value) && value.length ? value : ["Not visible in reviewed public materials."]; }
+function uniqueStrings(values) { return [...new Set(values.filter((value) => typeof value === "string" && value.trim()))]; }
+function appendSentence(base, sentence) { const current = typeof base === "string" && base.trim() ? base.trim() : ""; if (!sentence) return current; return current ? `${current} ${sentence}` : sentence; }
+function slug(value) { return String(value || "section").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 50) || "section"; }
