@@ -1,8 +1,10 @@
-# M9 Hybrid Compiler Contract
+# Legal Cartography and Index — Hybrid Compiler Contract
 
-This file belongs to `agent_2b_m9` only.
+This file belongs to the **Legal Cartography and Index** phase.
 
-M9 is split into two internal jobs inside the same Legal Cartography phase:
+The compatibility package path and filename retain the old internal identifier because the current backend still references those paths.
+
+Legal Cartography and Index is split into two internal jobs:
 
 ```text
 Job A — Legal Cartography Index
@@ -68,6 +70,8 @@ data_provenance_profile
 renderer_payload
 ```
 
+The two old support artifact names above are forbidden output names. They are retained in this list only as prohibited compatibility artifacts.
+
 ## Merge Rules
 
 The compiler performs a strict merge.
@@ -78,7 +82,7 @@ Semantic labels may attach only to an existing deterministic pointer.
 
 If a semantic label does not attach to an existing deterministic pointer, the compiler rejects or quarantines it.
 
-The compiler must not copy full source text into the final M9 artifact.
+The compiler must not copy full source text into the final Legal Cartography and Index artifact.
 
 The compiler must not fetch sources, browse, crawl, or infer private documents.
 
@@ -90,13 +94,13 @@ Downstream phases may continue to read:
 legal_cartography_index
 ```
 
-The new deterministic Job B separately emits:
+The deterministic Job B separately emits:
 
 ```text
 legal_signal_derivation_profile
 ```
 
-Job B is not part of the Job A compiler. It consumes the saved Job A artifacts and loaded legal/governance corpus.
+Job B is not part of the Job A compiler. It consumes the saved Job A artifacts and loaded legal-governance corpus.
 
 ## Boundary Rules
 
@@ -106,17 +110,17 @@ The Job A compiler may emit locator rows and navigation pointers that Job B can 
 
 ## Status Rule
 
-Use `LOCKED` only when the compiled index is complete against the loaded legal corpus.
+Use `LOCKED` only when the compiled index is complete against the loaded legal-governance corpus.
 
 Use `LOCKED_WITH_LIMITATIONS` when the index is usable but contains unresolved ordinary limitations.
 
 Use `REPAIR_REQUIRED` only for repairable schema or source-discipline problems.
 
-Use `CONTROLLED_FAILURE` only when the legal/governance corpus or source custody is unusable.
+Use `CONTROLLED_FAILURE` only when the legal-governance corpus or source custody is unusable.
 
 ## Legal Signal Derivation Boundary
 
-The prior downstream object named `qualified_review_legal_signals` is retired from the M9 package contract.
+The prior downstream object named `qualified_review_legal_signals` is retired from the Legal Cartography and Index package contract.
 
 Legal signal derivation is now a separate deterministic Job B output:
 
@@ -132,4 +136,6 @@ Job B must follow:
 M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md
 ```
 
-Job B may use `legal_cartography_index`, `legal_cartography_deterministic_map`, `legal_cartography_semantic_profile`, and loaded L-family source text as source authority.
+The filename is retained for compatibility; the governing phase name is **Legal Cartography and Index**.
+
+Job B may use `legal_cartography_index`, `legal_cartography_deterministic_map`, `legal_cartography_semantic_profile`, and loaded legal-governance source text as source authority.
