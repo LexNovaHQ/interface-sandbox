@@ -1,0 +1,147 @@
+const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze([
+  "source_discovery_handoff",
+  "target_profile",
+  "target_profile_forensics",
+  "lossless_family__P1_PRODUCT",
+  "lossless_family__P2_PLATFORM_FEATURE_SOLUTION",
+  "lossless_family__P3_AI_CAPABILITY_TECHNICAL",
+  "lossless_family__P5_ENTERPRISE_PRICING"
+]);
+
+const ACTIVITY_CANDIDATE_INVENTORY_WRITES = Object.freeze(["feature_candidate_inventory"]);
+
+const ACTIVITY_CANDIDATE_INVENTORY_SOURCE_FAMILIES = Object.freeze([
+  "P1_PRODUCT",
+  "P2_PLATFORM_FEATURE_SOLUTION",
+  "P3_AI_CAPABILITY_TECHNICAL",
+  "P5_ENTERPRISE_PRICING"
+]);
+
+export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
+  contract_name: "ACTIVITY_CANDIDATE_INVENTORY_CONTRACT_v1_INDEX_ONLY",
+  central_phase_id: "ACTIVITY_PROFILE_REVIEW",
+  central_phase_label: "Activity Profile Review",
+  phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY",
+  public_label: "Activity Candidate Inventory",
+  compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY",
+  implementation_status: "CONTRACT_LOCKED_DETERMINISTIC_INDEX_MIGRATION_PENDING",
+  production_entrypoint_switched: false,
+  global_production_deployment_switched: false,
+  model_usage: "NONE_DETERMINISTIC",
+  deterministic_job: Object.freeze({
+    reads: ACTIVITY_CANDIDATE_INVENTORY_READS,
+    writes: ACTIVITY_CANDIDATE_INVENTORY_WRITES,
+    source_helper: "buildFeatureCandidateInventoryIndex",
+    source_helper_module: "src/m8-feature-candidate-inventory-index.js",
+    legacy_harvester_module: "src/m8-feature-candidate-inventory.js",
+    validator: "validateFeatureCandidateInventoryIndex",
+    validator_module: "src/m8-feature-candidate-inventory-index.js"
+  }),
+  source_family_scope: Object.freeze({
+    candidate_creation_families: ACTIVITY_CANDIDATE_INVENTORY_SOURCE_FAMILIES,
+    p4_use_case_industry_candidate_creation_allowed: false,
+    p4_reserved_for_activity_profile_review_context: true,
+    legal_governance_family_candidate_creation_allowed: false,
+    data_family_candidate_creation_allowed: false,
+    external_browsing_allowed: false
+  }),
+  output_contract: Object.freeze({
+    required_top_level_artifact: "feature_candidate_inventory",
+    artifact_type: "feature_candidate_inventory",
+    inventory_version: "m8_feature_candidate_inventory_index_v1",
+    derivation_mode: "DETERMINISTIC_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION",
+    required_branches: Object.freeze([
+      "artifact_type",
+      "inventory_version",
+      "run_id",
+      "derivation_mode",
+      "source_families_indexed",
+      "raw_hit_count",
+      "canonical_candidate_count",
+      "raw_feature_hit_index",
+      "candidates",
+      "canonicalization_index",
+      "dedup_index",
+      "parent_child_overlap_index",
+      "dedup_summary",
+      "index_boundary",
+      "index_limitations"
+    ]),
+    candidate_required_fields: Object.freeze([
+      "candidate_id",
+      "canonical_feature_key",
+      "candidate_name",
+      "candidate_type",
+      "candidate_status",
+      "wrapper_or_surface",
+      "capability_key",
+      "surface_key",
+      "mandatory_profile_treatment",
+      "merged_raw_hit_ids",
+      "source_pointers"
+    ]),
+    source_pointer_required_fields: Object.freeze([
+      "lossless_artifact_name",
+      "source_family",
+      "source_id",
+      "source_url",
+      "route_type",
+      "locator_type",
+      "locator_value"
+    ]),
+    index_only: true,
+    no_evidence_text_copy: true,
+    no_mechanics_proof: true,
+    no_activity_summary: true,
+    no_archetype_or_surface_derivation: true,
+    no_legal_privacy_or_registry_analysis: true
+  }),
+  forbidden_runtime_reads: Object.freeze([
+    "legal_cartography_index",
+    "legal_signal_derivation_profile",
+    "m7_deterministic_legal_signal_overlay",
+    "lossless_family__L1_CORE_TERMS_PRIVACY",
+    "lossless_family__L2_B2B_CONTRACTING",
+    "lossless_family__L3_AI_USAGE_GOVERNANCE",
+    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
+    "lossless_family__L5_LEGAL_HUB_HOSTED",
+    "lossless_family__L6_ENTITY_NOTICE",
+    "lossless_family__P4_USE_CASE_INDUSTRY",
+    "lossless_family__D1_SECURITY_TRUST",
+    "lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER",
+    "lossless_family__D3_DATA_GOVERNANCE_CONTROLS",
+    "lossless_family__D4_DOCS_API_DATA_FLOW",
+    "lossless_family__D5_AI_SAFETY_TRANSPARENCY",
+    "target_feature_profile",
+    "target_feature_profile_forensics",
+    "data_provenance_profile",
+    "exposure_registry_profile",
+    "challenge_gate",
+    "final_output_handoff",
+    "renderer_payload",
+    "qualified_review_handoff"
+  ]),
+  boundary_rules: Object.freeze({
+    deterministic_only: true,
+    must_not_call_provider: true,
+    must_not_discover_or_fetch_sources: true,
+    must_not_emit_target_feature_profile: true,
+    must_not_emit_target_feature_profile_forensics: true,
+    must_not_copy_lossless_text_or_excerpts: true,
+    must_not_create_candidate_from_p4: true,
+    candidate_inventory_is_navigation_index_not_evidence: true,
+    next_job: "ACTIVITY_PROFILE_REVIEW_MATERIAL"
+  })
+});
+
+export function activityCandidateInventoryReadArtifacts() {
+  return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.reads];
+}
+
+export function activityCandidateInventoryWriteArtifacts() {
+  return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.writes];
+}
+
+export function activityCandidateInventoryCandidateCreationFamilies() {
+  return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.source_family_scope.candidate_creation_families];
+}
