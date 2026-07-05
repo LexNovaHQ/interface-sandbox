@@ -18,8 +18,9 @@ assert.equal(contract.central_phase_id, "TARGET_PROFILE_REVIEW");
 assert.equal(contract.public_label, "Target Profile Review");
 assert.equal(contract.type, "model");
 assert.equal(contract.agent_id, "agent_3_target_feature");
-assert.equal(contract.runtime_wiring_status, "CONTRACT_LOCKED_AUDITED");
-assert.equal(contract.production_entrypoint_switched, false);
+assert.equal(contract.runtime_wiring_status, "PHASE_RUNNER_CUTOVER");
+assert.equal(contract.production_entrypoint_switched, true);
+assert.equal(contract.global_production_deployment_switched, false);
 assert.deepEqual(contract.reads, expectedReads);
 assert.deepEqual(contract.writes, ["target_profile"]);
 assert.deepEqual(contract.references, ["M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml", "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"]);
@@ -75,7 +76,9 @@ assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_runtime_wiring_audit
 assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_reads_contract_locked, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_prompt_stack_contract_locked, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_validator_wired, true);
-assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_production_entrypoint_switched, false);
+assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_phase_runner_cutover, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.target_profile_review_production_entrypoint_switched, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.global_production_deployment_switched, false);
 
 const pipelineSource = read("src/runtime/services/pipeline.service.js");
 assert.ok(pipelineSource.includes("import { validateM7TargetProfileOutput as validateTargetProfileOutput }"));
