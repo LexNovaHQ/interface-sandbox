@@ -12,7 +12,8 @@ const MATERIAL_TOP_KEYS = Object.freeze([TP]);
 const FORENSIC_TOP_KEYS = Object.freeze([TPF]);
 const PROFILE_BRANCHES = Object.freeze(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.branch_fields);
 const MATERIAL_BRANCHES = Object.freeze(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.required_top_level_branches);
-const SELECTED_FIELDS = Object.freeze([...Object.entries(PROFILE_BRANCHES).flatMap(([parent, fields]) => fields.map((field) => `${parent}.${field}`)), TPL]);
+const PROFILE_OBJECT_BRANCHES = Object.freeze(Object.entries(PROFILE_BRANCHES).filter(([parent]) => parent !== TPL));
+const SELECTED_FIELDS = Object.freeze([...PROFILE_OBJECT_BRANCHES.flatMap(([parent, fields]) => fields.map((field) => `${parent}.${field}`)), TPL]);
 const ARRAY_FIELDS = new Set(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.array_fields);
 const CONTROLLED_VALUES = new Set(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.controlled_field_values);
 const DIRECT_SIGNAL_ALLOWED_FIELDS = new Set(TARGET_PROFILE_REVIEW_CONTRACT.direct_legal_signal_intake.allowed_field_rows.map((row) => row.field_id));
@@ -89,7 +90,7 @@ export function validateTargetProfileReviewOutput(output, options = {}) {
 function validateProfile(profile, failures) {
   if (!isPlainObject(profile)) return failures.push(`${TP} must be object`);
   rejectKeyDiff(Object.keys(profile).sort(), MATERIAL_BRANCHES.slice().sort(), TP, failures);
-  for (const [parent, fields] of Object.entries(PROFILE_BRANCHES)) {
+  for (const [parent, fields] of PROFILE_OBJECT_BRANCHES) {
     if (!isPlainObject(profile[parent])) {
       failures.push(`${TP}.${parent} must be object`);
       continue;
