@@ -28,7 +28,7 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       validation_status: status,
       normalized_report_manifest: output.normalized_report_manifest,
       normalized_sections,
-      compiler_trace: { ...(final.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v8_exposure_tier_sorted", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length, section_6_m9_summary_not_raw_index: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, exposure_tier_carry_forward: true, exposure_tier_sort_locked: true, archived_legacy_outputs_not_emitted: true }
+      compiler_trace: { ...(final.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v9_exposure_tier_sorted_phase_language", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length, section_6_legal_cartography_summary_not_raw_index: true, section_6_legal_signal_derivation_profile_summary_present: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, exposure_tier_carry_forward: true, exposure_tier_sort_locked: true, archived_legacy_outputs_not_emitted: true }
     }
   };
   output.normalizer_validation = validateNormalizedProfilerOutput(output);
