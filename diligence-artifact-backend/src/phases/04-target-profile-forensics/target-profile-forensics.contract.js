@@ -25,8 +25,8 @@ export const TARGET_PROFILE_FORENSICS_CONTRACT = Object.freeze({
     writes: TARGET_PROFILE_FORENSICS_WRITES,
     source_helper: "buildM7DeterministicTargetForensics",
     source_helper_module: "src/deterministic-profile-forensics.js",
-    validator: "validateM7TargetProfileOutput",
-    validator_phase: "M7_TARGET_PROFILE_FORENSICS"
+    validator: "target_profile_forensics_boundary_validator",
+    validator_scope: "forensic_trace_output_only"
   }),
   output_contract: Object.freeze({
     required_top_level_artifact: "target_profile_forensics",
