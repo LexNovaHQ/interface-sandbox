@@ -1,5 +1,5 @@
-schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v3_DIRECT_SIGNAL
-purpose: Sanitized Target Profile Review derivation authority. This file replaces broad target-profile registry source-basis language inside Target Profile Review prompts.
+schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v4_CONTRACT_LOCKED
+purpose: Sanitized Target Profile Review derivation authority aligned to the Phase 3A contract lock.
 phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
 compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review.
@@ -24,6 +24,16 @@ source_boundary:
     - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
     - lossless_family__L5_LEGAL_HUB_HOSTED
     - lossless_family__L6_ENTITY_NOTICE
+    - lossless_family__P1_PRODUCT
+    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+    - lossless_family__P4_USE_CASE_INDUSTRY
+    - lossless_family__P5_ENTERPRISE_PRICING
+    - lossless_family__D1_SECURITY_TRUST
+    - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
+    - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
+    - lossless_family__D4_DOCS_API_DATA_FLOW
+    - lossless_family__D5_AI_SAFETY_TRANSPARENCY
 
 controlled_statuses:
   - FIELD_LIMITED
@@ -47,13 +57,15 @@ direct_legal_signal_policy:
     - TP.JUR.005
     - TP.JUR.007
     - TP.JUR.008
+  forbidden_field_families:
+    - privacy_grievance_contact_signal_map
+    - consent_manager_signal_map
   allowed_target_branches:
-    - target_identity
     - jurisdiction_notice
     - target_profile_limitations
   status_translation:
-    DERIVED: use_value_if_schema_permits
-    DERIVED_WITH_LIMITATION: use_value_with_target_profile_limitation
+    DERIVED: use_value_if_target_profile_schema_permits
+    DERIVED_WITH_LIMITATION: use_value_only_with_target_profile_limitation
     LOCATOR_FOUND_VALUE_NOT_VISIBLE: no_value_record_controlled_limitation
     SOURCE_NOT_PUBLIC: no_value_record_controlled_limitation
     SOURCE_CONFLICT: no_winner_record_conflict_limitation
@@ -65,8 +77,8 @@ selected_fields:
     source_basis: target_profile_bucket_only
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.legal_entity_name:
-    source_basis: target_profile_bucket_or_direct_legal_signal_only
-    direct_legal_signal_allowed: true
+    source_basis: target_profile_bucket_only
+    direct_legal_signal_allowed: false
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.entity_type:
     source_basis: target_profile_bucket_only
@@ -124,6 +136,7 @@ hard_rules:
   - Target Profile Review must not request legal/governance family artifacts.
   - Target Profile Review must not request legal_cartography_index.
   - Target Profile Review must not request m7_deterministic_legal_signal_overlay.
+  - Target Profile Review must not use direct legal signal rows for target_identity, business_context, or product_service_wrapper derivation.
   - Target Profile Review must not block because legal/governance families are unavailable.
   - Missing direct legal signal data means controlled field status, not source repair.
   - Source repair is reserved for missing or corrupted target-profile bucket artifacts.
