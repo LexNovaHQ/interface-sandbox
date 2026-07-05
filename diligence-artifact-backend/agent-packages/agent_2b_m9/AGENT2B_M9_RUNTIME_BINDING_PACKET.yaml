@@ -1,32 +1,38 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v4_agent2b_m9_phase2_job_split
+runtime_contract_version: v5_legal_cartography_and_index_phase_job_split
 active_agent_id: agent_2b_m9
-active_agent_name: Interface Legal Cartography Agent
-active_phase_scope: M9_ONLY
+active_agent_name: Interface Legal Cartography and Index Agent
+active_phase_scope: LEGAL_CARTOGRAPHY_AND_INDEX_ONLY
 run_mode: PHASED_AGENT
 run_id_required: true
 run_id: "{{run_id}}"
 
+compatibility_boundary:
+  internal_agent_id_retained_for_runtime: agent_2b_m9
+  compatibility_package_path_retained: agent-packages/agent_2b_m9
+  product_phase_name: Legal Cartography and Index
+  old_module_language_forbidden_in_human_facing_text: true
+
 structure_authority:
   packet_structure_supreme: true
   no_module_merge: true
-  backend_supports_agent_structure: true
+  backend_supports_phase_structure: true
   backend_must_not_dictate_prompt_structure: true
-  current_agent_identity_preserved: true
+  current_agent_identity_preserved_for_compatibility: true
   current_input_protocol_preserved: true
-  agent_package_is_semantic_authority: true
+  phase_package_is_semantic_authority: true
   semantic_sidecar_prompt_active: false
-  phase_2_internal_job_split_locked: true
+  internal_job_split_locked: true
 
-allowed_modules:
-  - M9_LEGAL_CARTOGRAPHY
+allowed_phase:
+  - LEGAL_CARTOGRAPHY_AND_INDEX
 
 internal_execution_layers:
-  - M9_DETERMINISTIC_LEGAL_STACK_INDEX
-  - M9_CANONICAL_SEMANTIC_LABELING
-  - M9_DETERMINISTIC_COMPILER
-  - M9_LEGAL_SIGNAL_DERIVATION
+  - LEGAL_CARTOGRAPHY_DETERMINISTIC_STACK_INDEX
+  - LEGAL_CARTOGRAPHY_CANONICAL_SEMANTIC_LABELING
+  - LEGAL_CARTOGRAPHY_DETERMINISTIC_COMPILER
+  - LEGAL_SIGNAL_DERIVATION
 
 reference_documents:
   - M9_FIELD_DERIVATION_REGISTRY.yaml
@@ -47,28 +53,29 @@ write_artifacts_in_order:
   - legal_cartography_index
   - legal_signal_derivation_profile
 
-internal_artifacts_m9_owned:
+internal_artifacts_owned_by_legal_cartography_and_index:
   - legal_cartography_deterministic_map
   - legal_cartography_semantic_profile
   - legal_cartography_reinvestigation_workpad
 
-final_downstream_required_artifact:
+final_downstream_required_artifacts:
   - legal_cartography_index
   - legal_signal_derivation_profile
 
 phase_lock:
-  - M9
-phase_lock_meaning: "Agent 2B locks M9 after legal_cartography_index and legal_signal_derivation_profile validate and save. M6 belongs to Agent 2A and is not executed by this package. M7, M10, and Qualified Review integrations are deferred to their own phase contracts."
+  - LEGAL_CARTOGRAPHY_AND_INDEX
+phase_lock_meaning: "Legal Cartography and Index locks after legal_cartography_index and legal_signal_derivation_profile validate and save. Source Discovery is upstream and is not executed by this package. Target Profile Review, Data Provenance Profile, and Qualified Review consume these outputs through their own phase contracts."
 
-forbidden_modules:
-  - M6_SOURCE_DISCOVERY
-  - M7_TARGET_PROFILE
-  - M8_TARGET_FEATURE_PROFILE
-  - M10_DATA_PROVENANCE
-  - M11_EXPOSURE_REGISTRY
-  - M12_OPERATOR_CHALLENGE
-  - M13_OUTPUT_HANDOFF
-  - M14_TERMINAL_RENDERER
+forbidden_phases:
+  - SOURCE_DISCOVERY
+  - TARGET_PROFILE_REVIEW
+  - ACTIVITY_PROFILE_REVIEW
+  - DATA_PROVENANCE_PROFILE
+  - EXPOSURE_PROFILE
+  - OPERATOR_CHALLENGE
+  - COMPILER
+  - NORMALIZED_REPORT_RENDERER
+  - QUALIFIED_REVIEW
 
 forbidden_outputs:
   - source_discovery_handoff
@@ -90,10 +97,10 @@ forbidden_outputs:
   - question_rows
   - question_index
 
-backend_permission_profile: agent_2b_m9
-validator_profile: agent_2b_m9_phase2_job_split_validator
-phase_packet_contract: agent_2b_m9_phase_packet_contract
-terminal_receipt_profile: agent_2b_m9_same_chat_receipt
-next_agent_command: "@Interface Target Feature Agent Continue run {{run_id}}."
+backend_permission_profile: legal_cartography_and_index_phase
+validator_profile: legal_cartography_and_index_job_split_validator
+phase_packet_contract: legal_cartography_and_index_phase_packet_contract
+terminal_receipt_profile: legal_cartography_and_index_same_chat_receipt
+next_phase_command: "Backend advances to Target Profile Review after Legal Cartography and Index locks."
 stop_condition: "Stop after legal_cartography_deterministic_map, legal_cartography_semantic_profile, legal_cartography_index, and legal_signal_derivation_profile save and validate."
 </RUNTIME_BINDING_PACKET>
