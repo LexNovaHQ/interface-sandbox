@@ -9,6 +9,9 @@ const expectedWrites = targetProfileForensicsWriteArtifacts();
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.central_phase_id, "TARGET_PROFILE_FORENSICS");
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.public_label, "Target Profile Forensics");
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.compatibility_internal_job_id, "M7_TARGET_PROFILE_FORENSICS");
+assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.implementation_status, "PHASE_RUNNER_CUTOVER_STAGED");
+assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.production_entrypoint_switched, true);
+assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.global_production_deployment_switched, false);
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.model_usage, "NONE_DETERMINISTIC");
 assert.deepEqual(expectedWrites, ["target_profile_forensics"]);
 assert.deepEqual(runtimeContract.reads, expectedReads);
@@ -27,7 +30,8 @@ for (const requiredBranch of TARGET_PROFILE_FORENSICS_CONTRACT.output_contract.r
 }
 
 assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.phase_owned_runner, true);
-assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.production_entrypoint_switched, false);
+assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.production_entrypoint_switched, true);
+assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.global_production_deployment_switched, false);
 assert.deepEqual(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.reads, expectedReads);
 assert.deepEqual(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.writes, expectedWrites);
 
