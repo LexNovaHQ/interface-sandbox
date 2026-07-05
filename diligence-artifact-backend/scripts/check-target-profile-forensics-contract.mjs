@@ -13,6 +13,8 @@ assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.implementation_status, "PHASE_RUN
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.production_entrypoint_switched, true);
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.global_production_deployment_switched, false);
 assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.model_usage, "NONE_DETERMINISTIC");
+assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.deterministic_job.validator, "target_profile_forensics_boundary_validator");
+assert.equal(TARGET_PROFILE_FORENSICS_CONTRACT.deterministic_job.validator_scope, "forensic_trace_output_only");
 assert.deepEqual(expectedWrites, ["target_profile_forensics"]);
 assert.deepEqual(runtimeContract.reads, expectedReads);
 assert.deepEqual(runtimeContract.writes, expectedWrites);
