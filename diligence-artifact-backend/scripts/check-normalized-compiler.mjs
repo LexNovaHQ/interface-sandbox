@@ -6,6 +6,7 @@ const artifacts = {
   target_profile: { target_identity: {}, jurisdiction_notice: {}, business_context: {}, product_service_wrapper: {}, target_profile_limitations: [] },
   target_feature_profile: { activities: [], profile_level_limitations: [] },
   legal_cartography_index: { document_coverage_index: [], document_structure_index: [], incorporated_linked_document_map: [], control_language_locator: [], missing_limited_legal_governance_items: [], lock_status: "LOCKED" },
+  legal_signal_derivation_profile: { artifact_name: "legal_signal_derivation_profile", model_generated: false, field_derivations: [], coverage_summary: { emitted_field_count: 0 } },
   data_provenance_profile: { missing_proof_and_diligence_requests: [], limitations: [] },
   exposure_registry_triggered_profile: { triggered_rows: [] },
   exposure_registry_controlled_profile: { controlled_rows: [] },
@@ -32,5 +33,8 @@ assert.equal(output.final_output_handoff.validation_status, "LOCKED");
 assert.equal(final.validation_status, "LOCKED");
 assert.equal(final.compiler_trace.qualified_review_branch_separate, true);
 assert.equal(final.compiler_trace.archived_legacy_outputs_not_emitted, true);
+assert.equal(final.compiler_trace.section_6_legal_cartography_summary_not_raw_index, true);
+assert.equal(final.compiler_trace.section_6_legal_signal_derivation_profile_summary_present, true);
+assert.equal(JSON.stringify(output).includes("qualified_review_legal_signals"), false);
 
 console.log("normalized compiler output: PASS");
