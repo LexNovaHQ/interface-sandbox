@@ -1,8 +1,10 @@
-# M9 Legal Signal Derivation Contract
+# Legal Cartography and Index — Legal Signal Derivation Contract
 
-This file belongs to `agent_2b_m9` only.
+This file belongs to the **Legal Cartography and Index** phase.
 
-It governs Job B inside Phase 2:
+The compatibility filename retains the old internal identifier because existing package manifests still reference it.
+
+It governs Job B:
 
 ```text
 LEGAL_SIGNAL_DERIVATION
@@ -31,7 +33,7 @@ lossless_family__L6_ENTITY_NOTICE
 field derivation registry contact/consent patch
 ```
 
-Job B must not browse, crawl, fetch new URLs, infer private documents, or read M7/M8/M10/M11/M12/compiler artifacts.
+Job B must not browse, crawl, fetch new URLs, infer private documents, or read Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, or Renderer artifacts.
 
 ## Derivation Authority
 
@@ -144,8 +146,10 @@ renderer_payload
 full_clause_text
 ```
 
+The old support artifact names above are retained here only as forbidden compatibility artifact names.
+
 ## Downstream Boundary
 
-M7, M10, and Qualified Review integration is deferred.
+Target Profile Review, Data Provenance Profile, and Qualified Review integration is controlled by their own phase contracts.
 
 Job B may expose downstream consumer metadata, but it must not include reviewer question text or UI prompt text.
