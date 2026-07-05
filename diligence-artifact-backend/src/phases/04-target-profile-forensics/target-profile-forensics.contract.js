@@ -16,8 +16,9 @@ export const TARGET_PROFILE_FORENSICS_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_FORENSICS",
   public_label: "Target Profile Forensics",
   compatibility_internal_job_id: "M7_TARGET_PROFILE_FORENSICS",
-  implementation_status: "CONTRACT_LOCKED_DETERMINISTIC_HELPER_MIGRATION",
-  production_entrypoint_switched: false,
+  implementation_status: "PHASE_RUNNER_CUTOVER_STAGED",
+  production_entrypoint_switched: true,
+  global_production_deployment_switched: false,
   model_usage: "NONE_DETERMINISTIC",
   deterministic_job: Object.freeze({
     reads: TARGET_PROFILE_FORENSICS_READS,
