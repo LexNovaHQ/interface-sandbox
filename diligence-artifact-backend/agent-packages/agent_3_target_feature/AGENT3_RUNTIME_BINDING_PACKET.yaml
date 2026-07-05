@@ -1,9 +1,19 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v5_m7_direct_legal_signal_profile_m8_feature_candidate_inventory_index
+runtime_contract_version: v6_target_profile_review_contract_locked_activity_compatibility
 active_agent_id: agent_3_target_feature
-active_agent_name: Interface Target Feature Agent
-active_phase_scope: M7_TARGET_PROFILE_THEN_M8_FEATURE_CANDIDATE_INVENTORY_THEN_M8_TARGET_FEATURE_PROFILE
+active_agent_name: Interface Target and Activity Profile Agent
+active_phase_scope: TARGET_PROFILE_REVIEW_THEN_ACTIVITY_PROFILE_REVIEW_COMPATIBILITY
+
+compatibility_boundary:
+  internal_agent_id_retained_for_runtime: agent_3_target_feature
+  compatibility_package_path_retained: agent-packages/agent_3_target_feature
+  product_phase_names:
+    - Target Profile Review
+    - Target Profile Forensics
+    - Activity Profile Review
+    - Activity Profile Forensics
+  old_module_language_forbidden_in_human_facing_text: true
 
 run_mode: PHASED_AGENT
 run_id_required: true
@@ -15,39 +25,32 @@ prompt_assembly_position:
   phase_prompt_after_packet: true
 
 prompt_precedence:
-  - 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md controls all M7 active reads and source authority.
-  - M7_TARGET_PROFILE is profile-bucket only and must not read legal/governance lossless families or raw legal_cartography_index.
-  - M7 may consume legal_signal_derivation_profile only for M7-owned legal notice and jurisdiction signal fields.
-  - 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md controls all M8 candidate-existence, inventory, and dedup rules.
-  - Any legacy wording in 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md that tells M8_TARGET_FEATURE_PROFILE to harvest candidates, build a source extraction capsule, dedupe candidates, or prove route-family coverage inside the model prompt is superseded.
-  - M8_TARGET_FEATURE_PROFILE consumes the saved feature_candidate_inventory and compiles target_feature_profile only.
+  - Backend phase contracts control read/write authority.
+  - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
+  - Target Profile Review uses target-profile source families as primary source authority.
+  - Target Profile Review may consume legal_signal_derivation_profile only as a bounded secondary field-signal input.
+  - Target Profile Review must not read raw legal_cartography_index, legal-governance lossless families, or the old deterministic legal overlay artifact.
+  - Activity Profile Review compatibility remains governed by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md until its own phase migration.
+  - Any package text that expands Target Profile Review read authority is superseded.
 
-allowed_modules:
-  - M7_TARGET_PROFILE
-  - M8_FEATURE_CANDIDATE_INVENTORY
-  - M8_TARGET_FEATURE_PROFILE
+allowed_phases:
+  - TARGET_PROFILE_REVIEW
+  - TARGET_PROFILE_FORENSICS
+  - ACTIVITY_PROFILE_REVIEW
+  - ACTIVITY_PROFILE_FORENSICS
 
 read_artifacts:
   common:
     - source_discovery_handoff
-  M7_TARGET_PROFILE:
+  TARGET_PROFILE_REVIEW:
     - source_discovery_handoff
-    - legal_signal_derivation_profile
     - lossless_family__T0_ROOT
     - lossless_family__T1_IDENTITY
     - lossless_family__T2_LEGAL_IDENTITY
     - lossless_family__T3_OPERATOR_ENTITY
     - lossless_family__T4_SUPPORTING_IDENTITY
-  M8_FEATURE_CANDIDATE_INVENTORY:
-    - source_discovery_handoff
-    - target_profile
-    - target_profile_forensics
-    - lossless_family__P1_PRODUCT
-    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-    - lossless_family__P4_USE_CASE_INDUSTRY
-    - lossless_family__P5_ENTERPRISE_PRICING
-  M8_TARGET_FEATURE_PROFILE:
+    - legal_signal_derivation_profile
+  ACTIVITY_PROFILE_REVIEW:
     - source_discovery_handoff
     - target_profile
     - target_profile_forensics
@@ -58,7 +61,7 @@ read_artifacts:
     - lossless_family__P4_USE_CASE_INDUSTRY
     - lossless_family__P5_ENTERPRISE_PRICING
 
-forbidden_m7_read_artifacts:
+forbidden_target_profile_review_read_artifacts:
   - legal_cartography_index
   - m7_deterministic_legal_signal_overlay
   - lossless_family__L1_CORE_TERMS_PRIVACY
@@ -67,60 +70,70 @@ forbidden_m7_read_artifacts:
   - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
   - lossless_family__L5_LEGAL_HUB_HOSTED
   - lossless_family__L6_ENTITY_NOTICE
+  - lossless_family__P1_PRODUCT
+  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+  - lossless_family__P4_USE_CASE_INDUSTRY
+  - lossless_family__P5_ENTERPRISE_PRICING
+  - lossless_family__D1_SECURITY_TRUST
+  - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
+  - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
+  - lossless_family__D4_DOCS_API_DATA_FLOW
+  - lossless_family__D5_AI_SAFETY_TRANSPARENCY
 
 required_reference_files:
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
-  - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-  - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
+  TARGET_PROFILE_REVIEW:
+    - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+  ACTIVITY_PROFILE_REVIEW:
+    - REGISTRY_KEY_v3_0.md
+    - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+    - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
 
 write_artifacts_in_order:
-  M7_TARGET_PROFILE:
-    PHASE_B1_MATERIAL_SAVE_EVENT:
+  TARGET_PROFILE_REVIEW:
+    MATERIAL_SAVE_EVENT:
       - target_profile
-    PHASE_D_FORENSIC_SAVE_EVENT:
+  TARGET_PROFILE_FORENSICS:
+    FORENSIC_SAVE_EVENT:
       - target_profile_forensics
-  M8_FEATURE_CANDIDATE_INVENTORY:
-    PHASE_A_DETERMINISTIC_INDEX_SAVE_EVENT:
+  ACTIVITY_PROFILE_REVIEW:
+    DETERMINISTIC_INVENTORY_SAVE_EVENT:
       - feature_candidate_inventory
-  M8_TARGET_FEATURE_PROFILE:
-    PHASE_B1_MATERIAL_SAVE_EVENT:
+    MATERIAL_SAVE_EVENT:
       - target_feature_profile
-    PHASE_D_FORENSIC_SAVE_EVENT:
+  ACTIVITY_PROFILE_FORENSICS:
+    FORENSIC_SAVE_EVENT:
       - target_feature_profile_forensics
 
-phase_locks:
-  - M7_TARGET_PROFILE
-  - M8_FEATURE_CANDIDATE_INVENTORY
-  - M8_TARGET_FEATURE_PROFILE
-
 phase_gate_rules:
-  - M7 Phase B1 returns and saves only target_profile.
-  - M7 Phase C may begin only after saved target_profile exists.
-  - M7 Phase D returns and saves only target_profile_forensics.
-  - M7 must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile values become controlled field statuses and limitations.
-  - M8 feature candidate inventory may begin only after saved target_profile and target_profile_forensics exist.
-  - M8 feature candidate inventory is deterministic index-only and saves only feature_candidate_inventory.
-  - M8 target feature profile may begin only after saved feature_candidate_inventory exists.
-  - M8 target feature profile uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
-  - M10 may begin only after saved feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics exist.
+  - Target Profile Review returns and saves only target_profile.
+  - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
+  - Target Profile Forensics may begin only after saved target_profile exists.
+  - Activity Profile Review may begin only after saved target_profile and target_profile_forensics exist.
+  - Activity Profile Review uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
+  - Data Provenance Profile may begin only after feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics lock.
   - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
 
-forbidden_modules:
-  - M6_SOURCE_DISCOVERY
-  - M9_LEGAL_CARTOGRAPHY
-  - M10_DATA_PROVENANCE
-  - M11_EXPOSURE_REGISTRY
-  - M12_OPERATOR_CHALLENGE
-  - M13_OUTPUT_HANDOFF
-  - M14_TERMINAL_RENDERER
+forbidden_phases:
+  - SOURCE_DISCOVERY
+  - LEGAL_CARTOGRAPHY_AND_INDEX
+  - DATA_PROVENANCE_PROFILE
+  - EXPOSURE_PROFILE
+  - OPERATOR_CHALLENGE
+  - COMPILER
+  - NORMALIZED_REPORT_RENDERER
+  - QUALIFIED_REVIEW
 
 forbidden_outputs:
   - source_discovery_handoff
   - legal_cartography_index
+  - legal_signal_derivation_profile
   - m7_deterministic_legal_signal_overlay
-  - target_data_provenance_profile
-  - target_exposure_profile
-  - operator_challenge_gate
+  - data_provenance_profile
+  - exposure_registry_profile
+  - challenge_gate
   - final_output_handoff
   - renderer_payload
   - registry_row_evaluation
@@ -131,11 +144,11 @@ forbidden_outputs:
   - phase_output_wrapper
   - terminal_receipt_in_backend_mode
 
-backend_permission_profile: agent_3_target_feature_m7_direct_legal_signal_profile_m8_split_save
-validator_profile: agent_3_m7_direct_legal_signal_profile_m8_split_save_validator
-phase_packet_contract: agent_3_target_feature_inventory_split_phase_packet_contract
-terminal_receipt_profile: agent_3_target_feature_manual_receipt_only
+backend_permission_profile: target_profile_review_direct_signal_activity_compatibility
+validator_profile: target_profile_review_direct_signal_activity_compatibility_validator
+phase_packet_contract: target_profile_review_contract_locked_packet
+terminal_receipt_profile: target_activity_profile_manual_receipt_only
 
-next_agent_command: "backend runner advances to M10 only after M8_TARGET_FEATURE_PROFILE_FORENSICS lock"
-stop_condition: "Stop after M8_TARGET_FEATURE_PROFILE lock."
+next_phase_command: "backend runner advances to Target Profile Forensics after Target Profile Review locks; Activity Profile Review begins only after Target Profile Forensics locks."
+stop_condition: "Stop after the active backend phase artifact is saved and validated."
 </RUNTIME_BINDING_PACKET>
