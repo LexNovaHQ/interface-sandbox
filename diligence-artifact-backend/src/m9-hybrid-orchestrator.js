@@ -1,15 +1,18 @@
 import { buildM9DeterministicMap, M9_DETERMINISTIC_ARTIFACT_NAME } from "./m9-deterministic-map.js";
 import { validateM9SemanticProfile } from "./m9-semantic-profile-validator.js";
 import { compileM9HybridCartography } from "./m9-hybrid-compiler-v2.js";
+import { buildLegalSignalDerivation } from "./phases/02-legal-cartography-index/jobs/legal-signal-derivation.job.js";
 
 export const M9_SEMANTIC_ARTIFACT_NAME = "legal_cartography_semantic_profile";
 export const M9_REINVESTIGATION_ARTIFACT_NAME = "legal_cartography_reinvestigation_workpad";
 export const M9_FINAL_ARTIFACT_NAME = "legal_cartography_index";
+export const M9_LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAME = "legal_signal_derivation_profile";
 
 export const M9_HYBRID_SAVE_ORDER = Object.freeze([
   M9_DETERMINISTIC_ARTIFACT_NAME,
   M9_SEMANTIC_ARTIFACT_NAME,
-  M9_FINAL_ARTIFACT_NAME
+  M9_FINAL_ARTIFACT_NAME,
+  M9_LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAME
 ]);
 
 export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSemanticModel, runReinvestigationModel = null, saveArtifact = null, validateFinalIndex = null, logger = null } = {}) {
@@ -50,7 +53,33 @@ export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSem
   }
   await saveM9Artifact({ saveArtifact, artifactName: M9_FINAL_ARTIFACT_NAME, artifactWrapper: finalWrapper, saved, logger });
 
-  return { ok: true, run_id: runId, agent_id: "agent_2b_m9", phase: "M9", artifacts_saved_in_order: saved, required_save_order: [...M9_HYBRID_SAVE_ORDER], required_save_order_respected: requiredSaveOrderRespected(saved), optional_artifacts_saved: saved.includes(M9_REINVESTIGATION_ARTIFACT_NAME) ? [M9_REINVESTIGATION_ARTIFACT_NAME] : [], semantic_validation: semanticValidation, final_validation: finalValidation, notes, final_output: finalWrapper };
+  const legalSignalWrapper = await buildLegalSignalDerivation({
+    run: { ...run, run_id: runId },
+    artifacts: {
+      ...artifacts,
+      [M9_DETERMINISTIC_ARTIFACT_NAME]: deterministicWrapper,
+      [M9_SEMANTIC_ARTIFACT_NAME]: semanticWrapper,
+      ...(reinvestigationWrapper ? { [M9_REINVESTIGATION_ARTIFACT_NAME]: reinvestigationWrapper } : {}),
+      [M9_FINAL_ARTIFACT_NAME]: finalWrapper
+    }
+  });
+  await saveM9Artifact({ saveArtifact, artifactName: M9_LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAME, artifactWrapper: legalSignalWrapper, saved, logger });
+
+  return {
+    ok: true,
+    run_id: runId,
+    agent_id: "agent_2b_m9",
+    phase: "M9",
+    artifacts_saved_in_order: saved,
+    required_save_order: [...M9_HYBRID_SAVE_ORDER],
+    required_save_order_respected: requiredSaveOrderRespected(saved),
+    optional_artifacts_saved: saved.includes(M9_REINVESTIGATION_ARTIFACT_NAME) ? [M9_REINVESTIGATION_ARTIFACT_NAME] : [],
+    semantic_validation: semanticValidation,
+    final_validation: finalValidation,
+    legal_signal_derivation_validated: true,
+    notes,
+    final_output: { ...finalWrapper, ...legalSignalWrapper }
+  };
 }
 
 function shouldRunReinvestigation(validation, semanticWrapper) {
