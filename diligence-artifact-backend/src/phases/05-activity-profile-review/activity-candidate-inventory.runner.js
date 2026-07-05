@@ -8,7 +8,7 @@ export const ACTIVITY_CANDIDATE_INVENTORY_RUNNER_STATUS = Object.freeze({
   public_label: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.public_label,
   compatibility_internal_job_id: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.compatibility_internal_job_id,
   phase_owned_runner: true,
-  production_entrypoint_switched: false,
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "NONE_DETERMINISTIC",
   source_helper: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.source_helper,
