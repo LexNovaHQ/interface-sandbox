@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v4_m7_profile_bucket_overlay_m8_feature_candidate_inventory_index
+runtime_contract_version: v5_m7_direct_legal_signal_profile_m8_feature_candidate_inventory_index
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target Feature Agent
 active_phase_scope: M7_TARGET_PROFILE_THEN_M8_FEATURE_CANDIDATE_INVENTORY_THEN_M8_TARGET_FEATURE_PROFILE
@@ -17,7 +17,7 @@ prompt_assembly_position:
 prompt_precedence:
   - 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md controls all M7 active reads and source authority.
   - M7_TARGET_PROFILE is profile-bucket only and must not read legal/governance lossless families or raw legal_cartography_index.
-  - M7 may consume m7_deterministic_legal_signal_overlay only for the three allowed overlay fields.
+  - M7 may consume legal_signal_derivation_profile only for M7-owned legal notice and jurisdiction signal fields.
   - 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md controls all M8 candidate-existence, inventory, and dedup rules.
   - Any legacy wording in 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md that tells M8_TARGET_FEATURE_PROFILE to harvest candidates, build a source extraction capsule, dedupe candidates, or prove route-family coverage inside the model prompt is superseded.
   - M8_TARGET_FEATURE_PROFILE consumes the saved feature_candidate_inventory and compiles target_feature_profile only.
@@ -32,7 +32,7 @@ read_artifacts:
     - source_discovery_handoff
   M7_TARGET_PROFILE:
     - source_discovery_handoff
-    - m7_deterministic_legal_signal_overlay
+    - legal_signal_derivation_profile
     - lossless_family__T0_ROOT
     - lossless_family__T1_IDENTITY
     - lossless_family__T2_LEGAL_IDENTITY
@@ -60,6 +60,7 @@ read_artifacts:
 
 forbidden_m7_read_artifacts:
   - legal_cartography_index
+  - m7_deterministic_legal_signal_overlay
   - lossless_family__L1_CORE_TERMS_PRIVACY
   - lossless_family__L2_B2B_CONTRACTING
   - lossless_family__L3_AI_USAGE_GOVERNANCE
@@ -92,30 +93,15 @@ phase_locks:
   - M8_FEATURE_CANDIDATE_INVENTORY
   - M8_TARGET_FEATURE_PROFILE
 
-phase_sequence:
-  - M7_TARGET_PROFILE.PHASE_B_PROFILE_DERIVATION
-  - M7_TARGET_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
-  - M7_TARGET_PROFILE.PHASE_C_FORENSIC_DERIVATION
-  - M7_TARGET_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
-  - M8_FEATURE_CANDIDATE_INVENTORY.PHASE_A_DETERMINISTIC_INDEX_BUILD
-  - M8_FEATURE_CANDIDATE_INVENTORY.PHASE_B_INDEX_VALIDATION_SAVE_GATE
-  - M8_TARGET_FEATURE_PROFILE.PHASE_B_PROFILE_DERIVATION_FROM_INVENTORY
-  - M8_TARGET_FEATURE_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
-  - M8_TARGET_FEATURE_PROFILE.PHASE_C_FORENSIC_DERIVATION
-  - M8_TARGET_FEATURE_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
-
 phase_gate_rules:
   - M7 Phase B1 returns and saves only target_profile.
   - M7 Phase C may begin only after saved target_profile exists.
   - M7 Phase D returns and saves only target_profile_forensics.
-  - M7 must not block because raw legal/governance artifacts are absent; unavailable overlay values become controlled field statuses and limitations.
+  - M7 must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile values become controlled field statuses and limitations.
   - M8 feature candidate inventory may begin only after saved target_profile and target_profile_forensics exist.
   - M8 feature candidate inventory is deterministic index-only and saves only feature_candidate_inventory.
   - M8 target feature profile may begin only after saved feature_candidate_inventory exists.
   - M8 target feature profile uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
-  - M8 Phase B1 returns and saves only target_feature_profile.
-  - M8 Phase C may begin only after saved target_feature_profile exists.
-  - M8 Phase D returns and saves only target_feature_profile_forensics.
   - M10 may begin only after saved feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics exist.
   - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
 
@@ -131,6 +117,7 @@ forbidden_modules:
 forbidden_outputs:
   - source_discovery_handoff
   - legal_cartography_index
+  - m7_deterministic_legal_signal_overlay
   - target_data_provenance_profile
   - target_exposure_profile
   - operator_challenge_gate
@@ -144,8 +131,8 @@ forbidden_outputs:
   - phase_output_wrapper
   - terminal_receipt_in_backend_mode
 
-backend_permission_profile: agent_3_target_feature_m7_inventory_m8_split_save
-validator_profile: agent_3_m7_inventory_m8_split_save_validator
+backend_permission_profile: agent_3_target_feature_m7_direct_legal_signal_profile_m8_split_save
+validator_profile: agent_3_m7_direct_legal_signal_profile_m8_split_save_validator
 phase_packet_contract: agent_3_target_feature_inventory_split_phase_packet_contract
 terminal_receipt_profile: agent_3_target_feature_manual_receipt_only
 
