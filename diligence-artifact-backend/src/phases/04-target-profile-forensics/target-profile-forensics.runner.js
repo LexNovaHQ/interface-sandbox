@@ -1,6 +1,5 @@
 import { TARGET_PROFILE_FORENSICS_CONTRACT } from "./target-profile-forensics.contract.js";
 import { buildM7DeterministicTargetForensics } from "../../deterministic-profile-forensics.js";
-import { validateM7TargetProfileOutput } from "../../m7-validator.js";
 
 export const TARGET_PROFILE_FORENSICS_RUNNER_STATUS = Object.freeze({
   phase_runner: "target-profile-forensics.runner",
@@ -24,12 +23,11 @@ export async function runTargetProfileForensicsPhase({ run, internalJobId = "M7_
   assertAllowedRuntimeArtifacts(artifacts);
 
   const output = buildM7DeterministicTargetForensics({ artifacts });
-  validateM7TargetProfileOutput(output, { phase: internalJobId });
-
   const artifactName = contract.writes[0];
   const artifact = output?.[artifactName];
   if (!artifact || typeof artifact !== "object" || Array.isArray(artifact)) throw new Error(`TARGET_PROFILE_FORENSICS_OUTPUT_MISSING_ARTIFACT:${artifactName}`);
 
+  assertForensicOutputContract(artifact);
   assertForensicBoundary(artifact);
   const phaseLockStatus = resolveForensicLockStatus(artifact);
   await saveArtifact({ artifact_name: artifactName, artifact, lock_status: phaseLockStatus });
@@ -42,7 +40,8 @@ export async function runTargetProfileForensicsPhase({ run, internalJobId = "M7_
     artifacts_read: Object.keys(artifacts).sort(),
     model_usage: "NONE_DETERMINISTIC",
     target_profile_forensics_phase_runner_used: true,
-    source_helper: TARGET_PROFILE_FORENSICS_CONTRACT.deterministic_job.source_helper
+    source_helper: TARGET_PROFILE_FORENSICS_CONTRACT.deterministic_job.source_helper,
+    validator: TARGET_PROFILE_FORENSICS_CONTRACT.deterministic_job.validator
   };
 }
 
@@ -60,12 +59,19 @@ function assertAllowedRuntimeArtifacts(artifacts = {}) {
   }
 }
 
+function assertForensicOutputContract(artifact = {}) {
+  for (const branch of TARGET_PROFILE_FORENSICS_CONTRACT.output_contract.required_branches) {
+    if (!(branch in artifact)) throw new Error(`TARGET_PROFILE_FORENSICS_MISSING_BRANCH:${branch}`);
+  }
+  for (const branch of TARGET_PROFILE_FORENSICS_CONTRACT.output_contract.array_branches) {
+    if (!Array.isArray(artifact[branch])) throw new Error(`TARGET_PROFILE_FORENSICS_BRANCH_NOT_ARRAY:${branch}`);
+  }
+}
+
 function assertForensicBoundary(artifact = {}) {
   if (artifact?.forensic_contract?.model_generated_forensics_allowed !== false) throw new Error("TARGET_PROFILE_FORENSICS_MODEL_GENERATED_TRACE_NOT_FORBIDDEN");
   if (artifact?.forensic_boundary?.material_profile_re_emitted !== false) throw new Error("TARGET_PROFILE_FORENSICS_MATERIAL_PROFILE_REEMISSION_NOT_FORBIDDEN");
   if (artifact?.forensic_boundary?.semantic_forensic_profile_retired !== true) throw new Error("TARGET_PROFILE_FORENSICS_SEMANTIC_FORENSICS_NOT_RETIRED");
-  if (!Array.isArray(artifact.material_profile_trace_index)) throw new Error("TARGET_PROFILE_FORENSICS_MISSING_MATERIAL_TRACE_INDEX");
-  if (!Array.isArray(artifact.source_custody_trace_index)) throw new Error("TARGET_PROFILE_FORENSICS_MISSING_SOURCE_CUSTODY_TRACE_INDEX");
   if (!artifact.forensic_lock_gate_result || typeof artifact.forensic_lock_gate_result !== "object") throw new Error("TARGET_PROFILE_FORENSICS_MISSING_LOCK_GATE");
 }
 
