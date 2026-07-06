@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getPipelineContract } from "../src/runtime/contracts/pipeline.contract.js";
+import { getPipelineContract, PIPELINE_CONTRACT_STATUS } from "../src/runtime/contracts/pipeline.contract.js";
 import { validateM8TargetFeatureOutput } from "../src/m8-validator.js";
 import {
   ACTIVITY_PROFILE_REVIEW_CONTRACT,
@@ -28,9 +28,9 @@ assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.central_phase_id, "ACTIVITY_PROFIL
 assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.phase_job_id, "ACTIVITY_PROFILE_REVIEW_MATERIAL");
 assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.public_label, "Activity Profile Review");
 assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.compatibility_internal_job_id, "M8_TARGET_FEATURE_PROFILE");
-assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.implementation_status, "MATERIAL_CONTRACT_LOCKED_RUNTIME_CUTOVER_PENDING");
+assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.implementation_status, "PHASE_RUNNER_CUTOVER_STAGED");
 assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.model_usage, "MODEL_JSON_ONLY");
-assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.production_entrypoint_switched, false);
+assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.production_entrypoint_switched, true);
 assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.global_production_deployment_switched, false);
 
 assert.deepEqual(expectedReads, [
@@ -54,6 +54,13 @@ assert.equal(runtimeContract.public_label, "Activity Profile Review");
 assert.equal(runtimeContract.next, "M8_TARGET_FEATURE_PROFILE_FORENSICS");
 assert.deepEqual(runtimeContract.prompt_files, expectedPrompts);
 assert.deepEqual(runtimeContract.references, expectedReferences);
+assert.equal(runtimeContract.runtime_wiring_status, "PHASE_RUNNER_CUTOVER");
+assert.equal(runtimeContract.production_entrypoint_switched, true);
+assert.equal(runtimeContract.global_production_deployment_switched, false);
+assert.equal(PIPELINE_CONTRACT_STATUS.activity_profile_review_material_contract_locked, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.activity_profile_review_material_phase_runner_cutover, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.activity_profile_review_material_production_entrypoint_switched, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.global_production_deployment_switched, false);
 
 assert.deepEqual(ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.required_profile_keys, ["activities", "commercial_availability_posture", "profile_level_limitations"]);
 assert.deepEqual(expectedActivityFields, [
