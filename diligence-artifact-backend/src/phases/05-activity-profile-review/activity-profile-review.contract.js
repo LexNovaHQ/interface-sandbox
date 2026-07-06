@@ -66,8 +66,8 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
   public_label: "Activity Profile Review",
   compatibility_internal_job_id: "M8_TARGET_FEATURE_PROFILE",
-  implementation_status: "MATERIAL_CONTRACT_LOCKED_RUNTIME_CUTOVER_PENDING",
-  production_entrypoint_switched: false,
+  implementation_status: "PHASE_RUNNER_CUTOVER_STAGED",
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "MODEL_JSON_ONLY",
   material_job: Object.freeze({
