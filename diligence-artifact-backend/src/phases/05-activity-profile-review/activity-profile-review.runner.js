@@ -8,7 +8,7 @@ export const ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS = Object.freeze({
   public_label: ACTIVITY_PROFILE_REVIEW_CONTRACT.public_label,
   compatibility_internal_job_id: ACTIVITY_PROFILE_REVIEW_CONTRACT.compatibility_internal_job_id,
   phase_owned_runner: true,
-  production_entrypoint_switched: false,
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: ACTIVITY_PROFILE_REVIEW_CONTRACT.model_usage,
   validator: ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.validator,
