@@ -19,7 +19,7 @@ assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.phase_job_id, "ACTIVITY_PROFI
 assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.public_label, "Activity Profile Review");
 assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.compatibility_internal_job_id, "M8_TARGET_FEATURE_PROFILE");
 assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.phase_owned_runner, true);
-assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.production_entrypoint_switched, false);
+assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.production_entrypoint_switched, true);
 assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.global_production_deployment_switched, false);
 assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.model_usage, "MODEL_JSON_ONLY");
 assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.validator, "validateM8TargetFeatureOutput");
@@ -30,5 +30,7 @@ assert.deepEqual(ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads, expectedRe
 assert.deepEqual(ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.writes, expectedWrites);
 assert.deepEqual(ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.prompt_files, expectedPrompts);
 assert.deepEqual(ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.references, expectedReferences);
+assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.production_entrypoint_switched, true);
+assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.global_production_deployment_switched, false);
 
 console.log("Activity Profile Review runner: PASS");
