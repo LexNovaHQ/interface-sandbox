@@ -1,9 +1,9 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v6_target_profile_review_contract_locked_activity_compatibility
+runtime_contract_version: v7_activity_profile_review_material_contract_locked
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
-active_phase_scope: TARGET_PROFILE_REVIEW_THEN_ACTIVITY_PROFILE_REVIEW_COMPATIBILITY
+active_phase_scope: TARGET_PROFILE_REVIEW_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
 
 compatibility_boundary:
   internal_agent_id_retained_for_runtime: agent_3_target_feature
@@ -27,11 +27,12 @@ prompt_assembly_position:
 prompt_precedence:
   - Backend phase contracts control read/write authority.
   - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
-  - Target Profile Review uses target-profile source families as primary source authority.
-  - Target Profile Review may consume legal_signal_derivation_profile only as a bounded secondary field-signal input.
-  - Target Profile Review must not read raw legal_cartography_index, legal-governance lossless families, or the old deterministic legal overlay artifact.
-  - Activity Profile Review compatibility remains governed by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md until its own phase migration.
-  - Any package text that expands Target Profile Review read authority is superseded.
+  - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
+  - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
+  - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
+  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and P1-P5 lossless artifacts as evidence.
+  - P4 may support Activity Profile Review context but must not create candidate existence outside feature_candidate_inventory.
+  - Any package text that expands Target Profile Review, Target Profile Forensics, Activity Candidate Inventory, or Activity Profile Review material read/write authority is superseded by the phase-owned contract.
 
 allowed_phases:
   - TARGET_PROFILE_REVIEW
@@ -111,8 +112,9 @@ phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
   - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
   - Target Profile Forensics may begin only after saved target_profile exists.
-  - Activity Profile Review may begin only after saved target_profile and target_profile_forensics exist.
-  - Activity Profile Review uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
+  - Activity Candidate Inventory may begin only after saved target_profile and target_profile_forensics exist.
+  - Activity Profile Review material may begin only after saved feature_candidate_inventory exists and is locked.
+  - Activity Profile Review material uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
   - Data Provenance Profile may begin only after feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics lock.
   - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
 
@@ -144,11 +146,11 @@ forbidden_outputs:
   - phase_output_wrapper
   - terminal_receipt_in_backend_mode
 
-backend_permission_profile: target_profile_review_direct_signal_activity_compatibility
-validator_profile: target_profile_review_direct_signal_activity_compatibility_validator
-phase_packet_contract: target_profile_review_contract_locked_packet
+backend_permission_profile: target_activity_phase_contract_locked
+validator_profile: target_activity_profile_material_contract_validator
+phase_packet_contract: activity_profile_review_material_contract_locked
 terminal_receipt_profile: target_activity_profile_manual_receipt_only
 
-next_phase_command: "backend runner advances to Target Profile Forensics after Target Profile Review locks; Activity Profile Review begins only after Target Profile Forensics locks."
+next_phase_command: "backend runner advances through Activity Candidate Inventory, then Activity Profile Review material, then Activity Profile Forensics after each artifact locks."
 stop_condition: "Stop after the active backend phase artifact is saved and validated."
 </RUNTIME_BINDING_PACKET>
