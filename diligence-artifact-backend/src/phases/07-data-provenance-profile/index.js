@@ -19,6 +19,7 @@ export { buildPhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-nav
 export { validatePhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-navigation-index-validator.js";
 export { buildPhase7SemanticBatchRouteManifest } from "./layer3-semantic-batch-route-manifest-builder.js";
 export { validatePhase7SemanticBatchRouteManifest } from "./layer3-semantic-batch-route-manifest-validator.js";
+export { validatePhase7Layer4SemanticBatchArtifact } from "./layer4-semantic-batch-artifact-validator.js";
 export {
   PHASE7_FORBIDDEN_UNKNOWN_STATUSES,
   PHASE7_CONTROLLED_NAVIGATION_STATUSES,
