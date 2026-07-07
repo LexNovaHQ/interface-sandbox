@@ -20,24 +20,30 @@ export async function runPhase7Layer5SemanticBatchQualityGatePhase({ run, phase,
 
   const output = buildPhase7SemanticBatchQualityGate({ routeManifest, batchArtifacts, batchValidations });
   const validation = validatePhase7SemanticBatchQualityGate(output);
-  const gate = output[GATE_ARTIFACT];
-  const phaseLockStatus = gate?.status === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
-  const saveLockStatus = phaseLockStatus;
-  if (validation.status !== "PASS") {
-    output[MANIFEST_ARTIFACT].validation_quality_control_result = Object.freeze({
-      ...output[MANIFEST_ARTIFACT].validation_quality_control_result,
-      validator_errors: Object.freeze(validation.errors || []),
+  const baseManifest = output[MANIFEST_ARTIFACT];
+  const baseGate = output[GATE_ARTIFACT];
+  const validationLimited = validation.status !== "PASS";
+  const manifest = validationLimited ? {
+    ...baseManifest,
+    validation_quality_control_result: {
+      ...baseManifest.validation_quality_control_result,
+      validator_errors: validation.errors || [],
       non_blocking_repair_required: true,
       blocking_failure: false,
       status: "LOCKED_WITH_LIMITATIONS"
-    });
-    output[GATE_ARTIFACT].status = "LOCKED_WITH_LIMITATIONS";
-    output[GATE_ARTIFACT].non_blocking_repair_required = true;
-    output[GATE_ARTIFACT].blocking_failure = false;
-  }
+    }
+  } : baseManifest;
+  const gate = validationLimited ? {
+    ...baseGate,
+    status: "LOCKED_WITH_LIMITATIONS",
+    non_blocking_repair_required: true,
+    blocking_failure: false,
+    validator_errors: validation.errors || []
+  } : baseGate;
+  const phaseLockStatus = gate?.status === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
 
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id || AGENT_4, artifact_name: MANIFEST_ARTIFACT, artifact: output[MANIFEST_ARTIFACT], lock_status: saveLockStatus }));
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id || AGENT_4, artifact_name: GATE_ARTIFACT, artifact: output[GATE_ARTIFACT], lock_status: saveLockStatus }));
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id || AGENT_4, artifact_name: MANIFEST_ARTIFACT, artifact: manifest, lock_status: phaseLockStatus }));
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: contract.agent_id || AGENT_4, artifact_name: GATE_ARTIFACT, artifact: gate, lock_status: phaseLockStatus }));
   return lockPhase({ run_id: run.run_id, phase, agent_id: contract.agent_id || AGENT_4, status: phaseLockStatus, next_phase: contract.next });
 }
 
