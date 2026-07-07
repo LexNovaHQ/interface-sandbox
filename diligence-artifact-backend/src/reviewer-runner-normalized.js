@@ -6,26 +6,29 @@ import { compileFinalOutputHandoff } from "./compiler.js";
 import { buildRendererPayload } from "./report-renderer.js";
 import { buildQualifiedReviewSystemArtifacts } from "./qualified-review-system/branch.js";
 import { buildFeatureCandidateInventoryIndex, validateFeatureCandidateInventoryIndex } from "./m8-feature-candidate-inventory-index.js";
+import { runPhase7Layer4SemanticBatchPhase } from "./phase7-layer4-semantic-batch-orchestrator.js";
 import { artifactSaveBody, buildReportUrl, lockPhase, readArtifactPayload, saveArtifact } from "./artifact-service.js";
 import { readPhaseArtifactWithResolvedLosslessFamilies } from "./lossless-family-resolver.js";
 
 const ART = Object.freeze({ final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan", qrHandoff: "qualified_review_handoff", qrRenderer: "qualified_review_renderer_payload", qrSectionArtifacts: ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber"], featureCandidateInventory: "feature_candidate_inventory" });
 const QR_ACTOR = "qualified_review_system";
+const NORMALIZED_RUNNER_PHASES = Object.freeze(["M8_FEATURE_CANDIDATE_INVENTORY", "DATA_PROVENANCE_PROFILE_LAYER4", "NORMALIZED_COMPILER", "RENDERER"]);
 
 export async function advanceReviewerRun({ run_id }) {
   const run = await getRunRecord(run_id);
   if (run.current_phase === "COMPLETE" || run.status === "COMPLETE") return { ok: true, run_id, status: "COMPLETE", current_phase: "COMPLETE", advanced: false };
   const phase = normalizePhase(run.current_phase);
   if (phase !== run.current_phase) await updateRunRecord(run_id, { current_phase: phase });
-  if (!["M8_FEATURE_CANDIDATE_INVENTORY", "NORMALIZED_COMPILER", "RENDERER"].includes(phase)) return advanceLegacyReviewerRun({ run_id });
+  if (!NORMALIZED_RUNNER_PHASES.includes(phase)) return advanceLegacyReviewerRun({ run_id });
   const contract = getPhaseContract(phase);
-  await markRunning(run_id, phase, contract.actor_id);
+  await markRunning(run_id, phase, contract.actor_id || contract.agent_id);
   try {
     if (phase === "M8_FEATURE_CANDIDATE_INVENTORY") await runM8FeatureCandidateInventoryPhase({ run: { ...run, current_phase: phase }, phase, contract });
+    else if (phase === "DATA_PROVENANCE_PROFILE_LAYER4") await runPhase7Layer4SemanticBatchPhase({ run: { ...run, current_phase: phase }, phase, contract });
     else if (phase === "NORMALIZED_COMPILER") await runNormalizedCompilerPhase({ run: { ...run, current_phase: phase }, phase, contract });
     else await runRendererPhase({ run: { ...run, current_phase: phase }, phase, contract });
   } catch (error) {
-    await markPhaseFailure({ run_id, phase, actor: contract.actor_id, error });
+    await markPhaseFailure({ run_id, phase, actor: contract.actor_id || contract.agent_id, error });
     throw error;
   }
   const updated = await getRunRecord(run_id);
