@@ -21,3 +21,7 @@ export { buildPhase7DapFamilyRouteObligationMatrix, getPhase7RouteRuleForFamily 
 export { buildPhase7SourceNavigationInventory, buildAdmittedSourceRouteInventory } from "./layer2-source-navigation-inventory-builder.js";
 export { buildPhase7CrossRouteRescuePlan } from "./layer2-cross-route-rescue-planner.js";
 export { validatePhase7Layer2NavigationGate } from "./layer2-anti-unknown-navigation-gate.js";
+export { buildPhase7PinpointFamilyAccessPlan } from "./layer3-pinpoint-family-access-planner.js";
+export { PHASE7_EVIDENCE_ATOM_TYPES, makePhase7EvidenceAtom, validatePhase7EvidenceAtomShape } from "./layer3-evidence-atom-schema.js";
+export { buildPhase7EvidenceAtomInventory } from "./layer3-pinpoint-evidence-atom-extractor.js";
+export { validatePhase7EvidenceAtomInventory } from "./layer3-evidence-atom-validator.js";
