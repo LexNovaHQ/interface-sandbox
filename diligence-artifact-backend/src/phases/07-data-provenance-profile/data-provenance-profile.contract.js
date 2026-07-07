@@ -7,7 +7,7 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
   phase_order: 7,
   public_label: "Data Provenance Profile",
   package_label: "Semantic-Led Data and Privacy Architecture Profile",
-  implementation_status: "LAYER_2_HYBRID_NAVIGATION_INDEX_BUILT_RUNTIME_CUTOVER_PENDING",
+  implementation_status: "LAYER_3_DETERMINISTIC_BATCH_ROUTER_BUILT_RUNTIME_CUTOVER_PENDING",
   runtime_entrypoint_switched: false,
   material_dap_field_base_count: PHASE7_EXPECTED_DAP_FIELD_COUNT,
   material_family_section_count: 18,
@@ -59,6 +59,7 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
 
 export const PHASE7_LAYER1_ARTIFACTS = Object.freeze(["dap_registry_manifest", "dap_strategic_derivation_matrix"]);
 export const PHASE7_LAYER2_ARTIFACTS = Object.freeze(["data_privacy_navigation_index"]);
+export const PHASE7_LAYER3_ARTIFACTS = Object.freeze(["dap_semantic_batch_route_manifest"]);
 
 function layer(order, name, execution_mode, reads, writes) {
   return Object.freeze({ order, name, execution_mode, reads: Object.freeze(reads), writes: Object.freeze(writes) });
