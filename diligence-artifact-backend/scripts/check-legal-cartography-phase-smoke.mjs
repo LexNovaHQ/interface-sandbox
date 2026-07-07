@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { runM9HybridOrchestrator, M9_HYBRID_SAVE_ORDER } from "../src/m9-hybrid-orchestrator.js";
+import { runM9HybridOrchestrator, M9_HYBRID_SAVE_ORDER, M9_REINVESTIGATION_ARTIFACT_NAME } from "../src/m9-hybrid-orchestrator.js";
 import { validateM9LegalCartographyIndex } from "../src/m9-validator.js";
 import { validateLegalSignalDerivationProfile } from "../src/phases/02-legal-cartography-index/index.js";
 
@@ -15,13 +15,13 @@ const result = await runM9HybridOrchestrator({
 
 assert.equal(result.ok, true);
 assert.deepEqual(result.required_save_order, M9_HYBRID_SAVE_ORDER);
-assert.deepEqual(result.artifacts_saved_in_order, M9_HYBRID_SAVE_ORDER);
+assert.deepEqual(stripOptionalReinvestigation(result.artifacts_saved_in_order), M9_HYBRID_SAVE_ORDER);
 assert.equal(result.required_save_order_respected, true);
-assert.deepEqual(result.optional_artifacts_saved, []);
+assertOptionalReinvestigationOnly(result.optional_artifacts_saved);
 assert.equal(result.semantic_validation.status, "LOCKED");
 assert.equal(result.final_validation.status, "LOCKED");
 assert.equal(result.legal_signal_derivation_validated, true);
-assert.deepEqual(saved.map((row) => row.artifact_name), ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"]);
+assert.deepEqual(saved.map((row) => row.artifact_name), result.artifacts_saved_in_order);
 
 const finalIndex = result.final_output.legal_cartography_index;
 const signalProfile = result.final_output.legal_signal_derivation_profile;
@@ -47,6 +47,15 @@ assert.equal(finalIndex.downstream_rules.legal_signal_derivation_profile_is_sepa
 assert.equal(finalIndex.downstream_rules.qualified_review_legal_signals_retired_from_m9_index, true);
 assert.equal(finalIndex.downstream_rules.use_only_loaded_legal_corpus, true);
 console.log("Legal Cartography and Index self-contained smoke: PASS");
+
+function stripOptionalReinvestigation(names) {
+  return names.filter((name) => name !== M9_REINVESTIGATION_ARTIFACT_NAME);
+}
+
+function assertOptionalReinvestigationOnly(names) {
+  assert.ok(Array.isArray(names), "optional_artifacts_saved must be an array");
+  for (const name of names) assert.equal(name, M9_REINVESTIGATION_ARTIFACT_NAME, `unexpected optional artifact saved: ${name}`);
+}
 
 function containsExactKey(value, targetKey) {
   if (!value || typeof value !== "object") return false;
