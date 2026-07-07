@@ -18,10 +18,13 @@ assert.equal(DATA_PROVENANCE_PROFILE_PHASE.implementation_status, "PACKAGE_CONTR
 assert.equal(phaseRegistryRow.implementation_status, "PACKAGE_CONTRACT_LAYER_1_LOCKED_RUNTIME_CUTOVER_PENDING");
 assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.phase_id, "DATA_PROVENANCE_PROFILE");
 assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.material_dap_field_base_count, PHASE7_EXPECTED_DAP_FIELD_COUNT);
-assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.layer_1_contract.expected_dap_material_rows, PHASE7_EXPECTED_DAP_FIELD_COUNT);
-assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.layer_1_contract.source_registry_path, PHASE7_REGISTRY_SOURCE_PATH);
-assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.layer_contracts.length, 10);
+assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.semantic_led_architecture, true);
+assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.deterministic_first, false);
+assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.compiler_inside_phase7, false);
+assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.forensics_inside_phase7, false);
+assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.layer_contracts.length, 5);
 assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.layer_contracts[0].writes[0], "dap_registry_manifest");
+assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.layer_contracts[0].writes[1], "dap_strategic_derivation_matrix");
 
 assert.equal(manifest.registry_metadata.declared_row_count, 427);
 assert.equal(manifest.registry_metadata.locked, true);
