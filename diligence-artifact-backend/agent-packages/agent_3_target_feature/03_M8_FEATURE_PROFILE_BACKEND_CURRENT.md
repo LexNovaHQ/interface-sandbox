@@ -162,7 +162,7 @@ surface_context_tokens must be an array. It may be empty only where no surface t
 
 ## M8.S8 — Material Output Boundary
 
-The only valid backend output for this phase is target_feature_profile with activities[] and profile_level_limitations[].
+The only valid backend output for this phase is target_feature_profile with exactly three profile-level keys: activities[], commercial_availability_posture, and profile_level_limitations[].
 
 M8 must not return:
 
@@ -252,27 +252,30 @@ It must not contain forensic ledgers, source excerpts, route coverage rows, or c
 
 Limitations must be business-readable.
 
-## M8.S12 — Final Gate
+## M8.S12 - Final Gate
 
 Before returning, verify:
 
-1. Output has exactly one top-level key: target_feature_profile.
-2. target_feature_profile has exactly activities[] and profile_level_limitations[].
+1. Output has exactly one top-level key: `target_feature_profile`.
+2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
 3. Every activity has exactly the locked 12 keys.
-4. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, or forensic branches appear in the material profile.
-5. Every emitted activity has at least one archetype code.
-6. Every emitted activity has a surface_context_tokens array.
-7. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
-8. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
-9. No unindexed candidate has been added as a normal activity.
-10. No forensic output is emitted.
+4. `commercial_availability_posture` has exactly these six keys: `posture`, `free_trial_freemium_signal`, `beta_pilot_early_access_signal`, `paid_production_enterprise_plan_signal`, `evidence_basis`, and `limitation`.
+5. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, confidence fields, or forensic rows.
+6. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
+7. Every emitted activity has at least one archetype code.
+8. Every emitted activity has a `surface_context_tokens` array.
+9. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
+10. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
+11. No unindexed candidate has been added as a normal activity.
+12. No forensic output is emitted.
 
 If any condition fails, repair the material output only. Do not emit forensics.
 
-## M8.S13 — Final Backend JSON Shape
+## M8.S13 - Final Backend JSON Shape
 
 Return strict JSON only with exactly this shape:
 
+```json
 {
   "target_feature_profile": {
     "activities": [
@@ -291,19 +294,22 @@ Return strict JSON only with exactly this shape:
         "surface_proof_and_routing_limits": ""
       }
     ],
+    "commercial_availability_posture": {
+      "posture": "",
+      "free_trial_freemium_signal": "",
+      "beta_pilot_early_access_signal": "",
+      "paid_production_enterprise_plan_signal": "",
+      "evidence_basis": [],
+      "limitation": ""
+    },
     "profile_level_limitations": []
   }
 }
-
-## M8.S14 — QR Commercial Availability Posture Addendum
-
-This addendum is the only authorized M8 material-output expansion for Qualified Review commercial posture. It is additive and does not modify, weaken, or expand the locked 12-field activity card in M8.S9.
-
-If this addendum conflicts with older wording in M8.S7, M8.S8, M8.S11, M8.S12, or M8.S13 that says the material profile contains only `activities[]` and `profile_level_limitations[]`, this addendum supersedes that older wording only to permit one additional profile-level object:
-
-```text
-target_feature_profile.commercial_availability_posture
 ```
+
+## M8.S14 - QR Commercial Availability Posture Addendum
+
+This addendum documents 	target_feature_profile.commercial_availability_posture, the profile-level commercial availability object already incorporated into M8.S12 and M8.S13. It does not modify, weaken, or expand the locked 12-field activity card in M8.S9.
 
 No other profile-level material object is authorized by this addendum.
 
