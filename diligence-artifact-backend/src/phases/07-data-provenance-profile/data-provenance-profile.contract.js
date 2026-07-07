@@ -7,7 +7,7 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
   phase_order: 7,
   public_label: "Data Provenance Profile",
   package_label: "Semantic-Led Data and Privacy Architecture Profile",
-  implementation_status: "LAYER_3_DETERMINISTIC_BATCH_ROUTER_BUILT_RUNTIME_CUTOVER_PENDING",
+  implementation_status: "LAYER_5_BATCH_QUALITY_SCHEMA_VALIDATOR_BUILT_RUNTIME_CUTOVER_PENDING",
   runtime_entrypoint_switched: false,
   material_dap_field_base_count: PHASE7_EXPECTED_DAP_FIELD_COUNT,
   material_family_section_count: 18,
@@ -50,7 +50,7 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
     layer(2, "Hybrid Data Privacy Navigation Index", "hybrid_deterministic_led", ["approved inputs", "dap_strategic_derivation_matrix"], ["data_privacy_navigation_index"]),
     layer(3, "Deterministic Semantic Batch Router", "deterministic", ["data_privacy_navigation_index", "dap_strategic_derivation_matrix"], ["dap_semantic_batch_route_manifest"]),
     layer(4, "Semantic Family Batch Runner", "semantic_batch", ["dap_semantic_batch_route_manifest", "data_privacy_navigation_index"], PHASE7_DAP_SEMANTIC_BATCH_PLAN.map((batchRow) => batchRow.artifact_name)),
-    layer(5, "Batch Quality + Schema Validator", "deterministic_validator", ["semantic batch artifacts"], ["dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"])
+    layer(5, "Batch Quality + Schema Validator", "deterministic_validator", ["semantic batch artifacts", "semantic batch validation artifacts", "dap_semantic_batch_route_manifest"], ["dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"])
   ]),
   material_section_matrix: PHASE7_DAP_MATERIAL_SECTION_MATRIX,
   semantic_batch_plan: PHASE7_DAP_SEMANTIC_BATCH_PLAN,
@@ -60,6 +60,7 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
 export const PHASE7_LAYER1_ARTIFACTS = Object.freeze(["dap_registry_manifest", "dap_strategic_derivation_matrix"]);
 export const PHASE7_LAYER2_ARTIFACTS = Object.freeze(["data_privacy_navigation_index"]);
 export const PHASE7_LAYER3_ARTIFACTS = Object.freeze(["dap_semantic_batch_route_manifest"]);
+export const PHASE7_LAYER5_ARTIFACTS = Object.freeze(["dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"]);
 
 function layer(order, name, execution_mode, reads, writes) {
   return Object.freeze({ order, name, execution_mode, reads: Object.freeze(reads), writes: Object.freeze(writes) });
