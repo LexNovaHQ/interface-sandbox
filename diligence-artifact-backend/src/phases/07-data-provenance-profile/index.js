@@ -9,6 +9,15 @@ export {
   validatePhase7DapRegistryManifest
 } from "./dap-registry-derivation-rule-compiler.js";
 export {
+  PHASE7_DAP_SEMANTIC_BATCH_PLAN,
+  PHASE7_DAP_STRATEGIC_DERIVATION_COUNTS,
+  buildPhase7StrategicDerivationMatrixArtifact,
+  getPhase7StrategicDerivationForField,
+  validatePhase7StrategicDerivationMatrix
+} from "./dap-strategic-derivation-matrix.js";
+export { buildPhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-navigation-index-builder.js";
+export { validatePhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-navigation-index-validator.js";
+export {
   PHASE7_FORBIDDEN_UNKNOWN_STATUSES,
   PHASE7_CONTROLLED_NAVIGATION_STATUSES,
   assertNoForbiddenUnknownStatus,
