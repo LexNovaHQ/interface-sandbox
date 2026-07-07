@@ -31,3 +31,5 @@ export { validatePhase7ActivityDataFlowCandidateMap } from "./layer4-activity-da
 export { PHASE7_PREFILL_STATUSES, selectPhase7PrefillStatus, phase7ModelRequiredForPrefillStatus } from "./layer5-prefill-status-policy.js";
 export { buildPhase7DeterministicFieldPrefillMatrix } from "./layer5-deterministic-field-prefill-matrix.js";
 export { validatePhase7DeterministicFieldPrefillMatrix } from "./layer5-prefill-matrix-validator.js";
+export { buildPhase7ModelWorkPacketManifest } from "./layer6-model-work-packet-router.js";
+export { validatePhase7ModelWorkPacketManifest } from "./layer6-model-packet-validator.js";
