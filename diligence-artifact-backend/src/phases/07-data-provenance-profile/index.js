@@ -33,3 +33,6 @@ export { buildPhase7DeterministicFieldPrefillMatrix } from "./layer5-determinist
 export { validatePhase7DeterministicFieldPrefillMatrix } from "./layer5-prefill-matrix-validator.js";
 export { buildPhase7ModelWorkPacketManifest } from "./layer6-model-work-packet-router.js";
 export { validatePhase7ModelWorkPacketManifest } from "./layer6-model-packet-validator.js";
+export { PHASE7_SEMANTIC_RESOLUTION_STATUSES, PHASE7_FORBIDDEN_SEMANTIC_CONCLUSION_PATTERNS, normalizePhase7SemanticStatus, assertNoPhase7ForbiddenSemanticConclusion } from "./layer7-semantic-resolution-status-policy.js";
+export { buildPhase7ModelResolutionPackets } from "./layer7-bounded-semantic-resolution-packets.js";
+export { validatePhase7ModelResolutionPackets } from "./layer7-semantic-resolution-validator.js";
