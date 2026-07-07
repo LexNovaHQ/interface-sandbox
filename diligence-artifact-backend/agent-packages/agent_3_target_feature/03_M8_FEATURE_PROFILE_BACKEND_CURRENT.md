@@ -416,7 +416,7 @@ The commercial availability object does not authorize new activity keys, new can
 Before returning the M8 material response, verify:
 
 1. Output has exactly one top-level key: `target_feature_profile`.
-2. `target_feature_profile` has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
+2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
 3. Every activity still has exactly the locked 12 keys from M8.S9.
 4. `commercial_availability_posture` has exactly the six keys in M8.S14C.
 5. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
