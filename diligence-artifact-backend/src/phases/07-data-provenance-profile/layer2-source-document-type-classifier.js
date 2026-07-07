@@ -1,4 +1,7 @@
 const DOCUMENT_TYPE_RULES = Object.freeze([
+  rule("direct_legal_signal_profile", ["legal_signal_derivation_profile", "privacy_grievance_contact_signal_map", "consent_manager_signal_map"]),
+  rule("upstream_activity_profile", ["target_feature_profile", "feature_candidate_inventory", "activity", "mechanics"]),
+  rule("upstream_target_profile", ["target_profile", "target_profile_forensics", "target identity"]),
   rule("privacy_notice", ["privacy", "privacy-policy", "privacy_notice", "personal data", "data protection"]),
   rule("dpa", ["dpa", "data processing", "data-processing", "data protection addendum", "processor terms"]),
   rule("subprocessor_list", ["subprocessor", "sub-processor", "processors", "vendors"]),
@@ -11,10 +14,7 @@ const DOCUMENT_TYPE_RULES = Object.freeze([
   rule("incident_breach_security", ["incident", "breach", "security event", "vulnerability", "report"]),
   rule("terms", ["terms", "tos", "terms-of-service", "service terms", "customer terms", "eula"]),
   rule("legal_navigation_ref", ["legal", "legal center", "notice", "governing", "jurisdiction"]),
-  rule("product_activity_context", ["product", "feature", "solution", "platform", "workflow"]),
-  rule("direct_legal_signal_profile", ["legal_signal_derivation_profile", "privacy_grievance_contact_signal_map", "consent_manager_signal_map"]),
-  rule("upstream_activity_profile", ["target_feature_profile", "feature_candidate_inventory", "activity", "mechanics"]),
-  rule("upstream_target_profile", ["target_profile", "target_profile_forensics", "target identity"])
+  rule("product_activity_context", ["product", "feature", "solution", "platform", "workflow"])
 ]);
 
 export const PHASE7_DOCUMENT_TYPES = Object.freeze(DOCUMENT_TYPE_RULES.map((row) => row.document_type));
