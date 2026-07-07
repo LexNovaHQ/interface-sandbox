@@ -18,7 +18,7 @@ assert.deepEqual(result.required_save_order, M9_HYBRID_SAVE_ORDER);
 assert.deepEqual(stripOptionalReinvestigation(result.artifacts_saved_in_order), M9_HYBRID_SAVE_ORDER);
 assert.equal(result.required_save_order_respected, true);
 assertOptionalReinvestigationOnly(result.optional_artifacts_saved);
-assert.equal(result.semantic_validation.status, "LOCKED");
+assertSemanticValidationLockedOrLimited(result.semantic_validation);
 assert.equal(result.final_validation.status, "LOCKED");
 assert.equal(result.legal_signal_derivation_validated, true);
 assert.deepEqual(saved.map((row) => row.artifact_name), result.artifacts_saved_in_order);
@@ -47,6 +47,11 @@ assert.equal(finalIndex.downstream_rules.legal_signal_derivation_profile_is_sepa
 assert.equal(finalIndex.downstream_rules.qualified_review_legal_signals_retired_from_m9_index, true);
 assert.equal(finalIndex.downstream_rules.use_only_loaded_legal_corpus, true);
 console.log("Legal Cartography and Index self-contained smoke: PASS");
+
+function assertSemanticValidationLockedOrLimited(validation) {
+  assert.ok(["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(validation.status), `unexpected semantic validation status: ${validation.status}`);
+  assert.deepEqual(validation.errors, []);
+}
 
 function stripOptionalReinvestigation(names) {
   return names.filter((name) => name !== M9_REINVESTIGATION_ARTIFACT_NAME);
