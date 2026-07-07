@@ -9,10 +9,12 @@ const layer4 = getPhaseContract("DATA_PROVENANCE_PROFILE_LAYER4");
 const layer5 = getPhaseContract(phase);
 
 assert.ok(PHASES.includes(phase));
+assert.equal(PHASES.includes("AGENT_4B_EXTENDED_DAP_INDIA_READINESS"), false);
+assert.equal(PHASES.includes("AGENT_4C_INTEGRATED_DAP_REPORT"), false);
 assert.equal(layer4.next, phase);
 assert.equal(layer5.type, "phase7_layer5_deterministic_gate");
 assert.equal(layer5.agent_id, "agent_4_data_privacy");
-assert.equal(layer5.next, "AGENT_4B_EXTENDED_DAP_INDIA_READINESS");
+assert.equal(layer5.next, "M11");
 assert.equal(typeof runPhase7Layer5SemanticBatchQualityGatePhase, "function");
 assert.equal(typeof advanceReviewerRun, "function");
 
