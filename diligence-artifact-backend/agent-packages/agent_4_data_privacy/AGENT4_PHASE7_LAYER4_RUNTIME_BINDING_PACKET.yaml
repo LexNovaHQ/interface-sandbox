@@ -1,0 +1,61 @@
+runtime_contract: PHASE7_LAYER4_DAP_SEMANTIC_BATCH_RUNTIME
+active_agent_id: agent_4_data_privacy
+active_agent_name: Interface Data Privacy Agent
+active_phase_scope: PHASE7_DAP_SEMANTIC_BATCH_RUNNER
+run_mode: SEMANTIC_BATCH_AGENT
+active_batch_required: true
+allowed_modules:
+  - PHASE7_LAYER4_SEMANTIC_BATCH_RUNNER
+read_artifacts:
+  - dap_registry_manifest
+  - dap_strategic_derivation_matrix
+  - data_privacy_navigation_index
+  - dap_semantic_batch_route_manifest
+  - source_discovery_handoff
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - target_profile
+  - target_profile_forensics
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - lossless_family__D1_SECURITY_TRUST
+  - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
+  - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
+  - lossless_family__D4_DOCS_API_DATA_FLOW
+  - lossless_family__D5_AI_SAFETY_TRANSPARENCY
+layer4_use_rules:
+  - Execute exactly one active semantic batch per model call.
+  - The active route packet controls families, expected field IDs, expected root, reading priorities, schema requirements, and validation requirements.
+  - Use D1-D5 material only through data_privacy_navigation_index routes.
+  - Use L-family material only through Legal Cartography locator routes selected by the active route packet.
+  - Emit only the active batch artifact root.
+  - Do not emit old M10 material, old M10 forensics, compiler material, report material, final profile material, or another batch artifact.
+  - Do not mutate upstream artifacts or route manifests.
+write_artifact_rule:
+  emits_exactly_one_active_batch_artifact: true
+  root_must_equal: active_dap_semantic_batch_route_packet.expected_artifact_name
+  returned_field_ids_must_equal: active_dap_semantic_batch_route_packet.expected_field_ids
+  one_row_per_field_id: true
+allowed_batch_artifacts:
+  - dap_semantic_batch_exec_artifact
+  - dap_semantic_batch_lim_artifact
+  - dap_semantic_batch_party_artifact
+  - dap_semantic_batch_role_artifact
+  - dap_semantic_batch_flow_artifact
+  - dap_semantic_batch_obj_artifact
+  - dap_semantic_batch_auth_artifact
+  - dap_semantic_batch_ctrl_artifact
+  - dap_semantic_batch_contact_cm_artifact
+  - dap_semantic_batch_vend_artifact
+  - dap_semantic_batch_loc_artifact
+  - dap_semantic_batch_ret_artifact
+  - dap_semantic_batch_sec_artifact
+  - dap_semantic_batch_sens_artifact
+  - dap_semantic_batch_dom_artifact
+  - dap_semantic_batch_ready_artifact
+  - dap_semantic_batch_req_artifact
+phase_save_contract:
+  emits_only:
+    - active_batch_artifact_root
+  backend_must_validate_with: layer4_semantic_batch_artifact_validator
+  must_stop_after_active_batch_emit: true
