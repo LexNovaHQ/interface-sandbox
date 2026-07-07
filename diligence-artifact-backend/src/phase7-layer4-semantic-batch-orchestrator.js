@@ -29,8 +29,12 @@ export async function runPhase7Layer4SemanticBatchPhase({ run, phase, contract }
   const artifacts = { ...sourceArtifacts, ...bootstrap };
   const routeManifest = artifacts.dap_semantic_batch_route_manifest;
   const routePackets = routeManifest?.batch_route_packets || [];
-  if (!routePackets.length) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_4, status: "REPAIR_REQUIRED", next_phase: phase });
+  if (!routePackets.length) {
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_4, artifact_name: "dap_semantic_batch_validation__DAP-SEM-BATCH-00", artifact: { dap_semantic_batch_validation: { status: "LOCKED_WITH_LIMITATIONS", non_blocking_repair_required: true, blocking_failure: false, errors: ["missing_route_packets"] } }, lock_status: "LOCKED_WITH_LIMITATIONS" }));
+    return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_4, status: "LOCKED_WITH_LIMITATIONS", next_phase: contract.next });
+  }
 
+  let hasLimitations = false;
   const accepted = [];
   const validations = [];
   for (const routePacket of routePackets) {
@@ -44,18 +48,17 @@ export async function runPhase7Layer4SemanticBatchPhase({ run, phase, contract }
     if (validation.status !== "PASS") {
       output = await runBatchModel({ run, phase, routePacket, artifacts, repair: true, priorOutput: output, validation });
       validation = validatePhase7Layer4SemanticBatchArtifact(output, { routePacket });
-      if (validation.status !== "PASS") {
-        await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_4, artifact_name: `dap_semantic_batch_validation__${routePacket.batch_id}`, artifact: { dap_semantic_batch_validation: validation }, lock_status: "REPAIR_REQUIRED" }));
-        return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_4, status: "REPAIR_REQUIRED", next_phase: phase });
-      }
     }
-    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_4, artifact_name: `dap_semantic_batch_validation__${routePacket.batch_id}`, artifact: { dap_semantic_batch_validation: validation }, lock_status: "LOCKED" }));
-    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_4, artifact_name: routePacket.expected_artifact_name, artifact: output, lock_status: "LOCKED" }));
+    const validationStatus = validation.status === "PASS" ? "PASS" : "LOCKED_WITH_LIMITATIONS";
+    if (validationStatus !== "PASS") hasLimitations = true;
+    const normalizedValidation = Object.freeze({ ...validation, status: validationStatus, non_blocking_repair_required: validation.status !== "PASS", blocking_failure: false });
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_4, artifact_name: `dap_semantic_batch_validation__${routePacket.batch_id}`, artifact: { dap_semantic_batch_validation: normalizedValidation }, lock_status: validationStatus === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS" }));
+    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_4, artifact_name: routePacket.expected_artifact_name, artifact: output && typeof output === "object" ? output : { [routePacket.expected_artifact_name]: { batch_id: routePacket.batch_id, families: routePacket.families, returned_field_ids: [], field_rows: [], batch_limitations: ["model_output_missing_or_non_object"], batch_quality_flags: ["NON_BLOCKING_REPAIR_REQUIRED"] } }, lock_status: validationStatus === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS" }));
     accepted.push(output);
-    validations.push(validation);
+    validations.push(normalizedValidation);
   }
 
-  return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_4, status: "LOCKED", next_phase: contract.next });
+  return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_4, status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", next_phase: contract.next });
 }
 
 async function buildAndSaveLayer4BootstrapArtifacts({ run, phase, sourceArtifacts }) {
