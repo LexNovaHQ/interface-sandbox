@@ -25,3 +25,6 @@ export { buildPhase7PinpointFamilyAccessPlan } from "./layer3-pinpoint-family-ac
 export { PHASE7_EVIDENCE_ATOM_TYPES, makePhase7EvidenceAtom, validatePhase7EvidenceAtomShape } from "./layer3-evidence-atom-schema.js";
 export { buildPhase7EvidenceAtomInventory } from "./layer3-pinpoint-evidence-atom-extractor.js";
 export { validatePhase7EvidenceAtomInventory } from "./layer3-evidence-atom-validator.js";
+export { normalizePhase7ActivitySources } from "./layer4-activity-source-normalizer.js";
+export { buildPhase7ActivityDataFlowCandidateMap } from "./layer4-activity-dap-obligation-joiner.js";
+export { validatePhase7ActivityDataFlowCandidateMap } from "./layer4-activity-data-joiner-validator.js";
