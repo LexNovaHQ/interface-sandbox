@@ -24,8 +24,8 @@ export const PHASE7_DAP_SEMANTIC_BATCH_PLAN = Object.freeze([
   batch(17, ["REQ"], 8)
 ]);
 
-const SEMANTIC_LED_FAMILIES = new Set(["EXEC", "PARTY", "ROLE", "FLOW", "OBJ", "AUTH", "SENS", "DOM", "READY"]);
-const HYBRID_FAMILIES = new Set(["LIM", "CTRL", "CONTACT", "CM", "VEND", "LOC", "RET", "SEC", "REQ"]);
+const SEMANTIC_LED_FAMILIES = new Set(["EXEC", "PARTY", "ROLE", "FLOW", "OBJ", "AUTH", "VEND", "LOC", "RET", "SEC", "SENS", "DOM", "READY"]);
+const HYBRID_FAMILIES = new Set(["LIM", "CTRL", "CONTACT", "CM", "REQ"]);
 const DETERMINISTIC_FINAL_FIELDS = new Set([
   "DAP.CONTACT.001", "DAP.CONTACT.002", "DAP.CONTACT.004",
   "DAP.CM.002", "DAP.CM.005", "DAP.CM.006",
@@ -43,8 +43,9 @@ export function getPhase7StrategicDerivationForField(fieldId = "") {
   const family = String(fieldId).split(".")[1] || "UNROUTED";
   let primary = "SEMANTIC_LED";
   if (DETERMINISTIC_FINAL_FIELDS.has(fieldId)) primary = "DETERMINISTIC_FINAL";
+  else if (HYBRID_FIELD_OVERRIDES.has(fieldId)) primary = "SEMANTIC_LED_WITH_DETERMINISTIC_SUPPORT";
   else if (SEMANTIC_FIELD_OVERRIDES.has(fieldId) || SEMANTIC_LED_FAMILIES.has(family)) primary = "SEMANTIC_LED";
-  else if (HYBRID_FIELD_OVERRIDES.has(fieldId) || HYBRID_FAMILIES.has(family)) primary = "SEMANTIC_LED_WITH_DETERMINISTIC_SUPPORT";
+  else if (HYBRID_FAMILIES.has(family)) primary = "SEMANTIC_LED_WITH_DETERMINISTIC_SUPPORT";
   return Object.freeze({
     family_section_18: family,
     primary_derivation: primary,
