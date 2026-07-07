@@ -66,7 +66,13 @@ assert.equal(output.dap_semantic_batch_validation_manifest.field_coverage.unique
 const brokenArtifacts = { ...batchArtifacts };
 delete brokenArtifacts.dap_semantic_batch_contact_cm_artifact;
 const broken = buildPhase7SemanticBatchQualityGate({ routeManifest, batchArtifacts: brokenArtifacts, batchValidations });
-assert.equal(broken.data_provenance_profile_semantic_batch_gate.status, "REPAIR_REQUIRED");
+const brokenValidation = validatePhase7SemanticBatchQualityGate(broken);
+assert.equal(brokenValidation.status, "PASS");
+assert.equal(broken.data_provenance_profile_semantic_batch_gate.status, "LOCKED_WITH_LIMITATIONS");
+assert.equal(broken.data_provenance_profile_semantic_batch_gate.non_blocking_repair_required, true);
+assert.equal(broken.data_provenance_profile_semantic_batch_gate.blocking_failure, false);
 assert.ok(broken.data_provenance_profile_semantic_batch_gate.errors.some((error) => error.includes("missing_batch_artifact:dap_semantic_batch_contact_cm_artifact")));
+assert.notEqual(broken.data_provenance_profile_semantic_batch_gate.status, "REPAIR_REQUIRED");
+assert.notEqual(broken.dap_semantic_batch_validation_manifest.validation_quality_control_result.status, "REPAIR_REQUIRED");
 
 console.log("Phase 7 Layer 5 semantic batch quality gate: PASS");
