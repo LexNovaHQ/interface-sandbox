@@ -1,11 +1,13 @@
-import { asArray, safeObject, safeText, unique } from "./report-safe-language.js";
+import { asArray, safeObject, safeText } from "./report-safe-language.js";
 import { NORMALIZATION_MAP_VERSION } from "./report-normalization-map.js";
 
-export const FORENSIC_ANNEXURE_NORMALIZER_VERSION = "forensic_annexure_normalizer_v1_deterministic_manifest_only";
+export const FORENSIC_ANNEXURE_NORMALIZER_VERSION = "forensic_annexure_normalizer_v2_phase7_dap_manifest";
 
-const REVIEW_READY_BOUNDARY_NOTICE = "This is a public-footprint diligence artifact and Review-Ready Draft support material. It is not legal advice, does not decide compliance, liability, enforceability, or legal sufficiency, and requires local counsel / qualified reviewer review before reliance.";
+const REVIEW_READY_BOUNDARY_NOTICE = "This is a public-footprint diligence artifact and Review-Ready Draft support material. It does not decide compliance, liability, enforceability, or legal sufficiency, and requires local counsel / qualified reviewer review before reliance.";
 const PUBLIC_FOOTPRINT_LIMITATION = "This report is limited to reviewed public materials, admitted source artifacts, and locked backend diligence outputs. It does not verify private implementation, customer contracts, internal controls, or non-public operating facts.";
-const DISPLAY_RULE = "Manifest only Ã¢â‚¬â€ full payload preserved as backend artifact";
+const DISPLAY_RULE = "Manifest only — full payload preserved as backend artifact";
+
+const PHASE7_BATCH_ARTIFACTS = Object.freeze(["dap_semantic_batch_exec_artifact", "dap_semantic_batch_lim_artifact", "dap_semantic_batch_party_artifact", "dap_semantic_batch_role_artifact", "dap_semantic_batch_flow_artifact", "dap_semantic_batch_obj_artifact", "dap_semantic_batch_auth_artifact", "dap_semantic_batch_ctrl_artifact", "dap_semantic_batch_contact_cm_artifact", "dap_semantic_batch_vend_artifact", "dap_semantic_batch_loc_artifact", "dap_semantic_batch_ret_artifact", "dap_semantic_batch_sec_artifact", "dap_semantic_batch_sens_artifact", "dap_semantic_batch_dom_artifact", "dap_semantic_batch_ready_artifact", "dap_semantic_batch_req_artifact"]);
 
 const ANNEXURE_ARTIFACTS = Object.freeze([
   ["source_family_index", "A1", "Source Discovery", "AGENT_1B_EXTRACT", "source index"],
@@ -18,8 +20,10 @@ const ANNEXURE_ARTIFACTS = Object.freeze([
   ["legal_cartography_index", "M9", "Legal Cartography", "M9", "index"],
   ["data_provenance_profile", "M10", "Data Provenance", "M10", "profile"],
   ["data_provenance_profile_forensics", "M10", "Data Provenance", "M10_FORENSICS", "forensics"],
-  ["extended_dap_india_readiness_profile", "4B", "Extended DAP", "AGENT_4B_EXTENDED_DAP_INDIA_READINESS", "profile"],
-  ["integrated_dap_report", "4C", "Integrated DAP", "AGENT_4C_INTEGRATED_DAP_REPORT", "integrated report"],
+  ["dap_semantic_batch_route_manifest", "P7", "Data Provenance", "DATA_PROVENANCE_PROFILE_LAYER4", "route manifest"],
+  ...PHASE7_BATCH_ARTIFACTS.map((name) => [name, "P7", "Data Provenance", "DATA_PROVENANCE_PROFILE_LAYER4", "semantic batch"]),
+  ["dap_semantic_batch_validation_manifest", "P7", "Data Provenance", "DATA_PROVENANCE_PROFILE_LAYER5", "validation manifest"],
+  ["data_provenance_profile_semantic_batch_gate", "P7", "Data Provenance", "DATA_PROVENANCE_PROFILE_LAYER5", "batch gate"],
   ["exposure_registry_route_plan", "M11", "Exposure Registry", "M11", "route plan"],
   ["exposure_registry_workpad_98", "M11", "Exposure Registry", "M11", "full workpad"],
   ["exposure_registry_controlled_profile", "M11", "Exposure Registry", "M11", "controlled profile"],
@@ -31,7 +35,7 @@ const ANNEXURE_ARTIFACTS = Object.freeze([
 ]);
 
 export function buildMethodologyLimitationsForensicAnnexureSection({ run = {}, artifacts = {}, baseOutput = {}, sectionStatus = "LOCKED_WITH_LIMITATIONS" } = {}) {
-  const section = {
+  return {
     section_id: "methodology_limitations_forensic_annexure",
     artifact_name: "normalized_section__methodology_limitations_forensic_annexure",
     section_title: "10. Methodology, Limitations & Forensic Annexure",
@@ -49,33 +53,15 @@ export function buildMethodologyLimitationsForensicAnnexureSection({ run = {}, a
     ],
     section_limitations: [],
     source_artifacts_used: ["normalized_report_manifest", "normalizer_validation", ...ANNEXURE_ARTIFACTS.map(([name]) => name)],
-    normalization: {
-      profiler_version: FORENSIC_ANNEXURE_NORMALIZER_VERSION,
-      normalization_map_version: NORMALIZATION_MAP_VERSION,
-      deterministic_only: true,
-      manifest_only: true,
-      full_forensic_payload_rendered_inline: false,
-      legal_conclusion_generated: false
-    },
+    normalization: { profiler_version: FORENSIC_ANNEXURE_NORMALIZER_VERSION, normalization_map_version: NORMALIZATION_MAP_VERSION, deterministic_only: true, manifest_only: true, full_forensic_payload_rendered_inline: false, legal_conclusion_generated: false, phase7_dap_manifest_used: true },
     review_ready_mapping: { eligible_for_review: false, review_category: "methodology_limitations_forensic_annexure", requires_confirmation_before_assembly: true }
   };
-  return section;
 }
 
 function methodologyBoundary({ run = {}, baseOutput = {} }) {
   const final = safeObject(baseOutput.final_output_handoff?.final_output_handoff || baseOutput.final_output_handoff);
   const trace = safeObject(final.compiler_trace);
-  return {
-    Run_ID: safeText(run.run_id || final.run_meta?.run_id, "Run ID not specified"),
-    Target_URL: safeText(run.root_url || run.target_url || final.run_meta?.target_url, "Target URL not specified"),
-    Source_Mode: safeText(run.source_mode || "url", "Source mode not specified"),
-    Pipeline_Stages: ["Source discovery", "Target profile", "Feature profile", "Legal cartography", "Data provenance / DAP", "Exposure registry", "Challenge gate", "Deterministic normalization", "Renderer"],
-    Public_Footprint_Limitation: PUBLIC_FOOTPRINT_LIMITATION,
-    Review_Ready_Boundary: REVIEW_READY_BOUNDARY_NOTICE,
-    No_Post_M12_Model_Generation: trace.model_used_after_m12 === false || trace.deterministic_only === true,
-    Deterministic_Normalization: trace.deterministic_only === true,
-    Section_789_Split: trace.section_789_artifact_split === true
-  };
+  return { Run_ID: safeText(run.run_id || final.run_meta?.run_id, "Run ID not specified"), Target_URL: safeText(run.root_url || run.target_url || final.run_meta?.target_url, "Target URL not specified"), Source_Mode: safeText(run.source_mode || "url", "Source mode not specified"), Pipeline_Stages: ["Source discovery", "Target profile", "Feature profile", "Legal cartography", "Data provenance / DAP", "Exposure registry", "Challenge gate", "Deterministic normalization", "Renderer"], Public_Footprint_Limitation: PUBLIC_FOOTPRINT_LIMITATION, Review_Ready_Boundary: REVIEW_READY_BOUNDARY_NOTICE, No_Post_M12_Model_Generation: trace.model_used_after_m12 === false || trace.deterministic_only === true, Deterministic_Normalization: trace.deterministic_only === true, Section_789_Split: trace.section_789_artifact_split === true };
 }
 
 function annexureManifest({ artifacts = {}, baseOutput = {} }) {
@@ -83,45 +69,21 @@ function annexureManifest({ artifacts = {}, baseOutput = {} }) {
   return ANNEXURE_ARTIFACTS.map(([artifactName, module, agent, phase, artifactType], index) => {
     const artifact = unwrapArtifact(merged[artifactName], artifactName);
     const present = hasContent(artifact);
-    return {
-      Annexure_Ref: `ANNEX-${module}-${String(index + 1).padStart(3, "0")}`,
-      Module_Agent: agent,
-      Phase: phase,
-      Artifact_Name: artifactName,
-      Artifact_Type: artifactType,
-      Presence: present ? "present" : "missing or not loaded",
-      Lock_Status: detectLockStatus(artifact, baseOutput, artifactName),
-      Row_Object_Count: present ? rowOrObjectCount(artifact) : 0,
-      Contains_Provenance_Metadata: present ? yesNo(containsKeyLike(artifact, /provenance|metadata|manifest|trace/i)) : "No",
-      Contains_Source_Custody_Trace: present ? yesNo(containsKeyLike(artifact, /source|custody|evidence|artifact_ref|unit_ref|family/i)) : "No",
-      Contains_Limitation_Repair_Ledger: present ? yesNo(containsKeyLike(artifact, /limitation|warning|repair|reinvestigation|failure|missing/i)) : "No",
-      Display_Rule: DISPLAY_RULE
-    };
+    return { Annexure_Ref: `ANNEX-${module}-${String(index + 1).padStart(3, "0")}`, Module_Agent: agent, Phase: phase, Artifact_Name: artifactName, Artifact_Type: artifactType, Presence: present ? "present" : "missing or not loaded", Lock_Status: detectLockStatus(artifact, baseOutput, artifactName), Row_Object_Count: present ? rowOrObjectCount(artifact) : 0, Contains_Provenance_Metadata: present ? yesNo(containsKeyLike(artifact, /provenance|metadata|manifest|trace/i)) : "No", Contains_Source_Custody_Trace: present ? yesNo(containsKeyLike(artifact, /source|custody|evidence|artifact_ref|unit_ref|family|route/i)) : "No", Contains_Limitation_Repair_Ledger: present ? yesNo(containsKeyLike(artifact, /limitation|warning|repair|reinvestigation|failure|missing/i)) : "No", Display_Rule: DISPLAY_RULE };
   });
 }
 
 function workpadRouteLedgerSummary({ artifacts = {}, baseOutput = {} }) {
   const featureCandidateInventory = unwrapArtifact(artifacts.feature_candidate_inventory, "feature_candidate_inventory");
   const legal = unwrapArtifact(artifacts.legal_cartography_index, "legal_cartography_index");
-  const integrated = unwrapArtifact(artifacts.integrated_dap_report, "integrated_dap_report");
+  const dapGate = unwrapArtifact(artifacts.data_provenance_profile_semantic_batch_gate, "data_provenance_profile_semantic_batch_gate");
+  const dapManifest = unwrapArtifact(artifacts.dap_semantic_batch_validation_manifest, "dap_semantic_batch_validation_manifest");
   const route = unwrapArtifact(artifacts.exposure_registry_route_plan, "exposure_registry_route_plan");
   const workpad = unwrapArtifact(artifacts.exposure_registry_workpad_98, "exposure_registry_workpad_98");
   const triggered = unwrapArtifact(artifacts.exposure_registry_triggered_profile, "exposure_registry_triggered_profile");
   const controlled = unwrapArtifact(artifacts.exposure_registry_controlled_profile, "exposure_registry_controlled_profile");
   const challenge = unwrapArtifact(artifacts.challenge_gate, "challenge_gate");
-  return [
-    metric("Feature candidate count", countFirstArray(featureCandidateInventory, ["feature_candidates", "candidates", "canonical_candidates", "candidate_inventory"]), "feature_candidate_inventory"),
-    metric("Legal cartography document rows", asArray(legal.document_coverage_index).length, "legal_cartography_index.document_coverage_index"),
-    metric("Legal cartography unit rows", asArray(legal.document_structure_index).length, "legal_cartography_index.document_structure_index"),
-    metric("Integrated DAP qualified-review queue rows", asArray(integrated.qualified_review_queue).length, "integrated_dap_report.qualified_review_queue"),
-    metric("M11 route rows", asArray(route.route_rows).length, "exposure_registry_route_plan.route_rows"),
-    metric("M11 batch count", asArray(route.batch_plan).length, "exposure_registry_route_plan.batch_plan"),
-    metric("M11 workpad rows", asArray(workpad.registry_rows).length, "exposure_registry_workpad_98.registry_rows"),
-    metric("M11 triggered rows", asArray(triggered.triggered_rows).length, "exposure_registry_triggered_profile.triggered_rows"),
-    metric("M11 controlled rows", asArray(controlled.controlled_rows).length, "exposure_registry_controlled_profile.controlled_rows"),
-    metric("M12 challenge findings", countChallengeRows(challenge), "challenge_gate"),
-    metric("Normalized section artifacts", asArray(baseOutput.normalized_report_manifest?.section_artifacts).length, "normalized_report_manifest.section_artifacts")
-  ];
+  return [metric("Feature candidate count", countFirstArray(featureCandidateInventory, ["feature_candidates", "candidates", "canonical_candidates", "candidate_inventory"]), "feature_candidate_inventory"), metric("Legal cartography document rows", asArray(legal.document_coverage_index).length, "legal_cartography_index.document_coverage_index"), metric("Legal cartography unit rows", asArray(legal.document_structure_index).length, "legal_cartography_index.document_structure_index"), metric("Phase 7 DAP batch rows", Number(dapGate.field_count || dapManifest.observed_field_count || 0), "data_provenance_profile_semantic_batch_gate.field_count"), metric("Phase 7 DAP batch count", Number(dapGate.batch_count || dapManifest.observed_batch_count || 0), "data_provenance_profile_semantic_batch_gate.batch_count"), metric("M11 route rows", asArray(route.route_rows).length, "exposure_registry_route_plan.route_rows"), metric("M11 batch count", asArray(route.batch_plan).length, "exposure_registry_route_plan.batch_plan"), metric("M11 workpad rows", asArray(workpad.registry_rows).length, "exposure_registry_workpad_98.registry_rows"), metric("M11 triggered rows", asArray(triggered.triggered_rows).length, "exposure_registry_triggered_profile.triggered_rows"), metric("M11 controlled rows", asArray(controlled.controlled_rows).length, "exposure_registry_controlled_profile.controlled_rows"), metric("M12 challenge findings", countChallengeRows(challenge), "challenge_gate"), metric("Normalized section artifacts", asArray(baseOutput.normalized_report_manifest?.section_artifacts).length, "normalized_report_manifest.section_artifacts")];
 }
 
 function provenanceSourceCustodySummary({ run = {}, artifacts = {}, baseOutput = {} }) {
@@ -130,191 +92,32 @@ function provenanceSourceCustodySummary({ run = {}, artifacts = {}, baseOutput =
   const final = safeObject(baseOutput.final_output_handoff?.final_output_handoff || baseOutput.final_output_handoff);
   const trace = safeObject(final.compiler_trace);
   const familyKeys = Object.keys(artifacts || {}).filter((key) => key.startsWith("lossless_family__"));
-  return {
-    Source_Family_Index_Present: yesNo(hasContent(sourceFamilyIndex)),
-    Lossless_Family_Shards_Resolved: yesNo(trace.lossless_family_shards_resolved === true || containsKeyLike(sourceFamilyIndex, /shard|part|resolved/i)),
-    Uploaded_Documents_Included: yesNo(Boolean(run.uploaded_source_documents?.document_count || run.uploaded_source_documents?.length || artifacts.uploaded_source_document_index || artifacts.uploaded_source_document_corpus)),
-    Target_Families_Present: familyPresence(familyKeys, "T"),
-    Product_Families_Present: familyPresence(familyKeys, "P"),
-    Legal_Governance_Families_Present: familyPresence(familyKeys, "L"),
-    Data_Families_Present: familyPresence(familyKeys, "D"),
-    Dynamic_M11_Batch_Artifacts_Loaded: Number(dynamicManifest.loaded_batch_artifacts || 0),
-    Dynamic_M12_Batch_Validation_Artifacts_Loaded: Number(dynamicManifest.loaded_batch_validation_artifacts || 0),
-    Missing_Static_Artifacts: asArray(artifacts.normalized_compiler_missing_static_artifacts),
-    Missing_Dynamic_Batch_Artifacts: asArray(dynamicManifest.missing_batch_artifacts),
-    Missing_Dynamic_Batch_Validation_Artifacts: asArray(dynamicManifest.missing_batch_validation_artifacts)
-  };
+  return { Source_Family_Index_Present: yesNo(hasContent(sourceFamilyIndex)), Lossless_Family_Shards_Resolved: yesNo(trace.lossless_family_shards_resolved === true || containsKeyLike(sourceFamilyIndex, /shard|part|resolved/i)), Uploaded_Documents_Included: yesNo(Boolean(run.uploaded_source_documents?.document_count || run.uploaded_source_documents?.length || artifacts.uploaded_source_document_index || artifacts.uploaded_source_document_corpus)), Target_Families_Present: familyPresence(familyKeys, "T"), Product_Families_Present: familyPresence(familyKeys, "P"), Legal_Governance_Families_Present: familyPresence(familyKeys, "L"), Data_Families_Present: familyPresence(familyKeys, "D"), Dynamic_M11_Batch_Artifacts_Loaded: Number(dynamicManifest.loaded_batch_artifacts || 0), Dynamic_M12_Batch_Validation_Artifacts_Loaded: Number(dynamicManifest.loaded_batch_validation_artifacts || 0), Missing_Static_Artifacts: asArray(artifacts.normalized_compiler_missing_static_artifacts), Missing_Dynamic_Batch_Artifacts: asArray(dynamicManifest.missing_batch_artifacts), Missing_Dynamic_Batch_Validation_Artifacts: asArray(dynamicManifest.missing_batch_validation_artifacts) };
 }
 
 function limitationRepairLedger({ artifacts = {}, baseOutput = {} }) {
   const rows = [];
-  const scanSources = [
-    ["M7", "target_profile_forensics", unwrapArtifact(artifacts.target_profile_forensics, "target_profile_forensics")],
-    ["M8", "target_feature_profile_forensics", unwrapArtifact(artifacts.target_feature_profile_forensics, "target_feature_profile_forensics")],
-    ["M10", "data_provenance_profile_forensics", unwrapArtifact(artifacts.data_provenance_profile_forensics, "data_provenance_profile_forensics")],
-    ["4C", "integrated_dap_report", unwrapArtifact(artifacts.integrated_dap_report, "integrated_dap_report")],
-    ["M11", "exposure_registry_route_plan", unwrapArtifact(artifacts.exposure_registry_route_plan, "exposure_registry_route_plan")],
-    ["M11", "exposure_registry_workpad_98", unwrapArtifact(artifacts.exposure_registry_workpad_98, "exposure_registry_workpad_98")],
-    ["M11", "exposure_registry_profile_forensics", unwrapArtifact(artifacts.exposure_registry_profile_forensics, "exposure_registry_profile_forensics")],
-    ["M12", "challenge_gate", unwrapArtifact(artifacts.challenge_gate, "challenge_gate")],
-    ["NORMALIZER", "normalizer_validation", baseOutput.normalizer_validation]
-  ];
-  for (const [module, artifactName, artifact] of scanSources) {
-    for (const item of extractLimitationItems(artifact)) {
-      rows.push({
-        Limitation_Ref: `LIM-${String(rows.length + 1).padStart(3, "0")}`,
-        Source_Module: module,
-        Source_Artifact: artifactName,
-        Limitation_Type: classifyLimitation(item),
-        Affected_Field_Row: affectedFieldRow(item),
-        Blocking: isBlocking(item) ? "Yes" : "No",
-        Reviewer_Action: reviewerActionForLimitation(item)
-      });
-    }
-  }
+  const scanSources = [["M7", "target_profile_forensics", unwrapArtifact(artifacts.target_profile_forensics, "target_profile_forensics")], ["M8", "target_feature_profile_forensics", unwrapArtifact(artifacts.target_feature_profile_forensics, "target_feature_profile_forensics")], ["M10", "data_provenance_profile_forensics", unwrapArtifact(artifacts.data_provenance_profile_forensics, "data_provenance_profile_forensics")], ["P7", "data_provenance_profile_semantic_batch_gate", unwrapArtifact(artifacts.data_provenance_profile_semantic_batch_gate, "data_provenance_profile_semantic_batch_gate")], ["P7", "dap_semantic_batch_validation_manifest", unwrapArtifact(artifacts.dap_semantic_batch_validation_manifest, "dap_semantic_batch_validation_manifest")], ["M11", "exposure_registry_route_plan", unwrapArtifact(artifacts.exposure_registry_route_plan, "exposure_registry_route_plan")], ["M11", "exposure_registry_workpad_98", unwrapArtifact(artifacts.exposure_registry_workpad_98, "exposure_registry_workpad_98")], ["M11", "exposure_registry_profile_forensics", unwrapArtifact(artifacts.exposure_registry_profile_forensics, "exposure_registry_profile_forensics")], ["M12", "challenge_gate", unwrapArtifact(artifacts.challenge_gate, "challenge_gate")], ["NORMALIZER", "normalizer_validation", baseOutput.normalizer_validation]];
+  for (const [module, artifactName, artifact] of scanSources) for (const item of extractLimitationItems(artifact)) rows.push({ Limitation_Ref: `LIM-${String(rows.length + 1).padStart(3, "0")}`, Source_Module: module, Source_Artifact: artifactName, Limitation_Type: classifyLimitation(item), Affected_Field_Row: affectedFieldRow(item), Blocking: isBlocking(item) ? "Yes" : "No", Reviewer_Action: reviewerActionForLimitation(item) });
   return rows;
 }
 
-function technicalAnnexureAccessNote() {
-  return "Full upstream forensic ledgers, workpads, route plans, validation ledgers, and source-custody traces are preserved as locked backend artifacts. This public report renders only a forensic annexure manifest and deterministic summaries to avoid truncation and preserve review usability. Qualified reviewers should inspect the referenced backend artifacts before relying on any Review-Ready draft output.";
-}
-
-function extractLimitationItems(root, path = "") {
-  if (!root || typeof root !== "object") return [];
-  const items = [];
-  if (Array.isArray(root)) {
-    for (const [index, value] of root.entries()) items.push(...extractLimitationItems(value, `${path}[${index}]`));
-    return items;
-  }
-  for (const [key, value] of Object.entries(root)) {
-    const nextPath = path ? `${path}.${key}` : key;
-    if (/limitation|warning|repair|reinvestigation|failure|failures|missing|controlled_failure/i.test(key)) {
-      if (Array.isArray(value)) for (const item of value.slice(0, 50)) items.push({ path: nextPath, value: summarizeValue(item) });
-      else if (value && typeof value === "object") items.push({ path: nextPath, value: summarizeValue(value) });
-      else if (value !== undefined && value !== null && value !== "") items.push({ path: nextPath, value: safeText(value, "Limitation recorded") });
-    }
-    if (value && typeof value === "object") items.push(...extractLimitationItems(value, nextPath));
-  }
-  return dedupeLimitationItems(items).slice(0, 80);
-}
-
-function dedupeLimitationItems(items) {
-  const seen = new Set();
-  const out = [];
-  for (const item of items) {
-    const key = `${item.path}:${item.value}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(item);
-  }
-  return out;
-}
-
-function classifyLimitation(item) {
-  const text = `${item.path} ${item.value}`.toLowerCase();
-  if (/repair|reinvestigation/.test(text)) return "repair / reinvestigation";
-  if (/failure|controlled_failure|missing/.test(text)) return "missing-source / failure";
-  if (/warning/.test(text)) return "warning";
-  return "limitation";
-}
-
-function affectedFieldRow(item) {
-  const text = safeText(item.value, "Limitation recorded");
-  const threat = text.match(/[A-Z]{3}_[A-Z]{3}_[0-9]{3}/)?.[0];
-  return threat || safeText(item.path, "Affected row not specified");
-}
-
-function isBlocking(item) {
-  return /repair|required|failure|controlled_failure|missing|block|not visible|insufficient/i.test(`${item.path} ${item.value}`);
-}
-
-function reviewerActionForLimitation(item) {
-  if (isBlocking(item)) return "Qualified reviewer should resolve or confirm before downstream reliance.";
-  return "Qualified reviewer should preserve this limitation in review notes and verify before reliance.";
-}
-
-function unwrapArtifact(value, key) {
-  const object = safeObject(value);
-  return safeObject(object[key] || object.artifact?.[key] || object);
-}
-
-function hasContent(value) {
-  if (!value) return false;
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === "object") return Object.keys(value).length > 0;
-  return Boolean(String(value).trim());
-}
-
-function rowOrObjectCount(value) {
-  if (Array.isArray(value)) return value.length;
-  if (!value || typeof value !== "object") return hasContent(value) ? 1 : 0;
-  const firstArray = findFirstArray(value);
-  return firstArray ? firstArray.length : Object.keys(value).length;
-}
-
-function countFirstArray(object, keys) {
-  for (const key of keys) if (Array.isArray(object?.[key])) return object[key].length;
-  const first = findFirstArray(object);
-  return first ? first.length : 0;
-}
-
-function findFirstArray(value) {
-  if (!value || typeof value !== "object") return null;
-  if (Array.isArray(value)) return value;
-  for (const nested of Object.values(value)) {
-    if (Array.isArray(nested)) return nested;
-    const found = findFirstArray(nested);
-    if (found) return found;
-  }
-  return null;
-}
-
-function containsKeyLike(value, pattern, depth = 0) {
-  if (!value || typeof value !== "object" || depth > 8) return false;
-  if (Array.isArray(value)) return value.slice(0, 20).some((item) => containsKeyLike(item, pattern, depth + 1));
-  for (const [key, nested] of Object.entries(value)) {
-    if (pattern.test(key)) return true;
-    if (nested && typeof nested === "object" && containsKeyLike(nested, pattern, depth + 1)) return true;
-  }
-  return false;
-}
-
-function detectLockStatus(artifact, baseOutput, artifactName) {
-  if (!hasContent(artifact)) return "missing or not loaded";
-  return safeText(artifact.lock_status || artifact.status || artifact.validation_status || baseOutput.normalized_report_manifest?.validation_status, artifactName === "normalizer_validation" ? baseOutput.normalizer_validation?.status : "present");
-}
-
-function countChallengeRows(challenge) {
-  return countFirstArray(challenge, ["challenge_findings", "findings", "failures", "warnings", "limitations"]);
-}
-
-function metric(Metric, Count, Source) {
-  return { Metric, Count, Source };
-}
-
-function yesNo(value) {
-  return value ? "Yes" : "No";
-}
-
-function familyPresence(keys, prefix) {
-  return yesNo(keys.some((key) => key.startsWith(`lossless_family__${prefix}`)));
-}
-
-function summarizeValue(value) {
-  if (typeof value === "string") return safeText(value, "Limitation recorded");
-  if (!value || typeof value !== "object") return safeText(value, "Limitation recorded");
-  const o = safeObject(value);
-  return safeText(o.message || o.failure || o.warning || o.limitation || o.reason || o.status || o.field || o.Threat_ID || o.artifact_name || JSON.stringify(trimObject(o)), "Limitation recorded");
-}
-
-function trimObject(object) {
-  return Object.fromEntries(Object.entries(object).slice(0, 8).map(([key, value]) => [key, typeof value === "object" ? "[object]" : value]));
-}
-
-function subsection(subsection_id, subsection_title, fields) {
-  return { subsection_id, subsection_title, fields: asArray(fields) };
-}
-
-function field(field_id, label, value, source_artifact, source_path) {
-  return { field_id, label, value, source_artifact, source_path, evidence_refs: [], limitation: "", qualified_review_note: "Qualified reviewer should verify before reliance.", technical_refs: {} };
-}
+function technicalAnnexureAccessNote() { return "Full upstream forensic ledgers, workpads, route plans, validation ledgers, and source-custody traces are preserved as locked backend artifacts. This public report renders only a forensic manifest and selected reviewer-facing summaries."; }
+function subsection(subsection_id, subsection_title, fields) { return { subsection_id, subsection_title, fields }; }
+function field(field_id, label, value, source_artifact, source_path) { return { field_id, label, value, source_artifact, source_path, limitation: PUBLIC_FOOTPRINT_LIMITATION }; }
+function metric(Metric, Value, Source) { return { Metric, Value, Source }; }
+function unwrapArtifact(value, key) { return value?.[key] && typeof value[key] === "object" ? value[key] : value?.artifact?.[key] || value || {}; }
+function hasContent(value) { if (!value) return false; if (Array.isArray(value)) return value.length > 0; if (typeof value === "object") return Object.keys(value).length > 0; return Boolean(value); }
+function detectLockStatus(artifact, baseOutput, artifactName) { return artifact?.lock_status || artifact?.status || artifact?.validation_status || (artifactName === "normalizer_validation" ? baseOutput.normalizer_validation?.status : "not reported"); }
+function rowOrObjectCount(value) { if (Array.isArray(value)) return value.length; if (!value || typeof value !== "object") return 0; return Object.values(value).reduce((count, item) => count + (Array.isArray(item) ? item.length : 0), Object.keys(value).length); }
+function containsKeyLike(value, regex) { if (!value || typeof value !== "object") return false; return Object.entries(value).some(([key, item]) => regex.test(key) || (item && typeof item === "object" && containsKeyLike(item, regex))); }
+function yesNo(value) { return value ? "Yes" : "No"; }
+function countFirstArray(obj, keys) { for (const key of keys) if (Array.isArray(obj?.[key])) return obj[key].length; return 0; }
+function countChallengeRows(challenge) { return asArray(challenge?.challenge_findings || challenge?.findings || challenge?.rows).length; }
+function familyPresence(keys, family) { return keys.filter((key) => key.startsWith(`lossless_family__${family}`)).length; }
+function extractLimitationItems(value) { const items = []; scan(value, items); return items.slice(0, 80); }
+function scan(value, items) { if (!value || items.length >= 80) return; if (Array.isArray(value)) { for (const item of value) scan(item, items); return; } if (typeof value === "object") { if (value.limitation || value.warning || value.error || value.non_blocking_repair_required || value.blocking_failure) items.push(value); for (const item of Object.values(value)) scan(item, items); } }
+function classifyLimitation(item) { const text = JSON.stringify(item || {}).toLowerCase(); if (text.includes("blocking_failure")) return "blocking failure signal"; if (text.includes("repair")) return "repair / limitation signal"; if (text.includes("missing")) return "missing proof / evidence gap"; if (text.includes("warning")) return "warning"; return "limitation"; }
+function affectedFieldRow(item) { return item?.field_id || item?.Threat_ID || item?.threat_id || item?.artifact_name || item?.Source_Artifact || "not specified"; }
+function isBlocking(item) { return item?.blocking === true || item?.Blocking === "Yes" || item?.blocking_failure === true; }
+function reviewerActionForLimitation(item) { return item?.reviewer_action || item?.Reviewer_Action || item?.qualified_review_action || item?.action || "Review before reliance."; }
