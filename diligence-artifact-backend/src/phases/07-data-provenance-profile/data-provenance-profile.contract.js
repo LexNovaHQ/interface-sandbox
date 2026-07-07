@@ -1,19 +1,26 @@
-import { PHASE7_DAP_MATERIAL_SECTION_MATRIX, PHASE7_EXPECTED_DAP_FIELD_COUNT, PHASE7_MODEL_PACKET_MATRIX, PHASE7_REGISTRY_SOURCE_PATH } from "./dap-registry-derivation-rule-compiler.js";
+import { PHASE7_DAP_MATERIAL_SECTION_MATRIX, PHASE7_EXPECTED_DAP_FIELD_COUNT, PHASE7_REGISTRY_SOURCE_PATH } from "./dap-registry-derivation-rule-compiler.js";
+import { PHASE7_DAP_SEMANTIC_BATCH_PLAN, PHASE7_DAP_STRATEGIC_DERIVATION_COUNTS } from "./dap-strategic-derivation-matrix.js";
 
 export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
-  contract_name: "PHASE7_DATA_PRIVACY_ARCHITECTURE_PACKAGE_CONTRACT_v1_LAYER1_LOCKED",
+  contract_name: "PHASE7_DATA_PRIVACY_ARCHITECTURE_PACKAGE_CONTRACT_v3_SEMANTIC_LED_BATCH_ARCHITECTURE",
   phase_id: "DATA_PROVENANCE_PROFILE",
   phase_order: 7,
   public_label: "Data Provenance Profile",
-  package_label: "Integrated Data and Privacy Architecture Profile",
-  implementation_status: "PACKAGE_CONTRACT_LAYER_1_LOCKED_RUNTIME_CUTOVER_PENDING",
+  package_label: "Semantic-Led Data and Privacy Architecture Profile",
+  implementation_status: "LAYER_2_HYBRID_NAVIGATION_INDEX_BUILT_RUNTIME_CUTOVER_PENDING",
   runtime_entrypoint_switched: false,
   material_dap_field_base_count: PHASE7_EXPECTED_DAP_FIELD_COUNT,
+  material_family_section_count: 18,
   material_report_section_count: PHASE7_DAP_MATERIAL_SECTION_MATRIX.length,
-  registry_rules_mandatory_in_layer_1: true,
-  deterministic_first: true,
-  bounded_model_packets_only: true,
-  compatibility_roots_preserved: true,
+  semantic_batch_count: PHASE7_DAP_SEMANTIC_BATCH_PLAN.length,
+  semantic_led_architecture: true,
+  deterministic_first: false,
+  deterministic_supports_semantic_reasoning: true,
+  compiler_inside_phase7: false,
+  forensics_inside_phase7: false,
+  report_projection_inside_phase7: false,
+  phase8_forensics_is_100_percent_deterministic: true,
+  strategic_derivation_counts: PHASE7_DAP_STRATEGIC_DERIVATION_COUNTS,
   approved_input_universe: Object.freeze([
     "source_discovery_handoff",
     "legal_cartography_index",
@@ -29,33 +36,29 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
     "lossless_family__D4_DOCS_API_DATA_FLOW",
     "lossless_family__D5_AI_SAFETY_TRANSPARENCY"
   ]),
-  layer_1_contract: Object.freeze({
-    layer_id: "LAYER_1_DAP_REGISTRY_DERIVATION_RULE_COMPILER",
-    source_registry_path: PHASE7_REGISTRY_SOURCE_PATH,
-    expected_registry_total_rows: 427,
-    expected_dap_material_rows: PHASE7_EXPECTED_DAP_FIELD_COUNT,
-    expected_material_sections: PHASE7_DAP_MATERIAL_SECTION_MATRIX.length,
-    required_rule_columns: Object.freeze(["field_id", "profile_section", "field_family", "output_field", "mode", "source_basis", "conditions", "trigger_outcome", "exclude_fallback", "forbidden_inference", "lock_status"]),
-    compiled_rule_fields: Object.freeze(["material_section_id", "material_section_title", "material_subsection_id", "registry_family", "deterministic_prefill_eligible", "model_packet_family", "evidence_atom_requirements", "limitation_trigger", "missing_proof_trigger", "legal_firewall"])
+  navigation_rules: Object.freeze({
+    data_privacy_navigation_index_is_hybrid: true,
+    deterministic_system_builds_index_spine: true,
+    semantic_system_adds_family_batch_navigation_pointers: true,
+    full_d_family_lossless_evidence_allowed_only_through_data_privacy_navigation_index: true,
+    selective_l_family_lossless_evidence_allowed_only_through_legal_cartography_index: true,
+    no_free_corpus_read: true,
+    no_dossier_layer: true
   }),
   layer_contracts: Object.freeze([
-    layer(1, "DAP Registry and Rule Compiler", "deterministic", ["FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml"], ["dap_registry_manifest"]),
-    layer(2, "Source Navigation Inventory", "deterministic", ["approved inputs"], ["dap_source_navigation_inventory"]),
-    layer(3, "Evidence Atom Extractor", "deterministic", ["dap_source_navigation_inventory"], ["dap_evidence_atom_inventory"]),
-    layer(4, "Activity Data Joiner", "deterministic", ["target_feature_profile", "dap_evidence_atom_inventory"], ["activity_data_flow_candidate_map"]),
-    layer(5, "Field Prefill Matrix", "deterministic", ["dap_registry_manifest", "dap_evidence_atom_inventory"], ["dap_field_prefill_matrix"]),
-    layer(6, "Model Packet Router", "deterministic", ["dap_field_prefill_matrix"], ["dap_model_work_packet_manifest"]),
-    layer(7, "Semantic Resolver", "bounded_model", ["dap_model_work_packet_manifest"], ["dap_model_resolution_packets"]),
-    layer(8, "DAP Compiler", "deterministic", ["compiled inputs"], ["data_privacy_architecture_profile", "data_provenance_profile", "extended_dap_india_readiness_profile", "integrated_dap_report"]),
-    layer(9, "Forensics and Validator", "deterministic", ["data_privacy_architecture_profile"], ["data_provenance_profile_forensics"]),
-    layer(10, "Report Projection", "deterministic", ["data_privacy_architecture_profile"], ["data_privacy_public_report_projection"])
+    layer(1, "DAP Registry + Strategic Derivation Matrix", "deterministic_contract", [PHASE7_REGISTRY_SOURCE_PATH], ["dap_registry_manifest", "dap_strategic_derivation_matrix"]),
+    layer(2, "Hybrid Data Privacy Navigation Index", "hybrid_deterministic_led", ["approved inputs", "dap_strategic_derivation_matrix"], ["data_privacy_navigation_index"]),
+    layer(3, "Deterministic Semantic Batch Router", "deterministic", ["data_privacy_navigation_index", "dap_strategic_derivation_matrix"], ["dap_semantic_batch_route_manifest"]),
+    layer(4, "Semantic Family Batch Runner", "semantic_batch", ["dap_semantic_batch_route_manifest", "data_privacy_navigation_index"], PHASE7_DAP_SEMANTIC_BATCH_PLAN.map((batchRow) => batchRow.artifact_name)),
+    layer(5, "Batch Quality + Schema Validator", "deterministic_validator", ["semantic batch artifacts"], ["dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"])
   ]),
   material_section_matrix: PHASE7_DAP_MATERIAL_SECTION_MATRIX,
-  model_packet_matrix: PHASE7_MODEL_PACKET_MATRIX,
-  compatibility_outputs: Object.freeze(["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report"])
+  semantic_batch_plan: PHASE7_DAP_SEMANTIC_BATCH_PLAN,
+  excluded_from_phase7: Object.freeze(["compiler", "forensics", "report_projection"])
 });
 
-export const PHASE7_LAYER1_ARTIFACTS = Object.freeze(["dap_registry_manifest"]);
+export const PHASE7_LAYER1_ARTIFACTS = Object.freeze(["dap_registry_manifest", "dap_strategic_derivation_matrix"]);
+export const PHASE7_LAYER2_ARTIFACTS = Object.freeze(["data_privacy_navigation_index"]);
 
 function layer(order, name, execution_mode, reads, writes) {
   return Object.freeze({ order, name, execution_mode, reads: Object.freeze(reads), writes: Object.freeze(writes) });
