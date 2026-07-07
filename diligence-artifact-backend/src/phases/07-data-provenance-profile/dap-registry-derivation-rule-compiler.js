@@ -54,7 +54,7 @@ export function compilePhase7DapRegistryDerivationRules(registryText, options = 
   const dapRows = registryRows.filter((row) => row.field_id.startsWith("DAP."));
   const materialRules = dapRows.map(enrichDapRule);
   const sectionCounts = countBy(materialRules, (row) => row.material_section_id);
-  const familyCounts = countBy(materialRules, (row) => row.registry_family));
+  const familyCounts = countBy(materialRules, (row) => row.registry_family);
   const packetCounts = countBy(materialRules, (row) => row.model_packet_family);
   const requiredRuleCoverage = materialRules.map((row) => ({
     field_id: row.field_id,
@@ -95,14 +95,13 @@ export function validatePhase7DapRegistryManifest(manifest) {
   if (manifest.artifact_type !== "dap_registry_manifest") return fail("wrong_artifact_type");
   if (manifest.actual_dap_field_count !== PHASE7_EXPECTED_DAP_FIELD_COUNT) return fail("wrong_dap_field_count");
   if (!Array.isArray(manifest.material_rules) || manifest.material_rules.length !== PHASE7_EXPECTED_DAP_FIELD_COUNT) return fail("material_rules_missing_or_wrong_count");
-  const validation = validateCompiledRules({
+  return validateCompiledRules({
     metadata: manifest.registry_metadata || {},
     materialRules: manifest.material_rules,
     sectionCounts: manifest.section_counts || {},
     requiredRuleCoverage: manifest.required_rule_coverage || [],
     expectedCount: PHASE7_EXPECTED_DAP_FIELD_COUNT
   });
-  return validation;
 }
 
 function section(section_id, section_title, subsection_id, registry_keys, expected_count) {
