@@ -1,5 +1,5 @@
 export { DATA_PROVENANCE_PROFILE_PHASE } from "./data-provenance-profile.phase.js";
-export { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT, PHASE7_LAYER1_ARTIFACTS, PHASE7_LAYER2_ARTIFACTS } from "./data-provenance-profile.contract.js";
+export { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT, PHASE7_LAYER1_ARTIFACTS, PHASE7_LAYER2_ARTIFACTS, PHASE7_LAYER3_ARTIFACTS } from "./data-provenance-profile.contract.js";
 export {
   PHASE7_DAP_MATERIAL_SECTION_MATRIX,
   PHASE7_EXPECTED_DAP_FIELD_COUNT,
@@ -17,6 +17,8 @@ export {
 } from "./dap-strategic-derivation-matrix.js";
 export { buildPhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-navigation-index-builder.js";
 export { validatePhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-navigation-index-validator.js";
+export { buildPhase7SemanticBatchRouteManifest } from "./layer3-semantic-batch-route-manifest-builder.js";
+export { validatePhase7SemanticBatchRouteManifest } from "./layer3-semantic-batch-route-manifest-validator.js";
 export {
   PHASE7_FORBIDDEN_UNKNOWN_STATUSES,
   PHASE7_CONTROLLED_NAVIGATION_STATUSES,
