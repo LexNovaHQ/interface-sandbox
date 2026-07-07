@@ -27,7 +27,7 @@ for (const artifactName of [...PHASE7_DAP_LAYER1_ARTIFACT_NAMES, ...PHASE7_DAP_L
 const contract = getPhaseContract(phase);
 assert.equal(contract.type, "phase7_layer4_orchestrated");
 assert.equal(contract.agent_id, "agent_4_data_privacy");
-assert.equal(contract.next, "AGENT_4B_EXTENDED_DAP_INDIA_READINESS");
+assert.equal(contract.next, "DATA_PROVENANCE_PROFILE_LAYER5");
 assert.ok(contract.reads.includes("target_feature_profile_forensics"));
 assert.ok(contract.writes.includes("dap_semantic_batch_contact_cm_artifact"));
 
