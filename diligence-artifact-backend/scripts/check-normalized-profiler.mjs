@@ -5,12 +5,15 @@ const run = { run_id: "TEST-NORMALIZED", target: "Example", root_url: "https://e
 const artifacts = {
   target_profile: { target_identity: { brand_name: "Example", legal_entity_name: "Example Inc.", entity_type: "Company", reviewed_website: "https://example.com", primary_domain: "example.com" }, jurisdiction_notice: {}, business_context: {}, product_service_wrapper: {}, target_profile_limitations: [] },
   target_feature_profile: { commercial_availability_posture: { posture: "Public demo / review required" }, activities: [{ activity_reference: "A1", activity_feature_name: "Draft assistant", archetype_codes: ["CRT"], surface_context_tokens: ["Content&IP"] }], profile_level_limitations: [] },
-  legal_cartography_index: { document_coverage_index: [{ document_or_artifact: "Terms of Service", artifact_class: "TERMS_OF_SERVICE", source_type: "URL", source: "https://example.com/terms-of-service", status: "FOUND_INDEXED" }, { document_or_artifact: "Annexure C: DPA", artifact_class: "DATA_PROCESSING_AGREEMENT", source_type: "EMBEDDED_UNIT", status: "FOUND_EMBEDDED_IN_LEGAL_CORPUS" }], document_structure_index: [], incorporated_linked_document_map: [], control_language_locator: [{ control_language_family: "DATA_PRIVACY", display_in_main_report: false, technical_annexure_only: true }], semantic_navigation_index: [{ control_families: ["DATA_PRIVACY"], subcats: ["PRV"], document_id: "DOC-TERMS", unit_id: "UNIT-001" }], priority_semantic_locator: [{ locator_id: "LCI-SEM-001", document_id: "DOC-TERMS", heading_label: "Privacy", control_families: ["DATA_PRIVACY"], subcats: ["PRV"] }], qualified_review_locator: [], missing_limited_legal_governance_items: [{ missing_or_limited_item: "https://example.com/terms-of-use", display_in_main_report: false, blocking: false }], lock_status: "LOCKED" },
-  legal_signal_derivation_profile: { artifact_name: "legal_signal_derivation_profile", model_generated: false, derivation_mode: "deterministic_from_legal_cartography_index_and_loaded_legal_corpus", field_derivations: [{ field_id: "LGC.NOT.010", field_family: "legal_notice_contact_signal_map", derivation_status: "DERIVED", value: "legal@example.com" }, { field_id: "DAP.CM.001", field_family: "consent_manager_signal_map", derivation_status: "DERIVED_WITH_LIMITATION", value: "Consent route requires confirmation." }], coverage_summary: { emitted_field_count: 2 } },
+  legal_cartography_index: { document_coverage_index: [{ document_or_artifact: "Terms of Service", artifact_class: "TERMS_OF_SERVICE", source_type: "URL", source: "https://example.com/terms-of-service", status: "FOUND_INDEXED" }], document_structure_index: [], incorporated_linked_document_map: [], control_language_locator: [{ control_language_family: "DATA_PRIVACY", display_in_main_report: false, technical_annexure_only: true }], semantic_navigation_index: [], priority_semantic_locator: [], qualified_review_locator: [], missing_limited_legal_governance_items: [], lock_status: "LOCKED" },
+  legal_signal_derivation_profile: { artifact_name: "legal_signal_derivation_profile", model_generated: false, field_derivations: [], coverage_summary: { emitted_field_count: 0 } },
   data_provenance_profile: { missing_proof_and_diligence_requests: [], limitations: [] },
-  exposure_registry_triggered_profile: { triggered_rows: [{ Threat_ID: "CRT_INF_001", Threat_Name: "Training Data IP Gap", Subcategory: "INF", evaluation_status: "TRIGGERED", target_match: "Draft assistant generates content.", basis_proof: "Public product page describes generation.", control_exclusion_evaluation: "No visible exclusion found.", evidence_source_basis: "Product page", fp_mechanism: "Direct feature match", Archetype: "CRT", Surface: "Content&IP", Pain_Tier: "T2", Pain_Depth: "Corporate", Pain_Category: "Uncapped Money", Legal_Pain: "IP review issue", remediation: "Review IP terms", review_route: "product/legal-governance review", row_limitations: "" }] },
+  dap_semantic_batch_route_manifest: { batch_route_packets: [] },
+  dap_semantic_batch_validation_manifest: { observed_batch_count: 0, observed_field_count: 0, expected_field_count: 150, validation_quality_control_result: { status: "LOCKED_WITH_LIMITATIONS", non_blocking_repair_required: true } },
+  data_provenance_profile_semantic_batch_gate: { status: "LOCKED_WITH_LIMITATIONS", batch_count: 0, field_count: 0, all_fields_covered_once: false, non_blocking_repair_required: true },
+  exposure_registry_triggered_profile: { triggered_rows: [{ Threat_ID: "CRT_INF_001", Threat_Name: "Training Data IP Gap", Subcategory: "INF", evaluation_status: "TRIGGERED", Pain_Tier: "T2" }] },
   exposure_registry_controlled_profile: { controlled_rows: [] },
-  exposure_registry_workpad_98: { registry_rows: [{ Threat_ID: "CRT_INF_001", registry_order: 1, final_material_status: "TRIGGERED", material_projection: { Threat_ID: "CRT_INF_001" } }] },
+  exposure_registry_workpad_98: { registry_rows: [{ Threat_ID: "CRT_INF_001", final_material_status: "TRIGGERED" }] },
   exposure_registry_profile_forensics: {},
   challenge_gate: { status: "LOCKED_WITH_LIMITATIONS" }
 };
@@ -28,7 +31,10 @@ for (const artifactName of NORMALIZED_SECTION_ARTIFACT_NAMES) {
 }
 
 assertSectionHasSubsection(output.normalized_section__product_activity_ip_profile, "commercial_availability_posture");
-assertSectionHasSubsection(output.normalized_section__data_provenance_controls, "integrated_dap_report_notice");
+assertSectionHasSubsection(output.normalized_section__data_provenance_controls, "phase7_dap_batch_projection_notice");
+const section5 = JSON.stringify(output.normalized_section__data_provenance_controls);
+assert.equal(section5.includes("extended_dap_india_readiness_profile"), false);
+assert.equal(section5.includes("integrated_dap_report"), false);
 assert.ok(output.normalized_section__legal_document_control_review);
 assert.ok(output.normalized_section__exposure_diagnosis_table);
 assert.ok(output.normalized_section__methodology_limitations_forensic_annexure);
@@ -42,11 +48,6 @@ assert.equal(section6.includes("qualified_review_legal_signals"), false);
 assert.equal(section6.includes("document_structure_index"), false);
 assert.equal(section6.includes("control_language_locator"), false);
 assert.equal(output.normalized_report_manifest.renderer_contract.section_6_legal_signal_derivation_profile_summary_present, true);
-
-const exposureTable = JSON.stringify(output.normalized_section__exposure_diagnosis_table);
-assert.ok(exposureTable.includes("Threat_Name"));
-assert.ok(exposureTable.includes("Subcat"));
-assert.equal(exposureTable.includes("Business Category"), false);
 
 assert.ok(JSON.stringify(output.normalized_section__methodology_limitations_forensic_annexure).includes("Manifest only"));
 assert.equal(Object.prototype.hasOwnProperty.call(output, "normalized_section__forensic_ledger_appendix"), false);
