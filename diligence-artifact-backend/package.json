@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "node src/runtime/main.js",
-    "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && node scripts/check-m8-feature-candidate-inventory.mjs && node scripts/check-phase1-8-central-runtime.mjs",
+    "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && node scripts/check-m8-feature-candidate-inventory.mjs && npm run check:phase1-8-runtime",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:normalized": "node scripts/check-normalized-hardening.mjs",
     "check:m8-feature-candidates": "node scripts/check-m8-feature-candidate-inventory.mjs",
-    "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs",
+    "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs && node scripts/check-activity-profile-v4-binding.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
   },
