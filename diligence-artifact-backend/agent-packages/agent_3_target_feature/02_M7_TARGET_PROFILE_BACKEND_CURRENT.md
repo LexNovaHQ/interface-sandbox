@@ -25,6 +25,14 @@ Target Profile Review must not use raw `legal_cartography_index` as model eviden
 
 Target Profile Review must not use product/activity families or data-provenance families.
 
+## Reference authority
+
+`AI_REGISTRY_KEY.md` is the base registry derivation reference for Target Profile Review and Activity Profile Review.
+
+Target Profile Review may use only §6 Lane from `AI_REGISTRY_KEY.md`, and only to derive `target_profile.business_context.lane` as a source-grounded target-role signal.
+
+Target Profile Review must not use `AI_REGISTRY_KEY.md` to derive exposure rows, threat triggers, pain tiers, legal risk, compliance framework, archetype classification, surface classification, or downstream registry conclusions.
+
 ## Primary source rule
 
 The target-profile source families are the primary source authority for:
@@ -33,7 +41,36 @@ The target-profile source families are the primary source authority for:
 - `business_context`
 - `product_service_wrapper`
 
-Direct legal signal rows must not be used to infer commercial category, business model, product wrapper, product activity, data role, legal risk, compliance status, or enforceability.
+Direct legal signal rows must not be used to infer commercial category, business model, product wrapper, product activity, data role, legal risk, compliance status, enforceability, or Lane.
+
+## Semantic Lane derivation
+
+`target_profile.business_context.lane` is mandatory.
+
+Use the `AI_REGISTRY_KEY.md` §6 Lane grammar:
+
+```text
+A = AI Provider / Product Exposure
+B = Deployer / Employer Exposure
+Both = Provider & Deployer Exposure
+```
+
+Derive Lane semantically from the admitted target-profile source material only:
+
+- Use `A` when public target-profile material shows the target develops, sells, licenses, or makes an AI product/system available to external users or customers.
+- Use `B` when public target-profile material shows the target operates or deploys AI internally, including employer/workforce or own-operations use, and the public footprint does not support an external AI product/provider role.
+- Use `Both` only when public target-profile material supports both an external AI provider/product role and an internal deployer/employer or own-operations role at the target-profile level.
+
+If Lane cannot be source-grounded from the admitted target-profile material, use one controlled value and explain it in `target_profile_limitations[]`:
+
+```text
+FIELD_LIMITED
+FIELD_NOT_PUBLIC
+FIELD_CONFLICTED
+FIELD_NOT_FOUND
+```
+
+Lane is a target-role signal for downstream exposure matching. It is not a legal conclusion, compliance conclusion, exposure finding, threat trigger, or advice.
 
 ## Direct legal signal use
 
@@ -84,6 +121,14 @@ Target Profile Review must return strict JSON with exactly one top-level key: `t
 - `business_context`
 - `product_service_wrapper`
 - `target_profile_limitations`
+
+`business_context` must include the semantic Lane field:
+
+```text
+lane
+```
+
+`lane` must be exactly `A`, `B`, `Both`, or a controlled fallback value.
 
 The exact field schema is governed by the active target-profile validator. No extra top-level keys, forensic branches, source ledgers, runtime traces, downstream profiles, exposure artifacts, challenge gates, final handoffs, Qualified Review artifacts, or renderer payloads are allowed.
 
