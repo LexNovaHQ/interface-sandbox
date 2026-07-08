@@ -6,6 +6,7 @@ const TARGET_LIMITATIONS = "target_profile_limitations";
 const REVIEW_PHASES = new Set(["TARGET_PROFILE_REVIEW", "M7_TARGET_PROFILE"]);
 const FORENSIC_PHASES = new Set(["TARGET_PROFILE_FORENSICS", "M7_TARGET_PROFILE_FORENSICS"]);
 const CONTROLLED_VALUES = new Set(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.controlled_field_values || []);
+const SEMANTIC_LANE_VALUES = new Set([...(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.semantic_lane_values || []), ...CONTROLLED_VALUES]);
 const ARRAY_FIELDS = new Set(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.array_fields || []);
 const PROFILE_BRANCHES = Object.freeze(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.branch_fields || {});
 const MATERIAL_BRANCHES = Object.freeze(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.required_top_level_branches || Object.keys(PROFILE_BRANCHES));
@@ -60,7 +61,18 @@ function validateForensicOutput(output, failures, phase) {
   if (forensics.forensic_boundary?.material_profile_re_emitted !== false) failures.push("target_profile_forensics must not re-emit material profile");
 }
 
-function assertFieldValue({ profile, fieldPath, failures }) { const value = valueAt(profile, fieldPath); if (ARRAY_FIELDS.has(fieldPath)) { if (!Array.isArray(value)) failures.push(`target_profile.${fieldPath} must be array`); } else if (!(typeof value === "string" && value.trim())) failures.push(`target_profile.${fieldPath} must be string`); }
+function assertFieldValue({ profile, fieldPath, failures }) {
+  const value = valueAt(profile, fieldPath);
+  if (ARRAY_FIELDS.has(fieldPath)) {
+    if (!Array.isArray(value)) failures.push(`target_profile.${fieldPath} must be array`);
+    return;
+  }
+  if (!(typeof value === "string" && value.trim())) {
+    failures.push(`target_profile.${fieldPath} must be string`);
+    return;
+  }
+  if (fieldPath === "business_context.lane" && !SEMANTIC_LANE_VALUES.has(value)) failures.push(`target_profile.business_context.lane must be one of: ${[...SEMANTIC_LANE_VALUES].join(",")}`);
+}
 function validateExactTopLevelKeys(output, expected, failures, phase) { if (!isPlainObject(output)) return failures.push(`${phase}_OUTPUT_INVALID:not_object`); rejectKeyDiff(Object.keys(output).sort(), [...expected].sort(), phase, failures); }
 function rejectKeyDiff(actual, expected, label, failures) { const missing = expected.filter((key) => !actual.includes(key)); const extra = actual.filter((key) => !expected.includes(key)); if (missing.length) failures.push(`${label} missing keys: ${missing.join(",")}`); if (extra.length) failures.push(`${label} extra keys: ${extra.join(",")}`); }
 function collectFieldPaths(profile) { return OBJECT_BRANCHES.flatMap(([branch, fields]) => fields.map((field) => `${branch}.${field}`)); }
