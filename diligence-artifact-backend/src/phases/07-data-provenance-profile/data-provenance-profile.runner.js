@@ -11,8 +11,6 @@ import { buildPhase7SemanticBatchQualityGate, validatePhase7SemanticBatchQuality
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
 const AGENT_4 = "agent_4_data_privacy";
-const LAYER4_PROMPTS = Object.freeze(["agent-packages/agent_4_data_privacy/AGENT4_PHASE7_LAYER4_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_RUNNER.md"]);
-const LAYER4_REPAIR_PROMPTS = Object.freeze(["agent-packages/agent_4_data_privacy/AGENT4_PHASE7_LAYER4_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_RUNNER.md", "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_REPAIR.md"]);
 
 export async function runDataProvenanceProfilePhase({ run, internalJobId, contract, readArtifacts, buildPrompt, callProvider, saveArtifact } = {}) {
   assertCallback(readArtifacts, "readArtifacts");
@@ -25,6 +23,8 @@ export async function runDataProvenanceProfilePhase({ run, internalJobId, contra
 async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvider, saveArtifact }) {
   assertCallback(buildPrompt, "buildPrompt");
   assertCallback(callProvider, "callProvider");
+  const promptFiles = assertPromptFiles(contract.prompt_files, "DATA_PROVENANCE_PROFILE_LAYER4_PROMPT_FILES");
+  const repairPromptFiles = assertPromptFiles(contract.repair_prompt_files, "DATA_PROVENANCE_PROFILE_LAYER4_REPAIR_PROMPT_FILES");
   const sourceArtifacts = await readArtifacts({ reads: contract.reads || [], agent_id: contract.agent_id || contract.actor_id || AGENT_4 });
   assertAllowedLayer4Reads(sourceArtifacts, contract.reads || []);
   const bootstrap = buildBootstrapArtifacts(sourceArtifacts);
@@ -36,10 +36,10 @@ async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvid
   let hasLimitations = false;
   const routePackets = bootstrap.dap_semantic_batch_route_manifest.batch_route_packets || [];
   for (const routePacket of routePackets) {
-    let output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, ...bootstrap }, buildPrompt, callProvider, repair: false });
+    let output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, ...bootstrap }, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair: false });
     let validation = validatePhase7Layer4SemanticBatchArtifact(output, { routePacket });
     if (validation.status !== "PASS") {
-      output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, ...bootstrap }, buildPrompt, callProvider, repair: true, priorOutput: output, validation });
+      output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, ...bootstrap }, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair: true, priorOutput: output, validation });
       validation = validatePhase7Layer4SemanticBatchArtifact(output, { routePacket });
     }
     const validationStatus = validation.status === "PASS" ? "PASS" : "LOCKED_WITH_LIMITATIONS";
@@ -50,7 +50,7 @@ async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvid
     await saveArtifact({ artifact_name: routePacket.expected_artifact_name, artifact: normalizeBatchOutput({ output, routePacket }), lock_status: validationStatus === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS" });
     saved.push(routePacket.expected_artifact_name);
   }
-  return Object.freeze({ ok: true, output: bootstrap, saved_artifacts: saved, phase_lock_status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", model_usage: "SEMANTIC_BATCH_AGENT", route_packet_count: routePackets.length });
+  return Object.freeze({ ok: true, output: bootstrap, saved_artifacts: saved, phase_lock_status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", model_usage: "SEMANTIC_BATCH_AGENT", route_packet_count: routePackets.length, prompt_files_source: "pipeline.contract", repair_prompt_files_source: "pipeline.contract" });
 }
 
 async function runLayer5({ contract, readArtifacts, saveArtifact }) {
@@ -80,13 +80,14 @@ function buildBootstrapArtifacts(sourceArtifacts) {
   return Object.freeze({ dap_registry_manifest: dapRegistryManifest, dap_strategic_derivation_matrix: strategicMatrix, data_privacy_navigation_index: navigationIndex, dap_semantic_batch_route_manifest: routeManifest });
 }
 
-async function runBatchModel({ run, routePacket, artifacts, buildPrompt, callProvider, repair, priorOutput = null, validation = null }) {
-  const prompt = await buildPrompt({ prompt_files: repair ? LAYER4_REPAIR_PROMPTS : LAYER4_PROMPTS, phase: `DATA_PROVENANCE_PROFILE_LAYER4:${repair ? "REPAIR" : "BATCH"}:${routePacket.batch_id}`, run, artifacts: repair ? { ...artifacts, active_dap_semantic_batch_route_packet: routePacket, prior_batch_output: priorOutput, backend_batch_validation: validation } : { ...artifacts, active_dap_semantic_batch_route_packet: routePacket }, writes: [routePacket.expected_artifact_name], references: [] });
+async function runBatchModel({ run, routePacket, artifacts, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair, priorOutput = null, validation = null }) {
+  const prompt = await buildPrompt({ prompt_files: repair ? repairPromptFiles : promptFiles, phase: `DATA_PROVENANCE_PROFILE_LAYER4:${repair ? "REPAIR" : "BATCH"}:${routePacket.batch_id}`, run, artifacts: repair ? { ...artifacts, active_dap_semantic_batch_route_packet: routePacket, prior_batch_output: priorOutput, backend_batch_validation: validation } : { ...artifacts, active_dap_semantic_batch_route_packet: routePacket }, writes: [routePacket.expected_artifact_name], references: [] });
   const result = await callProvider({ prompt, phase: `DATA_PROVENANCE_PROFILE_LAYER4:${routePacket.batch_id}` });
   return result?.json || result || {};
 }
 function normalizeBatchOutput({ output, routePacket }) { if (output?.[routePacket.expected_artifact_name]) return output; return { [routePacket.expected_artifact_name]: output && typeof output === "object" ? output : { batch_id: routePacket.batch_id, families: routePacket.families, returned_field_ids: [], field_rows: [], batch_limitations: ["model_output_missing_or_non_object"], batch_quality_flags: ["NON_BLOCKING_REPAIR_REQUIRED"] } }; }
 function assertAllowedLayer4Reads(artifacts, reads) { const allowed = new Set(reads); for (const key of Object.keys(artifacts || {})) if (!allowed.has(key)) throw new Error(`DATA_PROVENANCE_PROFILE_LAYER4_FORBIDDEN_RUNTIME_ARTIFACT:${key}`); }
 function assertPass(result = {}, label) { if (result.status !== "PASS") throw new Error(`${label}_FAILED:${JSON.stringify(result.errors || [])}`); }
+function assertPromptFiles(files, label) { if (!Array.isArray(files) || !files.length) throw new Error(`${label}_MISSING`); for (const file of files) if (!(typeof file === "string" && file.trim())) throw new Error(`${label}_INVALID_ENTRY`); return Object.freeze([...files]); }
 function unwrap(value, key) { return value?.[key] || value?.artifact?.[key] || value || {}; }
 function assertCallback(fn, label) { if (typeof fn !== "function") throw new Error(`DATA_PROVENANCE_PROFILE_RUNNER_MISSING_CALLBACK:${label}`); }
