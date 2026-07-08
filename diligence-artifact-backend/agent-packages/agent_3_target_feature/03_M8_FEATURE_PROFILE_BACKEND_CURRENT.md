@@ -9,7 +9,7 @@ active_phase_only: true
 active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_ai_registry_key_direct_v4_archetypes
+runtime_contract_version: m8_ai_registry_key_direct_v4_basis_coverage
 
 ## M8.S1 — Architecture Lock
 
@@ -165,6 +165,8 @@ Apply these v4 split fences strictly:
 - Optimization that directly moves operator money or controls operations maps to OPT only when it is not recommendation/personalization to a person and not person-access gating.
 - Security or system monitoring maps to SHD only when the activity defends, detects threats in, or monitors another system/environment and is not content-policy adjudication.
 
+Multiple archetypes may be selected for a single activity when multiple AI_REGISTRY_KEY.md §4 gates are independently supported by the same activity mechanics. Do not collapse a multi-function activity into one archetype merely to simplify the row.
+
 Every emitted activity must be tested against all locked surface tokens:
 
 - Consumer-Public
@@ -180,11 +182,15 @@ Every emitted activity must be tested against all locked surface tokens:
 
 Every emitted activity must have at least one evidence-supported archetype code.
 
-Every emitted archetype code must have a corresponding `archetype_derivation_basis[]` entry.
+Every emitted archetype code must have exactly one matching `archetype_derivation_basis[]` entry whose `code_or_token` equals that archetype code.
 
-Every emitted surface token must have a corresponding `surface_derivation_basis[]` entry.
+No `archetype_derivation_basis[]` entry may exist for an archetype code that is not present in `archetype_codes[]`.
 
-surface_context_tokens must be an array. It may be empty only where no surface token is supported after source lookup.
+Every emitted surface token must have exactly one matching `surface_derivation_basis[]` entry whose `code_or_token` equals that surface token.
+
+No `surface_derivation_basis[]` entry may exist for a surface token that is not present in `surface_context_tokens[]`.
+
+surface_context_tokens must be an array. It may be empty only where no surface token is supported after source lookup. If `surface_context_tokens[]` is empty, `surface_derivation_basis[]` must also be empty.
 
 ## M8.S8 — Material Output Boundary
 
@@ -266,9 +272,9 @@ data_content_object_touched should state the visible object acted on, such as do
 
 external_internal_action_signal should state whether the activity appears customer-facing, internal/admin-facing, developer-facing, enterprise-deployment-facing, or unclear.
 
-archetype_codes must be an array of supported locked archetype codes.
+archetype_codes must be an array of supported locked archetype codes. More than one archetype is allowed when each selected archetype has independent trigger support.
 
-archetype_derivation_basis must be an array of material basis objects. Each object must contain exactly:
+archetype_derivation_basis must be an array of material basis objects. It must contain exactly one object for each selected archetype code and no object for any unselected archetype code. Each object must contain exactly:
 
 - code_or_token
 - normalized_name
@@ -280,7 +286,7 @@ archetype_derivation_basis must be an array of material basis objects. Each obje
 
 surface_context_tokens must be an array of supported surface tokens.
 
-surface_derivation_basis must be an array of material basis objects. Each object must contain exactly:
+surface_derivation_basis must be an array of material basis objects. It must contain exactly one object for each selected surface token and no object for any unselected surface token. Each object must contain exactly:
 
 - code_or_token
 - normalized_name
@@ -318,16 +324,20 @@ Before returning, verify:
 4. No activity contains `archetype_proof` or `surface_proof_and_routing_limits`.
 5. `archetype_derivation_basis` and `surface_derivation_basis` are arrays.
 6. Every derivation basis object contains exactly `code_or_token`, `normalized_name`, `conditions_satisfied`, `trigger_if_applied`, `exclude_if_checked`, `material_basis`, and `limitation`.
-7. `commercial_availability_posture` has exactly these six keys: `posture`, `free_trial_freemium_signal`, `beta_pilot_early_access_signal`, `paid_production_enterprise_plan_signal`, `evidence_basis`, and `limitation`.
-8. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, confidence fields, or forensic rows.
-9. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
-10. Every emitted activity has at least one archetype code.
-11. Every emitted activity has a `surface_context_tokens` array.
-12. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
-13. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
-14. No unindexed candidate has been added as a normal activity.
-15. No forensic output is emitted.
-16. No Activity Profile material instruction treats CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active authority.
+7. Every archetype code in `archetype_codes[]` has exactly one matching `archetype_derivation_basis[]` object by `code_or_token`.
+8. No `archetype_derivation_basis[]` object exists for an unselected archetype code.
+9. Every surface token in `surface_context_tokens[]` has exactly one matching `surface_derivation_basis[]` object by `code_or_token`.
+10. No `surface_derivation_basis[]` object exists for an unselected surface token.
+11. `commercial_availability_posture` has exactly these six keys: `posture`, `free_trial_freemium_signal`, `beta_pilot_early_access_signal`, `paid_production_enterprise_plan_signal`, `evidence_basis`, and `limitation`.
+12. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, confidence fields, or forensic rows.
+13. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
+14. Every emitted activity has at least one archetype code.
+15. Every emitted activity has a `surface_context_tokens` array.
+16. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
+17. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
+18. No unindexed candidate has been added as a normal activity.
+19. No forensic output is emitted.
+20. No Activity Profile material instruction treats CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active authority.
 
 If any condition fails, repair the material output only. Do not emit forensics.
 
@@ -473,10 +483,12 @@ Before returning the M8 material response, verify:
 2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
 3. Every activity still has exactly the locked 12 keys from M8.S9.
 4. No activity contains `archetype_proof` or `surface_proof_and_routing_limits`.
-5. `commercial_availability_posture` has exactly the six keys in M8.S14C.
-6. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
-7. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
-8. No forensic output is emitted.
-9. CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is not active authority for M8 material derivation.
+5. Every selected archetype code and surface token has exactly one matching derivation-basis object by `code_or_token`.
+6. No derivation-basis object exists for an unselected archetype code or surface token.
+7. `commercial_availability_posture` has exactly the six keys in M8.S14C.
+8. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
+9. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
+10. No forensic output is emitted.
+11. CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is not active authority for M8 material derivation.
 
 If any condition fails, repair the material output only. Do not emit forensics.
