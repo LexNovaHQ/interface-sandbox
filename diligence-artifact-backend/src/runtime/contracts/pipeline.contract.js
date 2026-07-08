@@ -13,8 +13,9 @@ const M9_WRITES = Object.freeze(["legal_cartography_deterministic_map", "legal_c
 const LEGAL_SIGNAL_READS = Object.freeze([...LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAMES]);
 const TARGET_PROFILE_REVIEW_READS = Object.freeze(["source_discovery_handoff", ...TARGET_PROFILE_FAMILY_ARTIFACT_NAMES, ...LEGAL_SIGNAL_READS]);
 const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze(["source_discovery_handoff", "target_profile", "target_profile_forensics", "lossless_family__P1_PRODUCT", "lossless_family__P2_PLATFORM_FEATURE_SOLUTION", "lossless_family__P3_AI_CAPABILITY_TECHNICAL", "lossless_family__P5_ENTERPRISE_PRICING"]);
-const PHASE7_LAYER4_READS = Object.freeze(["source_discovery_handoff", "legal_cartography_index", ...LEGAL_SIGNAL_READS, "target_profile", "target_profile_forensics", "feature_candidate_inventory", "target_feature_profile", "target_feature_profile_forensics", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES]);
-const PHASE7_LAYER5_READS = Object.freeze(["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES]);
+const PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_NAMES = Object.freeze(Array.from({ length: 17 }, (_, index) => `dap_semantic_batch_validation__DAP-SEM-BATCH-${String(index + 1).padStart(2, "0")}`));
+const PHASE7_LAYER4_READS = Object.freeze(["source_discovery_handoff", "legal_cartography_index", ...LEGAL_SIGNAL_READS, "target_profile", "target_profile_forensics", "feature_candidate_inventory", "target_feature_profile", "target_feature_profile_forensics", ...DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES]);
+const PHASE7_LAYER5_READS = Object.freeze(["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, ...PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_NAMES]);
 const PHASE8_DAP_FORENSICS_READS = Object.freeze(["data_privacy_navigation_index", "dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES]);
 const DAP_RUNTIME_READS = Object.freeze([...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES]);
 const RENDERER_READS = Object.freeze(["final_output_handoff", "normalized_report_manifest", ...NORMALIZED_SECTION_ARTIFACT_NAMES]);
@@ -47,4 +48,4 @@ export const PIPELINE_CONTRACTS = Object.freeze({
 
 export function getPipelineContract(internalJobId) { return PIPELINE_CONTRACTS[internalJobId] || null; }
 export function assertPipelineContract(internalJobId) { const contract = getPipelineContract(internalJobId); if (!contract) throw new Error(`MISSING_PIPELINE_CONTRACT:${internalJobId || "missing"}`); return contract; }
-export const PIPELINE_CONTRACT_STATUS = Object.freeze({ central_runtime_contract: "pipeline.contract", phase7_semantic_batch_wired: true, phase8_dap_forensics_wired: true, old_m10_4b_4c_active_contracts_removed: true });
+export const PIPELINE_CONTRACT_STATUS = Object.freeze({ central_runtime_contract: "pipeline.contract", phase7_semantic_batch_wired: true, phase8_dap_forensics_wired: true, phase7_layer4_d_primary_reads_enforced: true, phase7_layer5_validation_reads_explicit: true, blocking_is_exception_noncritical_limitations_pass: true, old_m10_4b_4c_active_contracts_removed: true });
