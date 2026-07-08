@@ -35,6 +35,7 @@ console.log(JSON.stringify({
     "PHASE7_READ_CONTRACT_SYNC",
     "PHASE7_LAYER5_VALIDATION_READ_SYNC",
     "PHASE1_8_DISPATCH_CONTRACT_ARTIFACT_SYNC",
+    "PHASE7_DATA_PROVENANCE_PERMISSION_BOUNDARY",
     "BLOCKING_IS_EXCEPTION_LIMITATION_POLICY"
   ]
 }, null, 2));
@@ -138,6 +139,12 @@ function checkArtifactPermissionSync() {
   }
   for (const [agentId, permissions] of Object.entries(WRITE_PERMISSIONS)) if (agentId !== "operator") for (const legacy of legacyActiveArtifacts) assert.ok(!permissions.includes(legacy), `${agentId} write permissions include active legacy artifact ${legacy}`);
   for (const [agentId, permissions] of Object.entries(READ_PERMISSIONS)) if (agentId !== "operator") for (const legacy of legacyActiveArtifacts) assert.ok(!permissions.includes(legacy), `${agentId} read permissions include active legacy artifact ${legacy}`);
+
+  const dataProvenancePermissions = READ_PERMISSIONS.agent_4_data_privacy || [];
+  for (const legalFamily of LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES) assert.ok(!dataProvenancePermissions.includes(legalFamily), `agent_4_data_privacy must not have full legal-family read permission ${legalFamily}`);
+  for (const dataFamily of DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES) assert.ok(dataProvenancePermissions.includes(dataFamily), `agent_4_data_privacy must keep D-family read permission ${dataFamily}`);
+  assert.ok(dataProvenancePermissions.includes("legal_cartography_index"), "agent_4_data_privacy must keep legal_cartography_index locator permission");
+  assert.ok(dataProvenancePermissions.includes("legal_signal_derivation_profile"), "agent_4_data_privacy must keep legal_signal_derivation_profile support permission");
 }
 
 function checkArtifactGateSync(files) {
