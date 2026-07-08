@@ -10,6 +10,8 @@ const root = process.cwd();
 const phase1To8Jobs = Object.freeze(["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX", "M9", "M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5", "DATA_PROVENANCE_PROFILE_FORENSICS"]);
 const expectedJobChain = Object.freeze([...phase1To8Jobs, "M11"]);
 const expectedValidationNames = Object.freeze(Array.from({ length: 17 }, (_, index) => `dap_semantic_batch_validation__DAP-SEM-BATCH-${String(index + 1).padStart(2, "0")}`));
+const expectedPhase7PromptFiles = Object.freeze(["agent-packages/agent_4_data_privacy/AGENT4_PHASE7_LAYER4_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_RUNNER.md"]);
+const expectedPhase7RepairPromptFiles = Object.freeze([...expectedPhase7PromptFiles, "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_REPAIR.md"]);
 const legacyActiveArtifacts = Object.freeze(["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]);
 const forbiddenPhase1To8RootImports = Object.freeze(["../../m7-validator.js", "../../m8-validator.js", "../../m8-feature-candidate-inventory-index.js", "../../m8-feature-candidate-inventory.js", "../../m8-feature-candidate-index-boundary.js", "../../m9-validator.js", "../../m9-normalizer.js", "../../m9-hybrid-orchestrator.js", "../../m9-deterministic-map.js", "../../m9-semantic-profile-validator.js", "../../m9-hybrid-compiler.js", "../../m9-hybrid-compiler-v2.js", "../../deterministic-profile-forensics.js"]);
 const allowedPostPhase8RootImports = Object.freeze(["../../m11-orchestrator.js", "../../m12-deterministic-challenge.js", "../../compiler.js", "../../report-renderer.js"]);
@@ -20,6 +22,7 @@ checkPostPhase8BridgeBoundary(files);
 checkPhase1To8PipelineChain();
 checkPhase1To8DispatchText(files);
 checkPhase7ContractSync();
+checkPhase7AgentPackagePromptSync(files);
 checkActiveLegacyRemoval(files);
 checkArtifactPermissionSync();
 checkArtifactGateSync(files);
@@ -34,6 +37,7 @@ console.log(JSON.stringify({
     "NO_M10_4B_4C_ACTIVE_CHAIN",
     "PHASE7_READ_CONTRACT_SYNC",
     "PHASE7_LAYER5_VALIDATION_READ_SYNC",
+    "PHASE7_AGENT_PACKAGE_PROMPT_WIRING_SYNC",
     "PHASE1_8_DISPATCH_CONTRACT_ARTIFACT_SYNC",
     "PHASE7_DATA_PROVENANCE_PERMISSION_BOUNDARY",
     "BLOCKING_IS_EXCEPTION_LIMITATION_POLICY"
@@ -118,6 +122,16 @@ function checkPhase7ContractSync() {
   const layer5Reads = PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads;
   assert.deepEqual(layer5Reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, ...expectedValidationNames], "Phase 7 Layer 5 reads must explicitly include route, 17 batches, and 17 validations");
   assert.equal(new Set(layer5Reads.filter((name) => name.startsWith("dap_semantic_batch_validation__"))).size, 17, "Phase 7 Layer 5 must declare exactly 17 validation reads");
+}
+
+function checkPhase7AgentPackagePromptSync(files) {
+  const layer4 = PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4;
+  assert.deepEqual(layer4.prompt_files, expectedPhase7PromptFiles, "Phase 7 Layer 4 prompt files must be contract-owned and exact");
+  assert.deepEqual(layer4.repair_prompt_files, expectedPhase7RepairPromptFiles, "Phase 7 Layer 4 repair prompt files must be contract-owned and exact");
+  const runner = files["src/phases/07-data-provenance-profile/data-provenance-profile.runner.js"];
+  assert.ok(runner.includes("contract.prompt_files"), "Phase 7 runner must consume contract.prompt_files");
+  assert.ok(runner.includes("contract.repair_prompt_files"), "Phase 7 runner must consume contract.repair_prompt_files");
+  for (const promptFile of expectedPhase7RepairPromptFiles) assert.ok(!runner.includes(promptFile), `Phase 7 runner must not hardcode prompt file ${promptFile}`);
 }
 
 function checkActiveLegacyRemoval(files) {
