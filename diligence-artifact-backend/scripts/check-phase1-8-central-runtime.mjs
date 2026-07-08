@@ -57,19 +57,28 @@ async function loadFilesForStaticChecks() {
     "src/phases/07-data-provenance-profile/data-provenance-profile.contract.js",
     ...(await listFiles("src/phases", ".js"))
   ];
-  const unique = [...new Set(paths)].sort();
-  return Object.fromEntries(await Promise.all(unique.map(async (relativePath) => [relativePath, await readFile(path.join(root, relativePath), "utf8")])));
+  const unique = [...new Set(paths.map(normalizeRepoPath))].sort();
+  return Object.fromEntries(await Promise.all(unique.map(async (relativePath) => [relativePath, await readFile(resolveRepoPath(relativePath), "utf8")])));
 }
 
 async function listFiles(directory, extension) {
-  const entries = await readdir(path.join(root, directory), { withFileTypes: true });
+  const normalizedDirectory = normalizeRepoPath(directory);
+  const entries = await readdir(resolveRepoPath(normalizedDirectory), { withFileTypes: true });
   const out = [];
   for (const entry of entries) {
-    const relativePath = path.join(directory, entry.name);
+    const relativePath = `${normalizedDirectory}/${entry.name}`;
     if (entry.isDirectory()) out.push(...(await listFiles(relativePath, extension)));
     else if (entry.isFile() && entry.name.endsWith(extension)) out.push(relativePath);
   }
-  return out.sort();
+  return out.map(normalizeRepoPath).sort();
+}
+
+function resolveRepoPath(relativePath) {
+  return path.join(root, ...normalizeRepoPath(relativePath).split("/"));
+}
+
+function normalizeRepoPath(relativePath) {
+  return String(relativePath || "").replaceAll("\\", "/");
 }
 
 function checkNoPhase1To8RootImports(files) {
@@ -129,6 +138,7 @@ function checkPhase7AgentPackagePromptSync(files) {
   assert.deepEqual(layer4.prompt_files, expectedPhase7PromptFiles, "Phase 7 Layer 4 prompt files must be contract-owned and exact");
   assert.deepEqual(layer4.repair_prompt_files, expectedPhase7RepairPromptFiles, "Phase 7 Layer 4 repair prompt files must be contract-owned and exact");
   const runner = files["src/phases/07-data-provenance-profile/data-provenance-profile.runner.js"];
+  assert.ok(typeof runner === "string", "Phase 7 runner must be loaded for prompt wiring validation");
   assert.ok(runner.includes("contract.prompt_files"), "Phase 7 runner must consume contract.prompt_files");
   assert.ok(runner.includes("contract.repair_prompt_files"), "Phase 7 runner must consume contract.repair_prompt_files");
   for (const promptFile of expectedPhase7RepairPromptFiles) assert.ok(!runner.includes(promptFile), `Phase 7 runner must not hardcode prompt file ${promptFile}`);
