@@ -7,8 +7,10 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
   phase_order: 7,
   public_label: "Data Provenance Profile",
   package_label: "Semantic-Led Data and Privacy Architecture Profile",
-  implementation_status: "LAYER_5_BATCH_QUALITY_SCHEMA_VALIDATOR_BUILT_RUNTIME_CUTOVER_PENDING",
-  runtime_entrypoint_switched: false,
+  implementation_status: "LAYER_5_BATCH_QUALITY_SCHEMA_VALIDATOR_BUILT_RUNTIME_CUTOVER",
+  runtime_entrypoint_switched: true,
+  global_production_deployment_switched: false,
+  blocking_is_exception_noncritical_limitations_pass: true,
   material_dap_field_base_count: PHASE7_EXPECTED_DAP_FIELD_COUNT,
   material_family_section_count: 18,
   material_report_section_count: PHASE7_DAP_MATERIAL_SECTION_MATRIX.length,
@@ -42,7 +44,9 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
     semantic_system_adds_family_batch_navigation_pointers: true,
     full_d_family_lossless_evidence_allowed_only_through_data_privacy_navigation_index: true,
     selective_l_family_lossless_evidence_allowed_only_through_legal_cartography_index: true,
+    selective_l_family_legal_signal_support_allowed_only_through_legal_signal_derivation_profile: true,
     no_free_corpus_read: true,
+    no_full_l_family_scan_without_locator: true,
     no_dossier_layer: true
   }),
   layer_contracts: Object.freeze([
