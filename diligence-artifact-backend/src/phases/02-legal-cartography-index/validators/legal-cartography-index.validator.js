@@ -32,12 +32,13 @@ export function validateM9LegalCartographyIndex(output) {
 }
 
 export function assertM9LegalCartographyIndex(output) {
-  const validation = validateM9LegalCartographyIndex(output);
-  if (validation.status === "PASS" || validation.status === "LOCKED_WITH_LIMITATIONS") return validation;
+  return validateM9LegalCartographyIndex(output);
+}
+
+function fail(failures) {
+  const validation = { status: "REPAIR_REQUIRED", failed_gates: failures, limitation_gates: [], repair_instructions: ["Return exactly one legal_cartography_index object using Phase 2 index-only contract. Keep legal signal derivation in legal_signal_derivation_profile and do not emit old M10/4B/4C artifacts."] };
   const error = new Error(`LEGAL_CARTOGRAPHY_VALIDATION_FAILED:${JSON.stringify(validation)}`);
   error.validation = validation;
   throw error;
 }
-
-function fail(failures) { return { status: "REPAIR_REQUIRED", failed_gates: failures, limitation_gates: [], repair_instructions: ["Return exactly one legal_cartography_index object using Phase 2 index-only contract. Keep legal signal derivation in legal_signal_derivation_profile and do not emit old M10/4B/4C artifacts."] }; }
 function containsKey(value, key) { if (!value || typeof value !== "object") return false; if (Object.prototype.hasOwnProperty.call(value, key)) return true; return Object.values(value).some((item) => containsKey(item, key)); }
