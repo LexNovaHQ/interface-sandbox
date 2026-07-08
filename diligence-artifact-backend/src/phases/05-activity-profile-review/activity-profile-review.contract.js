@@ -69,7 +69,7 @@ const ARCHETYPE_CODES = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR",
 const SURFACE_CONTEXT_TOKENS = Object.freeze(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
 
 export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v3_AI_REGISTRY_KEY_V4_ARCHETYPES",
+  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v4_BASIS_COVERAGE_LOCKED",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
@@ -117,9 +117,14 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     commercial_availability_posture_must_be_object: true,
     commercial_availability_evidence_basis_must_be_business_readable_array: true,
     archetype_codes_required_non_empty: true,
+    multiple_archetypes_per_activity_allowed: true,
     archetype_derivation_basis_must_be_array: true,
+    archetype_derivation_basis_must_match_selected_codes_one_to_one: true,
+    no_unselected_archetype_basis_entries: true,
     surface_context_tokens_required_array_may_be_empty: true,
     surface_derivation_basis_must_be_array: true,
+    surface_derivation_basis_must_match_selected_tokens_one_to_one: true,
+    no_unselected_surface_basis_entries: true,
     activity_reference_sequence: "ACT.001_PLUS_SEQUENTIAL",
     material_output_only: true,
     forensic_output_forbidden: true
