@@ -90,7 +90,7 @@ async function loadFilesForStaticChecks() {
     ...(await listFiles("src/phases", ".js"))
   ];
   const unique = [...new Set(paths.map(normalizeRepoPath))].sort();
-  return Object.fromEntries(await Promise.all(unique.map(async (relativePath) => [relativePath, await readFile(resolveRepoPath(relativePath), "utf8")])));
+  return Object.fromEntries(await Promise.all(unique.map(async (relativePath) => [relativePath, await readFile(resolveRepoPath(relativePath), "utf8")]))) ;
 }
 
 async function listFiles(directory, extension) {
@@ -230,8 +230,8 @@ function checkActivityProfileV4DerivationContract(files) {
   assert.ok(backendContract.includes("No `surface_derivation_basis[]` object may exist for an unselected surface token"), "Backend output contract must reject unselected surface basis entries");
   assert.ok(binding.includes("Activity Profile Review must use AI_REGISTRY_KEY.md directly"), "Agent 3 binding must require direct AI_REGISTRY_KEY.md activity derivation");
   assert.ok(binding.includes("CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded"), "Agent 3 binding must mark classification matrix superseded");
-  assert.equal(manifest.validation?.AI_REGISTRY_KEY.md?.activity_profile_material_archetype_enum, "v4_14_codes", "Reference manifest must record Activity Profile v4 archetype enum");
-  assert.equal(manifest.validation?.CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml?.active_activity_profile_material_reference, false, "Reference manifest must mark classification matrix inactive for Activity Profile material");
+  assert.equal(manifest.validation?.["AI_REGISTRY_KEY.md"]?.activity_profile_material_archetype_enum, "v4_14_codes", "Reference manifest must record Activity Profile v4 archetype enum");
+  assert.equal(manifest.validation?.["CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml"]?.active_activity_profile_material_reference, false, "Reference manifest must mark classification matrix inactive for Activity Profile material");
 }
 
 function checkPhase7ContractSync() {
