@@ -15,8 +15,11 @@ const expectedPhase7RepairPromptFiles = Object.freeze([...expectedPhase7PromptFi
 const legacyActiveArtifacts = Object.freeze(["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]);
 const forbiddenPhase1To8RootImports = Object.freeze(["../../m7-validator.js", "../../m8-validator.js", "../../m8-feature-candidate-inventory-index.js", "../../m8-feature-candidate-inventory.js", "../../m8-feature-candidate-index-boundary.js", "../../m9-validator.js", "../../m9-normalizer.js", "../../m9-hybrid-orchestrator.js", "../../m9-deterministic-map.js", "../../m9-semantic-profile-validator.js", "../../m9-hybrid-compiler.js", "../../m9-hybrid-compiler-v2.js", "../../deterministic-profile-forensics.js"]);
 const allowedPostPhase8RootImports = Object.freeze(["../../m11-orchestrator.js", "../../m12-deterministic-challenge.js", "../../compiler.js", "../../report-renderer.js"]);
+const activeEntrypointFiles = Object.freeze(["package.json", "server.js", "src/runtime/main.js", "src/runtime/app.js", "src/runtime/routes/operator.routes.js", "src/runtime/routes/public.routes.js", "src/runtime/services/async.service.js", "src/runtime/services/pipeline.service.js", "src/runtime/services/artifacts.service.js"]);
 
 const files = await loadFilesForStaticChecks();
+checkProductionEntrypointCutover(files);
+checkLegacyReviewerStackInactive(files);
 checkNoPhase1To8RootImports(files);
 checkPostPhase8BridgeBoundary(files);
 checkPhase1To8PipelineChain();
@@ -32,6 +35,11 @@ console.log(JSON.stringify({
   check: "phase1-8 central runtime",
   status: "PASS",
   enforced_gates: [
+    "PACKAGE_STARTS_CENTRAL_RUNTIME",
+    "SERVER_JS_DELEGATES_TO_CENTRAL_RUNTIME",
+    "NO_ACTIVE_LEGACY_REVIEWER_ADVANCE",
+    "NO_AGENT3_M10_LOCK_ROUTE",
+    "OLD_PHASE_CONTRACTS_NOT_RUNTIME_ACTIVE",
     "NO_PHASE1_8_ROOT_IMPORTS",
     "POST_PHASE8_ROOT_BRIDGES_EXPLICIT_ONLY",
     "NO_M10_4B_4C_ACTIVE_CHAIN",
@@ -46,6 +54,13 @@ console.log(JSON.stringify({
 
 async function loadFilesForStaticChecks() {
   const paths = [
+    "package.json",
+    "server.js",
+    "src/runtime/main.js",
+    "src/runtime/app.js",
+    "src/runtime/routes/operator.routes.js",
+    "src/runtime/routes/public.routes.js",
+    "src/runtime/services/async.service.js",
     "src/runtime/services/pipeline.service.js",
     "src/runtime/services/artifacts.service.js",
     "src/runtime/contracts/pipeline.contract.js",
@@ -79,6 +94,30 @@ function resolveRepoPath(relativePath) {
 
 function normalizeRepoPath(relativePath) {
   return String(relativePath || "").replaceAll("\\", "/");
+}
+
+function checkProductionEntrypointCutover(files) {
+  const pkg = JSON.parse(files["package.json"]);
+  assert.equal(pkg.scripts?.start, "node src/runtime/main.js", "package.json start must boot the central runtime entrypoint");
+
+  const server = files["server.js"] || "";
+  assert.ok(server.includes("./src/runtime/main.js"), "server.js must delegate to the central runtime main entrypoint");
+  assert.ok(server.includes("startRuntimeServer"), "server.js must start the central runtime server only");
+
+  for (const forbidden of ["./src/reviewer-routes.js", "./src/public-reviewer-routes.js", "./src/artifact-service.js", "reviewerRouter", "publicReviewerRouter", "agent3LockPhaseRoute", "saveArtifactHandler", "M10"]) {
+    assert.ok(!server.includes(forbidden), `server.js must not expose retired legacy runtime marker ${forbidden}`);
+  }
+
+  assert.ok(files["src/runtime/main.js"].includes("createRuntimeApp"), "central runtime main must create runtime app");
+  assert.ok(files["src/runtime/app.js"].includes("operatorRouter"), "central runtime app must mount operator router");
+  assert.ok(files["src/runtime/app.js"].includes("publicRouter"), "central runtime app must mount public router");
+}
+
+function checkLegacyReviewerStackInactive(files) {
+  const activeEntrypointText = activeEntrypointFiles.map((file) => files[file] || "").join("\n");
+  for (const forbidden of ["reviewer-runner-normalized.js", "reviewer-async-runner.js", "reviewer-routes.js", "public-reviewer-routes.js", "./phase-contracts.js", "from \"./phase-contracts.js\"", "from '../phase-contracts.js'"]) {
+    assert.ok(!activeEntrypointText.includes(forbidden), `active runtime entrypoint must not import retired reviewer/phase-contract stack marker ${forbidden}`);
+  }
 }
 
 function checkNoPhase1To8RootImports(files) {
