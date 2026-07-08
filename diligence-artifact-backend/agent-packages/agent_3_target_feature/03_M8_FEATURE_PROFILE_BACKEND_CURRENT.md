@@ -9,7 +9,7 @@ active_phase_only: true
 active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_ai_registry_key_direct_authority_step1
+runtime_contract_version: m8_ai_registry_key_direct_derivation_basis_schema_v2
 
 ## M8.S1 — Architecture Lock
 
@@ -127,7 +127,7 @@ M8 may use the candidate name and source pointer only to locate the source objec
 
 M8 must not copy lossless excerpts into the material profile.
 
-M8 must not place source URLs, source IDs, source pointers, candidate IDs, or evidence ledgers inside target_feature_profile.
+M8 must not place source URLs, source IDs, source pointers, candidate IDs, copied evidence excerpts, confidence fields, evidence ledgers, or forensic/provenance material inside target_feature_profile.
 
 ## M8.S7 — Archetype and Surface Authority
 
@@ -155,6 +155,10 @@ Every emitted activity must be tested against all locked surface tokens:
 - Minors
 
 Every emitted activity must have at least one evidence-supported archetype code.
+
+Every emitted archetype code must have a corresponding `archetype_derivation_basis[]` entry.
+
+Every emitted surface token must have a corresponding `surface_derivation_basis[]` entry.
 
 surface_context_tokens must be an array. It may be empty only where no surface token is supported after source lookup.
 
@@ -192,6 +196,8 @@ M8 must not include inside target_feature_profile:
 - lock_status
 - validation_status
 - profile_meta
+- archetype_proof
+- surface_proof_and_routing_limits
 
 ## M8.S9 — Activity Row Contract
 
@@ -206,11 +212,13 @@ Each activity row must contain exactly these 12 keys:
 - data_content_object_touched
 - external_internal_action_signal
 - archetype_codes
-- archetype_proof
+- archetype_derivation_basis
 - surface_context_tokens
-- surface_proof_and_routing_limits
+- surface_derivation_basis
 
 No other activity keys are permitted under the current material schema.
+
+The old fields `archetype_proof` and `surface_proof_and_routing_limits` are forbidden.
 
 activity_reference must be stable and unique, using ACT.001, ACT.002, ACT.003, and continuing sequentially.
 
@@ -236,11 +244,37 @@ external_internal_action_signal should state whether the activity appears custom
 
 archetype_codes must be an array of supported locked archetype codes.
 
-archetype_proof must explain why the selected archetype codes are supported under AI_REGISTRY_KEY.md §4.
+archetype_derivation_basis must be an array of material basis objects. Each object must contain exactly:
+
+- code_or_token
+- normalized_name
+- conditions_satisfied
+- trigger_if_applied
+- exclude_if_checked
+- material_basis
+- limitation
 
 surface_context_tokens must be an array of supported surface tokens.
 
-surface_proof_and_routing_limits must explain supported surface tokens under AI_REGISTRY_KEY.md §7 and any public-evidence limitations.
+surface_derivation_basis must be an array of material basis objects. Each object must contain exactly:
+
+- code_or_token
+- normalized_name
+- conditions_satisfied
+- trigger_if_applied
+- exclude_if_checked
+- material_basis
+- limitation
+
+conditions_satisfied must be an array of short, business-readable condition statements drawn from the relevant AI_REGISTRY_KEY.md trigger grammar.
+
+trigger_if_applied must state the trigger grammar applied from AI_REGISTRY_KEY.md.
+
+exclude_if_checked must state the exclusion fence checked from AI_REGISTRY_KEY.md.
+
+material_basis must explain the business-readable basis from admitted P1-P5 lossless material without copied source text, URLs, source IDs, source pointers, confidence, or forensic language.
+
+limitation must state any public-footprint limitation. If no material limitation exists, use `No material derivation limitation identified from reviewed public material.`
 
 ## M8.S11 — Profile-Level Limitations
 
@@ -257,16 +291,19 @@ Before returning, verify:
 1. Output has exactly one top-level key: `target_feature_profile`.
 2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
 3. Every activity has exactly the locked 12 keys.
-4. `commercial_availability_posture` has exactly these six keys: `posture`, `free_trial_freemium_signal`, `beta_pilot_early_access_signal`, `paid_production_enterprise_plan_signal`, `evidence_basis`, and `limitation`.
-5. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, confidence fields, or forensic rows.
-6. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
-7. Every emitted activity has at least one archetype code.
-8. Every emitted activity has a `surface_context_tokens` array.
-9. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
-10. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
-11. No unindexed candidate has been added as a normal activity.
-12. No forensic output is emitted.
-13. No Activity Profile material instruction treats CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active authority.
+4. No activity contains `archetype_proof` or `surface_proof_and_routing_limits`.
+5. `archetype_derivation_basis` and `surface_derivation_basis` are arrays.
+6. Every derivation basis object contains exactly `code_or_token`, `normalized_name`, `conditions_satisfied`, `trigger_if_applied`, `exclude_if_checked`, `material_basis`, and `limitation`.
+7. `commercial_availability_posture` has exactly these six keys: `posture`, `free_trial_freemium_signal`, `beta_pilot_early_access_signal`, `paid_production_enterprise_plan_signal`, `evidence_basis`, and `limitation`.
+8. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, confidence fields, or forensic rows.
+9. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
+10. Every emitted activity has at least one archetype code.
+11. Every emitted activity has a `surface_context_tokens` array.
+12. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
+13. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
+14. No unindexed candidate has been added as a normal activity.
+15. No forensic output is emitted.
+16. No Activity Profile material instruction treats CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active authority.
 
 If any condition fails, repair the material output only. Do not emit forensics.
 
@@ -288,9 +325,29 @@ Return strict JSON only with exactly this shape:
         "data_content_object_touched": "",
         "external_internal_action_signal": "",
         "archetype_codes": [],
-        "archetype_proof": "",
+        "archetype_derivation_basis": [
+          {
+            "code_or_token": "",
+            "normalized_name": "",
+            "conditions_satisfied": [],
+            "trigger_if_applied": "",
+            "exclude_if_checked": "",
+            "material_basis": "",
+            "limitation": ""
+          }
+        ],
         "surface_context_tokens": [],
-        "surface_proof_and_routing_limits": ""
+        "surface_derivation_basis": [
+          {
+            "code_or_token": "",
+            "normalized_name": "",
+            "conditions_satisfied": [],
+            "trigger_if_applied": "",
+            "exclude_if_checked": "",
+            "material_basis": "",
+            "limitation": ""
+          }
+        ]
       }
     ],
     "commercial_availability_posture": {
@@ -391,10 +448,11 @@ Before returning the M8 material response, verify:
 1. Output has exactly one top-level key: `target_feature_profile`.
 2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
 3. Every activity still has exactly the locked 12 keys from M8.S9.
-4. `commercial_availability_posture` has exactly the six keys in M8.S14C.
-5. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
-6. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
-7. No forensic output is emitted.
-8. CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is not active authority for M8 material derivation.
+4. No activity contains `archetype_proof` or `surface_proof_and_routing_limits`.
+5. `commercial_availability_posture` has exactly the six keys in M8.S14C.
+6. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
+7. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
+8. No forensic output is emitted.
+9. CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is not active authority for M8 material derivation.
 
 If any condition fails, repair the material output only. Do not emit forensics.
