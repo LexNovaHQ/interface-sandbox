@@ -1,7 +1,6 @@
 import { assertRunId } from "../utils/run-id.js";
-import { assertKnownArtifactName, assertInternalJobCanWriteArtifact as assertPhaseCanWriteArtifact, M11_BATCH_ARTIFACT_PATTERN, M11_BATCH_VALIDATION_ARTIFACT_PATTERN, assertCanReadArtifact, assertCanWriteArtifact } from "../contracts/artifact-permissions.contract.js";
+import { assertKnownArtifactName, assertInternalJobCanWriteArtifact as assertPhaseCanWriteArtifact, M11_BATCH_ARTIFACT_PATTERN, M11_BATCH_VALIDATION_ARTIFACT_PATTERN, PHASE7_DAP_BATCH_ARTIFACT_PATTERN, PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN, assertCanReadArtifact, assertCanWriteArtifact } from "../contracts/artifact-permissions.contract.js";
 import { isStaleDeterministicForensics } from "../../deterministic-profile-forensics.js";
-import { buildExtendedDapIndiaReadinessProfile } from "../../extended-dap-india-readiness.js";
 import { config, requireRuntimeConfig } from "../config.js";
 import { artifactsForCentralPhase } from "../contracts/artifacts.contract.js";
 import { centralPhaseForInternalJob, getCentralPhase, CENTRAL_PHASE_BY_ID } from "../contracts/central-phase.contract.js";
@@ -14,61 +13,57 @@ const LOCK_STATUSES = new Set(["CREATED", "RUNNING", "LOCKED", "LOCKED_WITH_LIMI
 const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const ACCEPTED_ARTIFACT_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
 const FORENSIC_CONTRACT_EXPOSURE = "M11_ROW_LEVEL_TRACE_CONTRACT_V1";
-const DETERMINISTIC_PROFILE_FORENSICS = new Set(["target_profile_forensics", "target_feature_profile_forensics", "data_provenance_profile_forensics", "exposure_registry_profile_forensics"]);
-const EXTENDED_DATA_READINESS_ARTIFACT = "extended_dap_india_readiness_profile";
-const EXTENDED_DATA_READINESS_ACTOR = "agent_4b_extended_dap";
+const FORENSIC_CONTRACT_DAP = "DAP_SEMANTIC_BATCH_FORENSICS_CONTRACT_V1";
+const DETERMINISTIC_PROFILE_FORENSICS = new Set(["target_profile_forensics", "target_feature_profile_forensics", "dap_forensics_profile", "exposure_registry_profile_forensics"]);
 const RUNTIME_ARTIFACT_EXTRAS = new Set(["qualified_review_validation_manifest", "diligence_qa_completion_receipt"]);
 
 const ART = Object.freeze({
+  dedupedUrlManifest: "deduped_url_manifest",
+  sourceFamilyIndex: "source_family_index",
+  sourceHandoff: "source_discovery_handoff",
+  legalIndex: "legal_cartography_index",
+  legalSignalDerivationProfile: "legal_signal_derivation_profile",
   targetProfile: "target_profile",
   targetForensics: "target_profile_forensics",
   activityInventory: "feature_candidate_inventory",
   activityProfile: "target_feature_profile",
   activityForensics: "target_feature_profile_forensics",
-  dataProfile: "data_provenance_profile",
-  dataForensics: "data_provenance_profile_forensics",
+  dapRegistryManifest: "dap_registry_manifest",
+  dapStrategicMatrix: "dap_strategic_derivation_matrix",
+  dapNavigationIndex: "data_privacy_navigation_index",
+  dapRoute: "dap_semantic_batch_route_manifest",
+  dapValidationManifest: "dap_semantic_batch_validation_manifest",
+  dapGate: "data_provenance_profile_semantic_batch_gate",
+  dapForensics: "dap_forensics_profile",
   exposureRoutePlan: "exposure_registry_route_plan",
   exposureWorkpad: "exposure_registry_workpad_98",
   exposureControlled: "exposure_registry_controlled_profile",
   exposureTriggered: "exposure_registry_triggered_profile",
   exposureForensics: "exposure_registry_profile_forensics",
   challengeGate: "challenge_gate",
-  sourceFamilyIndex: "source_family_index",
   uploadedSourceCorpus: "uploaded_source_document_corpus"
 });
 
 export const ARTIFACTS_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "artifacts.service",
-  migration_status: "runtime_owned_central_artifact_service",
+  migration_status: "runtime_owned_central_artifact_service_phase1_8_synced",
   old_artifact_service_bridge_removed: true,
   old_constants_permissions_dependency_removed: true,
   central_phase_aware: true,
-  compatibility_permission_ids_retained: true
+  compatibility_permission_ids_retained: true,
+  source_to_phase6_order_gates_enforced: true,
+  phase7_semantic_batch_gate_enforced: true,
+  phase8_dap_forensics_gate_enforced: true,
+  old_m10_4b_4c_sidecar_removed: true,
+  old_dap_profile_route_gate_removed: true
 });
 
-export async function saveRuntimeArtifact(input) {
-  return saveArtifact(input);
-}
-
-export async function readRuntimeArtifact(input) {
-  return readArtifact(input);
-}
-
-export async function readRuntimeArtifactPayload(input) {
-  return readArtifactPayload(input);
-}
-
-export async function lockRuntimePhase(input) {
-  return lockPhase(input);
-}
-
-export async function listRuntimeArtifacts(runId) {
-  return listArtifacts(runId);
-}
-
-export async function assertCentralPhaseArtifactsExist(runId, centralPhaseId) {
-  return assertRequiredArtifactsExist(runId, artifactsForCentralPhase(centralPhaseId));
-}
+export async function saveRuntimeArtifact(input) { return saveArtifact(input); }
+export async function readRuntimeArtifact(input) { return readArtifact(input); }
+export async function readRuntimeArtifactPayload(input) { return readArtifactPayload(input); }
+export async function lockRuntimePhase(input) { return lockPhase(input); }
+export async function listRuntimeArtifacts(runId) { return listArtifacts(runId); }
+export async function assertCentralPhaseArtifactsExist(runId, centralPhaseId) { return assertRequiredArtifactsExist(runId, artifactsForCentralPhase(centralPhaseId)); }
 
 export async function saveArtifact(input) {
   requireRuntimeConfig();
@@ -85,10 +80,6 @@ export async function saveArtifact(input) {
   const version = await getNextArtifactVersion(parsed.run_id, parsed.artifact_name);
   const driveResult = await saveJsonArtifactToDrive({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, drive_folder_id: run.drive_folder_id, artifact: parsed.artifact });
   const meta = await saveArtifactMetadata({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, phase: phaseContext.persistence_phase, agent_id: parsed.agent_id, lock_status: effectiveLockStatus, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
-
-  if (parsed.artifact_name === ART.dataForensics && ACCEPTED_ARTIFACT_STATUSES.has(effectiveLockStatus)) {
-    await buildExtendedDataReadinessSidecarNonblocking({ run, dataForensicsArtifact: parsed.artifact });
-  }
 
   await updateRunRecord(parsed.run_id, { current_phase: phaseContext.persistence_phase, status: effectiveLockStatus, central_phase: phaseContext.central_phase_id, central_phase_label: phaseContext.central_phase_label, active_internal_job: phaseContext.internal_job_id });
   await logRuntimeArtifactEvent({ run_id: parsed.run_id, event_type: "ARTIFACT_SAVED", actor: parsed.agent_id, phaseContext, payload: { artifact_name: parsed.artifact_name, version, lock_status: effectiveLockStatus, original_lock_status: parsed.lock_status, save_order_gate: "PASS" } });
@@ -119,15 +110,13 @@ export async function readArtifactPayload({ run_id, artifact_name, agent_id = "o
   }
 }
 
-export async function listArtifacts(runId) {
-  assertRunId(runId);
-  return listArtifactMetadata(runId);
-}
+export async function listArtifacts(runId) { assertRunId(runId); return listArtifactMetadata(runId); }
 
 export async function assertRequiredArtifactsExist(runId, artifactNames) {
   for (const artifactName of artifactNames || []) {
-    if (String(artifactName || "").includes("{GROUP}")) continue;
-    await getArtifactMetadata(runId, artifactName);
+    const name = String(artifactName || "");
+    if (name.includes("{GROUP}") || name.includes("{BATCH_ID}")) continue;
+    await getArtifactMetadata(runId, name);
   }
 }
 
@@ -142,14 +131,7 @@ export async function lockPhase(input) {
 
   const existing = await getRunRecord(body.run_id);
   const nextContext = body.next_phase ? phaseContextFor(body.next_phase) : null;
-  const patch = {
-    current_phase: nextContext?.persistence_phase || body.next_phase || body.phase,
-    status: body.status,
-    central_phase: nextContext?.central_phase_id || phaseContext.central_phase_id,
-    central_phase_label: nextContext?.central_phase_label || phaseContext.central_phase_label,
-    active_internal_job: nextContext?.internal_job_id || phaseContext.internal_job_id,
-    final_report_url: body.final_report_url || existing.final_report_url || ""
-  };
+  const patch = { current_phase: nextContext?.persistence_phase || body.next_phase || body.phase, status: body.status, central_phase: nextContext?.central_phase_id || phaseContext.central_phase_id, central_phase_label: nextContext?.central_phase_label || phaseContext.central_phase_label, active_internal_job: nextContext?.internal_job_id || phaseContext.internal_job_id, final_report_url: body.final_report_url || existing.final_report_url || "" };
   const updated = await updateRunRecord(body.run_id, patch);
   await updateRunDashboardRow(updated);
   await logRuntimeArtifactEvent({ run_id: body.run_id, event_type: "CENTRAL_PHASE_LOCKED", actor: body.agent_id, phaseContext, payload: { status: body.status, next_phase: patch.current_phase, next_central_phase: patch.central_phase } });
@@ -157,14 +139,7 @@ export async function lockPhase(input) {
 }
 
 function parseSaveArtifactInput(input = {}) {
-  const parsed = {
-    run_id: String(input.run_id || ""),
-    phase: String(input.phase || ""),
-    agent_id: String(input.agent_id || ""),
-    artifact_name: String(input.artifact_name || ""),
-    lock_status: String(input.lock_status || ""),
-    artifact: input.artifact
-  };
+  const parsed = { run_id: String(input.run_id || ""), phase: String(input.phase || ""), agent_id: String(input.agent_id || ""), artifact_name: String(input.artifact_name || ""), lock_status: String(input.lock_status || ""), artifact: input.artifact };
   const missing = [];
   if (!parsed.run_id) missing.push("run_id");
   if (!parsed.phase) missing.push("phase");
@@ -177,14 +152,7 @@ function parseSaveArtifactInput(input = {}) {
 }
 
 function parseLockPhaseInput(input = {}) {
-  const parsed = {
-    run_id: String(input.run_id || ""),
-    phase: String(input.phase || ""),
-    agent_id: String(input.agent_id || "operator"),
-    status: String(input.status || ""),
-    next_phase: input.next_phase == null ? null : String(input.next_phase),
-    final_report_url: String(input.final_report_url || "")
-  };
+  const parsed = { run_id: String(input.run_id || ""), phase: String(input.phase || ""), agent_id: String(input.agent_id || "operator"), status: String(input.status || ""), next_phase: input.next_phase == null ? null : String(input.next_phase), final_report_url: String(input.final_report_url || "") };
   const missing = [];
   if (!parsed.run_id) missing.push("run_id");
   if (!parsed.phase) missing.push("phase");
@@ -218,7 +186,7 @@ function requiredWritesForPhaseContext(phaseContext) {
 
 function assertRuntimeKnownArtifact(artifactName) {
   if (RUNTIME_ARTIFACT_EXTRAS.has(artifactName)) return;
-  if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
+  if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
   assertKnownArtifactName(artifactName);
 }
 
@@ -238,11 +206,11 @@ function assertRuntimeWritePermission(agentId, artifactName) {
 function assertRuntimePhaseCanWriteArtifact(phaseContext, artifactName) {
   if (phaseContext.is_central_phase_request) {
     const allowed = artifactsForCentralPhase(phaseContext.central_phase_id);
-    if (!allowed.includes(artifactName)) throw new Error(`CENTRAL_PHASE_WRITE_FORBIDDEN:${phaseContext.central_phase_id}:${artifactName}`);
+    if (!allowed.includes(artifactName) && !(phaseContext.central_phase_id === "DATA_PROVENANCE_PROFILE" && PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName))) throw new Error(`CENTRAL_PHASE_WRITE_FORBIDDEN:${phaseContext.central_phase_id}:${artifactName}`);
     return;
   }
   if (RUNTIME_ARTIFACT_EXTRAS.has(artifactName)) return;
-  if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
+  if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
   assertPhaseCanWriteArtifact(phaseContext.persistence_phase, artifactName);
 }
 
@@ -253,7 +221,16 @@ function normalizeArtifactLockStatus(parsed) {
 
 async function assertArtifactSaveOrder(parsed) {
   const { run_id, artifact_name } = parsed;
+
+  if (artifact_name === ART.sourceFamilyIndex) await requireSavedArtifact(run_id, ART.dedupedUrlManifest, "SAVE_ORDER_BLOCKED:source_family_index_requires_deduped_url_manifest");
+  if (artifact_name === ART.sourceHandoff) await requireSavedArtifact(run_id, ART.sourceFamilyIndex, "SAVE_ORDER_BLOCKED:source_handoff_requires_source_family_index");
+
+  if (artifact_name === ART.legalIndex || artifact_name === ART.legalSignalDerivationProfile) await requireSavedArtifact(run_id, ART.sourceHandoff, "SAVE_ORDER_BLOCKED:legal_cartography_requires_source_handoff");
+  if (artifact_name === ART.legalSignalDerivationProfile) await requireSavedArtifact(run_id, ART.legalIndex, "SAVE_ORDER_BLOCKED:legal_signal_derivation_requires_legal_cartography_index");
+
+  if (artifact_name === ART.targetProfile) await requireSavedArtifact(run_id, ART.legalSignalDerivationProfile, "SAVE_ORDER_BLOCKED:target_profile_requires_legal_signal_derivation_profile");
   if (artifact_name === ART.targetForensics) await requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:target_forensics_requires_target_profile");
+
   if (artifact_name === ART.activityInventory) {
     await requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:activity_inventory_requires_target_profile");
     await requireSavedArtifact(run_id, ART.targetForensics, "SAVE_ORDER_BLOCKED:activity_inventory_requires_target_forensics");
@@ -269,21 +246,44 @@ async function assertArtifactSaveOrder(parsed) {
     await requireSavedArtifact(run_id, ART.activityProfile, "SAVE_ORDER_BLOCKED:activity_forensics_requires_activity_profile");
     await requirePhaseAccepted(run_id, ART.activityProfile, "SAVE_ORDER_BLOCKED:activity_forensics_requires_accepted_activity_profile");
   }
-  if (artifact_name === ART.dataProfile) {
-    await requireSavedArtifact(run_id, ART.activityInventory, "SAVE_ORDER_BLOCKED:data_profile_requires_activity_inventory");
-    await requirePhaseAccepted(run_id, ART.activityInventory, "SAVE_ORDER_BLOCKED:data_profile_requires_accepted_activity_inventory");
-    await requireSavedArtifact(run_id, ART.activityProfile, "SAVE_ORDER_BLOCKED:data_profile_requires_activity_profile");
-    await requireSavedArtifact(run_id, ART.activityForensics, "SAVE_ORDER_BLOCKED:data_profile_requires_activity_forensics");
-    await requirePhaseAccepted(run_id, ART.activityForensics, "SAVE_ORDER_BLOCKED:data_profile_requires_accepted_activity_forensics");
+
+  if (artifact_name === ART.dapRegistryManifest) await requireAcceptedActivityForensics(run_id, "SAVE_ORDER_BLOCKED:dap_registry_requires_accepted_activity_forensics");
+  if (artifact_name === ART.dapStrategicMatrix) await requireSavedArtifact(run_id, ART.dapRegistryManifest, "SAVE_ORDER_BLOCKED:dap_strategic_matrix_requires_registry_manifest");
+  if (artifact_name === ART.dapNavigationIndex) {
+    await requireAcceptedActivityForensics(run_id, "SAVE_ORDER_BLOCKED:dap_navigation_requires_accepted_activity_forensics");
+    await requireSavedArtifact(run_id, ART.dapRegistryManifest, "SAVE_ORDER_BLOCKED:dap_navigation_requires_registry_manifest");
+    await requireSavedArtifact(run_id, ART.dapStrategicMatrix, "SAVE_ORDER_BLOCKED:dap_navigation_requires_strategic_matrix");
   }
-  if (artifact_name === ART.dataForensics) {
-    await requireSavedArtifact(run_id, ART.dataProfile, "SAVE_ORDER_BLOCKED:data_forensics_requires_data_profile");
-    await requirePhaseAccepted(run_id, ART.dataProfile, "SAVE_ORDER_BLOCKED:data_forensics_requires_accepted_data_profile");
+  if (artifact_name === ART.dapRoute) {
+    await requireSavedArtifact(run_id, ART.dapNavigationIndex, "SAVE_ORDER_BLOCKED:dap_route_requires_navigation_index");
+    await requirePhaseAccepted(run_id, ART.dapNavigationIndex, "SAVE_ORDER_BLOCKED:dap_route_requires_accepted_navigation_index");
   }
+  if (PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_batch_validation_requires_route_manifest");
+  if (PHASE7_DAP_BATCH_ARTIFACT_PATTERN.test(artifact_name)) {
+    await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_batch_requires_route_manifest");
+    await requireSavedArtifact(run_id, pairedDapBatchValidationName(artifact_name), "SAVE_ORDER_BLOCKED:dap_batch_requires_paired_validation");
+  }
+  if (artifact_name === ART.dapValidationManifest) {
+    await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_validation_manifest_requires_route_manifest");
+    await requireAllPlannedDapBatchesSaved(run_id, "SAVE_ORDER_BLOCKED:dap_validation_manifest_requires_all_batches_and_validations");
+  }
+  if (artifact_name === ART.dapGate) {
+    await requireSavedArtifact(run_id, ART.dapValidationManifest, "SAVE_ORDER_BLOCKED:dap_gate_requires_validation_manifest");
+    await requirePhaseAccepted(run_id, ART.dapValidationManifest, "SAVE_ORDER_BLOCKED:dap_gate_requires_accepted_validation_manifest");
+    await requireAllPlannedDapBatchesSaved(run_id, "SAVE_ORDER_BLOCKED:dap_gate_requires_all_batches_and_validations");
+  }
+  if (artifact_name === ART.dapForensics) {
+    await requireSavedArtifact(run_id, ART.dapNavigationIndex, "SAVE_ORDER_BLOCKED:dap_forensics_requires_navigation_index");
+    await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_forensics_requires_route_manifest");
+    await requireAllPlannedDapBatchesSaved(run_id, "SAVE_ORDER_BLOCKED:dap_forensics_requires_all_batches_and_validations");
+    await requireSavedArtifact(run_id, ART.dapValidationManifest, "SAVE_ORDER_BLOCKED:dap_forensics_requires_validation_manifest");
+    await requireSavedArtifact(run_id, ART.dapGate, "SAVE_ORDER_BLOCKED:dap_forensics_requires_semantic_batch_gate");
+    await requirePhaseAccepted(run_id, ART.dapGate, "SAVE_ORDER_BLOCKED:dap_forensics_requires_accepted_semantic_batch_gate");
+  }
+
   if (artifact_name === ART.exposureRoutePlan) {
-    await requireSavedArtifact(run_id, ART.dataProfile, "SAVE_ORDER_BLOCKED:exposure_route_plan_requires_data_profile");
-    await requireSavedArtifact(run_id, ART.dataForensics, "SAVE_ORDER_BLOCKED:exposure_route_plan_requires_data_forensics");
-    await requirePhaseAccepted(run_id, ART.dataForensics, "SAVE_ORDER_BLOCKED:exposure_route_plan_requires_accepted_data_forensics");
+    await requireSavedArtifact(run_id, ART.dapForensics, "SAVE_ORDER_BLOCKED:exposure_route_plan_requires_dap_forensics");
+    await requirePhaseAccepted(run_id, ART.dapForensics, "SAVE_ORDER_BLOCKED:exposure_route_plan_requires_accepted_dap_forensics");
   }
   if (M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) await requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:exposure_batch_validation_requires_route_plan");
   if (M11_BATCH_ARTIFACT_PATTERN.test(artifact_name)) {
@@ -320,52 +320,71 @@ async function assertArtifactSaveOrder(parsed) {
 async function assertArtifactLockOrder(body, phaseContext) {
   if (!LOCK_ADVANCE_STATUSES.has(body.status)) return;
   const required = requiredWritesForPhaseContext(phaseContext);
-  if (required.includes(ART.activityInventory)) {
+  const requiresAny = (...names) => names.some((name) => required.includes(name));
+  const requiresAnyDapBatch = required.some((name) => PHASE7_DAP_BATCH_ARTIFACT_PATTERN.test(name));
+
+  if (requiresAny(ART.sourceHandoff)) await requireSavedArtifact(body.run_id, ART.sourceFamilyIndex, "PHASE_LOCK_BLOCKED:source_handoff_requires_source_family_index");
+  if (requiresAny(ART.legalIndex, ART.legalSignalDerivationProfile)) await requireSavedArtifact(body.run_id, ART.sourceHandoff, "PHASE_LOCK_BLOCKED:legal_cartography_requires_source_handoff");
+  if (requiresAny(ART.targetProfile)) await requireSavedArtifact(body.run_id, ART.legalSignalDerivationProfile, "PHASE_LOCK_BLOCKED:target_profile_requires_legal_signal_derivation_profile");
+
+  if (requiresAny(ART.activityInventory)) {
     await requireSavedArtifact(body.run_id, ART.targetProfile, "PHASE_LOCK_BLOCKED:activity_inventory_requires_target_profile");
     await requireSavedArtifact(body.run_id, ART.targetForensics, "PHASE_LOCK_BLOCKED:activity_inventory_requires_target_forensics");
     await requirePhaseAccepted(body.run_id, ART.targetForensics, "PHASE_LOCK_BLOCKED:activity_inventory_requires_accepted_target_forensics");
   }
-  if (required.some((name) => [ART.activityProfile, ART.activityForensics, ART.dataProfile, ART.dataForensics].includes(name))) {
-    await requireSavedArtifact(body.run_id, ART.activityInventory, "PHASE_LOCK_BLOCKED:profile_chain_requires_activity_inventory");
-    await requirePhaseAccepted(body.run_id, ART.activityInventory, "PHASE_LOCK_BLOCKED:profile_chain_requires_accepted_activity_inventory");
-  }
-  if (required.includes(ART.activityForensics)) {
+  if (requiresAny(ART.activityForensics)) {
     await requireSavedArtifact(body.run_id, ART.activityProfile, "PHASE_LOCK_BLOCKED:activity_forensics_requires_activity_profile");
     await requirePhaseAccepted(body.run_id, ART.activityProfile, "PHASE_LOCK_BLOCKED:activity_forensics_requires_accepted_activity_profile");
   }
-  if (required.includes(ART.dataProfile)) {
-    await requireSavedArtifact(body.run_id, ART.activityProfile, "PHASE_LOCK_BLOCKED:data_profile_requires_activity_profile");
-    await requireSavedArtifact(body.run_id, ART.activityForensics, "PHASE_LOCK_BLOCKED:data_profile_requires_activity_forensics");
-    await requirePhaseAccepted(body.run_id, ART.activityForensics, "PHASE_LOCK_BLOCKED:data_profile_requires_accepted_activity_forensics");
+
+  if (requiresAny(ART.dapRegistryManifest, ART.dapStrategicMatrix, ART.dapNavigationIndex, ART.dapRoute) || requiresAnyDapBatch) await requireAcceptedActivityForensics(body.run_id, "PHASE_LOCK_BLOCKED:dap_layer4_requires_accepted_activity_forensics");
+  if (requiresAny(ART.dapRoute) || requiresAnyDapBatch || requiresAny(ART.dapValidationManifest, ART.dapGate, ART.dapForensics)) await requireSavedArtifact(body.run_id, ART.dapRoute, "PHASE_LOCK_BLOCKED:dap_route_manifest_required");
+  if (requiresAnyDapBatch || requiresAny(ART.dapValidationManifest, ART.dapGate, ART.dapForensics)) await requireAllPlannedDapBatchesSaved(body.run_id, "PHASE_LOCK_BLOCKED:all_dap_batches_and_validations_required");
+  if (requiresAny(ART.dapGate, ART.dapForensics)) {
+    await requireSavedArtifact(body.run_id, ART.dapValidationManifest, "PHASE_LOCK_BLOCKED:dap_validation_manifest_required");
+    if (requiresAny(ART.dapGate)) await requirePhaseAccepted(body.run_id, ART.dapValidationManifest, "PHASE_LOCK_BLOCKED:accepted_dap_validation_manifest_required");
   }
-  if (required.includes(ART.dataForensics)) {
-    await requireSavedArtifact(body.run_id, ART.dataProfile, "PHASE_LOCK_BLOCKED:data_forensics_requires_data_profile");
-    await requirePhaseAccepted(body.run_id, ART.dataProfile, "PHASE_LOCK_BLOCKED:data_forensics_requires_accepted_data_profile");
+  if (requiresAny(ART.dapForensics)) {
+    await requireSavedArtifact(body.run_id, ART.dapGate, "PHASE_LOCK_BLOCKED:dap_semantic_batch_gate_required");
+    await requirePhaseAccepted(body.run_id, ART.dapGate, "PHASE_LOCK_BLOCKED:accepted_dap_semantic_batch_gate_required");
   }
-  if (required.includes(ART.exposureWorkpad) || required.includes(ART.exposureForensics) || required.includes(ART.challengeGate)) {
+  if (requiresAny(ART.exposureRoutePlan)) {
+    await requireSavedArtifact(body.run_id, ART.dapForensics, "PHASE_LOCK_BLOCKED:exposure_requires_dap_forensics");
+    await requirePhaseAccepted(body.run_id, ART.dapForensics, "PHASE_LOCK_BLOCKED:exposure_requires_accepted_dap_forensics");
+  }
+  if (requiresAny(ART.exposureWorkpad, ART.exposureForensics, ART.challengeGate)) {
     await requireSavedArtifact(body.run_id, ART.exposureRoutePlan, "PHASE_LOCK_BLOCKED:exposure_route_plan_required");
     await requireAllPlannedExposureBatchesSaved(body.run_id, "PHASE_LOCK_BLOCKED:all_exposure_batches_and_validations_required");
   }
-  if (required.includes(ART.exposureForensics) || required.includes(ART.challengeGate)) {
+  if (requiresAny(ART.exposureForensics, ART.challengeGate)) {
     await requireSavedArtifact(body.run_id, ART.exposureWorkpad, "PHASE_LOCK_BLOCKED:exposure_workpad_required");
     await requireSavedArtifact(body.run_id, ART.exposureControlled, "PHASE_LOCK_BLOCKED:controlled_exposure_required");
     await requireSavedArtifact(body.run_id, ART.exposureTriggered, "PHASE_LOCK_BLOCKED:triggered_exposure_required");
   }
-  if (required.includes(ART.challengeGate)) {
+  if (requiresAny(ART.challengeGate)) {
     await requireSavedArtifact(body.run_id, ART.exposureForensics, "PHASE_LOCK_BLOCKED:exposure_forensics_required");
     await requirePhaseAccepted(body.run_id, ART.exposureForensics, "PHASE_LOCK_BLOCKED:accepted_exposure_forensics_required");
     await requireSavedArtifact(body.run_id, ART.challengeGate, "PHASE_LOCK_BLOCKED:operator_challenge_gate_required");
   }
 }
 
-async function normalizePhaseLockBody(body, phaseContext) {
-  if (phaseContext.central_phase_id === "EXPOSURE_PROFILE" && body.status === "REPAIR_REQUIRED") {
-    try {
-      const meta = await getArtifactMetadata(body.run_id, ART.exposureForensics);
-      if (meta) return { ...body, status: "LOCKED_WITH_LIMITATIONS", next_phase: body.next_phase && body.next_phase !== body.phase ? body.next_phase : "M12" };
-    } catch (_error) { }
+async function normalizePhaseLockBody(body, _phaseContext) { return body; }
+
+async function requireAcceptedActivityForensics(runId, message) {
+  await requireSavedArtifact(runId, ART.activityForensics, message);
+  await requirePhaseAccepted(runId, ART.activityForensics, message);
+}
+
+async function requireAllPlannedDapBatchesSaved(runId, message) {
+  const routeManifest = await readInternalArtifactPayload(runId, ART.dapRoute);
+  const packets = routeManifest?.batch_route_packets || routeManifest?.dap_semantic_batch_route_manifest?.batch_route_packets || [];
+  if (!Array.isArray(packets)) throw new Error(`${message}:route_packets_missing_or_not_array`);
+  if (packets.length !== 17) throw new Error(`${message}:expected_17_route_packets_found_${packets.length}`);
+  for (const packet of packets) {
+    if (!packet?.batch_id || !packet.expected_artifact_name) throw new Error(`${message}:packet_missing_id_or_artifact`);
+    await requireSavedArtifact(runId, `dap_semantic_batch_validation__${packet.batch_id}`, `${message}:missing_validation:${packet.batch_id}`);
+    await requireSavedArtifact(runId, packet.expected_artifact_name, `${message}:missing_batch:${packet.expected_artifact_name}`);
   }
-  return body;
 }
 
 async function requireAllPlannedExposureBatchesSaved(runId, message) {
@@ -379,22 +398,33 @@ async function requireAllPlannedExposureBatchesSaved(runId, message) {
   }
 }
 
-function pairedBatchValidationName(batchArtifactName) {
-  return batchArtifactName.replace(/^exposure_registry_batch__/, "exposure_registry_batch_validation__");
+function pairedBatchValidationName(batchArtifactName) { return batchArtifactName.replace(/^exposure_registry_batch__/, "exposure_registry_batch_validation__"); }
+
+async function pairedDapBatchValidationName(batchArtifactName) {
+  const routeManifest = await readInternalArtifactPayload(arguments[1], ART.dapRoute);
+  return batchArtifactName;
 }
 
-async function readInternalArtifactPayload(runId, artifactName) {
-  const meta = await getArtifactMetadata(runId, artifactName);
-  return readJsonArtifactFromDrive(meta.drive_file_id);
+function pairedDapBatchValidationNameFromManifest(routeManifest, batchArtifactName) {
+  const packets = routeManifest?.batch_route_packets || routeManifest?.dap_semantic_batch_route_manifest?.batch_route_packets || [];
+  const packet = packets.find((row) => row.expected_artifact_name === batchArtifactName);
+  return packet?.batch_id ? `dap_semantic_batch_validation__${packet.batch_id}` : "";
 }
+
+async function requirePairedDapValidationForBatch(runId, batchArtifactName, message) {
+  const routeManifest = await readInternalArtifactPayload(runId, ART.dapRoute);
+  const validationName = pairedDapBatchValidationNameFromManifest(routeManifest, batchArtifactName);
+  if (!validationName) throw new Error(`${message}:batch_not_in_route_manifest:${batchArtifactName}`);
+  await requireSavedArtifact(runId, validationName, message);
+}
+
+async function readInternalArtifactPayload(runId, artifactName) { const meta = await getArtifactMetadata(runId, artifactName); return readJsonArtifactFromDrive(meta.drive_file_id); }
 
 async function requireSavedArtifact(runId, artifactName, message) {
   try {
     const meta = await getArtifactMetadata(runId, artifactName);
     if (DETERMINISTIC_PROFILE_FORENSICS.has(artifactName)) await assertForensicsNotStale(runId, artifactName, meta, message);
-  } catch (_error) {
-    throw new Error(message);
-  }
+  } catch (_error) { throw new Error(message); }
 }
 
 async function requirePhaseAccepted(runId, artifactName, message) {
@@ -402,9 +432,7 @@ async function requirePhaseAccepted(runId, artifactName, message) {
   try {
     meta = await getArtifactMetadata(runId, artifactName);
     if (DETERMINISTIC_PROFILE_FORENSICS.has(artifactName)) await assertForensicsNotStale(runId, artifactName, meta, message);
-  } catch (_error) {
-    throw new Error(message);
-  }
+  } catch (_error) { throw new Error(message); }
   if (!ACCEPTED_ARTIFACT_STATUSES.has(meta.lock_status)) throw new Error(`${message}:status:${meta.lock_status || "missing"}`);
 }
 
@@ -418,6 +446,7 @@ async function assertForensicsNotStale(runId, artifactName, meta, message) {
 
 function isStaleForensicsArtifact(artifactName, artifact) {
   if (artifactName === ART.exposureForensics) return isStaleExposureForensicsArtifact(artifact);
+  if (artifactName === ART.dapForensics) return isStaleDapForensicsArtifact(artifact);
   return isStaleDeterministicForensics({ artifactName, artifact });
 }
 
@@ -426,39 +455,9 @@ function isStaleExposureForensicsArtifact(artifact) {
   return root.forensic_contract?.contract_name !== FORENSIC_CONTRACT_EXPOSURE || root.forensic_contract?.model_generated_forensics_allowed !== false || !Array.isArray(root.forensic_trace_index) || !Array.isArray(root.material_profile_trace_index) || root.forensic_boundary?.semantic_forensic_profile_retired !== true;
 }
 
-async function buildExtendedDataReadinessSidecarNonblocking({ run, dataForensicsArtifact }) {
-  try {
-    const artifacts = {};
-    for (const artifactName of ["source_discovery_handoff", "legal_cartography_index", ART.targetProfile, ART.targetForensics, ART.activityProfile, ART.activityForensics, ART.dataProfile]) {
-      try { artifacts[artifactName] = await readArtifactPayload({ run_id: run.run_id, artifact_name: artifactName, agent_id: "operator" }); }
-      catch (_error) { artifacts[artifactName] = null; }
-    }
-    artifacts[ART.dataForensics] = dataForensicsArtifact;
-    const output = buildExtendedDapIndiaReadinessProfile({ run, artifacts });
-    const artifact = normalizeExtendedDataReadinessProofQueue(output?.[EXTENDED_DATA_READINESS_ARTIFACT]);
-    if (!artifact || typeof artifact !== "object") throw new Error(`EXTENDED_DATA_READINESS_OUTPUT_MISSING:${EXTENDED_DATA_READINESS_ARTIFACT}`);
-    const status = artifact.lock_status === "LOCKED" || artifact.status === "LOCKED" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
-    const version = await getNextArtifactVersion(run.run_id, EXTENDED_DATA_READINESS_ARTIFACT);
-    const driveResult = await saveJsonArtifactToDrive({ run_id: run.run_id, artifact_name: EXTENDED_DATA_READINESS_ARTIFACT, version, drive_folder_id: run.drive_folder_id, artifact });
-    await saveArtifactMetadata({ run_id: run.run_id, artifact_name: EXTENDED_DATA_READINESS_ARTIFACT, phase: "AGENT_4B_EXTENDED_DAP_INDIA_READINESS", agent_id: EXTENDED_DATA_READINESS_ACTOR, lock_status: status, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
-    await logEvent({ run_id: run.run_id, event_type: "EXTENDED_DATA_READINESS_SIDECAR_COMPLETED", actor: EXTENDED_DATA_READINESS_ACTOR, payload: { artifact_name: EXTENDED_DATA_READINESS_ARTIFACT, lock_status: status, field_count: artifact.field_count, model_usage: "NONE_DETERMINISTIC", mode: "sidecar_nonblocking", missing_proof_queue_normalized: true } });
-  } catch (error) {
-    await logEvent({ run_id: run.run_id, event_type: "EXTENDED_DATA_READINESS_SIDECAR_NONBLOCKING_FAILURE", actor: EXTENDED_DATA_READINESS_ACTOR, payload: { artifact_name: EXTENDED_DATA_READINESS_ARTIFACT, error_message: error?.message || String(error) } });
-  }
-}
-
-function normalizeExtendedDataReadinessProofQueue(artifact) {
-  if (!artifact || typeof artifact !== "object") return artifact;
-  const missing = Array.isArray(artifact.missing_proof_requests) ? artifact.missing_proof_requests : [];
-  return { ...artifact, missing_proof_requests: missing.map((row) => ({ ...row, field_status: row.field_status || row.status || "", status: proofRequestStatus(row.status), required_action: row.required_action || "QUALIFIED_REVIEW_OR_TARGETED_REINVESTIGATION", blocking: false })) };
-}
-
-function proofRequestStatus(fieldStatus) {
-  if (fieldStatus === "ACCESS_FAILED") return "ACCESS_FAILED_REVIEW_REQUIRED";
-  if (fieldStatus === "CONFLICTING_SIGNALS") return "REVIEWER_CONFIRMATION_REQUIRED";
-  if (fieldStatus === "VISIBLE_DATA_PROCESSING_NO_CONTROL_FOUND") return "PUBLIC_PROOF_INSUFFICIENT";
-  if (fieldStatus === "VISIBLE_CONTROL_PRESENT") return "REVIEWER_CONFIRMATION_REQUIRED";
-  return "PROOF_REQUESTED";
+function isStaleDapForensicsArtifact(artifact) {
+  const root = artifact?.dap_forensics_profile || artifact || {};
+  return root.forensic_contract?.contract_name !== FORENSIC_CONTRACT_DAP || root.forensic_contract?.model_generated_forensics_allowed !== false || root.forensic_boundary?.old_m10_forensics_reused !== false || root.forensic_boundary?.four_b_four_c_reused !== false || !Array.isArray(root.material_profile_trace_index) || !Array.isArray(root.field_trace_index) || !root.forensic_lock_gate_result;
 }
 
 async function mergeUploadedDocumentSourcesIntoArtifact({ run, artifactName, artifact }) {
@@ -488,10 +487,7 @@ function uploadedSourceRow({ source, family, sourceNumber }) {
   return { source_id: `${family}.UPDOC.${String(sourceNumber).padStart(3, "0")}`, manifest_id: source.uploaded_source_id, bucket, root_family: family, canonical_url: source.canonical_url, url: source.original_drive_web_view_link || source.canonical_url, route_type: routeType, materiality: source.materiality || "uploaded_source_material", discovered_by: ["USER_UPLOADED_DOCUMENT"], route_found_by: "DOCUMENT_UPLOAD", priority_result: "UPLOADED_PRIMARY_SOURCE", admission_tier: "PRIMARY", variant_class: "UPLOADED_DOCUMENT", extraction_decision: "EXTRACT", tier_reason: "Uploaded by user as source material.", execution_status: "uploaded_document_parsed", extraction_status: source.extraction_status, evidence_text_source: "UPLOADED_DOCUMENT_TEXT", content_type: source.content_type, final_url: source.original_drive_web_view_link, filename: source.filename, sha256: source.sha256, lossless_text: source.lossless_text, extraction_warnings: source.extraction_warnings || [] };
 }
 
-function withoutText(source) {
-  const { lossless_text: _losslessText, ...rest } = source;
-  return rest;
-}
+function withoutText(source) { const { lossless_text: _losslessText, ...rest } = source; return rest; }
 
 export function buildReportUrl(runId) {
   const base = config.reviewerPublicBaseUrl || config.rendererBaseUrl || "";
@@ -500,25 +496,8 @@ export function buildReportUrl(runId) {
   return `${clean}/interface-diligence/diligence-system/report.html?run_id=${encodeURIComponent(runId)}`;
 }
 
-export function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) {
-  return { run_id, phase, agent_id, artifact_name, lock_status, artifact };
-}
-
-export function isLosslessFamilyArtifactName(value) {
-  return /^lossless_family__[A-Z0-9_]+$/.test(String(value || ""));
-}
-
-export function buildDynamicEmptyLosslessFamilyArtifact({ artifact_name, error = null } = {}) {
-  const family = String(artifact_name || "").replace(/^lossless_family__/, "");
-  return { artifact_name, root_family: family, bucket: "", storage_mode: "UNSAVED_EMPTY", sources: [], manifest_only_sources: [], metadata_only_sources: [], rejected_sources: [], missing_limited_primary_sources: [], dynamic_family_read_resolution: { status: "CONTROLLED_EMPTY_FAMILY", reason: "DYNAMIC_SOURCE_FAMILY_NOT_PHYSICALLY_SAVED", original_error: error?.message || String(error || "") }, family_part_resolution: { status: "UNSAVED_EMPTY", reason: "DYNAMIC_SOURCE_FAMILY_NOT_PHYSICALLY_SAVED", required_artifacts: [], loaded_artifacts: [], required_together: false }, corpus_forensics: { total_sources: 0, dynamic_empty_family: true }, dedupe_forensics: {} };
-}
-
-async function logDynamicFamilyFallback({ run_id, artifact_name, agent_id, error }) {
-  try {
-    await logEvent({ run_id, event_type: "DYNAMIC_LOSSLESS_FAMILY_EMPTY_READ", actor: agent_id || "runtime.artifacts.service", payload: { artifact_name, reason: "lossless family artifact not physically saved", original_error: error?.message || String(error || "") } });
-  } catch (_ignored) { }
-}
-
-async function logRuntimeArtifactEvent({ run_id, event_type, actor, phaseContext, payload = {} }) {
-  await logEvent({ run_id, event_type, actor, payload: { phase: phaseContext.persistence_phase, internal_job_id: phaseContext.internal_job_id, central_phase: phaseContext.central_phase_id, central_phase_label: phaseContext.central_phase_label, ...payload } });
-}
+export function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) { return { run_id, phase, agent_id, artifact_name, lock_status, artifact }; }
+export function isLosslessFamilyArtifactName(value) { return /^lossless_family__[A-Z0-9_]+$/.test(String(value || "")); }
+export function buildDynamicEmptyLosslessFamilyArtifact({ artifact_name, error = null } = {}) { const family = String(artifact_name || "").replace(/^lossless_family__/, ""); return { artifact_name, root_family: family, bucket: "", storage_mode: "UNSAVED_EMPTY", sources: [], manifest_only_sources: [], metadata_only_sources: [], rejected_sources: [], missing_limited_primary_sources: [], dynamic_family_read_resolution: { status: "CONTROLLED_EMPTY_FAMILY", reason: "DYNAMIC_SOURCE_FAMILY_NOT_PHYSICALLY_SAVED", original_error: error?.message || String(error || "") }, family_part_resolution: { status: "UNSAVED_EMPTY", reason: "DYNAMIC_SOURCE_FAMILY_NOT_PHYSICALLY_SAVED", required_artifacts: [], loaded_artifacts: [], required_together: false }, corpus_forensics: { total_sources: 0, dynamic_empty_family: true }, dedupe_forensics: {} }; }
+async function logDynamicFamilyFallback({ run_id, artifact_name, agent_id, error }) { try { await logEvent({ run_id, event_type: "DYNAMIC_LOSSLESS_FAMILY_EMPTY_READ", actor: agent_id || "runtime.artifacts.service", payload: { artifact_name, reason: "lossless family artifact not physically saved", original_error: error?.message || String(error || "") } }); } catch (_ignored) { } }
+async function logRuntimeArtifactEvent({ run_id, event_type, actor, phaseContext, payload = {} }) { await logEvent({ run_id, event_type, actor, payload: { phase: phaseContext.persistence_phase, internal_job_id: phaseContext.internal_job_id, central_phase: phaseContext.central_phase_id, central_phase_label: phaseContext.central_phase_label, ...payload } }); }
