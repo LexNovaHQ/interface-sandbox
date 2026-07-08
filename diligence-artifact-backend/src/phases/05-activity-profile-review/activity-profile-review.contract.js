@@ -41,9 +41,19 @@ const ACTIVITY_ROW_FIELDS = Object.freeze([
   "data_content_object_touched",
   "external_internal_action_signal",
   "archetype_codes",
-  "archetype_proof",
+  "archetype_derivation_basis",
   "surface_context_tokens",
-  "surface_proof_and_routing_limits"
+  "surface_derivation_basis"
+]);
+
+const DERIVATION_BASIS_FIELDS = Object.freeze([
+  "code_or_token",
+  "normalized_name",
+  "conditions_satisfied",
+  "trigger_if_applied",
+  "exclude_if_checked",
+  "material_basis",
+  "limitation"
 ]);
 
 const COMMERCIAL_AVAILABILITY_FIELDS = Object.freeze([
@@ -59,7 +69,7 @@ const ARCHETYPE_CODES = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR",
 const SURFACE_CONTEXT_TOKENS = Object.freeze(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
 
 export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v1_MATERIAL_LOCKED",
+  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v2_DERIVATION_BASIS_FIELDS",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
@@ -96,6 +106,8 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     required_top_level_artifact: "target_feature_profile",
     required_profile_keys: Object.freeze(["activities", "commercial_availability_posture", "profile_level_limitations"]),
     activity_row_fields: ACTIVITY_ROW_FIELDS,
+    derivation_basis_fields: DERIVATION_BASIS_FIELDS,
+    old_activity_proof_fields_forbidden: Object.freeze(["archetype_proof", "surface_proof_and_routing_limits"]),
     commercial_availability_fields: COMMERCIAL_AVAILABILITY_FIELDS,
     archetype_codes: ARCHETYPE_CODES,
     surface_context_tokens: SURFACE_CONTEXT_TOKENS,
@@ -104,7 +116,9 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     commercial_availability_posture_must_be_object: true,
     commercial_availability_evidence_basis_must_be_business_readable_array: true,
     archetype_codes_required_non_empty: true,
+    archetype_derivation_basis_must_be_array: true,
     surface_context_tokens_required_array_may_be_empty: true,
+    surface_derivation_basis_must_be_array: true,
     activity_reference_sequence: "ACT.001_PLUS_SEQUENTIAL",
     material_output_only: true,
     forensic_output_forbidden: true
@@ -144,7 +158,9 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     "derivation_ledger",
     "validation_ledger",
     "forensic_contract",
-    "forensic_boundary"
+    "forensic_boundary",
+    "archetype_proof",
+    "surface_proof_and_routing_limits"
   ]),
   boundary_rules: Object.freeze({
     must_not_discover_or_fetch_sources: true,
