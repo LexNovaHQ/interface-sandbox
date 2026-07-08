@@ -82,17 +82,20 @@ export const LAWYER_READABLE_LABELS = Object.freeze({
   }),
 
   archetypes: Object.freeze({
-    UNI: "Universal review item",
-    DOE: "Decisioning / evaluation activity",
-    JDG: "Judgment or scoring activity",
-    CMP: "Comparison / ranking activity",
-    CRT: "Content creation or generation activity",
-    RDR: "Retrieval, data reading, or data access activity",
-    ORC: "Orchestration / workflow automation activity",
-    TRN: "Training, tuning, or model-improvement activity",
-    SHD: "Sharing, disclosure, or publication activity",
-    OPT: "Optimization or recommendation activity",
-    MOV: "Movement, transfer, or physical-world effect activity"
+    UNI: "Cross-cutting AI system",
+    DOE: "Autonomous-action / agentic system",
+    JDG: "Person-affecting automated decision system",
+    CMP: "Relational / companion system",
+    CRT: "Generative / synthetic-output system",
+    RDR: "Data-ingestion / training-corpus system",
+    ORC: "Model-routing / multi-provider system",
+    TRN: "Biometric / signal-processing system",
+    SHD: "Security / monitoring system",
+    OPT: "High-stakes optimization system",
+    MOV: "Cyber-physical / embodied system",
+    CUR: "Recommendation / ranking / amplification system",
+    MOD: "Content-moderation / adjudication system",
+    ORA: "Predictive / forecasting system"
   }),
 
   surfaces: Object.freeze({
