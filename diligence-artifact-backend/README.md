@@ -12,20 +12,20 @@ Branch:
 phase1-8-central-runtime-integration
 ```
 
-Clean Phase 1-8 validation baseline:
+Last locally validated Phase 1-8 baseline before production-hardening documentation/permission patches:
 
 ```text
 f8b6614c614a4712d86beb6a68cb54014022184c
 ```
 
-Local validation completed for Phase 1-8 only:
+Local validation completed for Phase 1-8 only at that baseline:
 
 ```text
 npm run check:phase1-8-runtime  # PASS, exit code 0
 npm run check:syntax            # PASS, exit code 0
 ```
 
-The full normalized/compiler/renderer validation path is intentionally outside this Phase 1-8 pass. Do not treat `npm run check:normalized` or full `npm run check` as a Phase 1-8 acceptance gate until Phase 9+ / compiler / renderer work is in scope.
+After pulling any newer production-hardening commits on this branch, rerun the Phase 1-8 validation commands in this README. The full normalized/compiler/renderer validation path is intentionally outside this Phase 1-8 pass. Do not treat `npm run check:normalized` or full `npm run check` as a Phase 1-8 acceptance gate until Phase 9+ / compiler / renderer work is in scope.
 
 ## Scope boundary
 
@@ -207,6 +207,33 @@ dap_semantic_batch_route_manifest
 17 paired DAP semantic batch validation artifacts
 ```
 
+## Phase 7 permission boundary
+
+`agent_4_data_privacy` may read D-family artifacts and selected legal support only:
+
+```text
+legal_cartography_index
+legal_signal_derivation_profile
+lossless_family__D1_SECURITY_TRUST
+lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
+lossless_family__D3_DATA_GOVERNANCE_CONTROLS
+lossless_family__D4_DOCS_API_DATA_FLOW
+lossless_family__D5_AI_SAFETY_TRANSPARENCY
+```
+
+It must not receive blanket read permission to the legal governance family:
+
+```text
+lossless_family__L1_CORE_TERMS_PRIVACY
+lossless_family__L2_B2B_CONTRACTING
+lossless_family__L3_AI_USAGE_GOVERNANCE
+lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+lossless_family__L5_LEGAL_HUB_HOSTED
+lossless_family__L6_ENTITY_NOTICE
+```
+
+This is enforced by the Phase 1-8 runtime validator.
+
 ## Phase 8 current architecture
 
 Phase 8 writes:
@@ -215,16 +242,17 @@ Phase 8 writes:
 dap_forensics_profile
 ```
 
-Phase 8 reads the locked Phase 7 artifacts:
+Phase 8 reads the locked Phase 7 profile artifacts:
 
 ```text
 data_privacy_navigation_index
 dap_semantic_batch_route_manifest
 17 DAP semantic batch artifacts
-17 paired DAP semantic batch validation artifacts
 dap_semantic_batch_validation_manifest
 data_provenance_profile_semantic_batch_gate
 ```
+
+Phase 8 does not directly read each paired DAP batch validation artifact. The paired validation artifacts are enforced upstream by the artifact service before Layer 5 and before Phase 8 can lock. Phase 8 consumes the resulting validation manifest and semantic batch gate.
 
 The DAP forensic contract requires deterministic, non-model-generated trace discipline and explicitly rejects old M10 / 4B / 4C reuse.
 
@@ -292,10 +320,11 @@ NO_M10_4B_4C_ACTIVE_CHAIN
 PHASE7_READ_CONTRACT_SYNC
 PHASE7_LAYER5_VALIDATION_READ_SYNC
 PHASE1_8_DISPATCH_CONTRACT_ARTIFACT_SYNC
+PHASE7_DATA_PROVENANCE_PERMISSION_BOUNDARY
 BLOCKING_IS_EXCEPTION_LIMITATION_POLICY
 ```
 
-The validator scans active runtime services and `src/phases/**` for forbidden Phase 1-8 root helper imports, verifies the Phase 1-8 pipeline chain, verifies Phase 7 read contract alignment, verifies the Layer 5 17-batch / 17-validation contract, verifies legacy DAP removal, verifies permissions, and verifies the limitation-pass policy.
+The validator scans active runtime services and `src/phases/**` for forbidden Phase 1-8 root helper imports, verifies the Phase 1-8 pipeline chain, verifies Phase 7 read contract alignment, verifies the Layer 5 17-batch / 17-validation contract, verifies legacy DAP removal, verifies permissions, verifies the data-provenance legal-read boundary, and verifies the limitation-pass policy.
 
 ## Local validation discipline
 
