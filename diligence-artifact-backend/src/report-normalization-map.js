@@ -32,9 +32,9 @@ export const LAWYER_READABLE_LABELS = Object.freeze({
     data_content_object_touched: "Data, content, or asset affected",
     external_internal_action_signal: "External effect or internal workflow signal",
     archetype_codes: "Activity pattern",
-    archetype_proof: "Why this activity pattern was selected",
+    archetype_derivation_basis: "Why this activity pattern was selected",
     surface_context_tokens: "Affected context",
-    surface_proof_and_routing_limits: "Why this affected context was selected / limited",
+    surface_derivation_basis: "Why this affected context was selected or limited",
     profile_level_limitations: "Product/activity mapping limitations",
 
     assessment_scope: "Data/control review scope",
