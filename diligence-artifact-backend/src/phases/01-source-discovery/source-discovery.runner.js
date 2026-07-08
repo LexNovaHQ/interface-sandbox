@@ -6,8 +6,10 @@ import { buildSourceFamilyHandoff } from "./jobs/source-family-handoff.job.js";
 export const SOURCE_DISCOVERY_RUNNER = Object.freeze({
   phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id,
   public_label: SOURCE_DISCOVERY_CONTRACT.public_label,
-  implementation_status: "PHASE_OWNED_IMPLEMENTATION",
-  production_entrypoint_switched: false,
+  implementation_status: "PHASE_OWNED_IMPLEMENTATION_RUNTIME_CUTOVER",
+  production_entrypoint_switched: true,
+  global_production_deployment_switched: false,
+  blocking_is_exception_noncritical_limitations_pass: true,
   old_helper_files_cut_off_from_new_runtime: true,
   old_helper_files: ["agent-1-scout-extractor.js", "m6-bucket-router.js"]
 });
