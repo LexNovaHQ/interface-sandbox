@@ -8,17 +8,17 @@ import { saveRuntimeArtifact as saveArtifact, readRuntimeArtifactPayload as read
 import { buildPhasePrompt } from "./prompts.service.js";
 import { callProviderJson } from "./provider.service.js";
 import { runSourceUrlManifestJob as runSourceUrlManifestPhaseJob, runSourceExtractionJob as runSourceExtractionPhaseJob, runSourceFamilyHandoffJob as runSourceFamilyHandoffPhaseJob } from "../../phases/01-source-discovery/source-discovery.runner.js";
+import { validateM9LegalCartographyIndex as validateLegalCartographyIndex } from "../../phases/02-legal-cartography-index/validators/legal-cartography-index.validator.js";
+import { runM9HybridOrchestrator as runLegalCartographyHybridOrchestrator, M9_FINAL_ARTIFACT_NAME as LEGAL_CARTOGRAPHY_FINAL_ARTIFACT_NAME } from "../../phases/02-legal-cartography-index/orchestrators/legal-cartography-hybrid.orchestrator.js";
 import { runTargetProfileReviewPhase } from "../../phases/03-target-profile-review/target-profile-review.runner.js";
+import { validateM7TargetProfileOutput as validateTargetProfileOutput } from "../../phases/03-target-profile-review/validators/target-profile-review.validator.js";
 import { runTargetProfileForensicsPhase } from "../../phases/04-target-profile-forensics/target-profile-forensics.runner.js";
 import { runActivityCandidateInventoryPhase } from "../../phases/05-activity-profile-review/activity-candidate-inventory.runner.js";
 import { runActivityProfileReviewPhase } from "../../phases/05-activity-profile-review/activity-profile-review.runner.js";
+import { validateM8TargetFeatureOutput as validateActivityProfileOutput } from "../../phases/05-activity-profile-review/validators/activity-profile-review.validator.js";
 import { runActivityProfileForensicsPhase } from "../../phases/06-activity-profile-forensics/activity-profile-forensics.runner.js";
 import { runDataProvenanceProfilePhase } from "../../phases/07-data-provenance-profile/data-provenance-profile.runner.js";
 import { runDapForensicsPhase } from "../../phases/08-data-provenance-forensics/dap-forensics.runner.js";
-import { validateM9LegalCartographyIndex as validateLegalCartographyIndex } from "../../m9-validator.js";
-import { validateM7TargetProfileOutput as validateTargetProfileOutput } from "../../m7-validator.js";
-import { validateM8TargetFeatureOutput as validateActivityProfileOutput } from "../../m8-validator.js";
-import { runM9HybridOrchestrator as runLegalCartographyHybridOrchestrator, M9_FINAL_ARTIFACT_NAME as LEGAL_CARTOGRAPHY_FINAL_ARTIFACT_NAME } from "../../m9-hybrid-orchestrator.js";
 import { runM11OrchestratedPhase as runExposureProfileOrchestrator } from "../../m11-orchestrator.js";
 import { buildM12DeterministicChallengeGate as buildOperatorChallengeGate } from "../../m12-deterministic-challenge.js";
 import { compileFinalOutputHandoff } from "../../compiler.js";
@@ -35,7 +35,7 @@ const LEGAL_CARTOGRAPHY_SEMANTIC_PROMPT_FILES = Object.freeze(["agent-packages/0
 const MODEL_LIMITATION_JOBS = new Set([JOB.legalCartographyIndex, JOB.targetProfileReview, JOB.targetProfileForensics, JOB.activityProfileReview, JOB.activityProfileForensics, JOB.dataProvenanceLayer4, JOB.exposureProfile, JOB.operatorChallenge]);
 const TARGET_ACTIVITY_REVIEW_JOBS = new Set([JOB.targetProfileReview, JOB.targetProfileForensics, JOB.activityProfileReview, JOB.activityProfileForensics]);
 
-export const PIPELINE_SERVICE_STATUS = Object.freeze({ central_runtime_service: "pipeline.service", migration_status: "runtime_owned_central_phase_pipeline_through_phase8", old_runner_bridge_removed: true, source_discovery_phase_runner_wired: true, target_profile_review_phase_runner_wired: true, target_profile_forensics_phase_runner_wired: true, activity_candidate_inventory_phase_runner_wired: true, activity_profile_review_phase_runner_wired: true, activity_profile_forensics_phase_runner_wired: true, phase7_semantic_batch_profile_wired: true, phase8_dap_forensics_wired: true, old_m10_4b_4c_dispatch_removed: true, central_phase_language: true, compatibility_internal_job_ids_retained: true, m9_saves_legal_signal_derivation_profile: true, m9_legacy_support_packet_saves_removed: true, option_a_direct_legal_signal_consumers: true, m7_overlay_application_hook_removed: true });
+export const PIPELINE_SERVICE_STATUS = Object.freeze({ central_runtime_service: "pipeline.service", migration_status: "runtime_owned_central_phase_pipeline_through_phase8", old_runner_bridge_removed: true, source_discovery_phase_runner_wired: true, target_profile_review_phase_runner_wired: true, target_profile_forensics_phase_runner_wired: true, activity_candidate_inventory_phase_runner_wired: true, activity_profile_review_phase_runner_wired: true, activity_profile_forensics_phase_runner_wired: true, phase7_semantic_batch_profile_wired: true, phase8_dap_forensics_wired: true, old_m10_4b_4c_dispatch_removed: true, phase1_8_root_shim_imports_removed: true, central_phase_language: true, compatibility_internal_job_ids_retained: true, m9_saves_legal_signal_derivation_profile: true, m9_legacy_support_packet_saves_removed: true, option_a_direct_legal_signal_consumers: true, m7_overlay_application_hook_removed: true });
 
 export function decorateRunWithCentralPhase(run = {}) { const internalJobId = normalizeRuntimeJobId(run.current_phase || ""); const central = centralPhaseStatusForInternalJob(internalJobId); return { ...run, central_phase: run.central_phase || central.central_phase_id, central_phase_label: run.central_phase_label || central.central_phase_label, active_internal_job: run.current_phase || "" }; }
 
