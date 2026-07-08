@@ -1,5 +1,5 @@
-schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v4_CONTRACT_LOCKED
-purpose: Sanitized Target Profile Review derivation authority aligned to the Phase 3A contract lock.
+schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v5_LANE_CONTRACT_LOCKED
+purpose: Sanitized Target Profile Review derivation authority aligned to the Phase 3A contract lock and AI Registry Key v4 Lane derivation.
 phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
 compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review.
@@ -14,6 +14,10 @@ source_boundary:
     - lossless_family__T3_OPERATOR_ENTITY
     - lossless_family__T4_SUPPORTING_IDENTITY
     - legal_signal_derivation_profile
+  allowed_reference_documents:
+    - AI_REGISTRY_KEY.md
+    - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   forbidden_model_sources:
     - legal_cartography_index
     - m7_deterministic_legal_signal_overlay
@@ -40,6 +44,26 @@ controlled_statuses:
   - FIELD_NOT_PUBLIC
   - FIELD_CONFLICTED
   - FIELD_NOT_FOUND
+
+semantic_lane_policy:
+  reference_document: AI_REGISTRY_KEY.md
+  governing_section: section_6_lane_exposure_role
+  output_field: business_context.lane
+  allowed_values:
+    - A
+    - B
+    - Both
+  controlled_values_allowed: true
+  lane_is_target_role_signal_not_exposure_conclusion: true
+  legal_risk_derivation_forbidden: true
+  compliance_framework_derivation_forbidden: true
+  threat_trigger_derivation_forbidden: true
+  source_basis: target_profile_bucket_only
+  derivation_rules:
+    A: Use only when target-profile public material shows the target develops, sells, licenses, or makes an AI system/product available to external users or customers.
+    B: Use only when target-profile public material shows internal deployment, employer/workforce use, or own-operations AI use and does not support an external provider/product role.
+    Both: Use only when target-profile public material supports both external provider/product role and internal deployer/employer or own-operations role at target-profile level.
+  unsupported_behavior: controlled_status_plus_limitation
 
 direct_legal_signal_policy:
   artifact: legal_signal_derivation_profile
@@ -110,6 +134,15 @@ selected_fields:
   business_context.market_type_candidate:
     source_basis: target_profile_bucket_only
     unsupported_behavior: controlled_status_plus_limitation
+  business_context.lane:
+    source_basis: target_profile_bucket_only_plus_AI_REGISTRY_KEY_section_6_derivation_grammar
+    semantic_derivation_required: true
+    allowed_values:
+      - A
+      - B
+      - Both
+    controlled_values_allowed: true
+    unsupported_behavior: controlled_status_plus_limitation
   business_context.industry_sector:
     source_basis: target_profile_bucket_only
     unsupported_behavior: controlled_status_plus_limitation
@@ -136,7 +169,9 @@ hard_rules:
   - Target Profile Review must not request legal/governance family artifacts.
   - Target Profile Review must not request legal_cartography_index.
   - Target Profile Review must not request m7_deterministic_legal_signal_overlay.
-  - Target Profile Review must not use direct legal signal rows for target_identity, business_context, or product_service_wrapper derivation.
+  - Target Profile Review must not use direct legal signal rows for target_identity, business_context, product_service_wrapper, or Lane derivation.
+  - Target Profile Review must not derive legal risk, compliance framework, exposure rows, threat triggers, or pain tier from AI_REGISTRY_KEY.md.
+  - Target Profile Review may use AI_REGISTRY_KEY.md only for semantic Lane derivation under section 6.
   - Target Profile Review must not block because legal/governance families are unavailable.
   - Missing direct legal signal data means controlled field status, not source repair.
   - Source repair is reserved for missing or corrupted target-profile bucket artifacts.
