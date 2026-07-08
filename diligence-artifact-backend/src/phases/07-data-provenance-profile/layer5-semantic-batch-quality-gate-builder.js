@@ -1,11 +1,4 @@
-const CONTROLLED_STATUSES = Object.freeze([
-  "SEMANTIC_RESOLVED_WITH_BOUNDED_SUPPORT",
-  "SEMANTIC_RESOLVED_WITH_LIMITATION",
-  "SEMANTIC_MISSING_PROOF_REQUIRED",
-  "SEMANTIC_PRIVATE_CONFIRMATION_REQUIRED",
-  "SEMANTIC_CONFLICT_REQUIRES_REVIEW",
-  "DETERMINISTIC_SOURCE_FACT_CARRIED"
-]);
+const CONTROLLED_STATUSES = Object.freeze(["SEMANTIC_RESOLVED_WITH_BOUNDED_SUPPORT","SEMANTIC_RESOLVED_WITH_LIMITATION","SEMANTIC_MISSING_PROOF_REQUIRED","SEMANTIC_PRIVATE_CONFIRMATION_REQUIRED","SEMANTIC_CONFLICT_REQUIRES_REVIEW","DETERMINISTIC_SOURCE_FACT_CARRIED"]);
 
 export function buildPhase7SemanticBatchQualityGate({ routeManifest, batchArtifacts = {}, batchValidations = {} } = {}) {
   const packets = routeManifest?.batch_route_packets || [];
@@ -36,39 +29,13 @@ export function buildPhase7SemanticBatchQualityGate({ routeManifest, batchArtifa
     observed_batch_count: batchResults.filter((row) => row.batch_artifact_present).length,
     expected_field_count: 150,
     observed_field_count: returnedFieldIds.length,
-    field_coverage: Object.freeze({
-      expected_field_count: expectedFieldIds.length,
-      returned_field_count: returnedFieldIds.length,
-      unique_returned_field_count: new Set(returnedFieldIds).size,
-      missing_field_ids: Object.freeze(missingFieldIds),
-      duplicate_field_ids: Object.freeze([...new Set(duplicateFieldIds)]),
-      unexpected_field_ids: Object.freeze([...new Set(unexpectedFieldIds)])
-    }),
+    field_coverage: Object.freeze({ expected_field_count: expectedFieldIds.length, returned_field_count: returnedFieldIds.length, unique_returned_field_count: new Set(returnedFieldIds).size, missing_field_ids: Object.freeze(missingFieldIds), duplicate_field_ids: Object.freeze([...new Set(duplicateFieldIds)]), unexpected_field_ids: Object.freeze([...new Set(unexpectedFieldIds)]) }),
     batch_results: Object.freeze(batchResults),
-    validation_quality_control_result: Object.freeze({
-      status,
-      non_blocking_repair_required: errors.length > 0,
-      blocking_failure: false,
-      errors: Object.freeze(errors)
-    })
+    validation_quality_control_result: Object.freeze({ status, non_blocking_repair_required: errors.length > 0, blocking_failure: false, errors: Object.freeze(errors) })
   });
   return Object.freeze({
     dap_semantic_batch_validation_manifest: manifest,
-    data_provenance_profile_semantic_batch_gate: Object.freeze({
-      artifact_type: "data_provenance_profile_semantic_batch_gate",
-      manifest_version: "phase7_layer5_semantic_batch_gate_v1",
-      phase_id: "DATA_PROVENANCE_PROFILE",
-      layer_id: "LAYER_5_BATCH_QUALITY_SCHEMA_VALIDATOR",
-      status,
-      non_blocking_repair_required: errors.length > 0,
-      blocking_failure: false,
-      all_batches_present: manifest.observed_batch_count === 17,
-      all_fields_covered_once: manifest.field_coverage.returned_field_count === 150 && manifest.field_coverage.unique_returned_field_count === 150 && !missingFieldIds.length && !unexpectedFieldIds.length,
-      batch_count: manifest.observed_batch_count,
-      field_count: manifest.observed_field_count,
-      errors: Object.freeze(errors),
-      next_step: status === "PASS" ? "READY_FOR_DOWNSTREAM_MIGRATION_DECISION" : "ADVANCE_WITH_LIMITATIONS_AND_REPAIR_QUEUE"
-    })
+    data_provenance_profile_semantic_batch_gate: Object.freeze({ artifact_type: "data_provenance_profile_semantic_batch_gate", manifest_version: "phase7_layer5_semantic_batch_gate_v1", phase_id: "DATA_PROVENANCE_PROFILE", layer_id: "LAYER_5_BATCH_QUALITY_SCHEMA_VALIDATOR", status, non_blocking_repair_required: errors.length > 0, blocking_failure: false, all_batches_present: manifest.observed_batch_count === 17, all_fields_covered_once: manifest.field_coverage.returned_field_count === 150 && manifest.field_coverage.unique_returned_field_count === 150 && !missingFieldIds.length && !unexpectedFieldIds.length, batch_count: manifest.observed_batch_count, field_count: manifest.observed_field_count, errors: Object.freeze(errors), next_step: status === "PASS" ? "READY_FOR_DAP_FORENSICS" : "ADVANCE_WITH_LIMITATIONS_TO_DAP_FORENSICS" })
   });
 }
 
@@ -104,30 +71,7 @@ function inspectBatch({ packet, artifactRoot, validationRoot }) {
   if (batch && rows.length !== expectedIds.length) errors.push(`row_count_mismatch:${packet.batch_id}:${rows.length}:${expectedIds.length}`);
   const routeIds = new Set([...(packet.required_d_family_route_ids || []), ...(packet.selective_l_family_route_ids || [])]);
   for (const row of rows) inspectRow({ row, packet, routeIds, errors });
-  return Object.freeze({
-    batch_id: packet.batch_id,
-    expected_artifact_name: expectedName,
-    batch_artifact_present: Boolean(batch),
-    layer4_validation_present: Boolean(validation),
-    layer4_validation_status: validation?.status || "MISSING",
-    expected_field_count: expectedIds.length,
-    returned_field_count: returnedFieldIds.length,
-    returned_field_ids: Object.freeze(returnedFieldIds),
-    has_controlled_limitations: rows.some((row) => ["SEMANTIC_RESOLVED_WITH_LIMITATION", "SEMANTIC_MISSING_PROOF_REQUIRED", "SEMANTIC_PRIVATE_CONFIRMATION_REQUIRED", "SEMANTIC_CONFLICT_REQUIRES_REVIEW"].includes(row.semantic_resolution_status)) || errors.length > 0,
-    errors: Object.freeze(errors)
-  });
+  return Object.freeze({ batch_id: packet.batch_id, expected_artifact_name: expectedName, batch_artifact_present: Boolean(batch), layer4_validation_present: Boolean(validation), layer4_validation_status: validation?.status || "MISSING", expected_field_count: expectedIds.length, returned_field_count: returnedFieldIds.length, returned_field_ids: Object.freeze(returnedFieldIds), has_controlled_limitations: rows.some((row) => ["SEMANTIC_RESOLVED_WITH_LIMITATION","SEMANTIC_MISSING_PROOF_REQUIRED","SEMANTIC_PRIVATE_CONFIRMATION_REQUIRED","SEMANTIC_CONFLICT_REQUIRES_REVIEW"].includes(row.semantic_resolution_status)) || errors.length > 0, errors: Object.freeze(errors) });
 }
-
-function inspectRow({ row, packet, routeIds, errors }) {
-  if (!packet.expected_field_ids.includes(row.field_id)) errors.push(`unexpected_row_field:${packet.batch_id}:${row.field_id}`);
-  if (!CONTROLLED_STATUSES.includes(row.semantic_resolution_status)) errors.push(`uncontrolled_status:${packet.batch_id}:${row.field_id}:${row.semantic_resolution_status}`);
-  if (!Array.isArray(row.basis_route_ids) || !row.basis_route_ids.length) errors.push(`missing_basis_routes:${packet.batch_id}:${row.field_id}`);
-  for (const routeId of row.basis_route_ids || []) if (!routeIds.has(routeId)) errors.push(`route_id_not_allowed:${packet.batch_id}:${row.field_id}:${routeId}`);
-  if (row.forbidden_inference_check !== "PASS") errors.push(`field_guard_not_pass:${packet.batch_id}:${row.field_id}`);
-}
-
-function sameSet(a = [], b = []) {
-  const left = [...a].sort();
-  const right = [...b].sort();
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
+function inspectRow({ row, packet, routeIds, errors }) { if (!packet.expected_field_ids.includes(row.field_id)) errors.push(`unexpected_row_field:${packet.batch_id}:${row.field_id}`); if (!CONTROLLED_STATUSES.includes(row.semantic_resolution_status)) errors.push(`uncontrolled_status:${packet.batch_id}:${row.field_id}:${row.semantic_resolution_status}`); if (!Array.isArray(row.basis_route_ids) || !row.basis_route_ids.length) errors.push(`missing_basis_routes:${packet.batch_id}:${row.field_id}`); for (const routeId of row.basis_route_ids || []) if (!routeIds.has(routeId)) errors.push(`route_id_not_allowed:${packet.batch_id}:${row.field_id}:${routeId}`); if (row.forbidden_inference_check !== "PASS") errors.push(`field_guard_not_pass:${packet.batch_id}:${row.field_id}`); }
+function sameSet(a = [], b = []) { const left = [...a].sort(); const right = [...b].sort(); return left.length === right.length && left.every((value, index) => value === right[index]); }
