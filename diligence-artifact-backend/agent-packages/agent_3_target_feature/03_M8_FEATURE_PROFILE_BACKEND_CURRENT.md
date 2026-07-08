@@ -9,7 +9,7 @@ active_phase_only: true
 active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_feature_candidate_inventory_index_sync_v1
+runtime_contract_version: m8_ai_registry_key_direct_authority_step1
 
 ## M8.S1 — Architecture Lock
 
@@ -35,11 +35,17 @@ M8 is governed by:
 - 00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md
 - 00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
 - 00_VALIDATOR_RULES_INTEGRATED.md
+- AI_REGISTRY_KEY.md
 - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
 - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-- CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
 
-If any older M8 wording conflicts with 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md, the inventory contract controls.
+AI_REGISTRY_KEY.md is the sole active authority for Activity Profile archetype and surface derivation.
+
+CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation and must not be used as a controlling M8 reference.
+
+If any older M8 wording conflicts with 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md, the inventory contract controls for candidate existence and navigation.
+
+If any older M8 wording conflicts with AI_REGISTRY_KEY.md, AI_REGISTRY_KEY.md controls for archetype and surface derivation.
 
 ## M8.S3 — Required Inputs
 
@@ -54,9 +60,9 @@ M8 must consume:
 - lossless_family__P3_AI_CAPABILITY_TECHNICAL
 - lossless_family__P4_USE_CASE_INDUSTRY
 - lossless_family__P5_ENTERPRISE_PRICING
+- AI_REGISTRY_KEY.md
 - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
 - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-- CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
 
 feature_candidate_inventory.candidates[] is the mandatory candidate universe.
 
@@ -107,7 +113,7 @@ Pricing-confirmed candidates must not create mechanics by themselves. Pricing ca
 
 Standalone API, model, integration, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows.
 
-If grouping is necessary under the 12-field material card, the grouped candidate name must remain visible in activity_feature_name or activity_candidate_summary.
+If grouping is necessary under the activity card, the grouped candidate name must remain visible in activity_feature_name or activity_candidate_summary.
 
 If M8 sees a public feature in lossless source that is not present in feature_candidate_inventory, M8 must not add that feature as a normal activity. M8 must record a profile-level limitation requiring repair of M8_FEATURE_CANDIDATE_INVENTORY.
 
@@ -123,25 +129,17 @@ M8 must not copy lossless excerpts into the material profile.
 
 M8 must not place source URLs, source IDs, source pointers, candidate IDs, or evidence ledgers inside target_feature_profile.
 
-## M8.S7 — Archetype and Surface Rules
+## M8.S7 — Archetype and Surface Authority
 
-M8 must apply the selected PA.* material rows from FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml only to the locked 12-field activity card.
+M8 must derive archetypes directly from AI_REGISTRY_KEY.md §4.
 
-M8 must use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as the controlling authority for archetype and surface derivation.
+M8 must derive surface tokens directly from AI_REGISTRY_KEY.md §7.
 
-Every mechanically valid emitted activity must be tested against all locked archetype codes:
+M8 must not use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as an active derivation authority.
 
-- UNI
-- DOE
-- JDG
-- CMP
-- CRT
-- RDR
-- ORC
-- TRN
-- SHD
-- OPT
-- MOV
+M8 must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
+
+Every mechanically valid emitted activity must be tested against the active archetype vocabulary authorized by the current material validator.
 
 Every emitted activity must be tested against all locked surface tokens:
 
@@ -212,7 +210,7 @@ Each activity row must contain exactly these 12 keys:
 - surface_context_tokens
 - surface_proof_and_routing_limits
 
-No other activity keys are permitted.
+No other activity keys are permitted under the current material schema.
 
 activity_reference must be stable and unique, using ACT.001, ACT.002, ACT.003, and continuing sequentially.
 
@@ -238,11 +236,11 @@ external_internal_action_signal should state whether the activity appears custom
 
 archetype_codes must be an array of supported locked archetype codes.
 
-archetype_proof must explain why the selected archetype codes are supported.
+archetype_proof must explain why the selected archetype codes are supported under AI_REGISTRY_KEY.md §4.
 
 surface_context_tokens must be an array of supported surface tokens.
 
-surface_proof_and_routing_limits must explain supported surface tokens and any public-evidence limitations.
+surface_proof_and_routing_limits must explain supported surface tokens under AI_REGISTRY_KEY.md §7 and any public-evidence limitations.
 
 ## M8.S11 — Profile-Level Limitations
 
@@ -268,6 +266,7 @@ Before returning, verify:
 10. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
 11. No unindexed candidate has been added as a normal activity.
 12. No forensic output is emitted.
+13. No Activity Profile material instruction treats CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active authority.
 
 If any condition fails, repair the material output only. Do not emit forensics.
 
@@ -309,7 +308,7 @@ Return strict JSON only with exactly this shape:
 
 ## M8.S14 - QR Commercial Availability Posture Addendum
 
-This addendum documents 	target_feature_profile.commercial_availability_posture, the profile-level commercial availability object already incorporated into M8.S12 and M8.S13. It does not modify, weaken, or expand the locked 12-field activity card in M8.S9.
+This addendum documents target_feature_profile.commercial_availability_posture, the profile-level commercial availability object already incorporated into M8.S12 and M8.S13. It does not modify, weaken, or expand the locked activity card in M8.S9.
 
 No other profile-level material object is authorized by this addendum.
 
@@ -381,39 +380,7 @@ profile_level_limitations
 
 ### M8.S14E — Final Backend JSON Shape Addendum
 
-Return strict JSON only. When this addendum is active, the M8 material response shape is:
-
-```json
-{
-  "target_feature_profile": {
-    "activities": [
-      {
-        "activity_reference": "ACT.001",
-        "product_service_wrapper": "",
-        "activity_feature_name": "",
-        "activity_candidate_summary": "",
-        "mechanics_proof": "",
-        "autonomy_human_control_signal": "",
-        "data_content_object_touched": "",
-        "external_internal_action_signal": "",
-        "archetype_codes": [],
-        "archetype_proof": "",
-        "surface_context_tokens": [],
-        "surface_proof_and_routing_limits": ""
-      }
-    ],
-    "commercial_availability_posture": {
-      "posture": "",
-      "free_trial_freemium_signal": "",
-      "beta_pilot_early_access_signal": "",
-      "paid_production_enterprise_plan_signal": "",
-      "evidence_basis": [],
-      "limitation": ""
-    },
-    "profile_level_limitations": []
-  }
-}
-```
+Return strict JSON only. When this addendum is active, the M8 material response shape is the same strict `target_feature_profile` shape in M8.S13.
 
 The commercial availability object does not authorize new activity keys, new candidates, source discovery, legal analysis, privacy analysis, registry evaluation, or final QR/report output.
 
@@ -428,5 +395,6 @@ Before returning the M8 material response, verify:
 5. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
 6. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
 7. No forensic output is emitted.
+8. CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is not active authority for M8 material derivation.
 
 If any condition fails, repair the material output only. Do not emit forensics.
