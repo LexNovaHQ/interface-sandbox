@@ -16,7 +16,7 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     execution_mode: "bounded_model_profile_review",
     deterministic_prefilter_required: true,
     model_allowed: true,
-    purpose: "Derive the public target identity, jurisdiction notice, business context, and product/service wrapper profile from admitted target-family source material, with bounded direct legal signal support only for owned legal-notice and jurisdiction fields.",
+    purpose: "Derive the public target identity, jurisdiction notice, business context, semantic Lane, and product/service wrapper profile from admitted target-family source material, with bounded direct legal signal support only for owned legal-notice and jurisdiction fields.",
     reads: Object.freeze([
       "source_discovery_handoff",
       "lossless_family__T0_ROOT",
@@ -80,10 +80,11 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     branch_fields: Object.freeze({
       target_identity: Object.freeze(["brand_name", "legal_entity_name", "entity_type", "reviewed_website", "primary_domain"]),
       jurisdiction_notice: Object.freeze(["registered_notice_location", "governing_law", "courts_venue"]),
-      business_context: Object.freeze(["business_category", "primary_customer_type", "market_type_candidate", "industry_sector", "regulated_sector_hints"]),
+      business_context: Object.freeze(["business_category", "primary_customer_type", "market_type_candidate", "lane", "industry_sector", "regulated_sector_hints"]),
       product_service_wrapper: Object.freeze(["high_level_offering", "primary_public_claim", "product_service_wrapper_names", "delivery_model_signals"]),
       target_profile_limitations: Object.freeze([])
     }),
+    semantic_lane_values: Object.freeze(["A", "B", "Both"]),
     array_fields: Object.freeze([
       "business_context.regulated_sector_hints",
       "product_service_wrapper.product_service_wrapper_names",
@@ -96,6 +97,18 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
       "FIELD_CONFLICTED",
       "FIELD_NOT_FOUND"
     ])
+  }),
+  semantic_lane_derivation: Object.freeze({
+    reference_document: "AI_REGISTRY_KEY.md",
+    governing_section: "§6 Lane — Exposure Role",
+    field_path: "business_context.lane",
+    allowed_values: Object.freeze(["A", "B", "Both"]),
+    controlled_values_allowed: true,
+    derivation_boundary: "Lane is a public-footprint role signal for downstream exposure matching, not a legal-risk conclusion.",
+    lane_a: "Use A only when target-family public material shows the entity develops, sells, licenses, or makes an AI system/product available to external users or customers.",
+    lane_b: "Use B only when target-family public material shows internal deployment, employer/workforce use, or own-operations AI use rather than an external product exposure.",
+    lane_both: "Use Both only when public material supports both external provider/product exposure and internal deployer/employer exposure at target-profile level without needing legal/exposure analysis.",
+    unsupported_behavior: "Use FIELD_LIMITED, FIELD_NOT_PUBLIC, FIELD_CONFLICTED, or FIELD_NOT_FOUND and explain the limitation in target_profile_limitations[]."
   }),
   direct_legal_signal_intake: Object.freeze({
     artifact_name: "legal_signal_derivation_profile",
@@ -135,6 +148,7 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     legal_signal_profile_is_secondary_bounded_source: true,
     legal_cartography_index_is_forbidden_as_model_evidence: true,
     legal_governance_lossless_families_are_forbidden_as_model_evidence: true,
+    semantic_lane_is_target_role_signal_not_exposure_conclusion: true,
     no_activity_profile_derivation: true,
     no_data_profile_derivation: true,
     no_exposure_profile_derivation: true,
