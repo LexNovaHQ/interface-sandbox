@@ -11,10 +11,10 @@
       "sha256": "cd71194ee586cbb12eedacb07e842d24aabce269b618411ea69a2188ca3bd19a"
     },
     "AI_REGISTRY_KEY.md": {
-      "bytes": 27959,
-      "sha256": "df8323cdfd81668732de637871b5430e6ab4d3065d6c9dd979b096483bd1d339",
+      "git_blob_sha": "29aa58639bc07cebebc64c7c352711bfa243fa4a",
       "status": "v4_derivation_spec_base_reference",
-      "supersedes": "REGISTRY_KEY_v3_0.md"
+      "supersedes": "REGISTRY_KEY_v3_0.md",
+      "source_upload_sha256": "df8323cdfd81668732de637871b5430e6ab4d3065d6c9dd979b096483bd1d339"
     },
     "REGISTRY_KEY_v3_0.md": {
       "bytes": 25723,
