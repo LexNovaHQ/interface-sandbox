@@ -9,7 +9,7 @@ active_phase_only: true
 active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_ai_registry_key_direct_derivation_basis_schema_v2
+runtime_contract_version: m8_ai_registry_key_direct_v4_archetypes
 
 ## M8.S1 — Architecture Lock
 
@@ -139,7 +139,31 @@ M8 must not use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as an active der
 
 M8 must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
 
-Every mechanically valid emitted activity must be tested against the active archetype vocabulary authorized by the current material validator.
+Every mechanically valid emitted activity must be tested against all 14 AI_REGISTRY_KEY.md v4 archetypes:
+
+- UNI — Cross-Cutting any AI system
+- DOE — Autonomous-Action / Agentic System
+- JDG — Automated Decision System, person-affecting access-gating
+- CMP — Relational / Companion System
+- CRT — Generative / Synthetic-Output System
+- RDR — Data-Ingestion / Training-Corpus System
+- ORC — Model-Routing / Multi-Provider System
+- TRN — Biometric / Signal-Processing System
+- SHD — Security / Monitoring System
+- OPT — High-Stakes Optimization System
+- MOV — Cyber-Physical / Embodied System
+- CUR — Recommendation / Ranking / Amplification System
+- MOD — Content-Moderation / Adjudication System
+- ORA — Predictive / Forecasting System, non-person subject
+
+Apply these v4 split fences strictly:
+
+- Recommendation, ranking, personalization, relevance selection, targeting, or amplification shown to a person maps to CUR, not JDG or OPT.
+- Content approval, removal, flagging, restriction, takedown, or policy/legal adjudication maps to MOD, not SHD.
+- Prediction or forecasting about non-person systems, aggregates, equipment, markets, weather, demand, risk pools, or operations maps to ORA, not JDG.
+- Person-affecting access, eligibility, entitlement, employment, credit, housing, insurance, healthcare, education, benefit, or similar gating maps to JDG, not CUR or ORA.
+- Optimization that directly moves operator money or controls operations maps to OPT only when it is not recommendation/personalization to a person and not person-access gating.
+- Security or system monitoring maps to SHD only when the activity defends, detects threats in, or monitors another system/environment and is not content-policy adjudication.
 
 Every emitted activity must be tested against all locked surface tokens:
 
