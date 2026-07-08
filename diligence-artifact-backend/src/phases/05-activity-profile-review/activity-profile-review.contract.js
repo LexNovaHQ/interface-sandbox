@@ -26,7 +26,7 @@ const ACTIVITY_PROFILE_REVIEW_PROMPT_FILES = Object.freeze([
 ]);
 
 const ACTIVITY_PROFILE_REVIEW_REFERENCES = Object.freeze([
-  "REGISTRY_KEY_v3_0.md",
+  "AI_REGISTRY_KEY.md",
   "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
   "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml",
   "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml"
@@ -80,6 +80,7 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     validator_phase: "M8_TARGET_FEATURE_PROFILE"
   }),
   source_authority: Object.freeze({
+    base_registry_key_reference: "AI_REGISTRY_KEY.md",
     candidate_universe_artifact: "feature_candidate_inventory",
     candidate_universe_path: "feature_candidate_inventory.candidates[]",
     candidate_inventory_is_navigation_only: true,
