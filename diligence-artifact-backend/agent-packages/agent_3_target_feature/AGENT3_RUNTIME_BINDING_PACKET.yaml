@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v8_target_lane_ai_registry_key_v4
+runtime_contract_version: v9_activity_profile_ai_registry_key_direct
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -28,6 +28,8 @@ prompt_precedence:
   - Backend phase contracts control read/write authority.
   - AI_REGISTRY_KEY.md is the base registry derivation reference for Target Profile Review and Activity Profile Review.
   - Target Profile Review may use AI_REGISTRY_KEY.md only for §6 Lane derivation into business_context.lane.
+  - Activity Profile Review must use AI_REGISTRY_KEY.md directly as the active archetype and surface derivation authority.
+  - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation and must not be treated as an active M8 reference.
   - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
   - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
   - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
@@ -93,7 +95,6 @@ required_reference_files:
     - AI_REGISTRY_KEY.md
     - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-    - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
 
 write_artifacts_in_order:
   TARGET_PROFILE_REVIEW:
@@ -120,6 +121,7 @@ phase_gate_rules:
   - Activity Candidate Inventory may begin only after saved target_profile and target_profile_forensics exist.
   - Activity Profile Review material may begin only after saved feature_candidate_inventory exists and is locked.
   - Activity Profile Review material uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
+  - Activity Profile Review archetype/surface derivation must read AI_REGISTRY_KEY.md directly, not CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml.
   - Data Provenance Profile may begin only after feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics lock.
   - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
 
