@@ -1,7 +1,7 @@
 export const SOURCE_DISCOVERY_CONTRACT = Object.freeze({
   phase_id: "SOURCE_DISCOVERY",
   public_label: "Source Discovery",
-  implementation_status: "PHASE_OWNED_IMPLEMENTATION",
+  implementation_status: "PHASE_OWNED_IMPLEMENTATION_RUNTIME_CUTOVER",
   old_helper_dependency_removed: true,
   old_helper_files_cut_off_from_new_runtime: ["agent-1-scout-extractor.js", "m6-bucket-router.js"],
   model_usage: "NONE",
@@ -11,7 +11,7 @@ export const SOURCE_DISCOVERY_CONTRACT = Object.freeze({
       job_id: "URL_MANIFEST",
       public_label: "Source URL Manifest",
       responsibility: "Resolve target URL, discover candidate source URLs, dedupe candidates, and classify manifest rows by source family before extraction.",
-      implementation_status: "PHASE_OWNED_IMPLEMENTATION",
+      implementation_status: "PHASE_OWNED_IMPLEMENTATION_RUNTIME_CUTOVER",
       reads: [],
       writes: ["deduped_url_manifest"]
     }),
@@ -19,7 +19,7 @@ export const SOURCE_DISCOVERY_CONTRACT = Object.freeze({
       job_id: "SOURCE_EXTRACTION",
       public_label: "Source Extraction",
       responsibility: "Fetch admitted primary source rows, preserve lossless text, create source family index, and create lossless source family artifacts.",
-      implementation_status: "PHASE_OWNED_IMPLEMENTATION",
+      implementation_status: "PHASE_OWNED_IMPLEMENTATION_RUNTIME_CUTOVER",
       reads: ["deduped_url_manifest"],
       writes: ["source_family_index", "lossless_family__{ROOT_FAMILY}", "lossless_family__{ROOT_FAMILY}__part_{NNN}"]
     }),
@@ -27,7 +27,7 @@ export const SOURCE_DISCOVERY_CONTRACT = Object.freeze({
       job_id: "SOURCE_FAMILY_HANDOFF",
       public_label: "Source Family Handoff",
       responsibility: "Build the downstream source discovery handoff from the manifest, source family index, and resolved lossless family artifacts.",
-      implementation_status: "PHASE_OWNED_IMPLEMENTATION",
+      implementation_status: "PHASE_OWNED_IMPLEMENTATION_RUNTIME_CUTOVER",
       reads: ["deduped_url_manifest", "source_family_index", "lossless_family__{ROOT_FAMILY}"],
       writes: ["source_discovery_handoff"]
     })
@@ -51,8 +51,8 @@ export const SOURCE_DISCOVERY_CONTRACT = Object.freeze({
   boundary: Object.freeze({
     phase_layer: "src/phases/01-source-discovery",
     runtime_owner: "src/runtime/services/pipeline.service.js",
-    migration_mode: "phase_owned_implementation",
-    production_entrypoint_switched: false
+    migration_mode: "phase_owned_implementation_runtime_cutover",
+    production_entrypoint_switched: true
   })
 });
 
