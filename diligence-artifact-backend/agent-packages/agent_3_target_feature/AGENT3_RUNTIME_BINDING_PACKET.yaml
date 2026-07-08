@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v7_activity_profile_review_material_contract_locked
+runtime_contract_version: v8_target_lane_ai_registry_key_v4
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -26,6 +26,8 @@ prompt_assembly_position:
 
 prompt_precedence:
   - Backend phase contracts control read/write authority.
+  - AI_REGISTRY_KEY.md is the base registry derivation reference for Target Profile Review and Activity Profile Review.
+  - Target Profile Review may use AI_REGISTRY_KEY.md only for §6 Lane derivation into business_context.lane.
   - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
   - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
   - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
@@ -84,10 +86,11 @@ forbidden_target_profile_review_read_artifacts:
 
 required_reference_files:
   TARGET_PROFILE_REVIEW:
+    - AI_REGISTRY_KEY.md
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   ACTIVITY_PROFILE_REVIEW:
-    - REGISTRY_KEY_v3_0.md
+    - AI_REGISTRY_KEY.md
     - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
     - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
@@ -110,6 +113,8 @@ write_artifacts_in_order:
 
 phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
+  - Target Profile Review must derive business_context.lane as A, B, Both, or controlled fallback using AI_REGISTRY_KEY.md §6.
+  - Target Profile Review must not turn Lane into a legal risk, exposure, compliance framework, or threat-trigger conclusion.
   - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
   - Target Profile Forensics may begin only after saved target_profile exists.
   - Activity Candidate Inventory may begin only after saved target_profile and target_profile_forensics exist.
@@ -148,9 +153,9 @@ forbidden_outputs:
 
 backend_permission_profile: target_activity_phase_contract_locked
 validator_profile: target_activity_profile_material_contract_validator
-phase_packet_contract: activity_profile_review_material_contract_locked
+phase_packet_contract: target_lane_activity_profile_review_material_contract_locked
 terminal_receipt_profile: target_activity_profile_manual_receipt_only
 
-next_phase_command: "backend runner advances through Activity Candidate Inventory, then Activity Profile Review material, then Activity Profile Forensics after each artifact locks."
+next_phase_command: "backend runner advances through Target Profile Review, Target Profile Forensics, Activity Candidate Inventory, Activity Profile Review material, then Activity Profile Forensics after each artifact locks."
 stop_condition: "Stop after the active backend phase artifact is saved and validated."
 </RUNTIME_BINDING_PACKET>
