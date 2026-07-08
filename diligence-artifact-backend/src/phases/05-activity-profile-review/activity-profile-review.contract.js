@@ -28,8 +28,7 @@ const ACTIVITY_PROFILE_REVIEW_PROMPT_FILES = Object.freeze([
 const ACTIVITY_PROFILE_REVIEW_REFERENCES = Object.freeze([
   "AI_REGISTRY_KEY.md",
   "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
-  "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml",
-  "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml"
+  "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"
 ]);
 
 const ACTIVITY_ROW_FIELDS = Object.freeze([
@@ -81,6 +80,9 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
   }),
   source_authority: Object.freeze({
     base_registry_key_reference: "AI_REGISTRY_KEY.md",
+    archetype_derivation_authority: "AI_REGISTRY_KEY.md §4",
+    surface_derivation_authority: "AI_REGISTRY_KEY.md §7",
+    classification_matrix_active_for_material_derivation: false,
     candidate_universe_artifact: "feature_candidate_inventory",
     candidate_universe_path: "feature_candidate_inventory.candidates[]",
     candidate_inventory_is_navigation_only: true,
