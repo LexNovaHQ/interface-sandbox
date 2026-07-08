@@ -110,6 +110,30 @@ Rules:
   - `commercial_availability_posture`
   - `profile_level_limitations`
 - `target_feature_profile.activities` must be an array.
+- Each `target_feature_profile.activities[]` row must contain exactly:
+  - `activity_reference`
+  - `product_service_wrapper`
+  - `activity_feature_name`
+  - `activity_candidate_summary`
+  - `mechanics_proof`
+  - `autonomy_human_control_signal`
+  - `data_content_object_touched`
+  - `external_internal_action_signal`
+  - `archetype_codes`
+  - `archetype_derivation_basis`
+  - `surface_context_tokens`
+  - `surface_derivation_basis`
+- Do not emit the retired fields `archetype_proof` or `surface_proof_and_routing_limits`.
+- `archetype_derivation_basis` and `surface_derivation_basis` must be arrays of material basis objects.
+- Each derivation-basis object must contain exactly:
+  - `code_or_token`
+  - `normalized_name`
+  - `conditions_satisfied`
+  - `trigger_if_applied`
+  - `exclude_if_checked`
+  - `material_basis`
+  - `limitation`
+- `conditions_satisfied` must be an array.
 - `target_feature_profile.commercial_availability_posture` must be an object with exactly:
   - `posture`
   - `free_trial_freemium_signal`
@@ -181,19 +205,3 @@ Forbidden examples:
   "output": {}
 }
 ```
-
-```json
-{
-  "result": {}
-}
-```
-
-```json
-{
-  "data": {}
-}
-```
-
-Any response that combines artifacts from different save phases is invalid.
-
-If older package text conflicts with this file, this file controls for backend execution.
