@@ -1,6 +1,6 @@
 {
   "package": "AGENT3_REGISTRY_REFERENCE_FILES_PACKAGE_AI_KEY_V4",
-  "repair_scope": "AI_REGISTRY_KEY.md is the base derivation-spec reference for Target Profile Review and Activity Profile Review; CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation; live AI_THREAT_REGISTRY remains v3.2-compatible until the v4 registry build closes.",
+  "repair_scope": "AI_REGISTRY_KEY.md is the base derivation-spec reference for Target Profile Review and Activity Profile Review; Activity Profile material archetype enum is v4-ready; CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation; live AI_THREAT_REGISTRY remains v3.2-compatible until the v4 registry build closes.",
   "files": {
     "03_REGISTRY_EVALUATION_RULES.yaml": {
       "bytes": 2236,
@@ -46,6 +46,7 @@
       "target_profile_reference": true,
       "activity_profile_reference": true,
       "activity_profile_archetype_surface_authority": true,
+      "activity_profile_material_archetype_enum": "v4_14_codes",
       "live_registry_csv_build_status": "pending_v4_registry_build"
     },
     "AI_THREAT_REGISTRY.yaml": {
@@ -63,7 +64,7 @@
       "archetype_count": 11,
       "surface_count": 10,
       "existing_locked_registries_mutated": false,
-      "v4_archetype_expansion_status": "pending_follow_on_patch"
+      "v4_archetype_expansion_status": "superseded_by_direct_AI_REGISTRY_KEY_v4_activity_profile_enum"
     }
   }
 }
