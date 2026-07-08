@@ -1,6 +1,6 @@
 {
   "package": "AGENT3_REGISTRY_REFERENCE_FILES_PACKAGE_AI_KEY_V4",
-  "repair_scope": "AI_REGISTRY_KEY.md added as the base derivation-spec reference for Target Profile Review and Activity Profile Review; live AI_THREAT_REGISTRY remains v3.2-compatible until the v4 registry build closes.",
+  "repair_scope": "AI_REGISTRY_KEY.md is the base derivation-spec reference for Target Profile Review and Activity Profile Review; CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation; live AI_THREAT_REGISTRY remains v3.2-compatible until the v4 registry build closes.",
   "files": {
     "03_REGISTRY_EVALUATION_RULES.yaml": {
       "bytes": 2236,
@@ -11,7 +11,7 @@
       "sha256": "cd71194ee586cbb12eedacb07e842d24aabce269b618411ea69a2188ca3bd19a"
     },
     "AI_REGISTRY_KEY.md": {
-      "git_blob_sha": "29aa58639bc07cebebc64c7c352711bfa243fa4a",
+      "git_blob_sha": "af1b4256d94f750a13f0aaa9ccc4150d6ed8347b",
       "status": "v4_derivation_spec_base_reference",
       "supersedes": "REGISTRY_KEY_v3_0.md",
       "source_upload_sha256": "df8323cdfd81668732de637871b5430e6ab4d3065d6c9dd979b096483bd1d339"
@@ -31,7 +31,8 @@
     },
     "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml": {
       "bytes": 23066,
-      "sha256": "44e18428aac78e88ba717d4c3219036689ce369660bdc89de042687528c49f62"
+      "sha256": "44e18428aac78e88ba717d4c3219036689ce369660bdc89de042687528c49f62",
+      "status": "superseded_for_activity_profile_material_derivation_retained_for_archive_only"
     },
     "AI_THREAT_REGISTRY_REPAIR_AUDIT.md": {
       "bytes": 4822,
@@ -44,6 +45,7 @@
       "role": "derivation_specification",
       "target_profile_reference": true,
       "activity_profile_reference": true,
+      "activity_profile_archetype_surface_authority": true,
       "live_registry_csv_build_status": "pending_v4_registry_build"
     },
     "AI_THREAT_REGISTRY.yaml": {
@@ -56,6 +58,8 @@
     },
     "CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml": {
       "lock_status": "LOCKED",
+      "active_activity_profile_material_reference": false,
+      "status": "SUPERSEDED_FOR_ACTIVITY_PROFILE_MATERIAL_DERIVATION",
       "archetype_count": 11,
       "surface_count": 10,
       "existing_locked_registries_mutated": false,
