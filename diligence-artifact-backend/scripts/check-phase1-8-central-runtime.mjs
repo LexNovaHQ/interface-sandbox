@@ -5,6 +5,7 @@ import { PIPELINE_CONTRACTS, INTERNAL_PIPELINE_JOB_IDS, PIPELINE_CONTRACT_STATUS
 import { CENTRAL_PHASES } from "../src/runtime/contracts/central-phase.contract.js";
 import { ARTIFACT_NAMES, ARCHIVED_LEGACY_ARTIFACT_NAMES, DATA_PROVENANCE_FAMILY_ARTIFACT_NAMES, INTERNAL_JOB_WRITE_PERMISSIONS, LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES, PHASE7_DAP_BATCH_ARTIFACT_NAMES, PHASE7_DAP_LAYER4_ARTIFACT_NAMES, PHASE7_DAP_LAYER5_ARTIFACT_NAMES, PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, READ_PERMISSIONS, WRITE_PERMISSIONS, artifactMatchesPermission } from "../src/runtime/contracts/artifact-permissions.contract.js";
 import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
+import { ACTIVITY_PROFILE_REVIEW_CONTRACT } from "../src/phases/05-activity-profile-review/activity-profile-review.contract.js";
 
 const root = process.cwd();
 const phase1To8Jobs = Object.freeze(["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX", "M9", "M7_TARGET_PROFILE", "M7_TARGET_PROFILE_FORENSICS", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5", "DATA_PROVENANCE_PROFILE_FORENSICS"]);
@@ -12,6 +13,9 @@ const expectedJobChain = Object.freeze([...phase1To8Jobs, "M11"]);
 const expectedValidationNames = Object.freeze(Array.from({ length: 17 }, (_, index) => `dap_semantic_batch_validation__DAP-SEM-BATCH-${String(index + 1).padStart(2, "0")}`));
 const expectedPhase7PromptFiles = Object.freeze(["agent-packages/agent_4_data_privacy/AGENT4_PHASE7_LAYER4_RUNTIME_BINDING_PACKET.yaml", "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_RUNNER.md"]);
 const expectedPhase7RepairPromptFiles = Object.freeze([...expectedPhase7PromptFiles, "agent-packages/agent_4_data_privacy/PHASE7_LAYER4_DAP_SEMANTIC_BATCH_REPAIR.md"]);
+const expectedActivityProfileReferences = Object.freeze(["AI_REGISTRY_KEY.md", "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml", "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"]);
+const expectedActivityProfileArchetypes = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR", "ORC", "TRN", "SHD", "OPT", "MOV", "CUR", "MOD", "ORA"]);
+const expectedActivityProfileSurfaces = Object.freeze(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
 const legacyActiveArtifacts = Object.freeze(["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]);
 const forbiddenPhase1To8RootImports = Object.freeze(["../../m7-validator.js", "../../m8-validator.js", "../../m8-feature-candidate-inventory-index.js", "../../m8-feature-candidate-inventory.js", "../../m8-feature-candidate-index-boundary.js", "../../m9-validator.js", "../../m9-normalizer.js", "../../m9-hybrid-orchestrator.js", "../../m9-deterministic-map.js", "../../m9-semantic-profile-validator.js", "../../m9-hybrid-compiler.js", "../../m9-hybrid-compiler-v2.js", "../../deterministic-profile-forensics.js"]);
 const allowedPostPhase8RootImports = Object.freeze(["../../m11-orchestrator.js", "../../m12-deterministic-challenge.js", "../../compiler.js", "../../report-renderer.js"]);
@@ -24,6 +28,7 @@ checkNoPhase1To8RootImports(files);
 checkPostPhase8BridgeBoundary(files);
 checkPhase1To8PipelineChain();
 checkPhase1To8DispatchText(files);
+checkActivityProfileV4DerivationContract(files);
 checkPhase7ContractSync();
 checkPhase7AgentPackagePromptSync(files);
 checkActiveLegacyRemoval(files);
@@ -43,6 +48,11 @@ console.log(JSON.stringify({
     "NO_PHASE1_8_ROOT_IMPORTS",
     "POST_PHASE8_ROOT_BRIDGES_EXPLICIT_ONLY",
     "NO_M10_4B_4C_ACTIVE_CHAIN",
+    "ACTIVITY_PROFILE_AI_REGISTRY_KEY_V4_DIRECT_AUTHORITY",
+    "ACTIVITY_PROFILE_NO_ACTIVE_CLASSIFICATION_MATRIX",
+    "ACTIVITY_PROFILE_V4_ARCHETYPE_ENUM",
+    "ACTIVITY_PROFILE_DERIVATION_BASIS_SCHEMA",
+    "ACTIVITY_PROFILE_BASIS_COVERAGE_ENFORCED",
     "PHASE7_READ_CONTRACT_SYNC",
     "PHASE7_LAYER5_VALIDATION_READ_SYNC",
     "PHASE7_AGENT_PACKAGE_PROMPT_WIRING_SYNC",
@@ -69,7 +79,14 @@ async function loadFilesForStaticChecks() {
     "src/phases/01-source-discovery/source-discovery.runner.js",
     "src/phases/02-legal-cartography-index/legal-cartography-index.runner.js",
     "src/phases/02-legal-cartography-index/validators/legal-cartography-index.validator.js",
+    "src/phases/05-activity-profile-review/activity-profile-review.contract.js",
+    "src/phases/05-activity-profile-review/validators/activity-profile-review.validator.js",
     "src/phases/07-data-provenance-profile/data-provenance-profile.contract.js",
+    "src/report-normalization-map.js",
+    "agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md",
+    "agent-packages/agent_3_target_feature/AGENT3_BACKEND_OUTPUT_CONTRACT.md",
+    "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
+    "references/registry/REFERENCE_MANIFEST.json",
     ...(await listFiles("src/phases", ".js"))
   ];
   const unique = [...new Set(paths.map(normalizeRepoPath))].sort();
@@ -157,6 +174,64 @@ function checkPhase1To8DispatchText(files) {
     "runDapForensicsRuntimeJob"
   ];
   for (const marker of requiredDispatchMarkers) assert.ok(pipeline.includes(marker), `pipeline.service.js missing dispatch marker ${marker}`);
+}
+
+function checkActivityProfileV4DerivationContract(files) {
+  const activity = ACTIVITY_PROFILE_REVIEW_CONTRACT;
+  const pipelineActivity = PIPELINE_CONTRACTS.M8_TARGET_FEATURE_PROFILE;
+  const prompt = files["agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md"];
+  const backendContract = files["agent-packages/agent_3_target_feature/AGENT3_BACKEND_OUTPUT_CONTRACT.md"];
+  const binding = files["agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml"];
+  const validator = files["src/phases/05-activity-profile-review/validators/activity-profile-review.validator.js"];
+  const reportMap = files["src/report-normalization-map.js"];
+  const manifest = JSON.parse(files["references/registry/REFERENCE_MANIFEST.json"]);
+
+  assert.deepEqual(activity.material_job.references, expectedActivityProfileReferences, "Activity Profile material references must use AI_REGISTRY_KEY.md directly and exclude classification matrix");
+  assert.deepEqual(pipelineActivity.references, expectedActivityProfileReferences, "Pipeline Activity Profile references must exclude classification matrix");
+  assert.equal(activity.source_authority.base_registry_key_reference, "AI_REGISTRY_KEY.md", "Activity Profile must use AI_REGISTRY_KEY.md as base registry key reference");
+  assert.equal(activity.source_authority.archetype_derivation_authority, "AI_REGISTRY_KEY.md §4", "Activity Profile archetype authority must be AI_REGISTRY_KEY.md §4");
+  assert.equal(activity.source_authority.surface_derivation_authority, "AI_REGISTRY_KEY.md §7", "Activity Profile surface authority must be AI_REGISTRY_KEY.md §7");
+  assert.equal(activity.source_authority.classification_matrix_active_for_material_derivation, false, "Classification matrix must not be active for Activity Profile material derivation");
+
+  assert.deepEqual(activity.output_contract.archetype_codes, expectedActivityProfileArchetypes, "Activity Profile must expose all 14 AI Registry Key v4 archetypes in order");
+  assert.deepEqual(activity.output_contract.surface_context_tokens, expectedActivityProfileSurfaces, "Activity Profile surfaces must match AI Registry Key §7 tokens");
+  for (const code of ["CUR", "MOD", "ORA"]) {
+    assert.ok(validator.includes(`"${code}"`), `Activity Profile validator must allow v4 archetype ${code}`);
+    assert.ok(prompt.includes(`${code} —`), `M8 prompt must describe v4 archetype ${code}`);
+    assert.ok(reportMap.includes(`${code}:`), `report-normalization-map.js must label v4 archetype ${code}`);
+  }
+
+  assert.ok(activity.output_contract.activity_row_fields.includes("archetype_derivation_basis"), "Activity row schema must include archetype_derivation_basis");
+  assert.ok(activity.output_contract.activity_row_fields.includes("surface_derivation_basis"), "Activity row schema must include surface_derivation_basis");
+  assert.ok(!activity.output_contract.activity_row_fields.includes("archetype_proof"), "Activity row schema must not include retired archetype_proof");
+  assert.ok(!activity.output_contract.activity_row_fields.includes("surface_proof_and_routing_limits"), "Activity row schema must not include retired surface_proof_and_routing_limits");
+  assert.equal(activity.output_contract.multiple_archetypes_per_activity_allowed, true, "Activity Profile must allow multiple archetypes per activity");
+  assert.equal(activity.output_contract.archetype_derivation_basis_must_match_selected_codes_one_to_one, true, "Activity Profile must require one basis per selected archetype");
+  assert.equal(activity.output_contract.surface_derivation_basis_must_match_selected_tokens_one_to_one, true, "Activity Profile must require one basis per selected surface token");
+  assert.equal(activity.output_contract.no_unselected_archetype_basis_entries, true, "Activity Profile must reject unselected archetype basis entries");
+  assert.equal(activity.output_contract.no_unselected_surface_basis_entries, true, "Activity Profile must reject unselected surface basis entries");
+
+  assert.ok(validator.includes("function validateBasisCoverage"), "Activity Profile validator must define basis coverage check");
+  assert.ok(validator.includes("count !== 1"), "Activity Profile validator must require exactly one basis entry per selected item");
+  assert.ok(validator.includes("contains basis entry for unselected"), "Activity Profile validator must reject unselected basis entries");
+  assert.ok(validator.includes("validateUniqueSelections(archetypeCodes"), "Activity Profile validator must reject duplicate archetype selections");
+  assert.ok(validator.includes("validateUniqueSelections(surfaceTokens"), "Activity Profile validator must reject duplicate surface selections");
+
+  assert.ok(prompt.includes("AI_REGISTRY_KEY.md is the sole active authority"), "M8 prompt must name AI_REGISTRY_KEY.md as sole active authority");
+  assert.ok(prompt.includes("M8 must derive archetypes directly from AI_REGISTRY_KEY.md §4"), "M8 prompt must derive archetypes from AI_REGISTRY_KEY.md §4");
+  assert.ok(prompt.includes("M8 must derive surface tokens directly from AI_REGISTRY_KEY.md §7"), "M8 prompt must derive surfaces from AI_REGISTRY_KEY.md §7");
+  assert.ok(prompt.includes("Multiple archetypes may be selected"), "M8 prompt must allow multiple archetypes per activity");
+  assert.ok(prompt.includes("exactly one matching `archetype_derivation_basis[]`"), "M8 prompt must require archetype basis coverage");
+  assert.ok(prompt.includes("No `surface_derivation_basis[]` entry may exist for a surface token that is not present"), "M8 prompt must reject unselected surface basis entries");
+  assert.ok(prompt.includes("CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded"), "M8 prompt must mark classification matrix superseded, not active");
+
+  assert.ok(backendContract.includes("may contain more than one archetype"), "Backend output contract must allow multiple archetypes");
+  assert.ok(backendContract.includes("Every selected archetype code must have exactly one matching"), "Backend output contract must require archetype basis coverage");
+  assert.ok(backendContract.includes("No `surface_derivation_basis[]` object may exist for an unselected surface token"), "Backend output contract must reject unselected surface basis entries");
+  assert.ok(binding.includes("Activity Profile Review must use AI_REGISTRY_KEY.md directly"), "Agent 3 binding must require direct AI_REGISTRY_KEY.md activity derivation");
+  assert.ok(binding.includes("CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded"), "Agent 3 binding must mark classification matrix superseded");
+  assert.equal(manifest.validation?.AI_REGISTRY_KEY.md?.activity_profile_material_archetype_enum, "v4_14_codes", "Reference manifest must record Activity Profile v4 archetype enum");
+  assert.equal(manifest.validation?.CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml?.active_activity_profile_material_reference, false, "Reference manifest must mark classification matrix inactive for Activity Profile material");
 }
 
 function checkPhase7ContractSync() {
