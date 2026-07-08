@@ -65,11 +65,11 @@ const COMMERCIAL_AVAILABILITY_FIELDS = Object.freeze([
   "limitation"
 ]);
 
-const ARCHETYPE_CODES = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR", "ORC", "TRN", "SHD", "OPT", "MOV"]);
+const ARCHETYPE_CODES = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR", "ORC", "TRN", "SHD", "OPT", "MOV", "CUR", "MOD", "ORA"]);
 const SURFACE_CONTEXT_TOKENS = Object.freeze(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
 
 export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v2_DERIVATION_BASIS_FIELDS",
+  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v3_AI_REGISTRY_KEY_V4_ARCHETYPES",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
@@ -91,6 +91,7 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
   source_authority: Object.freeze({
     base_registry_key_reference: "AI_REGISTRY_KEY.md",
     archetype_derivation_authority: "AI_REGISTRY_KEY.md §4",
+    archetype_enum_version: "AI_REGISTRY_KEY_v4_14_ARCHETYPES",
     surface_derivation_authority: "AI_REGISTRY_KEY.md §7",
     classification_matrix_active_for_material_derivation: false,
     candidate_universe_artifact: "feature_candidate_inventory",
