@@ -124,6 +124,7 @@ Rules:
   - `surface_context_tokens`
   - `surface_derivation_basis`
 - Do not emit the retired fields `archetype_proof` or `surface_proof_and_routing_limits`.
+- `archetype_codes[]` may contain more than one archetype when each selected archetype is independently supported by activity mechanics.
 - `archetype_derivation_basis` and `surface_derivation_basis` must be arrays of material basis objects.
 - Each derivation-basis object must contain exactly:
   - `code_or_token`
@@ -134,6 +135,10 @@ Rules:
   - `material_basis`
   - `limitation`
 - `conditions_satisfied` must be an array.
+- Every selected archetype code must have exactly one matching `archetype_derivation_basis[]` object where `code_or_token` equals the selected code.
+- No `archetype_derivation_basis[]` object may exist for an unselected archetype code.
+- Every selected surface token must have exactly one matching `surface_derivation_basis[]` object where `code_or_token` equals the selected token.
+- No `surface_derivation_basis[]` object may exist for an unselected surface token.
 - `target_feature_profile.commercial_availability_posture` must be an object with exactly:
   - `posture`
   - `free_trial_freemium_signal`
