@@ -20,11 +20,12 @@ The backend phase contract is the canonical permission source. Prompt text canno
 This package currently covers these compatibility surfaces until each phase is migrated into its own phase folder:
 
 - Target Profile Review
+- Domain Derivation Layer
 - Target Profile Forensics
 - Activity Profile Review
 - Activity Profile Forensics
 
-The package does not own Source Discovery, Legal Cartography and Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, Qualified Review, or Domain Derivation Layer except where a separate 3B prompt package is explicitly added later.
+The package does not own Source Discovery, Legal Cartography and Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
 
 ## Target Profile Review read authority
 
@@ -98,11 +99,68 @@ NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN -> do not invent value; record controlled limi
 
 Target Profile Review must not derive or emit `business_context.lane`. Lane/domain package/AI mount decisions belong outside 3A.
 
+## Domain Derivation Layer read authority
+
+Domain Derivation Layer is Phase 3B and uses the registry ladder prompt `02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md`.
+
+Domain Derivation Layer may read only:
+
+- `source_discovery_handoff`
+- `cartography_index`
+- `target_profile_source_index`
+- `activity_profile_source_index`
+- `target_profile`
+- `lossless_root__homepage_landing`
+- `lossless_root__about_company`
+- `lossless_root__product_service`
+- `lossless_root__platform_feature_solution`
+- `lossless_root__technical_docs_api_developer`
+- `lossless_root__docs_api_data_flow`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__use_case_customer_industry`
+- `lossless_root__integrations_ecosystem`
+- `domain_selection_profile`
+- `active_run_package_manifest`
+
+Domain Derivation Layer may use only these references:
+
+- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
+- `references/domain-packages/package-catalog.v0.json`
+- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+
+Domain Derivation Layer must treat `cartography_index`, `target_profile_source_index`, and `activity_profile_source_index` as navigation only. The scoped target/activity `lossless_root__*` artifacts are the evidence source. `target_profile` is context only and not proof.
+
+## Domain Derivation Layer registry ladder rule
+
+Domain Derivation Layer must not hardcode domain classification logic. It must evaluate the active rules in `DOMAIN_DERIVATION_REGISTRY_v0.yaml` and package identities in `package-catalog.v0.json`.
+
+New domains, overlays, fusion candidates, and regulatory overlays are added by registry/catalog update, not by prompt update.
+
+The model derives condition-level semantic evaluations. The deterministic validator/compiler is the lock authority.
+
+## Domain Derivation Layer forbidden rule
+
+Domain Derivation Layer must not read or request:
+
+- `legal_cartography_index`
+- `legal_signal_derivation_profile`
+- `legal_doc_inventory`
+- `legal_doc_extraction_index`
+- `legal_doc_{DOC_TYPE}`
+- legal/governance source text
+- data-provenance roots
+- privacy/security/trust roots
+- exposure artifacts
+- compiler artifacts
+- Qualified Review artifacts
+
+Domain Derivation Layer must not derive or emit target profile edits, activity profile rows, archetypes, surface locks, exposure rows, legal advice, compliance conclusion, risk conclusion, Lane, or remediation route.
+
 ## Activity Profile Review read authority
 
 Activity Profile Review may read target profile artifacts, feature candidate inventory, domain derivation context, and product/activity evidence as authorized by the backend phase contract.
 
-Activity Profile Review must not use Target Profile Review to backdoor legal/governance source material.
+Activity Profile Review must not use Target Profile Review or Domain Derivation Layer to backdoor legal/governance source material.
 
 ## Runtime stop rules
 
