@@ -9,7 +9,7 @@
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:normalized": "node scripts/check-normalized-hardening.mjs",
     "check:m8-feature-candidates": "node scripts/check-m8-feature-candidate-inventory.mjs",
-    "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs && node scripts/check-phase1-agnostic-source-discovery.mjs && node scripts/check-phase2-cartography-index.mjs && node scripts/check-activity-profile-v4-binding.mjs",
+    "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs && node scripts/check-phase1-agnostic-source-discovery.mjs && node scripts/check-phase2-cartography-index.mjs && node scripts/check-phase2-no-legacy-family-inputs.mjs && node scripts/check-activity-profile-v4-binding.mjs",
     "check:domain-gate-v0": "node scripts/check-domain-package-key.mjs && node scripts/check-package-catalog-v0.mjs && node scripts/check-pre-phase-1-domain-preflight.mjs && node scripts/check-no-pre-phase-1-lock.mjs && node scripts/check-active-run-package-manifest-v0.mjs && node scripts/check-domain-selection-manifest-sync.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
