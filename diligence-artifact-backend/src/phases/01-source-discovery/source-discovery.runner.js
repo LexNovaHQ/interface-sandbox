@@ -1,3 +1,4 @@
+import { runPrePhase1DomainPreflight } from "../../runtime/domain-gate/pre-phase-1-domain-preflight.js";
 import { SOURCE_DISCOVERY_CONTRACT, getSourceDiscoveryJobContract } from "./source-discovery.contract.js";
 import { buildSourceUrlManifest } from "./jobs/url-manifest.job.js";
 import { buildSourceExtractionArtifacts } from "./jobs/source-extraction.job.js";
@@ -11,14 +12,17 @@ export const SOURCE_DISCOVERY_RUNNER = Object.freeze({
   global_production_deployment_switched: false,
   blocking_is_exception_noncritical_limitations_pass: true,
   old_helper_files_cut_off_from_new_runtime: true,
+  pre_phase_1_domain_preflight_hook_wired: true,
+  pre_phase_1_domain_preflight_lock_allowed: false,
   old_helper_files: ["agent-1-scout-extractor.js", "m6-bucket-router.js"]
 });
 
 export async function runSourceDiscoveryJob({ job_id, run, artifacts = {} } = {}) {
   const job = getSourceDiscoveryJobContract(job_id);
   if (job.job_id === "URL_MANIFEST") {
+    const preflight = await runPrePhase1DomainPreflight({ run });
     const output = await buildSourceUrlManifest({ run });
-    return sourceDiscoveryRunResult({ job, output });
+    return sourceDiscoveryRunResult({ job, output: { ...preflight.output, ...output } });
   }
   if (job.job_id === "SOURCE_EXTRACTION") {
     const output = await buildSourceExtractionArtifacts({ run, deduped_url_manifest: artifacts.deduped_url_manifest });
