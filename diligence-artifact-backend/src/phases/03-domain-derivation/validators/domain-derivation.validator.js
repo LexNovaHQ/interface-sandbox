@@ -1,5 +1,6 @@
 import { DOMAIN_DERIVATION_CONTRACT } from "../domain-derivation.contract.js";
 import { loadDomainDerivationRegistryV0 } from "../../../runtime/domain-gate/domain-derivation-registry.loader.js";
+import { buildPhase3BDomainDerivationManifestUpdate } from "../../../runtime/domain-gate/active-run-package-manifest.schema.js";
 
 const CONTROLLED_FAILURE_STATUS = "CONTROLLED_FAILURE";
 const AI_MOUNT_ONLY_STATUS = "LOCKED_FOR_PACKAGE_MOUNT_ONLY";
@@ -168,39 +169,12 @@ function selectFusion(rows, primary, aiMount, modelFusion) {
 }
 
 function compileActiveRunPackageManifest({ run, artifacts, profile, validation }) {
-  const before = isPlainObject(artifacts.active_run_package_manifest) ? artifacts.active_run_package_manifest : {};
-  const runtimeFlags = { ...(before.runtime_flags || {}) };
-  for (const key of ["dynamic_routing_enabled", "field_registry_compile_enabled", "qr_matrix_routing_enabled", "report_template_routing_enabled", "assembly_routing_enabled"]) runtimeFlags[key] = false;
-  const aiMount = profile.ai_mount_derivation || {};
-  const after = {
-    ...before,
-    run_id: before.run_id || run.run_id || "",
-    selection_stage: "PHASE_3B_DOMAIN_DERIVATION",
-    manifest_status: validation.status === CONTROLLED_FAILURE_STATUS ? "REVIEW_REQUIRED" : "LOCKED_WITH_LIMITATIONS",
-    primary_domain_package: profile.primary_domain_derivation.selected_package || null,
-    primary_domain_status: profile.primary_domain_derivation.status || "REVIEW_REQUIRED",
-    primary_domain_rule_id: profile.primary_domain_derivation.selected_rule_id || null,
-    capability_overlays: aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" ? ["ai-native"] : [],
-    capability_overlay_status: aiMount.status || "NOT_VISIBLE",
-    ai_package_mount: aiMount.ai_package_mount || "AI_NOT_VISIBLE",
-    ai_mount_rule_id: aiMount.selected_rule_id || null,
-    ai_activity_lock_status: aiMount.activity_lock_status || "DEFERRED_TO_PHASE_5",
-    ai_exposure_lock_status: aiMount.exposure_lock_status || "DEFERRED_TO_PHASE_9",
-    ai_package_mount_only: aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED",
-    fusion_bucket_candidates: profile.fusion_candidate_derivation.candidates || [],
-    domain_derivation_profile_ref: "domain_derivation_profile",
-    runtime_flags: runtimeFlags,
-    package_selection_locked_by_phase_3b: validation.status !== CONTROLLED_FAILURE_STATUS
-  };
-  return {
-    active_run_package_manifest: after,
-    manifest_update: {
-      before_selection_stage: before.selection_stage || "PRE_PHASE_1_DOMAIN_PREFLIGHT",
-      after_selection_stage: after.selection_stage,
-      changed_fields: ["selection_stage", "primary_domain_package", "primary_domain_status", "capability_overlays", "ai_package_mount", "ai_activity_lock_status", "ai_exposure_lock_status", "fusion_bucket_candidates", "domain_derivation_profile_ref"],
-      unchanged_runtime_flags: runtimeFlags
-    }
-  };
+  return buildPhase3BDomainDerivationManifestUpdate({
+    run,
+    before: isPlainObject(artifacts.active_run_package_manifest) ? artifacts.active_run_package_manifest : {},
+    domain_derivation_profile: profile,
+    validation
+  });
 }
 
 function validateEvaluatedRule(row, { rulesById, failures, warnings }) {
