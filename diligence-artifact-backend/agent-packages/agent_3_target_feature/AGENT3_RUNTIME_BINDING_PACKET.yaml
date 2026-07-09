@@ -1,15 +1,16 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v11_phase3a_scoped_lossless_no_lane
+runtime_contract_version: v12_phase3a_scoped_lossless_phase3b_registry_ladder
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
-active_phase_scope: TARGET_PROFILE_REVIEW_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
+active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
 
 compatibility_boundary:
   internal_agent_id_retained_for_runtime: agent_3_target_feature
   compatibility_package_path_retained: agent-packages/agent_3_target_feature
   product_phase_names:
     - Target Profile Review
+    - Domain Derivation Layer
     - Target Profile Forensics
     - Activity Profile Review
     - Activity Profile Forensics
@@ -32,15 +33,19 @@ prompt_precedence:
   - Target Profile Review must not read legal_cartography_index or legal lossless document artifacts.
   - Target Profile Review must not derive or emit business_context.lane.
   - Target Profile Review must not derive primary domain package, AI overlay mount, AI archetype, surface classification, exposure rows, legal risk, or compliance conclusions.
-  - Domain Derivation Layer is a separate Phase 3B job and is not authorized by this Target Profile Review prompt.
+  - Domain Derivation Layer is controlled by 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md and src/phases/03-domain-derivation/domain-derivation.contract.js.
+  - Domain Derivation Layer uses DOMAIN_DERIVATION_REGISTRY_v0.yaml as rule authority and package-catalog.v0.json as package authority.
+  - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by registry/catalog update, not prompt update.
+  - Domain Derivation Layer must not read legal_cartography_index, legal_signal_derivation_profile, legal documents, or legal lossless evidence.
   - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
   - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
   - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
   - Activity Profile Review uses feature_candidate_inventory as the candidate universe and product/activity evidence authorized by the active backend phase contract.
-  - Any package text that expands Target Profile Review, Target Profile Forensics, Activity Candidate Inventory, or Activity Profile Review material read/write authority is superseded by the phase-owned contract.
+  - Any package text that expands Target Profile Review, Domain Derivation Layer, Target Profile Forensics, Activity Candidate Inventory, or Activity Profile Review material read/write authority is superseded by the phase-owned contract.
 
 allowed_phases:
   - TARGET_PROFILE_REVIEW
+  - P3_DOMAIN_DERIVATION_LAYER
   - TARGET_PROFILE_FORENSICS
   - ACTIVITY_PROFILE_REVIEW
   - ACTIVITY_PROFILE_FORENSICS
@@ -62,6 +67,23 @@ read_artifacts:
     - legal_signal_derivation_profile
     - domain_selection_profile
     - active_run_package_manifest
+  P3_DOMAIN_DERIVATION_LAYER:
+    - source_discovery_handoff
+    - cartography_index
+    - target_profile_source_index
+    - activity_profile_source_index
+    - target_profile
+    - lossless_root__homepage_landing
+    - lossless_root__about_company
+    - lossless_root__product_service
+    - lossless_root__platform_feature_solution
+    - lossless_root__technical_docs_api_developer
+    - lossless_root__docs_api_data_flow
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__use_case_customer_industry
+    - lossless_root__integrations_ecosystem
+    - domain_selection_profile
+    - active_run_package_manifest
   ACTIVITY_PROFILE_REVIEW:
     - cartography_index
     - activity_profile_source_index
@@ -81,14 +103,44 @@ forbidden_target_profile_review_read_artifacts:
   - activity/product roots outside the scoped Target Profile Review lossless_root list
   - data-provenance roots
 
+forbidden_domain_derivation_read_artifacts:
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - legal_doc_inventory
+  - legal_doc_extraction_index
+  - legal_doc_{DOC_TYPE}
+  - data_privacy_navigation_index
+  - lossless_root__privacy_data_processing
+  - lossless_root__security_trust
+  - lossless_root__trust_compliance
+  - exposure artifacts
+  - compiler artifacts
+  - Qualified Review artifacts
+
 required_reference_files:
   TARGET_PROFILE_REVIEW:
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+  P3_DOMAIN_DERIVATION_LAYER:
+    - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
+    - references/domain-packages/package-catalog.v0.json
+    - references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
   ACTIVITY_PROFILE_REVIEW:
     - AI_REGISTRY_KEY.md
     - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+
+domain_derivation_registry_ladder_schema:
+  prompt_file: 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md
+  registry_authority: references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+  package_authority: references/domain-packages/package-catalog.v0.json
+  prompt_is_domain_agnostic: true
+  new_domains_added_by_registry_not_prompt: true
+  model_role: condition_level_semantic_evaluator
+  validator_role: deterministic_lock_authority
+  model_must_not_hardcode_domain_logic: true
+  model_must_not_emit_active_run_package_manifest_top_level: true
+  allowed_model_top_level_key: domain_derivation_profile
 
 activity_profile_material_schema:
   archetype_derivation_authority: AI_REGISTRY_KEY.md §4
@@ -150,6 +202,10 @@ write_artifacts_in_order:
   TARGET_PROFILE_REVIEW:
     MATERIAL_SAVE_EVENT:
       - target_profile
+  P3_DOMAIN_DERIVATION_LAYER:
+    MATERIAL_SAVE_EVENT:
+      - domain_derivation_profile
+      - active_run_package_manifest
   TARGET_PROFILE_FORENSICS:
     FORENSIC_SAVE_EVENT:
       - target_profile_forensics
@@ -167,6 +223,9 @@ phase_gate_rules:
   - Target Profile Review must not derive or emit business_context.lane.
   - Target Profile Review must not turn bounded legal signals into legal risk, exposure, compliance framework, or threat-trigger conclusions.
   - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
+  - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
+  - Domain Derivation Layer must evaluate registry rules as the ladder and must not hardcode domains in prompt logic.
+  - Domain Derivation Layer must save domain_derivation_profile before active_run_package_manifest.
   - Target Profile Forensics may begin only after saved target_profile and domain_derivation_profile exist under the active Phase 3 split.
   - Activity Candidate Inventory may begin only after saved target_profile, domain_derivation_profile, active_run_package_manifest, and target_profile_forensics exist.
   - Activity Profile Review material may begin only after saved feature_candidate_inventory exists and is locked.
@@ -188,8 +247,6 @@ forbidden_outputs:
   - legal_cartography_index
   - legal_signal_derivation_profile
   - m7_deterministic_legal_signal_overlay
-  - domain_derivation_profile
-  - active_run_package_manifest
   - data_provenance_profile
   - exposure_registry_profile
   - challenge_gate
