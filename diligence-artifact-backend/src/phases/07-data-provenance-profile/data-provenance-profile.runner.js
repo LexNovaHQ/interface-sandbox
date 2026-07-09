@@ -3,7 +3,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { compilePhase7DapRegistryDerivationRules, PHASE7_REGISTRY_SOURCE_PATH } from "./dap-registry-derivation-rule-compiler.js";
 import { buildPhase7StrategicDerivationMatrixArtifact } from "./dap-strategic-derivation-matrix.js";
-import { buildPhase7DataPrivacyNavigationIndex } from "./layer2-data-privacy-navigation-index-builder.js";
 import { buildPhase7SemanticBatchRouteManifest } from "./layer3-semantic-batch-route-manifest-builder.js";
 import { validatePhase7Layer4SemanticBatchArtifact } from "./layer4-semantic-batch-artifact-validator.js";
 import { buildPhase7SemanticBatchQualityGate, validatePhase7SemanticBatchQualityGate } from "./layer5-semantic-batch-quality-gate-builder.js";
@@ -39,7 +38,7 @@ async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvid
     let output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, ...bootstrap }, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair: false });
     let validation = validatePhase7Layer4SemanticBatchArtifact(output, { routePacket });
     if (validation.status !== "PASS") {
-      output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, ...bootstrap }, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair: true, priorOutput: output, validation });
+      output = await runBatchModel({ run, routePacket, artifacts: { ...sourceArtifacts, active_phase2_data_privacy_navigation_index: sourceArtifacts.data_privacy_navigation_index, ...bootstrap }, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair: true, priorOutput: output, validation });
       validation = validatePhase7Layer4SemanticBatchArtifact(output, { routePacket });
     }
     const validationStatus = validation.status === "PASS" ? "PASS" : "LOCKED_WITH_LIMITATIONS";
@@ -50,7 +49,7 @@ async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvid
     await saveArtifact({ artifact_name: routePacket.expected_artifact_name, artifact: normalizeBatchOutput({ output, routePacket }), lock_status: validationStatus === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS" });
     saved.push(routePacket.expected_artifact_name);
   }
-  return Object.freeze({ ok: true, output: bootstrap, saved_artifacts: saved, phase_lock_status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", model_usage: "SEMANTIC_BATCH_AGENT", route_packet_count: routePackets.length, prompt_files_source: "pipeline.contract", repair_prompt_files_source: "pipeline.contract" });
+  return Object.freeze({ ok: true, output: bootstrap, saved_artifacts: saved, phase_lock_status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", model_usage: "SEMANTIC_BATCH_AGENT", route_packet_count: routePackets.length, prompt_files_source: "pipeline.contract", repair_prompt_files_source: "pipeline.contract", phase2_data_privacy_navigation_index_reused: true });
 }
 
 async function runLayer5({ contract, readArtifacts, saveArtifact }) {
@@ -71,13 +70,13 @@ function buildBootstrapArtifacts(sourceArtifacts) {
   const registryText = fs.readFileSync(path.join(BACKEND_ROOT, PHASE7_REGISTRY_SOURCE_PATH), "utf8");
   const dapRegistryManifest = compilePhase7DapRegistryDerivationRules(registryText);
   const strategicMatrix = buildPhase7StrategicDerivationMatrixArtifact(dapRegistryManifest.material_rules);
-  const navigationIndex = buildPhase7DataPrivacyNavigationIndex({ dapRegistryManifest, strategicDerivationMatrix: strategicMatrix, artifacts: sourceArtifacts });
+  const navigationIndex = resolvePhase2DataPrivacyNavigationIndex(sourceArtifacts);
   const routeManifest = buildPhase7SemanticBatchRouteManifest({ dapRegistryManifest, strategicDerivationMatrix: strategicMatrix, dataPrivacyNavigationIndex: navigationIndex });
   assertPass(dapRegistryManifest.validation_quality_control_result, "PHASE7_REGISTRY_MANIFEST");
   assertPass(strategicMatrix.validation_quality_control_result, "PHASE7_STRATEGIC_MATRIX");
-  assertPass(navigationIndex.validation_quality_control_result, "PHASE7_NAVIGATION_INDEX");
+  assertPass(navigationIndex.validation_quality_control_result, "PHASE2_DATA_PRIVACY_NAVIGATION_INDEX");
   assertPass(routeManifest.validation_quality_control_result, "PHASE7_ROUTE_MANIFEST");
-  return Object.freeze({ dap_registry_manifest: dapRegistryManifest, dap_strategic_derivation_matrix: strategicMatrix, data_privacy_navigation_index: navigationIndex, dap_semantic_batch_route_manifest: routeManifest });
+  return Object.freeze({ dap_registry_manifest: dapRegistryManifest, dap_strategic_derivation_matrix: strategicMatrix, dap_semantic_batch_route_manifest: routeManifest });
 }
 
 async function runBatchModel({ run, routePacket, artifacts, buildPrompt, callProvider, promptFiles, repairPromptFiles, repair, priorOutput = null, validation = null }) {
@@ -86,6 +85,7 @@ async function runBatchModel({ run, routePacket, artifacts, buildPrompt, callPro
   return result?.json || result || {};
 }
 function normalizeBatchOutput({ output, routePacket }) { if (output?.[routePacket.expected_artifact_name]) return output; return { [routePacket.expected_artifact_name]: output && typeof output === "object" ? output : { batch_id: routePacket.batch_id, families: routePacket.families, returned_field_ids: [], field_rows: [], batch_limitations: ["model_output_missing_or_non_object"], batch_quality_flags: ["NON_BLOCKING_REPAIR_REQUIRED"] } }; }
+function resolvePhase2DataPrivacyNavigationIndex(sourceArtifacts = {}) { const index = unwrap(sourceArtifacts.data_privacy_navigation_index, "data_privacy_navigation_index"); if (!index || index.artifact_type !== "data_privacy_navigation_index") throw new Error("PHASE7_LAYER4_REQUIRES_PHASE2_DATA_PRIVACY_NAVIGATION_INDEX"); return index; }
 function assertAllowedLayer4Reads(artifacts, reads) { const allowed = new Set(reads); for (const key of Object.keys(artifacts || {})) if (!allowed.has(key)) throw new Error(`DATA_PROVENANCE_PROFILE_LAYER4_FORBIDDEN_RUNTIME_ARTIFACT:${key}`); }
 function assertPass(result = {}, label) { if (result.status !== "PASS") throw new Error(`${label}_FAILED:${JSON.stringify(result.errors || [])}`); }
 function assertPromptFiles(files, label) { if (!Array.isArray(files) || !files.length) throw new Error(`${label}_MISSING`); for (const file of files) if (!(typeof file === "string" && file.trim())) throw new Error(`${label}_INVALID_ENTRY`); return Object.freeze([...files]); }
