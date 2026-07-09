@@ -4,7 +4,6 @@ export { INTERNAL_JOB_WRITE_PERMISSIONS as PHASE_WRITE_PERMISSIONS } from "./run
 export const SERVICE_NAME = "interface-diligence-artifacts";
 export const QUALIFIED_REVIEW_SYSTEM_AGENT = "qualified_review_system";
 export const NORMALIZED_COMPILER_PHASE = "NORMALIZED_COMPILER";
-export const LEGACY_COMPILER_ARTIFACT_NAMES = Object.freeze(["profiles_combined", "forensics_combined"]);
 export const PHASES = Object.freeze([
   "AGENT_1A_URL_MANIFEST",
   "AGENT_1B_EXTRACT",
