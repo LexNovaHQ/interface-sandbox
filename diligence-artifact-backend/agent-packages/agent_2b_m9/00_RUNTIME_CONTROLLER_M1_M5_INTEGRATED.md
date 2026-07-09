@@ -15,9 +15,9 @@ Agent 2B identity: `agent_2b_m9`.
 
 Agent 2B allowed module: `M9_LEGAL_CARTOGRAPHY` only.
 
-Agent 2B must read only `source_discovery_handoff` and the loaded legal-governance lossless family artifacts supplied by the runtime packet.
+Agent 2B must read only the Phase 1 source contract supplied by runtime: `source_discovery_handoff`, source-control manifests, common-root artifacts, legal-doc control artifacts, and `legal_doc_*` artifacts. Old family input contracts and legacy family adapters are forbidden.
 
-Agent 2B must write only `legal_cartography_index`.
+Agent 2B must write only the Legal Cartography and Index artifacts: `legal_cartography_deterministic_map`, `legal_cartography_semantic_profile`, optional `legal_cartography_reinvestigation_workpad`, `legal_cartography_index`, and `legal_signal_derivation_profile`.
 
 M6 belongs to Agent 2A and is already complete before Agent 2B runs. Do not execute M6 inside this package.
 
