@@ -7,16 +7,14 @@ import { buildSourceFamilyHandoff } from "./jobs/source-family-handoff.job.js";
 export const SOURCE_DISCOVERY_RUNNER = Object.freeze({
   phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id,
   public_label: SOURCE_DISCOVERY_CONTRACT.public_label,
-  implementation_status: "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_UPGRADE_V0",
+  implementation_status: "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V1",
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   blocking_is_exception_noncritical_limitations_pass: true,
-  old_helper_files_cut_off_from_new_runtime: true,
   pre_phase_1_domain_preflight_hook_wired: true,
   pre_phase_1_domain_preflight_lock_allowed: false,
   phase_1_agnostic_bucket_upgrade_wired: true,
-  legal_doc_granular_lossless_extraction_wired: true,
-  old_helper_files: ["agent-1-scout-extractor.js", "m6-bucket-router.js"]
+  legal_doc_granular_lossless_extraction_wired: true
 });
 
 export async function runSourceDiscoveryJob({ job_id, run, artifacts = {} } = {}) {
@@ -37,26 +35,10 @@ export async function runSourceDiscoveryJob({ job_id, run, artifacts = {} } = {}
   throw new Error(`SOURCE_DISCOVERY_RUNNER_UNHANDLED_JOB:${job.job_id}`);
 }
 
-export async function runSourceUrlManifestJob(input) {
-  return runSourceDiscoveryJob({ ...input, job_id: "URL_MANIFEST" });
-}
-
-export async function runSourceExtractionJob(input) {
-  return runSourceDiscoveryJob({ ...input, job_id: "SOURCE_EXTRACTION" });
-}
-
-export async function runSourceFamilyHandoffJob(input) {
-  return runSourceDiscoveryJob({ ...input, job_id: "SOURCE_FAMILY_HANDOFF" });
-}
+export async function runSourceUrlManifestJob(input) { return runSourceDiscoveryJob({ ...input, job_id: "URL_MANIFEST" }); }
+export async function runSourceExtractionJob(input) { return runSourceDiscoveryJob({ ...input, job_id: "SOURCE_EXTRACTION" }); }
+export async function runSourceFamilyHandoffJob(input) { return runSourceDiscoveryJob({ ...input, job_id: "SOURCE_FAMILY_HANDOFF" }); }
 
 function sourceDiscoveryRunResult({ job, output }) {
-  return {
-    ok: true,
-    phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id,
-    public_label: SOURCE_DISCOVERY_CONTRACT.public_label,
-    job_id: job.job_id,
-    job_label: job.public_label,
-    model_usage: SOURCE_DISCOVERY_CONTRACT.model_usage,
-    output
-  };
+  return { ok: true, phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id, public_label: SOURCE_DISCOVERY_CONTRACT.public_label, job_id: job.job_id, job_label: job.public_label, model_usage: SOURCE_DISCOVERY_CONTRACT.model_usage, output };
 }
