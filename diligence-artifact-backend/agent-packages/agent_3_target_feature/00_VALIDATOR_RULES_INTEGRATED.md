@@ -43,7 +43,7 @@ The validator must reject Target Profile Review use of:
 - `m7_deterministic_legal_signal_overlay`
 - activity/product evidence roots outside the scoped target list
 - data-provenance roots
-- any retired `lossless_family__*` artifact
+- retired pre-cutover family artifacts
 
 Target Profile Review must not block merely because legal/governance lossless artifacts are unavailable. Missing or limited direct legal signal rows must become controlled field statuses and limitation rows.
 
