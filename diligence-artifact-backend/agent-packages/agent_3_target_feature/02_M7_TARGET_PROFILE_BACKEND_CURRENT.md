@@ -24,7 +24,7 @@ Target Profile Review active inputs are limited to the artifacts authorized by `
 
 `cartography_index` and `target_profile_source_index` are navigation support only. They are not evidence and must not be copied as factual proof.
 
-The source-of-truth evidence for material target fields is the scoped `lossless_root__*` target evidence listed above.
+The source-of-truth evidence for material target fields is the scoped target `lossless_root__*` evidence listed above.
 
 ## Forbidden inputs
 
@@ -38,7 +38,7 @@ Target Profile Review must not read, request, infer from, or cite:
 - `m7_deterministic_legal_signal_overlay`
 - activity/product roots outside the scoped target evidence list
 - data/DAP roots
-- any retired `lossless_family__*` artifact
+- retired pre-cutover family artifacts
 
 ## Reference authority
 
