@@ -111,6 +111,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     controlled_status_values: Object.freeze([
       "LOCKED",
       "LOCKED_WITH_LIMITATIONS",
+      "LOCKED_FOR_PACKAGE_MOUNT_ONLY",
       "REVIEW_REQUIRED",
       "NOT_VISIBLE",
       "CANDIDATE_ONLY"
@@ -158,9 +159,12 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     legal_lossless_evidence_forbidden: true,
     data_privacy_navigation_index_forbidden: true,
     company_level_lane_forbidden: true,
+    ai_package_mount_is_not_ai_activity_lock: true,
+    ai_package_mount_is_not_ai_exposure_lock: true,
     ai_archetype_lock_forbidden: true,
     ai_surface_lock_forbidden: true,
     exposure_row_matching_forbidden: true,
+    fusion_candidates_domain_owned_and_deferred: true,
     no_activity_profile_derivation: true,
     no_data_profile_derivation: true,
     no_exposure_profile_derivation: true,
