@@ -9,9 +9,11 @@ export const DOMAIN_DERIVATION_RUNNER_STATUS = Object.freeze({
   public_label: DOMAIN_DERIVATION_CONTRACT.public_label,
   phase_owned_runner: true,
   semantic_first_deterministic_gated: true,
+  registry_ladder_prompt_active: true,
   agent_id: DOMAIN_DERIVATION_CONTRACT.agent_id,
   agent_package_root: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.agent_package_root,
   prompt_package_status: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_package_status,
+  prompt_files: [...DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files],
   writes: [...DOMAIN_DERIVATION_CONTRACT.writes],
   reads: [...DOMAIN_DERIVATION_CONTRACT.reads]
 });
@@ -46,6 +48,7 @@ export async function runDomainDerivationPhase({ run, internalJobId = DOMAIN_DER
     validation: compiled.validation,
     model_metadata: providerResult?.metadata || {},
     registry_id: registryPacket.registry?.registry_id || "",
+    registry_ladder_prompt_used: true,
     domain_derivation_phase_runner_used: true
   };
 }
@@ -55,13 +58,17 @@ function assertRuntimeContract(contract = {}) {
   if ((contract.agent_id || contract.actor_id) !== DOMAIN_DERIVATION_CONTRACT.agent_id) throw new Error(`P3_DOMAIN_DERIVATION_AGENT_MISMATCH:${contract.agent_id || contract.actor_id || "missing"}`);
   assertSameArray(contract.reads || [], DOMAIN_DERIVATION_CONTRACT.reads, "P3_DOMAIN_DERIVATION_READS");
   assertSameArray(contract.writes || [], DOMAIN_DERIVATION_CONTRACT.writes, "P3_DOMAIN_DERIVATION_WRITES");
+  assertSameArray(contract.prompt_files || [], DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files, "P3_DOMAIN_DERIVATION_PROMPT_FILES");
+  if (contract.prompt_package_status !== "ACTIVE_REGISTRY_LADDER_PROMPT") throw new Error("P3_DOMAIN_DERIVATION_PROMPT_PACKAGE_NOT_ACTIVE");
   if (contract.legal_cartography_forbidden !== true) throw new Error("P3_DOMAIN_DERIVATION_LEGAL_CARTOGRAPHY_BOUNDARY_MISSING");
   if (contract.legal_signal_derivation_forbidden !== true) throw new Error("P3_DOMAIN_DERIVATION_LEGAL_SIGNAL_BOUNDARY_MISSING");
+  if (contract.registry_ladder_prompt_active !== true) throw new Error("P3_DOMAIN_DERIVATION_REGISTRY_LADDER_PROMPT_FLAG_MISSING");
 }
 
 function assertPromptPackageDeclared(contract = {}) {
   const promptFiles = contract.prompt_files || (contract.prompt_file ? [contract.prompt_file] : []);
-  if (!promptFiles.length) throw new Error("P3_DOMAIN_DERIVATION_PROMPT_PACKAGE_PENDING:agent package prompt files must be added after contract/runner lock");
+  if (!promptFiles.length) throw new Error("P3_DOMAIN_DERIVATION_PROMPT_PACKAGE_MISSING:registry ladder prompt files must be declared");
+  if (!promptFiles.includes("agent-packages/agent_3_target_feature/02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md")) throw new Error("P3_DOMAIN_DERIVATION_REGISTRY_LADDER_PROMPT_MISSING");
 }
 
 function assertSameArray(actual, expected, label) {
