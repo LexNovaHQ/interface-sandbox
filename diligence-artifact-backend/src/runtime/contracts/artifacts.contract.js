@@ -1,7 +1,7 @@
-import { PHASE7_DAP_BATCH_ARTIFACT_NAMES } from "./artifact-permissions.contract.js";
+import { DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, PHASE7_DAP_BATCH_ARTIFACT_NAMES } from "./artifact-permissions.contract.js";
 
 export const CENTRAL_ARTIFACT_GROUPS = Object.freeze({
-  SOURCE_DISCOVERY: ["deduped_url_manifest", "source_family_index", "source_discovery_handoff"],
+  SOURCE_DISCOVERY: [...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, "deduped_url_manifest", "source_family_index", "source_discovery_handoff"],
   LEGAL_CARTOGRAPHY_INDEX: ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"],
   TARGET_PROFILE_REVIEW: ["target_profile"],
   TARGET_PROFILE_FORENSICS: ["target_profile_forensics"],
