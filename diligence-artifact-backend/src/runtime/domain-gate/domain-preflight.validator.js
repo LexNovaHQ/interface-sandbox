@@ -4,6 +4,7 @@ import {
   PRE_PHASE_1_SELECTION_STAGE,
   RUNTIME_FLAG_NAMES
 } from "./domain-package-key.js";
+import { PRE_PHASE_1_PROFILE_STATUS } from "./domain-selection-profile.schema.js";
 import { packageIdSet } from "./package-catalog.loader.js";
 
 export function validatePrePhase1DomainPreflight({ domain_selection_profile, active_run_package_manifest, catalog } = {}) {
@@ -33,6 +34,7 @@ export function validateDomainSelectionProfilePrePhase1(profile, catalog, errors
   if (profile?.version !== "0.1") errors.push("domain_selection_profile.version must be 0.1");
   if (profile?.selection_stage !== PRE_PHASE_1_SELECTION_STAGE) errors.push("domain_selection_profile.selection_stage must be PRE_PHASE_1");
   if (profile?.hook_name !== "pre_phase_1_domain_preflight") errors.push("domain_selection_profile.hook_name mismatch");
+  if (profile?.status !== PRE_PHASE_1_PROFILE_STATUS) errors.push("domain_selection_profile.status must be PROVISIONAL_ONLY at PRE_PHASE_1");
   if (Object.hasOwn(profile || {}, "locked_primary_domain")) errors.push("locked_primary_domain must not exist at PRE_PHASE_1");
   if (Object.hasOwn(profile || {}, "locked_capability_overlays")) errors.push("locked_capability_overlays must not exist at PRE_PHASE_1");
   if (Object.hasOwn(profile || {}, "locked_regulatory_overlays")) errors.push("locked_regulatory_overlays must not exist at PRE_PHASE_1");
