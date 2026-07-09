@@ -9,6 +9,12 @@ Job A — legal_cartography_index
 Job B — legal_signal_derivation_profile
 ```
 
+## Active input contract
+
+Legal Cartography and Index must validate against the Phase 1 source contract: common-root artifacts, legal-doc control artifacts, and `legal_doc_*` artifacts.
+
+Old family input contracts and legacy family adapters are invalid.
+
 ## Job A Required Root
 
 The compiled Job A artifact must contain exactly one root:
@@ -37,7 +43,7 @@ lock_status
 
 Job A is index/navigation only.
 
-Job A must not contain reviewer-question structures, field-derived signal answers, target outputs, data outputs, final handoff outputs, or renderer payloads.
+Job A must not contain reviewer-question structures, field-derived signal answers, target outputs, data outputs, final handoff outputs, renderer payloads, old family input contracts, or legacy family adapter markers.
 
 ## Job B Required Root
 
@@ -77,7 +83,7 @@ If a locator exists, Job B must not emit exhaustive-scan failure.
 
 `downstream_rules.embedded_legal_instruments_are_indexable` must be `true`.
 
-`downstream_rules.use_only_loaded_legal_corpus` must be `true`.
+`downstream_rules.use_only_phase1_legal_common_root_and_legal_doc_sources` must be `true`.
 
 `downstream_rules.referenced_unloaded_documents_must_not_be_fetched` must be `true`.
 
@@ -86,12 +92,12 @@ If a locator exists, Job B must not emit exhaustive-scan failure.
 Every `source_type` must be one of:
 
 ```text
-URL
+LEGAL_DOC_ARTIFACT
+COMMON_ROOT
 EMBEDDED_UNIT
 INTERNAL_REFERENCE
 METADATA_ONLY
 REFERENCED_URL
-ABSENT_FAMILY
 ```
 
 ## Allowed source_corpus_status values only
@@ -141,7 +147,7 @@ Every material document, annexure, schedule, exhibit, appendix, or internal inst
 
 ## Forbidden keys
 
-Do not emit old source-routing keys, target artifacts, data artifacts, registry artifacts, final handoff, renderer payload, or registry evaluations inside Job A or Job B.
+Do not emit old source-routing keys, old family input contract names, legacy adapter markers, target artifacts, data artifacts, registry artifacts, final handoff, renderer payload, or registry evaluations inside Job A or Job B.
 
 ## Final self-check before output
 
