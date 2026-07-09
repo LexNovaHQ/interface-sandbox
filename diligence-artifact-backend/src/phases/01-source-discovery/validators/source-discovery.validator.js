@@ -17,10 +17,11 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
   }
   if (job_id === "SOURCE_EXTRACTION") {
     if (!output.source_family_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:source_family_index");
+    if (!output.source_family_index.root_artifact_manifest || typeof output.source_family_index.root_artifact_manifest !== "object" || Array.isArray(output.source_family_index.root_artifact_manifest)) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:root_artifact_manifest");
+    if (!Array.isArray(output.source_family_index.saved_root_artifacts)) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:saved_root_artifacts_index");
     if (!output.legal_doc_inventory) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_inventory");
     if (!output.legal_doc_extraction_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_extraction_index");
     if (!output.legal_doc_lossless_validation_manifest) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_lossless_validation_manifest");
-    if (!Object.keys(output).some((name) => name.startsWith("lossless_root__"))) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:lossless_root__COMMON_ROOT");
     if (output.legal_doc_lossless_validation_manifest?.merged_legal_blob_detected !== false) throw new Error("SOURCE_DISCOVERY_LEGAL_DOC_MERGE_FORBIDDEN");
   }
   if (job_id === "SOURCE_FAMILY_HANDOFF") {
