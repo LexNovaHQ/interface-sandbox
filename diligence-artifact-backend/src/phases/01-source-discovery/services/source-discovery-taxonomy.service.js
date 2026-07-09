@@ -5,13 +5,13 @@ export const COMMON_ROOTS = Object.freeze([
   { id: "product_service", priority: "PRIMARY", buckets: ["product_activity_sources", "commercial_positioning_sources"], paths: ["/product", "/products"] },
   { id: "platform_feature_solution", priority: "PRIMARY", buckets: ["product_activity_sources"], paths: ["/platform", "/features", "/solutions"] },
   { id: "pricing_commercial_availability", priority: "PRIMARY", buckets: ["pricing_plan_sources", "commercial_positioning_sources"], paths: ["/pricing", "/api-pricing", "/plans", "/enterprise", "/contact-sales"] },
-  { id: "privacy_data_processing", priority: "PRIMARY", buckets: ["privacy_security_sources", "data_processing_signals"], paths: ["/privacy", "/privacy-policy", "/privacy-center", "/data-protection", "/gdpr", "/data-processing", "/data-processing-agreement", "/dpa", "/subprocessors", "/subprocessor", "/cookies", "/cookie-policy"] },
+  { id: "privacy_data_processing", priority: "PRIMARY", buckets: ["privacy_security_sources", "data_processing_signals", "legal_terms_sources"], paths: ["/privacy", "/privacy-policy", "/privacy-center", "/data-protection", "/gdpr", "/data-processing", "/data-processing-agreement", "/data-processing-addendum", "/dpa", "/subprocessors", "/subprocessor", "/cookies", "/cookie-policy", "/terms", "/terms-of-service", "/terms-of-use", "/terms-and-conditions", "/eula", "/aup", "/acceptable-use", "/acceptable-use-policy", "/sla", "/service-level-agreement", "/service-credit-terms", "/platform-agreement", "/customer-agreement", "/msa", "/order-terms", "/usage-policy", "/content-policy", "/ai-policy", "/model-policy", "/safety-policy", "/developer-terms", "/api-terms", "/marketplace-terms", "/seller-terms", "/baa"] },
   { id: "security_trust", priority: "PRIMARY", buckets: ["trust_compliance_sources", "privacy_security_sources"], paths: ["/security", "/security-center", "/data-security", "/trust", "/trust-center", "/compliance", "/compliance-center", "/soc-2", "/iso-27001"] },
   { id: "technical_docs_api_developer", priority: "PRIMARY", buckets: ["technical_docs_sources", "api_integration_sources"], paths: ["/docs", "/developer", "/developers", "/api", "/apis", "/api-reference", "/sdk", "/sdks"] },
   { id: "docs_api_data_flow", priority: "PRIMARY", buckets: ["technical_docs_sources", "api_integration_sources", "data_processing_signals"], paths: ["/webhooks", "/authentication", "/permissions", "/audit-logs", "/data-flow", "/data-flows"] },
   { id: "trust_compliance", priority: "PRIMARY", buckets: ["trust_compliance_sources"], paths: ["/trust", "/trust-center", "/compliance", "/compliance-center", "/responsible-ai", "/safety", "/transparency"] },
   { id: "contact_notice", priority: "PRIMARY", buckets: ["contact_notice_sources", "company_identity_sources"], paths: ["/contact", "/contact-us", "/support/contact", "/legal", "/privacy/contact"] },
-  { id: "operator_entity_signals", priority: "SECONDARY", buckets: ["company_identity_sources", "jurisdiction_market_signals"], paths: ["/privacy", "/terms", "/legal"] },
+  { id: "operator_entity_signals", priority: "SECONDARY", buckets: ["company_identity_sources", "jurisdiction_market_signals"], paths: [] },
   { id: "supporting_company_signals", priority: "SECONDARY", buckets: ["third_party_profile_sources", "customer_segment_signals"], paths: ["/team", "/careers", "/newsroom", "/press"] },
   { id: "use_case_customer_industry", priority: "SECONDARY", buckets: ["customer_segment_signals", "regulated_activity_signals"], paths: ["/use-cases", "/industries", "/customers", "/stories"] },
   { id: "integrations_ecosystem", priority: "SECONDARY", buckets: ["api_integration_sources", "product_activity_sources"], paths: ["/integrations", "/connectors", "/apps", "/marketplace"] },
@@ -24,11 +24,7 @@ export const COMMON_ROOTS = Object.freeze([
 
 export const COMMON_ROOT_CODES = Object.freeze(COMMON_ROOTS.map((root) => root.id));
 export const COMMON_ROOT_ARTIFACT_NAMES = Object.freeze(COMMON_ROOT_CODES.map((code) => `lossless_root__${code}`));
-
-export const NEUTRAL_BUCKETS = Object.freeze([
-  "company_identity_sources", "commercial_positioning_sources", "product_activity_sources", "technical_docs_sources", "api_integration_sources", "pricing_plan_sources", "legal_terms_sources", "privacy_security_sources", "trust_compliance_sources", "regulated_activity_signals", "ai_mechanism_signals", "data_processing_signals", "contact_notice_sources", "thin_or_missing_source_gaps", "customer_segment_signals", "jurisdiction_market_signals", "third_party_profile_sources"
-]);
-
+export const NEUTRAL_BUCKETS = Object.freeze(["company_identity_sources", "commercial_positioning_sources", "product_activity_sources", "technical_docs_sources", "api_integration_sources", "pricing_plan_sources", "legal_terms_sources", "privacy_security_sources", "trust_compliance_sources", "regulated_activity_signals", "ai_mechanism_signals", "data_processing_signals", "contact_notice_sources", "thin_or_missing_source_gaps", "customer_segment_signals", "jurisdiction_market_signals", "third_party_profile_sources"]);
 export const ADAPTERS = Object.freeze([
   { adapter_id: "ai-native", adapter_type: "capability_overlay", paths: ["/ai", "/models", "/agents", "/llm", "/assistant", "/automation", "/generation", "/prediction", "/ranking", "/classification"] },
   { adapter_id: "ai-governance", adapter_type: "primary_domain_package", paths: ["/governance", "/model-risk", "/ai-compliance", "/responsible-ai", "/safety", "/evals", "/guardrails"] },
@@ -37,80 +33,14 @@ export const ADAPTERS = Object.freeze([
   { adapter_id: "hrtech", adapter_type: "primary_domain_package", paths: ["/hiring", "/recruiting", "/screening", "/assessment", "/performance", "/workforce", "/talent"] },
   { adapter_id: "privacy", adapter_type: "regulatory_overlay", paths: ["/privacy", "/dpa", "/subprocessors", "/cookies", "/gdpr", "/dpdp", "/ccpa", "/data-processing"] }
 ]);
-
 export const LEGAL_DOC_RULES = Object.freeze([
-  ["terms_of_service", "legal_doc_terms_of_service", ["terms", "terms-of-service", "terms-of-use", "terms-and-conditions"]],
-  ["privacy_policy", "legal_doc_privacy_policy", ["privacy", "privacy-policy"]],
-  ["eula", "legal_doc_eula", ["eula"]],
-  ["acceptable_use_policy", "legal_doc_acceptable_use_policy", ["aup", "acceptable-use", "acceptable-use-policy"]],
-  ["data_processing_agreement", "legal_doc_data_processing_agreement", ["dpa", "data-processing-agreement", "data-processing-addendum"]],
-  ["subprocessor_list", "legal_doc_subprocessor_list", ["subprocessor", "subprocessors"]],
-  ["cookie_policy", "legal_doc_cookie_policy", ["cookie", "cookies", "cookie-policy"]],
-  ["service_level_agreement", "legal_doc_service_level_agreement", ["sla", "service-level", "service-credit"]],
-  ["msa", "legal_doc_msa", ["msa", "master-services", "master-service"]],
-  ["customer_agreement", "legal_doc_customer_agreement", ["customer-agreement", "platform-agreement", "order-terms"]],
-  ["ai_policy", "legal_doc_ai_policy", ["ai-policy", "responsible-ai", "ai-transparency"]],
-  ["usage_policy", "legal_doc_usage_policy", ["usage-policy", "model-policy"]],
-  ["content_policy", "legal_doc_content_policy", ["content-policy"]],
-  ["safety_policy", "legal_doc_safety_policy", ["safety-policy", "safety"]],
-  ["legal_notice", "legal_doc_legal_notice", ["legal-notice", "imprint", "controller"]],
-  ["refund_cancellation_policy", "legal_doc_refund_cancellation_policy", ["refund", "cancellation", "returns"]],
-  ["developer_terms", "legal_doc_developer_terms", ["developer-terms", "api-terms"]],
-  ["marketplace_terms", "legal_doc_marketplace_terms", ["marketplace-terms", "seller-terms"]],
-  ["baa", "legal_doc_baa", ["baa", "business-associate"]]
+  ["terms_of_service", "legal_doc_terms_of_service", ["terms", "terms-of-service", "terms-of-use", "terms-and-conditions"]], ["privacy_policy", "legal_doc_privacy_policy", ["privacy", "privacy-policy"]], ["eula", "legal_doc_eula", ["eula"]], ["acceptable_use_policy", "legal_doc_acceptable_use_policy", ["aup", "acceptable-use", "acceptable-use-policy"]], ["data_processing_agreement", "legal_doc_data_processing_agreement", ["dpa", "data-processing-agreement", "data-processing-addendum"]], ["subprocessor_list", "legal_doc_subprocessor_list", ["subprocessor", "subprocessors"]], ["cookie_policy", "legal_doc_cookie_policy", ["cookie", "cookies", "cookie-policy"]], ["service_level_agreement", "legal_doc_service_level_agreement", ["sla", "service-level", "service-credit"]], ["msa", "legal_doc_msa", ["msa", "master-services", "master-service"]], ["customer_agreement", "legal_doc_customer_agreement", ["customer-agreement", "platform-agreement", "order-terms"]], ["ai_policy", "legal_doc_ai_policy", ["ai-policy", "responsible-ai", "ai-transparency"]], ["usage_policy", "legal_doc_usage_policy", ["usage-policy", "model-policy"]], ["content_policy", "legal_doc_content_policy", ["content-policy"]], ["safety_policy", "legal_doc_safety_policy", ["safety-policy", "safety"]], ["legal_notice", "legal_doc_legal_notice", ["legal-notice", "imprint", "controller"]], ["refund_cancellation_policy", "legal_doc_refund_cancellation_policy", ["refund", "cancellation", "returns"]], ["developer_terms", "legal_doc_developer_terms", ["developer-terms", "api-terms"]], ["marketplace_terms", "legal_doc_marketplace_terms", ["marketplace-terms", "seller-terms"]], ["baa", "legal_doc_baa", ["baa", "business-associate"]]
 ]);
-
-export function adapterExpansionPathsFromPreflight(preflightContext = {}) {
-  const profile = preflightContext.domain_selection_profile || preflightContext;
-  const ids = new Set([
-    ...(profile.provisional_primary_domain_candidates || []).map((x) => x.package_id),
-    ...(profile.provisional_capability_overlay_candidates || []).map((x) => x.package_id),
-    ...(profile.provisional_regulatory_overlay_candidates || []).map((x) => x.package_id)
-  ].filter(Boolean));
-  return [...new Set(ADAPTERS.filter((adapter) => ids.has(adapter.adapter_id)).flatMap((adapter) => adapter.paths))];
-}
-
-export function selectedAdaptersFromPreflight(preflightContext = {}) {
-  const profile = preflightContext.domain_selection_profile || preflightContext;
-  const ids = new Set([
-    ...(profile.provisional_primary_domain_candidates || []).map((x) => x.package_id),
-    ...(profile.provisional_capability_overlay_candidates || []).map((x) => x.package_id),
-    ...(profile.provisional_regulatory_overlay_candidates || []).map((x) => x.package_id)
-  ].filter(Boolean));
-  return ADAPTERS.filter((adapter) => ids.has(adapter.adapter_id));
-}
-
-export function legalDocTypeFromUrlOrRoute(value) {
-  const normalized = String(value || "").toLowerCase();
-  for (const [docType, artifactName, terms] of LEGAL_DOC_RULES) {
-    if (terms.some((term) => normalized.includes(term))) return { docType, artifactName };
-  }
-  return { docType: "other", artifactName: "legal_doc_other" };
-}
-
-export function neutralBucketsForSource(source = {}) {
-  const base = COMMON_ROOTS.find((root) => root.id === source.common_root)?.buckets || [];
-  const value = `${source.common_root || ""} ${source.route_type || ""} ${source.canonical_url || ""} ${source.fetch_url || ""}`.toLowerCase();
-  const extra = [];
-  if (value.includes("ai") || value.includes("model") || value.includes("agent")) extra.push("ai_mechanism_signals");
-  if (/(credit|loan|health|clinical|hiring|recruit|legal|biometric|kyc|children|minor|student|payment|banking|underwriting)/.test(value)) extra.push("regulated_activity_signals");
-  if (value.includes("privacy") || value.includes("data") || value.includes("subprocessor") || value.includes("dpa") || value.includes("cookie")) extra.push("data_processing_signals");
-  if (value.includes("terms") || value.includes("eula") || value.includes("policy") || value.includes("legal") || value.includes("aup") || value.includes("sla")) extra.push("legal_terms_sources");
-  return [...new Set([...base, ...extra].filter((bucket) => NEUTRAL_BUCKETS.includes(bucket)))];
-}
-
-export function emptyNeutralBuckets() {
-  return Object.fromEntries(NEUTRAL_BUCKETS.map((bucket) => [bucket, { priority: primaryNeutralBucket(bucket) ? "PRIMARY" : "SECONDARY", sources: [] }]));
-}
-
-export function primaryNeutralBucket(bucket) {
-  return !["customer_segment_signals", "jurisdiction_market_signals", "third_party_profile_sources"].includes(bucket);
-}
-
-export function noLockNoNarrow() {
-  return { primary_domain_locked: false, source_discovery_narrowed: false, sources_excluded_by_domain: false, domain_specific_prompt_routing_used: false, dynamic_routing_used: false };
-}
-
-export function stableSlug(value) {
-  return String(value || "unknown").toLowerCase().replace(/^https?:\/\//, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 56) || "unknown";
-}
+export function adapterExpansionPathsFromPreflight(preflightContext = {}) { const profile = preflightContext.domain_selection_profile || preflightContext; const ids = new Set([...(profile.provisional_primary_domain_candidates || []).map((x) => x.package_id), ...(profile.provisional_capability_overlay_candidates || []).map((x) => x.package_id), ...(profile.provisional_regulatory_overlay_candidates || []).map((x) => x.package_id)].filter(Boolean)); return [...new Set(ADAPTERS.filter((adapter) => ids.has(adapter.adapter_id)).flatMap((adapter) => adapter.paths))]; }
+export function selectedAdaptersFromPreflight(preflightContext = {}) { const profile = preflightContext.domain_selection_profile || preflightContext; const ids = new Set([...(profile.provisional_primary_domain_candidates || []).map((x) => x.package_id), ...(profile.provisional_capability_overlay_candidates || []).map((x) => x.package_id), ...(profile.provisional_regulatory_overlay_candidates || []).map((x) => x.package_id)].filter(Boolean)); return ADAPTERS.filter((adapter) => ids.has(adapter.adapter_id)); }
+export function legalDocTypeFromUrlOrRoute(value) { const normalized = String(value || "").toLowerCase(); for (const [docType, artifactName, terms] of LEGAL_DOC_RULES) if (terms.some((term) => normalized.includes(term))) return { docType, artifactName }; return { docType: "other", artifactName: "legal_doc_other" }; }
+export function neutralBucketsForSource(source = {}) { const base = COMMON_ROOTS.find((root) => root.id === source.common_root)?.buckets || []; const value = `${source.common_root || ""} ${source.route_type || ""} ${source.canonical_url || ""} ${source.fetch_url || ""}`.toLowerCase(); const extra = []; if (value.includes("ai") || value.includes("model") || value.includes("agent")) extra.push("ai_mechanism_signals"); if (/(credit|loan|health|clinical|hiring|recruit|legal|biometric|kyc|children|minor|student|payment|banking|underwriting)/.test(value)) extra.push("regulated_activity_signals"); if (value.includes("privacy") || value.includes("data") || value.includes("subprocessor") || value.includes("dpa") || value.includes("cookie")) extra.push("data_processing_signals"); if (value.includes("terms") || value.includes("eula") || value.includes("policy") || value.includes("legal") || value.includes("aup") || value.includes("sla")) extra.push("legal_terms_sources"); return [...new Set([...base, ...extra].filter((bucket) => NEUTRAL_BUCKETS.includes(bucket)))]; }
+export function emptyNeutralBuckets() { return Object.fromEntries(NEUTRAL_BUCKETS.map((bucket) => [bucket, { priority: primaryNeutralBucket(bucket) ? "PRIMARY" : "SECONDARY", sources: [] }])); }
+export function primaryNeutralBucket(bucket) { return !["customer_segment_signals", "jurisdiction_market_signals", "third_party_profile_sources"].includes(bucket); }
+export function noLockNoNarrow() { return { primary_domain_locked: false, source_discovery_narrowed: false, sources_excluded_by_domain: false, domain_specific_prompt_routing_used: false, dynamic_routing_used: false }; }
+export function stableSlug(value) { return String(value || "unknown").toLowerCase().replace(/^https?:\/\//, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 56) || "unknown"; }
