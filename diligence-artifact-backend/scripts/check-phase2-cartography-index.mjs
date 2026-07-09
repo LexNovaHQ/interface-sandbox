@@ -5,6 +5,7 @@ import { CARTOGRAPHY_ARTIFACT_NAMES, CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, CARTOGRA
 import { PIPELINE_CONTRACTS, INTERNAL_PIPELINE_JOB_IDS, PIPELINE_CONTRACT_STATUS } from "../src/runtime/contracts/pipeline.contract.js";
 import { CENTRAL_PHASES } from "../src/runtime/contracts/central-phase.contract.js";
 import { CARTOGRAPHY_INDEX_CONTRACT } from "../src/phases/02-cartography-index/cartography-index.contract.js";
+import { DATA_PRIVACY_NAVIGATION_COMPATIBILITY_STATUS } from "../src/phases/02-cartography-index/data-privacy-navigation-compatibility.adapter.js";
 import { M9_LEGAL_FAMILY_COMPATIBILITY_STATUS } from "../src/phases/02-cartography-index/m9-legal-family-compatibility.adapter.js";
 import { LEGAL_CARTOGRAPHY_INDEX_CONTRACT } from "../src/phases/02-legal-cartography-index/legal-cartography-index.contract.js";
 import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
@@ -18,7 +19,9 @@ const runtimeFiles = [
   "src/runtime/contracts/artifacts.contract.js",
   "src/phase-contracts.js",
   "src/phases/02-cartography-index/cartography-index.runner.js",
+  "src/phases/02-cartography-index/data-privacy-navigation-compatibility.adapter.js",
   "src/phases/02-cartography-index/m9-legal-family-compatibility.adapter.js",
+  "src/phases/07-data-provenance-profile/data-provenance-profile.runner.js",
   "src/runtime/services/pipeline.service.js",
   "src/runtime/services/artifacts.service.js"
 ];
@@ -37,6 +40,10 @@ assert.equal(M9_LEGAL_FAMILY_COMPATIBILITY_STATUS.m9_agent_package_changed, fals
 assert.equal(M9_LEGAL_FAMILY_COMPATIBILITY_STATUS.m9_contract_changed, false);
 assert.equal(M9_LEGAL_FAMILY_COMPATIBILITY_STATUS.emits_persisted_artifacts, false);
 assert.equal(M9_LEGAL_FAMILY_COMPATIBILITY_STATUS.old_family_artifact_identity_preserved_for_m9_runtime, true);
+assert.equal(DATA_PRIVACY_NAVIGATION_COMPATIBILITY_STATUS.phase7_index_artifact_identity_changed, false);
+assert.equal(DATA_PRIVACY_NAVIGATION_COMPATIBILITY_STATUS.phase7_builder_changed, false);
+assert.equal(DATA_PRIVACY_NAVIGATION_COMPATIBILITY_STATUS.emits_persisted_artifacts, false);
+assert.equal(DATA_PRIVACY_NAVIGATION_COMPATIBILITY_STATUS.old_d_family_artifact_identity_preserved_for_dpni_runtime, true);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.final_artifacts, CARTOGRAPHY_ARTIFACT_NAMES);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.profile_index_artifacts, ["target_profile_source_index", "activity_profile_source_index"]);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.restored_existing_index_artifacts, ["legal_cartography_index", "legal_signal_derivation_profile", "data_privacy_navigation_index"]);
@@ -95,7 +102,7 @@ assert.deepEqual(centralPhase2.terminal_outputs, CARTOGRAPHY_ARTIFACT_NAMES);
 for (const forbidden of ["legal_governance_source_index", "data_provenance_source_index"]) {
   assert.equal(`${activeText}\n${contractText}`.includes(forbidden), false, `forbidden replacement index present: ${forbidden}`);
 }
-for (const required of ["runCartographyIndexJob", "runM9HybridOrchestrator", "buildM9LegalFamilyCompatibilityArtifacts", "m9_legal_family_compatibility_manifest", "lossless_family__L1_CORE_TERMS_PRIVACY", "P2_SOURCE_INVENTORY_CARTOGRAPHY", "data_privacy_navigation_index", "legal_cartography_index", "legal_signal_derivation_profile", "cartography_validation_manifest", "contains_lossless_text: false", "semantic_guidance_only"]) {
+for (const required of ["runCartographyIndexJob", "runM9HybridOrchestrator", "buildM9LegalFamilyCompatibilityArtifacts", "buildDataPrivacyNavigationCompatibilityArtifacts", "data_privacy_navigation_compatibility_manifest", "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__D1_SECURITY_TRUST", "data_privacy_navigation_d_family_routes_present", "resolvePhase2DataPrivacyNavigationIndex", "PHASE7_LAYER4_REQUIRES_PHASE2_DATA_PRIVACY_NAVIGATION_INDEX", "P2_SOURCE_INVENTORY_CARTOGRAPHY", "data_privacy_navigation_index", "legal_cartography_index", "legal_signal_derivation_profile", "cartography_validation_manifest", "contains_lossless_text: false", "semantic_guidance_only"]) {
   assert.ok(`${activeText}\n${contractText}`.includes(required), `active files missing ${required}`);
 }
 assert.equal(PIPELINE_CONTRACT_STATUS.m9_legal_cartography_index_preserved_in_phase2, true);
@@ -104,4 +111,4 @@ assert.equal(PIPELINE_CONTRACT_STATUS.phase7_data_privacy_navigation_index_migra
 assert.equal(PIPELINE_CONTRACT_STATUS.no_legal_governance_source_index, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.no_data_provenance_source_index, true);
 
-console.log("Phase 2 cartography + restored M9/DPNI + M9 adapter validator: PASS");
+console.log("Phase 2 cartography + restored M9/DPNI + compatibility adapters validator: PASS");
