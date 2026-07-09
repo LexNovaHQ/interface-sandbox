@@ -1,21 +1,33 @@
 {
-  "overall_status": "SYNCED_FOR_PHASE2_JOB_SPLIT_CONTRACT_LOCK",
-  "backend_phase": "M9",
+  "overall_status": "SYNCED_FOR_PHASE2_NEW_SOURCE_INPUT_CONTRACT",
+  "backend_phase": "CARTOGRAPHY_INDEX",
   "active_agent_id": "agent_2b_m9",
-  "active_phase_scope": "M9_ONLY",
+  "active_phase_scope": "LEGAL_CARTOGRAPHY_AND_INDEX_ONLY",
   "phase_2_internal_jobs": [
     "LEGAL_CARTOGRAPHY_INDEX",
     "LEGAL_SIGNAL_DERIVATION"
   ],
-  "input_protocol_preserved": true,
-  "read_artifacts_preserved": [
+  "input_protocol": "phase1_common_roots_plus_legal_doc_artifacts",
+  "old_family_input_contract_forbidden": true,
+  "legacy_family_adapters_forbidden": true,
+  "read_artifacts": [
     "source_discovery_handoff",
-    "lossless_family__L1_CORE_TERMS_PRIVACY",
-    "lossless_family__L2_B2B_CONTRACTING",
-    "lossless_family__L3_AI_USAGE_GOVERNANCE",
-    "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
-    "lossless_family__L5_LEGAL_HUB_HOSTED",
-    "lossless_family__L6_ENTITY_NOTICE"
+    "post_phase_1_domain_gate_handoff",
+    "source_discovery_matrix_manifest",
+    "neutral_evidence_bucket_manifest",
+    "adapter_expansion_log",
+    "source_family_index",
+    "legal_doc_inventory",
+    "legal_doc_extraction_index",
+    "legal_doc_lossless_validation_manifest",
+    "legal_doc_{DOC_TYPE}",
+    "lossless_root__legal_identity_notice",
+    "lossless_root__privacy_data_processing",
+    "lossless_root__security_trust",
+    "lossless_root__trust_compliance",
+    "lossless_root__contact_notice",
+    "lossless_root__technical_docs_api_developer",
+    "lossless_root__docs_api_data_flow"
   ],
   "write_artifacts_in_order": [
     "legal_cartography_deterministic_map",
