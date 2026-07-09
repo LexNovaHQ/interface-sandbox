@@ -30,7 +30,7 @@ const JOB = Object.freeze({ sourceUrlManifest: "AGENT_1A_URL_MANIFEST", sourceEx
 const CARTOGRAPHY_JOBS = new Set([JOB.cartographySourceInventory, JOB.cartographyLocatorSpine, JOB.cartographyProfileRouteMatrix, JOB.cartographySemanticOverlay, JOB.cartographyCompilerValidation]);
 const ART = Object.freeze({ targetProfile: "target_profile", domainDerivation: "domain_derivation_profile", activeManifest: "active_run_package_manifest", legalIndex: "legal_cartography_index", challengeGate: "challenge_gate", final: "final_output_handoff", renderer: "renderer_payload", exposureRoutePlan: "exposure_registry_route_plan" });
 
-export const PIPELINE_SERVICE_STATUS = Object.freeze({ central_runtime_service: "pipeline.service", phase3_domain_derivation_runner_wired: true, phase3_domain_derivation_prompt_package_pending: true, downstream_domain_derivation_reads_synced: true, central_phase_language: true });
+export const PIPELINE_SERVICE_STATUS = Object.freeze({ central_runtime_service: "pipeline.service", phase3_domain_derivation_runner_wired: true, phase3_domain_derivation_registry_ladder_prompt_active: true, phase3_domain_derivation_prompt_package_pending: false, downstream_domain_derivation_reads_synced: true, central_phase_language: true });
 export function decorateRunWithCentralPhase(run = {}) { const internalJobId = normalizeRuntimeJobId(run.current_phase || ""); const central = centralPhaseStatusForInternalJob(internalJobId); return { ...run, central_phase: run.central_phase || central.central_phase_id, central_phase_label: run.central_phase_label || central.central_phase_label, active_internal_job: run.current_phase || "" }; }
 
 export async function advanceCentralPipelineRun({ run_id } = {}) {
