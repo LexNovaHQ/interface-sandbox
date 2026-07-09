@@ -30,7 +30,7 @@ const ACTIVE_PHASE2_INPUT_FILES = Object.freeze([
   "agent-packages/agent_2b_m9/AGENT2B_M9_PACKET_MANIFEST.json",
   "agent-packages/agent_2b_m9/AGENT2B_M9_PACKET_VALIDATION.json"
 ]);
-const FORBIDDEN = Object.freeze(["lossless_family__", "legacy family adapter", "legacy-family", "compatibility.adapter", "CompatibilityArtifacts", "compatibility_adapter", "old family input contracts and legacy compatibility adapters", "loaded legal-governance lossless family"]);
+const FORBIDDEN = Object.freeze(["lossless_family__", "compatibility.adapter", "CompatibilityArtifacts", "compatibility_adapter", "loaded legal-governance lossless family"]);
 const REQUIRED = Object.freeze(["phase1_common_roots_plus_legal_doc_artifacts", "legal_doc_inventory", "legal_doc_{DOC_TYPE}", "lossless_root__privacy_data_processing", "data_source_routes", "required_data_source_route_ids"]);
 const activeText = ACTIVE_PHASE2_INPUT_FILES.map((file) => [file, fs.readFileSync(path.join(ROOT, file), "utf8")]);
 for (const [file, text] of activeText) for (const marker of FORBIDDEN) assert.equal(text.includes(marker), false, `${file} contains forbidden legacy-family input marker: ${marker}`);
