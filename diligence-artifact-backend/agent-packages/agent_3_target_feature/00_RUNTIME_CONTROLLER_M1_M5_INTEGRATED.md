@@ -58,7 +58,7 @@ Target Profile Review must not read or request:
 - `m7_deterministic_legal_signal_overlay`
 - activity/product roots outside the scoped target list
 - data-provenance roots
-- any retired `lossless_family__*` artifact
+- retired pre-cutover family artifacts
 
 Target Profile Review must not block because legal/governance lossless artifacts are absent. Missing or limited direct legal signal rows become controlled field statuses and limitation rows.
 
