@@ -32,8 +32,8 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
       "source_discovery_handoff",
       "cartography_index",
       "target_profile_source_index",
-      ...TARGET_PROFILE_LOSSLESS_READS,
       "legal_signal_derivation_profile",
+      ...TARGET_PROFILE_LOSSLESS_READS,
       "domain_selection_profile",
       "active_run_package_manifest"
     ]),
