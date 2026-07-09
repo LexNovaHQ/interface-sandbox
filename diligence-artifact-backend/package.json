@@ -9,7 +9,7 @@
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:normalized": "node scripts/check-normalized-hardening.mjs",
     "check:m8-feature-candidates": "node scripts/check-m8-feature-candidate-inventory.mjs",
-    "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs && node scripts/check-activity-profile-v4-binding.mjs",
+    "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs && node scripts/check-phase1-agnostic-source-discovery.mjs && node scripts/check-activity-profile-v4-binding.mjs",
     "check:domain-gate-v0": "node scripts/check-domain-package-key.mjs && node scripts/check-package-catalog-v0.mjs && node scripts/check-pre-phase-1-domain-preflight.mjs && node scripts/check-no-pre-phase-1-lock.mjs && node scripts/check-active-run-package-manifest-v0.mjs && node scripts/check-domain-selection-manifest-sync.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
@@ -18,7 +18,7 @@
     "@google-cloud/firestore": "^7.11.0",
     "@google-cloud/tasks": "^5.0.0",
     "busboy": "^1.6.0",
-    "cors": "^2.8.5",
+    "cors": "^4.19.2",
     "express": "^4.19.2",
     "firebase-admin": "^12.7.0",
     "googleapis": "^144.0.0",
