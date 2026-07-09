@@ -7,13 +7,15 @@ import { buildSourceFamilyHandoff } from "./jobs/source-family-handoff.job.js";
 export const SOURCE_DISCOVERY_RUNNER = Object.freeze({
   phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id,
   public_label: SOURCE_DISCOVERY_CONTRACT.public_label,
-  implementation_status: "PHASE_OWNED_IMPLEMENTATION_RUNTIME_CUTOVER",
+  implementation_status: "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_UPGRADE_V0",
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   blocking_is_exception_noncritical_limitations_pass: true,
   old_helper_files_cut_off_from_new_runtime: true,
   pre_phase_1_domain_preflight_hook_wired: true,
   pre_phase_1_domain_preflight_lock_allowed: false,
+  phase_1_agnostic_bucket_upgrade_wired: true,
+  legal_doc_granular_lossless_extraction_wired: true,
   old_helper_files: ["agent-1-scout-extractor.js", "m6-bucket-router.js"]
 });
 
@@ -21,7 +23,7 @@ export async function runSourceDiscoveryJob({ job_id, run, artifacts = {} } = {}
   const job = getSourceDiscoveryJobContract(job_id);
   if (job.job_id === "URL_MANIFEST") {
     const preflight = await runPrePhase1DomainPreflight({ run });
-    const output = await buildSourceUrlManifest({ run });
+    const output = await buildSourceUrlManifest({ run, preflight_context: preflight.output });
     return sourceDiscoveryRunResult({ job, output: { ...preflight.output, ...output } });
   }
   if (job.job_id === "SOURCE_EXTRACTION") {
