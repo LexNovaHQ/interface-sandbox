@@ -1,56 +1,90 @@
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import assert from "node:assert/strict";
+import { buildPhasePrompt } from "../src/prompt-loader.js";
+import { PIPELINE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
+import { TARGET_PROFILE_REVIEW_CONTRACT } from "../src/phases/03-target-profile-review/target-profile-review.contract.js";
+import { DOMAIN_DERIVATION_CONTRACT } from "../src/phases/03-domain-derivation/domain-derivation.contract.js";
+import { compileDomainDerivationArtifacts } from "../src/phases/03-domain-derivation/validators/domain-derivation.validator.js";
 
 const ROOT = process.cwd();
 const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
 
-const pipeline = read("src/runtime/contracts/pipeline.contract.js");
-const pipelineService = read("src/runtime/services/pipeline.service.js");
-const targetContract = read("src/phases/03-target-profile-review/target-profile-review.contract.js");
-const targetPrompt = read("agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md");
-const targetRunner = read("src/phases/03-target-profile-review/target-profile-review.runner.js");
-const domainContract = read("src/phases/03-domain-derivation/domain-derivation.contract.js");
-const domainPrompt = read("agent-packages/agent_3_target_feature/02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md");
-const domainValidator = read("src/phases/03-domain-derivation/validators/domain-derivation.validator.js");
-const domainRegistry = read("references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml");
-const packageJson = read("package.json");
+const m7 = PIPELINE_CONTRACTS.M7_TARGET_PROFILE;
+const p3b = PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER;
+assert.ok(m7, "M7_TARGET_PROFILE pipeline contract missing");
+assert.ok(p3b, "P3_DOMAIN_DERIVATION_LAYER pipeline contract missing");
+assert.deepEqual(m7.reads, TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads, "3A pipeline and phase-owned reads must match");
+assert.deepEqual(p3b.reads, DOMAIN_DERIVATION_CONTRACT.reads, "3B pipeline and phase-owned reads must match");
+assert.deepEqual(p3b.writes, DOMAIN_DERIVATION_CONTRACT.writes, "3B pipeline and phase-owned writes must match");
 
-assert.ok(pipeline.includes("M7_TARGET_PROFILE"), "pipeline must retain M7_TARGET_PROFILE job id");
-assert.ok(pipeline.includes("P3_DOMAIN_DERIVATION_LAYER"), "pipeline must include P3 domain derivation job");
-assert.ok(pipeline.includes('next: "P3_DOMAIN_DERIVATION_LAYER"'), "3A must advance to 3B");
-assert.ok(pipeline.includes('next: "M7_TARGET_PROFILE_FORENSICS"'), "3B must advance to Phase 4 target forensics");
-assert.ok(pipeline.includes('runtime_wiring_status: "PHASE3A_SCOPED_LOSSLESS_INPUTS_SYNCED"'), "3A central contract must be synced to scoped lossless inputs");
-assert.ok(pipeline.includes('company_level_lane_forbidden: true'), "3B central contract must forbid company-level lane");
-assert.ok(pipelineService.includes("runTargetProfileReviewPhase"), "pipeline service must use phase-owned 3A runner");
-assert.ok(pipelineService.includes("runDomainDerivationPhase"), "pipeline service must use phase-owned 3B runner");
-assert.ok(targetRunner.includes("production_entrypoint_switched: true"), "3A runner must advertise production entrypoint switched");
+const run = { run_id: "CHECK_PHASE3_SYNC_V0", target: "example.com", target_url: "https://example.com", root_url: "https://example.com", source_mode: "public_url" };
+const artifacts = Object.fromEntries(DOMAIN_DERIVATION_CONTRACT.reads.map((name) => [name, artifactFor(name)]));
+const prompt = await buildPhasePrompt({
+  prompt_files: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files,
+  phase: DOMAIN_DERIVATION_CONTRACT.internal_job_id,
+  run,
+  artifacts,
+  writes: DOMAIN_DERIVATION_CONTRACT.writes,
+  references: DOMAIN_DERIVATION_CONTRACT.references
+});
 
-assert.ok(targetContract.includes('implementation_status: "CONTRACT_RUNNER_AND_PROMPT_ACTIVE"'), "3A contract metadata must match active runner state");
-assert.ok(targetContract.includes("production_entrypoint_switched: true"), "3A contract must advertise active cutover");
-assert.ok(targetContract.includes('phase_2_indexes_are_mandatory_navigation_tools: true'), "3A must require Phase 2 navigation");
-assert.ok(targetContract.includes('phase_2_indexes_are_not_evidence: true'), "3A must declare indexes are not evidence");
-assert.ok(targetContract.includes('company_level_lane_forbidden: true'), "3A must forbid company-level lane");
-assert.ok(targetPrompt.includes("Target Profile Review must not emit `business_context.lane`"), "3A prompt must forbid business_context.lane");
-assert.equal(targetContract.includes('"lane"'), false, "3A target profile schema must not contain a lane field");
+for (const required of [
+  "<REFERENCE_PACKET>",
+  "DOMAIN_PACKAGE_KEY_v0.md",
+  "package-catalog.v0.json",
+  "DOMAIN_DERIVATION_REGISTRY_v0.yaml",
+  "DOMAIN_DERIVATION_REGISTRY_v0",
+  "PRIMARY_DOMAIN_AI_GOVERNANCE",
+  "PRIMARY_DOMAIN_FINTECH",
+  "AI_OVERLAY_MOUNTED",
+  "trigger_if",
+  "exclude_if",
+  "<RUNTIME_PACKET>"
+]) {
+  assert.ok(prompt.includes(required), `3B prompt build missing registry/package reference content: ${required}`);
+}
 
-assert.ok(domainContract.includes('implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE"'), "3B contract must be active");
-assert.ok(domainContract.includes('registry_ladder_prompt_active: true'), "3B must use registry ladder prompt");
-assert.ok(domainContract.includes('phase_2_indexes_are_navigation_only: true'), "3B must declare Phase 2 indexes navigation-only");
-assert.ok(domainContract.includes('company_level_lane_forbidden: true'), "3B must forbid company-level lane");
-assert.ok(domainContract.includes('"business_context.lane"'), "3B forbidden outputs must include business_context.lane");
-assert.ok(domainPrompt.includes("not evidence"), "3B prompt must state indexes are not evidence");
-assert.ok(domainPrompt.includes("must not emit Lane"), "3B prompt must forbid Lane");
-assert.ok(domainPrompt.includes("package mount"), "3B prompt must distinguish AI package mount from activity/exposure lock");
+const compiled = await compileDomainDerivationArtifacts({
+  run,
+  artifacts,
+  modelOutput: {
+    domain_derivation_profile: {
+      primary_domain_derivation: { evaluated_rules: [] },
+      ai_mount_derivation: { evaluated_rules: [] },
+      fusion_candidate_derivation: { evaluated_rules: [] },
+      limitation_ledger: [],
+      contradiction_ledger: []
+    }
+  }
+});
 
-assert.ok(domainRegistry.includes("AI package mount is AI_PRIMARY and AI overlay is prohibited"), "registry must prohibit overlay when AI is primary");
-assert.ok(domainRegistry.includes("AI_OVERLAY_MOUNTED is package availability only and does not trigger AI exposure rows"), "registry must limit AI overlay to package availability only in 3B");
-assert.ok(domainRegistry.includes("Fusion candidates are owned by the locked primary domain package"), "registry must keep fusion ownership with primary domain");
-assert.ok(domainValidator.includes('"LOCKED_FOR_PACKAGE_MOUNT_ONLY"'), "3B validator must expose package-mount-only AI overlay status");
-assert.ok(domainValidator.includes('activity_lock_status: "DEFERRED_TO_PHASE_5"'), "3B validator must defer AI activity lock to Phase 5");
-assert.ok(domainValidator.includes('exposure_lock_status: "DEFERRED_TO_PHASE_9"'), "3B validator must defer AI exposure lock to Phase 9");
-assert.ok(domainValidator.includes('fusion_owner: primary.selected_package'), "fusion candidates must be owned by locked primary domain");
-assert.ok(domainValidator.includes('dynamic_routing_enabled'), "manifest compiler must keep runtime flags false");
-assert.ok(packageJson.includes("check:phase3-sync-v0"), "package.json must expose Phase 3 sync check");
+assert.ok(compiled.output.domain_derivation_profile, "3B compiler must emit domain_derivation_profile");
+assert.ok(compiled.output.active_run_package_manifest, "3B compiler must emit active_run_package_manifest");
+assert.equal(compiled.output.active_run_package_manifest.selection_stage, "PHASE_3B_DOMAIN_DERIVATION");
+assert.equal(compiled.output.active_run_package_manifest.domain_derivation_profile_ref, "domain_derivation_profile");
+assert.ok(Object.prototype.hasOwnProperty.call(compiled.output.active_run_package_manifest, "updated_at"), "canonical manifest helper must add updated_at");
+assert.ok(Object.prototype.hasOwnProperty.call(compiled.output.active_run_package_manifest, "validation"), "canonical manifest helper must add validation block");
+assert.equal(compiled.output.active_run_package_manifest.runtime_flags.dynamic_routing_enabled, false);
+assert.equal(compiled.output.active_run_package_manifest.runtime_flags.field_registry_compile_enabled, false);
 
-console.log(JSON.stringify({ check: "phase3 sync v0", status: "PASS", enforced: ["3A_ACTIVE_METADATA", "3A_LANE_FREE", "3B_REGISTRY_LADDER", "PHASE2_NAVIGATION_NOT_EVIDENCE", "AI_PACKAGE_MOUNT_ONLY", "FUSION_DOMAIN_OWNED"] }, null, 2));
+const validator = read("src/phases/03-domain-derivation/validators/domain-derivation.validator.js");
+assert.ok(validator.includes("buildPhase3BDomainDerivationManifestUpdate"), "3B runtime validator must call canonical manifest helper");
+assert.equal(validator.includes("function compileActiveRunPackageManifest({ run, artifacts, profile, validation }) {\n  const before"), false, "inline manifest brain must not be present");
+
+console.log(JSON.stringify({ check: "phase3 sync v0", status: "PASS", enforced: ["3A_PIPELINE_READ_SYNC", "3B_PIPELINE_READ_WRITE_SYNC", "3B_PROMPT_REFERENCE_BUILD", "3B_REGISTRY_VISIBLE_TO_MODEL", "3B_CANONICAL_MANIFEST_COMPILER", "RUNTIME_FLAGS_REMAIN_FALSE"] }, null, 2));
+
+function artifactFor(name) {
+  if (name.startsWith("lossless_root__")) {
+    return {
+      artifact_name: name,
+      common_root: name.replace(/^lossless_root__/, ""),
+      sources: [],
+      storage_mode: "UNSAVED_EMPTY"
+    };
+  }
+  if (name === "active_run_package_manifest") {
+    return { artifact_name: name, selection_stage: "PRE_PHASE_1_DOMAIN_PREFLIGHT", runtime_flags: {} };
+  }
+  return { artifact_name: name, status: "LOCKED" };
+}
