@@ -23,9 +23,11 @@ for(const r of ["source_discovery_handoff","cartography_index","target_profile_s
 for(const f of ["legal_cartography_index","activity_profile_source_index","data_privacy_navigation_index","legal_doc_inventory","legal_doc_extraction_index","legal_doc_{DOC_TYPE}"])assert.equal(PIPELINE_CONTRACTS.M7_TARGET_PROFILE.reads.includes(f),false,`3A forbidden ${f}`);
 assert.deepEqual(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.reads,DOMAIN_DERIVATION_CONTRACT.reads);
 assert.deepEqual(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.writes,DOMAIN_DERIVATION_ARTIFACT_NAMES);
+assert.deepEqual(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.prompt_files,DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files);
 assert.equal(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.agent_id,"agent_3_target_feature");
-assert.equal(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.prompt_package_status,"PENDING_FINAL_PROMPT_AUTHORING");
+assert.equal(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.prompt_package_status,"ACTIVE_REGISTRY_LADDER_PROMPT");
+assert.equal(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.registry_ladder_prompt_active,true);
 for(const r of ["source_discovery_handoff","cartography_index","target_profile_source_index","activity_profile_source_index","target_profile","domain_selection_profile","active_run_package_manifest",...dRoots])assert.ok(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.reads.includes(r),`3B missing ${r}`);
 for(const f of no)assert.equal(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.reads.includes(f),false,`3B forbidden ${f}`);
 for(const retired of ["data_provenance_profile","data_provenance_profile_forensics","extended_dap_india_readiness_profile","integrated_dap_report","m10_selected_legal_support_packet","m7_deterministic_legal_signal_overlay"])assert.equal(ARTIFACT_NAMES.includes(retired),false,`${retired} active`);
-console.log(JSON.stringify({check:"phase1-8 central runtime",status:"PASS",enforced_gates:["PHASE1_8_JOB_CHAIN","PHASE3A_SCOPED_LOSSLESS_TARGET_EVIDENCE","PHASE3B_SCOPED_NON_LEGAL_TARGET_ACTIVITY_EVIDENCE","PHASE3B_AGENT3_PROMPT_PENDING"]},null,2));
+console.log(JSON.stringify({check:"phase1-8 central runtime",status:"PASS",enforced_gates:["PHASE1_8_JOB_CHAIN","PHASE3A_SCOPED_LOSSLESS_TARGET_EVIDENCE","PHASE3B_SCOPED_NON_LEGAL_TARGET_ACTIVITY_EVIDENCE","PHASE3B_AGENT3_ACTIVE_REGISTRY_LADDER_PROMPT"]},null,2));
