@@ -12,11 +12,16 @@ const ART = Object.freeze({
   legalDocExtractionIndex: "legal_doc_extraction_index",
   legalDocLosslessValidationManifest: "legal_doc_lossless_validation_manifest",
   legalDocDynamicPattern: "legal_doc_{DOC_TYPE}",
-  legalDeterministicMap: "legal_cartography_deterministic_map",
-  legalSemanticProfile: "legal_cartography_semantic_profile",
-  legalReinvestigationWorkpad: "legal_cartography_reinvestigation_workpad",
-  legalIndex: "legal_cartography_index",
-  legalSignalDerivationProfile: "legal_signal_derivation_profile",
+  cartographySourceInventory: "cartography_source_inventory",
+  cartographyLocatorSpine: "cartography_locator_spine",
+  cartographyProfileRouteMatrix: "cartography_profile_route_matrix",
+  cartographySemanticNavigationOverlay: "cartography_semantic_navigation_overlay",
+  targetProfileSourceIndex: "target_profile_source_index",
+  activityProfileSourceIndex: "activity_profile_source_index",
+  dataProvenanceSourceIndex: "data_provenance_source_index",
+  legalGovernanceSourceIndex: "legal_governance_source_index",
+  cartographyIndex: "cartography_index",
+  cartographyValidationManifest: "cartography_validation_manifest",
   targetProfile: "target_profile",
   targetForensics: "target_profile_forensics",
   activityInventory: "feature_candidate_inventory",
@@ -24,7 +29,6 @@ const ART = Object.freeze({
   activityForensics: "target_feature_profile_forensics",
   dapRegistryManifest: "dap_registry_manifest",
   dapStrategicDerivationMatrix: "dap_strategic_derivation_matrix",
-  dataPrivacyNavigationIndex: "data_privacy_navigation_index",
   dapSemanticBatchRouteManifest: "dap_semantic_batch_route_manifest",
   dapSemanticBatchValidationManifest: "dap_semantic_batch_validation_manifest",
   dataProvenanceSemanticBatchGate: "data_provenance_profile_semantic_batch_gate",
@@ -54,7 +58,7 @@ const ART = Object.freeze({
 });
 
 export const DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES = Object.freeze([ART.domainSelectionProfile, ART.activeRunPackageManifest]);
-export const AGENT_IDS = Object.freeze({ sourceUrlManifest: "agent_1a_url_manifest", sourceExtractor: "agent_1b_extract", sourceDiscovery: "agent_2a_bucket_routing", legalCartography: "agent_2b_m9", targetActivity: "agent_3_target_feature", dataProvenance: "agent_4_data_privacy", exposureRegistry: "agent_5_exposure_registry", operatorChallenge: "agent_7_m12", documentSourceIngestor: "document_source_ingestor", compiler: "compiler", qualifiedReview: "qualified_review_system", diligenceQaGate: "diligence_qa_gate", assemblyEngine: "assembly_engine", renderer: "portfolio_renderer", operator: "operator" });
+export const AGENT_IDS = Object.freeze({ sourceUrlManifest: "agent_1a_url_manifest", sourceExtractor: "agent_1b_extract", sourceDiscovery: "agent_2a_bucket_routing", cartographyIndex: "agent_2_cartography_index", targetActivity: "agent_3_target_feature", dataProvenance: "agent_4_data_privacy", exposureRegistry: "agent_5_exposure_registry", operatorChallenge: "agent_7_m12", documentSourceIngestor: "document_source_ingestor", compiler: "compiler", qualifiedReview: "qualified_review_system", diligenceQaGate: "diligence_qa_gate", assemblyEngine: "assembly_engine", renderer: "portfolio_renderer", operator: "operator" });
 
 export const COMMON_ROOT_CODES = Object.freeze(["homepage_landing", "about_company", "legal_identity_notice", "product_service", "platform_feature_solution", "pricing_commercial_availability", "privacy_data_processing", "security_trust", "technical_docs_api_developer", "docs_api_data_flow", "trust_compliance", "contact_notice", "operator_entity_signals", "supporting_company_signals", "use_case_customer_industry", "integrations_ecosystem", "support_help", "blog_resources", "careers_hiring", "public_repository_developer_assets", "third_party_profiles"]);
 const COMMON_ROOT_PATTERN_SOURCE = COMMON_ROOT_CODES.map(escapeRegExp).join("|");
@@ -72,15 +76,24 @@ export const ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES = Object.freeze(["lossless_r
 export const DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES = Object.freeze(["lossless_root__privacy_data_processing", "lossless_root__security_trust", "lossless_root__technical_docs_api_developer", "lossless_root__docs_api_data_flow", "lossless_root__trust_compliance"]);
 export const LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES = Object.freeze([...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION, "lossless_root__legal_identity_notice", "lossless_root__privacy_data_processing", "lossless_root__security_trust", "lossless_root__trust_compliance", "lossless_root__contact_notice"]);
 
+export const CARTOGRAPHY_LAYER1_ARTIFACT_NAMES = Object.freeze([ART.cartographySourceInventory]);
+export const CARTOGRAPHY_LAYER2_ARTIFACT_NAMES = Object.freeze([ART.cartographyLocatorSpine]);
+export const CARTOGRAPHY_LAYER3_ARTIFACT_NAMES = Object.freeze([ART.cartographyProfileRouteMatrix]);
+export const CARTOGRAPHY_LAYER4_ARTIFACT_NAMES = Object.freeze([ART.cartographySemanticNavigationOverlay]);
+export const CARTOGRAPHY_PROFILE_INDEX_ARTIFACT_NAMES = Object.freeze([ART.targetProfileSourceIndex, ART.activityProfileSourceIndex, ART.dataProvenanceSourceIndex, ART.legalGovernanceSourceIndex]);
+export const CARTOGRAPHY_LAYER5_ARTIFACT_NAMES = Object.freeze([...CARTOGRAPHY_PROFILE_INDEX_ARTIFACT_NAMES, ART.cartographyIndex, ART.cartographyValidationManifest]);
+export const CARTOGRAPHY_ARTIFACT_NAMES = Object.freeze([...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES]);
+export const CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES = Object.freeze([ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.sourceDiscoveryMatrixManifest, ART.neutralEvidenceBucketManifest, ART.adapterExpansionLog, "source_family_index", ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION]);
+
 export const FEATURE_CANDIDATE_INVENTORY_ARTIFACT_NAMES = Object.freeze([ART.activityInventory]);
-export const LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAMES = Object.freeze([ART.legalSignalDerivationProfile]);
+export const LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAMES = Object.freeze([]);
 export const M7_DETERMINISTIC_LEGAL_SIGNAL_ARTIFACT_NAMES = Object.freeze([]);
 export const M10_SELECTED_LEGAL_SUPPORT_ARTIFACT_NAMES = Object.freeze([]);
 export const PHASE7_DAP_LAYER1_ARTIFACT_NAMES = Object.freeze([ART.dapRegistryManifest, ART.dapStrategicDerivationMatrix]);
-export const PHASE7_DAP_LAYER2_ARTIFACT_NAMES = Object.freeze([ART.dataPrivacyNavigationIndex]);
+export const PHASE7_DAP_LAYER2_ARTIFACT_NAMES = Object.freeze([]);
 export const PHASE7_DAP_LAYER3_ARTIFACT_NAMES = Object.freeze([ART.dapSemanticBatchRouteManifest]);
 export const PHASE7_DAP_BATCH_ARTIFACT_NAMES = Object.freeze(["dap_semantic_batch_exec_artifact", "dap_semantic_batch_lim_artifact", "dap_semantic_batch_party_artifact", "dap_semantic_batch_role_artifact", "dap_semantic_batch_flow_artifact", "dap_semantic_batch_obj_artifact", "dap_semantic_batch_auth_artifact", "dap_semantic_batch_ctrl_artifact", "dap_semantic_batch_contact_cm_artifact", "dap_semantic_batch_vend_artifact", "dap_semantic_batch_loc_artifact", "dap_semantic_batch_ret_artifact", "dap_semantic_batch_sec_artifact", "dap_semantic_batch_sens_artifact", "dap_semantic_batch_dom_artifact", "dap_semantic_batch_ready_artifact", "dap_semantic_batch_req_artifact"]);
-export const PHASE7_DAP_LAYER4_ARTIFACT_NAMES = Object.freeze([...PHASE7_DAP_LAYER1_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER2_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER3_ARTIFACT_NAMES, ...PHASE7_DAP_BATCH_ARTIFACT_NAMES]);
+export const PHASE7_DAP_LAYER4_ARTIFACT_NAMES = Object.freeze([...PHASE7_DAP_LAYER1_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER3_ARTIFACT_NAMES, ...PHASE7_DAP_BATCH_ARTIFACT_NAMES]);
 export const PHASE7_DAP_LAYER5_ARTIFACT_NAMES = Object.freeze([ART.dapSemanticBatchValidationManifest, ART.dataProvenanceSemanticBatchGate]);
 export const PHASE7_DAP_RUNTIME_ARTIFACT_NAMES = Object.freeze([...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES]);
 export const PHASE8_DAP_FORENSICS_ARTIFACT_NAMES = Object.freeze([ART.dapForensicsProfile]);
@@ -109,15 +122,15 @@ export const AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES = Object.freeze([...AGENT_
 export const AGENT_1B_ARTIFACT_NAMES = AGENT_1B_REQUIRED_ARTIFACT_NAMES;
 export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_REQUIRED_ARTIFACT_NAMES]);
 
-export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze(["source_family_index", ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES]);
-export const ARTIFACT_NAMES = Object.freeze([...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES, ART.rendererPayload]);
+export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze(["source_family_index", ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ...CARTOGRAPHY_ARTIFACT_NAMES, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES]);
+export const ARTIFACT_NAMES = Object.freeze([...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ...CARTOGRAPHY_ARTIFACT_NAMES, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ART.challengeGate, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES, ART.rendererPayload]);
 export const AGENTS = Object.freeze([...Object.values(AGENT_IDS)]);
 
 export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceUrlManifest]: AGENT_1A_ARTIFACT_NAMES,
   [AGENT_IDS.sourceExtractor]: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES,
   [AGENT_IDS.sourceDiscovery]: SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES,
-  [AGENT_IDS.legalCartography]: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.legalSignalDerivationProfile],
+  [AGENT_IDS.cartographyIndex]: CARTOGRAPHY_ARTIFACT_NAMES,
   [AGENT_IDS.targetActivity]: [ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics],
   [AGENT_IDS.dataProvenance]: [...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern],
   [AGENT_IDS.exposureRegistry]: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics, ART.challengeGate],
@@ -135,11 +148,11 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceUrlManifest]: [],
   [AGENT_IDS.sourceExtractor]: ["deduped_url_manifest", ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES],
   [AGENT_IDS.sourceDiscovery]: [...AGENT_1_ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION],
-  [AGENT_IDS.legalCartography]: ["source_family_index", ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff],
-  [AGENT_IDS.targetActivity]: ["source_family_index", ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.legalSignalDerivationProfile, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ...TARGET_PROFILE_SOURCE_ARTIFACT_NAMES, ...ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION],
-  [AGENT_IDS.dataProvenance]: ["source_family_index", ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern, ...DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES],
-  [AGENT_IDS.exposureRegistry]: ["source_family_index", ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES],
-  [AGENT_IDS.operatorChallenge]: [...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.legalIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES],
+  [AGENT_IDS.cartographyIndex]: CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES,
+  [AGENT_IDS.targetActivity]: [ART.cartographyIndex, ART.targetProfileSourceIndex, ART.activityProfileSourceIndex, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES],
+  [AGENT_IDS.dataProvenance]: [ART.cartographyIndex, ART.dataProvenanceSourceIndex, ART.legalGovernanceSourceIndex, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern],
+  [AGENT_IDS.exposureRegistry]: [ART.cartographyIndex, ART.legalGovernanceSourceIndex, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES],
+  [AGENT_IDS.operatorChallenge]: [ART.cartographyIndex, ART.legalGovernanceSourceIndex, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ART.targetProfile, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES],
   [AGENT_IDS.compiler]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
   [AGENT_IDS.qualifiedReview]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
   [AGENT_IDS.diligenceQaGate]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
@@ -148,7 +161,33 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.operator]: [...ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION, ...M11_DYNAMIC_ARTIFACT_PATTERNS, ...PHASE7_DAP_DYNAMIC_ARTIFACT_PATTERNS]
 });
 
-export const INTERNAL_JOB_WRITE_PERMISSIONS = Object.freeze({ AGENT_1A_URL_MANIFEST: AGENT_1A_ARTIFACT_NAMES, AGENT_1B_EXTRACT: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES, M6_BUCKET_INDEX: SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES, M9: [ART.legalDeterministicMap, ART.legalSemanticProfile, ART.legalReinvestigationWorkpad, ART.legalIndex, ART.legalSignalDerivationProfile], M7_TARGET_PROFILE: [ART.targetProfile], M7_TARGET_PROFILE_FORENSICS: [ART.targetForensics], M8_FEATURE_CANDIDATE_INVENTORY: [ART.activityInventory], M8_TARGET_FEATURE_PROFILE: [ART.activityProfile], M8_TARGET_FEATURE_PROFILE_FORENSICS: [ART.activityForensics], DATA_PROVENANCE_PROFILE_LAYER4: [...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern], DATA_PROVENANCE_PROFILE_LAYER5: PHASE7_DAP_LAYER5_ARTIFACT_NAMES, DATA_PROVENANCE_PROFILE_FORENSICS: PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, M11: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics], M12: [ART.challengeGate], NORMALIZED_COMPILER: COMPILER_ARTIFACT_NAMES, NORMALIZED_REPORT_RENDERER: [ART.rendererPayload], RENDERER: [ART.rendererPayload], QUALIFIED_REVIEW: QUALIFIED_REVIEW_RUNTIME_ARTIFACT_NAMES, DILIGENCE_QA_COMPLETE: DILIGENCE_QA_ARTIFACT_NAMES, QUALIFIED_REVIEW_SUBMISSION: [ART.qualifiedReviewSubmission], ASSEMBLY_ENGINE: [] });
+export const INTERNAL_JOB_WRITE_PERMISSIONS = Object.freeze({
+  AGENT_1A_URL_MANIFEST: AGENT_1A_ARTIFACT_NAMES,
+  AGENT_1B_EXTRACT: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES,
+  M6_BUCKET_INDEX: SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES,
+  P2_SOURCE_INVENTORY_CARTOGRAPHY: CARTOGRAPHY_LAYER1_ARTIFACT_NAMES,
+  P2_LOCATOR_SPINE: CARTOGRAPHY_LAYER2_ARTIFACT_NAMES,
+  P2_PROFILE_ROUTE_MATRIX: CARTOGRAPHY_LAYER3_ARTIFACT_NAMES,
+  P2_SEMANTIC_NAVIGATION_OVERLAY: CARTOGRAPHY_LAYER4_ARTIFACT_NAMES,
+  P2_INDEX_COMPILER_VALIDATION: CARTOGRAPHY_LAYER5_ARTIFACT_NAMES,
+  M7_TARGET_PROFILE: [ART.targetProfile],
+  M7_TARGET_PROFILE_FORENSICS: [ART.targetForensics],
+  M8_FEATURE_CANDIDATE_INVENTORY: [ART.activityInventory],
+  M8_TARGET_FEATURE_PROFILE: [ART.activityProfile],
+  M8_TARGET_FEATURE_PROFILE_FORENSICS: [ART.activityForensics],
+  DATA_PROVENANCE_PROFILE_LAYER4: [...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern],
+  DATA_PROVENANCE_PROFILE_LAYER5: PHASE7_DAP_LAYER5_ARTIFACT_NAMES,
+  DATA_PROVENANCE_PROFILE_FORENSICS: PHASE8_DAP_FORENSICS_ARTIFACT_NAMES,
+  M11: [ART.exposureRoutePlan, ART.exposureBatchPattern, ART.exposureBatchValidationPattern, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ART.exposureForensics],
+  M12: [ART.challengeGate],
+  NORMALIZED_COMPILER: COMPILER_ARTIFACT_NAMES,
+  NORMALIZED_REPORT_RENDERER: [ART.rendererPayload],
+  RENDERER: [ART.rendererPayload],
+  QUALIFIED_REVIEW: QUALIFIED_REVIEW_RUNTIME_ARTIFACT_NAMES,
+  DILIGENCE_QA_COMPLETE: DILIGENCE_QA_ARTIFACT_NAMES,
+  QUALIFIED_REVIEW_SUBMISSION: [ART.qualifiedReviewSubmission],
+  ASSEMBLY_ENGINE: []
+});
 export const PHASE_WRITE_PERMISSIONS = INTERNAL_JOB_WRITE_PERMISSIONS;
 
 export function isKnownArtifactName(artifactName) {
@@ -170,5 +209,5 @@ export function assertCanReadArtifact(agentId, artifactName) { assertKnownAgent(
 export function assertCanWriteArtifact(agentId, artifactName) { assertKnownAgent(agentId); assertKnownArtifactName(artifactName); const allowed = WRITE_PERMISSIONS[agentId] || []; if (!allowed.some((permission) => artifactMatchesPermission(artifactName, permission))) throw new Error(`WRITE_FORBIDDEN:${agentId}:${artifactName}`); }
 export function assertInternalJobCanWriteArtifact(internalJobId, artifactName) { assertKnownArtifactName(artifactName); const allowed = INTERNAL_JOB_WRITE_PERMISSIONS[internalJobId] || []; if (!allowed.some((permission) => artifactMatchesPermission(artifactName, permission))) throw new Error(`INTERNAL_JOB_WRITE_FORBIDDEN:${internalJobId}:${artifactName}`); }
 export function publicPermissionMatrix() { return { read: READ_PERMISSIONS, write: WRITE_PERMISSIONS, internal_job_write: INTERNAL_JOB_WRITE_PERMISSIONS }; }
-export const ARTIFACT_PERMISSION_CONTRACT_STATUS = Object.freeze({ central_runtime_contract: "artifact-permissions.contract", phase1_agnostic_source_discovery_artifacts_registered: true, phase1_legal_doc_granular_artifacts_registered: true, pre_phase_1_domain_lock_forbidden: true, phase7_semantic_batch_artifacts_registered: true, phase8_dap_forensics_registered: true });
+export const ARTIFACT_PERMISSION_CONTRACT_STATUS = Object.freeze({ central_runtime_contract: "artifact-permissions.contract", phase1_agnostic_source_discovery_artifacts_registered: true, phase1_legal_doc_granular_artifacts_registered: true, phase2_cartography_index_artifacts_registered: true, phase2_retired_legal_cartography_artifacts_removed: true, phase2_retired_legal_signal_derivation_removed: true, phase7_data_navigation_artifact_retired_from_active_contract: true, pre_phase_1_domain_lock_forbidden: true, phase7_semantic_batch_artifacts_registered: true, phase8_dap_forensics_registered: true });
 function escapeRegExp(value) { const replacements = { "\\": "\\\\", "^": "\\^", "$": "\\$", "*": "\\*", "+": "\\+", "?": "\\?", ".": "\\.", "(": "\\(", ")": "\\)", "|": "\\|", "{": "\\{", "}": "\\}", "[": "\\[", "]": "\\]" }; return String(value).split("").map((ch) => replacements[ch] || ch).join(""); }
