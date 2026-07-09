@@ -10,22 +10,31 @@ const DOMAIN_DERIVATION_LOSSLESS_READS = Object.freeze([
   "lossless_root__integrations_ecosystem"
 ]);
 
+const DOMAIN_DERIVATION_PROMPT_FILES = Object.freeze([
+  "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md",
+  "agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+  "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
+  "agent-packages/agent_3_target_feature/02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md",
+  "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md",
+  "agent-packages/agent_3_target_feature/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md"
+]);
+
 export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   internal_job_id: "P3_DOMAIN_DERIVATION_LAYER",
   public_label: "Domain Derivation Layer",
-  implementation_status: "CONTRACT_LOCKED_RUNNER_ADDED_PROMPT_PACKAGE_PENDING",
-  execution_mode: "semantic_registry_derivation_with_deterministic_gate",
+  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE",
+  execution_mode: "semantic_registry_ladder_derivation_with_deterministic_gate",
   agent_id: "agent_3_target_feature",
   actor_id: "agent_3_target_feature",
   agent_package_binding: Object.freeze({
     agent_package_root: "agent-packages/agent_3_target_feature",
-    prompt_package_status: "PENDING_FINAL_PROMPT_AUTHORING",
+    prompt_package_status: "ACTIVE_REGISTRY_LADDER_PROMPT",
+    prompt_files: DOMAIN_DERIVATION_PROMPT_FILES,
     expected_prompt_files: Object.freeze([
-      "agent-packages/agent_3_target_feature/04_P3_DOMAIN_DERIVATION_LAYER.md",
-      "agent-packages/agent_3_target_feature/04A_P3_DOMAIN_DERIVATION_OUTPUT_CONTRACT.md",
-      "agent-packages/agent_3_target_feature/04B_P3_DOMAIN_DERIVATION_VALIDATOR_RULES.md"
-    ])
+      "agent-packages/agent_3_target_feature/02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md"
+    ]),
+    prompt_non_updatability_rule: "New domains, overlays, fusion candidates, and regulatory overlays must be added through DOMAIN_DERIVATION_REGISTRY_v0.yaml and package-catalog.v0.json, not by editing the prompt."
   }),
   reads: Object.freeze([
     "source_discovery_handoff",
@@ -85,6 +94,8 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   ]),
   output_contract: Object.freeze({
     artifact_name: "domain_derivation_profile",
+    model_response_top_level_key: "domain_derivation_profile",
+    compiler_emits_active_run_package_manifest: true,
     required_top_level_branches: Object.freeze([
       "domain_derivation_metadata",
       "input_scope",
@@ -105,6 +116,21 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
       "CANDIDATE_ONLY"
     ])
   }),
+  registry_ladder_contract: Object.freeze({
+    prompt_is_domain_agnostic: true,
+    registry_is_rule_authority: true,
+    package_catalog_is_package_authority: true,
+    prompt_must_not_list_domain_specific_classification_logic: true,
+    new_domains_do_not_require_prompt_update: true,
+    prompt_update_required_only_for: Object.freeze([
+      "new_rule_type",
+      "new_output_branch",
+      "new_evidence_class",
+      "new_manifest_field",
+      "new_boolean_grammar",
+      "new_phase_boundary"
+    ])
+  }),
   manifest_update_contract: Object.freeze({
     artifact_name: "active_run_package_manifest",
     selection_stage_after_3b: "PHASE_3B_DOMAIN_DERIVATION",
@@ -120,7 +146,10 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     model_derives_condition_level_semantics: true,
     deterministic_validator_is_gate_not_brain: true,
     registry_driven_derivation: true,
+    registry_ladder_prompt_active: true,
     hardcoded_domain_logic_forbidden: true,
+    prompt_domain_examples_forbidden: true,
+    new_domains_added_by_registry_not_prompt: true,
     phase_2_indexes_are_navigation_only: true,
     scoped_lossless_target_activity_evidence_required: true,
     target_profile_is_context_not_proof: true,
@@ -148,4 +177,8 @@ export function domainDerivationReadArtifacts() {
 
 export function domainDerivationLosslessReadArtifacts() {
   return [...DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads];
+}
+
+export function domainDerivationPromptFiles() {
+  return [...DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files];
 }
