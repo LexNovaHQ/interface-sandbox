@@ -45,7 +45,7 @@ for (const retiredValue of ["QR-004", "QR-013", "QR-016"]) {
 
 assert.equal(finalIndex.downstream_rules.legal_signal_derivation_profile_is_separate_job_b_artifact, true);
 assert.equal(finalIndex.downstream_rules.qualified_review_legal_signals_retired_from_m9_index, true);
-assert.equal(finalIndex.downstream_rules.use_only_loaded_legal_corpus, true);
+assert.equal(finalIndex.downstream_rules.use_only_phase1_legal_common_root_and_legal_doc_sources, true);
 console.log("Legal Cartography and Index self-contained smoke: PASS");
 
 function assertSemanticValidationLockedOrLimited(validation) {
