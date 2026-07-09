@@ -17,6 +17,7 @@ const profile = result.output.domain_selection_profile;
 const manifest = result.output.active_run_package_manifest;
 assert.equal(result.ok, true);
 assert.equal(profile.selection_stage, "PRE_PHASE_1");
+assert.equal(profile.status, "PROVISIONAL_ONLY");
 assert.equal(profile.hook_name, "pre_phase_1_domain_preflight");
 assert.ok(profile.provisional_primary_domain_candidates.some((candidate) => candidate.package_id === "fintech"), "fintech must be provisional for underwriting intake");
 assert.ok(profile.provisional_capability_overlay_candidates.some((candidate) => candidate.package_id === "ai-native"), "ai-native must be provisional for AI intake");
