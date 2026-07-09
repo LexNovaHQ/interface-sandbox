@@ -1,13 +1,13 @@
-import { DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, PHASE7_DAP_BATCH_ARTIFACT_NAMES, SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES, SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES } from "./artifact-permissions.contract.js";
+import { CARTOGRAPHY_ARTIFACT_NAMES, DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, PHASE7_DAP_BATCH_ARTIFACT_NAMES, SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES, SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES } from "./artifact-permissions.contract.js";
 
 export const CENTRAL_ARTIFACT_GROUPS = Object.freeze({
   SOURCE_DISCOVERY: [...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, "deduped_url_manifest", ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, "source_family_index", ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES],
-  LEGAL_CARTOGRAPHY_INDEX: ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"],
+  CARTOGRAPHY_INDEX: CARTOGRAPHY_ARTIFACT_NAMES,
   TARGET_PROFILE_REVIEW: ["target_profile"],
   TARGET_PROFILE_FORENSICS: ["target_profile_forensics"],
   ACTIVITY_PROFILE_REVIEW: ["feature_candidate_inventory", "target_feature_profile"],
   ACTIVITY_PROFILE_FORENSICS: ["target_feature_profile_forensics"],
-  DATA_PROVENANCE_PROFILE: ["dap_registry_manifest", "dap_strategic_derivation_matrix", "data_privacy_navigation_index", "dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, "dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"],
+  DATA_PROVENANCE_PROFILE: ["dap_registry_manifest", "dap_strategic_derivation_matrix", "dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, "dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"],
   DATA_PROVENANCE_FORENSICS: ["dap_forensics_profile"],
   EXPOSURE_PROFILE: ["exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "exposure_registry_profile_forensics"],
   OPERATOR_CHALLENGE: ["challenge_gate"],
