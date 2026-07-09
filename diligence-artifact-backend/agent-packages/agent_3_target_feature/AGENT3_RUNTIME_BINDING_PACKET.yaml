@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v10_activity_profile_v4_basis_coverage
+runtime_contract_version: v11_phase3a_scoped_lossless_no_lane
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -26,21 +26,17 @@ prompt_assembly_position:
 
 prompt_precedence:
   - Backend phase contracts control read/write authority.
-  - AI_REGISTRY_KEY.md is the base registry derivation reference for Target Profile Review and Activity Profile Review.
-  - Target Profile Review may use AI_REGISTRY_KEY.md only for §6 Lane derivation into business_context.lane.
-  - Activity Profile Review must use AI_REGISTRY_KEY.md directly as the active archetype and surface derivation authority.
-  - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation and must not be treated as an active M8 reference.
-  - Activity Profile Review must support multiple archetypes per activity when each selected archetype has independent AI_REGISTRY_KEY.md §4 trigger support.
-  - Activity Profile Review must emit archetype_derivation_basis and surface_derivation_basis as material basis arrays.
-  - Activity Profile Review must not emit retired material fields archetype_proof or surface_proof_and_routing_limits.
-  - Activity Profile Review must emit exactly one matching derivation-basis object per selected archetype code and per selected surface token using code_or_token.
-  - Activity Profile Review must not emit derivation-basis objects for unselected archetype codes or unselected surface tokens.
   - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
+  - Target Profile Review uses scoped target-profile lossless_root artifacts as evidence and Phase 2 indexes as navigation only.
+  - Target Profile Review may use legal_signal_derivation_profile only as bounded secondary input for owned notice and jurisdiction fields.
+  - Target Profile Review must not read legal_cartography_index or legal lossless document artifacts.
+  - Target Profile Review must not derive or emit business_context.lane.
+  - Target Profile Review must not derive primary domain package, AI overlay mount, AI archetype, surface classification, exposure rows, legal risk, or compliance conclusions.
+  - Domain Derivation Layer is a separate Phase 3B job and is not authorized by this Target Profile Review prompt.
   - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
   - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
   - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
-  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and P1-P5 lossless artifacts as evidence.
-  - P4 may support Activity Profile Review context but must not create candidate existence outside feature_candidate_inventory.
+  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and product/activity evidence authorized by the active backend phase contract.
   - Any package text that expands Target Profile Review, Target Profile Forensics, Activity Candidate Inventory, or Activity Profile Review material read/write authority is superseded by the phase-owned contract.
 
 allowed_phases:
@@ -54,46 +50,39 @@ read_artifacts:
     - source_discovery_handoff
   TARGET_PROFILE_REVIEW:
     - source_discovery_handoff
-    - lossless_family__T0_ROOT
-    - lossless_family__T1_IDENTITY
-    - lossless_family__T2_LEGAL_IDENTITY
-    - lossless_family__T3_OPERATOR_ENTITY
-    - lossless_family__T4_SUPPORTING_IDENTITY
+    - cartography_index
+    - target_profile_source_index
+    - lossless_root__homepage_landing
+    - lossless_root__about_company
+    - lossless_root__legal_identity_notice
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__contact_notice
+    - lossless_root__operator_entity_signals
+    - lossless_root__supporting_company_signals
     - legal_signal_derivation_profile
+    - domain_selection_profile
+    - active_run_package_manifest
   ACTIVITY_PROFILE_REVIEW:
-    - source_discovery_handoff
+    - cartography_index
+    - activity_profile_source_index
     - target_profile
     - target_profile_forensics
+    - domain_derivation_profile
+    - active_run_package_manifest
     - feature_candidate_inventory
-    - lossless_family__P1_PRODUCT
-    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-    - lossless_family__P4_USE_CASE_INDUSTRY
-    - lossless_family__P5_ENTERPRISE_PRICING
 
 forbidden_target_profile_review_read_artifacts:
   - legal_cartography_index
+  - legal_doc_inventory
+  - legal_doc_extraction_index
+  - legal_doc_{DOC_TYPE}
   - m7_deterministic_legal_signal_overlay
-  - lossless_family__L1_CORE_TERMS_PRIVACY
-  - lossless_family__L2_B2B_CONTRACTING
-  - lossless_family__L3_AI_USAGE_GOVERNANCE
-  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-  - lossless_family__L5_LEGAL_HUB_HOSTED
-  - lossless_family__L6_ENTITY_NOTICE
-  - lossless_family__P1_PRODUCT
-  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-  - lossless_family__P4_USE_CASE_INDUSTRY
-  - lossless_family__P5_ENTERPRISE_PRICING
-  - lossless_family__D1_SECURITY_TRUST
-  - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
-  - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
-  - lossless_family__D4_DOCS_API_DATA_FLOW
-  - lossless_family__D5_AI_SAFETY_TRANSPARENCY
+  - lossless_family__*
+  - activity/product roots outside the scoped Target Profile Review lossless_root list
+  - data-provenance roots
 
 required_reference_files:
   TARGET_PROFILE_REVIEW:
-    - AI_REGISTRY_KEY.md
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   ACTIVITY_PROFILE_REVIEW:
@@ -156,15 +145,6 @@ activity_profile_material_schema:
     - exclude_if_checked
     - material_basis
     - limitation
-  basis_coverage_rules:
-    - Every selected archetype code must have exactly one matching archetype_derivation_basis object whose code_or_token equals the selected archetype code.
-    - No archetype_derivation_basis object may exist for an unselected archetype code.
-    - Every selected surface token must have exactly one matching surface_derivation_basis object whose code_or_token equals the selected surface token.
-    - No surface_derivation_basis object may exist for an unselected surface token.
-    - Duplicate archetype_codes, surface_context_tokens, or derivation-basis code_or_token values are forbidden.
-  downstream_boundary:
-    - Activity Profile Review must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
-    - Activity Profile Review material must not include source URLs, source IDs, source pointers, candidate IDs, copied excerpts, confidence fields, forensic ledgers, validation status, lock status, or runtime trace.
 
 write_artifacts_in_order:
   TARGET_PROFILE_REVIEW:
@@ -184,19 +164,13 @@ write_artifacts_in_order:
 
 phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
-  - Target Profile Review must derive business_context.lane as A, B, Both, or controlled fallback using AI_REGISTRY_KEY.md §6.
-  - Target Profile Review must not turn Lane into a legal risk, exposure, compliance framework, or threat-trigger conclusion.
+  - Target Profile Review must not derive or emit business_context.lane.
+  - Target Profile Review must not turn bounded legal signals into legal risk, exposure, compliance framework, or threat-trigger conclusions.
   - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
-  - Target Profile Forensics may begin only after saved target_profile exists.
-  - Activity Candidate Inventory may begin only after saved target_profile and target_profile_forensics exist.
+  - Target Profile Forensics may begin only after saved target_profile and domain_derivation_profile exist under the active Phase 3 split.
+  - Activity Candidate Inventory may begin only after saved target_profile, domain_derivation_profile, active_run_package_manifest, and target_profile_forensics exist.
   - Activity Profile Review material may begin only after saved feature_candidate_inventory exists and is locked.
-  - Activity Profile Review material uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
-  - Activity Profile Review archetype/surface derivation must read AI_REGISTRY_KEY.md directly, not CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml.
-  - Activity Profile Review material must allow multiple archetypes per activity when each selected archetype has independent trigger support.
-  - Activity Profile Review material must emit archetype_derivation_basis and surface_derivation_basis, not archetype_proof or surface_proof_and_routing_limits.
-  - Activity Profile Review material must emit exactly one derivation-basis object per selected archetype code and per selected surface token.
-  - Activity Profile Review material must reject derivation-basis objects for unselected archetype codes or unselected surface tokens.
-  - Data Provenance Profile may begin only after feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics lock.
+  - Activity Profile Review material uses feature_candidate_inventory as candidate universe and backend-authorized product/activity evidence.
   - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
 
 forbidden_phases:
@@ -214,24 +188,10 @@ forbidden_outputs:
   - legal_cartography_index
   - legal_signal_derivation_profile
   - m7_deterministic_legal_signal_overlay
+  - domain_derivation_profile
+  - active_run_package_manifest
   - data_provenance_profile
   - exposure_registry_profile
   - challenge_gate
   - final_output_handoff
-  - renderer_payload
-  - registry_row_evaluation
-  - legal_risk_finding
-  - privacy_readiness_finding
-  - combined_material_and_forensic_response
-  - four_artifact_target_feature_bundle
-  - phase_output_wrapper
-  - terminal_receipt_in_backend_mode
-
-backend_permission_profile: target_activity_phase_contract_locked
-validator_profile: target_activity_profile_material_contract_validator
-phase_packet_contract: target_lane_activity_profile_review_material_contract_locked
-terminal_receipt_profile: target_activity_profile_manual_receipt_only
-
-next_phase_command: "backend runner advances through Target Profile Review, Target Profile Forensics, Activity Candidate Inventory, Activity Profile Review material, then Activity Profile Forensics after each artifact locks."
-stop_condition: "Stop after the active backend phase artifact is saved and validated."
 </RUNTIME_BINDING_PACKET>
