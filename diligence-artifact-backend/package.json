@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/runtime/main.js",
-    "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && node scripts/check-m8-feature-candidate-inventory.mjs && npm run check:phase1-8-runtime && npm run check:domain-gate-v0 && npm run check:domain-derivation-registry-v0 && npm run check:phase3a-target-profile && npm run check:phase3-domain-derivation",
+    "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && node scripts/check-m8-feature-candidate-inventory.mjs && npm run check:phase1-8-runtime && npm run check:domain-gate-v0 && npm run check:domain-derivation-registry-v0 && npm run check:phase3a-target-profile && npm run check:phase3-domain-derivation && npm run check:phase3-sync-v0",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:normalized": "node scripts/check-normalized-hardening.mjs",
     "check:m8-feature-candidates": "node scripts/check-m8-feature-candidate-inventory.mjs",
@@ -14,6 +14,7 @@
     "check:domain-derivation-registry-v0": "node scripts/check-domain-derivation-registry-v0.mjs",
     "check:phase3a-target-profile": "node scripts/check-phase3a-target-profile-package.mjs",
     "check:phase3-domain-derivation": "node scripts/check-phase3-domain-derivation-contract.mjs && node scripts/check-phase3-domain-derivation-downstream.mjs",
+    "check:phase3-sync-v0": "node scripts/check-phase3-sync-v0.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
   },
