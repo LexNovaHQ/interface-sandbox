@@ -7,6 +7,7 @@ import {
 } from "./domain-package-key.js";
 
 export const DOMAIN_SELECTION_PROFILE_ARTIFACT_NAME = "domain_selection_profile";
+export const PRE_PHASE_1_PROFILE_STATUS = "PROVISIONAL_ONLY";
 
 export function buildDomainSelectionProfileSchemaDefaults({ run = {}, catalog, now = new Date().toISOString() } = {}) {
   return {
@@ -15,6 +16,7 @@ export function buildDomainSelectionProfileSchemaDefaults({ run = {}, catalog, n
     selection_mode: DOMAIN_GATE_SELECTION_MODE,
     selection_stage: PRE_PHASE_1_SELECTION_STAGE,
     hook_name: PRE_PHASE_1_HOOK_NAME,
+    status: PRE_PHASE_1_PROFILE_STATUS,
     run_id: run.run_id || null,
     created_at: now,
     updated_at: now,
