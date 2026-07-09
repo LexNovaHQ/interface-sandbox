@@ -1,37 +1,12 @@
 import { createHash } from "node:crypto";
 import { CARTOGRAPHY_INDEX_CONTRACT, getCartographyIndexJobContract } from "./cartography-index.contract.js";
+import { buildDataPrivacyNavigationCompatibilityArtifacts } from "./data-privacy-navigation-compatibility.adapter.js";
 import { buildPhase7DataPrivacyNavigationIndex } from "../07-data-provenance-profile/layer2-data-privacy-navigation-index-builder.js";
 import { PHASE7_DAP_SEMANTIC_BATCH_PLAN } from "../07-data-provenance-profile/dap-strategic-derivation-matrix.js";
 
 const PROFILE_INDEXES = Object.freeze(["target_profile_source_index", "activity_profile_source_index"]);
-const PROFILE_BY_ROOT = Object.freeze({
-  homepage_landing: ["target_profile_source_index"],
-  about_company: ["target_profile_source_index"],
-  legal_identity_notice: ["target_profile_source_index"],
-  product_service: ["activity_profile_source_index"],
-  platform_feature_solution: ["activity_profile_source_index"],
-  pricing_commercial_availability: ["target_profile_source_index", "activity_profile_source_index"],
-  technical_docs_api_developer: ["activity_profile_source_index"],
-  docs_api_data_flow: ["activity_profile_source_index"],
-  contact_notice: ["target_profile_source_index"],
-  operator_entity_signals: ["target_profile_source_index"],
-  supporting_company_signals: ["target_profile_source_index"],
-  use_case_customer_industry: ["activity_profile_source_index"],
-  integrations_ecosystem: ["activity_profile_source_index"],
-  support_help: ["activity_profile_source_index"],
-  blog_resources: ["activity_profile_source_index"],
-  careers_hiring: ["target_profile_source_index"],
-  public_repository_developer_assets: ["activity_profile_source_index"],
-  third_party_profiles: ["target_profile_source_index"]
-});
-const TARGET_ACTIVITY_DOC_TYPES = Object.freeze({
-  terms_of_service: ["target_profile_source_index", "activity_profile_source_index"],
-  acceptable_use_policy: ["activity_profile_source_index"],
-  ai_policy: ["activity_profile_source_index"],
-  developer_terms: ["activity_profile_source_index"],
-  legal_notice: ["target_profile_source_index"],
-  eula: ["activity_profile_source_index"]
-});
+const PROFILE_BY_ROOT = Object.freeze({ homepage_landing: ["target_profile_source_index"], about_company: ["target_profile_source_index"], legal_identity_notice: ["target_profile_source_index"], product_service: ["activity_profile_source_index"], platform_feature_solution: ["activity_profile_source_index"], pricing_commercial_availability: ["target_profile_source_index", "activity_profile_source_index"], technical_docs_api_developer: ["activity_profile_source_index"], docs_api_data_flow: ["activity_profile_source_index"], contact_notice: ["target_profile_source_index"], operator_entity_signals: ["target_profile_source_index"], supporting_company_signals: ["target_profile_source_index"], use_case_customer_industry: ["activity_profile_source_index"], integrations_ecosystem: ["activity_profile_source_index"], support_help: ["activity_profile_source_index"], blog_resources: ["activity_profile_source_index"], careers_hiring: ["target_profile_source_index"], public_repository_developer_assets: ["activity_profile_source_index"], third_party_profiles: ["target_profile_source_index"] });
+const TARGET_ACTIVITY_DOC_TYPES = Object.freeze({ terms_of_service: ["target_profile_source_index", "activity_profile_source_index"], acceptable_use_policy: ["activity_profile_source_index"], ai_policy: ["activity_profile_source_index"], developer_terms: ["activity_profile_source_index"], legal_notice: ["target_profile_source_index"], eula: ["activity_profile_source_index"] });
 
 export async function runCartographyIndexJob({ run, internalJobId, contract, readArtifacts, readArtifact, saveArtifact } = {}) {
   const job = getCartographyIndexJobContract(internalJobId);
@@ -49,14 +24,7 @@ export async function runCartographyIndexJob({ run, internalJobId, contract, rea
   return { ok: true, phase_id: CARTOGRAPHY_INDEX_CONTRACT.central_phase_id, job_id: internalJobId, saved_artifacts: saved, output, phase_lock_status: resolveJobStatus(output), model_usage: internalJobId === "P2_SEMANTIC_NAVIGATION_OVERLAY" ? "SEMANTIC_GUIDANCE_BOUNDED_NO_FREE_CORPUS_READ" : "NONE_DETERMINISTIC" };
 }
 
-async function buildOutputForJob({ jobId, input }) {
-  if (jobId === "P2_SOURCE_INVENTORY_CARTOGRAPHY") return buildSourceInventory(input);
-  if (jobId === "P2_LOCATOR_SPINE") return buildLocatorSpine(input);
-  if (jobId === "P2_PROFILE_ROUTE_MATRIX") return buildProfileRouteMatrix(input);
-  if (jobId === "P2_SEMANTIC_NAVIGATION_OVERLAY") return buildSemanticNavigationOverlay(input);
-  if (jobId === "P2_INDEX_COMPILER_VALIDATION") return buildCompiledIndexes(input);
-  throw new Error(`UNKNOWN_CARTOGRAPHY_INDEX_JOB:${jobId || "missing"}`);
-}
+async function buildOutputForJob({ jobId, input }) { if (jobId === "P2_SOURCE_INVENTORY_CARTOGRAPHY") return buildSourceInventory(input); if (jobId === "P2_LOCATOR_SPINE") return buildLocatorSpine(input); if (jobId === "P2_PROFILE_ROUTE_MATRIX") return buildProfileRouteMatrix(input); if (jobId === "P2_SEMANTIC_NAVIGATION_OVERLAY") return buildSemanticNavigationOverlay(input); if (jobId === "P2_INDEX_COMPILER_VALIDATION") return buildCompiledIndexes(input); throw new Error(`UNKNOWN_CARTOGRAPHY_INDEX_JOB:${jobId || "missing"}`); }
 
 function buildSourceInventory({ run, artifacts }) {
   const rows = [];
@@ -89,22 +57,8 @@ function buildLocatorSpine({ run, artifacts }) {
   }
   return { cartography_locator_spine: baseArtifact({ run, artifact_type: "cartography_locator_spine", layer_id: "P2-L2", locators: locatorRows.map((row, index) => ({ ...row, locator_id: `LOC.${String(index + 1).padStart(5, "0")}` })), locator_count: locatorRows.length, locator_policy: navigationOnlyPolicy() }) };
 }
-
-function buildProfileRouteMatrix({ run, artifacts }) {
-  const spine = unwrap(artifacts.cartography_locator_spine);
-  const routes = [];
-  for (const locator of spine.locators || []) for (const profileIndex of routeProfilesForLocator(locator)) routes.push(routeRow({ locator, profileIndex }));
-  return { cartography_profile_route_matrix: baseArtifact({ run, artifact_type: "cartography_profile_route_matrix", layer_id: "P2-L3", routes: routes.map((row, index) => ({ ...row, route_id: `P2.ROUTE.${String(index + 1).padStart(5, "0")}` })), profile_index_counts: countBy(routes, "profile_index"), route_policy: navigationOnlyPolicy() }) };
-}
-
-function buildSemanticNavigationOverlay({ run, artifacts }) {
-  const matrix = unwrap(artifacts.cartography_profile_route_matrix);
-  const overlayRows = (matrix.routes || []).map((route, index) => {
-    const labels = semanticLabelsForRoute(route);
-    return { overlay_id: `SNO.${String(index + 1).padStart(5, "0")}`, route_id: route.route_id, locator_id: route.locator_id, profile_index: route.profile_index, semantic_labels: labels, reading_priority: priorityForRoute(route, labels), field_family_relevance: fieldFamiliesForRoute(route, labels), profile_relevance: route.profile_index, ambiguity_status: labels.includes("generic_route_candidate") ? "MEDIUM_AMBIGUITY" : "LOW_AMBIGUITY", domain_overlay_candidate_tags: overlayTagsForRoute(route, labels), semantic_guidance_only: true, no_fact_derivation: true, no_summary: true, no_excerpt: true };
-  });
-  return { cartography_semantic_navigation_overlay: baseArtifact({ run, artifact_type: "cartography_semantic_navigation_overlay", layer_id: "P2-L4", overlays: overlayRows, overlay_count: overlayRows.length, semantic_policy: { ...navigationOnlyPolicy(), semantic_guidance_only: true, no_fact_derivation: true } }) };
-}
+function buildProfileRouteMatrix({ run, artifacts }) { const spine = unwrap(artifacts.cartography_locator_spine); const routes = []; for (const locator of spine.locators || []) for (const profileIndex of routeProfilesForLocator(locator)) routes.push(routeRow({ locator, profileIndex })); return { cartography_profile_route_matrix: baseArtifact({ run, artifact_type: "cartography_profile_route_matrix", layer_id: "P2-L3", routes: routes.map((row, index) => ({ ...row, route_id: `P2.ROUTE.${String(index + 1).padStart(5, "0")}` })), profile_index_counts: countBy(routes, "profile_index"), route_policy: navigationOnlyPolicy() }) }; }
+function buildSemanticNavigationOverlay({ run, artifacts }) { const matrix = unwrap(artifacts.cartography_profile_route_matrix); const overlayRows = (matrix.routes || []).map((route, index) => { const labels = semanticLabelsForRoute(route); return { overlay_id: `SNO.${String(index + 1).padStart(5, "0")}`, route_id: route.route_id, locator_id: route.locator_id, profile_index: route.profile_index, semantic_labels: labels, reading_priority: priorityForRoute(route, labels), field_family_relevance: fieldFamiliesForRoute(route, labels), profile_relevance: route.profile_index, ambiguity_status: labels.includes("generic_route_candidate") ? "MEDIUM_AMBIGUITY" : "LOW_AMBIGUITY", domain_overlay_candidate_tags: overlayTagsForRoute(route, labels), semantic_guidance_only: true, no_fact_derivation: true, no_summary: true, no_excerpt: true }; }); return { cartography_semantic_navigation_overlay: baseArtifact({ run, artifact_type: "cartography_semantic_navigation_overlay", layer_id: "P2-L4", overlays: overlayRows, overlay_count: overlayRows.length, semantic_policy: { ...navigationOnlyPolicy(), semantic_guidance_only: true, no_fact_derivation: true } }) }; }
 
 function buildCompiledIndexes({ run, artifacts }) {
   const inventory = unwrap(artifacts.cartography_source_inventory);
@@ -114,9 +68,10 @@ function buildCompiledIndexes({ run, artifacts }) {
   const overlayByRoute = new Map((overlay.overlays || []).map((row) => [row.route_id, row]));
   const routes = (matrix.routes || []).map((route) => ({ ...route, semantic_navigation: overlayByRoute.get(route.route_id) || null })).filter(routeIntegrityPass);
   const profileIndexes = Object.fromEntries(PROFILE_INDEXES.map((name) => [name, profileIndexArtifact({ run, name, routes: routes.filter((route) => route.profile_index === name) })]));
-  const dataPrivacyNavigationIndex = buildPhase7DataPrivacyNavigationIndex({ dapRegistryManifest: { artifact_type: "dap_registry_manifest", material_rules: [] }, strategicDerivationMatrix: { semantic_batch_plan: PHASE7_DAP_SEMANTIC_BATCH_PLAN }, artifacts: buildDataPrivacyNavigationInputArtifacts(artifacts) });
+  const dataPrivacyInputArtifacts = buildDataPrivacyNavigationInputArtifacts({ run, artifacts });
+  const dataPrivacyNavigationIndex = buildPhase7DataPrivacyNavigationIndex({ dapRegistryManifest: { artifact_type: "dap_registry_manifest", material_rules: [] }, strategicDerivationMatrix: { semantic_batch_plan: PHASE7_DAP_SEMANTIC_BATCH_PLAN }, artifacts: dataPrivacyInputArtifacts });
   const validation = validateCompiledIndexes({ inventory, spine, matrix, overlay, profileIndexes, dataPrivacyNavigationIndex, routes });
-  const cartographyIndex = baseArtifact({ run, artifact_type: "cartography_index", layer_id: "P2-L5", index_version: "phase2_cartography_index_v1", execution_mode: "DETERMINISTIC_LED_SEMANTIC_GUIDED_WITH_RESTORED_M9_AND_MIGRATED_PHASE7_INDEX", navigation_only: true, source_inventory_ref: "cartography_source_inventory", locator_spine_ref: "cartography_locator_spine", profile_route_matrix_ref: "cartography_profile_route_matrix", semantic_navigation_overlay_ref: "cartography_semantic_navigation_overlay", legal_cartography_index_ref: "legal_cartography_index", legal_signal_derivation_profile_ref: "legal_signal_derivation_profile", data_privacy_navigation_index_ref: "data_privacy_navigation_index", profile_indexes: Object.fromEntries(PROFILE_INDEXES.map((name) => [name, { artifact_name: name, route_count: profileIndexes[name].route_count }])), downstream_free_read_forbidden: true, contains_lossless_text: false, contains_excerpts: false, contains_summaries: false, contains_profile_answers: false, contains_legal_or_compliance_conclusions: false });
+  const cartographyIndex = baseArtifact({ run, artifact_type: "cartography_index", layer_id: "P2-L5", index_version: "phase2_cartography_index_v1", execution_mode: "DETERMINISTIC_LED_SEMANTIC_GUIDED_WITH_RESTORED_M9_AND_MIGRATED_PHASE7_INDEX", navigation_only: true, source_inventory_ref: "cartography_source_inventory", locator_spine_ref: "cartography_locator_spine", profile_route_matrix_ref: "cartography_profile_route_matrix", semantic_navigation_overlay_ref: "cartography_semantic_navigation_overlay", legal_cartography_index_ref: "legal_cartography_index", legal_signal_derivation_profile_ref: "legal_signal_derivation_profile", data_privacy_navigation_index_ref: "data_privacy_navigation_index", data_privacy_navigation_compatibility_adapter: "data-privacy-navigation-compatibility.adapter", profile_indexes: Object.fromEntries(PROFILE_INDEXES.map((name) => [name, { artifact_name: name, route_count: profileIndexes[name].route_count }])), downstream_free_read_forbidden: true, contains_lossless_text: false, contains_excerpts: false, contains_summaries: false, contains_profile_answers: false, contains_legal_or_compliance_conclusions: false });
   return { ...profileIndexes, data_privacy_navigation_index: dataPrivacyNavigationIndex, cartography_index: cartographyIndex, cartography_validation_manifest: validation };
 }
 
@@ -133,14 +88,17 @@ function validateCompiledIndexes({ inventory, spine, matrix, overlay, profileInd
     if (!overlaysByRoute.has(route.route_id)) warnings.push(`ROUTE_MISSING_SEMANTIC_OVERLAY:${route.route_id || "missing"}`);
   }
   const compiled = { ...profileIndexes, cartography_source_inventory: inventory, cartography_locator_spine: spine, cartography_profile_route_matrix: matrix, cartography_semantic_navigation_overlay: overlay };
+  const dFamilyRoutes = dataPrivacyNavigationIndex?.deterministic_navigation_spine?.d_family_routes || [];
   if (containsForbiddenEvidence(compiled)) failures.push("INDEX_CONTAINS_FORBIDDEN_EVIDENCE_OR_SUMMARY_FIELD");
   if (dataPrivacyNavigationIndex?.artifact_type !== "data_privacy_navigation_index") failures.push("DATA_PRIVACY_NAVIGATION_INDEX_NOT_RESTORED");
   if (!dataPrivacyNavigationIndex?.semantic_navigation_overlay?.batch_navigation_pointers?.length) failures.push("DATA_PRIVACY_NAVIGATION_INDEX_MISSING_BATCH_POINTERS");
-  return baseArtifact({ run: {}, artifact_type: "cartography_validation_manifest", layer_id: "P2-L5", status: failures.length ? "REPAIR_REQUIRED" : "LOCKED", validation_status: failures.length ? "FAIL" : "PASS", failures, warnings, route_count: routes.length, profile_index_counts: Object.fromEntries(PROFILE_INDEXES.map((name) => [name, profileIndexes[name].route_count])), restored_artifacts_verified: { legal_cartography_index: true, legal_signal_derivation_profile: true, data_privacy_navigation_index: dataPrivacyNavigationIndex?.artifact_type === "data_privacy_navigation_index" }, hard_failures_enforced: CARTOGRAPHY_INDEX_CONTRACT.validation_hard_failures });
+  if (dFamilyRoutes.length !== 5) failures.push("DATA_PRIVACY_NAVIGATION_INDEX_MISSING_D_FAMILY_ROUTES");
+  for (const route of dFamilyRoutes) if (route.present !== true) failures.push(`DATA_PRIVACY_NAVIGATION_INDEX_D_ROUTE_NOT_PRESENT:${route.source_artifact}`);
+  return baseArtifact({ run: {}, artifact_type: "cartography_validation_manifest", layer_id: "P2-L5", status: failures.length ? "REPAIR_REQUIRED" : "LOCKED", validation_status: failures.length ? "FAIL" : "PASS", failures, warnings, route_count: routes.length, profile_index_counts: Object.fromEntries(PROFILE_INDEXES.map((name) => [name, profileIndexes[name].route_count])), restored_artifacts_verified: { legal_cartography_index: true, legal_signal_derivation_profile: true, data_privacy_navigation_index: dataPrivacyNavigationIndex?.artifact_type === "data_privacy_navigation_index", data_privacy_navigation_d_family_routes_present: dFamilyRoutes.length === 5 && dFamilyRoutes.every((route) => route.present === true) }, hard_failures_enforced: CARTOGRAPHY_INDEX_CONTRACT.validation_hard_failures });
 }
 
 async function loadLegalDocArtifacts({ artifacts, readArtifact }) { const loaded = {}; if (typeof readArtifact !== "function") return loaded; const legalInventory = unwrap(artifacts.legal_doc_inventory); for (const doc of legalDocumentsFromInventory(legalInventory)) { const artifactName = doc.artifact_name || doc.legal_doc_artifact_name || `legal_doc_${doc.doc_type || "other"}`; if (!artifactName || loaded[artifactName]) continue; try { loaded[artifactName] = await readArtifact({ artifact_name: artifactName }); } catch { loaded[artifactName] = null; } } return loaded; }
-function buildDataPrivacyNavigationInputArtifacts(artifacts) { return { ...artifacts, "lossless_family__D1_SECURITY_TRUST": artifacts["lossless_root__security_trust"], "lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER": artifacts["lossless_root__privacy_data_processing"] || artifacts["lossless_root__trust_compliance"], "lossless_family__D3_DATA_GOVERNANCE_CONTROLS": artifacts["lossless_root__privacy_data_processing"] || artifacts["lossless_root__trust_compliance"], "lossless_family__D4_DOCS_API_DATA_FLOW": artifacts["lossless_root__docs_api_data_flow"] || artifacts["lossless_root__technical_docs_api_developer"], "lossless_family__D5_AI_SAFETY_TRANSPARENCY": artifacts["lossless_root__technical_docs_api_developer"] || artifacts["lossless_root__trust_compliance"] } }
+function buildDataPrivacyNavigationInputArtifacts({ run, artifacts }) { const compatibilityArtifacts = buildDataPrivacyNavigationCompatibilityArtifacts({ run, artifacts }); return { ...artifacts, ...compatibilityArtifacts }; }
 function sourceInventoryRow({ run, artifactName, sourceRoot, source, sourceClass, sourceStatus, docType = "", legalDocInventoryLink = "" }) { const sourceId = source.source_id || source.manifest_id || legalDocInventoryLink || artifactName; return { run_id: run?.run_id || "", source_artifact: artifactName, source_root: sourceRoot, source_id: sourceId, source_url: source.canonical_url || source.url || source.final_url || "", doc_type: docType || source.doc_type || "", source_class: sourceClass, available_for_indexing: sourceStatus === "AVAILABLE" || sourceStatus === "EXTRACTED" || sourceStatus === "LOCKED", source_status: sourceStatus, neutral_bucket_tags: neutralBucketTagsForSource({ sourceRoot, source }), lossless_text_pointer: { artifact_name: artifactName, source_id: sourceId, text_field: "lossless_text" }, legal_doc_inventory_link: legalDocInventoryLink, index_contains_lossless_text: false }; }
 function locatorRow({ row, text, unitType, headingPath, start, end }) { return { source_inventory_id: row.source_inventory_id || "", source_artifact: row.source_artifact, source_id: row.source_id, source_url: row.source_url, source_root: row.source_root, doc_type: row.doc_type || "", unit_type: unitType, heading_path: headingPath.map(cleanHeading).filter(Boolean).slice(0, 6), section_label: cleanHeading(headingPath.at(-1) || unitType), char_range: { start: Number(start) || 0, end: Math.max(Number(end) || 0, Number(start) || 0) }, text_hash: text ? `sha256:${createHash("sha256").update(text).digest("hex")}` : "", lossless_text_pointer: row.lossless_text_pointer, index_contains_lossless_text: false }; }
 function routeRow({ locator, profileIndex }) { return { profile_index: profileIndex, locator_id: locator.locator_id, source_artifact: locator.source_artifact, source_id: locator.source_id, source_url: locator.source_url, source_root: locator.source_root, doc_type: locator.doc_type, route_class: routeClass({ locator, profileIndex }), access_rule: "READ_ONLY_BY_LOCATOR", priority_default: defaultPriority({ locator, profileIndex }), heading_path: locator.heading_path, char_range: locator.char_range, lossless_text_pointer: locator.lossless_text_pointer, domain_overlay_slots: [], capability_overlay_slots: [], regulatory_overlay_slots: [], overlay_status: "CANDIDATE_ONLY_PHASE_2", index_contains_lossless_text: false }; }
