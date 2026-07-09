@@ -1,5 +1,5 @@
-schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v5_LANE_CONTRACT_LOCKED
-purpose: Sanitized Target Profile Review derivation authority aligned to the Phase 3A contract lock and AI Registry Key v4 Lane derivation.
+schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v6_SCOPED_LOSSLESS_NO_LANE
+purpose: Target Profile Review derivation authority aligned to Phase 3A scoped target-profile lossless evidence, bounded legal_signal_derivation_profile use, and no Lane/domain-package derivation.
 phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
 compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review.
@@ -7,21 +7,46 @@ compatibility_note: File name retained for backend compatibility. Governing phas
 source_boundary:
   allowed_model_sources:
     - source_discovery_handoff
-    - source_discovery_handoff.bucket_family_index.target_profile_urls.families
+    - cartography_index
+    - target_profile_source_index
+    - lossless_root__homepage_landing
+    - lossless_root__about_company
+    - lossless_root__legal_identity_notice
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__contact_notice
+    - lossless_root__operator_entity_signals
+    - lossless_root__supporting_company_signals
+    - legal_signal_derivation_profile
+    - domain_selection_profile
+    - active_run_package_manifest
+  navigation_only_sources:
+    - source_discovery_handoff
+    - cartography_index
+    - target_profile_source_index
+  evidence_sources:
+    - lossless_root__homepage_landing
+    - lossless_root__about_company
+    - lossless_root__legal_identity_notice
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__contact_notice
+    - lossless_root__operator_entity_signals
+    - lossless_root__supporting_company_signals
+  bounded_secondary_signal_sources:
+    - legal_signal_derivation_profile
+  allowed_reference_documents:
+    - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+  forbidden_model_sources:
+    - legal_cartography_index
+    - legal_doc_inventory
+    - legal_doc_extraction_index
+    - legal_doc_{DOC_TYPE}
+    - m7_deterministic_legal_signal_overlay
     - lossless_family__T0_ROOT
     - lossless_family__T1_IDENTITY
     - lossless_family__T2_LEGAL_IDENTITY
     - lossless_family__T3_OPERATOR_ENTITY
     - lossless_family__T4_SUPPORTING_IDENTITY
-    - legal_signal_derivation_profile
-  allowed_reference_documents:
-    - AI_REGISTRY_KEY.md
-    - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-  forbidden_model_sources:
-    - legal_cartography_index
-    - m7_deterministic_legal_signal_overlay
-    - source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families
     - lossless_family__L1_CORE_TERMS_PRIVACY
     - lossless_family__L2_B2B_CONTRACTING
     - lossless_family__L3_AI_USAGE_GOVERNANCE
@@ -45,25 +70,10 @@ controlled_statuses:
   - FIELD_CONFLICTED
   - FIELD_NOT_FOUND
 
-semantic_lane_policy:
-  reference_document: AI_REGISTRY_KEY.md
-  governing_section: section_6_lane_exposure_role
-  output_field: business_context.lane
-  allowed_values:
-    - A
-    - B
-    - Both
-  controlled_values_allowed: true
-  lane_is_target_role_signal_not_exposure_conclusion: true
-  legal_risk_derivation_forbidden: true
-  compliance_framework_derivation_forbidden: true
-  threat_trigger_derivation_forbidden: true
-  source_basis: target_profile_bucket_only
-  derivation_rules:
-    A: Use only when target-profile public material shows the target develops, sells, licenses, or makes an AI system/product available to external users or customers.
-    B: Use only when target-profile public material shows internal deployment, employer/workforce use, or own-operations AI use and does not support an external provider/product role.
-    Both: Use only when target-profile public material supports both external provider/product role and internal deployer/employer or own-operations role at target-profile level.
-  unsupported_behavior: controlled_status_plus_limitation
+lane_policy:
+  lane_derivation_forbidden_in_target_profile_review: true
+  business_context_lane_forbidden: true
+  domain_derivation_layer_owns_domain_package_and_ai_mount: true
 
 direct_legal_signal_policy:
   artifact: legal_signal_derivation_profile
@@ -98,23 +108,23 @@ direct_legal_signal_policy:
 
 selected_fields:
   target_identity.brand_name:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.legal_entity_name:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     direct_legal_signal_allowed: false
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.entity_type:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.reviewed_website:
-    source_basis: source_discovery_handoff_or_target_profile_bucket
+    source_basis: source_discovery_handoff_or_scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.primary_domain:
     source_basis: reviewed_website_or_source_discovery_handoff
     unsupported_behavior: controlled_status_plus_limitation
   jurisdiction_notice.registered_notice_location:
-    source_basis: target_profile_bucket_or_direct_legal_signal_only
+    source_basis: scoped_target_lossless_evidence_or_direct_legal_signal_only
     direct_legal_signal_allowed: true
     unsupported_behavior: controlled_status_plus_limitation
   jurisdiction_notice.governing_law:
@@ -126,40 +136,31 @@ selected_fields:
     direct_legal_signal_allowed: true
     unsupported_behavior: controlled_status_plus_limitation
   business_context.business_category:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   business_context.primary_customer_type:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   business_context.market_type_candidate:
-    source_basis: target_profile_bucket_only
-    unsupported_behavior: controlled_status_plus_limitation
-  business_context.lane:
-    source_basis: target_profile_bucket_only_plus_AI_REGISTRY_KEY_section_6_derivation_grammar
-    semantic_derivation_required: true
-    allowed_values:
-      - A
-      - B
-      - Both
-    controlled_values_allowed: true
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   business_context.industry_sector:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   business_context.regulated_sector_hints:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: empty_array_plus_limitation_when_material
   product_service_wrapper.high_level_offering:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   product_service_wrapper.primary_public_claim:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   product_service_wrapper.product_service_wrapper_names:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: empty_array_plus_limitation_when_material
   product_service_wrapper.delivery_model_signals:
-    source_basis: target_profile_bucket_only
+    source_basis: scoped_target_lossless_evidence
     unsupported_behavior: empty_array_plus_limitation_when_material
   target_profile_limitations:
     source_basis: controlled_statuses_and_source_boundary
@@ -168,10 +169,10 @@ selected_fields:
 hard_rules:
   - Target Profile Review must not request legal/governance family artifacts.
   - Target Profile Review must not request legal_cartography_index.
+  - Target Profile Review must not request legal documents or legal lossless text.
   - Target Profile Review must not request m7_deterministic_legal_signal_overlay.
-  - Target Profile Review must not use direct legal signal rows for target_identity, business_context, product_service_wrapper, or Lane derivation.
-  - Target Profile Review must not derive legal risk, compliance framework, exposure rows, threat triggers, or pain tier from AI_REGISTRY_KEY.md.
-  - Target Profile Review may use AI_REGISTRY_KEY.md only for semantic Lane derivation under section 6.
+  - Target Profile Review must not use direct legal signal rows for target_identity, business_context, product_service_wrapper, Lane, domain package, or AI overlay derivation.
+  - Target Profile Review must not derive Lane, domain package, AI mount, archetype, surface, legal risk, compliance framework, exposure rows, threat triggers, or pain tier.
   - Target Profile Review must not block because legal/governance families are unavailable.
   - Missing direct legal signal data means controlled field status, not source repair.
-  - Source repair is reserved for missing or corrupted target-profile bucket artifacts.
+  - Source repair is reserved for missing or corrupted scoped target lossless evidence artifacts.
