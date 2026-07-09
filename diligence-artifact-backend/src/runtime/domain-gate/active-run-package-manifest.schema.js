@@ -28,6 +28,9 @@ export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new D
     ai_package_mount: "PROVISIONAL",
     ai_mount_rule_id: null,
     ai_mount_evidence_basis: [],
+    ai_package_mount_only: false,
+    ai_activity_lock_status: "NOT_EVALUATED",
+    ai_exposure_lock_status: "NOT_EVALUATED",
     regulatory_overlays: [],
     regulatory_overlay_status: "PROVISIONAL",
     fusion_bucket_candidates: [],
@@ -58,6 +61,7 @@ export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = 
   const ai = domain_derivation_profile.ai_mount_derivation || {};
   const fusion = domain_derivation_profile.fusion_candidate_derivation || {};
   const runtimeFlags = forceAllRuntimeFlagsFalse(before.runtime_flags || {});
+  const aiOverlayMounted = ai.ai_package_mount === "AI_OVERLAY_MOUNTED";
   const after = {
     ...before,
     artifact_name: ACTIVE_RUN_PACKAGE_MANIFEST_ARTIFACT_NAME,
@@ -70,12 +74,15 @@ export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = 
     primary_domain_status: primary.status || "REVIEW_REQUIRED",
     primary_domain_rule_id: primary.selected_rule_id || null,
     primary_domain_evidence_basis: evidenceBasis(primary.evaluated_rules),
-    capability_overlays: ai.ai_package_mount === "AI_OVERLAY_MOUNTED" ? [ai.overlay_package_id || "ai-native"].filter(Boolean) : [],
+    capability_overlays: aiOverlayMounted ? [ai.overlay_package_id || "ai-native"].filter(Boolean) : [],
     capability_overlay_status: ai.status || "NOT_VISIBLE",
     capability_overlay_rule_ids: ai.selected_rule_id ? [ai.selected_rule_id] : [],
     ai_package_mount: ai.ai_package_mount || "AI_NOT_VISIBLE",
     ai_mount_rule_id: ai.selected_rule_id || null,
     ai_mount_evidence_basis: evidenceBasis(ai.evaluated_rules),
+    ai_package_mount_only: aiOverlayMounted,
+    ai_activity_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_5" : (ai.activity_lock_status || "NOT_EVALUATED"),
+    ai_exposure_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_9" : (ai.exposure_lock_status || "NOT_EVALUATED"),
     fusion_bucket_candidates: Array.isArray(fusion.candidates) ? fusion.candidates : [],
     derivation_limitations: Array.isArray(domain_derivation_profile.limitation_ledger) ? domain_derivation_profile.limitation_ledger : [],
     contradiction_ledger: Array.isArray(domain_derivation_profile.contradiction_ledger) ? domain_derivation_profile.contradiction_ledger : [],
@@ -101,6 +108,9 @@ export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = 
         "capability_overlay_status",
         "ai_package_mount",
         "ai_mount_rule_id",
+        "ai_package_mount_only",
+        "ai_activity_lock_status",
+        "ai_exposure_lock_status",
         "fusion_bucket_candidates",
         "domain_derivation_profile_ref"
       ],
