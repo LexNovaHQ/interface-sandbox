@@ -6,14 +6,14 @@ const TARGET_LIMITATIONS = "target_profile_limitations";
 const REVIEW_PHASES = new Set(["TARGET_PROFILE_REVIEW", "M7_TARGET_PROFILE"]);
 const FORENSIC_PHASES = new Set(["TARGET_PROFILE_FORENSICS", "M7_TARGET_PROFILE_FORENSICS"]);
 const CONTROLLED_VALUES = new Set(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.controlled_field_values || []);
-const SEMANTIC_LANE_VALUES = new Set([...(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.semantic_lane_values || []), ...CONTROLLED_VALUES]);
 const ARRAY_FIELDS = new Set(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.array_fields || []);
 const PROFILE_BRANCHES = Object.freeze(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.branch_fields || {});
 const MATERIAL_BRANCHES = Object.freeze(TARGET_PROFILE_REVIEW_CONTRACT.output_contract.required_top_level_branches || Object.keys(PROFILE_BRANCHES));
 const OBJECT_BRANCHES = Object.freeze(Object.entries(PROFILE_BRANCHES).filter(([branch]) => branch !== TARGET_LIMITATIONS));
 const DIRECT_SIGNAL_ALLOWED_FIELDS = new Set((TARGET_PROFILE_REVIEW_CONTRACT.direct_legal_signal_intake?.allowed_field_rows || []).map((row) => row.field_id));
 const DIRECT_SIGNAL_FORBIDDEN_FAMILIES = new Set(TARGET_PROFILE_REVIEW_CONTRACT.direct_legal_signal_intake?.forbidden_field_families || []);
-const FORBIDDEN_PROFILE_KEYS = Object.freeze(["target_profile_forensics", "legal_cartography_index", "legal_signal_derivation_profile", "m7_deterministic_legal_signal_overlay", "feature_candidate_inventory", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "dap_forensics_profile", "exposure_registry_profile", "challenge_gate", "final_output_handoff", "renderer_payload", "qualified_review_handoff", "qualified_review_renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion"]);
+const FORBIDDEN_PROFILE_KEYS = Object.freeze(["domain_derivation_profile", "active_run_package_manifest", "target_profile_forensics", "legal_cartography_index", "legal_signal_derivation_profile", "m7_deterministic_legal_signal_overlay", "feature_candidate_inventory", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "dap_forensics_profile", "exposure_registry_profile", "challenge_gate", "final_output_handoff", "renderer_payload", "qualified_review_handoff", "qualified_review_renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion"]);
+const FORBIDDEN_FIELD_PATHS = Object.freeze(["business_context.lane"]);
 const FORENSIC_BRANCHES = Object.freeze(["source_ledger_used_for_m7", "target_source_extraction_capsule_summary", "target_source_route_coverage_ledger", "field_derivation_ledger", "targeted_re_extraction_ledger", "limitation_ledger", "cross_route_use_ledger", "validation_quality_control_result", "runtime_trace_m7_only", "forensic_boundary"]);
 const FORENSIC_ARRAY_BRANCHES = FORENSIC_BRANCHES.filter((branch) => !["validation_quality_control_result", "runtime_trace_m7_only", "forensic_boundary"].includes(branch));
 
@@ -43,6 +43,7 @@ function validateMaterialOutput(output, failures, phase) {
   const controlled = collectFieldPaths(profile).filter((fieldPath) => CONTROLLED_VALUES.has(valueAt(profile, fieldPath)));
   if (controlled.length && !profile[TARGET_LIMITATIONS]?.length) failures.push("controlled Target Profile Review fields require target_profile_limitations[]");
   for (const key of FORBIDDEN_PROFILE_KEYS) if (containsKey(profile, key)) failures.push(`target_profile contains forbidden key: ${key}`);
+  for (const fieldPath of FORBIDDEN_FIELD_PATHS) if (valueAt(profile, fieldPath) !== undefined) failures.push(`target_profile contains forbidden field path: ${fieldPath}`);
   for (const family of DIRECT_SIGNAL_FORBIDDEN_FAMILIES) if (containsString(profile, family)) failures.push(`target_profile contains forbidden direct signal family: ${family}`);
   for (const row of collectRows(profile)) {
     const fieldId = row?.field_id || row?.fieldId || row?.field;
@@ -71,7 +72,6 @@ function assertFieldValue({ profile, fieldPath, failures }) {
     failures.push(`target_profile.${fieldPath} must be string`);
     return;
   }
-  if (fieldPath === "business_context.lane" && !SEMANTIC_LANE_VALUES.has(value)) failures.push(`target_profile.business_context.lane must be one of: ${[...SEMANTIC_LANE_VALUES].join(",")}`);
 }
 function validateExactTopLevelKeys(output, expected, failures, phase) { if (!isPlainObject(output)) return failures.push(`${phase}_OUTPUT_INVALID:not_object`); rejectKeyDiff(Object.keys(output).sort(), [...expected].sort(), phase, failures); }
 function rejectKeyDiff(actual, expected, label, failures) { const missing = expected.filter((key) => !actual.includes(key)); const extra = actual.filter((key) => !expected.includes(key)); if (missing.length) failures.push(`${label} missing keys: ${missing.join(",")}`); if (extra.length) failures.push(`${label} extra keys: ${extra.join(",")}`); }
