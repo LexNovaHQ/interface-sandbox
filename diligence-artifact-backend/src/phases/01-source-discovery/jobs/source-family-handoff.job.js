@@ -14,6 +14,15 @@ export function buildSourceFamilyHandoff({ run, artifacts } = {}) {
   const output = buildSourceFamilyHandoffArtifact({ run, artifacts });
   const upgrade = buildPhase1HandoffUpgradeArtifacts({ run, artifacts, output });
   const merged = { ...output, ...upgrade };
+  if (merged.source_discovery_handoff?.contract) {
+    merged.source_discovery_handoff.contract = {
+      ...merged.source_discovery_handoff.contract,
+      no_separate_bucket_artifacts: false,
+      agnostic_bucket_artifacts_enabled: true,
+      independent_legal_doc_artifacts_enabled: true,
+      source_text_location: "lossless_root__{COMMON_ROOT}.sources[].lossless_text OR legal_doc_{DOC_TYPE}.lossless_text"
+    };
+  }
   assertNoSourceDiscoveryModelUsage({ job_id: SOURCE_DISCOVERY_FAMILY_HANDOFF_JOB.job_id });
   assertSourceDiscoveryBoundary({ job_id: SOURCE_DISCOVERY_FAMILY_HANDOFF_JOB.job_id, output: merged });
   return merged;
