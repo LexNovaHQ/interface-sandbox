@@ -11,14 +11,15 @@ const TARGET_PROFILE_LOSSLESS_READS = Object.freeze([
 export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   public_label: "Target Profile Review",
-  implementation_status: "CONTRACT_LOCKED_IMPLEMENTATION_PENDING",
-  production_entrypoint_switched: false,
+  implementation_status: "CONTRACT_RUNNER_AND_PROMPT_ACTIVE",
+  production_entrypoint_switched: true,
+  global_production_deployment_switched: false,
   migration_boundary: Object.freeze({
     phase_layer: "src/phases/03-target-profile-review",
     runtime_owner: "src/runtime/services/pipeline.service.js",
-    migration_mode: "contract_first",
-    compatibility_internal_job_ids_retained_until_explicit_cutover: Object.freeze(["M7_TARGET_PROFILE"]),
-    compatibility_agent_id_retained_until_explicit_cutover: "agent_3_target_feature"
+    migration_mode: "phase_owned_runner_active",
+    compatibility_internal_job_ids_retained_until_explicit_rename: Object.freeze(["M7_TARGET_PROFILE"]),
+    compatibility_agent_id_retained_until_explicit_rename: "agent_3_target_feature"
   }),
   material_job: Object.freeze({
     job_id: "M7_TARGET_PROFILE",
