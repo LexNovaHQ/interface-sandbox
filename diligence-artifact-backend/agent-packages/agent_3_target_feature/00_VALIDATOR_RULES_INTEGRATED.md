@@ -92,11 +92,80 @@ NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN -> do not invent value; record controlled limi
 
 No forensic branch, profile metadata, evidence ledger, source ledger, confidence object, trace object, downstream object, domain derivation object, manifest update, legal-risk object, data object, registry object, final handoff, renderer payload, or Qualified Review object may appear inside `target_profile`.
 
+## Domain Derivation Layer input gate
+
+For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs are exactly:
+
+- `source_discovery_handoff`
+- `cartography_index`
+- `target_profile_source_index`
+- `activity_profile_source_index`
+- `target_profile`
+- `lossless_root__homepage_landing`
+- `lossless_root__about_company`
+- `lossless_root__product_service`
+- `lossless_root__platform_feature_solution`
+- `lossless_root__technical_docs_api_developer`
+- `lossless_root__docs_api_data_flow`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__use_case_customer_industry`
+- `lossless_root__integrations_ecosystem`
+- `domain_selection_profile`
+- `active_run_package_manifest`
+
+For `P3_DOMAIN_DERIVATION_LAYER`, allowed references are exactly:
+
+- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
+- `references/domain-packages/package-catalog.v0.json`
+- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+
+The validator must reject Domain Derivation Layer use of:
+
+- `legal_cartography_index`
+- `legal_signal_derivation_profile`
+- `legal_doc_inventory`
+- `legal_doc_extraction_index`
+- `legal_doc_{DOC_TYPE}`
+- raw legal/governance source text
+- `data_privacy_navigation_index`
+- privacy/security/trust roots
+- exposure artifacts
+- compiler artifacts
+- Qualified Review artifacts
+
+## Domain Derivation Layer registry ladder gate
+
+The Domain Derivation Layer prompt is domain-agnostic. It must not hardcode domain-specific classification logic.
+
+The registry is the ladder:
+
+- `DOMAIN_DERIVATION_REGISTRY_v0.yaml` is rule authority.
+- `package-catalog.v0.json` is package authority.
+- scoped target/activity `lossless_root__*` artifacts are evidence authority.
+- Phase 2 indexes are navigation only.
+- `target_profile` is context only, not proof.
+- the model returns condition-level semantic evaluations.
+- deterministic validator/compiler is lock authority.
+
+New supported domains, overlays, fusion candidates, and regulatory overlays must be added through registry/catalog updates, not prompt edits.
+
+## Domain Derivation Layer output gate
+
+The model response must contain exactly one top-level key:
+
+- `domain_derivation_profile`
+
+The model must not emit top-level `active_run_package_manifest`. The compiler writes `active_run_package_manifest` after validation.
+
+`domain_derivation_profile` must contain the branches defined by the phase-owned contract and must not contain target profile edits, activity rows, data profile artifacts, exposure rows, legal advice, compliance conclusions, risk conclusions, Lane, AI archetype lock, or surface lock.
+
+Every true registry condition must carry scoped lossless evidence anchors. Index artifacts and `target_profile` must never be cited as evidence.
+
 ## Activity Profile Review gate
 
 Activity Profile Review may use only target-profile artifacts, domain derivation context, feature candidate inventory, and product/activity evidence authorized by the backend phase contract.
 
-Activity Profile Review may not use Target Profile Review to import legal/governance source material.
+Activity Profile Review may not use Target Profile Review or Domain Derivation Layer to import legal/governance source material.
 
 ## Failure routing
 
