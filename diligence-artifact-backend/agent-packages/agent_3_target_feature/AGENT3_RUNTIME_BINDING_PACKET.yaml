@@ -77,7 +77,7 @@ forbidden_target_profile_review_read_artifacts:
   - legal_doc_extraction_index
   - legal_doc_{DOC_TYPE}
   - m7_deterministic_legal_signal_overlay
-  - lossless_family__*
+  - retired pre-cutover family artifacts
   - activity/product roots outside the scoped Target Profile Review lossless_root list
   - data-provenance roots
 
