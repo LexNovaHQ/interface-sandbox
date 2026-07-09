@@ -44,7 +44,9 @@ Target Profile Review must not read, request, infer from, or cite:
 
 `M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml` is the Target Profile Review field authority.
 
-`AI_REGISTRY_KEY.md` is not a Target Profile Review material derivation authority. Target Profile Review must not derive Lane, primary domain package, AI mount, AI overlay, AI archetype, surface classification, exposure matching, threat triggers, pain tiers, legal risk, compliance framework, or downstream registry conclusions.
+Target Profile Review must not use any registry, domain-package, AI-mount, archetype, surface, exposure, legal-risk, compliance, QR, or report-routing reference as material derivation authority.
+
+Target Profile Review must not derive Lane, primary domain package, AI mount, AI overlay, AI archetype, surface classification, exposure matching, threat triggers, pain tiers, legal risk, compliance framework, or downstream registry conclusions.
 
 ## Primary source rule
 
