@@ -1,8 +1,8 @@
 import { DOMAIN_DERIVATION_CONTRACT } from "../domain-derivation.contract.js";
 import { loadDomainDerivationRegistryV0 } from "../../../runtime/domain-gate/domain-derivation-registry.loader.js";
 
-const LOCKED_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS"]);
 const CONTROLLED_FAILURE_STATUS = "CONTROLLED_FAILURE";
+const AI_MOUNT_ONLY_STATUS = "LOCKED_FOR_PACKAGE_MOUNT_ONLY";
 const FORBIDDEN_OUTPUT_MARKERS = Object.freeze(["business_context.lane", "\"lane\"", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion", "exposure_registry", "ai_archetype", "surface_lock"]);
 const INDEX_ARTIFACT_NAMES = new Set(["cartography_index", "target_profile_source_index", "activity_profile_source_index", "legal_cartography_index", "legal_signal_derivation_profile", "data_privacy_navigation_index", "source_discovery_handoff"]);
 
@@ -44,13 +44,14 @@ export function validateDomainDerivationProfile(profile = {}, { artifacts = {}, 
   if (primary.selected_package && !String(primary.selected_package).match(/^[a-z0-9-]+$/)) failures.push("primary_domain_derivation.selected_package must be catalog-style package id");
   if (primary.selected_package === "ai-governance" && aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED") failures.push("AI primary and AI overlay cannot both apply");
   if (aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" && primary.selected_package === "ai-governance") failures.push("AI overlay cannot mount when primary domain is ai-governance");
+  if (aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" && aiMount.status !== AI_MOUNT_ONLY_STATUS) failures.push(`AI_OVERLAY_MOUNTED status must be ${AI_MOUNT_ONLY_STATUS}`);
   if ((fusion.candidates || []).length && aiMount.ai_package_mount !== "AI_OVERLAY_MOUNTED") failures.push("fusion candidate requires AI_OVERLAY_MOUNTED");
   for (const candidate of fusion.candidates || []) if (candidate.fusion_owner && primary.selected_package && candidate.fusion_owner !== primary.selected_package) failures.push(`fusion owner ${candidate.fusion_owner} must equal primary package ${primary.selected_package}`);
   const status = failures.length ? CONTROLLED_FAILURE_STATUS : (primary.status === "REVIEW_REQUIRED" ? "LOCKED_WITH_LIMITATIONS" : "LOCKED");
   return {
     status,
     validator: "domain-derivation.validator",
-    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "LEGAL_INPUTS_FORBIDDEN", "MANIFEST_COMPILABLE"],
+    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "LEGAL_INPUTS_FORBIDDEN", "PRIMARY_DOMAIN_LOCK_ONLY", "AI_PACKAGE_MOUNT_ONLY", "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"],
     failures,
     warnings
   };
@@ -87,6 +88,7 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
       required_reads_present: DOMAIN_DERIVATION_CONTRACT.reads.filter((name) => Object.prototype.hasOwnProperty.call(artifacts, name)),
       phase_2_navigation_artifacts_used: ["cartography_index", "target_profile_source_index", "activity_profile_source_index"],
       scoped_lossless_evidence_artifacts_used: DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads,
+      phase_2_indexes_are_navigation_only_not_evidence: true,
       target_profile_used_as_context_only: true,
       legal_inputs_forbidden: true
     },
@@ -138,11 +140,17 @@ function selectAiMount(rows, primary, modelAi) {
   const fired = rows.filter((row) => row.validator_trigger_result === true && row.validator_exclude_result !== true);
   const selected = fired[0] || null;
   const aiPrimary = primary.selected_package === "ai-governance";
+  const aiPackageMount = aiPrimary ? "AI_PRIMARY" : (selected?.rule_id === "AI_OVERLAY_MOUNTED" ? "AI_OVERLAY_MOUNTED" : (selected?.rule_id === "AI_CANDIDATE_ONLY" ? "AI_CANDIDATE_ONLY" : (modelAi.ai_package_mount || "AI_NOT_VISIBLE")));
   return {
-    ai_package_mount: aiPrimary ? "AI_PRIMARY" : (selected?.rule_id === "AI_OVERLAY_MOUNTED" ? "AI_OVERLAY_MOUNTED" : (selected?.rule_id === "AI_CANDIDATE_ONLY" ? "AI_CANDIDATE_ONLY" : (modelAi.ai_package_mount || "AI_NOT_VISIBLE"))),
-    status: selected ? "LOCKED" : (aiPrimary ? "LOCKED" : "NOT_VISIBLE"),
+    ai_package_mount: aiPackageMount,
+    status: aiPrimary ? "LOCKED" : (aiPackageMount === "AI_OVERLAY_MOUNTED" ? AI_MOUNT_ONLY_STATUS : (aiPackageMount === "AI_CANDIDATE_ONLY" ? "CANDIDATE_ONLY" : "NOT_VISIBLE")),
     selected_rule_id: aiPrimary ? "PRIMARY_DOMAIN_AI_GOVERNANCE" : (selected?.rule_id || modelAi.selected_rule_id || null),
     overlay_package_id: aiPrimary ? null : (selected?.package_id || null),
+    package_mount_lock_status: aiPackageMount === "AI_OVERLAY_MOUNTED" ? AI_MOUNT_ONLY_STATUS : null,
+    activity_lock_status: "DEFERRED_TO_PHASE_5",
+    exposure_lock_status: "DEFERRED_TO_PHASE_9",
+    ai_archetype_lock_forbidden_in_phase_3b: true,
+    ai_surface_lock_forbidden_in_phase_3b: true,
     evaluated_rules: rows,
     final_basis: modelAi.final_basis || "semantic_ai_mount_derivation_subject_to_registry_gate"
   };
@@ -163,6 +171,7 @@ function compileActiveRunPackageManifest({ run, artifacts, profile, validation }
   const before = isPlainObject(artifacts.active_run_package_manifest) ? artifacts.active_run_package_manifest : {};
   const runtimeFlags = { ...(before.runtime_flags || {}) };
   for (const key of ["dynamic_routing_enabled", "field_registry_compile_enabled", "qr_matrix_routing_enabled", "report_template_routing_enabled", "assembly_routing_enabled"]) runtimeFlags[key] = false;
+  const aiMount = profile.ai_mount_derivation || {};
   const after = {
     ...before,
     run_id: before.run_id || run.run_id || "",
@@ -171,10 +180,13 @@ function compileActiveRunPackageManifest({ run, artifacts, profile, validation }
     primary_domain_package: profile.primary_domain_derivation.selected_package || null,
     primary_domain_status: profile.primary_domain_derivation.status || "REVIEW_REQUIRED",
     primary_domain_rule_id: profile.primary_domain_derivation.selected_rule_id || null,
-    capability_overlays: profile.ai_mount_derivation.ai_package_mount === "AI_OVERLAY_MOUNTED" ? ["ai-native"] : [],
-    capability_overlay_status: profile.ai_mount_derivation.status || "NOT_VISIBLE",
-    ai_package_mount: profile.ai_mount_derivation.ai_package_mount || "AI_NOT_VISIBLE",
-    ai_mount_rule_id: profile.ai_mount_derivation.selected_rule_id || null,
+    capability_overlays: aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" ? ["ai-native"] : [],
+    capability_overlay_status: aiMount.status || "NOT_VISIBLE",
+    ai_package_mount: aiMount.ai_package_mount || "AI_NOT_VISIBLE",
+    ai_mount_rule_id: aiMount.selected_rule_id || null,
+    ai_activity_lock_status: aiMount.activity_lock_status || "DEFERRED_TO_PHASE_5",
+    ai_exposure_lock_status: aiMount.exposure_lock_status || "DEFERRED_TO_PHASE_9",
+    ai_package_mount_only: aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED",
     fusion_bucket_candidates: profile.fusion_candidate_derivation.candidates || [],
     domain_derivation_profile_ref: "domain_derivation_profile",
     runtime_flags: runtimeFlags,
@@ -185,7 +197,7 @@ function compileActiveRunPackageManifest({ run, artifacts, profile, validation }
     manifest_update: {
       before_selection_stage: before.selection_stage || "PRE_PHASE_1_DOMAIN_PREFLIGHT",
       after_selection_stage: after.selection_stage,
-      changed_fields: ["selection_stage", "primary_domain_package", "primary_domain_status", "capability_overlays", "ai_package_mount", "fusion_bucket_candidates", "domain_derivation_profile_ref"],
+      changed_fields: ["selection_stage", "primary_domain_package", "primary_domain_status", "capability_overlays", "ai_package_mount", "ai_activity_lock_status", "ai_exposure_lock_status", "fusion_bucket_candidates", "domain_derivation_profile_ref"],
       unchanged_runtime_flags: runtimeFlags
     }
   };
@@ -207,25 +219,15 @@ function validateEvaluatedRule(row, { rulesById, failures, warnings }) {
 
 function buildSourceEvidenceLedger(artifacts, rows) {
   return DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads.map((artifactName) => ({
-    source_artifact_name: artifactName,
-    present: Object.prototype.hasOwnProperty.call(artifacts, artifactName),
-    used_by_rules: rows.filter((row) => evidenceAnchorsForRow(row).some((anchor) => (anchor.source_artifact_name || anchor.artifact_name || anchor) === artifactName)).map((row) => row.rule_id)
+    artifact_name: artifactName,
+    present: Object.prototype.hasOwnProperty.call(artifacts || {}, artifactName),
+    source_count: Array.isArray(artifacts?.[artifactName]?.sources) ? artifacts[artifactName].sources.length : 0,
+    cited_by_rule_ids: rows.filter((row) => evidenceAnchorsForRow(row).some((anchor) => (anchor.source_artifact_name || anchor.artifact_name || anchor) === artifactName)).map((row) => row.rule_id)
   }));
 }
-
-function allEvaluatedRules(profile = {}) {
-  return [
-    ...(profile.primary_domain_derivation?.evaluated_rules || []),
-    ...(profile.ai_mount_derivation?.evaluated_rules || []),
-    ...(profile.fusion_candidate_derivation?.evaluated_rules || [])
-  ];
-}
-
-function normalizeConditionBooleans(results = {}) {
-  return Object.fromEntries(Object.entries(results || {}).map(([key, value]) => [key, conditionValue(value)]));
-}
-function conditionValue(value) { if (typeof value === "boolean") return value; if (isPlainObject(value)) return Boolean(value.value ?? value.result ?? value.present ?? value.satisfied); if (typeof value === "string") return ["true", "yes", "present", "satisfied", "derived"].includes(value.trim().toLowerCase()); return Boolean(value); }
-function evidenceAnchorsForRow(row = {}) { const anchors = row.evidence_anchors || row.evidence || []; if (Array.isArray(anchors)) return anchors; return []; }
-function assertNoForbiddenMarkers(value, failures) { const text = JSON.stringify(value || {}); for (const marker of FORBIDDEN_OUTPUT_MARKERS) if (text.includes(marker)) failures.push(`domain_derivation_profile contains forbidden marker ${marker}`); }
-function evaluateBooleanExpression(expression, values = {}) { const tokens = String(expression || "").match(/\bC\d+\b|AND|OR|NOT|\(|\)/g) || []; let index = 0; function parseOr() { let left = parseAnd(); while (tokens[index] === "OR") { index += 1; left = left || parseAnd(); } return left; } function parseAnd() { let left = parseNot(); while (tokens[index] === "AND") { index += 1; left = left && parseNot(); } return left; } function parseNot() { if (tokens[index] === "NOT") { index += 1; return !parseNot(); } return parseAtom(); } function parseAtom() { const token = tokens[index++]; if (token === "(") { const value = parseOr(); if (tokens[index] === ")") index += 1; return value; } return Boolean(values[token]); } return parseOr(); }
-function isPlainObject(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
+function allEvaluatedRules(profile = {}) { return [...(profile.primary_domain_derivation?.evaluated_rules || []), ...(profile.ai_mount_derivation?.evaluated_rules || []), ...(profile.fusion_candidate_derivation?.evaluated_rules || [])]; }
+function evidenceAnchorsForRow(row = {}) { const anchors = row.evidence_anchors || row.evidence_basis || row.source_evidence || []; return Array.isArray(anchors) ? anchors : []; }
+function normalizeConditionBooleans(value = {}) { return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [key, Boolean(typeof item === "object" && item !== null ? (item.value ?? item.satisfied ?? item.present ?? item.result) : item)])); }
+function evaluateBooleanExpression(expr = "", vars = {}) { const normalized = String(expr).replace(/\bAND\b/g, "&&").replace(/\bOR\b/g, "||").replace(/\bNOT\b/g, "!").replace(/\bC\d+\b/g, (name) => (vars[name] ? "true" : "false")); if (!/^[\s()!&|truefals]+$/.test(normalized)) return false; try { return Boolean(Function(`"use strict"; return (${normalized});`)()); } catch { return false; } }
+function assertNoForbiddenMarkers(value, failures) { const text = JSON.stringify(value || {}); for (const marker of FORBIDDEN_OUTPUT_MARKERS) if (text.includes(marker)) failures.push(`forbidden domain derivation output marker present: ${marker}`); }
+function isPlainObject(value) { return Boolean(value && typeof value === "object" && !Array.isArray(value)); }
