@@ -1,76 +1,60 @@
 # Target Profile Review — Backend Prompt
 
-Target Profile Review is the target-profile phase for `agent_3_target_feature`.
+Target Profile Review is the target-profile material phase for `agent_3_target_feature`.
 
-Compatibility note: this file name is retained because the current backend still references it. The governing phase name is **Target Profile Review**.
+Compatibility note: this file name is retained because the backend still references it. The governing phase name is **Target Profile Review** and the phase-owned contract controls read/write authority.
 
 ## Active inputs
 
-Target Profile Review active inputs are limited to:
+Target Profile Review active inputs are limited to the artifacts authorized by `src/phases/03-target-profile-review/target-profile-review.contract.js` and `PIPELINE_CONTRACTS.M7_TARGET_PROFILE`:
 
 - `source_discovery_handoff`
-- `source_discovery_handoff.bucket_family_index.target_profile_urls.families`
-- `lossless_family__T0_ROOT`
-- `lossless_family__T1_IDENTITY`
-- `lossless_family__T2_LEGAL_IDENTITY`
-- `lossless_family__T3_OPERATOR_ENTITY`
-- `lossless_family__T4_SUPPORTING_IDENTITY`
+- `cartography_index`
+- `target_profile_source_index`
+- `lossless_root__homepage_landing`
+- `lossless_root__about_company`
+- `lossless_root__legal_identity_notice`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__contact_notice`
+- `lossless_root__operator_entity_signals`
+- `lossless_root__supporting_company_signals`
 - `legal_signal_derivation_profile`
+- `domain_selection_profile`
+- `active_run_package_manifest`
 
-Target Profile Review must not use any artifact whose name starts with `lossless_family__L`.
+`cartography_index` and `target_profile_source_index` are navigation support only. They are not evidence and must not be copied as factual proof.
 
-Target Profile Review must not use `source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families`.
+The source-of-truth evidence for material target fields is the scoped `lossless_root__*` target evidence listed above.
 
-Target Profile Review must not use raw `legal_cartography_index` as model evidence.
+## Forbidden inputs
 
-Target Profile Review must not use product/activity families or data-provenance families.
+Target Profile Review must not read, request, infer from, or cite:
+
+- `legal_cartography_index`
+- `legal_doc_inventory`
+- `legal_doc_extraction_index`
+- `legal_doc_{DOC_TYPE}`
+- raw legal document lossless text
+- `m7_deterministic_legal_signal_overlay`
+- activity/product roots outside the scoped target evidence list
+- data/DAP roots
+- any retired `lossless_family__*` artifact
 
 ## Reference authority
 
-`AI_REGISTRY_KEY.md` is the base registry derivation reference for Target Profile Review and Activity Profile Review.
+`M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml` is the Target Profile Review field authority.
 
-Target Profile Review may use only §6 Lane from `AI_REGISTRY_KEY.md`, and only to derive `target_profile.business_context.lane` as a source-grounded target-role signal.
-
-Target Profile Review must not use `AI_REGISTRY_KEY.md` to derive exposure rows, threat triggers, pain tiers, legal risk, compliance framework, archetype classification, surface classification, or downstream registry conclusions.
+`AI_REGISTRY_KEY.md` is not a Target Profile Review material derivation authority. Target Profile Review must not derive Lane, primary domain package, AI mount, AI overlay, AI archetype, surface classification, exposure matching, threat triggers, pain tiers, legal risk, compliance framework, or downstream registry conclusions.
 
 ## Primary source rule
 
-The target-profile source families are the primary source authority for:
+The scoped target-profile `lossless_root__*` artifacts are the primary source authority for:
 
 - `target_identity`
 - `business_context`
 - `product_service_wrapper`
 
-Direct legal signal rows must not be used to infer commercial category, business model, product wrapper, product activity, data role, legal risk, compliance status, enforceability, or Lane.
-
-## Semantic Lane derivation
-
-`target_profile.business_context.lane` is mandatory.
-
-Use the `AI_REGISTRY_KEY.md` §6 Lane grammar:
-
-```text
-A = AI Provider / Product Exposure
-B = Deployer / Employer Exposure
-Both = Provider & Deployer Exposure
-```
-
-Derive Lane semantically from the admitted target-profile source material only:
-
-- Use `A` when public target-profile material shows the target develops, sells, licenses, or makes an AI product/system available to external users or customers.
-- Use `B` when public target-profile material shows the target operates or deploys AI internally, including employer/workforce or own-operations use, and the public footprint does not support an external AI product/provider role.
-- Use `Both` only when public target-profile material supports both an external AI provider/product role and an internal deployer/employer or own-operations role at the target-profile level.
-
-If Lane cannot be source-grounded from the admitted target-profile material, use one controlled value and explain it in `target_profile_limitations[]`:
-
-```text
-FIELD_LIMITED
-FIELD_NOT_PUBLIC
-FIELD_CONFLICTED
-FIELD_NOT_FOUND
-```
-
-Lane is a target-role signal for downstream exposure matching. It is not a legal conclusion, compliance conclusion, exposure finding, threat trigger, or advice.
+Direct legal signal rows must not be used to infer commercial category, business model, product wrapper, product activity, data role, legal risk, compliance status, enforceability, Lane, domain package, or AI overlay.
 
 ## Direct legal signal use
 
@@ -91,7 +75,7 @@ Target Profile Review must ignore these direct-signal groups for material deriva
 - `privacy_grievance_contact_signal_map`
 - `consent_manager_signal_map`
 
-Target Profile Review must treat each direct signal row as a bounded field signal, not as legal advice, not as legal sufficiency, and not as an instruction to inspect legal-family source text.
+Target Profile Review must treat each direct signal row as a bounded field signal, not as legal advice, not as legal sufficiency, and not as permission to inspect legal-family source text.
 
 Allowed direct-signal statuses must be converted into Target Profile Review field behavior as follows:
 
@@ -122,14 +106,16 @@ Target Profile Review must return strict JSON with exactly one top-level key: `t
 - `product_service_wrapper`
 - `target_profile_limitations`
 
-`business_context` must include the semantic Lane field:
+`business_context` must contain exactly the fields governed by the active validator:
 
-```text
-lane
-```
+- `business_category`
+- `primary_customer_type`
+- `market_type_candidate`
+- `industry_sector`
+- `regulated_sector_hints`
 
-`lane` must be exactly `A`, `B`, `Both`, or a controlled fallback value.
+Target Profile Review must not emit `business_context.lane`.
 
-The exact field schema is governed by the active target-profile validator. No extra top-level keys, forensic branches, source ledgers, runtime traces, downstream profiles, exposure artifacts, challenge gates, final handoffs, Qualified Review artifacts, or renderer payloads are allowed.
+The exact field schema is governed by the active target-profile validator. No extra top-level keys, forensic branches, source ledgers, runtime traces, downstream profiles, exposure artifacts, challenge gates, final handoffs, Qualified Review artifacts, domain derivation artifacts, manifest updates, or renderer payloads are allowed.
 
 Unsupported fields must use a controlled status and must be explained in `target_profile_limitations[]`.
