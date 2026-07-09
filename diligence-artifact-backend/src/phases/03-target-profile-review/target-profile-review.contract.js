@@ -1,3 +1,13 @@
+const TARGET_PROFILE_LOSSLESS_READS = Object.freeze([
+  "lossless_root__homepage_landing",
+  "lossless_root__about_company",
+  "lossless_root__legal_identity_notice",
+  "lossless_root__pricing_commercial_availability",
+  "lossless_root__contact_notice",
+  "lossless_root__operator_entity_signals",
+  "lossless_root__supporting_company_signals"
+]);
+
 export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   public_label: "Target Profile Review",
@@ -16,23 +26,35 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     execution_mode: "bounded_model_profile_review",
     deterministic_prefilter_required: true,
     model_allowed: true,
-    purpose: "Derive the public target identity, jurisdiction notice, business context, and product/service wrapper profile from admitted source material reached through Phase 2 navigation, with bounded direct legal signal support only for owned legal-notice and jurisdiction fields.",
+    purpose: "Derive the public target identity, jurisdiction notice, business context, and product/service wrapper profile from scoped target-profile lossless evidence reached through Phase 2 navigation, with bounded direct legal signal support only through legal_signal_derivation_profile.",
     reads: Object.freeze([
+      "source_discovery_handoff",
       "cartography_index",
       "target_profile_source_index",
-      "legal_cartography_index",
+      ...TARGET_PROFILE_LOSSLESS_READS,
       "legal_signal_derivation_profile",
       "domain_selection_profile",
       "active_run_package_manifest"
     ]),
     writes: Object.freeze(["target_profile"]),
     forbidden_reads: Object.freeze([
+      "legal_cartography_index",
+      "legal_doc_inventory",
+      "legal_doc_extraction_index",
+      "legal_doc_{DOC_TYPE}",
       "retired_target_family_artifacts",
       "retired_legal_family_artifacts",
       "retired_product_family_artifacts",
       "retired_data_family_artifacts",
       "m7_deterministic_legal_signal_overlay"
     ]),
+    scoped_lossless_evidence_reads: TARGET_PROFILE_LOSSLESS_READS,
+    legal_signal_boundary: Object.freeze({
+      only_legal_input_allowed: "legal_signal_derivation_profile",
+      legal_cartography_index_forbidden: true,
+      legal_doc_lossless_evidence_forbidden: true,
+      tos_derived_signals_must_arrive_through_legal_signal_derivation_profile: true
+    }),
     forbidden_outputs: Object.freeze([
       "domain_derivation_profile",
       "active_run_package_manifest",
@@ -122,9 +144,13 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     phase_output_single_material_artifact_only: true,
     phase_2_indexes_are_mandatory_navigation_tools: true,
     phase_2_indexes_are_not_evidence: true,
+    scoped_lossless_target_evidence_required: true,
     admitted_lossless_phase_1_evidence_remains_source_authority: true,
     legal_signal_profile_is_secondary_bounded_source: true,
+    legal_signal_profile_is_only_legal_input_allowed: true,
+    legal_cartography_index_is_forbidden_as_3a_input: true,
     legal_cartography_index_is_forbidden_as_model_evidence: true,
+    legal_doc_lossless_evidence_forbidden_for_3a: true,
     legal_governance_lossless_families_are_forbidden_as_model_evidence: true,
     company_level_lane_forbidden: true,
     primary_domain_package_derivation_forbidden: true,
