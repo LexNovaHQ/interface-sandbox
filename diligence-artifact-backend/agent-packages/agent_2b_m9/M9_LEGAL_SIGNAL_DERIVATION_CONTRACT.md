@@ -24,16 +24,21 @@ Job B may read only:
 legal_cartography_deterministic_map
 legal_cartography_semantic_profile
 legal_cartography_index
-lossless_family__L1_CORE_TERMS_PRIVACY
-lossless_family__L2_B2B_CONTRACTING
-lossless_family__L3_AI_USAGE_GOVERNANCE
-lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-lossless_family__L5_LEGAL_HUB_HOSTED
-lossless_family__L6_ENTITY_NOTICE
+legal_doc_inventory
+legal_doc_extraction_index
+legal_doc_lossless_validation_manifest
+legal_doc_{DOC_TYPE}
+lossless_root__legal_identity_notice
+lossless_root__privacy_data_processing
+lossless_root__security_trust
+lossless_root__trust_compliance
+lossless_root__contact_notice
+lossless_root__technical_docs_api_developer
+lossless_root__docs_api_data_flow
 field derivation registry contact/consent patch
 ```
 
-Job B must not browse, crawl, fetch new URLs, infer private documents, or read Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, or Renderer artifacts.
+Job B must not browse, crawl, fetch new URLs, infer private documents, use old family input contracts, use legacy family adapters, or read Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, or Renderer artifacts.
 
 ## Derivation Authority
 
@@ -144,9 +149,11 @@ target_profile
 data_provenance_profile
 renderer_payload
 full_clause_text
+old_family_input_contract
+legacy_family_adapter
 ```
 
-The old support artifact names above are retained here only as forbidden compatibility artifact names.
+The old support artifact names above are retained only as forbidden compatibility artifact names.
 
 ## Downstream Boundary
 
