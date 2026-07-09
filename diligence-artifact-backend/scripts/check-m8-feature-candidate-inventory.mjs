@@ -30,7 +30,7 @@ assert.ok(inventory.raw_hit_count >= 17, `expected at least 17 raw hits, got ${i
 assert.equal(validateFeatureCandidateInventoryIndex(inventory).status, "PASS");
 
 const keys = new Set(inventory.candidates.map((candidate) => candidate.canonical_feature_key));
-for (const expectedKey of ["akshar::akshar::product-wrapper", "arya::arya::product-wrapper", "conversational-agents::conversational-agents::product-wrapper", "edge::edge::product-wrapper", "studio::studio::product-wrapper", "sarvam-api::speech-to-text::standalone-api", "sarvam-api::text-to-speech::standalone-api", "sarvam-api::translation::standalone-api", "models::model-catalogue::model-catalogue", "integrations::integration-surface::integration-surface"]) assert.ok(keys.has(expectedKey), `missing canonical key ${expectedKey}`);
+for (const expectedKey of ["akshar::akshar::product-wrapper", "arya::arya::product-wrapper", "conversational-agents::conversational-agents::product-wrapper", "edge::edge::product-wrapper", "studio::studio::product-wrapper", "api::speech-to-text::standalone-api", "api::text-to-speech::standalone-api", "api::translation::standalone-api", "models::model-catalogue::model-catalogue", "integrations::integration-surface::integration-surface"]) assert.ok(keys.has(expectedKey), `missing canonical key ${expectedKey}`);
 
 for (const candidate of inventory.candidates) {
   assert.ok(Array.isArray(candidate.source_pointers) && candidate.source_pointers.length, `${candidate.candidate_id} must have source pointers`);
