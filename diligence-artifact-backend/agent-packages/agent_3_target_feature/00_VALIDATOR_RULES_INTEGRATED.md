@@ -18,23 +18,32 @@ This validator is bounded by the backend phase contract. It cannot expand read a
 For Target Profile Review, allowed inputs are exactly:
 
 - `source_discovery_handoff`
-- `lossless_family__T0_ROOT`
-- `lossless_family__T1_IDENTITY`
-- `lossless_family__T2_LEGAL_IDENTITY`
-- `lossless_family__T3_OPERATOR_ENTITY`
-- `lossless_family__T4_SUPPORTING_IDENTITY`
+- `cartography_index`
+- `target_profile_source_index`
+- `lossless_root__homepage_landing`
+- `lossless_root__about_company`
+- `lossless_root__legal_identity_notice`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__contact_notice`
+- `lossless_root__operator_entity_signals`
+- `lossless_root__supporting_company_signals`
 - `legal_signal_derivation_profile`
+- `domain_selection_profile`
+- `active_run_package_manifest`
+
+`cartography_index` and `target_profile_source_index` are navigation only. The scoped `lossless_root__*` target artifacts are the evidence source.
 
 The validator must reject Target Profile Review use of:
 
 - `legal_cartography_index`
-- `m7_deterministic_legal_signal_overlay`
-- any artifact whose name starts with `lossless_family__L`
-- `source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families`
+- `legal_doc_inventory`
+- `legal_doc_extraction_index`
+- `legal_doc_{DOC_TYPE}`
 - raw legal/governance source text
-- legal/governance route buckets
-- product/activity source families
-- data-provenance source families
+- `m7_deterministic_legal_signal_overlay`
+- activity/product evidence roots outside the scoped target list
+- data-provenance roots
+- any retired `lossless_family__*` artifact
 
 Target Profile Review must not block merely because legal/governance lossless artifacts are unavailable. Missing or limited direct legal signal rows must become controlled field statuses and limitation rows.
 
@@ -79,11 +88,13 @@ NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN -> do not invent value; record controlled limi
 - `product_service_wrapper`
 - `target_profile_limitations`
 
-No forensic branch, profile metadata, evidence ledger, source ledger, confidence object, trace object, downstream object, legal-risk object, data object, registry object, final handoff, renderer payload, or Qualified Review object may appear inside `target_profile`.
+`business_context` must not include `lane`.
+
+No forensic branch, profile metadata, evidence ledger, source ledger, confidence object, trace object, downstream object, domain derivation object, manifest update, legal-risk object, data object, registry object, final handoff, renderer payload, or Qualified Review object may appear inside `target_profile`.
 
 ## Activity Profile Review gate
 
-Activity Profile Review may use only target-profile artifacts, feature candidate inventory, and product/activity families authorized by the backend phase contract.
+Activity Profile Review may use only target-profile artifacts, domain derivation context, feature candidate inventory, and product/activity evidence authorized by the backend phase contract.
 
 Activity Profile Review may not use Target Profile Review to import legal/governance source material.
 
