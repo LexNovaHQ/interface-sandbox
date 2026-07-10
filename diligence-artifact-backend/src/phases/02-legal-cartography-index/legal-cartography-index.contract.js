@@ -1,85 +1,60 @@
+const M9_PHASE1_V4_READS = Object.freeze([
+  "source_discovery_handoff",
+  "post_phase_1_domain_gate_handoff",
+  "source_discovery_matrix_manifest",
+  "neutral_evidence_bucket_manifest",
+  "adapter_expansion_log",
+  "source_family_index",
+  "legal_doc_inventory",
+  "legal_doc_extraction_index",
+  "legal_doc_lossless_validation_manifest",
+  "legal_doc_{DOC_TYPE}",
+  "lossless_root__company_identity",
+  "lossless_root__contact_notice",
+  "lossless_root__privacy_data_processing",
+  "lossless_root__security_trust_compliance",
+  "lossless_root__data_governance_controls",
+  "lossless_root__ai_safety_transparency",
+  "lossless_root__technical_docs_api",
+  "lossless_root__docs_api_data_flow"
+]);
+
 export const LEGAL_CARTOGRAPHY_INDEX_CONTRACT = Object.freeze({
   central_phase_id: "LEGAL_CARTOGRAPHY_INDEX",
   public_label: "Legal Cartography and Index",
-  implementation_status: "CONTRACT_SYNCED_TO_PHASE1_SOURCE_CONTRACT_INPUTS",
+  implementation_status: "M9_MAIN_RESTORED_PHASE1_V4_INPUT_CONTRACT",
   production_entrypoint_switched: false,
   migration_boundary: {
     phase_layer: "src/phases/02-legal-cartography-index",
     runtime_owner: "src/runtime/services/pipeline.service.js",
-    migration_mode: "input_contract_cutover_no_legacy_family_reads",
+    migration_mode: "main_m9_substance_restored_phase1_v4_input_cutover",
     m9_artifact_contract_preserved: true
   },
   jobs: Object.freeze({
     LEGAL_CARTOGRAPHY_INDEX: Object.freeze({
       job_id: "LEGAL_CARTOGRAPHY_INDEX",
       public_label: "Legal Cartography Index",
-      execution_mode: "hybrid_indexing",
+      execution_mode: "m9_hybrid_main_restored",
       model_assisted_semantic_navigation_allowed: true,
       deterministic_compiler_required: true,
-      purpose: "Build legal/governance document inventory, document structure, semantic navigation, locators, missing/limited source rows, and index-only navigation pointers from Phase 1 common-root and legal_doc source artifacts.",
-      reads: Object.freeze([
-        "source_discovery_handoff",
-        "post_phase_1_domain_gate_handoff",
-        "source_discovery_matrix_manifest",
-        "neutral_evidence_bucket_manifest",
-        "adapter_expansion_log",
-        "source_family_index",
-        "legal_doc_inventory",
-        "legal_doc_extraction_index",
-        "legal_doc_lossless_validation_manifest",
-        "legal_doc_{DOC_TYPE}",
-        "lossless_root__legal_identity_notice",
-        "lossless_root__privacy_data_processing",
-        "lossless_root__security_trust",
-        "lossless_root__trust_compliance",
-        "lossless_root__contact_notice",
-        "lossless_root__technical_docs_api_developer",
-        "lossless_root__docs_api_data_flow"
-      ]),
+      purpose: "Build main-M9 legal/governance document inventory, structure, embedded-unit map, semantic navigation, control locators, QR legal signal map, and missing/limited source rows from Phase 1 v4 common-root and legal_doc source artifacts.",
+      reads: M9_PHASE1_V4_READS,
       writes: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index"]),
-      forbidden_outputs: Object.freeze(["legal_signal_derivation_profile", "m7_deterministic_legal_signal_overlay", "m10_selected_legal_support_packet", "target_profile", "data_provenance_profile", "qualified_review_handoff", "qualified_review_renderer_payload", "renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion"]),
-      boundary_rules: Object.freeze({ index_only: true, input_contract: "phase1_common_roots_plus_legal_doc_artifacts", old_family_inputs_forbidden: true, full_legal_text_copied: false, legal_advice_generated: false, compliance_conclusion_generated: false, enforceability_conclusion_generated: false, risk_conclusion_generated: false, qr_pollution_allowed: false, must_not_emit_question_id: true, must_not_emit_reviewer_question: true })
-    }),
-    LEGAL_SIGNAL_DERIVATION: Object.freeze({
-      job_id: "LEGAL_SIGNAL_DERIVATION",
-      public_label: "Legal Signal Derivation",
-      execution_mode: "deterministic_field_derivation",
-      model_generated: false,
-      model_assisted_derivation_allowed: false,
-      purpose: "Derive bounded field-registry keyed legal, jurisdiction, privacy-contact, and consent-manager signals from legal_cartography_index and Phase 1 legal/common-root sources.",
-      reads: Object.freeze([
-        "legal_cartography_deterministic_map",
-        "legal_cartography_semantic_profile",
-        "legal_cartography_index",
-        "legal_doc_inventory",
-        "legal_doc_extraction_index",
-        "legal_doc_lossless_validation_manifest",
-        "legal_doc_{DOC_TYPE}",
-        "lossless_root__legal_identity_notice",
-        "lossless_root__privacy_data_processing",
-        "lossless_root__security_trust",
-        "lossless_root__trust_compliance",
-        "lossless_root__contact_notice",
-        "lossless_root__technical_docs_api_developer",
-        "lossless_root__docs_api_data_flow",
-        "FIELD_DERIVATION_REGISTRY_v2_LOCKED_QR_CONTACT_PATCH_20260704.yml"
-      ]),
-      writes: Object.freeze(["legal_signal_derivation_profile"]),
-      forbidden_outputs: Object.freeze(["qualified_review_legal_signals", "question_rows", "question_index", "m7_deterministic_legal_signal_overlay", "m10_selected_legal_support_packet", "target_profile", "data_provenance_profile", "qualified_review_handoff", "renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion"]),
-      boundary_rules: Object.freeze({ deterministic_only: true, input_contract: "phase1_common_roots_plus_legal_doc_artifacts", old_family_inputs_forbidden: true, field_derivation_registry_is_derivation_authority: true, qr_question_id_is_not_derivation_authority: true, qr_pollution_allowed: false, question_id_forbidden: true, reviewer_question_forbidden: true, qr_prose_forbidden: true, full_clause_text_copied: false, legal_advice_generated: false, compliance_conclusion_generated: false, enforceability_conclusion_generated: false, risk_conclusion_generated: false, unknown_status_forbidden: true })
+      forbidden_outputs: Object.freeze(["source_discovery_handoff", "m7_deterministic_legal_signal_overlay", "m10_selected_legal_support_packet", "target_profile", "data_provenance_profile", "qualified_review_handoff", "qualified_review_renderer_payload", "renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion"]),
+      boundary_rules: Object.freeze({ index_only: true, input_contract: "phase1_v4_common_roots_plus_individual_legal_doc_artifacts", old_family_inputs_forbidden: true, full_legal_text_copied: false, legal_advice_generated: false, compliance_conclusion_generated: false, enforceability_conclusion_generated: false, risk_conclusion_generated: false, qualified_review_legal_signals_are_locator_signals_only: true })
     })
   }),
-  required_save_order: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"]),
-  final_downstream_artifacts: Object.freeze(["legal_cartography_index", "legal_signal_derivation_profile"]),
-  deferred_downstream_integrations: Object.freeze(["M7 consumes LGC.NOT and TP.JUR signals in a later pass.", "M10 consumes DAP.CONTACT and DAP.CM signals in a later pass.", "Qualified Review consumes normalized/compiled field outputs later; it does not drive derivation."])
+  required_save_order: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index"]),
+  final_downstream_artifacts: Object.freeze(["legal_cartography_index"]),
+  restored_main_m9_input_contract: M9_PHASE1_V4_READS
 });
 
 export const LEGAL_SIGNAL_DERIVATION_PROFILE_CONTRACT = Object.freeze({
   artifact_name: "legal_signal_derivation_profile",
-  schema_version: "LEGAL_SIGNAL_DERIVATION_PROFILE_v2_PHASE1_SOURCE_INPUT_CONTRACT",
+  schema_version: "LEGAL_SIGNAL_DERIVATION_PROFILE_v2_PHASE1_SOURCE_INPUT_CONTRACT_COMPATIBILITY_RETIRED_FROM_MAIN_M9",
   model_generated: false,
-  derivation_mode: "deterministic_from_legal_cartography_index_and_phase1_legal_common_root_sources",
-  source_boundary: Object.freeze({ allowed_sources: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_doc_inventory", "legal_doc_extraction_index", "legal_doc_lossless_validation_manifest", "legal_doc_{DOC_TYPE}", "lossless_root__legal_identity_notice", "lossless_root__privacy_data_processing", "lossless_root__security_trust", "lossless_root__trust_compliance", "lossless_root__contact_notice", "lossless_root__technical_docs_api_developer", "lossless_root__docs_api_data_flow", "field_derivation_registry"]), old_family_inputs_forbidden: true, qr_pollution_allowed: false, legal_advice_generated: false, compliance_conclusion_generated: false, enforceability_conclusion_generated: false, risk_conclusion_generated: false, full_clause_text_copied: false }),
+  derivation_mode: "compatibility_only_not_part_of_restored_main_m9",
+  source_boundary: Object.freeze({ allowed_sources: Object.freeze(M9_PHASE1_V4_READS), old_family_inputs_forbidden: true, qr_pollution_allowed: false, legal_advice_generated: false, compliance_conclusion_generated: false, enforceability_conclusion_generated: false, risk_conclusion_generated: false, full_clause_text_copied: false }),
   required_field_groups: Object.freeze({
     legal_notice_contact_signal_map: Object.freeze([{ field_id: "LGC.NOT.010", field_key: "legal_notice_email" }, { field_id: "LGC.NOT.011", field_key: "legal_notice_contact_route" }, { field_id: "LGC.NOT.012", field_key: "legal_notice_contact_evidence_basis" }, { field_id: "LGC.NOT.013", field_key: "legal_notice_contact_limitation" }]),
     jurisdiction_dispute_signal_map: Object.freeze([{ field_id: "TP.JUR.003", field_key: "governing_law_country" }, { field_id: "TP.JUR.004", field_key: "governing_law_state" }, { field_id: "TP.JUR.005", field_key: "courts_venue" }, { field_id: "TP.JUR.007", field_key: "jurisdiction_evidence_basis" }, { field_id: "TP.JUR.008", field_key: "jurisdiction_uncertainty" }]),
