@@ -1,6 +1,6 @@
 {
   "package": "AGENT3_REGISTRY_REFERENCE_FILES_PACKAGE_AI_KEY_V4",
-  "repair_scope": "AI_REGISTRY_KEY.md is the base derivation-spec reference for Target Profile Review and Activity Profile Review; Activity Profile material archetype enum is v4-ready; CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation; live AI_THREAT_REGISTRY remains v3.2-compatible until the v4 registry build closes.",
+  "repair_scope": "AI_REGISTRY_KEY.md remains the base derivation-spec reference for Target Profile Review and Activity Profile Review where authorized; TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml adds TP.BIZ.009 and TP.BIZ.010 pending the next full field-registry rebuild; M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml is Phase 1 v5 17-root regulatory/grievance synced; Activity Profile material archetype enum is v4-ready; CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation; live AI_THREAT_REGISTRY remains v3.2-compatible until the v4 registry build closes.",
   "files": {
     "03_REGISTRY_EVALUATION_RULES.yaml": {
       "bytes": 2236,
@@ -23,7 +23,18 @@
     },
     "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml": {
       "bytes": 359231,
-      "sha256": "0a948faefa1535ed7728d9a51cf509fc3541ffc8a7e1efbca197fda0059dc615"
+      "sha256": "0a948faefa1535ed7728d9a51cf509fc3541ffc8a7e1efbca197fda0059dc615",
+      "status": "base_locked_registry_retained"
+    },
+    "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml": {
+      "bytes": 4095,
+      "sha256": "292dc9cd87f6ab398a0c83290ccee3f440b11a723d847d97461b0cddf03106f0",
+      "status": "target_profile_material_field_addendum_locked"
+    },
+    "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml": {
+      "bytes": 11367,
+      "sha256": "c8f33c8afc2fc6f63dd12399a9dcbc6c12446ec0bbcbdc8bc77304df754d1eaf",
+      "status": "phase1_v5_17_root_regulatory_grievance_sync"
     },
     "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml": {
       "bytes": 9522,
@@ -48,6 +59,32 @@
       "activity_profile_archetype_surface_authority": true,
       "activity_profile_material_archetype_enum": "v4_14_codes",
       "live_registry_csv_build_status": "pending_v4_registry_build"
+    },
+    "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml": {
+      "strict_yaml_parse": "PASS",
+      "added_target_profile_fields": [
+        "TP.BIZ.009",
+        "TP.BIZ.010"
+      ],
+      "forbidden_conclusions_preserved": [
+        "license_validity",
+        "license_requirement",
+        "applicable_regulator",
+        "regulatory_compliance_status",
+        "grievance_sufficiency",
+        "grievance_compliance_status"
+      ]
+    },
+    "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml": {
+      "strict_yaml_parse": "PASS",
+      "phase1_source_contract": "PHASE1_V5_17_ROOT",
+      "new_scoped_roots": [
+        "lossless_root__regulatory_licensing_status",
+        "lossless_root__grievance_complaints"
+      ],
+      "retired_target_roots_forbidden": true,
+      "lane_derivation_forbidden": true,
+      "regulatory_grievance_conclusions_forbidden": true
     },
     "AI_THREAT_REGISTRY.yaml": {
       "strict_yaml_parse": "PASS",
