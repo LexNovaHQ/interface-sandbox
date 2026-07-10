@@ -109,12 +109,13 @@ for (const artifact of WRITE_ORDER) {
 for (const routeMap of ROUTE_MAPS) {
   assert.ok(moduleText.includes(routeMap), `module missing ${routeMap}`);
   assert.ok(referenceMap.includes(routeMap), `reference map missing ${routeMap}`);
+  assert.ok(validator.includes(routeMap), `validator rules missing ${routeMap}`);
 }
 
 for (const marker of ["Phase 2B creates a route-aware", "Phase 2B owns `activity_profile_source_index`", "Phase 3B Domain Derivation owns", "not a domain derivation layer", "not an overlay mounting layer", "not a package selection layer"]) assert.ok(moduleText.includes(marker), `module missing boundary marker: ${marker}`);
 for (const marker of ["AI_SIGNAL_PLUS_ONE_OR_MORE_PRIMARY_REGULATORY_ACTIVITY_OR_COMMERCIAL_SIGNAL", "composite_signal_required: true", "derived_value_forbidden: true", "phase_2b_action: LOCATE_ONLY"]) assert.ok(referenceMap.includes(marker), `reference map missing route doctrine: ${marker}`);
-for (const marker of ["P2B_DOMAIN_ACTIVITY_FORBIDDEN_OUTPUTS", "P2B_DOMAIN_ACTIVITY_FORBIDDEN_CONCLUSIONS", "P2B_DOMAIN_ACTIVITY_RETIRED_ROOTS_FORBIDDEN", "coverage_ratio", "semantic_label_queue"]) assert.ok(validator.includes(marker), `validator rules missing ${marker}`);
-for (const marker of ["strict JSON", "No markdown", "Do not instruct the backend to advance", "Do not run 3B"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
+for (const marker of ["Semantic coverage is measured against deterministic `semantic_label_queue`", "coverage_ratio", "ready_for_compiler", "Forbidden content", "Retired roots forbidden", "lossless_family__"]) assert.ok(validator.includes(marker), `validator rules missing ${marker}`);
+for (const marker of ["strict JSON", "same-chat next-phase instructions", "Do not continue to:", "P3_DOMAIN_DERIVATION_LAYER", "Each save event must have one top-level root only"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
 assert.ok(controller.includes("Phase 2B executes only Domain & Activity Source Index work"));
 
 for (const text of [binding, controller, moduleText, referenceMap, validator, terminal]) {
