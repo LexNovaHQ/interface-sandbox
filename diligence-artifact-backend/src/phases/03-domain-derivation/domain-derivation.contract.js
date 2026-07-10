@@ -74,6 +74,19 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "lossless_root__security_trust_compliance",
     "lossless_root__data_governance_controls"
   ]),
+  boundary_rules: Object.freeze({
+    semantic_first_deterministic_gated: true,
+    registry_driven_derivation: true,
+    registry_ladder_prompt_active: true,
+    hardcoded_domain_logic_forbidden: true,
+    new_domains_added_by_registry_not_prompt: true,
+    legal_cartography_index_forbidden: true,
+    legal_signal_derivation_profile_forbidden: true,
+    legal_lossless_evidence_forbidden: true,
+    target_profile_is_context_not_proof: true,
+    phase2_indexes_navigation_only: true,
+    company_level_lane_forbidden: true
+  }),
   forbidden_outputs: Object.freeze([
     "target_profile",
     "target_profile_forensics",
