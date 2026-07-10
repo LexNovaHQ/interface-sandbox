@@ -1,11 +1,24 @@
+const ACTIVITY_PROFILE_LOSSLESS_READS = Object.freeze([
+  "lossless_root__product_service",
+  "lossless_root__platform_feature_solution",
+  "lossless_root__technical_docs_api",
+  "lossless_root__docs_api_data_flow",
+  "lossless_root__integrations_ecosystem",
+  "lossless_root__pricing_commercial_availability",
+  "lossless_root__use_case_customer_industry",
+  "lossless_root__support_help_resources",
+  "lossless_root__ai_safety_transparency"
+]);
+
 const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze([
-  "cartography_index",
+  "phase_routing_manifest",
+  "phase_route_runtime_packet",
   "activity_profile_source_index",
   "target_profile",
-  "target_profile_forensics",
   "domain_derivation_profile",
   "active_run_package_manifest",
-  "domain_selection_profile"
+  "domain_selection_profile",
+  ...ACTIVITY_PROFILE_LOSSLESS_READS
 ]);
 
 const ACTIVITY_CANDIDATE_INVENTORY_WRITES = Object.freeze(["feature_candidate_inventory"]);
@@ -31,16 +44,24 @@ const ACTIVITY_CONTEXT_ONLY_LOCATOR_MAPS = Object.freeze([
 ]);
 
 export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_CANDIDATE_INVENTORY_CONTRACT_v2_PHASE2C_PACKAGE_AWARE",
+  contract_name: "ACTIVITY_CANDIDATE_INVENTORY_CONTRACT_v3_PHASE2G_ROUTED",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY",
   public_label: "Activity Candidate Inventory",
   compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY",
-  implementation_status: "PHASE5_SYNCED_TO_P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
+  implementation_status: "PHASE5_CANDIDATE_INVENTORY_PHASE2G_ROUTE_SCOPED_RUNTIME_CUTOVER_COMPLETE",
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "NONE_DETERMINISTIC",
+  route_contract: Object.freeze({
+    routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+    route_id: "ROUTE.PHASE5.ACTIVITY_PROFILE",
+    bucket_id: "2C_BUCKET_ACTIVITY_PROFILE",
+    runtime_reader: "phase-route-runtime.reader",
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true
+  }),
   deterministic_job: Object.freeze({
     reads: ACTIVITY_CANDIDATE_INVENTORY_READS,
     writes: ACTIVITY_CANDIDATE_INVENTORY_WRITES,
@@ -51,6 +72,7 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
     validator: "validateFeatureCandidateInventoryIndex",
     validator_module: "src/phases/05-activity-profile-review/services/activity-candidate-inventory-index.builder.js"
   }),
+  scoped_lossless_evidence_reads: ACTIVITY_PROFILE_LOSSLESS_READS,
   source_index_scope: Object.freeze({
     candidate_creation_locator_maps: ACTIVITY_CANDIDATE_CREATION_LOCATOR_MAPS,
     context_only_locator_maps: ACTIVITY_CONTEXT_ONLY_LOCATOR_MAPS,
@@ -91,12 +113,8 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
     "lossless_family__P3_AI_CAPABILITY_TECHNICAL",
     "lossless_family__P4_USE_CASE_INDUSTRY",
     "lossless_family__P5_ENTERPRISE_PRICING",
-    "lossless_root__product_service",
-    "lossless_root__platform_feature_solution",
-    "lossless_root__technical_docs_api",
-    "lossless_root__docs_api_data_flow",
-    "lossless_root__integrations_ecosystem",
-    "lossless_root__pricing_commercial_availability",
+    "cartography_index",
+    "target_profile_forensics",
     "legal_cartography_index",
     "legal_signal_derivation_profile",
     "data_privacy_navigation_index",
@@ -112,10 +130,13 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
     "qualified_review_handoff"
   ]),
   boundary_rules: Object.freeze({
+    phase2g_route_scoped_runtime_reader_required: true,
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true,
     deterministic_only: true,
     must_not_call_provider: true,
     must_not_discover_or_fetch_sources: true,
-    must_not_read_raw_phase1_roots: true,
+    must_not_read_raw_phase1_roots_outside_phase2g_packet: true,
     must_not_emit_target_feature_profile: true,
     must_not_emit_target_feature_profile_forensics: true,
     must_not_copy_lossless_text_or_excerpts: true,
