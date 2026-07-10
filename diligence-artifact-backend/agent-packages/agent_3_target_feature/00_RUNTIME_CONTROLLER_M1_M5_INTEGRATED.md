@@ -4,20 +4,22 @@
 
 This file governs `agent_3_target_feature` only when assembled with `AGENT3_RUNTIME_BINDING_PACKET.yaml` and an active phase prompt.
 
-The backend phase contract is the canonical permission source. Prompt text cannot expand backend read or write authority.
+The backend phase contract is the canonical permission source. Prompt text cannot expand backend read or write authority. For Target Profile Review, Domain Derivation Layer, and Activity Profile Review, Phase 2G is the sole runtime routing authority.
 
 ## Runtime execution rule
 
 1. Read the runtime binding packet before the active phase prompt.
 2. Execute only the active phase selected by the backend runner.
-3. Read only artifacts listed in the backend phase contract for that active phase.
-4. Write only artifacts listed in the backend phase contract for that active phase.
-5. Save material artifacts before forensic artifacts.
-6. Do not emit downstream objects, final handoff artifacts, renderer payloads, Qualified Review artifacts, or same-chat receipts in backend mode.
+3. For 3A, 3B, and Phase 5, accept only the artifact packet resolved from `phase_routing_manifest` by `phase-route-runtime.reader`.
+4. Treat lossless evidence in that packet as primary evidence and use the routed index as the mandatory navigation map.
+5. Do not request or inspect any artifact outside the routed bucket and declared preceding derived-profile context.
+6. Write only artifacts listed in the backend phase contract for that active phase.
+7. Save material artifacts before forensic artifacts.
+8. Do not emit downstream objects, final handoff artifacts, renderer payloads, Qualified Review artifacts, or same-chat receipts in backend mode.
 
 ## Active phase ownership
 
-This package currently covers these compatibility surfaces until each phase is migrated into its own phase folder:
+This package covers:
 
 - Target Profile Review
 - Domain Derivation Layer
@@ -25,16 +27,29 @@ This package currently covers these compatibility surfaces until each phase is m
 - Activity Profile Review
 - Activity Profile Forensics
 
-The package does not own Source Discovery, Legal Cartography and Index, Phase 2A Target Profile Source Index, Phase 2B Domain Derivation Source Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
+The package does not own Source Discovery, Phase 2 Cartography and Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
+
+## Phase 2G boundary
+
+For material profile jobs:
+
+- `phase_routing_manifest` identifies the authorized route.
+- `phase_route_runtime_packet` records the resolved route and bucket.
+- Lossless evidence is primary evidence; it is not a fallback.
+- Index navigation is mandatory.
+- Free-corpus reads are forbidden.
+- A material profile may receive its own bucket plus only the preceding derived profiles declared by 2G.
+- Target, activity, DAP, and exposure forensic artifacts are forbidden as material-profile inputs.
+- A phase may not widen its own packet.
 
 ## Target Profile Review read authority
 
-Target Profile Review is scoped target-profile material derivation.
+Target Profile Review uses `ROUTE.PHASE3A.TARGET_PROFILE` and bucket `2A_BUCKET_TARGET_PROFILE`.
 
-Target Profile Review may read only:
+Its routed packet contains:
 
-- `source_discovery_handoff`
-- `cartography_index`
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
 - `target_profile_source_index`
 - `lossless_root__homepage_landing`
 - `lossless_root__company_identity`
@@ -43,28 +58,22 @@ Target Profile Review may read only:
 - `lossless_root__regulatory_licensing_status`
 - `lossless_root__grievance_complaints`
 - `legal_signal_derivation_profile`
-- `domain_selection_profile`
-- `active_run_package_manifest`
 
-`cartography_index` and `target_profile_source_index` are navigation support only. The scoped `lossless_root__*` target artifacts are the source evidence.
-
-`target_profile_source_index` is the active Phase 2A locator authority. It routes Target Profile Review to evidence; it does not supply target-profile values.
+`target_profile_source_index` is navigation support only. The scoped `lossless_root__*` target artifacts are primary source evidence.
 
 Target Profile Review must not read or request:
 
+- `source_discovery_handoff`
+- `cartography_index`
+- `domain_selection_profile`
+- `active_run_package_manifest`
+- `target_profile_forensics`
+- `domain_derivation_source_index`
+- `activity_profile_source_index`
 - `legal_cartography_index`
-- `legal_doc_inventory`
-- `legal_doc_extraction_index`
-- `legal_doc_{DOC_TYPE}`
-- raw legal/governance source text
-- `m7_deterministic_legal_signal_overlay`
-- `target_profile_deterministic_map`
-- `target_profile_semantic_profile`
-- activity/product roots outside the scoped target list
+- raw legal documents
 - data-provenance roots
 - retired pre-cutover family artifacts
-
-Target Profile Review must not block because legal/governance lossless artifacts are absent. Missing or limited direct legal signal rows become controlled field statuses and limitation rows.
 
 ## Target Profile Review regulatory and grievance signal rule
 
@@ -74,9 +83,9 @@ Target Profile Review must not emit license validity, license requirement, appli
 
 ## Direct legal signal rule
 
-`legal_signal_derivation_profile` is the only Legal Cartography and Index-derived material available to Target Profile Review.
+`legal_signal_derivation_profile` is the only legal-derived material available to Target Profile Review and arrives as a bounded dependency through 2G.
 
-Target Profile Review may use it only for owned legal notice and jurisdiction signal rows:
+Target Profile Review may use only owned legal notice and jurisdiction signal rows:
 
 - `LGC.NOT.010`
 - `LGC.NOT.011`
@@ -90,7 +99,7 @@ Target Profile Review may use it only for owned legal notice and jurisdiction si
 
 Target Profile Review must not use `privacy_grievance_contact_signal_map` or `consent_manager_signal_map` for material derivation.
 
-Target Profile Review must treat direct signal rows as bounded field signals, not legal advice, not legal sufficiency, and not permission to inspect legal-family source text.
+Direct signal rows are bounded field signals, not legal advice, legal sufficiency, or permission to inspect legal source text.
 
 ## Direct legal signal status handling
 
@@ -110,13 +119,12 @@ Target Profile Review must not derive or emit `business_context.lane`. Lane/doma
 
 ## Domain Derivation Layer read authority
 
-Domain Derivation Layer is Phase 3B and uses the registry ladder prompt `02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md`.
+Domain Derivation Layer uses `ROUTE.PHASE3B.DOMAIN_DERIVATION` and bucket `2B_BUCKET_DOMAIN_DERIVATION`.
 
-Domain Derivation Layer may read only:
+Its routed packet contains:
 
-- `source_discovery_handoff`
-- `cartography_index`
-- `target_profile_source_index`
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
 - `domain_derivation_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
@@ -140,46 +148,52 @@ Domain Derivation Layer may use only these references:
 - `references/domain-packages/package-catalog.v0.json`
 - `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
 
-Domain Derivation Layer must treat `cartography_index`, `target_profile_source_index`, and `domain_derivation_source_index` as navigation only. The scoped 12 `lossless_root__*` artifacts are the evidence source. `target_profile` is context only and not proof.
-
-`activity_profile_source_index` is reserved for 2C / Phase 5 Activity Profile and must not be read by Domain Derivation Layer.
-
-## Domain Derivation Layer registry ladder rule
-
-Domain Derivation Layer must not hardcode domain classification logic. It must evaluate the active rules in `DOMAIN_DERIVATION_REGISTRY_v0.yaml` and package identities in `package-catalog.v0.json`.
-
-New domains, overlays, fusion candidates, and regulatory overlays are added by registry/catalog update, not by prompt update.
-
-The model derives condition-level semantic evaluations. The deterministic validator/compiler is the lock authority.
-
-## Domain Derivation Layer forbidden rule
+`domain_derivation_source_index` is navigation only. The scoped 12 `lossless_root__*` artifacts are primary evidence. `target_profile` is context only and not proof.
 
 Domain Derivation Layer must not read or request:
 
+- `source_discovery_handoff`
+- `cartography_index`
+- `target_profile_source_index`
+- `target_profile_forensics`
 - `activity_profile_source_index`
 - `legal_cartography_index`
 - `legal_signal_derivation_profile`
-- `legal_doc_inventory`
-- `legal_doc_extraction_index`
-- `legal_doc_{DOC_TYPE}`
-- legal/governance source text
+- legal documents or legal source text
 - data-provenance roots
-- privacy/security/trust roots
-- retired pre-cutover family artifacts
-- exposure artifacts
-- compiler artifacts
-- Qualified Review artifacts
+- exposure, compiler, or Qualified Review artifacts
+
+Domain Derivation Layer must evaluate the active rules in `DOMAIN_DERIVATION_REGISTRY_v0.yaml`; new domains and overlays are added by registry/catalog update, not prompt update. The model performs condition-level semantic evaluation and the deterministic validator/compiler remains lock authority.
 
 Domain Derivation Layer must not derive or emit target profile edits, activity profile rows, archetypes, surface locks, exposure rows, legal advice, compliance conclusion, risk conclusion, Lane, or remediation route.
 
 ## Activity Profile Review read authority
 
-Activity Profile Review may read target profile artifacts, feature candidate inventory, domain derivation context, and product/activity evidence as authorized by the backend phase contract.
+Both Phase 5 jobs use `ROUTE.PHASE5.ACTIVITY_PROFILE` and bucket `2C_BUCKET_ACTIVITY_PROFILE`.
 
-Activity Profile Review must not use Target Profile Review or Domain Derivation Layer to backdoor legal/governance source material.
+The routed bucket contains:
 
-## Runtime stop rules
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
+- `activity_profile_source_index`
+- `target_profile`
+- `domain_derivation_profile`
+- `domain_selection_profile`
+- `active_run_package_manifest`
+- `lossless_root__product_service`
+- `lossless_root__platform_feature_solution`
+- `lossless_root__technical_docs_api`
+- `lossless_root__docs_api_data_flow`
+- `lossless_root__integrations_ecosystem`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__use_case_customer_industry`
+- `lossless_root__support_help_resources`
+- `lossless_root__ai_safety_transparency`
 
-If the binding packet, active prompt, validator, or reference material conflicts with the backend phase contract, the backend phase contract wins.
+`M8_TARGET_FEATURE_PROFILE` additionally receives `feature_candidate_inventory` as a 2G-declared job-scoped derived artifact.
 
-If a required field cannot be supported from allowed artifacts, emit a controlled limitation rather than requesting forbidden upstream legal material.
+The candidate inventory job creates candidates only from `activity_profile_source_index` locators. It must not independently scan the routed lossless evidence or copy it into the inventory.
+
+The material profile uses the same routed lossless evidence, navigated through `activity_profile_source_index` and candidate pointers, to derive mechanics and the material activity profile.
+
+Neither Phase 5 job may read `target_profile_forensics`, `target_feature_profile_forensics`, legal/data indexes outside its route, or any downstream artifact.
