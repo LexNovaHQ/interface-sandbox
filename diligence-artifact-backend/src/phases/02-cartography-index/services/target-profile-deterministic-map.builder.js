@@ -1,5 +1,6 @@
 import {
   P2A_TARGET_PROFILE_ARTIFACTS,
+  P2A_TARGET_PROFILE_MATERIAL_FIELD_INVENTORY,
   P2A_TARGET_PROFILE_TARGET_ROOT_INPUTS,
   P2A_TARGET_PROFILE_SECONDARY_CONTEXT_ROOT_INPUTS
 } from "../target-profile-source-index.contract.js";
@@ -9,14 +10,19 @@ export const TARGET_PROFILE_DETERMINISTIC_ARTIFACT_NAME = P2A_TARGET_PROFILE_ART
 
 const TARGET_ROOT_ARTIFACTS = Object.freeze([...P2A_TARGET_PROFILE_TARGET_ROOT_INPUTS, ...P2A_TARGET_PROFILE_SECONDARY_CONTEXT_ROOT_INPUTS]);
 const LEGAL_DOC_CONTROL_ARTIFACTS = Object.freeze(["legal_doc_inventory", "legal_doc_extraction_index", "legal_doc_lossless_validation_manifest"]);
+const REGULATORY_ROOT = "regulatory_licensing_status";
+const GRIEVANCE_ROOT = "grievance_complaints";
+const REGULATORY_LOCATOR_FAMILIES = Object.freeze(["REGULATORY_LICENSING_SIGNAL_LOCATOR", "REGULATORY_DISCLOSURE_LOCATOR", "BANK_PARTNER_SPONSOR_BANK_LOCATOR", "CONSUMER_DISCLOSURE_LOCATOR", "COUNTERPARTY_INSTITUTION_LOCATOR"]);
+const GRIEVANCE_LOCATOR_FAMILIES = Object.freeze(["GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR", "NODAL_GRIEVANCE_OFFICER_LOCATOR", "OMBUDSMAN_ESCALATION_LOCATOR", "COMPLAINTS_ROUTE_LOCATOR"]);
+const GOVERNING_LAW_VENUE_FAMILIES = Object.freeze(["GOVERNING_LAW_LOCATOR", "COURTS_VENUE_LOCATOR"]);
 const TARGET_LOCATOR_FAMILIES = Object.freeze({
   ENTITY_IDENTITY_LOCATOR: [/\blegal name\b/i, /\bcompany\b/i, /\bentity\b/i, /\bincorporated\b/i, /\bregistered\b/i, /\babout\b/i],
   BRAND_TRADE_NAME_LOCATOR: [/\bbrand\b/i, /\btrade name\b/i, /\boperat(?:es|ing) as\b/i, /\bplatform\b/i],
   HOMEPAGE_POSITIONING_LOCATOR: [/\bplatform\b/i, /\bcompany\b/i, /\bsolution\b/i, /\bproduct\b/i, /\bfor\b/i],
-  CONTACT_ROUTE_LOCATOR: [/\bcontact\b/i, /\bemail\b/i, /\bsupport\b/i, /\bsales\b/i, /\bnotice\b/i],
+  CONTACT_ROUTE_LOCATOR: [/\bcontact\b/i, /\bemail\b/i, /\bsupport\b/i, /\bsales\b/i, /\bnotice\b/i, /\bgrievance\b/i, /\bcomplaint\b/i],
   COMMERCIAL_AVAILABILITY_LOCATOR: [/\bpricing\b/i, /\bplans?\b/i, /\benterprise\b/i, /\bcontact sales\b/i, /\btrial\b/i],
-  PRICING_SALES_ROUTE_LOCATOR: [/\bsales\b/i, /\bpricing\b/i, /\bbilling\b/i, /\bsubscription\b/i, /\bquote\b/i],
-  CUSTOMER_SEGMENT_CONTEXT_LOCATOR: [/\bcustomer\b/i, /\buse case\b/i, /\bindustry\b/i, /\bteams?\b/i, /\bbusinesses\b/i]
+  PRICING_SALES_ROUTE_LOCATOR: [/\bsales\b/i, /\bpricing\b/i, /\bbilling\b/i, /\bsubscription\b/i, /\bquote\b/i, /\bfees?\b/i, /\bcharges?\b/i],
+  CUSTOMER_SEGMENT_CONTEXT_LOCATOR: [/\bcustomer\b/i, /\bconsumer\b/i, /\bborrower\b/i, /\bmerchant\b/i, /\buse case\b/i, /\bindustry\b/i, /\bteams?\b/i, /\bbusinesses\b/i]
 });
 
 export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } = {}) {
@@ -25,6 +31,7 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
   const sourceArtifactsRead = [];
   const targetCoverage = [];
   const structureIndex = [];
+  const materialTargetFields = [];
   const entityIdentity = [];
   const brandTradeName = [];
   const homepagePositioning = [];
@@ -32,6 +39,8 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
   const commercialAvailability = [];
   const pricingSalesRoute = [];
   const customerSegmentContext = [];
+  const regulatoryLicensing = [];
+  const grievanceComplaints = [];
   const legalTargetSignals = [];
   const missingLimited = [];
   const semanticQueue = [];
@@ -46,6 +55,7 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
       source,
       targetCoverage,
       structureIndex,
+      materialTargetFields,
       entityIdentity,
       brandTradeName,
       homepagePositioning,
@@ -53,6 +63,8 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
       commercialAvailability,
       pricingSalesRoute,
       customerSegmentContext,
+      regulatoryLicensing,
+      grievanceComplaints,
       legalTargetSignals,
       semanticQueue,
       repairQueue
@@ -66,9 +78,9 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
       run_id: runId,
       target_url: targetUrl,
       generated_by: "phase2a_target_profile_deterministic_layer",
-      schema_version: "P2A_TARGET_PROFILE_DETERMINISTIC_MAP_v2_LEGAL_SIGNAL_RULES",
+      schema_version: "P2A_TARGET_PROFILE_DETERMINISTIC_MAP_v3_PHASE1_V5_FIELD_LOCATORS",
       model_used: false,
-      artifact_role: "Navigation-only deterministic map for Target Profile Review over target-family Phase 1 v4 roots and limited target-relevant legal-doc signal locators.",
+      artifact_role: "Navigation-only deterministic map for Target Profile Review over Phase 1 v5 target-family roots and limited target-relevant legal/regulatory/grievance signal locators.",
       source_text_policy: {
         source_artifacts_remain_source_of_truth: true,
         full_text_copied_into_map: false,
@@ -79,6 +91,7 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
       source_artifacts_read: dedupeRows(sourceArtifactsRead, (row) => row.artifact_name),
       target_source_coverage_index: dedupeRows(targetCoverage, (row) => row.coverage_id),
       target_document_structure_index: dedupeRows(structureIndex, (row) => row.unit_id),
+      material_target_field_locator_map: dedupeRows(materialTargetFields, (row) => row.field_locator_id),
       entity_identity_locator_map: dedupeRows(entityIdentity, (row) => row.locator_id),
       brand_trade_name_locator_map: dedupeRows(brandTradeName, (row) => row.locator_id),
       homepage_positioning_locator_map: dedupeRows(homepagePositioning, (row) => row.locator_id),
@@ -86,12 +99,17 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
       commercial_availability_locator_map: dedupeRows(commercialAvailability, (row) => row.locator_id),
       pricing_sales_route_locator_map: dedupeRows(pricingSalesRoute, (row) => row.locator_id),
       customer_segment_context_locator_map: dedupeRows(customerSegmentContext, (row) => row.locator_id),
+      regulatory_licensing_locator_map: dedupeRows(regulatoryLicensing, (row) => row.locator_id),
+      grievance_complaints_locator_map: dedupeRows(grievanceComplaints, (row) => row.locator_id),
       legal_target_signal_locator_map: dedupeRows(legalTargetSignals, (row) => row.locator_id),
       missing_limited_target_source_map: dedupeRows(missingLimited, (row) => row.missing_id),
       semantic_label_queue: dedupeRows(semanticQueue, (row) => row.queue_id),
       quality_repair_queue: dedupeRows(repairQueue, (row) => `${row.repair_type}:${row.source_artifact}:${row.source_id}`),
       downstream_rules: {
         target_profile_deterministic_map_is_navigation_only: true,
+        material_target_field_locators_are_pointer_only: true,
+        regulatory_licensing_locators_are_factual_signal_only: true,
+        grievance_complaints_locators_are_route_visibility_only: true,
         legal_target_signals_are_locators_only: true,
         target_profile_review_must_derive_values_from_source_reads: true,
         phase_2a_must_not_emit_target_profile_values: true,
@@ -101,13 +119,19 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
         legal_advice_forbidden: true,
         compliance_conclusion_forbidden: true,
         enforceability_assessment_forbidden: true,
+        license_validity_forbidden: true,
+        license_requirement_forbidden: true,
+        applicable_regulator_conclusion_forbidden: true,
+        grievance_sufficiency_forbidden: true,
+        governing_law_from_regulatory_or_grievance_roots_forbidden: true,
+        courts_venue_from_regulatory_or_grievance_roots_forbidden: true,
         legal_signal_rule_source: "target-legal-signal-locator.rules.js",
         source_artifacts_remain_source_of_truth: true,
         full_text_copied: false,
         summaries_allowed: false,
         excerpts_allowed: false,
         old_family_input_contract_forbidden: true,
-        phase1_v4_source_contract_required: true
+        phase1_v5_source_contract_required: true
       },
       lock_status: status
     }
@@ -122,7 +146,7 @@ function collectTargetSources(artifacts = {}) {
     const artifact = unwrapArtifact(artifacts[artifactName]);
     const rows = collectSourcesFromArtifact({ artifactName, artifact, sourceClass: "target_common_root", docType: artifactName.replace(/^lossless_root__/, "") });
     routes.push(routeSummary({ artifactName, artifact, sourceClass: "target_common_root", sourceCount: rows.length }));
-    if (!rows.length) gaps.push(missingRow({ artifactName, sourceClass: "target_common_root", reason: "No material source rows available for this Phase 1 v4 target-family root." }));
+    if (!rows.length) gaps.push(missingRow({ artifactName, sourceClass: "target_common_root", reason: "No material source rows available for this Phase 1 v5 target-family root." }));
     sources.push(...rows);
   }
 
@@ -145,7 +169,7 @@ function collectTargetSources(artifacts = {}) {
 }
 
 function ingestTargetSource(ctx) {
-  const { source, targetCoverage, structureIndex, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, legalTargetSignals, semanticQueue, repairQueue } = ctx;
+  const { source, targetCoverage, structureIndex, materialTargetFields, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, regulatoryLicensing, grievanceComplaints, legalTargetSignals, semanticQueue, repairQueue } = ctx;
   const text = String(source.lossless_text || "");
   const sourceArtifact = source.source_artifact;
   const sourceRoot = source.common_root || sourceArtifact.replace(/^lossless_root__/, "");
@@ -176,45 +200,53 @@ function ingestTargetSource(ctx) {
   const units = buildStructureUnits({ text, title, source, documentId, pointer });
   for (const unit of units) {
     structureIndex.push(unit);
-    addTargetLocators({ unit, source, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, legalTargetSignals, semanticQueue });
+    addTargetLocators({ unit, source, materialTargetFields, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, regulatoryLicensing, grievanceComplaints, legalTargetSignals, semanticQueue });
   }
 }
 
 function addTargetLocators(ctx) {
-  const { unit, source, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, legalTargetSignals, semanticQueue } = ctx;
+  const { unit, source, materialTargetFields, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, regulatoryLicensing, grievanceComplaints, legalTargetSignals, semanticQueue } = ctx;
   const unitSearchText = textForRange(source.lossless_text, unit.char_range);
   const text = `${unit.heading_path.join(" ")} ${unitSearchText} ${source.url} ${source.doc_type} ${source.common_root}`;
-  pushLocatorMatches({ unit, source, locatorFamily: "ENTITY_IDENTITY_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.ENTITY_IDENTITY_LOCATOR, rows: entityIdentity, semanticQueue, targetSubcats: ["ENTITY_IDENTITY"], signalFamilies: ["IDENTITY"], priority: "P0", text });
-  pushLocatorMatches({ unit, source, locatorFamily: "BRAND_TRADE_NAME_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.BRAND_TRADE_NAME_LOCATOR, rows: brandTradeName, semanticQueue, targetSubcats: ["BRAND_IDENTITY"], signalFamilies: ["IDENTITY"], priority: "P1", text });
-  pushLocatorMatches({ unit, source, locatorFamily: "HOMEPAGE_POSITIONING_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.HOMEPAGE_POSITIONING_LOCATOR, rows: homepagePositioning, semanticQueue, targetSubcats: ["MARKET_POSITIONING"], signalFamilies: ["MARKET"], priority: "P1", text });
-  pushLocatorMatches({ unit, source, locatorFamily: "CONTACT_ROUTE_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.CONTACT_ROUTE_LOCATOR, rows: contactRoute, semanticQueue, targetSubcats: ["CONTACT_NOTICE"], signalFamilies: ["CONTACT"], priority: "P0", text });
-  pushLocatorMatches({ unit, source, locatorFamily: "COMMERCIAL_AVAILABILITY_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.COMMERCIAL_AVAILABILITY_LOCATOR, rows: commercialAvailability, semanticQueue, targetSubcats: ["COMMERCIAL_AVAILABILITY"], signalFamilies: ["COMMERCIAL"], priority: "P1", text });
-  pushLocatorMatches({ unit, source, locatorFamily: "PRICING_SALES_ROUTE_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.PRICING_SALES_ROUTE_LOCATOR, rows: pricingSalesRoute, semanticQueue, targetSubcats: ["PRICING_SALES"], signalFamilies: ["COMMERCIAL"], priority: "P1", text });
-  pushLocatorMatches({ unit, source, locatorFamily: "CUSTOMER_SEGMENT_CONTEXT_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.CUSTOMER_SEGMENT_CONTEXT_LOCATOR, rows: customerSegmentContext, semanticQueue, targetSubcats: ["CUSTOMER_SEGMENT"], signalFamilies: ["MARKET"], priority: "P2", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "ENTITY_IDENTITY_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.ENTITY_IDENTITY_LOCATOR, rows: entityIdentity, materialTargetFields, semanticQueue, targetSubcats: ["ENTITY_IDENTITY"], signalFamilies: ["IDENTITY"], priority: "P0", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "BRAND_TRADE_NAME_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.BRAND_TRADE_NAME_LOCATOR, rows: brandTradeName, materialTargetFields, semanticQueue, targetSubcats: ["BRAND_IDENTITY"], signalFamilies: ["IDENTITY"], priority: "P1", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "HOMEPAGE_POSITIONING_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.HOMEPAGE_POSITIONING_LOCATOR, rows: homepagePositioning, materialTargetFields, semanticQueue, targetSubcats: ["MARKET_POSITIONING"], signalFamilies: ["MARKET"], priority: "P1", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "CONTACT_ROUTE_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.CONTACT_ROUTE_LOCATOR, rows: contactRoute, materialTargetFields, semanticQueue, targetSubcats: ["CONTACT_NOTICE"], signalFamilies: ["CONTACT"], priority: "P0", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "COMMERCIAL_AVAILABILITY_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.COMMERCIAL_AVAILABILITY_LOCATOR, rows: commercialAvailability, materialTargetFields, semanticQueue, targetSubcats: ["COMMERCIAL_AVAILABILITY"], signalFamilies: ["COMMERCIAL"], priority: "P1", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "PRICING_SALES_ROUTE_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.PRICING_SALES_ROUTE_LOCATOR, rows: pricingSalesRoute, materialTargetFields, semanticQueue, targetSubcats: ["PRICING_SALES"], signalFamilies: ["COMMERCIAL"], priority: "P1", text });
+  pushLocatorMatches({ unit, source, locatorFamily: "CUSTOMER_SEGMENT_CONTEXT_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.CUSTOMER_SEGMENT_CONTEXT_LOCATOR, rows: customerSegmentContext, materialTargetFields, semanticQueue, targetSubcats: ["CUSTOMER_SEGMENT"], signalFamilies: ["MARKET"], priority: "P2", text });
 
-  if (source.source_class === "legal_doc_target_signal") {
-    for (const rule of matchLegalTargetSignalRules(text)) pushLegalTargetSignalLocator({ unit, source, rule, rows: legalTargetSignals, semanticQueue });
+  for (const rule of matchLegalTargetSignalRules(text)) {
+    if (!ruleAllowedForSource(rule, source)) continue;
+    const row = buildTargetSignalLocator({ unit, source, rule });
+    legalTargetSignals.push(row);
+    if (REGULATORY_LOCATOR_FAMILIES.includes(rule.locator_family)) regulatoryLicensing.push(row);
+    if (GRIEVANCE_LOCATOR_FAMILIES.includes(rule.locator_family)) grievanceComplaints.push(row);
+    pushMaterialFieldLocatorRows({ materialTargetFields, locatorRow: row, source, unit });
+    pushSemanticQueue({ semanticQueue, unit, source, locatorId: row.locator_id, locatorFamily: rule.locator_family, targetSubcats: rule.target_subcats, signalFamilies: rule.target_signal_families, priority: rule.priority, materialFieldRows: materialRowsForLocatorFamily(rule.locator_family) });
   }
 }
 
-function pushLocatorMatches({ unit, source, locatorFamily, patterns, rows, semanticQueue, targetSubcats, signalFamilies, priority, text }) {
+function pushLocatorMatches({ unit, source, locatorFamily, patterns, rows, materialTargetFields, semanticQueue, targetSubcats, signalFamilies, priority, text }) {
   if (!patterns.some((pattern) => pattern.test(text))) return;
   const locatorId = `P2A.${locatorFamily}.${makeStableId(`${unit.unit_id}:${locatorFamily}`)}`;
   const row = baseLocatorRow({ locatorId, locatorFamily, unit, source, priority, targetSubcats, signalFamilies, limitation: "Locator only. Target Profile Review must read source text and derive any value." });
   rows.push(row);
-  pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily, targetSubcats, signalFamilies, priority });
+  pushMaterialFieldLocatorRows({ materialTargetFields, locatorRow: row, source, unit });
+  pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily, targetSubcats, signalFamilies, priority, materialFieldRows: materialRowsForLocatorFamily(locatorFamily) });
 }
 
-function pushLegalTargetSignalLocator({ unit, source, rule, rows, semanticQueue }) {
-  const locatorId = `P2A.${rule.locator_family}.${makeStableId(`${unit.unit_id}:${rule.locator_family}`)}`;
-  rows.push({
-    ...baseLocatorRow({ locatorId, locatorFamily: rule.locator_family, unit, source, priority: rule.priority, targetSubcats: rule.target_subcats, signalFamilies: rule.target_signal_families, limitation: "Target legal signal locator only. Target Profile Review must derive the value from the source text." }),
+function buildTargetSignalLocator({ unit, source, rule }) {
+  return {
+    ...baseLocatorRow({ locatorId: `P2A.${rule.locator_family}.${makeStableId(`${unit.unit_id}:${rule.locator_family}`)}`, locatorFamily: rule.locator_family, unit, source, priority: rule.priority, targetSubcats: rule.target_subcats, signalFamilies: rule.target_signal_families, limitation: locatorLimitation(rule) }),
     target_3a_signal: rule.target_3a_signal,
     matched_terms: rule.matched_terms,
-    locator_scope: "TARGET_PROFILE_REVIEW_LEGAL_SIGNAL_ONLY",
-    full_legal_cartography_reserved_for_2e: true
-  });
-  pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily: rule.locator_family, targetSubcats: rule.target_subcats, signalFamilies: rule.target_signal_families, priority: rule.priority });
+    locator_scope: REGULATORY_LOCATOR_FAMILIES.includes(rule.locator_family) ? "TARGET_PROFILE_REVIEW_REGULATORY_SIGNAL_ONLY" : GRIEVANCE_LOCATOR_FAMILIES.includes(rule.locator_family) ? "TARGET_PROFILE_REVIEW_GRIEVANCE_SIGNAL_ONLY" : "TARGET_PROFILE_REVIEW_LEGAL_SIGNAL_ONLY",
+    source_boundary: rule.source_boundary,
+    phase_2a_action: "LOCATE_ONLY",
+    full_legal_cartography_reserved_for_2e: true,
+    legal_or_regulatory_conclusion_forbidden: true
+  };
 }
 
 function baseLocatorRow({ locatorId, locatorFamily, unit, source, priority, targetSubcats, signalFamilies, limitation }) {
@@ -242,7 +274,36 @@ function baseLocatorRow({ locatorId, locatorFamily, unit, source, priority, targ
   };
 }
 
-function pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily, targetSubcats, signalFamilies, priority }) {
+function pushMaterialFieldLocatorRows({ materialTargetFields, locatorRow, source, unit }) {
+  for (const material of materialRowsForLocatorFamily(locatorRow.locator_family)) {
+    materialTargetFields.push({
+      field_locator_id: `P2A.FIELD.${material.field_id}.${makeStableId(`${locatorRow.locator_id}:${material.field_key}`)}`,
+      field_id: material.field_id,
+      field_key: material.field_key,
+      field_branch: String(material.field_key || "").split(".")[0] || "target_profile",
+      downstream_owner: material.downstream_owner,
+      derivation_authority_refs: material.derivation_authority_refs,
+      phase_2a_action: "LOCATE_ONLY",
+      locator_id: locatorRow.locator_id,
+      locator_family: locatorRow.locator_family,
+      source_artifact: source.source_artifact,
+      source_id: source.source_id,
+      common_root: source.common_root || "",
+      source_url: source.canonical_url || source.url || "",
+      doc_type: source.doc_type || "",
+      heading_path: unit.heading_path,
+      char_range: unit.char_range,
+      navigation_pointer: unit.navigation_pointer,
+      lossless_text_pointer: unit.lossless_text_pointer,
+      derived_value_emitted: false,
+      value: "",
+      index_only: true,
+      limitation: "Field-aware locator only. Derivation authority must be used by Target Profile Review."
+    });
+  }
+}
+
+function pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily, targetSubcats, signalFamilies, priority, materialFieldRows = [] }) {
   semanticQueue.push({
     queue_id: `P2A.Q.${String(semanticQueue.length + 1).padStart(4, "0")}`,
     unit_id: unit.unit_id,
@@ -252,10 +313,27 @@ function pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFami
     source_id: source.source_id,
     target_subcat_candidates: targetSubcats,
     target_signal_family_candidates: signalFamilies,
+    material_field_candidates: materialFieldRows.map((row) => ({ field_id: row.field_id, field_key: row.field_key, derivation_authority_refs: row.derivation_authority_refs })),
     priority,
     semantic_label_required: ["P0", "P1"].includes(priority),
     navigation_pointer: unit.navigation_pointer
   });
+}
+
+function materialRowsForLocatorFamily(locatorFamily) {
+  return P2A_TARGET_PROFILE_MATERIAL_FIELD_INVENTORY.filter((row) => (row.locator_families || []).includes(locatorFamily));
+}
+
+function locatorLimitation(rule) {
+  if (REGULATORY_LOCATOR_FAMILIES.includes(rule.locator_family)) return "Regulatory/licensing public operating-context locator only. Do not derive license validity, license requirement, applicable regulator, or compliance status.";
+  if (GRIEVANCE_LOCATOR_FAMILIES.includes(rule.locator_family)) return "Grievance/complaints route-visibility locator only. Do not derive grievance sufficiency, legal compliance, ombudsman requirement, or statutory complaint obligation.";
+  return "Target legal signal locator only. Target Profile Review must derive any value from the source text and active derivation authority.";
+}
+
+function ruleAllowedForSource(rule, source) {
+  const root = source.common_root || source.source_artifact?.replace(/^lossless_root__/, "") || "";
+  if (GOVERNING_LAW_VENUE_FAMILIES.includes(rule.locator_family) && [REGULATORY_ROOT, GRIEVANCE_ROOT].includes(root)) return false;
+  return true;
 }
 
 function buildStructureUnits({ text, title, source, documentId, pointer }) {
