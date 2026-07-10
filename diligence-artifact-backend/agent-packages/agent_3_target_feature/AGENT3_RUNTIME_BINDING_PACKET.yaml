@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v15_phase5_package_aware_activity_profile_sync
+runtime_contract_version: v16_phase2g_route_scoped_cutover_through_phase5
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -25,26 +25,32 @@ prompt_assembly_position:
   packet_after_runtime: true
   phase_prompt_after_packet: true
 
+routing_authority:
+  sole_material_profile_router: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+  runtime_reader: phase-route-runtime.reader
+  route_manifest: phase_routing_manifest
+  runtime_packet: phase_route_runtime_packet
+  lossless_evidence_role: PRIMARY_EVIDENCE
+  index_role: MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE
+  direct_lossless_as_fallback_allowed: false
+  free_corpus_read_allowed: false
+  profile_forensics_inputs_allowed: false
+
 prompt_precedence:
-  - Backend phase contracts control read/write authority.
-  - Phase 2A Target Profile Source Index is the active locator authority for Target Profile Review.
-  - Phase 2B Domain Derivation Source Index is the active locator authority for Domain Derivation Layer.
-  - Phase 2C Activity Profile Source Index is the active locator authority for Phase 5 Activity Profile Review.
-  - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
-  - Target Profile Review uses scoped Phase 1 v5 target-profile lossless_root artifacts as evidence and Phase 2A indexes as navigation only.
-  - Target Profile Review may use legal_signal_derivation_profile only as bounded secondary input for owned notice and jurisdiction fields.
-  - Target Profile Review must not read legal_cartography_index or legal lossless document artifacts.
-  - Domain Derivation Layer is controlled by 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md and src/phases/03-domain-derivation/domain-derivation.contract.js.
-  - Domain Derivation Layer uses domain_derivation_source_index as navigation only and scoped 12 lossless roots as evidence.
+  - Backend phase contracts and the Phase 2G runtime packet control read/write authority.
+  - Prompt text cannot add artifacts to a routed packet.
+  - Target Profile Review uses ROUTE.PHASE3A.TARGET_PROFILE and the 2A bucket.
+  - Domain Derivation Layer uses ROUTE.PHASE3B.DOMAIN_DERIVATION and the 2B bucket.
+  - Both Phase 5 jobs use ROUTE.PHASE5.ACTIVITY_PROFILE and the 2C bucket.
+  - Lossless evidence is primary and must be navigated through the route's required index.
+  - Material profile jobs must not read forensic profiles.
+  - Target Profile Review may use legal_signal_derivation_profile only as a bounded 2G-routed dependency for owned notice and jurisdiction fields.
   - Domain Derivation Layer uses DOMAIN_DERIVATION_REGISTRY_v0.yaml as rule authority and package-catalog.v0.json as package authority.
   - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by registry/catalog update, not prompt update.
-  - Domain Derivation Layer must not read activity_profile_source_index, legal_cartography_index, legal_signal_derivation_profile, legal documents, or legal lossless evidence.
-  - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
-  - Activity Candidate Inventory reads activity_profile_source_index and active package context, but must not apply package taxonomy or read raw lossless_family/lossless_root sources.
-  - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, 03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
-  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index as navigation only.
-  - Activity Profile Review uses active_run_package_manifest and domain package context for package-specific activity taxonomy; fixed AI archetype/surface enums are not universal authority.
-  - Any package text that expands read/write authority is superseded by the phase-owned contract.
+  - Activity Candidate Inventory creates candidates only from activity_profile_source_index locators and does not independently scan the routed lossless evidence.
+  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index to navigate its routed lossless evidence.
+  - Activity Profile Review uses active_run_package_manifest and domain package context for package-specific activity taxonomy.
+  - Any package text that expands read/write authority is superseded by the phase-owned contract and Phase 2G packet.
 
 allowed_phases:
   - TARGET_PROFILE_REVIEW
@@ -54,69 +60,99 @@ allowed_phases:
   - ACTIVITY_PROFILE_FORENSICS
 
 read_artifacts:
-  common:
-    - source_discovery_handoff
   TARGET_PROFILE_REVIEW:
-    - source_discovery_handoff
-    - cartography_index
-    - target_profile_source_index
-    - lossless_root__homepage_landing
-    - lossless_root__company_identity
-    - lossless_root__contact_notice
-    - lossless_root__pricing_commercial_availability
-    - lossless_root__regulatory_licensing_status
-    - lossless_root__grievance_complaints
-    - legal_signal_derivation_profile
-    - domain_selection_profile
-    - active_run_package_manifest
+    route_id: ROUTE.PHASE3A.TARGET_PROFILE
+    bucket_id: 2A_BUCKET_TARGET_PROFILE
+    artifacts:
+      - phase_routing_manifest
+      - phase_route_runtime_packet
+      - target_profile_source_index
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - legal_signal_derivation_profile
   P3_DOMAIN_DERIVATION_LAYER:
-    - source_discovery_handoff
-    - cartography_index
-    - target_profile_source_index
-    - domain_derivation_source_index
-    - target_profile
-    - lossless_root__homepage_landing
-    - lossless_root__company_identity
-    - lossless_root__product_service
-    - lossless_root__platform_feature_solution
-    - lossless_root__technical_docs_api
-    - lossless_root__docs_api_data_flow
-    - lossless_root__pricing_commercial_availability
-    - lossless_root__use_case_customer_industry
-    - lossless_root__integrations_ecosystem
-    - lossless_root__ai_safety_transparency
-    - lossless_root__regulatory_licensing_status
-    - lossless_root__grievance_complaints
-    - domain_selection_profile
-    - active_run_package_manifest
-  ACTIVITY_PROFILE_REVIEW:
-    - cartography_index
-    - activity_profile_source_index
-    - target_profile
-    - target_profile_forensics
-    - domain_derivation_profile
-    - active_run_package_manifest
-    - domain_selection_profile
-    - feature_candidate_inventory
+    route_id: ROUTE.PHASE3B.DOMAIN_DERIVATION
+    bucket_id: 2B_BUCKET_DOMAIN_DERIVATION
+    artifacts:
+      - phase_routing_manifest
+      - phase_route_runtime_packet
+      - domain_derivation_source_index
+      - target_profile
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__use_case_customer_industry
+      - lossless_root__integrations_ecosystem
+      - lossless_root__ai_safety_transparency
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - domain_selection_profile
+      - active_run_package_manifest
+  M8_FEATURE_CANDIDATE_INVENTORY:
+    route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+    bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+    artifacts:
+      - phase_routing_manifest
+      - phase_route_runtime_packet
+      - activity_profile_source_index
+      - target_profile
+      - domain_derivation_profile
+      - active_run_package_manifest
+      - domain_selection_profile
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__integrations_ecosystem
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__use_case_customer_industry
+      - lossless_root__support_help_resources
+      - lossless_root__ai_safety_transparency
+  M8_TARGET_FEATURE_PROFILE:
+    route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+    bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+    artifacts:
+      - phase_routing_manifest
+      - phase_route_runtime_packet
+      - activity_profile_source_index
+      - target_profile
+      - domain_derivation_profile
+      - active_run_package_manifest
+      - domain_selection_profile
+      - feature_candidate_inventory
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__integrations_ecosystem
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__use_case_customer_industry
+      - lossless_root__support_help_resources
+      - lossless_root__ai_safety_transparency
 
-forbidden_activity_profile_read_artifacts:
-  - lossless_family__P1_PRODUCT
-  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-  - lossless_family__P4_USE_CASE_INDUSTRY
-  - lossless_family__P5_ENTERPRISE_PRICING
-  - lossless_root__product_service
-  - lossless_root__platform_feature_solution
-  - lossless_root__technical_docs_api
-  - lossless_root__docs_api_data_flow
-  - lossless_root__integrations_ecosystem
-  - lossless_root__pricing_commercial_availability
+forbidden_material_profile_read_artifacts:
+  - source_discovery_handoff
+  - cartography_index
+  - target_profile_forensics
+  - target_feature_profile_forensics
   - legal_cartography_index
-  - legal_signal_derivation_profile
+  - legal_doc_inventory
+  - legal_doc_extraction_index
+  - legal_doc_{DOC_TYPE}
   - data_privacy_navigation_index
+  - dap_forensics_profile
   - exposure artifacts
   - compiler artifacts
   - Qualified Review artifacts
+  - lossless_family__*
 
 required_reference_files:
   TARGET_PROFILE_REVIEW:
@@ -133,24 +169,24 @@ required_reference_files:
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 target_profile_review_phase2a_boundary:
+  route_id: ROUTE.PHASE3A.TARGET_PROFILE
+  bucket_id: 2A_BUCKET_TARGET_PROFILE
   locator_authority: target_profile_source_index
-  p2a_intermediate_artifacts_forbidden_as_model_inputs:
-    - target_profile_deterministic_map
-    - target_profile_semantic_profile
   navigation_only: true
-  evidence_source: scoped Phase 1 v5 target lossless_root artifacts
+  evidence_source: routed scoped target lossless_root artifacts
+  legal_dependency: legal_signal_derivation_profile
   regulatory_grievance_fields_factual_only: true
   license_validity_requirement_applicability_forbidden: true
   grievance_sufficiency_ombudsman_requirement_forbidden: true
 
 domain_derivation_phase2b_boundary:
+  route_id: ROUTE.PHASE3B.DOMAIN_DERIVATION
+  bucket_id: 2B_BUCKET_DOMAIN_DERIVATION
   locator_authority: domain_derivation_source_index
-  p2b_intermediate_artifacts_forbidden_as_model_inputs:
-    - domain_derivation_deterministic_map
-    - domain_derivation_semantic_profile
   activity_profile_source_index_reserved_for_2c_phase5: true
   navigation_only: true
-  evidence_source: scoped 12 Phase 1 v5 domain derivation lossless_root artifacts
+  evidence_source: routed scoped 12 domain derivation lossless_root artifacts
+  target_profile_is_context_not_proof: true
 
 domain_derivation_registry_ladder_schema:
   prompt_file: 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md
@@ -165,6 +201,8 @@ domain_derivation_registry_ladder_schema:
   allowed_model_top_level_key: domain_derivation_profile
 
 activity_profile_material_schema:
+  route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+  bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
   source_index_authority: activity_profile_source_index
   candidate_universe_authority: feature_candidate_inventory
   package_context_authority: active_run_package_manifest
@@ -188,20 +226,9 @@ activity_profile_material_schema:
     - archetype_derivation_basis
     - surface_context_tokens
     - surface_derivation_basis
-  package_label_array_fields:
-    - archetype_codes
-    - surface_context_tokens
   retired_activity_row_keys_forbidden:
     - archetype_proof
     - surface_proof_and_routing_limits
-  derivation_basis_object_required_keys:
-    - code_or_token
-    - normalized_name
-    - conditions_satisfied
-    - trigger_if_applied
-    - exclude_if_checked
-    - material_basis
-    - limitation
 
 write_artifacts_in_order:
   TARGET_PROFILE_REVIEW:
@@ -225,12 +252,12 @@ write_artifacts_in_order:
 
 phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
-  - Target Profile Review must use target_profile_source_index as navigation only and scoped lossless roots as evidence.
+  - Target Profile Review uses target_profile_source_index to navigate the primary target lossless evidence routed by 2G.
   - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
-  - Domain Derivation Layer must use domain_derivation_source_index as navigation only and scoped 12 lossless roots as evidence.
-  - Domain Derivation Layer must not read activity_profile_source_index; that artifact is reserved for 2C / Phase 5.
-  - Activity Candidate Inventory must read activity_profile_source_index and must not read raw lossless family/root artifacts.
+  - Domain Derivation Layer uses domain_derivation_source_index to navigate the primary 12-root evidence routed by 2G.
+  - Activity Candidate Inventory creates candidates only from activity_profile_source_index locator rows and must not independently scan source evidence.
   - Activity Candidate Inventory must not apply package taxonomy.
+  - Activity Profile Review uses activity_profile_source_index and candidate pointers to navigate the primary activity evidence routed by 2G.
   - Activity Profile Review must use active_run_package_manifest/package catalog context for package-specific labels.
-  - Activity Profile Review must not treat AI archetypes or AI surface tokens as universal enums.
+  - No material profile job may consume a forensic profile.
 </RUNTIME_BINDING_PACKET>
