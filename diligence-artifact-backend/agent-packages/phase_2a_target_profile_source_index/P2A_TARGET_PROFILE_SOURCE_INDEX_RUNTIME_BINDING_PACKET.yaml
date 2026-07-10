@@ -1,9 +1,9 @@
 runtime_binding_packet: P2A_TARGET_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET
-version: v1_phase1_v5_package_only
+version: v2_phase1_v5_runtime_wired
 active_phase_id: P2A_TARGET_PROFILE_SOURCE_INDEX
 active_phase_name: Target Profile Source Index
 active_phase_scope: P2A_TARGET_PROFILE_SOURCE_INDEX_ONLY
-run_mode: PHASED_AGENT_PACKAGE
+run_mode: PHASED_AGENT_PACKAGE_RUNTIME_WIRED
 run_id_required: true
 run_id: "{{run_id}}"
 
@@ -11,7 +11,8 @@ structure_authority:
   package_structure_supreme: true
   no_module_merge: true
   backend_contract_controls_artifact_permissions: true
-  package_must_not_change_runtime_wiring: true
+  runtime_wiring_status: WIRED_BY_RUNTIME_CONTRACTS
+  runtime_job_id: P2A_TARGET_PROFILE_SOURCE_INDEX
   current_phase_identity_preserved: true
   module_prompt_authority: P2A_TARGET_PROFILE_SOURCE_INDEX.md
   reference_map_authority: P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml
@@ -71,8 +72,7 @@ phase_lock:
 phase_lock_meaning: >-
   Phase 2A locks only after target_profile_deterministic_map,
   target_profile_semantic_profile, and target_profile_source_index are generated
-  under the backend contract. The package is package-only and does not wire itself
-  into runtime.
+  and saved under the backend runtime contract.
 
 forbidden_phases:
   - SOURCE_DISCOVERY
@@ -109,8 +109,8 @@ forbidden_outputs:
   - risk_conclusion
   - P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS from backend contract
 
-backend_permission_profile: phase_2a_target_profile_source_index_package_only
+backend_permission_profile: phase_2a_target_profile_source_index_runtime_wired
 validator_profile: phase_2a_target_profile_source_index_validator
 terminal_receipt_profile: phase_2a_target_profile_source_index_receipt
-next_phase_boundary: "Backend may advance only through runtime contract wiring outside this package. This package does not advance the pipeline."
+next_phase_boundary: "Backend advances only through runtime contract next=P2_INDEX_COMPILER_VALIDATION after target_profile_source_index is saved."
 stop_condition: "Stop after target_profile_source_index is produced under the backend save order."
