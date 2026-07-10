@@ -2,59 +2,92 @@
 
 ## Purpose
 
-This addendum supersedes any older Activity Profile Review instruction that treats AI archetypes, AI surface tokens, or `AI_REGISTRY_KEY.md` as universal Phase 5 taxonomy.
+This addendum supersedes older Activity Profile Review instructions that treat AI archetypes, AI surface tokens, or `AI_REGISTRY_KEY.md` as universal Phase 5 taxonomy.
 
-Phase 5 is now package-aware:
+Phase 5 is package-aware and Phase 2G-routed:
 
 ```text
-2C = activity_profile_source_index navigation substrate.
-M8_FEATURE_CANDIDATE_INVENTORY = deterministic candidate universe from 2C only.
-M8_TARGET_FEATURE_PROFILE = material activity profile using feature_candidate_inventory + mounted domain package context.
+2G = sole runtime routing authority.
+2C = activity_profile_source_index navigation substrate plus primary activity lossless evidence bucket.
+M8_FEATURE_CANDIDATE_INVENTORY = deterministic candidate universe from 2C locator rows only.
+M8_TARGET_FEATURE_PROFILE = material activity profile using feature_candidate_inventory + mounted domain package context + 2C-navigated primary evidence.
 ```
 
-## Runtime Reads
+## Runtime route
 
-Activity Candidate Inventory and Activity Profile Review must use:
+Both Phase 5 jobs use:
 
 ```text
-cartography_index
+ROUTE.PHASE5.ACTIVITY_PROFILE
+2C_BUCKET_ACTIVITY_PROFILE
+```
+
+The Phase 2G packet contains:
+
+```text
+phase_routing_manifest
+phase_route_runtime_packet
 activity_profile_source_index
 target_profile
-target_profile_forensics
 domain_derivation_profile
 active_run_package_manifest
 domain_selection_profile
-feature_candidate_inventory   # material profile only
-```
-
-They must not read:
-
-```text
-lossless_family__*
 lossless_root__product_service
 lossless_root__platform_feature_solution
 lossless_root__technical_docs_api
 lossless_root__docs_api_data_flow
 lossless_root__integrations_ecosystem
 lossless_root__pricing_commercial_availability
+lossless_root__use_case_customer_industry
+lossless_root__support_help_resources
+lossless_root__ai_safety_transparency
+```
+
+`M8_TARGET_FEATURE_PROFILE` additionally receives:
+
+```text
+feature_candidate_inventory
+```
+
+This is a job-scoped derived artifact declared by 2G. It is not an independent routing decision by Phase 5.
+
+They must not read:
+
+```text
+source_discovery_handoff
+cartography_index
+target_profile_forensics
+target_feature_profile_forensics
+lossless_family__*
 legal_cartography_index
 legal_signal_derivation_profile
 data_privacy_navigation_index
+dap_forensics_profile
 ```
 
-## Candidate Inventory Rule
+## Evidence rule
+
+Lossless evidence in the 2C bucket is primary evidence. It is not a fallback.
+
+`activity_profile_source_index` is the mandatory navigation map into that evidence.
+
+The candidate inventory job may create candidates only from index locator rows. It receives the routed bucket for custody and audit consistency but must not independently scan the lossless evidence.
+
+The material profile may navigate the routed primary evidence through the index and inventory pointers to derive mechanics and activity facts. It must not make free-corpus reads or expand beyond the 2C bucket.
+
+## Candidate inventory rule
 
 `feature_candidate_inventory` is created only from `activity_profile_source_index` locator rows.
 
 It must not apply domain package taxonomy. It must not emit archetypes, surfaces, package labels, mechanics proof, activity summaries, source excerpts, or legal/data/exposure conclusions.
 
-## Material Profile Rule
+## Material profile rule
 
 `M8_TARGET_FEATURE_PROFILE` must treat `active_run_package_manifest` and the referenced domain package catalog as the package context. Any activity taxonomy labels, archetype-like labels, surface/context labels, or package-specific field families must be package-controlled.
 
-The model must not assume the AI archetype set is universal. If the active package does not expose a usable taxonomy in v0, the model may still produce the required row fields, but it must identify the label basis as package-context-limited and record a limitation.
+The model must not assume the AI archetype set is universal. Where the active package does not expose a usable taxonomy, the model may still produce the required row fields but must identify the label basis as package-context-limited and record a limitation.
 
-## Output Compatibility
+## Output compatibility
 
 The backend material artifact remains:
 
@@ -62,7 +95,7 @@ The backend material artifact remains:
 target_feature_profile
 ```
 
-The row keys remain the current material-card keys for downstream compatibility:
+The row keys remain:
 
 ```text
 activity_reference
@@ -79,9 +112,9 @@ surface_context_tokens
 surface_derivation_basis
 ```
 
-But `archetype_codes` and `surface_context_tokens` are no longer hardcoded AI enum fields. They are package-controlled labels. Their derivation basis must cite the active package context and the public activity evidence located by 2C / candidate inventory.
+`archetype_codes` and `surface_context_tokens` are package-controlled labels, not hardcoded AI enums. Their derivation basis must cite the active package context and public activity evidence reached through 2C navigation.
 
-## Forbidden
+## Forbidden output
 
 The model must not emit:
 
@@ -89,6 +122,7 @@ The model must not emit:
 feature_candidate_inventory
 target_feature_profile_forensics
 activity_profile_source_index
+phase_route_runtime_packet
 source pointers
 source URLs
 source excerpts
