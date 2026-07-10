@@ -1,0 +1,163 @@
+reference_map_name: P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REFERENCE_MAP
+version: v1_phase1_v5_12_root
+status: ACTIVE_CONTRACT_ONLY
+backend_contract: src/phases/02-cartography-index/domain-derivation-source-index.contract.js
+final_artifact: domain_derivation_source_index
+reserved_for_2c_phase5: activity_profile_source_index
+
+source_roots:
+  - lossless_root__homepage_landing
+  - lossless_root__company_identity
+  - lossless_root__product_service
+  - lossless_root__platform_feature_solution
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__pricing_commercial_availability
+  - lossless_root__use_case_customer_industry
+  - lossless_root__integrations_ecosystem
+  - lossless_root__ai_safety_transparency
+  - lossless_root__regulatory_licensing_status
+  - lossless_root__grievance_complaints
+
+route_families:
+  primary_domain_locator_map:
+    route_code: PRIMARY_DOMAIN
+    route_class: PRIMARY_DOMAIN_ROUTE
+    signal_family: PRIMARY_DOMAIN_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    source_roots:
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__use_case_customer_industry
+      - lossless_root__integrations_ecosystem
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+  ai_overlay_locator_map:
+    route_code: AI_OVERLAY
+    route_class: AI_OVERLAY_ROUTE
+    signal_family: AI_OVERLAY_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    source_roots:
+      - lossless_root__homepage_landing
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__integrations_ecosystem
+      - lossless_root__ai_safety_transparency
+  regulatory_overlay_locator_map:
+    route_code: REGULATORY_OVERLAY
+    route_class: REGULATORY_OVERLAY_ROUTE
+    signal_family: REGULATORY_OVERLAY_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    source_roots:
+      - lossless_root__company_identity
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__use_case_customer_industry
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+  fusion_candidate_locator_map:
+    route_code: FUSION_CANDIDATE
+    route_class: FUSION_CANDIDATE_ROUTE
+    signal_family: FUSION_CANDIDATE_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    composite_signal_required: true
+    composite_rule: AI_SIGNAL_PLUS_ONE_OR_MORE_PRIMARY_REGULATORY_ACTIVITY_OR_COMMERCIAL_SIGNAL
+  activity_capability_locator_map:
+    route_code: ACTIVITY_CAPABILITY
+    route_class: ACTIVITY_CAPABILITY_ROUTE
+    signal_family: ACTIVITY_CAPABILITY_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    note: Supporting locator for 3B domain derivation only; not the Phase 5 activity profile source index.
+  commercial_availability_locator_map:
+    route_code: COMMERCIAL_AVAILABILITY
+    route_class: COMMERCIAL_AVAILABILITY_ROUTE
+    signal_family: COMMERCIAL_AVAILABILITY_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+  technical_capability_locator_map:
+    route_code: TECHNICAL_CAPABILITY
+    route_class: TECHNICAL_CAPABILITY_ROUTE
+    signal_family: TECHNICAL_CAPABILITY_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+  integration_ecosystem_locator_map:
+    route_code: INTEGRATION_ECOSYSTEM
+    route_class: INTEGRATION_ECOSYSTEM_ROUTE
+    signal_family: INTEGRATION_ECOSYSTEM_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+  use_case_customer_industry_locator_map:
+    route_code: USE_CASE_CUSTOMER_INDUSTRY
+    route_class: USE_CASE_CUSTOMER_INDUSTRY_ROUTE
+    signal_family: USE_CASE_CUSTOMER_INDUSTRY_SIGNAL
+    downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+    phase_2b_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+forbidden_outputs:
+  - activity_profile_source_index
+  - domain_derivation_profile
+  - active_run_package_manifest
+  - feature_candidate_inventory
+  - target_feature_profile
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - data_privacy_navigation_index
+
+forbidden_conclusions:
+  - primary_domain_final
+  - domain_package_selected
+  - ai_overlay_mounted
+  - regulatory_overlay_mounted
+  - fusion_candidate_locked
+  - license_validity
+  - regulatory_compliance_status
+  - legal_advice
+  - compliance_conclusion
+
+semantic_values:
+  route_classes:
+    - PRIMARY_DOMAIN_ROUTE
+    - AI_OVERLAY_ROUTE
+    - REGULATORY_OVERLAY_ROUTE
+    - FUSION_CANDIDATE_ROUTE
+    - ACTIVITY_CAPABILITY_ROUTE
+    - COMMERCIAL_AVAILABILITY_ROUTE
+    - TECHNICAL_CAPABILITY_ROUTE
+    - INTEGRATION_ECOSYSTEM_ROUTE
+    - USE_CASE_CUSTOMER_INDUSTRY_ROUTE
+    - SOURCE_LIMITATION_ROUTE
+  signal_families:
+    - PRIMARY_DOMAIN_SIGNAL
+    - AI_OVERLAY_SIGNAL
+    - REGULATORY_OVERLAY_SIGNAL
+    - FUSION_CANDIDATE_SIGNAL
+    - ACTIVITY_CAPABILITY_SIGNAL
+    - COMMERCIAL_AVAILABILITY_SIGNAL
+    - TECHNICAL_CAPABILITY_SIGNAL
+    - INTEGRATION_ECOSYSTEM_SIGNAL
+    - USE_CASE_CUSTOMER_INDUSTRY_SIGNAL
+    - SOURCE_LIMITATION
+  confidence:
+    - CLEAR
+    - PARTIAL
+    - UNCLEAR
