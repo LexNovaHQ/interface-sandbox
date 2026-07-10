@@ -1,43 +1,36 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v6_phase2_new_source_input_contract
+runtime_contract_version: v7_agent2b_m9_main_restored_phase1_v4_inputs
 active_agent_id: agent_2b_m9
-active_agent_name: Interface Legal Cartography and Index Agent
-active_phase_scope: LEGAL_CARTOGRAPHY_AND_INDEX_ONLY
+active_agent_name: Interface Legal Cartography Agent
+active_phase_scope: M9_ONLY
 run_mode: PHASED_AGENT
 run_id_required: true
 run_id: "{{run_id}}"
 
-compatibility_boundary:
-  internal_agent_id_retained_for_runtime: agent_2b_m9
-  compatibility_package_path_retained: agent-packages/agent_2b_m9
-  product_phase_name: Legal Cartography and Index
-  old_module_language_forbidden_in_human_facing_text: true
-
 structure_authority:
   packet_structure_supreme: true
   no_module_merge: true
-  backend_supports_phase_structure: true
+  backend_supports_agent_structure: true
   backend_must_not_dictate_prompt_structure: true
-  current_agent_identity_preserved_for_compatibility: true
-  phase1_source_input_contract_active: true
-  old_family_input_contract_forbidden: true
-  phase_package_is_semantic_authority: true
+  current_agent_identity_preserved: true
+  current_input_protocol_preserved: true
+  current_downstream_final_artifact_preserved: true
+  agent_package_is_semantic_authority: true
   semantic_sidecar_prompt_active: false
-  internal_job_split_locked: true
+  phase1_v4_source_input_contract_active: true
+  old_family_input_contract_forbidden: true
 
-allowed_phase:
-  - LEGAL_CARTOGRAPHY_AND_INDEX
+allowed_modules:
+  - M9_LEGAL_CARTOGRAPHY
 
 internal_execution_layers:
-  - LEGAL_CARTOGRAPHY_DETERMINISTIC_STACK_INDEX
-  - LEGAL_CARTOGRAPHY_CANONICAL_SEMANTIC_LABELING
-  - LEGAL_CARTOGRAPHY_DETERMINISTIC_COMPILER
-  - LEGAL_SIGNAL_DERIVATION
+  - M9_DETERMINISTIC_LEGAL_STACK_INDEX
+  - M9_CANONICAL_SEMANTIC_LABELING
+  - M9_DETERMINISTIC_COMPILER
 
 reference_documents:
   - M9_FIELD_DERIVATION_REGISTRY.yaml
-  - M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md
 
 read_artifacts:
   - source_discovery_handoff
@@ -50,34 +43,33 @@ read_artifacts:
   - legal_doc_extraction_index
   - legal_doc_lossless_validation_manifest
   - legal_doc_{DOC_TYPE}
-  - lossless_root__legal_identity_notice
-  - lossless_root__privacy_data_processing
-  - lossless_root__security_trust
-  - lossless_root__trust_compliance
+  - lossless_root__company_identity
   - lossless_root__contact_notice
-  - lossless_root__technical_docs_api_developer
+  - lossless_root__privacy_data_processing
+  - lossless_root__security_trust_compliance
+  - lossless_root__data_governance_controls
+  - lossless_root__ai_safety_transparency
+  - lossless_root__technical_docs_api
   - lossless_root__docs_api_data_flow
 
 write_artifacts_in_order:
   - legal_cartography_deterministic_map
   - legal_cartography_semantic_profile
   - legal_cartography_index
-  - legal_signal_derivation_profile
 
-internal_artifacts_owned_by_legal_cartography_and_index:
+internal_artifacts_m9_owned:
   - legal_cartography_deterministic_map
   - legal_cartography_semantic_profile
   - legal_cartography_reinvestigation_workpad
 
-final_downstream_required_artifacts:
+final_downstream_required_artifact:
   - legal_cartography_index
-  - legal_signal_derivation_profile
 
 phase_lock:
-  - LEGAL_CARTOGRAPHY_AND_INDEX
-phase_lock_meaning: "Legal Cartography and Index locks after legal_cartography_index and legal_signal_derivation_profile validate and save. Source Discovery is upstream and is not executed by this package. Target Profile Review, Data Provenance Profile, and Qualified Review consume these outputs through their own phase contracts."
+  - M9
+phase_lock_meaning: "Agent 2B locks only M9 after legal_cartography_index validates and saves. Source Discovery belongs upstream and is not executed by this package. The deterministic and semantic artifacts are M9-owned internal artifacts and must not become downstream-required inputs."
 
-forbidden_phases:
+forbidden_modules:
   - SOURCE_DISCOVERY
   - TARGET_PROFILE_REVIEW
   - ACTIVITY_PROFILE_REVIEW
@@ -91,6 +83,12 @@ forbidden_phases:
 forbidden_inputs:
   - old_family_input_contract
   - legacy_family_artifact_adapter
+  - lossless_family__L1_CORE_TERMS_PRIVACY
+  - lossless_family__L2_B2B_CONTRACTING
+  - lossless_family__L3_AI_USAGE_GOVERNANCE
+  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
+  - lossless_family__L5_LEGAL_HUB_HOSTED
+  - lossless_family__L6_ENTITY_NOTICE
 
 forbidden_outputs:
   - source_discovery_handoff
@@ -103,19 +101,20 @@ forbidden_outputs:
   - challenge_gate
   - final_output_handoff
   - renderer_payload
+  - legal_advice
+  - compliance_conclusion
+  - sufficiency_conclusion
+  - enforceability_assessment
+  - risk_conclusion
   - registry_evaluation
   - registry_row_status
   - fix_route
   - remediation_route
-  - question_id
-  - reviewer_question
-  - question_rows
-  - question_index
 
-backend_permission_profile: legal_cartography_and_index_phase
-validator_profile: legal_cartography_and_index_job_split_validator
-phase_packet_contract: legal_cartography_and_index_phase_packet_contract
-terminal_receipt_profile: legal_cartography_and_index_same_chat_receipt
-next_phase_command: "Backend advances to Target Profile Review after Legal Cartography and Index locks."
-stop_condition: "Stop after legal_cartography_deterministic_map, legal_cartography_semantic_profile, legal_cartography_index, and legal_signal_derivation_profile save and validate."
+backend_permission_profile: agent_2b_m9
+validator_profile: agent_2b_m9_legal_cartography_validator
+phase_packet_contract: agent_2b_m9_phase_packet_contract
+terminal_receipt_profile: agent_2b_m9_same_chat_receipt
+next_agent_command: "Backend advances to Target Profile Review after M9 locks."
+stop_condition: "Stop after legal_cartography_deterministic_map, legal_cartography_semantic_profile, and final legal_cartography_index save, and legal_cartography_index validates and locks M9."
 </RUNTIME_BINDING_PACKET>
