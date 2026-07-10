@@ -38,6 +38,7 @@ assert.equal(P2G_PHASE_ROUTER_CONTRACT.designation, "P2G_CENTRALIZED_PHASE_ROUTI
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.lossless_evidence_is_primary, true);
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.index_navigation_mandatory, true);
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.direct_lossless_fallback_framing_forbidden, true);
+assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.job_scoped_derived_profiles_must_be_declared_in_2g, true);
 assert.equal(P2G_ROUTING_DOCTRINE, "LOSSLESS_EVIDENCE_IS_PRIMARY_AND_MUST_BE_NAVIGATED_THROUGH_INDEX");
 assert.equal(P2G_NO_FALLBACK_DOCTRINE, "DIRECT_LOSSLESS_EVIDENCE_IS_NOT_FALLBACK");
 assert.equal(P2G_ROUTE_BUCKETS.length, 6);
@@ -61,7 +62,17 @@ for (const bucket of P2G_ROUTE_BUCKETS) {
   assert.equal(bucket.free_corpus_read_allowed, false, `${bucket.bucket_id} free corpus read forbidden`);
   assert.equal(bucket.navigation_rule, P2G_ROUTING_DOCTRINE);
   for (const profile of bucket.allowed_preceding_derived_profiles || []) assert.equal(String(profile).includes("forensics"), false, `${bucket.bucket_id} must not allow forensics profile input ${profile}`);
+  for (const [jobId, profiles] of Object.entries(bucket.job_scoped_derived_profiles || {})) {
+    assert.ok(bucket.parent_jobs.includes(jobId), `${bucket.bucket_id} job-scoped profile declared for non-parent job ${jobId}`);
+    for (const profile of profiles) {
+      assert.equal(String(profile).includes("forensics"), false, `${bucket.bucket_id} must not allow job-scoped forensic input ${profile}`);
+      assert.equal(bucket.forbidden_artifacts.includes(profile), false, `${bucket.bucket_id} job-scoped input also forbidden ${profile}`);
+    }
+  }
 }
+const activityBucket = P2G_ROUTE_BUCKETS.find((bucket) => bucket.bucket_id === PHASE_ROUTE_BUCKET_IDS.activityProfile);
+assert.deepEqual(activityBucket.job_scoped_derived_profiles.M8_TARGET_FEATURE_PROFILE, ["feature_candidate_inventory"]);
+assert.equal(Object.prototype.hasOwnProperty.call(activityBucket.job_scoped_derived_profiles, "M8_FEATURE_CANDIDATE_INVENTORY"), false);
 
 const output = buildPhaseRoutingManifest({ runId: "TEST-RUN", artifacts: { target_profile_source_index: {}, domain_derivation_source_index: {}, activity_profile_source_index: {}, data_privacy_navigation_index: {}, domain_control_obligation_navigation_index: {}, legal_cartography_index: {}, legal_signal_derivation_profile: {} } });
 const manifest = output.phase_routing_manifest;
@@ -71,7 +82,7 @@ assert.equal(manifest.doctrine.index_role, "MANDATORY_NAVIGATION_MAP_INTO_PRIMAR
 assert.equal(manifest.doctrine.direct_lossless_as_fallback_allowed, false);
 assert.equal(manifest.route_buckets.length, 6);
 const validation = validatePhaseRoutingManifest(manifest);
-assert.equal(validation.ok, true);
+assert.equal(validation.ok, true, JSON.stringify(validation.errors));
 const validationManifest = buildPhaseRouteValidationManifest({ phaseRoutingManifest: output, validation }).phase_route_validation_manifest;
 assert.equal(validatePhaseRouteValidationManifest(validationManifest).ok, true);
 const serialized = JSON.stringify(manifest);
