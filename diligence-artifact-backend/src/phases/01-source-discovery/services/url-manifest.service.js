@@ -181,10 +181,16 @@ function classifyContactNotice({ path }, matches) {
 }
 function classifyProductService({ path, subdomain, host }, matches) {
   if (subdomain && path === "/" && !host.startsWith("docs.") && !isAppHost(host)) add(matches, "product_service", "product_subdomain_root", "product_activity", "PRIMARY", "NONE", "Target-controlled product subdomain root.", ["PRODUCT_ACTIVITY_SIGNAL"]);
-  if (!matchAny(path, ["/product", "/products", "/services", "/tools"])) return;
-  const first = path.split("/").filter(Boolean)[0] || "product";
-  const route = pathDepth(path) <= 1 ? `${first}_root` : `${first}_slug`;
-  add(matches, "product_service", route, "product_activity", "PRIMARY", "NONE", "Product/service matrix route matched.", ["PRODUCT_ACTIVITY_SIGNAL", "COMMERCIAL_POSITIONING_SIGNAL"]);
+  if (matchAny(path, ["/product", "/products", "/services", "/tools"])) {
+    const first = path.split("/").filter(Boolean)[0] || "product";
+    const route = pathDepth(path) <= 1 ? `${first}_root` : `${first}_slug`;
+    add(matches, "product_service", route, "product_activity", "PRIMARY", "NONE", "Product/service matrix route matched.", ["PRODUCT_ACTIVITY_SIGNAL", "COMMERCIAL_POSITIONING_SIGNAL"]);
+    return;
+  }
+  if (pathDepth(path) === 1 && regulatedTokenPresent(path) && !isGovernanceOrLegalSlug(path)) {
+    const disclosure = /(?:fee|charge|rate|interest|tariff)/i.test(path);
+    add(matches, "product_service", "regulated_product_slug", "product_activity", "PRIMARY", "NONE", "Top-level regulated product slug discovered via union probe/harvest.", ["PRODUCT_ACTIVITY_SIGNAL", "REGULATED_ACTIVITY_SIGNAL", disclosure ? "CONSUMER_DISCLOSURE_SIGNAL" : null].filter(Boolean));
+  }
 }
 function classifyPlatformFeatureSolution({ path }, matches) {
   if (!matchAny(path, ["/platform", "/features", "/solutions", "/workflows", "/automation"])) return;
@@ -421,7 +427,8 @@ function isAppHost(host) { return /^(app|dashboard|console|account|login)\./i.te
 function isBlogPath(path) { return /^\/(blog|blogs|news|press|resources)($|\/)/i.test(path); }
 function isDocsApiOrIntegrationPath(path) { return /\/(docs|developer|developers|api|apis|api-reference|integrations|connectors|webhooks|authentication|permissions|audit-logs)/i.test(path); }
 function hasDataFlowSignal(path) { return DATA_FLOW_SIGNALS.some((signal) => path.toLowerCase().includes(signal)); }
-function regulatedTokenPresent(path) { return /(credit|loan|lend|health|clinical|hiring|recruit|legal|biometric|kyc|aml|children|minor|student|payment|pay|banking|bank|deposit|savings|underwriting|medical|patient|upi|wallet|remittance|transfer|payout|settlement|card|debit|bnpl|installment|emi|mortgage|insurance|broking|mutual-fund|securities|trading|forex|crypto|fee|charge|interest-rate|apr|mitc|kfs|grievance|ombudsman|licen|nbfc|escrow|nodal|custody)/i.test(path); }
+function regulatedTokenPresent(path) { return /(credit|loan|lend|health|clinical|hiring|recruit|legal|biometric|kyc|aml|children|minor|student|payment|pay|banking|bank|deposit|savings|underwriting|medical|patient|upi|wallet|remittance|transfer|payout|settlement|card|debit|bnpl|installment|emi|mortgage|insurance|broking|mutual-fund|securities|trading|forex|crypto|fee|charge|interest-rate|\brates?\b|apr|mitc|kfs|grievance|ombudsman|licen|nbfc|escrow|nodal|custody)/i.test(path); }
+function isGovernanceOrLegalSlug(path) { return /(grievance|ombudsman|nodal|complaint|licen|regulat|disclosure|legal|privacy|security|compliance|contact)/i.test(path); }
 function isSdkPath(path) { return /\/(sdk|sdks|client|clients)($|\/)/i.test(path); }
 function isLanguageVariant(segments) { return segments.some((segment) => LANGUAGE_SEGMENTS.has(segment.toLowerCase()) || /^[a-z]{2}-[a-z]{2}$/i.test(segment)); }
 function sortCandidates(a, b) { return priority(a.priority_route_found_by) - priority(b.priority_route_found_by) || a.canonical_url.localeCompare(b.canonical_url); }
