@@ -1,8 +1,8 @@
 const REQUIRED_ROOT = "legal_cartography_semantic_profile";
 const MIN_QUEUE_COVERAGE = 0.8;
 
-const ALLOWED_SUBCATS = new Set(["CNS", "LIA", "HAL", "INF", "PRV", "BIO", "DEC", "HRM", "FRD", "TRD"]);
-const ALLOWED_CONTROL_FAMILIES = new Set(["FORMATION_CONTRACT", "ACTIVITY_SPECIFIC_DISCLOSURE", "DATA_PRIVACY", "VENDORS_TRANSFER", "SECURITY", "USE_SAFETY", "AGENT_AUTHORITY", "IP_CONTENT", "COMMERCIAL_LEGAL_ALLOCATION", "CONTACT_ROUTES", "INDEMNITY", "UNKNOWN_CONTROL_LANGUAGE"]);
+const ALLOWED_SUBCATS = new Set(["CNS", "LIA", "HAL", "INF", "PRV", "BIO", "DEC", "HRM", "FRD", "TRD", "REGULATORY_DISCLOSURE", "LICENSING_REGISTRATION", "GRIEVANCE_REDRESSAL", "COMPLAINTS_ESCALATION", "CONSUMER_DISCLOSURE", "COUNTERPARTY_INSTITUTION", "FINANCIAL_TERMS_DISCLOSURE"]);
+const ALLOWED_CONTROL_FAMILIES = new Set(["FORMATION_CONTRACT", "ACTIVITY_SPECIFIC_DISCLOSURE", "DATA_PRIVACY", "VENDORS_TRANSFER", "SECURITY", "USE_SAFETY", "AGENT_AUTHORITY", "IP_CONTENT", "COMMERCIAL_LEGAL_ALLOCATION", "CONTACT_ROUTES", "INDEMNITY", "REGULATORY_GOVERNANCE", "GRIEVANCE_REDRESSAL", "CONSUMER_DISCLOSURE", "COUNTERPARTY_INSTITUTION", "FINANCIAL_TERMS_DISCLOSURE", "UNKNOWN_CONTROL_LANGUAGE"]);
 const ALLOWED_CONFIDENCE = new Set(["CLEAR", "PARTIAL", "UNCLEAR"]);
 const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
 const ALLOWED_PROFILE_KEYS = new Set(["run_id", "schema_version", "semantic_navigation_index", "semantic_integrity", "lock_status"]);
@@ -11,6 +11,14 @@ const ALLOWED_INTEGRITY_KEYS = new Set(["required_queue_count", "labeled_queue_c
 
 const REMOVED_SEMANTIC_KEYS = Object.freeze(["document_labels", "unit_subcat_labels", "control_family_labels", "indemnity_labels", "cross_reference_labels", "missing_source_labels", "semantic_repair_queue", "semantic_integrity_summary", "downstream_rules", "status"]);
 const DOWNSTREAM_ROOT_KEYS = Object.freeze(["legal_cartography_index", "target_profile", "target_feature_profile", "data_provenance_profile", "extended_dap_india_readiness_profile", "integrated_dap_report", "dap_forensics_profile", "exposure_registry_profile", "challenge_gate", "final_output_handoff", "renderer_payload"]);
+const FORBIDDEN_CONCLUSION_KEYS = Object.freeze(["license_validity", "license_required", "required_license", "applicable_regulator", "regulatory_compliance_status", "grievance_sufficiency", "grievance_compliance_status", "ombudsman_requirement", "RBI_applicability", "SEBI_applicability", "FCA_authorisation_status"]);
+const FORBIDDEN_CONCLUSION_PATTERNS = Object.freeze([
+  /licen[cs]e\s+(valid|required|approved|compliant)/i,
+  /(regulator|regulation|rbi|sebi|fca)\s+(applies|applicable|required)/i,
+  /regulatory\s+compliance\s+(confirmed|valid|passed)/i,
+  /grievance\s+(mechanism|process)\s+(sufficient|compliant|required)/i,
+  /ombudsman\s+required/i
+]);
 
 export function validateM9SemanticProfile(rawOutput, deterministicMapWrapper = {}) {
   const errors = [];
@@ -23,6 +31,8 @@ export function validateM9SemanticProfile(rawOutput, deterministicMapWrapper = {
   for (const key of Object.keys(profile)) if (!ALLOWED_PROFILE_KEYS.has(key)) errors.push(`Unexpected semantic profile key: ${key}.`);
   for (const key of REMOVED_SEMANTIC_KEYS) if (Object.prototype.hasOwnProperty.call(profile, key)) errors.push(`Removed semantic key present: ${key}.`);
   for (const key of DOWNSTREAM_ROOT_KEYS) if (containsKey(profile, key)) errors.push(`Downstream root key inside semantic profile: ${key}.`);
+  for (const key of FORBIDDEN_CONCLUSION_KEYS) if (containsKey(profile, key)) errors.push(`Forbidden regulatory/grievance conclusion key inside semantic profile: ${key}.`);
+  assertNoForbiddenConclusionText(profile, errors);
 
   if (!Array.isArray(profile.semantic_navigation_index)) errors.push("semantic_navigation_index must be an array.");
   if (!profile.semantic_integrity || typeof profile.semantic_integrity !== "object" || Array.isArray(profile.semantic_integrity)) errors.push("semantic_integrity must be an object.");
@@ -45,7 +55,7 @@ function validateRows(profile, errors) {
     if (!ALLOWED_CONFIDENCE.has(row.confidence)) errors.push(`semantic_navigation_index[${index}] invalid confidence.`);
     for (const value of asArray(row.subcats)) if (!ALLOWED_SUBCATS.has(value)) errors.push(`semantic_navigation_index[${index}] invalid subcat: ${value}.`);
     for (const value of asArray(row.control_families)) if (!ALLOWED_CONTROL_FAMILIES.has(value)) errors.push(`semantic_navigation_index[${index}] invalid control family: ${value}.`);
-    if (asArray(row.control_families).length > 3) errors.push(`semantic_navigation_index[${index}] has too many control_families.`);
+    if (asArray(row.control_families).length > 4) errors.push(`semantic_navigation_index[${index}] has too many control_families.`);
   }
 }
 
@@ -91,6 +101,13 @@ function collectDeterministicQueue(wrapper) {
     else out.optionalQueueToUnit.set(queueId, unitId);
   }
   return out;
+}
+
+function assertNoForbiddenConclusionText(value, errors, path = "semantic_profile") {
+  if (typeof value === "string") for (const pattern of FORBIDDEN_CONCLUSION_PATTERNS) if (pattern.test(value)) errors.push(`Forbidden regulatory/grievance conclusion text at ${path}.`);
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) return value.forEach((item, index) => assertNoForbiddenConclusionText(item, errors, `${path}[${index}]`));
+  for (const [key, item] of Object.entries(value)) assertNoForbiddenConclusionText(item, errors, `${path}.${key}`);
 }
 
 function isRequiredQueueRow(row) { return row?.semantic_label_required === true || ["P0", "P1"].includes(row?.priority); }
