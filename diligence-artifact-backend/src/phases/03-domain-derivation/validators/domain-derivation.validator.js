@@ -9,7 +9,7 @@ const FORBIDDEN_OUTPUT_MARKERS = Object.freeze([
   "business_context.lane",
   "\"lane\"",
   "legal_advice",
-  "compliance_conclusion",
+  "\"compliance_conclusion\"",
   "enforceability_assessment",
   "risk_conclusion",
   "exposure_registry",
