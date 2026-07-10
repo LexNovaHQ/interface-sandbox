@@ -2,7 +2,8 @@ import {
   P2A_TARGET_PROFILE_ARTIFACTS,
   P2A_TARGET_PROFILE_ALLOWED_TARGET_SUBCATS,
   P2A_TARGET_PROFILE_ALLOWED_SIGNAL_FAMILIES,
-  P2A_TARGET_PROFILE_ALLOWED_CONFIDENCE
+  P2A_TARGET_PROFILE_ALLOWED_CONFIDENCE,
+  P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS
 } from "../target-profile-source-index.contract.js";
 
 const REQUIRED_ROOT = P2A_TARGET_PROFILE_ARTIFACTS.semanticProfile;
@@ -45,7 +46,18 @@ const FORBIDDEN_KEYS_ANYWHERE = Object.freeze([
   "legal_advice",
   "compliance_conclusion",
   "risk_conclusion",
-  "enforceability_assessment"
+  "enforceability_assessment",
+  ...P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS
+]);
+const FORBIDDEN_VALUE_PATTERNS = Object.freeze([
+  /\blicen[cs]e\s+(is\s+)?(valid|required|approved|compliant)\b/i,
+  /\b(regulatory|legal)\s+compliance\s+(status|confirmed|valid|passed)\b/i,
+  /\b(applicable|applies)\s+(regulator|regulation|rbi|sebi|fca)\b/i,
+  /\b(is|are)\s+regulated\b/i,
+  /\bgrievance\s+(mechanism|process)\s+(is\s+)?(sufficient|compliant|required)\b/i,
+  /\bombudsman\s+(is\s+)?required\b/i,
+  /\bgoverning\s+law\s+(derived|from)\s+(regulatory|grievance|complaints?)\b/i,
+  /\bcourts?\s*\/?\s*venue\s+(derived|from)\s+(regulatory|grievance|complaints?|support|contact)\b/i
 ]);
 
 export function validateTargetProfileSemanticProfile(rawOutput, deterministicMapWrapper = {}) {
@@ -58,7 +70,8 @@ export function validateTargetProfileSemanticProfile(rawOutput, deterministicMap
   for (const key of Object.keys(output)) if (key !== REQUIRED_ROOT) errors.push(`Unexpected top-level key: ${key}.`);
   for (const key of Object.keys(profile)) if (!ALLOWED_PROFILE_KEYS.has(key)) errors.push(`Unexpected semantic profile key: ${key}.`);
   for (const key of DOWNSTREAM_ROOT_KEYS) if (containsKey(profile, key)) errors.push(`Downstream root key inside target semantic profile: ${key}.`);
-  for (const key of FORBIDDEN_KEYS_ANYWHERE) if (containsKey(profile, key)) errors.push(`Forbidden derived/copy key inside target semantic profile: ${key}.`);
+  for (const key of FORBIDDEN_KEYS_ANYWHERE) if (containsKey(profile, key)) errors.push(`Forbidden derived/copy/conclusion key inside target semantic profile: ${key}.`);
+  assertNoForbiddenConclusionText(profile, errors);
 
   if (!Array.isArray(profile.semantic_navigation_index)) errors.push("semantic_navigation_index must be an array.");
   if (!profile.semantic_integrity || typeof profile.semantic_integrity !== "object" || Array.isArray(profile.semantic_integrity)) errors.push("semantic_integrity must be an object.");
@@ -105,13 +118,11 @@ function validateIntegrity(profile, deterministic, errors, warnings) {
   const integrity = profile.semantic_integrity || {};
   for (const key of Object.keys(integrity)) if (!ALLOWED_INTEGRITY_KEYS.has(key)) errors.push(`semantic_integrity unexpected key: ${key}.`);
 
-  const rowQueueIds = new Set();
   let attached = 0;
   for (const [index, row] of rows.entries()) {
     const queueId = String(row?.queue_id || "");
     const unitId = String(row?.unit_id || "");
     if (!queueId) continue;
-    rowQueueIds.add(queueId);
     const expectedUnitId = deterministic.requiredQueueToUnit.get(queueId) || deterministic.optionalQueueToUnit.get(queueId);
     if (!expectedUnitId) {
       errors.push(`semantic_navigation_index[${index}] queue_id not found in deterministic semantic_label_queue.`);
@@ -145,6 +156,19 @@ function collectDeterministicQueue(wrapper) {
     else out.optionalQueueToUnit.set(queueId, unitId);
   }
   return out;
+}
+
+function assertNoForbiddenConclusionText(value, errors, path = "target_profile_semantic_profile") {
+  if (typeof value === "string") {
+    for (const pattern of FORBIDDEN_VALUE_PATTERNS) if (pattern.test(value)) errors.push(`Forbidden regulatory/grievance/legal conclusion text at ${path}.`);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertNoForbiddenConclusionText(item, errors, `${path}[${index}]`));
+    return;
+  }
+  for (const [key, item] of Object.entries(value)) assertNoForbiddenConclusionText(item, errors, `${path}.${key}`);
 }
 
 function containsKey(value, key) {
