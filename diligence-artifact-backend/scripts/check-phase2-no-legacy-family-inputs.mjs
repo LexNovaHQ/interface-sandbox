@@ -107,8 +107,12 @@ const EXPLICIT_FORBIDDEN_LIST_FILES = Object.freeze([
   "agent-packages/phase_2b_domain_derivation_source_index/00_VALIDATOR_RULES_PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX.md",
   "agent-packages/phase_2c_activity_profile_source_index/P2C_ACTIVITY_PROFILE_SOURCE_INDEX.md",
   "agent-packages/phase_2c_activity_profile_source_index/00_VALIDATOR_RULES_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md",
+  "agent-packages/phase_2d_data_privacy_navigation_index/P2D_DATA_PRIVACY_NAVIGATION_INDEX_RUNTIME_BINDING_PACKET.yaml",
+  "agent-packages/phase_2d_data_privacy_navigation_index/00_RUNTIME_CONTROLLER_PHASE2D_DATA_PRIVACY_NAVIGATION_INDEX.md",
+  "agent-packages/phase_2d_data_privacy_navigation_index/P2D_DATA_PRIVACY_NAVIGATION_INDEX.md",
   "agent-packages/phase_2d_data_privacy_navigation_index/P2D_DATA_PRIVACY_NAVIGATION_INDEX_REFERENCE_MAP.yaml",
   "agent-packages/phase_2d_data_privacy_navigation_index/00_VALIDATOR_RULES_PHASE2D_DATA_PRIVACY_NAVIGATION_INDEX.md",
+  "agent-packages/phase_2d_data_privacy_navigation_index/00_TERMINAL_RECEIPT_RULES_PHASE2D_DATA_PRIVACY_NAVIGATION_INDEX.md",
   "agent-packages/phase_2d_data_privacy_navigation_index/P2D_PACKET_MANIFEST.json"
 ]);
 const RETIRED_ROOT_ACTIVE_INPUT_MARKERS = Object.freeze(["lossless_root__legal_identity_notice", "lossless_root__security_trust\"", "lossless_root__trust_compliance", "lossless_root__technical_docs_api_developer"]);
