@@ -43,6 +43,7 @@ function validateRoute(route = {}, ctx) {
   bucketIds.add(route.bucket_id);
   routeIds.add(route.route_id);
   if (!expectedBuckets.has(route.bucket_id)) errors.push(`UNKNOWN_BUCKET_ID:${route.bucket_id}`);
+  if (!Array.isArray(route.parent_jobs) || route.parent_jobs.length < 1) errors.push(`ROUTE_PARENT_JOBS_MISSING:${route.bucket_id}`);
   if (!Array.isArray(route.required_index_artifacts) || route.required_index_artifacts.length < 1) errors.push(`ROUTE_REQUIRED_INDEX_MISSING:${route.bucket_id}`);
   if (!Array.isArray(route.primary_lossless_evidence) || route.primary_lossless_evidence.length < 1) errors.push(`ROUTE_PRIMARY_LOSSLESS_EVIDENCE_MISSING:${route.bucket_id}`);
   if (route.lossless_evidence_primary !== true) errors.push(`ROUTE_LOSSLESS_NOT_PRIMARY:${route.bucket_id}`);
@@ -51,8 +52,32 @@ function validateRoute(route = {}, ctx) {
   if (route.direct_lossless_as_fallback_allowed !== false) errors.push(`ROUTE_DIRECT_LOSSLESS_FALLBACK_ALLOWED:${route.bucket_id}`);
   if (route.free_corpus_read_allowed !== false) errors.push(`ROUTE_FREE_CORPUS_READ_ALLOWED:${route.bucket_id}`);
   for (const artifact of route.primary_lossless_evidence || []) if (!String(artifact).startsWith("lossless_root__") && artifact !== "legal_doc_{DOC_TYPE}" && !String(artifact).startsWith("legal_doc_")) errors.push(`ROUTE_PRIMARY_EVIDENCE_NOT_LOSSLESS_OR_LEGAL_DOC:${route.bucket_id}:${artifact}`);
-  for (const artifact of route.allowed_preceding_derived_profiles || []) if (FORENSICS_MARKERS.some((marker) => String(artifact).includes(marker))) errors.push(`ROUTE_PRECEDING_PROFILE_FORENSICS_FORBIDDEN:${route.bucket_id}:${artifact}`);
+  for (const artifact of route.allowed_preceding_derived_profiles || []) validateDerivedProfileArtifact(artifact, route, errors, "ROUTE_PRECEDING_PROFILE");
+  validateJobScopedDerivedProfiles(route, errors);
   for (const artifact of route.forbidden_artifacts || []) if (!artifact) warnings.push(`EMPTY_FORBIDDEN_ARTIFACT_MARKER:${route.bucket_id}`);
   if (route.requires_legal_dependency !== true && Array.isArray(route.allowed_legal_artifacts) && route.allowed_legal_artifacts.length) errors.push(`LEGAL_ARTIFACTS_WITHOUT_DECLARED_LEGAL_DEPENDENCY:${route.bucket_id}`);
   if (route.route_ready === false) warnings.push(`ROUTE_REQUIRED_INDEX_NOT_PRESENT_AT_BUILD_TIME:${route.bucket_id}`);
+}
+
+function validateJobScopedDerivedProfiles(route, errors) {
+  const scoped = route.job_scoped_derived_profiles || {};
+  if (!scoped || typeof scoped !== "object" || Array.isArray(scoped)) {
+    errors.push(`ROUTE_JOB_SCOPED_DERIVED_PROFILES_INVALID:${route.bucket_id}`);
+    return;
+  }
+  const parentJobs = new Set(route.parent_jobs || []);
+  for (const [jobId, artifacts] of Object.entries(scoped)) {
+    if (!parentJobs.has(jobId)) errors.push(`ROUTE_JOB_SCOPED_PROFILE_JOB_NOT_PARENT:${route.bucket_id}:${jobId}`);
+    if (!Array.isArray(artifacts) || artifacts.length < 1) errors.push(`ROUTE_JOB_SCOPED_PROFILE_LIST_INVALID:${route.bucket_id}:${jobId}`);
+    for (const artifact of artifacts || []) validateDerivedProfileArtifact(artifact, route, errors, `ROUTE_JOB_SCOPED_PROFILE:${jobId}`);
+  }
+}
+
+function validateDerivedProfileArtifact(artifact, route, errors, label) {
+  const name = String(artifact || "");
+  if (!name) errors.push(`${label}_EMPTY:${route.bucket_id}`);
+  if (FORENSICS_MARKERS.some((marker) => name.includes(marker))) errors.push(`${label}_FORENSICS_FORBIDDEN:${route.bucket_id}:${name}`);
+  if ((route.forbidden_artifacts || []).includes(name)) errors.push(`${label}_ALSO_FORBIDDEN:${route.bucket_id}:${name}`);
+  if ((route.required_index_artifacts || []).includes(name)) errors.push(`${label}_INDEX_NOT_DERIVED_PROFILE:${route.bucket_id}:${name}`);
+  if ((route.primary_lossless_evidence || []).includes(name)) errors.push(`${label}_LOSSLESS_NOT_DERIVED_PROFILE:${route.bucket_id}:${name}`);
 }
