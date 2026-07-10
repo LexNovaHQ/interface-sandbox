@@ -1,10 +1,10 @@
 {
   "packet_name": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET",
-  "version": "v1_phase1_v5_contract_only",
+  "version": "v2_phase1_v5_runtime_wired",
   "active_phase_id": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
   "active_phase_scope": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY",
-  "package_status": "LEAN_PACKAGE_CONTRACT_ONLY",
-  "runtime_wiring_changed": false,
+  "package_status": "LEAN_PACKAGE_RUNTIME_WIRED",
+  "runtime_wiring_changed": true,
   "runtime_job_id": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
   "phase1_input_contract": "PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE",
   "read_artifacts": [
@@ -45,18 +45,22 @@
   "final_downstream_required_artifact": "activity_profile_source_index",
   "downstream_owner": "ACTIVITY_PROFILE_REVIEW",
   "runtime_wiring": {
-    "artifact_permissions_registered": false,
-    "pipeline_contract_registered": false,
-    "central_phase_registered": false,
-    "pipeline_service_dispatch_registered": false,
-    "save_order_gates_registered": false,
-    "p2c_next": "PENDING_RUNTIME_WIRING"
+    "artifact_permissions_registered": true,
+    "pipeline_contract_registered": true,
+    "central_phase_registered": true,
+    "pipeline_service_dispatch_registered": true,
+    "save_order_gates_registered": true,
+    "p2b_next": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
+    "p2c_next": "P2_INDEX_COMPILER_VALIDATION"
   },
   "reference_documents": [
     "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
     "src/phases/02-cartography-index/activity-profile-source-index.contract.js",
     "src/phases/02-cartography-index/services/activity-profile-deterministic-map.builder.js",
-    "src/phases/02-cartography-index/validators/activity-profile-semantic-profile.validator.js"
+    "src/phases/02-cartography-index/validators/activity-profile-semantic-profile.validator.js",
+    "src/phases/02-cartography-index/services/activity-profile-source-index.compiler.js",
+    "src/phases/02-cartography-index/validators/activity-profile-source-index.validator.js",
+    "src/phases/02-cartography-index/orchestrators/activity-profile-source-index.orchestrator.js"
   ],
   "components": [
     "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET.yaml",
@@ -84,10 +88,10 @@
     "feature_candidate_inventory_forbidden": true,
     "target_feature_profile_forbidden": true,
     "target_feature_profile_forensics_forbidden": true,
-    "runtime_wiring_changed": false,
-    "compiler_built": false,
-    "final_validator_built": false,
-    "orchestrator_built": false,
+    "runtime_wiring_changed": true,
+    "compiler_built": true,
+    "final_validator_built": true,
+    "orchestrator_built": true,
     "derivation_logic_hardcoded_in_package": false,
     "source_artifacts_remain_source_of_truth": true,
     "pointer_only_outputs": true,
