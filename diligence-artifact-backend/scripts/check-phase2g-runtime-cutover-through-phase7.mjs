@@ -28,8 +28,8 @@ const CUTOVER_JOBS = Object.freeze([
   "M8_TARGET_FEATURE_PROFILE",
   "DATA_PROVENANCE_PROFILE_LAYER4"
 ]);
+const ROUTE_NEUTRAL_JOBS = Object.freeze(["DATA_PROVENANCE_PROFILE_LAYER5"]);
 const DEFERRED_JOBS = Object.freeze([
-  "DATA_PROVENANCE_PROFILE_LAYER5",
   "DATA_PROVENANCE_PROFILE_FORENSICS",
   "M11",
   "M12",
@@ -42,7 +42,9 @@ assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.route_scoped_runtime_reader_a
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.lossless_evidence_is_primary, true);
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.index_navigation_mandatory, true);
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.profile_forensics_inputs_forbidden, true);
-for (const job of DEFERRED_JOBS) assert.equal(Object.prototype.hasOwnProperty.call(P2G_RUNTIME_ROUTE_BY_JOB, job), false, `${job} must remain outside this cutover`);
+for (const job of [...ROUTE_NEUTRAL_JOBS, ...DEFERRED_JOBS]) assert.equal(Object.prototype.hasOwnProperty.call(P2G_RUNTIME_ROUTE_BY_JOB, job), false, `${job} must not use the source-bucket reader in this cutover`);
+assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads.slice(1)]);
+assert.equal(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads.includes("phase_routing_manifest"), false, "Phase 7 Layer 5 is route-neutral and must read only Layer 4 outputs");
 
 const manifest = buildPhaseRoutingManifest({ runId: "CHECK-P2G-CUTOVER-THROUGH-P7", artifacts: presentPhase2Artifacts() }).phase_routing_manifest;
 const plans = Object.fromEntries(CUTOVER_JOBS.map((job) => [job, buildPhaseRouteRuntimeReadPlan({ internalJobId: job, phaseRoutingManifest: manifest })]));
@@ -121,7 +123,7 @@ for (const forbidden of ["target_profile_forensics", "target_feature_profile_for
 }
 
 assert.equal(P2G_ROUTE_BUCKETS.length, 6);
-console.log(JSON.stringify({ check: "Phase 2G runtime cutover through Phase 7", status: "PASS", cutover_jobs: CUTOVER_JOBS, deferred_jobs: DEFERRED_JOBS, enforced_gates: ["ROUTE_SCOPED_RUNTIME_READER", "3A_2A_CUTOVER", "3B_2B_CUTOVER", "PHASE5_2C_CUTOVER", "PHASE7_2D_CUTOVER", "PRIMARY_LOSSLESS_EVIDENCE", "MANDATORY_INDEX_NAVIGATION", "NO_PROFILE_FORENSICS_INPUT", "PHASE8_PLUS_DEFERRED"] }, null, 2));
+console.log(JSON.stringify({ check: "Phase 2G runtime cutover through Phase 7", status: "PASS", cutover_jobs: CUTOVER_JOBS, route_neutral_jobs: ROUTE_NEUTRAL_JOBS, deferred_jobs: DEFERRED_JOBS, enforced_gates: ["ROUTE_SCOPED_RUNTIME_READER", "3A_2A_CUTOVER", "3B_2B_CUTOVER", "PHASE5_2C_CUTOVER", "PHASE7_2D_CUTOVER", "PHASE7_LAYER5_ROUTE_NEUTRAL", "PRIMARY_LOSSLESS_EVIDENCE", "MANDATORY_INDEX_NAVIGATION", "NO_PROFILE_FORENSICS_INPUT", "PHASE8_PLUS_DEFERRED"] }, null, 2));
 
 function assertPlan(plan, { routeId, bucketId, index, roots, profiles = [], context = [], legal = [] }) {
   assert.equal(plan.route_id, routeId);
