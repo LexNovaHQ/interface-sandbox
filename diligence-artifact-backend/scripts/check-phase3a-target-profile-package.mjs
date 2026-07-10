@@ -12,6 +12,7 @@ const files = {
   runtime: "agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
   binding: "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
   validatorRules: "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md",
+  outputContract: "agent-packages/agent_3_target_feature/AGENT3_BACKEND_OUTPUT_CONTRACT.md",
   authority: "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
 };
 const content = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, read(file)]));
@@ -73,11 +74,13 @@ for (const marker of ["target_profile_source_index", "Phase 2A", "navigation", "
   assert.ok(content.runtime.includes(marker), `Agent3 runtime controller missing ${marker}`);
   assert.ok(content.binding.includes(marker), `Agent3 binding missing ${marker}`);
   assert.ok(content.validatorRules.includes(marker), `Agent3 validator rules missing ${marker}`);
+  assert.ok(content.outputContract.includes(marker), `Agent3 output contract missing ${marker}`);
 }
 
 for (const forbiddenConclusion of ["license validity", "license requirement", "applicable regulator", "regulatory compliance status", "grievance sufficiency", "grievance compliance status", "ombudsman requirement"]){
   assert.ok(content.prompt.includes(forbiddenConclusion), `M7 prompt missing forbidden conclusion guard ${forbiddenConclusion}`);
   assert.ok(content.validatorRules.includes(forbiddenConclusion), `Agent3 validator missing forbidden conclusion guard ${forbiddenConclusion}`);
+  assert.ok(content.outputContract.includes(forbiddenConclusion), `Agent3 output contract missing forbidden conclusion guard ${forbiddenConclusion}`);
 }
 
 assert.ok(content.prompt.includes("Target Profile Review must not emit `business_context.lane`"));
@@ -86,4 +89,4 @@ assert.ok(content.authority.includes("business_context_lane_forbidden: true"));
 assert.ok(content.prompt.includes("legal_signal_derivation_profile"));
 assert.ok(content.prompt.includes("owned legal notice and jurisdiction fields"));
 
-console.log(JSON.stringify({ check: "phase3a target profile package", status: "PASS", enforced_gates: ["M7_READS_MATCH_PHASE_CONTRACT", "P2A_TARGET_SOURCE_INDEX_NAVIGATION_AUTHORITY", "PHASE1_V5_SCOPED_LOSSLESS_ROOTS_PRESENT", "NO_RETIRED_ROOT_MARKERS_IN_AGENT3_PACKAGE", "NO_LANE_DERIVATION", "NO_AI_REGISTRY_REFERENCE_FOR_3A", "LEGAL_SIGNAL_ONLY_BOUNDED", "REGULATORY_GRIEVANCE_FACTUAL_ONLY"] }, null, 2));
+console.log(JSON.stringify({ check: "phase3a target profile package", status: "PASS", enforced_gates: ["M7_READS_MATCH_PHASE_CONTRACT", "P2A_TARGET_SOURCE_INDEX_NAVIGATION_AUTHORITY", "PHASE1_V5_SCOPED_LOSSLESS_ROOTS_PRESENT", "NO_RETIRED_ROOT_MARKERS_IN_AGENT3_PACKAGE", "NO_LANE_DERIVATION", "NO_AI_REGISTRY_REFERENCE_FOR_3A", "LEGAL_SIGNAL_ONLY_BOUNDED", "REGULATORY_GRIEVANCE_FACTUAL_ONLY", "AGENT3_OUTPUT_CONTRACT_SYNCED"] }, null, 2));
