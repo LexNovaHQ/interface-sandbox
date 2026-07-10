@@ -1,24 +1,20 @@
-# Legal Cartography and Index — Legal Signal Derivation Contract
+# Legal Cartography and Index — Legal Signal Derivation Compatibility Contract
 
 This file belongs to the **Legal Cartography and Index** phase.
 
-The compatibility filename retains the old internal identifier because existing package manifests still reference it.
+The compatibility filename retains the old internal identifier because existing package manifests and downstream contracts still reference it.
 
-It governs Job B:
-
-```text
-LEGAL_SIGNAL_DERIVATION
-```
-
-Job B is deterministic. It emits one artifact:
+It governs the compatibility artifact:
 
 ```text
 legal_signal_derivation_profile
 ```
 
+This artifact is preserved only to avoid downstream breakage during the 2A/3A cutover. It is not the active Target Profile legal-signal locator authority after 2A is active.
+
 ## Source Boundary
 
-Job B may read only:
+The compatibility profile may read only:
 
 ```text
 legal_cartography_deterministic_map
@@ -28,23 +24,29 @@ legal_doc_inventory
 legal_doc_extraction_index
 legal_doc_lossless_validation_manifest
 legal_doc_{DOC_TYPE}
-lossless_root__legal_identity_notice
-lossless_root__privacy_data_processing
-lossless_root__security_trust
-lossless_root__trust_compliance
+lossless_root__company_identity
 lossless_root__contact_notice
-lossless_root__technical_docs_api_developer
+lossless_root__privacy_data_processing
+lossless_root__security_trust_compliance
+lossless_root__data_governance_controls
+lossless_root__ai_safety_transparency
+lossless_root__technical_docs_api
 lossless_root__docs_api_data_flow
-field derivation registry contact/consent patch
+lossless_root__regulatory_licensing_status
+lossless_root__grievance_complaints
 ```
 
-Job B must not browse, crawl, fetch new URLs, infer private documents, use old family input contracts, use legacy family adapters, or read Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, or Renderer artifacts.
+It must not browse, crawl, fetch new URLs, infer private documents, use old family input contracts, use legacy family adapters, or read Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Renderer, or Qualified Review artifacts.
 
-## Derivation Authority
+## Authority Boundary
 
-The field derivation registry field ID is the derivation authority.
+2A owns Target Profile Source Index and target-profile legal signal locators.
 
-Reviewer question IDs, reviewer prompts, and UI copy are not derivation authority.
+2E / M9 owns full legal/governance cartography.
+
+`legal_signal_derivation_profile` is compatibility-only. It must not override `target_profile_source_index`, 2A target legal signal locators, or 3A derivation authority.
+
+The field derivation registry field ID is the row authority for this compatibility profile. Reviewer question IDs, reviewer prompts, and UI copy are not derivation authority.
 
 ## Required Output Groups
 
@@ -131,11 +133,31 @@ SOURCE_CONFLICT requires at least two evidence rows.
 NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN requires scanned_sources and failure_reason.
 ```
 
-If a locator exists, Job B must not use `NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN`.
+If a locator exists, this profile must not use `NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN`.
+
+## Regulatory / Grievance Boundary
+
+The Phase 1 v5 regulatory/licensing and grievance/complaints roots may support locator rows only.
+
+This profile must not determine:
+
+```text
+license_validity
+license_requirement
+applicable_regulator
+regulatory_compliance_status
+RBI_applicability
+SEBI_applicability
+FCA_authorisation_status
+grievance_sufficiency
+grievance_compliance_status
+ombudsman_requirement
+statutory_complaint_obligation
+```
 
 ## Forbidden Output Content
 
-Job B must not emit:
+This profile must not emit:
 
 ```text
 question_id
@@ -151,6 +173,10 @@ renderer_payload
 full_clause_text
 old_family_input_contract
 legacy_family_adapter
+legal_advice
+compliance_conclusion
+enforceability_assessment
+risk_conclusion
 ```
 
 The old support artifact names above are retained only as forbidden compatibility artifact names.
@@ -159,4 +185,4 @@ The old support artifact names above are retained only as forbidden compatibilit
 
 Target Profile Review, Data Provenance Profile, and Qualified Review integration is controlled by their own phase contracts.
 
-Job B may expose downstream consumer metadata, but it must not include reviewer question text or UI prompt text.
+This compatibility profile may expose downstream consumer metadata, but it must not include reviewer question text, UI prompt text, legal advice, compliance conclusions, enforceability conclusions, or regulatory/grievance sufficiency conclusions.
