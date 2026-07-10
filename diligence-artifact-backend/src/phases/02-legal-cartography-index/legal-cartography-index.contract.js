@@ -1,3 +1,6 @@
+export const M9_PHASE2F_DESIGNATION = "P2F_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS";
+export const M9_RUNTIME_JOB_ID = "M9";
+
 export const M9_PHASE1_V5_READS = Object.freeze([
   "source_discovery_handoff",
   "post_phase_1_domain_gate_handoff",
@@ -50,24 +53,33 @@ export const M9_FORBIDDEN_CONCLUSIONS = Object.freeze([
 
 export const LEGAL_CARTOGRAPHY_INDEX_CONTRACT = Object.freeze({
   central_phase_id: "LEGAL_CARTOGRAPHY_INDEX",
-  public_label: "Legal Cartography and Index",
-  implementation_status: "M9_MAIN_RESTORED_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC",
+  phase2_designation: M9_PHASE2F_DESIGNATION,
+  runtime_job_id_preserved: M9_RUNTIME_JOB_ID,
+  public_label: "2F Legal Cartography / Legal Signals",
+  implementation_status: "M9_DESIGNATED_AS_PHASE2F_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC",
   production_entrypoint_switched: false,
   migration_boundary: Object.freeze({
     phase_layer: "src/phases/02-legal-cartography-index",
     runtime_owner: "src/runtime/services/pipeline.service.js",
-    migration_mode: "main_m9_substance_restored_phase1_v5_input_cutover",
+    migration_mode: "main_m9_substance_restored_phase1_v5_input_cutover_designated_2f",
+    m9_runtime_job_id_preserved: true,
     m9_artifact_contract_preserved: true,
-    legal_signal_derivation_profile_compatibility_preserved: true
+    phase2_designation: M9_PHASE2F_DESIGNATION,
+    legal_cartography_index_remains_m9_artifact: true,
+    legal_signal_derivation_profile_compatibility_preserved: true,
+    full_legal_governance_cartography_owned_by_2f: true,
+    phase2e_domain_control_obligation_index_separate: true
   }),
   jobs: Object.freeze({
     LEGAL_CARTOGRAPHY_INDEX: Object.freeze({
       job_id: "LEGAL_CARTOGRAPHY_INDEX",
-      public_label: "Legal Cartography Index",
-      execution_mode: "m9_hybrid_main_restored_phase1_v5",
+      phase2_designation: M9_PHASE2F_DESIGNATION,
+      runtime_job_id_preserved: M9_RUNTIME_JOB_ID,
+      public_label: "2F Legal Cartography Index",
+      execution_mode: "m9_hybrid_main_restored_phase1_v5_designated_2f",
       model_assisted_semantic_navigation_allowed: true,
       deterministic_compiler_required: true,
-      purpose: "Build main-M9 legal/governance document inventory, structure, embedded-unit map, semantic navigation, control locators, QR legal signal map, and missing/limited source rows from Phase 1 v5 common-root and legal_doc source artifacts.",
+      purpose: "Build Phase 2F / M9 legal-governance document inventory, structure, embedded-unit map, semantic navigation, control locators, QR legal signal map, and missing/limited source rows from Phase 1 v5 common-root and legal_doc source artifacts.",
       reads: M9_PHASE1_V5_READS,
       writes: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index"]),
       forbidden_outputs: Object.freeze(["source_discovery_handoff", "m7_deterministic_legal_signal_overlay", "m10_selected_legal_support_packet", "target_profile", "data_provenance_profile", "qualified_review_handoff", "qualified_review_renderer_payload", "renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion", ...M9_FORBIDDEN_CONCLUSIONS]),
@@ -84,16 +96,19 @@ export const LEGAL_CARTOGRAPHY_INDEX_CONTRACT = Object.freeze({
         regulatory_grievance_conclusions_forbidden: true,
         qualified_review_legal_signals_are_locator_signals_only: true,
         target_profile_legal_signal_locators_owned_by_2a: true,
-        full_legal_governance_cartography_owned_by_2e: true
+        full_legal_governance_cartography_owned_by_2f: true,
+        phase2e_domain_control_obligation_index_separate: true
       })
     }),
     LEGAL_SIGNAL_DERIVATION: Object.freeze({
       job_id: "LEGAL_SIGNAL_DERIVATION",
-      public_label: "Legal Signal Derivation Compatibility Profile",
-      execution_mode: "deterministic_compatibility_profile",
+      phase2_designation: M9_PHASE2F_DESIGNATION,
+      runtime_job_id_preserved: M9_RUNTIME_JOB_ID,
+      public_label: "2F Legal Signal Derivation Compatibility Profile",
+      execution_mode: "deterministic_compatibility_profile_designated_2f",
       model_assisted_semantic_navigation_allowed: false,
       deterministic_compiler_required: true,
-      purpose: "Preserve legacy downstream legal_signal_derivation_profile compatibility without making it the active Target Profile legal-signal authority after 2A cutover.",
+      purpose: "Preserve downstream legal_signal_derivation_profile compatibility inside Phase 2F / M9 without making it the active Target Profile legal-signal authority after 2A cutover.",
       reads: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", ...M9_PHASE1_V5_READS]),
       writes: Object.freeze(["legal_signal_derivation_profile"]),
       forbidden_outputs: Object.freeze(["target_profile", "data_provenance_profile", "qualified_review_renderer_payload", "renderer_payload", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion", "question_id", "reviewer_question", "question_rows", "question_index", ...M9_FORBIDDEN_CONCLUSIONS]),
@@ -102,7 +117,8 @@ export const LEGAL_CARTOGRAPHY_INDEX_CONTRACT = Object.freeze({
         old_family_inputs_forbidden: true,
         target_profile_legal_signal_authority_after_2a_cutover: false,
         target_profile_legal_signal_locators_owned_by_2a: true,
-        full_legal_governance_cartography_owned_by_2e: true,
+        full_legal_governance_cartography_owned_by_2f: true,
+        phase2e_domain_control_obligation_index_separate: true,
         legal_advice_generated: false,
         compliance_conclusion_generated: false,
         enforceability_conclusion_generated: false,
@@ -119,16 +135,20 @@ export const LEGAL_CARTOGRAPHY_INDEX_CONTRACT = Object.freeze({
     legal_signal_derivation_profile_preserved: true,
     legal_signal_derivation_profile_status: "COMPATIBILITY_ONLY_UNTIL_DOWNSTREAM_CUTOVER",
     target_profile_legal_signal_locators_owned_by_2a: true,
-    m9_owns_full_legal_governance_cartography: true,
-    m9_must_not_override_2a_target_profile_source_index: true
+    full_legal_governance_cartography_owned_by_2f: true,
+    m9_full_legal_cartography_source_of_truth: "legal_cartography_index",
+    m9_must_not_override_2a_target_profile_source_index: true,
+    phase2e_domain_control_obligation_index_separate: true
   })
 });
 
 export const LEGAL_SIGNAL_DERIVATION_PROFILE_CONTRACT = Object.freeze({
   artifact_name: "legal_signal_derivation_profile",
-  schema_version: "LEGAL_SIGNAL_DERIVATION_PROFILE_v3_PHASE1_V5_COMPATIBILITY_BOUNDARY",
+  phase2_designation: M9_PHASE2F_DESIGNATION,
+  runtime_job_id_preserved: M9_RUNTIME_JOB_ID,
+  schema_version: "LEGAL_SIGNAL_DERIVATION_PROFILE_v4_PHASE2F_PHASE1_V5_COMPATIBILITY_BOUNDARY",
   model_generated: false,
-  derivation_mode: "compatibility_only_not_active_target_profile_legal_signal_authority",
+  derivation_mode: "phase2f_compatibility_only_not_active_target_profile_legal_signal_authority",
   source_boundary: Object.freeze({
     allowed_sources: Object.freeze(["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", ...M9_PHASE1_V5_READS]),
     old_family_inputs_forbidden: true,
@@ -143,6 +163,8 @@ export const LEGAL_SIGNAL_DERIVATION_PROFILE_CONTRACT = Object.freeze({
   compatibility_boundary: Object.freeze({
     target_profile_legal_signal_locators_owned_by_2a: true,
     legal_signal_derivation_profile_must_not_be_used_as_2a_authority_after_cutover: true,
+    full_legal_governance_cartography_owned_by_2f: true,
+    phase2e_domain_control_obligation_index_separate: true,
     m9_full_legal_cartography_source_of_truth: "legal_cartography_index"
   }),
   required_field_groups: Object.freeze({
