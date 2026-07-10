@@ -179,7 +179,8 @@ export const P2G_PHASE_ROUTER_CONTRACT = Object.freeze({
     preceding_derived_profiles_allowed: true,
     job_scoped_derived_profiles_must_be_declared_in_2g: true,
     preceding_forensics_profiles_forbidden: true,
-    runtime_cutover_pending_after_first_patch: true
+    profile_runtime_cutover_completed_through_phase7: true,
+    phase8_m11_m12_compiler_cutover_deferred: true
   })
 });
 
