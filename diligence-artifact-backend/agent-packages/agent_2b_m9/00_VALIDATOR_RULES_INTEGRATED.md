@@ -31,7 +31,7 @@ lossless_root__regulatory_licensing_status
 lossless_root__grievance_complaints
 ```
 
-Old `lossless_family__L*` input contracts, retired root artifacts, and legacy family adapters are invalid.
+Old family input contracts, retired root artifacts, and legacy family adapters are invalid.
 
 ## Required Root
 
