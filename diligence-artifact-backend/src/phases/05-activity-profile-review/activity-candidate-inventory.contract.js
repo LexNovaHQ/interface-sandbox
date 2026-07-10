@@ -1,8 +1,130 @@
-const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze(["source_discovery_handoff", "target_profile", "target_profile_forensics", "lossless_family__P1_PRODUCT", "lossless_family__P2_PLATFORM_FEATURE_SOLUTION", "lossless_family__P3_AI_CAPABILITY_TECHNICAL", "lossless_family__P5_ENTERPRISE_PRICING"]);
-const ACTIVITY_CANDIDATE_INVENTORY_WRITES = Object.freeze(["feature_candidate_inventory"]);
-const ACTIVITY_CANDIDATE_INVENTORY_SOURCE_FAMILIES = Object.freeze(["P1_PRODUCT", "P2_PLATFORM_FEATURE_SOLUTION", "P3_AI_CAPABILITY_TECHNICAL", "P5_ENTERPRISE_PRICING"]);
+const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze([
+  "cartography_index",
+  "activity_profile_source_index",
+  "target_profile",
+  "target_profile_forensics",
+  "domain_derivation_profile",
+  "active_run_package_manifest",
+  "domain_selection_profile"
+]);
 
-export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({ contract_name: "ACTIVITY_CANDIDATE_INVENTORY_CONTRACT_v1_INDEX_ONLY", central_phase_id: "ACTIVITY_PROFILE_REVIEW", central_phase_label: "Activity Profile Review", phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY", public_label: "Activity Candidate Inventory", compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY", implementation_status: "PHASE_RUNNER_CUTOVER_PHASE_OWNED", production_entrypoint_switched: true, global_production_deployment_switched: false, model_usage: "NONE_DETERMINISTIC", deterministic_job: Object.freeze({ reads: ACTIVITY_CANDIDATE_INVENTORY_READS, writes: ACTIVITY_CANDIDATE_INVENTORY_WRITES, source_helper: "buildFeatureCandidateInventoryIndex", source_helper_module: "src/phases/05-activity-profile-review/services/activity-candidate-inventory-index.builder.js", legacy_harvester_module: null, validator: "validateFeatureCandidateInventoryIndex", validator_module: "src/phases/05-activity-profile-review/services/activity-candidate-inventory-index.builder.js" }), source_family_scope: Object.freeze({ candidate_creation_families: ACTIVITY_CANDIDATE_INVENTORY_SOURCE_FAMILIES, p4_use_case_industry_candidate_creation_allowed: false, p4_reserved_for_activity_profile_review_context: true, legal_governance_family_candidate_creation_allowed: false, data_family_candidate_creation_allowed: false, external_browsing_allowed: false }), output_contract: Object.freeze({ required_top_level_artifact: "feature_candidate_inventory", artifact_type: "feature_candidate_inventory", inventory_version: "m8_feature_candidate_inventory_index_v1", derivation_mode: "DETERMINISTIC_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION", required_branches: Object.freeze(["artifact_type", "inventory_version", "run_id", "derivation_mode", "source_families_indexed", "raw_hit_count", "canonical_candidate_count", "raw_feature_hit_index", "candidates", "canonicalization_index", "dedup_index", "parent_child_overlap_index", "dedup_summary", "index_boundary", "index_limitations"]), candidate_required_fields: Object.freeze(["candidate_id", "canonical_feature_key", "candidate_name", "candidate_type", "candidate_status", "wrapper_or_surface", "capability_key", "surface_key", "mandatory_profile_treatment", "merged_raw_hit_ids", "source_pointers"]), source_pointer_required_fields: Object.freeze(["lossless_artifact_name", "source_family", "source_id", "source_url", "route_type", "locator_type", "locator_value"]), index_only: true, no_evidence_text_copy: true, no_mechanics_proof: true, no_activity_summary: true, no_archetype_or_surface_derivation: true, no_legal_privacy_or_registry_analysis: true }), forbidden_runtime_reads: Object.freeze(["legal_cartography_index", "legal_signal_derivation_profile", "m7_deterministic_legal_signal_overlay", "lossless_family__L1_CORE_TERMS_PRIVACY", "lossless_family__L2_B2B_CONTRACTING", "lossless_family__L3_AI_USAGE_GOVERNANCE", "lossless_family__L4_PRIVACY_ADJACENT_NOTICES", "lossless_family__L5_LEGAL_HUB_HOSTED", "lossless_family__L6_ENTITY_NOTICE", "lossless_family__P4_USE_CASE_INDUSTRY", "lossless_family__D1_SECURITY_TRUST", "lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER", "lossless_family__D3_DATA_GOVERNANCE_CONTROLS", "lossless_family__D4_DOCS_API_DATA_FLOW", "lossless_family__D5_AI_SAFETY_TRANSPARENCY", "target_feature_profile", "target_feature_profile_forensics", "data_provenance_profile", "extended_dap_india_readiness_profile", "integrated_dap_report", "exposure_registry_profile", "challenge_gate", "final_output_handoff", "renderer_payload", "qualified_review_handoff"]), boundary_rules: Object.freeze({ deterministic_only: true, must_not_call_provider: true, must_not_discover_or_fetch_sources: true, must_not_emit_target_feature_profile: true, must_not_emit_target_feature_profile_forensics: true, must_not_copy_lossless_text_or_excerpts: true, must_not_create_candidate_from_p4: true, candidate_inventory_is_navigation_index_not_evidence: true, next_job: "ACTIVITY_PROFILE_REVIEW_MATERIAL" }) });
+const ACTIVITY_CANDIDATE_INVENTORY_WRITES = Object.freeze(["feature_candidate_inventory"]);
+
+const ACTIVITY_CANDIDATE_CREATION_LOCATOR_MAPS = Object.freeze([
+  "activity_candidate_source_locator_map",
+  "product_capability_locator_map",
+  "feature_mechanics_locator_map",
+  "technical_mechanics_locator_map",
+  "api_interaction_locator_map",
+  "data_object_interaction_locator_map",
+  "integration_action_locator_map",
+  "commercial_availability_locator_map",
+  "external_action_context_locator_map",
+  "input_output_object_context_locator_map"
+]);
+
+const ACTIVITY_CONTEXT_ONLY_LOCATOR_MAPS = Object.freeze([
+  "customer_use_context_locator_map",
+  "support_operational_context_locator_map",
+  "automation_transparency_context_locator_map",
+  "human_control_context_locator_map"
+]);
+
+export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
+  contract_name: "ACTIVITY_CANDIDATE_INVENTORY_CONTRACT_v2_PHASE2C_PACKAGE_AWARE",
+  central_phase_id: "ACTIVITY_PROFILE_REVIEW",
+  central_phase_label: "Activity Profile Review",
+  phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY",
+  public_label: "Activity Candidate Inventory",
+  compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY",
+  implementation_status: "PHASE5_SYNCED_TO_P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
+  production_entrypoint_switched: true,
+  global_production_deployment_switched: false,
+  model_usage: "NONE_DETERMINISTIC",
+  deterministic_job: Object.freeze({
+    reads: ACTIVITY_CANDIDATE_INVENTORY_READS,
+    writes: ACTIVITY_CANDIDATE_INVENTORY_WRITES,
+    source_helper: "buildFeatureCandidateInventoryIndex",
+    source_helper_module: "src/phases/05-activity-profile-review/services/activity-candidate-inventory-index.builder.js",
+    source_index_artifact: "activity_profile_source_index",
+    legacy_harvester_module: null,
+    validator: "validateFeatureCandidateInventoryIndex",
+    validator_module: "src/phases/05-activity-profile-review/services/activity-candidate-inventory-index.builder.js"
+  }),
+  source_index_scope: Object.freeze({
+    candidate_creation_locator_maps: ACTIVITY_CANDIDATE_CREATION_LOCATOR_MAPS,
+    context_only_locator_maps: ACTIVITY_CONTEXT_ONLY_LOCATOR_MAPS,
+    candidate_creation_from_context_only_maps_allowed: false,
+    source_index_is_navigation_only: true,
+    phase_2c_is_source_of_candidate_navigation: true,
+    phase_1_lossless_family_reads_forbidden: true,
+    legal_governance_index_candidate_creation_allowed: false,
+    data_privacy_navigation_candidate_creation_allowed: false,
+    external_browsing_allowed: false
+  }),
+  package_boundary: Object.freeze({
+    active_run_package_manifest_required: true,
+    domain_derivation_profile_required: true,
+    candidate_inventory_does_not_apply_package_taxonomy: true,
+    mounted_domain_package_controls_activity_taxonomy_in_material_profile: true,
+    archetype_surface_and_package_specific_labels_forbidden_in_inventory: true
+  }),
+  output_contract: Object.freeze({
+    required_top_level_artifact: "feature_candidate_inventory",
+    artifact_type: "feature_candidate_inventory",
+    inventory_version: "m8_feature_candidate_inventory_index_v2_phase2c",
+    derivation_mode: "DETERMINISTIC_INDEX_FROM_ACTIVITY_PROFILE_SOURCE_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION",
+    required_branches: Object.freeze(["artifact_type", "inventory_version", "run_id", "derivation_mode", "source_index_artifact", "source_locator_maps_indexed", "raw_hit_count", "canonical_candidate_count", "raw_feature_hit_index", "candidates", "canonicalization_index", "dedup_index", "parent_child_overlap_index", "dedup_summary", "index_boundary", "index_limitations"]),
+    candidate_required_fields: Object.freeze(["candidate_id", "canonical_feature_key", "candidate_name", "candidate_type", "candidate_status", "activity_route_class", "capability_key", "source_root", "mandatory_profile_treatment", "merged_raw_hit_ids", "source_pointers"]),
+    source_pointer_required_fields: Object.freeze(["source_artifact", "source_id", "source_root", "route_class", "route_code", "locator_id", "unit_id", "source_pointer", "unit_pointer"]),
+    index_only: true,
+    no_evidence_text_copy: true,
+    no_mechanics_proof: true,
+    no_activity_summary: true,
+    no_archetype_or_surface_derivation: true,
+    no_package_specific_activity_classification: true,
+    no_legal_privacy_or_registry_analysis: true
+  }),
+  forbidden_runtime_reads: Object.freeze([
+    "lossless_family__P1_PRODUCT",
+    "lossless_family__P2_PLATFORM_FEATURE_SOLUTION",
+    "lossless_family__P3_AI_CAPABILITY_TECHNICAL",
+    "lossless_family__P4_USE_CASE_INDUSTRY",
+    "lossless_family__P5_ENTERPRISE_PRICING",
+    "lossless_root__product_service",
+    "lossless_root__platform_feature_solution",
+    "lossless_root__technical_docs_api",
+    "lossless_root__docs_api_data_flow",
+    "lossless_root__integrations_ecosystem",
+    "lossless_root__pricing_commercial_availability",
+    "legal_cartography_index",
+    "legal_signal_derivation_profile",
+    "data_privacy_navigation_index",
+    "target_feature_profile",
+    "target_feature_profile_forensics",
+    "data_provenance_profile",
+    "extended_dap_india_readiness_profile",
+    "integrated_dap_report",
+    "exposure_registry_profile",
+    "challenge_gate",
+    "final_output_handoff",
+    "renderer_payload",
+    "qualified_review_handoff"
+  ]),
+  boundary_rules: Object.freeze({
+    deterministic_only: true,
+    must_not_call_provider: true,
+    must_not_discover_or_fetch_sources: true,
+    must_not_read_raw_phase1_roots: true,
+    must_not_emit_target_feature_profile: true,
+    must_not_emit_target_feature_profile_forensics: true,
+    must_not_copy_lossless_text_or_excerpts: true,
+    must_not_apply_domain_package_taxonomy: true,
+    candidate_inventory_is_navigation_index_not_evidence: true,
+    next_job: "ACTIVITY_PROFILE_REVIEW_MATERIAL"
+  })
+});
+
 export function activityCandidateInventoryReadArtifacts() { return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.reads]; }
 export function activityCandidateInventoryWriteArtifacts() { return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.writes]; }
-export function activityCandidateInventoryCandidateCreationFamilies() { return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.source_family_scope.candidate_creation_families]; }
+export function activityCandidateInventoryCandidateCreationLocatorMaps() { return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.source_index_scope.candidate_creation_locator_maps]; }
