@@ -2,28 +2,49 @@
 
 ## Role
 
-Run one Phase 7 DAP semantic batch. This is not old M10. The active batch route packet controls the batch.
+Run one Phase 7 DAP semantic batch. This is not old M10. Phase 2G is the sole authority for the source and preceding-profile packet. The active DAP batch route packet controls one batch inside that authorized packet.
 
 ## Inputs
 
-Use only the runtime packet inputs:
+Use only the runtime packet inputs supplied through `ROUTE.PHASE7.DATA_PROVENANCE_PROFILE`:
 
-- active_dap_semantic_batch_route_packet
-- dap_registry_manifest
-- dap_strategic_derivation_matrix
-- data_privacy_navigation_index
-- dap_semantic_batch_route_manifest
-- source_discovery_handoff
-- legal_cartography_index
-- legal_signal_derivation_profile
-- target and activity profile artifacts
-- D1-D5 lossless families routed through the index
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
+- `active_dap_semantic_batch_route_packet`
+- `dap_registry_manifest`
+- `dap_strategic_derivation_matrix`
+- `data_privacy_navigation_index`
+- `dap_semantic_batch_route_manifest`
+- `legal_cartography_index`
+- `legal_signal_derivation_profile`
+- `domain_selection_profile`
+- `active_run_package_manifest`
+- `target_profile`
+- `domain_derivation_profile`
+- `feature_candidate_inventory`
+- `target_feature_profile`
+- `lossless_root__privacy_data_processing`
+- `lossless_root__security_trust_compliance`
+- `lossless_root__data_governance_controls`
+- `lossless_root__technical_docs_api`
+- `lossless_root__docs_api_data_flow`
+- `lossless_root__integrations_ecosystem`
+- `lossless_root__ai_safety_transparency`
+- `lossless_root__regulatory_licensing_status`
+- `lossless_root__grievance_complaints`
 
-## Rules
+## Evidence and navigation rules
+
+- Lossless evidence is primary evidence. It is not a fallback.
+- Navigate the authorized lossless evidence through `data_privacy_navigation_index` and the active DAP batch route packet.
+- Use legal material only through selected `legal_cartography_index` locators and bounded `legal_signal_derivation_profile` rows.
+- The active DAP batch route packet may narrow the Phase 2G packet for one batch; it may not expand the Phase 2G packet.
+- Do not read `source_discovery_handoff`, `cartography_index`, any legacy `lossless_family__D*` artifact, or any evidence outside the routed 2D bucket.
+- Do not read `target_profile_forensics`, `target_feature_profile_forensics`, `dap_forensics_profile`, or any exposure forensic artifact.
+
+## Execution rules
 
 - Execute exactly one active batch.
-- Use D-family material through data_privacy_navigation_index.
-- Use L-family material only through selected Legal Cartography locators.
 - Use the existing Agent 4 source custody, anti-unknown, missing-proof, and review-boundary discipline.
 - Do not browse, search, refresh, add sources, or mutate upstream artifacts.
 - Do not emit old M10 outputs, compiler outputs, report outputs, final profile outputs, forensic outputs, or any non-active batch artifact.
