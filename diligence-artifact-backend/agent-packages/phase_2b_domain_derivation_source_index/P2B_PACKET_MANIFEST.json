@@ -1,6 +1,6 @@
 {
   "packet_name": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_PACKET",
-  "version": "v2_phase1_v5_runtime_wired",
+  "version": "v3_phase1_v5_runtime_wired_p2c_handoff",
   "active_phase_id": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX",
   "active_phase_scope": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_ONLY",
   "package_status": "LEAN_PACKAGE_RUNTIME_WIRED",
@@ -41,7 +41,7 @@
     "pipeline_service_dispatch_registered": true,
     "save_order_gates_registered": true,
     "p2a_next": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX",
-    "p2b_next": "P2_INDEX_COMPILER_VALIDATION"
+    "p2b_next": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX"
   },
   "reference_documents": [
     "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REFERENCE_MAP.yaml",
