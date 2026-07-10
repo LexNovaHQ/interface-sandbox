@@ -94,16 +94,18 @@ const terminal = read(`${PACKAGE_DIR}/00_TERMINAL_RECEIPT_RULES_PHASE2C_ACTIVITY
 const manifest = JSON.parse(read(`${PACKAGE_DIR}/P2C_PACKET_MANIFEST.json`));
 
 assert.equal(manifest.packet_name, "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET");
-assert.equal(manifest.package_status, "LEAN_PACKAGE_CONTRACT_ONLY");
-assert.equal(manifest.runtime_wiring_changed, false);
+assert.equal(manifest.package_status, "LEAN_PACKAGE_RUNTIME_WIRED");
+assert.equal(manifest.runtime_wiring_changed, true);
 assert.equal(manifest.runtime_job_id, "P2C_ACTIVITY_PROFILE_SOURCE_INDEX");
 assert.equal(manifest.final_downstream_required_artifact, "activity_profile_source_index");
 assert.equal(manifest.downstream_owner, "ACTIVITY_PROFILE_REVIEW");
-assert.equal(manifest.boundary_locks.runtime_wiring_changed, false);
-assert.equal(manifest.boundary_locks.compiler_built, false);
-assert.equal(manifest.boundary_locks.final_validator_built, false);
-assert.equal(manifest.boundary_locks.orchestrator_built, false);
-for (const flag of ["artifact_permissions_registered", "pipeline_contract_registered", "central_phase_registered", "pipeline_service_dispatch_registered", "save_order_gates_registered"]) assert.equal(manifest.runtime_wiring[flag], false, `manifest must not claim runtime wiring flag ${flag}`);
+assert.equal(manifest.boundary_locks.runtime_wiring_changed, true);
+assert.equal(manifest.boundary_locks.compiler_built, true);
+assert.equal(manifest.boundary_locks.final_validator_built, true);
+assert.equal(manifest.boundary_locks.orchestrator_built, true);
+for (const flag of ["artifact_permissions_registered", "pipeline_contract_registered", "central_phase_registered", "pipeline_service_dispatch_registered", "save_order_gates_registered"]) assert.equal(manifest.runtime_wiring[flag], true, `manifest must claim runtime wiring flag ${flag}`);
+assert.equal(manifest.runtime_wiring.p2b_next, "P2C_ACTIVITY_PROFILE_SOURCE_INDEX");
+assert.equal(manifest.runtime_wiring.p2c_next, "P2_INDEX_COMPILER_VALIDATION");
 assert.deepEqual(manifest.components, EXPECTED_PACKAGE_FILES);
 assert.deepEqual(manifest.deliberately_not_created, OMITTED_PACKAGE_FILES);
 assert.deepEqual(manifest.write_artifacts_in_order, WRITE_ORDER);
@@ -135,7 +137,7 @@ for (const marker of ["package_specific_classification_forbidden: true", "derive
 for (const marker of ["Semantic coverage", "coverage_ratio", "ready_for_compiler", "Forbidden outputs", "Retired roots forbidden", "lossless_family__"]) assert.ok(validator.includes(marker), `validator rules missing ${marker}`);
 for (const marker of ["strict JSON", "same-chat next-phase instructions", "Do not continue to:", "ACTIVITY_PROFILE_REVIEW", "Each save event must have one top-level root only"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
 assert.ok(controller.includes("Phase 2C exists only to build a pointer-only source index"));
-assert.ok(binding.includes("runtime_wiring_changed: false"));
+assert.ok(binding.includes("runtime_wiring_changed: true"));
 assert.ok(binding.includes("P2C_ACTIVITY_PROFILE_SOURCE_INDEX"));
 
 for (const text of [binding, controller, moduleText, referenceMap, validator, terminal]) {
