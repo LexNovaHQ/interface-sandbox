@@ -6,6 +6,7 @@ import { artifactSaveBody, lockPhase, readArtifact, readArtifactPayload, saveArt
 import { assembleM11AcceptedBatchLedger, buildExposureRegistryRoutePlan, buildM11BatchPacket, mergeExposureRegistryWorkpad98, projectControlledProfile, projectTriggeredProfile, validateM11BatchLedger } from "./m11-deterministic-system-m11v2.js";
 import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-deterministic-forensics-m11v2.js";
 import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
+import { readPhaseRouteRuntimePacket } from "./phases/02-cartography-index/services/phase-route-runtime.reader.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
@@ -15,8 +16,25 @@ const REPAIR_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/
 const ART = Object.freeze({ legalIndex: "legal_cartography_index", featureMain: "target_feature_profile", route: "exposure_registry_route_plan", workpad: "exposure_registry_workpad_98", controlled: "exposure_registry_controlled_profile", triggered: "exposure_registry_triggered_profile", forensics: "exposure_registry_profile_forensics" });
 const M11_SCHEMA_UPGRADE = "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1";
 
+export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
+  routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+  route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+  bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",
+  delivery_mode: "SOURCE_BUCKET_PROFILE",
+  lossless_evidence_is_primary: true,
+  index_navigation_mandatory: true,
+  preceding_forensic_inputs_forbidden: true
+});
+
 export async function runM11OrchestratedPhase({ run, phase, contract }) {
-  const artifacts = await readArtifactsForM11({ run_id: run.run_id, reads: contract.reads, agent_id: contract.agent_id || AGENT_5 });
+  if (!(contract.reads || []).includes("phase_routing_manifest")) throw new Error("M11_PHASE2G_MANIFEST_READ_MISSING");
+  const routed = await readPhaseRouteRuntimePacket({
+    internalJobId: "M11",
+    consumerAgentId: contract.agent_id || AGENT_5,
+    readArtifacts: ({ reads, agent_id, strict }) => readArtifactsForM11({ run_id: run.run_id, reads, agent_id, strict })
+  });
+  const artifacts = routed.artifacts;
+  assertM11RoutePacket(artifacts.phase_route_runtime_packet);
   const referencePacket = await loadReferencePacket(contract.references || []);
   const route = await getOrBuildRoutePlan({ run, phase, artifacts, referencePacket });
   if (!isAccepted(route.lock_status)) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
@@ -72,7 +90,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const triggered = await getOrBuildProjection({ run, phase, artifactName: ART.triggered, isCurrent: isM11V2Projection, build: () => projectTriggeredProfile({ [ART.workpad]: workpad.artifact })[ART.triggered] });
   const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket });
   const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
-  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
 }
 
@@ -146,11 +164,7 @@ async function getOrBuildForensics({ run, phase, route, workpad, controlled, tri
   const diagnostic_status = artifact.forensic_lock_gate_result?.status || artifact.registry_lock_gate_result?.status || "REPAIR_REQUIRED";
   const lock_status = diagnostic_status === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
   if (diagnostic_status !== "PASS" && diagnostic_status !== "PASS_WITH_LIMITATION") {
-    artifact.non_blocking_forensic_repair = {
-      status: diagnostic_status,
-      policy: "FORENSICS_DIAGNOSTIC_ONLY_DOES_NOT_BLOCK_M11_TO_M12",
-      note: "Forensic repair requirements are preserved for audit but do not block controlled/triggered profile handoff."
-    };
+    artifact.non_blocking_forensic_repair = { status: diagnostic_status, policy: "FORENSICS_DIAGNOSTIC_ONLY_DOES_NOT_BLOCK_M11_TO_M12", note: "Forensic repair requirements are preserved for audit but do not block controlled/triggered profile handoff." };
   }
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.forensics, artifact, lock_status }));
   return { artifact, lock_status, diagnostic_status };
@@ -171,10 +185,24 @@ async function readCompletedBatchCheckpoint({ run_id, batch_id }) {
   return validation && batch && isM11V2Batch(batch.artifact) ? { validationArtifact: validation.artifact, batchArtifact: batch.artifact, validationLockStatus: validation.lock_status, batchLockStatus: batch.lock_status } : null;
 }
 
-async function readArtifactsForM11({ run_id, reads, agent_id }) {
+async function readArtifactsForM11({ run_id, reads, agent_id, strict = true }) {
   const artifacts = {};
-  for (const artifactName of reads) artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id });
+  for (const artifactName of reads || []) {
+    try { artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id }); }
+    catch (error) { if (strict) throw error; artifacts[artifactName] = null; }
+  }
   return artifacts;
+}
+
+function assertM11RoutePacket(packet = {}) {
+  if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("M11_PHASE2G_AUTHORITY_MISSING");
+  if (packet.internal_job_id !== "M11") throw new Error(`M11_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`);
+  if (packet.route_id !== "ROUTE.PHASE9.EXPOSURE_PROFILE") throw new Error(`M11_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
+  if (packet.delivery_mode !== "SOURCE_BUCKET_PROFILE") throw new Error(`M11_PHASE2G_DELIVERY_MODE_MISMATCH:${packet.delivery_mode || "missing"}`);
+  if (packet.source_bucket_delivered !== true) throw new Error("M11_PHASE2G_SOURCE_BUCKET_MISSING");
+  if (packet.lossless_evidence_role !== "PRIMARY_EVIDENCE") throw new Error("M11_PHASE2G_LOSSLESS_PRIMARY_MISSING");
+  if (packet.index_role !== "MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE") throw new Error("M11_PHASE2G_INDEX_NAVIGATION_MISSING");
+  if (packet.profile_forensics_inputs_allowed !== false) throw new Error("M11_PHASE2G_FORENSICS_INPUT_BOUNDARY_MISSING");
 }
 
 function routePlanLockStatus(status) { return status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "CONTROLLED_FAILURE"; }
