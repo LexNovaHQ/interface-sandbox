@@ -30,11 +30,19 @@ assert.equal(ARTIFACTS_SERVICE_STATUS.phase3_manifest_update_order_gate_enforced
 const update = buildPhase3BDomainDerivationManifestUpdate({
   run: { run_id: "TEST" },
   before: { runtime_flags: { dynamic_routing_enabled: true, field_registry_compile_enabled: true } },
-  domain_derivation_profile: { primary_domain_derivation: { selected_package: "fintech", status: "LOCKED", selected_rule_id: "PRIMARY_DOMAIN_FINTECH", evaluated_rules: [] }, ai_mount_derivation: { ai_package_mount: "AI_NOT_VISIBLE", status: "NOT_VISIBLE", evaluated_rules: [] }, fusion_candidate_derivation: { candidates: [] } },
+  domain_derivation_profile: {
+    primary_domain_derivation: { selected_package: "fintech", status: "LOCKED", selected_rule_id: "PRIMARY_DOMAIN_FINTECH", evaluated_rules: [] },
+    ai_mount_derivation: { ai_package_mount: "AI_NOT_VISIBLE", status: "NOT_VISIBLE", evaluated_rules: [] },
+    regulatory_overlay_derivation: { status: "CANDIDATE_ONLY", candidates: [{ overlay_id: "financial-services", evidence_anchors: [{ source_artifact_name: "lossless_root__regulatory_licensing_status" }] }] },
+    fusion_candidate_derivation: { candidates: [] }
+  },
   validation: { status: "LOCKED", failures: [], warnings: [] }
 });
 assert.equal(update.active_run_package_manifest.selection_stage, PHASE_3B_DOMAIN_DERIVATION_SELECTION_STAGE);
+assert.deepEqual(update.active_run_package_manifest.regulatory_overlays, ["financial-services"]);
+assert.equal(update.active_run_package_manifest.regulatory_overlay_status, "CANDIDATE_ONLY");
+assert.deepEqual(update.manifest_update.changed_fields.includes("regulatory_overlays"), true);
 assert.equal(update.active_run_package_manifest.runtime_flags.dynamic_routing_enabled, false);
 assert.equal(update.active_run_package_manifest.runtime_flags.field_registry_compile_enabled, false);
 assert.equal(update.manifest_update.dynamic_routing_still_disabled, true);
-console.log(JSON.stringify({ check: "phase3 domain derivation downstream", status: "PASS", enforced_gates: ["P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REQUIRED", "ACTIVITY_PROFILE_INDEX_FORBIDDEN_IN_3B", "DOWNSTREAM_READS_DOMAIN_DERIVATION_PROFILE", "PHASE3B_MANIFEST_STAGE", "RUNTIME_FLAGS_STAY_FALSE", "ARTIFACT_SAVE_ORDER_GATES_DECLARED"] }, null, 2));
+console.log(JSON.stringify({ check: "phase3 domain derivation downstream", status: "PASS", enforced_gates: ["P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REQUIRED", "ACTIVITY_PROFILE_INDEX_FORBIDDEN_IN_3B", "REGULATORY_OVERLAY_MANIFEST_SYNC", "DOWNSTREAM_READS_DOMAIN_DERIVATION_PROFILE", "PHASE3B_MANIFEST_STAGE", "RUNTIME_FLAGS_STAY_FALSE", "ARTIFACT_SAVE_ORDER_GATES_DECLARED"] }, null, 2));
