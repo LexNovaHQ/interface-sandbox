@@ -58,7 +58,7 @@ The source-of-truth evidence for domain derivation is the admitted lossless Phas
 
 `domain_selection_profile` and the incoming `active_run_package_manifest` are prior provisional/passive runtime state only. They are not proof and do not lock a domain or overlay.
 
-activity_profile_source_index is reserved for 2C / Phase 5 Activity Profile. Phase 3B must not read it.
+`activity_profile_source_index` is reserved for 2C / Phase 5 Activity Profile. Phase 3B must not read it.
 
 ## Registry ladder
 
@@ -77,9 +77,20 @@ Do not hardcode domain-specific classification logic in this prompt. The registr
 - primary domain lock status, subject to validator approval;
 - AI package mount mode;
 - package mount only AI overlay state;
+- catalog-gated regulatory overlay candidates;
 - domain-owned fusion candidates for later phases;
 - limitations, contradictions, and missing evidence;
 - active run package manifest update instruction.
+
+## Regulatory overlay boundary
+
+Regulatory overlays in Phase 3B are catalog-gated candidates only.
+
+Phase 3B may record a `regulatory_overlay_derivation` branch only when the candidate overlay exists in `package-catalog.v0.json` under `regulatory_overlays` and the candidate is supported by scoped lossless evidence anchors.
+
+Phase 3B must not determine legal applicability, license validity, license requirement, applicable regulator conclusion, regulatory compliance status, grievance sufficiency, grievance compliance status, ombudsman requirement, statutory complaint obligation, or legal advice.
+
+Regulatory overlay candidates are routing context for later review. They are not compliance conclusions.
 
 ## What Phase 3B must not emit
 
@@ -133,6 +144,8 @@ Return strict JSON with exactly one top-level key:
 
 Inside `domain_derivation_profile`, include only branches allowed by the active validator. The compiler/validator derives and saves the corresponding `active_run_package_manifest` artifact.
 
-Every fired rule must include condition-level results and lossless evidence anchors. Do not cite Phase 2 index artifacts as evidence.
+Every fired registry rule must include condition-level results and lossless evidence anchors. Do not cite Phase 2 index artifacts as evidence.
+
+Every regulatory overlay candidate must include an `overlay_id`, `status`, and scoped lossless evidence anchors. Do not cite Phase 2 index artifacts as regulatory evidence.
 
 If evidence is weak, conflicted, or only generic marketing language, set the relevant decision to candidate/review-required rather than forcing a lock.
