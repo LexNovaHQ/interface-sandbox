@@ -4,7 +4,9 @@ import {
   ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES,
   DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES,
   DOMAIN_CONTROL_OBLIGATION_SOURCE_ARTIFACT_NAMES,
-  LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES
+  LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES,
+  PHASE7_DAP_LAYER4_ARTIFACT_NAMES,
+  PHASE7_DAP_LAYER5_ARTIFACT_NAMES
 } from "../../runtime/contracts/artifact-permissions.contract.js";
 
 export const P2G_PHASE_ROUTER_JOB_ID = "P2G_PHASE_ROUTER";
@@ -12,15 +14,8 @@ export const P2G_PHASE_ROUTER_PUBLIC_LABEL = "Phase Routing Manifest";
 export const P2G_ROUTING_DOCTRINE = "LOSSLESS_EVIDENCE_IS_PRIMARY_AND_MUST_BE_NAVIGATED_THROUGH_INDEX";
 export const P2G_NO_FALLBACK_DOCTRINE = "DIRECT_LOSSLESS_EVIDENCE_IS_NOT_FALLBACK";
 
-export const P2G_PHASE_ROUTING_ARTIFACTS = Object.freeze({
-  manifest: "phase_routing_manifest",
-  validation: "phase_route_validation_manifest"
-});
-
-export const P2G_PHASE_ROUTING_SAVE_ORDER = Object.freeze([
-  P2G_PHASE_ROUTING_ARTIFACTS.manifest,
-  P2G_PHASE_ROUTING_ARTIFACTS.validation
-]);
+export const P2G_PHASE_ROUTING_ARTIFACTS = Object.freeze({ manifest: "phase_routing_manifest", validation: "phase_route_validation_manifest" });
+export const P2G_PHASE_ROUTING_SAVE_ORDER = Object.freeze([P2G_PHASE_ROUTING_ARTIFACTS.manifest, P2G_PHASE_ROUTING_ARTIFACTS.validation]);
 
 export const PHASE_ROUTE_BUCKET_IDS = Object.freeze({
   targetProfile: "2A_BUCKET_TARGET_PROFILE",
@@ -37,7 +32,7 @@ export const PHASE_ROUTE_IDS = Object.freeze({
   activityProfile: "ROUTE.PHASE5.ACTIVITY_PROFILE",
   dataPrivacy: "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE",
   domainControlObligation: "ROUTE.PHASE7B.DOMAIN_CONTROL_OBLIGATION_PROFILE",
-  legalCartographySignals: "ROUTE.PHASE2F.LEGAL_CARTOGRAPHY_LEGAL_SIGNALS"
+  legalCartographySignals: "ROUTE.PHASE9.EXPOSURE_PROFILE"
 });
 
 const ROUTE_BOUNDARY = Object.freeze({
@@ -107,9 +102,7 @@ export const P2G_ROUTE_BUCKETS = Object.freeze([
     required_index_artifacts: ["activity_profile_source_index"],
     primary_lossless_evidence: ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES,
     allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile"],
-    job_scoped_derived_profiles: {
-      M8_TARGET_FEATURE_PROFILE: ["feature_candidate_inventory"]
-    },
+    job_scoped_derived_profiles: { M8_TARGET_FEATURE_PROFILE: ["feature_candidate_inventory"] },
     allowed_runtime_context: ["domain_selection_profile", "active_run_package_manifest"],
     forbidden_artifacts: ["target_profile_forensics", "target_feature_profile_forensics", "data_privacy_navigation_index", "domain_control_obligation_navigation_index"]
   }),
@@ -142,12 +135,14 @@ export const P2G_ROUTE_BUCKETS = Object.freeze([
   route({
     route_id: PHASE_ROUTE_IDS.legalCartographySignals,
     bucket_id: PHASE_ROUTE_BUCKET_IDS.legalCartographySignals,
-    parent_phase: "CARTOGRAPHY_INDEX",
-    parent_jobs: ["M9"],
+    parent_phase: "EXPOSURE_PROFILE",
+    parent_jobs: ["M11"],
     required_index_artifacts: ["legal_cartography_index", "legal_signal_derivation_profile"],
     primary_lossless_evidence: LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES,
+    allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES],
+    allowed_runtime_context: ["domain_selection_profile", "active_run_package_manifest"],
     requires_legal_dependency: true,
-    forbidden_artifacts: ["legal_governance_source_index", "data_provenance_source_index", "target_profile_forensics", "target_feature_profile_forensics"]
+    forbidden_artifacts: ["legal_governance_source_index", "data_provenance_source_index", "target_profile_forensics", "target_feature_profile_forensics", "dap_forensics_profile", "exposure_registry_profile_forensics"]
   })
 ]);
 
@@ -156,17 +151,7 @@ export const P2G_PHASE_ROUTER_CONTRACT = Object.freeze({
   public_label: P2G_PHASE_ROUTER_PUBLIC_LABEL,
   phase_id: "CARTOGRAPHY_INDEX",
   designation: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-  reads: Object.freeze([
-    "target_profile_source_index",
-    "domain_derivation_source_index",
-    "activity_profile_source_index",
-    "data_privacy_navigation_index",
-    "domain_control_obligation_navigation_index",
-    "legal_cartography_index",
-    "legal_signal_derivation_profile",
-    "domain_selection_profile",
-    "active_run_package_manifest"
-  ]),
+  reads: Object.freeze(["target_profile_source_index", "domain_derivation_source_index", "activity_profile_source_index", "data_privacy_navigation_index", "domain_control_obligation_navigation_index", "legal_cartography_index", "legal_signal_derivation_profile", "domain_selection_profile", "active_run_package_manifest"]),
   writes: P2G_PHASE_ROUTING_SAVE_ORDER,
   route_buckets: P2G_ROUTE_BUCKETS,
   doctrine: Object.freeze({
@@ -179,6 +164,7 @@ export const P2G_PHASE_ROUTER_CONTRACT = Object.freeze({
     preceding_derived_profiles_allowed: true,
     job_scoped_derived_profiles_must_be_declared_in_2g: true,
     preceding_forensics_profiles_forbidden: true,
+    phase2f_forward_owner_exposure_profile: true,
     profile_runtime_cutover_completed_through_phase7: true,
     phase8_m11_m12_compiler_cutover_deferred: true
   })
