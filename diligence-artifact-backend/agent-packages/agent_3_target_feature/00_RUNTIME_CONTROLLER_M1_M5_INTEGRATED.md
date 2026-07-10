@@ -63,10 +63,6 @@ Target Profile Review must not read or request:
 - activity/product roots outside the scoped target list
 - data-provenance roots
 - retired pre-cutover family artifacts
-- `lossless_root__about_company`
-- `lossless_root__legal_identity_notice`
-- `lossless_root__operator_entity_signals`
-- `lossless_root__supporting_company_signals`
 
 Target Profile Review must not block because legal/governance lossless artifacts are absent. Missing or limited direct legal signal rows become controlled field statuses and limitation rows.
 
@@ -163,13 +159,7 @@ Domain Derivation Layer must not read or request:
 - legal/governance source text
 - data-provenance roots
 - privacy/security/trust roots
-- `lossless_root__about_company`
-- `lossless_root__technical_docs_api_developer`
-- `lossless_root__privacy_data_processing`
-- `lossless_root__security_trust`
-- `lossless_root__trust_compliance`
-- `lossless_root__security_trust_compliance`
-- `lossless_root__data_governance_controls`
+- retired pre-cutover family artifacts
 - exposure artifacts
 - compiler artifacts
 - Qualified Review artifacts
