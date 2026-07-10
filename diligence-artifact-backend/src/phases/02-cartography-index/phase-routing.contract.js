@@ -117,7 +117,7 @@ export const P2G_ROUTE_BUCKETS = Object.freeze([
     route_id: PHASE_ROUTE_IDS.dataPrivacy,
     bucket_id: PHASE_ROUTE_BUCKET_IDS.dataPrivacy,
     parent_phase: "DATA_PROVENANCE_PROFILE",
-    parent_jobs: ["DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5"],
+    parent_jobs: ["DATA_PROVENANCE_PROFILE_LAYER4"],
     required_index_artifacts: ["data_privacy_navigation_index"],
     primary_lossless_evidence: DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES,
     allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile"],
