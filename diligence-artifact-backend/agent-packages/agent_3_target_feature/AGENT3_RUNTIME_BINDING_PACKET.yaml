@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v14_phase2b_domain_derivation_source_index_sync
+runtime_contract_version: v15_phase5_package_aware_activity_profile_sync
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -29,24 +29,22 @@ prompt_precedence:
   - Backend phase contracts control read/write authority.
   - Phase 2A Target Profile Source Index is the active locator authority for Target Profile Review.
   - Phase 2B Domain Derivation Source Index is the active locator authority for Domain Derivation Layer.
+  - Phase 2C Activity Profile Source Index is the active locator authority for Phase 5 Activity Profile Review.
   - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
   - Target Profile Review uses scoped Phase 1 v5 target-profile lossless_root artifacts as evidence and Phase 2A indexes as navigation only.
   - Target Profile Review may use legal_signal_derivation_profile only as bounded secondary input for owned notice and jurisdiction fields.
   - Target Profile Review must not read legal_cartography_index or legal lossless document artifacts.
-  - Target Profile Review must not read target_profile_deterministic_map or target_profile_semantic_profile.
-  - Target Profile Review must not derive or emit business_context.lane.
-  - Target Profile Review must not derive primary domain package, AI overlay mount, AI archetype, surface classification, exposure rows, legal risk, or compliance conclusions.
-  - Target Profile Review regulatory/grievance fields are factual public operating-context signals only.
   - Domain Derivation Layer is controlled by 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md and src/phases/03-domain-derivation/domain-derivation.contract.js.
   - Domain Derivation Layer uses domain_derivation_source_index as navigation only and scoped 12 lossless roots as evidence.
   - Domain Derivation Layer uses DOMAIN_DERIVATION_REGISTRY_v0.yaml as rule authority and package-catalog.v0.json as package authority.
   - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by registry/catalog update, not prompt update.
   - Domain Derivation Layer must not read activity_profile_source_index, legal_cartography_index, legal_signal_derivation_profile, legal documents, or legal lossless evidence.
-  - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
   - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
-  - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
-  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and product/activity evidence authorized by the active backend phase contract.
-  - Any package text that expands Target Profile Review, Domain Derivation Layer, Target Profile Forensics, Activity Candidate Inventory, or Activity Profile Review material read/write authority is superseded by the phase-owned contract.
+  - Activity Candidate Inventory reads activity_profile_source_index and active package context, but must not apply package taxonomy or read raw lossless_family/lossless_root sources.
+  - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, 03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
+  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index as navigation only.
+  - Activity Profile Review uses active_run_package_manifest and domain package context for package-specific activity taxonomy; fixed AI archetype/surface enums are not universal authority.
+  - Any package text that expands read/write authority is superseded by the phase-owned contract.
 
 allowed_phases:
   - TARGET_PROFILE_REVIEW
@@ -98,30 +96,24 @@ read_artifacts:
     - target_profile_forensics
     - domain_derivation_profile
     - active_run_package_manifest
+    - domain_selection_profile
     - feature_candidate_inventory
 
-forbidden_target_profile_review_read_artifacts:
-  - legal_cartography_index
-  - legal_doc_inventory
-  - legal_doc_extraction_index
-  - legal_doc_{DOC_TYPE}
-  - m7_deterministic_legal_signal_overlay
-  - target_profile_deterministic_map
-  - target_profile_semantic_profile
-  - retired pre-cutover family artifacts
-  - activity/product roots outside the scoped Target Profile Review lossless_root list
-  - data-provenance roots
-
-forbidden_domain_derivation_read_artifacts:
-  - activity_profile_source_index
+forbidden_activity_profile_read_artifacts:
+  - lossless_family__P1_PRODUCT
+  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+  - lossless_family__P4_USE_CASE_INDUSTRY
+  - lossless_family__P5_ENTERPRISE_PRICING
+  - lossless_root__product_service
+  - lossless_root__platform_feature_solution
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__integrations_ecosystem
+  - lossless_root__pricing_commercial_availability
   - legal_cartography_index
   - legal_signal_derivation_profile
-  - legal_doc_inventory
-  - legal_doc_extraction_index
-  - legal_doc_{DOC_TYPE}
   - data_privacy_navigation_index
-  - retired pre-cutover family artifacts
-  - privacy/security/trust roots
   - exposure artifacts
   - compiler artifacts
   - Qualified Review artifacts
@@ -135,8 +127,9 @@ required_reference_files:
     - references/domain-packages/package-catalog.v0.json
     - references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
   ACTIVITY_PROFILE_REVIEW:
-    - AI_REGISTRY_KEY.md
-    - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
+    - references/domain-packages/package-catalog.v0.json
+    - references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 target_profile_review_phase2a_boundary:
@@ -172,36 +165,16 @@ domain_derivation_registry_ladder_schema:
   allowed_model_top_level_key: domain_derivation_profile
 
 activity_profile_material_schema:
-  archetype_derivation_authority: AI_REGISTRY_KEY.md §4
-  surface_derivation_authority: AI_REGISTRY_KEY.md §7
-  classification_matrix_active_for_material_derivation: false
-  multiple_archetypes_per_activity_allowed: true
-  allowed_archetype_codes:
-    - UNI
-    - DOE
-    - JDG
-    - CMP
-    - CRT
-    - RDR
-    - ORC
-    - TRN
-    - SHD
-    - OPT
-    - MOV
-    - CUR
-    - MOD
-    - ORA
-  allowed_surface_context_tokens:
-    - Consumer-Public
-    - Enterprise-Private
-    - PII
-    - Employment
-    - Sensitive/Biometric
-    - Financial
-    - Content&IP
-    - Safety&Physical
-    - Infrastructure
-    - Minors
+  source_index_authority: activity_profile_source_index
+  candidate_universe_authority: feature_candidate_inventory
+  package_context_authority: active_run_package_manifest
+  package_catalog_authority: references/domain-packages/package-catalog.v0.json
+  archetype_derivation_authority: mounted_domain_package_or_active_run_package_manifest
+  surface_derivation_authority: mounted_domain_package_or_active_run_package_manifest
+  fixed_ai_registry_key_universal_authority_forbidden: true
+  fixed_ai_archetype_enum_forbidden: true
+  fixed_ai_surface_enum_forbidden: true
+  multiple_package_labels_per_activity_allowed: true
   activity_row_required_keys:
     - activity_reference
     - product_service_wrapper
@@ -215,6 +188,9 @@ activity_profile_material_schema:
     - archetype_derivation_basis
     - surface_context_tokens
     - surface_derivation_basis
+  package_label_array_fields:
+    - archetype_codes
+    - surface_context_tokens
   retired_activity_row_keys_forbidden:
     - archetype_proof
     - surface_proof_and_routing_limits
@@ -249,45 +225,12 @@ write_artifacts_in_order:
 
 phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
-  - Target Profile Review must not derive or emit business_context.lane.
   - Target Profile Review must use target_profile_source_index as navigation only and scoped lossless roots as evidence.
-  - Target Profile Review must not turn bounded legal signals into legal risk, exposure, compliance framework, or threat-trigger conclusions.
-  - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
   - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
   - Domain Derivation Layer must use domain_derivation_source_index as navigation only and scoped 12 lossless roots as evidence.
   - Domain Derivation Layer must not read activity_profile_source_index; that artifact is reserved for 2C / Phase 5.
-  - Domain Derivation Layer must evaluate registry rules as the ladder and must not hardcode domains in prompt logic.
-  - Domain Derivation Layer must save domain_derivation_profile before active_run_package_manifest.
-  - Target Profile Forensics may begin only after saved target_profile and domain_derivation_profile exist under the active Phase 3 split.
-  - Activity Candidate Inventory may begin only after saved target_profile, domain_derivation_profile, active_run_package_manifest, and target_profile_forensics exist.
-  - Activity Profile Review material may begin only after saved feature_candidate_inventory exists and is locked.
-  - Activity Profile Review material uses feature_candidate_inventory as candidate universe and backend-authorized product/activity evidence.
-  - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
-
-forbidden_phases:
-  - SOURCE_DISCOVERY
-  - LEGAL_CARTOGRAPHY_AND_INDEX
-  - PHASE2A_TARGET_PROFILE_SOURCE_INDEX
-  - PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX
-  - DATA_PROVENANCE_PROFILE
-  - EXPOSURE_PROFILE
-  - OPERATOR_CHALLENGE
-  - COMPILER
-  - NORMALIZED_REPORT_RENDERER
-  - QUALIFIED_REVIEW
-
-forbidden_outputs:
-  - source_discovery_handoff
-  - legal_cartography_index
-  - legal_signal_derivation_profile
-  - m7_deterministic_legal_signal_overlay
-  - target_profile_deterministic_map
-  - target_profile_semantic_profile
-  - domain_derivation_deterministic_map
-  - domain_derivation_semantic_profile
-  - data_provenance_profile
-  - exposure_registry_profile
-  - challenge_gate
-  - final_output_handoff
-  - renderer_payload
+  - Activity Candidate Inventory must read activity_profile_source_index and must not read raw lossless family/root artifacts.
+  - Activity Candidate Inventory must not apply package taxonomy.
+  - Activity Profile Review must use active_run_package_manifest/package catalog context for package-specific labels.
+  - Activity Profile Review must not treat AI archetypes or AI surface tokens as universal enums.
 </RUNTIME_BINDING_PACKET>
