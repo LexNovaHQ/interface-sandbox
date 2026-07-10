@@ -96,12 +96,7 @@ forbidden_modules:
 forbidden_inputs:
   - old_family_input_contract
   - legacy_family_artifact_adapter
-  - lossless_family__L1_CORE_TERMS_PRIVACY
-  - lossless_family__L2_B2B_CONTRACTING
-  - lossless_family__L3_AI_USAGE_GOVERNANCE
-  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-  - lossless_family__L5_LEGAL_HUB_HOSTED
-  - lossless_family__L6_ENTITY_NOTICE
+  - retired_pre_v5_family_artifacts
 
 forbidden_outputs:
   - source_discovery_handoff
