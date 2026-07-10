@@ -1,5 +1,5 @@
 packet_name: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET
-version: v2_phase1_v5_runtime_wired
+version: v3_phase1_v5_runtime_wired_p2d_handoff
 active_phase_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
 active_phase_scope: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY
 public_label: Activity Profile Source Index
@@ -50,7 +50,8 @@ final_downstream_required_artifact: activity_profile_source_index
 reserved_downstream_owner: ACTIVITY_PROFILE_REVIEW
 runtime_chain:
   previous_job: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
-  next_job: P2_INDEX_COMPILER_VALIDATION
+  next_job: P2D_DATA_PRIVACY_NAVIGATION_INDEX
+  following_job: P2_INDEX_COMPILER_VALIDATION
 
 candidate_creation_roots:
   - lossless_root__product_service
@@ -118,67 +119,3 @@ route_maps:
     downstream_owner: ACTIVITY_PROFILE_REVIEW
     candidate_creation_forbidden: true
     package_specific_classification_forbidden: true
-  external_action_context_locator_map:
-    action: LOCATE_ONLY
-    downstream_owner: ACTIVITY_PROFILE_REVIEW
-    package_specific_classification_forbidden: true
-  input_output_object_context_locator_map:
-    action: LOCATE_ONLY
-    downstream_owner: ACTIVITY_PROFILE_REVIEW
-    package_specific_classification_forbidden: true
-
-package_boundary:
-  domain_agnostic_activity_locator_only: true
-  mounted_domain_package_controls_activity_taxonomy: true
-  package_specific_activity_taxonomy_deferred_to_phase5: true
-  archetype_surface_and_package_field_derivation_forbidden: true
-  phase_5_derives_profile_values_later: true
-  source_artifacts_remain_source_of_truth: true
-  pointer_only_outputs: true
-
-forbidden_outputs:
-  - feature_candidate_inventory
-  - target_feature_profile
-  - target_feature_profile_forensics
-  - domain_derivation_profile
-  - active_run_package_manifest
-  - target_profile
-  - target_profile_forensics
-  - data_privacy_navigation_index
-  - legal_cartography_index
-  - legal_signal_derivation_profile
-  - exposure_registry_profile
-  - challenge_gate
-  - final_output_handoff
-  - renderer_payload
-
-forbidden_package_specific_classifications:
-  - archetype_codes
-  - surface_context_tokens
-  - archetype_derivation_basis
-  - surface_derivation_basis
-  - activity_archetype
-  - activity_surface
-  - domain_activity_taxonomy
-  - package_activity_classification
-  - package_specific_field_family
-  - selected_package
-  - primary_domain_package
-  - domain_package_selected
-  - AI_REGISTRY_KEY
-  - FIELD_DERIVATION_REGISTRY
-  - CLASSIFICATION_DERIVATION_MATRIX
-
-forbidden_conclusions:
-  - mechanics_proof
-  - activity_candidate_summary
-  - activity_profile_answer
-  - profile_activity_final
-  - archetype_locked
-  - surface_locked
-  - package_classification_locked
-  - legal_advice
-  - compliance_conclusion
-  - risk_conclusion
-  - exposure_match
-  - data_provenance_conclusion
