@@ -27,6 +27,7 @@ Rules:
 - Do not return `[ { "target_profile": {} } ]`.
 - Do not include `target_profile_forensics` in the Target Profile Review material response.
 - Do not put source ledgers, derivation ledgers, runtime trace, validation status, lock status, confidence, evidence basis, extraction capsule, or forensic/provenance material inside `target_profile`.
+- Do not emit `target_profile_source_index`, `target_profile_deterministic_map`, or `target_profile_semantic_profile` as output. They are Phase 2A inputs/support artifacts only.
 - Do not emit `legal_signal_derivation_profile` as an output. It is an input only.
 - Do not emit `legal_cartography_index`, legal/governance material, downstream profiles, exposure artifacts, final handoff, renderer payload, or Qualified Review artifacts.
 - `target_profile` must contain exactly the five material parent branches required by Target Profile Review:
@@ -35,6 +36,15 @@ Rules:
   - `business_context`
   - `product_service_wrapper`
   - `target_profile_limitations`
+- `business_context` must contain the active backend contract fields, including:
+  - `business_category`
+  - `primary_customer_type`
+  - `market_type_candidate`
+  - `industry_sector`
+  - `regulated_sector_hints`
+  - `public_regulatory_licensing_signal`
+  - `public_grievance_complaints_signal`
+- `business_context.public_regulatory_licensing_signal` and `business_context.public_grievance_complaints_signal` are factual public operating-context fields only. They must not contain legal, regulatory, grievance, ombudsman, license-validity, regulator-applicability, compliance, sufficiency, or obligation conclusions.
 - The backend runner must validate and save `target_profile` before Target Profile Forensics begins.
 
 Forbidden Target Profile Review combined shape:
