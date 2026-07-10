@@ -2,22 +2,31 @@
 
 ## Agent 2B / M9 Validator Overlay
 
-This overlay binds Phase 2 to two separate validation surfaces:
+This overlay binds the restored main M9 validation surface.
+
+M9 validates exactly one final downstream root:
 
 ```text
-Job A — legal_cartography_index
-Job B — legal_signal_derivation_profile
+legal_cartography_index
+```
+
+The deterministic and semantic artifacts remain M9-owned internal artifacts:
+
+```text
+legal_cartography_deterministic_map
+legal_cartography_semantic_profile
+legal_cartography_reinvestigation_workpad
 ```
 
 ## Active input contract
 
-Legal Cartography and Index must validate against the Phase 1 source contract: common-root artifacts, legal-doc control artifacts, and `legal_doc_*` artifacts.
+M9 must validate against the Phase 1 v4 source contract: common-root artifacts, legal-doc control artifacts, and individual `legal_doc_*` artifacts.
 
-Old family input contracts and legacy family adapters are invalid.
+Old `lossless_family__L*` input contracts and legacy family adapters are invalid.
 
-## Job A Required Root
+## Required Root
 
-The compiled Job A artifact must contain exactly one root:
+The compiled artifact must contain exactly one root:
 
 ```text
 legal_cartography_index
@@ -32,6 +41,8 @@ incorporated_linked_document_map
 control_language_locator
 semantic_navigation_index
 priority_semantic_locator
+qualified_review_locator
+qualified_review_legal_signals
 legal_notice_locator
 dispute_resolution_locator
 governing_law_venue_locator
@@ -41,63 +52,35 @@ downstream_rules
 lock_status
 ```
 
-Job A is index/navigation only.
+M9 is index/navigation only.
 
-Job A must not contain reviewer-question structures, field-derived signal answers, target outputs, data outputs, final handoff outputs, renderer payloads, old family input contracts, or legacy family adapter markers.
+M9 may emit `qualified_review_legal_signals` only as a deterministic locator-signal object. It must not emit legal advice, compliance conclusions, enforceability conclusions, risk conclusions, or full clause text.
 
-## Job B Required Root
+## Required downstream_rules booleans
 
-The deterministic Job B artifact must contain exactly one root:
-
-```text
-legal_signal_derivation_profile
-```
-
-Job B must validate against:
-
-```text
-M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md
-src/phases/02-legal-cartography-index/legal-cartography-index.contract.js
-```
-
-Job B must contain the locked 21 field-registry keyed rows across:
-
-```text
-legal_notice_contact_signal_map
-jurisdiction_dispute_signal_map
-privacy_grievance_contact_signal_map
-consent_manager_signal_map
-```
-
-## Job B Status Discipline
-
-Job B may use only the controlled status vocabulary locked in `M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md`.
-
-Loose absence values are invalid.
-
-If a locator exists, Job B must not emit exhaustive-scan failure.
-
-## Required downstream_rules booleans for Job A
-
-`downstream_rules.m6_is_navigation_not_legal_authority` must be `true`.
+`downstream_rules.m6_is_navigation_not_legal_authority` or `downstream_rules.source_discovery_is_navigation_not_legal_authority` must be `true`.
 
 `downstream_rules.embedded_legal_instruments_are_indexable` must be `true`.
 
-`downstream_rules.use_only_phase1_legal_common_root_and_legal_doc_sources` must be `true`.
+`downstream_rules.use_only_phase1_v4_legal_common_roots_and_legal_doc_artifacts` must be `true`.
 
 `downstream_rules.referenced_unloaded_documents_must_not_be_fetched` must be `true`.
+
+`downstream_rules.qualified_review_legal_signals_true_derived_object` must be `true`.
 
 ## Allowed source_type values only
 
 Every `source_type` must be one of:
 
 ```text
+URL
 LEGAL_DOC_ARTIFACT
 COMMON_ROOT
 EMBEDDED_UNIT
 INTERNAL_REFERENCE
 METADATA_ONLY
 REFERENCED_URL
+ABSENT_FAMILY
 ```
 
 ## Allowed source_corpus_status values only
@@ -145,12 +128,32 @@ Use only backend validator artifact-class values.
 
 Every material document, annexure, schedule, exhibit, appendix, or internal instrument named in `document_structure_index` must also appear in `document_coverage_index`.
 
+## Semantic validator discipline
+
+`legal_cartography_semantic_profile` must use exactly:
+
+```text
+queue_id
+unit_id
+subcats
+control_families
+confidence
+```
+
+Confidence must be one of:
+
+```text
+CLEAR
+PARTIAL
+UNCLEAR
+```
+
+The semantic layer must label every deterministic P0/P1 queue row with at least 0.80 coverage. Empty model output must not be normalized into ready compiler status.
+
 ## Forbidden keys
 
-Do not emit old source-routing keys, old family input contract names, legacy adapter markers, target artifacts, data artifacts, registry artifacts, final handoff, renderer payload, or registry evaluations inside Job A or Job B.
+Do not emit old source-routing keys, old family input contract names, legacy adapter markers, target artifacts, data artifacts, registry artifacts, final handoff, renderer payload, legal advice, compliance conclusions, enforceability conclusions, risk conclusions, or registry evaluations inside M9.
 
 ## Final self-check before output
 
-Before returning/saving Job A, verify that no row contains a source_type, source_corpus_status, status, or artifact_class outside the allowed lists above.
-
-Before returning/saving Job B, verify that all 21 field rows are present and no reviewer-question fields are present.
+Before returning/saving M9, verify that no row contains a source_type, source_corpus_status, status, or artifact_class outside the allowed lists above and that `qualified_review_legal_signals` is locator-only.
