@@ -114,7 +114,7 @@ For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs are exactly:
 - `source_discovery_handoff`
 - `cartography_index`
 - `target_profile_source_index`
-- `activity_profile_source_index`
+- `domain_derivation_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
 - `lossless_root__company_identity`
@@ -125,6 +125,9 @@ For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs are exactly:
 - `lossless_root__pricing_commercial_availability`
 - `lossless_root__use_case_customer_industry`
 - `lossless_root__integrations_ecosystem`
+- `lossless_root__ai_safety_transparency`
+- `lossless_root__regulatory_licensing_status`
+- `lossless_root__grievance_complaints`
 - `domain_selection_profile`
 - `active_run_package_manifest`
 
@@ -134,8 +137,11 @@ For `P3_DOMAIN_DERIVATION_LAYER`, allowed references are exactly:
 - `references/domain-packages/package-catalog.v0.json`
 - `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
 
+`domain_derivation_source_index` is navigation only. The scoped 12 `lossless_root__*` artifacts are evidence authority.
+
 The validator must reject Domain Derivation Layer use of:
 
+- `activity_profile_source_index`
 - `legal_cartography_index`
 - `legal_signal_derivation_profile`
 - `legal_doc_inventory`
@@ -157,9 +163,11 @@ The registry is the ladder:
 
 - `DOMAIN_DERIVATION_REGISTRY_v0.yaml` is rule authority.
 - `package-catalog.v0.json` is package authority.
-- scoped target/activity `lossless_root__*` artifacts are evidence authority.
+- scoped 12 domain-derivation `lossless_root__*` artifacts are evidence authority.
 - Phase 2 indexes are navigation only.
 - `target_profile` is context only, not proof.
+- `domain_derivation_source_index` is the Phase 2B locator authority.
+- `activity_profile_source_index` is reserved for 2C / Phase 5 and forbidden in 3B.
 - the model returns condition-level semantic evaluations.
 - deterministic validator/compiler is lock authority.
 
@@ -179,12 +187,6 @@ Every true registry condition must carry scoped lossless evidence anchors. Index
 
 ## Activity Profile Review gate
 
-Activity Profile Review may use only target-profile artifacts, domain derivation context, feature candidate inventory, and product/activity evidence authorized by the backend phase contract.
+Activity Profile Review must use its own backend phase contract. It may read `activity_profile_source_index` only when 2C / Phase 5 has made that artifact available.
 
-Activity Profile Review may not use Target Profile Review or Domain Derivation Layer to import legal/governance source material.
-
-## Failure routing
-
-Forbidden artifact use is `CONTROLLED_FAILURE`.
-
-Unsupported but in-scope fields are controlled limitations, not legal-family repair requests.
+Activity Profile Review must not use Domain Derivation Layer to backdoor legal/governance source material.
