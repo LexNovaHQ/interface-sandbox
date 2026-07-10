@@ -43,7 +43,9 @@
     "pipeline_service_dispatch_registered": true,
     "save_order_gates_registered": true,
     "p2_index_compiler_reads_not_writes_dpni": true,
-    "phase7_layer4_reads_phase2d_dpni": true
+    "phase7_layer4_reads_phase2d_dpni": true,
+    "p2d_next": "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX",
+    "p2e_next": "P2_INDEX_COMPILER_VALIDATION"
   },
   "boundaries": {
     "navigation_only": true,
