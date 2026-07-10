@@ -55,8 +55,9 @@ const terminal = read(`${PACKAGE_DIR}/00_TERMINAL_RECEIPT_RULES_PHASE2A_TARGET_P
 const manifest = JSON.parse(read(`${PACKAGE_DIR}/P2A_PACKET_MANIFEST.json`));
 
 assert.equal(manifest.packet_name, "P2A_TARGET_PROFILE_SOURCE_INDEX_PACKET");
-assert.equal(manifest.package_status, "LEAN_PACKAGE_CREATED_NOT_RUNTIME_WIRED");
-assert.equal(manifest.runtime_wiring_changed, false);
+assert.equal(manifest.package_status, "LEAN_PACKAGE_RUNTIME_WIRED");
+assert.equal(manifest.runtime_wiring_changed, true);
+assert.equal(manifest.runtime_job_id, "P2A_TARGET_PROFILE_SOURCE_INDEX");
 assert.equal(manifest.final_downstream_required_artifact, "target_profile_source_index");
 assert.deepEqual(manifest.components, [
   "P2A_TARGET_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET.yaml",
@@ -91,7 +92,7 @@ for (const marker of ["P2A_TARGET_PROFILE_FORBIDDEN_OUTPUTS", "P2A_TARGET_PROFIL
 for (const marker of ["strict JSON", "No markdown", "Do not instruct the backend to advance", "Do not run Target Profile Review"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
 assert.ok(controller.includes("Phase 2A executes only Target Profile Source Index work"));
 
-const runtimeText = ["src/phase-contracts.js", "src/runtime/contracts/pipeline.contract.js", "src/runtime/contracts/artifact-permissions.contract.js"].map(read).join("\n");
-assert.equal(runtimeText.includes(PACKAGE_DIR), false, "Phase 2A package must not be runtime-wired during package audit");
+const runtimeText = ["src/phase-contracts.js", "src/runtime/contracts/pipeline.contract.js", "src/runtime/contracts/artifact-permissions.contract.js", "src/runtime/contracts/central-phase.contract.js", "src/runtime/services/pipeline.service.js", "src/runtime/services/artifacts.service.js"].map(read).join("\n");
+for (const marker of [PACKAGE_DIR, "P2A_TARGET_PROFILE_SOURCE_INDEX", "target_profile_deterministic_map", "target_profile_semantic_profile", "target_profile_source_index"]) assert.ok(runtimeText.includes(marker), `runtime wiring missing ${marker}`);
 
-console.log("Phase 2A target source lean package audit: PASS");
+console.log("Phase 2A target source lean package runtime wiring audit: PASS");
