@@ -1,13 +1,12 @@
 const ACTIVITY_PROFILE_REVIEW_READS = Object.freeze([
-  "source_discovery_handoff",
+  "cartography_index",
+  "activity_profile_source_index",
   "target_profile",
   "target_profile_forensics",
   "feature_candidate_inventory",
-  "lossless_family__P1_PRODUCT",
-  "lossless_family__P2_PLATFORM_FEATURE_SOLUTION",
-  "lossless_family__P3_AI_CAPABILITY_TECHNICAL",
-  "lossless_family__P4_USE_CASE_INDUSTRY",
-  "lossless_family__P5_ENTERPRISE_PRICING"
+  "domain_derivation_profile",
+  "active_run_package_manifest",
+  "domain_selection_profile"
 ]);
 
 const ACTIVITY_PROFILE_REVIEW_WRITES = Object.freeze(["target_feature_profile"]);
@@ -18,6 +17,7 @@ const ACTIVITY_PROFILE_REVIEW_PROMPT_FILES = Object.freeze([
   "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
   "agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md",
   "agent-packages/agent_3_target_feature/03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md",
+  "agent-packages/agent_3_target_feature/03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md",
   "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md",
   "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md",
   "agent-packages/agent_3_target_feature/AGENT3_BACKEND_OUTPUT_CONTRACT.md",
@@ -26,8 +26,9 @@ const ACTIVITY_PROFILE_REVIEW_PROMPT_FILES = Object.freeze([
 ]);
 
 const ACTIVITY_PROFILE_REVIEW_REFERENCES = Object.freeze([
-  "AI_REGISTRY_KEY.md",
-  "FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml",
+  "references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md",
+  "references/domain-packages/package-catalog.v0.json",
+  "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml",
   "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"
 ]);
 
@@ -65,17 +66,14 @@ const COMMERCIAL_AVAILABILITY_FIELDS = Object.freeze([
   "limitation"
 ]);
 
-const ARCHETYPE_CODES = Object.freeze(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR", "ORC", "TRN", "SHD", "OPT", "MOV", "CUR", "MOD", "ORA"]);
-const SURFACE_CONTEXT_TOKENS = Object.freeze(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
-
 export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v4_BASIS_COVERAGE_LOCKED",
+  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v5_PHASE2C_PACKAGE_AWARE",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
   public_label: "Activity Profile Review",
   compatibility_internal_job_id: "M8_TARGET_FEATURE_PROFILE",
-  implementation_status: "PHASE_RUNNER_CUTOVER_STAGED",
+  implementation_status: "PHASE5_PACKAGE_AWARE_SYNCED_TO_P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "MODEL_JSON_ONLY",
@@ -89,17 +87,19 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     validator_phase: "M8_TARGET_FEATURE_PROFILE"
   }),
   source_authority: Object.freeze({
-    base_registry_key_reference: "AI_REGISTRY_KEY.md",
-    archetype_derivation_authority: "AI_REGISTRY_KEY.md §4",
-    archetype_enum_version: "AI_REGISTRY_KEY_v4_14_ARCHETYPES",
-    surface_derivation_authority: "AI_REGISTRY_KEY.md §7",
-    classification_matrix_active_for_material_derivation: false,
+    source_index_artifact: "activity_profile_source_index",
     candidate_universe_artifact: "feature_candidate_inventory",
     candidate_universe_path: "feature_candidate_inventory.candidates[]",
     candidate_inventory_is_navigation_only: true,
-    p1_p5_lossless_artifacts_are_mechanics_evidence: true,
-    p4_use_case_industry_context_allowed: true,
-    p4_candidate_creation_allowed: false,
+    active_run_package_manifest_required: true,
+    active_package_manifest_is_taxonomy_selector: true,
+    domain_package_key_reference: "references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md",
+    package_catalog_reference: "references/domain-packages/package-catalog.v0.json",
+    hardcoded_ai_registry_key_for_activity_taxonomy_forbidden: true,
+    fixed_archetype_enum_forbidden: true,
+    fixed_surface_token_enum_forbidden: true,
+    p2c_activity_profile_source_index_is_navigation_only: true,
+    p1_lossless_family_reads_forbidden: true,
     external_browsing_allowed: false,
     general_market_knowledge_allowed: false
   }),
@@ -110,8 +110,11 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     derivation_basis_fields: DERIVATION_BASIS_FIELDS,
     old_activity_proof_fields_forbidden: Object.freeze(["archetype_proof", "surface_proof_and_routing_limits"]),
     commercial_availability_fields: COMMERCIAL_AVAILABILITY_FIELDS,
-    archetype_codes: ARCHETYPE_CODES,
-    surface_context_tokens: SURFACE_CONTEXT_TOKENS,
+    archetype_codes_source: "mounted_domain_package_or_active_run_package_manifest",
+    surface_context_tokens_source: "mounted_domain_package_or_active_run_package_manifest",
+    fixed_archetype_codes_forbidden: true,
+    fixed_surface_context_tokens_forbidden: true,
+    package_specific_labels_allowed_only_when_supported_by_active_manifest: true,
     activities_must_be_array: true,
     profile_level_limitations_must_be_array: true,
     commercial_availability_posture_must_be_object: true,
@@ -132,6 +135,7 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
   candidate_treatment_rules: Object.freeze({
     every_inventory_candidate_must_be_considered: true,
     candidate_requiring_treatment_must_be_visible_activity_or_profile_limitation: true,
+    candidate_taxonomy_label_must_come_from_active_package_context: true,
     standalone_api_model_integration_candidates_must_not_be_silently_absorbed: true,
     pricing_confirmed_candidate_must_not_create_mechanics_by_itself: true,
     unindexed_candidate_must_not_be_added_as_normal_activity: true,
@@ -142,6 +146,7 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     "target_feature_profile_forensics",
     "target_profile",
     "target_profile_forensics",
+    "activity_profile_source_index",
     "legal_cartography_index",
     "legal_signal_derivation_profile",
     "data_provenance_profile",
@@ -177,30 +182,16 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     must_not_perform_legal_data_exposure_operator_compiler_or_qr_work: true,
     must_not_copy_lossless_text_or_excerpts: true,
     must_not_include_urls_ids_pointers_or_confidence: true,
+    must_use_activity_profile_source_index_for_navigation: true,
+    must_use_active_run_package_manifest_for_package_context: true,
+    fixed_ai_archetype_and_surface_taxonomies_forbidden: true,
     next_phase: "ACTIVITY_PROFILE_FORENSICS"
   })
 });
 
-export function activityProfileReviewReadArtifacts() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads];
-}
-
-export function activityProfileReviewWriteArtifacts() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.writes];
-}
-
-export function activityProfileReviewPromptFiles() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.prompt_files];
-}
-
-export function activityProfileReviewReferenceFiles() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.references];
-}
-
-export function activityProfileReviewActivityRowFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.activity_row_fields];
-}
-
-export function activityProfileReviewCommercialAvailabilityFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.commercial_availability_fields];
-}
+export function activityProfileReviewReadArtifacts() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads]; }
+export function activityProfileReviewWriteArtifacts() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.writes]; }
+export function activityProfileReviewPromptFiles() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.prompt_files]; }
+export function activityProfileReviewReferenceFiles() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.references]; }
+export function activityProfileReviewActivityRowFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.activity_row_fields]; }
+export function activityProfileReviewCommercialAvailabilityFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.commercial_availability_fields]; }
