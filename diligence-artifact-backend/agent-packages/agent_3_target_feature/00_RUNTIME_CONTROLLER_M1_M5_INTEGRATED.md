@@ -25,7 +25,7 @@ This package currently covers these compatibility surfaces until each phase is m
 - Activity Profile Review
 - Activity Profile Forensics
 
-The package does not own Source Discovery, Legal Cartography and Index, Phase 2A Target Profile Source Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
+The package does not own Source Discovery, Legal Cartography and Index, Phase 2A Target Profile Source Index, Phase 2B Domain Derivation Source Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
 
 ## Target Profile Review read authority
 
@@ -117,7 +117,7 @@ Domain Derivation Layer may read only:
 - `source_discovery_handoff`
 - `cartography_index`
 - `target_profile_source_index`
-- `activity_profile_source_index`
+- `domain_derivation_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
 - `lossless_root__company_identity`
@@ -128,6 +128,9 @@ Domain Derivation Layer may read only:
 - `lossless_root__pricing_commercial_availability`
 - `lossless_root__use_case_customer_industry`
 - `lossless_root__integrations_ecosystem`
+- `lossless_root__ai_safety_transparency`
+- `lossless_root__regulatory_licensing_status`
+- `lossless_root__grievance_complaints`
 - `domain_selection_profile`
 - `active_run_package_manifest`
 
@@ -137,7 +140,9 @@ Domain Derivation Layer may use only these references:
 - `references/domain-packages/package-catalog.v0.json`
 - `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
 
-Domain Derivation Layer must treat `cartography_index`, `target_profile_source_index`, and `activity_profile_source_index` as navigation only. The scoped target/activity `lossless_root__*` artifacts are the evidence source. `target_profile` is context only and not proof.
+Domain Derivation Layer must treat `cartography_index`, `target_profile_source_index`, and `domain_derivation_source_index` as navigation only. The scoped 12 `lossless_root__*` artifacts are the evidence source. `target_profile` is context only and not proof.
+
+`activity_profile_source_index` is reserved for 2C / Phase 5 Activity Profile and must not be read by Domain Derivation Layer.
 
 ## Domain Derivation Layer registry ladder rule
 
@@ -151,6 +156,7 @@ The model derives condition-level semantic evaluations. The deterministic valida
 
 Domain Derivation Layer must not read or request:
 
+- `activity_profile_source_index`
 - `legal_cartography_index`
 - `legal_signal_derivation_profile`
 - `legal_doc_inventory`
