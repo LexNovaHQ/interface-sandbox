@@ -92,7 +92,7 @@ export async function buildSourceUrlManifestArtifact({ run, preflightContext = {
       target: run.target,
       target_url: rootUrl,
       generated_by: "source_discovery_url_manifest",
-      taxonomy_version: "PHASE1_AGNOSTIC_URL_MANIFEST_v1",
+      taxonomy_version: "PHASE1_AGNOSTIC_URL_MANIFEST_v1_LOCKED_ROOTS",
       target_boundary: {
         submitted_url: run.root_url || run.target,
         resolved_primary_url: rootUrl,
@@ -102,7 +102,7 @@ export async function buildSourceUrlManifestArtifact({ run, preflightContext = {
         allowed_host_rule: "same root host and target-controlled subdomains only"
       },
       source_search_rule_applied: {
-        mandatory_discovery_first: "ROOT, HEADER, FOOTER, sitemap discovery, then common known-path probes. Adapter probes are expand-only and cannot narrow or exclude.",
+        mandatory_discovery_first: "ROOT, HEADER, FOOTER, sitemap discovery, then locked common known-path probes. Adapter probes are expand-only and cannot narrow or exclude.",
         dedupe_rule: "Dedupe happens before extraction using common_root + canonical URL keys. www/non-www variants collapse into one manifest row.",
         tier_rule: "PRIMARY is extracted by Source Extraction. SECONDARY and CONTEXT_ONLY remain manifest-only. METADATA_ONLY and REJECTED_NOT_EVIDENCE are never extracted.",
         legal_doc_rule: "Distinct public legal documents are PRIMARY and must be extracted into independent legal_doc_* artifacts.",
@@ -132,7 +132,7 @@ export async function buildSourceUrlManifestArtifact({ run, preflightContext = {
       run_id: run.run_id,
       target_url: rootUrl,
       generated_by: "source_discovery_url_manifest",
-      schema_version: "PHASE1_AGNOSTIC_SOURCE_DISCOVERY_MATRIX_v1",
+      schema_version: "PHASE1_AGNOSTIC_SOURCE_DISCOVERY_MATRIX_v1_LOCKED_ROOTS",
       classifications: ["COMMON_CORE_ROOT", "EXPAND_ONLY_ADAPTER_ROOT", "NEUTRAL_SIGNAL_BUCKET"],
       common_core_roots: COMMON_ROOTS.map(({ id, priority, buckets, paths }) => ({ id, artifact_name: `lossless_root__${id}`, priority, neutral_buckets: buckets, probe_paths: paths })),
       adapter_expansion_roots: ADAPTERS.map((adapter) => ({ adapter_id: adapter.adapter_id, adapter_type: adapter.adapter_type, mode: "EXPAND_ONLY", may_expand_discovery: true, may_narrow_discovery: false, may_exclude_sources: false, probe_paths: adapter.paths })),
@@ -170,8 +170,8 @@ function classifyCandidate(candidate, rootHost) {
   const subdomain = host !== rootHost;
 
   if (!subdomain && path === "/") matches.push(primary("homepage_landing", "primary_homepage", "target_boundary", "Exact submitted/root host homepage."));
-  if (subdomain && path === "/" && host.startsWith("docs.")) matches.push(primary("technical_docs_api_developer", "docs_subdomain_root", "technical_docs", "Docs subdomain root."));
-  if (subdomain && path === "/" && isAppHost(host)) matches.push(metadata("technical_docs_api_developer", "app_shell_subdomain", "Dashboard/app shell metadata only."));
+  if (subdomain && path === "/" && host.startsWith("docs.")) matches.push(primary("technical_docs_api", "docs_subdomain_root", "technical_docs", "Docs subdomain root."));
+  if (subdomain && path === "/" && isAppHost(host)) matches.push(metadata("technical_docs_api", "app_shell_subdomain", "Dashboard/app shell metadata only."));
   if (subdomain && path === "/" && !host.startsWith("docs.") && !isAppHost(host)) matches.push(primary("product_service", "target_controlled_product_subdomain", "product_activity", "Target-controlled product subdomain root."));
 
   for (const root of COMMON_ROOTS) {
@@ -183,9 +183,9 @@ function classifyCandidate(candidate, rootHost) {
     }
   }
 
-  if (isBlogPath(path)) matches.push(context("blog_resources", "blog_or_resource", "supporting_context", "Blog/resource context; manifest-only."));
+  if (isBlogPath(path)) matches.push(context("support_help_resources", "blog_or_resource", "supporting_context", "Blog/resource context; manifest-only."));
   if (isDocsApiOrIntegrationPath(path) && hasDataFlowSignal(path)) matches.push(primary("docs_api_data_flow", "docs_api_data_flow", "data_flow_signal", "Docs/API route shows data flow/control signal."));
-  if (isLanguageVariant(segments)) matches.push(context("technical_docs_api_developer", "language_or_locale_variant", "technical_variant", "Language/locale/API variant; manifest-only."));
+  if (isLanguageVariant(segments)) matches.push(context("technical_docs_api", "language_or_locale_variant", "technical_variant", "Language/locale/API variant; manifest-only."));
 
   return mergeMatchesByRoot(matches);
 }
@@ -196,11 +196,16 @@ function routeTypeForRoot(root, path) {
   return root;
 }
 function materialityForRoot(root) {
-  if (["legal_identity_notice", "privacy_data_processing"].includes(root)) return "legal_document";
-  if (["security_trust", "trust_compliance"].includes(root)) return "trust_compliance";
-  if (["technical_docs_api_developer", "docs_api_data_flow", "integrations_ecosystem"].includes(root)) return "technical_evidence";
+  if (["company_identity"].includes(root)) return "target_identity";
+  if (["contact_notice"].includes(root)) return "contact_notice";
+  if (["privacy_data_processing"].includes(root)) return "data_processing";
+  if (["security_trust_compliance"].includes(root)) return "trust_compliance";
+  if (["data_governance_controls"].includes(root)) return "data_governance";
+  if (["technical_docs_api", "docs_api_data_flow", "integrations_ecosystem"].includes(root)) return "technical_evidence";
   if (["product_service", "platform_feature_solution"].includes(root)) return "product_activity";
   if (root === "pricing_commercial_availability") return "commercial_terms";
+  if (root === "ai_safety_transparency") return "ai_governance";
+  if (root === "support_help_resources") return "support_context";
   return "source_evidence";
 }
 function primary(commonRoot, routeType, materiality, reason) { return row(commonRoot, routeType, materiality, "PRIMARY", "NONE", reason); }
@@ -234,7 +239,7 @@ function normalizeRootUrl(value) { const raw = String(value || "").trim(); const
 function normalizeCandidateUrl(value, baseUrl, rootHost) { try { const url = new URL(String(value || "").trim(), baseUrl); if (!["http:", "https:"].includes(url.protocol)) return ""; const host = stripWww(url.hostname); if (!(host === rootHost || host.endsWith(`.${rootHost}`))) return ""; url.hash = ""; return url.toString(); } catch { return ""; } }
 function normalizeCandidateForManifest(value, rootHost) { try { const url = new URL(value); url.hash = ""; url.search = ""; const host = stripWww(url.hostname); if (!(host === rootHost || host.endsWith(`.${rootHost}`))) return null; const path = normalizePath(url.pathname); const canonicalUrl = `${url.protocol}//${host}${path}`; return { original_url: value, fetch_url: url.toString(), canonical_url: canonicalUrl, canonical_url_key: canonicalUrl }; } catch { return null; } }
 function isSocialHost(hostname) { const host = String(hostname || "").toLowerCase(); return SOCIAL_HOST_PARTS.some((part) => host === part || host.endsWith(`.${part}`)); }
-function extractTagChunks(html, tag) { const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "gi"); return [...String(html || "").matchAll(regex)].map((match) => match[1] || ""); }
+function extractTagChunks(html, tag) { const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, "gi"); return [...String(html || "").matchAll(regex)].map((match) => match[1] || ""); }
 function extractHrefs(html) { const out = []; const regex = /<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi; for (const match of String(html || "").matchAll(regex)) out.push(match[1]); return out; }
 function extractLinkedSitemaps(html) { const out = []; const regex = /<link\b[^>]*rel=["'][^"']*sitemap[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>/gi; for (const match of String(html || "").matchAll(regex)) out.push(match[1]); return out; }
 function extractSitemapLocs(xml) { const out = []; const regex = /<loc>\s*([^<]+?)\s*<\/loc>/gi; for (const match of String(xml || "").matchAll(regex)) out.push(match[1].trim()); return out; }
