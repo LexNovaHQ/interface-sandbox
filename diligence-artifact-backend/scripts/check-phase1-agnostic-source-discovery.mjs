@@ -99,6 +99,8 @@ assert.ok(urlService.includes("classifyCompanyIdentity"), "URL manifest service 
 assert.ok(urlService.includes("classifyDataGovernanceControls"), "URL manifest service must include dedicated data governance classifier");
 assert.ok(urlService.includes("classifyRegulatoryLicensingStatus"), "URL manifest service must include dedicated regulatory/licensing classifier");
 assert.ok(urlService.includes("classifyGrievanceComplaints"), "URL manifest service must include dedicated grievance/complaints classifier");
+assert.ok(urlService.includes("regulated_product_slug"), "URL manifest service must capture regulated bare product/disclosure slugs into product_service");
+assert.ok(urlService.includes("isGovernanceOrLegalSlug"), "URL manifest service must exclude governance/legal slugs from regulated product fallback");
 assert.ok(urlService.includes("SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING"), "URL rows must preserve Phase 1 source-routing-only classification effect");
 assert.ok(extractionService.includes("buildSparseRootArtifacts"), "extraction service must save only sparse material root artifacts");
 assert.ok(extractionService.includes("root_artifact_manifest"), "source_family_index must advertise virtual root manifest");
@@ -170,6 +172,16 @@ assertFixtureRow(manifest, "/grievance", "grievance_complaints", { routeType: "g
 assertFixtureRow(manifest, "/complaints", "grievance_complaints", { routeType: "complaints_route", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
 assertFixtureRow(manifest, "/ombudsman", "grievance_complaints", { routeType: "ombudsman_escalation", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
 assertFixtureRow(manifest, "/nodal-officer", "grievance_complaints", { routeType: "nodal_officer", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
+assertFixtureRow(manifest, "/personal-loan", "product_service", { routeType: "regulated_product_slug", tier: "PRIMARY", role: "REGULATED_ACTIVITY_SIGNAL" });
+assertFixtureRow(manifest, "/upi", "product_service", { routeType: "regulated_product_slug", tier: "PRIMARY", role: "REGULATED_ACTIVITY_SIGNAL" });
+assertFixtureRow(manifest, "/kyc", "product_service", { routeType: "regulated_product_slug", tier: "PRIMARY", role: "REGULATED_ACTIVITY_SIGNAL" });
+assertFixtureRow(manifest, "/rates", "product_service", { routeType: "regulated_product_slug", tier: "PRIMARY", role: "REGULATED_ACTIVITY_SIGNAL" });
+const feeRows = rowsForPath(manifest, "/fees").filter((row) => row.common_root === "product_service");
+assert.ok(feeRows.length === 1 && feeRows[0].route_type === "regulated_product_slug" && feeRows[0].source_signal_roles.includes("CONSUMER_DISCLOSURE_SIGNAL"), "/fees must be a product_service regulated_product_slug carrying CONSUMER_DISCLOSURE_SIGNAL");
+
+assert.equal(rowsForPath(manifest, "/grievance-redressal").some((row) => row.common_root === "product_service"), false, "grievance slug must not classify as a product");
+assert.equal(rowsForPath(manifest, "/licenses").some((row) => row.common_root === "product_service"), false, "licenses slug must not classify as a product");
+assert.equal(rowsForPath(manifest, "/corporate").some((row) => row.common_root === "product_service" && row.route_type === "regulated_product_slug"), false, "/corporate must not be a regulated_product_slug");
 
 for (const falsePositivePath of ["/chair", "/claims", "/email", "/availability"]) {
   const rows = rowsForPath(manifest, falsePositivePath);
@@ -186,6 +198,7 @@ console.log(JSON.stringify({
     "PHASE1_V5_17_ROOT_ORDER",
     "REGULATORY_LICENSING_CLASSIFIER",
     "GRIEVANCE_COMPLAINTS_CLASSIFIER",
+    "REGULATED_BARE_SLUG_PRODUCT_CAPTURE",
     "MULTI_DOMAIN_UNION_PROBE_EXPAND_ONLY",
     "SPARSE_ROOT_STORAGE",
     "LEGAL_DOC_GRANULARITY"
@@ -236,7 +249,7 @@ function rowsForPath(manifest, urlPath) {
 }
 function normalizePath(value) { return String(value || "/").replace(/\/+$/g, "") || "/"; }
 
-const ROOT_LINKS = ["/about", "/legal-notice", "/contact", "/product", "/product/speech-to-text", "/features", "/features/voice-ai", "/docs", "/docs/api/authentication", "/apis/speech-to-text", "/integrations/slack", "/pricing", "/use-cases/healthcare", "/privacy", "/dpa", "/subprocessors", "/cookie-policy", "/security", "/data-residency", "/model-cards/foo", "/usage-policy", "/help/article", "/licenses", "/regulatory-disclosures", "/bank-partners", "/grievance", "/complaints", "/ombudsman", "/nodal-officer", "/fair-practice-code", "/grievance-redressal-policy", "/schedule-of-charges", "/chair", "/claims", "/email", "/availability"];
+const ROOT_LINKS = ["/about", "/legal-notice", "/contact", "/product", "/product/speech-to-text", "/features", "/features/voice-ai", "/docs", "/docs/api/authentication", "/apis/speech-to-text", "/integrations/slack", "/pricing", "/use-cases/healthcare", "/privacy", "/dpa", "/subprocessors", "/cookie-policy", "/security", "/data-residency", "/model-cards/foo", "/usage-policy", "/help/article", "/licenses", "/regulatory-disclosures", "/bank-partners", "/grievance", "/grievance-redressal", "/complaints", "/ombudsman", "/nodal-officer", "/fair-practice-code", "/grievance-redressal-policy", "/schedule-of-charges", "/personal-loan", "/upi", "/fees", "/kyc", "/rates", "/corporate", "/chair", "/claims", "/email", "/availability"];
 const anchorHtml = (links) => links.map((href) => `<a href="${href}">${href}</a>`).join("\n");
 const FIXTURE_PAGES = Object.freeze({
   "/": `<html><head><title>Fixture</title></head><body><header>${anchorHtml(ROOT_LINKS)}</header><main>Fixture public home with product, privacy, docs, security, model, regulatory and grievance links.</main></body></html>`,
@@ -276,12 +289,19 @@ const FIXTURE_PAGES = Object.freeze({
   "/regulatory-disclosures": `<main>Regulatory disclosures and consumer disclosure.</main>`,
   "/bank-partners": `<main>Bank partners and sponsor bank information.</main>`,
   "/grievance": `<main>Grievance redressal route.</main>`,
+  "/grievance-redressal": `<main>Grievance redressal route.</main>`,
   "/complaints": `<main>Complaints route and complaint email.</main>`,
   "/ombudsman": `<main>Ombudsman escalation route.</main>`,
   "/nodal-officer": `<main>Nodal officer details.</main>`,
   "/fair-practice-code": `<main>Fair practice code.</main>`,
   "/grievance-redressal-policy": `<main>Grievance redressal policy.</main>`,
   "/schedule-of-charges": `<main>Schedule of charges.</main>`,
+  "/personal-loan": `<main>Personal loan product, eligibility and repayment.</main>`,
+  "/upi": `<main>UPI payments product and money movement features.</main>`,
+  "/fees": `<main>Fees and charges for the account.</main>`,
+  "/kyc": `<main>KYC and onboarding requirements.</main>`,
+  "/rates": `<main>Interest rates on deposits and loans.</main>`,
+  "/corporate": `<main>Corporate information page (false-positive control).</main>`,
   "/chair": `<main>Chair page. The word contains ai but is not AI.</main>`,
   "/claims": `<main>Claims page. The word contains ai but is not AI.</main>`,
   "/email": `<main>Email page. The word contains ai but is not AI.</main>`,
