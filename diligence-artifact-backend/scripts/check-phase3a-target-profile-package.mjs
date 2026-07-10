@@ -74,13 +74,17 @@ for (const marker of ["target_profile_source_index", "Phase 2A", "navigation", "
   assert.ok(content.runtime.includes(marker), `Agent3 runtime controller missing ${marker}`);
   assert.ok(content.binding.includes(marker), `Agent3 binding missing ${marker}`);
   assert.ok(content.validatorRules.includes(marker), `Agent3 validator rules missing ${marker}`);
+}
+for (const marker of ["target_profile_source_index", "target_profile_deterministic_map", "target_profile_semantic_profile", "public_regulatory_licensing_signal", "public_grievance_complaints_signal", "Phase 2A"]){
   assert.ok(content.outputContract.includes(marker), `Agent3 output contract missing ${marker}`);
 }
 
 for (const forbiddenConclusion of ["license validity", "license requirement", "applicable regulator", "regulatory compliance status", "grievance sufficiency", "grievance compliance status", "ombudsman requirement"]){
   assert.ok(content.prompt.includes(forbiddenConclusion), `M7 prompt missing forbidden conclusion guard ${forbiddenConclusion}`);
   assert.ok(content.validatorRules.includes(forbiddenConclusion), `Agent3 validator missing forbidden conclusion guard ${forbiddenConclusion}`);
-  assert.ok(content.outputContract.includes(forbiddenConclusion), `Agent3 output contract missing forbidden conclusion guard ${forbiddenConclusion}`);
+}
+for (const outputGuard of ["license-validity", "regulator-applicability", "compliance", "sufficiency", "obligation conclusions"]){
+  assert.ok(content.outputContract.includes(outputGuard), `Agent3 output contract missing output guard ${outputGuard}`);
 }
 
 assert.ok(content.prompt.includes("Target Profile Review must not emit `business_context.lane`"));
