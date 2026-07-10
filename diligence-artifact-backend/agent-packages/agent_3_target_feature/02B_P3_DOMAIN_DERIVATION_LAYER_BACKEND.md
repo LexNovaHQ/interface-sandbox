@@ -26,13 +26,23 @@ The model may recommend condition-level rule outcomes, but the deterministic reg
 
 `DOMAIN_DERIVATION_REGISTRY_v0.yaml` is the rule ladder. `package-catalog.v0.json` is the package authority.
 
+## Phase 2G route
+
+Phase 3B runs only under:
+
+```text
+ROUTE.PHASE3B.DOMAIN_DERIVATION
+2B_BUCKET_DOMAIN_DERIVATION
+```
+
+Phase 2G is the sole runtime routing authority. Lossless evidence is primary evidence and `domain_derivation_source_index` is the mandatory navigation map. Direct lossless evidence is not a fallback.
+
 ## Active inputs
 
-Use only the artifacts authorized by `src/phases/03-domain-derivation/domain-derivation.contract.js` and `PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER`:
+Use only:
 
-- `source_discovery_handoff`
-- `cartography_index`
-- `target_profile_source_index`
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
 - `domain_derivation_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
@@ -50,11 +60,11 @@ Use only the artifacts authorized by `src/phases/03-domain-derivation/domain-der
 - `domain_selection_profile`
 - `active_run_package_manifest`
 
-`cartography_index`, `target_profile_source_index`, `domain_derivation_source_index`, and `source_discovery_handoff` are navigation support only. They are not evidence and must never be cited as factual proof.
+`domain_derivation_source_index` is navigation only. It must never be cited as factual proof.
 
-The source-of-truth evidence for domain derivation is the admitted lossless Phase 1 evidence reached through Phase 2 navigation.
+The scoped 12 lossless roots are the primary evidence for domain derivation.
 
-`target_profile` is context only. It may help identify what Target Profile Review derived, but it is not proof of package selection.
+`target_profile` is context only. It may identify what Target Profile Review derived, but it is not proof of package selection.
 
 `domain_selection_profile` and the incoming `active_run_package_manifest` are prior provisional/passive runtime state only. They are not proof and do not lock a domain or overlay.
 
@@ -76,7 +86,7 @@ Do not hardcode domain-specific classification logic in this prompt. The registr
 - primary domain package recommendation;
 - primary domain lock status, subject to validator approval;
 - AI package mount mode;
-- package mount only AI overlay state;
+- package-mount-only AI overlay state;
 - catalog-gated regulatory overlay candidates;
 - domain-owned fusion candidates for later phases;
 - limitations, contradictions, and missing evidence;
@@ -86,7 +96,7 @@ Do not hardcode domain-specific classification logic in this prompt. The registr
 
 Regulatory overlays in Phase 3B are catalog-gated candidates only.
 
-Phase 3B may record a `regulatory_overlay_derivation` branch only when the candidate overlay exists in `package-catalog.v0.json` under `regulatory_overlays` and the candidate is supported by scoped lossless evidence anchors.
+Phase 3B may record a `regulatory_overlay_derivation` branch only when the candidate exists in `package-catalog.v0.json` under `regulatory_overlays` and is supported by scoped primary lossless evidence anchors.
 
 Phase 3B must not determine legal applicability, license validity, license requirement, applicable regulator conclusion, regulatory compliance status, grievance sufficiency, grievance compliance status, ombudsman requirement, statutory complaint obligation, or legal advice.
 
@@ -106,7 +116,7 @@ AI package mount is package availability only in Phase 3B.
 
 When the primary domain is `ai-governance`, AI is primary and the AI overlay is prohibited.
 
-When a non-AI primary domain is locked and the registry supports `AI_OVERLAY_MOUNTED`, Phase 3B may mount the AI package as `ai-native` for downstream availability only. This does not trigger AI exposure rows, does not classify AI archetype, does not classify surface, and does not resolve Lane.
+When a non-AI primary domain is locked and the registry supports `AI_OVERLAY_MOUNTED`, Phase 3B may mount the AI package as `ai-native` for downstream availability only. This does not trigger AI exposure rows, classify AI archetype or surface, or resolve Lane.
 
 Activity-level AI classification is deferred to Phase 5. Exposure matching is deferred to Phase 9.
 
@@ -122,6 +132,10 @@ Fusion candidates are deferred to Phase 5 Activity Profile and Phase 9 Exposure 
 
 Do not read, request, infer from, or cite:
 
+- `source_discovery_handoff`
+- `cartography_index`
+- `target_profile_source_index`
+- `target_profile_forensics`
 - `activity_profile_source_index`
 - `legal_cartography_index`
 - `legal_signal_derivation_profile`
@@ -144,8 +158,8 @@ Return strict JSON with exactly one top-level key:
 
 Inside `domain_derivation_profile`, include only branches allowed by the active validator. The compiler/validator derives and saves the corresponding `active_run_package_manifest` artifact.
 
-Every fired registry rule must include condition-level results and lossless evidence anchors. Do not cite Phase 2 index artifacts as evidence.
+Every fired registry rule must include condition-level results and primary lossless evidence anchors. Do not cite Phase 2 index artifacts, the route manifest, the runtime packet, or preceding profiles as evidence.
 
-Every regulatory overlay candidate must include an `overlay_id`, `status`, and scoped lossless evidence anchors. Do not cite Phase 2 index artifacts as regulatory evidence.
+Every regulatory overlay candidate must include an `overlay_id`, `status`, and scoped primary lossless evidence anchors.
 
 If evidence is weak, conflicted, or only generic marketing language, set the relevant decision to candidate/review-required rather than forcing a lock.
