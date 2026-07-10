@@ -16,6 +16,7 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
     assertLockedRootMatrix(output.deduped_url_manifest, output.source_discovery_matrix_manifest);
     if (output.adapter_expansion_log?.dynamic_routing_used !== false) throw new Error("SOURCE_DISCOVERY_ADAPTER_DYNAMIC_ROUTING_FORBIDDEN");
     if (output.adapter_expansion_log?.domain_lock_used !== false) throw new Error("SOURCE_DISCOVERY_ADAPTER_DOMAIN_LOCK_FORBIDDEN");
+    if (output.adapter_expansion_log?.union_probe_mode !== "ALL_DOMAIN_HINT_PACKS_PLUS_PREFLIGHT_HINTS") throw new Error("SOURCE_DISCOVERY_UNION_PROBE_MODE_MISSING");
   }
   if (job_id === "SOURCE_EXTRACTION") {
     if (!output.source_family_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:source_family_index");
@@ -91,10 +92,10 @@ function assertLegalDocsIndependent(output = {}) {
   }
 }
 function assertHandoffPropagation(handoff = {}, postHandoff = {}) {
-  if (handoff.schema_version !== "PHASE1_SOURCE_DISCOVERY_HANDOFF_v2_FULL_ROOT_MATRIX") throw new Error(`SOURCE_DISCOVERY_HANDOFF_SCHEMA_STALE:${handoff.schema_version || "missing"}`);
-  if (postHandoff.schema_version !== "POST_PHASE_1_DOMAIN_GATE_HANDOFF_v2_FULL_ROOT_MATRIX") throw new Error(`SOURCE_DISCOVERY_POST_HANDOFF_SCHEMA_STALE:${postHandoff.schema_version || "missing"}`);
+  if (handoff.schema_version !== "PHASE1_SOURCE_DISCOVERY_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN") throw new Error(`SOURCE_DISCOVERY_HANDOFF_SCHEMA_STALE:${handoff.schema_version || "missing"}`);
+  if (postHandoff.schema_version !== "POST_PHASE_1_DOMAIN_GATE_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN") throw new Error(`SOURCE_DISCOVERY_POST_HANDOFF_SCHEMA_STALE:${postHandoff.schema_version || "missing"}`);
   const contract = handoff.contract || {};
-  for (const flag of ["full_15_root_classifier_matrix_preserved", "primary_full_extract_slug_chain_preserved", "source_signal_roles_preserved", "technical_route_shape_preserved", "api_data_flow_signal_preserved", "legal_doc_granularity_preserved"]) if (contract[flag] !== true) throw new Error(`SOURCE_DISCOVERY_HANDOFF_CONTRACT_FLAG_MISSING:${flag}`);
+  for (const flag of ["full_17_root_classifier_matrix_preserved", "primary_full_extract_slug_chain_preserved", "source_signal_roles_preserved", "technical_route_shape_preserved", "api_data_flow_signal_preserved", "legal_doc_granularity_preserved", "multi_domain_union_probe_preserved"]) if (contract[flag] !== true) throw new Error(`SOURCE_DISCOVERY_HANDOFF_CONTRACT_FLAG_MISSING:${flag}`);
   for (const [root, entry] of Object.entries(handoff.common_root_index || {})) {
     if (!COMMON_ROOT_CODES.includes(root) || RETIRED_COMMON_ROOT_CODES.includes(root)) throw new Error(`SOURCE_DISCOVERY_HANDOFF_INVALID_ROOT:${root}`);
     if (entry.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[root]) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROOT_POLICY_MISMATCH:${root}`);
