@@ -44,10 +44,6 @@ Target Profile Review must not read, request, infer from, or cite:
 - activity/product roots outside the scoped target evidence list
 - data/DAP roots
 - retired pre-cutover family artifacts
-- `lossless_root__about_company`
-- `lossless_root__legal_identity_notice`
-- `lossless_root__operator_entity_signals`
-- `lossless_root__supporting_company_signals`
 
 ## Reference authority
 
