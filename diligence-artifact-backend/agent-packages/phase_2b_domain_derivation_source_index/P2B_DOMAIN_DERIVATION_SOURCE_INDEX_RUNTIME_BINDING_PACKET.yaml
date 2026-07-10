@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX
-runtime_contract_version: v2_phase2b_domain_derivation_source_index_phase1_v5_12_root_runtime_wired
+runtime_contract_version: v3_phase2b_domain_derivation_source_index_phase1_v5_runtime_wired_p2c_handoff
 active_phase_id: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
 active_phase_scope: P2B_DOMAIN_DERIVATION_SOURCE_INDEX_ONLY
 package_status: LEAN_PACKAGE_RUNTIME_WIRED
@@ -14,7 +14,7 @@ runtime_wiring:
   pipeline_service_dispatch_registered: true
   save_order_gates_registered: true
   p2a_next: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
-  p2b_next: P2_INDEX_COMPILER_VALIDATION
+  p2b_next: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
 
 read_artifacts:
   - source_discovery_handoff
@@ -43,6 +43,7 @@ write_artifacts_in_order:
 
 final_downstream_required_artifact: domain_derivation_source_index
 downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+next_phase_2_index_job: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
 reserved_for_later:
   - activity_profile_source_index
   - feature_candidate_inventory
