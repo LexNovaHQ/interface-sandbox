@@ -1,0 +1,60 @@
+reference_map_id: P2D_DATA_PRIVACY_NAVIGATION_INDEX_REFERENCE_MAP
+phase_id: P2D_DATA_PRIVACY_NAVIGATION_INDEX
+final_artifact: data_privacy_navigation_index
+route_families:
+  SECURITY_TRUST:
+    action: LOCATE_ONLY
+    phase1_roots:
+      - lossless_root__security_trust_compliance
+      - lossless_root__data_governance_controls
+    dap_families: [SEC, READY]
+  PRIVACY_VENDOR_TRANSFER:
+    action: LOCATE_ONLY
+    phase1_roots:
+      - lossless_root__privacy_data_processing
+      - lossless_root__security_trust_compliance
+      - lossless_root__integrations_ecosystem
+      - lossless_root__regulatory_licensing_status
+    dap_families: [VEND, LOC, ROLE, PARTY]
+  DATA_GOVERNANCE_CONTROLS:
+    action: LOCATE_ONLY
+    phase1_roots:
+      - lossless_root__data_governance_controls
+      - lossless_root__privacy_data_processing
+      - lossless_root__grievance_complaints
+      - lossless_root__regulatory_licensing_status
+    dap_families: [AUTH, CTRL, CONTACT, CM, RET, REQ, LIM]
+  DOCS_API_DATA_FLOW:
+    action: LOCATE_ONLY
+    phase1_roots:
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__integrations_ecosystem
+    dap_families: [FLOW, OBJ, DOM, SENS]
+  AI_SAFETY_TRANSPARENCY:
+    action: LOCATE_ONLY
+    phase1_roots:
+      - lossless_root__ai_safety_transparency
+      - lossless_root__docs_api_data_flow
+      - lossless_root__technical_docs_api
+    dap_families: [DOM, SENS]
+legal_routes:
+  legal_cartography_index:
+    action: SELECTIVE_LOCATOR_ONLY
+  legal_signal_derivation_profile:
+    action: SELECTIVE_SIGNAL_SUPPORT_ONLY
+compatibility_aliases:
+  d_family_routes: data_source_routes
+  l_family_routes: legal_index_routes
+  required_d_family_route_ids: required_data_source_route_ids
+  selective_l_family_route_ids: selective_legal_route_ids
+forbidden_inputs:
+  - lossless_family__D1_SECURITY_TRUST
+  - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
+  - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
+  - lossless_family__D4_DOCS_API_DATA_FLOW
+  - lossless_family__D5_AI_SAFETY_TRANSPARENCY
+  - lossless_root__security_trust
+  - lossless_root__trust_compliance
+  - lossless_root__technical_docs_api_developer
+  - data_provenance_source_index
