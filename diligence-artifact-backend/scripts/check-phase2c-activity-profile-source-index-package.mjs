@@ -105,7 +105,8 @@ assert.equal(manifest.boundary_locks.final_validator_built, true);
 assert.equal(manifest.boundary_locks.orchestrator_built, true);
 for (const flag of ["artifact_permissions_registered", "pipeline_contract_registered", "central_phase_registered", "pipeline_service_dispatch_registered", "save_order_gates_registered"]) assert.equal(manifest.runtime_wiring[flag], true, `manifest must claim runtime wiring flag ${flag}`);
 assert.equal(manifest.runtime_wiring.p2b_next, "P2C_ACTIVITY_PROFILE_SOURCE_INDEX");
-assert.equal(manifest.runtime_wiring.p2c_next, "P2_INDEX_COMPILER_VALIDATION");
+assert.equal(manifest.runtime_wiring.p2c_next, "P2D_DATA_PRIVACY_NAVIGATION_INDEX");
+assert.equal(manifest.runtime_wiring.p2d_next, "P2_INDEX_COMPILER_VALIDATION");
 assert.deepEqual(manifest.components, EXPECTED_PACKAGE_FILES);
 assert.deepEqual(manifest.deliberately_not_created, OMITTED_PACKAGE_FILES);
 assert.deepEqual(manifest.write_artifacts_in_order, WRITE_ORDER);
@@ -139,6 +140,7 @@ for (const marker of ["strict JSON", "same-chat next-phase instructions", "Do no
 assert.ok(controller.includes("Phase 2C exists only to build a pointer-only source index"));
 assert.ok(binding.includes("runtime_wiring_changed: true"));
 assert.ok(binding.includes("P2C_ACTIVITY_PROFILE_SOURCE_INDEX"));
+assert.ok(binding.includes("next_job: P2D_DATA_PRIVACY_NAVIGATION_INDEX"));
 
 for (const text of [binding, controller, moduleText, referenceMap, validator, terminal]) {
   assert.equal(text.includes("source text may be copied"), false, "package must not allow source text copy");
