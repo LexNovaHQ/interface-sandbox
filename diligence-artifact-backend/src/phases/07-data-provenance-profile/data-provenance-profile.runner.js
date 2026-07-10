@@ -6,6 +6,7 @@ import { buildPhase7StrategicDerivationMatrixArtifact } from "./dap-strategic-de
 import { buildPhase7SemanticBatchRouteManifest } from "./layer3-semantic-batch-route-manifest-builder.js";
 import { validatePhase7Layer4SemanticBatchArtifact } from "./layer4-semantic-batch-artifact-validator.js";
 import { buildPhase7SemanticBatchQualityGate, validatePhase7SemanticBatchQualityGate } from "./layer5-semantic-batch-quality-gate-builder.js";
+import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
@@ -14,18 +15,20 @@ const AGENT_4 = "agent_4_data_privacy";
 export async function runDataProvenanceProfilePhase({ run, internalJobId, contract, readArtifacts, buildPrompt, callProvider, saveArtifact } = {}) {
   assertCallback(readArtifacts, "readArtifacts");
   assertCallback(saveArtifact, "saveArtifact");
-  if (internalJobId === "DATA_PROVENANCE_PROFILE_LAYER4") return runLayer4({ run, contract, readArtifacts, buildPrompt, callProvider, saveArtifact });
+  if (internalJobId === "DATA_PROVENANCE_PROFILE_LAYER4") return runLayer4({ run, internalJobId, contract, readArtifacts, buildPrompt, callProvider, saveArtifact });
   if (internalJobId === "DATA_PROVENANCE_PROFILE_LAYER5") return runLayer5({ run, contract, readArtifacts, saveArtifact });
   throw new Error(`DATA_PROVENANCE_PROFILE_UNKNOWN_JOB:${internalJobId || "missing"}`);
 }
 
-async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvider, saveArtifact }) {
+async function runLayer4({ run, internalJobId, contract, readArtifacts, buildPrompt, callProvider, saveArtifact }) {
   assertCallback(buildPrompt, "buildPrompt");
   assertCallback(callProvider, "callProvider");
   const promptFiles = assertPromptFiles(contract.prompt_files, "DATA_PROVENANCE_PROFILE_LAYER4_PROMPT_FILES");
   const repairPromptFiles = assertPromptFiles(contract.repair_prompt_files, "DATA_PROVENANCE_PROFILE_LAYER4_REPAIR_PROMPT_FILES");
-  const sourceArtifacts = await readArtifacts({ reads: contract.reads || [], agent_id: contract.agent_id || contract.actor_id || AGENT_4 });
-  assertAllowedLayer4Reads(sourceArtifacts, contract.reads || []);
+  if (!(contract.reads || []).includes("phase_routing_manifest")) throw new Error("DATA_PROVENANCE_PROFILE_LAYER4_PHASE2G_MANIFEST_READ_MISSING");
+  const routed = await readPhaseRouteRuntimePacket({ internalJobId, readArtifacts, consumerAgentId: contract.agent_id || contract.actor_id || AGENT_4 });
+  const sourceArtifacts = routed.artifacts;
+  assertRoutePacket(sourceArtifacts.phase_route_runtime_packet, internalJobId);
   const bootstrap = buildBootstrapArtifacts(sourceArtifacts);
   const saved = [];
   for (const [artifact_name, artifact] of Object.entries(bootstrap)) {
@@ -49,7 +52,7 @@ async function runLayer4({ run, contract, readArtifacts, buildPrompt, callProvid
     await saveArtifact({ artifact_name: routePacket.expected_artifact_name, artifact: normalizeBatchOutput({ output, routePacket }), lock_status: validationStatus === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS" });
     saved.push(routePacket.expected_artifact_name);
   }
-  return Object.freeze({ ok: true, output: bootstrap, saved_artifacts: saved, phase_lock_status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", model_usage: "SEMANTIC_BATCH_AGENT", route_packet_count: routePackets.length, prompt_files_source: "pipeline.contract", repair_prompt_files_source: "pipeline.contract", phase2_data_privacy_navigation_index_reused: true });
+  return Object.freeze({ ok: true, output: bootstrap, saved_artifacts: saved, phase_lock_status: hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", model_usage: "SEMANTIC_BATCH_AGENT", route_packet_count: routePackets.length, prompt_files_source: "pipeline.contract", repair_prompt_files_source: "pipeline.contract", phase2_data_privacy_navigation_index_reused: true, phase2g_route_scoped_runtime_reader_active: true, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, profile_forensics_inputs_used: false });
 }
 
 async function runLayer5({ contract, readArtifacts, saveArtifact }) {
@@ -86,7 +89,7 @@ async function runBatchModel({ run, routePacket, artifacts, buildPrompt, callPro
 }
 function normalizeBatchOutput({ output, routePacket }) { if (output?.[routePacket.expected_artifact_name]) return output; return { [routePacket.expected_artifact_name]: output && typeof output === "object" ? output : { batch_id: routePacket.batch_id, families: routePacket.families, returned_field_ids: [], field_rows: [], batch_limitations: ["model_output_missing_or_non_object"], batch_quality_flags: ["NON_BLOCKING_REPAIR_REQUIRED"] } }; }
 function resolvePhase2DataPrivacyNavigationIndex(sourceArtifacts = {}) { const index = unwrap(sourceArtifacts.data_privacy_navigation_index, "data_privacy_navigation_index"); if (!index || index.artifact_type !== "data_privacy_navigation_index") throw new Error("PHASE7_LAYER4_REQUIRES_PHASE2_DATA_PRIVACY_NAVIGATION_INDEX"); return index; }
-function assertAllowedLayer4Reads(artifacts, reads) { const allowed = new Set(reads); for (const key of Object.keys(artifacts || {})) if (!allowed.has(key)) throw new Error(`DATA_PROVENANCE_PROFILE_LAYER4_FORBIDDEN_RUNTIME_ARTIFACT:${key}`); }
+function assertRoutePacket(packet = {}, internalJobId) { if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("DATA_PROVENANCE_PROFILE_LAYER4_PHASE2G_AUTHORITY_MISSING"); if (packet.internal_job_id !== internalJobId) throw new Error(`DATA_PROVENANCE_PROFILE_LAYER4_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`); if (packet.lossless_evidence_role !== "PRIMARY_EVIDENCE") throw new Error("DATA_PROVENANCE_PROFILE_LAYER4_LOSSLESS_PRIMARY_BOUNDARY_MISSING"); if (packet.index_role !== "MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE") throw new Error("DATA_PROVENANCE_PROFILE_LAYER4_INDEX_NAVIGATION_BOUNDARY_MISSING"); if (packet.profile_forensics_inputs_allowed !== false) throw new Error("DATA_PROVENANCE_PROFILE_LAYER4_FORENSICS_INPUT_BOUNDARY_MISSING"); }
 function assertPass(result = {}, label) { if (result.status !== "PASS") throw new Error(`${label}_FAILED:${JSON.stringify(result.errors || [])}`); }
 function assertPromptFiles(files, label) { if (!Array.isArray(files) || !files.length) throw new Error(`${label}_MISSING`); for (const file of files) if (!(typeof file === "string" && file.trim())) throw new Error(`${label}_INVALID_ENTRY`); return Object.freeze([...files]); }
 function unwrap(value, key) { return value?.[key] || value?.artifact?.[key] || value || {}; }
