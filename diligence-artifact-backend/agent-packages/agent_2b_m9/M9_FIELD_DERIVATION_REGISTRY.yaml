@@ -1,19 +1,22 @@
 registry_name: M9_FIELD_DERIVATION_REGISTRY
-version: v4_minimal_navigation_index
+version: v5_phase1_v5_regulatory_grievance_navigation_index
 owner_agent: agent_2b_m9
-phase: M9
+phase: LEGAL_CARTOGRAPHY_AND_INDEX
 purpose: >-
   Minimal semantic registry for M9. Semantic is only a navigation-label layer.
-  It maps deterministic queue rows to subcats and control families.
+  It maps deterministic queue rows to subcats and control families. It does not
+  derive legal conclusions, compliance conclusions, regulator applicability,
+  license validity, grievance sufficiency, or target-profile values.
 
 source_of_truth:
   deterministic_structure: legal_cartography_deterministic_map
   semantic_queue: legal_cartography_deterministic_map.semantic_label_queue
   final_output: legal_cartography_index
+  compatibility_output: legal_signal_derivation_profile
 
 semantic_output_root: legal_cartography_semantic_profile
 semantic_output_contract:
-  schema_version: M9_SEMANTIC_NAVIGATION_INDEX_v1
+  schema_version: M9_SEMANTIC_NAVIGATION_INDEX_v2_PHASE1_V5
   fields:
     semantic_navigation_index:
       type: array
@@ -33,8 +36,42 @@ semantic_output_contract:
     lock_status: allowed_lock_status
 
 allowed_values:
-  subcats: [CNS, LIA, HAL, INF, PRV, BIO, DEC, HRM, FRD, TRD]
-  control_families: [FORMATION_CONTRACT, ACTIVITY_SPECIFIC_DISCLOSURE, DATA_PRIVACY, VENDORS_TRANSFER, SECURITY, USE_SAFETY, AGENT_AUTHORITY, IP_CONTENT, COMMERCIAL_LEGAL_ALLOCATION, CONTACT_ROUTES, INDEMNITY, UNKNOWN_CONTROL_LANGUAGE]
+  subcats:
+    - CNS
+    - LIA
+    - HAL
+    - INF
+    - PRV
+    - BIO
+    - DEC
+    - HRM
+    - FRD
+    - TRD
+    - REGULATORY_DISCLOSURE
+    - LICENSING_REGISTRATION
+    - GRIEVANCE_REDRESSAL
+    - COMPLAINTS_ESCALATION
+    - CONSUMER_DISCLOSURE
+    - COUNTERPARTY_INSTITUTION
+    - FINANCIAL_TERMS_DISCLOSURE
+  control_families:
+    - FORMATION_CONTRACT
+    - ACTIVITY_SPECIFIC_DISCLOSURE
+    - DATA_PRIVACY
+    - VENDORS_TRANSFER
+    - SECURITY
+    - USE_SAFETY
+    - AGENT_AUTHORITY
+    - IP_CONTENT
+    - COMMERCIAL_LEGAL_ALLOCATION
+    - CONTACT_ROUTES
+    - INDEMNITY
+    - REGULATORY_GOVERNANCE
+    - GRIEVANCE_REDRESSAL
+    - CONSUMER_DISCLOSURE
+    - COUNTERPARTY_INSTITUTION
+    - FINANCIAL_TERMS_DISCLOSURE
+    - UNKNOWN_CONTROL_LANGUAGE
   confidence: [CLEAR, PARTIAL, UNCLEAR]
   lock_status: [LOCKED, LOCKED_WITH_LIMITATIONS, REPAIR_REQUIRED, CONTROLLED_FAILURE]
 
@@ -59,6 +96,13 @@ subcat_rules:
   HRM: children, minors, vulnerable users, wellbeing or safety escalation.
   FRD: authenticity, impersonation, synthetic media, AI-content disclosure, misrepresentation.
   TRD: trading, investment, pricing, financial transaction, order execution.
+  REGULATORY_DISCLOSURE: regulatory disclosure, fair-practice, KFS, MITC, charges, responsible lending, public disclosure pages.
+  LICENSING_REGISTRATION: licensing, registration, authorization, regulatory-registration pages.
+  GRIEVANCE_REDRESSAL: grievance redressal, complaints route, grievance officer, complaint officer.
+  COMPLAINTS_ESCALATION: ombudsman, nodal officer, appellate/escalation route.
+  CONSUMER_DISCLOSURE: borrower, customer-protection, fee/charge disclosure, consumer-facing disclosure.
+  COUNTERPARTY_INSTITUTION: sponsor bank, partner bank, NBFC partner, issuer, escrow, payment partner.
+  FINANCIAL_TERMS_DISCLOSURE: fee schedule, charges, interest-rate policy, KFS, MITC.
 
 control_family_rules:
   FORMATION_CONTRACT: terms, agreement, acceptance, account, eligibility, consent.
@@ -72,7 +116,25 @@ control_family_rules:
   COMMERCIAL_LEGAL_ALLOCATION: payment, termination, liability, warranty, dispute, SLA/support.
   CONTACT_ROUTES: contact, grievance, notices, support.
   INDEMNITY: indemnity.
+  REGULATORY_GOVERNANCE: licensing/registration/regulatory-disclosure locators only.
+  GRIEVANCE_REDRESSAL: grievance/complaints/nodal/ombudsman locators only.
+  CONSUMER_DISCLOSURE: consumer/borrower/customer-protection disclosure locators only.
+  COUNTERPARTY_INSTITUTION: bank-partner/sponsor-bank/NBFC/issuer/escrow/payment-partner locators only.
+  FINANCIAL_TERMS_DISCLOSURE: charges, interest-rate, KFS, MITC, fee-disclosure locators only.
   UNKNOWN_CONTROL_LANGUAGE: material queue row that cannot be classified.
+
+forbidden_conclusions:
+  - license_validity
+  - license_requirement
+  - applicable_regulator
+  - regulatory_compliance_status
+  - grievance_sufficiency
+  - grievance_compliance_status
+  - ombudsman_requirement
+  - statutory_complaint_obligation
+  - RBI_applicability
+  - SEBI_applicability
+  - FCA_authorisation_status
 
 emission_rules:
   - Copy queue_id exactly.
@@ -80,3 +142,4 @@ emission_rules:
   - Do not emit text, excerpt, quote, summary, description, role label, downstream treatment, or note field.
   - If uncertain, emit subcats as empty array, control_families as [UNKNOWN_CONTROL_LANGUAGE], and confidence as UNCLEAR.
   - Backend recomputes integrity fields and does not rely on model counts.
+  - Regulatory, licensing, grievance, complaint, ombudsman, and counterparty labels are locators only and cannot state legal or regulatory conclusions.
