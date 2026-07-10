@@ -1,5 +1,5 @@
-schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v6_SCOPED_LOSSLESS_NO_LANE
-purpose: Target Profile Review derivation authority aligned to Phase 3A scoped target-profile lossless evidence, bounded legal_signal_derivation_profile use, and no Lane/domain-package derivation.
+schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v7_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC
+purpose: Target Profile Review derivation authority aligned to Phase 1 v5 17-root scoped target-profile lossless evidence, bounded legal_signal_derivation_profile compatibility use, public regulatory/grievance operating-context signals, and no Lane/domain-package derivation.
 phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
 compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review.
@@ -10,12 +10,11 @@ source_boundary:
     - cartography_index
     - target_profile_source_index
     - lossless_root__homepage_landing
-    - lossless_root__about_company
-    - lossless_root__legal_identity_notice
+    - lossless_root__company_identity
     - lossless_root__pricing_commercial_availability
     - lossless_root__contact_notice
-    - lossless_root__operator_entity_signals
-    - lossless_root__supporting_company_signals
+    - lossless_root__regulatory_licensing_status
+    - lossless_root__grievance_complaints
     - legal_signal_derivation_profile
     - domain_selection_profile
     - active_run_package_manifest
@@ -25,16 +24,16 @@ source_boundary:
     - target_profile_source_index
   evidence_sources:
     - lossless_root__homepage_landing
-    - lossless_root__about_company
-    - lossless_root__legal_identity_notice
+    - lossless_root__company_identity
     - lossless_root__pricing_commercial_availability
     - lossless_root__contact_notice
-    - lossless_root__operator_entity_signals
-    - lossless_root__supporting_company_signals
+    - lossless_root__regulatory_licensing_status
+    - lossless_root__grievance_complaints
   bounded_secondary_signal_sources:
     - legal_signal_derivation_profile
   allowed_reference_documents:
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+    - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   forbidden_model_sources:
     - legal_cartography_index
@@ -42,6 +41,10 @@ source_boundary:
     - legal_doc_extraction_index
     - legal_doc_{DOC_TYPE}
     - m7_deterministic_legal_signal_overlay
+    - lossless_root__about_company
+    - lossless_root__legal_identity_notice
+    - lossless_root__operator_entity_signals
+    - lossless_root__supporting_company_signals
     - retired pre-cutover family artifacts
     - product/activity roots outside the scoped Target Profile Review evidence list
     - data-provenance roots
@@ -59,6 +62,7 @@ lane_policy:
 
 direct_legal_signal_policy:
   artifact: legal_signal_derivation_profile
+  compatibility_status: COMPATIBILITY_PRESERVED_UNTIL_2A_TARGET_LEGAL_SIGNAL_LOCATOR_CUTOVER
   model_may_use_supported_field_rows_only: true
   model_must_not_read_raw_legal_sources: true
   direct_signal_is_not_legal_advice: true
@@ -88,61 +92,142 @@ direct_legal_signal_policy:
     NOT_APPLICABLE_CONTEXTUAL: controlled_not_applicable_where_schema_permits
     NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN: no_value_record_controlled_limitation
 
+regulatory_grievance_signal_policy:
+  branch: business_context
+  public_regulatory_licensing_signal:
+    field_id: TP.BIZ.009
+    source_basis: scoped_target_lossless_evidence_only
+    allowed_roots:
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__company_identity
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__contact_notice
+    factual_signal_only: true
+    forbidden_conclusions:
+      - license_validity
+      - license_requirement
+      - applicable_regulator
+      - regulatory_compliance_status
+      - RBI_applicability
+      - SEBI_applicability
+      - FCA_authorisation_status
+  public_grievance_complaints_signal:
+    field_id: TP.BIZ.010
+    source_basis: scoped_target_lossless_evidence_only
+    allowed_roots:
+      - lossless_root__grievance_complaints
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+    factual_signal_only: true
+    forbidden_conclusions:
+      - grievance_sufficiency
+      - grievance_compliance_status
+      - ombudsman_requirement
+      - statutory_complaint_obligation
+      - regulator_applicability
+  governing_law_and_venue_boundary:
+    grievance_or_regulatory_roots_may_not_derive_governing_law: true
+    grievance_or_regulatory_roots_may_not_derive_courts_venue: true
+    governing_law_source_must_be_terms_customer_agreement_or_legal_terms: true
+    courts_venue_source_must_be_terms_dispute_clause_or_legal_terms: true
+
 selected_fields:
   target_identity.brand_name:
+    field_id: TP.ID.001
     source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.legal_entity_name:
+    field_id: TP.ID.002
     source_basis: scoped_target_lossless_evidence
     direct_legal_signal_allowed: false
+    regulatory_grievance_roots_may_support_locator_context: true
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.entity_type:
+    field_id: TP.ID.005
     source_basis: scoped_target_lossless_evidence
+    regulatory_grievance_roots_may_support_locator_context: true
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.reviewed_website:
+    field_id: TP.ID.003
     source_basis: source_discovery_handoff_or_scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.primary_domain:
+    field_id: TP.ID.004
     source_basis: reviewed_website_or_source_discovery_handoff
     unsupported_behavior: controlled_status_plus_limitation
   jurisdiction_notice.registered_notice_location:
+    field_id: TP.JUR.001
     source_basis: scoped_target_lossless_evidence_or_direct_legal_signal_only
     direct_legal_signal_allowed: true
+    regulatory_grievance_roots_may_support_notice_address_context: true
     unsupported_behavior: controlled_status_plus_limitation
   jurisdiction_notice.governing_law:
+    field_ids:
+      - TP.JUR.003
+      - TP.JUR.004
     source_basis: direct_legal_signal_only
     direct_legal_signal_allowed: true
+    regulatory_grievance_roots_forbidden: true
     unsupported_behavior: controlled_status_plus_limitation
   jurisdiction_notice.courts_venue:
+    field_id: TP.JUR.005
     source_basis: direct_legal_signal_only
     direct_legal_signal_allowed: true
+    regulatory_grievance_roots_forbidden: true
     unsupported_behavior: controlled_status_plus_limitation
   business_context.business_category:
+    field_id: TP.BIZ.001
     source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   business_context.primary_customer_type:
+    field_id: TP.BIZ.002
     source_basis: scoped_target_lossless_evidence
+    regulatory_grievance_roots_may_support_customer_context: true
     unsupported_behavior: controlled_status_plus_limitation
   business_context.market_type_candidate:
+    field_id: TP.BIZ.003
     source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   business_context.industry_sector:
+    field_id: TP.BIZ.004
     source_basis: scoped_target_lossless_evidence
+    regulatory_grievance_roots_may_support_industry_context: true
     unsupported_behavior: controlled_status_plus_limitation
   business_context.regulated_sector_hints:
+    field_id: TP.BIZ.005
     source_basis: scoped_target_lossless_evidence
+    regulatory_grievance_roots_may_support_factual_sector_hint: true
     unsupported_behavior: empty_array_plus_limitation_when_material
+  business_context.public_regulatory_licensing_signal:
+    field_id: TP.BIZ.009
+    source_basis: scoped_target_lossless_evidence
+    output_boundary: factual_public_operating_context_signal_only
+    unsupported_behavior: FIELD_LIMITED_or_NO_PUBLIC_SIGNAL_FOUND
+  business_context.public_grievance_complaints_signal:
+    field_id: TP.BIZ.010
+    source_basis: scoped_target_lossless_evidence
+    output_boundary: factual_public_route_visibility_signal_only
+    unsupported_behavior: FIELD_LIMITED_or_NO_PUBLIC_SIGNAL_FOUND
   product_service_wrapper.high_level_offering:
+    field_id: TP.WRAP.001
     source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   product_service_wrapper.primary_public_claim:
+    field_id: TP.WRAP.002
     source_basis: scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   product_service_wrapper.product_service_wrapper_names:
+    field_id: TP.WRAP.003
     source_basis: scoped_target_lossless_evidence
     unsupported_behavior: empty_array_plus_limitation_when_material
   product_service_wrapper.delivery_model_signals:
+    field_ids:
+      - TP.WRAP.005
+      - TP.WRAP.006
+      - TP.WRAP.007
+      - TP.WRAP.008
     source_basis: scoped_target_lossless_evidence
+    regulatory_licensing_roots_may_support_partner_or_intermediary_delivery_signal: true
     unsupported_behavior: empty_array_plus_limitation_when_material
   target_profile_limitations:
     source_basis: controlled_statuses_and_source_boundary
@@ -153,6 +238,9 @@ hard_rules:
   - Target Profile Review must not request legal_cartography_index.
   - Target Profile Review must not request legal documents or legal lossless text.
   - Target Profile Review must not request m7_deterministic_legal_signal_overlay.
+  - Target Profile Review must not request retired Phase 1 target roots including about_company, legal_identity_notice, operator_entity_signals, or supporting_company_signals.
+  - Target Profile Review may use regulatory_licensing_status and grievance_complaints only as scoped target lossless evidence for factual operating-context and route-visibility signals.
+  - Target Profile Review must not use regulatory_licensing_status or grievance_complaints to derive license validity, license requirement, applicable regulator, compliance status, statutory grievance sufficiency, governing law, or courts/venue.
   - Target Profile Review must not use direct legal signal rows for target_identity, business_context, product_service_wrapper, Lane, domain package, or AI overlay derivation.
   - Target Profile Review must not derive Lane, domain package, AI mount, archetype, surface, legal risk, compliance framework, exposure rows, threat triggers, or pain tier.
   - Target Profile Review must not block because legal/governance families are unavailable.
