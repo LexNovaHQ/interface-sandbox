@@ -7,9 +7,15 @@ import {
 export const DOMAIN_ACTIVITY_DETERMINISTIC_ARTIFACT_NAME = P2B_DOMAIN_ACTIVITY_ARTIFACTS.deterministicMap;
 
 const DOMAIN_ACTIVITY_ROOT_ARTIFACTS = Object.freeze([...P2B_DOMAIN_ACTIVITY_ROOT_INPUTS]);
-const ROOT_PRIMARY_HINTS = Object.freeze(["homepage_landing", "company_identity", "product_service", "platform_feature_solution", "pricing_commercial_availability", "use_case_customer_industry", "integrations_ecosystem", "technical_docs_api", "docs_api_data_flow"]);
-const ROOT_AI_HINTS = Object.freeze(["homepage_landing", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "ai_safety_transparency"]);
-const ROOT_REGULATORY_HINTS = Object.freeze(["company_identity", "product_service", "platform_feature_solution", "pricing_commercial_availability", "use_case_customer_industry", "regulatory_licensing_status", "grievance_complaints"]);
+const ROOT_PRIMARY_HINTS = toCommonRoots(P2B_DOMAIN_ACTIVITY_ROUTE_FAMILIES.primaryDomain.source_roots);
+const ROOT_AI_HINTS = toCommonRoots(P2B_DOMAIN_ACTIVITY_ROUTE_FAMILIES.aiOverlay.source_roots);
+const ROOT_REGULATORY_HINTS = toCommonRoots(P2B_DOMAIN_ACTIVITY_ROUTE_FAMILIES.regulatoryOverlay.source_roots);
+const ROOT_FUSION_HINTS = toCommonRoots(P2B_DOMAIN_ACTIVITY_ROUTE_FAMILIES.fusionCandidate.source_roots);
+const ROOT_ACTIVITY_HINTS = Object.freeze(["product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "use_case_customer_industry"]);
+const ROOT_COMMERCIAL_HINTS = Object.freeze(["pricing_commercial_availability", "product_service", "homepage_landing"]);
+const ROOT_TECHNICAL_HINTS = Object.freeze(["technical_docs_api", "docs_api_data_flow", "platform_feature_solution", "product_service"]);
+const ROOT_INTEGRATION_HINTS = Object.freeze(["integrations_ecosystem", "technical_docs_api", "platform_feature_solution"]);
+const ROOT_USE_CASE_HINTS = Object.freeze(["use_case_customer_industry", "homepage_landing", "product_service", "pricing_commercial_availability"]);
 
 const LOCATOR_PATTERNS = Object.freeze({
   PRIMARY_DOMAIN_ROUTE: Object.freeze([/\bplatform\b/i, /\bproduct\b/i, /\bsolution\b/i, /\bservice\b/i, /\bapi\b/i, /\bdeveloper\b/i, /\bfintech\b/i, /\bpayments?\b/i, /\blending\b/i, /\bbanking\b/i, /\binsurance\b/i, /\bhealth\s?tech\b/i, /\bhr\s?tech\b/i, /\bed\s?tech\b/i, /\bsecurity\b/i, /\bworkflow\b/i]),
@@ -56,7 +62,7 @@ export function buildDomainActivityDeterministicMap({ run = {}, artifacts = {} }
     run_id: runId,
     target_url: targetUrl,
     generated_by: "phase2b_domain_activity_deterministic_layer",
-    schema_version: "P2B_DOMAIN_ACTIVITY_DETERMINISTIC_MAP_v1_PHASE1_V5_12_ROOT",
+    schema_version: "P2B_DOMAIN_ACTIVITY_DETERMINISTIC_MAP_v2_PHASE1_V5_12_ROOT_STRICT_FUSION",
     model_used: false,
     artifact_role: "Navigation-only deterministic map for 3B Domain Derivation over scoped Phase 1 v5 domain/activity/AI/regulatory roots.",
     source_text_policy: {
@@ -89,6 +95,7 @@ export function buildDomainActivityDeterministicMap({ run = {}, artifacts = {} }
       primary_domain_derivation_forbidden_in_2b: true,
       ai_overlay_derivation_forbidden_in_2b: true,
       regulatory_overlay_derivation_forbidden_in_2b: true,
+      fusion_candidate_requires_composite_signal: true,
       fusion_lock_forbidden_in_2b: true,
       source_artifacts_remain_source_of_truth: true,
       full_text_copied: false,
@@ -112,7 +119,7 @@ function collectDomainActivitySources(artifacts = {}) {
   const gaps = [];
   for (const artifactName of DOMAIN_ACTIVITY_ROOT_ARTIFACTS) {
     const artifact = unwrapArtifact(artifacts[artifactName]);
-    const commonRoot = artifactName.replace(/^lossless_root__/, "");
+    const commonRoot = normalizeCommonRoot(artifactName);
     const rows = collectSourcesFromArtifact({ artifactName, artifact, commonRoot });
     routes.push(routeSummary({ artifactName, artifact, commonRoot, sourceCount: rows.length }));
     if (!rows.length) gaps.push(missingRow({ artifactName, commonRoot, reason: "No material source rows available for this Phase 1 v5 domain/activity root." }));
@@ -124,12 +131,13 @@ function collectDomainActivitySources(artifacts = {}) {
 function ingestDomainActivitySource({ source, coverageIndex, structureIndex, locatorBuckets, semanticQueue, qualityRepairQueue }) {
   const text = String(source.lossless_text || "");
   const sourceArtifact = source.source_artifact;
-  const sourceRoot = source.common_root || sourceArtifact.replace(/^lossless_root__/, "");
+  const sourceRoot = normalizeCommonRoot(source.common_root || sourceArtifact);
   const sourceId = source.source_id;
   const sourceUrl = source.canonical_url || source.final_url || source.url || "";
-  const pointer = pointerForSource(source);
+  const pointer = pointerForSource({ ...source, common_root: sourceRoot });
   const documentId = makeStableId(`${sourceArtifact}:${sourceId}`);
   const title = firstHeading(text) || source.title || source.page_title || titleFromUrl(sourceUrl) || sourceArtifact;
+  const normalizedSource = { ...source, common_root: sourceRoot };
 
   coverageIndex.push({
     coverage_id: `P2B.COV.${documentId}`,
@@ -148,34 +156,56 @@ function ingestDomainActivitySource({ source, coverageIndex, structureIndex, loc
 
   if (!text) qualityRepairQueue.push({ repair_type: "MISSING_LOSSLESS_TEXT", source_artifact: sourceArtifact, source_id: sourceId, reason: "Source row exists but lossless_text is empty." });
 
-  const units = buildStructureUnits({ text, title, source, documentId, pointer });
+  const units = buildStructureUnits({ text, title, source: normalizedSource, documentId, pointer });
   for (const unit of units) {
     structureIndex.push(unit);
-    addDomainActivityLocators({ unit, source, locatorBuckets, semanticQueue });
+    addDomainActivityLocators({ unit, source: normalizedSource, locatorBuckets, semanticQueue });
   }
 }
 
 function addDomainActivityLocators({ unit, source, locatorBuckets, semanticQueue }) {
   const unitText = textForRange(source.lossless_text, unit.char_range);
-  const text = `${unit.heading_path.join(" ")} ${unitText} ${source.url} ${source.common_root}`;
+  const commonRoot = normalizeCommonRoot(source.common_root);
+  const text = `${unit.heading_path.join(" ")} ${unitText} ${source.url} ${commonRoot}`;
+  const matched = new Set();
   for (const [routeClass, patterns] of Object.entries(LOCATOR_PATTERNS)) {
+    if (routeClass === "FUSION_CANDIDATE_ROUTE") continue;
     const meta = ROUTE_META[routeClass];
     if (!meta || !patterns.some((pattern) => pattern.test(text))) continue;
-    if (!rootSupportsRoute(source.common_root, routeClass)) continue;
+    if (!rootSupportsRoute(commonRoot, routeClass)) continue;
     const locator = locatorRow({ unit, source, routeClass, meta });
     locatorBuckets[meta.key].push(locator);
     semanticQueue.push(semanticQueueRow({ locator, unit, source, meta }));
+    matched.add(routeClass);
   }
-  addFusionIfComposite({ unit, source, locatorBuckets, semanticQueue, text });
+  addFusionIfComposite({ unit, source, locatorBuckets, semanticQueue, text, matchedRouteClasses: matched });
 }
 
-function addFusionIfComposite({ unit, source, locatorBuckets, semanticQueue, text }) {
-  const aiHit = LOCATOR_PATTERNS.AI_OVERLAY_ROUTE.some((pattern) => pattern.test(text));
-  const regHit = LOCATOR_PATTERNS.REGULATORY_OVERLAY_ROUTE.some((pattern) => pattern.test(text));
-  const activityHit = LOCATOR_PATTERNS.ACTIVITY_CAPABILITY_ROUTE.some((pattern) => pattern.test(text)) || LOCATOR_PATTERNS.TECHNICAL_CAPABILITY_ROUTE.some((pattern) => pattern.test(text));
-  if (!(aiHit && (regHit || activityHit))) return;
+function addFusionIfComposite({ unit, source, locatorBuckets, semanticQueue, text, matchedRouteClasses }) {
+  const commonRoot = normalizeCommonRoot(source.common_root);
+  if (!ROOT_FUSION_HINTS.includes(commonRoot)) return;
+  const aiHit = matchedRouteClasses.has("AI_OVERLAY_ROUTE") || LOCATOR_PATTERNS.AI_OVERLAY_ROUTE.some((pattern) => pattern.test(text));
+  const regHit = matchedRouteClasses.has("REGULATORY_OVERLAY_ROUTE") || LOCATOR_PATTERNS.REGULATORY_OVERLAY_ROUTE.some((pattern) => pattern.test(text));
+  const activityHit = matchedRouteClasses.has("ACTIVITY_CAPABILITY_ROUTE") || matchedRouteClasses.has("TECHNICAL_CAPABILITY_ROUTE");
+  const commercialHit = matchedRouteClasses.has("COMMERCIAL_AVAILABILITY_ROUTE");
+  const primaryHit = matchedRouteClasses.has("PRIMARY_DOMAIN_ROUTE");
+  const compositeSignalCount = [aiHit, regHit, activityHit, commercialHit, primaryHit].filter(Boolean).length;
+  if (!(aiHit && compositeSignalCount >= 2)) return;
   const meta = ROUTE_META.FUSION_CANDIDATE_ROUTE;
-  const locator = locatorRow({ unit, source, routeClass: "FUSION_CANDIDATE_ROUTE", meta, fusion_basis: { ai_signal_visible: aiHit, regulatory_signal_visible: regHit, activity_signal_visible: activityHit } });
+  const locator = locatorRow({
+    unit,
+    source,
+    routeClass: "FUSION_CANDIDATE_ROUTE",
+    meta,
+    fusion_basis: {
+      ai_signal_visible: aiHit,
+      regulatory_signal_visible: regHit,
+      activity_signal_visible: activityHit,
+      commercial_signal_visible: commercialHit,
+      primary_domain_signal_visible: primaryHit,
+      composite_signal_count: compositeSignalCount
+    }
+  });
   locatorBuckets[meta.key].push(locator);
   semanticQueue.push(semanticQueueRow({ locator, unit, source, meta }));
 }
@@ -188,7 +218,7 @@ function locatorRow({ unit, source, routeClass, meta, fusion_basis = null }) {
     route_code: meta.routeCode,
     source_artifact: source.source_artifact,
     source_id: source.source_id,
-    common_root: source.common_root,
+    common_root: normalizeCommonRoot(source.common_root),
     source_url: source.canonical_url || source.final_url || source.url || "",
     navigation_pointer: unit.navigation_pointer,
     priority: meta.priority,
@@ -207,7 +237,7 @@ function semanticQueueRow({ locator, unit, source, meta }) {
     unit_id: unit.unit_id,
     source_artifact: source.source_artifact,
     source_id: source.source_id,
-    common_root: source.common_root,
+    common_root: normalizeCommonRoot(source.common_root),
     route_class: locator.route_class,
     route_code: locator.route_code,
     route_signal_families: meta.signalFamilies,
@@ -219,24 +249,32 @@ function semanticQueueRow({ locator, unit, source, meta }) {
   };
 }
 
-function rootSupportsRoute(commonRoot, routeClass) {
+function rootSupportsRoute(commonRootRaw, routeClass) {
+  const commonRoot = normalizeCommonRoot(commonRootRaw);
   if (routeClass === "PRIMARY_DOMAIN_ROUTE") return ROOT_PRIMARY_HINTS.includes(commonRoot);
   if (routeClass === "AI_OVERLAY_ROUTE") return ROOT_AI_HINTS.includes(commonRoot);
   if (routeClass === "REGULATORY_OVERLAY_ROUTE") return ROOT_REGULATORY_HINTS.includes(commonRoot);
-  if (routeClass === "FUSION_CANDIDATE_ROUTE") return P2B_DOMAIN_ACTIVITY_ROUTE_FAMILIES.fusionCandidate.source_roots.includes(`lossless_root__${commonRoot}`);
-  if (routeClass === "COMMERCIAL_AVAILABILITY_ROUTE") return ["pricing_commercial_availability", "product_service", "homepage_landing"].includes(commonRoot);
-  if (routeClass === "TECHNICAL_CAPABILITY_ROUTE") return ["technical_docs_api", "docs_api_data_flow", "platform_feature_solution", "product_service"].includes(commonRoot);
-  if (routeClass === "INTEGRATION_ECOSYSTEM_ROUTE") return ["integrations_ecosystem", "technical_docs_api", "platform_feature_solution"].includes(commonRoot);
-  if (routeClass === "USE_CASE_CUSTOMER_INDUSTRY_ROUTE") return ["use_case_customer_industry", "homepage_landing", "product_service", "pricing_commercial_availability"].includes(commonRoot);
-  return true;
+  if (routeClass === "FUSION_CANDIDATE_ROUTE") return ROOT_FUSION_HINTS.includes(commonRoot);
+  if (routeClass === "ACTIVITY_CAPABILITY_ROUTE") return ROOT_ACTIVITY_HINTS.includes(commonRoot);
+  if (routeClass === "COMMERCIAL_AVAILABILITY_ROUTE") return ROOT_COMMERCIAL_HINTS.includes(commonRoot);
+  if (routeClass === "TECHNICAL_CAPABILITY_ROUTE") return ROOT_TECHNICAL_HINTS.includes(commonRoot);
+  if (routeClass === "INTEGRATION_ECOSYSTEM_ROUTE") return ROOT_INTEGRATION_HINTS.includes(commonRoot);
+  if (routeClass === "USE_CASE_CUSTOMER_INDUSTRY_ROUTE") return ROOT_USE_CASE_HINTS.includes(commonRoot);
+  return false;
 }
 
-function routeScopeForRoot(commonRoot) {
+function routeScopeForRoot(commonRootRaw) {
+  const commonRoot = normalizeCommonRoot(commonRootRaw);
   const scopes = [];
   if (ROOT_PRIMARY_HINTS.includes(commonRoot)) scopes.push("PRIMARY_DOMAIN");
   if (ROOT_AI_HINTS.includes(commonRoot)) scopes.push("AI_OVERLAY");
   if (ROOT_REGULATORY_HINTS.includes(commonRoot)) scopes.push("REGULATORY_OVERLAY");
-  if (P2B_DOMAIN_ACTIVITY_ROUTE_FAMILIES.fusionCandidate.source_roots.includes(`lossless_root__${commonRoot}`)) scopes.push("FUSION_CANDIDATE");
+  if (ROOT_FUSION_HINTS.includes(commonRoot)) scopes.push("FUSION_CANDIDATE");
+  if (ROOT_ACTIVITY_HINTS.includes(commonRoot)) scopes.push("ACTIVITY_CAPABILITY");
+  if (ROOT_COMMERCIAL_HINTS.includes(commonRoot)) scopes.push("COMMERCIAL_AVAILABILITY");
+  if (ROOT_TECHNICAL_HINTS.includes(commonRoot)) scopes.push("TECHNICAL_CAPABILITY");
+  if (ROOT_INTEGRATION_HINTS.includes(commonRoot)) scopes.push("INTEGRATION_ECOSYSTEM");
+  if (ROOT_USE_CASE_HINTS.includes(commonRoot)) scopes.push("USE_CASE_CUSTOMER_INDUSTRY");
   return scopes;
 }
 
@@ -251,11 +289,12 @@ function normalizeSourceRow({ row, index, artifactName, commonRoot }) {
   if (!row || typeof row !== "object") return null;
   const lossless = String(row.lossless_text || row.clean_text || row.text || row.raw_text || row.markdown || row.body || row.content || "");
   const sourceId = String(row.source_id || row.id || row.url_id || row.page_id || `${artifactName}.${index + 1}`);
+  const normalizedRoot = normalizeCommonRoot(row.common_root || commonRoot);
   return {
     ...row,
     source_artifact: artifactName,
     source_id: sourceId,
-    common_root: row.common_root || commonRoot,
+    common_root: normalizedRoot,
     canonical_url: row.canonical_url || row.final_url || row.url || row.href || "",
     url: row.url || row.canonical_url || row.final_url || row.href || "",
     lossless_text: lossless
@@ -282,7 +321,7 @@ function unitFor({ documentId, index, heading, start, end, source, pointer, empt
     unit_id: `P2B.UNIT.${documentId}.${String(index).padStart(3, "0")}`,
     source_artifact: source.source_artifact,
     source_id: source.source_id,
-    common_root: source.common_root,
+    common_root: normalizeCommonRoot(source.common_root),
     heading_path: [heading || source.source_artifact],
     char_range: { start, end },
     navigation_pointer: { ...pointer, char_range: { start, end } },
@@ -290,13 +329,13 @@ function unitFor({ documentId, index, heading, start, end, source, pointer, empt
   };
 }
 
-function pointerForSource(source) { return { artifact_name: source.source_artifact, source_id: source.source_id, common_root: source.common_root, text_field: "lossless_text" }; }
+function pointerForSource(source) { return { artifact_name: source.source_artifact, source_id: source.source_id, common_root: normalizeCommonRoot(source.common_root), text_field: "lossless_text" }; }
 function splitIntoChunks(text) { return String(text).split(/\n{2,}|(?=^#{1,4}\s+)/gm).map((chunk) => chunk.trim()).filter(Boolean).flatMap((chunk) => chunk.length > 2200 ? chunk.match(/[\s\S]{1,1800}(?:\s|$)/g).map((part) => part.trim()).filter(Boolean) : [chunk]); }
 function textForRange(text, range = {}) { const source = String(text || ""); return source.slice(Number(range.start || 0), Number(range.end || 0)); }
 function firstHeading(text) { const match = String(text || "").match(/^#{1,4}\s+(.+)$/m); return match ? match[1].trim().slice(0, 160) : ""; }
 function titleFromUrl(url) { try { const parsed = new URL(url); return parsed.pathname.split("/").filter(Boolean).pop() || parsed.hostname; } catch { return ""; } }
-function routeSummary({ artifactName, artifact, commonRoot, sourceCount }) { return { artifact_name: artifactName, common_root: commonRoot, present: Boolean(artifact), source_count: sourceCount, route_scope: routeScopeForRoot(commonRoot), access_rule: "READ_PHASE1_COMMON_ROOT_SOURCE_THROUGH_2B_INDEX" }; }
-function missingRow({ artifactName, commonRoot, reason }) { return { missing_id: `P2B.MISS.${makeStableId(artifactName)}`, source_artifact: artifactName, common_root: commonRoot, status: "SOURCE_NOT_PRESENT_OR_EMPTY", limitation: reason }; }
+function routeSummary({ artifactName, artifact, commonRoot, sourceCount }) { const normalizedRoot = normalizeCommonRoot(commonRoot); return { artifact_name: artifactName, common_root: normalizedRoot, present: Boolean(artifact), source_count: sourceCount, route_scope: routeScopeForRoot(normalizedRoot), access_rule: "READ_PHASE1_COMMON_ROOT_SOURCE_THROUGH_2B_INDEX" }; }
+function missingRow({ artifactName, commonRoot, reason }) { return { missing_id: `P2B.MISS.${makeStableId(artifactName)}`, source_artifact: artifactName, common_root: normalizeCommonRoot(commonRoot), status: "SOURCE_NOT_PRESENT_OR_EMPTY", limitation: reason }; }
 function resolveStatus({ coverageIndex, missingLimited, qualityRepairQueue }) { if (!coverageIndex.length) return "CONTROLLED_FAILURE"; if (missingLimited.length || qualityRepairQueue.length) return "LOCKED_WITH_LIMITATIONS"; return "LOCKED"; }
 function keepDeterministicShape(value) { const keys = ["run_id", "target_url", "generated_by", "schema_version", "model_used", "artifact_role", "source_text_policy", "source_artifacts_read", "domain_activity_source_coverage_index", "domain_activity_document_structure_index", "primary_domain_locator_map", "ai_overlay_locator_map", "regulatory_overlay_locator_map", "fusion_candidate_locator_map", "activity_capability_locator_map", "commercial_availability_locator_map", "technical_capability_locator_map", "integration_ecosystem_locator_map", "use_case_customer_industry_locator_map", "missing_limited_domain_activity_source_map", "semantic_label_queue", "quality_repair_queue", "downstream_rules", "lock_status"]; return Object.fromEntries(keys.map((key) => [key, value[key] ?? []])); }
 function unwrapArtifact(value) { if (!value || typeof value !== "object") return null; if (value.artifact && typeof value.artifact === "object") return value.artifact; if (value.data && typeof value.data === "object") return value.data; if (value.payload && typeof value.payload === "object") return value.payload; return value; }
@@ -306,3 +345,5 @@ function dedupeRows(rows, keyFn) { const seen = new Set(); const out = []; for (
 function makeStableId(value) { let hash = 0; const text = String(value || ""); for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0; return Math.abs(hash).toString(36).padStart(6, "0"); }
 function findRunId(artifacts) { for (const value of Object.values(artifacts || {})) { const artifact = unwrapArtifact(value); if (artifact?.run_id) return artifact.run_id; } return ""; }
 function stripEmpty(row) { return Object.fromEntries(Object.entries(row || {}).filter(([, value]) => value !== undefined && value !== null)); }
+function normalizeCommonRoot(value) { return String(value || "").replace(/^lossless_root__/, ""); }
+function toCommonRoots(values = []) { return Object.freeze([...values].map(normalizeCommonRoot)); }
