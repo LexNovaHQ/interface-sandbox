@@ -154,5 +154,18 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
       NOT_APPLICABLE_CONTEXTUAL: "controlled_not_applicable_where_schema_permits",
       NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN: "do_not_invent_value_record_controlled_limitation"
     })
+  }),
+  boundary_rules: Object.freeze({
+    phase2a_target_profile_source_index_required: true,
+    target_profile_source_index_navigation_only: true,
+    target_profile_deterministic_map_forbidden_as_model_read: true,
+    target_profile_semantic_profile_forbidden_as_model_read: true,
+    scoped_lossless_roots_phase1_v5_only: true,
+    company_level_lane_forbidden: true,
+    primary_domain_package_derivation_forbidden: true,
+    ai_overlay_mount_derivation_forbidden: true,
+    regulatory_grievance_fields_factual_only: true,
+    legal_cartography_index_forbidden: true,
+    raw_legal_docs_forbidden: true
   })
 });
