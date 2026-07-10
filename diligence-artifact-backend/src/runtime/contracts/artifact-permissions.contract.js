@@ -2,6 +2,9 @@ const ART = Object.freeze({
   domainSelectionProfile: "domain_selection_profile",
   activeRunPackageManifest: "active_run_package_manifest",
   domainDerivationProfile: "domain_derivation_profile",
+  domainDerivationDeterministicMap: "domain_derivation_deterministic_map",
+  domainDerivationSemanticProfile: "domain_derivation_semantic_profile",
+  domainDerivationSourceIndex: "domain_derivation_source_index",
   uploadedSourceDocumentIndex: "uploaded_source_document_index",
   uploadedSourceDocumentCorpus: "uploaded_source_document_corpus",
   sourceHandoff: "source_discovery_handoff",
@@ -82,11 +85,13 @@ export const SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES = Object.freeze([
 export const SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES = Object.freeze([ART.sourceHandoff, ART.postPhase1DomainGateHandoff]);
 export const TARGET_PROFILE_SOURCE_ARTIFACT_NAMES = Object.freeze(["lossless_root__homepage_landing", "lossless_root__company_identity", "lossless_root__contact_notice", "lossless_root__pricing_commercial_availability", "lossless_root__regulatory_licensing_status", "lossless_root__grievance_complaints"]);
 export const ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES = Object.freeze(["lossless_root__product_service", "lossless_root__platform_feature_solution", "lossless_root__technical_docs_api", "lossless_root__docs_api_data_flow", "lossless_root__integrations_ecosystem", "lossless_root__pricing_commercial_availability", "lossless_root__use_case_customer_industry", "lossless_root__support_help_resources"]);
+export const DOMAIN_DERIVATION_SOURCE_ROOT_ARTIFACT_NAMES = Object.freeze(["lossless_root__homepage_landing", "lossless_root__company_identity", "lossless_root__product_service", "lossless_root__platform_feature_solution", "lossless_root__technical_docs_api", "lossless_root__docs_api_data_flow", "lossless_root__pricing_commercial_availability", "lossless_root__use_case_customer_industry", "lossless_root__integrations_ecosystem", "lossless_root__ai_safety_transparency", "lossless_root__regulatory_licensing_status", "lossless_root__grievance_complaints"]);
 export const PHASE3_TARGET_ACTIVITY_SOURCE_ARTIFACT_NAMES = Object.freeze([...new Set([...TARGET_PROFILE_SOURCE_ARTIFACT_NAMES, ...ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES])]);
 export const DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES = Object.freeze(["lossless_root__privacy_data_processing", "lossless_root__security_trust_compliance", "lossless_root__data_governance_controls", "lossless_root__technical_docs_api", "lossless_root__docs_api_data_flow", "lossless_root__integrations_ecosystem", "lossless_root__ai_safety_transparency"]);
 export const LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES = Object.freeze([...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION, "lossless_root__company_identity", "lossless_root__contact_notice", "lossless_root__privacy_data_processing", "lossless_root__security_trust_compliance", "lossless_root__data_governance_controls", "lossless_root__ai_safety_transparency", "lossless_root__regulatory_licensing_status", "lossless_root__grievance_complaints"]);
 
 export const TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES = Object.freeze([ART.targetProfileDeterministicMap, ART.targetProfileSemanticProfile, ART.targetProfileSourceIndex]);
+export const DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES = Object.freeze([ART.domainDerivationDeterministicMap, ART.domainDerivationSemanticProfile, ART.domainDerivationSourceIndex]);
 export const LEGAL_CARTOGRAPHY_ARTIFACT_NAMES = Object.freeze([ART.legalCartographyDeterministicMap, ART.legalCartographySemanticProfile, ART.legalCartographyIndex, ART.legalSignalDerivationProfile]);
 export const LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES = Object.freeze([ART.legalCartographyReinvestigationWorkpad]);
 export const LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAMES = Object.freeze([ART.legalSignalDerivationProfile]);
@@ -96,7 +101,7 @@ export const CARTOGRAPHY_LAYER3_ARTIFACT_NAMES = Object.freeze([ART.cartographyP
 export const CARTOGRAPHY_LAYER4_ARTIFACT_NAMES = Object.freeze([ART.cartographySemanticNavigationOverlay]);
 export const CARTOGRAPHY_PROFILE_INDEX_ARTIFACT_NAMES = Object.freeze([ART.activityProfileSourceIndex]);
 export const CARTOGRAPHY_LAYER5_ARTIFACT_NAMES = Object.freeze([...CARTOGRAPHY_PROFILE_INDEX_ARTIFACT_NAMES, ART.dataPrivacyNavigationIndex, ART.cartographyIndex, ART.cartographyValidationManifest]);
-export const CARTOGRAPHY_ARTIFACT_NAMES = Object.freeze([...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES]);
+export const CARTOGRAPHY_ARTIFACT_NAMES = Object.freeze([...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES]);
 export const CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES = Object.freeze([ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ART.sourceDiscoveryMatrixManifest, ART.neutralEvidenceBucketManifest, ART.adapterExpansionLog, "source_family_index", ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION]);
 
 export const FEATURE_CANDIDATE_INVENTORY_ARTIFACT_NAMES = Object.freeze([ART.activityInventory]);
@@ -143,7 +148,7 @@ export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceUrlManifest]: AGENT_1A_ARTIFACT_NAMES,
   [AGENT_IDS.sourceExtractor]: AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES,
   [AGENT_IDS.sourceDiscovery]: SOURCE_DISCOVERY_HANDOFF_ARTIFACT_NAMES,
-  [AGENT_IDS.cartographyIndex]: [...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES],
+  [AGENT_IDS.cartographyIndex]: [...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES],
   [AGENT_IDS.legalCartography]: [...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES],
   [AGENT_IDS.targetActivity]: [ART.targetProfile, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics],
   [AGENT_IDS.dataProvenance]: [...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern],
@@ -162,9 +167,9 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceUrlManifest]: [],
   [AGENT_IDS.sourceExtractor]: ["deduped_url_manifest", ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES],
   [AGENT_IDS.sourceDiscovery]: [...AGENT_1_ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION],
-  [AGENT_IDS.cartographyIndex]: [...CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES],
+  [AGENT_IDS.cartographyIndex]: [...CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES],
   [AGENT_IDS.legalCartography]: [...CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, ART.cartographySourceInventory, ART.cartographyLocatorSpine, ART.cartographyProfileRouteMatrix, ART.cartographySemanticNavigationOverlay],
-  [AGENT_IDS.targetActivity]: [ART.sourceHandoff, ART.cartographyIndex, ART.targetProfileSourceIndex, ART.activityProfileSourceIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ...PHASE3_TARGET_ACTIVITY_SOURCE_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES],
+  [AGENT_IDS.targetActivity]: [ART.sourceHandoff, ART.cartographyIndex, ART.targetProfileSourceIndex, ART.domainDerivationSourceIndex, ART.activityProfileSourceIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ...DOMAIN_DERIVATION_SOURCE_ROOT_ARTIFACT_NAMES, ...PHASE3_TARGET_ACTIVITY_SOURCE_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES],
   [AGENT_IDS.dataProvenance]: [ART.cartographyIndex, ART.dataPrivacyNavigationIndex, ART.legalCartographyIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ART.dapSemanticBatchValidationPattern],
   [AGENT_IDS.exposureRegistry]: [ART.cartographyIndex, ART.legalCartographyIndex, ART.legalSignalDerivationProfile, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ART.targetProfile, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES],
   [AGENT_IDS.operatorChallenge]: [ART.cartographyIndex, ART.legalCartographyIndex, ART.legalSignalDerivationProfile, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ART.targetProfile, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES],
@@ -186,6 +191,7 @@ export const INTERNAL_JOB_WRITE_PERMISSIONS = Object.freeze({
   P2_SEMANTIC_NAVIGATION_OVERLAY: CARTOGRAPHY_LAYER4_ARTIFACT_NAMES,
   M9: [...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES],
   P2A_TARGET_PROFILE_SOURCE_INDEX: TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES,
+  P2B_DOMAIN_DERIVATION_SOURCE_INDEX: DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES,
   P2_INDEX_COMPILER_VALIDATION: CARTOGRAPHY_LAYER5_ARTIFACT_NAMES,
   M7_TARGET_PROFILE: [ART.targetProfile],
   P3_DOMAIN_DERIVATION_LAYER: DOMAIN_DERIVATION_ARTIFACT_NAMES,
@@ -217,7 +223,7 @@ export function artifactMatchesPermission(artifactName, permission) {
   if (permission === LEGAL_DOC_DYNAMIC_PERMISSION) return LEGAL_DOC_ARTIFACT_PATTERN.test(artifactName);
   if (permission === ART.exposureBatchPattern) return M11_BATCH_ARTIFACT_PATTERN.test(artifactName);
   if (permission === ART.exposureBatchValidationPattern) return M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName);
-  if (permission === ART.dapSemanticBatchValidationPattern) return PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName);
+  if (permission === ART.dapSemanticBatchValidationPattern) return PHASE7_DAP_BATCH_VALIDATION_PATTERN.test(artifactName);
   if (String(permission || "").startsWith("lossless_root__")) return artifactName === permission || artifactName.startsWith(`${permission}__part_`);
   return false;
 }
