@@ -10,9 +10,10 @@ The deterministic phase must save exactly one artifact:
 {
   "feature_candidate_inventory": {
     "artifact_type": "feature_candidate_inventory",
-    "inventory_version": "m8_feature_candidate_inventory_index_v1",
-    "derivation_mode": "DETERMINISTIC_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION",
-    "source_families_indexed": [],
+    "inventory_version": "m8_feature_candidate_inventory_index_v2_phase2c",
+    "derivation_mode": "DETERMINISTIC_INDEX_FROM_ACTIVITY_PROFILE_SOURCE_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION",
+    "source_index_artifact": "activity_profile_source_index",
+    "source_locator_maps_indexed": [],
     "raw_hit_count": 0,
     "canonical_candidate_count": 0,
     "raw_feature_hit_index": [],
@@ -35,6 +36,12 @@ The deterministic phase must save exactly one artifact:
 
 `target_feature_profile_forensics` must reference the saved inventory through `feature_candidate_inventory_ref` and may ledger deterministic steps, but it must not become a second candidate inventory.
 
+## Source Authority
+
+`feature_candidate_inventory` is built only from `activity_profile_source_index` locator rows.
+
+It must not read `lossless_family__*` or raw `lossless_root__*` activity sources directly.
+
 ## Index-Only Rule
 
-The saved inventory is a map to source locations. It must not copy or summarize the underlying source text.
+The saved inventory is a map to source locations. It must not copy or summarize the underlying source text. It must not emit mechanics proof, package taxonomy, archetype labels, surface labels, legal analysis, data privacy analysis, exposure analysis, or risk scoring.
