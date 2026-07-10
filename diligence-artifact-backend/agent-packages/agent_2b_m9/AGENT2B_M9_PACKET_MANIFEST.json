@@ -1,8 +1,10 @@
 {
   "packet_name": "AGENT2B_M9_LEGAL_CARTOGRAPHY_PROMPT_PACKET",
-  "version": "v6_phase1_v5_17_root_regulatory_grievance_sync",
+  "phase2_designation": "P2F_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",
+  "runtime_job_id_preserved": "M9",
+  "version": "v7_phase2f_phase1_v5_17_root_regulatory_grievance_sync",
   "active_agent_id": "agent_2b_m9",
-  "active_phase_scope": "LEGAL_CARTOGRAPHY_AND_INDEX_ONLY",
+  "active_phase_scope": "P2F_LEGAL_CARTOGRAPHY_AND_LEGAL_SIGNALS_ONLY",
   "phase_2_internal_jobs": ["LEGAL_CARTOGRAPHY_INDEX", "LEGAL_SIGNAL_DERIVATION_COMPATIBILITY"],
   "input_protocol": "phase1_v5_17_root_common_roots_plus_legal_doc_artifacts",
   "read_artifacts": [
@@ -37,7 +39,7 @@
   "components": ["AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml", "00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md", "M9_STEP1_OUTPUT_CONTRACT_LOCK.md", "04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md", "M9_FIELD_DERIVATION_REGISTRY.yaml", "M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md", "M9_C_REINVESTIGATION.md", "M9_HYBRID_COMPILER_CONTRACT.md", "00_VALIDATOR_RULES_INTEGRATED.md", "00_TERMINAL_RECEIPT_RULES_INTEGRATED.md", "AGENT2B_M9_PROMPT_STACK_ORDER.md", "AGENT2B_M9_PACKET_VALIDATION.json"],
   "ownership_boundary": {
     "target_profile_legal_signal_locators_owned_by_2a": true,
-    "full_legal_governance_cartography_owned_by_2e": true,
+    "full_legal_governance_cartography_owned_by_2f": true,
     "legal_signal_derivation_profile_compatibility_only": true
   },
   "forbidden_conclusions": ["license_validity", "license_requirement", "applicable_regulator", "regulatory_compliance_status", "grievance_sufficiency", "grievance_compliance_status", "ombudsman_requirement"],
