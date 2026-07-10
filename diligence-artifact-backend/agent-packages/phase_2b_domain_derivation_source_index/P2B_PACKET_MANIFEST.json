@@ -1,10 +1,10 @@
 {
   "packet_name": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_PACKET",
-  "version": "v1_phase1_v5_contract_only",
+  "version": "v2_phase1_v5_runtime_wired",
   "active_phase_id": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX",
   "active_phase_scope": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_ONLY",
-  "package_status": "LEAN_PACKAGE_CONTRACT_ONLY",
-  "runtime_wiring_changed": false,
+  "package_status": "LEAN_PACKAGE_RUNTIME_WIRED",
+  "runtime_wiring_changed": true,
   "runtime_job_id": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX",
   "phase1_input_contract": "PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE",
   "read_artifacts": [
@@ -34,6 +34,15 @@
   ],
   "final_downstream_required_artifact": "domain_derivation_source_index",
   "reserved_for_2c_phase5": "activity_profile_source_index",
+  "runtime_wiring": {
+    "artifact_permissions_registered": true,
+    "pipeline_contract_registered": true,
+    "central_phase_registered": true,
+    "pipeline_service_dispatch_registered": true,
+    "save_order_gates_registered": true,
+    "p2a_next": "P2B_DOMAIN_DERIVATION_SOURCE_INDEX",
+    "p2b_next": "P2_INDEX_COMPILER_VALIDATION"
+  },
   "reference_documents": [
     "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REFERENCE_MAP.yaml",
     "src/phases/02-cartography-index/domain-derivation-source-index.contract.js",
@@ -65,7 +74,7 @@
     "activity_profile_source_index_reserved_for_2c_phase5": true,
     "domain_derivation_profile_forbidden": true,
     "active_run_package_manifest_forbidden": true,
-    "runtime_wiring_changed": false,
+    "runtime_wiring_changed": true,
     "derivation_logic_hardcoded_in_package": false,
     "source_artifacts_remain_source_of_truth": true,
     "pointer_only_outputs": true,
