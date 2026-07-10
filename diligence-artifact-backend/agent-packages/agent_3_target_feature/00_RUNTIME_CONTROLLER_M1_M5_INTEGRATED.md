@@ -25,7 +25,7 @@ This package currently covers these compatibility surfaces until each phase is m
 - Activity Profile Review
 - Activity Profile Forensics
 
-The package does not own Source Discovery, Legal Cartography and Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
+The package does not own Source Discovery, Legal Cartography and Index, Phase 2A Target Profile Source Index, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Normalized Report Renderer, or Qualified Review.
 
 ## Target Profile Review read authority
 
@@ -37,17 +37,18 @@ Target Profile Review may read only:
 - `cartography_index`
 - `target_profile_source_index`
 - `lossless_root__homepage_landing`
-- `lossless_root__about_company`
-- `lossless_root__legal_identity_notice`
-- `lossless_root__pricing_commercial_availability`
+- `lossless_root__company_identity`
 - `lossless_root__contact_notice`
-- `lossless_root__operator_entity_signals`
-- `lossless_root__supporting_company_signals`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__regulatory_licensing_status`
+- `lossless_root__grievance_complaints`
 - `legal_signal_derivation_profile`
 - `domain_selection_profile`
 - `active_run_package_manifest`
 
 `cartography_index` and `target_profile_source_index` are navigation support only. The scoped `lossless_root__*` target artifacts are the source evidence.
+
+`target_profile_source_index` is the active Phase 2A locator authority. It routes Target Profile Review to evidence; it does not supply target-profile values.
 
 Target Profile Review must not read or request:
 
@@ -57,11 +58,23 @@ Target Profile Review must not read or request:
 - `legal_doc_{DOC_TYPE}`
 - raw legal/governance source text
 - `m7_deterministic_legal_signal_overlay`
+- `target_profile_deterministic_map`
+- `target_profile_semantic_profile`
 - activity/product roots outside the scoped target list
 - data-provenance roots
 - retired pre-cutover family artifacts
+- `lossless_root__about_company`
+- `lossless_root__legal_identity_notice`
+- `lossless_root__operator_entity_signals`
+- `lossless_root__supporting_company_signals`
 
 Target Profile Review must not block because legal/governance lossless artifacts are absent. Missing or limited direct legal signal rows become controlled field statuses and limitation rows.
+
+## Target Profile Review regulatory and grievance signal rule
+
+Target Profile Review may populate `business_context.public_regulatory_licensing_signal` and `business_context.public_grievance_complaints_signal` only as factual public operating-context signals from scoped target evidence.
+
+Target Profile Review must not emit license validity, license requirement, applicable regulator conclusion, regulatory compliance status, grievance sufficiency, grievance compliance status, ombudsman requirement, or statutory complaint obligation.
 
 ## Direct legal signal rule
 
@@ -111,10 +124,10 @@ Domain Derivation Layer may read only:
 - `activity_profile_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
-- `lossless_root__about_company`
+- `lossless_root__company_identity`
 - `lossless_root__product_service`
 - `lossless_root__platform_feature_solution`
-- `lossless_root__technical_docs_api_developer`
+- `lossless_root__technical_docs_api`
 - `lossless_root__docs_api_data_flow`
 - `lossless_root__pricing_commercial_availability`
 - `lossless_root__use_case_customer_industry`
@@ -150,6 +163,13 @@ Domain Derivation Layer must not read or request:
 - legal/governance source text
 - data-provenance roots
 - privacy/security/trust roots
+- `lossless_root__about_company`
+- `lossless_root__technical_docs_api_developer`
+- `lossless_root__privacy_data_processing`
+- `lossless_root__security_trust`
+- `lossless_root__trust_compliance`
+- `lossless_root__security_trust_compliance`
+- `lossless_root__data_governance_controls`
 - exposure artifacts
 - compiler artifacts
 - Qualified Review artifacts
