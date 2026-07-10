@@ -1,21 +1,24 @@
 reference_map_name: P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP
-version: v1_phase1_v5_target_profile_locator_authority_map
+version: v2_phase1_v5_field_aware_locator_reference_map
 phase: P2A_TARGET_PROFILE_SOURCE_INDEX
 public_label: Target Profile Source Index
-package_status: CREATED_AS_PACKAGE_FOLDER_ANCHOR
+package_status: FIELD_AWARE_REFERENCE_MAP_LOCKED
 lock_status: LOCKED
 
 purpose: >-
-  Package-local reference map for Phase 2A Target Profile Source Index.
-  This file creates the package folder and inventories the external authority
-  documents that the 2A module must use later. It does not define derivation
-  rules and does not authorize value derivation.
+  Package-local reference map for Phase 2A Target Profile Source Index. This
+  file maps Target Profile Review material fields to external derivation
+  authorities, allowed source scopes, and locator families. It is a locator
+  reference map only. It does not define derivation rules, does not authorize
+  value derivation, and does not replace the Target Profile Review derivation
+  authority.
 
 authority_sources:
   backend_contract: src/phases/02-cartography-index/target-profile-source-index.contract.js
   deterministic_builder: src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js
   semantic_validator: src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
   target_profile_derivation_authority: references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+  base_field_registry: references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
   regulatory_grievance_field_addendum: references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
 
 source_contract:
@@ -38,17 +41,386 @@ source_contract:
     - lossless_root__pricing_commercial_availability
     - lossless_root__regulatory_licensing_status
     - lossless_root__grievance_complaints
+  dynamic_reads:
+    - legal_doc_{DOC_TYPE}
+  retired_roots_forbidden:
+    - lossless_root__about_company
+    - lossless_root__legal_identity_notice
+    - lossless_root__operator_entity_signals
+    - lossless_root__supporting_company_signals
+    - lossless_root__security_trust
+    - lossless_root__trust_compliance
+    - lossless_root__support_help
+    - lossless_root__blog_resources
+    - lossless_root__careers_hiring
+    - lossless_root__public_repository_developer_assets
+    - lossless_root__third_party_profiles
+    - lossless_root__technical_docs_api_developer
 
 execution_boundary:
   phase_2a_action: LOCATE_ONLY
   derived_values_forbidden: true
   target_profile_output_forbidden: true
   domain_derivation_forbidden: true
+  lane_derivation_forbidden: true
   activity_derivation_forbidden: true
+  data_privacy_navigation_forbidden: true
   full_legal_cartography_reserved_for_2e: true
   target_profile_review_derives_values_later: true
+  source_artifacts_remain_source_of_truth: true
+  full_text_copied: false
+  summaries_allowed: false
+  excerpts_allowed: false
 
-package_creation_note: >-
-  This is the first package file. It intentionally anchors the GitHub folder
-  without adding placeholder or .gitkeep pollution. Full field-by-field rows
-  will be expanded only during the locked reference-map build step.
+phase_boundaries:
+  p2a_owns: target-profile source locators and target-profile legal signal locators
+  p3a_owns: target_profile material value derivation
+  p2e_m9_owns: full legal/governance cartography
+  legal_signal_derivation_profile_status: COMPATIBILITY_ONLY_UNTIL_DOWNSTREAM_CUTOVER
+
+material_field_locator_rows:
+  - field_id: TP.ID.002
+    field_key: target_identity.legal_entity_name
+    field_branch: target_identity
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - LEGAL_ENTITY_NAME_LOCATOR
+      - REGISTERED_ENTITY_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.ID.005
+    field_key: target_identity.entity_type
+    field_branch: target_identity
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__regulatory_licensing_status
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - REGISTERED_ENTITY_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.ID.006
+    field_key: target_identity.parent_affiliate_relationship
+    field_branch: target_identity
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__regulatory_licensing_status
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - BANK_PARTNER_SPONSOR_BANK_LOCATOR
+      - COUNTERPARTY_INSTITUTION_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.JUR.001
+    field_key: jurisdiction_notice.registered_notice_country
+    field_branch: jurisdiction_notice
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - REGISTERED_OFFICE_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.JUR.002
+    field_key: jurisdiction_notice.registered_notice_state
+    field_branch: jurisdiction_notice
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - REGISTERED_OFFICE_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.JUR.007
+    field_key: target_profile_limitations.jurisdiction_evidence_basis
+    field_branch: target_profile_limitations
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - REGISTERED_OFFICE_LOCATOR
+      - LEGAL_NOTICE_CONTACT_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.JUR.008
+    field_key: target_profile_limitations.jurisdiction_uncertainty
+    field_branch: target_profile_limitations
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - REGISTERED_OFFICE_LOCATOR
+      - LEGAL_NOTICE_CONTACT_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.BIZ.002
+    field_key: business_context.primary_customer_type
+    field_branch: business_context
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+    locator_families:
+      - CUSTOMER_SEGMENT_CONTEXT_LOCATOR
+      - CONSUMER_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.BIZ.004
+    field_key: business_context.industry_sector
+    field_branch: business_context
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__regulatory_licensing_status
+    locator_families:
+      - REGULATORY_LICENSING_SIGNAL_LOCATOR
+      - CONSUMER_DISCLOSURE_LOCATOR
+      - BANK_PARTNER_SPONSOR_BANK_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.BIZ.005
+    field_key: business_context.regulated_sector_hints
+    field_branch: business_context
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__company_identity
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+    locator_families:
+      - REGULATORY_LICENSING_SIGNAL_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - BANK_PARTNER_SPONSOR_BANK_LOCATOR
+      - CONSUMER_DISCLOSURE_LOCATOR
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+  - field_id: TP.BIZ.009
+    field_key: business_context.public_regulatory_licensing_signal
+    field_branch: business_context
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
+    allowed_source_scopes:
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__company_identity
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__contact_notice
+    locator_families:
+      - REGULATORY_LICENSING_SIGNAL_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+      - BANK_PARTNER_SPONSOR_BANK_LOCATOR
+      - CONSUMER_DISCLOSURE_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    boundary: factual_public_operating_context_signal_only
+
+  - field_id: TP.BIZ.010
+    field_key: business_context.public_grievance_complaints_signal
+    field_branch: business_context
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
+    allowed_source_scopes:
+      - lossless_root__grievance_complaints
+      - lossless_root__contact_notice
+      - lossless_root__regulatory_licensing_status
+    locator_families:
+      - GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR
+      - NODAL_GRIEVANCE_OFFICER_LOCATOR
+      - OMBUDSMAN_ESCALATION_LOCATOR
+      - COMPLAINTS_ROUTE_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+    boundary: factual_public_route_visibility_signal_only
+
+  - field_id: TP.WRAP.008
+    field_key: product_service_wrapper.delivery_model_signals.partner_marketplace_intermediary_signal
+    field_branch: product_service_wrapper
+    downstream_owner: TARGET_PROFILE_REVIEW
+    derivation_authority_refs:
+      - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    allowed_source_scopes:
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__regulatory_licensing_status
+      - legal_doc_target_signal_locator_only
+    locator_families:
+      - BANK_PARTNER_SPONSOR_BANK_LOCATOR
+      - COUNTERPARTY_INSTITUTION_LOCATOR
+      - REGULATORY_DISCLOSURE_LOCATOR
+    phase_2a_action: LOCATE_ONLY
+    derived_value_forbidden: true
+
+legal_target_signal_locator_policy:
+  legal_doc_target_signal_locator_only: true
+  legal_doc_full_text_copy_forbidden: true
+  legal_doc_value_derivation_forbidden: true
+  full_legal_cartography_reserved_for_2e: true
+  target_profile_review_must_read_source_later: true
+  governing_law_and_courts_boundary:
+    regulatory_or_grievance_roots_may_not_derive_governing_law: true
+    regulatory_or_grievance_roots_may_not_derive_courts_venue: true
+    governing_law_source_must_be_terms_customer_agreement_or_legal_terms: true
+    courts_venue_source_must_be_terms_dispute_clause_or_legal_terms: true
+
+allowed_semantic_vocab:
+  target_subcats:
+    - ENTITY_IDENTITY
+    - BRAND_IDENTITY
+    - OPERATOR_IDENTITY
+    - MARKET_POSITIONING
+    - CONTACT_NOTICE
+    - COMMERCIAL_AVAILABILITY
+    - PRICING_SALES
+    - CUSTOMER_SEGMENT
+    - GEOGRAPHY_JURISDICTION
+    - LEGAL_NOTICE_POINTER
+    - LEGAL_TARGET_SIGNAL
+    - REGULATORY_LICENSING_SIGNAL
+    - PUBLIC_REGULATORY_DISCLOSURE
+    - GRIEVANCE_COMPLAINTS_SIGNAL
+    - COMPLAINTS_ESCALATION_ROUTE
+    - COUNTERPARTY_INSTITUTION_SIGNAL
+    - CONSUMER_DISCLOSURE_SIGNAL
+    - LIMITED_PUBLIC_DISCLOSURE
+  target_signal_families:
+    - IDENTITY
+    - CONTACT
+    - COMMERCIAL
+    - MARKET
+    - JURISDICTION_POINTER
+    - LEGAL_NOTICE_POINTER
+    - LEGAL_TARGET_SIGNAL
+    - REGULATORY_OPERATING_CONTEXT
+    - GRIEVANCE_OPERATING_CONTEXT
+    - COUNTERPARTY_INSTITUTION
+    - CONSUMER_DISCLOSURE
+    - MONEY_MOVEMENT_CONTEXT
+    - SOURCE_LIMITATION
+    - UNKNOWN_TARGET_SIGNAL
+  confidence:
+    - CLEAR
+    - PARTIAL
+    - UNCLEAR
+
+forbidden_outputs:
+  - target_profile
+  - domain_derivation_profile
+  - active_run_package_manifest
+  - feature_candidate_inventory
+  - target_feature_profile
+  - data_privacy_navigation_index
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - exposure_registry_profile
+  - challenge_gate
+  - final_output_handoff
+  - renderer_payload
+
+forbidden_conclusions:
+  - license_status
+  - regulatory_compliance_status
+  - is_regulated
+  - applicable_regulator
+  - required_license
+  - license_validity
+  - grievance_compliance_status
+  - grievance_sufficiency
+  - ombudsman_required
+  - RBI_applicability
+  - SEBI_applicability
+  - FCA_authorisation_status
+
+hard_rules:
+  - Phase 2A emits locators only.
+  - Phase 2A must not emit or infer Target Profile Review values.
+  - Phase 2A must not summarize, quote, excerpt, or copy source text.
+  - Phase 2A must not determine legal, regulatory, compliance, license, ombudsman, or grievance sufficiency conclusions.
+  - Phase 2A must not derive governing law or courts/venue from regulatory, grievance, complaints, support, or contact pages.
+  - Target Profile Review derives material values later from scoped source artifacts and active derivation authority.
