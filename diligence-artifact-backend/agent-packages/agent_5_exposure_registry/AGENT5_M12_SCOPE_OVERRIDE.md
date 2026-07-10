@@ -1,24 +1,28 @@
-# AGENT5_M12_SCOPE_OVERRIDE
+# AGENT5_M12_SCOPE_OVERRIDE — RETIRED OWNERSHIP CLAIM
 
-This file overrides older Agent 5 package language that described Agent 5 as M11-only.
+This file now overrides and retires older package language that assigned M12 global challenge to Agent 5.
 
-## Active Agent 5 scopes
+## Active Agent 5 scope
 
-Agent 5 now owns these backend scopes:
+Agent 5 owns only:
 
 ```text
 M11_EXPOSURE_REGISTRY
-M12_BATCH_VALIDATION
-M12_GLOBAL_CHALLENGE
 ```
 
-## Module boundary
+Within M11, the backend performs deterministic validation of each semantic batch before the accepted batch is saved. Those deterministic validation artifacts remain part of the M11 execution cycle:
 
-M11 owns:
+```text
+exposure_registry_batch_validation__{GROUP}__{NNN}
+```
+
+They do not make Agent 5 the owner of the global M12 phase.
+
+## M11 outputs
 
 ```text
 exposure_registry_route_plan
-m11_batch_registry_ledger
+exposure_registry_batch_validation__{GROUP}__{NNN}
 exposure_registry_batch__{GROUP}__{NNN}
 exposure_registry_workpad_98
 exposure_registry_controlled_profile
@@ -26,42 +30,56 @@ exposure_registry_triggered_profile
 exposure_registry_profile_forensics
 ```
 
-M12 batch owns:
+`exposure_registry_profile_forensics` is an audit side output. It is not an M12 input or prerequisite.
+
+## M12 global ownership
+
+M12 global challenge belongs only to:
 
 ```text
-exposure_registry_batch_validation
+agent_7_m12
 ```
 
-The backend persists M12 batch output as:
+M12 receives a Phase 2G `DERIVED_ONLY` packet under:
 
 ```text
-exposure_registry_batch_validation__{GROUP}__{NNN}
+routing_authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+route_id: ROUTE.PHASE9.EXPOSURE_PROFILE
+delivery_mode: DERIVED_ONLY
 ```
 
-M12 global owns:
+The packet contains M11 material outputs and dynamically loaded M11 batch and validation artifacts. It must not contain:
 
 ```text
-challenge_gate
+target_profile_forensics
+target_feature_profile_forensics
+dap_forensics_profile
+exposure_registry_profile_forensics
 ```
 
 ## Root rule
 
 M11 must not emit `challenge_gate`.
-M12 batch must not emit `challenge_gate`.
-M12 global may emit only `challenge_gate`.
+
+The dedicated deterministic M12 runner may emit only:
+
+```text
+challenge_gate
+```
 
 ## Phase order
 
 ```text
 M11 route plan
-M11 batch evaluation
-M12 batch validation
+M11 semantic batch evaluation
+backend deterministic batch validation
 accepted batch save
 workpad merge
 controlled projection
 triggered projection
-M11 forensics
-M12 global challenge_gate
+M11 forensic side output
+M12 global deterministic challenge
+compiler
 ```
 
-Backend may advance to compiler only after `challenge_gate.lock_status` is `PASS` or `PASS_WITH_LIMITATION`.
+Compiler advancement is controlled by the saved `challenge_gate` status and the central pipeline contract.
