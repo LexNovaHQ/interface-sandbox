@@ -24,7 +24,7 @@ import {
 import { PIPELINE_CONTRACTS, INTERNAL_PIPELINE_JOB_IDS, PIPELINE_CONTRACT_STATUS } from "../src/runtime/contracts/pipeline.contract.js";
 import { CENTRAL_PHASES } from "../src/runtime/contracts/central-phase.contract.js";
 import { CARTOGRAPHY_INDEX_CONTRACT } from "../src/phases/02-cartography-index/cartography-index.contract.js";
-import { LEGAL_CARTOGRAPHY_INDEX_CONTRACT, M9_PHASE1_V5_READS } from "../src/phases/02-legal-cartography-index/legal-cartography-index.contract.js";
+import { LEGAL_CARTOGRAPHY_INDEX_CONTRACT, M9_PHASE1_V5_READS, M9_PHASE2F_DESIGNATION } from "../src/phases/02-legal-cartography-index/legal-cartography-index.contract.js";
 
 const LOCKED_ROOTS = Object.freeze(["homepage_landing", "company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "support_help_resources", "regulatory_licensing_status", "grievance_complaints"]);
 const DOMAIN_DERIVATION_ROOTS = Object.freeze(["homepage_landing", "company_identity", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "pricing_commercial_availability", "use_case_customer_industry", "integrations_ecosystem", "ai_safety_transparency", "regulatory_licensing_status", "grievance_complaints"]);
@@ -62,7 +62,12 @@ assert.equal(CARTOGRAPHY_INDEX_CONTRACT.migration_boundary.domain_control_obliga
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.data_privacy_navigation_index_runtime_ownership_moves_to_phase_2d, true);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.domain_control_obligation_navigation_index_runtime_ownership_moves_to_phase_2e, true);
 
-assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.implementation_status, "M9_MAIN_RESTORED_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC");
+assert.equal(M9_PHASE2F_DESIGNATION, "P2F_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS");
+assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.phase2_designation, M9_PHASE2F_DESIGNATION);
+assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.runtime_job_id_preserved, "M9");
+assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.implementation_status, "M9_DESIGNATED_AS_PHASE2F_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC");
+assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.migration_boundary.full_legal_governance_cartography_owned_by_2f, true);
+assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.migration_boundary.phase2e_domain_control_obligation_index_separate, true);
 assert.deepEqual(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.restored_main_m9_input_contract, M9_PHASE1_V5_READS);
 assert.deepEqual(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.required_save_order, ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"]);
 
@@ -91,6 +96,8 @@ assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2D_DATA_PRIVACY_NAVIGATION_INDE
 assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX, DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX_ARTIFACT_NAMES);
 assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2_INDEX_COMPILER_VALIDATION, CARTOGRAPHY_LAYER5_ARTIFACT_NAMES);
 assert.deepEqual(PIPELINE_CONTRACTS.M9.writes, LEGAL_CARTOGRAPHY_ARTIFACT_NAMES);
+assert.equal(PIPELINE_CONTRACTS.M9.phase2_designation, M9_PHASE2F_DESIGNATION);
+assert.equal(PIPELINE_CONTRACTS.M9.m9_runtime_job_id_preserved, true);
 assert.deepEqual(PIPELINE_CONTRACTS.P2A_TARGET_PROFILE_SOURCE_INDEX.writes, TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES);
 assert.deepEqual(PIPELINE_CONTRACTS.P2B_DOMAIN_DERIVATION_SOURCE_INDEX.writes, DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES);
 assert.deepEqual(PIPELINE_CONTRACTS.P2C_ACTIVITY_PROFILE_SOURCE_INDEX.writes, ACTIVITY_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES);
@@ -109,6 +116,7 @@ assert.equal(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.runtime_wiring_st
 assert.ok(INTERNAL_PIPELINE_JOB_IDS.includes("P2D_DATA_PRIVACY_NAVIGATION_INDEX"));
 assert.ok(INTERNAL_PIPELINE_JOB_IDS.includes("P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX"));
 assert.deepEqual(CENTRAL_PHASES.find((p) => p.sequence === 2).internal_jobs.filter((id) => id.startsWith("P2") || id === "M9"), ["P2_SOURCE_INVENTORY_CARTOGRAPHY", "P2_LOCATOR_SPINE", "P2_PROFILE_ROUTE_MATRIX", "P2_SEMANTIC_NAVIGATION_OVERLAY", "M9", "P2A_TARGET_PROFILE_SOURCE_INDEX", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX", "P2C_ACTIVITY_PROFILE_SOURCE_INDEX", "P2D_DATA_PRIVACY_NAVIGATION_INDEX", "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX", "P2_INDEX_COMPILER_VALIDATION"]);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase2f_m9_legal_cartography_designated, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2d_data_privacy_navigation_index_runtime_wired, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2d_data_privacy_navigation_index_owns_dpni, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2e_domain_control_obligation_navigation_index_declared, true);
@@ -117,4 +125,4 @@ assert.equal(PIPELINE_CONTRACT_STATUS.no_data_provenance_source_index, true);
 assert.ok(CARTOGRAPHY_INDEX_CONTRACT.downstream_contract.domain_control_obligation_reads.includes("domain_control_obligation_navigation_index"));
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.forbidden_new_artifacts.includes("domain_control_obligation_navigation_index"), false);
 
-console.log(JSON.stringify({ check: "phase2 cartography index", status: "PASS", phase2d_data_privacy_navigation_index_owned_by_2d: true, phase2e_domain_control_obligation_navigation_index_owned_by_2e: true }, null, 2));
+console.log(JSON.stringify({ check: "phase2 cartography index", status: "PASS", phase2f_m9_legal_cartography_designated: true, phase2d_data_privacy_navigation_index_owned_by_2d: true, phase2e_domain_control_obligation_navigation_index_owned_by_2e: true }, null, 2));
