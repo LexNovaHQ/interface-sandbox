@@ -58,6 +58,7 @@ assert.ok(contract.includes("sparse root storage"), "contract must lock sparse r
 assert.ok(contract.includes("legal_document_blob_merging"), "contract must forbid legal document blob merging");
 assert.ok(contract.includes("primary_root_slug_chain_sampling"), "contract must forbid primary root slug-chain sampling");
 assert.ok(runner.includes("phase_1_agnostic_bucket_upgrade_wired: true"), "runner must advertise Phase 1 agnostic upgrade");
+assert.ok(runner.includes("implementation_status: SOURCE_DISCOVERY_CONTRACT.implementation_status"), "runner must inherit Phase 1 V4 contract status");
 assert.ok(urlService.includes("scoutLockedRootMatrix"), "URL manifest service must run locked root matrix traversal");
 assert.ok(urlService.includes("classifyCompanyIdentity"), "URL manifest service must include dedicated company identity classifier");
 assert.ok(urlService.includes("classifyDataGovernanceControls"), "URL manifest service must include dedicated data governance classifier");
@@ -79,7 +80,9 @@ assert.ok(pipelineService.includes("sparse_lossless_root_resolution_enabled: tru
 assert.ok(pipelineService.includes("resolveLosslessRootArtifact"), "pipeline must resolve virtual lossless roots through source_family_index");
 assert.ok(pipelineService.includes("root_artifact_manifest"), "pipeline root resolver must use source_family_index.root_artifact_manifest");
 assert.ok(pipelineService.includes("UNSAVED_EMPTY"), "pipeline root resolver must return controlled empty roots for unsaved sparse roots");
-assert.ok(phaseContracts.includes("dynamic_writes: [LEGAL_DOC_DYNAMIC_ARTIFACT_PATTERN]"), "phase contracts must allow dynamic legal doc writes");
+assert.ok(phaseContracts.includes("runtime/contracts/pipeline.contract.js"), "legacy phase-contracts shim must delegate to runtime pipeline contract");
+assert.ok(phaseContracts.includes("old_phase_contract_table_removed: true"), "legacy phase-contracts table must be retired");
+assert.ok(pipelineContract.includes("dynamic_writes: [\"legal_doc_{DOC_TYPE}\"]"), "runtime pipeline contract must allow dynamic legal doc writes");
 assert.ok(!contract.includes("domain_locking_allowed"), "Phase 1 must not allow domain locking");
 
 assert.deepEqual(legalDocTypeFromUrlOrRoute("/privacy-policy"), { docType: "privacy_policy", artifactName: "legal_doc_privacy_policy" });
