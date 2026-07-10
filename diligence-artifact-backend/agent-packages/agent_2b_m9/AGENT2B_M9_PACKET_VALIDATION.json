@@ -1,15 +1,16 @@
 {
-  "overall_status": "SYNCED_FOR_PHASE2_NEW_SOURCE_INPUT_CONTRACT",
+  "overall_status": "SYNCED_FOR_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_INPUT_CONTRACT",
   "backend_phase": "CARTOGRAPHY_INDEX",
   "active_agent_id": "agent_2b_m9",
   "active_phase_scope": "LEGAL_CARTOGRAPHY_AND_INDEX_ONLY",
   "phase_2_internal_jobs": [
     "LEGAL_CARTOGRAPHY_INDEX",
-    "LEGAL_SIGNAL_DERIVATION"
+    "LEGAL_SIGNAL_DERIVATION_COMPATIBILITY"
   ],
-  "input_protocol": "phase1_common_roots_plus_legal_doc_artifacts",
+  "input_protocol": "phase1_v5_17_root_common_roots_plus_legal_doc_artifacts",
   "old_family_input_contract_forbidden": true,
   "legacy_family_adapters_forbidden": true,
+  "retired_phase1_root_inputs_forbidden": true,
   "read_artifacts": [
     "source_discovery_handoff",
     "post_phase_1_domain_gate_handoff",
@@ -21,13 +22,16 @@
     "legal_doc_extraction_index",
     "legal_doc_lossless_validation_manifest",
     "legal_doc_{DOC_TYPE}",
-    "lossless_root__legal_identity_notice",
-    "lossless_root__privacy_data_processing",
-    "lossless_root__security_trust",
-    "lossless_root__trust_compliance",
+    "lossless_root__company_identity",
     "lossless_root__contact_notice",
-    "lossless_root__technical_docs_api_developer",
-    "lossless_root__docs_api_data_flow"
+    "lossless_root__privacy_data_processing",
+    "lossless_root__security_trust_compliance",
+    "lossless_root__data_governance_controls",
+    "lossless_root__ai_safety_transparency",
+    "lossless_root__technical_docs_api",
+    "lossless_root__docs_api_data_flow",
+    "lossless_root__regulatory_licensing_status",
+    "lossless_root__grievance_complaints"
   ],
   "write_artifacts_in_order": [
     "legal_cartography_deterministic_map",
@@ -36,7 +40,9 @@
     "legal_signal_derivation_profile"
   ],
   "final_downstream_required_artifacts": [
-    "legal_cartography_index",
+    "legal_cartography_index"
+  ],
+  "compatibility_downstream_artifacts": [
     "legal_signal_derivation_profile"
   ],
   "field_registry_reference": "M9_FIELD_DERIVATION_REGISTRY.yaml",
@@ -57,10 +63,37 @@
     "P1"
   ],
   "semantic_required_coverage_threshold": 0.8,
+  "phase1_v5_labels_added": [
+    "REGULATORY_DISCLOSURE",
+    "LICENSING_REGISTRATION",
+    "GRIEVANCE_REDRESSAL",
+    "COMPLAINTS_ESCALATION",
+    "CONSUMER_DISCLOSURE",
+    "COUNTERPARTY_INSTITUTION",
+    "FINANCIAL_TERMS_DISCLOSURE"
+  ],
+  "phase1_v5_control_families_added": [
+    "REGULATORY_GOVERNANCE",
+    "GRIEVANCE_REDRESSAL",
+    "CONSUMER_DISCLOSURE",
+    "COUNTERPARTY_INSTITUTION",
+    "FINANCIAL_TERMS_DISCLOSURE"
+  ],
   "job_b_deterministic_only": true,
   "job_b_required_field_count": 21,
+  "job_b_status": "COMPATIBILITY_ONLY_UNTIL_DOWNSTREAM_CUTOVER",
+  "target_profile_legal_signal_locators_owned_by_2a": true,
+  "full_legal_governance_cartography_owned_by_2e": true,
   "review_question_shapes_allowed_in_m9": false,
-  "m7_m10_integration_deferred": true,
+  "forbidden_conclusions_preserved": [
+    "license_validity",
+    "license_requirement",
+    "applicable_regulator",
+    "regulatory_compliance_status",
+    "grievance_sufficiency",
+    "grievance_compliance_status",
+    "ombudsman_requirement"
+  ],
   "final_shape_preserved": [
     "document_coverage_index",
     "document_structure_index",
@@ -68,10 +101,16 @@
     "control_language_locator",
     "semantic_navigation_index",
     "priority_semantic_locator",
+    "qualified_review_locator",
+    "qualified_review_legal_signals",
     "legal_notice_locator",
     "dispute_resolution_locator",
     "governing_law_venue_locator",
     "contact_grievance_locator",
+    "regulatory_governance_locator",
+    "grievance_redressal_locator",
+    "consumer_disclosure_locator",
+    "counterparty_institution_locator",
     "missing_limited_legal_governance_items",
     "downstream_rules",
     "lock_status"
