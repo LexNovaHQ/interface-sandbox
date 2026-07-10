@@ -7,7 +7,7 @@ import { buildSourceFamilyHandoff } from "./jobs/source-family-handoff.job.js";
 export const SOURCE_DISCOVERY_RUNNER = Object.freeze({
   phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id,
   public_label: SOURCE_DISCOVERY_CONTRACT.public_label,
-  implementation_status: "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V1",
+  implementation_status: SOURCE_DISCOVERY_CONTRACT.implementation_status,
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   blocking_is_exception_noncritical_limitations_pass: true,
