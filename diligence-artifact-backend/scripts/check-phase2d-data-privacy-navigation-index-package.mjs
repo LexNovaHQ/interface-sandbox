@@ -44,6 +44,8 @@ assert.equal(manifest.runtime_wiring.pipeline_service_dispatch_registered, true)
 assert.equal(manifest.runtime_wiring.save_order_gates_registered, true);
 assert.equal(manifest.runtime_wiring.p2_index_compiler_reads_not_writes_dpni, true);
 assert.equal(manifest.runtime_wiring.phase7_layer4_reads_phase2d_dpni, true);
+assert.equal(manifest.runtime_wiring.p2d_next, "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX");
+assert.equal(manifest.runtime_wiring.p2e_next, "P2_INDEX_COMPILER_VALIDATION");
 assert.equal(manifest.boundaries.old_d_family_inputs_forbidden, true);
 assert.equal(manifest.boundaries.data_provenance_source_index_forbidden, true);
 assert.equal(manifest.boundaries.phase7_layer3_compatibility_keys_preserved, true);
