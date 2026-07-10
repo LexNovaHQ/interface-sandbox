@@ -4,8 +4,36 @@ import { buildPhase3BDomainDerivationManifestUpdate } from "../../../runtime/dom
 
 const CONTROLLED_FAILURE_STATUS = "CONTROLLED_FAILURE";
 const AI_MOUNT_ONLY_STATUS = "LOCKED_FOR_PACKAGE_MOUNT_ONLY";
-const FORBIDDEN_OUTPUT_MARKERS = Object.freeze(["business_context.lane", "\"lane\"", "legal_advice", "compliance_conclusion", "enforceability_assessment", "risk_conclusion", "exposure_registry", "ai_archetype", "surface_lock"]);
-const INDEX_ARTIFACT_NAMES = new Set(["cartography_index", "target_profile_source_index", "activity_profile_source_index", "legal_cartography_index", "legal_signal_derivation_profile", "data_privacy_navigation_index", "source_discovery_handoff"]);
+const REGULATORY_CANDIDATE_STATUS = "CANDIDATE_ONLY";
+const FORBIDDEN_OUTPUT_MARKERS = Object.freeze([
+  "business_context.lane",
+  "\"lane\"",
+  "legal_advice",
+  "compliance_conclusion",
+  "enforceability_assessment",
+  "risk_conclusion",
+  "exposure_registry",
+  "ai_archetype",
+  "surface_lock",
+  "license_validity",
+  "license_requirement",
+  "applicable_regulator",
+  "regulatory_compliance_status",
+  "grievance_sufficiency",
+  "grievance_compliance_status",
+  "ombudsman_requirement",
+  "statutory_complaint_obligation"
+]);
+const INDEX_ARTIFACT_NAMES = new Set([
+  "cartography_index",
+  "target_profile_source_index",
+  "domain_derivation_source_index",
+  "activity_profile_source_index",
+  "legal_cartography_index",
+  "legal_signal_derivation_profile",
+  "data_privacy_navigation_index",
+  "source_discovery_handoff"
+]);
 
 export async function compileDomainDerivationArtifacts({ run = {}, artifacts = {}, modelOutput = {}, registryPacket } = {}) {
   const packet = registryPacket || await loadDomainDerivationRegistryV0();
@@ -37,6 +65,7 @@ export function validateDomainDerivationProfile(profile = {}, { artifacts = {}, 
   const rulesById = new Map((registry.rules || []).map((rule) => [rule.rule_id, rule]));
   const evaluatedRules = allEvaluatedRules(profile);
   for (const row of evaluatedRules) validateEvaluatedRule(row, { rulesById, failures, warnings });
+  validateRegulatoryOverlayDerivation(profile.regulatory_overlay_derivation || {}, { artifacts, failures, warnings });
   const primary = profile.primary_domain_derivation || {};
   const aiMount = profile.ai_mount_derivation || {};
   const fusion = profile.fusion_candidate_derivation || {};
@@ -52,7 +81,7 @@ export function validateDomainDerivationProfile(profile = {}, { artifacts = {}, 
   return {
     status,
     validator: "domain-derivation.validator",
-    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "LEGAL_INPUTS_FORBIDDEN", "PRIMARY_DOMAIN_LOCK_ONLY", "AI_PACKAGE_MOUNT_ONLY", "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"],
+    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "P2B_DOMAIN_SOURCE_INDEX", "LEGAL_INPUTS_FORBIDDEN", "PRIMARY_DOMAIN_LOCK_ONLY", "AI_PACKAGE_MOUNT_ONLY", "REGULATORY_OVERLAY_CANDIDATE_ONLY", "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"],
     failures,
     warnings
   };
@@ -62,7 +91,7 @@ export function assertDomainDerivationRuntimeArtifacts(artifacts = {}, failures 
   const localFailures = failures || [];
   const allowed = new Set(DOMAIN_DERIVATION_CONTRACT.reads);
   for (const key of Object.keys(artifacts || {})) if (!allowed.has(key)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_RUNTIME_ARTIFACT:${key}`);
-  for (const required of ["source_discovery_handoff", "cartography_index", "target_profile_source_index", "activity_profile_source_index", "target_profile", "domain_selection_profile", "active_run_package_manifest"]) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, required)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_REQUIRED_INPUT:${required}`);
+  for (const required of ["source_discovery_handoff", "cartography_index", "target_profile_source_index", "domain_derivation_source_index", "target_profile", "domain_selection_profile", "active_run_package_manifest"]) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, required)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_REQUIRED_INPUT:${required}`);
   for (const root of DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, root)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_SCOPED_LOSSLESS_ROOT:${root}`);
   for (const forbidden of DOMAIN_DERIVATION_CONTRACT.forbidden_reads) if (Object.prototype.hasOwnProperty.call(artifacts || {}, forbidden)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_INPUT_PRESENT:${forbidden}`);
   if (!failures && localFailures.length) throw new Error(`P3_DOMAIN_DERIVATION_INPUT_CONTRACT_FAILED:${JSON.stringify(localFailures)}`);
@@ -74,6 +103,7 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
   const fusionRows = normalizeRows(rawProfile?.fusion_candidate_derivation?.evaluated_rules || [], registry, "FUSION_CANDIDATE");
   const primary = selectPrimary(primaryRows, rawProfile?.primary_domain_derivation || {});
   const aiMount = selectAiMount(aiRows, primary, rawProfile?.ai_mount_derivation || {});
+  const regulatoryOverlay = selectRegulatoryOverlay(rawProfile?.regulatory_overlay_derivation || {}, artifacts);
   const fusion = selectFusion(fusionRows, primary, aiMount, rawProfile?.fusion_candidate_derivation || {});
   return {
     domain_derivation_metadata: {
@@ -87,15 +117,18 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
     },
     input_scope: {
       required_reads_present: DOMAIN_DERIVATION_CONTRACT.reads.filter((name) => Object.prototype.hasOwnProperty.call(artifacts, name)),
-      phase_2_navigation_artifacts_used: ["cartography_index", "target_profile_source_index", "activity_profile_source_index"],
+      phase_2_navigation_artifacts_used: ["cartography_index", "target_profile_source_index", "domain_derivation_source_index"],
+      p2b_domain_derivation_source_index_required: true,
+      activity_profile_source_index_forbidden_until_2c_phase5: true,
       scoped_lossless_evidence_artifacts_used: DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads,
       phase_2_indexes_are_navigation_only_not_evidence: true,
       target_profile_used_as_context_only: true,
       legal_inputs_forbidden: true
     },
-    source_evidence_ledger: buildSourceEvidenceLedger(artifacts, [...primaryRows, ...aiRows, ...fusionRows]),
+    source_evidence_ledger: buildSourceEvidenceLedger(artifacts, [...primaryRows, ...aiRows, ...fusionRows], regulatoryOverlay.candidates),
     primary_domain_derivation: primary,
     ai_mount_derivation: aiMount,
+    regulatory_overlay_derivation: regulatoryOverlay,
     fusion_candidate_derivation: fusion,
     manifest_update: rawProfile?.manifest_update || {},
     limitation_ledger: Array.isArray(rawProfile?.limitation_ledger) ? rawProfile.limitation_ledger : [],
@@ -157,6 +190,28 @@ function selectAiMount(rows, primary, modelAi) {
   };
 }
 
+function selectRegulatoryOverlay(modelRegulatory = {}, artifacts = {}) {
+  const rawCandidates = Array.isArray(modelRegulatory.candidates)
+    ? modelRegulatory.candidates
+    : (Array.isArray(modelRegulatory.regulatory_overlays) ? modelRegulatory.regulatory_overlays : []);
+  const candidates = rawCandidates.map((candidate) => ({
+    overlay_id: String(candidate?.overlay_id || candidate?.regulatory_overlay || candidate?.overlay || "").trim(),
+    status: candidate?.status || REGULATORY_CANDIDATE_STATUS,
+    evidence_anchors: evidenceAnchorsForRow(candidate),
+    candidate_basis: candidate?.candidate_basis || "catalog_candidate_from_scoped_lossless_evidence",
+    legal_applicability_status: "NOT_DETERMINED_IN_PHASE_3B",
+    compliance_conclusion_forbidden: true
+  })).filter((candidate) => candidate.overlay_id);
+  return {
+    status: candidates.length ? (modelRegulatory.status || REGULATORY_CANDIDATE_STATUS) : "NOT_VISIBLE",
+    catalog_source: "package-catalog.v0.json:regulatory_overlays",
+    candidates,
+    legal_applicability_status: "NOT_DETERMINED_IN_PHASE_3B",
+    compliance_conclusion_forbidden: true,
+    final_basis: modelRegulatory.final_basis || "regulatory_overlay_candidates_are_catalog_gated_and_deferred_to_later_review"
+  };
+}
+
 function selectFusion(rows, primary, aiMount, modelFusion) {
   const fired = rows.filter((row) => row.validator_trigger_result === true && row.validator_exclude_result !== true);
   const allowed = primary.selected_package && primary.selected_package !== "ai-governance" && aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED";
@@ -187,18 +242,54 @@ function validateEvaluatedRule(row, { rulesById, failures, warnings }) {
   if (row.validator_trigger_result) {
     const anchors = evidenceAnchorsForRow(row);
     if (!anchors.length) failures.push(`${row.rule_id} fired without evidence anchors`);
-    for (const anchor of anchors) if (INDEX_ARTIFACT_NAMES.has(anchor.source_artifact_name || anchor.artifact_name || anchor)) failures.push(`${row.rule_id} cites navigation/index artifact as evidence: ${anchor.source_artifact_name || anchor.artifact_name || anchor}`);
+    assertAnchorsAreScopedLossless(anchors, failures, `${row.rule_id}`);
   }
 }
 
-function buildSourceEvidenceLedger(artifacts, rows) {
+function validateRegulatoryOverlayDerivation(regulatory = {}, { artifacts = {}, failures, warnings }) {
+  if (!isPlainObject(regulatory)) { failures.push("regulatory_overlay_derivation must be object"); return; }
+  const allowedStatus = new Set(DOMAIN_DERIVATION_CONTRACT.output_contract.regulatory_overlay_status_values || ["NOT_VISIBLE", "CANDIDATE_ONLY", "REVIEW_REQUIRED"]);
+  if (!allowedStatus.has(regulatory.status || "NOT_VISIBLE")) failures.push(`regulatory_overlay_derivation.status is not allowed: ${regulatory.status || "missing"}`);
+  const catalogOverlays = availableRegulatoryOverlayIds(artifacts);
+  const candidates = Array.isArray(regulatory.candidates) ? regulatory.candidates : [];
+  if (candidates.length && regulatory.status === "NOT_VISIBLE") failures.push("regulatory overlay candidates require CANDIDATE_ONLY or REVIEW_REQUIRED status");
+  for (const [index, candidate] of candidates.entries()) {
+    if (!candidate.overlay_id) failures.push(`regulatory_overlay_derivation.candidates[${index}] missing overlay_id`);
+    if (catalogOverlays.size && candidate.overlay_id && !catalogOverlays.has(candidate.overlay_id)) failures.push(`regulatory overlay ${candidate.overlay_id} not present in package catalog`);
+    if (candidate.status && !allowedStatus.has(candidate.status)) failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} has invalid status ${candidate.status}`);
+    if (candidate.legal_applicability_status !== "NOT_DETERMINED_IN_PHASE_3B") failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} must not determine legal applicability`);
+    if (candidate.compliance_conclusion_forbidden !== true) failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} must forbid compliance conclusion`);
+    const anchors = evidenceAnchorsForRow(candidate);
+    if (!anchors.length) failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} missing scoped lossless evidence anchors`);
+    assertAnchorsAreScopedLossless(anchors, failures, `regulatory_overlay:${candidate.overlay_id || index}`);
+  }
+  if (!catalogOverlays.size) warnings.push("active_run_package_manifest package catalog did not expose regulatory_overlays; catalog membership was not checked");
+}
+
+function buildSourceEvidenceLedger(artifacts, rows, regulatoryCandidates = []) {
   return DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads.map((artifactName) => ({
     artifact_name: artifactName,
     present: Object.prototype.hasOwnProperty.call(artifacts || {}, artifactName),
     source_count: Array.isArray(artifacts?.[artifactName]?.sources) ? artifacts[artifactName].sources.length : 0,
-    cited_by_rule_ids: rows.filter((row) => evidenceAnchorsForRow(row).some((anchor) => (anchor.source_artifact_name || anchor.artifact_name || anchor) === artifactName)).map((row) => row.rule_id)
+    cited_by_rule_ids: rows.filter((row) => evidenceAnchorsForRow(row).some((anchor) => (anchor.source_artifact_name || anchor.artifact_name || anchor) === artifactName)).map((row) => row.rule_id),
+    cited_by_regulatory_overlay_ids: regulatoryCandidates.filter((candidate) => evidenceAnchorsForRow(candidate).some((anchor) => (anchor.source_artifact_name || anchor.artifact_name || anchor) === artifactName)).map((candidate) => candidate.overlay_id).filter(Boolean)
   }));
 }
+
+function assertAnchorsAreScopedLossless(anchors, failures, label) {
+  const allowedLossless = new Set(DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads);
+  for (const anchor of anchors) {
+    const artifactName = anchor.source_artifact_name || anchor.artifact_name || anchor;
+    if (INDEX_ARTIFACT_NAMES.has(artifactName)) failures.push(`${label} cites navigation/index artifact as evidence: ${artifactName}`);
+    if (artifactName && !allowedLossless.has(artifactName)) failures.push(`${label} cites artifact outside scoped 3B lossless evidence: ${artifactName}`);
+  }
+}
+
+function availableRegulatoryOverlayIds(artifacts = {}) {
+  const overlays = artifacts?.active_run_package_manifest?.package_catalog?.available_regulatory_overlays;
+  return new Set(Array.isArray(overlays) ? overlays.filter(Boolean) : []);
+}
+
 function allEvaluatedRules(profile = {}) { return [...(profile.primary_domain_derivation?.evaluated_rules || []), ...(profile.ai_mount_derivation?.evaluated_rules || []), ...(profile.fusion_candidate_derivation?.evaluated_rules || [])]; }
 function evidenceAnchorsForRow(row = {}) { const anchors = row.evidence_anchors || row.evidence_basis || row.source_evidence || []; return Array.isArray(anchors) ? anchors : []; }
 function normalizeConditionBooleans(value = {}) { return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [key, Boolean(typeof item === "object" && item !== null ? (item.value ?? item.satisfied ?? item.present ?? item.result) : item)])); }
