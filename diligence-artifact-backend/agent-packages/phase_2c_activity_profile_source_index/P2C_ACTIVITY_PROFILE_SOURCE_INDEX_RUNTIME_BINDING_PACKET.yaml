@@ -1,0 +1,199 @@
+packet_name: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET
+version: v1_phase1_v5_contract_only
+active_phase_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
+active_phase_scope: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY
+public_label: Activity Profile Source Index
+package_status: LEAN_PACKAGE_CONTRACT_ONLY
+runtime_wiring_changed: false
+runtime_job_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
+phase1_input_contract: PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE
+
+runtime_boundary:
+  phase_layer: src/phases/02-cartography-index
+  backend_contract: src/phases/02-cartography-index/activity-profile-source-index.contract.js
+  deterministic_builder: src/phases/02-cartography-index/services/activity-profile-deterministic-map.builder.js
+  semantic_validator: src/phases/02-cartography-index/validators/activity-profile-semantic-profile.validator.js
+  compiler: PENDING_STEP_4
+  final_validator: PENDING_STEP_5
+  orchestrator: PENDING_STEP_6
+  artifact_permissions_registered: false
+  pipeline_contract_registered: false
+  pipeline_service_dispatch_registered: false
+  save_order_gates_registered: false
+
+read_artifacts:
+  control_inputs:
+    - source_discovery_handoff
+    - post_phase_1_domain_gate_handoff
+    - source_discovery_matrix_manifest
+    - neutral_evidence_bucket_manifest
+    - adapter_expansion_log
+    - source_family_index
+  phase1_common_root_inputs:
+    - lossless_root__product_service
+    - lossless_root__platform_feature_solution
+    - lossless_root__technical_docs_api
+    - lossless_root__docs_api_data_flow
+    - lossless_root__integrations_ecosystem
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__use_case_customer_industry
+    - lossless_root__support_help_resources
+    - lossless_root__ai_safety_transparency
+
+write_artifacts_in_order:
+  - activity_profile_deterministic_map
+  - activity_profile_semantic_profile
+  - activity_profile_source_index
+
+final_downstream_required_artifact: activity_profile_source_index
+reserved_downstream_owner: ACTIVITY_PROFILE_REVIEW
+
+candidate_creation_roots:
+  - lossless_root__product_service
+  - lossless_root__platform_feature_solution
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__integrations_ecosystem
+  - lossless_root__pricing_commercial_availability
+
+context_only_roots:
+  - lossless_root__use_case_customer_industry
+  - lossless_root__support_help_resources
+  - lossless_root__ai_safety_transparency
+
+route_maps:
+  activity_candidate_source_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  product_capability_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  feature_mechanics_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  technical_mechanics_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  api_interaction_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  data_object_interaction_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  integration_action_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  commercial_availability_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  customer_use_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  support_operational_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  automation_transparency_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  human_control_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  external_action_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  input_output_object_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+
+package_boundary:
+  domain_agnostic_activity_locator_only: true
+  mounted_domain_package_controls_activity_taxonomy: true
+  package_specific_activity_taxonomy_deferred_to_phase5: true
+  archetype_surface_and_package_field_derivation_forbidden: true
+  phase_5_derives_profile_values_later: true
+  source_artifacts_remain_source_of_truth: true
+  pointer_only_outputs: true
+
+forbidden_outputs:
+  - feature_candidate_inventory
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - domain_derivation_profile
+  - active_run_package_manifest
+  - target_profile
+  - target_profile_forensics
+  - data_privacy_navigation_index
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - exposure_registry_profile
+  - challenge_gate
+  - final_output_handoff
+  - renderer_payload
+
+forbidden_package_specific_classifications:
+  - archetype_codes
+  - surface_context_tokens
+  - archetype_derivation_basis
+  - surface_derivation_basis
+  - activity_archetype
+  - activity_surface
+  - domain_activity_taxonomy
+  - package_activity_classification
+  - package_specific_field_family
+  - selected_package
+  - primary_domain_package
+  - domain_package_selected
+  - AI_REGISTRY_KEY
+  - FIELD_DERIVATION_REGISTRY
+  - CLASSIFICATION_DERIVATION_MATRIX
+
+forbidden_conclusions:
+  - mechanics_proof
+  - activity_candidate_summary
+  - activity_profile_answer
+  - profile_activity_final
+  - archetype_locked
+  - surface_locked
+  - package_classification_locked
+  - legal_advice
+  - compliance_conclusion
+  - risk_conclusion
+  - exposure_match
+  - data_provenance_conclusion
+
+retired_roots_forbidden:
+  - lossless_root__about_company
+  - lossless_root__legal_identity_notice
+  - lossless_root__operator_entity_signals
+  - lossless_root__supporting_company_signals
+  - lossless_root__security_trust
+  - lossless_root__trust_compliance
+  - lossless_root__support_help
+  - lossless_root__blog_resources
+  - lossless_root__careers_hiring
+  - lossless_root__public_repository_developer_assets
+  - lossless_root__third_party_profiles
+  - lossless_root__technical_docs_api_developer
+  - lossless_family__P1_PRODUCT
+  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
+  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
+  - lossless_family__P4_USE_CASE_INDUSTRY
+  - lossless_family__P5_ENTERPRISE_PRICING
