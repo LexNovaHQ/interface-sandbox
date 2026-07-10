@@ -26,7 +26,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   internal_job_id: "P3_DOMAIN_DERIVATION_LAYER",
   public_label: "Domain Derivation Layer",
-  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE_PHASE1_V5_P2B_DOMAIN_SOURCE_INDEX_SYNCED",
+  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE_PHASE1_V5_P2B_DOMAIN_SOURCE_INDEX_REGULATORY_OVERLAY_SYNCED",
   execution_mode: "semantic_registry_ladder_derivation_with_deterministic_gate",
   agent_id: "agent_3_target_feature",
   actor_id: "agent_3_target_feature",
@@ -86,6 +86,9 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     new_domains_added_by_registry_not_prompt: true,
     domain_derivation_source_index_required: true,
     activity_profile_source_index_forbidden_until_2c_phase5: true,
+    regulatory_overlay_catalog_gated: true,
+    regulatory_overlay_candidate_only: true,
+    regulatory_overlay_compliance_conclusion_forbidden: true,
     legal_cartography_index_forbidden: true,
     legal_signal_derivation_profile_forbidden: true,
     legal_lossless_evidence_forbidden: true,
@@ -112,6 +115,14 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "compliance_conclusion",
     "enforceability_assessment",
     "risk_conclusion",
+    "license_validity",
+    "license_requirement",
+    "applicable_regulator",
+    "regulatory_compliance_status",
+    "grievance_sufficiency",
+    "grievance_compliance_status",
+    "ombudsman_requirement",
+    "statutory_complaint_obligation",
     "lane",
     "business_context.lane"
   ]),
@@ -125,6 +136,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
       "source_evidence_ledger",
       "primary_domain_derivation",
       "ai_mount_derivation",
+      "regulatory_overlay_derivation",
       "fusion_candidate_derivation",
       "manifest_update",
       "limitation_ledger",
@@ -138,6 +150,11 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
       "REVIEW_REQUIRED",
       "NOT_VISIBLE",
       "CANDIDATE_ONLY"
+    ]),
+    regulatory_overlay_status_values: Object.freeze([
+      "NOT_VISIBLE",
+      "CANDIDATE_ONLY",
+      "REVIEW_REQUIRED"
     ])
   }),
   registry_ladder_contract: Object.freeze({
@@ -145,6 +162,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     prompt_hardcoded_domain_logic_forbidden: true,
     package_catalog_is_mount_source: true,
     domain_derivation_registry_is_rule_ladder: true,
+    regulatory_overlays_are_catalog_gated_candidates_only: true,
     prompt_must_not_be_updated_for_new_domain_additions: true
   })
 });
