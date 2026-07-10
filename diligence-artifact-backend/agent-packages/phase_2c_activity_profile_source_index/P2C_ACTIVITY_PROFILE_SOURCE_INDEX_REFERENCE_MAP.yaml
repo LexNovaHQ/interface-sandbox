@@ -1,0 +1,286 @@
+reference_map_name: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_REFERENCE_MAP
+version: v1_phase1_v5_domain_agnostic
+active_phase_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
+final_artifact: activity_profile_source_index
+source_authority: Phase 1 v5 lossless roots and control artifacts only
+package_authority: mounted domain package applies later in Phase 5
+
+control_inputs:
+  - source_discovery_handoff
+  - post_phase_1_domain_gate_handoff
+  - source_discovery_matrix_manifest
+  - neutral_evidence_bucket_manifest
+  - adapter_expansion_log
+  - source_family_index
+
+root_inputs:
+  candidate_creation_roots:
+    - lossless_root__product_service
+    - lossless_root__platform_feature_solution
+    - lossless_root__technical_docs_api
+    - lossless_root__docs_api_data_flow
+    - lossless_root__integrations_ecosystem
+    - lossless_root__pricing_commercial_availability
+  context_only_roots:
+    - lossless_root__use_case_customer_industry
+    - lossless_root__support_help_resources
+    - lossless_root__ai_safety_transparency
+
+route_families:
+  activity_candidate_source_locator_map:
+    route_code: ACTIVITY_CANDIDATE_SOURCE
+    route_class: ACTIVITY_CANDIDATE_SOURCE_ROUTE
+    signal_family: ACTIVITY_CANDIDATE_SOURCE_SIGNAL
+    source_roots:
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__integrations_ecosystem
+      - lossless_root__pricing_commercial_availability
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  product_capability_locator_map:
+    route_code: PRODUCT_CAPABILITY
+    route_class: PRODUCT_CAPABILITY_ROUTE
+    signal_family: PRODUCT_CAPABILITY_SIGNAL
+    source_roots:
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__pricing_commercial_availability
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  feature_mechanics_locator_map:
+    route_code: FEATURE_MECHANICS
+    route_class: FEATURE_MECHANICS_ROUTE
+    signal_family: FEATURE_MECHANICS_SIGNAL
+    source_roots:
+      - lossless_root__platform_feature_solution
+      - lossless_root__product_service
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__support_help_resources
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  technical_mechanics_locator_map:
+    route_code: TECHNICAL_MECHANICS
+    route_class: TECHNICAL_MECHANICS_ROUTE
+    signal_family: TECHNICAL_MECHANICS_SIGNAL
+    source_roots:
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__platform_feature_solution
+      - lossless_root__integrations_ecosystem
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  api_interaction_locator_map:
+    route_code: API_INTERACTION
+    route_class: API_INTERACTION_ROUTE
+    signal_family: API_INTERACTION_SIGNAL
+    source_roots:
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__integrations_ecosystem
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  data_object_interaction_locator_map:
+    route_code: DATA_OBJECT_INTERACTION
+    route_class: DATA_OBJECT_INTERACTION_ROUTE
+    signal_family: DATA_OBJECT_INTERACTION_SIGNAL
+    source_roots:
+      - lossless_root__docs_api_data_flow
+      - lossless_root__technical_docs_api
+      - lossless_root__platform_feature_solution
+      - lossless_root__product_service
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  integration_action_locator_map:
+    route_code: INTEGRATION_ACTION
+    route_class: INTEGRATION_ACTION_ROUTE
+    signal_family: INTEGRATION_ACTION_SIGNAL
+    source_roots:
+      - lossless_root__integrations_ecosystem
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__platform_feature_solution
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  commercial_availability_locator_map:
+    route_code: COMMERCIAL_AVAILABILITY
+    route_class: COMMERCIAL_AVAILABILITY_ROUTE
+    signal_family: COMMERCIAL_AVAILABILITY_SIGNAL
+    source_roots:
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  customer_use_context_locator_map:
+    route_code: CUSTOMER_USE_CONTEXT
+    route_class: CUSTOMER_USE_CONTEXT_ROUTE
+    signal_family: CUSTOMER_USE_CONTEXT_SIGNAL
+    source_roots:
+      - lossless_root__use_case_customer_industry
+      - lossless_root__product_service
+      - lossless_root__pricing_commercial_availability
+    candidate_creation_allowed: false
+    context_only: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  support_operational_context_locator_map:
+    route_code: SUPPORT_OPERATIONAL_CONTEXT
+    route_class: SUPPORT_OPERATIONAL_CONTEXT_ROUTE
+    signal_family: SUPPORT_OPERATIONAL_CONTEXT_SIGNAL
+    source_roots:
+      - lossless_root__support_help_resources
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+    candidate_creation_allowed: false
+    context_only: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  automation_transparency_context_locator_map:
+    route_code: AUTOMATION_TRANSPARENCY_CONTEXT
+    route_class: AUTOMATION_TRANSPARENCY_CONTEXT_ROUTE
+    signal_family: AUTOMATION_TRANSPARENCY_CONTEXT_SIGNAL
+    source_roots:
+      - lossless_root__ai_safety_transparency
+      - lossless_root__product_service
+      - lossless_root__platform_feature_solution
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+    candidate_creation_allowed: false
+    context_only: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  human_control_context_locator_map:
+    route_code: HUMAN_CONTROL_CONTEXT
+    route_class: HUMAN_CONTROL_CONTEXT_ROUTE
+    signal_family: HUMAN_CONTROL_CONTEXT_SIGNAL
+    source_roots:
+      - lossless_root__ai_safety_transparency
+      - lossless_root__support_help_resources
+      - lossless_root__technical_docs_api
+      - lossless_root__platform_feature_solution
+    candidate_creation_allowed: false
+    context_only: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  external_action_context_locator_map:
+    route_code: EXTERNAL_ACTION_CONTEXT
+    route_class: EXTERNAL_ACTION_CONTEXT_ROUTE
+    signal_family: EXTERNAL_ACTION_CONTEXT_SIGNAL
+    source_roots:
+      - lossless_root__integrations_ecosystem
+      - lossless_root__technical_docs_api
+      - lossless_root__docs_api_data_flow
+      - lossless_root__product_service
+      - lossless_root__support_help_resources
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+  input_output_object_context_locator_map:
+    route_code: INPUT_OUTPUT_OBJECT_CONTEXT
+    route_class: INPUT_OUTPUT_OBJECT_CONTEXT_ROUTE
+    signal_family: INPUT_OUTPUT_OBJECT_CONTEXT_SIGNAL
+    source_roots:
+      - lossless_root__docs_api_data_flow
+      - lossless_root__technical_docs_api
+      - lossless_root__platform_feature_solution
+      - lossless_root__product_service
+      - lossless_root__support_help_resources
+    candidate_creation_allowed: true
+    action: LOCATE_ONLY
+    derived_value_forbidden: true
+    package_specific_classification_forbidden: true
+
+semantic_profile_requirements:
+  root_key: activity_profile_semantic_profile
+  required_branches:
+    - artifact_type
+    - schema_version
+    - generated_by
+    - source_text_policy
+    - semantic_route_labels
+    - semantic_navigation_index
+    - semantic_integrity
+    - package_boundary
+    - downstream_rules
+    - lock_status
+  required_row_fields:
+    - queue_id
+    - unit_id
+    - route_classes
+    - route_signal_families
+    - confidence
+    - semantic_reason_code
+    - source_text_copied
+    - package_specific_classification_forbidden
+  allowed_confidence:
+    - CLEAR
+    - PARTIAL
+    - UNCLEAR
+  semantic_reason_policy: compact_code_only_no_prose
+
+forbidden_reference_material:
+  - AI_REGISTRY_KEY
+  - FIELD_DERIVATION_REGISTRY
+  - CLASSIFICATION_DERIVATION_MATRIX
+  - active_domain_package_as_classification_source_inside_2c
+
+final_index_branches:
+  - source_coverage_index
+  - activity_profile_document_structure_index
+  - activity_candidate_source_locator_map
+  - product_capability_locator_map
+  - feature_mechanics_locator_map
+  - technical_mechanics_locator_map
+  - api_interaction_locator_map
+  - data_object_interaction_locator_map
+  - integration_action_locator_map
+  - commercial_availability_locator_map
+  - customer_use_context_locator_map
+  - support_operational_context_locator_map
+  - automation_transparency_context_locator_map
+  - human_control_context_locator_map
+  - external_action_context_locator_map
+  - input_output_object_context_locator_map
+  - priority_activity_profile_locator
+  - semantic_navigation_index
+  - missing_limited_activity_profile_items
+  - downstream_rules
+  - lock_status
