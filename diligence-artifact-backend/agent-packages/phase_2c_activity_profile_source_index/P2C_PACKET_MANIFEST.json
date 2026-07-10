@@ -1,6 +1,6 @@
 {
   "packet_name": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET",
-  "version": "v3_phase1_v5_runtime_wired_p2d_handoff",
+  "version": "v2_phase1_v5_runtime_wired",
   "active_phase_id": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
   "active_phase_scope": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY",
   "package_status": "LEAN_PACKAGE_RUNTIME_WIRED",
@@ -52,7 +52,8 @@
     "save_order_gates_registered": true,
     "p2b_next": "P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
     "p2c_next": "P2D_DATA_PRIVACY_NAVIGATION_INDEX",
-    "p2d_next": "P2_INDEX_COMPILER_VALIDATION"
+    "p2d_next": "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX",
+    "p2e_next": "P2_INDEX_COMPILER_VALIDATION"
   },
   "reference_documents": [
     "P2C_ACTIVITY_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
