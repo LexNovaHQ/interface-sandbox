@@ -26,6 +26,9 @@ const ART = Object.freeze({
   targetProfileDeterministicMap: "target_profile_deterministic_map",
   targetProfileSemanticProfile: "target_profile_semantic_profile",
   targetProfileSourceIndex: "target_profile_source_index",
+  domainDerivationDeterministicMap: "domain_derivation_deterministic_map",
+  domainDerivationSemanticProfile: "domain_derivation_semantic_profile",
+  domainDerivationSourceIndex: "domain_derivation_source_index",
   activityProfileSourceIndex: "activity_profile_source_index",
   dataPrivacyNavigationIndex: "data_privacy_navigation_index",
   cartographyIndex: "cartography_index",
@@ -51,7 +54,7 @@ const ART = Object.freeze({
   challengeGate: "challenge_gate"
 });
 
-export const ARTIFACTS_SERVICE_STATUS = Object.freeze({ central_runtime_service: "artifacts.service", phase2a_target_profile_source_index_save_order_gate_enforced: true, phase3_domain_derivation_save_order_gate_enforced: true, phase3_manifest_update_order_gate_enforced: true, downstream_domain_derivation_required_before_activity: true, central_phase_aware: true });
+export const ARTIFACTS_SERVICE_STATUS = Object.freeze({ central_runtime_service: "artifacts.service", phase2a_target_profile_source_index_save_order_gate_enforced: true, phase2b_domain_derivation_source_index_save_order_gate_enforced: true, phase3_domain_derivation_save_order_gate_enforced: true, phase3_manifest_update_order_gate_enforced: true, downstream_domain_derivation_required_before_activity: true, central_phase_aware: true });
 export async function saveRuntimeArtifact(input) { return saveArtifact(input); }
 export async function readRuntimeArtifact(input) { return readArtifact(input); }
 export async function readRuntimeArtifactPayload(input) { return readArtifactPayload(input); }
@@ -123,9 +126,11 @@ async function assertArtifactSaveOrder(parsed, phaseContext) {
   if (artifact_name === ART.targetProfileDeterministicMap) await requireSavedArtifact(run_id, ART.legalSignalDerivationProfile, "SAVE_ORDER_BLOCKED:target_profile_deterministic_map_requires_legal_signal_derivation_profile");
   if (artifact_name === ART.targetProfileSemanticProfile) await requireSavedArtifact(run_id, ART.targetProfileDeterministicMap, "SAVE_ORDER_BLOCKED:target_profile_semantic_profile_requires_target_profile_deterministic_map");
   if (artifact_name === ART.targetProfileSourceIndex) await requireSavedArtifact(run_id, ART.targetProfileSemanticProfile, "SAVE_ORDER_BLOCKED:target_profile_source_index_requires_target_profile_semantic_profile");
-  if ([ART.activityProfileSourceIndex, ART.dataPrivacyNavigationIndex, ART.cartographyIndex, ART.cartographyValidationManifest].includes(artifact_name)) await requireSavedArtifact(run_id, ART.targetProfileSourceIndex, `SAVE_ORDER_BLOCKED:${artifact_name}_requires_target_profile_source_index`);
+  if (artifact_name === ART.domainDerivationDeterministicMap) await requireSavedArtifact(run_id, ART.targetProfileSourceIndex, "SAVE_ORDER_BLOCKED:domain_derivation_deterministic_map_requires_target_profile_source_index");
+  if (artifact_name === ART.domainDerivationSemanticProfile) await requireSavedArtifact(run_id, ART.domainDerivationDeterministicMap, "SAVE_ORDER_BLOCKED:domain_derivation_semantic_profile_requires_domain_derivation_deterministic_map");
+  if (artifact_name === ART.domainDerivationSourceIndex) await requireSavedArtifact(run_id, ART.domainDerivationSemanticProfile, "SAVE_ORDER_BLOCKED:domain_derivation_source_index_requires_domain_derivation_semantic_profile");
   if (artifact_name === ART.targetProfile) { await requireSavedArtifact(run_id, ART.cartographyIndex, "SAVE_ORDER_BLOCKED:target_profile_requires_cartography_index"); await requireSavedArtifact(run_id, ART.targetProfileSourceIndex, "SAVE_ORDER_BLOCKED:target_profile_requires_target_profile_source_index"); await requireSavedArtifact(run_id, ART.legalSignalDerivationProfile, "SAVE_ORDER_BLOCKED:target_profile_requires_legal_signal_derivation_profile"); }
-  if (artifact_name === ART.domainDerivationProfile) { await requireSavedArtifact(run_id, ART.sourceHandoff, "SAVE_ORDER_BLOCKED:domain_derivation_requires_source_handoff"); await requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:domain_derivation_requires_target_profile"); await requireSavedArtifact(run_id, ART.cartographyIndex, "SAVE_ORDER_BLOCKED:domain_derivation_requires_cartography_index"); await requireSavedArtifact(run_id, ART.targetProfileSourceIndex, "SAVE_ORDER_BLOCKED:domain_derivation_requires_target_profile_source_index"); await requireSavedArtifact(run_id, ART.activityProfileSourceIndex, "SAVE_ORDER_BLOCKED:domain_derivation_requires_activity_profile_source_index"); }
+  if (artifact_name === ART.domainDerivationProfile) { await requireSavedArtifact(run_id, ART.sourceHandoff, "SAVE_ORDER_BLOCKED:domain_derivation_requires_source_handoff"); await requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:domain_derivation_requires_target_profile"); await requireSavedArtifact(run_id, ART.cartographyIndex, "SAVE_ORDER_BLOCKED:domain_derivation_requires_cartography_index"); await requireSavedArtifact(run_id, ART.targetProfileSourceIndex, "SAVE_ORDER_BLOCKED:domain_derivation_requires_target_profile_source_index"); await requireSavedArtifact(run_id, ART.domainDerivationSourceIndex, "SAVE_ORDER_BLOCKED:domain_derivation_requires_domain_derivation_source_index"); }
   if (artifact_name === ART.activeRunPackageManifest && phaseContext.internal_job_id === "P3_DOMAIN_DERIVATION_LAYER") await requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:phase3b_manifest_requires_domain_derivation_profile_first");
   if (artifact_name === ART.targetForensics) { await requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:target_forensics_requires_target_profile"); await requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:target_forensics_requires_domain_derivation_profile"); }
   if (artifact_name === ART.activityInventory) { await requireSavedArtifact(run_id, ART.activityProfileSourceIndex, "SAVE_ORDER_BLOCKED:activity_inventory_requires_activity_profile_source_index"); await requireSavedArtifact(run_id, ART.targetForensics, "SAVE_ORDER_BLOCKED:activity_inventory_requires_target_forensics"); await requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:activity_inventory_requires_domain_derivation_profile"); }
