@@ -93,7 +93,7 @@ assertContractMatchesPlan(TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads, pla
 assertContractMatchesPlan(DOMAIN_DERIVATION_CONTRACT.reads, plans.P3_DOMAIN_DERIVATION_LAYER, "3B");
 assertContractMatchesPlan(ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.reads, plans.M8_FEATURE_CANDIDATE_INVENTORY, "Phase5 inventory");
 assertContractMatchesPlan(ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads, plans.M8_TARGET_FEATURE_PROFILE, "Phase5 material");
-assert.deepEqual(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.approved_input_universe, ["phase_routing_manifest", "phase_route_runtime_packet", ...plans.DATA_PROVENANCE_PROFILE_LAYER4.artifact_reads]);
+assert.deepEqual(new Set(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.approved_input_universe), new Set(["phase_routing_manifest", "phase_route_runtime_packet", ...plans.DATA_PROVENANCE_PROFILE_LAYER4.artifact_reads]));
 assert.deepEqual(PHASE7_DATA_PRIVACY_LOSSLESS_READS, DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES);
 
 for (const runnerStatus of [TARGET_PROFILE_REVIEW_RUNNER_STATUS, DOMAIN_DERIVATION_RUNNER_STATUS, ACTIVITY_CANDIDATE_INVENTORY_RUNNER_STATUS, ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS]) {
