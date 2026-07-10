@@ -58,7 +58,7 @@ The source-of-truth evidence for domain derivation is the admitted lossless Phas
 
 `domain_selection_profile` and the incoming `active_run_package_manifest` are prior provisional/passive runtime state only. They are not proof and do not lock a domain or overlay.
 
-`activity_profile_source_index` is reserved for 2C / Phase 5 Activity Profile. Phase 3B must not read it.
+activity_profile_source_index is reserved for 2C / Phase 5 Activity Profile. Phase 3B must not read it.
 
 ## Registry ladder
 
