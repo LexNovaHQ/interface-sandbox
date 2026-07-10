@@ -1,138 +1,139 @@
 <RUNTIME_BINDING_PACKET>
-runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v5_agent5_m11_threat_name_subcategory_material_row
+runtime_contract: AGENT5_PHASE9_EXPOSURE_PHASE2G
+runtime_contract_version: v12_phase2f_forward_route
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
-active_phase_scope:
-  - M11_EXPOSURE_REGISTRY
-  - M12_BATCH_VALIDATION
-  - M12_GLOBAL_CHALLENGE
-
-run_mode: PHASED_AGENT
+active_phase_scope: M11_EXPOSURE_REGISTRY
+run_mode: BATCHED_AGENT
 run_id_required: true
 run_id: "{{run_id}}"
 
-allowed_modules:
+routing_authority:
+  authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+  route_id: ROUTE.PHASE9.EXPOSURE_PROFILE
+  bucket_id: 2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS
+  delivery_mode: SOURCE_BUCKET_PROFILE
+  lossless_evidence_role: PRIMARY_EVIDENCE
+  index_role: MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE
+  direct_lossless_as_fallback_allowed: false
+  free_corpus_read_allowed: false
+  profile_forensics_inputs_allowed: false
+  phase2f_forward_owner: M11
+  m9_is_index_builder_not_route_owner: true
+
+allowed_phases:
   - M11_EXPOSURE_REGISTRY
-  - M12_BATCH_VALIDATION
-  - M12_GLOBAL_CHALLENGE
 
-m11_material_row_contract:
-  architecture: three_layer
-  deterministic_backend_prefill: registry_spine
-  semantic_model_scope: active_batch_evidence_application_only
-  deterministic_backend_finalize: final_status_and_projection
-  public_normalization_scope: outside_m11
-  model_must_not_rewrite_registry_spine: true
-  model_must_not_choose_profile_placement: true
-  model_must_not_emit_final_material_profiles: true
-  material_row_field_count: 19
-  threat_name_required: true
-  threat_name_source: AI_THREAT_REGISTRY.Threat_Name
-  subcategory_code_only_in_m11: true
-  subcategory_display_label_scope: normalizer_compiler_only
-  legacy_subcategory_normalization:
-    FIN: LIA
-  legacy_subcategory_normalization_status: non_blocking_warning_ledgered
-  split_profile_root_discipline:
-    exposure_registry_controlled_profile: controlled_rows_only
-    exposure_registry_triggered_profile: triggered_rows_only
-  full_material_row_fields:
-    - Threat_ID
-    - Threat_Name
-    - target_match
-    - evaluation_status
-    - basis_proof
-    - control_exclusion_evaluation
-    - evidence_source_basis
-    - fp_mechanism
-    - Archetype
-    - Subcategory
-    - Surface
-    - authority_anchors
-    - Pain_Tier
-    - Pain_Depth
-    - Pain_Category
-    - Legal_Pain
-    - remediation
-    - review_route
-    - row_limitations
-  final_material_statuses:
-    - TRIGGERED
-    - CONTROLLED_BY_VISIBLE_CONTROL
-    - CONTROLLED_BY_EXCLUSION
-    - CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
+read_artifacts:
+  - phase_routing_manifest
+  - phase_route_runtime_packet
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - admitted_2f_lossless_legal_governance_bucket
+  - admitted_legal_doc_dynamic_artifacts
+  - target_profile
+  - domain_derivation_profile
+  - feature_candidate_inventory
+  - target_feature_profile
+  - dap_registry_manifest
+  - dap_strategic_derivation_matrix
+  - dap_semantic_batch_route_manifest
+  - dap_semantic_batch_exec_artifact
+  - dap_semantic_batch_lim_artifact
+  - dap_semantic_batch_party_artifact
+  - dap_semantic_batch_role_artifact
+  - dap_semantic_batch_flow_artifact
+  - dap_semantic_batch_obj_artifact
+  - dap_semantic_batch_auth_artifact
+  - dap_semantic_batch_ctrl_artifact
+  - dap_semantic_batch_contact_cm_artifact
+  - dap_semantic_batch_vend_artifact
+  - dap_semantic_batch_loc_artifact
+  - dap_semantic_batch_ret_artifact
+  - dap_semantic_batch_sec_artifact
+  - dap_semantic_batch_sens_artifact
+  - dap_semantic_batch_dom_artifact
+  - dap_semantic_batch_ready_artifact
+  - dap_semantic_batch_req_artifact
+  - dap_semantic_batch_validation_manifest
+  - data_provenance_profile_semantic_batch_gate
+  - domain_selection_profile
+  - active_run_package_manifest
 
-m9_legal_cartography_rule:
-  m9_is_builder: true
-  m11_is_builder: false
-  consumed_artifact: legal_cartography_index
-  permitted_use: navigation, custody, locator, missing-or-limited state
-  forbidden_use: proof-by-title, proof-by-route-label, rebuilding M9, mutating M9, blind L1-L6 scanning
+forbidden_read_artifacts:
+  - target_profile_forensics
+  - target_feature_profile_forensics
+  - dap_forensics_profile
+  - retired_data_provenance_profile
+  - retired_data_provenance_profile_forensics
+  - extended_dap_india_readiness_profile
+  - integrated_dap_report
+  - lossless_family__*
+  - source_outside_active_2f_packet
 
-phase_sequence:
-  - M11_PHASE_A_DETERMINISTIC_ROUTE_PLAN_AND_BATCH_PLAN
-  - M11_PHASE_B_AGENTIC_BATCH_EVIDENCE_APPLICATION
-  - M12_PHASE_B2_AGENTIC_BATCH_VALIDATION
-  - M11_PHASE_B2_DETERMINISTIC_STATUS_AND_ACCEPTED_BATCH_SAVE
-  - M11_PHASE_C_DETERMINISTIC_WORKPAD_98_MERGE
-  - M11_PHASE_D_DETERMINISTIC_CONTROLLED_PROJECTION
-  - M11_PHASE_E_DETERMINISTIC_TRIGGERED_PROJECTION
-  - M11_PHASE_F_DETERMINISTIC_FORENSICS
-  - M12_GLOBAL_CHALLENGE_AFTER_M11_FORENSICS
+required_reference_files:
+  - AI_THREAT_REGISTRY.yaml
+  - AI_REGISTRY_KEY.md
+  - 03_REGISTRY_EVALUATION_RULES.yaml
+  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+
+active_prompt_files:
+  - M11_EXPOSURE_REGISTRY.md
+  - 00_M11_RUNTIME_CONTROLLER.md
+  - M11_A_DETERMINISTIC_ROUTING_PREFILL.md
+  - M11_B_BATCH_PACKET_ASSEMBLY.md
+  - M11_C_BATCH_EVALUATION.md
+  - M11_D_BATCH_REINVESTIGATION_REPAIR.md
+
+m11_three_layer_contract:
+  layer_1_backend:
+    - validate_registry
+    - build_route_plan
+    - build_batch_plan
+    - resolve_2f_navigation_and_primary_evidence
+    - prefill_registry_spine
+  layer_2_model:
+    - apply_hunter_trigger_to_active_batch_evidence
+    - return_semantic_status_inputs
+    - return_basis_and_limitation_fields
+  layer_3_backend:
+    - deterministic_batch_validation
+    - deterministic_final_material_status
+    - save_accepted_batch
+    - merge_workpad_98
+    - project_controlled_and_triggered_profiles
+    - assemble_m11_forensics_side_output
+
+model_forbidden_actions:
+  - create_or_rewrite_route_plan
+  - choose_batch_membership
+  - rewrite_registry_spine
+  - choose_final_material_status
+  - save_artifacts
+  - merge_workpad
+  - project_material_profiles
+  - assemble_forensics
+  - emit_challenge_gate
+  - perform_global_m12_challenge
+  - compile_or_render
 
 write_artifacts_in_order:
-  PHASE_A_ROUTE_PLAN_SAVE_EVENT:
-    - exposure_registry_route_plan
-  PHASE_B_BATCH_EVALUATION_EVENT:
-    emits_model_ledger_only:
-      - m11_batch_registry_ledger
-    backend_save_forbidden_until_m12_batch_validation: true
-  PHASE_B2_BATCH_VALIDATION_SAVE_EVENT:
-    - exposure_registry_batch_validation__{GROUP}__{NNN}
-  PHASE_B2_ACCEPTED_BATCH_SAVE_EVENT:
-    - exposure_registry_batch__{GROUP}__{NNN}
-  PHASE_C_CANONICAL_WORKPAD_SAVE_EVENT:
-    - exposure_registry_workpad_98
-  PHASE_D_CONTROLLED_MATERIAL_SAVE_EVENT:
-    - exposure_registry_controlled_profile
-  PHASE_E_TRIGGERED_MATERIAL_SAVE_EVENT:
-    - exposure_registry_triggered_profile
-  PHASE_F_FORENSIC_SAVE_EVENT:
-    - exposure_registry_profile_forensics
-  M12_GLOBAL_CHALLENGE_SAVE_EVENT:
-    - challenge_gate
+  - exposure_registry_route_plan
+  - exposure_registry_batch_validation__GROUP__NNN
+  - exposure_registry_batch__GROUP__NNN
+  - exposure_registry_workpad_98
+  - exposure_registry_controlled_profile
+  - exposure_registry_triggered_profile
+  - exposure_registry_profile_forensics
 
-phase_gate_rules:
-  - Phase B model call may evaluate only expected_threat_ids supplied for the active batch.
-  - Phase B model call must emit semantic evidence application only.
-  - Threat_Name is backend-owned registry spine and must be carried into every accepted material row.
-  - Subcategory is backend-owned code-only registry spine; FIN is normalized to LIA with a non-blocking drift warning.
-  - M12 batch validation must exist before backend saves any exposure_registry_batch__{GROUP}__{NNN} artifact.
-  - Backend derives final material status before accepted-batch save.
-  - exposure_registry_workpad_98 must exist before controlled or triggered material projections.
-  - exposure_registry_profile_forensics may be built only after route plan, accepted batches, batch validations, workpad, and both split material profiles are saved.
-  - M11 may not emit challenge_gate.
-  - M12 batch may emit only exposure_registry_batch_validation.
-  - M12 global may emit challenge_gate.
+m12_boundary:
+  owner: agent_7_m12
+  delivery_mode: DERIVED_ONLY
+  exposure_forensics_required: false
+  preceding_forensics_required: false
+  challenge_gate_written_by_agent5: false
 
-forbidden_outputs_for_m11_and_m12_batch:
-  - challenge_gate
-  - final_output_handoff
-  - exposure_summary
-  - material_exposure_findings
-  - controlled_exposure_rows
-  - old seven-field material row as production contract
-  - old eighteen-field material row without Threat_Name as production contract
-  - exposure_registry_profile
-  - legal_cartography_index as output
-  - rebuilt legal cartography map
-
-backend_permission_profile: agent_5_m11_batched_three_layer_material_row
-validator_profile: agent_5_m11_three_layer_material_row_validator
-phase_packet_contract: AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11.md
-backend_output_adapter: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
-terminal_receipt_profile: agent_5_m11_batched_manual_receipt
-
-stop_condition: stop after M11_EXPOSURE_REGISTRY lock
+terminal_rule:
+  stop_after_m11_lock: true
 </RUNTIME_BINDING_PACKET>
