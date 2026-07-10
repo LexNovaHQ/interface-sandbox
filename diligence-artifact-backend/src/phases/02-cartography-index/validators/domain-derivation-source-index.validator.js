@@ -25,6 +25,7 @@ const DERIVED_VALUE_KEYS = Object.freeze(["primary_domain", "domain_package", "a
 
 export function validateDomainDerivationSourceIndex({ sourceIndex } = {}) {
   const errors = [];
+  validateForbiddenArtifactRoots(sourceIndex, errors);
   const index = unwrapFinal(sourceIndex);
   if (!index || typeof index !== "object" || Array.isArray(index)) errors.push("domain_derivation_source_index must be an object");
   if (!index) return { ok: false, errors, artifact_name: FINAL_ARTIFACT };
@@ -50,6 +51,14 @@ function unwrapFinal(value) {
   if (value && typeof value === "object" && FINAL_ARTIFACT in value) return value[FINAL_ARTIFACT];
   if (value && typeof value === "object" && value.payload && FINAL_ARTIFACT in value.payload) return value.payload[FINAL_ARTIFACT];
   return value;
+}
+
+function validateForbiddenArtifactRoots(value, errors) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return;
+  for (const artifactName of P2B_DOMAIN_DERIVATION_FORBIDDEN_OUTPUTS) {
+    if (Object.prototype.hasOwnProperty.call(value, artifactName)) errors.push(`2B must not emit forbidden artifact root ${artifactName}`);
+    if (value.payload && typeof value.payload === "object" && Object.prototype.hasOwnProperty.call(value.payload, artifactName)) errors.push(`2B must not emit forbidden payload root ${artifactName}`);
+  }
 }
 
 function validateLocatorRow({ key, rowIndex, row, errors }) {
@@ -95,7 +104,7 @@ function validateDownstreamRules(rules = {}, errors) {
 
 function validateNoForbiddenMarkers(value, errors) {
   const text = JSON.stringify(value || {});
-  for (const marker of [...P2B_DOMAIN_DERIVATION_FORBIDDEN_OUTPUTS, ...P2B_DOMAIN_DERIVATION_FORBIDDEN_CONCLUSIONS, ...P2B_DOMAIN_DERIVATION_RETIRED_ROOTS_FORBIDDEN]) {
+  for (const marker of [...P2B_DOMAIN_DERIVATION_FORBIDDEN_CONCLUSIONS, ...P2B_DOMAIN_DERIVATION_RETIRED_ROOTS_FORBIDDEN]) {
     if (text.includes(marker)) errors.push(`final index includes forbidden marker ${marker}`);
   }
 }
