@@ -35,17 +35,21 @@ const ACTIVE_PHASE2_INPUT_FILES = Object.freeze([
   "agent-packages/agent_2b_m9/AGENT2B_M9_PACKET_MANIFEST.json",
   "agent-packages/agent_2b_m9/AGENT2B_M9_PACKET_VALIDATION.json"
 ]);
-const FORBIDDEN = Object.freeze([
-  "lossless_family__",
-  "compatibility.adapter",
-  "CompatibilityArtifacts",
-  "compatibility_adapter",
-  "loaded legal-governance lossless family",
-  "lossless_root__legal_identity_notice",
-  "lossless_root__security_trust\"",
-  "lossless_root__trust_compliance",
-  "lossless_root__technical_docs_api_developer"
+const M9_ACTIVE_SOURCE_FILES = Object.freeze([
+  "src/phases/02-legal-cartography-index/legal-cartography-index.contract.js",
+  "src/phases/02-legal-cartography-index/services/legal-cartography-deterministic-map.builder.js",
+  "src/phases/02-legal-cartography-index/services/legal-cartography-hybrid-compiler.js",
+  "src/phases/02-legal-cartography-index/orchestrators/legal-cartography-hybrid.orchestrator.js",
+  "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
+  "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+  "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
+  "agent-packages/agent_2b_m9/M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md",
+  "agent-packages/agent_2b_m9/M9_C_REINVESTIGATION.md",
+  "agent-packages/agent_2b_m9/AGENT2B_M9_PACKET_MANIFEST.json",
+  "agent-packages/agent_2b_m9/AGENT2B_M9_PACKET_VALIDATION.json"
 ]);
+const GLOBAL_FORBIDDEN = Object.freeze(["lossless_family__", "compatibility.adapter", "CompatibilityArtifacts", "compatibility_adapter", "loaded legal-governance lossless family"]);
+const RETIRED_ROOT_ACTIVE_INPUT_MARKERS = Object.freeze(["lossless_root__legal_identity_notice", "lossless_root__security_trust\"", "lossless_root__trust_compliance", "lossless_root__technical_docs_api_developer"]);
 const REQUIRED = Object.freeze([
   "phase1_v5",
   "phase1_common_roots_plus_legal_doc_artifacts",
@@ -61,18 +65,14 @@ const REQUIRED = Object.freeze([
   "data_source_routes",
   "required_data_source_route_ids"
 ]);
-const FORBIDDEN_CONCLUSIONS = Object.freeze([
-  "license_validity",
-  "license_requirement",
-  "applicable_regulator",
-  "regulatory_compliance_status",
-  "grievance_sufficiency",
-  "grievance_compliance_status",
-  "ombudsman_requirement"
-]);
+const FORBIDDEN_CONCLUSIONS = Object.freeze(["license_validity", "license_requirement", "applicable_regulator", "regulatory_compliance_status", "grievance_sufficiency", "grievance_compliance_status", "ombudsman_requirement"]);
 
 const activeText = ACTIVE_PHASE2_INPUT_FILES.map((file) => [file, fs.readFileSync(path.join(ROOT, file), "utf8")]);
-for (const [file, text] of activeText) for (const marker of FORBIDDEN) assert.equal(text.includes(marker), false, `${file} contains forbidden legacy-family or retired-root input marker: ${marker}`);
+for (const [file, text] of activeText) for (const marker of GLOBAL_FORBIDDEN) assert.equal(text.includes(marker), false, `${file} contains forbidden legacy-family input marker: ${marker}`);
+for (const file of M9_ACTIVE_SOURCE_FILES) {
+  const text = fs.readFileSync(path.join(ROOT, file), "utf8");
+  for (const marker of RETIRED_ROOT_ACTIVE_INPUT_MARKERS) assert.equal(text.includes(marker), false, `${file} contains retired active M9 root input marker: ${marker}`);
+}
 const combined = activeText.map(([, text]) => text).join("\n");
 for (const marker of REQUIRED) assert.ok(combined.includes(marker), `active Phase 2/DPNI input contract missing required marker: ${marker}`);
 for (const marker of FORBIDDEN_CONCLUSIONS) assert.ok(combined.includes(marker), `Phase 2/M9 contract must explicitly forbid ${marker}`);
