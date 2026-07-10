@@ -4,20 +4,43 @@ active_agent_name: Interface Data Privacy Agent
 active_phase_scope: PHASE7_DAP_SEMANTIC_BATCH_RUNNER
 run_mode: SEMANTIC_BATCH_AGENT
 active_batch_required: true
+routing_authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+route_id: ROUTE.PHASE7.DATA_PROVENANCE_PROFILE
+bucket_id: 2D_BUCKET_DATA_PRIVACY
+route_scoped_runtime_reader: phase-route-runtime.reader
+lossless_evidence_role: PRIMARY_EVIDENCE
+index_role: MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE
+profile_forensics_inputs_forbidden: true
 allowed_modules:
   - PHASE7_LAYER4_SEMANTIC_BATCH_RUNNER
 read_artifacts:
-  - dap_registry_manifest
-  - dap_strategic_derivation_matrix
+  - phase_routing_manifest
+  - phase_route_runtime_packet
   - data_privacy_navigation_index
-  - dap_semantic_batch_route_manifest
-  - source_discovery_handoff
   - legal_cartography_index
   - legal_signal_derivation_profile
+  - domain_selection_profile
+  - active_run_package_manifest
   - target_profile
-  - target_profile_forensics
+  - domain_derivation_profile
+  - feature_candidate_inventory
   - target_feature_profile
+  - lossless_root__privacy_data_processing
+  - lossless_root__security_trust_compliance
+  - lossless_root__data_governance_controls
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__integrations_ecosystem
+  - lossless_root__ai_safety_transparency
+  - lossless_root__regulatory_licensing_status
+  - lossless_root__grievance_complaints
+forbidden_read_artifacts:
+  - source_discovery_handoff
+  - cartography_index
+  - target_profile_forensics
   - target_feature_profile_forensics
+  - dap_forensics_profile
+  - exposure_registry_route_plan
   - lossless_family__D1_SECURITY_TRUST
   - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
   - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
@@ -25,12 +48,15 @@ read_artifacts:
   - lossless_family__D5_AI_SAFETY_TRANSPARENCY
 layer4_use_rules:
   - Execute exactly one active semantic batch per model call.
-  - The active route packet controls families, expected field IDs, expected root, reading priorities, schema requirements, and validation requirements.
-  - Use D1-D5 material only through data_privacy_navigation_index routes.
-  - Use L-family material only through Legal Cartography locator routes selected by the active route packet.
+  - Phase 2G is the sole authority for the Phase 7 source and profile input packet.
+  - The Phase 2G runtime packet fixes the allowed data/privacy bucket, legal dependencies, preceding derived profiles, and runtime context.
+  - The active DAP batch route packet controls families, expected field IDs, expected root, reading priorities, schema requirements, and validation requirements inside the already authorized Phase 2G packet.
+  - Lossless evidence is primary evidence and must be navigated through data_privacy_navigation_index.
+  - Use legal material only through Legal Cartography locator routes selected by the active DAP batch route packet.
+  - Do not read any target, activity, DAP, or exposure forensic profile.
   - Emit only the active batch artifact root.
   - Do not emit old M10 material, old M10 forensics, compiler material, report material, final profile material, or another batch artifact.
-  - Do not mutate upstream artifacts or route manifests.
+  - Do not mutate upstream artifacts, the Phase 2G route packet, or DAP batch route manifests.
 write_artifact_rule:
   emits_exactly_one_active_batch_artifact: true
   root_must_equal: active_dap_semantic_batch_route_packet.expected_artifact_name
