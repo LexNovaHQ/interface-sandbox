@@ -20,7 +20,7 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
   if (job_id === "SOURCE_EXTRACTION") {
     if (!output.source_family_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:source_family_index");
     if (!output.source_family_index.root_artifact_manifest || typeof output.source_family_index.root_artifact_manifest !== "object" || Array.isArray(output.source_family_index.root_artifact_manifest)) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:root_artifact_manifest");
-    assertLockedRootManifest(output.source_family_index.root_artifact_manifest);
+    assertLockedRootManifest(output.source_family_index.root_artifact_manifest, output);
     assertMatrixRows(output.source_family_index.discovered_source_index || [], "source_family_index.discovered_source_index");
     assertMatrixRows([...(output.source_family_index.manifest_only_index || []), ...(output.source_family_index.metadata_only_index || [])], "source_family_index.index_rows");
     if (!Array.isArray(output.source_family_index.saved_root_artifacts)) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:saved_root_artifacts_index");
@@ -28,6 +28,7 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
     if (!output.legal_doc_extraction_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_extraction_index");
     if (!output.legal_doc_lossless_validation_manifest) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_lossless_validation_manifest");
     if (output.legal_doc_lossless_validation_manifest?.merged_legal_blob_detected !== false) throw new Error("SOURCE_DISCOVERY_LEGAL_DOC_MERGE_FORBIDDEN");
+    assertLegalDocsIndependent(output);
   }
   if (job_id === "SOURCE_FAMILY_HANDOFF") {
     if (!output.source_discovery_handoff) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:source_discovery_handoff");
@@ -57,10 +58,37 @@ function assertMatrixRows(rows = [], context) {
     if (row.common_root === "technical_docs_api" && row.admission_tier === "PRIMARY" && row.route_type !== "app_shell_metadata" && !row.technical_route_shape) throw new Error(`SOURCE_DISCOVERY_TECHNICAL_ROUTE_SHAPE_MISSING:${context}:${row.manifest_id || row.source_id}`);
   }
 }
-function assertLockedRootManifest(rootArtifactManifest = {}) {
+function assertLockedRootManifest(rootArtifactManifest = {}, output = {}) {
   const keys = Object.keys(rootArtifactManifest);
   for (const key of keys) if (!COMMON_ROOT_CODES.includes(key) || RETIRED_COMMON_ROOT_CODES.includes(key)) throw new Error(`SOURCE_DISCOVERY_ROOT_ARTIFACT_MANIFEST_INVALID_ROOT:${key}`);
   for (const code of COMMON_ROOT_CODES) if (!rootArtifactManifest[code]) throw new Error(`SOURCE_DISCOVERY_ROOT_ARTIFACT_MANIFEST_MISSING_ROOT:${code}`);
+  for (const [root, entry] of Object.entries(rootArtifactManifest)) {
+    if (entry.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[root]) throw new Error(`SOURCE_DISCOVERY_ROOT_ARTIFACT_MANIFEST_POLICY_MISMATCH:${root}`);
+    if (entry.source_text_cutting_allowed !== false) throw new Error(`SOURCE_DISCOVERY_ROOT_TEXT_CUTTING_FORBIDDEN:${root}`);
+    if (entry.legal_documents_stored_separately !== true) throw new Error(`SOURCE_DISCOVERY_LEGAL_DOC_SEPARATION_FLAG_MISSING:${root}`);
+    const required = Array.isArray(entry.required_artifacts) ? entry.required_artifacts : [];
+    if (!entry.source_count && required.length) throw new Error(`SOURCE_DISCOVERY_EMPTY_ROOT_PHYSICALLY_SAVED:${root}`);
+    if (entry.source_count > 0 && !required.length) throw new Error(`SOURCE_DISCOVERY_MATERIAL_ROOT_WITHOUT_PHYSICAL_ARTIFACT:${root}`);
+    if (entry.status === "SHARDED" && (required.length < 2 || entry.root_sources_required_together !== true)) throw new Error(`SOURCE_DISCOVERY_SHARDED_ROOT_INTEGRITY_INVALID:${root}`);
+    for (const name of required) {
+      const artifact = output[name];
+      if (!artifact) throw new Error(`SOURCE_DISCOVERY_ROOT_REQUIRED_ARTIFACT_NOT_EMITTED:${root}:${name}`);
+      if (!Array.isArray(artifact.sources) || artifact.sources.length === 0) throw new Error(`SOURCE_DISCOVERY_SAVED_ROOT_WITHOUT_SOURCES:${name}`);
+      if (artifact.root_shard_integrity?.source_text_cutting_allowed !== false) throw new Error(`SOURCE_DISCOVERY_SHARD_TEXT_CUTTING_FORBIDDEN:${name}`);
+    }
+    const listed = new Set(entry.source_ids || []);
+    const found = new Map();
+    for (const name of required) for (const source of output[name]?.sources || []) found.set(source.source_id, (found.get(source.source_id) || 0) + 1);
+    for (const id of listed) if (found.get(id) !== 1) throw new Error(`SOURCE_DISCOVERY_ROOT_SOURCE_ID_NOT_EXACTLY_ONCE:${root}:${id || "missing"}`);
+  }
+}
+function assertLegalDocsIndependent(output = {}) {
+  const docs = output.legal_doc_inventory?.documents_found || [];
+  for (const doc of docs) {
+    const artifact = output[doc.artifact_name];
+    if (!artifact || typeof artifact.lossless_text !== "string" || !artifact.lossless_text.trim()) throw new Error(`SOURCE_DISCOVERY_LEGAL_DOC_ARTIFACT_TEXT_MISSING:${doc.artifact_name || "missing"}`);
+    for (const rootName of output.source_family_index?.saved_root_artifacts || []) for (const source of output[rootName]?.sources || []) if (source.canonical_url === doc.source_url && source.lossless_text) throw new Error(`SOURCE_DISCOVERY_LEGAL_DOC_TEXT_LEAKED_INTO_ROOT:${rootName}:${doc.artifact_name}`);
+  }
 }
 function assertHandoffPropagation(handoff = {}, postHandoff = {}) {
   if (handoff.schema_version !== "PHASE1_SOURCE_DISCOVERY_HANDOFF_v2_FULL_ROOT_MATRIX") throw new Error(`SOURCE_DISCOVERY_HANDOFF_SCHEMA_STALE:${handoff.schema_version || "missing"}`);
