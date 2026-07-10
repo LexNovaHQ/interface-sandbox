@@ -153,7 +153,6 @@ export const P2G_PHASE_ROUTER_CONTRACT = Object.freeze({
   phase_id: "CARTOGRAPHY_INDEX",
   designation: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
   reads: Object.freeze([
-    "cartography_index",
     "target_profile_source_index",
     "domain_derivation_source_index",
     "activity_profile_source_index",
