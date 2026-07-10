@@ -50,7 +50,9 @@ for (const flag of ["artifact_permissions_registered", "pipeline_contract_regist
 assert.equal(manifest.runtime_wiring.p2b_next, "P2C_ACTIVITY_PROFILE_SOURCE_INDEX");
 assert.equal(manifest.runtime_wiring.p2c_next, "P2D_DATA_PRIVACY_NAVIGATION_INDEX");
 assert.equal(manifest.runtime_wiring.p2d_next, "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX");
-assert.equal(manifest.runtime_wiring.p2e_next, "P2_INDEX_COMPILER_VALIDATION");
+assert.equal(manifest.runtime_wiring.p2e_next, "P2G_PHASE_ROUTER");
+assert.equal(manifest.runtime_wiring.p2g_next, "P2_INDEX_COMPILER_VALIDATION");
+assert.equal(manifest.runtime_wiring.p2g_phase_router_required_before_p2_index, true);
 assert.deepEqual(manifest.components, EXPECTED_PACKAGE_FILES);
 assert.deepEqual(manifest.deliberately_not_created, OMITTED_PACKAGE_FILES);
 assert.deepEqual(manifest.write_artifacts_in_order, WRITE_ORDER);
