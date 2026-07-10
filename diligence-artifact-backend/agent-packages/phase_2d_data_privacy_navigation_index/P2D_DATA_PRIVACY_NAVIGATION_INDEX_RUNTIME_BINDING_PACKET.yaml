@@ -1,0 +1,48 @@
+packet_id: P2D_DATA_PRIVACY_NAVIGATION_INDEX_RUNTIME_BINDING_PACKET
+phase_id: P2D_DATA_PRIVACY_NAVIGATION_INDEX
+public_label: Data Privacy Navigation Index
+package_status: LEAN_PACKAGE_RUNTIME_WIRING_TARGET
+runtime_wiring_changed: true
+final_artifact: data_privacy_navigation_index
+write_order:
+  - data_privacy_deterministic_map
+  - data_privacy_semantic_profile
+  - data_privacy_navigation_index
+reads:
+  control_inputs:
+    - source_discovery_handoff
+    - post_phase_1_domain_gate_handoff
+    - source_discovery_matrix_manifest
+    - neutral_evidence_bucket_manifest
+    - adapter_expansion_log
+    - source_family_index
+  phase1_v5_data_privacy_roots:
+    - lossless_root__privacy_data_processing
+    - lossless_root__security_trust_compliance
+    - lossless_root__data_governance_controls
+    - lossless_root__technical_docs_api
+    - lossless_root__docs_api_data_flow
+    - lossless_root__integrations_ecosystem
+    - lossless_root__ai_safety_transparency
+    - lossless_root__regulatory_licensing_status
+    - lossless_root__grievance_complaints
+  legal_index_inputs:
+    - legal_cartography_index
+    - legal_signal_derivation_profile
+ownership:
+  data_privacy_navigation_index_owned_by_2d: true
+  p2_index_compiler_reads_not_writes_dpni: true
+  phase7_reads_phase2d_dpni: true
+boundary:
+  navigation_only: true
+  data_provenance_source_index_forbidden: true
+  old_d_family_inputs_forbidden: true
+  source_text_copy_forbidden: true
+  summaries_forbidden: true
+  excerpts_forbidden: true
+  profile_value_derivation_forbidden: true
+  legal_or_compliance_conclusion_forbidden: true
+compatibility:
+  phase7_layer3_legacy_route_keys_preserved: true
+  required_d_family_route_ids_preserved_as_compatibility_alias: true
+  selective_l_family_route_ids_preserved_as_compatibility_alias: true
