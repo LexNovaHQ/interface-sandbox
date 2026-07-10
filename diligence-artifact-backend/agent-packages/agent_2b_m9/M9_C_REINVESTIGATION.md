@@ -24,7 +24,7 @@ This workpad is optional and internal to Legal Cartography and Index. It must no
 
 ## Inputs
 
-Use only:
+Use only Phase 1 v5 legal/governance source inputs and M9 internal artifacts:
 
 ```text
 legal_cartography_deterministic_map
@@ -39,16 +39,19 @@ legal_doc_inventory
 legal_doc_extraction_index
 legal_doc_lossless_validation_manifest
 legal_doc_{DOC_TYPE}
-lossless_root__legal_identity_notice
-lossless_root__privacy_data_processing
-lossless_root__security_trust
-lossless_root__trust_compliance
+lossless_root__company_identity
 lossless_root__contact_notice
-lossless_root__technical_docs_api_developer
+lossless_root__privacy_data_processing
+lossless_root__security_trust_compliance
+lossless_root__data_governance_controls
+lossless_root__ai_safety_transparency
+lossless_root__technical_docs_api
 lossless_root__docs_api_data_flow
+lossless_root__regulatory_licensing_status
+lossless_root__grievance_complaints
 ```
 
-Do not fetch new URLs, infer private documents, use old family input contracts, or use legacy family adapters.
+Do not fetch new URLs, infer private documents, use old family input contracts, use retired Phase 1 root artifacts, or use legacy family adapters.
 
 ## Non-Blocking Repair Classes
 
@@ -66,6 +69,7 @@ missing standalone artifact with possible substitute control
 embedded instrument requiring confirmation
 ambiguous document-route relevance
 ambiguous subcat relevance
+regulatory/grievance locator ambiguity
 ```
 
 After reinvestigation, unresolved ordinary issues carry limitations and allow `LOCKED_WITH_LIMITATIONS`.
@@ -93,7 +97,7 @@ If used, return strict JSON only:
   "legal_cartography_reinvestigation_workpad": {
     "run_id": "",
     "generated_by": "legal_cartography_reinvestigation_layer",
-    "schema_version": "LEGAL_CARTOGRAPHY_REINVESTIGATION_WORKPAD_v2_PHASE1_SOURCE_INPUT_CONTRACT",
+    "schema_version": "LEGAL_CARTOGRAPHY_REINVESTIGATION_WORKPAD_v3_PHASE1_V5_SOURCE_INPUT_CONTRACT",
     "repair_rows_reviewed": [],
     "repair_rows_resolved": [],
     "repair_rows_unresolved_with_limitations": [],
@@ -101,9 +105,10 @@ If used, return strict JSON only:
     "downstream_rules": {
       "legal_cartography_reinvestigation_only": true,
       "no_new_url_discovery": true,
-      "use_only_phase1_legal_common_root_and_legal_doc_sources": true,
+      "use_only_phase1_v5_legal_common_root_and_legal_doc_sources": true,
       "ordinary_repairs_are_non_blocking": true,
-      "limitations_must_carry_forward": true
+      "limitations_must_carry_forward": true,
+      "regulatory_grievance_conclusions_forbidden": true
     },
     "status": "LOCKED_WITH_LIMITATIONS",
     "lock_status": "LOCKED_WITH_LIMITATIONS"
@@ -111,4 +116,4 @@ If used, return strict JSON only:
 }
 ```
 
-Do not emit final cartography, registry results, redline instructions, final handoff, renderer payload, or report prose.
+Do not emit final cartography, registry results, legal advice, compliance conclusions, regulatory conclusions, grievance sufficiency conclusions, redline instructions, final handoff, renderer payload, or report prose.
