@@ -53,8 +53,8 @@ const FORBIDDEN_COPY_KEYS = Object.freeze([
   "activity_candidate_summary"
 ]);
 const FORBIDDEN_ROUTE_TEXT_PATTERNS = Object.freeze([
-  /\barchetype\b/i,
-  /\bsurface\b/i,
+  /\barchetype\s+(code|label|classification|locked)\b/i,
+  /\bsurface\s+(context\s+token|label|classification|locked)\b/i,
   /\bclassification\s+locked\b/i,
   /\bpackage\s+classification\b/i,
   /\bselected\s+package\b/i,
