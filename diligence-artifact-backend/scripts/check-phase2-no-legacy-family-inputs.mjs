@@ -13,8 +13,11 @@ const ACTIVE_PHASE2_INPUT_FILES = Object.freeze([
   "src/phases/02-cartography-index/cartography-index.runner.js",
   "src/phases/02-cartography-index/target-profile-source-index.contract.js",
   "src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js",
+  "src/phases/02-cartography-index/services/target-profile-source-index.compiler.js",
   "src/phases/02-cartography-index/services/target-legal-signal-locator.rules.js",
   "src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js",
+  "src/phases/02-cartography-index/validators/target-profile-source-index.validator.js",
+  "src/phases/02-cartography-index/orchestrators/target-profile-source-index.orchestrator.js",
   "src/phases/02-legal-cartography-index/legal-cartography-index.contract.js",
   "src/phases/02-legal-cartography-index/services/legal-cartography-deterministic-map.builder.js",
   "src/phases/02-legal-cartography-index/services/legal-cartography-hybrid-compiler.js",
@@ -24,6 +27,13 @@ const ACTIVE_PHASE2_INPUT_FILES = Object.freeze([
   "src/phases/07-data-provenance-profile/data-provenance-profile.runner.js",
   "src/runtime/services/pipeline.service.js",
   "src/runtime/services/artifacts.service.js",
+  "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET.yaml",
+  "agent-packages/phase_2a_target_profile_source_index/00_RUNTIME_CONTROLLER_PHASE2A_TARGET_PROFILE_SOURCE_INDEX.md",
+  "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX.md",
+  "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+  "agent-packages/phase_2a_target_profile_source_index/00_VALIDATOR_RULES_PHASE2A_TARGET_PROFILE_SOURCE_INDEX.md",
+  "agent-packages/phase_2a_target_profile_source_index/00_TERMINAL_RECEIPT_RULES_PHASE2A_TARGET_PROFILE_SOURCE_INDEX.md",
+  "agent-packages/phase_2a_target_profile_source_index/P2A_PACKET_MANIFEST.json",
   "agent-packages/agent_2b_m9/AGENT2B_M9_RUNTIME_BINDING_PACKET.yaml",
   "agent-packages/agent_2b_m9/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
   "agent-packages/agent_2b_m9/04_M9_LEGAL_CARTOGRAPHY_RUNTIME_SYNC_PATCHED.md",
@@ -52,6 +62,10 @@ const GLOBAL_FORBIDDEN = Object.freeze(["lossless_family__", "compatibility.adap
 const RETIRED_ROOT_ACTIVE_INPUT_MARKERS = Object.freeze(["lossless_root__legal_identity_notice", "lossless_root__security_trust\"", "lossless_root__trust_compliance", "lossless_root__technical_docs_api_developer"]);
 const REQUIRED = Object.freeze([
   "phase1_v5",
+  "P2A_TARGET_PROFILE_SOURCE_INDEX",
+  "target_profile_deterministic_map",
+  "target_profile_semantic_profile",
+  "target_profile_source_index",
   "phase1_common_roots_plus_legal_doc_artifacts",
   "legal_doc_inventory",
   "legal_doc_{DOC_TYPE}",
@@ -74,6 +88,6 @@ for (const file of M9_ACTIVE_SOURCE_FILES) {
   for (const marker of RETIRED_ROOT_ACTIVE_INPUT_MARKERS) assert.equal(text.includes(marker), false, `${file} contains retired active M9 root input marker: ${marker}`);
 }
 const combined = activeText.map(([, text]) => text).join("\n");
-for (const marker of REQUIRED) assert.ok(combined.includes(marker), `active Phase 2/DPNI input contract missing required marker: ${marker}`);
-for (const marker of FORBIDDEN_CONCLUSIONS) assert.ok(combined.includes(marker), `Phase 2/M9 contract must explicitly forbid ${marker}`);
+for (const marker of REQUIRED) assert.ok(combined.includes(marker), `active Phase 2/P2A/DPNI input contract missing required marker: ${marker}`);
+for (const marker of FORBIDDEN_CONCLUSIONS) assert.ok(combined.includes(marker), `Phase 2/P2A/M9 contract must explicitly forbid ${marker}`);
 console.log("Phase 2 no legacy family input validator: PASS");
