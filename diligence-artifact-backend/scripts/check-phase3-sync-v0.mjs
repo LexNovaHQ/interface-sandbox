@@ -11,12 +11,18 @@ const ROOT = process.cwd();
 const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
 
 const m7 = PIPELINE_CONTRACTS.M7_TARGET_PROFILE;
+const p2b = PIPELINE_CONTRACTS.P2B_DOMAIN_DERIVATION_SOURCE_INDEX;
 const p3b = PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER;
 assert.ok(m7, "M7_TARGET_PROFILE pipeline contract missing");
+assert.ok(p2b, "P2B_DOMAIN_DERIVATION_SOURCE_INDEX pipeline contract missing");
 assert.ok(p3b, "P3_DOMAIN_DERIVATION_LAYER pipeline contract missing");
+assert.equal(PIPELINE_CONTRACTS.P2A_TARGET_PROFILE_SOURCE_INDEX.next, "P2B_DOMAIN_DERIVATION_SOURCE_INDEX");
+assert.equal(p2b.next, "P2_INDEX_COMPILER_VALIDATION");
 assert.deepEqual(m7.reads, TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads, "3A pipeline and phase-owned reads must match");
 assert.deepEqual(p3b.reads, DOMAIN_DERIVATION_CONTRACT.reads, "3B pipeline and phase-owned reads must match");
 assert.deepEqual(p3b.writes, DOMAIN_DERIVATION_CONTRACT.writes, "3B pipeline and phase-owned writes must match");
+assert.ok(p3b.reads.includes("domain_derivation_source_index"), "3B must read P2B domain_derivation_source_index");
+assert.equal(p3b.reads.includes("activity_profile_source_index"), false, "3B must not read activity_profile_source_index");
 
 const run = { run_id: "CHECK_PHASE3_SYNC_V0", target: "example.com", target_url: "https://example.com", root_url: "https://example.com", source_mode: "public_url" };
 const artifacts = Object.fromEntries(DOMAIN_DERIVATION_CONTRACT.reads.map((name) => [name, artifactFor(name)]));
@@ -40,10 +46,13 @@ for (const required of [
   "AI_OVERLAY_MOUNTED",
   "trigger_if",
   "exclude_if",
+  "domain_derivation_source_index",
+  "activity_profile_source_index is reserved",
   "<RUNTIME_PACKET>"
 ]) {
-  assert.ok(prompt.includes(required), `3B prompt build missing registry/package reference content: ${required}`);
+  assert.ok(prompt.includes(required), `3B prompt build missing registry/package/runtime content: ${required}`);
 }
+assert.equal(prompt.includes("- `activity_profile_source_index`\n- `target_profile`"), false, "3B active input list must not include activity_profile_source_index");
 
 const compiled = await compileDomainDerivationArtifacts({
   run,
@@ -52,7 +61,7 @@ const compiled = await compileDomainDerivationArtifacts({
     domain_derivation_profile: {
       primary_domain_derivation: { evaluated_rules: [] },
       ai_mount_derivation: { evaluated_rules: [] },
-      fusion_candidate_derivation: { evaluated_rules: [] },
+      fusion_candidate_derivation: { candidates: [] },
       limitation_ledger: [],
       contradiction_ledger: []
     }
@@ -72,7 +81,7 @@ const validator = read("src/phases/03-domain-derivation/validators/domain-deriva
 assert.ok(validator.includes("buildPhase3BDomainDerivationManifestUpdate"), "3B runtime validator must call canonical manifest helper");
 assert.equal(validator.includes("function compileActiveRunPackageManifest({ run, artifacts, profile, validation }) {\n  const before"), false, "inline manifest brain must not be present");
 
-console.log(JSON.stringify({ check: "phase3 sync v0", status: "PASS", enforced: ["3A_PIPELINE_READ_SYNC", "3B_PIPELINE_READ_WRITE_SYNC", "3B_PROMPT_REFERENCE_BUILD", "3B_REGISTRY_VISIBLE_TO_MODEL", "3B_CANONICAL_MANIFEST_COMPILER", "RUNTIME_FLAGS_REMAIN_FALSE"] }, null, 2));
+console.log(JSON.stringify({ check: "phase3 sync v0", status: "PASS", enforced: ["3A_PIPELINE_READ_SYNC", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_RUNTIME_WIRED", "3B_PIPELINE_READ_WRITE_SYNC", "3B_PROMPT_REFERENCE_BUILD", "3B_REGISTRY_VISIBLE_TO_MODEL", "3B_CANONICAL_MANIFEST_COMPILER", "RUNTIME_FLAGS_REMAIN_FALSE"] }, null, 2));
 
 function artifactFor(name) {
   if (name.startsWith("lossless_root__")) {
