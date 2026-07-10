@@ -7,7 +7,10 @@ const DOMAIN_DERIVATION_LOSSLESS_READS = Object.freeze([
   "lossless_root__docs_api_data_flow",
   "lossless_root__pricing_commercial_availability",
   "lossless_root__use_case_customer_industry",
-  "lossless_root__integrations_ecosystem"
+  "lossless_root__integrations_ecosystem",
+  "lossless_root__ai_safety_transparency",
+  "lossless_root__regulatory_licensing_status",
+  "lossless_root__grievance_complaints"
 ]);
 
 const DOMAIN_DERIVATION_PROMPT_FILES = Object.freeze([
@@ -23,7 +26,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   internal_job_id: "P3_DOMAIN_DERIVATION_LAYER",
   public_label: "Domain Derivation Layer",
-  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE_PHASE1_V5_ROOT_SYNCED",
+  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE_PHASE1_V5_P2B_DOMAIN_SOURCE_INDEX_SYNCED",
   execution_mode: "semantic_registry_ladder_derivation_with_deterministic_gate",
   agent_id: "agent_3_target_feature",
   actor_id: "agent_3_target_feature",
@@ -40,7 +43,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "source_discovery_handoff",
     "cartography_index",
     "target_profile_source_index",
-    "activity_profile_source_index",
+    "domain_derivation_source_index",
     "target_profile",
     ...DOMAIN_DERIVATION_LOSSLESS_READS,
     "domain_selection_profile",
@@ -57,6 +60,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml"
   ]),
   forbidden_reads: Object.freeze([
+    "activity_profile_source_index",
     "legal_cartography_index",
     "legal_signal_derivation_profile",
     "legal_doc_inventory",
@@ -80,6 +84,8 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     registry_ladder_prompt_active: true,
     hardcoded_domain_logic_forbidden: true,
     new_domains_added_by_registry_not_prompt: true,
+    domain_derivation_source_index_required: true,
+    activity_profile_source_index_forbidden_until_2c_phase5: true,
     legal_cartography_index_forbidden: true,
     legal_signal_derivation_profile_forbidden: true,
     legal_lossless_evidence_forbidden: true,
