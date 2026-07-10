@@ -4,40 +4,48 @@
 
 `feature_candidate_inventory` is the deterministic navigation index for M8. It is the single source of truth for the public activity candidate universe that the M8 material profile must resolve.
 
-It is not a lossless evidence artifact, not an activity summary, not mechanics proof, and not a package-specific classification profile.
+It is not a lossless evidence artifact, activity summary, mechanics proof, or package-specific classification profile.
 
-## Controlling Override
+## Controlling override
 
 This file supersedes all older M8 source-family harvesting language.
 
-Candidate existence, route harvesting, deterministic deduplication, and candidate universe creation belong only to `M8_FEATURE_CANDIDATE_INVENTORY`.
+Candidate existence, route harvesting, deterministic deduplication, and candidate-universe creation belong only to `M8_FEATURE_CANDIDATE_INVENTORY`. `M8_TARGET_FEATURE_PROFILE` consumes the saved inventory and does not recreate it.
 
-`M8_TARGET_FEATURE_PROFILE` consumes the saved inventory and does not recreate it.
+## Phase 2G authority
 
-## Source Authority
-
-The deterministic inventory phase reads `activity_profile_source_index` only as its activity evidence-navigation authority.
-
-It must not read or harvest directly from:
+`M8_FEATURE_CANDIDATE_INVENTORY` runs under:
 
 ```text
-lossless_family__*
-lossless_root__product_service
-lossless_root__platform_feature_solution
-lossless_root__technical_docs_api
-lossless_root__docs_api_data_flow
-lossless_root__integrations_ecosystem
-lossless_root__pricing_commercial_availability
+ROUTE.PHASE5.ACTIVITY_PROFILE
+2C_BUCKET_ACTIVITY_PROFILE
 ```
 
-Phase 1 source artifacts remain source-of-truth evidence, but Phase 5 reaches them only through 2C navigation pointers.
+Phase 2G supplies the authorized 2C packet. Lossless evidence in that packet is primary evidence and `activity_profile_source_index` is the mandatory navigation map.
 
-## Boundary Lock
+The inventory job receives the routed activity bucket so the backend packet remains uniform and auditable, but candidate creation must use only `activity_profile_source_index` locator rows. It must not independently scan, reinterpret, or copy the routed lossless evidence.
+
+It must not request or read outside the Phase 2G packet, and it must not consume `target_profile_forensics`, `target_feature_profile_forensics`, or any downstream forensic profile.
+
+## Source authority
+
+The deterministic inventory phase indexes candidate routes from `activity_profile_source_index` only.
+
+It must not:
+
+- use `lossless_family__*` artifacts;
+- create candidates by independently searching `lossless_root__*` artifacts;
+- browse, crawl, fetch, or add sources;
+- use `cartography_index`, legal indexes, data/privacy indexes, or downstream artifacts as candidate authority.
+
+Phase 1 source artifacts remain source-of-truth evidence. They are delivered through the 2G bucket and reached through 2C navigation pointers; they are not a second harvesting surface for this deterministic inventory job.
+
+## Boundary lock
 
 The inventory answers only:
 
 ```text
-What candidate activity/capability route exists, and which 2C locator points Phase 5 toward it?
+What candidate activity/capability route exists, and which 2C locator points the material profile toward it?
 ```
 
 It does not answer:
@@ -48,9 +56,9 @@ Which archetype/surface/package label applies?
 What is the mechanics proof?
 ```
 
-Those are material-profile questions for `M8_TARGET_FEATURE_PROFILE`, controlled by `active_run_package_manifest` and the mounted domain package context.
+Those are material-profile questions for `M8_TARGET_FEATURE_PROFILE`, controlled by `active_run_package_manifest`, the mounted domain package context, and the primary activity evidence navigated through 2C.
 
-## Allowed Locator Maps
+## Allowed locator maps
 
 The deterministic inventory phase indexes candidate-creation rows from:
 
@@ -76,7 +84,7 @@ automation_transparency_context_locator_map
 human_control_context_locator_map
 ```
 
-## Output Artifact
+## Output artifact
 
 The deterministic inventory phase writes exactly one artifact:
 
@@ -102,7 +110,7 @@ The deterministic inventory phase writes exactly one artifact:
 }
 ```
 
-## Candidate Row Contract
+## Candidate row contract
 
 Each canonical candidate must include:
 
@@ -134,7 +142,7 @@ source_pointer
 unit_pointer
 ```
 
-## Forbidden Inventory Content
+## Forbidden inventory content
 
 The inventory must not contain:
 
@@ -155,16 +163,14 @@ risk scoring
 recommendations
 ```
 
-## M8 Profile Compiler Rule
+## M8 profile compiler rule
 
-`M8_TARGET_FEATURE_PROFILE` must consume `feature_candidate_inventory` as the candidate universe. It uses `activity_profile_source_index` as navigation and `active_run_package_manifest` / domain package context to interpret the material profile.
+`M8_TARGET_FEATURE_PROFILE` receives `feature_candidate_inventory` as a job-scoped derived artifact declared by 2G. It uses the inventory as the candidate universe and `activity_profile_source_index` to navigate the same 2C primary evidence bucket.
 
 The model must not create a new candidate outside the saved inventory and must not drop a candidate without a treatment decision.
 
-## M8 Material Output Boundary
+## M8 material output boundary
 
 `M8_TARGET_FEATURE_PROFILE` returns only `target_feature_profile`.
 
 It must not return `feature_candidate_inventory`, `target_feature_profile_forensics`, candidate IDs, source pointers, source URLs, source excerpts, confidence fields, route coverage rows, deterministic inventory ledgers, or forensic branches inside `target_feature_profile`.
-
-The material activity row remains the current compatibility card, but archetype/surface labels are package-controlled, not fixed AI enums.
