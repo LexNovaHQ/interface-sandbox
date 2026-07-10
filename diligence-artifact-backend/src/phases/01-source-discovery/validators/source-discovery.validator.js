@@ -21,6 +21,8 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
     if (!output.source_family_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:source_family_index");
     if (!output.source_family_index.root_artifact_manifest || typeof output.source_family_index.root_artifact_manifest !== "object" || Array.isArray(output.source_family_index.root_artifact_manifest)) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:root_artifact_manifest");
     assertLockedRootManifest(output.source_family_index.root_artifact_manifest);
+    assertMatrixRows(output.source_family_index.discovered_source_index || [], "source_family_index.discovered_source_index");
+    assertMatrixRows([...(output.source_family_index.manifest_only_index || []), ...(output.source_family_index.metadata_only_index || [])], "source_family_index.index_rows");
     if (!Array.isArray(output.source_family_index.saved_root_artifacts)) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:saved_root_artifacts_index");
     if (!output.legal_doc_inventory) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_inventory");
     if (!output.legal_doc_extraction_index) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:legal_doc_extraction_index");
@@ -30,6 +32,7 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
   if (job_id === "SOURCE_FAMILY_HANDOFF") {
     if (!output.source_discovery_handoff) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:source_discovery_handoff");
     if (!output.post_phase_1_domain_gate_handoff) throw new Error("SOURCE_DISCOVERY_OUTPUT_MISSING:post_phase_1_domain_gate_handoff");
+    assertHandoffPropagation(output.source_discovery_handoff, output.post_phase_1_domain_gate_handoff);
     if (output.post_phase_1_domain_gate_handoff?.domain_lock_allowed_before_this_handoff !== false) throw new Error("SOURCE_DISCOVERY_PRE_HANDOFF_DOMAIN_LOCK_FORBIDDEN");
   }
   return { ok: true, job_id, phase_id: SOURCE_DISCOVERY_CONTRACT.phase_id };
@@ -41,18 +44,55 @@ function assertLockedRootMatrix(manifest = {}, matrix = {}) {
   const ids = matrixRoots.map((root) => root.id);
   if (ids.length !== COMMON_ROOT_CODES.length || COMMON_ROOT_CODES.some((code) => !ids.includes(code))) throw new Error("SOURCE_DISCOVERY_LOCKED_ROOT_MATRIX_INCOMPLETE");
   for (const root of matrixRoots) if (root.traversal_policy !== ROOT_TRAVERSAL_POLICY[root.id]) throw new Error(`SOURCE_DISCOVERY_ROOT_TRAVERSAL_POLICY_MISMATCH:${root.id}`);
-  for (const row of manifest.manifest_sources || []) {
-    if (!COMMON_ROOT_CODES.includes(row.common_root)) throw new Error(`SOURCE_DISCOVERY_UNKNOWN_COMMON_ROOT:${row.common_root || "missing"}`);
-    if (RETIRED_COMMON_ROOT_CODES.includes(row.common_root)) throw new Error(`SOURCE_DISCOVERY_RETIRED_COMMON_ROOT_FORBIDDEN:${row.common_root}`);
-    if (row.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[row.common_root]) throw new Error(`SOURCE_DISCOVERY_ROW_TRAVERSAL_POLICY_MISMATCH:${row.common_root}`);
-    if (!Array.isArray(row.source_signal_roles)) throw new Error(`SOURCE_DISCOVERY_ROW_SIGNAL_ROLES_MISSING:${row.manifest_id || row.common_root}`);
-    if (row.phase_1_classification_effect !== "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING") throw new Error(`SOURCE_DISCOVERY_ROW_CLASSIFICATION_EFFECT_INVALID:${row.manifest_id || row.common_root}`);
+  assertMatrixRows(manifest.manifest_sources || [], "deduped_url_manifest.manifest_sources");
+}
+function assertMatrixRows(rows = [], context) {
+  for (const row of rows) {
+    if (!COMMON_ROOT_CODES.includes(row.common_root)) throw new Error(`SOURCE_DISCOVERY_UNKNOWN_COMMON_ROOT:${context}:${row.common_root || "missing"}`);
+    if (RETIRED_COMMON_ROOT_CODES.includes(row.common_root)) throw new Error(`SOURCE_DISCOVERY_RETIRED_COMMON_ROOT_FORBIDDEN:${context}:${row.common_root}`);
+    if (row.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[row.common_root]) throw new Error(`SOURCE_DISCOVERY_ROW_TRAVERSAL_POLICY_MISMATCH:${context}:${row.common_root}`);
+    if (!Array.isArray(row.source_signal_roles)) throw new Error(`SOURCE_DISCOVERY_ROW_SIGNAL_ROLES_MISSING:${context}:${row.manifest_id || row.source_id || row.common_root}`);
+    if (row.phase_1_classification_effect !== "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING") throw new Error(`SOURCE_DISCOVERY_ROW_CLASSIFICATION_EFFECT_INVALID:${context}:${row.manifest_id || row.source_id || row.common_root}`);
+    if (row.common_root === "docs_api_data_flow" && row.admission_tier === "PRIMARY" && row.api_data_flow_signal?.present !== true) throw new Error(`SOURCE_DISCOVERY_DATA_FLOW_SIGNAL_MISSING:${context}:${row.manifest_id || row.source_id}`);
+    if (row.common_root === "technical_docs_api" && row.admission_tier === "PRIMARY" && row.route_type !== "app_shell_metadata" && !row.technical_route_shape) throw new Error(`SOURCE_DISCOVERY_TECHNICAL_ROUTE_SHAPE_MISSING:${context}:${row.manifest_id || row.source_id}`);
   }
 }
 function assertLockedRootManifest(rootArtifactManifest = {}) {
   const keys = Object.keys(rootArtifactManifest);
   for (const key of keys) if (!COMMON_ROOT_CODES.includes(key) || RETIRED_COMMON_ROOT_CODES.includes(key)) throw new Error(`SOURCE_DISCOVERY_ROOT_ARTIFACT_MANIFEST_INVALID_ROOT:${key}`);
   for (const code of COMMON_ROOT_CODES) if (!rootArtifactManifest[code]) throw new Error(`SOURCE_DISCOVERY_ROOT_ARTIFACT_MANIFEST_MISSING_ROOT:${code}`);
+}
+function assertHandoffPropagation(handoff = {}, postHandoff = {}) {
+  if (handoff.schema_version !== "PHASE1_SOURCE_DISCOVERY_HANDOFF_v2_FULL_ROOT_MATRIX") throw new Error(`SOURCE_DISCOVERY_HANDOFF_SCHEMA_STALE:${handoff.schema_version || "missing"}`);
+  if (postHandoff.schema_version !== "POST_PHASE_1_DOMAIN_GATE_HANDOFF_v2_FULL_ROOT_MATRIX") throw new Error(`SOURCE_DISCOVERY_POST_HANDOFF_SCHEMA_STALE:${postHandoff.schema_version || "missing"}`);
+  const contract = handoff.contract || {};
+  for (const flag of ["full_15_root_classifier_matrix_preserved", "primary_full_extract_slug_chain_preserved", "source_signal_roles_preserved", "technical_route_shape_preserved", "api_data_flow_signal_preserved", "legal_doc_granularity_preserved"]) if (contract[flag] !== true) throw new Error(`SOURCE_DISCOVERY_HANDOFF_CONTRACT_FLAG_MISSING:${flag}`);
+  for (const [root, entry] of Object.entries(handoff.common_root_index || {})) {
+    if (!COMMON_ROOT_CODES.includes(root) || RETIRED_COMMON_ROOT_CODES.includes(root)) throw new Error(`SOURCE_DISCOVERY_HANDOFF_INVALID_ROOT:${root}`);
+    if (entry.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[root]) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROOT_POLICY_MISMATCH:${root}`);
+    assertHandoffRows(entry.primary || [], `handoff.common_root_index.${root}.primary`);
+    assertHandoffRows(entry.legal_documents || [], `handoff.common_root_index.${root}.legal_documents`);
+    assertHandoffRows(entry.index_only || [], `handoff.common_root_index.${root}.index_only`, { allowNoSourceId: true });
+  }
+  const docs = handoff.legal_document_index?.documents_found || [];
+  for (const doc of docs) {
+    if (!doc.artifact_name || !doc.doc_type || !doc.source_url) throw new Error("SOURCE_DISCOVERY_HANDOFF_LEGAL_DOC_REF_INCOMPLETE");
+    if (!Array.isArray(doc.source_signal_roles)) throw new Error(`SOURCE_DISCOVERY_HANDOFF_LEGAL_DOC_SIGNAL_ROLES_MISSING:${doc.artifact_name}`);
+    if (doc.source_of_truth !== true) throw new Error(`SOURCE_DISCOVERY_HANDOFF_LEGAL_DOC_SOURCE_OF_TRUTH_MISSING:${doc.artifact_name}`);
+  }
+}
+function assertHandoffRows(rows = [], context, options = {}) {
+  for (const row of rows) {
+    if (!options.allowNoSourceId && !row.source_id) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_SOURCE_ID_MISSING:${context}`);
+    if (!row.common_root || !COMMON_ROOT_CODES.includes(row.common_root) || RETIRED_COMMON_ROOT_CODES.includes(row.common_root)) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_COMMON_ROOT_INVALID:${context}:${row.common_root || "missing"}`);
+    if (row.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[row.common_root]) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_POLICY_MISMATCH:${context}:${row.common_root}`);
+    if (!row.admission_tier) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_ADMISSION_TIER_MISSING:${context}:${row.manifest_id || row.source_id || row.common_root}`);
+    if (!row.extraction_decision) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_EXTRACTION_DECISION_MISSING:${context}:${row.manifest_id || row.source_id || row.common_root}`);
+    if (!Array.isArray(row.source_signal_roles)) throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_SIGNAL_ROLES_MISSING:${context}:${row.manifest_id || row.source_id || row.common_root}`);
+    if (row.phase_1_classification_effect !== "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING") throw new Error(`SOURCE_DISCOVERY_HANDOFF_ROW_CLASSIFICATION_EFFECT_INVALID:${context}:${row.manifest_id || row.source_id || row.common_root}`);
+    if (row.common_root === "docs_api_data_flow" && row.admission_tier === "PRIMARY" && row.api_data_flow_signal?.present !== true) throw new Error(`SOURCE_DISCOVERY_HANDOFF_DATA_FLOW_SIGNAL_MISSING:${context}:${row.manifest_id || row.source_id}`);
+    if (row.common_root === "technical_docs_api" && row.admission_tier === "PRIMARY" && row.route_type !== "app_shell_metadata" && !row.technical_route_shape) throw new Error(`SOURCE_DISCOVERY_HANDOFF_TECHNICAL_ROUTE_SHAPE_MISSING:${context}:${row.manifest_id || row.source_id}`);
+  }
 }
 function assertNoPhase1LockOrNarrowing(flags = {}, context) { if (flags.primary_domain_locked !== false) throw new Error(`SOURCE_DISCOVERY_DOMAIN_LOCK_FORBIDDEN:${context}`); if (flags.source_discovery_narrowed !== false) throw new Error(`SOURCE_DISCOVERY_NARROWING_FORBIDDEN:${context}`); if (flags.sources_excluded_by_domain !== false) throw new Error(`SOURCE_DISCOVERY_DOMAIN_EXCLUSION_FORBIDDEN:${context}`); if (flags.domain_specific_prompt_routing_used !== false) throw new Error(`SOURCE_DISCOVERY_DOMAIN_PROMPT_ROUTING_FORBIDDEN:${context}`); if (flags.dynamic_routing_used !== false) throw new Error(`SOURCE_DISCOVERY_DYNAMIC_ROUTING_FORBIDDEN:${context}`); }
 function assertNoLegacyFamilyArtifacts(output, jobId) { for (const name of Object.keys(output || {})) if (name.startsWith("lossless_family__")) throw new Error(`SOURCE_DISCOVERY_LEGACY_FAMILY_ARTIFACT_FORBIDDEN:${jobId}:${name}`); }
