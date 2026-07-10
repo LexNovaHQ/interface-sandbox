@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { CARTOGRAPHY_ARTIFACT_NAMES, CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, CARTOGRAPHY_LAYER5_ARTIFACT_NAMES, CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES, READ_PERMISSIONS, WRITE_PERMISSIONS, INTERNAL_JOB_WRITE_PERMISSIONS } from "../src/runtime/contracts/artifact-permissions.contract.js";
+import { CARTOGRAPHY_ARTIFACT_NAMES, CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, CARTOGRAPHY_LAYER5_ARTIFACT_NAMES, CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, COMMON_ROOT_CODES, LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES, READ_PERMISSIONS, WRITE_PERMISSIONS, INTERNAL_JOB_WRITE_PERMISSIONS } from "../src/runtime/contracts/artifact-permissions.contract.js";
 import { PIPELINE_CONTRACTS, INTERNAL_PIPELINE_JOB_IDS, PIPELINE_CONTRACT_STATUS } from "../src/runtime/contracts/pipeline.contract.js";
 import { CENTRAL_PHASES } from "../src/runtime/contracts/central-phase.contract.js";
 import { CARTOGRAPHY_INDEX_CONTRACT } from "../src/phases/02-cartography-index/cartography-index.contract.js";
@@ -13,15 +13,23 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
 const runtimeFiles = ["src/runtime/contracts/artifact-permissions.contract.js", "src/runtime/contracts/pipeline.contract.js", "src/runtime/contracts/central-phase.contract.js", "src/runtime/contracts/artifacts.contract.js", "src/phase-contracts.js", "src/phases/02-cartography-index/cartography-index.contract.js", "src/phases/02-legal-cartography-index/legal-cartography-index.contract.js", "src/phases/02-legal-cartography-index/services/legal-cartography-deterministic-map.builder.js", "src/phases/07-data-provenance-profile/layer2-data-privacy-navigation-index-builder.js", "src/phases/07-data-provenance-profile/data-provenance-profile.runner.js", "src/runtime/services/pipeline.service.js", "src/runtime/services/artifacts.service.js"];
 const activeText = runtimeFiles.map(read).join("\n");
 
-const LOCKED_ROOTS = Object.freeze(["homepage_landing", "company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "support_help_resources"]);
-const PRIMARY_FULL = Object.freeze(["company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency"]);
+const LOCKED_ROOTS = Object.freeze(["homepage_landing", "company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "support_help_resources", "regulatory_licensing_status", "grievance_complaints"]);
+const PRIMARY_FULL = Object.freeze(["company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "regulatory_licensing_status", "grievance_complaints"]);
 const SECONDARY_CONDITIONAL = Object.freeze(["integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "support_help_resources"]);
 const RETIRED_ROOTS = Object.freeze(["about_company", "legal_identity_notice", "operator_entity_signals", "supporting_company_signals", "security_trust", "trust_compliance", "support_help", "blog_resources", "careers_hiring", "public_repository_developer_assets", "third_party_profiles", "technical_docs_api_developer"]);
 const SOURCE_REF_FIELDS = Object.freeze(["source_id", "manifest_id", "common_root", "root_traversal_policy", "url", "canonical_url", "fetch_url", "file", "physical_artifacts", "text_field", "route_type", "route_type_aliases", "materiality", "admission_tier", "extraction_decision", "neutral_buckets", "source_signal_roles", "technical_route_shape", "api_data_flow_signal", "legal_doc_candidate", "legal_doc_type", "legal_doc_artifact_hint", "adapter_discovery", "phase_1_classification_effect"]);
 
+assert.deepEqual(COMMON_ROOT_CODES, LOCKED_ROOTS, "artifact permissions must accept the Phase 1 17-root source universe");
+assert.ok(CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES.includes("lossless_root__regulatory_licensing_status"), "Phase 2 source inputs must accept regulatory_licensing_status");
+assert.ok(CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES.includes("lossless_root__grievance_complaints"), "Phase 2 source inputs must accept grievance_complaints");
+assert.ok(READ_PERMISSIONS.agent_2_cartography_index.includes("lossless_root__regulatory_licensing_status"), "cartography agent must be allowed to read regulatory_licensing_status");
+assert.ok(READ_PERMISSIONS.agent_2_cartography_index.includes("lossless_root__grievance_complaints"), "cartography agent must be allowed to read grievance_complaints");
+assert.ok(READ_PERMISSIONS.agent_2b_m9.includes("lossless_root__regulatory_licensing_status"), "M9 must be allowed to read regulatory_licensing_status");
+assert.ok(READ_PERMISSIONS.agent_2b_m9.includes("lossless_root__grievance_complaints"), "M9 must be allowed to read grievance_complaints");
+
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.central_phase_id, "CARTOGRAPHY_INDEX");
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.public_label, "Cartography and Index");
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.implementation_status, "INPUT_CONTRACT_SYNCED_TO_PHASE1_V4_FULL_MATRIX_STORAGE_RESOLVER");
+assert.equal(CARTOGRAPHY_INDEX_CONTRACT.implementation_status, "INPUT_CONTRACT_SYNCED_TO_PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE");
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.phase_2_indexes_navigation_only, true);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.lossless_text_copy_allowed, false);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.domain_lock_allowed_in_phase_2, false);
@@ -34,13 +42,16 @@ assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.adapters_for_old_family_inputs_
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.phase_1_full_matrix_metadata_is_required, true);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.phase_1_sparse_root_manifest_is_required, true);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.phase_1_legal_doc_independent_artifacts_required, true);
+assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.phase_1_multi_domain_union_probe_is_required, true);
 
 const input = CARTOGRAPHY_INDEX_CONTRACT.phase1_input_contract;
-assert.equal(input.contract_version, "PHASE2_INPUT_CONTRACT_v2_PHASE1_FULL_MATRIX");
-assert.equal(input.required_source_discovery_handoff_schema, "PHASE1_SOURCE_DISCOVERY_HANDOFF_v2_FULL_ROOT_MATRIX");
-assert.equal(input.required_post_phase_1_handoff_schema, "POST_PHASE_1_DOMAIN_GATE_HANDOFF_v2_FULL_ROOT_MATRIX");
+assert.equal(input.contract_version, "PHASE2_INPUT_CONTRACT_v3_PHASE1_17_ROOT_MULTI_DOMAIN");
+assert.equal(input.required_source_discovery_handoff_schema, "PHASE1_SOURCE_DISCOVERY_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN");
+assert.equal(input.required_post_phase_1_handoff_schema, "POST_PHASE_1_DOMAIN_GATE_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN");
+assert.equal(input.required_url_manifest_schema, "PHASE1_AGNOSTIC_URL_MANIFEST_v3_MULTI_DOMAIN_UNION_PROBE");
+assert.equal(input.required_matrix_manifest_schema, "PHASE1_AGNOSTIC_SOURCE_DISCOVERY_MATRIX_v3_MULTI_DOMAIN_UNION_PROBE");
 assert.equal(input.required_source_family_index_schema, "PHASE1_AGNOSTIC_COMMON_ROOT_INDEX_v4_STORAGE_RESOLVER_HARDENED");
-assert.equal(input.source_discovery_contract_floor, "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V4_STORAGE_RESOLVER_HARDENED");
+assert.equal(input.source_discovery_contract_floor, "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V5_MULTI_DOMAIN_UNION_PROBE_17_ROOT");
 assert.deepEqual(input.locked_common_roots, LOCKED_ROOTS);
 assert.deepEqual(input.primary_full_extract_roots, PRIMARY_FULL);
 assert.deepEqual(input.secondary_conditional_roots, SECONDARY_CONDITIONAL);
@@ -51,16 +62,20 @@ assert.equal(input.sparse_root_policy.source_family_index_root_artifact_manifest
 assert.equal(input.sparse_root_policy.empty_no_material_roots_are_virtual_only, true);
 assert.equal(input.legal_doc_policy.individual_legal_doc_artifacts_source_of_truth, true);
 assert.equal(input.legal_doc_policy.legal_document_blob_merging_forbidden, true);
+assert.equal(input.multi_domain_union_probe_policy.required, true);
+assert.equal(input.multi_domain_union_probe_policy.expand_only, true);
+assert.equal(input.multi_domain_union_probe_policy.may_narrow_discovery, false);
+assert.equal(input.multi_domain_union_probe_policy.may_exclude_sources, false);
 assert.equal(input.classification_boundary.phase_1_classification_effect_must_equal, "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING");
 assert.equal(input.classification_boundary.phase_2_may_not_lock_domain, true);
 assert.equal(input.classification_boundary.phase_2_may_not_derive_profile_facts, true);
 for (const artifact of input.required_control_artifacts) assert.ok(CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES.includes(artifact), `CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES missing ${artifact}`);
-for (const flag of ["full_15_root_classifier_matrix_preserved", "primary_full_extract_slug_chain_preserved", "source_signal_roles_preserved", "technical_route_shape_preserved", "api_data_flow_signal_preserved", "legal_doc_granularity_preserved"]) assert.ok(input.required_handoff_flags.includes(flag), `Phase 2 input contract missing handoff flag ${flag}`);
+for (const flag of ["full_17_root_classifier_matrix_preserved", "primary_full_extract_slug_chain_preserved", "source_signal_roles_preserved", "technical_route_shape_preserved", "api_data_flow_signal_preserved", "legal_doc_granularity_preserved", "multi_domain_union_probe_preserved"]) assert.ok(input.required_handoff_flags.includes(flag), `Phase 2 input contract missing handoff flag ${flag}`);
 
-assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.target_profile_source_index.roots, ["homepage_landing", "company_identity", "contact_notice", "pricing_commercial_availability"]);
+assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.target_profile_source_index.roots, ["homepage_landing", "company_identity", "contact_notice", "pricing_commercial_availability", "regulatory_licensing_status", "grievance_complaints"]);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.activity_profile_source_index.roots, ["product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "support_help_resources"]);
-assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.data_privacy_navigation_index.roots, ["privacy_data_processing", "security_trust_compliance", "data_governance_controls", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "ai_safety_transparency"]);
-assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.legal_cartography_index.roots, ["company_identity", "contact_notice", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency"]);
+assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.data_privacy_navigation_index.roots, ["privacy_data_processing", "security_trust_compliance", "data_governance_controls", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "ai_safety_transparency", "regulatory_licensing_status", "grievance_complaints"]);
+assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.legal_cartography_index.roots, ["company_identity", "contact_notice", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "regulatory_licensing_status", "grievance_complaints"]);
 for (const retired of RETIRED_ROOTS) for (const route of Object.values(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes)) assert.ok(!(route.roots || []).includes(retired), `Phase 2 input route must not include retired root ${retired}`);
 
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.final_artifacts, CARTOGRAPHY_ARTIFACT_NAMES);
@@ -124,4 +139,4 @@ assert.equal(PIPELINE_CONTRACT_STATUS.phase7_data_privacy_navigation_index_migra
 assert.equal(PIPELINE_CONTRACT_STATUS.no_legal_governance_source_index, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.no_data_provenance_source_index, true);
 
-console.log("Phase 2 cartography Phase 1 v4 input contract/no legacy-family adapters validator: PASS");
+console.log("Phase 2 cartography Phase 1 v5 17-root input contract/no legacy-family adapters validator: PASS");
