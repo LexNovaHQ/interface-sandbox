@@ -1,0 +1,146 @@
+<RUNTIME_BINDING_PACKET>
+runtime_contract: 00_RUNTIME_CONTROLLER_PHASE2B_DOMAIN_ACTIVITY_SOURCE_INDEX
+runtime_contract_version: v1_phase2b_domain_activity_source_index_phase1_v5_12_root
+active_phase_id: P2B_DOMAIN_ACTIVITY_SOURCE_INDEX
+active_phase_scope: P2B_DOMAIN_ACTIVITY_SOURCE_INDEX_ONLY
+active_agent_id: agent_2_cartography_index
+active_agent_name: Interface Domain & Activity Source Index Agent
+run_mode: PHASED_AGENT
+run_id_required: true
+run_id: "{{run_id}}"
+
+structure_authority:
+  packet_structure_supreme: true
+  no_module_merge: true
+  backend_supports_agent_structure: true
+  backend_must_not_dictate_prompt_structure: true
+  phase1_v5_source_input_contract_active: true
+  old_family_input_contract_forbidden: true
+  package_status: LEAN_PACKAGE_CONTRACT_ONLY
+  runtime_wiring_changed: false
+  source_artifacts_remain_source_of_truth: true
+  pointer_only_outputs: true
+
+allowed_modules:
+  - P2B_DOMAIN_ACTIVITY_SOURCE_INDEX
+
+internal_execution_layers:
+  - P2B_DETERMINISTIC_DOMAIN_ACTIVITY_MAP
+  - P2B_BOUNDED_SEMANTIC_ROUTE_LABELING
+  - P2B_DETERMINISTIC_COMPILER
+  - P2B_FINAL_VALIDATOR
+
+reference_documents:
+  - P2B_DOMAIN_ACTIVITY_SOURCE_INDEX_REFERENCE_MAP.yaml
+  - src/phases/02-cartography-index/domain-activity-source-index.contract.js
+  - src/phases/02-cartography-index/services/domain-activity-deterministic-map.builder.js
+  - src/phases/02-cartography-index/validators/domain-activity-semantic-profile.validator.js
+
+read_artifacts:
+  - source_discovery_handoff
+  - post_phase_1_domain_gate_handoff
+  - source_discovery_matrix_manifest
+  - neutral_evidence_bucket_manifest
+  - adapter_expansion_log
+  - source_family_index
+  - lossless_root__homepage_landing
+  - lossless_root__company_identity
+  - lossless_root__product_service
+  - lossless_root__platform_feature_solution
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__pricing_commercial_availability
+  - lossless_root__use_case_customer_industry
+  - lossless_root__integrations_ecosystem
+  - lossless_root__ai_safety_transparency
+  - lossless_root__regulatory_licensing_status
+  - lossless_root__grievance_complaints
+
+write_artifacts_in_order:
+  - domain_activity_deterministic_map
+  - domain_activity_semantic_profile
+  - activity_profile_source_index
+
+final_downstream_required_artifact:
+  - activity_profile_source_index
+
+phase_lock:
+  - DOMAIN_ACTIVITY_SOURCE_INDEX
+phase_lock_meaning: "Phase 2B locks only a pointer-only Domain & Activity Source Index for 3B. 3B derives primary domain, AI overlay, regulatory overlay, fusion candidates, and package manifest updates later."
+
+ownership_boundary:
+  phase_2b_owns_activity_profile_source_index: true
+  phase_3b_owns_domain_derivation_profile: true
+  p2b_must_not_emit_domain_derivation_profile: true
+  p2b_must_not_emit_active_run_package_manifest: true
+  p2b_must_not_select_domain_package: true
+  p2b_must_not_mount_ai_overlay: true
+  p2b_must_not_mount_regulatory_overlay: true
+  p2b_must_not_lock_fusion_candidate: true
+  p2a_owns_target_profile_source_index: true
+  m9_owns_full_legal_cartography: true
+  dpni_owns_data_privacy_navigation_index: true
+
+forbidden_modules:
+  - SOURCE_DISCOVERY
+  - TARGET_PROFILE_REVIEW
+  - P3_DOMAIN_DERIVATION_LAYER
+  - TARGET_PROFILE_FORENSICS
+  - ACTIVITY_PROFILE_REVIEW
+  - DATA_PROVENANCE_PROFILE
+  - EXPOSURE_PROFILE
+  - OPERATOR_CHALLENGE
+  - COMPILER
+  - NORMALIZED_REPORT_RENDERER
+  - QUALIFIED_REVIEW
+
+forbidden_inputs:
+  - old_family_input_contract
+  - legacy_family_artifact_adapter
+  - retired_pre_v5_family_artifacts
+  - legal_doc_{DOC_TYPE}
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - data_privacy_navigation_index
+
+forbidden_outputs:
+  - domain_derivation_profile
+  - active_run_package_manifest
+  - target_profile
+  - target_profile_forensics
+  - feature_candidate_inventory
+  - target_feature_profile
+  - target_feature_profile_forensics
+  - data_privacy_navigation_index
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - exposure_registry_profile
+  - challenge_gate
+  - final_output_handoff
+  - renderer_payload
+  - qualified_review_handoff
+  - qualified_review_renderer_payload
+  - legal_advice
+  - compliance_conclusion
+  - enforceability_assessment
+  - risk_conclusion
+  - primary_domain_locked
+  - domain_package_selected
+  - ai_overlay_mounted
+  - regulatory_overlay_mounted
+  - fusion_candidate_locked
+
+output_discipline:
+  strict_json_only: true
+  source_text_copied: false
+  summaries_allowed: false
+  excerpts_allowed: false
+  quotes_allowed: false
+  derived_values_allowed: false
+  route_labels_only: true
+
+stop_condition:
+  - domain_activity_deterministic_map ready
+  - domain_activity_semantic_profile ready
+  - activity_profile_source_index ready
+</RUNTIME_BINDING_PACKET>
