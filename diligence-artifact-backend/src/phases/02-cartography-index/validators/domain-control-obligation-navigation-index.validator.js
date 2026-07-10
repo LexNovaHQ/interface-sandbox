@@ -10,7 +10,7 @@ const ALLOWED_ROUTE_IDS = new Set(CONTROL_SOURCE_ROUTE_CATALOG.map((entry) => `D
 const ALLOWED_LOCATORS = new Set(LOCATOR_FAMILY_REGISTRY);
 const ALLOWED_FIELDS = new Set(OBLIGATION_SHELL_FIELDS);
 const FORBIDDEN_KEYS = new Set(["lossless_text", "clean_text", "text", "excerpt", "snippet", "summary", "profile_answer", "legal_conclusion", "compliance_conclusion", "risk_conclusion", "obligation_posture", "posture_status", "derived_value", "obligation_present", "obligation_absent", "obligation_partial"]);
-const RETIRED_SOURCE_MARKERS = ["lossless_family__", "lossless_root__security_trust", "lossless_root__trust_compliance", "lossless_root__technical_docs_api_developer", "data_provenance_source_index"];
+const RETIRED_SOURCE_VALUES = new Set(["lossless_root__security_trust", "lossless_root__trust_compliance", "lossless_root__technical_docs_api_developer", "data_provenance_source_index"]);
 
 export function validateDomainControlObligationDeterministicMap(map = {}) {
   const artifact = unwrap(map, P2E_DOMAIN_CONTROL_OBLIGATION_ARTIFACTS.deterministicMap);
@@ -95,7 +95,7 @@ function validateShellInventory(rows = [], errors = []) {
 
 function containsForbiddenShape(value) {
   if (value == null) return false;
-  if (typeof value === "string") return RETIRED_SOURCE_MARKERS.some((marker) => value.includes(marker));
+  if (typeof value === "string") return value.includes("lossless_family__") || RETIRED_SOURCE_VALUES.has(value);
   if (Array.isArray(value)) return value.some(containsForbiddenShape);
   if (typeof value !== "object") return false;
   for (const [key, inner] of Object.entries(value)) {
@@ -108,7 +108,7 @@ function containsForbiddenShape(value) {
 
 function isPhase1Root(value) {
   const name = String(value || "");
-  return name.startsWith("lossless_root__") && !RETIRED_SOURCE_MARKERS.some((marker) => name.includes(marker));
+  return name.startsWith("lossless_root__") && !RETIRED_SOURCE_VALUES.has(name);
 }
 
 function unwrap(value = {}, artifactName) {
