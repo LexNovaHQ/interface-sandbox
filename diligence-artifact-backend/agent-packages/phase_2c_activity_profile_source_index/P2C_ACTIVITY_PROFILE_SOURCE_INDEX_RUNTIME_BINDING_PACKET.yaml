@@ -1,10 +1,10 @@
 packet_name: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET
-version: v1_phase1_v5_contract_only
+version: v2_phase1_v5_runtime_wired
 active_phase_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
 active_phase_scope: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY
 public_label: Activity Profile Source Index
-package_status: LEAN_PACKAGE_CONTRACT_ONLY
-runtime_wiring_changed: false
+package_status: LEAN_PACKAGE_RUNTIME_WIRED
+runtime_wiring_changed: true
 runtime_job_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
 phase1_input_contract: PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE
 
@@ -13,13 +13,14 @@ runtime_boundary:
   backend_contract: src/phases/02-cartography-index/activity-profile-source-index.contract.js
   deterministic_builder: src/phases/02-cartography-index/services/activity-profile-deterministic-map.builder.js
   semantic_validator: src/phases/02-cartography-index/validators/activity-profile-semantic-profile.validator.js
-  compiler: PENDING_STEP_4
-  final_validator: PENDING_STEP_5
-  orchestrator: PENDING_STEP_6
-  artifact_permissions_registered: false
-  pipeline_contract_registered: false
-  pipeline_service_dispatch_registered: false
-  save_order_gates_registered: false
+  compiler: src/phases/02-cartography-index/services/activity-profile-source-index.compiler.js
+  final_validator: src/phases/02-cartography-index/validators/activity-profile-source-index.validator.js
+  orchestrator: src/phases/02-cartography-index/orchestrators/activity-profile-source-index.orchestrator.js
+  artifact_permissions_registered: true
+  pipeline_contract_registered: true
+  central_phase_registered: true
+  pipeline_service_dispatch_registered: true
+  save_order_gates_registered: true
 
 read_artifacts:
   control_inputs:
@@ -47,6 +48,9 @@ write_artifacts_in_order:
 
 final_downstream_required_artifact: activity_profile_source_index
 reserved_downstream_owner: ACTIVITY_PROFILE_REVIEW
+runtime_chain:
+  previous_job: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
+  next_job: P2_INDEX_COMPILER_VALIDATION
 
 candidate_creation_roots:
   - lossless_root__product_service
@@ -178,22 +182,3 @@ forbidden_conclusions:
   - risk_conclusion
   - exposure_match
   - data_provenance_conclusion
-
-retired_roots_forbidden:
-  - lossless_root__about_company
-  - lossless_root__legal_identity_notice
-  - lossless_root__operator_entity_signals
-  - lossless_root__supporting_company_signals
-  - lossless_root__security_trust
-  - lossless_root__trust_compliance
-  - lossless_root__support_help
-  - lossless_root__blog_resources
-  - lossless_root__careers_hiring
-  - lossless_root__public_repository_developer_assets
-  - lossless_root__third_party_profiles
-  - lossless_root__technical_docs_api_developer
-  - lossless_family__P1_PRODUCT
-  - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-  - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-  - lossless_family__P4_USE_CASE_INDUSTRY
-  - lossless_family__P5_ENTERPRISE_PRICING
