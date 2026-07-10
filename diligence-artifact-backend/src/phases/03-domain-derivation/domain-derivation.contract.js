@@ -26,10 +26,18 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   internal_job_id: "P3_DOMAIN_DERIVATION_LAYER",
   public_label: "Domain Derivation Layer",
-  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE_PHASE1_V5_P2B_DOMAIN_SOURCE_INDEX_REGULATORY_OVERLAY_SYNCED",
+  implementation_status: "PHASE2G_ROUTE_SCOPED_RUNTIME_CUTOVER_COMPLETE",
   execution_mode: "semantic_registry_ladder_derivation_with_deterministic_gate",
   agent_id: "agent_3_target_feature",
   actor_id: "agent_3_target_feature",
+  route_contract: Object.freeze({
+    routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+    route_id: "ROUTE.PHASE3B.DOMAIN_DERIVATION",
+    bucket_id: "2B_BUCKET_DOMAIN_DERIVATION",
+    runtime_reader: "phase-route-runtime.reader",
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true
+  }),
   agent_package_binding: Object.freeze({
     agent_package_root: "agent-packages/agent_3_target_feature",
     prompt_package_status: "ACTIVE_REGISTRY_LADDER_PROMPT",
@@ -40,9 +48,8 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     prompt_non_updatability_rule: "New domains, overlays, fusion candidates, and regulatory overlays must be added through DOMAIN_DERIVATION_REGISTRY_v0.yaml and package-catalog.v0.json, not by editing the prompt."
   }),
   reads: Object.freeze([
-    "source_discovery_handoff",
-    "cartography_index",
-    "target_profile_source_index",
+    "phase_routing_manifest",
+    "phase_route_runtime_packet",
     "domain_derivation_source_index",
     "target_profile",
     ...DOMAIN_DERIVATION_LOSSLESS_READS,
@@ -60,6 +67,10 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml"
   ]),
   forbidden_reads: Object.freeze([
+    "source_discovery_handoff",
+    "cartography_index",
+    "target_profile_source_index",
+    "target_profile_forensics",
     "activity_profile_source_index",
     "legal_cartography_index",
     "legal_signal_derivation_profile",
@@ -79,6 +90,8 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "lossless_root__data_governance_controls"
   ]),
   boundary_rules: Object.freeze({
+    phase2g_route_scoped_runtime_reader_required: true,
+    direct_contract_read_loading_forbidden: true,
     semantic_first_deterministic_gated: true,
     registry_driven_derivation: true,
     registry_ladder_prompt_active: true,
@@ -94,7 +107,8 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     legal_lossless_evidence_forbidden: true,
     target_profile_is_context_not_proof: true,
     phase2_indexes_navigation_only: true,
-    company_level_lane_forbidden: true
+    company_level_lane_forbidden: true,
+    profile_forensics_inputs_forbidden: true
   }),
   forbidden_outputs: Object.freeze([
     "target_profile",
