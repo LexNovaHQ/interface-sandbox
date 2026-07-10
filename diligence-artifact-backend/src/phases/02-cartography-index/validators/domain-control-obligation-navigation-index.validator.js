@@ -1,13 +1,13 @@
 import {
   CONTROL_SOURCE_ROUTE_CATALOG,
   DOMAIN_CONTROL_OBLIGATION_LEGAL_INDEX_INPUTS,
-  LOCATOR_FAMILY_REGISTRY,
   OBLIGATION_SHELL_FIELDS,
   P2E_DOMAIN_CONTROL_OBLIGATION_ARTIFACTS
 } from "../domain-control-obligation-navigation-index.contract.js";
+import { catalogLocatorFamilySet } from "../services/domain-control-obligation-navigation-index.builder.js";
 
 const ALLOWED_ROUTE_IDS = new Set(CONTROL_SOURCE_ROUTE_CATALOG.map((entry) => `DCONI-SRC-${entry.route_code}`));
-const ALLOWED_LOCATORS = new Set(LOCATOR_FAMILY_REGISTRY);
+const ALLOWED_LOCATORS = catalogLocatorFamilySet();
 const ALLOWED_FIELDS = new Set(OBLIGATION_SHELL_FIELDS);
 const FORBIDDEN_KEYS = new Set(["lossless_text", "clean_text", "text", "excerpt", "snippet", "summary", "profile_answer", "legal_conclusion", "compliance_conclusion", "risk_conclusion", "obligation_posture", "posture_status", "derived_value", "obligation_present", "obligation_absent", "obligation_partial"]);
 const RETIRED_SOURCE_VALUES = new Set(["lossless_root__security_trust", "lossless_root__trust_compliance", "lossless_root__technical_docs_api_developer", "data_provenance_source_index"]);
@@ -68,9 +68,7 @@ function validateNavigationFlags(artifact = {}, errors = []) {
 function validateControlRoute(route = {}, errors = []) {
   if (!route.route_id || !ALLOWED_ROUTE_IDS.has(route.route_id)) errors.push(`DOMAIN_CONTROL_OBLIGATION_UNKNOWN_ROUTE:${route.route_id || "missing"}`);
   if (!Array.isArray(route.pointers) || !route.pointers.length) errors.push(`DOMAIN_CONTROL_OBLIGATION_ROUTE_MISSING_POINTERS:${route.route_id || "missing"}`);
-  for (const pointer of route.pointers || []) {
-    if (!isPhase1Root(pointer.artifact_name)) errors.push(`DOMAIN_CONTROL_OBLIGATION_POINTER_NOT_PHASE1_ROOT:${pointer.artifact_name || "missing"}`);
-  }
+  for (const pointer of route.pointers || []) if (!isPhase1Root(pointer.artifact_name)) errors.push(`DOMAIN_CONTROL_OBLIGATION_POINTER_NOT_PHASE1_ROOT:${pointer.artifact_name || "missing"}`);
 }
 
 function validateFamilyRoute(row = {}, errors = []) {
@@ -106,17 +104,6 @@ function containsForbiddenShape(value) {
   return false;
 }
 
-function isPhase1Root(value) {
-  const name = String(value || "");
-  return name.startsWith("lossless_root__") && !RETIRED_SOURCE_VALUES.has(name);
-}
-
-function unwrap(value = {}, artifactName) {
-  if (value?.[artifactName]) return value[artifactName];
-  if (value?.artifact_type === artifactName) return value;
-  return value || {};
-}
-
-function result(errors = []) {
-  return Object.freeze({ ok: errors.length === 0, status: errors.length ? "FAIL" : "PASS", errors: Object.freeze(errors), warnings: Object.freeze([]) });
-}
+function isPhase1Root(value) { const name = String(value || ""); return name.startsWith("lossless_root__") && !RETIRED_SOURCE_VALUES.has(name); }
+function unwrap(value = {}, artifactName) { if (value?.[artifactName]) return value[artifactName]; if (value?.artifact_type === artifactName) return value; return value || {}; }
+function result(errors = []) { return Object.freeze({ ok: errors.length === 0, status: errors.length ? "FAIL" : "PASS", errors: Object.freeze(errors), warnings: Object.freeze([]) }); }
