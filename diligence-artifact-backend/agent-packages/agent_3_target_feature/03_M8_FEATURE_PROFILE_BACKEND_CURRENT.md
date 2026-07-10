@@ -9,21 +9,17 @@ active_phase_only: true
 active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_ai_registry_key_direct_v4_basis_coverage
+runtime_contract_version: m8_phase5_package_aware_p2c_source_index_v5
 
 ## M8.S1 — Architecture Lock
 
-feature_candidate_inventory is the deterministic source of truth for M8 candidate existence.
+`feature_candidate_inventory` is the deterministic source of truth for candidate existence.
 
-M8 does not discover, harvest, dedupe, or create the candidate universe.
+`activity_profile_source_index` is the Phase 2C navigation authority for activity evidence.
 
-M8 consumes the saved feature_candidate_inventory as a navigation map and uses P1-P5 lossless artifacts only as evidence for mechanics, grouping, archetype derivation, surface-token derivation, limitations, and profile wording.
+`active_run_package_manifest` and the mounted domain package context control package-specific activity taxonomy. Fixed AI archetype and AI surface enums are not universal Phase 5 authority.
 
-The inventory answers only: what candidate exists, and where M8 should look.
-
-M8 answers only: what the evidenced candidate does, which activity mechanics are visible, which archetypes and surfaces are supported, and how the clean material activity row should be written.
-
-Lossless evidence remains exclusively in the lossless_family__P* artifacts. feature_candidate_inventory is not evidence text.
+M8 does not discover, harvest, dedupe, or create the candidate universe. M8 consumes the saved candidate inventory and writes only `target_feature_profile`.
 
 ## M8.S2 — Governing Imports
 
@@ -32,47 +28,45 @@ M8 is governed by:
 - 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md
 - AGENT3_RUNTIME_BINDING_PACKET.yaml
 - 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md
+- 03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md
 - 00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md
+- AGENT3_BACKEND_OUTPUT_CONTRACT.md
+- AGENT3_FEATURE_CANDIDATE_INVENTORY_OUTPUT_CONTRACT.md
 - 00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
 - 00_VALIDATOR_RULES_INTEGRATED.md
-- AI_REGISTRY_KEY.md
-- FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
+- references/domain-packages/package-catalog.v0.json
+- references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
 - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
-AI_REGISTRY_KEY.md is the sole active authority for Activity Profile archetype and surface derivation.
-
-CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is superseded for Activity Profile material derivation and must not be used as a controlling M8 reference.
-
-If any older M8 wording conflicts with 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md, the inventory contract controls for candidate existence and navigation.
-
-If any older M8 wording conflicts with AI_REGISTRY_KEY.md, AI_REGISTRY_KEY.md controls for archetype and surface derivation.
+If any older M8 wording conflicts with this file or 03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md, the package-aware Phase 5 rule controls.
 
 ## M8.S3 — Required Inputs
 
 M8 must consume:
 
-- feature_candidate_inventory
-- source_discovery_handoff
+- cartography_index
+- activity_profile_source_index
 - target_profile
 - target_profile_forensics
-- lossless_family__P1_PRODUCT
-- lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-- lossless_family__P3_AI_CAPABILITY_TECHNICAL
-- lossless_family__P4_USE_CASE_INDUSTRY
-- lossless_family__P5_ENTERPRISE_PRICING
-- AI_REGISTRY_KEY.md
-- FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+- feature_candidate_inventory
+- domain_derivation_profile
+- active_run_package_manifest
+- domain_selection_profile
+- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
+- references/domain-packages/package-catalog.v0.json
+- references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
 - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
-feature_candidate_inventory.candidates[] is the mandatory candidate universe.
+M8 must not consume raw Phase 1 families or roots directly. The activity evidence path is:
 
-feature_candidate_inventory.candidates[].source_pointers[] is used only to navigate to the matching P1-P5 lossless source object.
-
-P4 may support semantic context, but it does not create candidate existence unless the deterministic inventory has already indexed the candidate.
+```text
+Phase 1 source artifacts → Phase 2C activity_profile_source_index → feature_candidate_inventory → target_feature_profile
+```
 
 ## M8.S4 — Execution Boundary
 
-M8_TARGET_FEATURE_PROFILE begins only after saved feature_candidate_inventory exists and is locked.
+M8_TARGET_FEATURE_PROFILE begins only after saved `feature_candidate_inventory` exists and is locked.
 
 M8 must not:
 
@@ -85,116 +79,74 @@ M8 must not:
 - create candidates outside feature_candidate_inventory
 - dedupe candidates
 - mutate feature_candidate_inventory
-- mutate M7 artifacts
-- perform M7 work
-- perform M9 work
-- perform M10 work
-- perform M11 work
-- perform M12 work
-- perform M13 work
-- perform M14 work
-- evaluate registry rows
+- mutate target_profile or target_profile_forensics
+- perform M7, M9, M10, M11, M12, M13, or M14 work
+- evaluate legal/compliance/exposure/data-provenance conclusions
 - emit report prose
 - emit renderer payloads
 
 ## M8.S5 — Candidate Treatment Rules
 
-Every canonical candidate in feature_candidate_inventory.candidates[] must be considered.
+Every canonical candidate in `feature_candidate_inventory.candidates[]` must be considered.
 
-A candidate requiring product/activity treatment must appear as a visible activity row unless it was already merged as a duplicate by the deterministic inventory or the pointed lossless evidence is too thin to support mechanics after source lookup.
+A candidate requiring product/activity treatment must appear as a visible activity row unless it was already merged as a duplicate by the deterministic inventory or the pointed activity source evidence is too thin to support mechanics after navigation.
 
-Standalone API candidates should normally become direct activity rows because they are separately addressable developer-facing productized capabilities.
+Standalone API, model, integration, data-object interaction, external-action, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows. If grouping is necessary under the material card, the grouped candidate name must remain visible in `activity_feature_name` or `activity_candidate_summary`.
 
-Model catalogue or model-access candidates should normally become direct activity rows where public source evidence indicates model access, invocation, deployment, or productized availability.
-
-Integration candidates should normally become direct activity rows where public source evidence shows supported integration pathways, deployment surfaces, runtime infrastructure, or agent framework integrations.
-
-Pricing-confirmed candidates must not create mechanics by themselves. Pricing can confirm availability or commercial surface only after the corresponding product/API/model/source evidence is checked.
-
-Standalone API, model, integration, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows.
-
-If grouping is necessary under the activity card, the grouped candidate name must remain visible in activity_feature_name or activity_candidate_summary.
-
-If M8 sees a public feature in lossless source that is not present in feature_candidate_inventory, M8 must not add that feature as a normal activity. M8 must record a profile-level limitation requiring repair of M8_FEATURE_CANDIDATE_INVENTORY.
+If M8 sees a public activity signal through `activity_profile_source_index` that is not represented in `feature_candidate_inventory`, M8 must not add that candidate as a normal activity. It must record a profile-level limitation requiring repair of `M8_FEATURE_CANDIDATE_INVENTORY`.
 
 ## M8.S6 — Evidence Rules
 
-M8 must derive mechanics from lossless source text reached through the candidate's source pointers.
+M8 must derive mechanics from source evidence reached through `activity_profile_source_index` / `feature_candidate_inventory` navigation pointers.
 
 Route slugs, page titles, candidate names, source labels, pricing labels, and navigation labels are not mechanics proof by themselves.
 
-M8 may use the candidate name and source pointer only to locate the source object.
-
 M8 must not copy lossless excerpts into the material profile.
 
-M8 must not place source URLs, source IDs, source pointers, candidate IDs, copied evidence excerpts, confidence fields, evidence ledgers, or forensic/provenance material inside target_feature_profile.
+M8 must not place source URLs, source IDs, source pointers, candidate IDs, copied evidence excerpts, confidence fields, evidence ledgers, or forensic/provenance material inside `target_feature_profile`.
 
-## M8.S7 — Archetype and Surface Authority
+## M8.S7 — Package-Aware Activity Label Authority
 
-M8 must derive archetypes directly from AI_REGISTRY_KEY.md §4.
+`archetype_codes` and `surface_context_tokens` remain compatibility field names in the material card, but their values are package-controlled labels.
 
-M8 must derive surface tokens directly from AI_REGISTRY_KEY.md §7.
+They are not hardcoded AI enum fields.
+
+M8 must derive package labels from:
+
+```text
+active_run_package_manifest
+package-catalog.v0.json
+DOMAIN_PACKAGE_KEY_v0.md
+public activity mechanics located through 2C
+```
+
+If the active package does not expose enough package taxonomy in v0, M8 must still fill the required fields with package-context-limited labels and must record a limitation explaining the taxonomy constraint.
 
 M8 must not use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as an active derivation authority.
 
 M8 must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
 
-Every mechanically valid emitted activity must be tested against all 14 AI_REGISTRY_KEY.md v4 archetypes:
+Every emitted activity must have at least one package-controlled label in `archetype_codes[]`.
 
-- UNI — Cross-Cutting any AI system
-- DOE — Autonomous-Action / Agentic System
-- JDG — Automated Decision System, person-affecting access-gating
-- CMP — Relational / Companion System
-- CRT — Generative / Synthetic-Output System
-- RDR — Data-Ingestion / Training-Corpus System
-- ORC — Model-Routing / Multi-Provider System
-- TRN — Biometric / Signal-Processing System
-- SHD — Security / Monitoring System
-- OPT — High-Stakes Optimization System
-- MOV — Cyber-Physical / Embodied System
-- CUR — Recommendation / Ranking / Amplification System
-- MOD — Content-Moderation / Adjudication System
-- ORA — Predictive / Forecasting System, non-person subject
+Every emitted `archetype_codes[]` value must have exactly one matching `archetype_derivation_basis[]` entry whose `code_or_token` equals that value.
 
-Apply these v4 split fences strictly:
+No `archetype_derivation_basis[]` entry may exist for a value not present in `archetype_codes[]`.
 
-- Recommendation, ranking, personalization, relevance selection, targeting, or amplification shown to a person maps to CUR, not JDG or OPT.
-- Content approval, removal, flagging, restriction, takedown, or policy/legal adjudication maps to MOD, not SHD.
-- Prediction or forecasting about non-person systems, aggregates, equipment, markets, weather, demand, risk pools, or operations maps to ORA, not JDG.
-- Person-affecting access, eligibility, entitlement, employment, credit, housing, insurance, healthcare, education, benefit, or similar gating maps to JDG, not CUR or ORA.
-- Optimization that directly moves operator money or controls operations maps to OPT only when it is not recommendation/personalization to a person and not person-access gating.
-- Security or system monitoring maps to SHD only when the activity defends, detects threats in, or monitors another system/environment and is not content-policy adjudication.
+Every emitted `surface_context_tokens[]` value must have exactly one matching `surface_derivation_basis[]` entry whose `code_or_token` equals that value.
 
-Multiple archetypes may be selected for a single activity when multiple AI_REGISTRY_KEY.md §4 gates are independently supported by the same activity mechanics. Do not collapse a multi-function activity into one archetype merely to simplify the row.
+No `surface_derivation_basis[]` entry may exist for a value not present in `surface_context_tokens[]`.
 
-Every emitted activity must be tested against all locked surface tokens:
-
-- Consumer-Public
-- Enterprise-Private
-- PII
-- Employment
-- Sensitive/Biometric
-- Financial
-- Content&IP
-- Safety&Physical
-- Infrastructure
-- Minors
-
-Every emitted activity must have at least one evidence-supported archetype code.
-
-Every emitted archetype code must have exactly one matching `archetype_derivation_basis[]` entry whose `code_or_token` equals that archetype code.
-
-No `archetype_derivation_basis[]` entry may exist for an archetype code that is not present in `archetype_codes[]`.
-
-Every emitted surface token must have exactly one matching `surface_derivation_basis[]` entry whose `code_or_token` equals that surface token.
-
-No `surface_derivation_basis[]` entry may exist for a surface token that is not present in `surface_context_tokens[]`.
-
-surface_context_tokens must be an array. It may be empty only where no surface token is supported after source lookup. If `surface_context_tokens[]` is empty, `surface_derivation_basis[]` must also be empty.
+`surface_context_tokens[]` must be an array. It may be empty only where no package/context label is supported after source lookup. If it is empty, `surface_derivation_basis[]` must also be empty.
 
 ## M8.S8 — Material Output Boundary
 
-The only valid backend output for this phase is target_feature_profile with exactly three profile-level keys: activities[], commercial_availability_posture, and profile_level_limitations[].
+The only valid backend output for this phase is `target_feature_profile` with exactly three profile-level keys:
+
+```text
+activities[]
+commercial_availability_posture
+profile_level_limitations[]
+```
 
 M8 must not return:
 
@@ -202,14 +154,16 @@ M8 must not return:
 - target_feature_profile_forensics
 - target_profile
 - target_profile_forensics
+- activity_profile_source_index
 - legal_cartography_index
+- legal_signal_derivation_profile
 - data_provenance_profile
 - exposure_registry_profile
 - challenge_gate
 - final_output_handoff
 - renderer_payload
 
-M8 must not include inside target_feature_profile:
+M8 must not include inside `target_feature_profile`:
 
 - candidate_id
 - source_candidate_ids
@@ -246,249 +200,25 @@ Each activity row must contain exactly these 12 keys:
 - surface_context_tokens
 - surface_derivation_basis
 
-No other activity keys are permitted under the current material schema.
+No other activity keys are permitted under the current compatibility material schema.
 
 The old fields `archetype_proof` and `surface_proof_and_routing_limits` are forbidden.
 
-activity_reference must be stable and unique, using ACT.001, ACT.002, ACT.003, and continuing sequentially.
+`activity_reference` must be stable and unique, using ACT.001, ACT.002, ACT.003, and continuing sequentially.
 
-activity_feature_name must be specific enough for deterministic downstream matching to the inventory candidate.
+## M8.S10 — Commercial Availability
 
-Do not use vague names like AI platform, API service, enterprise AI, language tool, or automation feature where the inventory candidate is specific.
+`commercial_availability_posture` must contain:
 
-## M8.S10 — Field Guidance
-
-product_service_wrapper should identify the visible product, API family, model family, integration surface, or service wrapper.
-
-activity_feature_name should name the concrete activity or capability.
-
-activity_candidate_summary should summarize the evidenced activity in plain English.
-
-mechanics_proof should explain what the source shows the activity does. It must be based on lossless evidence, not route labels.
-
-autonomy_human_control_signal should state whether the activity appears automated, human-assisted, agentic, workflow-based, manual, review-based, or unclear from public material.
-
-data_content_object_touched should state the visible object acted on, such as documents, speech, text, video, voice, images, translations, models, APIs, customer workflows, integrations, or unclear.
-
-external_internal_action_signal should state whether the activity appears customer-facing, internal/admin-facing, developer-facing, enterprise-deployment-facing, or unclear.
-
-archetype_codes must be an array of supported locked archetype codes. More than one archetype is allowed when each selected archetype has independent trigger support.
-
-archetype_derivation_basis must be an array of material basis objects. It must contain exactly one object for each selected archetype code and no object for any unselected archetype code. Each object must contain exactly:
-
-- code_or_token
-- normalized_name
-- conditions_satisfied
-- trigger_if_applied
-- exclude_if_checked
-- material_basis
+- posture
+- free_trial_freemium_signal
+- beta_pilot_early_access_signal
+- paid_production_enterprise_plan_signal
+- evidence_basis[]
 - limitation
 
-surface_context_tokens must be an array of supported surface tokens.
+Commercial availability is not mechanics proof by itself. It confirms availability or commercial posture only when candidate/mechanics evidence supports the row.
 
-surface_derivation_basis must be an array of material basis objects. It must contain exactly one object for each selected surface token and no object for any unselected surface token. Each object must contain exactly:
+## M8.S11 — Limitation Rule
 
-- code_or_token
-- normalized_name
-- conditions_satisfied
-- trigger_if_applied
-- exclude_if_checked
-- material_basis
-- limitation
-
-conditions_satisfied must be an array of short, business-readable condition statements drawn from the relevant AI_REGISTRY_KEY.md trigger grammar.
-
-trigger_if_applied must state the trigger grammar applied from AI_REGISTRY_KEY.md.
-
-exclude_if_checked must state the exclusion fence checked from AI_REGISTRY_KEY.md.
-
-material_basis must explain the business-readable basis from admitted P1-P5 lossless material without copied source text, URLs, source IDs, source pointers, confidence, or forensic language.
-
-limitation must state any public-footprint limitation. If no material limitation exists, use `No material derivation limitation identified from reviewed public material.`
-
-## M8.S11 — Profile-Level Limitations
-
-profile_level_limitations[] may be used only for missing source pointer, missing lossless artifact, missing source object, evidence-thin candidate, inventory repair requirement, candidate not mechanically supported, or classification not supportable after source lookup.
-
-It must not contain forensic ledgers, source excerpts, route coverage rows, or candidate IDs.
-
-Limitations must be business-readable.
-
-## M8.S12 - Final Gate
-
-Before returning, verify:
-
-1. Output has exactly one top-level key: `target_feature_profile`.
-2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
-3. Every activity has exactly the locked 12 keys.
-4. No activity contains `archetype_proof` or `surface_proof_and_routing_limits`.
-5. `archetype_derivation_basis` and `surface_derivation_basis` are arrays.
-6. Every derivation basis object contains exactly `code_or_token`, `normalized_name`, `conditions_satisfied`, `trigger_if_applied`, `exclude_if_checked`, `material_basis`, and `limitation`.
-7. Every archetype code in `archetype_codes[]` has exactly one matching `archetype_derivation_basis[]` object by `code_or_token`.
-8. No `archetype_derivation_basis[]` object exists for an unselected archetype code.
-9. Every surface token in `surface_context_tokens[]` has exactly one matching `surface_derivation_basis[]` object by `code_or_token`.
-10. No `surface_derivation_basis[]` object exists for an unselected surface token.
-11. `commercial_availability_posture` has exactly these six keys: `posture`, `free_trial_freemium_signal`, `beta_pilot_early_access_signal`, `paid_production_enterprise_plan_signal`, `evidence_basis`, and `limitation`.
-12. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, confidence fields, or forensic rows.
-13. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
-14. Every emitted activity has at least one archetype code.
-15. Every emitted activity has a `surface_context_tokens` array.
-16. Every inventory candidate requiring treatment has a visible activity row or a profile-level limitation.
-17. No standalone API, model, integration, or pricing-confirmed candidate has been silently absorbed into a product wrapper.
-18. No unindexed candidate has been added as a normal activity.
-19. No forensic output is emitted.
-20. No Activity Profile material instruction treats CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active authority.
-
-If any condition fails, repair the material output only. Do not emit forensics.
-
-## M8.S13 - Final Backend JSON Shape
-
-Return strict JSON only with exactly this shape:
-
-```json
-{
-  "target_feature_profile": {
-    "activities": [
-      {
-        "activity_reference": "ACT.001",
-        "product_service_wrapper": "",
-        "activity_feature_name": "",
-        "activity_candidate_summary": "",
-        "mechanics_proof": "",
-        "autonomy_human_control_signal": "",
-        "data_content_object_touched": "",
-        "external_internal_action_signal": "",
-        "archetype_codes": [],
-        "archetype_derivation_basis": [
-          {
-            "code_or_token": "",
-            "normalized_name": "",
-            "conditions_satisfied": [],
-            "trigger_if_applied": "",
-            "exclude_if_checked": "",
-            "material_basis": "",
-            "limitation": ""
-          }
-        ],
-        "surface_context_tokens": [],
-        "surface_derivation_basis": [
-          {
-            "code_or_token": "",
-            "normalized_name": "",
-            "conditions_satisfied": [],
-            "trigger_if_applied": "",
-            "exclude_if_checked": "",
-            "material_basis": "",
-            "limitation": ""
-          }
-        ]
-      }
-    ],
-    "commercial_availability_posture": {
-      "posture": "",
-      "free_trial_freemium_signal": "",
-      "beta_pilot_early_access_signal": "",
-      "paid_production_enterprise_plan_signal": "",
-      "evidence_basis": [],
-      "limitation": ""
-    },
-    "profile_level_limitations": []
-  }
-}
-```
-
-## M8.S14 - QR Commercial Availability Posture Addendum
-
-This addendum documents target_feature_profile.commercial_availability_posture, the profile-level commercial availability object already incorporated into M8.S12 and M8.S13. It does not modify, weaken, or expand the locked activity card in M8.S9.
-
-No other profile-level material object is authorized by this addendum.
-
-### M8.S14A — Registry Authority
-
-M8 may derive `commercial_availability_posture` only through the locked `PA.COM.*` registry family:
-
-- `PA.COM.001` — commercial availability posture
-- `PA.COM.002` — free trial / freemium signal
-- `PA.COM.003` — beta / pilot / early-access signal
-- `PA.COM.004` — paid production / enterprise plan signal
-- `PA.COM.005` — commercial availability evidence basis
-- `PA.COM.006` — commercial availability limitation
-
-M8 must not derive this object from memory, market knowledge, external browsing, unapproved URLs, or pricing labels alone.
-
-### M8.S14B — Source Access and Evidence Boundary
-
-M8 may use only the source families already authorized for M8:
-
-- `feature_candidate_inventory`
-- `lossless_family__P1_PRODUCT`
-- `lossless_family__P2_PLATFORM_FEATURE_SOLUTION`
-- `lossless_family__P3_AI_CAPABILITY_TECHNICAL`
-- `lossless_family__P4_USE_CASE_INDUSTRY`
-- `lossless_family__P5_ENTERPRISE_PRICING`
-- locked `target_profile` and `target_profile_forensics` as context only
-
-P5 pricing material may support commercial availability posture, free trial/freemium posture, paid production posture, plan posture, or limitation posture. P5 must not create product/activity mechanics and must not create a normal `activities[]` row unless the deterministic inventory already requires that candidate to be treated and product/API/model/source evidence supports it.
-
-The material profile must not include source URLs, source IDs, source pointers, copied excerpts, confidence fields, derivation ledgers, or forensic material inside `commercial_availability_posture`. `evidence_basis[]` must be a short business-readable source-basis summary only, such as `Pricing page referenced paid API/model plans` or `Product/signup material referenced waitlist/private access`.
-
-### M8.S14C — Material Object Contract
-
-When this addendum is active, `target_feature_profile` must contain exactly these three top-level material keys:
-
-```text
-activities
-commercial_availability_posture
-profile_level_limitations
-```
-
-`commercial_availability_posture` must be a profile-level object with exactly these six keys:
-
-```json
-{
-  "posture": "",
-  "free_trial_freemium_signal": "",
-  "beta_pilot_early_access_signal": "",
-  "paid_production_enterprise_plan_signal": "",
-  "evidence_basis": [],
-  "limitation": ""
-}
-```
-
-### M8.S14D — Field Guidance
-
-`posture` must state the best public-footprint posture in plain English, using only visible evidence. Permitted answer families are: production/commercially available, beta/pilot/early access, free trial/freemium/free tier, paid production/enterprise, hybrid/unclear mixed posture, not publicly visible, or field limited.
-
-`free_trial_freemium_signal` must state whether the public material shows a free trial, freemium plan, free tier, free credits, free developer access, or no visible free/freemium signal.
-
-`beta_pilot_early_access_signal` must state whether the public material shows beta, pilot, preview, waitlist, private access, early access, limited availability, or no visible beta/pilot signal.
-
-`paid_production_enterprise_plan_signal` must state whether the public material shows paid production use, API pricing, paid plans, enterprise plan, request-demo enterprise access, sales-assisted commercial use, or no visible paid-production signal.
-
-`evidence_basis[]` must be a short array of business-readable basis notes. It must not include source URLs, source IDs, source pointers, copied source text, or forensic ledger rows.
-
-`limitation` must state any commercial-availability uncertainty, including private order-form dependency, pricing not reviewed, gated pricing, source not found, mixed product posture, or reviewer confirmation needed. If no material limitation exists, use `No material commercial availability limitation identified from reviewed public material.`
-
-### M8.S14E — Final Backend JSON Shape Addendum
-
-Return strict JSON only. When this addendum is active, the M8 material response shape is the same strict `target_feature_profile` shape in M8.S13.
-
-The commercial availability object does not authorize new activity keys, new candidates, source discovery, legal analysis, privacy analysis, registry evaluation, or final QR/report output.
-
-### M8.S14F — Final Gate Addendum
-
-Before returning the M8 material response, verify:
-
-1. Output has exactly one top-level key: `target_feature_profile`.
-2. target_feature_profile has exactly `activities[]`, `commercial_availability_posture`, and `profile_level_limitations[]`.
-3. Every activity still has exactly the locked 12 keys from M8.S9.
-4. No activity contains `archetype_proof` or `surface_proof_and_routing_limits`.
-5. Every selected archetype code and surface token has exactly one matching derivation-basis object by `code_or_token`.
-6. No derivation-basis object exists for an unselected archetype code or surface token.
-7. `commercial_availability_posture` has exactly the six keys in M8.S14C.
-8. `commercial_availability_posture.evidence_basis` is an array and contains no source URLs, source IDs, source pointers, copied excerpts, or forensic rows.
-9. No candidate IDs, source pointers, source URLs, excerpts, confidence fields, validation fields, or forensic branches appear in the material profile.
-10. No forensic output is emitted.
-11. CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml is not active authority for M8 material derivation.
-
-If any condition fails, repair the material output only. Do not emit forensics.
+If candidate evidence is too thin, package taxonomy is not expressive enough in v0, or source navigation is incomplete, use `profile_level_limitations[]` rather than inventing facts.
