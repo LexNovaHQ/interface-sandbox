@@ -1,15 +1,17 @@
 import { buildM9DeterministicMap, M9_DETERMINISTIC_ARTIFACT_NAME } from "../services/legal-cartography-deterministic-map.builder.js";
-import { compileM9HybridCartography } from "../services/legal-cartography-hybrid-compiler.js";
+import { compileM9CompatibilityLegalSignalDerivationProfile, compileM9HybridCartography } from "../services/legal-cartography-hybrid-compiler.js";
 import { validateM9SemanticProfile } from "../validators/legal-cartography-semantic-profile.validator.js";
 
 export const M9_SEMANTIC_ARTIFACT_NAME = "legal_cartography_semantic_profile";
 export const M9_REINVESTIGATION_ARTIFACT_NAME = "legal_cartography_reinvestigation_workpad";
 export const M9_FINAL_ARTIFACT_NAME = "legal_cartography_index";
+export const M9_LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAME = "legal_signal_derivation_profile";
 
 export const M9_HYBRID_SAVE_ORDER = Object.freeze([
   M9_DETERMINISTIC_ARTIFACT_NAME,
   M9_SEMANTIC_ARTIFACT_NAME,
-  M9_FINAL_ARTIFACT_NAME
+  M9_FINAL_ARTIFACT_NAME,
+  M9_LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAME
 ]);
 
 export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSemanticModel, runReinvestigationModel = null, saveArtifact = null, validateFinalIndex = null, logger = null } = {}) {
@@ -50,7 +52,11 @@ export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSem
   }
   await saveM9Artifact({ saveArtifact, artifactName: M9_FINAL_ARTIFACT_NAME, artifactWrapper: finalWrapper, saved, logger });
 
-  return { ok: true, run_id: runId, agent_id: "agent_2b_m9", phase: "M9", artifacts_saved_in_order: saved, required_save_order: [...M9_HYBRID_SAVE_ORDER], required_save_order_respected: requiredSaveOrderRespected(saved), optional_artifacts_saved: saved.includes(M9_REINVESTIGATION_ARTIFACT_NAME) ? [M9_REINVESTIGATION_ARTIFACT_NAME] : [], semantic_validation: semanticValidation, final_validation: finalValidation, notes, final_output: finalWrapper };
+  const compatibilityWrapper = compileM9CompatibilityLegalSignalDerivationProfile({ finalIndex: finalWrapper, deterministicMap: deterministicWrapper });
+  await saveM9Artifact({ saveArtifact, artifactName: M9_LEGAL_SIGNAL_DERIVATION_ARTIFACT_NAME, artifactWrapper: compatibilityWrapper, saved, logger });
+  notes.push("legal_signal_derivation_profile preserved as compatibility-only artifact; 2A owns target-profile legal signal locators after cutover.");
+
+  return { ok: true, run_id: runId, agent_id: "agent_2b_m9", phase: "M9", artifacts_saved_in_order: saved, required_save_order: [...M9_HYBRID_SAVE_ORDER], required_save_order_respected: requiredSaveOrderRespected(saved), optional_artifacts_saved: saved.includes(M9_REINVESTIGATION_ARTIFACT_NAME) ? [M9_REINVESTIGATION_ARTIFACT_NAME] : [], semantic_validation: semanticValidation, final_validation: finalValidation, notes, final_output: finalWrapper, compatibility_output: compatibilityWrapper };
 }
 
 function shouldRunReinvestigation(validation, semanticWrapper) {
@@ -72,7 +78,7 @@ async function buildOrRunReinvestigation({ run, artifacts, deterministicWrapper,
 function createDeterministicReinvestigationWorkpad({ runId, semanticValidation }) {
   const validationRows = [...asArray(semanticValidation?.errors).map((message) => ({ repair_type: "SEMANTIC_VALIDATION_ERROR", reason: message, blocking: false })), ...asArray(semanticValidation?.warnings).map((message) => ({ repair_type: "SEMANTIC_VALIDATION_WARNING", reason: message, blocking: false }))];
   const reviewed = validationRows.map((row, index) => ({ repair_id: `M9_REPAIR_${String(index + 1).padStart(3, "0")}`, repair_type: row.repair_type, target_ref: "legal_cartography_semantic_profile", reason: row.reason, blocking: false, disposition: "UNRESOLVED_WITH_LIMITATION" }));
-  return { [M9_REINVESTIGATION_ARTIFACT_NAME]: { run_id: runId, generated_by: "m9_hybrid_orchestrator_deterministic_repair_workpad", schema_version: "M9_REINVESTIGATION_WORKPAD_v1", repair_rows_reviewed: reviewed, repair_rows_resolved: [], repair_rows_unresolved_with_limitations: reviewed, compiler_notes: ["Semantic validation rows are carried as limitations."], downstream_rules: { m9_reinvestigation_only: true, no_new_url_discovery: true, use_only_phase1_v4_legal_common_roots_and_legal_doc_artifacts: true, limitations_must_carry_forward: true }, status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", lock_status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" } };
+  return { [M9_REINVESTIGATION_ARTIFACT_NAME]: { run_id: runId, generated_by: "m9_hybrid_orchestrator_deterministic_repair_workpad", schema_version: "M9_REINVESTIGATION_WORKPAD_v2_PHASE1_V5", repair_rows_reviewed: reviewed, repair_rows_resolved: [], repair_rows_unresolved_with_limitations: reviewed, compiler_notes: ["Semantic validation rows are carried as limitations."], downstream_rules: { m9_reinvestigation_only: true, no_new_url_discovery: true, use_only_phase1_v5_legal_common_roots_and_legal_doc_artifacts: true, limitations_must_carry_forward: true }, status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED", lock_status: reviewed.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" } };
 }
 
 function normalizeSemanticWrapper({ semanticRaw, runId, deterministicWrapper }) {
@@ -84,7 +90,7 @@ function normalizeSemanticWrapper({ semanticRaw, runId, deterministicWrapper }) 
   }
   const map = unwrapRoot(deterministicWrapper, M9_DETERMINISTIC_ARTIFACT_NAME);
   const required = asArray(map.semantic_label_queue).filter((row) => row.semantic_label_required === true || ["P0", "P1"].includes(row.priority));
-  return { [M9_SEMANTIC_ARTIFACT_NAME]: { run_id: runId, schema_version: "M9_SEMANTIC_PROFILE_EMPTY_REPAIR_REQUIRED_v1", semantic_navigation_index: [], semantic_integrity: { required_queue_count: required.length, labeled_queue_count: 0, coverage_ratio: required.length ? 0 : 1, ready_for_compiler: required.length === 0 }, lock_status: required.length ? "REPAIR_REQUIRED" : "LOCKED_WITH_LIMITATIONS" } };
+  return { [M9_SEMANTIC_ARTIFACT_NAME]: { run_id: runId, schema_version: "M9_SEMANTIC_PROFILE_EMPTY_REPAIR_REQUIRED_v2_PHASE1_V5", semantic_navigation_index: [], semantic_integrity: { required_queue_count: required.length, labeled_queue_count: 0, coverage_ratio: required.length ? 0 : 1, ready_for_compiler: required.length === 0 }, lock_status: required.length ? "REPAIR_REQUIRED" : "LOCKED_WITH_LIMITATIONS" } };
 }
 
 function normalizeReinvestigationWrapper({ raw, runId, semanticValidation }) {
@@ -107,21 +113,8 @@ async function saveM9Artifact({ saveArtifact, artifactName, artifactWrapper, sav
   log(logger, `M9 saved ${artifactName}`);
 }
 
-function requiredSaveOrderRespected(saved) {
-  const required = M9_HYBRID_SAVE_ORDER;
-  let cursor = 0;
-  for (const item of saved) if (item === required[cursor]) cursor += 1;
-  return cursor === required.length;
-}
-
-function inferRunId(artifacts) {
-  for (const value of Object.values(artifacts || {})) {
-    const root = value && typeof value === "object" ? value : null;
-    if (root?.run_id) return root.run_id;
-    if (root?.artifact?.run_id) return root.artifact.run_id;
-  }
-  return "";
-}
+function requiredSaveOrderRespected(saved) { const required = M9_HYBRID_SAVE_ORDER; let cursor = 0; for (const item of saved) if (item === required[cursor]) cursor += 1; return cursor === required.length; }
+function inferRunId(artifacts) { for (const value of Object.values(artifacts || {})) { const root = value && typeof value === "object" ? value : null; if (root?.run_id) return root.run_id; if (root?.artifact?.run_id) return root.artifact.run_id; } return ""; }
 function assertCallback(fn, name) { if (typeof fn !== "function") throw new Error(`M9_ORCHESTRATOR_MISSING_CALLBACK:${name}`); }
 function unwrapRoot(value, root) { if (!value || typeof value !== "object") return {}; const artifact = value.artifact && typeof value.artifact === "object" ? value.artifact : value; return artifact[root] || artifact || {}; }
 function asArray(value) { return Array.isArray(value) ? value : []; }
