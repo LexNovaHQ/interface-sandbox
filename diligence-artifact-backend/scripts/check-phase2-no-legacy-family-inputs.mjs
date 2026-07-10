@@ -100,7 +100,12 @@ const REQUIRED = Object.freeze([
 const FORBIDDEN_CONCLUSIONS = Object.freeze(["license_validity", "license_requirement", "applicable_regulator", "regulatory_compliance_status", "grievance_sufficiency", "grievance_compliance_status", "ombudsman_requirement"]);
 
 const activeText = ACTIVE_PHASE2_INPUT_FILES.map((file) => [file, fs.readFileSync(path.join(ROOT, file), "utf8")]);
-for (const [file, text] of activeText) for (const marker of GLOBAL_FORBIDDEN) assert.equal(text.includes(marker), false, `${file} contains forbidden legacy-family input marker: ${marker}`);
+for (const [file, text] of activeText) {
+  for (const marker of GLOBAL_FORBIDDEN) {
+    const isExplicitForbiddenMarkerList = marker === "lossless_family__" && file.includes("00_VALIDATOR_RULES_PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX.md");
+    if (!isExplicitForbiddenMarkerList) assert.equal(text.includes(marker), false, `${file} contains forbidden legacy-family input marker: ${marker}`);
+  }
+}
 for (const file of M9_ACTIVE_SOURCE_FILES) {
   const text = fs.readFileSync(path.join(ROOT, file), "utf8");
   for (const marker of RETIRED_ROOT_ACTIVE_INPUT_MARKERS) assert.equal(text.includes(marker), false, `${file} contains retired active M9 root input marker: ${marker}`);
