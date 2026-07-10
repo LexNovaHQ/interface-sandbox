@@ -46,25 +46,13 @@ export const OBLIGATION_SHELL_FIELDS = Object.freeze([
   "limitation"
 ]);
 
-export const LOCATOR_FAMILY_REGISTRY = Object.freeze([
-  "REGULATORY_LICENSING_SIGNAL_LOCATOR",
-  "REGULATORY_DISCLOSURE_LOCATOR",
-  "BANK_PARTNER_SPONSOR_BANK_LOCATOR",
-  "COUNTERPARTY_INSTITUTION_LOCATOR",
-  "GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR",
-  "NODAL_GRIEVANCE_OFFICER_LOCATOR",
-  "OMBUDSMAN_ESCALATION_LOCATOR",
-  "COMPLAINTS_ROUTE_LOCATOR",
-  "CONSUMER_DISCLOSURE_LOCATOR",
-  "CONTROL_MECHANISM_LOCATOR",
-  "SAFEGUARDING_CUSTODY_LOCATOR",
-  "FINANCIAL_CRIME_PROGRAM_LOCATOR",
-  "KEY_FACT_STATEMENT_LOCATOR",
-  "MONEY_MOVEMENT_ACTIVITY_LOCATOR",
-  "GOVERNANCE_CONTROL_LOCATOR",
-  "MODEL_SUPPLY_LICENSING_LOCATOR",
-  "HUMAN_OVERSIGHT_LOCATOR"
-]);
+export const LOCATOR_FAMILY_REGISTRY_POLICY = Object.freeze({
+  source: "installed_obligation_catalogs",
+  phase2_code_sector_vocabulary_forbidden: true,
+  malformed_catalogs_are_skipped: true,
+  may_lock_domain_required_false: true,
+  may_narrow_navigation_required_false: true
+});
 
 export const CONTROL_SOURCE_ROUTE_CATALOG = Object.freeze([
   Object.freeze({ route_code: "LICENSING_REGULATORY", source_artifacts: Object.freeze(["lossless_root__regulatory_licensing_status", "lossless_root__company_identity"]) }),
@@ -87,7 +75,7 @@ export const DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX_CONTRACT = Object.freeze
   writes: P2E_DOMAIN_CONTROL_OBLIGATION_SAVE_ORDER,
   final_artifact: P2E_DOMAIN_CONTROL_OBLIGATION_ARTIFACTS.finalIndex,
   route_catalog: CONTROL_SOURCE_ROUTE_CATALOG,
-  locator_family_registry: LOCATOR_FAMILY_REGISTRY,
+  locator_family_registry_policy: LOCATOR_FAMILY_REGISTRY_POLICY,
   obligation_shell_fields: OBLIGATION_SHELL_FIELDS,
   boundary: Object.freeze({
     navigation_only: true,
