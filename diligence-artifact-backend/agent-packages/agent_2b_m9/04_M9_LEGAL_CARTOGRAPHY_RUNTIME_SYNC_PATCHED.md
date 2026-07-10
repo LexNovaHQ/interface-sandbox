@@ -51,7 +51,7 @@ lossless_root__regulatory_licensing_status
 lossless_root__grievance_complaints
 ```
 
-Do not read old `lossless_family__L*` artifacts.
+Do not read retired pre-v5 family artifacts.
 
 Do not browse, crawl, search, fetch new URLs, or create downstream profile substance.
 
