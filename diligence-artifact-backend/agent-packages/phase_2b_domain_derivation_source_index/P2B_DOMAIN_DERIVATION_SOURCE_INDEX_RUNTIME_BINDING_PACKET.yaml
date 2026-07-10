@@ -1,0 +1,65 @@
+<RUNTIME_BINDING_PACKET>
+runtime_contract: 00_RUNTIME_CONTROLLER_PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX
+runtime_contract_version: v1_phase2b_domain_derivation_source_index_phase1_v5_12_root
+active_phase_id: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
+active_phase_scope: P2B_DOMAIN_DERIVATION_SOURCE_INDEX_ONLY
+package_status: LEAN_PACKAGE_CONTRACT_ONLY
+runtime_wiring_changed: false
+
+read_artifacts:
+  - source_discovery_handoff
+  - post_phase_1_domain_gate_handoff
+  - source_discovery_matrix_manifest
+  - neutral_evidence_bucket_manifest
+  - adapter_expansion_log
+  - source_family_index
+  - lossless_root__homepage_landing
+  - lossless_root__company_identity
+  - lossless_root__product_service
+  - lossless_root__platform_feature_solution
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__pricing_commercial_availability
+  - lossless_root__use_case_customer_industry
+  - lossless_root__integrations_ecosystem
+  - lossless_root__ai_safety_transparency
+  - lossless_root__regulatory_licensing_status
+  - lossless_root__grievance_complaints
+
+write_artifacts_in_order:
+  - domain_derivation_deterministic_map
+  - domain_derivation_semantic_profile
+  - domain_derivation_source_index
+
+final_downstream_required_artifact: domain_derivation_source_index
+downstream_owner: P3_DOMAIN_DERIVATION_LAYER
+reserved_for_later:
+  - activity_profile_source_index
+  - feature_candidate_inventory
+  - target_feature_profile
+
+route_maps:
+  - primary_domain_locator_map
+  - ai_overlay_locator_map
+  - regulatory_overlay_locator_map
+  - fusion_candidate_locator_map
+  - activity_capability_locator_map
+  - commercial_availability_locator_map
+  - technical_capability_locator_map
+  - integration_ecosystem_locator_map
+  - use_case_customer_industry_locator_map
+
+boundary_locks:
+  phase_2b_locates_only: true
+  domain_derivation_source_index_owned_by_2b: true
+  activity_profile_source_index_reserved_for_2c_phase5: true
+  domain_derivation_profile_forbidden: true
+  active_run_package_manifest_forbidden: true
+  primary_domain_derivation_forbidden_in_2b: true
+  ai_overlay_derivation_forbidden_in_2b: true
+  regulatory_overlay_derivation_forbidden_in_2b: true
+  fusion_lock_forbidden_in_2b: true
+  source_artifacts_remain_source_of_truth: true
+  pointer_only_outputs: true
+  summary_excerpt_source_text_forbidden: true
+</RUNTIME_BINDING_PACKET>
