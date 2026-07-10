@@ -7,6 +7,7 @@
   "active_phase_scope": "P2F_LEGAL_CARTOGRAPHY_AND_LEGAL_SIGNALS_ONLY",
   "phase_2_internal_jobs": ["LEGAL_CARTOGRAPHY_INDEX", "LEGAL_SIGNAL_DERIVATION_COMPATIBILITY"],
   "input_protocol": "phase1_v5_17_root_common_roots_plus_legal_doc_artifacts",
+  "input_protocol_alias": "phase1_common_roots_plus_legal_doc_artifacts",
   "read_artifacts": [
     "source_discovery_handoff",
     "post_phase_1_domain_gate_handoff",
