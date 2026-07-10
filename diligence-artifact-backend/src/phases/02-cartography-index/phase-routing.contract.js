@@ -52,7 +52,7 @@ const ROUTE_BOUNDARY = Object.freeze({
   legal_or_compliance_conclusions_forbidden: true
 });
 
-function route({ route_id, bucket_id, parent_phase, parent_jobs, required_index_artifacts, primary_lossless_evidence, allowed_preceding_derived_profiles = [], allowed_runtime_context = [], requires_legal_dependency = false, allowed_legal_artifacts = [], forbidden_artifacts = [] }) {
+function route({ route_id, bucket_id, parent_phase, parent_jobs, required_index_artifacts, primary_lossless_evidence, allowed_preceding_derived_profiles = [], job_scoped_derived_profiles = {}, allowed_runtime_context = [], requires_legal_dependency = false, allowed_legal_artifacts = [], forbidden_artifacts = [] }) {
   return Object.freeze({
     route_id,
     bucket_id,
@@ -61,6 +61,7 @@ function route({ route_id, bucket_id, parent_phase, parent_jobs, required_index_
     required_index_artifacts: Object.freeze(required_index_artifacts),
     primary_lossless_evidence: Object.freeze(primary_lossless_evidence),
     allowed_preceding_derived_profiles: Object.freeze(allowed_preceding_derived_profiles),
+    job_scoped_derived_profiles: freezeJobScopedDerivedProfiles(job_scoped_derived_profiles),
     allowed_runtime_context: Object.freeze(allowed_runtime_context),
     requires_legal_dependency,
     allowed_legal_artifacts: Object.freeze(allowed_legal_artifacts),
@@ -106,6 +107,9 @@ export const P2G_ROUTE_BUCKETS = Object.freeze([
     required_index_artifacts: ["activity_profile_source_index"],
     primary_lossless_evidence: ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES,
     allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile"],
+    job_scoped_derived_profiles: {
+      M8_TARGET_FEATURE_PROFILE: ["feature_candidate_inventory"]
+    },
     allowed_runtime_context: ["domain_selection_profile", "active_run_package_manifest"],
     forbidden_artifacts: ["target_profile_forensics", "target_feature_profile_forensics", "data_privacy_navigation_index", "domain_control_obligation_navigation_index"]
   }),
@@ -173,6 +177,7 @@ export const P2G_PHASE_ROUTER_CONTRACT = Object.freeze({
     direct_lossless_fallback_framing_forbidden: true,
     each_phase_gets_only_own_bucket: true,
     preceding_derived_profiles_allowed: true,
+    job_scoped_derived_profiles_must_be_declared_in_2g: true,
     preceding_forensics_profiles_forbidden: true,
     runtime_cutover_pending_after_first_patch: true
   })
@@ -182,4 +187,8 @@ export function getP2GRouteBucket(bucketId) {
   const bucket = P2G_ROUTE_BUCKETS.find((row) => row.bucket_id === bucketId || row.route_id === bucketId);
   if (!bucket) throw new Error(`UNKNOWN_P2G_ROUTE_BUCKET:${bucketId || "missing"}`);
   return bucket;
+}
+
+function freezeJobScopedDerivedProfiles(value = {}) {
+  return Object.freeze(Object.fromEntries(Object.entries(value).map(([jobId, artifacts]) => [jobId, Object.freeze([...(artifacts || [])])] )));
 }
