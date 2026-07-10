@@ -1,0 +1,54 @@
+reference_map_name: P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP
+version: v1_phase1_v5_target_profile_locator_authority_map
+phase: P2A_TARGET_PROFILE_SOURCE_INDEX
+public_label: Target Profile Source Index
+package_status: CREATED_AS_PACKAGE_FOLDER_ANCHOR
+lock_status: LOCKED
+
+purpose: >-
+  Package-local reference map for Phase 2A Target Profile Source Index.
+  This file creates the package folder and inventories the external authority
+  documents that the 2A module must use later. It does not define derivation
+  rules and does not authorize value derivation.
+
+authority_sources:
+  backend_contract: src/phases/02-cartography-index/target-profile-source-index.contract.js
+  deterministic_builder: src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js
+  semantic_validator: src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
+  target_profile_derivation_authority: references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+  regulatory_grievance_field_addendum: references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
+
+source_contract:
+  phase1_contract: PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE
+  allowed_control_artifacts:
+    - source_discovery_handoff
+    - post_phase_1_domain_gate_handoff
+    - source_discovery_matrix_manifest
+    - neutral_evidence_bucket_manifest
+    - adapter_expansion_log
+    - source_family_index
+    - legal_doc_inventory
+    - legal_doc_extraction_index
+    - legal_doc_lossless_validation_manifest
+    - legal_doc_{DOC_TYPE}
+  allowed_target_roots:
+    - lossless_root__homepage_landing
+    - lossless_root__company_identity
+    - lossless_root__contact_notice
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__regulatory_licensing_status
+    - lossless_root__grievance_complaints
+
+execution_boundary:
+  phase_2a_action: LOCATE_ONLY
+  derived_values_forbidden: true
+  target_profile_output_forbidden: true
+  domain_derivation_forbidden: true
+  activity_derivation_forbidden: true
+  full_legal_cartography_reserved_for_2e: true
+  target_profile_review_derives_values_later: true
+
+package_creation_note: >-
+  This is the first package file. It intentionally anchors the GitHub folder
+  without adding placeholder or .gitkeep pollution. Full field-by-field rows
+  will be expanded only during the locked reference-map build step.
