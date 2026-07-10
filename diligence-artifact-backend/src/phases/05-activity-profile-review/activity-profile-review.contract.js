@@ -1,12 +1,25 @@
+const ACTIVITY_PROFILE_LOSSLESS_READS = Object.freeze([
+  "lossless_root__product_service",
+  "lossless_root__platform_feature_solution",
+  "lossless_root__technical_docs_api",
+  "lossless_root__docs_api_data_flow",
+  "lossless_root__integrations_ecosystem",
+  "lossless_root__pricing_commercial_availability",
+  "lossless_root__use_case_customer_industry",
+  "lossless_root__support_help_resources",
+  "lossless_root__ai_safety_transparency"
+]);
+
 const ACTIVITY_PROFILE_REVIEW_READS = Object.freeze([
-  "cartography_index",
+  "phase_routing_manifest",
+  "phase_route_runtime_packet",
   "activity_profile_source_index",
   "target_profile",
-  "target_profile_forensics",
   "feature_candidate_inventory",
   "domain_derivation_profile",
   "active_run_package_manifest",
-  "domain_selection_profile"
+  "domain_selection_profile",
+  ...ACTIVITY_PROFILE_LOSSLESS_READS
 ]);
 
 const ACTIVITY_PROFILE_REVIEW_WRITES = Object.freeze(["target_feature_profile"]);
@@ -67,16 +80,25 @@ const COMMERCIAL_AVAILABILITY_FIELDS = Object.freeze([
 ]);
 
 export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v5_PHASE2C_PACKAGE_AWARE",
+  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v6_PHASE2G_ROUTED",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
   public_label: "Activity Profile Review",
   compatibility_internal_job_id: "M8_TARGET_FEATURE_PROFILE",
-  implementation_status: "PHASE5_PACKAGE_AWARE_SYNCED_TO_P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
+  implementation_status: "PHASE5_MATERIAL_PROFILE_PHASE2G_ROUTE_SCOPED_RUNTIME_CUTOVER_COMPLETE",
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "MODEL_JSON_ONLY",
+  route_contract: Object.freeze({
+    routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+    route_id: "ROUTE.PHASE5.ACTIVITY_PROFILE",
+    bucket_id: "2C_BUCKET_ACTIVITY_PROFILE",
+    runtime_reader: "phase-route-runtime.reader",
+    job_scoped_derived_profile: "feature_candidate_inventory",
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true
+  }),
   material_job: Object.freeze({
     reads: ACTIVITY_PROFILE_REVIEW_READS,
     writes: ACTIVITY_PROFILE_REVIEW_WRITES,
@@ -86,7 +108,9 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     validator_module: "src/m8-validator.js",
     validator_phase: "M8_TARGET_FEATURE_PROFILE"
   }),
+  scoped_lossless_evidence_reads: ACTIVITY_PROFILE_LOSSLESS_READS,
   source_authority: Object.freeze({
+    routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
     source_index_artifact: "activity_profile_source_index",
     candidate_universe_artifact: "feature_candidate_inventory",
     candidate_universe_path: "feature_candidate_inventory.candidates[]",
@@ -141,6 +165,19 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     unindexed_candidate_must_not_be_added_as_normal_activity: true,
     coverage_ledger_belongs_to_activity_profile_forensics_not_material_profile: true
   }),
+  forbidden_runtime_reads: Object.freeze([
+    "cartography_index",
+    "target_profile_forensics",
+    "target_feature_profile_forensics",
+    "legal_cartography_index",
+    "legal_signal_derivation_profile",
+    "data_privacy_navigation_index",
+    "data_provenance_profile",
+    "exposure_registry_profile",
+    "challenge_gate",
+    "final_output_handoff",
+    "renderer_payload"
+  ]),
   forbidden_material_keys: Object.freeze([
     "feature_candidate_inventory",
     "target_feature_profile_forensics",
@@ -174,6 +211,9 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     "surface_proof_and_routing_limits"
   ]),
   boundary_rules: Object.freeze({
+    phase2g_route_scoped_runtime_reader_required: true,
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true,
     must_not_discover_or_fetch_sources: true,
     must_not_create_candidate_universe: true,
     must_not_mutate_feature_candidate_inventory: true,
