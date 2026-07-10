@@ -7,9 +7,9 @@ export function buildPhaseRoutingManifest({ artifacts = {}, runId = null } = {})
     phase_id: "CARTOGRAPHY_INDEX",
     job_id: P2G_PHASE_ROUTER_JOB_ID,
     run_id: runId || "",
-    manifest_version: "phase2g_phase_routing_manifest_v2_profile_cutover_through_phase7",
+    manifest_version: "phase2g_phase_routing_manifest_v3_runtime_cutover_through_compiler",
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-    runtime_cutover_status: "PROFILE_RUNTIME_CUTOVER_COMPLETE_THROUGH_PHASE7_PHASE8_PLUS_DEFERRED",
+    runtime_cutover_status: "RUNTIME_CUTOVER_COMPLETE_THROUGH_NORMALIZED_COMPILER",
     doctrine: Object.freeze({
       lossless_evidence_is_primary: true,
       lossless_evidence_role: "PRIMARY_EVIDENCE",
@@ -23,8 +23,10 @@ export function buildPhaseRoutingManifest({ artifacts = {}, runId = null } = {})
       preceding_derived_profiles_allowed: true,
       job_scoped_derived_profiles_must_be_declared_in_2g: true,
       preceding_forensics_profiles_forbidden: true,
-      profile_runtime_cutover_completed_through_phase7: true,
-      phase8_m11_m12_compiler_cutover_deferred: true,
+      derived_only_downstream_packets_supported: true,
+      sparse_lossless_root_resolution_owned_by_2g: true,
+      runtime_cutover_complete_through_compiler: true,
+      no_other_routing_authority_allowed: true,
       derived_value_generation_forbidden_in_2g: true
     }),
     route_count: routes.length,
@@ -44,7 +46,7 @@ export function buildPhaseRouteValidationManifest({ phaseRoutingManifest = {}, v
       artifact_type: P2G_PHASE_ROUTING_ARTIFACTS.validation,
       phase_id: "CARTOGRAPHY_INDEX",
       job_id: P2G_PHASE_ROUTER_JOB_ID,
-      manifest_version: "phase2g_phase_route_validation_manifest_v2_profile_cutover_through_phase7",
+      manifest_version: "phase2g_phase_route_validation_manifest_v3_runtime_cutover_through_compiler",
       routing_authority: manifest.routing_authority || "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
       runtime_cutover_status: manifest.runtime_cutover_status || "UNKNOWN",
       route_count: Array.isArray(manifest.route_buckets) ? manifest.route_buckets.length : 0,
@@ -59,8 +61,10 @@ export function buildPhaseRouteValidationManifest({ phaseRoutingManifest = {}, v
         free_corpus_read_forbidden: true,
         forensics_for_profile_derivation_forbidden: true,
         job_scoped_derived_profiles_declared_in_2g: true,
-        profile_runtime_cutover_completed_through_phase7: true,
-        phase8_m11_m12_compiler_cutover_deferred: true
+        derived_only_downstream_packets_supported: true,
+        sparse_lossless_root_resolution_owned_by_2g: true,
+        runtime_cutover_complete_through_compiler: true,
+        no_other_routing_authority_allowed: true
       }),
       lock_status: validation.ok ? "LOCKED" : "REPAIR_REQUIRED"
     })
@@ -100,10 +104,5 @@ function buildRoute({ bucket, artifacts = {} }) {
   });
 }
 
-function present(value) {
-  return Boolean(value && typeof value === "object");
-}
-
-function unwrap(value, key) {
-  return value?.[key] || value?.artifact || value || {};
-}
+function present(value) { return Boolean(value && typeof value === "object"); }
+function unwrap(value, key) { return value?.[key] || value?.artifact || value || {}; }
