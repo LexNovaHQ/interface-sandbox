@@ -173,6 +173,17 @@ The registry is the ladder:
 
 New supported domains, overlays, fusion candidates, and regulatory overlays must be added through registry/catalog updates, not prompt edits.
 
+## Domain Derivation Layer regulatory overlay gate
+
+`regulatory_overlay_derivation` is candidate-only.
+
+Regulatory overlay candidates must:
+
+- use overlay IDs present in `package-catalog.v0.json` under `regulatory_overlays`;
+- cite scoped 12 Phase 1 v5 lossless evidence anchors;
+- remain routing context only;
+- avoid legal applicability, license validity, license requirement, applicable regulator conclusion, regulatory compliance status, grievance sufficiency, grievance compliance status, ombudsman requirement, statutory complaint obligation, legal advice, compliance conclusion, and risk conclusion.
+
 ## Domain Derivation Layer output gate
 
 The model response must contain exactly one top-level key:
@@ -181,9 +192,18 @@ The model response must contain exactly one top-level key:
 
 The model must not emit top-level `active_run_package_manifest`. The compiler writes `active_run_package_manifest` after validation.
 
-`domain_derivation_profile` must contain the branches defined by the phase-owned contract and must not contain target profile edits, activity rows, data profile artifacts, exposure rows, legal advice, compliance conclusions, risk conclusions, Lane, AI archetype lock, or surface lock.
+`domain_derivation_profile` must contain the branches defined by the phase-owned contract, including:
+
+- `primary_domain_derivation`
+- `ai_mount_derivation`
+- `regulatory_overlay_derivation`
+- `fusion_candidate_derivation`
+
+`domain_derivation_profile` must not contain target profile edits, activity rows, data profile artifacts, exposure rows, legal advice, compliance conclusions, risk conclusions, Lane, AI archetype lock, surface lock, or regulatory compliance conclusions.
 
 Every true registry condition must carry scoped lossless evidence anchors. Index artifacts and `target_profile` must never be cited as evidence.
+
+Every regulatory overlay candidate must carry scoped lossless evidence anchors. Index artifacts and `target_profile` must never be cited as regulatory evidence.
 
 ## Activity Profile Review gate
 
