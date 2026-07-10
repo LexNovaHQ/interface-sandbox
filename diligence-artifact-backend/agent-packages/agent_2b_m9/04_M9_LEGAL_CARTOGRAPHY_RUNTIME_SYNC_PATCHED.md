@@ -1,97 +1,193 @@
-# Legal Cartography and Index — Runtime Sync
+# MODULE IX — LEGAL / GOVERNANCE CARTOGRAPHY INDEX
 
-## Current Package Lock
+## Current System Patch — Agent 2B / M9
 
-This package implements the **Legal Cartography and Index** phase.
+This module is active only as `agent_2b_m9`.
 
-The compatibility agent ID remains `agent_2b_m9` because the runtime still uses that internal identifier.
+Source Discovery is executed upstream. M9 must not execute Source Discovery and must not emit `source_discovery_handoff`.
 
-Source Discovery is upstream. Legal Cartography and Index must not execute source discovery and must not emit `source_discovery_handoff`.
+The `agent_2b_m9` package is the sole prompt authority for M9 semantic instructions. No sidecar semantic prompt file is active.
 
-## Active Input Contract
+## Purpose
 
-Legal Cartography and Index reads the Phase 1 source contract directly:
+M9 creates a public legal/governance cartography index.
+
+It identifies:
+
+1. loaded legal/governance documents;
+2. document/source location;
+3. sections, subsections, annexures, schedules, exhibits, addenda, appendices, notices, and incorporated policies;
+4. control-language locations attached to accepted sections, subsections, or embedded legal units;
+5. missing, limited, referenced, or absent public material;
+6. subcat and control-family labels for the deterministic semantic queue.
+
+M9 is an index and map only. It is not a summary layer.
+
+## Inputs
+
+Use only Phase 1 v4 source-contract inputs:
+
+- `source_discovery_handoff`
+- `post_phase_1_domain_gate_handoff`
+- `source_discovery_matrix_manifest`
+- `neutral_evidence_bucket_manifest`
+- `adapter_expansion_log`
+- `source_family_index`
+- `legal_doc_inventory`
+- `legal_doc_extraction_index`
+- `legal_doc_lossless_validation_manifest`
+- `legal_doc_{DOC_TYPE}`
+- `lossless_root__company_identity`
+- `lossless_root__contact_notice`
+- `lossless_root__privacy_data_processing`
+- `lossless_root__security_trust_compliance`
+- `lossless_root__data_governance_controls`
+- `lossless_root__ai_safety_transparency`
+- `lossless_root__technical_docs_api`
+- `lossless_root__docs_api_data_flow`
+
+Do not read old `lossless_family__L*` artifacts.
+
+Do not browse, crawl, search, fetch new URLs, or create downstream profile substance.
+
+## Reference Registry
+
+M9 semantic derivation must follow:
 
 ```text
-source_discovery_handoff
-post_phase_1_domain_gate_handoff
-source_discovery_matrix_manifest
-neutral_evidence_bucket_manifest
-adapter_expansion_log
-source_family_index
-legal_doc_inventory
-legal_doc_extraction_index
-legal_doc_lossless_validation_manifest
-legal_doc_{DOC_TYPE}
-lossless_root__legal_identity_notice
-lossless_root__privacy_data_processing
-lossless_root__security_trust
-lossless_root__trust_compliance
-lossless_root__contact_notice
-lossless_root__technical_docs_api_developer
-lossless_root__docs_api_data_flow
+M9_FIELD_DERIVATION_REGISTRY.yaml
 ```
 
-Old family input contracts and legacy compatibility adapters are forbidden.
+The registry is reference material inside this same `agent_2b_m9` package. It is not a separate agent.
 
-## Internal Job Split
+If any semantic field conflicts with the registry, the registry wins.
 
-Legal Cartography and Index has two internal jobs:
+## Deterministic Layer Boundary
 
-```text
-Job A — Legal Cartography Index
-Job B — Legal Signal Derivation
+The deterministic layer owns factual indexing only:
+
+- document identity and class;
+- source URL, source root/artifact, and source status;
+- section and subsection structure;
+- annexure, schedule, appendix, addendum, exhibit, and notice detection;
+- line/character pointers;
+- parent-child unit relationship where visible;
+- missing or limited source status;
+- `semantic_label_queue` creation;
+- page-furniture and sentence-fragment exclusion before semantic labeling.
+
+The deterministic layer stops at subsection depth. Clause-level and sentence-level units are not emitted.
+
+## Semantic Layer Boundary
+
+Semantic labels deterministic `semantic_label_queue` rows. It does not recreate the deterministic index.
+
+Semantic emits only:
+
+- `subcats`;
+- `control_families`;
+- `confidence`.
+
+Semantic copies only:
+
+- `queue_id`;
+- `unit_id`.
+
+No summaries, quotes, excerpts, document roles, unit descriptions, downstream treatment, notes, new IDs, new URLs, or downstream artifacts.
+
+## Semantic Artifact Contract
+
+When the expected write artifact is `legal_cartography_semantic_profile`, return strict JSON only:
+
+```json
+{
+  "legal_cartography_semantic_profile": {
+    "schema_version": "M9_SEMANTIC_NAVIGATION_INDEX_v1",
+    "semantic_navigation_index": [
+      {
+        "queue_id": "",
+        "unit_id": "",
+        "subcats": [],
+        "control_families": [],
+        "confidence": ""
+      }
+    ],
+    "semantic_integrity": {
+      "required_queue_count": 0,
+      "labeled_queue_count": 0,
+      "coverage_ratio": 0,
+      "ready_for_compiler": false
+    },
+    "lock_status": "REPAIR_REQUIRED"
+  }
+}
 ```
 
-## Job A — Legal Cartography Index
+No other top-level key is allowed in semantic mode.
 
-Job A creates index/navigation artifacts only:
+## Semantic Coverage Discipline
+
+Emit one `semantic_navigation_index` row for every deterministic `semantic_label_queue` row where `priority` is `P0` or `P1`.
+
+The raw `macro_unit_map` is not the semantic coverage source. The `semantic_label_queue` is the semantic coverage source.
+
+`semantic_integrity.coverage_ratio` must be at least `0.80` for compiler readiness.
+
+If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REPAIR_REQUIRED`.
+
+## Allowed Semantic Values
+
+`subcats` may contain only:
 
 ```text
-legal_cartography_deterministic_map
-legal_cartography_semantic_profile
+CNS
+LIA
+HAL
+INF
+PRV
+BIO
+DEC
+HRM
+FRD
+TRD
+```
+
+`control_families` may contain only:
+
+```text
+FORMATION_CONTRACT
+ACTIVITY_SPECIFIC_DISCLOSURE
+DATA_PRIVACY
+VENDORS_TRANSFER
+SECURITY
+USE_SAFETY
+AGENT_AUTHORITY
+IP_CONTENT
+COMMERCIAL_LEGAL_ALLOCATION
+CONTACT_ROUTES
+INDEMNITY
+UNKNOWN_CONTROL_LANGUAGE
+```
+
+`confidence` must be one of:
+
+```text
+CLEAR
+PARTIAL
+UNCLEAR
+```
+
+If a row cannot be classified, still emit it with empty `subcats`, `UNKNOWN_CONTROL_LANGUAGE`, and `UNCLEAR` confidence.
+
+## Final Backend Output Contract
+
+The final compiled artifact remains:
+
+```text
 legal_cartography_index
 ```
 
-Job A identifies loaded documents, source locations, document structure, semantic navigation labels, locator rows, and missing/limited source rows from the active Phase 1 source contract.
-
-Job A must not emit field-derived answers, target profile outputs, data profile outputs, renderer payloads, or reviewer-question objects.
-
-## Job B — Legal Signal Derivation
-
-Job B creates one deterministic field-derived artifact:
-
-```text
-legal_signal_derivation_profile
-```
-
-Job B reads Job A artifacts and loaded Phase 1 legal/common-root source text. It derives only the 21 field-registry keyed rows locked in:
-
-```text
-M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md
-```
-
-The filename is retained for compatibility; the governing phase name is **Legal Cartography and Index**.
-
-Job B is deterministic only. Model-assisted derivation is not allowed.
-
-## Job A Semantic Contract
-
-When the expected write artifact is `legal_cartography_semantic_profile`, the semantic layer emits only:
-
-```text
-queue_id
-unit_id
-subcats
-control_families
-confidence
-```
-
-No summaries, quotes, excerpts, document roles, downstream treatment, new IDs, new URLs, or downstream artifacts.
-
-## Job A Final Artifact Shape
-
-`legal_cartography_index` must preserve:
+The final root must preserve:
 
 ```text
 document_coverage_index
@@ -100,6 +196,8 @@ incorporated_linked_document_map
 control_language_locator
 semantic_navigation_index
 priority_semantic_locator
+qualified_review_locator
+qualified_review_legal_signals
 legal_notice_locator
 dispute_resolution_locator
 governing_law_venue_locator
@@ -109,19 +207,6 @@ downstream_rules
 lock_status
 ```
 
-## Package Output Order
+Rows may include enriched navigation labels, but the current required fields must remain present.
 
-```text
-legal_cartography_deterministic_map
-legal_cartography_semantic_profile
-legal_cartography_index
-legal_signal_derivation_profile
-```
-
-## Forbidden Package Pollution
-
-The Legal Cartography and Index package must not emit question IDs, reviewer questions, question rows, question indexes, Target Profile Review overlays, Data Provenance Profile selected-support packets, target profile outputs, data profile outputs, renderer payloads, final handoff outputs, old family input contracts, or legacy source-family adapters.
-
-## Boundary
-
-Target Profile Review, Data Provenance Profile, and Qualified Review consume Legal Cartography and Index outputs later through their own phase contracts. They do not define Legal Cartography and Index derivation authority.
+Return strict JSON only.
