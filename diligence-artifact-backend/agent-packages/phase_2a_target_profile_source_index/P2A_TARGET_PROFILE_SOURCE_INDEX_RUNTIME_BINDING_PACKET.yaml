@@ -1,0 +1,116 @@
+runtime_binding_packet: P2A_TARGET_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET
+version: v1_phase1_v5_package_only
+active_phase_id: P2A_TARGET_PROFILE_SOURCE_INDEX
+active_phase_name: Target Profile Source Index
+active_phase_scope: P2A_TARGET_PROFILE_SOURCE_INDEX_ONLY
+run_mode: PHASED_AGENT_PACKAGE
+run_id_required: true
+run_id: "{{run_id}}"
+
+structure_authority:
+  package_structure_supreme: true
+  no_module_merge: true
+  backend_contract_controls_artifact_permissions: true
+  package_must_not_change_runtime_wiring: true
+  current_phase_identity_preserved: true
+  module_prompt_authority: P2A_TARGET_PROFILE_SOURCE_INDEX.md
+  reference_map_authority: P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml
+  phase1_v5_source_input_contract_active: true
+  old_family_input_contract_forbidden: true
+  retired_phase1_root_inputs_forbidden: true
+
+allowed_internal_layers:
+  - P2A_DETERMINISTIC_TARGET_SOURCE_INDEX
+  - P2A_CANONICAL_TARGET_SEMANTIC_LABELING
+  - P2A_FINAL_TARGET_SOURCE_INDEX
+
+reference_documents:
+  - P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml
+  - src/phases/02-cartography-index/target-profile-source-index.contract.js
+  - src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js
+  - src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
+  - references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+  - references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
+  - references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+
+read_artifacts:
+  - source_discovery_handoff
+  - post_phase_1_domain_gate_handoff
+  - source_discovery_matrix_manifest
+  - neutral_evidence_bucket_manifest
+  - adapter_expansion_log
+  - source_family_index
+  - legal_doc_inventory
+  - legal_doc_extraction_index
+  - legal_doc_lossless_validation_manifest
+  - legal_doc_{DOC_TYPE}
+  - lossless_root__homepage_landing
+  - lossless_root__company_identity
+  - lossless_root__contact_notice
+  - lossless_root__pricing_commercial_availability
+  - lossless_root__regulatory_licensing_status
+  - lossless_root__grievance_complaints
+
+dynamic_reads:
+  - legal_doc_{DOC_TYPE}
+
+write_artifacts_in_order:
+  - target_profile_deterministic_map
+  - target_profile_semantic_profile
+  - target_profile_source_index
+
+internal_artifacts_p2a_owned:
+  - target_profile_deterministic_map
+  - target_profile_semantic_profile
+
+final_downstream_required_artifact:
+  - target_profile_source_index
+
+phase_lock:
+  - P2A_TARGET_PROFILE_SOURCE_INDEX
+phase_lock_meaning: >-
+  Phase 2A locks only after target_profile_deterministic_map,
+  target_profile_semantic_profile, and target_profile_source_index are generated
+  under the backend contract. The package is package-only and does not wire itself
+  into runtime.
+
+forbidden_phases:
+  - SOURCE_DISCOVERY
+  - ACTIVITY_PROFILE_SOURCE_INDEX
+  - DATA_PRIVACY_NAVIGATION_INDEX
+  - LEGAL_CARTOGRAPHY_AND_INDEX
+  - TARGET_PROFILE_REVIEW
+  - DOMAIN_DERIVATION_LAYER
+  - ACTIVITY_PROFILE_REVIEW
+  - DATA_PROVENANCE_PROFILE
+  - EXPOSURE_PROFILE
+  - OPERATOR_CHALLENGE
+  - COMPILER
+  - NORMALIZED_REPORT_RENDERER
+  - QUALIFIED_REVIEW
+
+forbidden_outputs:
+  - source_discovery_handoff
+  - target_profile
+  - domain_derivation_profile
+  - active_run_package_manifest
+  - feature_candidate_inventory
+  - target_feature_profile
+  - data_privacy_navigation_index
+  - legal_cartography_index
+  - legal_signal_derivation_profile
+  - exposure_registry_profile
+  - challenge_gate
+  - final_output_handoff
+  - renderer_payload
+  - legal_advice
+  - compliance_conclusion
+  - enforceability_assessment
+  - risk_conclusion
+  - P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS from backend contract
+
+backend_permission_profile: phase_2a_target_profile_source_index_package_only
+validator_profile: phase_2a_target_profile_source_index_validator
+terminal_receipt_profile: phase_2a_target_profile_source_index_receipt
+next_phase_boundary: "Backend may advance only through runtime contract wiring outside this package. This package does not advance the pipeline."
+stop_condition: "Stop after target_profile_source_index is produced under the backend save order."
