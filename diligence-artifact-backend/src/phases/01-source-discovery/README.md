@@ -14,7 +14,7 @@ Phase 2 indexes source navigation.
 Profile phases derive facts from index-guided source reads.
 ```
 
-Phase 1 is deliberately domain-agnostic. Any pre-Phase-1 domain preflight is passive and expand-only. It may add discovery hints, but it may not narrow discovery, lock the target domain, exclude sources, or route prompts dynamically.
+Phase 1 is deliberately domain-agnostic. It probes the union of all loaded Phase 1 domain source-hint packs on every run and commits to none. Any pre-Phase-1 domain preflight is passive and expand-only. It may add discovery hints, but it may not narrow discovery, lock the target domain, exclude sources, or route prompts dynamically.
 
 ---
 
@@ -30,6 +30,12 @@ src/phases/01-source-discovery/services/url-manifest.service.js
 src/phases/01-source-discovery/services/source-extraction.service.js
 src/phases/01-source-discovery/services/source-family-handoff.service.js
 src/phases/01-source-discovery/validators/source-discovery.validator.js
+```
+
+Domain source-hint packs:
+
+```text
+references/domain-packages/phase-1/*.source-hints.json
 ```
 
 Runtime and permissions surfaces that must remain in sync:
@@ -56,8 +62,9 @@ Responsibilities:
 
 - resolve target URL and target-controlled host boundary;
 - run passive pre-Phase-1 domain preflight;
-- discover candidate URLs from root page, header/footer, sitemap, known paths, legal-doc probes, and adapter expansion hints;
-- traverse the locked 15-root classifier matrix in root order;
+- discover candidate URLs from root page, header/footer, sitemap, known paths, legal-doc probes, locked root traversal, and domain source-hint union probes;
+- traverse the locked 17-root classifier matrix in root order;
+- probe the union of all loaded domain source-hint packs regardless of preflight selection;
 - dedupe candidate URLs;
 - classify manifest rows into locked common roots, route types, signal roles, and admission tiers;
 - emit manifest/control artifacts.
@@ -119,9 +126,9 @@ post_phase_1_domain_gate_handoff
 
 ---
 
-## Locked 15-root matrix
+## Locked 17-root matrix
 
-Phase 1 stores source material under exactly 15 common physical roots. These are neutral source roots, not downstream profile families.
+Phase 1 stores source material under exactly 17 common physical roots. These are neutral source-function roots, not downstream profile families and not sector vocabulary.
 
 ```text
 1. homepage_landing
@@ -139,9 +146,27 @@ Phase 1 stores source material under exactly 15 common physical roots. These are
 13. data_governance_controls
 14. ai_safety_transparency
 15. support_help_resources
+16. regulatory_licensing_status
+17. grievance_complaints
 ```
 
 No other common root may be emitted as a physical Phase 1 root artifact.
+
+Boundary rule:
+
+```text
+Function roots may enter the base matrix.
+Sector words live only in *.source-hints.json packs.
+```
+
+Examples:
+
+```text
+regulatory_licensing_status = base function root
+grievance_complaints = base function root
+/personal-loan = fintech source-hint path, not a base root
+/speech-to-text = ai-native source-hint data-flow segment, not a base root
+```
 
 ---
 
@@ -170,6 +195,8 @@ privacy_data_processing
 security_trust_compliance
 data_governance_controls
 ai_safety_transparency
+regulatory_licensing_status
+grievance_complaints
 ```
 
 For these roots, Phase 1 must touch the complete same-root slug chain before moving to the next root.
@@ -211,21 +238,64 @@ These are not useless. They remain part of the matrix and may carry important so
 
 ---
 
-## Root-ordered traversal
+## Multi-domain source-hint union probe
 
-The URL manifest job traverses roots in locked matrix order.
+Domain vocabulary lives in source-hint packs:
 
-For each root, it:
+```text
+references/domain-packages/phase-1/*.source-hints.json
+```
 
-1. probes known root paths;
-2. fetches available root pages;
-3. extracts same-root links;
-4. crawls every same-root child slug for `PRIMARY_FULL_EXTRACT` roots;
-5. classifies every discovered candidate;
-6. dedupes canonical URLs;
-7. then moves to the next root.
+The loader lives in:
 
-This means Phase 1 must not sample one product page and move on. For primary full-extract roots, the full same-root chain is mandatory.
+```text
+src/phases/01-source-discovery/services/source-discovery-taxonomy.service.js
+```
+
+Locked loader behavior:
+
+```text
+reads every *.source-hints.json at module load
+never throws if the directory or a pack is malformed
+rejects packs with may_narrow_discovery = true
+rejects packs with may_exclude_sources = true
+keeps only hint_paths[] entries that begin with /
+keeps only non-empty data_flow_segments[] entries
+```
+
+The union export is:
+
+```text
+allDomainHintPaths()
+```
+
+`url-manifest.service.js` probes:
+
+```text
+preflight adapter paths + allDomainHintPaths()
+```
+
+on every run. This fixes the circular dependency where Phase 1 previously needed preflight to guess a domain before it could discover that domain's public surfaces.
+
+The union probe is still expand-only:
+
+```text
+may_expand_discovery = true
+may_narrow_discovery = false
+may_exclude_sources = false
+classification_effect = NONE
+dynamic_routing_used = false
+domain_lock_used = false
+```
+
+The currently committed packs are:
+
+```text
+fintech.source-hints.json
+ai.source-hints.json
+```
+
+Adding a future domain should mean dropping one new `*.source-hints.json` file into the directory, not editing the base root matrix.
 
 ---
 
@@ -249,8 +319,12 @@ classifySecurityTrustCompliance
 classifyDataGovernanceControls
 classifyAiSafetyTransparency
 classifySupportHelpResources
+classifyRegulatoryLicensingStatus
+classifyGrievanceComplaints
 classifyLegalDocumentSurfaces
 ```
+
+Note: as of this README update, the two new classifier functions must be present before the Phase 1 v5 lock is considered executable. The schema/handoff contract has been widened to 17 roots first; fixture validation must be updated in the next validation pass.
 
 Each classified manifest row must carry:
 
@@ -312,6 +386,11 @@ LEGAL_DOCUMENT_SIGNAL
 LEGAL_NOTICE_SIGNAL
 VENDOR_PROCESSING_SIGNAL
 SUPPORT_CONTEXT_SIGNAL
+MONEY_MOVEMENT_SIGNAL
+LICENSING_REGULATORY_SIGNAL
+COUNTERPARTY_INSTITUTION_SIGNAL
+CONSUMER_DISCLOSURE_SIGNAL
+GRIEVANCE_REDRESSAL_SIGNAL
 ```
 
 These roles must survive into:
@@ -329,7 +408,7 @@ No classifier field may die before Phase 2.
 
 ---
 
-## Technical route shapes
+## Technical route shapes and data-flow segments
 
 Technical sources may carry additional route shape metadata.
 
@@ -355,26 +434,25 @@ APP_SHELL_METADATA
 
 `docs_api_data_flow` rows must also carry `api_data_flow_signal.present = true` when they are primary data-flow rows.
 
-API/data-flow family segments include:
+`API_DATA_FLOW_FAMILY_SEGMENTS` is defined once in `source-discovery-taxonomy.service.js`. It is the union of generic base data-flow primitives and all loaded source-pack `data_flow_segments[]`.
+
+Generic base seed examples:
 
 ```text
-speech
-text-to-speech
-speech-to-text
-voice
-audio
-translation
-dubbing
-document
-digitisation
-digitization
-ocr
-vision
-image
 file
+files
 batch
-transcription
+upload
+download
+export
+stream
+event
+record
+object
+webhook
 ```
+
+Sector segments such as `speech-to-text`, `payments`, and `settlement` must come from source-hint packs, not from the base seed.
 
 ---
 
@@ -402,6 +480,11 @@ customer_segment_signals
 jurisdiction_market_signals
 support_context_sources
 thin_or_missing_source_gaps
+regulatory_licensing_sources
+consumer_disclosure_sources
+grievance_complaints_sources
+counterparty_institution_signals
+money_movement_signals
 ```
 
 The classifier must use tokenized matching for AI-related signals. It must not use raw substring matching such as `includes("ai")`.
@@ -439,6 +522,17 @@ Examples:
 /legal-notice -> legal_doc_legal_notice
 /usage-policy -> legal_doc_usage_policy
 /safety-policy -> legal_doc_safety_policy
+/fair-practice-code -> legal_doc_fair_practice_code
+/grievance-redressal-policy -> legal_doc_grievance_redressal_policy
+/interest-rate-policy -> legal_doc_interest_rate_policy
+/key-fact-statement -> legal_doc_key_fact_statement
+/kfs -> legal_doc_key_fact_statement
+/mitc -> legal_doc_most_important_terms_conditions
+/kyc-policy -> legal_doc_kyc_aml_policy
+/deposit-insurance -> legal_doc_deposit_insurance_disclosure
+/complaints-procedure -> legal_doc_complaints_procedure
+/schedule-of-charges -> legal_doc_schedule_of_charges
+/responsible-lending -> legal_doc_responsible_lending_policy
 ```
 
 Legal-doc inventory artifacts are navigation/control artifacts only:
@@ -466,7 +560,7 @@ This avoids saving empty artifacts.
 Rules:
 
 ```text
-Every one of the 15 roots must appear in source_family_index.root_artifact_manifest.
+Every one of the 17 roots must appear in source_family_index.root_artifact_manifest.
 A root with no extracted non-legal material source text is virtual only.
 A saved root artifact must contain at least one source.
 A material root must have required_artifacts[] in root_artifact_manifest.
@@ -544,13 +638,13 @@ technical_docs_api_developer -> technical_docs_api
 
 ---
 
-## Adapter expansion boundary
+## Adapter and domain source-hint boundary
 
-Adapters are expand-only.
+Adapters and source-hint packs are expand-only.
 
 They may add probe paths. They may not narrow discovery.
 
-Locked adapter flags:
+Locked flags:
 
 ```text
 may_expand_discovery = true
@@ -561,7 +655,7 @@ dynamic_routing_used = false
 domain_lock_used = false
 ```
 
-Passive preflight can suggest additional paths, but cannot change Phase 1's source universe.
+Passive preflight can suggest additional paths, but cannot change Phase 1's source universe. Source-hint packs are probed as a union on every run, even when preflight is empty.
 
 ---
 
@@ -577,27 +671,23 @@ post_phase_1_domain_gate_handoff
 The required handoff schema versions are:
 
 ```text
-PHASE1_SOURCE_DISCOVERY_HANDOFF_v2_FULL_ROOT_MATRIX
-POST_PHASE_1_DOMAIN_GATE_HANDOFF_v2_FULL_ROOT_MATRIX
+PHASE1_SOURCE_DISCOVERY_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN
+POST_PHASE_1_DOMAIN_GATE_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN
 ```
 
 The handoff must preserve:
 
 ```text
-full_15_root_classifier_matrix_preserved
+full_17_root_classifier_matrix_preserved
 primary_full_extract_slug_chain_preserved
 source_signal_roles_preserved
 technical_route_shape_preserved
 api_data_flow_signal_preserved
 legal_doc_granularity_preserved
+multi_domain_union_probe_preserved
 ```
 
-Phase 2's input contract requires Phase 1 v4:
-
-```text
-PHASE1_AGNOSTIC_COMMON_ROOT_INDEX_v4_STORAGE_RESOLVER_HARDENED
-PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V4_STORAGE_RESOLVER_HARDENED
-```
+Phase 2 input acceptance must be updated to accept Phase 1 v5 / 17-root handoff before merge.
 
 ---
 
@@ -664,6 +754,8 @@ primary_root_slug_chain_sampling
 full_matrix_metadata_stripping
 empty_root_physical_artifact_emission
 source_text_cutting_inside_row
+domain_hint_pack_narrowing
+sector_word_base_root_expansion
 ```
 
 If a future patch needs one of these, it is not a Phase 1 patch. It belongs downstream or requires a contract change.
@@ -680,25 +772,27 @@ scripts/check-phase1-agnostic-source-discovery.mjs
 
 It is wired into `npm run check`.
 
-The check currently validates:
+The check must validate:
 
 ```text
-exact 15-root matrix
+exact 17-root matrix
 PRIMARY_FULL_EXTRACT roots
 SECONDARY_CONDITIONAL roots
 retired root artifact ban
 pipeline read-set sanity
 full-root-matrix contract markers
+multi-domain union-probe markers
+source-hint loader behavior
 sparse storage contract markers
 legal_doc_* mappings
 mocked-source behavioral classifier fixtures
 AI false-positive behavior
-adapter expand-only behavior
+adapter/source-hint expand-only behavior
 source-family handoff metadata preservation
 storage-resolver hardened schema markers
 ```
 
-The behavioral fixture covers representative URLs including:
+Representative behavioral fixtures should include:
 
 ```text
 /about
@@ -720,6 +814,12 @@ The behavioral fixture covers representative URLs including:
 /model-cards/foo
 /usage-policy
 /help/article
+/licenses
+/grievance-redressal
+/fair-practice-code
+/personal-loan
+/fees
+/bank-partners
 ```
 
 False-positive fixtures include:
@@ -737,21 +837,24 @@ False-positive fixtures include:
 
 When auditing Phase 1, check these in order:
 
-1. `source-discovery-taxonomy.service.js` contains exactly the locked 15 roots.
+1. `source-discovery-taxonomy.service.js` contains exactly the locked 17 roots.
 2. No retired root is present as an active physical artifact or active read.
-3. `url-manifest.service.js` uses dedicated root classifiers, not only a generic prefix loop.
-4. `PRIMARY_FULL_EXTRACT` roots are traversed through same-root slug chains.
-5. `deduped_url_manifest.manifest_sources[]` carries full matrix metadata.
-6. `source-extraction.service.js` saves sparse root artifacts only when non-legal material source text exists.
-7. `source_family_index.root_artifact_manifest` has all 15 roots.
-8. Sharded roots require all physical shards together and do not cut source text inside a source row.
-9. Legal document text exists only in `legal_doc_*` artifacts.
-10. `source-family-handoff.service.js` preserves matrix metadata into `source_discovery_handoff`.
-11. `post_phase_1_domain_gate_handoff` advertises the full-root-matrix handoff schema.
-12. `pipeline.contract.js` does not read retired roots.
-13. `cartography-index.contract.js` accepts only Phase 1 v4 full-matrix input contract.
-14. `scripts/check-phase1-agnostic-source-discovery.mjs` includes behavioral classifier fixtures.
-15. `npm run check` must pass locally before merge.
+3. `source-discovery-taxonomy.service.js` defines `allDomainHintPaths()` and `API_DATA_FLOW_FAMILY_SEGMENTS` exactly once.
+4. `url-manifest.service.js` imports the union exports and does not redeclare API family segments.
+5. `url-manifest.service.js` probes all domain source-hint paths every run.
+6. `url-manifest.service.js` uses dedicated root classifiers, not only a generic prefix loop.
+7. `PRIMARY_FULL_EXTRACT` roots are traversed through same-root slug chains.
+8. `deduped_url_manifest.manifest_sources[]` carries full matrix metadata.
+9. `source-extraction.service.js` saves sparse root artifacts only when non-legal material source text exists.
+10. `source_family_index.root_artifact_manifest` has all 17 roots.
+11. Sharded roots require all physical shards together and do not cut source text inside a source row.
+12. Legal document text exists only in `legal_doc_*` artifacts.
+13. `source-family-handoff.service.js` preserves matrix metadata into `source_discovery_handoff`.
+14. `post_phase_1_domain_gate_handoff` advertises the v3 full-root-matrix multi-domain handoff schema.
+15. `pipeline.contract.js` does not read retired roots.
+16. `cartography-index.contract.js` must be updated to accept Phase 1 v5 / 17-root input before merge.
+17. `scripts/check-phase1-agnostic-source-discovery.mjs` must include behavioral classifier and union-loader fixtures.
+18. `npm run check` must pass locally before merge.
 
 ---
 
@@ -760,13 +863,14 @@ When auditing Phase 1, check these in order:
 As of this branch state, Phase 1 is intended to be locked at:
 
 ```text
-PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V4_STORAGE_RESOLVER_HARDENED
+PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V5_MULTI_DOMAIN_UNION_PROBE_17_ROOT
 ```
 
-The Phase 2 input contract expects:
+The current handoff schema is:
 
 ```text
-PHASE2_INPUT_CONTRACT_v2_PHASE1_FULL_MATRIX
+PHASE1_SOURCE_DISCOVERY_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN
+POST_PHASE_1_DOMAIN_GATE_HANDOFF_v3_FULL_ROOT_MATRIX_MULTI_DOMAIN
 ```
 
-Local validation was not run from the ChatGPT/GitHub connector environment. Any merge should be preceded by local validation in the repository environment.
+Phase 2 input acceptance has not yet been widened in this pass. Local validation was not run from the ChatGPT/GitHub connector environment. Any merge should be preceded by local validation in the repository environment.
