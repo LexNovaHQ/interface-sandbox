@@ -34,6 +34,7 @@ source_boundary:
   allowed_reference_documents:
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
     - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    - TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   forbidden_model_sources:
     - legal_cartography_index
