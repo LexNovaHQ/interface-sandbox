@@ -9,17 +9,19 @@ active_phase_only: true
 active_agent: agent_3_target_feature
 canonical_material_output: target_feature_profile
 canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_phase5_package_aware_p2c_source_index_v5
+runtime_contract_version: m8_phase5_phase2g_route_scoped_v6
 
 ## M8.S1 — Architecture Lock
 
+Phase 2G is the sole runtime routing authority for this material profile.
+
 `feature_candidate_inventory` is the deterministic source of truth for candidate existence.
 
-`activity_profile_source_index` is the Phase 2C navigation authority for activity evidence.
+`activity_profile_source_index` is the mandatory Phase 2C navigation map into the primary activity lossless evidence supplied in the 2G packet.
 
 `active_run_package_manifest` and the mounted domain package context control package-specific activity taxonomy. Fixed AI archetype and AI surface enums are not universal Phase 5 authority.
 
-M8 does not discover, harvest, dedupe, or create the candidate universe. M8 consumes the saved candidate inventory and writes only `target_feature_profile`.
+M8 does not discover, harvest, dedupe, or create the candidate universe. M8 consumes the saved candidate inventory, navigates the routed 2C evidence, and writes only `target_feature_profile`.
 
 ## M8.S2 — Governing Imports
 
@@ -39,29 +41,50 @@ M8 is governed by:
 - references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
 - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
-If any older M8 wording conflicts with this file or 03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md, the package-aware Phase 5 rule controls.
+If older M8 wording conflicts with this file, the Phase 2G route, phase-owned contract, and this package-aware rule control.
 
 ## M8.S3 — Required Inputs
 
-M8 must consume:
-
-- cartography_index
-- activity_profile_source_index
-- target_profile
-- target_profile_forensics
-- feature_candidate_inventory
-- domain_derivation_profile
-- active_run_package_manifest
-- domain_selection_profile
-- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
-- references/domain-packages/package-catalog.v0.json
-- references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
-- FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-
-M8 must not consume raw Phase 1 families or roots directly. The activity evidence path is:
+M8 must consume only the artifacts delivered through:
 
 ```text
-Phase 1 source artifacts → Phase 2C activity_profile_source_index → feature_candidate_inventory → target_feature_profile
+ROUTE.PHASE5.ACTIVITY_PROFILE
+2C_BUCKET_ACTIVITY_PROFILE
+```
+
+Required packet artifacts:
+
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
+- `activity_profile_source_index`
+- `target_profile`
+- `feature_candidate_inventory`
+- `domain_derivation_profile`
+- `active_run_package_manifest`
+- `domain_selection_profile`
+- `lossless_root__product_service`
+- `lossless_root__platform_feature_solution`
+- `lossless_root__technical_docs_api`
+- `lossless_root__docs_api_data_flow`
+- `lossless_root__integrations_ecosystem`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__use_case_customer_industry`
+- `lossless_root__support_help_resources`
+- `lossless_root__ai_safety_transparency`
+
+Required references:
+
+- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
+- `references/domain-packages/package-catalog.v0.json`
+- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+- `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml`
+
+M8 must not consume `source_discovery_handoff`, `cartography_index`, `target_profile_forensics`, `target_feature_profile_forensics`, raw `lossless_family__*` artifacts, or any evidence outside the routed 2C bucket.
+
+The activity evidence path is:
+
+```text
+Phase 2G 2C packet → activity_profile_source_index navigation → feature_candidate_inventory treatment → target_feature_profile
 ```
 
 ## M8.S4 — Execution Boundary
@@ -70,46 +93,42 @@ M8_TARGET_FEATURE_PROFILE begins only after saved `feature_candidate_inventory` 
 
 M8 must not:
 
-- discover new sources
-- browse
-- crawl
-- search the web
-- fetch new URLs
-- use memory or general knowledge about the target
-- create candidates outside feature_candidate_inventory
-- dedupe candidates
-- mutate feature_candidate_inventory
-- mutate target_profile or target_profile_forensics
-- perform M7, M9, M10, M11, M12, M13, or M14 work
-- evaluate legal/compliance/exposure/data-provenance conclusions
-- emit report prose
-- emit renderer payloads
+- discover new sources;
+- browse, crawl, search the web, or fetch new URLs;
+- use memory or general knowledge about the target;
+- read outside the Phase 2G packet;
+- use any forensic profile as a material-profile input;
+- create candidates outside `feature_candidate_inventory`;
+- dedupe or mutate candidates;
+- mutate upstream artifacts;
+- perform legal, data-provenance, exposure, operator, compiler, or review work;
+- emit report prose or renderer payloads.
 
 ## M8.S5 — Candidate Treatment Rules
 
 Every canonical candidate in `feature_candidate_inventory.candidates[]` must be considered.
 
-A candidate requiring product/activity treatment must appear as a visible activity row unless it was already merged as a duplicate by the deterministic inventory or the pointed activity source evidence is too thin to support mechanics after navigation.
+A candidate requiring product/activity treatment must appear as a visible activity row unless it was already merged as a duplicate by the deterministic inventory or the pointed activity evidence is too thin to support mechanics after index-guided navigation.
 
-Standalone API, model, integration, data-object interaction, external-action, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows. If grouping is necessary under the material card, the grouped candidate name must remain visible in `activity_feature_name` or `activity_candidate_summary`.
+Standalone API, model, integration, data-object interaction, external-action, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows. If grouping is necessary, the grouped candidate name must remain visible in `activity_feature_name` or `activity_candidate_summary`.
 
-If M8 sees a public activity signal through `activity_profile_source_index` that is not represented in `feature_candidate_inventory`, M8 must not add that candidate as a normal activity. It must record a profile-level limitation requiring repair of `M8_FEATURE_CANDIDATE_INVENTORY`.
+If M8 sees a public activity signal through index-guided reading of the routed primary evidence that is not represented in `feature_candidate_inventory`, M8 must not add that candidate as a normal activity. It must record a profile-level limitation requiring repair of `M8_FEATURE_CANDIDATE_INVENTORY`.
 
 ## M8.S6 — Evidence Rules
 
-M8 must derive mechanics from source evidence reached through `activity_profile_source_index` / `feature_candidate_inventory` navigation pointers.
+Lossless evidence in the 2C packet is primary evidence. It is not a fallback.
+
+M8 must derive mechanics from that evidence only after navigating through `activity_profile_source_index` and `feature_candidate_inventory` pointers.
 
 Route slugs, page titles, candidate names, source labels, pricing labels, and navigation labels are not mechanics proof by themselves.
 
-M8 must not copy lossless excerpts into the material profile.
+M8 must not make free-corpus reads or copy lossless excerpts into the material profile.
 
 M8 must not place source URLs, source IDs, source pointers, candidate IDs, copied evidence excerpts, confidence fields, evidence ledgers, or forensic/provenance material inside `target_feature_profile`.
 
 ## M8.S7 — Package-Aware Activity Label Authority
 
-`archetype_codes` and `surface_context_tokens` remain compatibility field names in the material card, but their values are package-controlled labels.
-
-They are not hardcoded AI enum fields.
+`archetype_codes` and `surface_context_tokens` remain compatibility field names in the material card, but their values are package-controlled labels, not hardcoded AI enum fields.
 
 M8 must derive package labels from:
 
@@ -117,30 +136,26 @@ M8 must derive package labels from:
 active_run_package_manifest
 package-catalog.v0.json
 DOMAIN_PACKAGE_KEY_v0.md
-public activity mechanics located through 2C
+public activity mechanics reached through 2C navigation
 ```
 
-If the active package does not expose enough package taxonomy in v0, M8 must still fill the required fields with package-context-limited labels and must record a limitation explaining the taxonomy constraint.
+If the active package does not expose enough package taxonomy, M8 must still fill the required fields with package-context-limited labels and record a limitation explaining the constraint.
 
-M8 must not use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as an active derivation authority.
+M8 must not use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active derivation authority.
 
 M8 must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
 
 Every emitted activity must have at least one package-controlled label in `archetype_codes[]`.
 
-Every emitted `archetype_codes[]` value must have exactly one matching `archetype_derivation_basis[]` entry whose `code_or_token` equals that value.
+Every `archetype_codes[]` value must have exactly one matching `archetype_derivation_basis[]` entry. No basis entry may exist for an unselected value.
 
-No `archetype_derivation_basis[]` entry may exist for a value not present in `archetype_codes[]`.
+Every `surface_context_tokens[]` value must have exactly one matching `surface_derivation_basis[]` entry. No basis entry may exist for an unselected token.
 
-Every emitted `surface_context_tokens[]` value must have exactly one matching `surface_derivation_basis[]` entry whose `code_or_token` equals that value.
-
-No `surface_derivation_basis[]` entry may exist for a value not present in `surface_context_tokens[]`.
-
-`surface_context_tokens[]` must be an array. It may be empty only where no package/context label is supported after source lookup. If it is empty, `surface_derivation_basis[]` must also be empty.
+`surface_context_tokens[]` may be empty only where no package/context label is supported after source lookup. In that case, `surface_derivation_basis[]` must also be empty.
 
 ## M8.S8 — Material Output Boundary
 
-The only valid backend output for this phase is `target_feature_profile` with exactly three profile-level keys:
+The only valid backend output is `target_feature_profile` with exactly three profile-level keys:
 
 ```text
 activities[]
@@ -155,6 +170,7 @@ M8 must not return:
 - target_profile
 - target_profile_forensics
 - activity_profile_source_index
+- phase_route_runtime_packet
 - legal_cartography_index
 - legal_signal_derivation_profile
 - data_provenance_profile
@@ -221,4 +237,4 @@ Commercial availability is not mechanics proof by itself. It confirms availabili
 
 ## M8.S11 — Limitation Rule
 
-If candidate evidence is too thin, package taxonomy is not expressive enough in v0, or source navigation is incomplete, use `profile_level_limitations[]` rather than inventing facts.
+If candidate evidence is too thin, package taxonomy is not expressive enough, or source navigation is incomplete, use `profile_level_limitations[]` rather than inventing facts.
