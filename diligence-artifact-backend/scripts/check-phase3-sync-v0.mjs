@@ -17,9 +17,13 @@ assert.ok(m7, "M7_TARGET_PROFILE pipeline contract missing");
 assert.ok(p2b, "P2B_DOMAIN_DERIVATION_SOURCE_INDEX pipeline contract missing");
 assert.ok(p3b, "P3_DOMAIN_DERIVATION_LAYER pipeline contract missing");
 assert.equal(PIPELINE_CONTRACTS.P2A_TARGET_PROFILE_SOURCE_INDEX.next, "P2B_DOMAIN_DERIVATION_SOURCE_INDEX");
-assert.equal(p2b.next, "P2_INDEX_COMPILER_VALIDATION");
-assert.deepEqual(m7.reads, TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads, "3A pipeline and phase-owned reads must match");
-assert.deepEqual(p3b.reads, DOMAIN_DERIVATION_CONTRACT.reads, "3B pipeline and phase-owned reads must match");
+assert.equal(p2b.next, "P2C_ACTIVITY_PROFILE_SOURCE_INDEX");
+assert.equal(PIPELINE_CONTRACTS.P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX.next, "P2G_PHASE_ROUTER");
+assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.next, "P2_INDEX_COMPILER_VALIDATION");
+assert.ok(m7.reads.includes("phase_routing_manifest"), "3A pipeline reads must include 2G route manifest during compatibility cutover");
+for (const readName of TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads) assert.ok(m7.reads.includes(readName), `3A pipeline missing phase-owned read ${readName}`);
+assert.ok(p3b.reads.includes("phase_routing_manifest"), "3B pipeline reads must include 2G route manifest during compatibility cutover");
+for (const readName of DOMAIN_DERIVATION_CONTRACT.reads) assert.ok(p3b.reads.includes(readName), `3B pipeline missing phase-owned read ${readName}`);
 assert.deepEqual(p3b.writes, DOMAIN_DERIVATION_CONTRACT.writes, "3B pipeline and phase-owned writes must match");
 assert.ok(p3b.reads.includes("domain_derivation_source_index"), "3B must read P2B domain_derivation_source_index");
 assert.equal(p3b.reads.includes("activity_profile_source_index"), false, "3B must not read activity_profile_source_index");
@@ -92,7 +96,7 @@ assert.ok(validator.includes("domain_derivation_source_index"), "3B validator mu
 assert.ok(validator.includes("regulatory_overlay_derivation"), "3B validator must normalize regulatory overlay branch");
 assert.equal(validator.includes("function compileActiveRunPackageManifest({ run, artifacts, profile, validation }) {\n  const before"), false, "inline manifest brain must not be present");
 
-console.log(JSON.stringify({ check: "phase3 sync v0", status: "PASS", enforced: ["3A_PIPELINE_READ_SYNC", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_RUNTIME_WIRED", "3B_PIPELINE_READ_WRITE_SYNC", "3B_PROMPT_REFERENCE_BUILD", "3B_REGISTRY_VISIBLE_TO_MODEL", "3B_REGULATORY_OVERLAY_CANDIDATE_BRANCH", "3B_CANONICAL_MANIFEST_COMPILER", "RUNTIME_FLAGS_REMAIN_FALSE"] }, null, 2));
+console.log(JSON.stringify({ check: "phase3 sync v0", status: "PASS", enforced: ["3A_PIPELINE_READ_SYNC_WITH_P2G_COMPAT", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_RUNTIME_WIRED", "P2G_ROUTE_MANIFEST_COMPAT_READ", "3B_PIPELINE_READ_WRITE_SYNC", "3B_PROMPT_REFERENCE_BUILD", "3B_REGISTRY_VISIBLE_TO_MODEL", "3B_REGULATORY_OVERLAY_CANDIDATE_BRANCH", "3B_CANONICAL_MANIFEST_COMPILER", "RUNTIME_FLAGS_REMAIN_FALSE"] }, null, 2));
 
 function artifactFor(name) {
   if (name.startsWith("lossless_root__")) {
