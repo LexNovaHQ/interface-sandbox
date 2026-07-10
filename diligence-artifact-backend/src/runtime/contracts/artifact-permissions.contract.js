@@ -223,7 +223,7 @@ export function artifactMatchesPermission(artifactName, permission) {
   if (permission === LEGAL_DOC_DYNAMIC_PERMISSION) return LEGAL_DOC_ARTIFACT_PATTERN.test(artifactName);
   if (permission === ART.exposureBatchPattern) return M11_BATCH_ARTIFACT_PATTERN.test(artifactName);
   if (permission === ART.exposureBatchValidationPattern) return M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName);
-  if (permission === ART.dapSemanticBatchValidationPattern) return PHASE7_DAP_BATCH_VALIDATION_PATTERN.test(artifactName);
+  if (permission === ART.dapSemanticBatchValidationPattern) return PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName);
   if (String(permission || "").startsWith("lossless_root__")) return artifactName === permission || artifactName.startsWith(`${permission}__part_`);
   return false;
 }
