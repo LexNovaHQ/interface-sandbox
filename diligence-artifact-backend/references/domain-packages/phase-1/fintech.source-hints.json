@@ -1,0 +1,11 @@
+{
+  "domain_id": "fintech",
+  "adapter_type": "primary_domain_package",
+  "schema_version": "PHASE1_DOMAIN_SOURCE_HINTS_v1",
+  "mode": "EXPAND_ONLY",
+  "may_expand_discovery": true,
+  "may_narrow_discovery": false,
+  "may_exclude_sources": false,
+  "hint_paths": ["/payments", "/pay", "/lending", "/loans", "/loan", "/personal-loan", "/business-loan", "/home-loan", "/credit", "/credit-card", "/cards", "/card", "/underwriting", "/banking", "/bank", "/accounts", "/savings", "/current-account", "/deposits", "/upi", "/wallet", "/wallets", "/remittance", "/transfers", "/transfer", "/payouts", "/collections", "/settlement", "/kyc", "/aml", "/onboarding", "/risk", "/fraud", "/insurance", "/investments", "/investing", "/mutual-funds", "/broking", "/trading", "/securities", "/wealth", "/forex", "/crypto", "/fees", "/rates", "/interest-rates", "/charges", "/schedule-of-charges", "/mitc", "/kfs", "/key-fact-statement", "/fair-practice-code", "/interest-rate-policy", "/deposit-insurance", "/bank-partners", "/partner-banks"],
+  "data_flow_segments": ["payments", "transfers", "payouts", "collections", "settlement", "ledger", "accounts", "cards", "disbursement", "mandate", "kyc", "onboarding", "transactions"]
+}
