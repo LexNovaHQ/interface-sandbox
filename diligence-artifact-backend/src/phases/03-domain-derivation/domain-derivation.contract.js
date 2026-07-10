@@ -1,9 +1,9 @@
 const DOMAIN_DERIVATION_LOSSLESS_READS = Object.freeze([
   "lossless_root__homepage_landing",
-  "lossless_root__about_company",
+  "lossless_root__company_identity",
   "lossless_root__product_service",
   "lossless_root__platform_feature_solution",
-  "lossless_root__technical_docs_api_developer",
+  "lossless_root__technical_docs_api",
   "lossless_root__docs_api_data_flow",
   "lossless_root__pricing_commercial_availability",
   "lossless_root__use_case_customer_industry",
@@ -23,7 +23,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   internal_job_id: "P3_DOMAIN_DERIVATION_LAYER",
   public_label: "Domain Derivation Layer",
-  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE",
+  implementation_status: "CONTRACT_RUNNER_AND_REGISTRY_LADDER_PROMPT_ACTIVE_PHASE1_V5_ROOT_SYNCED",
   execution_mode: "semantic_registry_ladder_derivation_with_deterministic_gate",
   agent_id: "agent_3_target_feature",
   actor_id: "agent_3_target_feature",
@@ -66,9 +66,13 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     "privacy_data_processing",
     "security_trust",
     "trust_compliance",
+    "lossless_root__about_company",
+    "lossless_root__technical_docs_api_developer",
     "lossless_root__privacy_data_processing",
     "lossless_root__security_trust",
-    "lossless_root__trust_compliance"
+    "lossless_root__trust_compliance",
+    "lossless_root__security_trust_compliance",
+    "lossless_root__data_governance_controls"
   ]),
   forbidden_outputs: Object.freeze([
     "target_profile",
@@ -118,71 +122,10 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     ])
   }),
   registry_ladder_contract: Object.freeze({
-    prompt_is_domain_agnostic: true,
-    registry_is_rule_authority: true,
-    package_catalog_is_package_authority: true,
-    prompt_must_not_list_domain_specific_classification_logic: true,
-    new_domains_do_not_require_prompt_update: true,
-    prompt_update_required_only_for: Object.freeze([
-      "new_rule_type",
-      "new_output_branch",
-      "new_evidence_class",
-      "new_manifest_field",
-      "new_boolean_grammar",
-      "new_phase_boundary"
-    ])
-  }),
-  manifest_update_contract: Object.freeze({
-    artifact_name: "active_run_package_manifest",
-    selection_stage_after_3b: "PHASE_3B_DOMAIN_DERIVATION",
-    runtime_flags_must_remain_false: true,
-    dynamic_routing_enabled: false,
-    field_registry_compile_enabled: false,
-    qr_matrix_routing_enabled: false,
-    report_template_routing_enabled: false,
-    assembly_routing_enabled: false
-  }),
-  boundary_rules: Object.freeze({
-    semantic_first_deterministic_gated: true,
-    model_derives_condition_level_semantics: true,
-    deterministic_validator_is_gate_not_brain: true,
-    registry_driven_derivation: true,
-    registry_ladder_prompt_active: true,
-    hardcoded_domain_logic_forbidden: true,
-    prompt_domain_examples_forbidden: true,
-    new_domains_added_by_registry_not_prompt: true,
-    phase_2_indexes_are_navigation_only: true,
-    scoped_lossless_target_activity_evidence_required: true,
-    target_profile_is_context_not_proof: true,
-    legal_cartography_index_forbidden: true,
-    legal_signal_derivation_profile_forbidden: true,
-    legal_lossless_evidence_forbidden: true,
-    data_privacy_navigation_index_forbidden: true,
-    company_level_lane_forbidden: true,
-    ai_package_mount_is_not_ai_activity_lock: true,
-    ai_package_mount_is_not_ai_exposure_lock: true,
-    ai_archetype_lock_forbidden: true,
-    ai_surface_lock_forbidden: true,
-    exposure_row_matching_forbidden: true,
-    fusion_candidates_domain_owned_and_deferred: true,
-    no_activity_profile_derivation: true,
-    no_data_profile_derivation: true,
-    no_exposure_profile_derivation: true,
-    no_legal_advice: true,
-    no_compliance_conclusion: true,
-    no_enforceability_conclusion: true,
-    no_risk_conclusion: true
+    registry_driven: true,
+    prompt_hardcoded_domain_logic_forbidden: true,
+    package_catalog_is_mount_source: true,
+    domain_derivation_registry_is_rule_ladder: true,
+    prompt_must_not_be_updated_for_new_domain_additions: true
   })
 });
-
-export function domainDerivationReadArtifacts() {
-  return [...DOMAIN_DERIVATION_CONTRACT.reads];
-}
-
-export function domainDerivationLosslessReadArtifacts() {
-  return [...DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads];
-}
-
-export function domainDerivationPromptFiles() {
-  return [...DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files];
-}
