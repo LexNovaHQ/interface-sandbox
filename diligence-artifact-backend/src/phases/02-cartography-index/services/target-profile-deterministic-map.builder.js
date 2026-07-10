@@ -1,9 +1,9 @@
 import {
   P2A_TARGET_PROFILE_ARTIFACTS,
   P2A_TARGET_PROFILE_TARGET_ROOT_INPUTS,
-  P2A_TARGET_PROFILE_SECONDARY_CONTEXT_ROOT_INPUTS,
-  P2A_TARGET_PROFILE_ALLOWED_LEGAL_SIGNAL_LOCATOR_FAMILIES
+  P2A_TARGET_PROFILE_SECONDARY_CONTEXT_ROOT_INPUTS
 } from "../target-profile-source-index.contract.js";
+import { matchLegalTargetSignalRules } from "./target-legal-signal-locator.rules.js";
 
 export const TARGET_PROFILE_DETERMINISTIC_ARTIFACT_NAME = P2A_TARGET_PROFILE_ARTIFACTS.deterministicMap;
 
@@ -17,20 +17,6 @@ const TARGET_LOCATOR_FAMILIES = Object.freeze({
   COMMERCIAL_AVAILABILITY_LOCATOR: [/\bpricing\b/i, /\bplans?\b/i, /\benterprise\b/i, /\bcontact sales\b/i, /\btrial\b/i],
   PRICING_SALES_ROUTE_LOCATOR: [/\bsales\b/i, /\bpricing\b/i, /\bbilling\b/i, /\bsubscription\b/i, /\bquote\b/i],
   CUSTOMER_SEGMENT_CONTEXT_LOCATOR: [/\bcustomer\b/i, /\buse case\b/i, /\bindustry\b/i, /\bteams?\b/i, /\bbusinesses\b/i]
-});
-
-const LEGAL_SIGNAL_TERMS = Object.freeze({
-  LEGAL_ENTITY_NAME_LOCATOR: [/\blegal name\b/i, /\blegal entity\b/i, /\bentity name\b/i, /\bcompany name\b/i, /\bregistered name\b/i],
-  REGISTERED_ENTITY_LOCATOR: [/\bregistered\b/i, /\bincorporated\b/i, /\bregistration\b/i, /\bcompany number\b/i, /\bcorporate\b/i],
-  CONTRACTING_ENTITY_LOCATOR: [/\bcontracting entity\b/i, /\bthese terms are between\b/i, /\bagreement is between\b/i, /\bwe are\b/i, /\bour company\b/i],
-  LEGAL_NOTICE_CONTACT_LOCATOR: [/\blegal notice\b/i, /\bnotices\b/i, /\blegal@\b/i, /\bnotice email\b/i, /\bcontact us\b/i],
-  REGISTERED_OFFICE_LOCATOR: [/\bregistered office\b/i, /\bprincipal office\b/i, /\bcorporate office\b/i, /\boffice at\b/i, /\baddress\b/i],
-  GOVERNING_LAW_LOCATOR: [/\bgoverning law\b/i, /\blaws of\b/i, /\bgoverned by\b/i],
-  COURTS_VENUE_LOCATOR: [/\bcourts?\b/i, /\bvenue\b/i, /\bjurisdiction\b/i, /\bexclusive jurisdiction\b/i],
-  DISPUTE_RESOLUTION_LOCATOR: [/\bdispute\b/i, /\barbitration\b/i, /\bmediation\b/i, /\bresolution\b/i],
-  NOTICE_DELIVERY_LOCATOR: [/\bnotice\b/i, /\bnotification\b/i, /\bdelivered\b/i, /\bby email\b/i, /\bmail\b/i],
-  BILLING_ENTITY_LOCATOR: [/\bbilling\b/i, /\binvoice\b/i, /\bpayment\b/i, /\bfees\b/i],
-  ENTERPRISE_TERMS_LOCATOR: [/\benterprise\b/i, /\border form\b/i, /\bmaster services\b/i, /\bmsa\b/i, /\bservice terms\b/i]
 });
 
 export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } = {}) {
@@ -80,7 +66,7 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
       run_id: runId,
       target_url: targetUrl,
       generated_by: "phase2a_target_profile_deterministic_layer",
-      schema_version: "P2A_TARGET_PROFILE_DETERMINISTIC_MAP_v1_PHASE1_V4",
+      schema_version: "P2A_TARGET_PROFILE_DETERMINISTIC_MAP_v2_LEGAL_SIGNAL_RULES",
       model_used: false,
       artifact_role: "Navigation-only deterministic map for Target Profile Review over target-family Phase 1 v4 roots and limited target-relevant legal-doc signal locators.",
       source_text_policy: {
@@ -115,6 +101,7 @@ export function buildTargetProfileDeterministicMap({ run = {}, artifacts = {} } 
         legal_advice_forbidden: true,
         compliance_conclusion_forbidden: true,
         enforceability_assessment_forbidden: true,
+        legal_signal_rule_source: "target-legal-signal-locator.rules.js",
         source_artifacts_remain_source_of_truth: true,
         full_text_copied: false,
         summaries_allowed: false,
@@ -195,7 +182,8 @@ function ingestTargetSource(ctx) {
 
 function addTargetLocators(ctx) {
   const { unit, source, entityIdentity, brandTradeName, homepagePositioning, contactRoute, commercialAvailability, pricingSalesRoute, customerSegmentContext, legalTargetSignals, semanticQueue } = ctx;
-  const text = `${unit.heading_path.join(" ")} ${source.url} ${source.doc_type} ${source.common_root}`;
+  const unitSearchText = textForRange(source.lossless_text, unit.char_range);
+  const text = `${unit.heading_path.join(" ")} ${unitSearchText} ${source.url} ${source.doc_type} ${source.common_root}`;
   pushLocatorMatches({ unit, source, locatorFamily: "ENTITY_IDENTITY_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.ENTITY_IDENTITY_LOCATOR, rows: entityIdentity, semanticQueue, targetSubcats: ["ENTITY_IDENTITY"], signalFamilies: ["IDENTITY"], priority: "P0", text });
   pushLocatorMatches({ unit, source, locatorFamily: "BRAND_TRADE_NAME_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.BRAND_TRADE_NAME_LOCATOR, rows: brandTradeName, semanticQueue, targetSubcats: ["BRAND_IDENTITY"], signalFamilies: ["IDENTITY"], priority: "P1", text });
   pushLocatorMatches({ unit, source, locatorFamily: "HOMEPAGE_POSITIONING_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.HOMEPAGE_POSITIONING_LOCATOR, rows: homepagePositioning, semanticQueue, targetSubcats: ["MARKET_POSITIONING"], signalFamilies: ["MARKET"], priority: "P1", text });
@@ -205,16 +193,32 @@ function addTargetLocators(ctx) {
   pushLocatorMatches({ unit, source, locatorFamily: "CUSTOMER_SEGMENT_CONTEXT_LOCATOR", patterns: TARGET_LOCATOR_FAMILIES.CUSTOMER_SEGMENT_CONTEXT_LOCATOR, rows: customerSegmentContext, semanticQueue, targetSubcats: ["CUSTOMER_SEGMENT"], signalFamilies: ["MARKET"], priority: "P2", text });
 
   if (source.source_class === "legal_doc_target_signal") {
-    for (const family of P2A_TARGET_PROFILE_ALLOWED_LEGAL_SIGNAL_LOCATOR_FAMILIES) {
-      pushLocatorMatches({ unit, source, locatorFamily: family, patterns: LEGAL_SIGNAL_TERMS[family] || [], rows: legalTargetSignals, semanticQueue, targetSubcats: ["LEGAL_TARGET_SIGNAL"], signalFamilies: legalSignalFamiliesFor(family), priority: legalPriorityFor(family), text });
-    }
+    for (const rule of matchLegalTargetSignalRules(text)) pushLegalTargetSignalLocator({ unit, source, rule, rows: legalTargetSignals, semanticQueue });
   }
 }
 
 function pushLocatorMatches({ unit, source, locatorFamily, patterns, rows, semanticQueue, targetSubcats, signalFamilies, priority, text }) {
   if (!patterns.some((pattern) => pattern.test(text))) return;
   const locatorId = `P2A.${locatorFamily}.${makeStableId(`${unit.unit_id}:${locatorFamily}`)}`;
-  const row = {
+  const row = baseLocatorRow({ locatorId, locatorFamily, unit, source, priority, targetSubcats, signalFamilies, limitation: "Locator only. Target Profile Review must read source text and derive any value." });
+  rows.push(row);
+  pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily, targetSubcats, signalFamilies, priority });
+}
+
+function pushLegalTargetSignalLocator({ unit, source, rule, rows, semanticQueue }) {
+  const locatorId = `P2A.${rule.locator_family}.${makeStableId(`${unit.unit_id}:${rule.locator_family}`)}`;
+  rows.push({
+    ...baseLocatorRow({ locatorId, locatorFamily: rule.locator_family, unit, source, priority: rule.priority, targetSubcats: rule.target_subcats, signalFamilies: rule.target_signal_families, limitation: "Target legal signal locator only. Target Profile Review must derive the value from the source text." }),
+    target_3a_signal: rule.target_3a_signal,
+    matched_terms: rule.matched_terms,
+    locator_scope: "TARGET_PROFILE_REVIEW_LEGAL_SIGNAL_ONLY",
+    full_legal_cartography_reserved_for_2e: true
+  });
+  pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily: rule.locator_family, targetSubcats: rule.target_subcats, signalFamilies: rule.target_signal_families, priority: rule.priority });
+}
+
+function baseLocatorRow({ locatorId, locatorFamily, unit, source, priority, targetSubcats, signalFamilies, limitation }) {
+  return {
     locator_id: locatorId,
     locator_family: locatorFamily,
     source_artifact: source.source_artifact,
@@ -226,13 +230,19 @@ function pushLocatorMatches({ unit, source, locatorFamily, patterns, rows, seman
     char_range: unit.char_range,
     navigation_pointer: unit.navigation_pointer,
     lossless_text_pointer: unit.lossless_text_pointer,
+    target_subcat_candidates: targetSubcats,
+    target_signal_family_candidates: signalFamilies,
+    priority,
     source_corpus_status: unit.source_corpus_status,
     status: "FOUND_INDEXED",
     index_only: true,
     derived_value_emitted: false,
-    limitation: "Locator only. Target Profile Review must read source text and derive any value."
+    value: "",
+    limitation
   };
-  rows.push(row);
+}
+
+function pushSemanticQueue({ semanticQueue, unit, source, locatorId, locatorFamily, targetSubcats, signalFamilies, priority }) {
   semanticQueue.push({
     queue_id: `P2A.Q.${String(semanticQueue.length + 1).padStart(4, "0")}`,
     unit_id: unit.unit_id,
@@ -370,14 +380,11 @@ function sourceText(value = {}) {
   return String(value.lossless_text || value.clean_text || value.text || value.raw_text || value.body || value.content || "").trim();
 }
 
-function legalSignalFamiliesFor(family) {
-  if (["GOVERNING_LAW_LOCATOR", "COURTS_VENUE_LOCATOR", "DISPUTE_RESOLUTION_LOCATOR"].includes(family)) return ["JURISDICTION_POINTER", "LEGAL_TARGET_SIGNAL"];
-  if (["LEGAL_NOTICE_CONTACT_LOCATOR", "NOTICE_DELIVERY_LOCATOR"].includes(family)) return ["LEGAL_NOTICE_POINTER", "LEGAL_TARGET_SIGNAL"];
-  return ["LEGAL_TARGET_SIGNAL"];
-}
-
-function legalPriorityFor(family) {
-  return ["LEGAL_ENTITY_NAME_LOCATOR", "CONTRACTING_ENTITY_LOCATOR", "GOVERNING_LAW_LOCATOR", "COURTS_VENUE_LOCATOR"].includes(family) ? "P0" : "P1";
+function textForRange(text, range = {}) {
+  const clean = String(text || "");
+  const start = Number.isFinite(range.start) ? range.start : 0;
+  const end = Number.isFinite(range.end) ? range.end : clean.length;
+  return clean.slice(Math.max(0, start), Math.min(clean.length, Math.max(start, end)));
 }
 
 function inferUnitType(value) {
