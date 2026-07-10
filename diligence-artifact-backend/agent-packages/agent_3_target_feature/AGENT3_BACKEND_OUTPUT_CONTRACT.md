@@ -60,6 +60,59 @@ That shape incorrectly mixes material and forensic artifacts into one backend ca
 
 ---
 
+## Domain Derivation Layer required response shape
+
+Domain Derivation Layer has one model response save event. The backend compiler/validator writes the corresponding `active_run_package_manifest` after validating the model response.
+
+For the Domain Derivation Layer model response, return exactly one plain top-level JSON object:
+
+```json
+{
+  "domain_derivation_profile": {}
+}
+```
+
+Rules:
+
+- The top-level value must be an object, not an array.
+- Do not wrap the object inside `phase_output`, `output`, `result`, `data`, an internal job label, or a compatibility module label.
+- Do not return `[ { "domain_derivation_profile": {} } ]`.
+- Do not emit top-level `active_run_package_manifest`; the compiler writes it after validation.
+- Do not emit `domain_derivation_source_index`, `domain_derivation_deterministic_map`, or `domain_derivation_semantic_profile` as output. They are Phase 2B inputs/support artifacts only.
+- Do not emit `activity_profile_source_index`; it is reserved for 2C / Phase 5.
+- Do not emit `target_profile`, `target_profile_forensics`, `feature_candidate_inventory`, `target_feature_profile`, `target_feature_profile_forensics`, data provenance artifacts, exposure artifacts, challenge gates, final handoffs, renderer payloads, or Qualified Review artifacts.
+- `domain_derivation_profile` must contain the active phase-owned contract branches, including:
+  - `domain_derivation_metadata`
+  - `input_scope`
+  - `source_evidence_ledger`
+  - `primary_domain_derivation`
+  - `ai_mount_derivation`
+  - `regulatory_overlay_derivation`
+  - `fusion_candidate_derivation`
+  - `manifest_update`
+  - `limitation_ledger`
+  - `contradiction_ledger`
+  - `validation_summary`
+- `primary_domain_derivation` is registry-gated and must not be hardcoded in prompt logic.
+- `ai_mount_derivation` is package availability only. It must not lock AI archetype, surface, exposure rows, or Lane.
+- `regulatory_overlay_derivation` is candidate-only and catalog-gated. It must not contain legal applicability, license-validity, license-requirement, applicable-regulator, compliance-status, grievance-sufficiency, ombudsman-requirement, statutory-obligation, legal-advice, compliance-conclusion, enforceability, or risk conclusions.
+- `fusion_candidate_derivation` is candidate-only and deferred to Phase 5 Activity Profile and Phase 9 Exposure Profile.
+- Every fired registry condition must carry scoped lossless evidence anchors. Phase 2 indexes and `target_profile` must not be cited as evidence.
+- Every regulatory overlay candidate must carry scoped lossless evidence anchors. Phase 2 indexes and `target_profile` must not be cited as regulatory evidence.
+
+Forbidden Domain Derivation combined shape:
+
+```json
+{
+  "domain_derivation_profile": {},
+  "active_run_package_manifest": {}
+}
+```
+
+That shape incorrectly bypasses the backend compiler/validator manifest update authority.
+
+---
+
 ## Target Profile Forensics required response shape
 
 For the Target Profile Forensics save event, consume the saved `target_profile` artifact and return exactly one plain top-level JSON object:
