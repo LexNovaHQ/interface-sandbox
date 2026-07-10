@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v13_phase2a_target_source_index_phase1_v5_sync
+runtime_contract_version: v14_phase2b_domain_derivation_source_index_sync
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -28,6 +28,7 @@ prompt_assembly_position:
 prompt_precedence:
   - Backend phase contracts control read/write authority.
   - Phase 2A Target Profile Source Index is the active locator authority for Target Profile Review.
+  - Phase 2B Domain Derivation Source Index is the active locator authority for Domain Derivation Layer.
   - Target Profile Review is controlled by 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md and src/phases/03-target-profile-review/target-profile-review.contract.js.
   - Target Profile Review uses scoped Phase 1 v5 target-profile lossless_root artifacts as evidence and Phase 2A indexes as navigation only.
   - Target Profile Review may use legal_signal_derivation_profile only as bounded secondary input for owned notice and jurisdiction fields.
@@ -37,9 +38,10 @@ prompt_precedence:
   - Target Profile Review must not derive primary domain package, AI overlay mount, AI archetype, surface classification, exposure rows, legal risk, or compliance conclusions.
   - Target Profile Review regulatory/grievance fields are factual public operating-context signals only.
   - Domain Derivation Layer is controlled by 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md and src/phases/03-domain-derivation/domain-derivation.contract.js.
+  - Domain Derivation Layer uses domain_derivation_source_index as navigation only and scoped 12 lossless roots as evidence.
   - Domain Derivation Layer uses DOMAIN_DERIVATION_REGISTRY_v0.yaml as rule authority and package-catalog.v0.json as package authority.
   - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by registry/catalog update, not prompt update.
-  - Domain Derivation Layer must not read legal_cartography_index, legal_signal_derivation_profile, legal documents, or legal lossless evidence.
+  - Domain Derivation Layer must not read activity_profile_source_index, legal_cartography_index, legal_signal_derivation_profile, legal documents, or legal lossless evidence.
   - Target Profile Forensics is controlled by src/phases/04-target-profile-forensics/target-profile-forensics.contract.js.
   - Activity Candidate Inventory is controlled by 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md and src/phases/05-activity-profile-review/activity-candidate-inventory.contract.js.
   - Activity Profile Review material output is controlled by 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md, AGENT3_BACKEND_OUTPUT_CONTRACT.md, and src/phases/05-activity-profile-review/activity-profile-review.contract.js.
@@ -73,7 +75,7 @@ read_artifacts:
     - source_discovery_handoff
     - cartography_index
     - target_profile_source_index
-    - activity_profile_source_index
+    - domain_derivation_source_index
     - target_profile
     - lossless_root__homepage_landing
     - lossless_root__company_identity
@@ -84,6 +86,9 @@ read_artifacts:
     - lossless_root__pricing_commercial_availability
     - lossless_root__use_case_customer_industry
     - lossless_root__integrations_ecosystem
+    - lossless_root__ai_safety_transparency
+    - lossless_root__regulatory_licensing_status
+    - lossless_root__grievance_complaints
     - domain_selection_profile
     - active_run_package_manifest
   ACTIVITY_PROFILE_REVIEW:
@@ -108,6 +113,7 @@ forbidden_target_profile_review_read_artifacts:
   - data-provenance roots
 
 forbidden_domain_derivation_read_artifacts:
+  - activity_profile_source_index
   - legal_cartography_index
   - legal_signal_derivation_profile
   - legal_doc_inventory
@@ -143,6 +149,15 @@ target_profile_review_phase2a_boundary:
   regulatory_grievance_fields_factual_only: true
   license_validity_requirement_applicability_forbidden: true
   grievance_sufficiency_ombudsman_requirement_forbidden: true
+
+domain_derivation_phase2b_boundary:
+  locator_authority: domain_derivation_source_index
+  p2b_intermediate_artifacts_forbidden_as_model_inputs:
+    - domain_derivation_deterministic_map
+    - domain_derivation_semantic_profile
+  activity_profile_source_index_reserved_for_2c_phase5: true
+  navigation_only: true
+  evidence_source: scoped 12 Phase 1 v5 domain derivation lossless_root artifacts
 
 domain_derivation_registry_ladder_schema:
   prompt_file: 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md
@@ -239,6 +254,8 @@ phase_gate_rules:
   - Target Profile Review must not turn bounded legal signals into legal risk, exposure, compliance framework, or threat-trigger conclusions.
   - Target Profile Review must not block because raw legal/governance artifacts are absent; unavailable legal_signal_derivation_profile rows become controlled field statuses and limitations.
   - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
+  - Domain Derivation Layer must use domain_derivation_source_index as navigation only and scoped 12 lossless roots as evidence.
+  - Domain Derivation Layer must not read activity_profile_source_index; that artifact is reserved for 2C / Phase 5.
   - Domain Derivation Layer must evaluate registry rules as the ladder and must not hardcode domains in prompt logic.
   - Domain Derivation Layer must save domain_derivation_profile before active_run_package_manifest.
   - Target Profile Forensics may begin only after saved target_profile and domain_derivation_profile exist under the active Phase 3 split.
@@ -251,6 +268,7 @@ forbidden_phases:
   - SOURCE_DISCOVERY
   - LEGAL_CARTOGRAPHY_AND_INDEX
   - PHASE2A_TARGET_PROFILE_SOURCE_INDEX
+  - PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX
   - DATA_PROVENANCE_PROFILE
   - EXPOSURE_PROFILE
   - OPERATOR_CHALLENGE
@@ -265,6 +283,8 @@ forbidden_outputs:
   - m7_deterministic_legal_signal_overlay
   - target_profile_deterministic_map
   - target_profile_semantic_profile
+  - domain_derivation_deterministic_map
+  - domain_derivation_semantic_profile
   - data_provenance_profile
   - exposure_registry_profile
   - challenge_gate
