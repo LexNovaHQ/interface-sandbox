@@ -33,6 +33,7 @@ export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new D
     ai_exposure_lock_status: "NOT_EVALUATED",
     regulatory_overlays: [],
     regulatory_overlay_status: "PROVISIONAL",
+    regulatory_overlay_evidence_basis: [],
     fusion_bucket_candidates: [],
     derivation_limitations: [],
     contradiction_ledger: [],
@@ -59,9 +60,11 @@ export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new D
 export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = {}, domain_derivation_profile = {}, validation = {}, now = new Date().toISOString() } = {}) {
   const primary = domain_derivation_profile.primary_domain_derivation || {};
   const ai = domain_derivation_profile.ai_mount_derivation || {};
+  const regulatory = domain_derivation_profile.regulatory_overlay_derivation || {};
   const fusion = domain_derivation_profile.fusion_candidate_derivation || {};
   const runtimeFlags = forceAllRuntimeFlagsFalse(before.runtime_flags || {});
   const aiOverlayMounted = ai.ai_package_mount === "AI_OVERLAY_MOUNTED";
+  const regulatoryCandidates = Array.isArray(regulatory.candidates) ? regulatory.candidates : [];
   const after = {
     ...before,
     artifact_name: ACTIVE_RUN_PACKAGE_MANIFEST_ARTIFACT_NAME,
@@ -83,6 +86,9 @@ export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = 
     ai_package_mount_only: aiOverlayMounted,
     ai_activity_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_5" : (ai.activity_lock_status || "NOT_EVALUATED"),
     ai_exposure_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_9" : (ai.exposure_lock_status || "NOT_EVALUATED"),
+    regulatory_overlays: regulatoryCandidates.map((candidate) => candidate.overlay_id).filter(Boolean),
+    regulatory_overlay_status: regulatory.status || "NOT_VISIBLE",
+    regulatory_overlay_evidence_basis: regulatoryEvidenceBasis(regulatoryCandidates),
     fusion_bucket_candidates: Array.isArray(fusion.candidates) ? fusion.candidates : [],
     derivation_limitations: Array.isArray(domain_derivation_profile.limitation_ledger) ? domain_derivation_profile.limitation_ledger : [],
     contradiction_ledger: Array.isArray(domain_derivation_profile.contradiction_ledger) ? domain_derivation_profile.contradiction_ledger : [],
@@ -111,6 +117,9 @@ export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = 
         "ai_package_mount_only",
         "ai_activity_lock_status",
         "ai_exposure_lock_status",
+        "regulatory_overlays",
+        "regulatory_overlay_status",
+        "regulatory_overlay_evidence_basis",
         "fusion_bucket_candidates",
         "domain_derivation_profile_ref"
       ],
@@ -129,4 +138,10 @@ function evidenceBasis(rows = []) {
     .filter((row) => row?.validator_trigger_result === true)
     .flatMap((row) => (row.evidence_anchors || []).map((anchor) => ({ rule_id: row.rule_id, source_artifact_name: anchor.source_artifact_name || anchor.artifact_name || anchor })))
     .filter((row) => row.source_artifact_name);
+}
+
+function regulatoryEvidenceBasis(candidates = []) {
+  return (Array.isArray(candidates) ? candidates : [])
+    .flatMap((candidate) => (candidate.evidence_anchors || []).map((anchor) => ({ overlay_id: candidate.overlay_id, source_artifact_name: anchor.source_artifact_name || anchor.artifact_name || anchor })))
+    .filter((row) => row.overlay_id && row.source_artifact_name);
 }
