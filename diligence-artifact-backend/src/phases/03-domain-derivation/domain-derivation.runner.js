@@ -1,7 +1,26 @@
 import { DOMAIN_DERIVATION_CONTRACT } from "./domain-derivation.contract.js";
 import { loadDomainDerivationRegistryV0 } from "../../runtime/domain-gate/domain-derivation-registry.loader.js";
-import { compileDomainDerivationArtifacts } from "./services/domain-derivation.compiler.js";
+import { compileDomainDerivationArtifacts } from "./validators/domain-derivation.validator.js";
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
+
+export const DOMAIN_DERIVATION_RUNNER_STATUS = Object.freeze({
+  phase_runner: "domain-derivation.runner",
+  central_phase_id: DOMAIN_DERIVATION_CONTRACT.central_phase_id,
+  internal_job_id: DOMAIN_DERIVATION_CONTRACT.internal_job_id,
+  public_label: DOMAIN_DERIVATION_CONTRACT.public_label,
+  phase_owned_runner: true,
+  semantic_first_deterministic_gated: true,
+  registry_ladder_prompt_active: true,
+  phase2g_route_scoped_runtime_reader_active: true,
+  direct_contract_read_loading_forbidden: true,
+  profile_forensics_inputs_forbidden: true,
+  agent_id: DOMAIN_DERIVATION_CONTRACT.agent_id,
+  agent_package_root: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.agent_package_root,
+  prompt_package_status: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_package_status,
+  prompt_files: [...DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_files],
+  writes: [...DOMAIN_DERIVATION_CONTRACT.writes],
+  routing_manifest_read: "phase_routing_manifest"
+});
 
 export async function runDomainDerivationPhase({ run, internalJobId = DOMAIN_DERIVATION_CONTRACT.internal_job_id, contract, readArtifacts, buildPrompt, callProvider, saveArtifact } = {}) {
   assertRuntimeContract(contract);
