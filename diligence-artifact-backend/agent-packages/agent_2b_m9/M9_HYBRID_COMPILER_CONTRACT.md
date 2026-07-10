@@ -4,14 +4,14 @@ This file belongs to the **Legal Cartography and Index** phase.
 
 The compatibility package path and filename retain the old internal identifier because the current backend still references those paths.
 
-Legal Cartography and Index is split into two internal jobs:
+Legal Cartography and Index is split into two compiler outputs:
 
 ```text
-Job A — Legal Cartography Index
-Job B — Legal Signal Derivation
+Job A — legal_cartography_index
+Job B — legal_signal_derivation_profile compatibility artifact
 ```
 
-This compiler contract governs Job A only.
+This compiler contract governs both output boundaries.
 
 ## Job A Output
 
@@ -44,10 +44,16 @@ incorporated_linked_document_map
 control_language_locator
 semantic_navigation_index
 priority_semantic_locator
+qualified_review_locator
+qualified_review_legal_signals
 legal_notice_locator
 dispute_resolution_locator
 governing_law_venue_locator
 contact_grievance_locator
+regulatory_governance_locator
+grievance_redressal_locator
+consumer_disclosure_locator
+counterparty_institution_locator
 missing_limited_legal_governance_items
 downstream_rules
 lock_status
@@ -58,19 +64,26 @@ lock_status
 It must not contain:
 
 ```text
-question_id
-reviewer_question
-question_rows
-question_index
 legal_signal_derivation_profile
 m7_deterministic_legal_signal_overlay
 m10_selected_legal_support_packet
 target_profile
 data_provenance_profile
 renderer_payload
+legal_advice
+compliance_conclusion
+enforceability_assessment
+risk_conclusion
+license_validity
+license_requirement
+applicable_regulator
+regulatory_compliance_status
+grievance_sufficiency
+grievance_compliance_status
+ombudsman_requirement
 ```
 
-The two old support artifact names above are forbidden output names. They are retained in this list only as prohibited compatibility artifacts.
+The old support artifact names above are forbidden output names. They are retained in this list only as prohibited compatibility artifacts.
 
 ## Merge Rules
 
@@ -86,27 +99,50 @@ The compiler must not copy full source text into the final Legal Cartography and
 
 The compiler must not fetch sources, browse, crawl, or infer private documents.
 
-## Final Compatibility Rule
+## Phase 1 v5 Locator Rules
 
-Downstream phases may continue to read:
+M9 may compile locator rows for:
 
 ```text
-legal_cartography_index
+regulatory_governance_locator
+grievance_redressal_locator
+consumer_disclosure_locator
+counterparty_institution_locator
 ```
 
-The deterministic Job B separately emits:
+These are locator rows only. They must not determine license validity, license requirement, applicable regulator, regulatory compliance, grievance sufficiency, ombudsman requirement, or statutory obligation.
+
+## Qualified Review Locator Object
+
+`qualified_review_legal_signals` remains inside `legal_cartography_index` as a deterministic locator-signal object.
+
+It must remain locator-only and must not copy full clause text, produce legal advice, determine enforceability, determine compliance, or calculate liability/SLA/legal effect.
+
+## Job B Compatibility Output
+
+Downstream phases may continue to read:
 
 ```text
 legal_signal_derivation_profile
 ```
 
-Job B is not part of the Job A compiler. It consumes the saved Job A artifacts and loaded legal-governance corpus.
+This artifact is compatibility-only until downstream cutover. It must not become the active Target Profile legal-signal authority after 2A is active.
 
-## Boundary Rules
+Job B derives field-registry keyed rows only. It must not emit question-shaped or reviewer-facing rows.
 
-The Job A compiler must not emit downstream profiles, registry-row decisions, redline instructions, final handoff, renderer payload, report prose, or field-derived signal answers.
+Job B must follow:
 
-The Job A compiler may emit locator rows and navigation pointers that Job B can later use.
+```text
+M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md
+```
+
+## 2A / 2E Boundary
+
+2A owns Target Profile Source Index and target-profile legal signal locators.
+
+2E / M9 owns full legal/governance cartography.
+
+The Job A compiler may emit locator rows and navigation pointers that Job B can later use, but neither Job A nor Job B may emit Target Profile values.
 
 ## Status Rule
 
@@ -118,24 +154,4 @@ Use `REPAIR_REQUIRED` only for repairable schema or source-discipline problems.
 
 Use `CONTROLLED_FAILURE` only when the legal-governance corpus or source custody is unusable.
 
-## Legal Signal Derivation Boundary
-
-The prior downstream object named `qualified_review_legal_signals` is retired from the Legal Cartography and Index package contract.
-
-Legal signal derivation is now a separate deterministic Job B output:
-
-```text
-legal_signal_derivation_profile
-```
-
-Job B derives field-registry keyed rows only. It must not emit question-shaped or reviewer-facing rows.
-
-Job B must follow:
-
-```text
-M9_LEGAL_SIGNAL_DERIVATION_CONTRACT.md
-```
-
 The filename is retained for compatibility; the governing phase name is **Legal Cartography and Index**.
-
-Job B may use `legal_cartography_index`, `legal_cartography_deterministic_map`, `legal_cartography_semantic_profile`, and loaded legal-governance source text as source authority.
