@@ -32,7 +32,9 @@ const INDEX_ARTIFACT_NAMES = new Set([
   "legal_cartography_index",
   "legal_signal_derivation_profile",
   "data_privacy_navigation_index",
-  "source_discovery_handoff"
+  "source_discovery_handoff",
+  "phase_routing_manifest",
+  "phase_route_runtime_packet"
 ]);
 
 export async function compileDomainDerivationArtifacts({ run = {}, artifacts = {}, modelOutput = {}, registryPacket } = {}) {
@@ -81,7 +83,7 @@ export function validateDomainDerivationProfile(profile = {}, { artifacts = {}, 
   return {
     status,
     validator: "domain-derivation.validator",
-    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "P2B_DOMAIN_SOURCE_INDEX", "LEGAL_INPUTS_FORBIDDEN", "PRIMARY_DOMAIN_LOCK_ONLY", "AI_PACKAGE_MOUNT_ONLY", "REGULATORY_OVERLAY_CANDIDATE_ONLY", "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"],
+    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "P2G_ROUTE_PACKET", "P2B_DOMAIN_SOURCE_INDEX", "LEGAL_INPUTS_FORBIDDEN", "PRIMARY_DOMAIN_LOCK_ONLY", "AI_PACKAGE_MOUNT_ONLY", "REGULATORY_OVERLAY_CANDIDATE_ONLY", "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"],
     failures,
     warnings
   };
@@ -91,9 +93,16 @@ export function assertDomainDerivationRuntimeArtifacts(artifacts = {}, failures 
   const localFailures = failures || [];
   const allowed = new Set(DOMAIN_DERIVATION_CONTRACT.reads);
   for (const key of Object.keys(artifacts || {})) if (!allowed.has(key)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_RUNTIME_ARTIFACT:${key}`);
-  for (const required of ["source_discovery_handoff", "cartography_index", "target_profile_source_index", "domain_derivation_source_index", "target_profile", "domain_selection_profile", "active_run_package_manifest"]) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, required)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_REQUIRED_INPUT:${required}`);
+  for (const required of ["phase_routing_manifest", "phase_route_runtime_packet", "domain_derivation_source_index", "target_profile", "domain_selection_profile", "active_run_package_manifest"]) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, required)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_REQUIRED_INPUT:${required}`);
   for (const root of DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, root)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_SCOPED_LOSSLESS_ROOT:${root}`);
   for (const forbidden of DOMAIN_DERIVATION_CONTRACT.forbidden_reads) if (Object.prototype.hasOwnProperty.call(artifacts || {}, forbidden)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_INPUT_PRESENT:${forbidden}`);
+  const routePacket = artifacts?.phase_route_runtime_packet || {};
+  if (routePacket.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") localFailures.push("P3_DOMAIN_DERIVATION_PHASE2G_ROUTING_AUTHORITY_MISSING");
+  if (routePacket.route_id !== DOMAIN_DERIVATION_CONTRACT.route_contract.route_id) localFailures.push(`P3_DOMAIN_DERIVATION_PHASE2G_ROUTE_ID_MISMATCH:${routePacket.route_id || "missing"}`);
+  if (routePacket.bucket_id !== DOMAIN_DERIVATION_CONTRACT.route_contract.bucket_id) localFailures.push(`P3_DOMAIN_DERIVATION_PHASE2G_BUCKET_ID_MISMATCH:${routePacket.bucket_id || "missing"}`);
+  if (routePacket.lossless_evidence_role !== "PRIMARY_EVIDENCE") localFailures.push("P3_DOMAIN_DERIVATION_LOSSLESS_PRIMARY_BOUNDARY_MISSING");
+  if (routePacket.index_role !== "MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE") localFailures.push("P3_DOMAIN_DERIVATION_INDEX_NAVIGATION_BOUNDARY_MISSING");
+  if (routePacket.profile_forensics_inputs_allowed !== false) localFailures.push("P3_DOMAIN_DERIVATION_FORENSICS_INPUT_BOUNDARY_MISSING");
   if (!failures && localFailures.length) throw new Error(`P3_DOMAIN_DERIVATION_INPUT_CONTRACT_FAILED:${JSON.stringify(localFailures)}`);
 }
 
@@ -117,13 +126,17 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
     },
     input_scope: {
       required_reads_present: DOMAIN_DERIVATION_CONTRACT.reads.filter((name) => Object.prototype.hasOwnProperty.call(artifacts, name)),
-      phase_2_navigation_artifacts_used: ["cartography_index", "target_profile_source_index", "domain_derivation_source_index"],
+      routing_authority: artifacts?.phase_route_runtime_packet?.routing_authority || "",
+      phase_2g_route_id: artifacts?.phase_route_runtime_packet?.route_id || "",
+      phase_2g_bucket_id: artifacts?.phase_route_runtime_packet?.bucket_id || "",
+      phase_2_navigation_artifacts_used: ["domain_derivation_source_index"],
       p2b_domain_derivation_source_index_required: true,
       activity_profile_source_index_forbidden_until_2c_phase5: true,
       scoped_lossless_evidence_artifacts_used: DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads,
       phase_2_indexes_are_navigation_only_not_evidence: true,
       target_profile_used_as_context_only: true,
-      legal_inputs_forbidden: true
+      legal_inputs_forbidden: true,
+      profile_forensics_inputs_used: false
     },
     source_evidence_ledger: buildSourceEvidenceLedger(artifacts, [...primaryRows, ...aiRows, ...fusionRows], regulatoryOverlay.candidates),
     primary_domain_derivation: primary,
