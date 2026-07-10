@@ -1,10 +1,11 @@
 {
   "packet_name": "P2A_TARGET_PROFILE_SOURCE_INDEX_PACKET",
-  "version": "v1_phase1_v5_package_only",
+  "version": "v2_phase1_v5_runtime_wired",
   "active_phase_id": "P2A_TARGET_PROFILE_SOURCE_INDEX",
   "active_phase_scope": "P2A_TARGET_PROFILE_SOURCE_INDEX_ONLY",
-  "package_status": "LEAN_PACKAGE_CREATED_NOT_RUNTIME_WIRED",
-  "runtime_wiring_changed": false,
+  "package_status": "LEAN_PACKAGE_RUNTIME_WIRED",
+  "runtime_wiring_changed": true,
+  "runtime_job_id": "P2A_TARGET_PROFILE_SOURCE_INDEX",
   "phase1_input_contract": "PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE",
   "read_artifacts": [
     "source_discovery_handoff",
@@ -59,7 +60,7 @@
     "phase_2a_locates_only": true,
     "target_profile_review_derives_values_later": true,
     "full_legal_cartography_reserved_for_2e": true,
-    "runtime_wiring_changed": false,
+    "runtime_wiring_changed": true,
     "derivation_logic_hardcoded_in_package": false,
     "source_artifacts_remain_source_of_truth": true,
     "pointer_only_outputs": true
