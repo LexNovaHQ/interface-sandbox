@@ -106,10 +106,6 @@ forbidden_target_profile_review_read_artifacts:
   - retired pre-cutover family artifacts
   - activity/product roots outside the scoped Target Profile Review lossless_root list
   - data-provenance roots
-  - lossless_root__about_company
-  - lossless_root__legal_identity_notice
-  - lossless_root__operator_entity_signals
-  - lossless_root__supporting_company_signals
 
 forbidden_domain_derivation_read_artifacts:
   - legal_cartography_index
@@ -118,13 +114,8 @@ forbidden_domain_derivation_read_artifacts:
   - legal_doc_extraction_index
   - legal_doc_{DOC_TYPE}
   - data_privacy_navigation_index
-  - lossless_root__about_company
-  - lossless_root__technical_docs_api_developer
-  - lossless_root__privacy_data_processing
-  - lossless_root__security_trust
-  - lossless_root__trust_compliance
-  - lossless_root__security_trust_compliance
-  - lossless_root__data_governance_controls
+  - retired pre-cutover family artifacts
+  - privacy/security/trust roots
   - exposure artifacts
   - compiler artifacts
   - Qualified Review artifacts
