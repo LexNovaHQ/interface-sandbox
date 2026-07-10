@@ -10,15 +10,23 @@ const TARGET_PROFILE_LOSSLESS_READS = Object.freeze([
 export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
   central_phase_id: "TARGET_PROFILE_REVIEW",
   public_label: "Target Profile Review",
-  implementation_status: "PHASE2A_TARGET_SOURCE_INDEX_SYNCED_PHASE1_V5",
+  implementation_status: "PHASE2G_ROUTE_SCOPED_RUNTIME_CUTOVER_COMPLETE",
   production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   migration_boundary: Object.freeze({
     phase_layer: "src/phases/03-target-profile-review",
     runtime_owner: "src/runtime/services/pipeline.service.js",
-    migration_mode: "phase_owned_runner_active",
+    migration_mode: "phase2g_route_scoped_phase_owned_runner_active",
     compatibility_internal_job_ids_retained_until_explicit_rename: Object.freeze(["M7_TARGET_PROFILE"]),
     compatibility_agent_id_retained_until_explicit_rename: "agent_3_target_feature"
+  }),
+  route_contract: Object.freeze({
+    routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+    route_id: "ROUTE.PHASE3A.TARGET_PROFILE",
+    bucket_id: "2A_BUCKET_TARGET_PROFILE",
+    runtime_reader: "phase-route-runtime.reader",
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true
   }),
   material_job: Object.freeze({
     job_id: "M7_TARGET_PROFILE",
@@ -26,18 +34,25 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     execution_mode: "bounded_model_profile_review",
     deterministic_prefilter_required: true,
     model_allowed: true,
-    purpose: "Derive the public target identity, jurisdiction notice, business context, and product/service wrapper profile from scoped target-profile lossless evidence reached through Phase 2A Target Profile Source Index, with bounded direct legal signal support only through legal_signal_derivation_profile compatibility rows.",
+    purpose: "Derive the public target identity, jurisdiction notice, business context, and product/service wrapper profile from Phase 2G-routed 2A lossless evidence navigated through target_profile_source_index, with bounded legal notice and jurisdiction support routed through legal_signal_derivation_profile.",
     reads: Object.freeze([
-      "source_discovery_handoff",
-      "cartography_index",
+      "phase_routing_manifest",
+      "phase_route_runtime_packet",
       "target_profile_source_index",
       "legal_signal_derivation_profile",
-      ...TARGET_PROFILE_LOSSLESS_READS,
-      "domain_selection_profile",
-      "active_run_package_manifest"
+      ...TARGET_PROFILE_LOSSLESS_READS
     ]),
     writes: Object.freeze(["target_profile"]),
     forbidden_reads: Object.freeze([
+      "source_discovery_handoff",
+      "cartography_index",
+      "domain_selection_profile",
+      "active_run_package_manifest",
+      "target_profile_forensics",
+      "domain_derivation_source_index",
+      "activity_profile_source_index",
+      "data_privacy_navigation_index",
+      "domain_control_obligation_navigation_index",
       "legal_cartography_index",
       "legal_doc_inventory",
       "legal_doc_extraction_index",
@@ -64,7 +79,7 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     }),
     legal_signal_boundary: Object.freeze({
       only_legal_input_allowed: "legal_signal_derivation_profile",
-      legal_signal_derivation_profile_status: "COMPATIBILITY_ONLY_UNTIL_FULL_3A_CUTOVER",
+      legal_signal_derivation_profile_status: "ACTIVE_BOUNDED_INPUT_ROUTED_BY_PHASE2G",
       legal_cartography_index_forbidden: true,
       legal_doc_lossless_evidence_forbidden: true,
       tos_derived_signals_must_arrive_through_legal_signal_derivation_profile: true
@@ -156,6 +171,9 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     })
   }),
   boundary_rules: Object.freeze({
+    phase2g_route_scoped_runtime_reader_required: true,
+    direct_contract_read_loading_forbidden: true,
+    profile_forensics_inputs_forbidden: true,
     phase2a_target_profile_source_index_required: true,
     target_profile_source_index_navigation_only: true,
     target_profile_deterministic_map_forbidden_as_model_read: true,
