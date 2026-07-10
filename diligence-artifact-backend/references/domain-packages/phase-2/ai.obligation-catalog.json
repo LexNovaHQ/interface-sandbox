@@ -1,0 +1,14 @@
+{
+  "domain_id": "ai-native",
+  "schema_version": "PHASE2_OBLIGATION_CATALOG_v1",
+  "may_narrow_navigation": false,
+  "may_lock_domain": false,
+  "uses_legal_index": true,
+  "obligation_families": [
+    { "id": "automated_decision_governance", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONTROL_MECHANISM", "REGULATED_ACTIVITY"], "locator_families": ["HUMAN_OVERSIGHT_LOCATOR", "GOVERNANCE_CONTROL_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["ai_policy", "usage_policy"], "shell_field_targets": ["control_mechanism_present", "linked_activity", "control_posture_status"], "reading_priority": ["responsible-ai/safety pages", "usage policy"] },
+    { "id": "model_evaluation_safety", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONTROL_MECHANISM"], "locator_families": ["GOVERNANCE_CONTROL_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["safety_policy"], "shell_field_targets": ["control_mechanism_present", "control_posture_status"], "reading_priority": ["safety/eval pages", "safety policy"] },
+    { "id": "model_supply_licensing", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "REGULATED_ACTIVITY", "DATA_FLOW_MECHANICS"], "locator_families": ["MODEL_SUPPLY_LICENSING_LOCATOR", "COUNTERPARTY_INSTITUTION_LOCATOR"], "legal_doc_types": ["usage_policy"], "shell_field_targets": ["authority_dependency", "exposure_role_context"], "reading_priority": ["model/provider pages", "docs/api"] },
+    { "id": "capability_limitation_disclosure", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONSUMER_DISCLOSURE"], "locator_families": ["GOVERNANCE_CONTROL_LOCATOR", "CONSUMER_DISCLOSURE_LOCATOR"], "legal_doc_types": ["ai_policy"], "shell_field_targets": ["obligation_trigger_timing", "control_mechanism_present"], "reading_priority": ["model cards", "transparency pages"] },
+    { "id": "conformity_attestation", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONTROL_MECHANISM"], "locator_families": ["GOVERNANCE_CONTROL_LOCATOR", "REGULATORY_DISCLOSURE_LOCATOR"], "legal_doc_types": [], "shell_field_targets": ["obligation_locus", "control_posture_status"], "reading_priority": ["compliance/trust pages"] }
+  ]
+}
