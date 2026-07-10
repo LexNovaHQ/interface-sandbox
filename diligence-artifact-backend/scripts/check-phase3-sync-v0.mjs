@@ -60,7 +60,7 @@ for (const required of [
   "trigger_if",
   "exclude_if",
   "domain_derivation_source_index",
-  "activity_profile_source_index is reserved",
+  "`activity_profile_source_index` is reserved",
   "regulatory_overlay_derivation",
   "catalog-gated regulatory overlay candidates",
   "<RUNTIME_PACKET>",
