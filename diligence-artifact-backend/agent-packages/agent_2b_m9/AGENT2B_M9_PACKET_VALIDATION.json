@@ -1,8 +1,10 @@
 {
-  "overall_status": "SYNCED_FOR_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_INPUT_CONTRACT",
+  "overall_status": "SYNCED_FOR_PHASE2F_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_INPUT_CONTRACT",
   "backend_phase": "CARTOGRAPHY_INDEX",
+  "phase2_designation": "P2F_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",
+  "runtime_job_id_preserved": "M9",
   "active_agent_id": "agent_2b_m9",
-  "active_phase_scope": "LEGAL_CARTOGRAPHY_AND_INDEX_ONLY",
+  "active_phase_scope": "P2F_LEGAL_CARTOGRAPHY_AND_LEGAL_SIGNALS_ONLY",
   "phase_2_internal_jobs": [
     "LEGAL_CARTOGRAPHY_INDEX",
     "LEGAL_SIGNAL_DERIVATION_COMPATIBILITY"
@@ -83,7 +85,7 @@
   "job_b_required_field_count": 21,
   "job_b_status": "COMPATIBILITY_ONLY_UNTIL_DOWNSTREAM_CUTOVER",
   "target_profile_legal_signal_locators_owned_by_2a": true,
-  "full_legal_governance_cartography_owned_by_2e": true,
+  "full_legal_governance_cartography_owned_by_2f": true,
   "review_question_shapes_allowed_in_m9": false,
   "forbidden_conclusions_preserved": [
     "license_validity",
