@@ -2,59 +2,78 @@
 
 ## Purpose
 
-`feature_candidate_inventory` is the deterministic navigation index for M8. It is the single source of truth for the public feature candidate universe that the M8 profile compiler must resolve.
+`feature_candidate_inventory` is the deterministic navigation index for M8. It is the single source of truth for the public activity candidate universe that the M8 material profile must resolve.
 
-It is not a lossless evidence artifact, not a feature summary, not a mechanics proof, and not a classification profile.
+It is not a lossless evidence artifact, not an activity summary, not mechanics proof, and not a package-specific classification profile.
 
 ## Controlling Override
 
-This file is a controlling M8 prompt override for the inventory architecture.
+This file supersedes all older M8 source-family harvesting language.
 
-Where `03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md` still refers to M8-A source extraction, route-family harvesting, source-capsule construction, candidate discovery, or 100% route coverage inside the model prompt, that legacy language is superseded by this file.
-
-Candidate existence, route harvesting, deterministic deduplication, and candidate coverage universe creation belong only to `M8_FEATURE_CANDIDATE_INVENTORY`.
+Candidate existence, route harvesting, deterministic deduplication, and candidate universe creation belong only to `M8_FEATURE_CANDIDATE_INVENTORY`.
 
 `M8_TARGET_FEATURE_PROFILE` consumes the saved inventory and does not recreate it.
+
+## Source Authority
+
+The deterministic inventory phase reads `activity_profile_source_index` only as its activity evidence-navigation authority.
+
+It must not read or harvest directly from:
+
+```text
+lossless_family__*
+lossless_root__product_service
+lossless_root__platform_feature_solution
+lossless_root__technical_docs_api
+lossless_root__docs_api_data_flow
+lossless_root__integrations_ecosystem
+lossless_root__pricing_commercial_availability
+```
+
+Phase 1 source artifacts remain source-of-truth evidence, but Phase 5 reaches them only through 2C navigation pointers.
 
 ## Boundary Lock
 
 The inventory answers only:
 
 ```text
-What feature candidate exists, and where should the M8 profile compiler look in the lossless artifacts?
+What candidate activity/capability route exists, and which 2C locator points Phase 5 toward it?
 ```
 
 It does not answer:
 
 ```text
-What does the feature do operationally, legally, technically, or as a registry archetype?
+What does the activity mean under the selected domain package?
+Which archetype/surface/package label applies?
+What is the mechanics proof?
 ```
 
-Lossless evidence remains exclusively in the `lossless_family__P*` artifacts.
+Those are material-profile questions for `M8_TARGET_FEATURE_PROFILE`, controlled by `active_run_package_manifest` and the mounted domain package context.
 
-## Allowed Source Families
+## Allowed Locator Maps
 
-The deterministic inventory phase indexes only:
+The deterministic inventory phase indexes candidate-creation rows from:
 
 ```text
-P1_PRODUCT
-P2_PLATFORM_FEATURE_SOLUTION
-P3_AI_CAPABILITY_TECHNICAL
-P5_ENTERPRISE_PRICING
+activity_candidate_source_locator_map
+product_capability_locator_map
+feature_mechanics_locator_map
+technical_mechanics_locator_map
+api_interaction_locator_map
+data_object_interaction_locator_map
+integration_action_locator_map
+commercial_availability_locator_map
+external_action_context_locator_map
+input_output_object_context_locator_map
 ```
 
-P4 may support later semantic M8 analysis, but it does not create candidate existence by itself unless the deterministic indexer is explicitly extended.
-
-## Candidate Trigger Rules
+Context-only maps may support later material interpretation but must not create standalone candidates:
 
 ```text
-P1 /products/{slug}       -> PRODUCT_WRAPPER
-P2 feature/solution route -> FEATURE_PAGE
-P3 /apis/{slug}           -> STANDALONE_API
-P3 /models                -> MODEL_CATALOGUE
-P3 /integrations          -> INTEGRATION_SURFACE
-P5 pricing label          -> PRICING_CONFIRMED_CAPABILITY
-P3 /docs                  -> DOCS_TECHNICAL_CAPABILITY
+customer_use_context_locator_map
+support_operational_context_locator_map
+automation_transparency_context_locator_map
+human_control_context_locator_map
 ```
 
 ## Output Artifact
@@ -65,9 +84,10 @@ The deterministic inventory phase writes exactly one artifact:
 {
   "feature_candidate_inventory": {
     "artifact_type": "feature_candidate_inventory",
-    "inventory_version": "m8_feature_candidate_inventory_index_v1",
-    "derivation_mode": "DETERMINISTIC_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION",
-    "source_families_indexed": [],
+    "inventory_version": "m8_feature_candidate_inventory_index_v2_phase2c",
+    "derivation_mode": "DETERMINISTIC_INDEX_FROM_ACTIVITY_PROFILE_SOURCE_INDEX_NO_MODEL_NO_EVIDENCE_COMPILATION",
+    "source_index_artifact": "activity_profile_source_index",
+    "source_locator_maps_indexed": [],
     "raw_hit_count": 0,
     "canonical_candidate_count": 0,
     "raw_feature_hit_index": [],
@@ -92,9 +112,9 @@ canonical_feature_key
 candidate_name
 candidate_type
 candidate_status
-wrapper_or_surface
+activity_route_class
 capability_key
-surface_key
+source_root
 mandatory_profile_treatment
 merged_raw_hit_ids
 source_pointers[]
@@ -103,13 +123,15 @@ source_pointers[]
 Each `source_pointer` must include:
 
 ```text
-lossless_artifact_name
-source_family
+source_artifact
 source_id
-source_url
-route_type
-locator_type
-locator_value
+source_root
+route_class
+route_code
+locator_id
+unit_id
+source_pointer
+unit_pointer
 ```
 
 ## Forbidden Inventory Content
@@ -122,8 +144,10 @@ clean_text
 source text excerpts
 mechanics proof
 activity summaries
-archetype proof
-surface proof
+archetype codes
+surface context tokens
+package activity classifications
+selected package findings
 legal analysis
 privacy analysis
 registry exposure analysis
@@ -133,19 +157,9 @@ recommendations
 
 ## M8 Profile Compiler Rule
 
-`M8_TARGET_FEATURE_PROFILE` must consume `feature_candidate_inventory` as the candidate universe. It may use P1-P5 lossless artifacts only to derive mechanics, archetypes, surfaces, grouping, limitations, and profile language.
+`M8_TARGET_FEATURE_PROFILE` must consume `feature_candidate_inventory` as the candidate universe. It uses `activity_profile_source_index` as navigation and `active_run_package_manifest` / domain package context to interpret the material profile.
 
 The model must not create a new candidate outside the saved inventory and must not drop a candidate without a treatment decision.
-
-## M8 Material Profile Candidate Resolution Rule
-
-Every canonical candidate in `feature_candidate_inventory.candidates[]` must be considered by the M8 profile compiler.
-
-Candidates requiring product/activity treatment must become visible activity rows unless the deterministic inventory already merged them as duplicate source evidence or the pointed lossless evidence is too thin to support mechanics.
-
-Standalone API, model, integration, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows. If grouping is necessary under the current 12-field material card, the grouped candidate name must remain visible in `activity_feature_name` or `activity_candidate_summary`.
-
-If the model sees a public feature in a lossless source that is not present in `feature_candidate_inventory`, it must not add that feature as a normal activity. It must record a profile-level limitation requiring repair of `M8_FEATURE_CANDIDATE_INVENTORY`.
 
 ## M8 Material Output Boundary
 
@@ -153,4 +167,4 @@ If the model sees a public feature in a lossless source that is not present in `
 
 It must not return `feature_candidate_inventory`, `target_feature_profile_forensics`, candidate IDs, source pointers, source URLs, source excerpts, confidence fields, route coverage rows, deterministic inventory ledgers, or forensic branches inside `target_feature_profile`.
 
-Each material activity row remains the locked 12-field card governed by `03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md` and `m8-validator.js`.
+The material activity row remains the current compatibility card, but archetype/surface labels are package-controlled, not fixed AI enums.
