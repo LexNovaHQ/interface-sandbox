@@ -21,17 +21,18 @@ For Target Profile Review, allowed inputs are exactly:
 - `cartography_index`
 - `target_profile_source_index`
 - `lossless_root__homepage_landing`
-- `lossless_root__about_company`
-- `lossless_root__legal_identity_notice`
-- `lossless_root__pricing_commercial_availability`
+- `lossless_root__company_identity`
 - `lossless_root__contact_notice`
-- `lossless_root__operator_entity_signals`
-- `lossless_root__supporting_company_signals`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__regulatory_licensing_status`
+- `lossless_root__grievance_complaints`
 - `legal_signal_derivation_profile`
 - `domain_selection_profile`
 - `active_run_package_manifest`
 
 `cartography_index` and `target_profile_source_index` are navigation only. The scoped `lossless_root__*` target artifacts are the evidence source.
+
+`target_profile_deterministic_map` and `target_profile_semantic_profile` are Phase 2A internal artifacts and must not be treated as Target Profile Review model inputs.
 
 The validator must reject Target Profile Review use of:
 
@@ -41,9 +42,15 @@ The validator must reject Target Profile Review use of:
 - `legal_doc_{DOC_TYPE}`
 - raw legal/governance source text
 - `m7_deterministic_legal_signal_overlay`
+- `target_profile_deterministic_map`
+- `target_profile_semantic_profile`
 - activity/product evidence roots outside the scoped target list
 - data-provenance roots
 - retired pre-cutover family artifacts
+- `lossless_root__about_company`
+- `lossless_root__legal_identity_notice`
+- `lossless_root__operator_entity_signals`
+- `lossless_root__supporting_company_signals`
 
 Target Profile Review must not block merely because legal/governance lossless artifacts are unavailable. Missing or limited direct legal signal rows must become controlled field statuses and limitation rows.
 
@@ -88,7 +95,19 @@ NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN -> do not invent value; record controlled limi
 - `product_service_wrapper`
 - `target_profile_limitations`
 
+`business_context` must contain exactly the active backend contract fields, including:
+
+- `business_category`
+- `primary_customer_type`
+- `market_type_candidate`
+- `industry_sector`
+- `regulated_sector_hints`
+- `public_regulatory_licensing_signal`
+- `public_grievance_complaints_signal`
+
 `business_context` must not include `lane`.
+
+`public_regulatory_licensing_signal` and `public_grievance_complaints_signal` must remain factual public operating-context signals. The validator must reject license validity, license requirement, applicable regulator conclusion, regulatory compliance status, grievance sufficiency, grievance compliance status, ombudsman requirement, or statutory complaint obligation.
 
 No forensic branch, profile metadata, evidence ledger, source ledger, confidence object, trace object, downstream object, domain derivation object, manifest update, legal-risk object, data object, registry object, final handoff, renderer payload, or Qualified Review object may appear inside `target_profile`.
 
@@ -102,10 +121,10 @@ For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs are exactly:
 - `activity_profile_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
-- `lossless_root__about_company`
+- `lossless_root__company_identity`
 - `lossless_root__product_service`
 - `lossless_root__platform_feature_solution`
-- `lossless_root__technical_docs_api_developer`
+- `lossless_root__technical_docs_api`
 - `lossless_root__docs_api_data_flow`
 - `lossless_root__pricing_commercial_availability`
 - `lossless_root__use_case_customer_industry`
@@ -129,6 +148,13 @@ The validator must reject Domain Derivation Layer use of:
 - raw legal/governance source text
 - `data_privacy_navigation_index`
 - privacy/security/trust roots
+- `lossless_root__about_company`
+- `lossless_root__technical_docs_api_developer`
+- `lossless_root__privacy_data_processing`
+- `lossless_root__security_trust`
+- `lossless_root__trust_compliance`
+- `lossless_root__security_trust_compliance`
+- `lossless_root__data_governance_controls`
 - exposure artifacts
 - compiler artifacts
 - Qualified Review artifacts
