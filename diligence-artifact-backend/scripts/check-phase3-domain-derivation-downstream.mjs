@@ -20,11 +20,14 @@ for (const jobId of downstreamJobs) {
   assert.ok(reads.includes("domain_derivation_profile"), `${jobId} must read domain_derivation_profile`);
 }
 assert.ok(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.reads.includes("domain_derivation_source_index"), "3B must read P2B domain_derivation_source_index");
+assert.ok(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.reads.includes("phase_routing_manifest"), "3B must read 2G phase_routing_manifest during compatibility cutover");
 assert.equal(PIPELINE_CONTRACTS.P3_DOMAIN_DERIVATION_LAYER.reads.includes("activity_profile_source_index"), false, "3B must not read activity_profile_source_index");
 assert.equal(PIPELINE_CONTRACT_STATUS.downstream_reads_domain_derivation_profile, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2b_domain_derivation_source_index_runtime_wired, true);
-assert.equal(PIPELINE_CONTRACT_STATUS.activity_profile_source_index_reserved_for_2c_phase5, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_phase_router_declared, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_lossless_evidence_primary, true);
 assert.equal(ARTIFACTS_SERVICE_STATUS.phase2b_domain_derivation_source_index_save_order_gate_enforced, true);
+assert.equal(ARTIFACTS_SERVICE_STATUS.phase2g_phase_router_save_order_gate_enforced, true);
 assert.equal(ARTIFACTS_SERVICE_STATUS.phase3_domain_derivation_save_order_gate_enforced, true);
 assert.equal(ARTIFACTS_SERVICE_STATUS.phase3_manifest_update_order_gate_enforced, true);
 const update = buildPhase3BDomainDerivationManifestUpdate({
@@ -45,4 +48,4 @@ assert.deepEqual(update.manifest_update.changed_fields.includes("regulatory_over
 assert.equal(update.active_run_package_manifest.runtime_flags.dynamic_routing_enabled, false);
 assert.equal(update.active_run_package_manifest.runtime_flags.field_registry_compile_enabled, false);
 assert.equal(update.manifest_update.dynamic_routing_still_disabled, true);
-console.log(JSON.stringify({ check: "phase3 domain derivation downstream", status: "PASS", enforced_gates: ["P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REQUIRED", "ACTIVITY_PROFILE_INDEX_FORBIDDEN_IN_3B", "REGULATORY_OVERLAY_MANIFEST_SYNC", "DOWNSTREAM_READS_DOMAIN_DERIVATION_PROFILE", "PHASE3B_MANIFEST_STAGE", "RUNTIME_FLAGS_STAY_FALSE", "ARTIFACT_SAVE_ORDER_GATES_DECLARED"] }, null, 2));
+console.log(JSON.stringify({ check: "phase3 domain derivation downstream", status: "PASS", enforced_gates: ["P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REQUIRED", "P2G_ROUTE_MANIFEST_COMPAT_READ", "ACTIVITY_PROFILE_INDEX_FORBIDDEN_IN_3B", "REGULATORY_OVERLAY_MANIFEST_SYNC", "DOWNSTREAM_READS_DOMAIN_DERIVATION_PROFILE", "PHASE3B_MANIFEST_STAGE", "RUNTIME_FLAGS_STAY_FALSE", "ARTIFACT_SAVE_ORDER_GATES_DECLARED"] }, null, 2));
