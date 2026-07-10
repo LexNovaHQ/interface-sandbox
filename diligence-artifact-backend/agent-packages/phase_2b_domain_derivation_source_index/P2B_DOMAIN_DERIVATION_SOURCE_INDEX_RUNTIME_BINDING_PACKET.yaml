@@ -1,10 +1,20 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_PHASE2B_DOMAIN_DERIVATION_SOURCE_INDEX
-runtime_contract_version: v1_phase2b_domain_derivation_source_index_phase1_v5_12_root
+runtime_contract_version: v2_phase2b_domain_derivation_source_index_phase1_v5_12_root_runtime_wired
 active_phase_id: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
 active_phase_scope: P2B_DOMAIN_DERIVATION_SOURCE_INDEX_ONLY
-package_status: LEAN_PACKAGE_CONTRACT_ONLY
-runtime_wiring_changed: false
+package_status: LEAN_PACKAGE_RUNTIME_WIRED
+runtime_wiring_changed: true
+runtime_job_id: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
+
+runtime_wiring:
+  artifact_permissions_registered: true
+  pipeline_contract_registered: true
+  central_phase_registered: true
+  pipeline_service_dispatch_registered: true
+  save_order_gates_registered: true
+  p2a_next: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
+  p2b_next: P2_INDEX_COMPILER_VALIDATION
 
 read_artifacts:
   - source_discovery_handoff
