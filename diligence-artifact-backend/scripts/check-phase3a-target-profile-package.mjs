@@ -61,7 +61,7 @@ for (const root of expectedRoots) {
 for (const marker of retiredRootMarkers) {
   for (const [key, text] of Object.entries(packageContent)) assert.equal(text.includes(marker), false, `${key} contains retired root marker: ${marker}`);
 }
-for (const forbidden of ["lossless_family__", "Lane is mandatory", "Semantic Lane derivation", "must derive business_context.lane", "AI_REGISTRY_KEY.md is the base registry derivation reference for Target Profile Review"]) {
+for (const forbidden of ["lossless_family__", "Lane is mandatory", "Semantic Lane derivation", "must derive business_context.lane", "AI_Registry_Key.yml is the base registry derivation reference for Target Profile Review"]) {
   for (const [key, text] of Object.entries(content)) assert.equal(text.includes(forbidden), false, `${key} contains forbidden 3A marker: ${forbidden}`);
 }
 for (const forbiddenRead of ["source_discovery_handoff", "cartography_index", "target_profile_forensics", "legal_cartography_index", "activity_profile_source_index", "data_privacy_navigation_index", "legal_doc_inventory", "legal_doc_extraction_index", "legal_doc_{DOC_TYPE}"]) assert.equal(TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads.includes(forbiddenRead), false, `3A routed contract reads forbidden artifact ${forbiddenRead}`);
