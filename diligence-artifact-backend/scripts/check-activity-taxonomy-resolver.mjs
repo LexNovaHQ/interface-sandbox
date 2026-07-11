@@ -55,8 +55,11 @@ for (const forbidden of [
   "readRuntimeArtifact",
   "fetch("
 ]) {
-  assert.equal(forbidden === "fetch(" ? resolverSource.includes(forbidden) : resolverSource.includes(forbidden), false,
-    `resolver must not contain routing/artifact read capability: ${forbidden}`);
+  assert.equal(
+    resolverSource.includes(forbidden),
+    false,
+    `resolver must not contain routing/artifact read capability: ${forbidden}`
+  );
 }
 assert.equal(
   resolverSource.includes("lossless_root__ai_safety_transparency"),
