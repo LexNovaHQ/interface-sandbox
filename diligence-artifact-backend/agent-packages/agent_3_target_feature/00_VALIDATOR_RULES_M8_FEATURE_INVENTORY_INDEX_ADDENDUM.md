@@ -26,7 +26,7 @@ The baseline must be built before semantic support.
 Every baseline candidate must:
 
 - resolve through a candidate-creation locator in `activity_profile_source_index`;
-- resolve to a Phase-2G-routed lossless evidence unit;
+- resolve to a Phase-2G-routed index-mapped `lossless_root__*` evidence unit;
 - contain the exact candidate field set;
 - set `evidence_grounded: true`;
 - contain one or more exact source pointers;
@@ -114,14 +114,10 @@ Allowed statuses are `APPLIED`, `NO_CHANGES`, `UNAVAILABLE`, and `OUTPUT_REJECTE
 
 Provider unavailability and wholly rejected output retain the baseline and require `LOCKED_WITH_LIMITATIONS`.
 
-Partial rejection alone is non-blocking when at least one accepted proposal or a usable no-change result remains and the deterministic baseline has no material limitation.
-
 ## 6. No evidence-copy or taxonomy gate
 
 Fail if the inventory or proposal packet contains copied source text, source excerpts, mechanics proof, evidence summaries, package IDs, overlay IDs, taxonomy fields, archetype codes, surface tokens, Lane, compliance frameworks, legal conclusions, confidence fields, or risk scoring.
 
-## 7. Candidate coverage and forensics boundary
+## 7. Material profile handoff
 
-Layer 1 does not perform final material-profile coverage adjudication. Existing candidate coverage and forensic ledgers remain downstream responsibilities. An unresolved candidate is not automatically blocking; it must be handled by the material profile or carried into controlled forensics/reinvestigation.
-
-Forensics must not recompile or duplicate `feature_candidate_inventory` as a competing source of truth.
+Layer 1 does not classify. Layer 2 is the only phase that may emit `primary_classification` and `overlay_classifications`.
