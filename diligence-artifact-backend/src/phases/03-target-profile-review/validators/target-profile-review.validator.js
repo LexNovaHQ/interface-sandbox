@@ -1,4 +1,4 @@
-import { TARGET_PROFILE_REVIEW_CONTRACT } from "../index.js";
+import { TARGET_PROFILE_REVIEW_CONTRACT } from "../target-profile-review.contract.js";
 
 const TARGET_PROFILE = "target_profile";
 const TARGET_PROFILE_FORENSICS = "target_profile_forensics";
