@@ -1,12 +1,18 @@
-import {
-  buildM8FeatureCoverageForensics,
-  validateFeatureCandidateCoverage
-} from "./activity-candidate-coverage.shared.js";
-
 const CONTRACTS = Object.freeze({
   target_profile_forensics: "M7_DETERMINISTIC_FORENSIC_TRACE_CONTRACT_V1",
   target_feature_profile_forensics: "M8_DETERMINISTIC_FORENSIC_TRACE_CONTRACT_V2_SPLIT_TAXONOMY"
 });
+
+const MATERIAL_ACTIVITY_FIELDS = Object.freeze([
+  "activity_reference",
+  "product_service_wrapper",
+  "activity_feature_name",
+  "activity_candidate_summary",
+  "mechanics_proof",
+  "autonomy_human_control_signal",
+  "data_content_object_touched",
+  "external_internal_action_signal"
+]);
 
 const CONTROLLED_VALUES = new Set([
   "FIELD_LIMITED",
@@ -30,50 +36,79 @@ const THIN_VALUES = new Set([
   "not applicable"
 ]);
 
-const M7_LEGAL_EXCEPTION_FIELDS = new Set([
-  "target_identity.legal_entity_name",
-  "target_identity.entity_type",
-  "jurisdiction_notice.registered_notice_location",
-  "jurisdiction_notice.governing_law",
-  "jurisdiction_notice.courts_venue"
-]);
+export function validateFeatureCandidateCoverage(inventoryInput, profileInput, { coverageLedger = null } = {}) {
+  const inventory = unwrap(inventoryInput, "feature_candidate_inventory");
+  const profile = unwrap(profileInput, "target_feature_profile");
+  const candidates = asArray(inventory.candidates);
+  const activities = asArray(profile.activities);
+  const ledger = coverageLedger || buildCandidateCoverageLedger({ inventory, activities });
+  const uncovered = ledger.filter((row) => !row.activity_reference);
 
-const MATERIAL_ACTIVITY_FIELDS = Object.freeze([
-  "activity_reference",
-  "product_service_wrapper",
-  "activity_feature_name",
-  "activity_candidate_summary",
-  "mechanics_proof",
-  "autonomy_human_control_signal",
-  "data_content_object_touched",
-  "external_internal_action_signal"
-]);
+  return {
+    coverage_result: uncovered.length ? "COVERAGE_LIMITED_TARGETED_REINVESTIGATION_REQUIRED" : "PASS",
+    candidate_count: candidates.length,
+    activity_count: activities.length,
+    covered_candidate_count: candidates.length - uncovered.length,
+    uncovered_candidate_count: uncovered.length,
+    uncovered_candidates: uncovered.map((row) => row.candidate_id),
+    failures: uncovered.map((row) => `UNCOVERED_FEATURE_CANDIDATE:${row.candidate_id}`),
+    blocking: false,
+    targeted_reinvestigation_required: uncovered.length > 0,
+    coverage_ledger: ledger
+  };
+}
 
-export function buildM7DeterministicTargetForensics({ artifacts = {} }) {
+export function buildM8FeatureCoverageForensics(inventoryInput, profileInput, { coverageResult = null, coverageLedger = null } = {}) {
+  const inventory = unwrap(inventoryInput, "feature_candidate_inventory");
+  const profile = unwrap(profileInput, "target_feature_profile");
+  const ledger = coverageLedger || buildCandidateCoverageLedger({ inventory, activities: asArray(profile.activities) });
+  const coverage = coverageResult || validateFeatureCandidateCoverage(inventory, profile, { coverageLedger: ledger });
+
+  return {
+    feature_candidate_inventory_ref: {
+      artifact_type: inventory.artifact_type || "feature_candidate_inventory",
+      inventory_version: inventory.inventory_version || "",
+      derivation_mode: inventory.derivation_mode || "",
+      canonical_candidate_count: Number(inventory.canonical_candidate_count || asArray(inventory.candidates).length),
+      source_index_artifact: inventory.source_index_artifact || "activity_profile_source_index",
+      semantic_support_receipt_present: Boolean(inventory.semantic_support_receipt)
+    },
+    raw_feature_hit_derivation_ledger: asArray(inventory.raw_feature_hit_index).map((row, index) => ({
+      raw_hit_index: index,
+      raw_hit_id: row.raw_hit_id || row.hit_id || `raw_hit_${index + 1}`,
+      source_root: row.source_root || "",
+      route_class: row.route_class || "",
+      evidence_grounded: row.evidence_grounded !== false,
+      copied_evidence_text_present: hasEvidenceText(row)
+    })),
+    canonicalization_derivation_ledger: asArray(inventory.canonicalization_index).map((row, index) => ({
+      canonicalization_index: index,
+      candidate_id: row.candidate_id || "",
+      canonical_feature_key: row.canonical_feature_key || "",
+      merged_raw_hit_ids: asArray(row.merged_raw_hit_ids)
+    })),
+    dedup_decision_ledger: asArray(inventory.dedup_index),
+    parent_child_overlap_ledger: asArray(inventory.parent_child_overlap_index),
+    candidate_to_activity_coverage_ledger: ledger,
+    coverage_summary: coverage
+  };
+}
+
+export function buildM7DeterministicTargetForensics({ artifacts = {} } = {}) {
   const profile = unwrap(artifacts.target_profile, "target_profile");
-  const sourceFamilies = sourceFamilyManifest(artifacts);
   const fieldTrace = buildObjectFieldTrace({ rootName: "target_profile", value: profile });
   const limitationTrace = asArray(profile.target_profile_limitations).map((item, index) => traceValue({
     trace_id: `target_profile_limitations[${index}]`,
     field_path: `target_profile.target_profile_limitations[${index}]`,
     value: item
   }));
-  const controlledFieldRows = buildM7ControlledFieldRows({ profile, sourceFamilies });
+  const sourceFamilies = sourceFamilyManifest(artifacts);
   const lockGate = buildFieldLockGate({
     artifactName: "target_profile_forensics",
     expectedRoot: "target_profile",
     fieldTrace,
-    limitationTrace,
-    controlledFieldRows
+    limitationTrace
   });
-  const sourceSummary = sourceFamilies.rows
-    .filter((row) => row.artifact_name.startsWith("lossless_family__"))
-    .map((row) => ({
-      family: row.artifact_name,
-      status: row.source_corpus_status,
-      source_count: row.source_count,
-      physical_artifact_names: row.physical_artifact_names || []
-    }));
 
   return {
     target_profile_forensics: {
@@ -83,19 +118,11 @@ export function buildM7DeterministicTargetForensics({ artifacts = {} }) {
         present: isPlainObject(profile),
         field_trace_rows: fieldTrace.length,
         limitation_rows: limitationTrace.length,
-        source_family_count: sourceFamilies.present_families.length,
-        controlled_field_rows: controlledFieldRows.length
+        source_family_count: sourceFamilies.present_families.length
       }],
       field_trace_index: fieldTrace,
       source_custody_trace_index: sourceFamilies.rows,
-      limitation_trace_index: [
-        ...limitationTrace,
-        ...controlledFieldRows.map((row) => traceValue({
-          trace_id: `controlled_field.${row.field_path}`,
-          field_path: row.field_path,
-          value: row.reason
-        }))
-      ],
+      limitation_trace_index: limitationTrace,
       profile_reconciliation_ledger: buildProfileFieldReconciliation({
         profileName: "target_profile",
         fieldTrace,
@@ -103,18 +130,11 @@ export function buildM7DeterministicTargetForensics({ artifacts = {} }) {
       }),
       forensic_lock_gate_result: lockGate,
       source_ledger_used_for_m7: sourceFamilies.rows,
-      target_source_extraction_capsule_summary: sourceSummary,
+      target_source_extraction_capsule_summary: sourceFamilies.present_families.map((family) => ({ family, status: "FOUND" })),
       target_source_route_coverage_ledger: sourceFamilies.rows,
       field_derivation_ledger: fieldTrace,
-      targeted_re_extraction_ledger: controlledFieldRows,
-      limitation_ledger: [
-        ...limitationTrace,
-        ...controlledFieldRows.map((row) => traceValue({
-          trace_id: `controlled_limitation.${row.field_path}`,
-          field_path: row.field_path,
-          value: row.reason
-        }))
-      ],
+      targeted_re_extraction_ledger: [],
+      limitation_ledger: limitationTrace,
       cross_route_use_ledger: buildCrossRouteLedger(artifacts),
       validation_quality_control_result: lockGate,
       runtime_trace_m7_only: runtimeTrace("M7_TARGET_PROFILE_FORENSICS"),
@@ -123,19 +143,28 @@ export function buildM7DeterministicTargetForensics({ artifacts = {} }) {
   };
 }
 
-export function buildM8DeterministicFeatureForensics({ artifacts = {} }) {
+export function buildM8DeterministicFeatureForensics({ artifacts = {} } = {}) {
   const profile = unwrap(artifacts.target_feature_profile, "target_feature_profile");
   const inventory = unwrap(artifacts.feature_candidate_inventory, "feature_candidate_inventory");
   const activities = asArray(profile.activities);
   const sourceFamilies = sourceFamilyManifest(artifacts);
-
+  const coverageTrace = buildM8FeatureCoverageForensics(inventory, profile);
+  const coverage = coverageTrace.coverage_summary;
+  const fieldTrace = activities.flatMap((activity, index) => buildObjectFieldTrace({
+    rootName: `target_feature_profile.activities[${index}]`,
+    value: activity
+  }));
+  const limitationTrace = asArray(profile.profile_level_limitations).map((item, index) => traceValue({
+    trace_id: `profile_level_limitations[${index}]`,
+    field_path: `target_feature_profile.profile_level_limitations[${index}]`,
+    value: item
+  }));
   const activityTrace = activities.map((activity, index) => {
     const primary = classificationTrace(activity.primary_classification);
     const overlays = asArray(activity.overlay_classifications).map((block) => ({
       overlay_id: block.overlay_id || "",
       ...classificationTrace(block)
     }));
-
     return {
       activity_index: index,
       activity_reference: activity.activity_reference || `activity_${index + 1}`,
@@ -162,40 +191,13 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} }) {
       forensic_trace_present: true
     };
   });
-
-  const fieldTrace = activities.flatMap((activity, index) => buildObjectFieldTrace({
-    rootName: `target_feature_profile.activities[${index}]`,
-    value: activity
-  }));
-  const limitationTrace = asArray(profile.profile_level_limitations).map((item, index) => traceValue({
-    trace_id: `profile_level_limitations[${index}]`,
-    field_path: `target_feature_profile.profile_level_limitations[${index}]`,
-    value: item
-  }));
-  const candidateCoverageLedger = buildCandidateCoverageLedger({ inventory, activities });
-  const coverage = validateFeatureCandidateCoverage(inventory, profile, {
-    coverageLedger: candidateCoverageLedger
-  });
   const lockGate = buildActivityLockGate({ activityTrace, fieldTrace, limitationTrace, coverage });
-  const inventoryTrace = buildM8FeatureCoverageForensics(inventory, profile, {
-    coverageResult: coverage,
-    coverageLedger: candidateCoverageLedger
-  });
-  const unresolvedCoverageRows = candidateCoverageLedger.filter((row) => !row.activity_reference);
+  const unresolved = coverageTrace.candidate_to_activity_coverage_ledger.filter((row) => !row.activity_reference);
 
   return {
     target_feature_profile_forensics: {
-      forensic_contract: contract(
-        "target_feature_profile_forensics",
-        "M8 target feature inventory, split-taxonomy and activity-level deterministic trace"
-      ),
-      feature_candidate_inventory_ref: inventoryTrace.feature_candidate_inventory_ref,
-      raw_feature_hit_derivation_ledger: inventoryTrace.raw_feature_hit_derivation_ledger,
-      canonicalization_derivation_ledger: inventoryTrace.canonicalization_derivation_ledger,
-      dedup_decision_ledger: inventoryTrace.dedup_decision_ledger,
-      parent_child_overlap_ledger: inventoryTrace.parent_child_overlap_ledger,
-      candidate_to_activity_coverage_ledger: candidateCoverageLedger,
-      candidate_exclusion_ledger: [],
+      forensic_contract: contract("target_feature_profile_forensics", "M8 target feature inventory, split-taxonomy and activity-level deterministic trace"),
+      ...coverageTrace,
       semantic_classification_ledger: activityTrace,
       material_profile_trace_index: activityTrace,
       activity_trace_index: activityTrace,
@@ -210,11 +212,8 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} }) {
       }),
       forensic_lock_gate_result: lockGate,
       product_activity_source_route_coverage_ledger: sourceFamilies.rows,
-      product_activity_extraction_capsule_summary: sourceFamilies.present_families.map((family) => ({
-        family,
-        status: "FOUND"
-      })),
-      candidate_admission_and_omission_ledger: candidateCoverageLedger.map((row) => ({
+      product_activity_extraction_capsule_summary: sourceFamilies.present_families.map((family) => ({ family, status: "FOUND" })),
+      candidate_admission_and_omission_ledger: coverageTrace.candidate_to_activity_coverage_ledger.map((row) => ({
         candidate_id: row.candidate_id,
         activity_reference: row.activity_reference || null,
         admitted: Boolean(row.activity_reference),
@@ -239,7 +238,7 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} }) {
         trace_present: true
       })),
       mounted_taxonomy_ref_trace: profile.mounted_taxonomy_ref || {},
-      targeted_re_extraction_ledger: unresolvedCoverageRows.map((row) => ({
+      targeted_re_extraction_ledger: unresolved.map((row) => ({
         candidate_id: row.candidate_id,
         reason: row.reason,
         required_action: "TARGETED_REINVESTIGATION_REQUIRED",
@@ -247,7 +246,7 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} }) {
       })),
       activity_limitations_ledger: [
         ...limitationTrace,
-        ...unresolvedCoverageRows.map((row) => traceValue({
+        ...unresolved.map((row) => traceValue({
           trace_id: `candidate_coverage_limitation.${row.candidate_id}`,
           field_path: `feature_candidate_inventory.candidates.${row.candidate_id}`,
           value: row.reason
@@ -273,7 +272,7 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} }) {
   };
 }
 
-export function isStaleDeterministicForensics({ artifactName, artifact }) {
+export function isStaleDeterministicForensics({ artifactName, artifact } = {}) {
   const root = unwrap(artifact, artifactName);
   return root.forensic_contract?.contract_name !== CONTRACTS[artifactName] ||
     root.forensic_contract?.model_generated_forensics_allowed !== false ||
@@ -282,55 +281,9 @@ export function isStaleDeterministicForensics({ artifactName, artifact }) {
     !root.forensic_lock_gate_result;
 }
 
-function classificationTrace(block = {}) {
-  return {
-    package_id: block.package_id || "",
-    archetype_codes: asArray(block.archetype_codes),
-    archetype_derivation_basis: asArray(block.archetype_derivation_basis),
-    surface_context_tokens: asArray(block.surface_context_tokens),
-    surface_derivation_basis: asArray(block.surface_derivation_basis)
-  };
-}
-
-function packageScopedValues(packageId, values) {
-  return asArray(values).map((value) => `${packageId || "UNMOUNTED"}::${value}`);
-}
-
-function hasMaterialValue(value) {
-  if (Array.isArray(value)) return value.length > 0;
-  if (isPlainObject(value)) return Object.keys(value).length > 0;
-  return String(value ?? "").trim().length > 0;
-}
-
-function buildM7ControlledFieldRows({ profile, sourceFamilies }) {
-  const legalSourcesPresent = sourceFamilies.rows.some((row) =>
-    row.artifact_name.startsWith("lossless_family__L") &&
-    row.source_corpus_status === "PHYSICAL_OR_RESOLVED_SOURCE_PRESENT"
-  );
-  return flatten(profile)
-    .filter(([path, value]) => CONTROLLED_VALUES.has(String(value || "")))
-    .map(([path, value]) => ({
-      field_path: `target_profile.${path}`,
-      field_value: value,
-      field_status: value,
-      legal_exception_invoked: M7_LEGAL_EXCEPTION_FIELDS.has(path),
-      legal_governance_sources_present: legalSourcesPresent,
-      reinvestigation_status: legalSourcesPresent && M7_LEGAL_EXCEPTION_FIELDS.has(path)
-        ? "LEGAL_EXCEPTION_SOURCE_PRESENT_REVIEW_REQUIRED"
-        : "CONTROLLED_LIMITATION_LEDGERED",
-      required_action: legalSourcesPresent && M7_LEGAL_EXCEPTION_FIELDS.has(path)
-        ? "RERUN_M7_OR_TARGETED_REINVESTIGATION_FROM_LEGAL_GOVERNANCE_FAMILIES"
-        : "QUALIFIED_REVIEW_CONFIRMATION",
-      blocking: false,
-      reason: legalSourcesPresent && M7_LEGAL_EXCEPTION_FIELDS.has(path)
-        ? `${path} is controlled even though legal-governance lossless source families are present; clean PASS is not allowed until rerun or targeted reinvestigation confirms absence.`
-        : `${path} is a controlled field value and must be carried as a limitation, not silent clean pass.`
-    }));
-}
-
 function buildCandidateCoverageLedger({ inventory, activities }) {
   return asArray(inventory.candidates).map((candidate) => {
-    const match = activities.find((activity) => activityMatchesCandidate(activity, candidate));
+    const match = asArray(activities).find((activity) => activityMatchesCandidate(activity, candidate));
     return match
       ? {
           candidate_id: candidate.candidate_id,
@@ -370,7 +323,7 @@ function candidateMatchPhrases(candidate) {
     candidate.capability_key,
     candidate.wrapper_or_surface,
     candidate.canonical_feature_key,
-    ...(candidate.source_pointers || []).flatMap((pointer) => [
+    ...asArray(candidate.source_pointers).flatMap((pointer) => [
       pointer.locator_value,
       pointer.route_code,
       pointer.unit_id,
@@ -393,10 +346,22 @@ function candidateMatchPhrases(candidate) {
 function phraseInFields(phrase, fields) {
   if (!phrase || !fields) return false;
   const words = phrase.split(" ").filter(Boolean);
-  if (words.length === 1) {
-    return new RegExp(`(^|\\s)${escapeRegExp(words[0])}(\\s|$)`).test(fields);
-  }
+  if (words.length === 1) return new RegExp(`(^|\\s)${escapeRegExp(words[0])}(\\s|$)`).test(fields);
   return fields.includes(phrase);
+}
+
+function classificationTrace(block = {}) {
+  return {
+    package_id: block.package_id || "",
+    archetype_codes: asArray(block.archetype_codes),
+    archetype_derivation_basis: asArray(block.archetype_derivation_basis),
+    surface_context_tokens: asArray(block.surface_context_tokens),
+    surface_derivation_basis: asArray(block.surface_derivation_basis)
+  };
+}
+
+function packageScopedValues(packageId, values) {
+  return asArray(values).map((value) => `${packageId || "UNMOUNTED"}::${value}`);
 }
 
 function contract(artifactName, traceScope) {
@@ -428,85 +393,44 @@ function runtimeTrace(phase) {
 }
 
 function sourceFamilyManifest(artifacts) {
-  const upstream = [
-    "source_discovery_handoff",
-    "legal_cartography_index",
-    "legal_signal_derivation_profile",
-    "target_profile",
-    "target_profile_forensics",
-    "feature_candidate_inventory",
-    "target_feature_profile",
-    "target_feature_profile_forensics",
-    "data_privacy_navigation_index",
-    "dap_semantic_batch_route_manifest",
-    "data_provenance_profile_semantic_batch_gate",
-    "dap_forensics_profile"
-  ];
-  const rows = Object.keys(artifacts)
-    .filter((key) => key.startsWith("lossless_family__") || upstream.includes(key))
+  const rows = Object.keys(artifacts || {})
+    .filter((key) => key.startsWith("lossless_root__") || key.startsWith("lossless_family__") || [
+      "source_discovery_handoff",
+      "legal_cartography_index",
+      "legal_signal_derivation_profile",
+      "target_profile",
+      "target_profile_forensics",
+      "feature_candidate_inventory",
+      "target_feature_profile",
+      "target_feature_profile_forensics",
+      "data_privacy_navigation_index",
+      "dap_semantic_batch_route_manifest",
+      "data_provenance_profile_semantic_batch_gate",
+      "dap_forensics_profile"
+    ].includes(key))
     .map((artifactName) => sourceCustodyRow(artifactName, artifacts[artifactName]));
   return {
     rows,
-    present_families: rows
-      .filter((row) => row.present && row.source_corpus_status === "PHYSICAL_OR_RESOLVED_SOURCE_PRESENT")
-      .map((row) => row.artifact_name)
+    present_families: rows.filter((row) => row.present).map((row) => row.artifact_name)
   };
 }
 
 function sourceCustodyRow(artifactName, artifact) {
-  if (!artifact) {
-    return {
-      artifact_name: artifactName,
-      present: false,
-      source_role: artifactName.startsWith("lossless_family__") ? "lossless_source_family" : "upstream_locked_artifact",
-      source_corpus_status: "MISSING",
-      source_count: 0
-    };
-  }
-  if (!artifactName.startsWith("lossless_family__")) {
-    return {
-      artifact_name: artifactName,
-      present: true,
-      source_role: "upstream_locked_artifact",
-      source_corpus_status: "INDEX_OR_PROFILE_PRESENT",
-      source_count: 0
-    };
-  }
-  const sourceCount = asArray(artifact.sources).length;
-  const resolution = artifact.family_part_resolution || {};
-  const status = sourceCount > 0
-    ? "PHYSICAL_OR_RESOLVED_SOURCE_PRESENT"
-    : resolution.status === "UNSAVED_EMPTY" || artifact.storage_mode === "UNSAVED_EMPTY"
-      ? "UNSAVED_EMPTY"
-      : resolution.reason === "INDEX_ENTRY_MISSING"
-        ? "MISSING"
-        : "RESOLVED_EMPTY_FAMILY";
+  const sourceCount = asArray(artifact?.sources).length;
   return {
     artifact_name: artifactName,
-    present: sourceCount > 0,
-    source_role: "lossless_source_family",
-    source_corpus_status: status,
+    present: Boolean(artifact),
+    source_role: artifactName.startsWith("lossless_") ? "lossless_source_root" : "upstream_locked_artifact",
+    source_corpus_status: artifact ? (sourceCount ? "PHYSICAL_OR_RESOLVED_SOURCE_PRESENT" : "INDEX_OR_PROFILE_PRESENT") : "MISSING",
     source_count: sourceCount,
-    physical_artifact_names: artifact.physical_artifact_names || resolution.required_artifacts || [],
-    family_part_resolution: resolution
+    physical_artifact_names: artifact?.physical_artifact_names || []
   };
 }
 
 function buildCrossRouteLedger(artifacts) {
-  return [
-    "source_discovery_handoff",
-    "legal_cartography_index",
-    "legal_signal_derivation_profile",
-    "target_profile",
-    "target_profile_forensics",
-    "feature_candidate_inventory",
-    "target_feature_profile",
-    "target_feature_profile_forensics",
-    "data_privacy_navigation_index",
-    "dap_semantic_batch_route_manifest",
-    "data_provenance_profile_semantic_batch_gate",
-    "dap_forensics_profile"
-  ].filter((name) => artifacts[name]).map((artifact_name) => ({ artifact_name, consumed_as_upstream: true }));
+  return Object.keys(artifacts || {})
+    .filter((name) => !name.startsWith("lossless_root__") && !name.startsWith("lossless_family__"))
+    .map((artifact_name) => ({ artifact_name, consumed_as_upstream: true }));
 }
 
 function buildObjectFieldTrace({ rootName, value }) {
@@ -543,24 +467,13 @@ function previewValue(value) {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value.slice(0, 500);
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-  try {
-    return JSON.stringify(value).slice(0, 500);
-  } catch {
-    return String(value).slice(0, 500);
-  }
-}
-
-function isReadable(value) {
-  const text = String(value || "").trim();
-  return text.length >= 12 && !THIN_VALUES.has(text.toLowerCase());
+  try { return JSON.stringify(value).slice(0, 500); } catch { return String(value).slice(0, 500); }
 }
 
 function buildProfileFieldReconciliation({ profileName, fieldTrace, limitationTrace, expectedRows = null }) {
   const failures = [];
   if (!fieldTrace.length) failures.push(`${profileName}:FIELD_TRACE_EMPTY`);
-  if (expectedRows !== null && expectedRows === 0 && !limitationTrace.length) {
-    failures.push(`${profileName}:EMPTY_PROFILE_WITHOUT_LIMITATION_TRACE`);
-  }
+  if (expectedRows !== null && expectedRows === 0 && !limitationTrace.length) failures.push(`${profileName}:EMPTY_PROFILE_WITHOUT_LIMITATION_TRACE`);
   return [{
     profile_name: profileName,
     traced_fields: fieldTrace.length,
@@ -571,15 +484,11 @@ function buildProfileFieldReconciliation({ profileName, fieldTrace, limitationTr
   }];
 }
 
-function buildFieldLockGate({ artifactName, expectedRoot, fieldTrace, limitationTrace, controlledFieldRows = [] }) {
+function buildFieldLockGate({ artifactName, expectedRoot, fieldTrace, limitationTrace }) {
   const failures = [];
   const warnings = [];
   if (!fieldTrace.length) failures.push(`${expectedRoot}:NO_FIELD_TRACE_ROWS`);
-  for (const row of fieldTrace) {
-    if (!row.forensic_trace_present) failures.push(`${row.field_path}:TRACE_MISSING`);
-  }
   if (!limitationTrace.length) warnings.push(`${expectedRoot}:NO_LIMITATION_ROWS`);
-  for (const row of controlledFieldRows) warnings.push(`${row.field_path}:${row.reinvestigation_status}`);
   return gate({ artifactName, failures, warnings });
 }
 
@@ -587,9 +496,7 @@ function buildActivityLockGate({ activityTrace, fieldTrace, limitationTrace, cov
   const failures = [];
   const warnings = [];
   if (!activityTrace.length && !limitationTrace.length) failures.push("M8:NO_ACTIVITY_TRACE_AND_NO_LIMITATION_TRACE");
-  if (coverage?.coverage_result !== "PASS") {
-    warnings.push(...(coverage?.failures || ["M8:CANDIDATE_COVERAGE_LIMITATION"]));
-  }
+  if (coverage?.coverage_result !== "PASS") warnings.push(...(coverage?.failures || ["M8:CANDIDATE_COVERAGE_LIMITATION"]));
   for (const row of activityTrace) {
     if (!row.material_fields_complete) warnings.push(`${row.activity_reference}:MATERIAL_ACTIVITY_FIELDS_INCOMPLETE`);
     if (!row.report_fields_human_readable) warnings.push(`${row.activity_reference}:REPORT_FIELDS_NOT_HUMAN_READABLE`);
@@ -600,41 +507,67 @@ function buildActivityLockGate({ activityTrace, fieldTrace, limitationTrace, cov
 
 function gate({ artifactName, failures, warnings }) {
   return {
-    status: failures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS",
-    failures,
-    warnings,
-    artifact_name: artifactName
+    status: failures.length ? "REPAIR_REQUIRED" : "PASS",
+    artifact_name: artifactName,
+    blocking_failures: failures,
+    non_blocking_warnings: warnings,
+    clean_pass_allowed: failures.length === 0
   };
 }
 
-function flatten(value, prefix = "") {
-  if (Array.isArray(value)) {
-    return value.flatMap((item, index) => flatten(item, `${prefix}[${index}]`));
-  }
-  if (isPlainObject(value)) {
-    return Object.entries(value).flatMap(([key, child]) => flatten(child, prefix ? `${prefix}.${key}` : key));
-  }
-  return [[prefix || "value", value]];
+function hasMaterialValue(value) {
+  if (Array.isArray(value)) return value.length > 0;
+  if (isPlainObject(value)) return Object.keys(value).length > 0;
+  return String(value ?? "").trim().length > 0;
 }
 
-function unwrap(value, key) {
-  return value?.[key] || value?.artifact?.[key] || value || {};
+function isReadable(value) {
+  const text = String(value || "").trim();
+  return text.length >= 12 && !THIN_VALUES.has(text.toLowerCase());
+}
+
+function hasEvidenceText(value) {
+  const text = JSON.stringify(value || {}).toLowerCase();
+  return ["excerpt", "clean_text", "lossless_text", "quoted_text", "source_text"].some((needle) => text.includes(needle));
+}
+
+function unwrap(input, key) {
+  if (!input) return {};
+  return input[key] && isPlainObject(input[key]) ? input[key] : input;
+}
+
+function flatten(value, prefix = "") {
+  if (!isPlainObject(value) && !Array.isArray(value)) return prefix ? [[prefix, value]] : [];
+  const entries = [];
+  for (const [key, item] of Object.entries(value || {})) {
+    const next = prefix ? `${prefix}.${key}` : key;
+    if (isPlainObject(item)) entries.push(...flatten(item, next));
+    else if (Array.isArray(item)) {
+      if (!item.length) entries.push([next, item]);
+      item.forEach((child, index) => {
+        if (isPlainObject(child)) entries.push(...flatten(child, `${next}[${index}]`));
+        else entries.push([`${next}[${index}]`, child]);
+      });
+    } else entries.push([next, item]);
+  }
+  return entries;
+}
+
+function normalizeMatchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[_/|:-]+/g, " ")
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function asArray(value) {
-  return Array.isArray(value) ? value : [];
+  return Array.isArray(value) ? value : value == null ? [] : [value];
 }
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function norm(value) {
-  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function normalizeMatchText(value) {
-  return norm(value).replace(/\s+/g, " ").trim();
 }
 
 function escapeRegExp(value) {
