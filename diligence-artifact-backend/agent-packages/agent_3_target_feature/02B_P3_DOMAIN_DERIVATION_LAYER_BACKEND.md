@@ -24,7 +24,7 @@ Model suggests. Rules decide. Evidence locks. Conflicts block auto-lock.
 
 The model may recommend condition-level rule outcomes, but the deterministic registry validator is the lock authority. The active run package manifest may be written only after validation.
 
-`DOMAIN_DERIVATION_REGISTRY_v0.yaml` is the rule ladder. `package-catalog.v0.json` is the package authority.
+The runtime assembles `DILIGENCE_DOMAIN_REGISTRY_v1` from the mounted Registry Keys (`domain_derivation_rules`) plus the Field Derivation Registry grammar. The mounted authorities are `Diligence_Field_Derivation_Registry.yml`, `AI_Registry_Key.yml`, and `FinTech_Registry_Key.yml`. `package-catalog.v0.json` is the package authority.
 
 ## Phase 2G route
 
@@ -72,14 +72,14 @@ The scoped 12 lossless roots are the primary evidence for domain derivation.
 
 ## Registry ladder
 
-Evaluate `DOMAIN_DERIVATION_REGISTRY_v0.yaml` in this order:
+Evaluate the mounted Registry Keys (`domain_derivation_rules`) plus the Field Derivation Registry grammar in this order:
 
 1. Active `PRIMARY_DOMAIN` rules.
 2. `AI_MOUNT` rules only after primary-domain resolution.
 3. `FUSION_CANDIDATE` rules only if a non-AI primary domain and AI overlay package mount are both present.
 4. Fallback rules when no supported primary domain locks.
 
-Do not hardcode domain-specific classification logic in this prompt. The registry is the rule authority and the package catalog is the package authority.
+Do not hardcode domain-specific classification logic in this prompt. The assembled registry is the rule authority and the package catalog is the package authority.
 
 ## What Phase 3B may derive
 
