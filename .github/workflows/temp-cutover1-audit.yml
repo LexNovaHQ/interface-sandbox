@@ -1,0 +1,32 @@
+name: Temporary Cutover 1 Audit
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+      - name: Audit addendum references and FDR insertion point
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=diligence-artifact-backend
+          TOKEN='TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml'
+          echo '=== LIVE REFERENCES ==='
+          grep -RIn --exclude='TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml' --exclude-dir=node_modules --exclude-dir=archive-legacy "$TOKEN" "$ROOT" || true
+          echo '=== TP.BIZ MARKERS ==='
+          grep -n 'field_id: TP.BIZ.00[789]' "$ROOT/references/registry/Diligence_Field_Derivation_Registry.yml" || true
+          grep -n 'field_id: TP.BIZ.010' "$ROOT/references/registry/Diligence_Field_Derivation_Registry.yml" || true
+          echo '=== ADDENDUM ==='
+          cat "$ROOT/references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml"
