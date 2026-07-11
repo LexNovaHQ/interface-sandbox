@@ -1,0 +1,67 @@
+name: Temporary CO10 Registry Validation
+
+on:
+  push:
+    branches:
+      - co10-registry-validation-work
+    paths:
+      - .github/workflows/co10-registry-validation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: co10-registry-validation-work
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+      - name: Run ordered acceptance and capture log
+        shell: bash
+        run: |
+          set +e
+          cd diligence-artifact-backend
+          log='../.co10-validation.log'
+          : > "$log"
+          overall=0
+          run_step() {
+            echo "===== $* =====" | tee -a "$log"
+            "$@" >> "$log" 2>&1
+            status=$?
+            echo "EXIT_STATUS=$status" | tee -a "$log"
+            echo >> "$log"
+            if [ "$status" -ne 0 ]; then overall=1; fi
+          }
+          run_step npm install
+          run_step node scripts/check-runtime-yaml-dep.mjs
+          run_step node scripts/check-domain-registry-assembled.mjs
+          run_step node scripts/check-no-legacy-registry-refs.mjs
+          run_step node scripts/check-phase3-domain-derivation-contract.mjs
+          run_step node scripts/check-phase3a-target-profile-package.mjs
+          run_step npm run check
+          echo "OVERALL_STATUS=$overall" | tee -a "$log"
+          echo "$overall" > ../.co10-validation-status
+      - name: Commit generated lockfile and validation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diligence-artifact-backend/package-lock.json .co10-validation.log .co10-validation-status
+          git commit -m 'Temporary CO-10 dependency lock and validation log'
+          git push origin HEAD:co10-registry-validation-work
+      - name: Enforce validation result
+        shell: bash
+        run: |
+          status="$(cat .co10-validation-status)"
+          if [ "$status" != "0" ]; then
+            cat .co10-validation.log
+            exit 1
+          fi
