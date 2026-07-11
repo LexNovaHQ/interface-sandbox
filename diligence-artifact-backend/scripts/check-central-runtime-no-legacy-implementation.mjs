@@ -78,16 +78,14 @@ const requiredAuthorities = Object.freeze([
 ]);
 for (const file of requiredAuthorities) assert.ok(existsSync(file), `central/phase authority missing: ${file}`);
 
-const activeFiles = collectFiles(["src/runtime", "src/phases", "src/qualified-review-system", "scripts", "public"]);
-for (const file of activeFiles) {
+const forbiddenImportSpecifiers = OBSOLETE_ACTIVE_FILES.flatMap((file) => {
+  const relative = file.replace(/^src\//, "");
+  return [`../src/${relative}`, `../../${relative}`, `../../../${relative}`, `../../../../${relative}`];
+});
+for (const file of collectFiles(["src/runtime", "src/phases", "src/qualified-review-system", "scripts", "public"])) {
   const source = readFileSync(file, "utf8");
-  assert.equal(/(?:from\s+|import\s*\()?["]['"]?[^"']*archive-legacy\//.test(source), false, `active file imports archive-legacy: ${file}`);
-  for (const obsolete of OBSOLETE_ACTIVE_FILES) {
-    const basename = path.basename(obsolete);
-    if (file === obsolete) continue;
-    const importPattern = new RegExp(`(?:from\\s+|import\\s*\\()["'][^"']*${escapeRegExp(basename)}["']`);
-    assert.equal(importPattern.test(source), false, `active file imports deleted obsolete path ${basename}: ${file}`);
-  }
+  assert.equal(/(?:from\s+|import\s*\()[^;\n]*["'][^"']*archive-legacy\//.test(source), false, `active file imports archive-legacy: ${file}`);
+  for (const specifier of forbiddenImportSpecifiers) assert.equal(source.includes(specifier), false, `active file imports deleted obsolete path ${specifier}: ${file}`);
 }
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
@@ -140,4 +138,3 @@ function walk(target, files) {
     walk(path.join(target, entry), files);
   }
 }
-function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
