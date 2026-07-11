@@ -31,8 +31,6 @@ jobs:
           import json
 
           root = Path('diligence-artifact-backend')
-
-          # Canonicalize active deployment state in the Phase 3-7 runtime chain.
           replacements = {
               root / 'src/phases/05-activity-profile-review/activity-profile-review.contract.js': [
                   ('global_production_deployment_switched: false', 'global_production_deployment_switched: true'),
@@ -58,8 +56,7 @@ jobs:
                   text = text.replace(old, new)
               path.write_text(text)
 
-          structural = root / 'scripts/check-phase5-structural-audit.mjs'
-          structural.write_text(r'''import assert from "node:assert/strict";
+          (root / 'scripts/check-phase5-structural-audit.mjs').write_text(r'''import assert from "node:assert/strict";
           import { execFileSync } from "node:child_process";
           import path from "node:path";
           import { fileURLToPath } from "node:url";
@@ -67,7 +64,6 @@ jobs:
           const __dirname = path.dirname(fileURLToPath(import.meta.url));
           const repoRoot = path.resolve(__dirname, "../..");
           const cutoverCommit = process.env.PHASE5_CUTOVER_COMMIT || "aa4fc9884c05a5f571acdab67f35071d271e7652";
-
           const allowed = new Set([
             "diligence-artifact-backend/package.json",
             "diligence-artifact-backend/scripts/check-activity-profile-review-contract.mjs",
@@ -80,66 +76,38 @@ jobs:
             "diligence-artifact-backend/src/phases/05-activity-profile-review/validators/activity-profile-review.validator.js",
             "diligence-artifact-backend/src/runtime/contracts/pipeline.contract.js"
           ]);
-
           execFileSync("git", ["rev-parse", "--verify", `${cutoverCommit}^{commit}`], { cwd: repoRoot, stdio: "pipe" });
-          const changed = execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", cutoverCommit], {
-            cwd: repoRoot,
-            encoding: "utf8"
-          }).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-
+          const changed = execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", cutoverCommit], { cwd: repoRoot, encoding: "utf8" })
+            .split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
           assert.ok(changed.length > 0, `Phase 5 cutover commit has no changed files: ${cutoverCommit}`);
           const outside = changed.filter((file) => !allowed.has(file));
           assert.deepEqual(outside, [], `Phase 5 cutover commit contains files outside locked scope: ${outside.join(", ")}`);
-
           for (const retired of [
             "diligence-artifact-backend/src/phases/05-activity-profile-review/services/activity-candidate-inventory.boundary.js",
             "diligence-artifact-backend/agent-packages/agent_3_target_feature/03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md"
-          ]) {
-            assert.equal(allowed.has(retired), false, `retired path remains in Phase 5 structural allowlist: ${retired}`);
-          }
-
-          console.log(JSON.stringify({
-            check: "phase5 committed cutover scope",
-            status: "PASS",
-            cutover_commit: cutoverCommit,
-            changed_files: changed
-          }, null, 2));
+          ]) assert.equal(allowed.has(retired), false, `retired path remains in allowlist: ${retired}`);
+          console.log(JSON.stringify({ check: "phase5 committed cutover scope", status: "PASS", cutover_commit: cutoverCommit, changed_files: changed }, null, 2));
           ''')
 
-          deployment_check = root / 'scripts/check-phase1-7-deployment-state.mjs'
-          deployment_check.write_text(r'''import assert from "node:assert/strict";
+          (root / 'scripts/check-phase1-7-deployment-state.mjs').write_text(r'''import assert from "node:assert/strict";
           import { PIPELINE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
           import { ACTIVITY_PROFILE_REVIEW_CONTRACT } from "../src/phases/05-activity-profile-review/activity-profile-review.contract.js";
           import { ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS } from "../src/phases/05-activity-profile-review/activity-profile-review.runner.js";
           import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
-
-          const activeJobs = [
-            "M7_TARGET_PROFILE",
-            "M8_FEATURE_CANDIDATE_INVENTORY",
-            "M8_TARGET_FEATURE_PROFILE",
-            "DATA_PROVENANCE_PROFILE_LAYER4",
-            "DATA_PROVENANCE_PROFILE_LAYER5"
-          ];
-
+          const activeJobs = ["M7_TARGET_PROFILE", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5"];
           for (const jobId of activeJobs) {
             const contract = PIPELINE_CONTRACTS[jobId];
-            assert.ok(contract, `missing active Phase 1-7 pipeline job: ${jobId}`);
+            assert.ok(contract, `missing active pipeline job: ${jobId}`);
             assert.equal(contract.production_entrypoint_switched, true, `${jobId} production entrypoint is not switched`);
             assert.equal(contract.global_production_deployment_switched, true, `${jobId} global production deployment is not switched`);
           }
-
           assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.production_entrypoint_switched, true);
           assert.equal(ACTIVITY_PROFILE_REVIEW_CONTRACT.global_production_deployment_switched, true);
           assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.production_entrypoint_switched, true);
           assert.equal(ACTIVITY_PROFILE_REVIEW_RUNNER_STATUS.global_production_deployment_switched, true);
           assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.runtime_entrypoint_switched, true);
           assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.global_production_deployment_switched, true);
-
-          console.log(JSON.stringify({
-            check: "phase1-7 deployment state",
-            status: "PASS",
-            active_jobs: activeJobs
-          }, null, 2));
+          console.log(JSON.stringify({ check: "phase1-7 deployment state", status: "PASS", active_jobs: activeJobs }, null, 2));
           ''')
 
           package_path = root / 'package.json'
@@ -147,10 +115,7 @@ jobs:
           scripts = package['scripts']
           scripts['check:phase1-7-deployment'] = 'node scripts/check-phase1-7-deployment-state.mjs'
           if 'npm run check:phase1-7-deployment' not in scripts['check']:
-              scripts['check'] = scripts['check'].replace(
-                  'node scripts/check-syntax.mjs && ',
-                  'node scripts/check-syntax.mjs && npm run check:phase1-7-deployment && '
-              )
+              scripts['check'] = scripts['check'].replace('node scripts/check-syntax.mjs && ', 'node scripts/check-syntax.mjs && npm run check:phase1-7-deployment && ')
           package_path.write_text(json.dumps(package, indent=2) + '\n')
           PY
       - name: Install and validate scoped repairs
