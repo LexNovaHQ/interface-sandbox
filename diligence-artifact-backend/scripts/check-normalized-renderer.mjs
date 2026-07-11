@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildRendererPayload } from "../src/report-renderer.js";
+import { buildRendererPayload } from "../src/runtime/services/reporting/report-renderer.service.js";
 
 const run = { run_id: "TEST-RENDERER", target: "Example", root_url: "https://example.com" };
 const final_output_handoff = {
