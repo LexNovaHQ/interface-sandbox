@@ -1,16 +1,20 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 
-const artifactService = await readFile("src/artifact-service.js", "utf8");
-const phaseContracts = await readFile("src/phase-contracts.js", "utf8");
+const pipeline = readFileSync("src/runtime/services/pipeline.service.js", "utf8");
+const routeReader = readFileSync("src/phases/02-cartography-index/services/phase-route-runtime.reader.js", "utf8");
+const permissions = readFileSync("src/runtime/contracts/artifact-permissions.contract.js", "utf8");
 
-assert.ok(artifactService.includes("isLosslessFamilyArtifactName"), "artifact-service must identify lossless family artifacts");
-assert.ok(artifactService.includes("buildDynamicEmptyLosslessFamilyArtifact"), "artifact-service must build controlled empty dynamic family artifacts");
-assert.ok(artifactService.includes("DYNAMIC_LOSSLESS_FAMILY_EMPTY_READ"), "artifact-service must log dynamic empty family reads");
-assert.ok(artifactService.includes("CONTROLLED_EMPTY_FAMILY"), "dynamic empty family fallback must be controlled, not silent");
-assert.ok(artifactService.includes("catch (error) { if (!isLosslessFamilyArtifactName(artifact_name)) throw error;"), "readArtifactPayload must fallback only for lossless_family__* artifacts");
+assert.ok(pipeline.includes("LOSSLESS_ROOT_BASE_ARTIFACT_PATTERN"), "central pipeline must recognize lossless_root virtual artifacts");
+assert.ok(pipeline.includes("resolveLosslessRootArtifact"), "central pipeline must resolve sparse/sharded lossless roots");
+assert.ok(pipeline.includes("readSourceFamilyIndexForRootResolver"), "root resolution must navigate source_family_index");
+assert.ok(pipeline.includes("required_artifacts"), "root resolution must load the root manifest's exact physical artifacts");
+assert.ok(pipeline.includes("source_text_cutting_allowed: false"), "root resolver must preserve lossless source text");
+assert.ok(routeReader.includes("readPhaseRouteRuntimePacket"), "P2G runtime reader missing");
+assert.ok(routeReader.includes("PRIMARY_EVIDENCE"), "P2G runtime reader must treat lossless evidence as primary");
+assert.ok(routeReader.includes("MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE"), "P2G runtime reader must enforce index navigation");
+assert.equal(routeReader.includes("lossless_family__"), false, "P2G reader must not use retired lossless_family artifacts");
+assert.ok(permissions.includes("LOSSLESS_COMMON_ROOT_ARTIFACT_PATTERN"), "canonical permissions must govern lossless_root artifacts");
+assert.equal(permissions.includes("LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES"), false, "retired family permission union must not return");
 
-assert.ok(phaseContracts.includes("...LEGAL_GOVERNANCE_FAMILY_ARTIFACT_NAMES"), "test expects downstream legal family reads to exist");
-assert.ok(phaseContracts.includes("M11"), "M11 phase contract missing");
-
-console.log("dynamic family read firewall: PASS");
+console.log(JSON.stringify({ check: "sparse root read firewall", status: "PASS", enforced_gates: ["P2G_SOLE_ROUTE_READER", "INDEX_NAVIGATION_MANDATORY", "LOSSLESS_EVIDENCE_PRIMARY", "SPARSE_ROOT_SHARDS_RESOLVED", "NO_RETIRED_LOSSLESS_FAMILY_RUNTIME"] }, null, 2));
