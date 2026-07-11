@@ -17,122 +17,105 @@ jobs:
         with:
           ref: domain-gate-v0-preflight
           fetch-depth: 0
-      - name: Apply exact FDR and Phase 2A cutover
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+      - name: Install backend dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+      - name: Apply exact Cutover 1
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
+          cd diligence-artifact-backend
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync, statSync } from 'node:fs';
+          import path from 'node:path';
+          import yaml from 'js-yaml';
 
-          root = Path('diligence-artifact-backend')
-          fdr = root / 'references/registry/Diligence_Field_Derivation_Registry.yml'
-          addendum = root / 'references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml'
+          const FDR = 'references/registry/Diligence_Field_Derivation_Registry.yml';
+          const ADDENDUM = 'references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml';
+          const PROMPT = 'agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md';
+          const AUTHORITY = 'references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml';
+          const GUARD = 'scripts/check-no-legacy-registry-refs.mjs';
+          const TOKEN = 'TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml';
 
-          fdr_text = fdr.read_text(encoding='utf-8')
-          addendum_lines = addendum.read_text(encoding='utf-8').splitlines()
+          assert.ok(existsSync(ADDENDUM), 'ADDENDUM_MISSING_BEFORE_CUTOVER');
+          const fdrText = readFileSync(FDR, 'utf8');
+          const addendumText = readFileSync(ADDENDUM, 'utf8');
+          const fdr = yaml.load(fdrText);
+          const addendum = yaml.load(addendumText);
 
-          if re.search(r'^- field_id: TP\.BIZ\.009$', fdr_text, flags=re.M) or re.search(r'^- field_id: TP\.BIZ\.010$', fdr_text, flags=re.M):
-              raise SystemExit('TP_BIZ_009_010_ALREADY_PRESENT')
-          if 'row_count: 454' not in fdr_text:
-              raise SystemExit('EXPECTED_FDR_ROW_COUNT_454_NOT_FOUND')
-          if 'version: v3_agnostic_multidomain_provenance' not in fdr_text:
-              raise SystemExit('EXPECTED_FDR_VERSION_NOT_FOUND')
+          assert.equal(fdr.registry.row_count, 456, 'FDR_ROW_COUNT_NOT_456');
+          assert.equal(fdr.registry.version, 'v3.1_agnostic_multidomain_provenance', 'FDR_VERSION_NOT_V3_1');
+          const fdrRows = new Map(fdr.fields.map((row) => [row.field_id, row]));
+          for (const legacyRow of addendum.fields) {
+            assert.ok(['TP.BIZ.009', 'TP.BIZ.010'].includes(legacyRow.field_id), `UNEXPECTED_ADDENDUM_ROW:${legacyRow.field_id}`);
+            assert.ok(fdrRows.has(legacyRow.field_id), `FDR_ROW_MISSING:${legacyRow.field_id}`);
+            assert.deepEqual(fdrRows.get(legacyRow.field_id), legacyRow, `FDR_ROW_NOT_LOSSLESS:${legacyRow.field_id}`);
+          }
+          assert.equal(addendum.fields.length, 2, 'ADDENDUM_ROW_COUNT_NOT_2');
+          assert.equal(fdr.fields.filter((row) => row.field_id === 'TP.BIZ.009').length, 1, 'TP_BIZ_009_DUPLICATE');
+          assert.equal(fdr.fields.filter((row) => row.field_id === 'TP.BIZ.010').length, 1, 'TP_BIZ_010_DUPLICATE');
 
-          start = next(i for i, line in enumerate(addendum_lines) if line == '  - field_id: TP.BIZ.009')
-          end = next(i for i, line in enumerate(addendum_lines) if line == 'hard_rules:')
-          block_lines = addendum_lines[start:end]
-          if not any(line == '  - field_id: TP.BIZ.010' for line in block_lines):
-              raise SystemExit('ADDENDUM_TP_BIZ_010_NOT_FOUND')
-          block = '\n'.join(line[2:] if line.startswith('  ') else line for line in block_lines).rstrip() + '\n'
+          let prompt = readFileSync(PROMPT, 'utf8');
+          const oldPromptLine = '`TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml` governs the two public operating-context signal fields when present through the active authority chain.';
+          const newPromptLine = '`Diligence_Field_Derivation_Registry.yml` governs the two public operating-context signal fields through `TP.BIZ.009` and `TP.BIZ.010`.';
+          assert.ok(prompt.includes(oldPromptLine), 'PROMPT_ADDENDUM_REFERENCE_NOT_FOUND');
+          prompt = prompt.replace(oldPromptLine, newPromptLine);
+          writeFileSync(PROMPT, prompt, 'utf8');
 
-          marker = '- field_id: TP.WRAP.001\n'
-          if marker not in fdr_text:
-              raise SystemExit('FDR_INSERTION_MARKER_NOT_FOUND')
-          fdr_text = fdr_text.replace(marker, block + marker, 1)
-          fdr_text = fdr_text.replace('row_count: 454', 'row_count: 456', 1)
-          fdr_text = fdr_text.replace('version: v3_agnostic_multidomain_provenance', 'version: v3.1_agnostic_multidomain_provenance', 1)
+          let authority = readFileSync(AUTHORITY, 'utf8');
+          const authorityLine = '    - TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml\n';
+          assert.ok(authority.includes(authorityLine), 'AUTHORITY_ADDENDUM_REFERENCE_NOT_FOUND');
+          authority = authority.replace(authorityLine, '');
+          writeFileSync(AUTHORITY, authority, 'utf8');
 
-          field_count = len(re.findall(r'^- field_id:', fdr_text, flags=re.M))
-          if field_count != 456:
-              raise SystemExit(f'FDR_FIELD_COUNT_MISMATCH:{field_count}')
-          if len(re.findall(r'^- field_id: TP\.BIZ\.009$', fdr_text, flags=re.M)) != 1:
-              raise SystemExit('TP_BIZ_009_COUNT_INVALID')
-          if len(re.findall(r'^- field_id: TP\.BIZ\.010$', fdr_text, flags=re.M)) != 1:
-              raise SystemExit('TP_BIZ_010_COUNT_INVALID')
-          fdr.write_text(fdr_text, encoding='utf-8')
+          let guard = readFileSync(GUARD, 'utf8');
+          const oldDeadTail = '  ["CLASSIFICATION", "DERIVATION", "MATRIX"].join("_")\n]);';
+          const newDeadTail = '  ["CLASSIFICATION", "DERIVATION", "MATRIX"].join("_"),\n  ["TARGET", "PROFILE", "PUBLIC", "REGULATORY", "GRIEVANCE", "FIELD", "ADDENDUM.yaml"].join("_")\n]);';
+          assert.ok(guard.includes(oldDeadTail), 'GUARD_DEAD_LIST_ANCHOR_NOT_FOUND');
+          guard = guard.replace(oldDeadTail, newDeadTail);
+          assert.ok(guard.includes('const roots = ["src", "scripts", "agent-packages"];'), 'GUARD_ROOTS_ANCHOR_NOT_FOUND');
+          guard = guard.replace('const roots = ["src", "scripts", "agent-packages"];', 'const roots = ["src", "scripts", "agent-packages", "references"];');
+          writeFileSync(GUARD, guard, 'utf8');
 
-          legacy_names = (
-              'M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml',
-              'TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml',
-          )
-          replacement = 'Diligence_Field_Derivation_Registry.yml'
-          targets = [root / 'src/phases/02-cartography-index']
-          targets.append(root / 'agent-packages/phase_2a_target_profile_source_index')
+          unlinkSync(ADDENDUM);
 
-          script_root = root / 'scripts'
-          for path in script_root.rglob('*'):
-              if not path.is_file() or path.suffix.lower() not in {'.js', '.mjs', '.cjs'}:
-                  continue
-              name = path.name.lower()
-              text = path.read_text(encoding='utf-8')
-              if ('phase2a' in name or 'target-profile-source-index' in name or 'target_profile_source_index' in text) and any(token in text for token in legacy_names):
-                  targets.append(path)
-
-          files = []
-          for target in targets:
-              if target.is_file():
-                  files.append(target)
-              elif target.exists():
-                  files.extend(path for path in target.rglob('*') if path.is_file() and path.suffix.lower() in {'.js', '.mjs', '.cjs', '.md', '.yaml', '.yml', '.json'})
-
-          changed = []
-          for path in sorted(set(files)):
-              text = path.read_text(encoding='utf-8')
-              original = text
-              for token in legacy_names:
-                  text = text.replace(token, replacement)
-              text = text.replace('["Diligence_Field_Derivation_Registry.yml", "Diligence_Field_Derivation_Registry.yml"]', '["Diligence_Field_Derivation_Registry.yml"]')
-              text = text.replace('["references/registry/Diligence_Field_Derivation_Registry.yml", "references/registry/Diligence_Field_Derivation_Registry.yml"]', '["references/registry/Diligence_Field_Derivation_Registry.yml"]')
-              lines = text.splitlines(keepends=True)
-              deduped = []
-              for line in lines:
-                  if deduped and line.strip() in {'- Diligence_Field_Derivation_Registry.yml', '- references/registry/Diligence_Field_Derivation_Registry.yml'} and line.strip() == deduped[-1].strip():
-                      continue
-                  deduped.append(line)
-              text = ''.join(deduped)
-              if text != original:
-                  path.write_text(text, encoding='utf-8')
-                  changed.append(str(path))
-
-          scan_roots = [root / 'src/phases/02-cartography-index', root / 'agent-packages/phase_2a_target_profile_source_index']
-          scan_roots.extend(path for path in script_root.rglob('*') if path.is_file() and ('phase2a' in path.name.lower() or 'target-profile-source-index' in path.name.lower()))
-          residue = []
-          for target in scan_roots:
-              paths = [target] if target.is_file() else [p for p in target.rglob('*') if p.is_file()]
-              for path in paths:
-                  if path.suffix.lower() not in {'.js', '.mjs', '.cjs', '.md', '.yaml', '.yml', '.json'}:
-                      continue
-                  text = path.read_text(encoding='utf-8')
-                  for token in legacy_names:
-                      if token in text:
-                          residue.append(f'{path}:{token}')
-          if residue:
-              raise SystemExit('PHASE2A_LEGACY_AUTHORITY_REFS_REMAIN:' + ','.join(residue))
-
-          print('CHANGED_FILES')
-          for item in changed:
-              print(item)
-          PY
-      - name: Commit cutover
+          const residue = [];
+          for (const root of ['src', 'scripts', 'agent-packages', 'references']) walk(root);
+          function walk(target) {
+            if (!existsSync(target)) return;
+            const stat = statSync(target);
+            if (stat.isFile()) {
+              if (!/\.(?:js|mjs|cjs|json|md|ya?ml)$/i.test(target)) return;
+              if (readFileSync(target, 'utf8').includes(TOKEN)) residue.push(target);
+              return;
+            }
+            for (const entry of readdirSync(target)) {
+              if (['node_modules', '.git', 'archive', 'archive-legacy'].includes(entry)) continue;
+              walk(path.join(target, entry));
+            }
+          }
+          assert.deepEqual(residue, [], `ADDENDUM_REFERENCE_RESIDUE:${residue.join(',')}`);
+          console.log(JSON.stringify({ cutover: 'TP.BIZ.009_TP.BIZ.010_TO_FDR', status: 'PASS' }, null, 2));
+          NODE
+      - name: Run Cutover 1 checks
+        working-directory: diligence-artifact-backend
+        run: |
+          node scripts/check-no-legacy-registry-refs.mjs
+          node scripts/check-phase3a-target-profile-package.mjs
+      - name: Commit Cutover 1
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add diligence-artifact-backend/references/registry/Diligence_Field_Derivation_Registry.yml \
-                  diligence-artifact-backend/src/phases/02-cartography-index \
-                  diligence-artifact-backend/agent-packages/phase_2a_target_profile_source_index \
-                  diligence-artifact-backend/scripts
-          git commit -m 'Integrate Target Profile regulatory fields into FDR'
+                  diligence-artifact-backend/references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml \
+                  diligence-artifact-backend/agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md \
+                  diligence-artifact-backend/scripts/check-no-legacy-registry-refs.mjs
+          git rm diligence-artifact-backend/references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
+          git commit -m 'Cutover TP.BIZ.009 and TP.BIZ.010 to FDR'
           git push origin HEAD:domain-gate-v0-preflight
