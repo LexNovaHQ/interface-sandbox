@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v19_phase5_mounted_taxonomy_split_schema
+runtime_contract_version: v18_phase5_agnostic_deterministic_led_semantic_supported
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -103,22 +103,6 @@ read_artifacts:
       - feature_candidate_inventory
     lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
 
-forbidden_material_profile_read_artifacts:
-  - source_discovery_handoff
-  - cartography_index
-  - target_profile_forensics
-  - target_feature_profile_forensics
-  - legal_cartography_index
-  - legal_doc_inventory
-  - legal_doc_extraction_index
-  - legal_doc_{DOC_TYPE}
-  - data_privacy_navigation_index
-  - dap_forensics_profile
-  - exposure artifacts
-  - compiler artifacts
-  - Qualified Review artifacts
-  - retired_family_artifact_taxonomy
-
 required_reference_files:
   TARGET_PROFILE_REVIEW:
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
@@ -135,40 +119,6 @@ required_reference_files:
     - mounted_registry_keys_from_active_run_package_manifest
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
-target_profile_review_phase2a_boundary:
-  route_id: ROUTE.PHASE3A.TARGET_PROFILE
-  bucket_id: 2A_BUCKET_TARGET_PROFILE
-  locator_authority: target_profile_source_index
-  navigation_only: true
-  evidence_source: phase2g_routed_target_lossless_evidence
-  legal_dependency: legal_signal_derivation_profile
-  regulatory_grievance_fields_factual_only: true
-  license_validity_requirement_applicability_forbidden: true
-  grievance_sufficiency_ombudsman_requirement_forbidden: true
-
-domain_derivation_phase2b_boundary:
-  route_id: ROUTE.PHASE3B.DOMAIN_DERIVATION
-  bucket_id: 2B_BUCKET_DOMAIN_DERIVATION
-  locator_authority: domain_derivation_source_index
-  activity_profile_source_index_reserved_for_2c_phase5: true
-  navigation_only: true
-  evidence_source: phase2g_routed_domain_derivation_lossless_evidence
-  target_profile_is_context_not_proof: true
-
-domain_derivation_registry_ladder_schema:
-  prompt_file: 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md
-  assembled_registry_id: DILIGENCE_DOMAIN_REGISTRY_v1
-  registry_grammar_authority: references/registry/Diligence_Field_Derivation_Registry.yml
-  package_authority: references/domain-packages/package-catalog.v0.json
-  package_key_authority: mounted_registry_keys_from_active_run_package_manifest
-  prompt_is_domain_agnostic: true
-  new_domains_added_by_registry_not_prompt: true
-  model_role: condition_level_semantic_evaluator
-  validator_role: deterministic_lock_authority
-  model_must_not_hardcode_domain_logic: true
-  model_must_not_emit_active_run_package_manifest_top_level: true
-  allowed_model_top_level_key: domain_derivation_profile
-
 activity_candidate_semantic_support_schema:
   route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
   bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
@@ -179,7 +129,8 @@ activity_candidate_semantic_support_schema:
   semantic_support_non_blocking: true
   semantic_output_non_authoritative: true
   deterministic_reconciliation_required: true
-  model_output_top_level_key: semantic_candidate_support_proposals
+  semantic_packet_top_level_key: semantic_candidate_support_proposal
+  model_output_top_level_key: semantic_candidate_support_proposal
   allowed_actions:
     - RECOVER_CANDIDATE
     - MERGE_CANDIDATES
@@ -210,15 +161,17 @@ activity_profile_material_schema:
   source_index_authority: activity_profile_source_index
   candidate_universe_authority: feature_candidate_inventory
   package_context_authority: active_run_package_manifest
-  package_catalog_authority: references/domain-packages/package-catalog.v0.json
   taxonomy_authority: mounted_registry_keys_from_active_run_package_manifest
-  primary_taxonomy_source: primary_package_registry_key
-  overlay_taxonomy_source: mounted_capability_overlay_registry_keys
+  taxonomy_resolver: resolveActivityTaxonomy
+  primary_taxonomy_source: mounted_primary_package_key
+  overlay_taxonomy_source: mounted_capability_overlay_keys
   regulatory_overlays_excluded_from_activity_classification: true
-  fixed_registry_key_universal_authority_forbidden: true
+  hardcoded_registry_key_list_forbidden: true
+  fixed_ai_registry_key_universal_authority_forbidden: true
   fixed_archetype_enum_forbidden: true
   fixed_surface_enum_forbidden: true
-  multiple_package_labels_per_activity_allowed: true
+  mounted_taxonomy_ref_stamped_by_backend: true
+  model_may_not_override_mounted_taxonomy_ref: true
   top_level_required_keys:
     - activities
     - commercial_availability_posture
@@ -248,17 +201,58 @@ activity_profile_material_schema:
     - archetype_derivation_basis
     - surface_context_tokens
     - surface_derivation_basis
+  derivation_basis_required_keys:
+    - code_or_token
+    - normalized_name
+    - conditions_satisfied
+    - trigger_if_applied
+    - exclude_if_checked
+    - material_basis
+    - limitation
   mounted_taxonomy_ref_required_keys:
     - primary_package_id
     - primary_key_version
     - overlays
-  retired_activity_row_keys_forbidden:
-    - archetype_codes
-    - archetype_derivation_basis
-    - surface_context_tokens
-    - surface_derivation_basis
-    - archetype_proof
-    - surface_proof_and_routing_limits
+  degradation_rules:
+    - PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
+    - NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>
+    - OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>
+    - DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>
+
+phase5_agnostic_prompt_bundle_lock:
+  runtime_contract_version: v18_phase5_agnostic_deterministic_led_semantic_supported
+  phase_scope: ACTIVITY_PROFILE_REVIEW_ONLY
+  phase2g_routing_authority_preserved: true
+  phase2e_modified: false
+  phase7_modified: false
+  phase9_modified: false
+  layer1_activity_candidate_inventory:
+    inventory_version: m8_feature_candidate_inventory_index_v4_deterministic_led_semantic_supported
+    derivation_mode: DETERMINISTIC_LED_SEMANTIC_SUPPORTED_FROM_INDEX_MAPPED_LOSSLESS_UNITS_NO_TEXT_COPY
+    deterministic_baseline_first: true
+    source_index_authority: activity_profile_source_index
+    lossless_evidence_role: PRIMARY_EVIDENCE
+    index_navigation_mandatory: true
+    index_mapped_lossless_units_opened_as_primary_evidence: true
+    evidence_text_copy_forbidden: true
+    package_taxonomy_forbidden: true
+    semantic_support_attempt_required: true
+    semantic_output_non_authoritative: true
+    deterministic_reconciliation_required: true
+    semantic_packet_top_level_key: semantic_candidate_support_proposal
+  layer2_activity_profile_material:
+    runtime_contract_version: m8_phase5_agnostic_taxonomy_v8
+    candidate_universe_authority: feature_candidate_inventory
+    taxonomy_authority: mounted_registry_keys_from_active_run_package_manifest
+    taxonomy_resolver: resolveActivityTaxonomy
+    primary_taxonomy_source: mounted_primary_package_key
+    overlay_taxonomy_source: mounted_capability_overlay_keys
+    regulatory_overlays_excluded_from_activity_classification: true
+    hardcoded_registry_key_list_forbidden: true
+    hardcoded_ai_registry_key_universal_authority_forbidden: true
+    hardcoded_ai_activity_evidence_root_forbidden: true
+    mounted_taxonomy_ref_stamped_by_backend: true
+    model_may_not_override_mounted_taxonomy_ref: true
 
 write_artifacts_in_order:
   TARGET_PROFILE_REVIEW:
@@ -282,9 +276,7 @@ write_artifacts_in_order:
 
 phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
-  - Target Profile Review uses target_profile_source_index to navigate the primary target lossless evidence routed by Phase 2G.
   - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
-  - Domain Derivation Layer uses domain_derivation_source_index to navigate the primary evidence routed by Phase 2G.
   - Activity Candidate Inventory first builds a deterministic baseline from index-mapped routed lossless units.
   - Activity Candidate Inventory then attempts one non-authoritative semantic proposal pass and deterministically validates and reconciles accepted proposals.
   - Semantic unavailability or wholly rejected output preserves the deterministic baseline and produces LOCKED_WITH_LIMITATIONS.
