@@ -79,6 +79,21 @@ assert.equal(app.includes("public-reviewer-routes.js"), false);
 assert.ok(app.includes('app.use("/public", publicRouter)'));
 assert.ok(app.includes('app.use("/v1", operatorRouter)'));
 
+const pipeline = readFileSync("src/runtime/services/pipeline.service.js", "utf8");
+for (const required of [
+  '../../phases/09-exposure-profile/exposure-profile.runner.js',
+  '../../phases/10-operator-challenge/operator-challenge.runner.js',
+  '../../phases/11-normalized-compiler/normalized-compiler.runner.js',
+  './reporting/report-renderer.service.js'
+]) assert.ok(pipeline.includes(required), `central pipeline missing direct implementation import: ${required}`);
+for (const retiredBridge of [
+  '../../m11-orchestrator.js',
+  '../../m12-phase2g.runner.js',
+  '../../compiler-phase2g.runner.js',
+  '../../report-renderer.js'
+]) assert.equal(pipeline.includes(retiredBridge), false, `central pipeline still imports root compatibility bridge: ${retiredBridge}`);
+assert.ok(pipeline.includes("root_downstream_compatibility_bridges_not_used: true"));
+
 const prompts = readFileSync("src/runtime/services/prompts.service.js", "utf8");
 assert.ok(prompts.includes('from "./reference.service.js"'));
 assert.equal(prompts.includes("../../reference-loader.js"), false);
@@ -93,6 +108,7 @@ console.log(JSON.stringify({
     "ONE_PRODUCTION_ENTRYPOINT",
     "ONE_PIPELINE_AND_ASYNC_STACK",
     "ONE_PROMPT_REFERENCE_PROVIDER_STORAGE_STACK",
+    "CENTRAL_PIPELINE_BYPASSES_ROOT_DOWNSTREAM_BRIDGES",
     "TARGETED_ROOT_FILES_COMPATIBILITY_ONLY",
     "PHASE9_10_11_IMPLEMENTATIONS_PHASE_OWNED",
     "RENDERER_IMPLEMENTATION_RUNTIME_OWNED",
