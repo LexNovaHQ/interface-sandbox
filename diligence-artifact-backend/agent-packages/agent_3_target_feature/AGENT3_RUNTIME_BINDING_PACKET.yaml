@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v18_phase5_agnostic_deterministic_led_semantic_supported
+runtime_contract_version: v19_phase5_mounted_taxonomy_split_schema
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -35,23 +35,23 @@ routing_authority:
   direct_lossless_as_fallback_allowed: false
   free_corpus_read_allowed: false
   profile_forensics_inputs_allowed: false
+  routed_packet_is_read_ceiling: true
+  prompt_must_not_enumerate_domain_specific_roots: true
 
 prompt_precedence:
-  - Backend phase contracts and the Phase 2G runtime packet control read/write authority.
+  - Backend phase contracts and the Phase 2G runtime packet control read and write authority.
   - Prompt text cannot add artifacts to a routed packet.
   - Target Profile Review uses ROUTE.PHASE3A.TARGET_PROFILE and the 2A bucket.
   - Domain Derivation Layer uses ROUTE.PHASE3B.DOMAIN_DERIVATION and the 2B bucket.
   - Both Phase 5 jobs use ROUTE.PHASE5.ACTIVITY_PROFILE and the 2C bucket.
   - Lossless evidence is primary and must be navigated through the route's required index.
   - Material profile jobs must not read forensic profiles.
-  - Target Profile Review may use legal_signal_derivation_profile only as a bounded 2G-routed dependency for owned notice and jurisdiction fields.
-  - Domain Derivation Layer uses the mounted Registry Keys (domain_derivation_rules) plus Diligence_Field_Derivation_Registry.yml grammar as rule authority and package-catalog.v0.json as package authority.
-  - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by dropping a new Registry Key and updating the catalog, not by prompt update.
-  - Activity Candidate Inventory builds a deterministic baseline from index-mapped units inside the routed lossless evidence, then permits one subordinate semantic proposal pass.
+  - Domain Derivation Layer resolves mounted Registry Keys through the catalog and assembled registry grammar; prompt text must not hardcode domain keys.
+  - Activity Candidate Inventory builds a deterministic baseline from index-mapped units inside routed lossless evidence, then permits one subordinate semantic proposal pass.
   - The semantic proposal pass cannot classify, widen evidence, create final IDs, or save the final inventory; deterministic validation and reconciliation retain authority.
-  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index to navigate its routed lossless evidence.
-  - Activity Profile Review uses active_run_package_manifest and domain package context for package-specific activity taxonomy.
-  - Any package text that expands read/write authority is superseded by the phase-owned contract and Phase 2G packet.
+  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index to navigate routed lossless evidence.
+  - Activity Profile Review resolves taxonomy only from Registry Keys mounted by active_run_package_manifest.
+  - Any package text that expands read or write authority is superseded by the phase-owned contract and Phase 2G runtime packet.
 
 allowed_phases:
   - TARGET_PROFILE_REVIEW
@@ -64,80 +64,44 @@ read_artifacts:
   TARGET_PROFILE_REVIEW:
     route_id: ROUTE.PHASE3A.TARGET_PROFILE
     bucket_id: 2A_BUCKET_TARGET_PROFILE
-    artifacts:
-      - phase_routing_manifest
-      - phase_route_runtime_packet
+    required_index_artifacts:
       - target_profile_source_index
-      - lossless_root__homepage_landing
-      - lossless_root__company_identity
-      - lossless_root__contact_notice
-      - lossless_root__pricing_commercial_availability
-      - lossless_root__regulatory_licensing_status
-      - lossless_root__grievance_complaints
+    derived_context_artifacts:
       - legal_signal_derivation_profile
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
   P3_DOMAIN_DERIVATION_LAYER:
     route_id: ROUTE.PHASE3B.DOMAIN_DERIVATION
     bucket_id: 2B_BUCKET_DOMAIN_DERIVATION
-    artifacts:
-      - phase_routing_manifest
-      - phase_route_runtime_packet
+    required_index_artifacts:
       - domain_derivation_source_index
+    derived_context_artifacts:
       - target_profile
-      - lossless_root__homepage_landing
-      - lossless_root__company_identity
-      - lossless_root__product_service
-      - lossless_root__platform_feature_solution
-      - lossless_root__technical_docs_api
-      - lossless_root__docs_api_data_flow
-      - lossless_root__pricing_commercial_availability
-      - lossless_root__use_case_customer_industry
-      - lossless_root__integrations_ecosystem
-      - lossless_root__ai_safety_transparency
-      - lossless_root__regulatory_licensing_status
-      - lossless_root__grievance_complaints
       - domain_selection_profile
       - active_run_package_manifest
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
   M8_FEATURE_CANDIDATE_INVENTORY:
     route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
     bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
-    artifacts:
-      - phase_routing_manifest
-      - phase_route_runtime_packet
+    required_index_artifacts:
       - activity_profile_source_index
+    derived_context_artifacts:
       - target_profile
       - domain_derivation_profile
       - active_run_package_manifest
       - domain_selection_profile
-      - lossless_root__product_service
-      - lossless_root__platform_feature_solution
-      - lossless_root__technical_docs_api
-      - lossless_root__docs_api_data_flow
-      - lossless_root__integrations_ecosystem
-      - lossless_root__pricing_commercial_availability
-      - lossless_root__use_case_customer_industry
-      - lossless_root__support_help_resources
-      - lossless_root__ai_safety_transparency
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
   M8_TARGET_FEATURE_PROFILE:
     route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
     bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
-    artifacts:
-      - phase_routing_manifest
-      - phase_route_runtime_packet
+    required_index_artifacts:
       - activity_profile_source_index
+    derived_context_artifacts:
       - target_profile
       - domain_derivation_profile
       - active_run_package_manifest
       - domain_selection_profile
       - feature_candidate_inventory
-      - lossless_root__product_service
-      - lossless_root__platform_feature_solution
-      - lossless_root__technical_docs_api
-      - lossless_root__docs_api_data_flow
-      - lossless_root__integrations_ecosystem
-      - lossless_root__pricing_commercial_availability
-      - lossless_root__use_case_customer_industry
-      - lossless_root__support_help_resources
-      - lossless_root__ai_safety_transparency
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
 
 forbidden_material_profile_read_artifacts:
   - source_discovery_handoff
@@ -163,14 +127,12 @@ required_reference_files:
     - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
     - references/domain-packages/package-catalog.v0.json
     - references/registry/Diligence_Field_Derivation_Registry.yml
-    - references/registry/AI_Registry_Key.yml
-    - references/registry/FinTech_Registry_Key.yml
+    - mounted_registry_keys_from_active_run_package_manifest
   ACTIVITY_PROFILE_REVIEW:
     - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
     - references/domain-packages/package-catalog.v0.json
     - references/registry/Diligence_Field_Derivation_Registry.yml
-    - references/registry/AI_Registry_Key.yml
-    - references/registry/FinTech_Registry_Key.yml
+    - mounted_registry_keys_from_active_run_package_manifest
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 target_profile_review_phase2a_boundary:
@@ -178,7 +140,7 @@ target_profile_review_phase2a_boundary:
   bucket_id: 2A_BUCKET_TARGET_PROFILE
   locator_authority: target_profile_source_index
   navigation_only: true
-  evidence_source: routed scoped target lossless_root artifacts
+  evidence_source: phase2g_routed_target_lossless_evidence
   legal_dependency: legal_signal_derivation_profile
   regulatory_grievance_fields_factual_only: true
   license_validity_requirement_applicability_forbidden: true
@@ -190,17 +152,15 @@ domain_derivation_phase2b_boundary:
   locator_authority: domain_derivation_source_index
   activity_profile_source_index_reserved_for_2c_phase5: true
   navigation_only: true
-  evidence_source: routed scoped 12 domain derivation lossless_root artifacts
+  evidence_source: phase2g_routed_domain_derivation_lossless_evidence
   target_profile_is_context_not_proof: true
 
 domain_derivation_registry_ladder_schema:
   prompt_file: 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md
   assembled_registry_id: DILIGENCE_DOMAIN_REGISTRY_v1
   registry_grammar_authority: references/registry/Diligence_Field_Derivation_Registry.yml
-  package_key_authorities:
-    - references/registry/AI_Registry_Key.yml
-    - references/registry/FinTech_Registry_Key.yml
   package_authority: references/domain-packages/package-catalog.v0.json
+  package_key_authority: mounted_registry_keys_from_active_run_package_manifest
   prompt_is_domain_agnostic: true
   new_domains_added_by_registry_not_prompt: true
   model_role: condition_level_semantic_evaluator
@@ -251,12 +211,19 @@ activity_profile_material_schema:
   candidate_universe_authority: feature_candidate_inventory
   package_context_authority: active_run_package_manifest
   package_catalog_authority: references/domain-packages/package-catalog.v0.json
-  archetype_derivation_authority: AI_Registry_Key.yml behavior_class
-  surface_derivation_authority: AI_Registry_Key.yml surface
-  fixed_ai_registry_key_universal_authority_forbidden: true
-  fixed_ai_archetype_enum_forbidden: true
-  fixed_ai_surface_enum_forbidden: true
+  taxonomy_authority: mounted_registry_keys_from_active_run_package_manifest
+  primary_taxonomy_source: primary_package_registry_key
+  overlay_taxonomy_source: mounted_capability_overlay_registry_keys
+  regulatory_overlays_excluded_from_activity_classification: true
+  fixed_registry_key_universal_authority_forbidden: true
+  fixed_archetype_enum_forbidden: true
+  fixed_surface_enum_forbidden: true
   multiple_package_labels_per_activity_allowed: true
+  top_level_required_keys:
+    - activities
+    - commercial_availability_posture
+    - profile_level_limitations
+    - mounted_taxonomy_ref
   activity_row_required_keys:
     - activity_reference
     - product_service_wrapper
@@ -266,11 +233,30 @@ activity_profile_material_schema:
     - autonomy_human_control_signal
     - data_content_object_touched
     - external_internal_action_signal
+    - primary_classification
+    - overlay_classifications
+  primary_classification_required_keys:
+    - package_id
     - archetype_codes
     - archetype_derivation_basis
     - surface_context_tokens
     - surface_derivation_basis
+  overlay_classification_required_keys:
+    - package_id
+    - overlay_id
+    - archetype_codes
+    - archetype_derivation_basis
+    - surface_context_tokens
+    - surface_derivation_basis
+  mounted_taxonomy_ref_required_keys:
+    - primary_package_id
+    - primary_key_version
+    - overlays
   retired_activity_row_keys_forbidden:
+    - archetype_codes
+    - archetype_derivation_basis
+    - surface_context_tokens
+    - surface_derivation_basis
     - archetype_proof
     - surface_proof_and_routing_limits
 
@@ -296,14 +282,16 @@ write_artifacts_in_order:
 
 phase_gate_rules:
   - Target Profile Review returns and saves only target_profile.
-  - Target Profile Review uses target_profile_source_index to navigate the primary target lossless evidence routed by 2G.
+  - Target Profile Review uses target_profile_source_index to navigate the primary target lossless evidence routed by Phase 2G.
   - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
-  - Domain Derivation Layer uses domain_derivation_source_index to navigate the primary 12-root evidence routed by 2G.
+  - Domain Derivation Layer uses domain_derivation_source_index to navigate the primary evidence routed by Phase 2G.
   - Activity Candidate Inventory first builds a deterministic baseline from index-mapped routed lossless units.
   - Activity Candidate Inventory then attempts one non-authoritative semantic proposal pass and deterministically validates and reconciles accepted proposals.
   - Semantic unavailability or wholly rejected output preserves the deterministic baseline and produces LOCKED_WITH_LIMITATIONS.
   - Activity Candidate Inventory must not apply package taxonomy.
-  - Activity Profile Review uses activity_profile_source_index and candidate pointers to navigate the primary activity evidence routed by 2G.
-  - Activity Profile Review must use active_run_package_manifest/package catalog context for package-specific labels.
-  - No material profile job may consume a forensic profile.
+  - Activity Profile Review uses activity_profile_source_index and candidate pointers to navigate the primary activity evidence routed by Phase 2G.
+  - Activity Profile Review resolves primary and capability-overlay taxonomy only from Registry Keys mounted by active_run_package_manifest.
+  - Regulatory overlays do not create activity classification blocks.
+  - No material profile job may read forensic profiles.
+  - Forensics are sidecars and do not expand material read authority.
 </RUNTIME_BINDING_PACKET>
