@@ -1,0 +1,962 @@
+{
+  "branch": "domain-gate-v0-preflight",
+  "intended_sources_of_truth": [
+    "references/registry/Diligence_Field_Derivation_Registry.yml",
+    "references/registry/AI_Registry_Key.yml",
+    "references/registry/FinTech_Registry_Key.yml"
+  ],
+  "field_coverage": {
+    "fdr_field_id_count": 454,
+    "m7_authority_field_ids": [
+      "TP.BIZ.001",
+      "TP.BIZ.002",
+      "TP.BIZ.003",
+      "TP.BIZ.004",
+      "TP.BIZ.005",
+      "TP.BIZ.009",
+      "TP.BIZ.010",
+      "TP.ID.001",
+      "TP.ID.002",
+      "TP.ID.003",
+      "TP.ID.004",
+      "TP.ID.005",
+      "TP.JUR.001",
+      "TP.JUR.003",
+      "TP.JUR.004",
+      "TP.JUR.005",
+      "TP.WRAP.001",
+      "TP.WRAP.002",
+      "TP.WRAP.003",
+      "TP.WRAP.005",
+      "TP.WRAP.006",
+      "TP.WRAP.007",
+      "TP.WRAP.008"
+    ],
+    "addendum_field_ids": [
+      "TP.BIZ.009",
+      "TP.BIZ.010"
+    ],
+    "legacy_union_count": 23,
+    "missing_legacy_field_ids_from_fdr": [
+      "TP.BIZ.009",
+      "TP.BIZ.010"
+    ],
+    "addendum_missing_field_ids_from_fdr": [
+      "TP.BIZ.009",
+      "TP.BIZ.010"
+    ],
+    "selected_field_coverage": [
+      {
+        "output_path": "target_identity.brand_name",
+        "field_ids": [
+          "TP.ID.001"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "target_identity.legal_entity_name",
+        "field_ids": [
+          "TP.ID.002"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "target_identity.entity_type",
+        "field_ids": [
+          "TP.ID.005"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "target_identity.reviewed_website",
+        "field_ids": [
+          "TP.ID.003"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "target_identity.primary_domain",
+        "field_ids": [
+          "TP.ID.004"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "jurisdiction_notice.registered_notice_location",
+        "field_ids": [
+          "TP.JUR.001"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "jurisdiction_notice.governing_law",
+        "field_ids": [
+          "TP.JUR.003",
+          "TP.JUR.004"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "jurisdiction_notice.courts_venue",
+        "field_ids": [
+          "TP.JUR.005"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "business_context.business_category",
+        "field_ids": [
+          "TP.BIZ.001"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "business_context.primary_customer_type",
+        "field_ids": [
+          "TP.BIZ.002"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "business_context.market_type_candidate",
+        "field_ids": [
+          "TP.BIZ.003"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "business_context.industry_sector",
+        "field_ids": [
+          "TP.BIZ.004"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "business_context.regulated_sector_hints",
+        "field_ids": [
+          "TP.BIZ.005"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "business_context.public_regulatory_licensing_signal",
+        "field_ids": [
+          "TP.BIZ.009"
+        ],
+        "all_in_fdr": false,
+        "missing": [
+          "TP.BIZ.009"
+        ]
+      },
+      {
+        "output_path": "business_context.public_grievance_complaints_signal",
+        "field_ids": [
+          "TP.BIZ.010"
+        ],
+        "all_in_fdr": false,
+        "missing": [
+          "TP.BIZ.010"
+        ]
+      },
+      {
+        "output_path": "product_service_wrapper.high_level_offering",
+        "field_ids": [
+          "TP.WRAP.001"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "product_service_wrapper.primary_public_claim",
+        "field_ids": [
+          "TP.WRAP.002"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "product_service_wrapper.product_service_wrapper_names",
+        "field_ids": [
+          "TP.WRAP.003"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "product_service_wrapper.delivery_model_signals",
+        "field_ids": [
+          "TP.WRAP.005",
+          "TP.WRAP.006",
+          "TP.WRAP.007",
+          "TP.WRAP.008"
+        ],
+        "all_in_fdr": true,
+        "missing": []
+      },
+      {
+        "output_path": "target_profile_limitations",
+        "field_ids": [],
+        "all_in_fdr": true,
+        "missing": []
+      }
+    ],
+    "tp_biz_009_fdr_row": null,
+    "tp_biz_010_fdr_row": null
+  },
+  "active_dependency_hits": [
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 60,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.ID.002\", field_key: \"target_identity.legal_entity_name\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"LEGAL_ENTITY_NAME_LOCATOR\", \"REGISTERED_ENTITY_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 61,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.ID.005\", field_key: \"target_identity.entity_type\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGISTERED_ENTITY_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 62,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.ID.006\", field_key: \"target_identity.parent_affiliate_relationship\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"BANK_PARTNER_SPONSOR_BANK_LOCATOR\", \"COUNTERPARTY_INSTITUTION_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 63,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.JUR.001\", field_key: \"jurisdiction_notice.registered_notice_country\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGISTERED_OFFICE_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 64,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.JUR.002\", field_key: \"jurisdiction_notice.registered_notice_state\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGISTERED_OFFICE_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 65,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.JUR.007\", field_key: \"target_profile_limitations.jurisdiction_evidence_basis\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGISTERED_OFFICE_LOCATOR\", \"LEGAL_NOTICE_CONTACT_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 66,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.JUR.008\", field_key: \"target_profile_limitations.jurisdiction_uncertainty\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGISTERED_OFFICE_LOCATOR\", \"LEGAL_NOTICE_CONTACT_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 67,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.002\", field_key: \"business_context.primary_customer_type\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"CUSTOMER_SEGMENT_CONTEXT_LOCATOR\", \"CONSUMER_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 68,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.004\", field_key: \"business_context.industry_sector\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGULATORY_LICENSING_SIGNAL_LOCATOR\", \"CONSUMER_DISCLOSURE_LOCATOR\", \"BANK_PARTNER_SPONSOR_BANK_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 69,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.005\", field_key: \"business_context.regulated_sector_hints\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"REGULATORY_LICENSING_SIGNAL_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"BANK_PARTNER_SPONSOR_BANK_LOCATOR\", \"CONSUMER_DISCLOSURE_LOCATOR\", \"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 70,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.009\", field_key: \"business_context.public_regulatory_licensing_signal\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml\"]), locator_families: Object.freeze([\"REGULATORY_LICENSING_SIGNAL_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"BANK_PARTNER_SPONSOR_BANK_LOCATOR\", \"CONSUMER_DISCLOSURE_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 71,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.010\", field_key: \"business_context.public_grievance_complaints_signal\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml\"]), locator_families: Object.freeze([\"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\", \"NODAL_GRIEVANCE_OFFICER_LOCATOR\", \"OMBUDSMAN_ESCALATION_LOCATOR\", \"COMPLAINTS_ROUTE_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 72,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "Object.freeze({ field_id: \"TP.WRAP.008\", field_key: \"product_service_wrapper.delivery_model_signals.partner_marketplace_intermediary_signal\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"Diligence_Field_Derivation_Registry.yml\"]), locator_families: Object.freeze([\"BANK_PARTNER_SPONSOR_BANK_LOCATOR\", \"COUNTERPARTY_INSTITUTION_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true })"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 70,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.009\", field_key: \"business_context.public_regulatory_licensing_signal\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml\"]), locator_families: Object.freeze([\"REGULATORY_LICENSING_SIGNAL_LOCATOR\", \"REGULATORY_DISCLOSURE_LOCATOR\", \"BANK_PARTNER_SPONSOR_BANK_LOCATOR\", \"CONSUMER_DISCLOSURE_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/02-cartography-index/target-profile-source-index.contract.js",
+      "line": 71,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "Object.freeze({ field_id: \"TP.BIZ.010\", field_key: \"business_context.public_grievance_complaints_signal\", downstream_owner: \"TARGET_PROFILE_REVIEW\", derivation_authority_refs: Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml\"]), locator_families: Object.freeze([\"GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR\", \"NODAL_GRIEVANCE_OFFICER_LOCATOR\", \"OMBUDSMAN_ESCALATION_LOCATOR\", \"COMPLAINTS_ROUTE_LOCATOR\"]), phase_2a_action: \"LOCATE_ONLY\", derived_value_forbidden: true }),"
+    },
+    {
+      "file": "src/phases/03-target-profile-review/target-profile-review.runner.js",
+      "line": 24,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "function assertRuntimeContract(contract = {}) { if (contract.central_phase_id !== TARGET_PROFILE_REVIEW_CONTRACT.central_phase_id) throw new Error(`TARGET_PROFILE_REVIEW_CONTRACT_MISMATCH:${contract.central_phase_id || \"missing\"}`); if (contract.public_label !== TARGET_PROFILE_REVIEW_CONTRACT.public_label) throw new Error(`TARGET_PROFILE_REVIEW_LABEL_MISMATCH:${contract.public_label || \"missing\"}`); if (!(contract.reads || []).includes(\"phase_routing_manifest\")) throw new Error(\"TARGET_PROFILE_REVIEW_PHASE2G_MANIFEST_READ_MISSING\"); assertSameArray(contract.writes || [], TARGET_PROFILE_REVIEW_CONTRACT.material_job.writes, \"TARGET_PROFILE_REVIEW_WRITES\"); if ((contract.references || []).includes(\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\") !== true) throw new Error(\"TARGET_PROFILE_REVIEW_AUTHORITY_REFERENCE_MISSING\"); }"
+    },
+    {
+      "file": "src/phases/03-domain-derivation/domain-derivation.contract.js",
+      "line": 65,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "\"references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md\","
+    },
+    {
+      "file": "src/runtime/contracts/pipeline.contract.js",
+      "line": 20,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "const TARGET_PROFILE_REFERENCE_FILES = Object.freeze([\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml\"]);"
+    },
+    {
+      "file": "src/runtime/contracts/pipeline.contract.js",
+      "line": 21,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "const DOMAIN_PACKAGE_REFERENCE_FILES = Object.freeze([\"references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md\", \"references/domain-packages/package-catalog.v0.json\"]);"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md",
+      "line": 147,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md",
+      "line": 135,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md",
+      "line": 65,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "`M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml` is the Target Profile Review field authority."
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md",
+      "line": 67,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "`TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml` governs the two public operating-context signal fields when present through the active authority chain."
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md",
+      "line": 39,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md",
+      "line": 79,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md",
+      "line": 142,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "DOMAIN_PACKAGE_KEY_v0.md"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
+      "line": 159,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
+      "line": 162,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md"
+    },
+    {
+      "file": "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
+      "line": 168,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_PACKET_MANIFEST.json",
+      "line": 39,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "\"references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\","
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_PACKET_MANIFEST.json",
+      "line": 40,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "\"references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml\","
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX.md",
+      "line": 88,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX.md",
+      "line": 89,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 20,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "target_profile_derivation_authority: references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 87,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 108,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 125,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 142,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 162,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 182,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 203,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 224,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 244,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 263,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 285,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 306,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 326,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 22,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "regulatory_grievance_field_addendum: references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 286,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "- TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml",
+      "line": 307,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "- TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET.yaml",
+      "line": 33,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "- references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2a_target_profile_source_index/P2A_TARGET_PROFILE_SOURCE_INDEX_RUNTIME_BINDING_PACKET.yaml",
+      "line": 34,
+      "legacy_name": "TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml",
+      "text": "- references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml"
+    },
+    {
+      "file": "agent-packages/phase_2b_domain_derivation_source_index/P2B_DOMAIN_DERIVATION_SOURCE_INDEX.md",
+      "line": 108,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md"
+    },
+    {
+      "file": "agent-packages/phase_2b_domain_derivation_source_index/P2B_PACKET_MANIFEST.json",
+      "line": 55,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "\"references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md\""
+    },
+    {
+      "file": "scripts/check-direct-legal-signal-behavior.mjs",
+      "line": 22,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "const authority = fs.readFileSync(path.join(repoRoot, \"references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\"), \"utf8\");"
+    },
+    {
+      "file": "scripts/check-domain-package-key.mjs",
+      "line": 15,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "]) assert.ok(key.includes(marker), `DOMAIN_PACKAGE_KEY_v0.md missing marker: ${marker}`);"
+    },
+    {
+      "file": "scripts/check-normalized-pipeline-contract.mjs",
+      "line": 31,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "assert.deepEqual(PIPELINE_CONTRACTS.M7_TARGET_PROFILE.references, [\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml\"]);"
+    },
+    {
+      "file": "scripts/check-phase3-sync-v0.mjs",
+      "line": 53,
+      "legacy_name": "DOMAIN_PACKAGE_KEY_v0.md",
+      "text": "\"DOMAIN_PACKAGE_KEY_v0.md\","
+    },
+    {
+      "file": "scripts/check-phase3a-target-profile-package.mjs",
+      "line": 19,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "authority: \"references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\""
+    },
+    {
+      "file": "scripts/check-phase3b-reference-packet.mjs",
+      "line": 15,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "assert.ok(m7packet.files[\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\"].content.length > 0);"
+    },
+    {
+      "file": "scripts/check-phase3b-reference-packet.mjs",
+      "line": 16,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "await assert.rejects(loadReferencePacket([\"references/domain-packages/../registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\"]));"
+    },
+    {
+      "file": "scripts/check-target-profile-review-package.mjs",
+      "line": 14,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "const authority = read(\"references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\");"
+    },
+    {
+      "file": "scripts/check-target-profile-review-runtime-wiring.mjs",
+      "line": 26,
+      "legacy_name": "M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml",
+      "text": "assert.deepEqual(contract.references, [\"M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml\", \"FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml\"]);"
+    }
+  ],
+  "domain_package_key": {
+    "phase3_reference_present": true,
+    "concept_coverage": {
+      "package_types": [
+        {
+          "term": "primary_domain_package",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": true
+        },
+        {
+          "term": "capability_overlay",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": true
+        },
+        {
+          "term": "regulatory_overlay",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": true
+        },
+        {
+          "term": "review_overlay",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": true
+        }
+      ],
+      "selection_statuses": [
+        {
+          "term": "NOT_EVALUATED",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "PROVISIONAL",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "CANDIDATE",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "LOCKED",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "LIMITED",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "REVIEW_REQUIRED",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "REJECTED",
+          "represented_in_intended_sot_or_contracts": true,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "SUPERSEDED",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        }
+      ],
+      "evidence_classes": [
+        {
+          "term": "official_homepage_positioning",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "official_product_page",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "official_pricing_or_plan_page",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "official_docs_or_api_reference",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "official_terms_privacy_security_page",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "official_app_or_workflow_description",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "official_case_study",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "public_regulatory_or_license_signal",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "credible_third_party_profile",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "user_intake_declaration",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        }
+      ],
+      "forbidden_auto_lock_basis": [
+        {
+          "term": "generic_marketing_adjective",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "blog_only_signal",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "news_only_signal",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "customer_logo_only",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "job_posting_only",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "investor_deck_language_only",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "model_guess_without_source",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "industry_assumption",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        }
+      ],
+      "runtime_flags": [
+        {
+          "term": "dynamic_routing_enabled",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "dynamic_prompt_routing_enabled",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "field_registry_compile_enabled",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "qr_matrix_routing_enabled",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "report_template_routing_enabled",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        },
+        {
+          "term": "assembly_template_routing_enabled",
+          "represented_in_intended_sot_or_contracts": false,
+          "represented_in_catalog": false
+        }
+      ]
+    },
+    "note": "Package catalog remains a separate mount inventory; this audit tests whether the Markdown key contributes unique Phase 3 semantics."
+  },
+  "m7_policy_coverage": {
+    "source_boundary": [
+      {
+        "marker": "target_profile_source_index",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "phase_routing_manifest",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "legal_signal_derivation_profile",
+        "in_target_contract": true,
+        "in_fdr": false
+      }
+    ],
+    "lane_policy": [
+      {
+        "marker": "company_level_lane_forbidden",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "primary_domain_package_derivation_forbidden",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "ai_overlay_mount_derivation_forbidden",
+        "in_target_contract": true,
+        "in_fdr": false
+      }
+    ],
+    "regulatory_grievance_policy": [
+      {
+        "marker": "regulatory_grievance_fields_factual_only",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "license_validity_requirement_applicability_forbidden",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "grievance_sufficiency_ombudsman_requirement_forbidden",
+        "in_target_contract": true,
+        "in_fdr": false
+      }
+    ],
+    "direct_legal_signal_policy": [
+      {
+        "marker": "direct_legal_signal_intake",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "allowed_field_rows",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "legal_signal_derivation_profile",
+        "in_target_contract": true,
+        "in_fdr": false
+      }
+    ],
+    "controlled_statuses": [
+      {
+        "marker": "FIELD_LIMITED",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "FIELD_NOT_PUBLIC",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "FIELD_CONFLICTED",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "FIELD_NOT_FOUND",
+        "in_target_contract": true,
+        "in_fdr": false
+      },
+      {
+        "marker": "NO_PUBLIC_SIGNAL_FOUND",
+        "in_target_contract": true,
+        "in_fdr": false
+      }
+    ]
+  },
+  "yaml_top_level_keys": {
+    "fdr": [
+      "registry",
+      "fields",
+      "domain_derivation_grammar"
+    ],
+    "ai": [
+      "registry_key",
+      "derivation_order",
+      "behavior_class",
+      "lane",
+      "surface",
+      "subcat",
+      "compliance_framework",
+      "severity",
+      "authority_rules",
+      "threat_trigger_format",
+      "threat_registry_binding",
+      "phase_5_taxonomy_slice",
+      "version_history",
+      "domain_derivation_rules",
+      "regulatory_overlay",
+      "domain_control_obligation"
+    ],
+    "fintech": [
+      "registry_key",
+      "derivation_order",
+      "behavior_class",
+      "lane",
+      "surface",
+      "subcat",
+      "compliance_framework",
+      "severity",
+      "authority_rules",
+      "threat_trigger_format",
+      "threat_registry_binding",
+      "phase_5_taxonomy_slice",
+      "version_history",
+      "domain_derivation_rules",
+      "regulatory_overlay",
+      "domain_control_obligation"
+    ],
+    "m7": [
+      "schema",
+      "purpose",
+      "phase",
+      "active_agent",
+      "compatibility_note",
+      "source_boundary",
+      "controlled_statuses",
+      "lane_policy",
+      "direct_legal_signal_policy",
+      "regulatory_grievance_signal_policy",
+      "selected_fields",
+      "hard_rules"
+    ],
+    "addendum": [
+      "schema",
+      "purpose",
+      "base_registry",
+      "base_registry_status",
+      "phase",
+      "active_agent",
+      "lock_status",
+      "integration_rule",
+      "columns",
+      "fields",
+      "hard_rules"
+    ]
+  }
+}
