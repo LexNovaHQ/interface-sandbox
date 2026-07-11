@@ -1,24 +1,24 @@
+import { ACTIVITY_CANDIDATE_INVENTORY_CONTRACT } from "./activity-candidate-inventory.contract.js";
 import {
-  ACTIVITY_CANDIDATE_INVENTORY_CONTRACT,
-  ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES
-} from "./activity-candidate-inventory.contract.js";
+  BASE_ACTIVITY_EVIDENCE_ROOTS,
+  CANDIDATE_CREATION_LOCATOR_MAPS,
+  CONTEXT_ONLY_LOCATOR_MAPS,
+  SEMANTIC_SUPPORT_RECEIPT_FIELDS
+} from "./activity-profile.constants.js";
 import {
   buildFeatureCandidateInventoryBaseline,
   validateFeatureCandidateInventoryIndex
 } from "./services/activity-candidate-inventory-index.builder.js";
 import {
-  buildSemanticSupportReceipt,
   buildSemanticSupportUnavailableReceipt,
   reconcileSemanticCandidateSupport
 } from "./services/activity-candidate-inventory-semantic-support.js";
-import {
-  BASE_ACTIVITY_EVIDENCE_ROOTS,
-  CANDIDATE_CREATION_LOCATOR_MAPS,
-  CONTEXT_ONLY_LOCATOR_MAPS
-} from "./activity-profile.constants.js";
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
 
-const DEGRADED_SEMANTIC_STATUSES = new Set(["UNAVAILABLE", "OUTPUT_REJECTED"]);
+const NEW_LAYER1_PROMPT = "03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC_LED_SEMANTIC_SUPPORTED.md";
+const OLD_LAYER1_PROMPT = "03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md";
+const LIMITATION_LOCK_STATUSES = new Set(["UNAVAILABLE", "OUTPUT_REJECTED"]);
+const MALFORMED_PROVIDER_ERROR = /(invalid|malformed|parse|json|schema|response format)/i;
 
 export const ACTIVITY_CANDIDATE_INVENTORY_RUNNER_STATUS = Object.freeze({
   phase_runner: "activity-candidate-inventory.runner",
@@ -27,17 +27,16 @@ export const ACTIVITY_CANDIDATE_INVENTORY_RUNNER_STATUS = Object.freeze({
   public_label: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.public_label,
   compatibility_internal_job_id: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.compatibility_internal_job_id,
   phase_owned_runner: true,
-  production_entrypoint_switched: false,
-  central_runtime_callback_injection_deferred: true,
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
-  model_usage: "DETERMINISTIC_LED_SEMANTIC_SUPPORTED",
-  deterministic_baseline_builder: "buildFeatureCandidateInventoryBaseline",
-  semantic_support_service: "activity-candidate-inventory-semantic-support",
-  semantic_prompt_files: ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES,
-  phase2g_activity_profile_source_index_required: true,
+  deterministic_baseline_required: true,
+  semantic_support_attempt_required: true,
+  semantic_support_non_blocking: true,
+  semantic_output_non_authoritative: true,
+  deterministic_reconciliation_required: true,
+  lossless_primary_evidence_navigated_via_index: true,
   phase2g_route_scoped_runtime_reader_active: true,
   profile_forensics_inputs_forbidden: true,
-  raw_phase1_family_reads_removed: true,
   writes: [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_baseline_job.writes],
   routing_manifest_read: "phase_routing_manifest"
 });
@@ -63,17 +62,14 @@ export async function runActivityCandidateInventoryPhase({
     consumerAgentId: contract.agent_id || contract.actor_id
   });
   const artifacts = routed.artifacts;
-  assertRoutePacket(artifacts.phase_route_runtime_packet, internalJobId);
+  const routePacket = artifacts.phase_route_runtime_packet;
+
+  assertRoutePacket(routePacket, internalJobId);
   assertActivityProfileSourceIndexPresent(artifacts.activity_profile_source_index);
   assertPackageContextPresent(artifacts);
 
-  const losslessUnitsByRoot = Object.fromEntries(
-    BASE_ACTIVITY_EVIDENCE_ROOTS
-      .filter((root) => artifacts[root] && typeof artifacts[root] === "object")
-      .map((root) => [root, artifacts[root]])
-  );
-
-  const baseline = buildFeatureCandidateInventoryBaseline(
+  const losslessUnitsByRoot = selectAuthorizedLosslessRoots(artifacts);
+  const deterministicBaseline = buildFeatureCandidateInventoryBaseline(
     artifacts.activity_profile_source_index,
     losslessUnitsByRoot,
     {
@@ -82,86 +78,102 @@ export async function runActivityCandidateInventoryPhase({
       domainDerivationProfile: artifacts.domain_derivation_profile
     }
   );
+  assertInventoryValidation(deterministicBaseline, "DETERMINISTIC_BASELINE");
 
-  const baselineValidation = validateFeatureCandidateInventoryIndex(baseline);
-  if (baselineValidation.status !== "PASS") {
-    throw new Error(`ACTIVITY_CANDIDATE_BASELINE_VALIDATION_FAILED:${JSON.stringify(baselineValidation)}`);
-  }
-
-  const semanticContext = buildSemanticPromptContext({
-    baseline,
-    sourceIndex: artifacts.activity_profile_source_index,
-    runtimePacket: artifacts.phase_route_runtime_packet
+  const locatorRows = collectLocatorRows(artifacts.activity_profile_source_index);
+  const mappedUnitIds = collectMappedUnitIds(deterministicBaseline);
+  const permittedEvidenceRoots = [...(deterministicBaseline.deterministic_baseline_metadata?.evidence_roots_opened || [])];
+  const routedArtifactNames = collectRoutedArtifactNames({
+    routePacket,
+    losslessUnitsByRoot
+  });
+  const mappedRoutedUnits = collectMappedRoutedUnits({
+    deterministicBaseline,
+    losslessUnitsByRoot
   });
 
   let finalInventory;
   let semanticReceipt;
   let modelMetadata = {};
+  let semanticError = null;
 
+  const prompt = await buildPrompt({
+    prompt_files: contract.prompt_files,
+    phase: internalJobId,
+    run,
+    artifacts: {
+      semantic_support_runtime_packet: {
+        route_id: routed.route.route_id,
+        bucket_id: routed.route.bucket_id,
+        routing_authority: routePacket.routing_authority,
+        lossless_evidence_role: routePacket.lossless_evidence_role,
+        index_role: routePacket.index_role,
+        deterministic_baseline: deterministicBaseline,
+        index_locator_rows: locatorRows,
+        mapped_routed_units: mappedRoutedUnits,
+        routed_artifact_names: routedArtifactNames,
+        index_mapped_unit_ids: mappedUnitIds,
+        permitted_evidence_roots: permittedEvidenceRoots,
+        package_taxonomy_supplied: false
+      }
+    },
+    writes: [],
+    references: []
+  });
+
+  let providerResult;
   try {
-    const prompt = await buildPrompt({
-      prompt_files: ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES,
-      phase: internalJobId,
-      run,
-      artifacts: semanticContext.prompt_artifacts,
-      writes: [],
-      references: []
-    });
-    const providerResult = await callProvider({
+    providerResult = await callProvider({
       prompt,
       phase: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.central_phase_id
     });
-    modelMetadata = providerResult?.metadata || {};
-    const providerOutput = providerResult?.json ?? providerResult;
-    const packet = extractProposalPacket(providerOutput);
-
-    if (!packet.valid) {
-      semanticReceipt = buildSemanticSupportReceipt({
-        deterministicBaseline: baseline,
-        proposalCount: 1,
-        acceptedProposalIds: [],
-        rejectedProposals: [{
-          proposal_id: null,
-          rejection_codes: ["MALFORMED_PROPOSAL"]
-        }],
-        finalInventory: baseline,
-        changesApplied: false,
-        limitations: ["SEMANTIC_SUPPORT_MALFORMED_RESPONSE"]
+  } catch (error) {
+    semanticError = error;
+    if (MALFORMED_PROVIDER_ERROR.test(String(error?.message || ""))) {
+      const rejected = reconcileSemanticCandidateSupport({
+        deterministicBaseline,
+        semanticProposalInput: {},
+        routedArtifactNames,
+        indexLocatorRows: locatorRows,
+        indexMappedUnitIds: mappedUnitIds,
+        permittedEvidenceRoots
+      });
+      finalInventory = rejected.inventory;
+      semanticReceipt = rejected.receipt;
+    } else {
+      semanticReceipt = buildSemanticSupportUnavailableReceipt({
+        deterministicBaseline,
+        limitation: "SEMANTIC_SUPPORT_PROVIDER_UNAVAILABLE"
       });
       finalInventory = Object.freeze({
-        ...baseline,
+        ...deterministicBaseline,
         semantic_support_receipt: semanticReceipt
       });
-    } else {
-      const reconciled = reconcileSemanticCandidateSupport({
-        deterministicBaseline: baseline,
-        proposals: packet.proposals,
-        routedArtifactNames: semanticContext.routed_artifact_names,
-        indexLocatorRows: semanticContext.index_locator_rows,
-        indexMappedUnitIds: semanticContext.index_mapped_unit_ids,
-        permittedEvidenceRoots: semanticContext.permitted_evidence_roots
-      });
-      finalInventory = reconciled.inventory;
-      semanticReceipt = reconciled.receipt;
     }
-  } catch (error) {
-    semanticReceipt = buildSemanticSupportUnavailableReceipt({
-      deterministicBaseline: baseline,
-      limitation: `SEMANTIC_SUPPORT_UNAVAILABLE:${sanitizeErrorCode(error)}`
-    });
-    finalInventory = Object.freeze({
-      ...baseline,
-      semantic_support_receipt: semanticReceipt
-    });
   }
 
-  assertInventoryOutputContract(finalInventory);
-  const finalValidation = validateFeatureCandidateInventoryIndex(finalInventory);
-  if (finalValidation.status !== "PASS") {
-    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_VALIDATION_FAILED:${JSON.stringify(finalValidation)}`);
+  if (!semanticReceipt) {
+    modelMetadata = providerResult?.metadata || {};
+    const semanticProposalInput = providerResult?.json ?? providerResult ?? {};
+    const reconciled = reconcileSemanticCandidateSupport({
+      deterministicBaseline,
+      semanticProposalInput,
+      routedArtifactNames,
+      indexLocatorRows: locatorRows,
+      indexMappedUnitIds: mappedUnitIds,
+      permittedEvidenceRoots
+    });
+    finalInventory = reconciled.inventory;
+    semanticReceipt = reconciled.receipt;
   }
 
-  const phaseLockStatus = resolvePhaseLockStatus({ baseline, semanticReceipt });
+  assertSemanticReceipt(semanticReceipt);
+  assertInventoryValidation(finalInventory, "FINAL_RECONCILED_INVENTORY");
+
+  const phaseLockStatus = resolvePhaseLockStatus({
+    deterministicBaseline,
+    semanticReceipt
+  });
   const artifactName = contract.writes[0];
   await saveArtifact({
     artifact_name: artifactName,
@@ -180,79 +192,21 @@ export async function runActivityCandidateInventoryPhase({
     source_locator_maps_indexed: finalInventory.source_locator_maps_indexed || [],
     raw_hit_count: finalInventory.raw_hit_count,
     canonical_candidate_count: finalInventory.canonical_candidate_count,
-    model_usage: "DETERMINISTIC_LED_SEMANTIC_SUPPORTED",
     semantic_support_status: semanticReceipt.status,
     semantic_support_attempted: semanticReceipt.attempted,
-    activity_candidate_inventory_phase_runner_used: true,
+    semantic_support_error: semanticError?.message || "",
     model_metadata: modelMetadata,
+    deterministic_baseline_required: true,
+    semantic_support_attempt_required: true,
+    semantic_support_non_blocking: true,
+    semantic_output_non_authoritative: true,
+    deterministic_reconciliation_required: true,
+    lossless_primary_evidence_navigated_via_index: true,
+    activity_candidate_inventory_phase_runner_used: true,
+    source_helper: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_baseline_job.source_helper,
+    validator: ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_baseline_job.validator,
     internal_job_id: internalJobId
   };
-}
-
-function buildSemanticPromptContext({ baseline, sourceIndex, runtimePacket }) {
-  const indexLocatorRows = [
-    ...CANDIDATE_CREATION_LOCATOR_MAPS.flatMap((mapKey) => rows(sourceIndex?.[mapKey])),
-    ...CONTEXT_ONLY_LOCATOR_MAPS.flatMap((mapKey) => rows(sourceIndex?.[mapKey]))
-  ];
-  const mappedPointers = [
-    ...rows(baseline.raw_feature_hit_index).map((row) => row?.source_pointer),
-    ...rows(baseline.context_pointer_index),
-    ...rows(baseline.candidates).flatMap((candidate) => rows(candidate.source_pointers))
-  ].filter((pointer) => pointer && typeof pointer === "object");
-  const indexMappedUnitIds = uniqueStrings(mappedPointers.map((pointer) => pointer.unit_id));
-  const permittedEvidenceRoots = uniqueStrings(
-    baseline?.deterministic_baseline_metadata?.evidence_roots_opened || []
-  );
-  const routedArtifactNames = uniqueStrings(
-    Array.isArray(runtimePacket?.delivered_artifacts) && runtimePacket.delivered_artifacts.length
-      ? runtimePacket.delivered_artifacts
-      : mappedPointers.map((pointer) => pointer.source_artifact)
-  );
-
-  return {
-    prompt_artifacts: Object.freeze({
-      deterministic_candidate_baseline: baseline,
-      routed_index_mapped_pointer_metadata: Object.freeze({
-        route_id: runtimePacket?.route_id || "",
-        bucket_id: runtimePacket?.bucket_id || "",
-        routing_authority: runtimePacket?.routing_authority || "",
-        source_index_artifact: "activity_profile_source_index",
-        routed_artifact_names: Object.freeze(routedArtifactNames),
-        permitted_evidence_roots: Object.freeze(permittedEvidenceRoots),
-        index_mapped_unit_ids: Object.freeze(indexMappedUnitIds),
-        index_locator_rows: Object.freeze(indexLocatorRows)
-      }),
-      phase_route_runtime_packet: runtimePacket
-    }),
-    routed_artifact_names: routedArtifactNames,
-    permitted_evidence_roots: permittedEvidenceRoots,
-    index_mapped_unit_ids: indexMappedUnitIds,
-    index_locator_rows: indexLocatorRows
-  };
-}
-
-function extractProposalPacket(output) {
-  if (Array.isArray(output)) return { valid: true, proposals: output };
-  if (!output || typeof output !== "object") return { valid: false, proposals: [] };
-  const keys = Object.keys(output);
-  if (
-    keys.length === 1 &&
-    keys[0] === "semantic_candidate_support_proposals" &&
-    Array.isArray(output.semantic_candidate_support_proposals)
-  ) {
-    return { valid: true, proposals: output.semantic_candidate_support_proposals };
-  }
-  return { valid: false, proposals: [] };
-}
-
-function resolvePhaseLockStatus({ baseline, semanticReceipt }) {
-  if (DEGRADED_SEMANTIC_STATUSES.has(semanticReceipt?.status)) {
-    return "LOCKED_WITH_LIMITATIONS";
-  }
-  const criticalBaselineLimitation = rows(baseline?.index_limitations).some((limitation) =>
-    String(limitation).startsWith("NO_INDEX_MAPPED_ROUTED_LOSSLESS_UNITS_AVAILABLE")
-  );
-  return criticalBaselineLimitation ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
 }
 
 function assertRuntimeContract(contract = {}) {
@@ -270,6 +224,16 @@ function assertRuntimeContract(contract = {}) {
     ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.deterministic_baseline_job.writes,
     "ACTIVITY_CANDIDATE_INVENTORY_WRITES"
   );
+  const promptFiles = contract.prompt_files || [];
+  if (!promptFiles.some((file) => String(file).endsWith(NEW_LAYER1_PROMPT))) {
+    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_NEW_SEMANTIC_PROMPT_MISSING");
+  }
+  if (promptFiles.some((file) => String(file).endsWith(OLD_LAYER1_PROMPT))) {
+    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_OLD_DETERMINISTIC_PROMPT_ACTIVE");
+  }
+  if ((contract.references || []).length) {
+    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_TAXONOMY_REFERENCES_FORBIDDEN");
+  }
 }
 
 function assertRoutePacket(packet = {}, internalJobId) {
@@ -278,6 +242,9 @@ function assertRoutePacket(packet = {}, internalJobId) {
   }
   if (packet.internal_job_id !== internalJobId) {
     throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`);
+  }
+  if (packet.route_id !== "ROUTE.PHASE5.ACTIVITY_PROFILE" || packet.bucket_id !== "2C_BUCKET_ACTIVITY_PROFILE") {
+    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}:${packet.bucket_id || "missing"}`);
   }
   if (packet.lossless_evidence_role !== "PRIMARY_EVIDENCE") {
     throw new Error("ACTIVITY_CANDIDATE_INVENTORY_LOSSLESS_PRIMARY_BOUNDARY_MISSING");
@@ -308,49 +275,122 @@ function assertPackageContextPresent(artifacts = {}) {
   }
 }
 
-function assertInventoryOutputContract(inventory = {}) {
-  const required = ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.output_contract;
-  for (const branch of required.required_branches) {
-    if (!(branch in inventory)) {
-      throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_MISSING_BRANCH:${branch}`);
+function selectAuthorizedLosslessRoots(artifacts = {}) {
+  return Object.freeze(Object.fromEntries(
+    BASE_ACTIVITY_EVIDENCE_ROOTS
+      .filter((root) => artifacts[root] && typeof artifacts[root] === "object" && !Array.isArray(artifacts[root]))
+      .map((root) => [root, artifacts[root]])
+  ));
+}
+
+function collectLocatorRows(index = {}) {
+  const rows = [];
+  for (const mapKey of [...CANDIDATE_CREATION_LOCATOR_MAPS, ...CONTEXT_ONLY_LOCATOR_MAPS]) {
+    for (const row of Array.isArray(index[mapKey]) ? index[mapKey] : []) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+      rows.push(Object.freeze({
+        source_locator_map: mapKey,
+        source_artifact: String(row.source_artifact || row.common_root || row.source_root || ""),
+        source_id: String(row.source_id || ""),
+        source_root: String(row.common_root || row.source_root || row.root_artifact || ""),
+        route_class: String(row.route_class || ""),
+        route_code: String(row.route_code || ""),
+        locator_id: String(row.locator_id || ""),
+        unit_id: String(row.unit_id || ""),
+        source_pointer: row.source_pointer ?? null,
+        unit_pointer: row.unit_pointer ?? null,
+        candidate_creation_allowed: row.candidate_creation_allowed !== false,
+        context_only: row.context_only === true,
+        matched_signal_labels: Array.isArray(row.matched_signal_labels)
+          ? row.matched_signal_labels.map((value) => String(value || "")).filter(Boolean)
+          : []
+      }));
     }
   }
-  if (inventory.artifact_type !== required.artifact_type) {
-    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_ARTIFACT_TYPE_MISMATCH:${inventory.artifact_type || "missing"}`);
+  return Object.freeze(rows);
+}
+
+function collectMappedUnitIds(inventory = {}) {
+  return Object.freeze(uniqueStrings([
+    ...(inventory.raw_feature_hit_index || []).map((row) => row?.source_pointer?.unit_id),
+    ...(inventory.context_pointer_index || []).map((row) => row?.unit_id)
+  ]));
+}
+
+function collectRoutedArtifactNames({ routePacket = {}, losslessUnitsByRoot = {} } = {}) {
+  const names = [...(routePacket.delivered_artifacts || [])];
+  for (const [rootName, payload] of Object.entries(losslessUnitsByRoot)) {
+    names.push(rootName, payload?.artifact_name, payload?.root_virtual_artifact_name);
+    names.push(...(Array.isArray(payload?.physical_artifact_names) ? payload.physical_artifact_names : []));
   }
-  if (inventory.inventory_version !== required.inventory_version) {
-    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_VERSION_MISMATCH:${inventory.inventory_version || "missing"}`);
+  return Object.freeze(uniqueStrings(names));
+}
+
+function collectMappedRoutedUnits({ deterministicBaseline = {}, losslessUnitsByRoot = {} } = {}) {
+  const units = [];
+  for (const rawHit of deterministicBaseline.raw_feature_hit_index || []) {
+    const sourceRoot = rawHit?.source_root;
+    const structuralPath = rawHit?.evidence_unit_ref?.structural_path;
+    const payload = losslessUnitsByRoot[sourceRoot];
+    const evidenceUnit = resolveStructuralPath(payload, structuralPath);
+    if (!evidenceUnit || typeof evidenceUnit !== "object") continue;
+    units.push(Object.freeze({
+      raw_hit_id: rawHit.raw_hit_id,
+      source_root: sourceRoot,
+      evidence_unit_ref: rawHit.evidence_unit_ref,
+      source_pointer: rawHit.source_pointer,
+      evidence_unit: evidenceUnit
+    }));
   }
-  if (inventory.derivation_mode !== required.derivation_mode) {
-    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_DERIVATION_MODE_MISMATCH:${inventory.derivation_mode || "missing"}`);
+  return Object.freeze(units);
+}
+
+function resolveStructuralPath(payload, structuralPath) {
+  if (!payload || typeof payload !== "object") return null;
+  const path = String(structuralPath || "");
+  if (!path || path === "$root") return payload;
+  if (!path.startsWith("$root")) return null;
+  const tokens = [];
+  const remainder = path.slice(5);
+  const matcher = /\.([^.[\]]+)|\[(\d+)\]/g;
+  let match;
+  while ((match = matcher.exec(remainder))) {
+    tokens.push(match[1] !== undefined ? match[1] : Number(match[2]));
   }
-  if (inventory.index_boundary?.deterministic_baseline_only !== true) {
-    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_BASELINE_BOUNDARY_MISSING");
+  let current = payload;
+  for (const token of tokens) {
+    if (current === null || current === undefined) return null;
+    current = current[token];
   }
-  if (inventory.index_boundary?.lossless_primary_evidence_read !== true) {
-    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_LOSSLESS_PRIMARY_BOUNDARY_MISSING");
+  return current ?? null;
+}
+
+function assertSemanticReceipt(receipt = {}) {
+  const actual = Object.keys(receipt).sort();
+  const expected = [...SEMANTIC_SUPPORT_RECEIPT_FIELDS].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_RECEIPT_FIELD_SET_MISMATCH:${JSON.stringify({ actual, expected })}`);
   }
-  if (inventory.index_boundary?.source_index_is_navigation_only !== true) {
-    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_INDEX_NAVIGATION_BOUNDARY_MISSING");
-  }
-  if (!inventory.semantic_support_receipt || inventory.semantic_support_receipt.attempted !== true) {
-    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_SEMANTIC_SUPPORT_RECEIPT_MISSING");
+  if (receipt.attempted !== true) {
+    throw new Error("ACTIVITY_CANDIDATE_INVENTORY_SEMANTIC_ATTEMPT_NOT_RECORDED");
   }
 }
 
-function rows(value) {
-  return Array.isArray(value) ? value.filter(Boolean) : [];
+function assertInventoryValidation(inventory, stage) {
+  const validation = validateFeatureCandidateInventoryIndex(inventory);
+  if (validation.status !== "PASS") {
+    throw new Error(`ACTIVITY_CANDIDATE_INVENTORY_${stage}_VALIDATION_FAILED:${JSON.stringify(validation)}`);
+  }
+}
+
+function resolvePhaseLockStatus({ deterministicBaseline = {}, semanticReceipt = {} } = {}) {
+  if ((deterministicBaseline.index_limitations || []).length) return "LOCKED_WITH_LIMITATIONS";
+  if (LIMITATION_LOCK_STATUSES.has(semanticReceipt.status)) return "LOCKED_WITH_LIMITATIONS";
+  return "LOCKED";
 }
 
 function uniqueStrings(values) {
-  return [...new Set(rows(values).map((value) => String(value || "").trim()).filter(Boolean))];
-}
-
-function sanitizeErrorCode(error) {
-  return String(error?.code || error?.message || "UNKNOWN")
-    .toUpperCase()
-    .replace(/[^A-Z0-9:_-]+/g, "_")
-    .slice(0, 160);
+  return [...new Set((values || []).flat(Infinity).map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
 function assertSameArray(actual, expected, label) {
