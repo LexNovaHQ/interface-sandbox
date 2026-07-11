@@ -73,9 +73,9 @@ forbidden_read_artifacts:
 
 required_reference_files:
   - AI_THREAT_REGISTRY.yaml
-  - AI_REGISTRY_KEY.md
+  - AI_Registry_Key.yml
   - 03_REGISTRY_EVALUATION_RULES.yaml
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - Diligence_Field_Derivation_Registry.yml
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 active_prompt_files:
