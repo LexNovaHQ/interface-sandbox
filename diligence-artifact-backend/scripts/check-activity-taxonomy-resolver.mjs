@@ -19,15 +19,16 @@ assert.ok(fintechWithAi.overlays[0].archetype_vocabulary.length > 0, "AI overlay
 assert.ok(fintechWithAi.evidence_roots.length > 0, "evidence root union missing");
 assert.ok(fintechWithAi.evidence_roots.includes("lossless_root__product_service"));
 
-// Append-only registry self-declarations are explicitly deferred. Until they land,
-// the resolver must use the key's existing capability-overlay mount rule, must not
-// hardcode the AI-specific evidence root, and must expose the temporary limitation.
-assert.equal(fintechWithAi.evidence_roots.includes("lossless_root__ai_safety_transparency"), false);
-assert.ok(
-  fintechWithAi.limitations.includes("OVERLAY_DECLARATION_DEFERRED_COMPATIBILITY_ACTIVE:ai-native")
+// Registry self-declarations are authoritative once present. The resolver must
+// mount the declared overlay and evidence root without compatibility limitations.
+assert.equal(fintechWithAi.evidence_roots.includes("lossless_root__ai_safety_transparency"), true);
+assert.equal(
+  fintechWithAi.limitations.includes("OVERLAY_DECLARATION_DEFERRED_COMPATIBILITY_ACTIVE:ai-native"),
+  false
 );
-assert.ok(
-  fintechWithAi.limitations.includes("ACTIVITY_EVIDENCE_ROOT_DECLARATION_DEFERRED:ai-governance")
+assert.equal(
+  fintechWithAi.limitations.includes("ACTIVITY_EVIDENCE_ROOT_DECLARATION_DEFERRED:ai-governance"),
+  false
 );
 
 const unkeyed = await resolveActivityTaxonomy({ primaryPackageId: "saas" });
@@ -64,7 +65,7 @@ for (const forbidden of [
 assert.equal(
   resolverSource.includes("lossless_root__ai_safety_transparency"),
   false,
-  "resolver must not hardcode deferred package evidence roots"
+  "resolver must not hardcode package evidence roots"
 );
 
-console.log("Activity taxonomy resolver: PASS (registry declarations deferred)");
+console.log("Activity taxonomy resolver: PASS (registry declarations active)");
