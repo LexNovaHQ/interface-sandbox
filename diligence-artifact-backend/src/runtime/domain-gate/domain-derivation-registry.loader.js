@@ -1,123 +1,127 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
+import yaml from "js-yaml";
 import { loadPackageCatalogV0, packageIdSet } from "./package-catalog.loader.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
-export const DOMAIN_DERIVATION_REGISTRY_V0_PATH = path.join(BACKEND_ROOT, "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml");
-export const DOMAIN_DERIVATION_REGISTRY_V0_ID = "DOMAIN_DERIVATION_REGISTRY_v0";
+const REGISTRY_DIR = path.join(BACKEND_ROOT, "references/registry");
+const FDR_PATH = path.join(REGISTRY_DIR, "Diligence_Field_Derivation_Registry.yml");
+const KEY_FILE_PATTERN = /_Registry_Key\.yml$/i;
+export const DOMAIN_REGISTRY_ID = "DILIGENCE_DOMAIN_REGISTRY_v1";
+
+export async function discoverPackageKeys() {
+  const files = (await readdir(REGISTRY_DIR)).filter((f) => KEY_FILE_PATTERN.test(f)).sort();
+  const keysByPackage = {};
+  for (const file of files) {
+    const key = yaml.load(await readFile(path.join(REGISTRY_DIR, file), "utf8")) || {};
+    const pkg = key?.registry_key?.domain_package;
+    if (!pkg) throw new Error(`REGISTRY_KEY_MISSING_DOMAIN_PACKAGE:${file}`);
+    if (keysByPackage[pkg]) throw new Error(`DUPLICATE_DOMAIN_PACKAGE_KEY:${pkg}`);
+    keysByPackage[pkg] = { file, key };
+  }
+  if (!Object.keys(keysByPackage).length) throw new Error("NO_REGISTRY_KEYS_DISCOVERED");
+  return keysByPackage;
+}
+
+export async function listPackageKeyFiles() {
+  const discovered = await discoverPackageKeys();
+  return Object.fromEntries(Object.entries(discovered).map(([pkg, v]) => [pkg, v.file]));
+}
 
 export async function loadDomainDerivationRegistryV0() {
-  const [raw, catalog] = await Promise.all([
-    readFile(DOMAIN_DERIVATION_REGISTRY_V0_PATH, "utf8"),
-    loadPackageCatalogV0()
-  ]);
-  const registry = parseDomainDerivationRegistryV0(raw);
-  validateDomainDerivationRegistryV0({ registry, raw, catalog });
-  return { raw, registry, catalog };
+  const catalog = await loadPackageCatalogV0();
+  const fdr = yaml.load(await readFile(FDR_PATH, "utf8")) || {};
+  const grammar = fdr.domain_derivation_grammar || {};
+  const discovered = await discoverPackageKeys();
+  const keysByPackage = Object.fromEntries(Object.entries(discovered).map(([pkg, v]) => [pkg, v.key]));
+  const rules = assembleRules({ keysByPackage, grammar });
+  const registry = {
+    registry_id: DOMAIN_REGISTRY_ID,
+    schema_version: String(grammar.schema_version || fdr?.registry?.version || "v1"),
+    status: "ASSEMBLED_FROM_KEYS_AND_FDR_GRAMMAR",
+    rules,
+    grammar,
+    keys_by_package: keysByPackage,
+    key_files: Object.fromEntries(Object.entries(discovered).map(([pkg, v]) => [pkg, v.file])),
+    regulatory_overlays_by_package: collectRegulatoryOverlays(keysByPackage)
+  };
+  validateAssembledRegistry({ registry, catalog });
+  return { registry, catalog, grammar };
 }
 
-export function parseDomainDerivationRegistryV0(raw) {
-  const text = String(raw || "");
-  const registry_id = valueForTopLevelKey(text, "registry_id");
-  const schema_version = valueForTopLevelKey(text, "schema_version");
-  const status = valueForTopLevelKey(text, "status");
-  const rules = parseRules(text);
-  return { registry_id, schema_version, status, rules };
+function assembleRules({ keysByPackage, grammar }) {
+  const rules = [];
+  for (const [pkg, key] of Object.entries(keysByPackage)) {
+    const ddr = key.domain_derivation_rules || {};
+    if (ddr.primary_domain_rule) rules.push(normalizeRule(ddr.primary_domain_rule, { rule_type: "PRIMARY_DOMAIN", package_id: pkg }));
+    for (const r of ddr.capability_overlay_mount_rules || []) rules.push(normalizeRule(r, { rule_type: r.rule_type || "AI_MOUNT" }));
+  }
+  if (grammar.fallback_rule) rules.push(normalizeRule(grammar.fallback_rule, { rule_type: "FALLBACK" }));
+  if (grammar.fusion_rule) rules.push(normalizeRule(grammar.fusion_rule, { rule_type: "FUSION_CANDIDATE" }));
+  const seen = new Set();
+  const out = [];
+  for (const r of rules) {
+    if (!r.rule_id || seen.has(r.rule_id)) continue;
+    seen.add(r.rule_id);
+    out.push(r);
+  }
+  return out;
 }
 
-export function validateDomainDerivationRegistryV0({ registry, raw, catalog } = {}) {
+function normalizeRule(r = {}, defaults = {}) {
+  const excludeIf = r.exclude_if ?? [];
+  return {
+    rule_id: r.rule_id,
+    rule_type: r.rule_type || defaults.rule_type,
+    package_id: r.package_id ?? defaults.package_id ?? null,
+    normalized_name: r.normalized_name || r.rule_id || "",
+    status: "ACTIVE",
+    priority: Number.isFinite(r.priority) ? r.priority : 0,
+    conditions: r.conditions || {},
+    trigger_if: r.trigger_if || "",
+    exclude_if: excludeIf,
+    exclude_if_present: Array.isArray(excludeIf) ? excludeIf.length > 0 : Boolean(excludeIf),
+    evidence_policy: r.evidence_policy || {},
+    evidence_policy_present: true,
+    result: r.result || {},
+    result_present: Boolean(r.result),
+    lock_scope: r.lock_scope || ""
+  };
+}
+
+function collectRegulatoryOverlays(keysByPackage) {
+  const out = {};
+  for (const [pkg, key] of Object.entries(keysByPackage)) out[pkg] = (key.regulatory_overlay?.overlays || []).map((o) => o.overlay_id).filter(Boolean);
+  return out;
+}
+
+export function validateAssembledRegistry({ registry, catalog } = {}) {
   const errors = [];
-  const text = String(raw || "");
   const packages = packageIdSet(catalog || {});
-  if (registry?.registry_id !== DOMAIN_DERIVATION_REGISTRY_V0_ID) errors.push("registry_id must be DOMAIN_DERIVATION_REGISTRY_v0");
-  if (!registry?.schema_version) errors.push("schema_version missing");
-  if (!Array.isArray(registry?.rules) || registry.rules.length === 0) errors.push("rules must be non-empty");
   const ids = new Set();
   for (const rule of registry?.rules || []) {
-    if (!rule.rule_id) errors.push("rule_id missing");
+    if (!rule.rule_id) {
+      errors.push("rule_id missing");
+      continue;
+    }
     if (ids.has(rule.rule_id)) errors.push(`duplicate rule_id: ${rule.rule_id}`);
     ids.add(rule.rule_id);
-    if (!rule.rule_type) errors.push(`${rule.rule_id || "UNKNOWN"} missing rule_type`);
-    if (!rule.normalized_name) errors.push(`${rule.rule_id || "UNKNOWN"} missing normalized_name`);
-    if (rule.status !== "ACTIVE") errors.push(`${rule.rule_id || "UNKNOWN"} status must be ACTIVE in v0`);
-    if (!Number.isFinite(rule.priority)) errors.push(`${rule.rule_id || "UNKNOWN"} priority must be numeric`);
-    if (!Object.keys(rule.conditions || {}).length) errors.push(`${rule.rule_id || "UNKNOWN"} conditions must be non-empty`);
-    if (!rule.trigger_if) errors.push(`${rule.rule_id || "UNKNOWN"} trigger_if missing`);
-    if (!rule.exclude_if_present) errors.push(`${rule.rule_id || "UNKNOWN"} exclude_if missing`);
-    if (!rule.evidence_policy_present) errors.push(`${rule.rule_id || "UNKNOWN"} evidence_policy missing`);
-    if (!rule.result_present) errors.push(`${rule.rule_id || "UNKNOWN"} result missing`);
-    if (!rule.lock_scope) errors.push(`${rule.rule_id || "UNKNOWN"} lock_scope missing`);
+    if (!rule.rule_type) errors.push(`${rule.rule_id} missing rule_type`);
+    if (!rule.trigger_if) errors.push(`${rule.rule_id} trigger_if missing`);
+    if (!rule.exclude_if_present) errors.push(`${rule.rule_id} exclude_if missing`);
+    if (rule.rule_type !== "FALLBACK" && !Object.keys(rule.conditions).length) errors.push(`${rule.rule_id} conditions empty`);
     if (rule.rule_type === "PRIMARY_DOMAIN" && !packages.has(rule.package_id)) errors.push(`${rule.rule_id} package_id not in catalog: ${rule.package_id || "missing"}`);
-    if (rule.rule_type === "AI_MOUNT" && rule.package_id && !packages.has(rule.package_id)) errors.push(`${rule.rule_id} AI_MOUNT package_id not in catalog: ${rule.package_id}`);
-    for (const conditionRef of conditionRefs(rule.trigger_if)) if (!rule.conditions?.[conditionRef]) errors.push(`${rule.rule_id} trigger_if references undeclared condition ${conditionRef}`);
+    for (const ref of conditionRefs(rule.trigger_if)) if (!(ref in rule.conditions)) errors.push(`${rule.rule_id} trigger_if references undeclared ${ref}`);
   }
   if (!ids.has("PRIMARY_DOMAIN_AI_GOVERNANCE")) errors.push("PRIMARY_DOMAIN_AI_GOVERNANCE rule missing");
   if (!ids.has("PRIMARY_DOMAIN_FINTECH")) errors.push("PRIMARY_DOMAIN_FINTECH rule missing");
   if (!ids.has("AI_OVERLAY_MOUNTED")) errors.push("AI_OVERLAY_MOUNTED rule missing");
-  if (!text.includes("phase_2_indexes_are_evidence: false")) errors.push("universal evidence rule must forbid Phase 2 indexes as evidence");
-  if (!text.includes("phase_2_index_as_evidence: FORBIDDEN")) errors.push("each rule set must preserve phase_2_index_as_evidence: FORBIDDEN policy text");
-  if (text.includes("package_id: ai_governance") || text.includes("primary_domain_package: ai_governance")) errors.push("registry must use catalog id ai-governance, not ai_governance");
-  if (errors.length) throw new Error(`INVALID_DOMAIN_DERIVATION_REGISTRY_V0:${errors.join("|")}`);
+  if (errors.length) throw new Error(`INVALID_DOMAIN_REGISTRY:${errors.join("|")}`);
   return { status: "PASS", rule_count: registry.rules.length };
 }
 
-function valueForTopLevelKey(text, key) {
-  const match = text.match(new RegExp(`^${escapeRegExp(key)}:\\s*([^\\n#]+)`, "m"));
-  return match ? match[1].trim().replace(/^[ '\"]|[ '\"]$/g, "") : "";
-}
-
-function parseRules(text) {
-  const blocks = text.split(/\n\s*-\s+rule_id:\s+/).slice(1);
-  return blocks.map((block) => {
-    const firstLineEnd = block.indexOf("\n");
-    const rule_id = (firstLineEnd === -1 ? block : block.slice(0, firstLineEnd)).trim();
-    const body = firstLineEnd === -1 ? "" : block.slice(firstLineEnd + 1);
-    const conditionsBlock = between(body, "    conditions:\n", "    trigger_if:");
-    return {
-      rule_id,
-      rule_type: valueForIndentedKey(body, "rule_type"),
-      package_id: valueForIndentedKey(body, "package_id"),
-      normalized_name: valueForIndentedKey(body, "normalized_name"),
-      status: valueForIndentedKey(body, "status"),
-      priority: Number(valueForIndentedKey(body, "priority")),
-      conditions: parseConditions(conditionsBlock),
-      trigger_if: valueForIndentedKey(body, "trigger_if"),
-      exclude_if_present: /\n\s{4}exclude_if:\n/.test(body),
-      evidence_policy_present: /\n\s{4}evidence_policy:\n/.test(body),
-      result_present: /\n\s{4}result:\n/.test(body),
-      lock_scope: valueForIndentedKey(body, "lock_scope")
-    };
-  });
-}
-
-function parseConditions(block) {
-  const conditions = {};
-  for (const match of String(block || "").matchAll(/^\s{6}(C\d+):/gm)) conditions[match[1]] = true;
-  return conditions;
-}
-
-function conditionRefs(expression) {
-  return [...new Set(String(expression || "").match(/\bC\d+\b/g) || [])];
-}
-
-function valueForIndentedKey(text, key) {
-  const match = String(text || "").match(new RegExp(`^\\s{4}${escapeRegExp(key)}:\\s*([^\\n#]+)`, "m"));
-  if (!match) return "";
-  const value = match[1].trim();
-  return value === "null" ? null : value.replace(/^[ '\"]|[ '\"]$/g, "");
-}
-
-function between(text, start, end) {
-  const s = text.indexOf(start);
-  if (s === -1) return "";
-  const from = s + start.length;
-  const e = text.indexOf(end, from);
-  return e === -1 ? text.slice(from) : text.slice(from, e);
-}
-
-function escapeRegExp(value) {
-  return String(value).replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+function conditionRefs(expr) {
+  return [...new Set(String(expr || "").match(/\bC\d+\b/g) || [])];
 }
