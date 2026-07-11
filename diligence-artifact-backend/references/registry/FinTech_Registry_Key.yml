@@ -667,3 +667,18 @@ domain_control_obligation:
       diligence_question: "Is insurance risk-carrying authorised and claims conduct fair, or unlicensed/unfair distribution?"
       linked_subcat: CONS
       limitation_note: "many insurtechs distribute rather than carry risk; distinguish carrier vs distributor from evidence."
+    - obligation_id: FIN-OBL-16
+      obligation_family: fair_lending_nondiscrimination
+      normalized_name: "Fair Lending & Non-Discrimination"
+      what_it_requires: "Do not discriminate in credit on a prohibited basis; give specific adverse-action reasons; test underwriting and pricing (including AI/ML models) for discriminatory outcomes and maintain model governance."
+      authority_dependency: [CFPB, RBI, Consumer_Protection]
+      applies_when: {behavior_class: [LEND, SCOR], surface: [Consumer-Retail, Credit-Data]}
+      trigger_condition: "target markets, prices, underwrites, or scores consumer credit, including via automated or AI/ML models"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "documented fair-lending testing; specific adverse-action reason generation; model bias-testing, validation and governance; non-proxy marketing and pricing"
+      public_evidence_signal: "lending/credit product page, adverse-action disclosures, responsible-AI or model-governance statement"
+      diligence_question: "Does the lender test for discriminatory outcomes and give specific adverse-action reasons, or approve and price on opaque proxies?"
+      linked_subcat: CONS
+      limitation_note: "US federal disparate-impact narrowing under the CFPB Regulation B rule effective 21 Jul 2026; intentional discrimination, adverse-action duties, state disparate-impact (e.g. New Jersey), and a private right of action remain live. Control-visibility only, not a compliance verdict."
