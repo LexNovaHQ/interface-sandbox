@@ -1,0 +1,69 @@
+name: Phase 5 Registry Append Temporary
+
+on:
+  push:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - ".github/workflows/phase5-registry-append-temporary.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  append-registry-declarations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+
+      - name: Append locked Phase 5 declarations
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          AI_KEY="diligence-artifact-backend/references/registry/AI_Registry_Key.yml"
+          FINTECH_KEY="diligence-artifact-backend/references/registry/FinTech_Registry_Key.yml"
+
+          if ! grep -q '^serves_capability_overlay: \[ai-native\]$' "$AI_KEY"; then
+            cat >> "$AI_KEY" <<'EOF'
+
+          # ---------------------------------------------------------------------------
+          # PHASE 5 ACTIVITY TAXONOMY MOUNT DECLARATIONS
+          # ---------------------------------------------------------------------------
+          serves_capability_overlay: [ai-native]
+          activity_evidence_roots:
+            - lossless_root__ai_safety_transparency
+          EOF
+          fi
+
+          if ! grep -q '^activity_evidence_roots: \[\]$' "$FINTECH_KEY"; then
+            cat >> "$FINTECH_KEY" <<'EOF'
+
+          # ---------------------------------------------------------------------------
+          # PHASE 5 ACTIVITY TAXONOMY MOUNT DECLARATIONS
+          # ---------------------------------------------------------------------------
+          activity_evidence_roots: []
+          EOF
+          fi
+
+          git diff --check
+          git diff -- "$AI_KEY" "$FINTECH_KEY"
+
+      - name: Commit append-only registry changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LexNovaHQ Phase 5 Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add diligence-artifact-backend/references/registry/AI_Registry_Key.yml \
+                  diligence-artifact-backend/references/registry/FinTech_Registry_Key.yml
+          if git diff --cached --quiet; then
+            echo "Registry declarations already present."
+            exit 0
+          fi
+          git commit -m "Append Phase 5 registry taxonomy declarations"
+          git push origin HEAD:domain-gate-v0-preflight
