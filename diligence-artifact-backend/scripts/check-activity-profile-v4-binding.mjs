@@ -28,6 +28,8 @@ const requiredMarkers = Object.freeze([
   "active_run_package_manifest",
   "package_context_authority: active_run_package_manifest",
   "package_catalog_authority: references/domain-packages/package-catalog.v0.json",
+  "archetype_derivation_authority: AI_Registry_Key.yml behavior_class",
+  "surface_derivation_authority: AI_Registry_Key.yml surface",
   "fixed_ai_registry_key_universal_authority_forbidden: true",
   "fixed_ai_archetype_enum_forbidden: true",
   "fixed_ai_surface_enum_forbidden: true"
@@ -36,8 +38,6 @@ for (const marker of requiredMarkers) assert.ok(binding.includes(marker), `AGENT
 for (const rootName of ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES) assert.ok(binding.includes(rootName), `Agent3 binding missing routed activity root ${rootName}`);
 
 for (const forbidden of [
-  "archetype_derivation_authority: AI_REGISTRY_KEY.md §4",
-  "surface_derivation_authority: AI_REGISTRY_KEY.md §7",
   "allowed_archetype_codes:",
   "allowed_surface_context_tokens:",
   "AGENT3_BINDING_AI_REGISTRY_KEY_DIRECT_AUTHORITY"
