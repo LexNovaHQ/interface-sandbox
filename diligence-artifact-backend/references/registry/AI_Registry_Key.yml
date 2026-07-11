@@ -1,0 +1,753 @@
+registry_key:
+  name: AI_Registry_Key
+  domain_package: ai-governance
+  version: v4.0
+  status: derivation_specification
+  runtime_mode: passive_reference_taxonomy
+  axis_naming: behavior_class   # renamed from "archetype" — this axis is now "Behavior Class" system-wide
+  purpose: >
+    Per-domain taxonomy authority for the ai-governance package. Defines the
+    Behavior Class, Surface, Lane, Subcat, Compliance Framework, and severity axes
+    used by Phase 5 (activity classification) and Phase 9 (exposure matching).
+    This document holds the ai-governance VOCABULARY only. It does not define
+    derivation MECHANICS (those live agnostically in the Field Derivation Registry),
+    and it must never be treated as universal Phase 5 authority — it is one package
+    key among many with an identical structure.
+  doctrine: "Model suggests. Rules decide. Evidence locks. Conflicts block auto-lock."
+  compatibility_note: >
+    The axis formerly labeled "Archetype" is renamed "Behavior Class" here and across
+    the Field Derivation Registry, Phase 5 output, and downstream phases. Behavior
+    Class codes below are unchanged; only the axis label changed.
+
+# ---------------------------------------------------------------------------
+# DERIVATION ORDER (categorical gates resolved first; row trigger last)
+# ---------------------------------------------------------------------------
+derivation_order:
+  - step: 1
+    axis: behavior_class
+    note: What the AI does (function). Categorical gate. Residual = UNI.
+  - step: 2
+    axis: lane
+    note: Whose operational role creates the exposure (provider vs deployer). Independent of behavior class.
+  - step: 3
+    axis: surface
+    note: What data / audience / context it touches.
+  - step: 4
+    axis: subcat
+    note: Terminal harm mechanism (what the plaintiff recovers on).
+  - step: 5
+    axis: compliance_framework
+    note: Regulatory regime(s) the row slices on.
+  - step: 6
+    axis: severity
+    note: Pain tier / depth / velocity / status — derived on write.
+  - step: 7
+    axis: threat_trigger
+    note: Row-specific detection logic on the public surface; must NOT re-encode the gates above.
+
+# ---------------------------------------------------------------------------
+# AXIS 1 — BEHAVIOR CLASS  (formerly Archetype) — AI FUNCTION CLASS (14)
+#   Classifies WHAT the AI does. Resolve first; if no functional gate fires -> UNI.
+# ---------------------------------------------------------------------------
+behavior_class:
+  axis_id: behavior_class
+  axis_label: "Behavior Class — AI Function Class"
+  residual_code: UNI
+  resolution_test: >
+    "Is this caused by something only this function does, or by something any AI could
+    do?" Function-unique -> keep; universal -> UNI. When two gates fire, assign the class
+    whose terminal harm the plaintiff recovers on; note the secondary in provenance.
+  codes:
+    - code: UNI
+      internal_name: Universal
+      normalized_name: "Cross-Cutting (any AI system)"
+      trigger_if: "exposure arises from something any AI product could do, with no function unique to a single class. Default residual."
+      exclude_if: "a specific functional gate below fires."
+      primary_legal_surface: "Applies across the board"
+    - code: DOE
+      internal_name: The Doer
+      normalized_name: "Autonomous-Action / Agentic System"
+      conditions:
+        C1: "executes actions affecting the outside world (transactions, bookings, sends, tool/API calls, system changes)"
+        C2: "at least some actions occur without per-action human approval"
+      trigger_if: "C1 AND C2"
+      exclude_if: "only produces output for a human to act on"
+      primary_legal_surface: "Agency & authority, UETA §14, contract formation, runaway-agent liability"
+    - code: JDG
+      internal_name: The Judge
+      normalized_name: "Automated Decision System (person-affecting, access-gating)"
+      conditions:
+        C1: "outputs a decision/score/classification about an identifiable person"
+        C2: "that output materially gates access to an opportunity or entitlement (employment, credit, housing, insurance, healthcare, education, benefits)"
+      trigger_if: "C1 AND C2"
+      exclude_if: "subject is a non-person (-> ORA) OR it ranks/curates content for consumption rather than gating a person (-> CUR)"
+      primary_legal_surface: "GDPR Art. 22, EU AI Act Annex III, CCPA ADMT, anti-discrimination"
+    - code: CMP
+      internal_name: The Companion
+      normalized_name: "Relational / Companion System"
+      conditions:
+        C1: "forms an ongoing, personalized emotional or relational interaction with a user as a primary function"
+      trigger_if: "C1"
+      exclude_if: "interaction is transactional/task-scoped with no relational bond"
+      primary_legal_surface: "Minors safety, companion-harm, duty of care, addictive design"
+    - code: CRT
+      internal_name: The Creator
+      normalized_name: "Generative / Synthetic-Output System"
+      conditions:
+        C1: "generates new content (text, image, audio, video, code, voice) as its primary output"
+      trigger_if: "C1"
+      exclude_if: "only classifies, ranks, or retrieves existing content without generating new content"
+      primary_legal_surface: "Copyright (training + output), synthetic-media disclosure, NCII/CSAM, work-product ownership"
+    - code: RDR
+      internal_name: The Reader
+      normalized_name: "Data-Ingestion / Training-Corpus System"
+      conditions:
+        C1: "ingests third-party data it does not own or licence in order to function (scraping, RAG, corpus assembly, fine-tuning on external data)"
+      trigger_if: "C1"
+      exclude_if: "only processes data owned/supplied by the operator or user"
+      primary_legal_surface: "Copyright/TDM, database rights, scraping/CFAA, RAG substitution, ingested-PII privacy"
+    - code: ORC
+      internal_name: The Orchestrator
+      normalized_name: "Model-Routing / Multi-Provider System"
+      conditions:
+        C1: "dynamically routes requests across multiple models, providers, or sub-processors"
+      trigger_if: "C1"
+      exclude_if: "single fixed model with no downstream sub-processor routing"
+      primary_legal_surface: "Sub-processor liability, transfer chains, DPA flow-down gaps"
+    - code: TRN
+      internal_name: The Translator
+      normalized_name: "Biometric / Signal-Processing System"
+      conditions:
+        C1: "processes biometric identifiers or human voice/face signals as input (voice, STT, diarization, face, voiceprint)"
+      trigger_if: "C1"
+      exclude_if: "no biometric or human-signal input"
+      primary_legal_surface: "BIPA/CUBI, DPDP sensitive data, voiceprint consent"
+    - code: SHD
+      internal_name: The Shield
+      normalized_name: "Security / Monitoring System"
+      conditions:
+        C1: "its function is to defend, detect threats in, or monitor another system or environment"
+      trigger_if: "C1"
+      exclude_if: "it adjudicates content against a policy (-> MOD)"
+      primary_legal_surface: "Security duty of care, monitoring/surveillance limits, false-negative liability"
+    - code: OPT
+      internal_name: The Optimizer
+      normalized_name: "High-Stakes Optimization System (operator outcomes)"
+      conditions:
+        C1: "optimization whose output directly moves the operator's money or controls its operations (trading, dynamic pricing, infra/resource tuning)"
+      trigger_if: "C1"
+      exclude_if: "it decides what a person is shown (-> CUR) or gates a person's access (-> JDG)"
+      primary_legal_surface: "Market manipulation, algorithmic collusion, pricing/antitrust, SEC/SEBI"
+    - code: MOV
+      internal_name: The Mover
+      normalized_name: "Cyber-Physical / Embodied System"
+      conditions:
+        C1: "governs a physical machine that can act in the physical world (robotics, AV, drone, spatial)"
+      trigger_if: "C1"
+      exclude_if: "purely digital output with no physical actuation"
+      primary_legal_surface: "Product liability, bodily-injury tort, wrongful death, safety regulation"
+    - code: CUR
+      internal_name: The Curator
+      normalized_name: "Recommendation / Ranking / Amplification System"
+      added_in: v4.0
+      conditions:
+        C1: "ranks, recommends, personalizes, or amplifies content/products/information shown to a person"
+        C2: "selection is driven by relevance, engagement, or targeting"
+      trigger_if: "C1 AND C2"
+      exclude_if: "output gates access to an entitlement (-> JDG) OR adjudicates whether content is permitted (-> MOD)"
+      primary_legal_surface: "DSA systemic risk, minors/addictive design, ad-delivery discrimination, amplification liability"
+    - code: MOD
+      internal_name: The Moderator
+      normalized_name: "Content-Moderation / Adjudication System"
+      added_in: v4.0
+      conditions:
+        C1: "decides whether user content is permitted — removes, flags, restricts, or approves it against a policy or legal standard"
+      trigger_if: "C1"
+      exclude_if: "it ranks/amplifies already-permitted content (-> CUR) OR defends infrastructure against security threats (-> SHD)"
+      primary_legal_surface: "DSA notice-and-action & appeals, intermediary safe harbour (IT Rules §3/§79, CDA 230), wrongful-takedown vs failure-to-remove"
+    - code: ORA
+      internal_name: The Oracle
+      normalized_name: "Predictive / Forecasting System (non-person subject)"
+      added_in: v4.0
+      conditions:
+        C1: "outputs a prediction/forecast that others rely on"
+        C2: "the subject is a non-person system or aggregate — demand, risk pool, equipment, weather, market — NOT an identifiable individual's gated outcome"
+      trigger_if: "C1 AND C2"
+      exclude_if: "the prediction concerns an identifiable person's access/eligibility (-> JDG)"
+      fence_note: "person-prediction is always JDG, never ORA"
+      primary_legal_surface: "Negligent misstatement/reliance, accuracy warranties, actuarial/underwriting, predictive-maintenance failure"
+
+# ---------------------------------------------------------------------------
+# AXIS 2 — LANE — EXPOSURE ROLE  (A / B / Both)  — universal structure across packages
+# ---------------------------------------------------------------------------
+lane:
+  axis_id: lane
+  axis_label: "Lane — Exposure Role"
+  resolves: "per-activity / per-exposure, NOT per-company"
+  codes:
+    - code: A
+      normalized_name: "AI Provider / Product Exposure"
+      conditions:
+        C1: "the entity develops, sells, licenses, or makes an AI system available to external users or customers"
+        C2: "the threat arises from the product as shipped, its terms, or its outputs to third parties"
+      trigger_if: "C1 AND C2"
+      exclude_if: "the exposure exists only through the entity's own internal use or employer role (-> B)"
+    - code: B
+      normalized_name: "Deployer / Employer Exposure"
+      conditions:
+        C1: "the entity operates or deploys AI internally, OR uses AI to make/inform decisions about its own workers, operations, or governance"
+        C2: "the threat arises from that internal deployment or employer role, not from a product sold to others"
+      trigger_if: "C1 AND C2"
+      exclude_if: "the exposure exists only through an external product the entity ships (-> A)"
+    - code: Both
+      normalized_name: "Provider & Deployer Exposure"
+      trigger_if: "the identical threat — same authority, same fix, same detection trigger — fires under BOTH the A and B triggers"
+      exclude_if: "the facets differ in authority, fix, or trigger by role (-> split into two rows)"
+  resolution_rule: >
+    Apply A and B triggers independently. Fires A only -> Lane A. Fires B only -> Lane B.
+    Fires both with identical authority+fix+trigger -> one row, Lane Both. Fires both but
+    authority/fix/trigger differ by role -> split into two rows (A-facet and B-facet),
+    each with its own UID. Do not collapse a genuine two-facet risk into a single Both row.
+
+# ---------------------------------------------------------------------------
+# AXIS 3 — SURFACE — DATA & AUDIENCE CONTEXT (atomic tokens, pipe-combined)
+# ---------------------------------------------------------------------------
+surface:
+  axis_id: surface
+  axis_label: "Surface — Data & Audience Context"
+  multi_value: true
+  combine: pipe
+  note: "Jurisdiction and regime are NOT surface tokens."
+  tokens:
+    - token: Consumer-Public
+      normalized_name: "Consumer / Public-Facing"
+      trigger_if: "product is offered to the general public"
+    - token: Enterprise-Private
+      normalized_name: "Enterprise / B2B"
+      trigger_if: "product is sold to businesses under negotiated terms"
+    - token: PII
+      normalized_name: "Personal Data"
+      trigger_if: "processes data identifying a person"
+    - token: Employment
+      normalized_name: "Employment / Workforce"
+      trigger_if: "touches hiring, management, or worker data"
+    - token: Sensitive/Biometric
+      normalized_name: "Sensitive / Biometric Data"
+      trigger_if: "processes special-category or biometric data"
+    - token: Financial
+      normalized_name: "Financial Data / Money Movement"
+      trigger_if: "handles payments, credit, or financial data"
+    - token: Content&IP
+      normalized_name: "Content & Intellectual Property"
+      trigger_if: "ingests or generates copyrightable/creative content"
+    - token: Safety&Physical
+      normalized_name: "Safety-Critical / Physical"
+      trigger_if: "output can cause physical harm"
+    - token: Infrastructure
+      normalized_name: "Infrastructure / Systems"
+      trigger_if: "governs or secures IT/operational infrastructure"
+    - token: Minors
+      normalized_name: "Children / Minors"
+      trigger_if: "accessible to or targeting under-18 users"
+
+# ---------------------------------------------------------------------------
+# AXIS 4 — SUBCAT — TERMINAL HARM MECHANISM (10, closed)
+# ---------------------------------------------------------------------------
+subcat:
+  axis_id: subcat
+  axis_label: "Subcat — Terminal Harm Mechanism"
+  closed_vocabulary: true
+  tie_break: "pick the terminal harm (what the plaintiff recovers on), not the method."
+  codes:
+    - {code: CNS, normalized_name: "Consent & Contract-Formation Defect", trigger_if: "harm arises from how the user did/didn't enter an enforceable agreement — browsewrap, dark pattern, defective disclosure, auto-renewal, cancellation"}
+    - {code: LIA, normalized_name: "Liability, Warranty & Authority Allocation", trigger_if: "harm arises from mis-allocated liability/warranty, product-vs-service classification, or an agent exceeding authority / making a runaway commitment"}
+    - {code: HAL, normalized_name: "False-Output & Defamation Exposure", trigger_if: "harm arises from false, fabricated, or defamatory output, or an unaccountable bot promise"}
+    - {code: INF, normalized_name: "Intellectual-Property Infringement", trigger_if: "harm arises from IP/copyright infringement in training data or output, safe-harbour loss, or IP contamination/ownership"}
+    - {code: PRV, normalized_name: "Data-Protection & Privacy", trigger_if: "harm arises from unlawful processing, transfer, retention, breach, or over-scope handling of personal data"}
+    - {code: BIO, normalized_name: "Biometric Data & Consent", trigger_if: "harm arises from capture/use of biometric identifiers without lawful consent"}
+    - {code: DEC, normalized_name: "Automated-Decision & Bias Harm", trigger_if: "harm arises from a consequential automated decision about a person — bias, missing assessment/oversight, unlawful automated processing"}
+    - {code: HRM, normalized_name: "Direct User & Safety Harm", trigger_if: "harm arises from direct injury to a user — minors, health, psychological, physical, or prohibited synthetic content"}
+    - {code: FRD, normalized_name: "Fraud & Misrepresentation", trigger_if: "harm arises from deceptive claims about the AI, fabricated evidence, or misrepresentation to markets/investors/regulators"}
+    - {code: TRD, normalized_name: "Market, Pricing & Trading Harm", trigger_if: "harm arises from trading, pricing, or market-manipulation conduct"}
+
+# ---------------------------------------------------------------------------
+# AXIS 5 — COMPLIANCE_FRAMEWORK — REGULATORY REGIME (multi-value, pipe-combined)
+#   Emit a token when its instrument appears in any Authority_* cell or in Legal_Pain.
+# ---------------------------------------------------------------------------
+compliance_framework:
+  axis_id: compliance_framework
+  axis_label: "Compliance Framework — Regulatory Regime"
+  multi_value: true
+  tokens:
+    - {token: EU_AI_Act, normalized_name: "EU Artificial Intelligence Act (Reg. 2024/1689)", instruments: "AI Act / Annex III/I / Art. 5/50/14/27 / GPAI / FRIA"}
+    - {token: GDPR, normalized_name: "EU General Data Protection Regulation", instruments: "GDPR / Arts. 5, 17, 22, 32, 35, 83"}
+    - {token: DPDP, normalized_name: "India Digital Personal Data Protection Act 2023", instruments: "DPDP Act / DPDP Rules 2025 / SDF duties"}
+    - {token: CCPA/CPRA, normalized_name: "California Consumer Privacy Act / CPRA", instruments: "CCPA / CPRA / CPPA / ADMT"}
+    - {token: IT_Act, normalized_name: "India Information Technology Act 2000 & Rules", instruments: "IT Act §43A/§66/§70B/§72A / SPDI / IT Rules / CERT-In"}
+    - {token: BIPA, normalized_name: "Illinois Biometric Information Privacy Act", instruments: "BIPA / CUBI / state biometric statutes"}
+    - {token: Anti_Discrimination, normalized_name: "Anti-Discrimination / Equal-Opportunity Law", instruments: "Title VII / ADA / ADEA / NYC LL144 / Illinois HB 3773 / RPwD Act 2016 / EU non-discrimination"}
+    - {token: Copyright, normalized_name: "Copyright & Neighbouring Rights", instruments: "Copyright Act / DMCA §1201 / fair use / TDM / RAGHAV / Bartz"}
+    - {token: FCRA, normalized_name: "US Fair Credit Reporting Act", instruments: "FCRA / consumer-reporting"}
+    - {token: FTC_Act, normalized_name: "US FTC Act §5 (Unfair/Deceptive)", instruments: "FTC / Section 5"}
+    - {token: SEC, normalized_name: "US Securities Regulation", instruments: "SEC / securities / Reg S-K"}
+    - {token: Colorado_AI_Act, normalized_name: "Colorado AI Act (SB 24-205)", instruments: "Colorado / SB 24-205"}
+    - {token: Minors_COPPA_AADC, normalized_name: "Children's Privacy & Age-Appropriate Design", instruments: "COPPA / AADC / SB 243"}
+    - {token: HIPAA, normalized_name: "US Health Data (HIPAA)", instruments: "HIPAA"}
+    - {token: Consumer_Protection_IN, normalized_name: "India Consumer Protection Act 2019", instruments: "CPA 2019 / dark-pattern guidelines"}
+    - {token: SOC2_ISO, normalized_name: "SOC 2 / ISO 27001 (control posture — not a threat source)", instruments: "ISO 27001 / SOC 2 (§8.1)", posture_only: true}
+    - {token: Contract_Tort, normalized_name: "Common Law — Contract & Tort", instruments: "tort / negligence / UCC / UETA / defamation / agency (residual)"}
+  posture_note: "SOC 2 is an attestation/assurance posture dimension, never a Legal_Pain row."
+
+# ---------------------------------------------------------------------------
+# AXIS 6 — SEVERITY (pain tier / pain depth / velocity / status) — universal structure
+# ---------------------------------------------------------------------------
+severity:
+  pain_tier:
+    axis_label: "Pain Tier / Pain Category (T1–T5)"
+    ceiling_rule: "push tier and velocity to the highest defensible level; if not externally confirmable, step down exactly one level."
+    codes:
+      - {tier: T1, pain_category: Existential, normalized_name: "Business-Ending Exposure", trigger_if: "forced teardown, permanent ban, model destruction/disgorgement, wrongful death, OR an outright prohibition with architectural implication"}
+      - {tier: T2, pain_category: "Uncapped Money", normalized_name: "Uncapped Financial Exposure", trigger_if: "no financial ceiling — revenue-percentage penalties (GDPR 4%, EU AI Act 7%/3%), or per-unit statutory damages × unbounded volume (BIPA, FCRA)"}
+      - {tier: T3, pain_category: "Deal Death", normalized_name: "Market-Access / Deal Loss", trigger_if: "money is capped but enterprise deals stall or regional market access narrows — bounded per-violation civil penalties (Colorado AI Act, NYC LL144)"}
+      - {tier: T4, pain_category: "Regulatory Heat", normalized_name: "Regulatory Enforcement", trigger_if: "fines, enforcement action, or forced operational change — expensive but survivable"}
+      - {tier: T5, pain_category: Friction, normalized_name: "Latent / Documentation Risk", trigger_if: "pending legislation, documentation gap, or preemption uncertainty"}
+  pain_depth:
+    axis_label: "Pain Depth — Who Bears the Liability"
+    codes:
+      - {value: Corporate, normalized_name: "Entity-Level (limited-liability shield holds)", trigger_if: "exposure lands on the entity; shield holds; personal assets safe. Default."}
+      - {value: Personal, normalized_name: "Principal-Level (shield pierced)", trigger_if: "personal guarantees, agency-theory principals, or direct tort exposure reach an individual's assets"}
+      - {value: Criminal, normalized_name: "Individual Criminal Exposure", trigger_if: "criminal liability attaches to the vendor's own leadership/principals — not merely to customers"}
+  velocity:
+    axis_label: "Velocity — Enforcement Timing"
+    derivation: "from Status, Effective_Date, and Pain_Tier"
+    promotion_rule: "any T1/T2 threat with an Effective_Date within 12 months promotes to ACTIVE_NOW regardless of Status"
+    codes:
+      - {value: ACTIVE_NOW, normalized_name: "In Force — Immediate Consequence", trigger_if: "law in force AND first-incident consequence is immediate; OR promotion rule fires"}
+      - {value: THIS_YEAR, normalized_name: "In Force — Near-Term (6–18 mo)", trigger_if: "in force but exposure typically materializes over 6–18 months"}
+      - {value: INCOMING, normalized_name: "Scheduled — Future Effective Date", trigger_if: "Effective_Date 2+ months out AND tier T3–T5; OR tier T1–T2 and date >12 months out"}
+      - {value: WATCH, normalized_name: "Proposed — Not Yet Law", trigger_if: "Status = Pending / proposed legislation with no effective date"}
+  status:
+    axis_label: "Status — Legal Status"
+    codes:
+      - {value: Active, normalized_name: "Currently Enforceable", trigger_if: "law/regulation in force and enforceable today"}
+      - {value: Upcoming, normalized_name: "Enacted — Not Yet Effective", trigger_if: "enacted with a future effective date"}
+      - {value: Pending, normalized_name: "Proposed / Under Consideration", trigger_if: "proposed/in consultation; pairs with Velocity = WATCH"}
+    effective_date_vocabulary: ["YYYY-MM-DD", "TBD", "Ongoing"]
+
+# ---------------------------------------------------------------------------
+# AUTHORITY + THREAT ROW FORMAT (shared contract with the threat registry CSV)
+# ---------------------------------------------------------------------------
+authority_rules:
+  fill_rule: "100% surety or blank. A cell is filled only when the authority is Real, Findable, and On-point; otherwise —."
+  format: "single most-authoritative instrument per cell with a locator, no /-joined lists."
+  grounding: "authority grounds the tier; a T1/T2 claim needs at least one anchor a lawyer would confirm."
+threat_trigger_format:
+  template: "CONDITION_1: [criterion] | CONDITION_2: [criterion] | ... | TRIGGER_IF: [boolean] | EXCLUDE_IF: [exclusion]"
+  rules:
+    - "≥1 CONDITION_N, exactly one TRIGGER_IF, exactly one EXCLUDE_IF"
+    - "Behavior Class, Surface, Lane, and Framework are resolved first as categorical gates; the trigger must NOT re-encode them"
+    - "conditions must be LLM-parseable concrete criteria, not judgment calls"
+threat_registry_binding:
+  csv: AI_THREAT_REGISTRY_v4_0.csv
+  columns_22: [UID, Threat_ID, Threat_Name, Lane, Behavior_Class, Surface, Authority_IN, Authority_EU, Authority_US, Compliance_Framework, Velocity, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Legal_Pain, FP_Mechanism, FP_Impact, Lex_Nova_Fix, Threat_Trigger, Provenance]
+  input_columns: [Threat_ID, Behavior_Class, Lane, Surface, Authority_IN, Authority_EU, Authority_US, Compliance_Framework, Status, Effective_Date, Threat_Trigger]
+  delivered_artifacts_cite: UID
+  note: "CSV 'Archetype'/'Archetype_Normalized' columns are renamed 'Behavior_Class'/'Behavior_Class_Normalized' under this key rename."
+
+# ---------------------------------------------------------------------------
+# PHASE 5 CONSUMPTION CONTRACT (what Phase 5 reads from this key)
+# ---------------------------------------------------------------------------
+phase_5_taxonomy_slice:
+  behavior_codes_source: behavior_class.codes
+  surface_tokens_source: surface.tokens
+  lane_source: lane.codes
+  note: >
+    Phase 5 consumes ONLY the behavior_class and surface vocabularies (plus lane) as the
+    activity-classification taxonomy. Subcat, compliance_framework, and severity are
+    consumed downstream (Phase 9 exposure). Phase 5 must reject any behavior/surface code
+    not present in this key for the mounted package.
+
+version_history:
+  - version: v4.0
+    changes:
+      - "Renamed the Archetype axis to Behavior Class across the key (values unchanged)."
+      - "Behavior classes 11 -> 14: added CUR (Curator), MOD (Moderator), ORA (Oracle)."
+      - "Lane promoted to a derivable dimension with A/B/Both triggers and un-bundling rule."
+      - "Added framework token Anti_Discrimination."
+      - "Reframed as a derivation specification with counsel-facing normalized names."
+
+# ---------------------------------------------------------------------------
+# DOMAIN DERIVATION RULES (ai-governance)
+#   Migrated from retired DOMAIN_DERIVATION_REGISTRY_v0. Domain-specific rule
+#   INSTANCES live here; the agnostic rule GRAMMAR + resolution order live in the
+#   Field Derivation Registry (domain_derivation_grammar). Phase 3B evaluates the
+#   mounted key's rules; it hardcodes no domain logic.
+# ---------------------------------------------------------------------------
+domain_derivation_rules:
+  package_id: ai-governance
+  primary_domain_rule:
+    rule_id: PRIMARY_DOMAIN_AI_GOVERNANCE
+    rule_type: PRIMARY_DOMAIN
+    priority: 80
+    normalized_name: AI Product / AI Governance Primary Domain
+    conditions:
+      C1: "Admitted lossless evidence shows the target offers/sells/licenses/exposes/integrates a product, API, platform, model, agent, assistant, workflow, automation, or governance/control tool to external users."
+      C2: "Reviewed offering performs generative output/synthetic content/drafting/summarization/translation/code/image/audio/video generation."
+      C3: "Reviewed offering performs classification/scoring/prediction/assessment/recommendation/ranking/eligibility support/automated decision support."
+      C4: "Reviewed offering provides model/API/LLM/foundation-model access, fine-tuning, embeddings, RAG, vector search, model routing, or multi-model orchestration."
+      C5: "Reviewed offering provides agentic action, autonomous workflow execution, tool/API calling, external action execution, or system operation without per-step human execution."
+      C6: "Reviewed offering provides AI moderation/monitoring/security/optimization, biometric/signal processing, or AI governance/control functionality."
+      C7: "The AI capability is the product/service wrapper or a core capability, not merely an internal operating tool."
+      C8: "Evidence appears in >=1 admitted product-facing or legal/control source (product/platform/API/docs/demo/pricing/terms/AI policy/trust/help/integration/announcement)."
+    trigger_if: "C1 AND (C2 OR C3 OR C4 OR C5 OR C6) AND C7 AND C8"
+    exclude_if:
+      - "A non-AI primary-domain rule fires and the AI capability is only the mechanism used inside that non-AI vertical activity."
+      - "The only AI evidence is generic wording (AI-powered/smart/automated/SEO/blog/hiring/investor/roadmap) with no concrete current AI product capability."
+    evidence_policy: {must_cite_lossless_evidence: true, phase_2_index_as_evidence: FORBIDDEN}
+    result: {primary_domain_package: ai-governance, primary_domain_status: LOCKED, ai_package_mount: AI_PRIMARY, ai_overlay_mount: PROHIBITED}
+    lock_scope: PRIMARY_DOMAIN_LOCK
+  capability_overlay_mount_rules:   # ai-native overlay eligibility when a NON-AI domain is primary
+    - rule_id: AI_OVERLAY_MOUNTED
+      rule_type: AI_MOUNT
+      package_id: ai-native
+      priority: 70
+      conditions:
+        C1: "A non-AI primary domain is locked or locked-with-limitations."
+        C2: "Target's product uses/provides generative output (as in primary_domain_rule.C2)."
+        C3: "Target's product uses/provides classification/scoring/prediction/decision support (C3)."
+        C4: "Target's product uses/provides model/API/LLM access, embeddings, RAG, routing (C4)."
+        C5: "Target's product uses/provides agentic action/autonomous execution/tool calling (C5)."
+        C6: "Target's product uses/provides AI moderation/monitoring/security/optimization/biometric (C6)."
+        C7: "AI function is tied to an actual product activity, user workflow, output, decision, API, or automation flow."
+        C8: "AI function appears in >=1 admitted product-facing or legal/control source."
+      trigger_if: "C1 AND (C2 OR C3 OR C4 OR C5 OR C6) AND C7 AND C8"
+      exclude_if: ["Primary domain is ai-governance.", "AI appears only as generic marketing/SEO/blog/hiring/investor/roadmap language."]
+      result: {ai_package_mount: AI_OVERLAY_MOUNTED, ai_overlay_status: LOCKED_FOR_PACKAGE_MOUNT_ONLY}
+      lock_scope: PACKAGE_MOUNT_ONLY
+      defer_to: PHASE_5_ACTIVITY_PROFILE_FOR_BEHAVIOR_LANE_SURFACE_AND_EXPOSURE_ROUTING
+    - rule_id: AI_CANDIDATE_ONLY
+      rule_type: AI_MOUNT
+      package_id: ai-native
+      priority: 40
+      conditions:
+        C1: "Evidence contains AI-adjacent wording (AI-powered/ML/model/LLM/generative/assistant/agent/prediction/recommendation/automation)."
+        C2: "Evidence does not identify a concrete current AI product activity/workflow/output/model/decision/API/user-facing capability."
+      trigger_if: "C1 AND C2"
+      exclude_if: ["PRIMARY_DOMAIN_AI_GOVERNANCE fires.", "AI_OVERLAY_MOUNTED fires."]
+      result: {ai_package_mount: AI_CANDIDATE_ONLY}
+      lock_scope: CANDIDATE_ONLY
+    - rule_id: AI_NOT_VISIBLE
+      rule_type: AI_MOUNT
+      package_id: ai-native
+      priority: 10
+      conditions:
+        C1: "No admitted lossless evidence contains any AI function/product/capability/model/workflow/AI-adjacent signal."
+      trigger_if: "C1"
+      exclude_if: ["PRIMARY_DOMAIN_AI_GOVERNANCE fires.", "AI_OVERLAY_MOUNTED fires.", "AI_CANDIDATE_ONLY fires."]
+      result: {ai_package_mount: AI_NOT_VISIBLE}
+      lock_scope: NOT_VISIBLE
+  fusion_note: "ai-native fusion candidates are owned by the locked non-AI primary domain package; fusion grammar lives in the FDR (DOMAIN_FUSION_CANDIDATE), deferred to Phase 5 + Phase 9."
+
+# ---------------------------------------------------------------------------
+# REGULATORY OVERLAY AXIS (ai-governance) — catalog-gated, evidence-derived in 3B
+#   Status ladder: NOT_VISIBLE -> CANDIDATE_ONLY -> REVIEW_REQUIRED. Phase 3B derives
+#   WHICH overlays apply as routing context; it never determines legal applicability
+#   or a compliance conclusion (deferred to Phase 7B/9/12).
+# ---------------------------------------------------------------------------
+regulatory_overlay:
+  axis_id: regulatory_overlay
+  axis_label: "Regulatory Overlay — catalog-gated, per-domain"
+  catalog_source: "package-catalog.v0.json:regulatory_overlays"
+  legal_applicability_status: NOT_DETERMINED_IN_PHASE_3B
+  status_values: [NOT_VISIBLE, CANDIDATE_ONLY, REVIEW_REQUIRED]
+  overlays:
+    - {overlay_id: eu-ai-act, applies: PRIMARY, trigger_if: "AI system offered/deployed in scope (GPAI, high-risk Annex III use, or limited-risk disclosure duty)", links_to_framework: [EU_AI_Act], default_status: CANDIDATE_ONLY}
+    - {overlay_id: privacy, applies: PRIMARY, trigger_if: "processes personal data as part of the offering", links_to_framework: [GDPR, DPDP, CCPA/CPRA], default_status: CANDIDATE_ONLY}
+    - {overlay_id: gdpr, applies: PRIMARY, trigger_if: "processes EU personal data / EU users/customers", links_to_framework: [GDPR], default_status: CANDIDATE_ONLY}
+    - {overlay_id: india-dpdp, applies: PRIMARY, trigger_if: "processes personal data of Indian data principals", links_to_framework: [DPDP], default_status: CANDIDATE_ONLY}
+    - {overlay_id: india-it-act, applies: PRIMARY, trigger_if: "Indian intermediary/cyber duties or SPDI handling visible", links_to_framework: [IT_Act], default_status: CANDIDATE_ONLY}
+    - {overlay_id: us-state-privacy, applies: PRIMARY, trigger_if: "US consumer personal data / ADMT profiling signals", links_to_framework: ["CCPA/CPRA"], default_status: CANDIDATE_ONLY}
+    - {overlay_id: employment, applies: PRIMARY, trigger_if: "AI used for hiring/management/worker decisions (bias surface)", links_to_framework: [Anti_Discrimination], default_status: CANDIDATE_ONLY}
+    - {overlay_id: consumer-protection, applies: PRIMARY, trigger_if: "consumer-facing AI with disclosure/dark-pattern/deception surface", links_to_framework: [FTC_Act, Consumer_Protection_IN], default_status: CANDIDATE_ONLY}
+    - {overlay_id: hipaa, applies: STUB, trigger_if: "US protected health information processed by the AI (rare for pure ai-governance)", links_to_framework: [HIPAA], default_status: CANDIDATE_ONLY}
+    - {overlay_id: financial-services, applies: STUB, trigger_if: "AI embedded in a regulated financial activity (usually implies fintech overlay/primary)", links_to_framework: [], default_status: CANDIDATE_ONLY}
+
+# ---------------------------------------------------------------------------
+# AXIS 7 — DOMAIN CONTROL OBLIGATION (ai-governance) — Phase 7B taxonomy
+#   Substantive, per-domain control-obligation definitions. Material fields
+#   (what_it_requires, expected_control_signal, diligence_question) are derivable,
+#   factual, analytical, and substantial — NOT mechanical routing. Route codes /
+#   locators stay in references/domain-packages/phase-2/ai.obligation-catalog.json.
+#   Legal applicability / compliance conclusions are deferred to Phase 9/12.
+#   EU AI Act phased dates (Art 5 in force Feb 2025; GPAI Aug 2025; Art 50 Aug 2026;
+#   high-risk Annex III to 2 Dec 2027 per May-2026 Omnibus) are noted in limitation_note.
+# ---------------------------------------------------------------------------
+domain_control_obligation:
+  axis_id: domain_control_obligation
+  axis_label: "Domain Control Obligation — AI Governance (Phase 7B)"
+  navigation_companion: "references/domain-packages/phase-2/ai.obligation-catalog.json"
+  legal_applicability_status: NOT_DETERMINED_IN_PHASE_7B
+  material_field_contract:
+    derivable: true
+    factual: true
+    analytical: true
+    substantial: true
+    not_mechanical: true
+    material_fields: [what_it_requires, expected_control_signal, diligence_question, exposure_role_context, obligation_locus]
+  field_schema: [obligation_id, normalized_name, obligation_family, what_it_requires, authority_dependency, applies_when, trigger_condition, exposure_role_context, obligation_locus, obligation_trigger_timing, expected_control_signal, public_evidence_signal, diligence_question, linked_subcat, limitation_note]
+  obligations:
+    - obligation_id: AI-OBL-01
+      obligation_family: automated_decision_governance
+      normalized_name: "Automated Decision Governance"
+      what_it_requires: "Provide human review, contestability, and meaningful information for automated decisions that materially affect a person; do not run solely-automated consequential decisions without safeguards."
+      authority_dependency: [GDPR, EU_AI_Act, "CCPA/CPRA", DPDP]
+      applies_when: {behavior_class: [JDG], surface: [PII, Employment]}
+      trigger_condition: "target outputs a decision/score about an identifiable person that gates access to an opportunity or entitlement"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "human-review/contest route; meaningful-information disclosure; opt-out where required"
+      public_evidence_signal: "product/decisioning page, terms, privacy policy, ADM disclosure"
+      diligence_question: "Are person-affecting automated decisions contestable with human review, or fully automated and opaque?"
+      linked_subcat: DEC
+      limitation_note: "internal review flows are often non-public; record control-visibility, not a compliance verdict."
+    - obligation_id: AI-OBL-02
+      obligation_family: human_oversight
+      normalized_name: "Human Oversight"
+      what_it_requires: "Design and document explicit human monitoring, intervention, and override mechanisms at key points for high-risk AI."
+      authority_dependency: [EU_AI_Act]
+      applies_when: {behavior_class: [JDG, DOE], surface: [Safety&Physical, PII]}
+      trigger_condition: "target ships or deploys a high-risk or autonomous system where human override is material"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "documented override/intervention mechanism; operator training; stop/rollback control"
+      public_evidence_signal: "safety/responsible-AI page, product docs, oversight statement"
+      diligence_question: "Can a human monitor, intervene and override at key points, or does the system act unchecked?"
+      linked_subcat: DEC
+      limitation_note: "EU AI Act Art 14 high-risk obligations apply from 2 Dec 2027 (Annex III, May-2026 Omnibus); treat as Upcoming for EU high-risk."
+    - obligation_id: AI-OBL-03
+      obligation_family: conformity_attestation
+      normalized_name: "Risk Management & Conformity Assessment"
+      what_it_requires: "Operate a risk-management system and complete conformity assessment / CE marking with post-market monitoring for high-risk AI."
+      authority_dependency: [EU_AI_Act]
+      applies_when: {behavior_class: [JDG, CRT, MOV], surface: [Safety&Physical, PII]}
+      trigger_condition: "target's system falls in a high-risk category (Annex III use or safety component)"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: pre-authorization
+      expected_control_signal: "risk-management system; conformity/CE reference; post-market monitoring plan"
+      public_evidence_signal: "compliance/conformity page, CE reference, trust center"
+      diligence_question: "Is a risk-management + conformity process evidenced for high-risk use, or absent?"
+      linked_subcat: DEC
+      limitation_note: "high-risk conformity obligations apply from 2 Dec 2027; treat as Upcoming."
+    - obligation_id: AI-OBL-04
+      obligation_family: fundamental_rights_impact
+      normalized_name: "Fundamental-Rights Impact Assessment (FRIA)"
+      what_it_requires: "As a deployer of high-risk AI in a regulated sector, conduct a Fundamental Rights Impact Assessment before deployment."
+      authority_dependency: [EU_AI_Act]
+      applies_when: {behavior_class: [JDG], surface: [Employment, PII]}
+      trigger_condition: "target is a deployer using high-risk AI to make/inform decisions about people in a regulated sector"
+      exposure_role_context: B
+      obligation_locus: entity
+      obligation_trigger_timing: pre-authorization
+      expected_control_signal: "FRIA reference; deployment governance for high-risk use"
+      public_evidence_signal: "governance/responsible-AI page, deployment policy"
+      diligence_question: "Has the deployer run a fundamental-rights impact assessment, or deployed high-risk AI blind?"
+      linked_subcat: DEC
+      limitation_note: "Art 27 deployer FRIA tracks the high-risk timeline (2 Dec 2027); deployer-role (Lane B) only."
+    - obligation_id: AI-OBL-05
+      obligation_family: transparency_ai_interaction
+      normalized_name: "AI Interaction Transparency"
+      what_it_requires: "Inform users when they are interacting with an AI system, unless it is obvious or a lawful exemption applies."
+      authority_dependency: [EU_AI_Act, FTC_Act]
+      applies_when: {behavior_class: [CMP, CUR, UNI], surface: [Consumer-Public, Minors]}
+      trigger_condition: "target operates an AI interface that interacts with the public"
+      exposure_role_context: A
+      obligation_locus: product
+      obligation_trigger_timing: on-event
+      expected_control_signal: "clear 'you are interacting with AI' disclosure at the interface"
+      public_evidence_signal: "product UI copy, chat disclaimer, terms"
+      diligence_question: "Are users told they're interacting with an AI, or is it concealed?"
+      linked_subcat: CNS
+      limitation_note: "EU AI Act Art 50 transparency applies from 2 Aug 2026 (in force)."
+    - obligation_id: AI-OBL-06
+      obligation_family: synthetic_content_marking
+      normalized_name: "Synthetic Content Marking"
+      what_it_requires: "Mark AI-generated or manipulated content (including deepfakes) as artificially generated, in machine-readable form where feasible."
+      authority_dependency: [EU_AI_Act, Copyright]
+      applies_when: {behavior_class: [CRT], surface: [Content&IP, Consumer-Public]}
+      trigger_condition: "target generates synthetic text/image/audio/video output"
+      exposure_role_context: A
+      obligation_locus: product
+      obligation_trigger_timing: on-event
+      expected_control_signal: "machine-readable AI-generated marking / provenance (e.g., C2PA); deepfake labelling"
+      public_evidence_signal: "output watermarking claim, provenance/labelling policy, product docs"
+      diligence_question: "Is AI-generated/synthetic output marked, or passed off as authentic?"
+      linked_subcat: HAL
+      limitation_note: "Art 50 marking duty applies from 2 Aug 2026."
+    - obligation_id: AI-OBL-07
+      obligation_family: data_governance_training
+      normalized_name: "Training-Data Governance & IP"
+      what_it_requires: "Govern training/ingested data lawfully — provenance, licensing/opt-out/TDM basis, and quality/bias controls."
+      authority_dependency: [EU_AI_Act, Copyright, GDPR]
+      applies_when: {behavior_class: [RDR, CRT], surface: [Content&IP, PII]}
+      trigger_condition: "target ingests third-party data it does not own/licence to train or operate"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "data-governance statement; licensing / opt-out / TDM policy; source disclosure"
+      public_evidence_signal: "data/training policy, copyright/opt-out page, docs"
+      diligence_question: "Is training/ingested data lawfully sourced and governed, or scraped without licence/basis?"
+      linked_subcat: INF
+      limitation_note: "copyright/TDM exposure is jurisdiction-sensitive; capture stated policy, not a legal conclusion."
+    - obligation_id: AI-OBL-08
+      obligation_family: model_supply_licensing
+      normalized_name: "GPAI Model-Provider Obligations"
+      what_it_requires: "As a GPAI model provider, maintain technical documentation, provide downstream integrator information, adopt an EU copyright policy, and publish a training-content summary."
+      authority_dependency: [EU_AI_Act, Copyright]
+      applies_when: {behavior_class: [CRT, RDR, ORC], surface: [Content&IP, Infrastructure]}
+      trigger_condition: "target provides a general-purpose AI model / hosted model access to downstream builders"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "technical documentation; EU copyright policy; training-content summary; downstream-provider info"
+      public_evidence_signal: "model card, copyright policy, training-data summary, developer docs"
+      diligence_question: "Does the GPAI provider publish the mandated docs, copyright policy and training summary?"
+      linked_subcat: INF
+      limitation_note: "GPAI obligations (Art 53-55) in force since 2 Aug 2025."
+    - obligation_id: AI-OBL-09
+      obligation_family: model_evaluation_safety
+      normalized_name: "Model Evaluation & Safety"
+      what_it_requires: "Evaluate and red-team the model, mitigate systemic risks, and report serious incidents (esp. systemic-risk GPAI)."
+      authority_dependency: [EU_AI_Act, Contract_Tort]
+      applies_when: {behavior_class: [CRT], surface: [Safety&Physical, Content&IP]}
+      trigger_condition: "target develops a foundation/GPAI model or a system with material safety risk"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "evaluation/red-team disclosure; incident-reporting; safety policy"
+      public_evidence_signal: "safety/eval page, model card, safety policy"
+      diligence_question: "Is model evaluation & safety testing evidenced, or shipped untested?"
+      linked_subcat: HRM
+      limitation_note: "systemic-risk GPAI duties in force since Aug 2025; general safety is Contract/Tort-anchored."
+    - obligation_id: AI-OBL-10
+      obligation_family: technical_documentation_logging
+      normalized_name: "Technical Documentation & Logging"
+      what_it_requires: "Maintain technical documentation and automatic event logging/record-keeping to enable traceability of high-risk AI."
+      authority_dependency: [EU_AI_Act]
+      applies_when: {behavior_class: [JDG, CRT, DOE], surface: [Infrastructure]}
+      trigger_condition: "target's high-risk system requires documentation and traceable logs"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "technical documentation; automatic logging / record-keeping; audit trail"
+      public_evidence_signal: "docs, trust center, audit/logging statement"
+      diligence_question: "Are technical docs and logs maintained for traceability, or absent?"
+      linked_subcat: LIA
+      limitation_note: "Art 11-12 high-risk documentation/logging tracks the 2 Dec 2027 timeline."
+    - obligation_id: AI-OBL-11
+      obligation_family: prohibited_practices_screen
+      normalized_name: "Prohibited-Practices Screen"
+      what_it_requires: "Ensure no feature falls in a prohibited practice — manipulative/subliminal techniques, social scoring, untargeted biometric scraping, or emotion recognition in work/education."
+      authority_dependency: [EU_AI_Act]
+      applies_when: {behavior_class: [CMP, CUR, TRN, SHD], surface: [Minors, Sensitive/Biometric, Employment]}
+      trigger_condition: "target ships a feature capable of manipulation, social scoring, biometric scraping, or emotion inference"
+      exposure_role_context: Both
+      obligation_locus: product
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "explicit exclusion of prohibited uses; use-restriction policy"
+      public_evidence_signal: "acceptable-use / prohibited-use policy, product scope statement"
+      diligence_question: "Does any feature fall in a prohibited practice, or is it screened out?"
+      linked_subcat: HRM
+      limitation_note: "EU AI Act Art 5 prohibitions in force since 2 Feb 2025 (immediate)."
+    - obligation_id: AI-OBL-12
+      obligation_family: bias_nondiscrimination_audit
+      normalized_name: "Bias & Non-Discrimination Audit"
+      what_it_requires: "Independently audit consequential automated decisions for bias/disparate impact and, where mandated, publish the audit."
+      authority_dependency: [Anti_Discrimination, "Colorado_AI_Act"]
+      applies_when: {behavior_class: [JDG], surface: [Employment, PII]}
+      trigger_condition: "target uses an automated tool for employment or other consequential person-decisions"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "independent bias audit; disparate-impact testing; audit publication/notice"
+      public_evidence_signal: "bias-audit summary, LL144 notice, fairness/responsible-AI page"
+      diligence_question: "Is a bias audit evidenced for consequential decisions, or is discrimination risk untested?"
+      linked_subcat: DEC
+      limitation_note: "NYC LL144 in force; Colorado AI Act effective 2026; deployer (employer) facet is Lane B."
+    - obligation_id: AI-OBL-13
+      obligation_family: biometric_consent
+      normalized_name: "Biometric Consent"
+      what_it_requires: "Obtain lawful consent for capture/use of biometric identifiers, with retention/deletion limits."
+      authority_dependency: [BIPA, DPDP, GDPR]
+      applies_when: {behavior_class: [TRN], surface: [Sensitive/Biometric, PII]}
+      trigger_condition: "target processes biometric identifiers or voice/face signals"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "biometric consent flow; retention/deletion schedule; no capture without consent"
+      public_evidence_signal: "privacy policy, biometric/consent notice, terms"
+      diligence_question: "Is biometric processing consent-gated, or captured without lawful consent?"
+      linked_subcat: BIO
+      limitation_note: "BIPA statutory damages are per-violation and uncapped; treat presence of consent flow as the control signal."
+    - obligation_id: AI-OBL-14
+      obligation_family: content_moderation_appeals
+      normalized_name: "Content Moderation & Safe Harbour"
+      what_it_requires: "Operate notice-and-action, user appeals, and transparency reporting to preserve intermediary safe harbour and avoid wrongful takedown/failure-to-remove."
+      authority_dependency: [EU_AI_Act, IT_Act, Contract_Tort]
+      applies_when: {behavior_class: [MOD], surface: [Consumer-Public, Minors]}
+      trigger_condition: "target adjudicates whether user content is permitted (removes/flags/restricts/approves)"
+      exposure_role_context: A
+      obligation_locus: product
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "notice-and-action mechanism; appeals route; transparency reporting"
+      public_evidence_signal: "content/moderation policy, appeals page, transparency report"
+      diligence_question: "Is moderation notice-and-appeal compliant, or does it risk safe-harbour loss / wrongful takedown?"
+      linked_subcat: LIA
+      limitation_note: "DSA duties are EU-scoped; IT Rules §3/§79 for India; CDA 230 for US — capture the visible mechanism."
+    - obligation_id: AI-OBL-15
+      obligation_family: subprocessor_transfer_governance
+      normalized_name: "Sub-Processor & Transfer Governance"
+      what_it_requires: "Govern model/provider sub-processors with DPA flow-down, a maintained sub-processor list, and lawful transfer safeguards."
+      authority_dependency: [GDPR, DPDP]
+      applies_when: {behavior_class: [ORC], surface: [PII, Infrastructure]}
+      trigger_condition: "target routes requests/data across multiple models, providers, or sub-processors"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "published sub-processor list; DPA flow-down; transfer safeguards (SCCs/adequacy)"
+      public_evidence_signal: "sub-processor page, DPA, trust center"
+      diligence_question: "Are model/provider sub-processors governed with DPA flow-down, or an ungoverned chain?"
+      linked_subcat: PRV
+      limitation_note: "sub-processor lists are commonly public for B2B AI; absence is a genuine gap signal."
+    - obligation_id: AI-OBL-16
+      obligation_family: ai_data_protection_dpia
+      normalized_name: "AI Data Protection & DPIA"
+      what_it_requires: "Process personal data in the AI pipeline lawfully with a DPIA, purpose limitation, and breach handling."
+      authority_dependency: [GDPR, DPDP, IT_Act]
+      applies_when: {behavior_class: [UNI, JDG, CRT, RDR], surface: [PII]}
+      trigger_condition: "target processes personal data as part of the AI system"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "privacy policy; DPIA reference; purpose limitation; breach-notification process"
+      public_evidence_signal: "privacy policy, DPIA/data-processing page, security page"
+      diligence_question: "Is personal data in the AI pipeline processed lawfully with a DPIA, or over-scoped?"
+      linked_subcat: PRV
+      limitation_note: "DPDP full enforcement scheduled May 2027 for India-only scope; treat as Upcoming there."
+    - obligation_id: AI-OBL-17
+      obligation_family: capability_limitation_disclosure
+      normalized_name: "Capability & Limitation Disclosure"
+      what_it_requires: "Disclose model capabilities, limitations, accuracy caveats and non-reliance, avoiding overstated or deceptive claims."
+      authority_dependency: [FTC_Act, EU_AI_Act, Contract_Tort]
+      applies_when: {behavior_class: [CMP, ORA, UNI], surface: [Consumer-Public]}
+      trigger_condition: "target markets an AI capability whose limits/accuracy materially affect reliance"
+      exposure_role_context: A
+      obligation_locus: product
+      obligation_trigger_timing: on-event
+      expected_control_signal: "stated model limitations; accuracy caveats; no-reliance / hallucination notice"
+      public_evidence_signal: "product docs, disclaimers, model card, terms"
+      diligence_question: "Are capability limits and accuracy caveats disclosed, or is the AI oversold?"
+      linked_subcat: HAL
+      limitation_note: "FTC §5 deception is in force; ORA accuracy/reliance is Contract/Tort-anchored."
