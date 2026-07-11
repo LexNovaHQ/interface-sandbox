@@ -39,10 +39,13 @@ export async function loadDomainDerivationRegistryV0() {
   // domain_derivation_grammar is a TOP-LEVEL sibling of `registry:` and `fields:` in the FDR
   // (NOT nested under registry:). Fail loud if absent — never default to {} (that silently
   // drops the FALLBACK/FUSION rules and makes the assembled-registry fixture fail downstream).
-  const grammar = fdr.domain_derivation_grammar;
-  if (!grammar || !grammar.controlled_vocabularies) {
+  const rawGrammar = fdr.domain_derivation_grammar;
+  if (!rawGrammar || !rawGrammar.controlled_vocabularies) {
     throw new Error("FDR_MISSING_DOMAIN_DERIVATION_GRAMMAR: expected a top-level 'domain_derivation_grammar' block in references/registry/Diligence_Field_Derivation_Registry.yml");
   }
+  // Historical retirement metadata belongs to the source document, not the active runtime registry.
+  const grammar = { ...rawGrammar };
+  delete grammar.retires;
   const discovered = await discoverPackageKeys();
   const keysByPackage = Object.fromEntries(Object.entries(discovered).map(([pkg, v]) => [pkg, v.key]));
   const rules = assembleRules({ keysByPackage, grammar });
