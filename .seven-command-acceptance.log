@@ -1,0 +1,139 @@
+===== COMMAND 1: npm install =====
+npm warn deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated uuid@10.0.0: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 264 packages, and audited 265 packages in 5s
+
+39 packages are looking for funding
+  run `npm fund` for details
+
+10 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+EXIT_STATUS=0
+
+===== COMMAND 2: runtime YAML dependency fixture =====
+{
+  "check": "runtime yaml dep",
+  "status": "PASS"
+}
+EXIT_STATUS=0
+
+===== COMMAND 3: assembled registry fixture =====
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert.ok(!JSON.stringify(registry).includes(["DOMAIN", "DERIVATION", "REGISTRY", "v0"].join("_")))
+
+    at file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/scripts/check-domain-registry-assembled.mjs:13:8 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '=='
+}
+
+Node.js v20.19.0
+EXIT_STATUS=1
+
+===== COMMAND 4: no legacy registry references =====
+{
+  "check": "no legacy registry refs (repo-wide)",
+  "status": "PASS",
+  "files_scanned": 414
+}
+EXIT_STATUS=0
+
+===== COMMAND 5: Phase 3 domain derivation contract =====
+{
+  "check": "phase3 domain derivation contract",
+  "status": "PASS",
+  "enforced_gates": [
+    "PHASE2G_2B_ROUTE_PLAN",
+    "P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REQUIRED",
+    "PRIMARY_LOSSLESS_EVIDENCE",
+    "NO_FORENSICS_INPUT",
+    "REGULATORY_OVERLAY_CANDIDATE_ONLY",
+    "ACTIVE_REGISTRY_LADDER_PROMPT",
+    "NO_DOMAIN_EXAMPLES_IN_PROMPT",
+    "NEW_DOMAINS_BY_REGISTRY_NOT_PROMPT",
+    "LEGAL_INPUTS_FORBIDDEN"
+  ]
+}
+EXIT_STATUS=0
+
+===== COMMAND 6: Phase 3A target profile package =====
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ undefined
+- [
+-   'lossless_root__homepage_landing',
+-   'lossless_root__company_identity',
+-   'lossless_root__contact_notice',
+-   'lossless_root__pricing_commercial_availability',
+-   'lossless_root__regulatory_licensing_status',
+-   'lossless_root__grievance_complaints'
+- ]
+    at file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/scripts/check-phase3a-target-profile-package.mjs:40:8
+    at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: undefined,
+  expected: [
+    'lossless_root__homepage_landing',
+    'lossless_root__company_identity',
+    'lossless_root__contact_notice',
+    'lossless_root__pricing_commercial_availability',
+    'lossless_root__regulatory_licensing_status',
+    'lossless_root__grievance_complaints'
+  ],
+  operator: 'deepStrictEqual'
+}
+
+Node.js v20.19.0
+EXIT_STATUS=1
+
+===== COMMAND 7: full repository check =====
+
+> interface-diligence-artifacts@0.1.0 check
+> node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && npm run check:phase5-activity-profile && npm run check:phase1-8-runtime && npm run check:domain-gate-v0 && npm run check:runtime-yaml-dep && npm run check:domain-registry-assembled && npm run check:no-legacy-registry-refs && npm run check:phase3a-target-profile && npm run check:phase3-domain-derivation && npm run check:phase3-sync-v0 && npm run check:runtime-cleanup
+
+node:internal/modules/esm/resolve:283
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/src/constants.js' imported from /home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/scripts/check-m7-legal-signal-overlay.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:283:11)
+    at moduleResolve (node:internal/modules/esm/resolve:952:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/src/constants.js'
+}
+
+Node.js v20.19.0
+EXIT_STATUS=1
+
