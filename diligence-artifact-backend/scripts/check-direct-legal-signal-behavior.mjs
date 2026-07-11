@@ -2,16 +2,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
+import { PIPELINE_CONTRACTS as PHASE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 const directSignal = "legal_signal_derivation_profile";
 const dataSignalLock = "DATA_PROVENANCE_DIRECT_LEGAL_SIGNAL_BEHAVIOR_LOCK.md";
+const dataProvenanceContract = PHASE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4;
 
 assert.ok(PHASE_CONTRACTS.M7_TARGET_PROFILE.reads.includes(directSignal));
-assert.ok(PHASE_CONTRACTS.M10.reads.includes(directSignal));
-assert.ok(PHASE_CONTRACTS.M10.prompt_files.some((file) => file.endsWith(dataSignalLock)));
+assert.ok(dataProvenanceContract.reads.includes(directSignal));
+assert.ok(dataProvenanceContract.prompt_files.some((file) => file.endsWith(dataSignalLock)));
 
 const targetPrompt = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md"), "utf8");
 assert.ok(targetPrompt.includes("Target Profile Review"));
