@@ -652,3 +652,8 @@ domain_control_obligation:
       diligence_question: "Is insurance risk-carrying authorised and claims conduct fair, or unlicensed/unfair distribution?"
       linked_subcat: CONS
       limitation_note: "many insurtechs distribute rather than carry risk; distinguish carrier vs distributor from evidence."
+
+# ---------------------------------------------------------------------------
+# PHASE 5 ACTIVITY TAXONOMY MOUNT DECLARATIONS
+# ---------------------------------------------------------------------------
+activity_evidence_roots: []

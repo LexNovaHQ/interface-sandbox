@@ -751,3 +751,10 @@ domain_control_obligation:
       diligence_question: "Are capability limits and accuracy caveats disclosed, or is the AI oversold?"
       linked_subcat: HAL
       limitation_note: "FTC §5 deception is in force; ORA accuracy/reliance is Contract/Tort-anchored."
+
+# ---------------------------------------------------------------------------
+# PHASE 5 ACTIVITY TAXONOMY MOUNT DECLARATIONS
+# ---------------------------------------------------------------------------
+serves_capability_overlay: [ai-native]
+activity_evidence_roots:
+  - lossless_root__ai_safety_transparency
