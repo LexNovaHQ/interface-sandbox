@@ -41,7 +41,9 @@ const ACTIVITY_PROFILE_REVIEW_PROMPT_FILES = Object.freeze([
 const ACTIVITY_PROFILE_REVIEW_REFERENCES = Object.freeze([
   "references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md",
   "references/domain-packages/package-catalog.v0.json",
-  "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml",
+  "references/registry/Diligence_Field_Derivation_Registry.yml",
+  "references/registry/AI_Registry_Key.yml",
+  "references/registry/FinTech_Registry_Key.yml",
   "FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"
 ]);
 

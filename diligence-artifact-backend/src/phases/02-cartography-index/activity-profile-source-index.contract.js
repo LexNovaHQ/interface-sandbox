@@ -332,8 +332,7 @@ export const P2C_ACTIVITY_PROFILE_FORBIDDEN_CLASSIFICATION_KEYS = Object.freeze(
   "primary_domain_package",
   "domain_package_selected",
   "AI_REGISTRY_KEY",
-  "FIELD_DERIVATION_REGISTRY",
-  "CLASSIFICATION_DERIVATION_MATRIX"
+  "FIELD_DERIVATION_REGISTRY"
 ]);
 
 export const P2C_ACTIVITY_PROFILE_FORBIDDEN_CONCLUSIONS = Object.freeze([
