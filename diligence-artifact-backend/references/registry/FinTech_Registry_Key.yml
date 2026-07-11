@@ -1,0 +1,654 @@
+registry_key:
+  name: FinTech_Registry_Key
+  domain_package: fintech
+  version: v1.0
+  status: derivation_specification
+  runtime_mode: passive_reference_taxonomy
+  axis_naming: behavior_class
+  built_to_structure_of: AI_Registry_Key.yml   # identical axis structure; fintech vocabulary
+  purpose: >
+    Per-domain taxonomy authority for the fintech package. Defines the Behavior Class,
+    Surface, Lane, Subcat, Compliance Framework, and severity axes used by Phase 5
+    (activity classification) and Phase 9 (exposure matching) for fintech targets.
+    Holds fintech VOCABULARY only; derivation MECHANICS live agnostically in the
+    Field Derivation Registry. Not universal Phase 5 authority — one package key of many.
+  doctrine: "Model suggests. Rules decide. Evidence locks. Conflicts block auto-lock."
+  baseline_radius_note: >
+    Full-horizon fintech baseline. Behavior classes, surfaces, and frameworks span the
+    fintech spectrum — lending, payments, custody, issuance, exchange/brokerage, advisory,
+    scoring/underwriting, KYC/AML, insurance, account aggregation, trading, and
+    settlement/rails — across India (RBI/SEBI/IRDAI/DPDP), EU (PSD3/PSR, MiCA, DORA, GDPR),
+    UK (FCA), and US (FinCEN/BSA, CFPB, SEC/FINRA/CFTC), plus PCI DSS and FATF AML.
+  regulatory_currency_note: >
+    Landscape verified July 2026: EU PSD3 + Payment Services Regulation (PSR) finalizing
+    2026, repealing/replacing PSD2 and the E-Money Directive; MiCA full compliance applies
+    EU-wide by mid-2026 as transitional periods expire; India DPDP Act full enforcement
+    scheduled May 2027 (RBI obligations apply now); PCI DSS v4.0/v4.0.1 current; UK
+    cryptoasset regime expected in force ~Oct 2027.
+
+# ---------------------------------------------------------------------------
+# DERIVATION ORDER — identical to AI key
+# ---------------------------------------------------------------------------
+derivation_order:
+  - {step: 1, axis: behavior_class, note: "What the fintech does (financial function). Categorical gate. Residual = UNI."}
+  - {step: 2, axis: lane, note: "Whose operational role creates the exposure (provider vs deployer). Independent of behavior class."}
+  - {step: 3, axis: surface, note: "What financial data / audience / context it touches."}
+  - {step: 4, axis: subcat, note: "Terminal harm mechanism (what the plaintiff/regulator recovers on)."}
+  - {step: 5, axis: compliance_framework, note: "Regulatory regime(s) the row slices on."}
+  - {step: 6, axis: severity, note: "Pain tier / depth / velocity / status — derived on write."}
+  - {step: 7, axis: threat_trigger, note: "Row-specific detection logic; must NOT re-encode the gates above."}
+
+# ---------------------------------------------------------------------------
+# AXIS 1 — BEHAVIOR CLASS — FINTECH FUNCTION CLASS (14)
+#   Classifies WHAT the fintech does with money / financial activity.
+#   Resolve first; if no functional gate fires -> UNI.
+# ---------------------------------------------------------------------------
+behavior_class:
+  axis_id: behavior_class
+  axis_label: "Behavior Class — FinTech Function Class"
+  residual_code: UNI
+  resolution_test: >
+    "Is this caused by something only this financial function does, or by something any
+    fintech could do?" Function-unique -> keep; universal -> UNI. When two gates fire,
+    assign the class whose terminal harm the plaintiff/regulator recovers on; note the
+    secondary in provenance.
+  codes:
+    - code: UNI
+      internal_name: Universal
+      normalized_name: "Cross-Cutting (any fintech system)"
+      trigger_if: "exposure arises from something any fintech product could do, with no function unique to a single class. Default residual."
+      exclude_if: "a specific functional gate below fires."
+      primary_legal_surface: "Applies across the board"
+    - code: LEND
+      internal_name: The Lender
+      normalized_name: "Credit Origination / Lending System"
+      conditions:
+        C1: "extends, originates, underwrites, or facilitates credit or deferred payment to a borrower (loans, BNPL, credit lines, P2P lending, revolving credit)"
+      trigger_if: "C1"
+      exclude_if: "only scores/assesses a person without extending credit (-> SCOR) OR only processes a payment for goods already owned (-> PAY)"
+      primary_legal_surface: "Digital lending rules, usury/interest caps, fair-lending, collections, disclosure/APR"
+    - code: PAY
+      internal_name: The Mover
+      normalized_name: "Payment Processing / Money Movement System"
+      conditions:
+        C1: "initiates, processes, routes, acquires, or instructs the movement of funds between parties (gateway, payment aggregator, UPI/rails, wallet transfer, remittance)"
+      trigger_if: "C1"
+      exclude_if: "holds client funds/assets as stored value or custody (-> CUST) OR issues the instrument/account itself (-> ISSU)"
+      primary_legal_surface: "Payment services authorization, safeguarding, PCI DSS, AML, settlement finality"
+    - code: CUST
+      internal_name: The Custodian
+      normalized_name: "Funds / Asset Custody System"
+      conditions:
+        C1: "holds, safeguards, or controls client money or financial assets (escrow, wallet float, custody, safeguarded e-money, crypto custody)"
+      trigger_if: "C1"
+      exclude_if: "only transmits funds without holding them (-> PAY)"
+      primary_legal_surface: "Client-money safeguarding, custody rules, segregation, insolvency protection"
+    - code: ISSU
+      internal_name: The Issuer
+      normalized_name: "Instrument / Account / E-Money Issuance System"
+      conditions:
+        C1: "issues a payment instrument, account, e-money, stored value, or stablecoin to a holder (card issuing, neobank account, PPI/wallet issuance, EMT/ART)"
+      trigger_if: "C1"
+      exclude_if: "only acquires or processes another issuer's instrument (-> PAY)"
+      primary_legal_surface: "E-money/PPI authorization, capital & safeguarding, MiCA EMT/ART, deposit-taking line"
+    - code: XCHG
+      internal_name: The Exchange
+      normalized_name: "Trading Venue / Marketplace System"
+      conditions:
+        C1: "operates a venue that matches counterparties and executes or records trades in financial assets (crypto exchange, order book, trading venue, P2P asset marketplace)"
+      trigger_if: "C1"
+      exclude_if: "executes on behalf of a client as intermediary (-> BRKR) OR only advises (-> ADVS)"
+      primary_legal_surface: "Market operator authorization, MiCA CASP, market integrity, listing/custody"
+    - code: BRKR
+      internal_name: The Broker
+      normalized_name: "Brokerage / Dealing Intermediary System"
+      conditions:
+        C1: "receives, transmits, or executes client orders in financial instruments or crypto as an intermediary (securities brokerage, dealing, crypto brokerage)"
+      trigger_if: "C1"
+      exclude_if: "operates the venue itself (-> XCHG) OR provides personalized advice/management (-> ADVS)"
+      primary_legal_surface: "Broker-dealer registration, best execution, suitability, client-asset rules"
+    - code: ADVS
+      internal_name: The Advisor
+      normalized_name: "Investment Advisory / Wealth Management System"
+      conditions:
+        C1: "provides personalized investment or financial recommendations, or manages assets on a discretionary basis (robo-advisory, wealthtech, PMS)"
+      trigger_if: "C1"
+      exclude_if: "only executes orders without advice (-> BRKR)"
+      primary_legal_surface: "Investment-adviser registration, fiduciary/suitability duty, mis-selling"
+    - code: SCOR
+      internal_name: The Underwriter
+      normalized_name: "Credit-Scoring / Person-Risk Underwriting System"
+      conditions:
+        C1: "outputs a score, rating, or risk assessment about an identifiable person or applicant"
+        C2: "that output materially gates access to a financial product (credit, insurance, account)"
+      trigger_if: "C1 AND C2"
+      exclude_if: "it actually extends the credit (-> LEND) OR forecasts a non-person aggregate/pool rather than gating a person (-> INSR pooling / ORA-equivalent)"
+      primary_legal_surface: "Fair-lending / FCRA, adverse-action, algorithmic bias, credit-information rules"
+      cross_ref: "person-gating analogue of AI behavior class JDG"
+    - code: KYCV
+      internal_name: The Verifier
+      normalized_name: "Identity Verification / KYC-AML Screening System"
+      conditions:
+        C1: "verifies identity, performs CDD/KYC, or screens a party for AML/sanctions/PEP as a function (onboarding, sanctions screening, transaction monitoring)"
+      trigger_if: "C1"
+      exclude_if: "only stores KYC records without verifying or screening"
+      primary_legal_surface: "AML/CFT program duties, sanctions, identity-data/biometric consent"
+    - code: INSR
+      internal_name: The Insurer
+      normalized_name: "Insurance Underwriting / Claims System"
+      conditions:
+        C1: "underwrites, issues, prices, or adjudicates insurance cover or claims, or carries insurance risk (insurtech, embedded insurance)"
+      trigger_if: "C1"
+      exclude_if: "only distributes insurance as an intermediary without carrying risk or underwriting (-> BRKR/AGGR)"
+      primary_legal_surface: "Insurance authorization, solvency, claims-handling fairness, IRDAI/prudential"
+    - code: AGGR
+      internal_name: The Aggregator
+      normalized_name: "Account / Data Aggregation & Open-Banking System"
+      conditions:
+        C1: "accesses and aggregates a user's financial data across third-party institutions (account aggregation, open banking, PFM, data connectivity, AISP)"
+      trigger_if: "C1"
+      exclude_if: "holds funds (-> CUST) OR moves funds (-> PAY)"
+      primary_legal_surface: "Open-banking/AA framework, consent architecture, data-sharing, §1033/PSD3 access"
+    - code: TRAD
+      internal_name: The Trader
+      normalized_name: "Algorithmic Trading / Treasury Optimization System"
+      conditions:
+        C1: "runs algorithmic trading, market making, or treasury/liquidity optimization whose output directly moves the operator's or a fund's money in markets"
+      trigger_if: "C1"
+      exclude_if: "executes client orders as intermediary (-> BRKR) OR only advises (-> ADVS)"
+      primary_legal_surface: "Market manipulation, algo-trading controls, best execution, SEBI/SEC/CFTC"
+      cross_ref: "operator-outcome optimization analogue of AI behavior class OPT"
+    - code: SETL
+      internal_name: The Settler
+      normalized_name: "Clearing / Settlement / Ledger & Rails System"
+      conditions:
+        C1: "performs clearing, settlement, or reconciliation, or maintains the authoritative financial ledger/rails (clearing, settlement, core ledger, BaaS/embedded rails)"
+      trigger_if: "C1"
+      exclude_if: "only initiates the payment instruction (-> PAY)"
+      primary_legal_surface: "Settlement finality, systemic-risk oversight, reconciliation integrity, BaaS partner-bank duties"
+
+# ---------------------------------------------------------------------------
+# AXIS 2 — LANE — EXPOSURE ROLE (A / B / Both) — identical structure, fintech-worded
+# ---------------------------------------------------------------------------
+lane:
+  axis_id: lane
+  axis_label: "Lane — Exposure Role"
+  resolves: "per-activity / per-exposure, NOT per-company"
+  codes:
+    - code: A
+      normalized_name: "Financial Product / Service Provider Exposure"
+      conditions:
+        C1: "the entity develops, sells, licenses, or makes a financial product, rail, or service available to external users or customers"
+        C2: "the threat arises from the product as shipped, its terms, or its handling of customer funds/data"
+      trigger_if: "C1 AND C2"
+      exclude_if: "the exposure exists only through the entity's own internal financial operations or employer role (-> B)"
+    - code: B
+      normalized_name: "Deployer / Operator Exposure"
+      conditions:
+        C1: "the entity operates or deploys fintech internally, or uses financial tooling to run its own money movement, treasury, payroll, or governance"
+        C2: "the threat arises from that internal deployment or operator role, not from a product sold to others"
+      trigger_if: "C1 AND C2"
+      exclude_if: "the exposure exists only through an external product the entity ships (-> A)"
+    - code: Both
+      normalized_name: "Provider & Deployer Exposure"
+      trigger_if: "the identical threat — same authority, same fix, same detection trigger — fires under BOTH the A and B triggers"
+      exclude_if: "the facets differ in authority, fix, or trigger by role (-> split into two rows)"
+  resolution_rule: >
+    Apply A and B triggers independently. Fires A only -> Lane A. Fires B only -> Lane B.
+    Fires both with identical authority+fix+trigger -> one row, Lane Both. Fires both but
+    authority/fix/trigger differ by role -> split into two rows, each with its own UID.
+
+# ---------------------------------------------------------------------------
+# AXIS 3 — SURFACE — FINANCIAL DATA & AUDIENCE CONTEXT (atomic tokens, pipe-combined)
+# ---------------------------------------------------------------------------
+surface:
+  axis_id: surface
+  axis_label: "Surface — Financial Data & Audience Context"
+  multi_value: true
+  combine: pipe
+  note: "Jurisdiction and regime are NOT surface tokens."
+  tokens:
+    - {token: Card-Data, normalized_name: "Cardholder / PAN Data (PCI)", trigger_if: "stores, processes, or transmits payment card / PAN / cardholder data"}
+    - {token: Bank-Account-Data, normalized_name: "Bank Account / Statement Data", trigger_if: "handles account numbers, IBAN/IFSC, balances, or statements"}
+    - {token: Funds-Custody, normalized_name: "Client Funds / Assets Held", trigger_if: "holds or controls client money or financial assets"}
+    - {token: KYC-Identity-Data, normalized_name: "Identity / KYC / Onboarding Data", trigger_if: "processes identity documents, KYC/CDD, or onboarding biometrics"}
+    - {token: Credit-Data, normalized_name: "Creditworthiness / Bureau Data", trigger_if: "handles credit history, bureau data, or repayment behavior"}
+    - {token: Transaction-Data, normalized_name: "Payment / Transaction Records", trigger_if: "processes payment, transfer, or transaction-flow records"}
+    - {token: Investment-Assets, normalized_name: "Securities / Investment Holdings", trigger_if: "handles securities, funds, or investment holdings"}
+    - {token: Crypto-VirtualAsset, normalized_name: "Crypto / Virtual Assets", trigger_if: "handles crypto-assets, tokens, or virtual-asset transfers/custody"}
+    - {token: Consumer-Retail, normalized_name: "Retail / Consumer Finance", trigger_if: "offered to retail financial consumers (B2C)"}
+    - {token: Enterprise-B2B, normalized_name: "Enterprise / B2B Finance", trigger_if: "sold to businesses under negotiated terms"}
+    - {token: Merchant-SME, normalized_name: "Merchant / SME", trigger_if: "serves merchants or small/medium businesses (acquiring, SME credit)"}
+    - {token: Cross-Border, normalized_name: "Cross-Border / FX / Remittance", trigger_if: "moves value across borders or handles FX/remittance"}
+    - {token: Sensitive-Financial, normalized_name: "Sensitive Financial (income/wealth/tax)", trigger_if: "processes income, net-worth, tax, or wealth data"}
+    - {token: Minors, normalized_name: "Children / Minors", trigger_if: "financial product accessible to or targeting under-18 users"}
+
+# ---------------------------------------------------------------------------
+# AXIS 4 — SUBCAT — TERMINAL HARM MECHANISM (10, closed) — fintech
+# ---------------------------------------------------------------------------
+subcat:
+  axis_id: subcat
+  axis_label: "Subcat — Terminal Harm Mechanism"
+  closed_vocabulary: true
+  tie_break: "pick the terminal harm (what the plaintiff/regulator recovers on), not the method."
+  codes:
+    - {code: LIC, normalized_name: "Licensing / Authorization Defect", trigger_if: "harm arises from conducting a regulated financial activity without the required license, registration, or authorization"}
+    - {code: FUND, normalized_name: "Client-Funds / Safeguarding Failure", trigger_if: "harm arises from commingling, misuse, shortfall, or loss of client money or safeguarded assets"}
+    - {code: AML, normalized_name: "AML / CFT / Sanctions Failure", trigger_if: "harm arises from inadequate KYC/CDD, transaction monitoring, sanctions screening, or SAR/STR duties"}
+    - {code: FRD, normalized_name: "Fraud & Misrepresentation", trigger_if: "harm arises from fraud, deceptive claims, or misrepresentation to consumers, markets, investors, or regulators"}
+    - {code: CRED, normalized_name: "Unfair / Predatory Lending & Collections", trigger_if: "harm arises from usury, predatory terms, unfair APR/fees, or abusive collections/recovery"}
+    - {code: DISC, normalized_name: "Disclosure / Consent / Mis-selling & Suitability", trigger_if: "harm arises from defective disclosure, consent, suitability, or mis-selling of a financial product"}
+    - {code: PRV, normalized_name: "Data-Protection & Privacy", trigger_if: "harm arises from unlawful processing, transfer, retention, breach, or over-scope handling of financial personal data"}
+    - {code: SETL_H, normalized_name: "Settlement / Custody / Reconciliation Failure", trigger_if: "harm arises from settlement failure, custody breach, reconciliation error, or ledger integrity loss"}
+    - {code: MKT, normalized_name: "Market Conduct / Manipulation / Insider", trigger_if: "harm arises from market manipulation, insider dealing, best-execution failure, or trading-conduct breach"}
+    - {code: CONS, normalized_name: "Consumer Harm / UDAAP / Unfair Terms", trigger_if: "harm arises from unfair, deceptive, or abusive acts/practices or unfair contract terms to financial consumers"}
+
+# ---------------------------------------------------------------------------
+# AXIS 5 — COMPLIANCE_FRAMEWORK — FINTECH REGULATORY REGIME (multi-value, pipe-combined)
+# ---------------------------------------------------------------------------
+compliance_framework:
+  axis_id: compliance_framework
+  axis_label: "Compliance Framework — FinTech Regulatory Regime"
+  multi_value: true
+  tokens:
+    - {token: RBI, normalized_name: "Reserve Bank of India (payments, lending, NBFC, PPI)", instruments: "Payment & Settlement Systems Act 2007 / PA-PG Guidelines / Digital Lending Guidelines / PPI Master Directions / NBFC directions"}
+    - {token: SEBI, normalized_name: "Securities & Exchange Board of India", instruments: "SEBI Act / Investment Advisers Regs 2013 / Stock Brokers Regs / PMS Regs / PFUTP"}
+    - {token: IRDAI, normalized_name: "Insurance Regulatory & Development Authority of India", instruments: "Insurance Act 1938 / IRDAI regulations / claims & distribution norms"}
+    - {token: DPDP, normalized_name: "India Digital Personal Data Protection Act 2023", instruments: "DPDP Act / DPDP Rules 2025 (full enforcement scheduled May 2027)"}
+    - {token: IT_Act, normalized_name: "India Information Technology Act 2000 & Rules", instruments: "IT Act §43A/§66/§72A / SPDI / CERT-In directions"}
+    - {token: PMLA, normalized_name: "India Prevention of Money Laundering Act", instruments: "PMLA 2002 / PML Rules / FIU-IND reporting"}
+    - {token: PSD3_PSR, normalized_name: "EU Payment Services (PSD3 + Payment Services Regulation)", instruments: "PSD3 Directive + PSR (finalizing 2026; replaces PSD2 & EMD) / strong customer authentication / safeguarding"}
+    - {token: MiCA, normalized_name: "EU Markets in Crypto-Assets Regulation", instruments: "MiCA (Reg. 2023/1114) / CASP authorization / EMT & ART issuance (full compliance mid-2026)"}
+    - {token: GDPR, normalized_name: "EU General Data Protection Regulation", instruments: "GDPR / Arts. 5, 6, 22, 32, 83"}
+    - {token: DORA, normalized_name: "EU Digital Operational Resilience Act", instruments: "DORA (Reg. 2022/2554) / ICT risk, incident reporting, third-party oversight"}
+    - {token: PCI_DSS, normalized_name: "Payment Card Industry Data Security Standard", instruments: "PCI DSS v4.0 / v4.0.1 (control posture for cardholder data)"}
+    - {token: AML_FATF, normalized_name: "FATF AML/CFT International Standard", instruments: "FATF Recommendations / EU AMLR-AMLD / travel rule"}
+    - {token: FinCEN_BSA, normalized_name: "US Bank Secrecy Act / FinCEN (MSB & money transmission)", instruments: "BSA / FinCEN MSB registration / state money-transmitter licenses / OFAC sanctions"}
+    - {token: CFPB, normalized_name: "US Consumer Financial Protection", instruments: "Dodd-Frank UDAAP / Reg E (EFTA) / Reg Z (TILA) / §1033 open banking"}
+    - {token: SEC_FINRA_CFTC, normalized_name: "US Securities & Derivatives Regulation", instruments: "SEC / FINRA broker-dealer / Investment Advisers Act / CFTC (derivatives, crypto)"}
+    - {token: FCA_UK, normalized_name: "UK Financial Conduct Authority", instruments: "FSMA / EMR 2011 / PSR 2017 / Consumer Duty / cryptoasset regime (expected in force ~2027)"}
+    - {token: Consumer_Protection, normalized_name: "Consumer Protection (fintech distribution & dark patterns)", instruments: "India CPA 2019 / dark-pattern guidelines / general consumer law"}
+    - {token: Contract_Tort, normalized_name: "Common Law — Contract & Tort", instruments: "contract / negligence / agency / misrepresentation (residual)"}
+  posture_note: "PCI DSS and DORA operate substantially as security/operational-resilience posture; tag on rows whose statutory fix also satisfies the control, and surface separately as posture dimensions."
+
+# ---------------------------------------------------------------------------
+# AXIS 6 — SEVERITY — identical universal structure to AI key
+# ---------------------------------------------------------------------------
+severity:
+  pain_tier:
+    axis_label: "Pain Tier / Pain Category (T1–T5)"
+    ceiling_rule: "push tier and velocity to the highest defensible level; if not externally confirmable, step down exactly one level."
+    codes:
+      - {tier: T1, pain_category: Existential, normalized_name: "Business-Ending Exposure", trigger_if: "license revocation, forced wind-down, permanent ban, deposit freeze, OR an outright prohibition of the regulated activity"}
+      - {tier: T2, pain_category: "Uncapped Money", normalized_name: "Uncapped Financial Exposure", trigger_if: "no financial ceiling — revenue-percentage or per-violation-uncapped penalties, restitution of client funds, or unbounded statutory damages"}
+      - {tier: T3, pain_category: "Deal Death", normalized_name: "Market-Access / Deal Loss", trigger_if: "money capped but partner-bank/enterprise relationships stall or regional market access narrows — bounded civil penalties"}
+      - {tier: T4, pain_category: "Regulatory Heat", normalized_name: "Regulatory Enforcement", trigger_if: "fines, supervisory action, or forced operational change — expensive but survivable"}
+      - {tier: T5, pain_category: Friction, normalized_name: "Latent / Documentation Risk", trigger_if: "pending legislation, documentation gap, or authorization-scope uncertainty"}
+  pain_depth:
+    axis_label: "Pain Depth — Who Bears the Liability"
+    codes:
+      - {value: Corporate, normalized_name: "Entity-Level (limited-liability shield holds)", trigger_if: "exposure lands on the entity; shield holds. Default."}
+      - {value: Personal, normalized_name: "Principal-Level (shield pierced)", trigger_if: "personal guarantees, fit-and-proper/director duties, or agency-theory principals reach an individual's assets"}
+      - {value: Criminal, normalized_name: "Individual Criminal Exposure", trigger_if: "criminal liability (AML/PMLA offences, fraud, unlicensed deposit-taking, statutory officer duties) attaches to the vendor's own leadership/principals"}
+  velocity:
+    axis_label: "Velocity — Enforcement Timing"
+    derivation: "from Status, Effective_Date, and Pain_Tier"
+    promotion_rule: "any T1/T2 threat with an Effective_Date within 12 months promotes to ACTIVE_NOW regardless of Status"
+    codes:
+      - {value: ACTIVE_NOW, normalized_name: "In Force — Immediate Consequence", trigger_if: "law in force AND first-incident consequence is immediate; OR promotion rule fires"}
+      - {value: THIS_YEAR, normalized_name: "In Force — Near-Term (6–18 mo)", trigger_if: "in force but exposure typically materializes over 6–18 months"}
+      - {value: INCOMING, normalized_name: "Scheduled — Future Effective Date", trigger_if: "Effective_Date 2+ months out AND tier T3–T5; OR tier T1–T2 and date >12 months out"}
+      - {value: WATCH, normalized_name: "Proposed — Not Yet Law", trigger_if: "Status = Pending / proposed legislation with no effective date"}
+  status:
+    axis_label: "Status — Legal Status"
+    codes:
+      - {value: Active, normalized_name: "Currently Enforceable", trigger_if: "law/regulation in force and enforceable today"}
+      - {value: Upcoming, normalized_name: "Enacted — Not Yet Effective", trigger_if: "enacted with a future effective date (e.g., DPDP full enforcement May 2027, UK crypto ~2027)"}
+      - {value: Pending, normalized_name: "Proposed / Under Consideration", trigger_if: "proposed/in consultation; pairs with Velocity = WATCH"}
+    effective_date_vocabulary: ["YYYY-MM-DD", "TBD", "Ongoing"]
+
+# ---------------------------------------------------------------------------
+# AUTHORITY + THREAT ROW FORMAT — identical contract to AI key
+# ---------------------------------------------------------------------------
+authority_rules:
+  fill_rule: "100% surety or blank. Filled only when the authority is Real, Findable, and On-point; otherwise —."
+  format: "single most-authoritative instrument per cell with a locator, no /-joined lists."
+  grounding: "authority grounds the tier; a T1/T2 claim needs at least one anchor a lawyer would confirm."
+  verification_mandate: "row-level case law / statutory anchors for the fintech threat registry must be web-verified before inclusion (not asserted from this key)."
+threat_trigger_format:
+  template: "CONDITION_1: [criterion] | CONDITION_2: [criterion] | ... | TRIGGER_IF: [boolean] | EXCLUDE_IF: [exclusion]"
+  rules:
+    - "≥1 CONDITION_N, exactly one TRIGGER_IF, exactly one EXCLUDE_IF"
+    - "Behavior Class, Surface, Lane, and Framework are resolved first as categorical gates; the trigger must NOT re-encode them"
+    - "conditions must be LLM-parseable concrete criteria, not judgment calls"
+threat_registry_binding:
+  csv: FinTech_Threat_Registry.csv   # Phase 9 exposure registry — to be built to this key; not yet populated
+  columns_22: [UID, Threat_ID, Threat_Name, Lane, Behavior_Class, Surface, Authority_IN, Authority_EU, Authority_US, Compliance_Framework, Velocity, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Legal_Pain, FP_Mechanism, FP_Impact, Lex_Nova_Fix, Threat_Trigger, Provenance]
+  input_columns: [Threat_ID, Behavior_Class, Lane, Surface, Authority_IN, Authority_EU, Authority_US, Compliance_Framework, Status, Effective_Date, Threat_Trigger]
+  delivered_artifacts_cite: UID
+  build_status: TAXONOMY_ONLY_THREAT_ROWS_PENDING
+
+# ---------------------------------------------------------------------------
+# PHASE 5 CONSUMPTION CONTRACT — identical to AI key
+# ---------------------------------------------------------------------------
+phase_5_taxonomy_slice:
+  behavior_codes_source: behavior_class.codes
+  surface_tokens_source: surface.tokens
+  lane_source: lane.codes
+  note: >
+    Phase 5 consumes ONLY behavior_class and surface (plus lane) as the activity
+    taxonomy. Subcat, compliance_framework, and severity are consumed downstream
+    (Phase 9). Phase 5 must reject any behavior/surface code not present in this key
+    for the mounted package.
+
+version_history:
+  - version: v1.0
+    changes:
+      - "Initial fintech taxonomy key built to AI_Registry_Key.yml structure exactly."
+      - "14 behavior classes spanning the full fintech horizon (UNI, LEND, PAY, CUST, ISSU, XCHG, BRKR, ADVS, SCOR, KYCV, INSR, AGGR, TRAD, SETL)."
+      - "14 fintech surfaces; 10 fintech subcat harm mechanisms; 18 fintech compliance frameworks."
+      - "Regulatory landscape verified July 2026 (PSD3/PSR, MiCA, DORA, RBI/SEBI/IRDAI, DPDP, PCI DSS v4, FinCEN, CFPB, SEC/FINRA/CFTC, FCA, FATF)."
+      - "Threat rows deferred to FinTech_Threat_Registry.csv (Phase 9); row-level anchors require web verification before inclusion."
+
+# ---------------------------------------------------------------------------
+# DOMAIN DERIVATION RULES (fintech)
+#   Migrated from retired DOMAIN_DERIVATION_REGISTRY_v0. Instances here; agnostic
+#   grammar/resolution order in the Field Derivation Registry.
+# ---------------------------------------------------------------------------
+domain_derivation_rules:
+  package_id: fintech
+  primary_domain_rule:
+    rule_id: PRIMARY_DOMAIN_FINTECH
+    rule_type: PRIMARY_DOMAIN
+    priority: 90
+    normalized_name: Financial Technology / Financial Services Primary Domain
+    conditions:
+      C1: "Admitted lossless evidence shows the target offers/enables/facilitates/intermediates/operates a financial product, service, workflow, or transaction activity."
+      C2: "Involves payments/money movement/acceptance/payouts/wallets/stored value/settlement/acquiring/refunds/chargebacks/transaction processing."
+      C3: "Involves lending/credit/BNPL/underwriting/credit scoring/affordability/origination/collections/repayment/borrower workflow."
+      C4: "Involves KYC/AML/sanctions/fraud screening/identity verification/onboarding/compliance workflow for financial access."
+      C5: "Involves brokerage/trading/investment/wealth/portfolio/advice/securities/capital-markets activity."
+      C6: "Involves insurance/insurtech/policy issuance/claims/risk pricing/distribution."
+      C7: "Involves customer funds/client assets/custody/safeguarding/partner-bank route/regulated account or wallet infrastructure."
+      C8: "Involves financial data infrastructure/open banking/account aggregation/financial API/transaction-data enrichment/bank connectivity as a product."
+      C9: "The financial activity is part of the target's own product/service wrapper offered to customers/merchants/borrowers/investors/institutions/partners."
+      C10: "Evidence appears in >=1 admitted product-facing or legal/control source tied to the actual offering."
+    trigger_if: "C1 AND (C2 OR C3 OR C4 OR C5 OR C6 OR C7 OR C8) AND C9 AND C10"
+    exclude_if:
+      - "The only financial signal is subscription billing/generic pricing/SaaS-fee collection/investor relations/customer logos/blog/case study/finance vertical example for a non-financial product."
+      - "The actual reviewed offering is an AI product and finance appears only as a customer use case/demo/industry page/example vertical."
+    evidence_policy: {must_cite_lossless_evidence: true, phase_2_index_as_evidence: FORBIDDEN}
+    result: {primary_domain_package: fintech, primary_domain_status: LOCKED, ai_package_mount: EVALUATE_SEPARATELY}
+    lock_scope: PRIMARY_DOMAIN_LOCK
+  ai_overlay_eligibility: "When fintech is primary, evaluate ai-native mount via the AI key's capability_overlay_mount_rules (AI_OVERLAY_MOUNTED -> AI_CANDIDATE_ONLY -> AI_NOT_VISIBLE)."
+  fusion_note: "fintech-owned AI fusion candidates fire only when fintech primary + AI_OVERLAY_MOUNTED both hold; fusion grammar in the FDR; deferred to Phase 5 + Phase 9."
+
+# ---------------------------------------------------------------------------
+# REGULATORY OVERLAY AXIS (fintech) — catalog-gated, evidence-derived in 3B
+# ---------------------------------------------------------------------------
+regulatory_overlay:
+  axis_id: regulatory_overlay
+  axis_label: "Regulatory Overlay — catalog-gated, per-domain"
+  catalog_source: "package-catalog.v0.json:regulatory_overlays"
+  legal_applicability_status: NOT_DETERMINED_IN_PHASE_3B
+  status_values: [NOT_VISIBLE, CANDIDATE_ONLY, REVIEW_REQUIRED]
+  overlays:
+    - {overlay_id: financial-services, applies: PRIMARY, trigger_if: "target conducts a regulated financial activity (payments/lending/custody/broking/insurance/etc.)", links_to_framework: [RBI, SEBI, IRDAI, PSD3_PSR, MiCA, FinCEN_BSA, SEC_FINRA_CFTC, FCA_UK, AML_FATF, PCI_DSS], default_status: CANDIDATE_ONLY}
+    - {overlay_id: privacy, applies: PRIMARY, trigger_if: "processes financial personal data as part of the offering", links_to_framework: [GDPR, DPDP], default_status: CANDIDATE_ONLY}
+    - {overlay_id: gdpr, applies: PRIMARY, trigger_if: "processes EU personal data / EU customers", links_to_framework: [GDPR], default_status: CANDIDATE_ONLY}
+    - {overlay_id: india-dpdp, applies: PRIMARY, trigger_if: "processes personal data of Indian data principals", links_to_framework: [DPDP], default_status: CANDIDATE_ONLY}
+    - {overlay_id: india-it-act, applies: PRIMARY, trigger_if: "Indian cyber/SPDI/CERT-In duties visible", links_to_framework: [IT_Act], default_status: CANDIDATE_ONLY}
+    - {overlay_id: us-state-privacy, applies: PRIMARY, trigger_if: "US consumer financial personal data", links_to_framework: [CFPB], default_status: CANDIDATE_ONLY}
+    - {overlay_id: consumer-protection, applies: PRIMARY, trigger_if: "retail financial consumers / mis-selling / unfair-terms / dark-pattern surface", links_to_framework: [CFPB, Consumer_Protection, FCA_UK], default_status: CANDIDATE_ONLY}
+    - {overlay_id: eu-ai-act, applies: STUB, trigger_if: "AI credit-scoring/insurance-pricing in EU high-risk scope (implies ai-native overlay)", links_to_framework: [], default_status: CANDIDATE_ONLY}
+    - {overlay_id: employment, applies: STUB, trigger_if: "payroll/earned-wage/lending-to-employees workforce surface", links_to_framework: [], default_status: CANDIDATE_ONLY}
+    - {overlay_id: hipaa, applies: STUB, trigger_if: "health-payment/health-insurance PHI processed (health-fintech)", links_to_framework: [], default_status: CANDIDATE_ONLY}
+
+# ---------------------------------------------------------------------------
+# AXIS 7 — DOMAIN CONTROL OBLIGATION (fintech) — Phase 7B taxonomy
+#   Substantive, per-domain control-obligation definitions. Material fields
+#   (what_it_requires, expected_control_signal, diligence_question) are derivable,
+#   factual, analytical, and substantial — NOT mechanical routing. Route codes /
+#   locators stay in references/domain-packages/phase-2/fintech.obligation-catalog.json
+#   (the navigation companion), keyed to these obligation_ids.
+#   Legal applicability / compliance conclusions are deferred to Phase 9/12.
+# ---------------------------------------------------------------------------
+domain_control_obligation:
+  axis_id: domain_control_obligation
+  axis_label: "Domain Control Obligation — FinTech (Phase 7B)"
+  navigation_companion: "references/domain-packages/phase-2/fintech.obligation-catalog.json"
+  legal_applicability_status: NOT_DETERMINED_IN_PHASE_7B
+  material_field_contract:
+    derivable: true
+    factual: true
+    analytical: true
+    substantial: true
+    not_mechanical: true
+    material_fields: [what_it_requires, expected_control_signal, diligence_question, exposure_role_context, obligation_locus]
+  field_schema: [obligation_id, normalized_name, obligation_family, what_it_requires, authority_dependency, applies_when, trigger_condition, exposure_role_context, obligation_locus, obligation_trigger_timing, expected_control_signal, public_evidence_signal, diligence_question, linked_subcat, limitation_note]
+  obligations:
+    - obligation_id: FIN-OBL-01
+      obligation_family: licensing_authorisation
+      normalized_name: "Licensing & Authorisation"
+      what_it_requires: "Conduct each regulated financial activity only under a held authorisation/registration, or under a licensed sponsor/partner where permitted; do not offer a regulated activity unlicensed."
+      authority_dependency: [RBI, SEBI, IRDAI, PSD3_PSR, MiCA, FinCEN_BSA, SEC_FINRA_CFTC, FCA_UK]
+      applies_when: {behavior_class: [UNI, LEND, PAY, CUST, ISSU, XCHG, BRKR, ADVS, SCOR, KYCV, INSR, AGGR, TRAD, SETL], surface: [Consumer-Retail, Enterprise-B2B, Merchant-SME]}
+      trigger_condition: "target evidences a regulated financial activity but no held or sponsor-provided authorisation is visible"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: pre-authorization
+      expected_control_signal: "named regulator + licence/registration reference, or explicit 'operating under sponsor/partner licence' disclosure"
+      public_evidence_signal: "regulatory/licensing page, footer registration numbers, partner-bank/sponsor disclosure, terms"
+      diligence_question: "Is every regulated activity the target performs covered by a held or sponsor-provided authorisation, or is it operating unlicensed?"
+      linked_subcat: LIC
+      limitation_note: "public footprint may not reveal sponsor arrangements; mark package_context_limited where authorisation is not visible."
+    - obligation_id: FIN-OBL-02
+      obligation_family: funds_custody_safeguarding
+      normalized_name: "Client-Funds Safeguarding & Custody"
+      what_it_requires: "Hold customer money/assets in a compliant safeguarded/escrow structure, segregated from operating funds, with no commingling and required day-end balance / safeguarding-from-receipt."
+      authority_dependency: [RBI, PSD3_PSR, FCA_UK, MiCA]
+      applies_when: {behavior_class: [CUST, ISSU, PAY], surface: [Funds-Custody, Bank-Account-Data]}
+      trigger_condition: "target holds or controls client funds/float (wallet, escrow, custody, safeguarded e-money) as evidenced on the public surface"
+      exposure_role_context: Both
+      obligation_locus: entity+partner-bank
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "named escrow/safeguarding bank; segregation statement; no float commingling; day-end balance / safeguarding-from-receipt reference"
+      public_evidence_signal: "trust/security page, partner-bank disclosure, terms, RBI PA compliance page"
+      diligence_question: "Is customer money held in a compliant safeguarded/escrow structure, or commingled with the operating account?"
+      linked_subcat: FUND
+      limitation_note: "safeguarding-bank identity is often non-public; record missing_proof rather than inferring commingling."
+    - obligation_id: FIN-OBL-03
+      obligation_family: money_movement_settlement
+      normalized_name: "Settlement, Reconciliation & Money Movement"
+      what_it_requires: "Settle funds within mandated timelines with reconciliation and dispute controls; manage settlement-float and finality risk."
+      authority_dependency: [RBI, PSD3_PSR]
+      applies_when: {behavior_class: [PAY, SETL], surface: [Transaction-Data, Funds-Custody]}
+      trigger_condition: "target moves or settles funds between parties (acquiring, payouts, rails, remittance)"
+      exposure_role_context: Both
+      obligation_locus: entity+partner-bank
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "disclosed settlement cycle/TAT; reconciliation & dispute/chargeback mechanism"
+      public_evidence_signal: "pricing/settlement page, merchant terms, API docs, dispute policy"
+      diligence_question: "Are settlement timelines and reconciliation controls evidenced, or is settlement-float / finality risk unmanaged?"
+      linked_subcat: SETL_H
+      limitation_note: "settlement mechanics may be described only in merchant contracts; mark limited where not public."
+    - obligation_id: FIN-OBL-04
+      obligation_family: financial_crime_kyc_aml
+      normalized_name: "KYC / CDD / AML-CFT / Sanctions"
+      what_it_requires: "Operate a risk-based CDD program with ongoing monitoring, periodic KYC, sanctions/PEP screening, STR/SAR filing, and a designated principal/nodal officer."
+      authority_dependency: [RBI, PMLA, AML_FATF, FinCEN_BSA]
+      applies_when: {behavior_class: [KYCV, LEND, PAY, CUST, ISSU, XCHG, BRKR, INSR], surface: [KYC-Identity-Data, Transaction-Data, Cross-Border]}
+      trigger_condition: "target onboards financial customers or moves value (any regulated financial access)"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "KYC/onboarding flow; sanctions/PEP screening; transaction monitoring; STR/principal-officer reference"
+      public_evidence_signal: "onboarding/KYC page, AML policy, compliance page, terms"
+      diligence_question: "Is a risk-based CDD + monitoring + sanctions program evidenced, or is onboarding un-gated?"
+      linked_subcat: AML
+      limitation_note: "internal AML programs are rarely fully public; record control-visibility, not a compliance verdict."
+    - obligation_id: FIN-OBL-05
+      obligation_family: card_data_security
+      normalized_name: "Card-Data Security (PCI)"
+      what_it_requires: "Handle cardholder data within PCI-DSS scope with tokenisation and storage limits; do not store prohibited authentication data."
+      authority_dependency: [PCI_DSS, RBI]
+      applies_when: {behavior_class: [PAY, ISSU], surface: [Card-Data]}
+      trigger_condition: "target stores, processes, or transmits payment card / PAN data"
+      exposure_role_context: Both
+      obligation_locus: entity+processor
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "PCI-DSS attestation/level; tokenisation; explicit no-PAN-storage / vaulting claim"
+      public_evidence_signal: "security/trust page, PCI badge/attestation, developer/API docs"
+      diligence_question: "Is cardholder data handled to PCI-DSS scope, or is PAN stored/transmitted unsafely?"
+      linked_subcat: PRV
+      limitation_note: "PCI level is sometimes only in security whitepapers; mark limited where not public."
+    - obligation_id: FIN-OBL-06
+      obligation_family: consumer_disclosure
+      normalized_name: "Consumer Disclosure & KFS / Pricing Transparency"
+      what_it_requires: "Disclose all-in cost, APR, key terms and cooling-off via a Key Fact Statement / equivalent before the customer commits."
+      authority_dependency: [RBI, CFPB, PSD3_PSR, FCA_UK]
+      applies_when: {behavior_class: [LEND, PAY, ISSU, INSR], surface: [Consumer-Retail, Credit-Data]}
+      trigger_condition: "target offers a priced financial product to retail consumers"
+      exposure_role_context: A
+      obligation_locus: product
+      obligation_trigger_timing: on-event
+      expected_control_signal: "published KFS / APR / all-in cost; T&C; cooling-off / cancellation terms"
+      public_evidence_signal: "pricing page, KFS, product terms, disclosure page"
+      diligence_question: "Are all-in costs and key terms disclosed per KFS/APR rules, or are fees opaque?"
+      linked_subcat: DISC
+      limitation_note: "KFS may appear only in the application flow; mark limited if not on the public surface."
+    - obligation_id: FIN-OBL-07
+      obligation_family: fair_practice_conduct
+      normalized_name: "Fair Practice, Lending Conduct & Collections"
+      what_it_requires: "Follow a fair-practices code: direct-to-borrower disbursal, transparent terms, and non-abusive recovery/collections conduct."
+      authority_dependency: [RBI, CFPB, FCA_UK]
+      applies_when: {behavior_class: [LEND, SCOR], surface: [Credit-Data, Consumer-Retail]}
+      trigger_condition: "target originates credit or runs collections/recovery"
+      exposure_role_context: Both
+      obligation_locus: entity+LSP
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "direct-to-borrower disbursal; fair-recovery / collections policy; grievance escalation for recovery"
+      public_evidence_signal: "fair-practice code page, lending terms, collections policy"
+      diligence_question: "Is lending & recovery conduct within fair-practice limits, or predatory/abusive (e.g., LSP-nodal disbursal, harassment)?"
+      linked_subcat: CRED
+      limitation_note: "collections conduct is largely non-public; base only on stated policy + red-flag signals."
+    - obligation_id: FIN-OBL-08
+      obligation_family: suitability_mis_selling
+      normalized_name: "Suitability, Advice & Mis-selling"
+      what_it_requires: "Gate advice/product recommendations on suitability/risk-profiling and a best-interest/fiduciary standard; avoid mis-selling."
+      authority_dependency: [SEBI, FCA_UK, SEC_FINRA_CFTC, IRDAI]
+      applies_when: {behavior_class: [ADVS, BRKR, INSR], surface: [Investment-Assets, Consumer-Retail]}
+      trigger_condition: "target advises on or distributes investment/insurance products to customers"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: on-event
+      expected_control_signal: "suitability/risk-profiling; best-interest/fiduciary statement; risk & conflicts disclosure"
+      public_evidence_signal: "advisory terms, risk disclosure, suitability questionnaire, disclosures page"
+      diligence_question: "Is advice suitability-gated and free of mis-selling, or product-pushed without a best-interest basis?"
+      linked_subcat: DISC
+      limitation_note: "suitability logic often sits in-app; record stated standard + visible disclosures."
+    - obligation_id: FIN-OBL-09
+      obligation_family: market_conduct_best_execution
+      normalized_name: "Market Conduct, Best Execution & Integrity"
+      what_it_requires: "Maintain best-execution, market-surveillance, and conflicts/insider controls; prevent manipulation and abusive trading conduct."
+      authority_dependency: [SEBI, SEC_FINRA_CFTC, MiCA]
+      applies_when: {behavior_class: [BRKR, TRAD, XCHG], surface: [Investment-Assets, Crypto-VirtualAsset]}
+      trigger_condition: "target executes/matches trades or runs algorithmic/market-making activity"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "best-execution policy; trade surveillance; conflicts-of-interest / insider controls"
+      public_evidence_signal: "order-execution policy, market-integrity/surveillance disclosure, terms"
+      diligence_question: "Are market-integrity & best-execution controls evidenced, or is trading conduct unmonitored?"
+      linked_subcat: MKT
+      limitation_note: "surveillance detail is rarely public; base on stated policy + venue type."
+    - obligation_id: FIN-OBL-10
+      obligation_family: grievance_redressal_machinery
+      normalized_name: "Grievance Redressal & Ombudsman"
+      what_it_requires: "Provide an accessible, documented grievance mechanism with a named nodal/grievance officer, turnaround times, and ombudsman/regulator escalation."
+      authority_dependency: [RBI, FCA_UK, CFPB]
+      applies_when: {behavior_class: [UNI, LEND, PAY, CUST, ISSU, INSR, ADVS, AGGR], surface: [Consumer-Retail]}
+      trigger_condition: "target serves retail financial consumers"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "named grievance/nodal officer; complaint TAT; ombudsman / RB-IOS escalation reference"
+      public_evidence_signal: "grievance-redressal page, nodal-officer contact, complaints policy"
+      diligence_question: "Is an accessible grievance machinery with regulator escalation evidenced, or absent?"
+      linked_subcat: CONS
+      limitation_note: "presence is publicly checkable; absence is a genuine red-flag signal."
+    - obligation_id: FIN-OBL-11
+      obligation_family: data_protection_financial
+      normalized_name: "Financial Personal Data Protection"
+      what_it_requires: "Process financial personal data lawfully with consent, purpose limitation, retention limits, and breach handling as a Data Fiduciary / controller."
+      authority_dependency: [DPDP, GDPR, IT_Act]
+      applies_when: {behavior_class: [UNI, LEND, PAY, CUST, ISSU, KYCV, AGGR, SCOR], surface: [Bank-Account-Data, KYC-Identity-Data, Credit-Data, Sensitive-Financial]}
+      trigger_condition: "target processes financial personal data of customers"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "privacy policy; purpose limitation & consent; retention; breach-notification process"
+      public_evidence_signal: "privacy policy, data-processing page, consent notices"
+      diligence_question: "Is financial personal data processed lawfully with consent/purpose limits, or over-scoped/retained?"
+      linked_subcat: PRV
+      limitation_note: "DPDP full enforcement scheduled May 2027; treat as Upcoming where India-only."
+    - obligation_id: FIN-OBL-12
+      obligation_family: data_access_consent_openbanking
+      normalized_name: "Data Access, Consent & Open Banking"
+      what_it_requires: "Access third-party financial data only through a scoped, revocable consent architecture (Account Aggregator / PSD3 access / §1033)."
+      authority_dependency: [RBI, PSD3_PSR, CFPB]
+      applies_when: {behavior_class: [AGGR], surface: [Bank-Account-Data, Transaction-Data]}
+      trigger_condition: "target aggregates or accesses a user's financial data across third-party institutions"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "AA / consent-artifact architecture; scoped access; consent revocation; purpose binding"
+      public_evidence_signal: "consent/AA page, data-access terms, API docs"
+      diligence_question: "Is third-party financial-data access consent-gated and scoped, or over-broad/unrevocable?"
+      linked_subcat: PRV
+      limitation_note: "consent architecture may be described only in developer docs; mark limited otherwise."
+    - obligation_id: FIN-OBL-13
+      obligation_family: counterparty_sponsor_dependency
+      normalized_name: "Counterparty / Sponsor-Bank / BaaS Dependency"
+      what_it_requires: "Govern sponsor-bank / BaaS / partner dependencies with outsourcing controls, flow-down obligations, and clear regulatory responsibility."
+      authority_dependency: [RBI, PSD3_PSR, FinCEN_BSA]
+      applies_when: {behavior_class: [SETL, ISSU, PAY, LEND], surface: [Enterprise-B2B, Funds-Custody]}
+      trigger_condition: "target relies on a partner/sponsor bank or BaaS provider for a regulated function"
+      exposure_role_context: Both
+      obligation_locus: partner-bank+entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "named partner/sponsor bank; outsourcing/flow-down governance; responsibility allocation"
+      public_evidence_signal: "partner-bank disclosure, 'powered by' / BaaS statements, terms"
+      diligence_question: "Is the sponsor-bank / BaaS dependency governed with flow-down controls, or an unmanaged single point of failure?"
+      linked_subcat: LIC
+      limitation_note: "partner arrangements are often disclosed only partially; capture what is visible."
+    - obligation_id: FIN-OBL-14
+      obligation_family: operational_resilience_cyber
+      normalized_name: "Operational Resilience, Cyber & Incident Reporting"
+      what_it_requires: "Maintain ICT/operational-resilience controls, incident reporting within mandated timelines, and business-continuity/DR."
+      authority_dependency: [DORA, IT_Act, RBI, PSD3_PSR]
+      applies_when: {behavior_class: [UNI, PAY, CUST, ISSU, SETL, AGGR], surface: [Transaction-Data, Bank-Account-Data]}
+      trigger_condition: "target operates financial infrastructure or holds financial data at scale"
+      exposure_role_context: Both
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "security posture (SOC2/ISO 27001); incident-reporting commitment; BCP/DR reference"
+      public_evidence_signal: "trust/security page, certifications, status page, incident policy"
+      diligence_question: "Is operational resilience & incident reporting evidenced, or is cyber posture undisclosed?"
+      linked_subcat: SETL_H
+      limitation_note: "posture is a visibility signal (SOC2 = posture, not liability); do not treat as a compliance verdict."
+    - obligation_id: FIN-OBL-15
+      obligation_family: insurance_conduct_solvency
+      normalized_name: "Insurance Conduct & Solvency"
+      what_it_requires: "Carry insurance risk only under authorisation with solvency margins and fair, timely claims handling and product-suitability."
+      authority_dependency: [IRDAI, FCA_UK, PSD3_PSR]
+      applies_when: {behavior_class: [INSR], surface: [Consumer-Retail, Sensitive-Financial]}
+      trigger_condition: "target underwrites/issues insurance or adjudicates claims"
+      exposure_role_context: A
+      obligation_locus: entity
+      obligation_trigger_timing: ongoing
+      expected_control_signal: "insurance authorisation/partner-insurer reference; claims-handling & fair-terms policy; solvency posture"
+      public_evidence_signal: "insurance product terms, partner-insurer disclosure, claims policy"
+      diligence_question: "Is insurance risk-carrying authorised and claims conduct fair, or unlicensed/unfair distribution?"
+      linked_subcat: CONS
+      limitation_note: "many insurtechs distribute rather than carry risk; distinguish carrier vs distributor from evidence."
