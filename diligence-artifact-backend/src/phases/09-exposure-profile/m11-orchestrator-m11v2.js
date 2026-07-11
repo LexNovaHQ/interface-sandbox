@@ -161,7 +161,7 @@ async function getOrBuildProjection({ run, phase, artifactName, isCurrent, build
 async function getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket }) {
   const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.forensics });
   if (existing && isM11V2Forensics(existing.artifact)) return { ...existing, diagnostic_status: existing.artifact?.forensic_lock_gate_result?.status || existing.artifact?.registry_lock_gate_result?.status || existing.lock_status };
-  const output = buildExposureRegistryForensicsFromSavedArtifacts({ routePlan: { [ART.route]: route.artifact }, acceptedBatches, batchValidations, workpad: { [ART.workpad]: workpad.artifact }, controlledProfile: { [ART.controlled]: controlled.artifact }, triggeredProfile: { [ART.triggered]: triggered.artifact }, fieldDerivationRegistryText: referencePacket.files?.["FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml"]?.content || "" });
+  const output = buildExposureRegistryForensicsFromSavedArtifacts({ routePlan: { [ART.route]: route.artifact }, acceptedBatches, batchValidations, workpad: { [ART.workpad]: workpad.artifact }, controlledProfile: { [ART.controlled]: controlled.artifact }, triggeredProfile: { [ART.triggered]: triggered.artifact }, fieldDerivationRegistryText: referencePacket.files?.["Diligence_Field_Derivation_Registry.yml"]?.content || "" });
   const artifact = output[ART.forensics];
   const diagnostic_status = artifact.forensic_lock_gate_result?.status || artifact.registry_lock_gate_result?.status || "REPAIR_REQUIRED";
   const lock_status = diagnostic_status === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";

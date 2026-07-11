@@ -40,7 +40,7 @@ export function parseAiThreatRegistryYaml(content) {
 
 export function parseReferencePacket(referencePacket = {}) {
   const files = referencePacket?.files && typeof referencePacket.files === "object" ? referencePacket.files : {};
-  return { aiThreatRegistryText: files["AI_THREAT_REGISTRY.yaml"]?.content || "", registryKeyText: files["REGISTRY_KEY_v3_0.md"]?.content || "", registryEvaluationRulesText: files["03_REGISTRY_EVALUATION_RULES.yaml"]?.content || "", fieldDerivationRegistryText: files["FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml"]?.content || "", forensicAnnexureRegistryText: files["FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"]?.content || "" };
+  return { aiThreatRegistryText: files["AI_THREAT_REGISTRY.yaml"]?.content || "", registryKeyText: files["AI_Registry_Key.yml"]?.content || "", registryEvaluationRulesText: files["03_REGISTRY_EVALUATION_RULES.yaml"]?.content || "", fieldDerivationRegistryText: files["Diligence_Field_Derivation_Registry.yml"]?.content || "", forensicAnnexureRegistryText: files["FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml"]?.content || "" };
 }
 
 export function validateRegistryRows(rows, { expectedCount = EXPECTED_ACTIVE_REGISTRY_ROWS } = {}) {

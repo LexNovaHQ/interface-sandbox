@@ -14,7 +14,7 @@ const REQUIRED_REGISTRY_COLUMNS = Object.freeze([
 ]);
 
 export const PHASE7_EXPECTED_DAP_FIELD_COUNT = 150;
-export const PHASE7_REGISTRY_SOURCE_PATH = "references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml";
+export const PHASE7_REGISTRY_SOURCE_PATH = "references/registry/Diligence_Field_Derivation_Registry.yml";
 
 export const PHASE7_DAP_MATERIAL_SECTION_MATRIX = Object.freeze([
   section("DAP-01", "Data & Privacy Executive Posture", "executive_provenance_posture", ["DAP.EXEC"], 8),
