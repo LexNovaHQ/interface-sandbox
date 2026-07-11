@@ -155,23 +155,38 @@ The direct legal signal profile may affect only:
 
 Return strict JSON with exactly one top-level key: `target_profile`.
 
-`target_profile` must contain exactly:
+`target_profile` must contain exactly these five parent branches, each with exactly the leaf fields listed (no missing, no extra):
 
-- `target_identity`
-- `jurisdiction_notice`
-- `business_context`
-- `product_service_wrapper`
-- `target_profile_limitations`
+`target_identity` (object):
+- `brand_name`
+- `legal_entity_name`
+- `entity_type`
+- `reviewed_website`
+- `primary_domain`
 
-`business_context` must contain exactly:
+`jurisdiction_notice` (object):
+- `registered_notice_location`
+- `governing_law`
+- `courts_venue`
 
+`business_context` (object):
 - `business_category`
 - `primary_customer_type`
 - `market_type_candidate`
 - `industry_sector`
-- `regulated_sector_hints`
+- `regulated_sector_hints`  (ARRAY)
 - `public_regulatory_licensing_signal`
 - `public_grievance_complaints_signal`
+
+`product_service_wrapper` (object):
+- `high_level_offering`
+- `primary_public_claim`
+- `product_service_wrapper_names`  (ARRAY)
+- `delivery_model_signals`  (ARRAY)
+
+`target_profile_limitations` (ARRAY)
+
+Every non-array leaf is a string; where a value is not supported, use one of the controlled statuses (`FIELD_LIMITED`, `FIELD_NOT_PUBLIC`, `FIELD_CONFLICTED`, `FIELD_NOT_FOUND`, `NO_PUBLIC_SIGNAL_FOUND`) and add a `target_profile_limitations[]` entry. Fields marked (ARRAY) must always be arrays.
 
 Target Profile Review must not emit `business_context.lane`.
 
