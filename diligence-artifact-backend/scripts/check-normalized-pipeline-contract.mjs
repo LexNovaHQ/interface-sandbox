@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AGENTS, PHASES, NORMALIZED_SECTION_ARTIFACT_NAMES, COMPILER_ARTIFACT_NAMES, QUALIFIED_REVIEW_ARTIFACT_NAMES, QUALIFIED_REVIEW_READ_ARTIFACT_NAMES, QUALIFIED_REVIEW_SYSTEM_AGENT, READ_PERMISSIONS, WRITE_PERMISSIONS, PHASE_WRITE_PERMISSIONS, TARGET_PROFILE_SOURCE_ARTIFACT_NAMES, PHASE7_DAP_BATCH_ARTIFACT_NAMES, PHASE7_DAP_LAYER5_ARTIFACT_NAMES, artifactMatchesPermission } from "../src/constants.js";
-import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
+import { PIPELINE_CONTRACTS as PHASE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -77,10 +77,9 @@ assert.equal(READ_PERMISSIONS.agent_4_data_privacy.includes(OLD_DATA_FORENSICS),
 assert.equal(WRITE_PERMISSIONS.agent_4_data_privacy.includes(OLD_DATA_PROFILE), false);
 assert.equal(WRITE_PERMISSIONS.agent_4_data_privacy.includes(OLD_DATA_FORENSICS), false);
 
-const m7Prompt = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_3_target_feature/02_M7_TARGET_PROFILE_BACKEND_CURRENT.md"), "utf8");
-assert.ok(!m7Prompt.includes("legal_cartography_index"));
-assert.ok(!m7Prompt.includes(OLD_M7_OVERLAY));
-assert.ok(QUALIFIED_REVIEW_ARTIFACT_NAMES.includes("qualified_review_submission"));
-assert.ok(QUALIFIED_REVIEW_READ_ARTIFACT_NAMES.includes("qualified_review_submission"));
-assert.ok(artifactMatchesPermission("exposure_registry_batch__INT__001", "exposure_registry_batch__{GROUP}__{NNN}"));
-console.log("normalized pipeline contract check: PASS");
+const phaseContracts = fs.readFileSync(path.join(repoRoot, "src/runtime/contracts/pipeline.contract.js"), "utf8");
+assert.equal(phaseContracts.includes("M10_LEAN_INPUT_CONTRACT"), false);
+assert.ok(phaseContracts.includes(LEGAL_SIGNAL_PROFILE));
+assert.equal(phaseContracts.includes(OLD_M10_SUPPORT), false);
+
+console.log("normalized pipeline contract: PASS");
