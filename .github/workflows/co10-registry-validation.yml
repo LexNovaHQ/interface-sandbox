@@ -34,3 +34,5 @@ jobs:
           git add diligence-artifact-backend/package-lock.json
           git commit -m 'CO-1 Generate package lockfile'
           git push origin HEAD:domain-gate-v0-preflight
+
+# trigger pull-request acceptance after base workflow installation
