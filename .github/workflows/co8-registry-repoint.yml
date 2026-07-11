@@ -1,4 +1,4 @@
-name: Temporary CO8 Registry Repoint
+name: Temporary CO8 Registry Residue Scan
 
 on:
   push:
@@ -6,34 +6,32 @@ on:
       - co8-registry-repoint-work
     paths:
       - .github/workflows/co8-registry-repoint.yml
-      - diligence-artifact-backend/agent-packages/agent_4_data_privacy/M10_DATA_PROVENANCE.md
 
 permissions:
   contents: write
 
 jobs:
-  literal-repoint:
+  residue-scan:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: co8-registry-repoint-work
-      - name: Replace retired registry filename exactly
+      - name: Build retired-token hit ledger
         run: |
           set -euo pipefail
-          file='diligence-artifact-backend/agent-packages/agent_4_data_privacy/M10_DATA_PROVENANCE.md'
-          perl -0pi -e 's/FIELD_DERIVATION_REGISTRY_v2_LOCKED\.yaml/Diligence_Field_Derivation_Registry.yml/g' "$file"
-          if grep -q 'FIELD_DERIVATION_REGISTRY_v2_LOCKED' "$file"; then
-            echo 'Retired token remains in M10 prompt' >&2
-            exit 1
+          cd diligence-artifact-backend
+          pattern='DOMAIN_DERIVATION_REGISTRY_v0|AI_REGISTRY_KEY\.md|FIELD_DERIVATION_REGISTRY_v2_LOCKED|REGISTRY_KEY_v3_0|CLASSIFICATION_DERIVATION_MATRIX'
+          grep -RInE "$pattern" src scripts agent-packages > ../.co8-legacy-hits.txt || true
+          if [ ! -s ../.co8-legacy-hits.txt ]; then
+            echo CLEAN > ../.co8-legacy-hits.txt
           fi
-          git diff --check
-      - name: Commit byte-preserving prompt repoint
+      - name: Commit temporary hit ledger
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add diligence-artifact-backend/agent-packages/agent_4_data_privacy/M10_DATA_PROVENANCE.md
-          git commit -m 'CO-8 Repoint M10 registry authority'
+          git add .co8-legacy-hits.txt
+          git commit -m 'Temporary CO-8 legacy token hit ledger'
           git push origin HEAD:co8-registry-repoint-work
