@@ -169,7 +169,8 @@ Return to the upstream repair phase identified above. Do not continue this phase
 | `agent_1b_extract` | `agent_1b_manual_receipt` | `PHASE LOCKED: AGENT_1B_EXTRACT` | `source_family_index`, `lossless_family__*` artifacts | backend runner advances to `M6_BUCKET_INDEX` |
 | `agent_2a_bucket_routing` | `agent_2a_manual_receipt` | `PHASE LOCKED: M6_BUCKET_INDEX` | `source_discovery_handoff` | backend runner advances to `M9` |
 | `agent_2b_m9` | `agent_2b_m9_manual_receipt` | `PHASE LOCKED: M9_LEGAL_CARTOGRAPHY` | `legal_cartography_index` | backend runner advances to `M7_TARGET_PROFILE` |
-| `agent_3_target_feature` / M7 | `agent_3_m7_manual_receipt` | `PHASE LOCKED: M7_TARGET_PROFILE` | `target_profile`, `target_profile_forensics` | backend runner advances to `M8_TARGET_FEATURE_PROFILE` |
+| `agent_3_target_feature` / M7 | `agent_3_m7_manual_receipt` | `PHASE LOCKED: M7_TARGET_PROFILE` | `target_profile` | backend runner advances to `P3_DOMAIN_DERIVATION_LAYER` |
+| `agent_3_target_feature` / P3 | `agent_3_p3_manual_receipt` | `PHASE LOCKED: P3_DOMAIN_DERIVATION_LAYER` | `domain_derivation_profile`, `active_run_package_manifest` | backend runner advances to `M7_TARGET_PROFILE_FORENSICS` |
 | `agent_3_target_feature` / M8 | `agent_3_m8_manual_receipt` | `PHASE LOCKED: M8_TARGET_FEATURE_PROFILE` | `target_feature_profile`, `target_feature_profile_forensics` | backend runner advances to `M10` |
 | `agent_4_data_privacy` | `agent_3_m10_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M10_DATA_PROVENANCE` | `target_data_provenance_profile`, `target_data_provenance_profile_forensics` | backend runner advances to `M11` |
 | `agent_5_exposure_registry` | `agent_4_m11_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M11_EXPOSURE_REGISTRY` | `target_exposure_profile`, `target_exposure_profile_forensics` | backend runner advances to `M12` |
@@ -198,10 +199,9 @@ Run ID: <run_id>
 
 Saved:
 - target_profile
-- target_profile_forensics
 
 NEXT STEP:
-Backend runner may advance this run to M8_TARGET_FEATURE_PROFILE.
+Backend runner may advance this run to P3_DOMAIN_DERIVATION_LAYER.
 ```
 
 ## 5.2 Agent 3 M8 LOCKED_WITH_LIMITATIONS Receipt
@@ -225,7 +225,25 @@ Backend runner may advance this run to M10.
 
 `TERM.A3.C3` Do not include detailed M7/M8 forensics, route coverage ledgers, field derivation rows, archetype derivation rows, surface derivation rows, source quotes, debug notes, or validator logs in the terminal receipt.
 
-## 5.3 Agent 3 Target Feature Repair Receipt
+## 5.3 Agent 3 P3 Domain Derivation LOCKED Receipt
+
+`TERM.A3.P3.C1` In manual same-chat mode only, if P3 status is `LOCKED`, emit exactly:
+
+```text
+PHASE LOCKED: P3_DOMAIN_DERIVATION_LAYER
+Run ID: <run_id>
+
+Saved:
+- domain_derivation_profile
+- active_run_package_manifest
+
+NEXT STEP:
+Backend runner may advance this run to M7_TARGET_PROFILE_FORENSICS.
+```
+
+`TERM.A3.P3.C2` The model emits only `domain_derivation_profile`; the compiler writes `active_run_package_manifest`. If P3 status is `CONTROLLED_FAILURE`, emit the CONTROLLED_FAILURE receipt and no next-phase command.
+
+## 5.4 Agent 3 Target Feature Repair Receipt
 
 `TERM.A3.C4` If M7 fails before M8, repair scope must say `M7_TARGET_PROFILE`, and the backend must not advance to M8.
 
