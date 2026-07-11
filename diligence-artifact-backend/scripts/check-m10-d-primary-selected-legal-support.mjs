@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { INTERNAL_JOB_WRITE_PERMISSIONS as PHASE_WRITE_PERMISSIONS, READ_PERMISSIONS, WRITE_PERMISSIONS } from "../src/runtime/contracts/artifact-permissions.contract.js";
-import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
+import { PIPELINE_CONTRACTS as PHASE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -24,7 +24,7 @@ assert.ok(WRITE_PERMISSIONS.agent_2b_m9.includes(directSignal));
 assert.ok(READ_PERMISSIONS.agent_4_data_privacy.includes(directSignal));
 assert.equal(READ_PERMISSIONS.agent_4_data_privacy.includes(oldPacket), false);
 
-const phaseContracts = fs.readFileSync(path.join(repoRoot, "src/phase-contracts.js"), "utf8");
+const phaseContracts = fs.readFileSync(path.join(repoRoot, "src/runtime/contracts/pipeline.contract.js"), "utf8");
 assert.equal(phaseContracts.includes("M10_LEAN_INPUT_CONTRACT"), false);
 assert.ok(phaseContracts.includes(directSignal));
 assert.equal(phaseContracts.includes(oldPacket), false);
