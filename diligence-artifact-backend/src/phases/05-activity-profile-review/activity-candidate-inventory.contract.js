@@ -9,6 +9,12 @@ import {
 } from "./activity-profile.constants.js";
 
 const ACTIVITY_PROFILE_LOSSLESS_READS = BASE_ACTIVITY_EVIDENCE_ROOTS;
+const TA_ROOT = "agent-packages/agent_3_target_feature";
+
+export const ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES = Object.freeze([
+  "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md",
+  `${TA_ROOT}/03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC_LED_SEMANTIC_SUPPORTED.md`
+]);
 
 const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze([
   "phase_routing_manifest",
@@ -45,10 +51,11 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
   phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY",
   public_label: "Activity Candidate Inventory",
   compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY",
-  implementation_status: "PHASE5_PASS3_DETERMINISTIC_BASELINE_COMPLETE_SEMANTIC_RUNTIME_PENDING",
-  production_entrypoint_switched: true,
+  implementation_status: "PHASE5_PASS5_PHASE_OWNED_RUNNER_COMPLETE_CENTRAL_RUNTIME_INJECTION_DEFERRED",
+  production_entrypoint_switched: false,
   global_production_deployment_switched: false,
   model_usage: "DETERMINISTIC_LED_SEMANTIC_SUPPORTED",
+  runtime_version: "v18_phase5_agnostic_deterministic_led_semantic_supported",
   route_contract: Object.freeze({
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
     route_id: "ROUTE.PHASE5.ACTIVITY_PROFILE",
@@ -62,11 +69,16 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
   deterministic_job: DETERMINISTIC_BASELINE_JOB,
   semantic_support: Object.freeze({
     prompt_bundle_id: "ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES",
-    prompt_bundle_wiring_status: "PENDING_PASS5",
+    prompt_files: ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES,
+    prompt_bundle_wiring_status: "PHASE_OWNED_ACTIVE_CENTRAL_RUNTIME_INJECTION_DEFERRED",
     semantic_support_attempt_required: true,
     semantic_support_non_blocking: true,
     semantic_output_non_authoritative: true,
-    deterministic_reconciliation_required: true
+    deterministic_reconciliation_required: true,
+    model_may_classify: false,
+    model_may_emit_final_inventory: false,
+    model_may_create_final_ids_or_keys: false,
+    model_may_apply_package_taxonomy: false
   }),
   scoped_lossless_evidence_reads: ACTIVITY_PROFILE_LOSSLESS_READS,
   source_index_scope: Object.freeze({
@@ -112,7 +124,8 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
       "context_pointer_index",
       "deterministic_baseline_metadata",
       "index_boundary",
-      "index_limitations"
+      "index_limitations",
+      "semantic_support_receipt"
     ]),
     semantic_support_receipt_required_after_reconciliation: true,
     candidate_required_fields: FEATURE_CANDIDATE_FIELDS,
@@ -195,6 +208,5 @@ export function activityCandidateInventoryCandidateCreationLocatorMaps() {
   return [...ACTIVITY_CANDIDATE_INVENTORY_CONTRACT.source_index_scope.candidate_creation_locator_maps];
 }
 
-// Temporary named-export compatibility for the untouched Phase 5 barrel.
-// It returns locator-map authorities, never retired Phase 1 family names.
-export const activityCandidateInventoryCandidateCreationFamilies = activityCandidateInventoryCandidateCreationLocatorMaps;
+export const activityCandidateInventoryCandidateCreationFamilies =
+  activityCandidateInventoryCandidateCreationLocatorMaps;
