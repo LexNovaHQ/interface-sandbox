@@ -32,7 +32,7 @@ reference_documents:
   - src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
   - references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
   - references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
-  - references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - references/registry/Diligence_Field_Derivation_Registry.yml
 
 read_artifacts:
   - source_discovery_handoff
