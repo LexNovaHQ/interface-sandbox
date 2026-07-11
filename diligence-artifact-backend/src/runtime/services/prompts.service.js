@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getInternalJobContract } from "../contracts/internal-job.contract.js";
-import { loadReferencePacket as loadReferencePacketFromRoots } from "../../reference-loader.js";
+import { loadReferencePacket as loadReferencePacketFromRoots } from "./reference.service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
@@ -16,7 +16,8 @@ export const PROMPTS_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "prompts.service",
   migration_status: "runtime_owned_prompt_loader",
   prompt_sources: ["prompts/", "agent-packages/"],
-  reference_packet_supported: true
+  reference_packet_supported: true,
+  reference_loader_authority: "reference.service"
 });
 
 export async function loadRuntimePromptFile(promptFile) {
@@ -40,7 +41,7 @@ function safePackagePath(file, promptFile) {
   return resolved;
 }
 
-// Single source of truth: delegate to the canonical multi-root reference loader.
+// Single source of truth: delegate to the central multi-root reference service.
 // It resolves references/registry/, references/domain-packages/, and bare names,
 // with directory traversal fenced. Do not reintroduce a local reference loader here.
 export async function loadReferencePacket(referenceFiles = []) {
