@@ -1,130 +1,376 @@
-import { validateFeatureCandidateInventoryIndex } from "../services/activity-candidate-inventory-index.builder.js";
+import {
+  SHARED_ACTIVITY_FIELDS,
+  CLASSIFICATION_BLOCK_FIELDS,
+  OVERLAY_CLASSIFICATION_BLOCK_FIELDS,
+  DERIVATION_BASIS_FIELDS,
+  COMMERCIAL_AVAILABILITY_FIELDS,
+  PROFILE_TOP_LEVEL_KEYS
+} from "../activity-profile.constants.js";
 
-const FCI = "feature_candidate_inventory";
 const TFP = "target_feature_profile";
-const TFPF = "target_feature_profile_forensics";
-const COMMERCIAL = "commercial_availability_posture";
 const MATERIAL_TOP_LEVEL_KEYS = Object.freeze([TFP]);
-const INVENTORY_TOP_LEVEL_KEYS = Object.freeze([FCI]);
-const FORENSIC_TOP_LEVEL_KEYS = Object.freeze([TFPF]);
-const PROFILE_FIELDS = Object.freeze(["activities", COMMERCIAL, "profile_level_limitations"]);
-const ACTIVITY_FIELDS = Object.freeze(["activity_reference", "product_service_wrapper", "activity_feature_name", "activity_candidate_summary", "mechanics_proof", "autonomy_human_control_signal", "data_content_object_touched", "external_internal_action_signal", "archetype_codes", "archetype_derivation_basis", "surface_context_tokens", "surface_derivation_basis"]);
-const DERIVATION_BASIS_FIELDS = Object.freeze(["code_or_token", "normalized_name", "conditions_satisfied", "trigger_if_applied", "exclude_if_checked", "material_basis", "limitation"]);
-const COMMERCIAL_FIELDS = Object.freeze(["posture", "free_trial_freemium_signal", "beta_pilot_early_access_signal", "paid_production_enterprise_plan_signal", "evidence_basis", "limitation"]);
-const FORENSIC_BRANCHES = Object.freeze(["forensic_contract", "feature_candidate_inventory_ref", "raw_feature_hit_derivation_ledger", "canonicalization_derivation_ledger", "dedup_decision_ledger", "parent_child_overlap_ledger", "candidate_to_activity_coverage_ledger", "candidate_exclusion_ledger", "semantic_classification_ledger", "material_profile_trace_index", "activity_trace_index", "field_trace_index", "source_custody_trace_index", "limitation_trace_index", "profile_reconciliation_ledger", "forensic_lock_gate_result", "product_activity_source_route_coverage_ledger", "product_activity_extraction_capsule_summary", "candidate_admission_and_omission_ledger", "selected_pa_field_derivation_ledger", "activity_mechanics_derivation_ledger", "archetype_derivation_ledger", "surface_token_derivation_ledger", "targeted_re_extraction_ledger", "activity_limitations_ledger", "cross_route_use_ledger", "validation_quality_control_result", "runtime_trace_m8_only", "forensic_boundary"]);
-const ARRAY_FORENSIC_BRANCHES = FORENSIC_BRANCHES.filter((branch) => !["forensic_contract", "feature_candidate_inventory_ref", "forensic_lock_gate_result", "validation_quality_control_result", "runtime_trace_m8_only", "forensic_boundary"].includes(branch));
-const MATERIAL_BLOCKED_KEYS = Object.freeze(["validation_status", "lock_status", "status", TFPF, FCI, "activity_profile_source_index", "runtime_trace", "source_ledger", "scratchpad", "debug", "archetype_proof", "surface_proof_and_routing_limits"]);
-const MATERIAL_BLOCKED_FRAGMENTS = Object.freeze(["http://", "https://", "source_id", "source_url", "source_pointer", "source_ref", "candidate_id", "confidence", "forensic", "ledger", "runtime_trace"]);
-const AI_ONLY_LOCKED_ENUM = new Set(["UNI", "DOE", "JDG", "CMP", "CRT", "RDR", "ORC", "TRN", "SHD", "OPT", "MOV", "CUR", "MOD", "ORA"]);
-const AI_ONLY_SURFACE_ENUM = new Set(["Consumer-Public", "Enterprise-Private", "PII", "Employment", "Sensitive/Biometric", "Financial", "Content&IP", "Safety&Physical", "Infrastructure", "Minors"]);
+const ACTIVITY_FIELDS = Object.freeze([...SHARED_ACTIVITY_FIELDS, "primary_classification", "overlay_classifications"]);
+const MOUNTED_TAXONOMY_REF_FIELDS = Object.freeze(["primary_package_id", "primary_key_version", "overlays"]);
+const MOUNTED_TAXONOMY_OVERLAY_REF_FIELDS = Object.freeze(["overlay_id", "package_id", "key_version"]);
 
-export function validateM8TargetFeatureOutput(output, { phase = "M8_TARGET_FEATURE_PROFILE" } = {}) {
+const MATERIAL_BLOCKED_KEYS = Object.freeze([
+  "validation_status",
+  "lock_status",
+  "status",
+  "target_feature_profile_forensics",
+  "feature_candidate_inventory",
+  "activity_profile_source_index",
+  "phase_route_runtime_packet",
+  "runtime_trace",
+  "source_ledger",
+  "scratchpad",
+  "debug",
+  "archetype_proof",
+  "surface_proof_and_routing_limits",
+  "candidate_id",
+  "source_id",
+  "source_url",
+  "source_pointer",
+  "source_ref",
+  "source_pointers",
+  "source_refs",
+  "source_urls",
+  "confidence",
+  "excerpt",
+  "lossless_text",
+  "clean_text",
+  "text"
+]);
+
+const MATERIAL_BLOCKED_FRAGMENTS = Object.freeze([
+  "http://",
+  "https://",
+  "source_id",
+  "source_url",
+  "source_pointer",
+  "source_ref",
+  "candidate_id",
+  "confidence",
+  "runtime_trace",
+  "_ledger"
+]);
+
+export function validateM8TargetFeatureOutput(output, { phase = "M8_TARGET_FEATURE_PROFILE", resolvedTaxonomy = null } = {}) {
   const failures = [];
-  if (phase === "M8_FEATURE_CANDIDATE_INVENTORY") {
-    validateExactTopLevelKeys(output, INVENTORY_TOP_LEVEL_KEYS, failures, phase);
-    if (!failures.length) {
-      const result = validateFeatureCandidateInventoryIndex(output[FCI]);
-      if (result.status !== "PASS") failures.push(...result.failures);
-    }
-  } else if (phase === "M8_TARGET_FEATURE_PROFILE") {
-    validateExactTopLevelKeys(output, MATERIAL_TOP_LEVEL_KEYS, failures, phase);
-    if (!failures.length) validateProfile(output[TFP], failures);
-  } else if (phase === "M8_TARGET_FEATURE_PROFILE_FORENSICS") {
-    validateExactTopLevelKeys(output, FORENSIC_TOP_LEVEL_KEYS, failures, phase);
-    if (!failures.length) validateForensics(output[TFPF], failures);
-  } else failures.push(`M8_UNKNOWN_PHASE:${phase}`);
-  if (failures.length) throw new Error(`M8_TARGET_FEATURE_PROFILE_VALIDATION_FAILED:${JSON.stringify({ phase, failures })}`);
-}
 
-function validateProfile(profile, failures) {
-  if (!isPlainObject(profile)) return failures.push(`${TFP} must be object`);
-  rejectKeyDiff(Object.keys(profile).sort(), [...PROFILE_FIELDS].sort(), TFP, failures);
-  if (!Array.isArray(profile.activities)) failures.push(`${TFP}.activities must be array`);
-  validateCommercialAvailability(profile[COMMERCIAL], failures);
-  if (!Array.isArray(profile.profile_level_limitations)) failures.push(`${TFP}.profile_level_limitations must be array`);
-  if (containsAnyKey(profile, MATERIAL_BLOCKED_KEYS)) failures.push(`${TFP} contains blocked material key`);
-  if (containsBlockedFragment(profile)) failures.push(`${TFP} contains blocked source/forensic fragment`);
-  const activities = Array.isArray(profile.activities) ? profile.activities : [];
-  if (!activities.length && Array.isArray(profile.profile_level_limitations) && !profile.profile_level_limitations.length) failures.push("empty activities[] requires profile_level_limitations[]");
-  activities.forEach((activity, index) => validateActivity(activity, index, failures));
-}
+  if (phase !== "M8_TARGET_FEATURE_PROFILE") {
+    throw new Error(`M8_TARGET_FEATURE_PROFILE_VALIDATION_FAILED:${JSON.stringify({ phase, failures: [`M8_UNSUPPORTED_LAYER2_PHASE:${phase}`] })}`);
+  }
 
-function validateCommercialAvailability(value, failures) {
-  const path = `${TFP}.${COMMERCIAL}`;
-  if (!isPlainObject(value)) return failures.push(`${path} must be object`);
-  rejectKeyDiff(Object.keys(value).sort(), [...COMMERCIAL_FIELDS].sort(), path, failures);
-  for (const field of ["posture", "free_trial_freemium_signal", "beta_pilot_early_access_signal", "paid_production_enterprise_plan_signal", "limitation"]) if (!(typeof value[field] === "string" && value[field].trim())) failures.push(`${path}.${field} must be non-empty string`);
-  if (!Array.isArray(value.evidence_basis)) failures.push(`${path}.evidence_basis must be array`);
-  for (const [index, item] of (Array.isArray(value.evidence_basis) ? value.evidence_basis : []).entries()) if (!(typeof item === "string" && item.trim())) failures.push(`${path}.evidence_basis[${index}] must be non-empty string`);
-}
+  validateExactTopLevelKeys(output, MATERIAL_TOP_LEVEL_KEYS, failures, phase);
 
-function validateActivity(activity, index, failures) {
-  const path = `${TFP}.activities[${index}]`;
-  if (!isPlainObject(activity)) return failures.push(`${path} must be object`);
-  rejectKeyDiff(Object.keys(activity).sort(), [...ACTIVITY_FIELDS].sort(), path, failures);
-  for (const field of ACTIVITY_FIELDS) if (!["archetype_codes", "archetype_derivation_basis", "surface_context_tokens", "surface_derivation_basis"].includes(field) && !(typeof activity[field] === "string" && activity[field].trim())) failures.push(`${path}.${field} must be non-empty string`);
-  if (!Array.isArray(activity.archetype_codes) || !activity.archetype_codes.length) failures.push(`${path}.archetype_codes must be non-empty package-controlled array`);
-  if (!Array.isArray(activity.archetype_derivation_basis)) failures.push(`${path}.archetype_derivation_basis must be array`);
-  if (!Array.isArray(activity.surface_context_tokens)) failures.push(`${path}.surface_context_tokens must be package-controlled array`);
-  if (!Array.isArray(activity.surface_derivation_basis)) failures.push(`${path}.surface_derivation_basis must be array`);
+  if (!failures.length) {
+    validateProfile(output[TFP], failures, normalizeResolvedTaxonomy(resolvedTaxonomy));
+  }
 
-  const archetypeCodes = Array.isArray(activity.archetype_codes) ? activity.archetype_codes : [];
-  const surfaceTokens = Array.isArray(activity.surface_context_tokens) ? activity.surface_context_tokens : [];
-  for (const code of archetypeCodes) if (!(typeof code === "string" && code.trim())) failures.push(`${path}.archetype_codes contains non-string/empty package label`);
-  for (const token of surfaceTokens) if (!(typeof token === "string" && token.trim())) failures.push(`${path}.surface_context_tokens contains non-string/empty package label`);
-
-  validateUniqueSelections(archetypeCodes, `${path}.archetype_codes`, failures);
-  validateUniqueSelections(surfaceTokens, `${path}.surface_context_tokens`, failures);
-  validateBasisArray(activity.archetype_derivation_basis, `${path}.archetype_derivation_basis`, failures);
-  validateBasisArray(activity.surface_derivation_basis, `${path}.surface_derivation_basis`, failures);
-  validateBasisCoverage({ selected: archetypeCodes, basis: activity.archetype_derivation_basis, path: `${path}.archetype_derivation_basis`, label: "package activity label", failures });
-  validateBasisCoverage({ selected: surfaceTokens, basis: activity.surface_derivation_basis, path: `${path}.surface_derivation_basis`, label: "package surface/context label", failures, allowEmptySelected: true });
-  validateNoAiOnlyEnumLock({ archetypeCodes, surfaceTokens, path, failures });
-}
-
-function validateNoAiOnlyEnumLock({ archetypeCodes, surfaceTokens, path, failures }) {
-  const archetypeSet = new Set(archetypeCodes);
-  const surfaceSet = new Set(surfaceTokens);
-  const archetypesAllFromAiEnum = archetypeCodes.length > 0 && archetypeCodes.every((code) => AI_ONLY_LOCKED_ENUM.has(code));
-  const surfacesAllFromAiEnum = surfaceTokens.length > 0 && surfaceTokens.every((token) => AI_ONLY_SURFACE_ENUM.has(token));
-  if (archetypesAllFromAiEnum && surfacesAllFromAiEnum && archetypeSet.size === archetypeCodes.length && surfaceSet.size === surfaceTokens.length) {
-    // This is not an automatic failure because ai-governance remains a valid package, but the validator must not enforce these as universal enums.
-    return;
+  if (failures.length) {
+    throw new Error(`M8_TARGET_FEATURE_PROFILE_VALIDATION_FAILED:${JSON.stringify({ phase, failures })}`);
   }
 }
 
+function validateProfile(profile, failures, taxonomy) {
+  if (!isPlainObject(profile)) return failures.push(`${TFP} must be object`);
+
+  rejectKeyDiff(Object.keys(profile).sort(), [...PROFILE_TOP_LEVEL_KEYS].sort(), TFP, failures);
+
+  if (!Array.isArray(profile.activities)) failures.push(`${TFP}.activities must be array`);
+  if (!Array.isArray(profile.profile_level_limitations)) failures.push(`${TFP}.profile_level_limitations must be array`);
+
+  validateCommercialAvailability(profile.commercial_availability_posture, failures);
+  validateMountedTaxonomyRef(profile.mounted_taxonomy_ref, failures, taxonomy);
+
+  if (containsAnyKey(profile, MATERIAL_BLOCKED_KEYS)) failures.push(`${TFP} contains blocked material key`);
+  if (containsBlockedFragment(profile)) failures.push(`${TFP} contains blocked source/forensic fragment`);
+
+  const limitations = Array.isArray(profile.profile_level_limitations) ? profile.profile_level_limitations : [];
+  for (const limitation of [...taxonomy.limitations, ...taxonomy.routing_limitations]) {
+    if (!limitations.includes(limitation)) failures.push(`${TFP}.profile_level_limitations missing resolver/routing limitation: ${limitation}`);
+  }
+
+  const activities = Array.isArray(profile.activities) ? profile.activities : [];
+  if (!activities.length && !limitations.length) failures.push("empty activities[] requires profile_level_limitations[]");
+
+  const seenRefs = new Set();
+  activities.forEach((activity, index) => {
+    const ref = typeof activity?.activity_reference === "string" ? activity.activity_reference.trim() : "";
+    if (ref) {
+      if (seenRefs.has(ref)) failures.push(`${TFP}.activities[${index}].activity_reference duplicate:${ref}`);
+      seenRefs.add(ref);
+    }
+    validateActivity(activity, index, failures, taxonomy, limitations);
+  });
+}
+
+function validateCommercialAvailability(value, failures) {
+  const path = `${TFP}.commercial_availability_posture`;
+  if (!isPlainObject(value)) return failures.push(`${path} must be object`);
+
+  rejectKeyDiff(Object.keys(value).sort(), [...COMMERCIAL_AVAILABILITY_FIELDS].sort(), path, failures);
+
+  for (const field of ["posture", "free_trial_freemium_signal", "beta_pilot_early_access_signal", "paid_production_enterprise_plan_signal", "limitation"]) {
+    if (!(typeof value[field] === "string" && value[field].trim())) failures.push(`${path}.${field} must be non-empty string`);
+  }
+
+  if (!Array.isArray(value.evidence_basis)) failures.push(`${path}.evidence_basis must be array`);
+  for (const [index, item] of (Array.isArray(value.evidence_basis) ? value.evidence_basis : []).entries()) {
+    if (!(typeof item === "string" && item.trim())) failures.push(`${path}.evidence_basis[${index}] must be non-empty string`);
+    if (containsBlockedFragment(item)) failures.push(`${path}.evidence_basis[${index}] contains blocked source fragment`);
+  }
+}
+
+function validateActivity(activity, index, failures, taxonomy, limitations) {
+  const path = `${TFP}.activities[${index}]`;
+
+  if (!isPlainObject(activity)) return failures.push(`${path} must be object`);
+
+  rejectKeyDiff(Object.keys(activity).sort(), [...ACTIVITY_FIELDS].sort(), path, failures);
+
+  for (const field of SHARED_ACTIVITY_FIELDS) {
+    if (!(typeof activity[field] === "string" && activity[field].trim())) failures.push(`${path}.${field} must be non-empty string`);
+  }
+
+  validatePrimaryClassification({
+    block: activity.primary_classification,
+    path: `${path}.primary_classification`,
+    activityReference: activity.activity_reference,
+    taxonomy,
+    limitations,
+    failures
+  });
+
+  validateOverlayBlocks({
+    overlays: activity.overlay_classifications,
+    path: `${path}.overlay_classifications`,
+    taxonomy,
+    failures
+  });
+}
+
+function validatePrimaryClassification({ block, path, activityReference, taxonomy, limitations, failures }) {
+  if (!isPlainObject(block)) return failures.push(`${path} must be object`);
+
+  rejectKeyDiff(Object.keys(block).sort(), [...CLASSIFICATION_BLOCK_FIELDS].sort(), path, failures);
+
+  const expectedPackageId = taxonomy.mounted_primary_package_id || taxonomy.primary?.package_id || "";
+  if (block.package_id !== expectedPackageId) {
+    failures.push(`${path}.package_id mismatch:${block.package_id || "missing"} expected:${expectedPackageId || "missing"}`);
+  }
+
+  validateClassificationBlock({
+    block,
+    path,
+    taxonomyBlock: taxonomy.primary,
+    expectedPackageId,
+    failures,
+    primary: true,
+    activityReference,
+    limitations
+  });
+}
+
+function validateOverlayBlocks({ overlays, path, taxonomy, failures }) {
+  if (!Array.isArray(overlays)) return failures.push(`${path} must be array`);
+
+  const expectedIds = (taxonomy.overlays || []).map((overlay) => overlay.overlay_id).sort();
+  const actualIds = overlays.map((overlay) => overlay?.overlay_id).filter(Boolean).sort();
+
+  rejectKeyDiff(actualIds, expectedIds, `${path}.overlay_id`, failures);
+
+  const seen = new Set();
+  overlays.forEach((overlay, index) => {
+    const overlayPath = `${path}[${index}]`;
+    if (!isPlainObject(overlay)) return failures.push(`${overlayPath} must be object`);
+
+    rejectKeyDiff(Object.keys(overlay).sort(), [...OVERLAY_CLASSIFICATION_BLOCK_FIELDS].sort(), overlayPath, failures);
+
+    if (seen.has(overlay.overlay_id)) failures.push(`${overlayPath}.overlay_id duplicate:${overlay.overlay_id}`);
+    seen.add(overlay.overlay_id);
+
+    if ((taxonomy.excluded_regulatory_overlay_ids || []).includes(overlay.overlay_id)) {
+      failures.push(`${overlayPath}.overlay_id regulatory overlay block forbidden:${overlay.overlay_id}`);
+    }
+
+    const taxonomyBlock = (taxonomy.overlays || []).find((item) => item.overlay_id === overlay.overlay_id);
+    if (!taxonomyBlock) {
+      failures.push(`${overlayPath} unresolved overlay block forbidden:${overlay.overlay_id || "missing"}`);
+      return;
+    }
+
+    validateClassificationBlock({
+      block: overlay,
+      path: overlayPath,
+      taxonomyBlock,
+      expectedPackageId: taxonomyBlock.package_id,
+      failures,
+      primary: false,
+      activityReference: "",
+      limitations: []
+    });
+  });
+}
+
+function validateClassificationBlock({
+  block,
+  path,
+  taxonomyBlock,
+  expectedPackageId,
+  failures,
+  primary,
+  activityReference,
+  limitations
+}) {
+  if (block.package_id !== expectedPackageId) {
+    failures.push(`${path}.package_id mismatch:${block.package_id || "missing"} expected:${expectedPackageId || "missing"}`);
+  }
+
+  const codes = arrayOfStrings(block.archetype_codes, `${path}.archetype_codes`, failures);
+  const surfaces = arrayOfStrings(block.surface_context_tokens, `${path}.surface_context_tokens`, failures);
+
+  validateUniqueSelections(codes, `${path}.archetype_codes`, failures);
+  validateUniqueSelections(surfaces, `${path}.surface_context_tokens`, failures);
+
+  validateBasisArray(block.archetype_derivation_basis, `${path}.archetype_derivation_basis`, failures);
+  validateBasisArray(block.surface_derivation_basis, `${path}.surface_derivation_basis`, failures);
+
+  validateBasisCoverage({
+    selected: codes,
+    basis: block.archetype_derivation_basis,
+    path: `${path}.archetype_derivation_basis`,
+    label: "archetype",
+    failures
+  });
+
+  validateBasisCoverage({
+    selected: surfaces,
+    basis: block.surface_derivation_basis,
+    path: `${path}.surface_derivation_basis`,
+    label: "surface",
+    failures,
+    allowEmptySelected: true
+  });
+
+  const vocabCodes = new Set((taxonomyBlock?.archetype_vocabulary || []).map((entry) => entry.code));
+  const surfaceTokens = new Set((taxonomyBlock?.surface_axes || []).flatMap((axis) => (axis.tokens || []).map((entry) => entry.token)));
+
+  if (taxonomyBlock) {
+    for (const code of codes) if (!vocabCodes.has(code)) failures.push(`${path}.archetype_codes contains code outside package vocabulary:${code}`);
+    for (const token of surfaces) if (!surfaceTokens.has(token)) failures.push(`${path}.surface_context_tokens contains token outside package vocabulary:${token}`);
+  }
+
+  if (primary) {
+    const noPrimaryKey = !taxonomyBlock;
+    const primaryLimitation = `PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:${expectedPackageId}`;
+    const noMatchLimitation = `NO_PRIMARY_ARCHETYPE_MATCH:${activityReference}`;
+
+    if (noPrimaryKey) {
+      if (!limitations.includes(primaryLimitation)) failures.push(`${path} missing limitation for unkeyed primary:${primaryLimitation}`);
+      if (codes.length || block.archetype_derivation_basis.length || surfaces.length || block.surface_derivation_basis.length) {
+        failures.push(`${path} must have empty classification arrays when primary taxonomy key is unresolved`);
+      }
+      return;
+    }
+
+    if (!codes.length && !limitations.includes(noMatchLimitation)) {
+      failures.push(`${path}.archetype_codes empty without ${noMatchLimitation}`);
+    }
+  } else if (!codes.length) {
+    failures.push(`${path}.archetype_codes must be non-empty for resolved overlay block`);
+  }
+}
+
+function validateMountedTaxonomyRef(ref, failures, taxonomy) {
+  const path = `${TFP}.mounted_taxonomy_ref`;
+  if (!isPlainObject(ref)) return failures.push(`${path} must be object`);
+
+  rejectKeyDiff(Object.keys(ref).sort(), [...MOUNTED_TAXONOMY_REF_FIELDS].sort(), path, failures);
+
+  if (ref.primary_package_id !== taxonomy.mounted_primary_package_id) {
+    failures.push(`${path}.primary_package_id mismatch:${ref.primary_package_id || "missing"} expected:${taxonomy.mounted_primary_package_id || "missing"}`);
+  }
+
+  const expectedPrimaryVersion = taxonomy.primary?.key_version || "";
+  if (ref.primary_key_version !== expectedPrimaryVersion) {
+    failures.push(`${path}.primary_key_version mismatch:${ref.primary_key_version || "missing"} expected:${expectedPrimaryVersion || "empty"}`);
+  }
+
+  if (!Array.isArray(ref.overlays)) failures.push(`${path}.overlays must be array`);
+
+  const expected = (taxonomy.overlays || []).map((overlay) => `${overlay.overlay_id}:${overlay.package_id}:${overlay.key_version || ""}`).sort();
+  const actual = (Array.isArray(ref.overlays) ? ref.overlays : []).map((overlay, index) => {
+    const overlayPath = `${path}.overlays[${index}]`;
+    if (!isPlainObject(overlay)) {
+      failures.push(`${overlayPath} must be object`);
+      return "";
+    }
+    rejectKeyDiff(Object.keys(overlay).sort(), [...MOUNTED_TAXONOMY_OVERLAY_REF_FIELDS].sort(), overlayPath, failures);
+    return `${overlay.overlay_id}:${overlay.package_id}:${overlay.key_version || ""}`;
+  }).sort();
+
+  rejectKeyDiff(actual, expected, `${path}.overlays`, failures);
+}
+
 function validateBasisArray(value, path, failures) {
-  if (!Array.isArray(value)) return;
+  if (!Array.isArray(value)) return failures.push(`${path} must be array`);
+
   for (const [index, item] of value.entries()) {
     const itemPath = `${path}[${index}]`;
     if (!isPlainObject(item)) {
       failures.push(`${itemPath} must be object`);
       continue;
     }
+
     rejectKeyDiff(Object.keys(item).sort(), [...DERIVATION_BASIS_FIELDS].sort(), itemPath, failures);
+
     for (const field of DERIVATION_BASIS_FIELDS) {
       const fieldValue = item[field];
       if (field === "conditions_satisfied") {
         if (!Array.isArray(fieldValue) || !fieldValue.length) failures.push(`${itemPath}.conditions_satisfied must be non-empty array`);
-        for (const [conditionIndex, condition] of (Array.isArray(fieldValue) ? fieldValue : []).entries()) if (!(typeof condition === "string" && condition.trim())) failures.push(`${itemPath}.conditions_satisfied[${conditionIndex}] must be non-empty string`);
-      } else if (!(typeof fieldValue === "string" && fieldValue.trim())) failures.push(`${itemPath}.${field} must be non-empty string`);
+        for (const [conditionIndex, condition] of (Array.isArray(fieldValue) ? fieldValue : []).entries()) {
+          if (!(typeof condition === "string" && condition.trim())) failures.push(`${itemPath}.conditions_satisfied[${conditionIndex}] must be non-empty string`);
+        }
+      } else if (!(typeof fieldValue === "string" && fieldValue.trim())) {
+        failures.push(`${itemPath}.${field} must be non-empty string`);
+      }
     }
   }
 }
 
 function validateBasisCoverage({ selected, basis, path, label, failures, allowEmptySelected = false }) {
   if (!Array.isArray(basis)) return;
+
   const selectedValues = selected.filter((item) => typeof item === "string" && item.trim());
   const basisValues = basis.map((item) => (isPlainObject(item) ? String(item.code_or_token || "").trim() : "")).filter(Boolean);
+
   if (!selectedValues.length && allowEmptySelected && !basisValues.length) return;
+
   for (const selectedValue of selectedValues) {
     const count = basisValues.filter((basisValue) => basisValue === selectedValue).length;
     if (count !== 1) failures.push(`${path} must contain exactly one basis entry for selected ${label}: ${selectedValue}`);
   }
+
   for (const basisValue of basisValues) {
     if (!selectedValues.includes(basisValue)) failures.push(`${path} contains basis entry for unselected ${label}: ${basisValue}`);
   }
+
   validateUniqueSelections(basisValues, `${path}.code_or_token`, failures);
+}
+
+function arrayOfStrings(value, path, failures) {
+  if (!Array.isArray(value)) {
+    failures.push(`${path} must be array`);
+    return [];
+  }
+
+  for (const [index, item] of value.entries()) {
+    if (!(typeof item === "string" && item.trim())) failures.push(`${path}[${index}] must be non-empty string`);
+  }
+
+  return value.filter((item) => typeof item === "string" && item.trim());
 }
 
 function validateUniqueSelections(values, path, failures) {
@@ -136,20 +382,46 @@ function validateUniqueSelections(values, path, failures) {
   }
 }
 
-function validateForensics(forensics, failures) {
-  if (!isPlainObject(forensics)) return failures.push(`${TFPF} must be object`);
-  rejectKeyDiff(Object.keys(forensics).sort(), [...FORENSIC_BRANCHES].sort(), TFPF, failures);
-  if (containsAnyKey(forensics, [TFP, FCI])) failures.push(`${TFPF} contains material artifact or competing inventory`);
-  for (const branch of ARRAY_FORENSIC_BRANCHES) if (!Array.isArray(forensics[branch])) failures.push(`${TFPF}.${branch} must be array`);
-  if (!isPlainObject(forensics.feature_candidate_inventory_ref) || forensics.feature_candidate_inventory_ref.artifact_name !== FCI) failures.push(`${TFPF}.feature_candidate_inventory_ref must reference ${FCI}`);
-  if (forensics.forensic_boundary?.semantic_forensic_profile_retired !== true) failures.push(`${TFPF}.forensic_boundary must retire semantic forensics`);
-}
-
 function validateExactTopLevelKeys(output, expected, failures, phase) {
   if (!isPlainObject(output)) return failures.push(`${phase}_OUTPUT_INVALID:not_object`);
   rejectKeyDiff(Object.keys(output).sort(), [...expected].sort(), phase, failures);
 }
-function rejectKeyDiff(actual, expected, label, failures) { const missing = expected.filter((key) => !actual.includes(key)); const extra = actual.filter((key) => !expected.includes(key)); if (missing.length) failures.push(`${label} missing keys: ${missing.join(",")}`); if (extra.length) failures.push(`${label} extra keys: ${extra.join(",")}`); }
-function isPlainObject(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
-function containsAnyKey(value, keys) { if (!value || typeof value !== "object") return false; if (Array.isArray(value)) return value.some((item) => containsAnyKey(item, keys)); return Object.keys(value).some((key) => keys.includes(key)) || Object.values(value).some((item) => containsAnyKey(item, keys)); }
-function containsBlockedFragment(value) { if (typeof value === "string") { const normalized = value.toLowerCase(); return MATERIAL_BLOCKED_FRAGMENTS.some((fragment) => normalized.includes(fragment.toLowerCase())); } if (!value || typeof value !== "object") return false; return Object.values(value).some((item) => containsBlockedFragment(item)); }
+
+function rejectKeyDiff(actual, expected, label, failures) {
+  const missing = expected.filter((key) => !actual.includes(key));
+  const extra = actual.filter((key) => !expected.includes(key));
+  if (missing.length) failures.push(`${label} missing keys: ${missing.join(",")}`);
+  if (extra.length) failures.push(`${label} extra keys: ${extra.join(",")}`);
+}
+
+function normalizeResolvedTaxonomy(input = {}) {
+  const primary = input?.primary || null;
+  const overlays = Array.isArray(input?.overlays) ? input.overlays : [];
+  return Object.freeze({
+    primary,
+    overlays,
+    mounted_primary_package_id: String(input?.mounted_primary_package_id || primary?.package_id || input?.primary_package_id || "").trim(),
+    excluded_regulatory_overlay_ids: Array.isArray(input?.excluded_regulatory_overlay_ids) ? input.excluded_regulatory_overlay_ids : [],
+    limitations: Array.isArray(input?.limitations) ? input.limitations : [],
+    routing_limitations: Array.isArray(input?.routing_limitations) ? input.routing_limitations : []
+  });
+}
+
+function containsAnyKey(value, keys) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => containsAnyKey(item, keys));
+  return Object.keys(value).some((key) => keys.includes(key)) || Object.values(value).some((item) => containsAnyKey(item, keys));
+}
+
+function containsBlockedFragment(value) {
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+    return MATERIAL_BLOCKED_FRAGMENTS.some((fragment) => normalized.includes(fragment.toLowerCase()));
+  }
+  if (!value || typeof value !== "object") return false;
+  return Object.values(value).some((item) => containsBlockedFragment(item));
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
