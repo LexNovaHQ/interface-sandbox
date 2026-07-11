@@ -64,7 +64,7 @@ Target Profile Review must not read, request, infer from, or cite:
 
 `M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml` is the Target Profile Review field authority.
 
-`TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml` governs the two public operating-context signal fields when present through the active authority chain.
+`Diligence_Field_Derivation_Registry.yml` governs the two public operating-context signal fields through `TP.BIZ.009` and `TP.BIZ.010`.
 
 Target Profile Review must not use any registry, domain-package, AI-mount, archetype, surface, exposure, legal-risk, compliance, QR, or report-routing reference as material derivation authority.
 
