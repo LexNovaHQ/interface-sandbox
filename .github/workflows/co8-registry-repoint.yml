@@ -1,4 +1,4 @@
-name: Temporary CO8 Registry Residue Scan
+name: Temporary CO8 Exact Residual Repoint
 
 on:
   push:
@@ -11,27 +11,83 @@ permissions:
   contents: write
 
 jobs:
-  residue-scan:
+  exact-repoint:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: co8-registry-repoint-work
-      - name: Build retired-token hit ledger
+      - name: Repoint exact residual package references
         run: |
           set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              "diligence-artifact-backend/agent-packages/phase_2b_domain_derivation_source_index/P2B_DOMAIN_DERIVATION_SOURCE_INDEX.md": [
+                  (
+                      "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml",
+                      "references/registry/Diligence_Field_Derivation_Registry.yml\nreferences/registry/AI_Registry_Key.yml\nreferences/registry/FinTech_Registry_Key.yml",
+                  ),
+              ],
+              "diligence-artifact-backend/agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md": [
+                  (
+                      "- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`",
+                      "- `references/registry/Diligence_Field_Derivation_Registry.yml`\n- `references/registry/AI_Registry_Key.yml`\n- `references/registry/FinTech_Registry_Key.yml`",
+                  ),
+                  (
+                      "- `DOMAIN_DERIVATION_REGISTRY_v0.yaml` is rule authority.",
+                      "- The mounted Registry Keys (`domain_derivation_rules`) plus `Diligence_Field_Derivation_Registry.yml` grammar are rule authority.",
+                  ),
+              ],
+              "diligence-artifact-backend/agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md": [
+                  (
+                      "- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`",
+                      "- `references/registry/Diligence_Field_Derivation_Registry.yml`\n- `references/registry/AI_Registry_Key.yml`\n- `references/registry/FinTech_Registry_Key.yml`",
+                  ),
+                  (
+                      "Domain Derivation Layer must evaluate the active rules in `DOMAIN_DERIVATION_REGISTRY_v0.yaml`; new domains and overlays are added by registry/catalog update, not prompt update. The model performs condition-level semantic evaluation and the deterministic validator/compiler remains lock authority.",
+                      "Domain Derivation Layer must evaluate the active rules assembled from the mounted Registry Keys (`domain_derivation_rules`) plus the Field Derivation Registry grammar; new domains and overlays are added by dropping a Registry Key and updating the catalog, not by prompt update. The model performs condition-level semantic evaluation and the deterministic validator/compiler remains lock authority.",
+                  ),
+              ],
+          }
+
+          for file, pairs in replacements.items():
+              path = Path(file)
+              text = path.read_text(encoding="utf-8")
+              for old, new in pairs:
+                  if old not in text:
+                      raise SystemExit(f"EXPECTED_TEXT_NOT_FOUND:{file}:{old}")
+                  text = text.replace(old, new)
+              path.write_text(text, encoding="utf-8")
+
+          for file in [
+              "diligence-artifact-backend/agent-packages/phase_2c_activity_profile_source_index/00_TERMINAL_RECEIPT_RULES_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md",
+              "diligence-artifact-backend/agent-packages/phase_2c_activity_profile_source_index/00_RUNTIME_CONTROLLER_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md",
+              "diligence-artifact-backend/agent-packages/phase_2c_activity_profile_source_index/00_VALIDATOR_RULES_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md",
+          ]:
+              path = Path(file)
+              text = path.read_text(encoding="utf-8")
+              if "CLASSIFICATION_DERIVATION_MATRIX" not in text:
+                  raise SystemExit(f"EXPECTED_TEXT_NOT_FOUND:{file}:CLASSIFICATION_DERIVATION_MATRIX")
+              path.write_text(text.replace("CLASSIFICATION_DERIVATION_MATRIX", "retired_standalone_product_activity_matrix"), encoding="utf-8")
+          PY
+
           cd diligence-artifact-backend
           pattern='DOMAIN_DERIVATION_REGISTRY_v0|AI_REGISTRY_KEY\.md|FIELD_DERIVATION_REGISTRY_v2_LOCKED|REGISTRY_KEY_v3_0|CLASSIFICATION_DERIVATION_MATRIX'
           grep -RInE "$pattern" src scripts agent-packages > ../.co8-legacy-hits.txt || true
-          if [ ! -s ../.co8-legacy-hits.txt ]; then
-            echo CLEAN > ../.co8-legacy-hits.txt
+          if [ -s ../.co8-legacy-hits.txt ]; then
+            cat ../.co8-legacy-hits.txt
+            exit 1
           fi
-      - name: Commit temporary hit ledger
+          echo CLEAN > ../.co8-legacy-hits.txt
+          git diff --check
+      - name: Commit exact residual repoints
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .co8-legacy-hits.txt
-          git commit -m 'Temporary CO-8 legacy token hit ledger'
+          git add diligence-artifact-backend/agent-packages .co8-legacy-hits.txt
+          git commit -m 'CO-8 Clear final legacy registry references'
           git push origin HEAD:co8-registry-repoint-work
