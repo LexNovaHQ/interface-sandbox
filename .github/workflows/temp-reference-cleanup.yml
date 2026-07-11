@@ -17,112 +17,26 @@ jobs:
         with:
           ref: domain-gate-v0-preflight
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20.19.0'
-      - name: Apply exact reference cleanup
+      - name: Correct scrubbed FDR comment
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-
-          root = Path('diligence-artifact-backend')
-
-          # Confirm base_registry is not interpreted by active JavaScript loaders/checkers.
-          code_hits = []
-          for base in (root / 'src', root / 'scripts'):
-              for path in base.rglob('*'):
-                  if path.suffix.lower() not in {'.js', '.mjs', '.cjs'}:
-                      continue
-                  text = path.read_text(encoding='utf-8')
-                  if 'base_registry' in text:
-                      code_hits.append(str(path))
-          if code_hits:
-              raise SystemExit('BASE_REGISTRY_CODE_RESOLVER_FOUND:' + ','.join(code_hits))
-
-          binding = root / 'agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml'
-          text = binding.read_text(encoding='utf-8')
-          if 'lossless_family__*' not in text:
-              raise SystemExit('EXPECTED_BINDING_TOKEN_NOT_FOUND')
-          binding.write_text(text.replace('lossless_family__*', 'retired_family_artifact_taxonomy'), encoding='utf-8')
-
-          fdr = root / 'references/registry/Diligence_Field_Derivation_Registry.yml'
-          text = fdr.read_text(encoding='utf-8')
-          retire_line = '  retires: DOMAIN_DERIVATION_REGISTRY_v0.yaml\n'
-          if retire_line not in text:
-              raise SystemExit('EXPECTED_FDR_RETIRES_LINE_NOT_FOUND')
-          text = text.replace(retire_line, '', 1)
-          fdr.write_text(text, encoding='utf-8')
-
-          authority = root / 'references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml'
-          text = authority.read_text(encoding='utf-8')
-          if 'FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml' not in text:
-              raise SystemExit('EXPECTED_M7_STALE_REFERENCE_NOT_FOUND')
-          authority.write_text(text.replace('FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml', 'Diligence_Field_Derivation_Registry.yml'), encoding='utf-8')
-
-          addendum = root / 'references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml'
-          text = addendum.read_text(encoding='utf-8')
-          if 'base_registry: FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml' not in text:
-              raise SystemExit('EXPECTED_ADDENDUM_BASE_REGISTRY_NOT_FOUND')
-          text = text.replace('base_registry: FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml', 'base_registry: Diligence_Field_Derivation_Registry.yml')
-          text = text.replace('base_registry_status: LOCKED_REFERENCE_RETAINED', 'base_registry_status: ACTIVE_GOVERNING_REFERENCE')
-          text = text.replace(
-              'integration_rule: This addendum is a reference-authority extension read together with FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml and M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml until the next full registry rebuild absorbs these rows.',
-              'integration_rule: This addendum is a reference-authority extension read together with Diligence_Field_Derivation_Registry.yml and M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml.'
-          )
-          addendum.write_text(text, encoding='utf-8')
-
-          # Optional comment-only scrub: never alter active YAML values.
-          comment_replacements = {
-              'DOMAIN_DERIVATION_REGISTRY_v0.yaml': 'the retired standalone domain registry',
-              'FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml': 'the retired standalone field registry',
-              'REGISTRY_KEY_v3_0.md': 'the retired registry key',
-              'AI_REGISTRY_KEY.md': 'the retired AI registry key',
-              'CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml': 'the retired standalone classification matrix',
-          }
-          for rel in (
-              'references/registry/AI_Registry_Key.yml',
-              'references/registry/FinTech_Registry_Key.yml',
-              'references/registry/Diligence_Field_Derivation_Registry.yml',
-          ):
-              path = root / rel
-              lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
-              out = []
-              for line in lines:
-                  if line.lstrip().startswith('#'):
-                      for old, new in comment_replacements.items():
-                          line = line.replace(old, new)
-                  out.append(line)
-              path.write_text(''.join(out), encoding='utf-8')
-
-          checks = {
-              binding: ['lossless_family__*'],
-              fdr: ['  retires: DOMAIN_DERIVATION_REGISTRY_v0.yaml'],
-              authority: ['FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml'],
-              addendum: ['FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml'],
-          }
-          for path, forbidden in checks.items():
-              current = path.read_text(encoding='utf-8')
-              for token in forbidden:
-                  if token in current:
-                      raise SystemExit(f'RETIRED_TOKEN_REMAINS:{path}:{token}')
+          path = Path('diligence-artifact-backend/references/registry/Diligence_Field_Derivation_Registry.yml')
+          text = path.read_text(encoding='utf-8')
+          old = '#   Migrated from the retired the retired standalone domain registry. This block holds'
+          new = '#   Consolidated into this registry. This block holds'
+          if old not in text:
+              raise SystemExit('EXPECTED_DUPLICATED_COMMENT_NOT_FOUND')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
-      - name: Commit cleanup to working branch
+      - name: Commit correction to working branch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add diligence-artifact-backend/agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml \
-                  diligence-artifact-backend/references/registry/Diligence_Field_Derivation_Registry.yml \
-                  diligence-artifact-backend/references/registry/AI_Registry_Key.yml \
-                  diligence-artifact-backend/references/registry/FinTech_Registry_Key.yml \
-                  diligence-artifact-backend/references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml \
-                  diligence-artifact-backend/references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
-          if git diff --cached --quiet; then
-            echo 'No changes required'
-            exit 0
-          fi
-          git commit -m 'Clean stale registry references and binding tokens'
+          git add diligence-artifact-backend/references/registry/Diligence_Field_Derivation_Registry.yml
+          git commit -m 'Correct FDR registry consolidation comment'
           git push origin HEAD:domain-gate-v0-preflight
