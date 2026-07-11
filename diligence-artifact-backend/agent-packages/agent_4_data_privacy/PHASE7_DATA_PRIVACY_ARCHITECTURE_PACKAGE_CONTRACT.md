@@ -14,7 +14,7 @@ This package replaces the old 34-field / 36-field split design with one integrat
 
 ## Layer 1 mandatory compiler
 
-Layer 1 emits `dap_registry_manifest` from `references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`.
+Layer 1 emits `dap_registry_manifest` from `references/registry/Diligence_Field_Derivation_Registry.yml`.
 
 Each compiled row must carry:
 
