@@ -2,50 +2,61 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-const TARGETED_ROOT_BRIDGES = Object.freeze([
-  "reviewer-runner.js",
-  "reviewer-runner-normalized.js",
-  "reviewer-async-runner.js",
-  "reviewer-routes.js",
-  "public-reviewer-routes.js",
-  "cloud-tasks-dispatcher.js",
-  "prompt-loader.js",
-  "reference-loader.js",
-  "gemini-client.js",
-  "firestore.js",
-  "sheets.js",
-  "drive.js",
-  "google.js",
-  "artifact-service.js",
-  "config.js",
-  "run-id.js",
-  "schemas.js",
-  "permissions.js",
-  "phase-contracts.js",
-  "document-source-ingestor.js",
-  "qualified-review-system/submission.js"
+const OBSOLETE_ACTIVE_FILES = Object.freeze([
+  "src/reviewer-runner.js",
+  "src/reviewer-runner-normalized.js",
+  "src/reviewer-async-runner.js",
+  "src/reviewer-routes.js",
+  "src/public-reviewer-routes.js",
+  "src/cloud-tasks-dispatcher.js",
+  "src/prompt-loader.js",
+  "src/reference-loader.js",
+  "src/gemini-client.js",
+  "src/firestore.js",
+  "src/sheets.js",
+  "src/drive.js",
+  "src/google.js",
+  "src/artifact-service.js",
+  "src/config.js",
+  "src/run-id.js",
+  "src/schemas.js",
+  "src/permissions.js",
+  "src/phase-contracts.js",
+  "src/document-source-ingestor.js",
+  "src/qualified-review-system/submission.js",
+  "src/m11-orchestrator.js",
+  "src/m11-orchestrator-m11v2.js",
+  "src/m11-deterministic-system-m11v2.js",
+  "src/m11-deterministic-system.js",
+  "src/m11-status-finalizer.js",
+  "src/m11-deterministic-forensics-m11v2.js",
+  "src/m11-deterministic-forensics.js",
+  "src/m11-forensic-trace-index.js",
+  "src/m11-lep-deterministic.js",
+  "src/m11-batch-evidence-resolver.js",
+  "src/m12-phase2g.runner.js",
+  "src/m12-deterministic-challenge.js",
+  "src/compiler-phase2g.runner.js",
+  "src/compiler.js",
+  "src/compiler-m9-section6-v3.js",
+  "src/phase7-dap-report-projection.js",
+  "src/exposure-tier-normalizer.js",
+  "src/normalized-profiler-m9-section6-v4.js",
+  "src/normalized-profiler-section10-v3.js",
+  "src/normalized-profiler-section789-v2.js",
+  "src/normalized-profiler.js",
+  "src/legal-section-normalizer.js",
+  "src/report-safe-language.js",
+  "src/forensic-annexure-normalizer.js",
+  "src/report-normalization-map.js",
+  "src/normalized-status.js",
+  "src/normalizer-validator.js",
+  "src/normalizer-validator-new-field-sync-v5.js",
+  "src/normalizer-validator-section10-v4.js",
+  "src/report-renderer.js"
 ]);
 
-const IMPLEMENTATION_MARKERS = Object.freeze([
-  "express.Router()",
-  "new CloudTasksClient",
-  "initializeApp(",
-  "getFirestore(",
-  "generativelanguage.googleapis.com",
-  "google.auth.GoogleAuth",
-  "saveJsonArtifactToDrive({",
-  "async function runModelPhase",
-  "async function runNormalizedCompilerPhase",
-  "async function requestReviewerRunAdvance"
-]);
-
-for (const relative of TARGETED_ROOT_BRIDGES) {
-  const file = path.join("src", relative);
-  assert.ok(existsSync(file), `targeted compatibility boundary missing unexpectedly: ${file}`);
-  const source = readFileSync(file, "utf8");
-  assert.ok(source.includes("Compatibility bridge only") || source.includes("Retired compatibility tombstone"), `legacy root file is not compatibility-only: ${file}`);
-  for (const marker of IMPLEMENTATION_MARKERS) assert.equal(source.includes(marker), false, `legacy implementation marker returned in ${file}: ${marker}`);
-}
+for (const file of OBSOLETE_ACTIVE_FILES) assert.equal(existsSync(file), false, `obsolete active file still exists: ${file}`);
 
 const requiredAuthorities = Object.freeze([
   "src/runtime/main.js",
@@ -59,6 +70,7 @@ const requiredAuthorities = Object.freeze([
   "src/runtime/services/storage/sheets.service.js",
   "src/runtime/services/storage/drive.service.js",
   "src/runtime/routes/public.routes.js",
+  "src/runtime/services/qualified-review-submission.service.js",
   "src/phases/09-exposure-profile/exposure-profile.runner.js",
   "src/phases/10-operator-challenge/operator-challenge.runner.js",
   "src/phases/11-normalized-compiler/normalized-compiler.runner.js",
@@ -66,9 +78,16 @@ const requiredAuthorities = Object.freeze([
 ]);
 for (const file of requiredAuthorities) assert.ok(existsSync(file), `central/phase authority missing: ${file}`);
 
-for (const file of collectFiles(["src/runtime", "src/phases", "scripts", "public"])) {
+const activeFiles = collectFiles(["src/runtime", "src/phases", "src/qualified-review-system", "scripts", "public"]);
+for (const file of activeFiles) {
   const source = readFileSync(file, "utf8");
-  assert.equal(/(?:from\s+|import\s*\()?["'][^"']*archive-legacy\//.test(source), false, `active file imports archive-legacy: ${file}`);
+  assert.equal(/(?:from\s+|import\s*\()?["]['"]?[^"']*archive-legacy\//.test(source), false, `active file imports archive-legacy: ${file}`);
+  for (const obsolete of OBSOLETE_ACTIVE_FILES) {
+    const basename = path.basename(obsolete);
+    if (file === obsolete) continue;
+    const importPattern = new RegExp(`(?:from\\s+|import\\s*\\()["'][^"']*${escapeRegExp(basename)}["']`);
+    assert.equal(importPattern.test(source), false, `active file imports deleted obsolete path ${basename}: ${file}`);
+  }
 }
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
@@ -81,38 +100,29 @@ assert.ok(app.includes('app.use("/v1", operatorRouter)'));
 
 const pipeline = readFileSync("src/runtime/services/pipeline.service.js", "utf8");
 for (const required of [
-  '../../phases/09-exposure-profile/exposure-profile.runner.js',
-  '../../phases/10-operator-challenge/operator-challenge.runner.js',
-  '../../phases/11-normalized-compiler/normalized-compiler.runner.js',
-  './reporting/report-renderer.service.js'
+  "../../phases/09-exposure-profile/exposure-profile.runner.js",
+  "../../phases/10-operator-challenge/operator-challenge.runner.js",
+  "../../phases/11-normalized-compiler/normalized-compiler.runner.js",
+  "./reporting/report-renderer.service.js"
 ]) assert.ok(pipeline.includes(required), `central pipeline missing direct implementation import: ${required}`);
-for (const retiredBridge of [
-  '../../m11-orchestrator.js',
-  '../../m12-phase2g.runner.js',
-  '../../compiler-phase2g.runner.js',
-  '../../report-renderer.js'
-]) assert.equal(pipeline.includes(retiredBridge), false, `central pipeline still imports root compatibility bridge: ${retiredBridge}`);
 assert.ok(pipeline.includes("root_downstream_compatibility_bridges_not_used: true"));
 
 const prompts = readFileSync("src/runtime/services/prompts.service.js", "utf8");
 assert.ok(prompts.includes('from "./reference.service.js"'));
 assert.equal(prompts.includes("../../reference-loader.js"), false);
-const m11 = readFileSync("src/phases/09-exposure-profile/m11-orchestrator-m11v2.js", "utf8");
-for (const retired of ["./prompt-loader.js", "./gemini-client.js", "./firestore.js", "./artifact-service.js"]) assert.equal(m11.includes(retired), false, `Phase 9 imports retired root service: ${retired}`);
 
 console.log(JSON.stringify({
-  check: "central runtime legacy implementation firewall",
+  check: "central runtime obsolete-file deletion firewall",
   status: "PASS",
-  targeted_root_compatibility_boundaries: TARGETED_ROOT_BRIDGES.length,
+  deleted_file_count_enforced: OBSOLETE_ACTIVE_FILES.length,
   enforced_gates: [
     "ONE_PRODUCTION_ENTRYPOINT",
     "ONE_PIPELINE_AND_ASYNC_STACK",
     "ONE_PROMPT_REFERENCE_PROVIDER_STORAGE_STACK",
-    "CENTRAL_PIPELINE_BYPASSES_ROOT_DOWNSTREAM_BRIDGES",
-    "TARGETED_ROOT_FILES_COMPATIBILITY_ONLY",
-    "PHASE9_10_11_IMPLEMENTATIONS_PHASE_OWNED",
-    "RENDERER_IMPLEMENTATION_RUNTIME_OWNED",
-    "NO_ACTIVE_IMPORT_FROM_ARCHIVE"
+    "CENTRAL_PIPELINE_USES_PHASE_OWNED_DOWNSTREAM_IMPLEMENTATIONS",
+    "OBSOLETE_ACTIVE_FILES_PHYSICALLY_ABSENT",
+    "NO_ACTIVE_IMPORT_FROM_ARCHIVE",
+    "NO_ACTIVE_IMPORT_OF_DELETED_ROOT_PATHS"
   ]
 }, null, 2));
 
@@ -130,3 +140,4 @@ function walk(target, files) {
     walk(path.join(target, entry), files);
   }
 }
+function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
