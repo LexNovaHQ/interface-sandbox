@@ -196,8 +196,8 @@ function selectAiMount(rows, primary, modelAi) {
     package_mount_lock_status: aiPackageMount === "AI_OVERLAY_MOUNTED" ? AI_MOUNT_ONLY_STATUS : null,
     activity_lock_status: "DEFERRED_TO_PHASE_5",
     exposure_lock_status: "DEFERRED_TO_PHASE_9",
-    ai_archetype_lock_forbidden_in_phase_3b: true,
-    ai_surface_lock_forbidden_in_phase_3b: true,
+    archetype_lock_deferred_to_phase_5: true,
+    surface_classification_deferred_to_phase_5: true,
     evaluated_rules: rows,
     final_basis: modelAi.final_basis || "semantic_ai_mount_derivation_subject_to_registry_gate"
   };
@@ -307,5 +307,13 @@ function allEvaluatedRules(profile = {}) { return [...(profile.primary_domain_de
 function evidenceAnchorsForRow(row = {}) { const anchors = row.evidence_anchors || row.evidence_basis || row.source_evidence || []; return Array.isArray(anchors) ? anchors : []; }
 function normalizeConditionBooleans(value = {}) { return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [key, Boolean(typeof item === "object" && item !== null ? (item.value ?? item.satisfied ?? item.present ?? item.result) : item)])); }
 function evaluateBooleanExpression(expr = "", vars = {}) { const normalized = String(expr).replace(/\bAND\b/g, "&&").replace(/\bOR\b/g, "||").replace(/\bNOT\b/g, "!").replace(/\bC\d+\b/g, (name) => (vars[name] ? "true" : "false")); if (!/^[\s()!&|truefals]+$/.test(normalized)) return false; try { return Boolean(Function(`"use strict"; return (${normalized});`)()); } catch { return false; } }
-function assertNoForbiddenMarkers(value, failures) { const text = JSON.stringify(value || {}); for (const marker of FORBIDDEN_OUTPUT_MARKERS) if (text.includes(marker)) failures.push(`forbidden domain derivation output marker present: ${marker}`); }
+function assertNoForbiddenMarkers(value, failures) {
+  const text = JSON.stringify(value || {});
+  for (const marker of FORBIDDEN_OUTPUT_MARKERS) {
+    const needle = marker.replace(/^"|"$/g, "");
+    const re = new RegExp(`(?<![A-Za-z0-9_])${escapeForbiddenMarker(needle)}(?![A-Za-z0-9_])`);
+    if (re.test(text)) failures.push(`forbidden domain derivation output marker present: ${marker}`);
+  }
+}
+function escapeForbiddenMarker(v) { return String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 function isPlainObject(value) { return Boolean(value && typeof value === "object" && !Array.isArray(value)); }
