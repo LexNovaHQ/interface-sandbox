@@ -350,6 +350,12 @@ phase_5_taxonomy_slice:
     (Phase 9). Phase 5 must reject any behavior/surface code not present in this key
     for the mounted package.
 
+
+# ---------------------------------------------------------------------------
+# PHASE 5 ACTIVITY TAXONOMY MOUNT DECLARATIONS
+# ---------------------------------------------------------------------------
+activity_evidence_roots: []
+
 version_history:
   - version: v1.1
     changes:
