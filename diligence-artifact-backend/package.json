@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/runtime/main.js",
-    "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && npm run check:phase5-activity-profile && npm run check:phase1-8-runtime && npm run check:domain-gate-v0 && npm run check:domain-derivation-registry-v0 && npm run check:phase3a-target-profile && npm run check:phase3-domain-derivation && npm run check:phase3-sync-v0 && npm run check:runtime-cleanup-c1",
+    "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && npm run check:phase5-activity-profile && npm run check:phase1-8-runtime && npm run check:domain-gate-v0 && npm run check:domain-derivation-registry-v0 && npm run check:phase3a-target-profile && npm run check:phase3-domain-derivation && npm run check:phase3-sync-v0 && npm run check:runtime-cleanup-c1 && npm run check:runtime-cleanup-c2",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:normalized": "node scripts/check-normalized-hardening.mjs",
     "check:m8-feature-candidates": "node scripts/check-m8-feature-candidate-inventory.mjs",
@@ -23,6 +23,7 @@
     "check:phase3-domain-derivation": "node scripts/check-phase3-domain-derivation-contract.mjs && node scripts/check-phase3-domain-derivation-downstream.mjs && npm run check:phase3-barrels && npm run check:phase3b-reference-packet && npm run check:phase3b-validator-markers && npm run check:phase3-prompt-input-gates",
     "check:phase3-sync-v0": "node scripts/check-phase3-sync-v0.mjs",
     "check:runtime-cleanup-c1": "node scripts/check-m11-central-runtime-dependencies.mjs",
+    "check:runtime-cleanup-c2": "node scripts/check-public-api-central-runtime.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
   },
