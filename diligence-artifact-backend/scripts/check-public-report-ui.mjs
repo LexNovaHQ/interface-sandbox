@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
-import { buildRendererPayload } from "../src/report-renderer.js";
+import { buildRendererPayload } from "../src/runtime/services/reporting/report-renderer.service.js";
 
 const reportHtml = readFileSync("public/interface-diligence/diligence-system/report.html", "utf8");
 const reportJs = readFileSync("public/interface-diligence/diligence-system/report.js", "utf8");
@@ -8,9 +8,9 @@ const reportUiSyncJs = readFileSync("public/interface-diligence/diligence-system
 const reportTableCss = readFileSync("public/interface-diligence/diligence-system/report-table-overrides.css", "utf8");
 const technicalAnnexureHtml = readFileSync("public/interface-diligence/diligence-system/technical-annexure.html", "utf8");
 const technicalAnnexureJs = readFileSync("public/interface-diligence/diligence-system/technical-annexure.js", "utf8");
-const reportRenderer = readFileSync("src/report-renderer.js", "utf8");
+const reportRenderer = readFileSync("src/runtime/services/reporting/report-renderer.service.js", "utf8");
 const serverJs = readFileSync("server.js", "utf8");
-const publicRoutesJs = readFileSync("src/public-reviewer-routes.js", "utf8");
+const publicRoutesJs = readFileSync("src/runtime/routes/public.routes.js", "utf8");
 const diligenceSystemJs = readFileSync("public/interface-diligence/diligence-system/diligence-system.js", "utf8");
 const publicRunConsoleJs = readFileSync("public/interface-diligence/diligence-system/public-run-console.js", "utf8");
 const qualifiedReviewHtml = readFileSync("public/interface-diligence/diligence-system/qualified-review.html", "utf8");
