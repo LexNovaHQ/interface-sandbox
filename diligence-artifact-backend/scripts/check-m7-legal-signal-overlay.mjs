@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { buildLegalSignalDerivation } from "../src/phases/02-legal-cartography-index/index.js";
-import { PHASE_CONTRACTS } from "../src/phase-contracts.js";
+import { PIPELINE_CONTRACTS as PHASE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
 import { READ_PERMISSIONS } from "../src/constants.js";
 
 const LEGAL_SIGNAL_PROFILE = "legal_signal_derivation_profile";
