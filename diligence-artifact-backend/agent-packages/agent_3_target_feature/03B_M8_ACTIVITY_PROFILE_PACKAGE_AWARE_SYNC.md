@@ -1,37 +1,34 @@
 # 03B — M8 Activity Profile Package-Aware Sync
 
-## Purpose
+## 1. Purpose
 
-This addendum supersedes older Activity Profile Review instructions that treat the `AI_Registry_Key.yml` behavior/surface axes as universal Phase 5 taxonomy rather than mounted package authority.
+This file synchronizes Activity Profile Review material output with the mounted package taxonomy supplied by the backend runtime.
 
-Phase 5 is package-aware and Phase 2G-routed:
+It applies only to `M8_TARGET_FEATURE_PROFILE`.
 
-```text
-2G = sole runtime routing authority.
-2C = activity_profile_source_index navigation substrate plus primary activity lossless evidence bucket.
-M8_FEATURE_CANDIDATE_INVENTORY = deterministic-led candidate universe from activity_profile_source_index locator rows resolved into index-mapped routed lossless evidence units.
-M8_TARGET_FEATURE_PROFILE = material activity profile using feature_candidate_inventory + mounted domain package context + 2C-navigated primary evidence.
-```
+Layer 1 candidate inventory is already complete before this material profile begins. The material model must not rebuild or re-emit the candidate inventory.
 
-## Runtime route
+## 2. Runtime packet
 
-Both Phase 5 jobs use:
+The material profile receives only the Phase-2G-routed 2C packet and backend-injected taxonomy context.
+
+Required context:
 
 ```text
-ROUTE.PHASE5.ACTIVITY_PROFILE
-2C_BUCKET_ACTIVITY_PROFILE
-```
-
-The Phase 2G packet contains:
-
-```text
-phase_routing_manifest
 phase_route_runtime_packet
 activity_profile_source_index
+feature_candidate_inventory
 target_profile
 domain_derivation_profile
 active_run_package_manifest
-domain_selection_profile
+resolved_activity_taxonomy
+activity_taxonomy_runtime_context
+usable routed lossless_root__* evidence roots only
+```
+
+Base activity evidence roots are:
+
+```text
 lossless_root__product_service
 lossless_root__platform_feature_solution
 lossless_root__technical_docs_api
@@ -40,62 +37,69 @@ lossless_root__integrations_ecosystem
 lossless_root__pricing_commercial_availability
 lossless_root__use_case_customer_industry
 lossless_root__support_help_resources
-lossless_root__ai_safety_transparency
 ```
 
-`M8_TARGET_FEATURE_PROFILE` additionally receives:
+The packet may also include domain-declared activity evidence roots from the mounted key's `activity_evidence_roots`, but only when Phase 2G routed them and the `activity_profile_source_index` maps them. Resolver-declared roots never expand reads.
+
+## 3. Layer 1 boundary
+
+`feature_candidate_inventory` is the candidate universe.
+
+Layer 1 used `activity_profile_source_index` as the navigation map to open index-mapped `lossless_root__*` units as primary evidence and enumerate evidence-backed candidates deterministically.
+
+Layer 1 still copies no evidence text and applies no package taxonomy.
+
+Layer 2 must consume the inventory. It must not create a competing candidate universe.
+
+## 4. Taxonomy authority
+
+Taxonomy authority is never a hardcoded registry key.
+
+Activity archetype and surface derivation authority equals:
 
 ```text
-feature_candidate_inventory
+mounted primary package key + mounted capability-overlay keys
+selected by active_run_package_manifest
+resolved from references/registry/*_Registry_Key.yml
+through resolveActivityTaxonomy
+using behavior_class and surface axes
 ```
 
-This is a job-scoped derived artifact declared by 2G. It is not an independent routing decision by Phase 5.
+The AI key is one key among many and is never universal Phase-5 authority.
 
-They must not read:
+Explicit `AI_Registry_Key.yml` and `FinTech_Registry_Key.yml` prompt references are forbidden in Phase 5 material instructions. Adding a domain must require only a valid new registry key and no prompt edit.
+
+Regulatory overlays are excluded from activity archetype and surface classification. They are obligation-level context for later phases.
+
+## 5. Material profile rule
+
+For each activity row:
+
+- derive `primary_classification` from the mounted primary package vocabulary;
+- add one `overlay_classifications[]` block per mounted capability overlay that resolves to a registry key;
+- do not add an overlay block for unresolved overlays;
+- never add a block for regulatory overlays;
+- keep identical code strings package-scoped by `package_id` and `overlay_id`;
+- if the primary package has no resolved taxonomy key, emit empty arrays in `primary_classification` and add `PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>` to `profile_level_limitations`;
+- if a primary key resolves but no archetype legitimately matches an activity, emit empty primary arrays and add `NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>` to `profile_level_limitations`;
+- never force a catch-all archetype.
+
+## 6. Target feature profile top-level schema
+
+The top-level `target_feature_profile` object contains exactly:
 
 ```text
-source_discovery_handoff
-cartography_index
-target_profile_forensics
-target_feature_profile_forensics
-lossless_family__*
-legal_cartography_index
-legal_signal_derivation_profile
-data_privacy_navigation_index
-dap_forensics_profile
+activities
+commercial_availability_posture
+profile_level_limitations
+mounted_taxonomy_ref
 ```
 
-## Evidence rule
+The model may not invent, modify, or override `mounted_taxonomy_ref`. The backend stamps it.
 
-Lossless evidence in the 2C bucket is primary evidence. It is not a fallback.
+## 7. Activity row schema
 
-`activity_profile_source_index` is the mandatory navigation map into that evidence.
-
-The candidate inventory job may create candidates only from activity_profile_source_index locator rows that resolve to index-mapped routed lossless evidence units. It must not free-scan the routed bucket, but it must open the mapped units as primary evidence.
-
-The material profile may navigate the routed primary evidence through the index and inventory pointers to derive mechanics and activity facts. It must not make free-corpus reads or expand beyond the 2C bucket.
-
-## Candidate inventory rule
-
-`feature_candidate_inventory` is created only from `activity_profile_source_index` locator rows that resolve to index-mapped routed lossless evidence units.
-
-It must not apply domain package taxonomy. It must not emit archetypes, surfaces, package labels, mechanics proof, activity summaries, source excerpts, or legal/data/exposure conclusions.
-
-## Material profile rule
-
-`M8_TARGET_FEATURE_PROFILE` must treat `active_run_package_manifest` and the referenced domain package catalog as the package context. Any activity taxonomy labels, archetype-like labels, surface/context labels, or package-specific field families must be package-controlled.
-
-The model must not assume the AI archetype set is universal. Where the active package does not expose a usable taxonomy, the model may still produce the required row fields but must identify the label basis as package-context-limited and record a limitation.
-
-## Output compatibility
-
-The backend material artifact remains:
-
-```text
-target_feature_profile
-```
-
-The row keys remain:
+Each `target_feature_profile.activities[]` entry contains exactly ten keys:
 
 ```text
 activity_reference
@@ -106,32 +110,129 @@ mechanics_proof
 autonomy_human_control_signal
 data_content_object_touched
 external_internal_action_signal
+primary_classification
+overlay_classifications
+```
+
+The first eight fields are non-empty domain-blind strings.
+
+## 8. Primary classification block
+
+`primary_classification` contains exactly:
+
+```text
+package_id
 archetype_codes
 archetype_derivation_basis
 surface_context_tokens
 surface_derivation_basis
 ```
 
-`archetype_codes` and `surface_context_tokens` are package-controlled labels, not hardcoded AI enums. Their derivation basis must cite the active package context and public activity evidence reached through 2C navigation.
+Rules:
 
-## Forbidden output
+- `package_id` equals the mounted primary package ID.
+- `archetype_codes[]` values come only from that package's `behavior_class`.
+- `surface_context_tokens[]` values come only from that package's `surface`.
+- each selected archetype code has exactly one matching derivation-basis entry;
+- each selected surface token has exactly one matching derivation-basis entry;
+- no basis entry may exist for an unselected code or token.
 
-The model must not emit:
+## 9. Overlay classification blocks
+
+`overlay_classifications` is an array.
+
+Each entry contains exactly:
 
 ```text
-feature_candidate_inventory
-target_feature_profile_forensics
-activity_profile_source_index
-phase_route_runtime_packet
-source pointers
-source URLs
-source excerpts
-confidence fields
-fixed universal AI archetype enum
-fixed universal AI surface enum
-legal advice
-compliance conclusion
-risk conclusion
-exposure match
-data provenance conclusion
+package_id
+overlay_id
+archetype_codes
+archetype_derivation_basis
+surface_context_tokens
+surface_derivation_basis
 ```
+
+Rules:
+
+- one block per resolved mounted capability overlay;
+- no block for unresolved overlays;
+- no block for regulatory overlays;
+- values are package-scoped by `package_id` and `overlay_id`;
+- membership and basis checks apply independently to each overlay block.
+
+## 10. Derivation basis entry schema
+
+Every `archetype_derivation_basis[]` and `surface_derivation_basis[]` entry contains exactly:
+
+```text
+code_or_token
+normalized_name
+conditions_satisfied
+trigger_if_applied
+exclude_if_checked
+material_basis
+limitation
+```
+
+`conditions_satisfied` must be a non-empty array of strings when a code or token is selected.
+
+## 11. Commercial availability schema
+
+`commercial_availability_posture` contains exactly:
+
+```text
+posture
+free_trial_freemium_signal
+beta_pilot_early_access_signal
+paid_production_enterprise_plan_signal
+evidence_basis
+limitation
+```
+
+`evidence_basis` is an array of non-empty strings and must not contain source IDs, URLs, quotes, or copied evidence text.
+
+## 12. Mounted taxonomy reference
+
+`mounted_taxonomy_ref` contains exactly:
+
+```text
+primary_package_id
+primary_key_version
+overlays
+```
+
+Each `overlays[]` entry contains exactly:
+
+```text
+overlay_id
+package_id
+key_version
+```
+
+The backend stamps this object. The model must not change it.
+
+## 13. Forbidden material-profile content
+
+Forbidden anywhere in `target_feature_profile`:
+
+```text
+URLs
+source_id
+source_url
+source_pointer
+source_ref
+candidate_id
+confidence
+validation_status
+lock_status
+*_ledger
+runtime_trace
+archetype_proof
+surface_proof_and_routing_limits
+excerpt
+lossless_text
+clean_text
+raw text
+```
+
+Do not return source pointers, IDs, URLs, copied evidence, or forensic ledgers.
