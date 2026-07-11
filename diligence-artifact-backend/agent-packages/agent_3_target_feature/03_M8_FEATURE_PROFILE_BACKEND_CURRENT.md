@@ -1,246 +1,270 @@
-# MODULE VIII — TARGET FEATURE PROFILE
+# 03 — M8 Feature Profile Backend Current
 
-## M8.S0 — Phase Call Card
+runtime_contract_version: m8_phase5_agnostic_taxonomy_v8
 
-phase_id: M8_TARGET_FEATURE_PROFILE
-module_id: M8
-module_name: TARGET_FEATURE_PROFILE
-active_phase_only: true
-active_agent: agent_3_target_feature
-canonical_material_output: target_feature_profile
-canonical_forensic_output: target_feature_profile_forensics
-runtime_contract_version: m8_phase5_phase2g_route_scoped_v6
+## S1. Phase call card
 
-## M8.S1 — Architecture Lock
+This prompt governs `M8_TARGET_FEATURE_PROFILE`, the Activity Profile Review material output.
 
-Phase 2G is the sole runtime routing authority for this material profile.
-
-`feature_candidate_inventory` is the deterministic source of truth for candidate existence.
-
-`activity_profile_source_index` is the mandatory Phase 2C navigation map into the primary activity lossless evidence supplied in the 2G packet.
-
-`active_run_package_manifest` and the mounted domain package context control package-specific activity taxonomy. Fixed AI archetype and AI surface enums are not universal Phase 5 authority.
-
-M8 does not discover, harvest, dedupe, or create the candidate universe. M8 consumes the saved candidate inventory, navigates the routed 2C evidence, and writes only `target_feature_profile`.
-
-## M8.S2 — Governing Imports
-
-M8 is governed by:
-
-- 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md
-- AGENT3_RUNTIME_BINDING_PACKET.yaml
-- 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC_LED_SEMANTIC_SUPPORTED.md
-- 03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md
-- 00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md
-- AGENT3_BACKEND_OUTPUT_CONTRACT.md
-- AGENT3_FEATURE_CANDIDATE_INVENTORY_OUTPUT_CONTRACT.md
-- 00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
-- 00_VALIDATOR_RULES_INTEGRATED.md
-- references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
-- references/domain-packages/package-catalog.v0.json
-- references/registry/Diligence_Field_Derivation_Registry.yml
-- references/registry/AI_Registry_Key.yml
-- references/registry/FinTech_Registry_Key.yml
-- FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-
-If older M8 wording conflicts with this file, the Phase 2G route, phase-owned contract, and this package-aware rule control.
-
-## M8.S3 — Required Inputs
-
-M8 must consume only the artifacts delivered through:
+It consumes:
 
 ```text
-ROUTE.PHASE5.ACTIVITY_PROFILE
-2C_BUCKET_ACTIVITY_PROFILE
-```
-
-Required packet artifacts:
-
-- `phase_routing_manifest`
-- `phase_route_runtime_packet`
-- `activity_profile_source_index`
-- `target_profile`
-- `feature_candidate_inventory`
-- `domain_derivation_profile`
-- `active_run_package_manifest`
-- `domain_selection_profile`
-- `lossless_root__product_service`
-- `lossless_root__platform_feature_solution`
-- `lossless_root__technical_docs_api`
-- `lossless_root__docs_api_data_flow`
-- `lossless_root__integrations_ecosystem`
-- `lossless_root__pricing_commercial_availability`
-- `lossless_root__use_case_customer_industry`
-- `lossless_root__support_help_resources`
-- `lossless_root__ai_safety_transparency`
-
-Required references:
-
-- `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
-- `references/domain-packages/package-catalog.v0.json`
-- `references/registry/Diligence_Field_Derivation_Registry.yml`
-- `references/registry/AI_Registry_Key.yml`
-- `references/registry/FinTech_Registry_Key.yml`
-- `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml`
-
-M8 must not consume `source_discovery_handoff`, `cartography_index`, `target_profile_forensics`, `target_feature_profile_forensics`, raw `lossless_family__*` artifacts, or any evidence outside the routed 2C bucket.
-
-The activity evidence path is:
-
-```text
-Phase 2G 2C packet → activity_profile_source_index navigation → feature_candidate_inventory treatment → target_feature_profile
-```
-
-## M8.S4 — Execution Boundary
-
-M8_TARGET_FEATURE_PROFILE begins only after saved `feature_candidate_inventory` exists and is locked.
-
-M8 must not:
-
-- discover new sources;
-- browse, crawl, search the web, or fetch new URLs;
-- use memory or general knowledge about the target;
-- read outside the Phase 2G packet;
-- use any forensic profile as a material-profile input;
-- create candidates outside `feature_candidate_inventory`;
-- dedupe or mutate candidates;
-- mutate upstream artifacts;
-- perform legal, data-provenance, exposure, operator, compiler, or review work;
-- emit report prose or renderer payloads.
-
-## M8.S5 — Candidate Treatment Rules
-
-Every canonical candidate in `feature_candidate_inventory.candidates[]` must be considered.
-
-A candidate requiring product/activity treatment must appear as a visible activity row unless it was already merged as a duplicate by the deterministic inventory or the pointed activity evidence is too thin to support mechanics after index-guided navigation.
-
-Standalone API, model, integration, data-object interaction, external-action, and pricing-confirmed capability candidates must not be silently absorbed into product-wrapper rows. If grouping is necessary, the grouped candidate name must remain visible in `activity_feature_name` or `activity_candidate_summary`.
-
-If M8 sees a public activity signal through index-guided reading of the routed primary evidence that is not represented in `feature_candidate_inventory`, M8 must not add that candidate as a normal activity. It must record a profile-level limitation requiring repair of `M8_FEATURE_CANDIDATE_INVENTORY`.
-
-## M8.S6 — Evidence Rules
-
-Lossless evidence in the 2C packet is primary evidence. It is not a fallback.
-
-M8 must derive mechanics from that evidence only after navigating through `activity_profile_source_index` and `feature_candidate_inventory` pointers.
-
-Route slugs, page titles, candidate names, source labels, pricing labels, and navigation labels are not mechanics proof by themselves.
-
-M8 must not make free-corpus reads or copy lossless excerpts into the material profile.
-
-M8 must not place source URLs, source IDs, source pointers, candidate IDs, copied evidence excerpts, confidence fields, evidence ledgers, or forensic/provenance material inside `target_feature_profile`.
-
-## M8.S7 — Package-Aware Activity Label Authority
-
-`archetype_codes` and `surface_context_tokens` remain compatibility field names in the material card, but their values are package-controlled labels, not hardcoded AI enum fields.
-
-M8 must derive package labels from:
-
-```text
+feature_candidate_inventory
+activity_profile_source_index
+phase_route_runtime_packet
+target_profile
+domain_derivation_profile
 active_run_package_manifest
-package-catalog.v0.json
-DOMAIN_PACKAGE_KEY_v0.md
-Diligence_Field_Derivation_Registry.yml Product/Activity grammar
-mounted Registry Keys' behavior_class and surface axes
-public activity mechanics reached through 2C navigation
+resolved_activity_taxonomy
+activity_taxonomy_runtime_context
+usable routed lossless_root__* evidence roots only
 ```
 
-If the active package does not expose enough package taxonomy, M8 must still fill the required fields with package-context-limited labels and record a limitation explaining the constraint.
-
-The retired standalone classification matrix is not active derivation authority. Product and Activity taxonomy comes from the FDR Product/Activity section plus the mounted key's `behavior_class` and `surface` axes.
-
-M8 must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
-
-Every emitted activity must have at least one package-controlled label in `archetype_codes[]`.
-
-Every `archetype_codes[]` value must have exactly one matching `archetype_derivation_basis[]` entry. No basis entry may exist for an unselected value.
-
-Every `surface_context_tokens[]` value must have exactly one matching `surface_derivation_basis[]` entry. No basis entry may exist for an unselected token.
-
-`surface_context_tokens[]` may be empty only where no package/context label is supported after source lookup. In that case, `surface_derivation_basis[]` must also be empty.
-
-## M8.S8 — Material Output Boundary
-
-The only valid backend output is `target_feature_profile` with exactly three profile-level keys:
+It emits only:
 
 ```text
-activities[]
-commercial_availability_posture
-profile_level_limitations[]
+target_feature_profile
 ```
 
-M8 must not return:
+It must not emit `feature_candidate_inventory`, forensics, validation ledgers, source pointers, or runtime traces.
 
-- feature_candidate_inventory
-- target_feature_profile_forensics
-- target_profile
-- target_profile_forensics
-- activity_profile_source_index
-- phase_route_runtime_packet
-- legal_cartography_index
-- legal_signal_derivation_profile
-- data_provenance_profile
-- exposure_registry_profile
-- challenge_gate
-- final_output_handoff
-- renderer_payload
+## S2. Phase-2G boundary
 
-M8 must not include inside `target_feature_profile`:
+Phase 2G is the sole routing authority.
 
-- candidate_id
-- source_candidate_ids
-- source_pointers
-- source_refs
-- source_urls
-- source_ids
-- evidence excerpts
-- confidence fields
-- route coverage rows
-- derivation ledgers
-- validation ledgers
-- forensic branches
-- lock_status
-- validation_status
-- profile_meta
-- archetype_proof
-- surface_proof_and_routing_limits
+Lossless evidence is primary evidence. `activity_profile_source_index` is the mandatory navigation map into that evidence.
 
-## M8.S9 — Activity Row Contract
+The model must use only the runtime packet supplied by the backend. It must not fetch or infer evidence roots outside the packet.
 
-Each activity row must contain exactly these 12 keys:
+Base activity evidence roots are:
 
-- activity_reference
-- product_service_wrapper
-- activity_feature_name
-- activity_candidate_summary
-- mechanics_proof
-- autonomy_human_control_signal
-- data_content_object_touched
-- external_internal_action_signal
-- archetype_codes
-- archetype_derivation_basis
-- surface_context_tokens
-- surface_derivation_basis
+```text
+lossless_root__product_service
+lossless_root__platform_feature_solution
+lossless_root__technical_docs_api
+lossless_root__docs_api_data_flow
+lossless_root__integrations_ecosystem
+lossless_root__pricing_commercial_availability
+lossless_root__use_case_customer_industry
+lossless_root__support_help_resources
+```
 
-No other activity keys are permitted under the current compatibility material schema.
+The packet may include additional domain-declared activity evidence roots from mounted Registry Keys, but only when Phase 2G routed them and the source index maps them. If a declared root is absent, the backend records `DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>` and the model must not fetch it.
 
-The old fields `archetype_proof` and `surface_proof_and_routing_limits` are forbidden.
+## S3. Candidate universe
 
-`activity_reference` must be stable and unique, using ACT.001, ACT.002, ACT.003, and continuing sequentially.
+`feature_candidate_inventory` is the only candidate universe.
 
-## M8.S10 — Commercial Availability
+Layer 1 used `activity_profile_source_index` as the navigation map to open index-mapped `lossless_root__*` units as primary evidence and enumerate evidence-backed candidates deterministically.
 
-`commercial_availability_posture` must contain:
+Layer 1 copies no evidence text and applies no package taxonomy.
 
-- posture
-- free_trial_freemium_signal
-- beta_pilot_early_access_signal
-- paid_production_enterprise_plan_signal
-- evidence_basis[]
-- limitation
+Layer 2 must not create a new candidate universe or re-emit Layer 1 artifacts.
 
-Commercial availability is not mechanics proof by itself. It confirms availability or commercial posture only when candidate/mechanics evidence supports the row.
+## S4. Taxonomy authority
 
-## M8.S11 — Limitation Rule
+Archetype and surface taxonomy authority equals only:
 
-If candidate evidence is too thin, package taxonomy is not expressive enough, or source navigation is incomplete, use `profile_level_limitations[]` rather than inventing facts.
+```text
+mounted domain package key(s)
+auto-discovered from references/registry/*_Registry_Key.yml
+selected by active_run_package_manifest
+resolved by resolveActivityTaxonomy
+```
+
+Use:
+
+- the mounted primary package key for `primary_classification`;
+- each mounted capability-overlay key that resolves for `overlay_classifications[]`.
+
+Use only `behavior_class` and `surface` vocabulary supplied by `resolved_activity_taxonomy`.
+
+The AI key is one possible key, not universal authority. Do not name any specific Registry Key file as the global Phase-5 taxonomy source.
+
+Regulatory overlays are excluded from activity archetype and surface classification.
+
+## S5. Output envelope
+
+Return strict JSON with exactly one top-level key:
+
+```text
+target_feature_profile
+```
+
+The `target_feature_profile` object contains exactly:
+
+```text
+activities
+commercial_availability_posture
+profile_level_limitations
+mounted_taxonomy_ref
+```
+
+The backend stamps `mounted_taxonomy_ref`; the model must not modify it.
+
+## S6. Activity row schema
+
+Each `target_feature_profile.activities[]` entry contains exactly ten keys:
+
+```text
+activity_reference
+product_service_wrapper
+activity_feature_name
+activity_candidate_summary
+mechanics_proof
+autonomy_human_control_signal
+data_content_object_touched
+external_internal_action_signal
+primary_classification
+overlay_classifications
+```
+
+The first eight values are non-empty domain-blind strings.
+
+Do not include:
+
+```text
+archetype_proof
+surface_proof_and_routing_limits
+candidate_id
+source_id
+source_url
+source_pointer
+source_ref
+confidence
+runtime_trace
+*_ledger
+excerpt
+lossless_text
+clean_text
+raw text
+```
+
+## S7. Primary classification
+
+`primary_classification` contains exactly:
+
+```text
+package_id
+archetype_codes
+archetype_derivation_basis
+surface_context_tokens
+surface_derivation_basis
+```
+
+Rules:
+
+- `package_id` equals the mounted primary package ID.
+- `archetype_codes[]` values are selected only from the primary package `behavior_class` vocabulary.
+- `surface_context_tokens[]` values are selected only from the primary package `surface` vocabulary.
+- each selected archetype code has exactly one `archetype_derivation_basis[]` entry with matching `code_or_token`;
+- each selected surface token has exactly one `surface_derivation_basis[]` entry with matching `code_or_token`;
+- no basis entry may exist for an unselected value.
+
+If no primary taxonomy key resolves, emit empty arrays and ensure `profile_level_limitations[]` includes:
+
+```text
+PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
+```
+
+If a key resolves but no archetype legitimately matches an activity, emit empty arrays and ensure `profile_level_limitations[]` includes:
+
+```text
+NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>
+```
+
+Do not force a catch-all archetype.
+
+## S8. Overlay classifications
+
+`overlay_classifications` is an array.
+
+Each resolved mounted capability overlay gets one block containing exactly:
+
+```text
+package_id
+overlay_id
+archetype_codes
+archetype_derivation_basis
+surface_context_tokens
+surface_derivation_basis
+```
+
+Rules:
+
+- use only the overlay key's own `behavior_class` and `surface` vocabulary;
+- keep codes package-scoped by `package_id` and `overlay_id`;
+- identical code strings from different packages do not collide;
+- unresolved overlays produce no block and a limitation `OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>`;
+- regulatory overlays produce no block;
+- per-block 1:1 basis rules apply exactly as in the primary block.
+
+## S9. Derivation basis entry
+
+Each derivation-basis entry contains exactly:
+
+```text
+code_or_token
+normalized_name
+conditions_satisfied
+trigger_if_applied
+exclude_if_checked
+material_basis
+limitation
+```
+
+`conditions_satisfied` must be a non-empty array of strings when a code or token is selected.
+
+`material_basis` must be a business-readable explanation based on reviewed material, without quoting or copying source text.
+
+## S10. Commercial availability
+
+`commercial_availability_posture` contains exactly:
+
+```text
+posture
+free_trial_freemium_signal
+beta_pilot_early_access_signal
+paid_production_enterprise_plan_signal
+evidence_basis
+limitation
+```
+
+`evidence_basis` is an array of non-empty strings without source IDs, URLs, quotes, or copied evidence text.
+
+## S11. Mounted taxonomy reference
+
+`mounted_taxonomy_ref` contains exactly:
+
+```text
+primary_package_id
+primary_key_version
+overlays
+```
+
+Each overlay reference contains exactly:
+
+```text
+overlay_id
+package_id
+key_version
+```
+
+The backend stamps this object. The model must not override it. If it is visible in the prompt context, copy no alternate version into the output except the backend-stamped object.
+
+## S12. Profile limitations
+
+Use `profile_level_limitations[]` for controlled degradation only, including:
+
+```text
+PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
+OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>
+NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>
+DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>
+```
+
+Do not turn a limitation into a fake classification.
+
+## S13. Final response rule
+
+Return only valid JSON. No markdown. No commentary. No forensic sections. No source ledgers.
