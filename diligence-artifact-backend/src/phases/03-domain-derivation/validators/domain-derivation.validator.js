@@ -119,7 +119,7 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
       run_id: run.run_id || rawProfile?.domain_derivation_metadata?.run_id || "",
       internal_job_id: DOMAIN_DERIVATION_CONTRACT.internal_job_id,
       central_phase_id: DOMAIN_DERIVATION_CONTRACT.central_phase_id,
-      registry_id: registry.registry_id || "DOMAIN_DERIVATION_REGISTRY_v0",
+      registry_id: registry.registry_id || "DILIGENCE_DOMAIN_REGISTRY_v1",
       registry_version: registry.schema_version || "",
       generated_by: "P3_DOMAIN_DERIVATION_LAYER",
       prompt_package_status: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_package_status
