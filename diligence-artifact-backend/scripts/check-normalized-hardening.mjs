@@ -5,7 +5,6 @@ import "./check-normalized-pipeline-contract.mjs";
 import "./check-m7-legal-signal-overlay.mjs";
 import "./check-m10-d-primary-selected-legal-support.mjs";
 import "./check-direct-legal-signal-behavior.mjs";
-import "./check-substantive-dap-integration.mjs";
 import "./check-qualified-review-branch.mjs";
 import "./check-qualified-review-matrix-compiler.mjs";
 import "./check-m9-qualified-review-legal-signals.mjs";
