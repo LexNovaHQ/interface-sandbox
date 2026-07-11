@@ -28,6 +28,7 @@ export const TARGET_PROFILE_REVIEW_CONTRACT = Object.freeze({
     direct_contract_read_loading_forbidden: true,
     profile_forensics_inputs_forbidden: true
   }),
+  scoped_lossless_evidence_reads: TARGET_PROFILE_LOSSLESS_READS,
   material_job: Object.freeze({
     job_id: "M7_TARGET_PROFILE",
     public_label: "Target Profile Review",
