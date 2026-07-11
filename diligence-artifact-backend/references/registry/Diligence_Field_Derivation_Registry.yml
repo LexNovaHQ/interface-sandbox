@@ -1,9 +1,9 @@
 registry:
   name: Diligence_Field_Derivation_Registry
-  version: v3_agnostic_multidomain_provenance
+  version: v3.1_agnostic_multidomain_provenance
   scope: agnostic_multidomain_covers_3A_3B_5_7_7B_9_plus_provenance_and_domain_derivation_grammar
   source_file: Diligence_Field_Derivation_Registry.yml
-  row_count: 454
+  row_count: 456
   columns:
   - field_id
   - profile_section
@@ -390,6 +390,30 @@ fields:
   exclude_fallback: EXCLUDE_IF source is too vague or not target-specific. FALLBACK_IF no clear business signal -> insufficient_public_evidence
     or not_visible_from_public_footprint.
   forbidden_inference: Do not speculate about hidden business model.
+  lock_status: LOCKED
+- field_id: TP.BIZ.009
+  profile_section: Target Profile
+  field_family: Business Context
+  output_field: Public regulatory / licensing signal
+  covers: business_context.public_regulatory_licensing_signal
+  mode: DERIVE
+  source_basis: scoped target lossless evidence from regulatory_licensing_status OR company_identity OR pricing_commercial_availability OR legal/governance public disclosures
+  conditions: C1 target-controlled public material shows regulatory disclosure, licensing/registration page, sponsor-bank/partner-bank signal, regulated activity disclosure, consumer disclosure, or similar public operating-context signal; C2 signal is tied to the reviewed target/operator/offering; C3 output remains factual route visibility or public operating-context signal only.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF support is partial/thin. FALLBACK_IF no public signal found.
+  exclude_fallback: EXCLUDE_IF source only implies regulation from industry, geography, customer type, payment words, or third-party commentary. FALLBACK_IF no target-controlled signal -> NO_PUBLIC_SIGNAL_FOUND or FIELD_LIMITED.
+  forbidden_inference: Do not determine license validity, license requirement, applicable regulator, regulatory compliance, RBI/SEBI/FCA applicability, or whether the target is regulated.
+  lock_status: LOCKED
+- field_id: TP.BIZ.010
+  profile_section: Target Profile
+  field_family: Business Context
+  output_field: Public grievance / complaints signal
+  covers: business_context.public_grievance_complaints_signal
+  mode: DERIVE
+  source_basis: scoped target lossless evidence from grievance_complaints OR contact_notice OR regulatory_licensing_status OR legal/governance public disclosures
+  conditions: C1 target-controlled public material shows grievance, complaints, nodal officer, grievance officer, ombudsman, escalation, customer complaint, or complaint-route signal; C2 signal is tied to the reviewed target/operator/offering; C3 output remains factual route visibility only.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF support is partial/thin. FALLBACK_IF no public signal found.
+  exclude_fallback: EXCLUDE_IF source is generic support, marketing contact, third-party review site, or unclear help article without grievance/complaints route. FALLBACK_IF no target-controlled signal -> NO_PUBLIC_SIGNAL_FOUND or FIELD_LIMITED.
+  forbidden_inference: Do not determine grievance mechanism sufficiency, legal compliance, ombudsman requirement, regulator applicability, or statutory complaint obligation.
   lock_status: LOCKED
 - field_id: TP.WRAP.001
   profile_section: Target Profile

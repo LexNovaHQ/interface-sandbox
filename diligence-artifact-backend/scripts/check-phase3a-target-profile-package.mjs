@@ -16,7 +16,7 @@ const files = {
   binding: "agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml",
   validatorRules: "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md",
   outputContract: "agent-packages/agent_3_target_feature/AGENT3_BACKEND_OUTPUT_CONTRACT.md",
-  authority: "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml"
+  authority: "references/registry/Diligence_Field_Derivation_Registry.yml"
 };
 const content = Object.fromEntries(Object.entries(files).map(([key, file]) => [key, read(file)]));
 const packageContent = Object.fromEntries(Object.entries(content).filter(([key]) => key !== "authority"));

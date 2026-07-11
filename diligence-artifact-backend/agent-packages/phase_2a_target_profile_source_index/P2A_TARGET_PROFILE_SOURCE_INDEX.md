@@ -85,8 +85,8 @@ P2A_TARGET_PROFILE_SOURCE_INDEX_REFERENCE_MAP.yaml
 src/phases/02-cartography-index/target-profile-source-index.contract.js
 src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js
 src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
-references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
+references/registry/Diligence_Field_Derivation_Registry.yml
+references/registry/Diligence_Field_Derivation_Registry.yml
 references/registry/Diligence_Field_Derivation_Registry.yml
 ```
 

@@ -30,8 +30,6 @@ reference_documents:
   - src/phases/02-cartography-index/target-profile-source-index.contract.js
   - src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js
   - src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
-  - references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-  - references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
   - references/registry/Diligence_Field_Derivation_Registry.yml
 
 read_artifacts:
