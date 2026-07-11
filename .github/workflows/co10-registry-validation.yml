@@ -24,3 +24,5 @@ jobs:
           node-version: '20.19.0'
       - name: No-op carrier
         run: echo 'PR-triggered acceptance workflow on base branch owns rerun'
+
+# synchronize PR head after base workflow install
