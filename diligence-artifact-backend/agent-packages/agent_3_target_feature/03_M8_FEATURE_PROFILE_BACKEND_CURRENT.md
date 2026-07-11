@@ -38,7 +38,9 @@ M8 is governed by:
 - 00_VALIDATOR_RULES_INTEGRATED.md
 - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
 - references/domain-packages/package-catalog.v0.json
-- references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+- references/registry/Diligence_Field_Derivation_Registry.yml
+- references/registry/AI_Registry_Key.yml
+- references/registry/FinTech_Registry_Key.yml
 - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 If older M8 wording conflicts with this file, the Phase 2G route, phase-owned contract, and this package-aware rule control.
@@ -76,7 +78,9 @@ Required references:
 
 - `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
 - `references/domain-packages/package-catalog.v0.json`
-- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+- `references/registry/Diligence_Field_Derivation_Registry.yml`
+- `references/registry/AI_Registry_Key.yml`
+- `references/registry/FinTech_Registry_Key.yml`
 - `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml`
 
 M8 must not consume `source_discovery_handoff`, `cartography_index`, `target_profile_forensics`, `target_feature_profile_forensics`, raw `lossless_family__*` artifacts, or any evidence outside the routed 2C bucket.
@@ -136,12 +140,14 @@ M8 must derive package labels from:
 active_run_package_manifest
 package-catalog.v0.json
 DOMAIN_PACKAGE_KEY_v0.md
+Diligence_Field_Derivation_Registry.yml Product/Activity grammar
+mounted Registry Keys' behavior_class and surface axes
 public activity mechanics reached through 2C navigation
 ```
 
 If the active package does not expose enough package taxonomy, M8 must still fill the required fields with package-context-limited labels and record a limitation explaining the constraint.
 
-M8 must not use CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml as active derivation authority.
+The retired standalone classification matrix is not active derivation authority. Product and Activity taxonomy comes from the FDR Product/Activity section plus the mounted key's `behavior_class` and `surface` axes.
 
 M8 must not derive Subcat, Authority, Compliance_Framework, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Velocity, Threat_Trigger, registry rows, legal risk, or exposure findings.
 
