@@ -1,45 +1,70 @@
-const LEGAL_GOVERNANCE_ARTIFACTS = Object.freeze([
-  "lossless_family__L1_CORE_TERMS_PRIVACY",
-  "lossless_family__L2_B2B_CONTRACTING",
-  "lossless_family__L3_AI_USAGE_GOVERNANCE",
-  "lossless_family__L4_PRIVACY_ADJACENT_NOTICES",
-  "lossless_family__L5_LEGAL_HUB_HOSTED",
-  "lossless_family__L6_ENTITY_NOTICE"
+const LEGAL_GOVERNANCE_ROOT_ARTIFACTS = Object.freeze([
+  "lossless_root__company_identity",
+  "lossless_root__contact_notice",
+  "lossless_root__privacy_data_processing",
+  "lossless_root__security_trust_compliance",
+  "lossless_root__data_governance_controls",
+  "lossless_root__ai_safety_transparency",
+  "lossless_root__regulatory_licensing_status",
+  "lossless_root__grievance_complaints"
 ]);
 
+const LEGAL_DOC_ARTIFACT_PATTERN = /^legal_doc_[a-z0-9]+(?:_[a-z0-9]+)*(?:__[a-z0-9-]+)?$/;
+const LEGAL_ROOT_PART_PATTERN = /^lossless_root__(company_identity|contact_notice|privacy_data_processing|security_trust_compliance|data_governance_controls|ai_safety_transparency|regulatory_licensing_status|grievance_complaints)__part_\d{3}$/;
 const MAX_FULL_LOSSLESS_UNITS_PER_BATCH = 24;
 const MAX_KEYWORDS_PER_ROW = 30;
 const TEXT_FIELD_NAMES = new Set(["lossless_text", "clean_text", "raw_text", "text", "content", "body", "markdown"]);
 
 export function buildCompactM11BatchPacket({ batchPacket, upstreamArtifacts = {} }) {
   const packet = batchPacket?.m11_batch_packet || batchPacket || {};
-  const legalEvidenceBundle = buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts });
+  const evidenceArtifactNames = routedPrimaryEvidenceArtifactNames(upstreamArtifacts);
+  const legalEvidenceBundle = buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts, evidenceArtifactNames });
 
   return {
     ...packet,
     backend_full_lossless_evidence_access_policy: {
       full_legal_governance_lossless_package_read_permission: true,
+      routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+      route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
       navigation_layer: "legal_cartography_index",
-      evidence_selection_policy: "m9_guided_full_lossless_units_only",
-      fallback_policy: "If M9 is silent or thin for a row, pull the closest relevant full lossless section or part from the loaded legal/governance corpus.",
-      insufficiency_rule: "If the supplied full lossless units are still insufficient, set status_inputs.public_evidence_limitation to yes or partial and record a row-specific limitation. Backend derives the final material status."
+      evidence_role: "PRIMARY_EVIDENCE",
+      evidence_selection_policy: "index_navigation_into_routed_primary_lossless_evidence",
+      index_gap_policy: "When M9 has no usable pointer for a row, navigate to the closest relevant unit inside the same 2F primary evidence bucket and record the index gap. This is not fallback evidence.",
+      direct_lossless_fallback_framing_forbidden: true,
+      insufficiency_rule: "If the routed primary evidence units remain insufficient, set status_inputs.public_evidence_limitation to yes or partial and record a row-specific limitation. Backend derives the final material status."
     },
-    backend_full_lossless_evidence_access_manifest: buildFullEvidenceAccessManifest(upstreamArtifacts),
+    backend_full_lossless_evidence_access_manifest: buildFullEvidenceAccessManifest(upstreamArtifacts, evidenceArtifactNames),
     legal_governance_evidence_bundle: legalEvidenceBundle
   };
 }
 
-function buildFullEvidenceAccessManifest(upstreamArtifacts = {}) {
-  return LEGAL_GOVERNANCE_ARTIFACTS.map((artifactName) => ({
-    artifact_name: artifactName,
-    available_to_backend: Boolean(upstreamArtifacts[artifactName]),
-    access_mode: "backend_m9_navigation_to_full_lossless_sections"
-  }));
+function routedPrimaryEvidenceArtifactNames(upstreamArtifacts = {}) {
+  return Object.keys(upstreamArtifacts)
+    .filter((artifactName) => LEGAL_GOVERNANCE_ROOT_ARTIFACTS.includes(artifactName) || LEGAL_ROOT_PART_PATTERN.test(artifactName) || LEGAL_DOC_ARTIFACT_PATTERN.test(artifactName))
+    .sort();
 }
 
-function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts }) {
+function buildFullEvidenceAccessManifest(upstreamArtifacts = {}, evidenceArtifactNames = routedPrimaryEvidenceArtifactNames(upstreamArtifacts)) {
+  const expectedRoots = LEGAL_GOVERNANCE_ROOT_ARTIFACTS.map((artifactName) => ({
+    artifact_name: artifactName,
+    available_to_backend: Boolean(upstreamArtifacts[artifactName]),
+    evidence_role: "PRIMARY_EVIDENCE",
+    access_mode: "m9_index_navigation_to_routed_lossless_root"
+  }));
+  const dynamic = evidenceArtifactNames
+    .filter((artifactName) => !LEGAL_GOVERNANCE_ROOT_ARTIFACTS.includes(artifactName))
+    .map((artifactName) => ({
+      artifact_name: artifactName,
+      available_to_backend: true,
+      evidence_role: "PRIMARY_EVIDENCE",
+      access_mode: LEGAL_DOC_ARTIFACT_PATTERN.test(artifactName) ? "m9_index_navigation_to_independent_legal_document" : "m9_index_navigation_to_routed_lossless_root_shard"
+    }));
+  return [...expectedRoots, ...dynamic];
+}
+
+function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts, evidenceArtifactNames }) {
   const registryRows = asArray(packet.registry_rows);
-  const allUnits = buildLosslessUnitIndex(upstreamArtifacts);
+  const allUnits = buildLosslessUnitIndex(upstreamArtifacts, evidenceArtifactNames);
   const selected = [];
   const selectedKeys = new Set();
   const rowBindings = [];
@@ -48,30 +73,31 @@ function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts }) {
   for (const row of registryRows) {
     const threatId = String(row.Threat_ID || "").trim();
     const m9Rows = asArray(row.m9_legal_cartography_selection);
-    const m9Driven = selectUnitsForRow({ row, m9Rows, allUnits, m9Required: true });
-    const fallback = m9Driven.length ? [] : selectUnitsForRow({ row, m9Rows: [], allUnits, m9Required: false });
-    const rowUnits = [...m9Driven, ...fallback];
+    const indexPinpointed = selectUnitsForRow({ row, m9Rows, allUnits, indexPointersRequired: true });
+    const indexGapNavigation = indexPinpointed.length ? [] : selectUnitsForRow({ row, m9Rows: [], allUnits, indexPointersRequired: false });
+    const rowUnits = [...indexPinpointed, ...indexGapNavigation];
 
     if (!m9Rows.length) {
       limitations.push({
         Threat_ID: threatId,
-        code: "M9_SILENT_CLOSEST_LOSSLESS_SECTION_USED",
-        message: "M9 selection was silent for this row; backend supplied the closest relevant full lossless section/part from loaded legal/governance evidence."
+        code: "M9_INDEX_GAP_NEAREST_PRIMARY_EVIDENCE_NAVIGATION_USED",
+        message: "M9 did not expose a usable pointer for this row. The backend navigated to the closest relevant unit inside the same routed 2F primary evidence bucket and recorded the index gap."
       });
     }
 
     if (!rowUnits.length) {
       limitations.push({
         Threat_ID: threatId,
-        code: "NO_RELEVANT_LOSSLESS_UNIT_FOUND",
-        message: "No M9-guided or closest relevant full lossless unit was found. M11 must carry public evidence limitation through status_inputs and row_limitations; backend derives the final material status."
+        code: "NO_RELEVANT_ROUTED_PRIMARY_EVIDENCE_UNIT_FOUND",
+        message: "No relevant unit was found inside the routed 2F primary evidence bucket. M11 must carry public evidence limitation through status_inputs and row_limitations; backend derives the final material status."
       });
     }
 
     rowBindings.push({
       Threat_ID: threatId,
       m9_rows_available: m9Rows.length,
-      selection_policy: m9Driven.length ? "M9_NAVIGATION_POINTERS" : "M9_SILENT_CLOSEST_RELEVANT_LOSSLESS_SECTION",
+      selection_policy: indexPinpointed.length ? "M9_INDEX_PINPOINTED_PRIMARY_EVIDENCE" : "INDEX_GAP_NEAREST_ROUTED_PRIMARY_EVIDENCE",
+      direct_lossless_fallback_used: false,
       selected_unit_ids: rowUnits.map((unit) => unit.unit_id)
     });
 
@@ -84,7 +110,11 @@ function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts }) {
   }
 
   return {
-    selection_method: "m9_navigation_pointers_to_full_lossless_units_with_closest_relevant_fallback",
+    routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
+    route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+    evidence_role: "PRIMARY_EVIDENCE",
+    selection_method: "m9_index_navigation_into_routed_primary_evidence_with_recorded_index_gap_navigation",
+    direct_lossless_fallback_used: false,
     selected_lossless_unit_count: selected.length,
     lossless_units: selected,
     row_bindings: rowBindings,
@@ -92,9 +122,9 @@ function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts }) {
   };
 }
 
-function buildLosslessUnitIndex(upstreamArtifacts = {}) {
+function buildLosslessUnitIndex(upstreamArtifacts = {}, evidenceArtifactNames = routedPrimaryEvidenceArtifactNames(upstreamArtifacts)) {
   const units = [];
-  for (const artifactName of LEGAL_GOVERNANCE_ARTIFACTS) {
+  for (const artifactName of evidenceArtifactNames) {
     const source = upstreamArtifacts[artifactName];
     if (!source) continue;
     units.push(...extractTextUnits({ artifactName, value: source }));
@@ -121,8 +151,8 @@ function extractTextUnits({ artifactName, value, path = artifactName, inherited 
   const nextInherited = {
     ...inherited,
     source_url: value.canonical_url || value.url || value.source_url || value.source || inherited.source_url || "",
-    route_type: value.route_type || value.source_family || value.family || inherited.route_type || "",
-    document_title: value.title || value.document_title || value.document_or_artifact || value.policy_name || inherited.document_title || ""
+    route_type: value.route_type || value.common_root || value.doc_type || inherited.route_type || "",
+    document_title: value.title || value.document_title || value.document_or_artifact || value.policy_name || value.doc_type || inherited.document_title || ""
   };
 
   for (const [key, item] of Object.entries(value)) {
@@ -148,7 +178,7 @@ function splitIntoFullLosslessUnits({ artifactName, path, text, inherited }) {
     document_title: inherited.document_title || "",
     path,
     unit_index: index + 1,
-    unit_selection_type: "FULL_LOSSLESS_SECTION_OR_PART",
+    unit_selection_type: "FULL_PRIMARY_EVIDENCE_SECTION_OR_PART",
     heading: inferHeading(block),
     text: block,
     search_text: [artifactName, inherited.source_url, inherited.document_title, inherited.route_type, block].join(" ").toLowerCase()
@@ -203,18 +233,18 @@ function inferHeading(text) {
   return first.slice(0, 180);
 }
 
-function selectUnitsForRow({ row, m9Rows, allUnits, m9Required }) {
+function selectUnitsForRow({ row, m9Rows, allUnits, indexPointersRequired }) {
   if (!allUnits.length) return [];
   const rowKeywords = buildRowKeywords(row);
   const m9Keywords = buildM9Keywords(m9Rows);
-  const keywords = unique([...(m9Required ? m9Keywords : []), ...rowKeywords]).slice(0, MAX_KEYWORDS_PER_ROW);
+  const keywords = unique([...(indexPointersRequired ? m9Keywords : []), ...rowKeywords]).slice(0, MAX_KEYWORDS_PER_ROW);
   if (!keywords.length) return [];
 
   return allUnits
-    .map((unit) => ({ unit, score: scoreUnit(unit, keywords, m9Required ? m9Keywords : []) }))
+    .map((unit) => ({ unit, score: scoreUnit(unit, keywords, indexPointersRequired ? m9Keywords : []) }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, m9Required ? 4 : 2)
+    .slice(0, indexPointersRequired ? 4 : 2)
     .map((entry) => stripSearchText(entry.unit));
 }
 
@@ -226,27 +256,8 @@ function scoreUnit(unit, keywords, m9Keywords) {
   return score;
 }
 
-function stripSearchText(unit) {
-  const { search_text, ...rest } = unit;
-  return rest;
-}
-
-function buildRowKeywords(row = {}) {
-  const raw = [row.Threat_ID, row.Threat_Name, row.Surface, row.FP_Mechanism, row.Lex_Nova_Fix, row.Legal_Pain, row.Hunter_Trigger]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return raw.split(/[^a-z0-9_\u00a7.-]+/).filter((word) => word.length >= 4).slice(0, MAX_KEYWORDS_PER_ROW);
-}
-
-function buildM9Keywords(m9Rows) {
-  return unique(asArray(m9Rows).map((row) => JSON.stringify(row)).join(" ").toLowerCase().split(/[^a-z0-9_\u00a7.-]+/).filter((word) => word.length >= 4)).slice(0, MAX_KEYWORDS_PER_ROW);
-}
-
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function unique(items) {
-  return [...new Set(asArray(items).filter(Boolean))];
-}
+function stripSearchText(unit) { const { search_text, ...rest } = unit; return rest; }
+function buildRowKeywords(row = {}) { const raw = [row.Threat_ID, row.Threat_Name, row.Surface, row.FP_Mechanism, row.Lex_Nova_Fix, row.Legal_Pain, row.Hunter_Trigger].filter(Boolean).join(" ").toLowerCase(); return raw.split(/[^a-z0-9_\u00a7.-]+/).filter((word) => word.length >= 4).slice(0, MAX_KEYWORDS_PER_ROW); }
+function buildM9Keywords(m9Rows) { return unique(asArray(m9Rows).map((row) => JSON.stringify(row)).join(" ").toLowerCase().split(/[^a-z0-9_\u00a7.-]+/).filter((word) => word.length >= 4)).slice(0, MAX_KEYWORDS_PER_ROW); }
+function asArray(value) { return Array.isArray(value) ? value : []; }
+function unique(items) { return [...new Set(asArray(items).filter(Boolean))]; }
