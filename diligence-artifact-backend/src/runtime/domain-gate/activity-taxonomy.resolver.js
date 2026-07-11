@@ -1,154 +1,224 @@
+import {
+  BASE_ACTIVITY_EVIDENCE_ROOTS
+} from "../../phases/05-activity-profile-review/activity-profile.constants.js";
 import { discoverPackageKeys } from "./domain-derivation-registry.loader.js";
-import { BASE_ACTIVITY_EVIDENCE_ROOTS } from "../../phases/05-activity-profile-review/activity-profile.constants.js";
 
-const OVERLAY_DECLARATION_COMPATIBILITY_LIMITATION = "OVERLAY_DECLARATION_DEFERRED_COMPATIBILITY_ACTIVE";
-const EVIDENCE_ROOT_DECLARATION_DEFERRED_LIMITATION = "ACTIVITY_EVIDENCE_ROOT_DECLARATION_DEFERRED";
+export const ACTIVITY_TAXONOMY_RESOLVER_STATUS = Object.freeze({
+  resolver: "activity-taxonomy.resolver",
+  resolver_version: "v1_registry_self_declaration_package_scoped",
+  registry_discovery: "references/registry/*_Registry_Key.yml",
+  primary_mapping: "registry_key.domain_package",
+  overlay_mapping: "serves_capability_overlay",
+  compatibility_fallbacks_allowed: false,
+  domain_derivation_rules_overlay_fallback_allowed: false,
+  regulatory_overlay_taxonomy_mount_allowed: false,
+  resolver_reads_runtime_artifacts: false,
+  resolver_expands_phase2g_reads: false,
+  phase2g_remains_only_routing_authority: true
+});
 
-export async function resolveActivityTaxonomy({ primaryPackageId, capabilityOverlayIds = [] } = {}) {
+export async function resolveActivityTaxonomy({
+  primaryPackageId,
+  capabilityOverlayIds = []
+} = {}) {
   const primaryId = normalizeId(primaryPackageId);
   const overlayIds = uniqueStrings(capabilityOverlayIds);
   const discovered = await discoverPackageKeys();
+  const records = Object.entries(discovered).map(([packageId, entry]) => normalizeKeyRecord({
+    packageId,
+    file: entry.file,
+    key: entry.key
+  }));
+
   const limitations = [];
+  const primaryRecord = primaryId
+    ? records.find((record) => record.package_id === primaryId) || null
+    : null;
 
-  const primaryEntry = primaryId ? discovered[primaryId] || null : null;
-  const primary = primaryEntry ? normalizeMountedKey(primaryEntry.key, { packageId: primaryId }) : null;
-
-  if (!primary) {
-    limitations.push(`PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:${primaryId || "missing"}`);
+  if (!primaryId) {
+    limitations.push("PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<missing>");
+  } else if (!primaryRecord) {
+    limitations.push(`PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:${primaryId}`);
   }
 
+  const primary = primaryRecord ? taxonomyBlockFromRecord(primaryRecord, { status: "RESOLVED_PRIMARY" }) : null;
   const overlays = [];
+
   for (const overlayId of overlayIds) {
-    const match = findOverlayKey(discovered, overlayId);
-    if (!match) {
+    const record = records.find((candidate) => candidate.serves_capability_overlay.includes(overlayId));
+    if (!record) {
       limitations.push(`OVERLAY_HAS_NO_TAXONOMY_KEY:${overlayId}`);
       continue;
     }
-
-    if (match.declaration_source === "DOMAIN_DERIVATION_RULES_COMPATIBILITY") {
-      limitations.push(`${OVERLAY_DECLARATION_COMPATIBILITY_LIMITATION}:${overlayId}`);
-      if (!Object.hasOwn(match.entry.key || {}, "activity_evidence_roots")) {
-        limitations.push(`${EVIDENCE_ROOT_DECLARATION_DEFERRED_LIMITATION}:${match.packageId}`);
-      }
-    }
-
-    overlays.push(normalizeMountedKey(match.entry.key, {
-      packageId: match.packageId,
-      overlayId
+    overlays.push(taxonomyBlockFromRecord(record, {
+      overlay_id: overlayId,
+      status: "RESOLVED_CAPABILITY_OVERLAY"
     }));
   }
 
-  const evidenceRoots = uniqueStrings([
-    ...BASE_ACTIVITY_EVIDENCE_ROOTS,
-    ...(primary?.evidence_roots || []),
-    ...overlays.flatMap((overlay) => overlay.evidence_roots || [])
-  ]);
-
   return Object.freeze({
-    primary: primary ? Object.freeze(primary) : null,
-    overlays: Object.freeze(overlays.map((overlay) => Object.freeze(overlay))),
-    evidence_roots: Object.freeze(evidenceRoots),
+    primary,
+    overlays: Object.freeze(overlays),
+    evidence_roots: Object.freeze(uniqueStrings([
+      ...BASE_ACTIVITY_EVIDENCE_ROOTS,
+      ...(primary?.evidence_roots || []),
+      ...overlays.flatMap((overlay) => overlay.evidence_roots || [])
+    ])),
     limitations: Object.freeze(uniqueStrings(limitations))
   });
 }
 
-function findOverlayKey(discovered, overlayId) {
-  for (const [packageId, entry] of Object.entries(discovered || {})) {
-    const declared = uniqueStrings(asArray(entry?.key?.serves_capability_overlay));
-    if (declared.includes(overlayId)) {
-      return { packageId, entry, declaration_source: "REGISTRY_SELF_DECLARATION" };
-    }
-  }
+function normalizeKeyRecord({ packageId, file, key }) {
+  const registryKey = key?.registry_key || {};
+  const declaredPackageId = normalizeId(registryKey.domain_package || packageId);
+  if (!declaredPackageId) throw new Error(`ACTIVITY_TAXONOMY_KEY_MISSING_DOMAIN_PACKAGE:${file || "unknown"}`);
 
-  // Temporary compatibility bridge while the append-only registry declarations are
-  // deferred. This reads the key's existing mount rules; it does not invent package
-  // mappings. A future explicit serves_capability_overlay declaration wins above and
-  // automatically retires this path without a resolver change.
-  for (const [packageId, entry] of Object.entries(discovered || {})) {
-    const mountedOverlayIds = uniqueStrings(
-      asArray(entry?.key?.domain_derivation_rules?.capability_overlay_mount_rules)
-        .map((rule) => rule?.package_id)
-    );
-    if (mountedOverlayIds.includes(overlayId)) {
-      return { packageId, entry, declaration_source: "DOMAIN_DERIVATION_RULES_COMPATIBILITY" };
-    }
-  }
-
-  return null;
-}
-
-function normalizeMountedKey(key = {}, { packageId, overlayId } = {}) {
-  const registryKey = key.registry_key || {};
-  const behaviorClass = key.behavior_class || {};
-  const surface = key.surface || {};
-  const archetypeVocabulary = asArray(behaviorClass.codes).map((entry) => Object.freeze({
-    package_id: packageId,
-    code: String(entry?.code || ""),
-    normalized_name: String(entry?.normalized_name || entry?.internal_name || entry?.code || ""),
-    conditions: Object.freeze({ ...(entry?.conditions || {}) }),
-    trigger_if: String(entry?.trigger_if || ""),
-    exclude_if: normalizeExcludeIf(entry?.exclude_if)
-  }));
-  const surfaceTokens = asArray(surface.tokens).map((entry) => Object.freeze({
-    package_id: packageId,
-    token: String(entry?.token || ""),
-    normalized_name: String(entry?.normalized_name || entry?.token || ""),
-    conditions: Object.freeze({ ...(entry?.conditions || {}) }),
-    trigger_if: String(entry?.trigger_if || "")
-  }));
-  const surfaceAxes = surface.axis_id || surfaceTokens.length
-    ? [Object.freeze({
-        package_id: packageId,
-        axis_id: String(surface.axis_id || "surface"),
-        axis_label: String(surface.axis_label || ""),
-        multi_value: surface.multi_value === true,
-        combine: String(surface.combine || ""),
-        tokens: Object.freeze(surfaceTokens)
-      })]
-    : [];
-
-  const normalized = {
-    package_id: packageId,
-    key_version: String(registryKey.version || ""),
-    archetype_vocabulary: Object.freeze(archetypeVocabulary),
-    surface_axes: Object.freeze(surfaceAxes),
-    evidence_roots: Object.freeze(uniqueStrings(key.activity_evidence_roots)),
+  return Object.freeze({
+    package_id: declaredPackageId,
+    key_file: file || "",
+    key,
+    key_version: normalizeId(registryKey.version || key?.version || key?.schema_version || ""),
+    serves_capability_overlay: normalizeOverlayDeclaration(key?.serves_capability_overlay),
+    archetype_vocabulary: Object.freeze(normalizeBehaviorClass(key?.behavior_class, declaredPackageId)),
+    surface_axes: Object.freeze(normalizeSurfaceAxes(key?.surface, declaredPackageId)),
+    evidence_roots: Object.freeze(uniqueStrings(key?.activity_evidence_roots || [])),
     grammar: Object.freeze({
-      behavior_class: Object.freeze({
-        axis_id: String(behaviorClass.axis_id || "behavior_class"),
-        residual_code: String(behaviorClass.residual_code || ""),
-        resolution_test: String(behaviorClass.resolution_test || "")
-      }),
-      surface: Object.freeze({
-        axis_id: String(surface.axis_id || "surface"),
-        multi_value: surface.multi_value === true,
-        combine: String(surface.combine || ""),
-        note: String(surface.note || "")
-      })
+      behavior_class_source: "behavior_class",
+      surface_source: "surface",
+      trigger_if_supported: true,
+      exclude_if_supported: true,
+      package_scoped: true
     })
+  });
+}
+
+function taxonomyBlockFromRecord(record, extras = {}) {
+  return Object.freeze({
+    ...(extras.overlay_id ? { overlay_id: extras.overlay_id } : {}),
+    package_id: record.package_id,
+    key_version: record.key_version,
+    key_file: record.key_file,
+    archetype_vocabulary: record.archetype_vocabulary,
+    surface_axes: record.surface_axes,
+    evidence_roots: record.evidence_roots,
+    grammar: record.grammar,
+    status: extras.status || "RESOLVED"
+  });
+}
+
+function normalizeBehaviorClass(value, packageId) {
+  const rows = normalizeArray(value);
+  return rows
+    .map((row) => {
+      if (typeof row === "string") {
+        return {
+          code: row,
+          normalized_name: row,
+          trigger_if: "",
+          exclude_if: []
+        };
+      }
+      return {
+        code: normalizeId(row.code || row.id || row.class_id || row.behavior_class),
+        normalized_name: normalizeId(row.normalized_name || row.name || row.label || row.code || row.id),
+        trigger_if: normalizeTrigger(row.trigger_if),
+        exclude_if: normalizeArray(row.exclude_if).map((item) => typeof item === "string" ? item : JSON.stringify(item)),
+        package_id: packageId
+      };
+    })
+    .filter((row) => row.code)
+    .map((row) => Object.freeze(row));
+}
+
+function normalizeSurfaceAxes(value, packageId) {
+  if (Array.isArray(value)) {
+    return value.map((axis, index) => normalizeSurfaceAxis(axis, index, packageId)).filter(Boolean).map(Object.freeze);
+  }
+
+  if (isPlainObject(value)) {
+    return Object.entries(value).map(([axisId, axisValue], index) => normalizeSurfaceAxis({
+      axis_id: axisId,
+      tokens: normalizeArray(axisValue)
+    }, index, packageId)).filter(Boolean).map(Object.freeze);
+  }
+
+  return [];
+}
+
+function normalizeSurfaceAxis(axis, index, packageId) {
+  if (typeof axis === "string") {
+    return {
+      axis_id: `surface_axis_${index + 1}`,
+      tokens: Object.freeze([Object.freeze({
+        token: axis,
+        normalized_name: axis,
+        trigger_if: "",
+        package_id: packageId
+      })])
+    };
+  }
+
+  if (!isPlainObject(axis)) return null;
+
+  const axisId = normalizeId(axis.axis_id || axis.id || axis.name || `surface_axis_${index + 1}`);
+  const tokenRows = normalizeArray(axis.tokens || axis.values || axis.options || axis.surface_tokens || axis.token)
+    .map((tokenRow) => normalizeSurfaceToken(tokenRow, packageId))
+    .filter(Boolean)
+    .map(Object.freeze);
+
+  return {
+    axis_id: axisId,
+    tokens: Object.freeze(tokenRows)
   };
-
-  if (overlayId) normalized.overlay_id = overlayId;
-  else normalized.status = String(registryKey.status || "ACTIVE");
-  return normalized;
 }
 
-function normalizeExcludeIf(value) {
-  if (Array.isArray(value)) return Object.freeze(value.map((item) => String(item || "")).filter(Boolean));
-  if (value === null || value === undefined || value === "") return Object.freeze([]);
-  return Object.freeze([String(value)]);
+function normalizeSurfaceToken(value, packageId) {
+  if (typeof value === "string") {
+    return {
+      token: value,
+      normalized_name: value,
+      trigger_if: "",
+      package_id: packageId
+    };
+  }
+
+  if (!isPlainObject(value)) return null;
+
+  const token = normalizeId(value.token || value.code || value.id || value.name);
+  if (!token) return null;
+
+  return {
+    token,
+    normalized_name: normalizeId(value.normalized_name || value.name || value.label || token),
+    trigger_if: normalizeTrigger(value.trigger_if),
+    package_id: packageId
+  };
 }
 
-function asArray(value) {
-  if (Array.isArray(value)) return value;
-  if (value === null || value === undefined || value === "") return [];
-  return [value];
+function normalizeOverlayDeclaration(value) {
+  return uniqueStrings(value);
+}
+
+function normalizeTrigger(value) {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return value.map((item) => typeof item === "string" ? item : JSON.stringify(item)).join(" AND ");
+  if (isPlainObject(value)) return JSON.stringify(value);
+  return "";
+}
+
+function normalizeArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function uniqueStrings(value) {
+  return [...new Set(normalizeArray(value).flat(Infinity).map(normalizeId).filter(Boolean))];
 }
 
 function normalizeId(value) {
-  return String(value || "").trim();
+  return String(value ?? "").trim();
 }
 
-function uniqueStrings(values) {
-  return [...new Set(asArray(values).flat(Infinity).map(normalizeId).filter(Boolean))];
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
