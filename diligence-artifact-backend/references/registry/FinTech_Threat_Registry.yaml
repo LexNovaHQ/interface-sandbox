@@ -1,0 +1,1093 @@
+# =============================================================================
+# FinTech_Threat_Registry.yaml  —  Phase 9 Exposure Registry (fintech package)
+# -----------------------------------------------------------------------------
+# Schema mirrors AI_THREAT_REGISTRY.yaml FIELD-FOR-FIELD so the Phase 9 / m11
+# loader can consume it identically (matches on Archetype, Surface, Status,
+# Hunter_Trigger, FIELD21/22/23; Threat_ID = Archetype_Subcat_Number).
+#
+# Archetype = fintech behavior_class code; Subcat = terminal-harm code;
+# Surface = fintech surface tokens.
+#
+# COMPLETE: 44 threat rows across all 14 behavior classes and all 10 subcats.
+#   Tranche 3 (12 rows) adds India + US DEPTH: fair-lending/ECOA, algorithmic-underwriting
+#   bias, Military Lending Act, OFAC sanctions, RBI PA-CB cross-border, sponsor-bank/BaaS
+#   third-party risk, NYDFS/GLBA/CERT-In cybersecurity, crypto tax (India 194S/115BBH +
+#   US 1099-DA), IRDAI unfair-claims, unregistered SEBI RA/US adviser, Aadhaar eKYC, RBI PPI.
+#   40 rows India-anchored, 39 rows US-anchored. (Note: US CTA/BOI intentionally omitted -
+#   FinCEN Mar-2025 interim rule exempts US domestic companies; federal ECOA disparate-impact
+#   narrowing eff. 21 Jul 2026 so fair-lending row is anchored on intentional-discrimination +
+#   adverse-action + state disparate-impact + private right of action, which remain live.)
+#   Tranche 1 (19 rows): LIC, FUND, AML, CRED, DISC, PRV + India-completeness
+#     (RBI payment-data localisation, card-on-file tokenisation, digital-lending data-minimisation).
+#   Tranche 2 (13 rows): FRD, MKT, SETL_H, CONS + behavior classes ISSU, BRKR,
+#     TRAD, SETL, INSR, AGGR, plus 4 forward-dated Upcoming regime rows
+#     (PSD3/PSR ~2028, EU AMLR 10 Jul 2027, EU CCD2 20 Nov 2026, India DPDP-core 13 May 2027).
+# Status: 28 Active / 4 Upcoming. SETL_H is a compound subcat (FIELD22=SETL_H) carried
+# in Threat_IDs as CUST_SETL_H_001 / SETL_SETL_H_001; FIELD21/22/23 are authoritative.
+#
+# Lex_Nova_Fix = TBD/DEFERRED for every row. Triad Authority_IN/EU/US; UK noted in cells.
+# All anchors web-verified July 2026. Currency: MiCA CASP live 1 Jul 2026; RBI PA
+# Directions 2025 + Digital Lending Directions 2025 in force; DPDP core duties 13 May 2027;
+# PSD3/PSR ~2028; AMLR 10 Jul 2027; CCD2 20 Nov 2026; DORA in force; UK FCA safeguarding
+# 7 May 2026; US CFPB diminished and Section 1033 enjoined, so US anchors use durable
+# statutes (EFTA, TILA, FCRA, FDCPA, BSA, state MTL, FTC Act 5), not CFPB enforcement.
+# =============================================================================
+---
+-
+    Threat_ID: PAY_LIC_001
+    Threat_Name: Unlicensed Money Transmission / Payment Aggregation
+    Lane: A
+    Archetype: PAY
+    Surface: Transaction-Data | Merchant-SME
+    Authority_IN: RBI (Regulation of Payment Aggregators) Directions, 2025 + Payment and Settlement Systems Act, 2007 s.4 / s.23A
+    Authority_EU: PSD2 (Dir 2015/2366) Art. 11 authorisation of payment institutions (PSD3/PSR to supersede on application, ~2028)
+    Authority_US: 18 U.S.C. section 1960 (unlicensed money transmitting) + FinCEN MSB registration (31 CFR 1022.380) + state money-transmitter licences via NMLS
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Criminal
+    Status: Active
+    Effective_Date: 2025-09-15
+    Legal_Pain: 'Operating a payment-aggregation or money-transmission business without authorisation is a first-order regulatory offence in every target market. In India non-bank PAs must be RBI-authorised and route all funds through a bank escrow; in the US unlicensed money transmission is a federal crime under 18 U.S.C. 1960 plus a state licensing regime; in the EU payment services require payment-institution authorisation. The consequence is a wind-down of the regulated activity.'
+    FP_Mechanism: 'your product collects, pools, or moves customer or merchant funds without holding the payment-aggregator authorisation, money-transmitter licences, or payment-institution authorisation that activity requires in the markets you serve'
+    FP_Impact: 'cease-and-desist / wind-down of the regulated flow, disgorgement of processed volume, and in the US criminal exposure under 18 U.S.C. 1960. partner banks and card networks drop an unlicensed aggregator immediately.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product collects OR pools OR holds OR transmits customer/merchant funds OR settles payments to third parties. | CONDITION_2: Product serves India OR US states OR EU/UK OR does not exclude those markets. | CONDITION_3: Product shows no payment-aggregator authorisation OR money-transmitter licence OR payment-institution authorisation OR licensed bank-sponsor arrangement. | CONDITION_4: Funds pass through the product entity rather than a licensed bank/escrow before reaching the payee. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_3 = TRUE AND AT_LEAST_1_OF(CONDITION_2, CONDITION_4) = TRUE | EXCLUDE_IF: Product operates strictly as a technology provider to a licensed bank/PA under a disclosed sponsor arrangement, never takes possession of funds, and routes all money through the licensed party escrow.'
+    Provenance: 't1:LIC_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: LIC
+    FIELD23: 1
+-
+    Threat_ID: LEND_LIC_001
+    Threat_Name: Unlicensed Lending / NBFC Authorisation Defect
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | Credit-Data
+    Authority_IN: RBI (Digital Lending) Directions, 2025 + Reserve Bank of India Act, 1934 s.45-IA (NBFC registration)
+    Authority_EU: Consumer Credit Directive 2 (Dir (EU) 2023/2225) creditor/credit-intermediary admission (applies 20 Nov 2026) + national credit-institution licensing
+    Authority_US: State lender-licensing statutes + true-lender doctrine (bank-partner look-through) + state usury caps
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-05-01
+    Legal_Pain: 'Extending credit as a business without the required licence, NBFC registration, or a valid bank-partner structure exposes the lender to loan-unenforceability and licence-defect enforcement. In India the RBI Digital Lending Directions route all regulated lending through Regulated Entities and their registered Lending Service Providers. US true-lender challenges look through rent-a-charter arrangements to the party with the predominant economic interest.'
+    FP_Mechanism: 'your platform originates, underwrites, or funds loans in its own economic interest without the NBFC registration or state lending licences that requires, or relies on a bank-partner rent-a-charter that a true-lender analysis would look straight through'
+    FP_Impact: 'loans made in the unlicensed window can be rendered void or unenforceable, interest/charges disgorged, and the origination model shut until licensing lands. in India non-compliant digital lending draws RBI enforcement against the RE and its LSP.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product originates OR underwrites OR funds OR materially controls consumer or SME loans OR credit lines. | CONDITION_2: Product serves India OR US states OR EU OR does not exclude those markets. | CONDITION_3: Product shows no NBFC registration OR state lending licence OR disclosed Regulated-Entity/bank-partner lending structure. | CONDITION_4: The platform (not a licensed bank) sets credit terms OR bears the predominant economic interest in the loans. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_3 = TRUE AND AT_LEAST_1_OF(CONDITION_2, CONDITION_4) = TRUE | EXCLUDE_IF: All lending is done by a licensed bank/NBFC of record that sets terms and holds the economic interest, with the platform acting only as a disclosed technology/servicing LSP.'
+    Provenance: 't1:LIC_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: LIC
+    FIELD23: 2
+-
+    Threat_ID: XCHG_LIC_001
+    Threat_Name: Unauthorised Crypto-Asset Service (CASP / VASP)
+    Lane: A
+    Archetype: XCHG
+    Surface: Crypto-VirtualAsset | Cross-Border
+    Authority_IN: PMLA, 2002 + FIU-IND registration of Virtual Digital Asset service providers (2023 notification)
+    Authority_EU: Markets in Crypto-Assets Regulation (Reg (EU) 2023/1114) CASP authorisation; transitional period ended 1 July 2026
+    Authority_US: Securities Act / Exchange Act registration where the asset is a security + FinCEN MSB registration for exchange/transfer
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Criminal
+    Status: Active
+    Effective_Date: 2026-07-01
+    Legal_Pain: 'As of 1 July 2026 the MiCA transitional window has closed: any provider offering crypto-asset services to EU clients without CASP authorisation (or a timely pending application filed before the national cut-off) must cease regulated services. In India VDA providers must register with FIU-IND under the PMLA; in the US crypto exchange/transfer triggers FinCEN MSB duties and securities registration where tokens are investment contracts.'
+    FP_Mechanism: 'your product offers crypto-asset exchange, custody, transfer, or brokerage to EU users without a MiCA CASP authorisation now that the transitional period has ended, or serves Indian users without FIU-IND registration, or US users without MSB registration'
+    FP_Impact: 'mandatory cessation of EU crypto services after 1 July 2026, FIU-IND/ED action in India under the PMLA, and US MSB/securities enforcement. loss of banking and fiat on-ramps follows immediately for an unlicensed CASP.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product provides crypto-asset exchange OR custody OR transfer OR brokerage OR trading. | CONDITION_2: Product serves EU users OR Indian users OR US users OR does not exclude those markets. | CONDITION_3: Product shows no MiCA CASP authorisation (EU) OR FIU-IND VDA registration (India) OR FinCEN MSB registration (US) appropriate to the users served. | CONDITION_4: Crypto services are live to EU users after 1 July 2026 without a pre-cutoff pending application. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_3 = TRUE AND CONDITION_2 = TRUE | EXCLUDE_IF: Product holds the market-appropriate authorisation (MiCA CASP, FIU-IND, FinCEN MSB) or geoblocks the markets where it is unlicensed with evidence of effective exclusion.'
+    Provenance: 't1:LIC_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: XCHG
+    FIELD22: LIC
+    FIELD23: 3
+-
+    Threat_ID: PAY_FUND_001
+    Threat_Name: Customer-Funds Commingling / Escrow Breach
+    Lane: A
+    Archetype: PAY
+    Surface: Funds-Custody | Transaction-Data
+    Authority_IN: RBI (Regulation of Payment Aggregators) Directions, 2025 (mandatory bank escrow, no commingling) + Payment and Settlement Systems Act, 2007 s.23A
+    Authority_EU: PSD2 (Dir 2015/2366) Art. 10 safeguarding / E-Money Directive Art. 7 (UK FCA supplementary safeguarding regime in force 7 May 2026)
+    Authority_US: State money-transmitter permissible-investment / customer-fund-protection statutes + FDIC pass-through insurance conditions
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-09-15
+    Legal_Pain: 'Customer money must be segregated from operator funds. The India 2025 PA Directions require all customer funds to flow only through a bank-held escrow with no commingling and quarterly auditor certification; EU/UK regimes require segregation and (UK from 7 May 2026) enhanced record-keeping toward a CASS-style statutory trust; US money-transmitter law imposes permissible-investment and customer-fund-protection duties. Commingling collapses the ring-fence that protects customers on insolvency.'
+    FP_Mechanism: 'your product holds customer or merchant balances in the same account as operating funds, or outside a compliant bank escrow / safeguarding account, so on a shortfall or insolvency the customer money is not ring-fenced and is reachable by your creditors'
+    FP_Impact: 'RBI can suspend the escrow-dependent authorisation and freeze flows; UK/EU regulators can direct remediation and impose penalties; on insolvency, commingled customer funds become general estate assets. this is a deposit-freeze / wind-down trigger.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product holds OR pools customer/merchant balances OR settles with a float. | CONDITION_2: Product serves India OR EU/UK OR US OR does not exclude those markets. | CONDITION_3: No evidence of a segregated bank escrow / safeguarding account separate from operating funds OR no safeguarding disclosure. | CONDITION_4: Operating or corporate funds can be drawn from the account holding customer balances. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Customer funds are held in a dedicated bank escrow/safeguarding account, segregated from operating funds, with published safeguarding method and auditor certification where applicable.'
+    Provenance: 't1:FUND_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: FUND
+    FIELD23: 1
+-
+    Threat_ID: CUST_FUND_001
+    Threat_Name: Safeguarding Shortfall on Held Client Assets
+    Lane: A
+    Archetype: CUST
+    Surface: Funds-Custody
+    Authority_IN: RBI escrow/nodal-account safeguarding norms for regulated intermediaries + RBI (Regulation of Payment Aggregators) Directions, 2025
+    Authority_EU: E-Money Directive (Dir 2009/110/EC) Art. 7 / PSD2 Art. 10 safeguarding (UK FCA CASS-style statutory-trust reform staged through 2026)
+    Authority_US: State custody / permissible-investment statutes for held client balances
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T2
+    Pain_Category: Uncapped Money
+    Pain_Depth: Personal
+    Status: Active
+    Effective_Date: 2025-09-15
+    Legal_Pain: 'Where a firm holds client money or assets, a safeguarding shortfall (under-reconciliation, mixing, or use of client funds for working capital) creates a restitution liability measured by the client shortfall, not a capped fine. Fit-and-proper and director-duty regimes can push exposure to principals. UK reform is moving safeguarding toward a statutory trust that hard-locks client funds against firm creditors.'
+    FP_Mechanism: 'your product holds client balances or assets but cannot demonstrate daily reconciliation and a fully-funded segregated safeguarding pool, so a reconciliation gap or use of client funds for operations creates a shortfall the firm must make good'
+    FP_Impact: 'restitution of the client shortfall (uncapped), supervisory action, and fit-and-proper/director exposure to principals. reconciliation and trust-status evidence become a hard gate for partner banks and acquirers.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product holds OR controls client money OR client assets OR a custodial balance. | CONDITION_2: Product serves India OR EU/UK OR US OR does not exclude those markets. | CONDITION_3: No evidence of daily reconciliation OR a segregated fully-funded safeguarding/custody pool OR independent safeguarding audit. | CONDITION_4: Client funds are usable for the firm working capital without a permissible-investment framework. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Client assets are fully segregated, reconciled at least daily, held under a safeguarding/trust arrangement, and evidenced by independent audit.'
+    Provenance: 't1:FUND_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: CUST
+    FIELD22: FUND
+    FIELD23: 2
+-
+    Threat_ID: KYCV_AML_001
+    Threat_Name: Inadequate KYC / CDD at Onboarding
+    Lane: Both
+    Archetype: KYCV
+    Surface: KYC-Identity-Data
+    Authority_IN: Prevention of Money Laundering Act, 2002 + PML (Maintenance of Records) Rules, 2005 + RBI Master Direction KYC (amended Jun & Aug 2025)
+    Authority_EU: AMLD framework in national law (single-rulebook AMLR (Reg (EU) 2024/1624) applies 10 July 2027)
+    Authority_US: Bank Secrecy Act + FinCEN Customer Due Diligence Rule (31 CFR 1010.230) + OFAC sanctions screening
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Criminal
+    Status: Active
+    Effective_Date: 2025-08-14
+    Legal_Pain: 'AML/CFT onboarding failures are a criminal-adjacent, licence-threatening exposure. India PMLA and the RBI KYC Master Direction mandate risk-based CDD from reliable independent sources with periodic re-KYC; the US BSA/CDD rule requires identity verification and beneficial-ownership collection; sanctions screening is strict-liability under OFAC. Weak onboarding is the single most common trigger for supervisory action and rail loss.'
+    FP_Mechanism: 'your onboarding does not perform risk-based identity verification, beneficial-ownership checks, and sanctions screening from reliable independent sources, so you admit customers you cannot adequately identify or screen, breaching PMLA / BSA / CDD duties'
+    FP_Impact: 'PMLA and BSA carry criminal exposure and personal officer liability; regulators impose remediation, monitorships, and penalties; partner banks and card networks terminate for AML-program deficiency. this reaches principals, not just the entity.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product onboards customers OR opens accounts OR enables funds movement for identified users. | CONDITION_2: Product serves India OR US OR EU OR does not exclude those markets. | CONDITION_3: No evidence of risk-based CDD OR identity verification from reliable independent sources OR sanctions/PEP screening OR beneficial-ownership collection. | CONDITION_4: Accounts can transact before verification completes OR no periodic re-KYC is described. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product performs documented risk-based CDD with reliable-source identity verification, sanctions/PEP screening, beneficial-ownership capture, and periodic re-KYC before or at account activation.'
+    Provenance: 't1:AML_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: KYCV
+    FIELD22: AML
+    FIELD23: 1
+-
+    Threat_ID: PAY_AML_001
+    Threat_Name: Transaction-Monitoring / SAR-STR Failure
+    Lane: A
+    Archetype: PAY
+    Surface: Transaction-Data | Cross-Border
+    Authority_IN: PMLA, 2002 + PML (Maintenance of Records) Rules + FIU-IND reporting (STR/CTR)
+    Authority_EU: AMLD-based national suspicious-transaction reporting (AMLR from 10 July 2027) + Transfer of Funds Regulation (travel rule)
+    Authority_US: Bank Secrecy Act Suspicious Activity Report (FinCEN Form 111, USD 2,000+ threshold) + FinCEN MSB AML-program duty
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Criminal
+    Status: Active
+    Effective_Date: 2024-07-19
+    Legal_Pain: 'Firms that move value must monitor transactions and file suspicious-activity/transaction reports. The US BSA requires SAR filing for suspicious activity at or above USD 2,000 for MSBs; India requires STR/CTR filing to FIU-IND; the EU requires suspicious-transaction reporting and travel-rule data on transfers. A monitoring/reporting gap is treated as a program failure supporting criminal and supervisory action.'
+    FP_Mechanism: 'your product moves funds but has no described transaction-monitoring, thresholds, or suspicious-activity reporting workflow, so suspicious or sanctioned flows pass unreported, breaching SAR/STR and travel-rule duties'
+    FP_Impact: 'BSA/PMLA program-failure enforcement with criminal exposure, per-violation penalties, and monitorships; loss of banking and network access. travel-rule gaps additionally block regulated crypto/cross-border rails.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product transmits OR settles OR routes funds OR crypto-asset transfers between parties. | CONDITION_2: Product serves India OR US OR EU OR cross-border corridors OR does not exclude those markets. | CONDITION_3: No evidence of transaction monitoring OR suspicious-activity/transaction reporting OR travel-rule originator/beneficiary data. | CONDITION_4: Cross-border transfers occur without originator/beneficiary information capture. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_3 = TRUE AND AT_LEAST_1_OF(CONDITION_2, CONDITION_4) = TRUE | EXCLUDE_IF: Product operates documented transaction monitoring with SAR/STR workflows and travel-rule data capture appropriate to the corridors served.'
+    Provenance: 't1:AML_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: AML
+    FIELD23: 2
+-
+    Threat_ID: LEND_CRED_001
+    Threat_Name: Predatory APR / Undisclosed All-In Cost
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | Credit-Data
+    Authority_IN: RBI (Digital Lending) Directions, 2025 (APR + all-in cost + penal-charge rules in the Key Fact Statement)
+    Authority_EU: Consumer Credit Directive 2 (Dir (EU) 2023/2225) APR + total-cost-of-credit + creditworthiness (applies 20 Nov 2026)
+    Authority_US: Truth in Lending Act / Regulation Z (12 CFR 1026) APR disclosure + state usury caps
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T2
+    Pain_Category: Uncapped Money
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-05-01
+    Legal_Pain: 'Consumer credit must disclose a true, all-in cost of borrowing and stay within usury limits. India Digital Lending Directions require an APR and full penal-charge disclosure in a Key Fact Statement before acceptance; TILA/Reg Z mandates an accurate APR; state usury caps void or penalise excess charges; EU CCD2 tightens APR and creditworthiness rules from 20 Nov 2026. Hidden fees that understate APR are a mis-statement with restitution and penalty exposure.'
+    FP_Mechanism: 'your pricing surfaces a headline rate but buries processing, insurance, or penal charges so the real APR the borrower pays is materially higher than disclosed, and in India it is not in a compliant Key Fact Statement before acceptance'
+    FP_Impact: 'refund/restitution of excess charges, penal-charge caps, RBI enforcement against the RE/LSP, and TILA statutory damages with class exposure in the US. usury breaches can void the interest entirely.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product extends consumer credit OR BNPL OR short-term loans with fees, interest, or penal charges. | CONDITION_2: Product serves India OR US OR EU OR does not exclude those markets. | CONDITION_3: No single all-in APR / total-cost figure is disclosed before acceptance OR fees are shown separately from the rate OR (India) no Key Fact Statement is presented pre-acceptance. | CONDITION_4: Penal / late / bounce charges are not disclosed as part of the cost of credit. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product discloses a single all-in APR / total cost of credit (and in India a compliant Key Fact Statement) before the borrower accepts, within applicable usury limits.'
+    Provenance: 't1:CRED_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: CRED
+    FIELD23: 1
+-
+    Threat_ID: LEND_CRED_002
+    Threat_Name: Abusive Collections / Recovery Conduct
+    Lane: Both
+    Archetype: LEND
+    Surface: Consumer-Retail
+    Authority_IN: RBI (Digital Lending) Directions, 2025 + RBI Fair Practices Code / recovery-agent conduct norms
+    Authority_EU: Consumer Credit Directive 2 (Dir (EU) 2023/2225) forbearance / arrears-handling duties (applies 20 Nov 2026)
+    Authority_US: Fair Debt Collection Practices Act (15 U.S.C. section 1692) + state debt-collection statutes
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-05-01
+    Legal_Pain: 'Collections conduct is tightly regulated. India digital-lending and fair-practices norms restrict recovery-agent harassment, contact hours, and third-party disclosure; the FDCPA gives US consumers a private right of action with statutory damages for abusive collection; CCD2 adds arrears-forbearance duties. Contact-list scraping and shaming tactics common in app-based lending are direct violations.'
+    FP_Mechanism: 'your collections access the borrower contacts or location, contact third parties, or use pressure tactics outside permitted hours and channels, conduct the RBI fair-practices norms and the FDCPA treat as abusive'
+    FP_Impact: 'FDCPA statutory damages plus fees and class exposure in the US; RBI action against the RE/LSP and app-store removal in India; reputational and partner-bank fallout. contact-scraping additionally triggers the privacy threats.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product performs OR arranges loan collections OR recovery OR arrears outreach. | CONDITION_2: Product serves India OR US OR EU OR does not exclude those markets. | CONDITION_3: Collections access borrower contacts/location OR contact third parties OR lack disclosed permitted-hours/channel limits and a grievance route. | CONDITION_4: No forbearance / hardship handling is described. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Collections follow a documented fair-practices policy limiting hours/channels, prohibit contact-scraping and third-party disclosure, and offer a forbearance and grievance route.'
+    Provenance: 't1:CRED_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: CRED
+    FIELD23: 2
+-
+    Threat_ID: LEND_DISC_001
+    Threat_Name: Missing Key Fact Statement / Pre-Contract Disclosure
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | Credit-Data
+    Authority_IN: RBI (Digital Lending) Directions, 2025 (mandatory digitally-signed Key Fact Statement before borrower acceptance)
+    Authority_EU: Consumer Credit Directive 2 (Dir (EU) 2023/2225) SECCI / pre-contractual disclosure (applies 20 Nov 2026)
+    Authority_US: Truth in Lending Act / Regulation Z (12 CFR 1026) pre-consummation disclosures
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-05-01
+    Legal_Pain: 'Consumer lenders must give standardised pre-contract disclosure. India 2025 Directions require a one-page digitally-signed Key Fact Statement (APR, fees, cooling-off, full-terms link) captured before acceptance and auto-delivered to the borrower; TILA requires pre-consummation disclosures; CCD2 requires the SECCI. A missing or post-hoc KFS is a per-loan compliance defect that RBI actively enforces.'
+    FP_Mechanism: 'your loan flow does not present a compliant Key Fact Statement / pre-contract disclosure before the borrower accepts, or captures acceptance before the borrower has seen the APR, fees, cooling-off period, and full terms'
+    FP_Impact: 'per-loan RBI enforcement against the RE/LSP, unwinding/cooling-off exposure, and TILA statutory damages in the US. the KFS gap is one of the most cited digital-lending violations and stalls partner-bank and audit sign-off.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product presents OR concludes consumer-loan/BNPL agreements. | CONDITION_2: Product serves India OR US OR EU OR does not exclude those markets. | CONDITION_3: No standardised pre-contract disclosure (India KFS / EU SECCI / TILA disclosure) is shown before acceptance OR terms appear only after acceptance. | CONDITION_4: No cooling-off / withdrawal right is disclosed where required. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product shows a compliant standardised pre-contract disclosure (KFS / SECCI / TILA) with APR, fees, cooling-off, and full-terms link before capturing acceptance, delivered to the borrower on execution.'
+    Provenance: 't1:DISC_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: DISC
+    FIELD23: 1
+-
+    Threat_ID: ADVS_DISC_001
+    Threat_Name: Investment-Advice Suitability / Mis-selling
+    Lane: A
+    Archetype: ADVS
+    Surface: Investment-Assets | Sensitive-Financial
+    Authority_IN: SEBI (Investment Advisers) Regulations, 2013 (suitability, risk-profiling, fee/disclosure duties)
+    Authority_EU: MiFID II (Dir 2014/65/EU) Arts. 24-25 suitability and appropriateness for retail investors
+    Authority_US: Regulation Best Interest (17 CFR 240.15l-1) + Investment Advisers Act, 1940 fiduciary duty
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2013-01-21
+    Legal_Pain: 'Firms that recommend investments owe suitability/best-interest duties. SEBI IA Regulations require risk-profiling and suitability with fee transparency; MiFID II requires suitability and appropriateness assessments for retail investors; US Reg BI and the Advisers Act impose best-interest/fiduciary duties. Recommending unsuitable products or hiding conflicts/fees is mis-selling with rescission and penalty exposure.'
+    FP_Mechanism: 'your product recommends or steers users into investment products without risk-profiling / suitability assessment, or without disclosing conflicts and the full fee load, presenting marketing as advice'
+    FP_Impact: 'SEBI/MiFID/SEC enforcement, investor restitution and rescission of unsuitable sales, and licence/registration jeopardy for the advisory function. mis-selling findings are deal-death for regulated-distribution partnerships.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product recommends OR ranks OR steers users toward specific investment OR insurance-investment products. | CONDITION_2: Product serves India OR EU OR US retail investors OR does not exclude those markets. | CONDITION_3: No risk-profiling / suitability or appropriateness assessment is described OR conflicts and full fees are not disclosed at the point of recommendation. | CONDITION_4: Marketing content functions as personalised advice without a suitability gate. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product performs documented suitability/appropriateness assessment, discloses conflicts and full fees at recommendation, or is clearly execution-only with no personalised steering.'
+    Provenance: 't1:DISC_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: ADVS
+    FIELD22: DISC
+    FIELD23: 2
+-
+    Threat_ID: PAY_DISC_001
+    Threat_Name: Unauthorised-Transfer / Error-Resolution Failure
+    Lane: B
+    Archetype: PAY
+    Surface: Transaction-Data | Consumer-Retail
+    Authority_IN: RBI circular on limiting customer liability for unauthorised electronic banking transactions (2017) + RBI ombudsman scheme
+    Authority_EU: PSD2 (Dir 2015/2366) Arts. 71-74 unauthorised-transaction refund + strong customer authentication
+    Authority_US: Electronic Fund Transfer Act / Regulation E (12 CFR 1005) error-resolution; burden of proof on the institution
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T4
+    Pain_Category: Regulatory Heat
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2013-01-01
+    Legal_Pain: 'Consumers get statutory protection against unauthorised electronic transfers with defined error-resolution timelines. Reg E places the burden of proving authorisation on the institution and mandates prompt investigation and provisional credit; PSD2 requires refund of unauthorised transactions and strong customer authentication; RBI caps customer liability with prompt-reporting rules. A weak dispute/error-resolution flow converts routine fraud into a compliance liability.'
+    FP_Mechanism: 'your product has no compliant unauthorised-transaction dispute and error-resolution workflow with statutory timelines and provisional credit, so you push the loss and burden onto the consumer contrary to Reg E / PSD2 / RBI limited-liability rules'
+    FP_Impact: 'regulatory findings and ombudsman awards, mandatory refunds and provisional credit, and per-institution supervisory heat. patterns of denied disputes draw examinations and class exposure.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product enables consumer electronic fund transfers OR card/account debits OR wallet payments. | CONDITION_2: Product serves India OR EU OR US consumers OR does not exclude those markets. | CONDITION_3: No described unauthorised-transaction dispute / error-resolution process with statutory timelines OR liability is shifted to the consumer by default. | CONDITION_4: No strong customer authentication where required. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product provides a compliant error-resolution / unauthorised-transaction process with statutory timelines, provisional credit, institution-side burden of proof, and strong customer authentication.'
+    Provenance: 't1:DISC_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: DISC
+    FIELD23: 3
+-
+    Threat_ID: KYCV_PRV_001
+    Threat_Name: KYC / Identity-Data Over-Retention and Breach Exposure
+    Lane: Both
+    Archetype: KYCV
+    Surface: KYC-Identity-Data | Sensitive-Financial
+    Authority_IN: Digital Personal Data Protection Act, 2023 + DPDP Rules, 2025 (core duties effective 13 May 2027) + IT Act, 2000 s.43A / SPDI Rules
+    Authority_EU: GDPR (Reg 2016/679) Arts. 5, 6, 32
+    Authority_US: Gramm-Leach-Bliley Act Safeguards Rule (16 CFR 314) + state data-breach statutes
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T2
+    Pain_Category: Uncapped Money
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2018-05-25
+    Legal_Pain: 'KYC pipelines collect exactly the identity, biometric, and financial data privacy law treats as high-risk. GDPR (in force) requires lawful basis, storage limitation, and Art. 32 security, with fines to 4 percent of global turnover; India DPDP adds consent, purpose-limitation, and breach duties with core obligations from 13 May 2027; GLBA imposes a US safeguards duty. Indefinite retention of KYC documents and unencrypted identity stores are the classic exposure.'
+    FP_Mechanism: 'your KYC flow collects identity documents, biometrics, and financial data but keeps them indefinitely, without a lawful basis / consent record, retention schedule, deletion route, or Art. 32-grade security, so the store is both unlawful and a breach magnet'
+    FP_Impact: 'GDPR fines up to 4 percent of global turnover and DPDP penalties; breach-notification and remediation costs; US GLBA/state-breach liability. identity-data breaches carry the highest per-record cost and regulator attention.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product collects OR stores identity documents OR biometrics OR financial personal data for KYC/onboarding. | CONDITION_2: Product serves EU OR India OR US users OR does not exclude those markets. | CONDITION_3: No lawful-basis/consent record OR retention schedule OR deletion route OR described encryption for the identity store. | CONDITION_4: KYC data is retained beyond the purpose or shared without a lawful basis. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product documents lawful basis/consent, applies a retention-and-deletion schedule, encrypts identity data at rest and in transit, and restricts access and sharing to the KYC purpose.'
+    Provenance: 't1:PRV_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: KYCV
+    FIELD22: PRV
+    FIELD23: 1
+-
+    Threat_ID: SCOR_PRV_001
+    Threat_Name: Credit-Scoring / Bureau-Data Misuse and Automated Decisioning
+    Lane: A
+    Archetype: SCOR
+    Surface: Credit-Data | Sensitive-Financial
+    Authority_IN: Credit Information Companies (Regulation) Act, 2005 (CICRA) + Digital Personal Data Protection Act, 2023
+    Authority_EU: GDPR (Reg 2016/679) Art. 22 (automated decisions incl. profiling) + Art. 5 accuracy
+    Authority_US: Fair Credit Reporting Act (15 U.S.C. section 1681); permissible purpose, accuracy, adverse-action notice
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2005-06-23
+    Legal_Pain: 'Using credit/bureau data or building credit scores triggers accuracy, permissible-purpose, and automated-decision duties. CICRA governs access to and use of Indian credit information; the FCRA gives US consumers a private right of action with statutory damages for impermissible use, inaccuracy, or missing adverse-action notices; GDPR Art. 22 restricts solely-automated credit decisions with legal or significant effect. Opaque scoring without a contest route is directly exposed.'
+    FP_Mechanism: 'your product pulls or derives credit/bureau data or runs a credit score for decisions about a person without a permissible purpose, accuracy controls, adverse-action explanation, or a human-contest route for automated decisions'
+    FP_Impact: 'FCRA statutory damages with class exposure and attorney fees; CICRA and DPDP enforcement in India; GDPR Art. 22 challenges in the EU. scoring-model opacity and missing adverse-action notices are frequent, well-litigated claims.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product accesses OR derives OR sells credit/bureau data OR produces a credit score OR risk score about identifiable persons. | CONDITION_2: Product serves India OR US OR EU OR does not exclude those markets. | CONDITION_3: No described permissible purpose OR accuracy/dispute mechanism OR adverse-action explanation OR human-contest route for automated credit decisions. | CONDITION_4: A solely-automated decision produces a legal or significant effect on the person. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product uses credit data under a permissible purpose with accuracy/dispute handling, provides adverse-action explanations, and offers human review/contest for automated credit decisions.'
+    Provenance: 't1:PRV_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: SCOR
+    FIELD22: PRV
+    FIELD23: 2
+-
+    Threat_ID: PAY_PRV_001
+    Threat_Name: Cardholder-Data Exposure / PCI Non-Compliance
+    Lane: Both
+    Archetype: PAY
+    Surface: Card-Data
+    Authority_IN: Digital Personal Data Protection Act, 2023 + IT Act, 2000 s.43A / SPDI Rules (reasonable security practices)
+    Authority_EU: GDPR (Reg 2016/679) Art. 32 security of processing (PCI DSS v4.0.1 as the control benchmark)
+    Authority_US: State data-breach-notification statutes + PCI DSS v4.0.1 (card-network contractual mandate)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2024-03-31
+    Legal_Pain: 'Handling cardholder / PAN data imposes both statutory security duties (GDPR Art. 32, India SPDI/DPDP, US state breach law) and the contractual PCI DSS v4.0.1 regime enforced by card networks. Storing PANs, transmitting card data in clear, or failing PCI scoping leads to network fines, forensic-audit costs, and breach liability. PCI is contractual but its breach is a gate for acquiring and partner banks.'
+    FP_Mechanism: 'your product stores, processes, or transmits card / PAN data without PCI DSS scoping, tokenisation, and encryption, so cardholder data sits in your environment as a breach and non-compliance liability'
+    FP_Impact: 'card-network fines and forced forensic audits, loss of acquiring/processing, plus GDPR Art. 32 and state-breach liability on a cardholder-data incident. PCI scope-reduction via tokenisation is the gate acquirers require.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product stores OR processes OR transmits payment-card / PAN / cardholder data. | CONDITION_2: Product serves India OR EU OR US OR does not exclude those markets. | CONDITION_3: No evidence of PCI DSS scoping OR tokenisation OR encryption of cardholder data OR card data is retained in the product environment. | CONDITION_4: Card data is transmitted or stored without encryption OR outside a PCI-compliant processor. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product tokenises/encrypts cardholder data, minimises PCI scope by routing card data through a PCI-DSS-compliant processor, and does not retain PANs in its own environment.'
+    Provenance: 't1:PRV_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: PRV
+    FIELD23: 3
+-
+    Threat_ID: PAY_PRV_002
+    Threat_Name: Payment-Data Localisation Breach (India)
+    Lane: Both
+    Archetype: PAY
+    Surface: Transaction-Data | Cross-Border
+    Authority_IN: RBI circular DPSS.CO.OD No. 2785/06.08.005/2017-2018 (6 Apr 2018), Storage of Payment System Data + Payment and Settlement Systems Act, 2007
+    Authority_EU: GDPR (Reg 2016/679) Ch. V (Arts. 44-49) international-transfer restrictions (transfer control, not localisation)
+    Authority_US: 'None (no US federal payment-data-localisation mandate; state data-security law only)'
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2018-10-15
+    Legal_Pain: 'The RBI directive requires the entire payment-system data set (customer data, payment-sensitive data, payment credentials, and transaction data) to be stored only in India. Processing abroad is permitted but the data must be repatriated and deleted from foreign servers within 24 hours. The RBI has enforced this by barring non-compliant operators (including major card networks) from onboarding new customers until they localised. It is an unfettered-supervisory-access mandate, not a documentation nicety.'
+    FP_Mechanism: 'your payment stack stores or retains Indian payment-system data (customer, credential, or transaction data) on servers outside India, or processes it abroad without repatriating and purging within 24 hours, contrary to the RBI localisation directive'
+    FP_Impact: 'RBI supervisory action up to a bar on onboarding new Indian customers until localisation is remediated (as applied to card networks), forced data-architecture rebuild, and audit/attestation cost. it also gates partner-bank and network relationships in India.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product processes OR stores payment-system data (customer, credential, or transaction data) for Indian payment transactions. | CONDITION_2: Product serves India OR does not exclude Indian payment flows. | CONDITION_3: Payment data is stored on servers outside India OR there is no evidence of India-resident storage. | CONDITION_4: Data processed abroad is not repatriated and deleted from foreign servers within 24 hours. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: All Indian payment-system data is stored only on India-resident servers, and any overseas processing is repatriated and purged from foreign systems within 24 hours, with evidence of the localisation architecture.'
+    Provenance: 't1:PRV_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: PRV
+    FIELD23: 4
+-
+    Threat_ID: PAY_PRV_003
+    Threat_Name: Card-on-File Storage Prohibition / Tokenisation (India)
+    Lane: Both
+    Archetype: PAY
+    Surface: Card-Data
+    Authority_IN: RBI Card-on-File (CoF) tokenisation directions (merchant/aggregator card-storage prohibition, effective 30 Sep 2022) + device-based tokenisation framework + RBI authentication directions (2FA by 1 Apr 2026)
+    Authority_EU: PCI DSS v4.0.1 (secure-storage benchmark) + GDPR Art. 32 (secures, does not prohibit merchant storage)
+    Authority_US: PCI DSS v4.0.1 (card-network contractual) + state data-breach statutes
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2022-09-30
+    Legal_Pain: 'Unlike most markets where PCI DSS secures but permits merchant card storage, India flatly prohibits it: no entity in the transaction chain other than the card issuer and/or network may store Card-on-File data, and previously stored card data must be purged. Merchants and aggregators must adopt CoF tokenisation instead. Storing PANs in India is a direct RBI/network violation, not merely weak security.'
+    FP_Mechanism: 'your Indian merchant/aggregator flow stores full card numbers (Card-on-File) for saved-card or recurring use instead of tokenising, and has not purged previously stored PANs, which the RBI CoF regime prohibits outright'
+    FP_Impact: 'RBI non-compliance exposure and card-network penalties, forced purge of stored PANs, and loss of card-acceptance / acquiring in India. saved-card and recurring-payment features break until tokenisation is adopted.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product stores OR retains card / PAN data for saved-card, recurring, or one-click use. | CONDITION_2: Product serves Indian card transactions OR does not exclude Indian cardholders. | CONDITION_3: Full card numbers are stored by the merchant/aggregator rather than tokenised via the issuer/network. | CONDITION_4: Previously stored PANs have not been purged. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product uses issuer/network CoF tokenisation for all saved/recurring Indian card use, stores no PANs beyond permitted last-four/issuer reference, and has purged previously stored card data.'
+    Provenance: 't1:PRV_005 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: PRV
+    FIELD23: 5
+-
+    Threat_ID: LEND_PRV_001
+    Threat_Name: Digital-Lending App Data-Minimisation / Mobile-Resource Access (India)
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | KYC-Identity-Data
+    Authority_IN: RBI (Digital Lending) Directions, 2025, Paras 12-14 (need-based data + explicit consent + audit trail; no access to contacts/call logs/gallery except one-time KYC; India-only storage with 24h repatriation; published privacy policy)
+    Authority_EU: GDPR (Reg 2016/679) Art. 5(1)(c) data minimisation + Art. 25 data protection by design
+    Authority_US: Gramm-Leach-Bliley Act (16 CFR 314) + FTC Act section 5 (unfair data practices)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-05-01
+    Legal_Pain: 'The RBI Digital Lending Directions hard-limit what a lending app may collect: data must be need-based with prior explicit consent and an audit trail; access to phone contacts, call logs, and gallery is prohibited (only one-time camera/microphone/location for KYC on explicit consent); LSPs may retain only minimal basic data; all data must be stored in India; and a public privacy policy naming authorised data collectors is mandatory. Contact/gallery scraping, endemic in app-based lending, is a direct enforced violation.'
+    FP_Mechanism: 'your lending app requests access to contacts, call logs, media/gallery, or over-collects borrower data beyond need, or lacks explicit consent, India-resident storage, or a published privacy policy, contrary to the RBI digital-lending data-minimisation rules'
+    FP_Impact: 'RBI enforcement against the Regulated Entity and its LSP, app-store takedown, and overlapping DPDP/IT-Act privacy exposure. permission over-reach is one of the most visible and actioned digital-lending violations in India.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product is a digital-lending app OR lending service provider collecting borrower data. | CONDITION_2: Product serves Indian borrowers OR does not exclude India. | CONDITION_3: App requests access to contacts OR call logs OR gallery/media OR collects data beyond need without explicit consent and audit trail. | CONDITION_4: No published privacy policy naming authorised data collectors OR no India-resident storage of borrower data. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: App collects only need-based data with explicit consent and audit trail, requests no contacts/call-log/gallery access beyond one-time KYC on consent, stores borrower data in India, and publishes a privacy policy naming authorised collectors.'
+    Provenance: 't1:PRV_006 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: PRV
+    FIELD23: 6
+-
+    Threat_ID: UNI_CONS_001
+    Threat_Name: Dark Patterns / Unfair Terms in Fintech Onboarding
+    Lane: A
+    Archetype: UNI
+    Surface: Consumer-Retail
+    Authority_IN: Consumer Protection Act, 2019 + CCPA Guidelines for Prevention and Regulation of Dark Patterns, 2023
+    Authority_EU: Unfair Commercial Practices Directive (2005/29/EC) + Unfair Contract Terms Directive (93/13/EEC)
+    Authority_US: FTC Act section 5 (unfair or deceptive acts or practices) + state UDAP statutes
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T4
+    Pain_Category: Regulatory Heat
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2023-11-30
+    Legal_Pain: 'Deceptive onboarding (pre-ticked consents, hidden auto-renewals, forced continuity, and confusing fee/consent flows) is directly targeted by consumer-protection law. India 2023 dark-pattern guidelines enumerate prohibited patterns under the Consumer Protection Act; the EU UCPD and UCTD strike unfair practices and terms; FTC Act section 5 and state UDAP reach deceptive or unfair design. These claims travel with restitution and injunctive relief.'
+    FP_Mechanism: 'your signup or checkout uses pre-ticked boxes, hidden fees, forced-continuity subscriptions, or confusing consent flows that steer users into charges or data-sharing they did not knowingly choose, enumerated dark patterns under Indian, EU, and US consumer law'
+    FP_Impact: 'consumer-protection enforcement with restitution and injunctions, unenforceable unfair terms, and reputational/app-store fallout. dark-pattern findings also undermine the validity of the consent your other compliance relies on.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product onboards OR charges OR obtains consent from consumers through a UI flow. | CONDITION_2: Product serves India OR EU OR US consumers OR does not exclude those markets. | CONDITION_3: Flow uses pre-ticked consents OR hidden/forced continuity OR obscured fees OR confusing opt-outs OR bundled consent. | CONDITION_4: Cancellation / opt-out is materially harder than sign-up / opt-in. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Onboarding uses affirmative unbundled consent, conspicuous fees, symmetric easy cancellation, and no enumerated dark-pattern designs.'
+    Provenance: 't1:CONS_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: UNI
+    FIELD22: CONS
+    FIELD23: 1
+
+-
+    Threat_ID: PAY_FRD_001
+    Threat_Name: Authorised Push Payment (APP) Fraud Reimbursement Failure
+    Lane: Both
+    Archetype: PAY
+    Surface: Transaction-Data | Consumer-Retail
+    Authority_IN: RBI circular limiting customer liability for unauthorised/fraud-induced electronic transactions + RBI ombudsman scheme
+    Authority_EU: UK PSR mandatory APP scam reimbursement (in force 7 Oct 2024, up to GBP 85,000, cost split 50/50 sending/receiving PSP) + PSD3/PSR fraud-liability provisions (upcoming ~2028)
+    Authority_US: Electronic Fund Transfer Act / Regulation E (covers unauthorised transfers; does NOT mandate reimbursement of authorised push-payment scams)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2024-10-07
+    Legal_Pain: 'The UK now imposes mandatory reimbursement for Authorised Push Payment scams: since 7 Oct 2024 in-scope PSPs must reimburse victims up to GBP 85,000 within five business days, with the cost split equally between the sending and receiving firm. First-year data shows 88 percent of claimed losses returned. Receiving-side PSPs are on the hook too, so any firm in a Faster Payments/CHAPS chain carries reimbursement exposure. The EU PSD3/PSR extends fraud-liability duties next.'
+    FP_Mechanism: 'your payment product sits in a UK Faster Payments or CHAPS chain (as sending or receiving PSP) without an APP-scam reimbursement, detection, and 5-day-refund workflow, so you carry unbudgeted mandatory-reimbursement liability for scam payments'
+    FP_Impact: 'mandatory reimbursement up to GBP 85,000 per claim within 5 business days, shared with the counterpart PSP, plus PSR supervisory scrutiny. receiving-firm liability means even pass-through firms are exposed.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product sends OR receives OR routes UK Faster Payments OR CHAPS transfers between accounts. | CONDITION_2: Product serves UK consumers OR does not exclude UK payment flows. | CONDITION_3: No described APP-scam reimbursement process OR fraud-warning/confirmation-of-payee controls OR 5-business-day refund workflow. | CONDITION_4: Reimbursement liability and cost-sharing with the counterpart PSP are not accounted for. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product operates a compliant APP-reimbursement workflow with confirmation-of-payee, fraud warnings, 5-day refunds, vulnerable-customer handling, and counterpart cost-sharing, or is fully out of UK Faster Payments/CHAPS scope.'
+    Provenance: 't2:FRD_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: FRD
+    FIELD23: 1
+-
+    Threat_ID: ISSU_FRD_001
+    Threat_Name: Deposit-Insurance Misrepresentation (Looks-Like-a-Bank)
+    Lane: A
+    Archetype: ISSU
+    Surface: Consumer-Retail | Bank-Account-Data
+    Authority_IN: DICGC Act, 1961 + RBI directions prohibiting misrepresentation of deposit-insurance / banking status
+    Authority_EU: National deposit-guarantee-scheme misrepresentation rules (Deposit Guarantee Schemes Directive 2014/49/EU)
+    Authority_US: FDIC 12 CFR Part 328 subpart B (false advertising / misrepresentation of insured status; effective 1 Apr 2024, compliance from 1 May 2025; applies to non-banks)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T4
+    Pain_Category: Regulatory Heat
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2024-04-01
+    Legal_Pain: 'Neobanks, wallets, and BaaS fintechs that imply they are banks or that customer balances are deposit-insured face direct misrepresentation liability. The FDIC 12 CFR Part 328 rule expressly reaches non-bank entities and prohibits stating or implying FDIC insurance where it does not apply or misstating its scope (e.g., pass-through coverage that fails if records are inadequate). The Synapse collapse made pass-through and "FDIC-insured" claims a live enforcement and consumer-harm issue.'
+    FP_Mechanism: 'your product describes itself as a bank or its balances as FDIC/deposit-insured (including implied pass-through insurance) without an insured bank of record and accurate scope disclosure, so the insured-status representation is false or misleading'
+    FP_Impact: 'FDIC enforcement under Part 328, consumer-protection and false-advertising exposure, and mandatory disclosure corrections. after Synapse, pass-through insurance claims draw heightened scrutiny and partner-bank de-risking.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product holds customer balances OR issues accounts/wallets/cards OR markets banking-like services. | CONDITION_2: Product serves US OR India OR EU consumers OR does not exclude those markets. | CONDITION_3: Product states OR implies it is a bank OR that balances are FDIC/deposit-insured without an insured bank of record. | CONDITION_4: Pass-through insurance is claimed without adequate ledger/record conditions OR scope is misstated. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product accurately discloses it is not a bank, names the insured bank of record, states the true scope and conditions of any pass-through insurance, and avoids FDIC name/logo misuse.'
+    Provenance: 't2:FRD_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: ISSU
+    FIELD22: FRD
+    FIELD23: 1
+-
+    Threat_ID: BRKR_MKT_001
+    Threat_Name: Payment for Order Flow / Best-Execution Conflict
+    Lane: A
+    Archetype: BRKR
+    Surface: Investment-Assets | Consumer-Retail
+    Authority_IN: SEBI (Prohibition of Fraudulent and Unfair Trade Practices) Regulations, 2003 + SEBI broker best-execution/conduct norms
+    Authority_EU: MiFIR Art. 39a prohibition of payment for order flow (fully applicable 30 June 2026) + MiFID II Art. 27 best execution
+    Authority_US: SEC Reg NMS best execution + FINRA Rule 5310 (PFOF permitted but must be disclosed; heightened scrutiny)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2026-06-30
+    Legal_Pain: 'From 30 June 2026 the EU fully prohibits payment for order flow: no investment firm acting for retail or opt-in professional clients may receive any fee or benefit for routing orders, ending the German exemption. MiFID II best-execution duties still bind. India SEBI PFUTP and best-execution norms and US Reg NMS/FINRA 5310 impose parallel duties (US permits PFOF but requires disclosure). A retail-brokerage model funded by PFOF is now unlawful for EU clients.'
+    FP_Mechanism: 'your brokerage routes retail orders in exchange for payment for order flow or fails documented best execution, which for EU clients is now prohibited outright and elsewhere is an undisclosed conflict undermining execution quality'
+    FP_Impact: 'for EU clients the PFOF revenue model is prohibited from 30 June 2026 (forcing a spread/commission/MTF rebuild); SEBI and SEC/FINRA best-execution enforcement elsewhere, with restitution and conduct findings.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product executes OR routes retail securities/derivatives orders OR operates a brokerage. | CONDITION_2: Product serves EU OR India OR US retail investors OR does not exclude those markets. | CONDITION_3: Product receives payment for order flow OR lacks a documented best-execution policy and monitoring. | CONDITION_4: EU retail/opt-in-professional orders are routed for third-party payment after 30 June 2026. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product takes no PFOF for EU retail/opt-in orders, funds execution via spreads/commissions/own venue, and operates a documented, monitored best-execution policy.'
+    Provenance: 't2:MKT_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: BRKR
+    FIELD22: MKT
+    FIELD23: 1
+-
+    Threat_ID: TRAD_MKT_001
+    Threat_Name: Market Manipulation / Insider Dealing
+    Lane: A
+    Archetype: TRAD
+    Surface: Investment-Assets | Crypto-VirtualAsset
+    Authority_IN: SEBI (Prohibition of Fraudulent and Unfair Trade Practices) Regulations, 2003 + SEBI Act, 1992 s.12A (insider trading / manipulation)
+    Authority_EU: Market Abuse Regulation (Reg (EU) 596/2014) + MiCA (Reg (EU) 2023/1114) crypto market-abuse provisions
+    Authority_US: Securities Exchange Act, 1934 s.10(b) / SEC Rule 10b-5 + CFTC anti-manipulation authority
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T2
+    Pain_Category: Uncapped Money
+    Pain_Depth: Criminal
+    Status: Active
+    Effective_Date: 2016-07-03
+    Legal_Pain: 'Trading venues, market-makers, and crypto exchanges must prevent and surveil for manipulation and insider dealing. The EU Market Abuse Regulation and MiCA crypto market-abuse rules, SEBI PFUTP and s.12A, and US s.10(b)/Rule 10b-5 all impose surveillance, disclosure, and prohibition duties with criminal and uncapped civil exposure. Wash trading, spoofing, front-running, and insider dealing are core violations, and MiCA now extends this to crypto venues.'
+    FP_Mechanism: 'your trading or exchange product lacks market-abuse surveillance and controls (for wash trading, spoofing, front-running, insider dealing), or permits proprietary/insider advantage over clients, breaching MAR/MiCA/PFUTP/Rule 10b-5 duties'
+    FP_Impact: 'criminal and uncapped civil exposure for manipulation/insider dealing, venue-licence jeopardy, and disgorgement. MiCA now brings crypto venues into the same surveillance-and-prohibition regime.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product operates a trading venue OR matches orders OR makes markets OR runs a crypto exchange. | CONDITION_2: Product serves EU OR India OR US OR does not exclude those markets. | CONDITION_3: No described market-abuse surveillance OR insider-dealing controls OR order-handling separation from proprietary activity. | CONDITION_4: The operator can trade ahead of or against client orders without controls. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product runs documented market-abuse surveillance, insider-dealing and information-barrier controls, and order-handling separation consistent with MAR/MiCA/PFUTP/Rule 10b-5.'
+    Provenance: 't2:MKT_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: TRAD
+    FIELD22: MKT
+    FIELD23: 2
+-
+    Threat_ID: CUST_SETL_H_001
+    Threat_Name: Crypto / Client-Asset Custody Segregation Failure
+    Lane: A
+    Archetype: CUST
+    Surface: Crypto-VirtualAsset | Funds-Custody
+    Authority_IN: PMLA, 2002 (VDA service-provider obligations) + RBI custody/segregation norms for held client assets
+    Authority_EU: MiCA (Reg (EU) 2023/1114) custody obligations (physical/legal segregation of client crypto, prohibition on own use, next-day deposit of client funds, CASP liability for loss)
+    Authority_US: SEC custody rule / state trust and custody statutes for client assets
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2026-07-01
+    Legal_Pain: 'MiCA imposes hard custody duties on CASPs: client crypto must be physically and legally segregated from the firm own assets, may not be used for the firm purposes, client funds must be deposited with a credit institution by the next business day, and the CASP bears liability for lost client assets unless an external event beyond its control caused the loss. Post-FTX, commingled or rehypothecated custody is a first-order, existential exposure.'
+    FP_Mechanism: 'your product custodies client crypto or funds without physical and legal segregation from firm assets, uses or rehypothecates client assets, or cannot evidence next-business-day deposit and per-client attribution, breaching MiCA custody duties'
+    FP_Impact: 'CASP liability for lost client assets, licence loss, and criminal/insolvency exposure; on a shortfall clients are unprotected. segregation and reconciliation evidence is a hard gate for MiCA authorisation and banking access.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product custodies OR controls client crypto-assets OR client funds OR private keys. | CONDITION_2: Product serves EU OR India OR US OR does not exclude those markets. | CONDITION_3: No evidence of physical/legal segregation of client assets from firm assets OR per-client attribution OR next-business-day client-fund deposit with a credit institution. | CONDITION_4: Client assets are usable, lent, or rehypothecated by the firm. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Client assets are physically and legally segregated, never used by the firm, attributed per client, reconciled, and client funds are deposited with a credit institution by the next business day.'
+    Provenance: 't2:SETL_H_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: CUST
+    FIELD22: SETL_H
+    FIELD23: 1
+-
+    Threat_ID: SETL_SETL_H_001
+    Threat_Name: Settlement / Reconciliation Integrity & Operational-Resilience Failure
+    Lane: A
+    Archetype: SETL
+    Surface: Transaction-Data | Funds-Custody
+    Authority_IN: RBI operational-resilience, reconciliation, and settlement-integrity norms for payment system operators
+    Authority_EU: DORA (Reg (EU) 2022/2554, in force 17 Jan 2025) ICT/operational resilience + Settlement Finality Directive (98/26/EC)
+    Authority_US: State money-transmitter reconciliation / permissible-investment statutes
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-01-17
+    Legal_Pain: 'Firms in the settlement path must maintain ledger integrity, reconciliation, and operational resilience. DORA (in force 17 Jan 2025) imposes ICT risk-management, incident-reporting, and third-party-oversight duties on EU financial entities; the Settlement Finality Directive protects settlement in designated systems; India RBI and US state law require reconciliation and settlement integrity. Reconciliation breaks and ICT outages become reportable resilience failures with supervisory consequences.'
+    FP_Mechanism: 'your product settles or holds transaction balances without robust daily reconciliation, ledger-integrity controls, ICT incident-reporting, or third-party (cloud/processor) oversight, so a reconciliation break or outage becomes a reportable resilience and settlement-integrity failure'
+    FP_Impact: 'DORA incident-reporting and supervisory action in the EU, RBI operational-resilience findings, and settlement-failure exposure. concentration on an unsupervised ICT third party is a specific DORA finding.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product settles OR reconciles OR holds transaction balances OR is an EU financial entity relying on ICT third parties. | CONDITION_2: Product serves EU OR India OR US OR does not exclude those markets. | CONDITION_3: No evidence of daily reconciliation OR ledger-integrity controls OR ICT incident-reporting OR third-party/cloud oversight register. | CONDITION_4: Critical settlement depends on an unsupervised single ICT third party. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product maintains daily reconciliation, ledger-integrity controls, a DORA-aligned ICT risk/incident framework, and documented third-party oversight for settlement-critical providers.'
+    Provenance: 't2:SETL_H_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: SETL
+    FIELD22: SETL_H
+    FIELD23: 2
+-
+    Threat_ID: INSR_DISC_001
+    Threat_Name: Insurance Mis-selling / Suitability (Demands and Needs)
+    Lane: A
+    Archetype: INSR
+    Surface: Consumer-Retail | Sensitive-Financial
+    Authority_IN: Insurance Act, 1938 + IRDAI conduct/distribution regulations (commission-reform consultation pending 2026)
+    Authority_EU: Insurance Distribution Directive (Dir (EU) 2016/97) demands-and-needs test + suitability for insurance-based investment products
+    Authority_US: State insurance suitability statutes + NAIC Suitability in Annuity Transactions best-interest model
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2018-10-01
+    Legal_Pain: 'Insurance distribution carries suitability and demands-and-needs duties. The EU IDD requires a demands-and-needs test for every sale and suitability/appropriateness for insurance-based investment products; India IRDAI conduct rules restrict mis-selling (with a 2026 commission overhaul underway to curb upfront-commission-driven mis-selling); US state suitability and the NAIC best-interest annuity model impose parallel duties. Selling unsuitable cover or hiding commission conflicts is mis-selling with restitution exposure.'
+    FP_Mechanism: 'your product distributes or recommends insurance without a demands-and-needs / suitability assessment, or without disclosing commission conflicts, so customers are steered into unsuitable or commission-driven cover'
+    FP_Impact: 'IRDAI/IDD/state-insurance enforcement, policy rescission and restitution, and distribution-licence jeopardy. India commission reform will further tie payouts to suitability and servicing.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product distributes OR recommends OR embeds insurance products. | CONDITION_2: Product serves India OR EU OR US consumers OR does not exclude those markets. | CONDITION_3: No demands-and-needs / suitability assessment is described OR commission/conflict disclosure is absent at point of sale. | CONDITION_4: Add-on or bundled insurance is sold without a separate needs check. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product performs a documented demands-and-needs / suitability assessment, discloses commissions and conflicts at point of sale, and does not force-bundle unsuitable cover.'
+    Provenance: 't2:DISC_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: INSR
+    FIELD22: DISC
+    FIELD23: 4
+-
+    Threat_ID: AGGR_PRV_001
+    Threat_Name: Unregistered / Non-Consent Financial-Data Aggregation
+    Lane: A
+    Archetype: AGGR
+    Surface: Bank-Account-Data | Transaction-Data
+    Authority_IN: RBI (Non-Banking Financial Company - Account Aggregator) Directions, 2025 (RBI registration + consent architecture) + DPDP Act, 2023
+    Authority_EU: PSD2 (Dir 2015/2366) account-information-service authorisation + GDPR consent
+    Authority_US: Section 1033 open-banking rule (ENJOINED / under reconsideration 2026) + Gramm-Leach-Bliley Act
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-01-01
+    Legal_Pain: 'Aggregating consumer financial data requires registration and a consent architecture. India permits account aggregation only through an RBI-registered NBFC-AA operating strict, revocable, purpose-limited consent, with no data retrieved without explicit consent; the EU requires AIS authorisation under PSD2 with GDPR consent. In the US the CFPB Section 1033 open-banking rule is currently enjoined and under reconsideration, so screen-scraping and data resale sit on GLBA and contract risk rather than a settled federal rule.'
+    FP_Mechanism: 'your product aggregates or resells consumer bank/financial data without operating through (or partnering with) a registered account aggregator / authorised AIS, or without a revocable purpose-limited consent record, relying on screen-scraping or blanket consent'
+    FP_Impact: 'RBI action for unregistered aggregation in India, PSD2/GDPR enforcement in the EU, and GLBA/contract and data-partner exposure in the US where the federal open-banking rule is unsettled. data-source banks cut off non-compliant aggregators.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product aggregates OR retrieves OR resells consumer bank-account, transaction, or financial data. | CONDITION_2: Product serves India OR EU OR US consumers OR does not exclude those markets. | CONDITION_3: Not operating through a registered account aggregator / authorised AIS OR no revocable purpose-limited consent record OR relies on screen-scraping. | CONDITION_4: Aggregated data is retained or resold beyond the consented purpose. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product aggregates only via a registered NBFC-AA / authorised AIS with revocable, purpose-limited consent, no screen-scraping, and no use or resale beyond the consented purpose.'
+    Provenance: 't2:PRV_007 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: AGGR
+    FIELD22: PRV
+    FIELD23: 7
+-
+    Threat_ID: LEND_CONS_001
+    Threat_Name: Unfair / Deceptive / Abusive Acts and Practices (UDAAP)
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail
+    Authority_IN: Consumer Protection Act, 2019 + RBI Fair Practices Code
+    Authority_EU: Unfair Commercial Practices Directive (2005/29/EC) + Unfair Contract Terms Directive (93/13/EEC)
+    Authority_US: FTC Act section 5 (unfair or deceptive acts or practices) + state UDAP statutes (Dodd-Frank UDAAP under 12 U.S.C. 5531/5536 exists but CFPB enforcement is materially diminished in 2025-26)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T4
+    Pain_Category: Regulatory Heat
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2019-08-09
+    Legal_Pain: 'Unfair, deceptive, or abusive practices in consumer finance draw multi-forum liability independent of any single regulator. US FTC Act section 5 and state UDAP statutes reach deceptive and unfair conduct (the CFPB Dodd-Frank UDAAP authority still exists on paper but its enforcement is materially diminished in 2025-26, so exposure runs through FTC/state channels); India Consumer Protection Act and RBI Fair Practices Code and the EU UCPD/UCTD do the same. Deceptive fee/renewal design and abusive terms are the core hooks.'
+    FP_Mechanism: 'your consumer-finance product uses unfair, deceptive, or abusive terms or practices (hidden fees, misleading claims, one-sided terms, obstacle-laden cancellation) that FTC section 5, state UDAP, RBI fair-practices, and EU UCPD/UCTD treat as actionable'
+    FP_Impact: 'FTC and state-AG enforcement with restitution and injunctions, unenforceable unfair terms, and RBI fair-practices action in India. reliance on the (now weakened) CFPB is unsafe; FTC/state channels are the live exposure.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product offers consumer credit, payments, or financial services with fees, terms, or marketing claims. | CONDITION_2: Product serves US OR India OR EU consumers OR does not exclude those markets. | CONDITION_3: Terms or practices include hidden/misleading fees OR deceptive claims OR one-sided unfair terms OR obstacle-laden cancellation. | CONDITION_4: Marketing overstates benefits or understates cost/risk. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product uses accurate non-deceptive marketing, conspicuous fees, balanced terms, and symmetric easy cancellation, with no enumerated unfair/deceptive/abusive practice.'
+    Provenance: 't2:CONS_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: CONS
+    FIELD23: 1
+-
+    Threat_ID: PAY_LIC_002
+    Threat_Name: PSD3 / PSR Payment-Institution Re-Authorisation Gap (Upcoming)
+    Lane: A
+    Archetype: PAY
+    Surface: Transaction-Data | Enterprise-B2B
+    Authority_IN: 'Not applicable (EU-specific reform)'
+    Authority_EU: PSD3 (Third Payment Services Directive) + Payment Services Regulation (PSR); provisional agreement Nov 2025, publication ~summer 2026, PSR generally applies ~21 months later (~2028)
+    Authority_US: 'Not applicable (EU-specific reform)'
+    Velocity: INCOMING
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Upcoming
+    Effective_Date: 2028-01-01
+    Legal_Pain: 'The EU payments framework is being replaced: PSD3 (a directive requiring national transposition) and the directly-applicable Payment Services Regulation consolidate and tighten payment-institution authorisation, safeguarding, fraud liability, and strong-customer-authentication rules, superseding PSD2 and the E-Money Directive. Firms authorised under PSD2 will need to re-qualify under the new regime. The core provisions are expected to apply around 2028, so this is a scheduled re-authorisation and re-safeguarding obligation, not yet in force.'
+    FP_Mechanism: 'your EU payment or e-money authorisation and safeguarding, fraud, and SCA controls are built to PSD2/EMD and are not mapped to the incoming PSD3/PSR requirements, creating a re-authorisation and re-compliance gap before the ~2028 application date'
+    FP_Impact: 'scheduled re-authorisation, safeguarding-diversification, and fraud/SCA uplift before PSD3/PSR applies; firms that ignore it face a compliance cliff at application. treat as an Upcoming planning obligation, not current enforcement.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product is (or will be) an EU-authorised payment institution OR e-money institution OR payment service provider. | CONDITION_2: Product serves EU payment/e-money customers OR does not exclude the EU. | CONDITION_3: No mapping of current PSD2/EMD authorisation and safeguarding to the incoming PSD3/PSR requirements. | CONDITION_4: No plan for re-authorisation, safeguarding diversification, or fraud/SCA uplift before the application date. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product has a documented PSD3/PSR readiness plan mapping authorisation, safeguarding, fraud-liability, and SCA changes with a timeline to the application date, or is fully out of EU payment-services scope.'
+    Provenance: 't2:LIC_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: LIC
+    FIELD23: 2
+-
+    Threat_ID: KYCV_AML_002
+    Threat_Name: EU AMLR Single-Rulebook Uplift (Upcoming)
+    Lane: Both
+    Archetype: KYCV
+    Surface: KYC-Identity-Data | Cross-Border
+    Authority_IN: 'Not applicable (EU-specific reform)'
+    Authority_EU: Anti-Money Laundering Regulation (Reg (EU) 2024/1624) applies 10 July 2027 + AMLA direct supervision of selected obliged entities from 2028
+    Authority_US: 'Not applicable (EU-specific reform)'
+    Velocity: INCOMING
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Upcoming
+    Effective_Date: 2027-07-10
+    Legal_Pain: 'The EU AML regime shifts from directive-based national rules to a single directly-applicable Anti-Money Laundering Regulation applying from 10 July 2027, with the new AML Authority (AMLA, operational since 2025) directly supervising selected obliged entities from 2028. AMLR harmonises CDD, beneficial-ownership, and enhanced-due-diligence rules across all member states and lowers thresholds, so existing national-AML programmes will need a documented uplift before application.'
+    FP_Mechanism: 'your EU AML programme is built to fragmented national AMLD transpositions and is not mapped to the harmonised AMLR single-rulebook CDD, beneficial-ownership, and EDD requirements taking effect 10 July 2027'
+    FP_Impact: 'scheduled AML-programme uplift before 10 July 2027 and potential AMLA direct supervision from 2028; firms that delay face a harmonised-rulebook compliance cliff. treat as an Upcoming planning obligation.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product is an EU obliged entity performing CDD/AML (payments, crypto, lending, or other regulated activity). | CONDITION_2: Product serves EU customers OR does not exclude the EU. | CONDITION_3: AML programme is mapped only to current national AMLD rules with no AMLR single-rulebook gap analysis. | CONDITION_4: No plan for harmonised CDD/beneficial-ownership/EDD uplift before 10 July 2027. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product has a documented AMLR readiness plan mapping harmonised CDD, beneficial-ownership, and EDD changes with a timeline to 10 July 2027, or is out of EU AML scope.'
+    Provenance: 't2:AML_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: KYCV
+    FIELD22: AML
+    FIELD23: 3
+-
+    Threat_ID: LEND_CRED_003
+    Threat_Name: EU CCD2 BNPL & Creditworthiness Uplift (Upcoming)
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | Credit-Data
+    Authority_IN: 'Not applicable (EU-specific reform)'
+    Authority_EU: Consumer Credit Directive 2 (Dir (EU) 2023/2225) applies 20 November 2026 (BNPL and small-value credit in scope; creditworthiness assessment on all loans incl. under EUR 200)
+    Authority_US: 'Not applicable (EU-specific reform)'
+    Velocity: INCOMING
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Upcoming
+    Effective_Date: 2026-11-20
+    Legal_Pain: 'CCD2 modernises EU consumer credit and, from 20 November 2026, brings Buy-Now-Pay-Later and other micro-lending into scope, requires a creditworthiness assessment on all loans (even under EUR 200), and tightens APR, advertising, and pre-contractual disclosure. BNPL providers previously outside the old CCD must build creditworthiness, disclosure, and withdrawal-right compliance before the application date.'
+    FP_Mechanism: 'your BNPL or small-value-credit product operates outside creditworthiness-assessment and CCD-style disclosure duties and is not mapped to CCD2, which brings it into scope with mandatory affordability checks and disclosures from 20 November 2026'
+    FP_Impact: 'scheduled build of creditworthiness assessment, SECCI disclosure, advertising controls, and withdrawal rights before 20 November 2026; non-readiness is a compliance cliff for EU BNPL. treat as an Upcoming planning obligation.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product offers BNPL OR small-value OR consumer credit to EU borrowers. | CONDITION_2: Product serves EU consumers OR does not exclude the EU. | CONDITION_3: No creditworthiness assessment on all loans OR no CCD2-style pre-contractual disclosure/advertising controls. | CONDITION_4: No plan to bring BNPL/micro-credit into CCD2 scope before 20 November 2026. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product performs creditworthiness assessment on all loans, provides CCD2 SECCI disclosure, controls advertising, and honours withdrawal rights, or is out of EU consumer-credit scope.'
+    Provenance: 't2:CRED_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: CRED
+    FIELD23: 3
+-
+    Threat_ID: KYCV_PRV_002
+    Threat_Name: India DPDP Core-Duty Enforcement (Upcoming)
+    Lane: Both
+    Archetype: KYCV
+    Surface: KYC-Identity-Data | Sensitive-Financial
+    Authority_IN: Digital Personal Data Protection Act, 2023 + DPDP Rules, 2025; core duties (notice, security safeguards, breach notification, Significant Data Fiduciary obligations, consent-manager registration) phased to 13 May 2027
+    Authority_EU: 'Cross-reference GDPR (already in force) for equivalent duties'
+    Authority_US: 'Cross-reference GLBA / state privacy (already in force) for equivalent duties'
+    Velocity: INCOMING
+    Pain_Tier: T2
+    Pain_Category: Uncapped Money
+    Pain_Depth: Corporate
+    Status: Upcoming
+    Effective_Date: 2027-05-13
+    Legal_Pain: 'India DPDP Rules 2025 phase in the substantive data-protection duties: the Data Protection Board stood up in Nov 2025, consent-manager registration follows in Nov 2026, and the core compliance obligations (notice, security safeguards, breach notification, Significant Data Fiduciary duties, data-principal rights) take effect 13 May 2027. Fintechs processing large volumes of financial personal data are likely Significant Data Fiduciaries and must build DPDP compliance before that date.'
+    FP_Mechanism: 'your data-protection posture is not mapped to the DPDP core duties taking effect 13 May 2027 (consent notices, security safeguards, breach notification, SDF obligations, data-principal rights), leaving an India privacy-compliance gap for a likely Significant Data Fiduciary'
+    FP_Impact: 'scheduled DPDP build before 13 May 2027 with penalties for non-compliance once live; large financial-data processors face SDF obligations (DPIAs, audits, data-protection officer). treat as an Upcoming planning obligation layered on current IT-Act/SPDI duties.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product processes personal or financial data of Indian data principals. | CONDITION_2: Product serves Indian users OR does not exclude India. | CONDITION_3: No DPDP-core readiness (consent notices, security safeguards, breach-notification workflow, data-principal-rights handling). | CONDITION_4: Large-volume financial-data processing likely triggers Significant Data Fiduciary duties with no DPIA/audit/DPO plan. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product has a documented DPDP readiness plan covering consent notices, security safeguards, breach notification, data-principal rights, and (where applicable) Significant Data Fiduciary duties with a timeline to 13 May 2027.'
+    Provenance: 't2:PRV_008 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: KYCV
+    FIELD22: PRV
+    FIELD23: 8
+
+-
+    Threat_ID: LEND_CONS_002
+    Threat_Name: Fair-Lending / Credit Discrimination (ECOA)
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | Credit-Data
+    Authority_IN: RBI Fair Practices Code (non-discrimination in lending); no dedicated Indian fair-lending statute
+    Authority_EU: Equal-treatment / anti-discrimination directives (Racial Equality Dir 2000/43/EC; Gender Goods & Services Dir 2004/113/EC)
+    Authority_US: Equal Credit Opportunity Act (15 U.S.C. 1691) / Regulation B intentional discrimination + adverse-action duties; federal disparate-impact narrowing (CFPB final rule eff. 21 Jul 2026) but state disparate-impact (e.g. NJ) + DOJ enforcement + private litigation remain
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T2
+    Pain_Category: Uncapped Money
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 1974-10-28
+    Legal_Pain: 'ECOA prohibits credit discrimination on prohibited bases and requires specific adverse-action reasons. The 2026 federal shift narrows disparate-impact theory (CFPB final rule effective 21 Jul 2026 eliminating it federally), but intentional-discrimination liability, the adverse-action-notice duty, DOJ enforcement (e.g. a USD 68M redlining/predatory settlement in Feb 2026), state disparate-impact laws (New Jersey codified it with AI-governance expectations), and a private right of action with uncapped actual plus punitive damages all remain live. Discriminatory marketing, pricing, or steering is the core exposure.'
+    FP_Mechanism: 'your credit product prices, markets, steers, or approves on lines that correlate with a prohibited basis, or cannot give specific adverse-action reasons, exposing you to ECOA intentional-discrimination claims federally and disparate-impact claims under state law and private suits'
+    FP_Impact: 'DOJ/state-AG enforcement and private class actions with uncapped actual and punitive damages, redlining/fair-lending consent orders, and reputational harm. state disparate-impact regimes (NJ) and private litigation persist even as federal disparate-impact narrows.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product markets, prices, underwrites, or approves consumer credit. | CONDITION_2: Product serves US borrowers OR does not exclude the US. | CONDITION_3: No fair-lending testing OR no specific adverse-action-reason mechanism OR marketing/pricing that could correlate with a prohibited basis. | CONDITION_4: Underwriting or targeting varies by geography/language/demographic proxy without a documented legitimate basis. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product runs documented fair-lending testing, gives specific ECOA adverse-action reasons, and avoids prohibited-basis proxies in marketing, pricing, and underwriting.'
+    Provenance: 't3:CONS_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: CONS
+    FIELD23: 2
+-
+    Threat_ID: SCOR_CONS_001
+    Threat_Name: Algorithmic Underwriting Bias / AI Credit-Model Governance
+    Lane: A
+    Archetype: SCOR
+    Surface: Credit-Data | Sensitive-Financial
+    Authority_IN: DPDP Act, 2023 (automated processing) + RBI model-governance and Fair Practices expectations
+    Authority_EU: GDPR Art. 22 (automated decisions) + EU AI Act high-risk creditworthiness classification (phased to 2 Dec 2027)
+    Authority_US: ECOA / Regulation B adverse-action for AI models (CFPB position - no exception for complex algorithms) + interagency model-risk guidance (SR 11-7) + state AI-governance rules (e.g. New Jersey)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2024-01-01
+    Legal_Pain: 'AI/ML underwriting inherits fair-lending and explainability duties. US regulators have said there is no consumer-protection exception for new technology, and that ECOA adverse-action reasons must be specific even where a model makes them hard to identify; interagency model-risk guidance expects validation, monitoring, and governance; states (NJ) impose AI-explainability and governance documentation; the EU AI Act designates credit scoring as high-risk with risk-management, data-governance, and human-oversight duties. An unexplainable or unvalidated credit model is a fair-lending and governance exposure.'
+    FP_Mechanism: 'your underwriting or scoring uses an ML/AI model without bias testing, validation, documented governance, or the ability to produce specific adverse-action reasons, so the model is both a discrimination risk and an explainability-duty breach'
+    FP_Impact: 'ECOA/adverse-action and fair-lending exposure, model-risk supervisory findings, EU AI-Act high-risk obligations, and state AI-governance enforcement. an unexplainable model blocks bank partnerships and audits.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product uses an ML/AI model to score, underwrite, or make consequential credit decisions. | CONDITION_2: Product serves US OR India OR EU borrowers OR does not exclude those markets. | CONDITION_3: No documented bias testing OR model validation/monitoring OR ability to generate specific adverse-action reasons OR human-oversight/contest route. | CONDITION_4: The model makes solely-automated consequential decisions without governance. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product documents bias testing, model validation and monitoring, specific adverse-action reason generation, and human oversight/contest consistent with ECOA, model-risk, and (EU) AI-Act high-risk duties.'
+    Provenance: 't3:CONS_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: SCOR
+    FIELD22: CONS
+    FIELD23: 1
+-
+    Threat_ID: LEND_CRED_004
+    Threat_Name: Military Lending Act 36% MAPR Cap
+    Lane: A
+    Archetype: LEND
+    Surface: Consumer-Retail | Minors
+    Authority_IN: 'Not applicable (US servicemember-specific statute)'
+    Authority_EU: 'Not applicable (US servicemember-specific statute)'
+    Authority_US: Military Lending Act (10 U.S.C. 987) + DoD implementing regulation (32 CFR 232); 36% Military APR cap, no mandatory arbitration, no prepayment penalty
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2016-10-03
+    Legal_Pain: 'The Military Lending Act caps most consumer credit to active-duty servicemembers and dependents at a 36% Military APR (an all-in figure sweeping in interest, fees, and credit-insurance charges), bans mandatory arbitration, and prohibits prepayment penalties. It covers credit cards, installment and payday-style loans, and overdraft lines. Enforcement rose in 2025 with suits against lenders exceeding the cap or omitting MLA disclosures. Violations can render loans void and carry statutory damages.'
+    FP_Mechanism: 'your consumer-credit product does not screen for covered-borrower (military) status via the DoD database, or charges an all-in MAPR above 36 percent, or uses mandatory arbitration / prepayment penalties prohibited for covered borrowers'
+    FP_Impact: 'loans to covered borrowers above the cap can be void, with statutory damages, actual damages, and fees; regulators and the DoD pursue MLA violations. arbitration and prepayment-penalty clauses are unenforceable against covered borrowers.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product extends consumer credit (cards, installment, payday-style, or overdraft lines). | CONDITION_2: Product serves US consumers OR does not exclude US active-duty servicemembers/dependents. | CONDITION_3: No covered-borrower (MLA database) screening OR all-in MAPR can exceed 36 percent OR mandatory arbitration / prepayment penalties are used. | CONDITION_4: Required MLA disclosures are not given to covered borrowers. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product screens covered-borrower status, caps MAPR at 36 percent all-in for covered borrowers, gives MLA disclosures, and omits mandatory arbitration and prepayment penalties for them.'
+    Provenance: 't3:CRED_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: LEND
+    FIELD22: CRED
+    FIELD23: 4
+-
+    Threat_ID: PAY_AML_002
+    Threat_Name: Sanctions / OFAC Screening Failure (Strict Liability)
+    Lane: Both
+    Archetype: PAY
+    Surface: Cross-Border | Transaction-Data
+    Authority_IN: FEMA, 1999 + UAPA sanctions / MHA and UNSC-list obligations + PMLA sanctions-screening expectations
+    Authority_EU: EU restrictive-measures (sanctions) regulations + national enforcement
+    Authority_US: OFAC sanctions administered under IEEPA (50 U.S.C. 1701 et seq.) and TWEA; strict civil liability + criminal exposure for willful violations
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Criminal
+    Status: Active
+    Effective_Date: 1977-12-28
+    Legal_Pain: 'Sanctions compliance is strict-liability: US OFAC can penalise a firm for processing a prohibited transaction even without intent, with per-transaction penalties, and willful violations are criminal. Any firm moving value must screen parties against OFAC, UN, EU, and Indian sanctions lists in real time and block/reject hits. Crypto and cross-border rails are a priority enforcement area. A screening gap or a single processed sanctioned transaction is an existential, criminal-adjacent exposure.'
+    FP_Mechanism: 'your product moves funds or crypto without real-time screening of parties and jurisdictions against OFAC/UN/EU/Indian sanctions lists, or lacks blocking/rejecting and reporting controls, so a prohibited transaction can be processed under strict liability'
+    FP_Impact: 'OFAC strict-liability civil penalties per transaction plus criminal exposure for willful conduct, loss of banking/correspondent access, and forced remediation. sanctions hits on crypto/cross-border rails draw priority enforcement.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product transmits OR settles OR routes funds OR crypto between parties or jurisdictions. | CONDITION_2: Product serves US OR EU OR India OR cross-border corridors OR does not exclude those markets. | CONDITION_3: No real-time sanctions/PEP screening against OFAC/UN/EU/India lists OR no blocking-reject-report workflow OR no geographic sanctions controls. | CONDITION_4: Transactions can reach sanctioned persons, wallets, or jurisdictions without a block. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product screens all parties and jurisdictions against current sanctions lists in real time, blocks/rejects and reports hits, and applies geographic controls consistent with OFAC/UN/EU/India regimes.'
+    Provenance: 't3:AML_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: AML
+    FIELD23: 2
+-
+    Threat_ID: PAY_LIC_003
+    Threat_Name: Cross-Border Payment Aggregation (PA-CB) / FEMA Authorisation
+    Lane: A
+    Archetype: PAY
+    Surface: Cross-Border | Merchant-SME
+    Authority_IN: RBI Master Direction on Regulation of Payment Aggregators, 2025 (PA-CB authorisation; separate InCA/OCA with AD-I banks; per-transaction cap INR 25 lakh) + Foreign Exchange Management Act, 1999
+    Authority_EU: PSD2 payment-institution authorisation for cross-border payment services
+    Authority_US: FinCEN MSB registration + state money-transmitter licences for cross-border transfers
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-09-15
+    Legal_Pain: 'Cross-border payment aggregation in India is a separately authorised activity: PA-CBs must hold RBI authorisation, restrict processing to FEMA-permissible current-account transactions, maintain separate Inward and Outward Collection Accounts with AD-I banks (no mixing of inward and outward funds), and observe a INR 25 lakh per-transaction cap. Handling inbound or outbound cross-border collections without PA-CB authorisation, or breaching the account-segregation and FEMA-permissibility rules, is unauthorised cross-border money movement.'
+    FP_Mechanism: 'your product aggregates cross-border collections for Indian merchants or customers without RBI PA-CB authorisation, mixes inward and outward funds, exceeds the INR 25 lakh per-transaction cap, or processes FEMA-impermissible transactions'
+    FP_Impact: 'RBI enforcement and cessation of the cross-border flow, FEMA contravention exposure, and loss of AD-bank relationships. non-segregated InCA/OCA handling is a specific breach.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product aggregates OR processes cross-border inbound or outbound payments for Indian merchants or customers. | CONDITION_2: Product serves India cross-border flows OR does not exclude them. | CONDITION_3: No RBI PA-CB authorisation OR no separate InCA/OCA with AD-I banks OR inward and outward funds are combined. | CONDITION_4: Transactions exceed INR 25 lakh each OR cover FEMA-impermissible purposes. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product holds RBI PA-CB authorisation, maintains segregated InCA/OCA with AD-I banks, stays within the per-transaction cap, and processes only FEMA-permissible current-account transactions.'
+    Provenance: 't3:LIC_005 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: LIC
+    FIELD23: 3
+-
+    Threat_ID: PAY_LIC_004
+    Threat_Name: Sponsor-Bank / BaaS Dependency & Third-Party-Risk Failure
+    Lane: A
+    Archetype: PAY
+    Surface: Bank-Account-Data | Enterprise-B2B
+    Authority_IN: RBI outsourcing / co-lending / digital-lending LSP norms (bank remains accountable for the fintech partner)
+    Authority_EU: EBA outsourcing guidelines + DORA third-party oversight
+    Authority_US: Interagency Third-Party Risk Management guidance (OCC/Fed/FDIC, June 2023) + 2024 joint statement/RFI on bank-fintech arrangements; FDIC/OCC consent orders overhauling fintech-partnership programs (post-Synapse)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2023-06-09
+    Legal_Pain: 'Fintechs that reach customers through a sponsor bank (BaaS) inherit the bank third-party-risk regime. US interagency guidance and the 2024 joint statement put banks on the hook for their fintech partners AML, consumer-protection, reconciliation, and record-keeping, and regulators have issued consent orders forcing banks to overhaul or cap fintech partnerships. The Synapse collapse showed that ledger and reconciliation failures in the middleware layer freeze customer funds. A fintech whose program cannot pass its bank third-party-risk and BSA scrutiny loses its rails.'
+    FP_Mechanism: 'your product depends on a sponsor bank/BaaS provider but cannot evidence the AML, reconciliation, ledger-integrity, consumer-protection, and record-keeping controls that the bank third-party-risk regime requires, so the bank must remediate, cap, or terminate the partnership'
+    FP_Impact: 'sponsor-bank de-risking, consent-order-driven caps on the partnership, frozen customer funds on a ledger failure (Synapse), and loss of the rails. concentration on a single unmonitored middleware/BaaS provider is a specific finding.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product delivers banking/payment services through a sponsor bank OR BaaS/middleware provider. | CONDITION_2: Product serves US OR India OR EU customers OR does not exclude those markets. | CONDITION_3: No evidence of AML, reconciliation, ledger-integrity, and record-keeping controls that satisfy the bank third-party-risk regime OR reliance on a single unmonitored middleware provider. | CONDITION_4: Per-customer ledger attribution and daily reconciliation with the bank cannot be demonstrated. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product evidences AML, reconciliation, per-customer ledger integrity, and record-keeping controls aligned to the sponsor bank third-party-risk and BSA program, with monitored, diversified providers.'
+    Provenance: 't3:LIC_006 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: PAY
+    FIELD22: LIC
+    FIELD23: 4
+-
+    Threat_ID: UNI_PRV_001
+    Threat_Name: Cybersecurity / Information-Security Program Failure
+    Lane: Both
+    Archetype: UNI
+    Surface: Sensitive-Financial | Bank-Account-Data
+    Authority_IN: IT Act, 2000 s.43A / SPDI Rules + CERT-In directions (6-hour incident reporting) + RBI cyber-security framework
+    Authority_EU: DORA (Reg (EU) 2022/2554) + GDPR Art. 32 security of processing
+    Authority_US: NYDFS 23 NYCRR Part 500 (Second Amendment MFA + asset-inventory rules effective 1 Nov 2025) + Gramm-Leach-Bliley Safeguards Rule (16 CFR 314) + FTC Act section 5
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-11-01
+    Legal_Pain: 'Financial firms face prescriptive information-security duties. NYDFS Part 500 (with new MFA-for-all-users and asset-inventory requirements effective 1 Nov 2025) binds NY-licensed financial entities including money transmitters and lenders; the GLBA Safeguards Rule imposes a written security program on US financial institutions; India CERT-In requires 6-hour incident reporting and SPDI-grade security; the EU DORA imposes ICT risk-management and incident reporting. Missing MFA, asset inventory, or an incident-response program is a direct, enforced deficiency.'
+    FP_Mechanism: 'your product lacks an information-security program meeting the applicable standard (MFA for all users, asset inventory, written safeguards, incident-response and reporting), leaving prescriptive gaps that NYDFS, GLBA, CERT-In, and DORA each treat as violations'
+    FP_Impact: 'NYDFS penalties and enforcement (MFA gaps are the most-cited breach vector), GLBA/FTC action, CERT-In non-reporting exposure, and DORA supervisory findings, plus breach liability. security-program evidence is a hard gate for licences and partners.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product handles financial or personal data OR is a licensed financial entity. | CONDITION_2: Product serves US (esp. NY) OR India OR EU OR does not exclude those markets. | CONDITION_3: No MFA for all users OR no asset inventory OR no written security program OR no incident-response/reporting workflow. | CONDITION_4: Incident reporting does not meet applicable timelines (e.g. CERT-In 6-hour, DORA). | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product enforces MFA for all users, maintains an asset inventory and written security program, and operates an incident-response and reporting workflow meeting NYDFS/GLBA/CERT-In/DORA requirements.'
+    Provenance: 't3:PRV_009 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: UNI
+    FIELD22: PRV
+    FIELD23: 9
+-
+    Threat_ID: XCHG_DISC_001
+    Threat_Name: Crypto Tax Reporting / TDS & Broker Reporting Failure
+    Lane: A
+    Archetype: XCHG
+    Surface: Crypto-VirtualAsset | Transaction-Data
+    Authority_IN: Income-tax Act s.194S (1% TDS on VDA transfer) + s.115BBH (30% tax on VDA gains, no loss set-off) + Schedule VDA reporting
+    Authority_EU: DAC8 (Council Dir (EU) 2023/2226) crypto-asset tax reporting aligned to OECD CARF (reporting from 2026)
+    Authority_US: IRS Form 1099-DA digital-asset broker reporting (effective 2025 tax year, gross proceeds reported early 2026; cost-basis for covered assets acquired on/after 1 Jan 2026)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-01-01
+    Legal_Pain: 'Crypto platforms now carry hard tax-withholding and information-reporting duties. India requires a 1% TDS on VDA transfers (s.194S) and taxes VDA gains at 30% (s.115BBH) with mandated reporting; the US IRS Form 1099-DA requires brokers to report digital-asset proceeds from the 2025 tax year (forms in early 2026) and cost basis for covered assets from 2026; the EU DAC8/CARF regime adds crypto tax reporting. A platform that fails to deduct TDS or file broker reports faces withholding liability, penalties, and disallowed operations.'
+    FP_Mechanism: 'your crypto platform does not deduct and remit the 1% Indian VDA TDS, or does not produce US 1099-DA broker reporting (proceeds and, from 2026, cost basis), or lacks EU CARF/DAC8 reporting, leaving withholding and information-reporting gaps'
+    FP_Impact: 'India TDS-withholding liability plus interest and penalties; US 1099-DA reporting penalties and IRS scrutiny; EU CARF/DAC8 non-reporting exposure. tax-reporting failures also draw AML and licensing attention.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product facilitates crypto-asset trades, transfers, or custody for users. | CONDITION_2: Product serves India OR US OR EU users OR does not exclude those markets. | CONDITION_3: No 1% Indian VDA TDS deduction/remittance OR no US 1099-DA broker reporting workflow OR no EU CARF/DAC8 reporting. | CONDITION_4: Cost-basis and disposition data are not tracked for reporting. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product deducts and remits Indian VDA TDS, produces US 1099-DA broker reporting with cost-basis tracking, and files EU CARF/DAC8 reports for the users it serves.'
+    Provenance: 't3:DISC_005 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: XCHG
+    FIELD22: DISC
+    FIELD23: 5
+-
+    Threat_ID: INSR_CONS_001
+    Threat_Name: Unfair Claims Settlement / Policyholder-Protection Failure
+    Lane: A
+    Archetype: INSR
+    Surface: Consumer-Retail | Sensitive-Financial
+    Authority_IN: IRDAI (Protection of Policyholders' Interests, Operations and Allied Matters of Insurers) Regulations, 2024 (board-approved claim policy, transparent deductions, time-bound settlement, cashless push)
+    Authority_EU: Insurance Distribution Directive (Dir (EU) 2016/97) + product-oversight-and-governance duties
+    Authority_US: State Unfair Claims Settlement Practices Acts (NAIC model) + state insurance-department enforcement
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2024-03-20
+    Legal_Pain: 'Insurers and insurtech distributors owe fair-claims and policyholder-protection duties. India IRDAI 2024 regulations require board-approved claim policies, transparent and documented deductions, time-bound settlement, and a push toward 100% cashless; US state unfair-claims-settlement statutes prohibit unreasonable claim delay, denial, or lowballing; the EU IDD and product-governance rules require fair treatment. Systematic claim delay, opaque deductions, or auto-deny logic is an unfair-claims and policyholder-protection violation.'
+    FP_Mechanism: 'your insurance or insurtech product delays, denies, or under-pays claims without transparent documented reasons, lacks a board-approved fair-claims policy, or uses auto-deny logic, breaching IRDAI/state-unfair-claims/IDD duties'
+    FP_Impact: 'IRDAI and state-insurance-department enforcement, restitution and penalties, and licence/distribution jeopardy. bad-faith claims handling additionally exposes US insurers to extra-contractual damages.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product underwrites, administers, or settles insurance claims. | CONDITION_2: Product serves India OR US OR EU policyholders OR does not exclude those markets. | CONDITION_3: No board-approved/transparent fair-claims policy OR undocumented deductions OR no time-bound settlement OR auto-deny without human review. | CONDITION_4: Claim-support, documentation, and escalation routes are not provided. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product operates a transparent, board-approved fair-claims process with documented deductions, time-bound settlement, human review of denials, and clear claim-support and escalation routes.'
+    Provenance: 't3:CONS_005 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: INSR
+    FIELD22: CONS
+    FIELD23: 1
+-
+    Threat_ID: ADVS_LIC_001
+    Threat_Name: Unregistered Research Analyst / Investment Adviser
+    Lane: A
+    Archetype: ADVS
+    Surface: Investment-Assets | Consumer-Retail
+    Authority_IN: SEBI (Research Analysts) Regulations, 2014 (as amended 2025) + SEBI (Investment Advisers) Regulations, 2013 (registration, qualification, certification, disclosure)
+    Authority_EU: MiFID II investment-advice / research authorisation and inducement rules
+    Authority_US: Investment Advisers Act, 1940 registration + SEC Regulation Analyst Certification (Reg AC) for research
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2025-02-10
+    Legal_Pain: 'Publishing investment research or giving investment advice is a registered activity. SEBI tightened its Research Analyst Regulations in 2025 (qualification, certification renewal, and bringing associated persons into scope) and requires RA/IA registration; the US Advisers Act requires adviser registration and Reg AC requires analyst certification of research; MiFID II regulates advice and research inducements. Fin-influencers, tip services, and app-based advice that operate without registration or the required qualifications are unlicensed advisory activity.'
+    FP_Mechanism: 'your product publishes investment research, recommendations, or advice (including fin-influencer or tip-service content) without SEBI RA/IA registration, US adviser registration / Reg AC certification, or the required qualifications and disclosures'
+    FP_Impact: 'SEBI/SEC enforcement, disgorgement, and bans; unregistered advice draws investor claims and platform takedown. SEBI has actively pursued unregistered advisory and fin-influencer activity.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product publishes investment research, recommendations, tips, or personalised investment advice. | CONDITION_2: Product serves India OR US OR EU investors OR does not exclude those markets. | CONDITION_3: No SEBI RA/IA registration OR US adviser registration / Reg AC OR required qualifications/certifications. | CONDITION_4: Conflicts, holdings, and compensation are not disclosed with the research/advice. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product holds the required RA/IA/adviser registration and qualifications, certifies research (Reg AC), and discloses conflicts, holdings, and compensation, or is clearly non-advisory factual information only.'
+    Provenance: 't3:LIC_007 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: ADVS
+    FIELD22: LIC
+    FIELD23: 1
+-
+    Threat_ID: KYCV_PRV_003
+    Threat_Name: Aadhaar Authentication Authorisation & Data-Handling (India)
+    Lane: Both
+    Archetype: KYCV
+    Surface: KYC-Identity-Data | Sensitive-Financial
+    Authority_IN: Aadhaar (Targeted Delivery of Financial and Other Subsidies, Benefits and Services) Act, 2016 + s.11A authorisation route for private entities + UIDAI authentication regulations + DPDP Act, 2023
+    Authority_EU: 'Cross-reference GDPR Art. 9 (biometric/special-category data) for equivalent handling duties'
+    Authority_US: 'Cross-reference GLBA / state biometric-privacy law for equivalent handling duties'
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T3
+    Pain_Category: Deal Death
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2019-03-01
+    Legal_Pain: 'Aadhaar-based eKYC is tightly gated. Only RBI/SEBI/IRDAI-regulated entities (or private entities specifically authorised under s.11A) may perform Aadhaar authentication; storing the Aadhaar number or core biometrics improperly is prohibited and penalised under the Aadhaar Act; OTP-based eKYC carries a INR 1 lakh/year transaction cap and only V-CIP achieves face-to-face equivalence. A fintech authenticating via Aadhaar without the right authorisation route, or retaining Aadhaar/biometric data improperly, breaches the Aadhaar Act and DPDP.'
+    FP_Mechanism: 'your product performs Aadhaar eKYC without the proper regulated-entity or s.11A authorisation route, stores the Aadhaar number or biometrics improperly, or relies on OTP-eKYC beyond its limits, breaching the Aadhaar Act, UIDAI rules, and DPDP'
+    FP_Impact: 'UIDAI/RBI action and Aadhaar-Act penalties for unauthorised authentication or improper storage, plus DPDP exposure for sensitive-data handling. improper Aadhaar retention is a specific, penalised breach.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product performs Aadhaar-based authentication OR eKYC OR stores Aadhaar/biometric data. | CONDITION_2: Product serves Indian users OR does not exclude India. | CONDITION_3: No proper authorisation route (regulated-entity or s.11A) for Aadhaar authentication OR improper storage of Aadhaar number/biometrics OR reliance on OTP-eKYC beyond its cap. | CONDITION_4: Aadhaar/biometric data is retained without masking, encryption, or a lawful basis. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product authenticates via Aadhaar only through an authorised route, masks/does not store the Aadhaar number and biometrics improperly, respects OTP-eKYC limits (or uses V-CIP), and handles the data under a lawful basis.'
+    Provenance: 't3:PRV_010 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: KYCV
+    FIELD22: PRV
+    FIELD23: 3
+-
+    Threat_ID: ISSU_LIC_001
+    Threat_Name: Prepaid Instrument / E-Money Issuance & KYC-Tier Failure
+    Lane: A
+    Archetype: ISSU
+    Surface: Consumer-Retail | Funds-Custody
+    Authority_IN: RBI Master Direction on Prepaid Payment Instruments (PPIs) (KYC tiers Small vs Full-KYC; issuance authorisation; escrow of outstanding balance) + Payment and Settlement Systems Act, 2007
+    Authority_EU: E-Money Directive (Dir 2009/110/EC) e-money-institution authorisation + safeguarding
+    Authority_US: State money-transmitter / stored-value licensing + FinCEN prepaid-access rules
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T1
+    Pain_Category: Existential
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2021-08-27
+    Legal_Pain: 'Issuing prepaid wallets or stored value is an authorised, KYC-tiered activity. India RBI PPI Master Directions require issuance authorisation, distinguish Small-PPI from Full-KYC-PPI (with different limits, interoperability, and KYC), and require the outstanding PPI balance to be held in escrow; the EU E-Money Directive requires e-money-institution authorisation and safeguarding; US stored-value issuance needs state money-transmitter licensing and triggers FinCEN prepaid-access rules. Issuing wallets without authorisation, mis-tiering KYC, or failing to escrow the float is unauthorised e-money issuance.'
+    FP_Mechanism: 'your product issues prepaid wallets or stored value without PPI/e-money authorisation, applies the wrong KYC tier for the limits offered, or fails to hold the outstanding balance in escrow/safeguarding, breaching PPI/EMD/state stored-value rules'
+    FP_Impact: 'RBI/EU/state enforcement and cessation of issuance, escrow-shortfall and safeguarding liability, and loss of interoperability access. mis-tiered KYC (offering Full-KYC limits on Small-PPI onboarding) is a specific breach.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product issues prepaid wallets, stored value, or e-money to customers. | CONDITION_2: Product serves India OR EU OR US customers OR does not exclude those markets. | CONDITION_3: No PPI/e-money issuance authorisation OR wrong KYC tier for the limits offered OR outstanding balance not held in escrow/safeguarding. | CONDITION_4: Wallet limits or interoperability exceed what the applied KYC tier permits. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product holds PPI/e-money issuance authorisation, applies the correct KYC tier for the limits and interoperability offered, and holds the outstanding balance in escrow/safeguarding.'
+    Provenance: 't3:LIC_008 web-verified 2026-07 FinTech_Registry_Key v1.0'
+    FIELD21: ISSU
+    FIELD22: LIC
+    FIELD23: 1
