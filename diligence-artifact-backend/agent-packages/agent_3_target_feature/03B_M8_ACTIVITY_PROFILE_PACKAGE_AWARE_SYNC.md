@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This addendum supersedes older Activity Profile Review instructions that treat AI archetypes, AI surface tokens, or `AI_REGISTRY_KEY.md` as universal Phase 5 taxonomy.
+This addendum supersedes older Activity Profile Review instructions that treat the `AI_Registry_Key.yml` behavior/surface axes as universal Phase 5 taxonomy rather than mounted package authority.
 
 Phase 5 is package-aware and Phase 2G-routed:
 

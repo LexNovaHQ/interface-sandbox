@@ -18,7 +18,7 @@ authority_sources:
   deterministic_builder: src/phases/02-cartography-index/services/target-profile-deterministic-map.builder.js
   semantic_validator: src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
   target_profile_derivation_authority: references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-  base_field_registry: references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  base_field_registry: references/registry/Diligence_Field_Derivation_Registry.yml
   regulatory_grievance_field_addendum: references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
 
 source_contract:
@@ -85,7 +85,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__contact_notice
@@ -106,7 +106,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__regulatory_licensing_status
@@ -123,7 +123,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__regulatory_licensing_status
@@ -140,7 +140,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__contact_notice
@@ -160,7 +160,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__contact_notice
@@ -180,7 +180,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__contact_notice
@@ -201,7 +201,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__contact_notice
@@ -222,7 +222,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__homepage_landing
       - lossless_root__company_identity
@@ -242,7 +242,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__homepage_landing
       - lossless_root__company_identity
@@ -261,7 +261,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__company_identity
       - lossless_root__pricing_commercial_availability
@@ -324,7 +324,7 @@ material_field_locator_rows:
     downstream_owner: TARGET_PROFILE_REVIEW
     derivation_authority_refs:
       - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-      - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+      - Diligence_Field_Derivation_Registry.yml
     allowed_source_scopes:
       - lossless_root__homepage_landing
       - lossless_root__company_identity

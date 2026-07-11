@@ -101,7 +101,9 @@ P2B_DOMAIN_DERIVATION_SOURCE_INDEX_REFERENCE_MAP.yaml
 src/phases/02-cartography-index/domain-derivation-source-index.contract.js
 src/phases/02-cartography-index/services/domain-derivation-deterministic-map.builder.js
 src/phases/02-cartography-index/validators/domain-derivation-semantic-profile.validator.js
-references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+references/registry/Diligence_Field_Derivation_Registry.yml
+references/registry/AI_Registry_Key.yml
+references/registry/FinTech_Registry_Key.yml
 references/domain-packages/package-catalog.v0.json
 references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
 ```

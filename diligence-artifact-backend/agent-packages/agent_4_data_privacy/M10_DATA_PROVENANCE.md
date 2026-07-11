@@ -24,7 +24,7 @@ governing_imports:
   - 00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
   - 00_VALIDATOR_RULES_INTEGRATED.md
   - AGENT4_BACKEND_OUTPUT_CONTRACT.md
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - Diligence_Field_Derivation_Registry.yml
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   - 01_M6_SOURCE_DISCOVERY_RUNTIME_SYNC_PATCHED.md
   - M7_TARGET_PROFILE_INTEGRATED_AGENT3_LOCKED_PATCHED_SPLIT_OUTPUTS.md
@@ -118,7 +118,7 @@ allowed_inputs:
   - target_profile_forensics
   - target_feature_profile
   - target_feature_profile_forensics
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml DAP.* authority
+  - Diligence_Field_Derivation_Registry.yml DAP.* authority
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml forensic authority
   - M6-approved data/privacy/security/control/legal/product/docs/API routes and admitted public material
   - upstream limitations from M6, M7, M8, M9, and M8 forensics
@@ -210,7 +210,7 @@ stop_condition:
 | Duty | Rule |
 |---|---|
 | Consume upstream artifacts | MUST consume `source_discovery_handoff`, `legal_cartography_index`, saved `target_profile`, saved `target_profile_forensics`, saved `target_feature_profile`, and saved `target_feature_profile_forensics`. |
-| Apply DAP authority | MUST apply selected `DAP.*` rows from `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`. |
+| Apply DAP authority | MUST apply selected `DAP.*` rows from `Diligence_Field_Derivation_Registry.yml`. |
 | Build extraction capsule | MUST build the Data-Control Source Extraction Capsule before DAP application. |
 | Use approved evidence only | MUST use only M6-approved/admitted routes/materials, locked upstream objects, and M9 navigation refs. |
 | Apply Anti-Unknown | MUST resolve every material signal through controlled status vocabulary. |
@@ -254,7 +254,7 @@ stop_condition:
 | `target_feature_profile` | Activity mechanics, data/content/object touched, archetypes, surfaces, and routing limitations only. |
 | `target_feature_profile_forensics` | M8 activity-source coverage, selected PA derivation, mechanics proof, archetype/surface proof, targeted re-extraction, and limitations where relevant to M10. |
 | `legal_cartography_index` | Privacy/DPA/security/subprocessor/legal-governance navigation refs only; no legal conclusions. |
-| `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml` | Governing `DAP.*` derivation authority. |
+| `Diligence_Field_Derivation_Registry.yml` | Governing `DAP.*` derivation authority. |
 | `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml` | Forensic/proof artifact structure. |
 | Module V ledger | Upstream custody, limitation, repair, and selected-row memory. |
 
@@ -411,7 +411,7 @@ M10-A passes only if:
 
 `M10.S5.C1` Module X owns only `data_provenance_profile` and `data_provenance_profile_forensics`.
 
-`M10.S5.C2` Material field authority comes from `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`.
+`M10.S5.C2` Material field authority comes from `Diligence_Field_Derivation_Registry.yml`.
 
 `M10.S5.C3` DAP registry authority is a derivation authority, not the visible material output schema.
 

@@ -27,9 +27,9 @@ lossless_family__L4_PRIVACY_ADJACENT_NOTICES
 lossless_family__L5_LEGAL_HUB_HOSTED
 lossless_family__L6_ENTITY_NOTICE
 AI_THREAT_REGISTRY.yaml
-REGISTRY_KEY_v3_0.md
+AI_Registry_Key.yml
 03_REGISTRY_EVALUATION_RULES.yaml
-FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+Diligence_Field_Derivation_Registry.yml
 FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 ```
 
