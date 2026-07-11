@@ -18,8 +18,17 @@ assert.equal(fintechWithAi.overlays[0].package_id, "ai-governance");
 assert.ok(fintechWithAi.overlays[0].archetype_vocabulary.length > 0, "AI overlay archetype vocabulary missing");
 assert.ok(fintechWithAi.evidence_roots.length > 0, "evidence root union missing");
 assert.ok(fintechWithAi.evidence_roots.includes("lossless_root__product_service"));
-assert.ok(fintechWithAi.evidence_roots.includes("lossless_root__ai_safety_transparency"));
-assert.deepEqual(fintechWithAi.limitations, []);
+
+// Append-only registry self-declarations are explicitly deferred. Until they land,
+// the resolver must use the key's existing capability-overlay mount rule, must not
+// hardcode the AI-specific evidence root, and must expose the temporary limitation.
+assert.equal(fintechWithAi.evidence_roots.includes("lossless_root__ai_safety_transparency"), false);
+assert.ok(
+  fintechWithAi.limitations.includes("OVERLAY_DECLARATION_DEFERRED_COMPATIBILITY_ACTIVE:ai-native")
+);
+assert.ok(
+  fintechWithAi.limitations.includes("ACTIVITY_EVIDENCE_ROOT_DECLARATION_DEFERRED:ai-governance")
+);
 
 const unkeyed = await resolveActivityTaxonomy({ primaryPackageId: "saas" });
 assert.equal(unkeyed.primary, null);
@@ -44,9 +53,15 @@ for (const forbidden of [
   "phase_routing_manifest",
   "phase_route_runtime_packet",
   "readRuntimeArtifact",
-  "fetch(" 
+  "fetch("
 ]) {
-  assert.equal(resolverSource.includes(forbidden), false, `resolver must not contain routing/artifact read capability: ${forbidden}`);
+  assert.equal(forbidden === "fetch(" ? resolverSource.includes(forbidden) : resolverSource.includes(forbidden), false,
+    `resolver must not contain routing/artifact read capability: ${forbidden}`);
 }
+assert.equal(
+  resolverSource.includes("lossless_root__ai_safety_transparency"),
+  false,
+  "resolver must not hardcode deferred package evidence roots"
+);
 
-console.log("Activity taxonomy resolver: PASS");
+console.log("Activity taxonomy resolver: PASS (registry declarations deferred)");
