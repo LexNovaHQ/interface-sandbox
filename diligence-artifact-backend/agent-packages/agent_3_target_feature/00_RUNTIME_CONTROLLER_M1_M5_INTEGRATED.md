@@ -194,8 +194,20 @@ The routed bucket contains:
 
 `M8_TARGET_FEATURE_PROFILE` additionally receives `feature_candidate_inventory` as a 2G-declared job-scoped derived artifact.
 
-The candidate inventory job creates candidates only from `activity_profile_source_index` locators. It must not independently scan the routed lossless evidence or copy it into the inventory.
+### Layer 1 — Activity Candidate Inventory
 
-The material profile uses the same routed lossless evidence, navigated through `activity_profile_source_index` and candidate pointers, to derive mechanics and the material activity profile.
+`M8_FEATURE_CANDIDATE_INVENTORY` is deterministic-led and semantic-supported.
+
+1. The backend uses `activity_profile_source_index` as mandatory navigation into the Phase-2G-routed primary lossless evidence.
+2. The backend opens only index-mapped routed lossless units and builds the deterministic evidence-grounded baseline first.
+3. The semantic call receives only that baseline, bounded locator rows, mapped routed units, and structural pointer metadata.
+4. The semantic call may propose recover, merge, split, rename, or reject actions only.
+5. The semantic call must not receive or apply Registry Key taxonomy, classify activities, copy evidence, expand evidence, generate final IDs/keys, or emit the saved inventory.
+6. The backend validator and reconciler remain the sole authority for proposal acceptance, final IDs/keys, receipt generation, and artifact saving.
+7. Provider failure or malformed output is non-blocking: retain the deterministic baseline and save `LOCKED_WITH_LIMITATIONS`.
+
+### Layer 2 — Activity Profile Review material
+
+The material profile uses the same routed lossless evidence, navigated through `activity_profile_source_index` and candidate pointers, to derive mechanics and the material activity profile. Package-specific taxonomy remains a Layer 2 concern and is not available to the Layer 1 semantic-support call.
 
 Neither Phase 5 job may read `target_profile_forensics`, `target_feature_profile_forensics`, legal/data indexes outside its route, or any downstream artifact.
