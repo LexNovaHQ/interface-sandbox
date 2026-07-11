@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { buildPhasePrompt } from "../src/prompt-loader.js";
+import { buildPhasePrompt } from "../src/runtime/services/prompts.service.js";
 import { PIPELINE_CONTRACTS } from "../src/runtime/contracts/pipeline.contract.js";
 import { TARGET_PROFILE_REVIEW_CONTRACT } from "../src/phases/03-target-profile-review/target-profile-review.contract.js";
 import { DOMAIN_DERIVATION_CONTRACT } from "../src/phases/03-domain-derivation/domain-derivation.contract.js";
@@ -52,8 +52,10 @@ for (const required of [
   "<REFERENCE_PACKET>",
   "DOMAIN_PACKAGE_KEY_v0.md",
   "package-catalog.v0.json",
-  "DOMAIN_DERIVATION_REGISTRY_v0.yaml",
-  "DOMAIN_DERIVATION_REGISTRY_v0",
+  "Diligence_Field_Derivation_Registry.yml",
+  "AI_Registry_Key.yml",
+  "FinTech_Registry_Key.yml",
+  "DILIGENCE_DOMAIN_REGISTRY_v1",
   "PRIMARY_DOMAIN_AI_GOVERNANCE",
   "PRIMARY_DOMAIN_FINTECH",
   "AI_OVERLAY_MOUNTED",
