@@ -4,6 +4,14 @@ registry:
   scope: agnostic_multidomain_covers_3A_3B_5_7_7B_9_plus_provenance_and_domain_derivation_grammar
   source_file: Diligence_Field_Derivation_Registry.yml
   row_count: 456
+  phase3a_scoped_target_lossless_evidence:
+  - lossless_root__homepage_landing
+  - lossless_root__company_identity
+  - lossless_root__contact_notice
+  - lossless_root__pricing_commercial_availability
+  - lossless_root__regulatory_licensing_status
+  - lossless_root__grievance_complaints
+  business_context_lane_forbidden: true
   columns:
   - field_id
   - profile_section

@@ -378,7 +378,7 @@ version_history:
 
 # ---------------------------------------------------------------------------
 # DOMAIN DERIVATION RULES (ai-governance)
-#   Migrated from retired DOMAIN_DERIVATION_REGISTRY_v0. Domain-specific rule
+#   Migrated from retired domain registry authority. Domain-specific rule
 #   INSTANCES live here; the agnostic rule GRAMMAR + resolution order live in the
 #   Field Derivation Registry (domain_derivation_grammar). Phase 3B evaluates the
 #   mounted key's rules; it hardcodes no domain logic.

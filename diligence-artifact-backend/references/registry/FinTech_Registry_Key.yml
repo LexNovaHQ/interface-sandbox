@@ -352,7 +352,7 @@ version_history:
 
 # ---------------------------------------------------------------------------
 # DOMAIN DERIVATION RULES (fintech)
-#   Migrated from retired DOMAIN_DERIVATION_REGISTRY_v0. Instances here; agnostic
+#   Migrated from retired domain registry authority. Instances here; agnostic
 #   grammar/resolution order in the Field Derivation Registry.
 # ---------------------------------------------------------------------------
 domain_derivation_rules:
