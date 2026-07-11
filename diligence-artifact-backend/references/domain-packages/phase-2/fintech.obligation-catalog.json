@@ -5,13 +5,400 @@
   "may_lock_domain": false,
   "uses_legal_index": true,
   "obligation_families": [
-    { "id": "funds_custody_safeguarding", "control_source_route_codes": ["LICENSING_REGULATORY", "COUNTERPARTY_INSTITUTION", "CONTROL_MECHANISM"], "locator_families": ["SAFEGUARDING_CUSTODY_LOCATOR", "BANK_PARTNER_SPONSOR_BANK_LOCATOR", "COUNTERPARTY_INSTITUTION_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["deposit_insurance_disclosure"], "shell_field_targets": ["authority_dependency", "obligation_locus", "control_mechanism_present", "control_posture_status"], "reading_priority": ["regulatory licensing pages", "homepage counterparty disclosure", "security/trust controls"] },
-    { "id": "licensing_authorisation", "control_source_route_codes": ["LICENSING_REGULATORY"], "locator_families": ["REGULATORY_LICENSING_SIGNAL_LOCATOR", "REGULATORY_DISCLOSURE_LOCATOR"], "legal_doc_types": [], "shell_field_targets": ["authority_dependency", "obligation_locus", "control_posture_status"], "reading_priority": ["regulatory/licensing pages", "company identity registrations"] },
-    { "id": "counterparty_sponsor_dependency", "control_source_route_codes": ["COUNTERPARTY_INSTITUTION", "LICENSING_REGULATORY"], "locator_families": ["BANK_PARTNER_SPONSOR_BANK_LOCATOR", "COUNTERPARTY_INSTITUTION_LOCATOR"], "legal_doc_types": [], "shell_field_targets": ["authority_dependency", "exposure_role_context"], "reading_priority": ["homepage 'not a bank' disclosure", "partner-bank pages"] },
-    { "id": "consumer_disclosure", "control_source_route_codes": ["CONSUMER_DISCLOSURE", "REGULATED_ACTIVITY"], "locator_families": ["CONSUMER_DISCLOSURE_LOCATOR", "KEY_FACT_STATEMENT_LOCATOR"], "legal_doc_types": ["key_fact_statement", "most_important_terms_conditions", "schedule_of_charges", "interest_rate_policy"], "shell_field_targets": ["obligation_trigger_timing", "control_mechanism_present", "control_posture_status"], "reading_priority": ["fees/rates pages", "KFS/MITC legal docs"] },
-    { "id": "fair_practice_conduct", "control_source_route_codes": ["REGULATED_ACTIVITY", "CONTROL_MECHANISM"], "locator_families": ["REGULATORY_DISCLOSURE_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["fair_practice_code", "responsible_lending_policy"], "shell_field_targets": ["control_mechanism_present", "control_posture_status"], "reading_priority": ["fair practice code doc", "responsible lending policy"] },
-    { "id": "grievance_redressal_machinery", "control_source_route_codes": ["GRIEVANCE_MACHINERY"], "locator_families": ["GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR", "NODAL_GRIEVANCE_OFFICER_LOCATOR", "OMBUDSMAN_ESCALATION_LOCATOR", "COMPLAINTS_ROUTE_LOCATOR"], "legal_doc_types": ["grievance_redressal_policy", "complaints_procedure"], "shell_field_targets": ["obligation_trigger_timing", "control_mechanism_present", "control_posture_status"], "reading_priority": ["grievance/complaints pages", "grievance policy docs"] },
-    { "id": "financial_crime_kyc_aml", "control_source_route_codes": ["REGULATED_ACTIVITY", "CONTROL_MECHANISM"], "locator_families": ["FINANCIAL_CRIME_PROGRAM_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["kyc_aml_policy"], "shell_field_targets": ["control_mechanism_present", "authority_dependency", "control_posture_status"], "reading_priority": ["KYC/AML product pages", "KYC/AML policy doc"] },
-    { "id": "money_movement_settlement", "control_source_route_codes": ["REGULATED_ACTIVITY", "DATA_FLOW_MECHANICS"], "locator_families": ["MONEY_MOVEMENT_ACTIVITY_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": [], "shell_field_targets": ["linked_activity", "control_mechanism_present"], "reading_priority": ["payments/settlement product pages", "docs/api data-flow"] }
+    {
+      "id": "funds_custody_safeguarding",
+      "control_source_route_codes": [
+        "LICENSING_REGULATORY",
+        "COUNTERPARTY_INSTITUTION",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "SAFEGUARDING_CUSTODY_LOCATOR",
+        "BANK_PARTNER_SPONSOR_BANK_LOCATOR",
+        "COUNTERPARTY_INSTITUTION_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "deposit_insurance_disclosure"
+      ],
+      "shell_field_targets": [
+        "authority_dependency",
+        "obligation_locus",
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "regulatory licensing pages",
+        "homepage counterparty disclosure",
+        "security/trust controls"
+      ]
+    },
+    {
+      "id": "licensing_authorisation",
+      "control_source_route_codes": [
+        "LICENSING_REGULATORY"
+      ],
+      "locator_families": [
+        "REGULATORY_LICENSING_SIGNAL_LOCATOR",
+        "REGULATORY_DISCLOSURE_LOCATOR"
+      ],
+      "legal_doc_types": [],
+      "shell_field_targets": [
+        "authority_dependency",
+        "obligation_locus",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "regulatory/licensing pages",
+        "company identity registrations"
+      ]
+    },
+    {
+      "id": "counterparty_sponsor_dependency",
+      "control_source_route_codes": [
+        "COUNTERPARTY_INSTITUTION",
+        "LICENSING_REGULATORY"
+      ],
+      "locator_families": [
+        "BANK_PARTNER_SPONSOR_BANK_LOCATOR",
+        "COUNTERPARTY_INSTITUTION_LOCATOR"
+      ],
+      "legal_doc_types": [],
+      "shell_field_targets": [
+        "authority_dependency",
+        "exposure_role_context"
+      ],
+      "reading_priority": [
+        "homepage 'not a bank' disclosure",
+        "partner-bank pages"
+      ]
+    },
+    {
+      "id": "consumer_disclosure",
+      "control_source_route_codes": [
+        "CONSUMER_DISCLOSURE",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "CONSUMER_DISCLOSURE_LOCATOR",
+        "KEY_FACT_STATEMENT_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "key_fact_statement",
+        "most_important_terms_conditions",
+        "schedule_of_charges",
+        "interest_rate_policy"
+      ],
+      "shell_field_targets": [
+        "obligation_trigger_timing",
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "fees/rates pages",
+        "KFS/MITC legal docs"
+      ]
+    },
+    {
+      "id": "fair_practice_conduct",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "REGULATORY_DISCLOSURE_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "fair_practice_code",
+        "responsible_lending_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "fair practice code doc",
+        "responsible lending policy"
+      ]
+    },
+    {
+      "id": "grievance_redressal_machinery",
+      "control_source_route_codes": [
+        "GRIEVANCE_MACHINERY"
+      ],
+      "locator_families": [
+        "GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR",
+        "NODAL_GRIEVANCE_OFFICER_LOCATOR",
+        "OMBUDSMAN_ESCALATION_LOCATOR",
+        "COMPLAINTS_ROUTE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "grievance_redressal_policy",
+        "complaints_procedure"
+      ],
+      "shell_field_targets": [
+        "obligation_trigger_timing",
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "grievance/complaints pages",
+        "grievance policy docs"
+      ]
+    },
+    {
+      "id": "financial_crime_kyc_aml",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "FINANCIAL_CRIME_PROGRAM_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "kyc_aml_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "authority_dependency",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "KYC/AML product pages",
+        "KYC/AML policy doc"
+      ]
+    },
+    {
+      "id": "money_movement_settlement",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "DATA_FLOW_MECHANICS"
+      ],
+      "locator_families": [
+        "MONEY_MOVEMENT_ACTIVITY_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [],
+      "shell_field_targets": [
+        "linked_activity",
+        "control_mechanism_present"
+      ],
+      "reading_priority": [
+        "payments/settlement product pages",
+        "docs/api data-flow"
+      ]
+    },
+    {
+      "id": "card_data_security",
+      "control_source_route_codes": [
+        "CONTROL_MECHANISM",
+        "DATA_FLOW_MECHANICS"
+      ],
+      "locator_families": [
+        "CONTROL_MECHANISM_LOCATOR",
+        "CARD_DATA_HANDLING_LOCATOR",
+        "TOKENISATION_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "privacy_policy",
+        "information_security_policy",
+        "pci_dss_attestation"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "security/trust pages",
+        "PCI/tokenisation docs",
+        "developer/docs data-flow"
+      ]
+    },
+    {
+      "id": "data_access_consent_openbanking",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "DATA_FLOW_MECHANICS",
+        "CONSUMER_DISCLOSURE"
+      ],
+      "locator_families": [
+        "CONSENT_ARCHITECTURE_LOCATOR",
+        "DATA_ACCESS_LOCATOR",
+        "ACCOUNT_AGGREGATOR_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "consent_policy",
+        "privacy_policy",
+        "data_sharing_terms"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status",
+        "obligation_locus"
+      ],
+      "reading_priority": [
+        "consent/data-sharing pages",
+        "account-aggregator/open-banking docs"
+      ]
+    },
+    {
+      "id": "data_protection_financial",
+      "control_source_route_codes": [
+        "CONTROL_MECHANISM",
+        "DATA_FLOW_MECHANICS"
+      ],
+      "locator_families": [
+        "DATA_PROTECTION_LOCATOR",
+        "PRIVACY_POLICY_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "privacy_policy",
+        "data_retention_policy",
+        "breach_notification_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "privacy policy",
+        "data-governance/security pages"
+      ]
+    },
+    {
+      "id": "insurance_conduct_solvency",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "CONSUMER_DISCLOSURE",
+        "GRIEVANCE_MACHINERY"
+      ],
+      "locator_families": [
+        "INSURANCE_CONDUCT_LOCATOR",
+        "CLAIMS_SETTLEMENT_LOCATOR",
+        "GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "policy_wording",
+        "claims_policy",
+        "grievance_redressal_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status",
+        "obligation_trigger_timing"
+      ],
+      "reading_priority": [
+        "insurance product pages",
+        "claims/policy docs",
+        "grievance pages"
+      ]
+    },
+    {
+      "id": "market_conduct_best_execution",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "CONSUMER_DISCLOSURE",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "MARKET_CONDUCT_LOCATOR",
+        "BEST_EXECUTION_LOCATOR",
+        "ORDER_ROUTING_DISCLOSURE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "best_execution_policy",
+        "order_routing_disclosure",
+        "conflicts_of_interest_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "trading/brokerage pages",
+        "best-execution/order-routing disclosures"
+      ]
+    },
+    {
+      "id": "operational_resilience_cyber",
+      "control_source_route_codes": [
+        "CONTROL_MECHANISM",
+        "GOVERNANCE_TRANSPARENCY"
+      ],
+      "locator_families": [
+        "CONTROL_MECHANISM_LOCATOR",
+        "CYBER_RESILIENCE_LOCATOR",
+        "INCIDENT_RESPONSE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "information_security_policy",
+        "incident_response_policy",
+        "business_continuity_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "security/trust pages",
+        "status/incident pages",
+        "resilience docs"
+      ]
+    },
+    {
+      "id": "suitability_mis_selling",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "CONSUMER_DISCLOSURE"
+      ],
+      "locator_families": [
+        "SUITABILITY_ASSESSMENT_LOCATOR",
+        "RISK_PROFILING_LOCATOR",
+        "PRODUCT_DISCLOSURE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "suitability_policy",
+        "risk_disclosure_document",
+        "product_disclosure"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "advisory/product pages",
+        "suitability/risk-disclosure docs"
+      ]
+    },
+    {
+      "id": "fair_lending_nondiscrimination",
+      "control_source_route_codes": [
+        "REGULATED_ACTIVITY",
+        "CONSUMER_DISCLOSURE",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "FAIR_LENDING_LOCATOR",
+        "ADVERSE_ACTION_LOCATOR",
+        "MODEL_GOVERNANCE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "fair_lending_policy",
+        "adverse_action_notice",
+        "model_governance_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "lending/credit product pages",
+        "adverse-action/fair-lending disclosures",
+        "model-governance/responsible-ai docs"
+      ]
+    }
   ]
 }
