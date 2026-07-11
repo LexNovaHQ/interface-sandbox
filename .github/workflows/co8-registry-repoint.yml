@@ -1,0 +1,39 @@
+name: Temporary CO8 Registry Repoint
+
+on:
+  push:
+    branches:
+      - co8-registry-repoint-work
+    paths:
+      - .github/workflows/co8-registry-repoint.yml
+      - diligence-artifact-backend/agent-packages/agent_4_data_privacy/M10_DATA_PROVENANCE.md
+
+permissions:
+  contents: write
+
+jobs:
+  literal-repoint:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: co8-registry-repoint-work
+      - name: Replace retired registry filename exactly
+        run: |
+          set -euo pipefail
+          file='diligence-artifact-backend/agent-packages/agent_4_data_privacy/M10_DATA_PROVENANCE.md'
+          perl -0pi -e 's/FIELD_DERIVATION_REGISTRY_v2_LOCKED\.yaml/Diligence_Field_Derivation_Registry.yml/g' "$file"
+          if grep -q 'FIELD_DERIVATION_REGISTRY_v2_LOCKED' "$file"; then
+            echo 'Retired token remains in M10 prompt' >&2
+            exit 1
+          fi
+          git diff --check
+      - name: Commit byte-preserving prompt repoint
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diligence-artifact-backend/agent-packages/agent_4_data_privacy/M10_DATA_PROVENANCE.md
+          git commit -m 'CO-8 Repoint M10 registry authority'
+          git push origin HEAD:co8-registry-repoint-work
