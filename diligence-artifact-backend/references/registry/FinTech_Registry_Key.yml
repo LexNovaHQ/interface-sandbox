@@ -322,11 +322,20 @@ threat_trigger_format:
     - "Behavior Class, Surface, Lane, and Framework are resolved first as categorical gates; the trigger must NOT re-encode them"
     - "conditions must be LLM-parseable concrete criteria, not judgment calls"
 threat_registry_binding:
-  csv: FinTech_Threat_Registry.csv   # Phase 9 exposure registry — to be built to this key; not yet populated
-  columns_22: [UID, Threat_ID, Threat_Name, Lane, Behavior_Class, Surface, Authority_IN, Authority_EU, Authority_US, Compliance_Framework, Velocity, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Legal_Pain, FP_Mechanism, FP_Impact, Lex_Nova_Fix, Threat_Trigger, Provenance]
-  input_columns: [Threat_ID, Behavior_Class, Lane, Surface, Authority_IN, Authority_EU, Authority_US, Compliance_Framework, Status, Effective_Date, Threat_Trigger]
-  delivered_artifacts_cite: UID
-  build_status: TAXONOMY_ONLY_THREAT_ROWS_PENDING
+  yaml: FinTech_Threat_Registry.yaml            # Phase 9 exposure registry — BUILT to this key (Tranches 1-3)
+  format: yaml_list_of_threat_rows              # consumed by the Phase 9 / m11 loader IDENTICALLY to AI_THREAT_REGISTRY.yaml
+  mirrors_schema_of: references/registry/AI_THREAT_REGISTRY.yaml
+  loader_match_fields: [Archetype, Surface, Status, Hunter_Trigger, FIELD21, FIELD22, FIELD23]
+  threat_id_format: Archetype_Subcat_Number     # FIELD21=Archetype (behavior_class), FIELD22=Subcat, FIELD23=number
+  row_fields: [Threat_ID, Threat_Name, Lane, Archetype, Surface, Authority_IN, Authority_EU, Authority_US, Velocity, Pain_Tier, Pain_Category, Pain_Depth, Status, Effective_Date, Legal_Pain, FP_Mechanism, FP_Impact, Lex_Nova_Fix, Hunter_Trigger, Provenance, FIELD21, FIELD22, FIELD23]
+  jurisdiction_columns: [Authority_IN, Authority_EU, Authority_US]   # UK/FCA noted inside cells
+  compliance_framework_note: 'framework tokens live inside the Authority_IN/EU/US cells (no separate Compliance_Framework column, matching AI registry)'
+  row_count: 44
+  coverage: 'all 14 behavior classes and all 10 subcats; 40 rows India-anchored, 39 US-anchored'
+  status_split: '40 Active / 4 Upcoming'
+  lex_nova_fix_status: TBD_DEFERRED             # fintech fix-doc inventory not yet built
+  verification: 'row-level legal anchors web-verified July 2026 per authority_rules.verification_mandate'
+  build_status: THREAT_ROWS_BUILT_TRANCHES_1_2_3
 
 # ---------------------------------------------------------------------------
 # PHASE 5 CONSUMPTION CONTRACT — identical to AI key
@@ -342,6 +351,12 @@ phase_5_taxonomy_slice:
     for the mounted package.
 
 version_history:
+  - version: v1.1
+    changes:
+      - 'FinTech_Threat_Registry.yaml BUILT (44 threat rows, Tranches 1-3) mirroring AI_THREAT_REGISTRY.yaml field-for-field.'
+      - 'Coverage: all 14 behavior classes and all 10 subcats; 40 rows India-anchored, 39 US-anchored; 40 Active / 4 Upcoming.'
+      - 'threat_registry_binding flipped from CSV/PENDING to yaml: FinTech_Threat_Registry.yaml; build_status THREAT_ROWS_BUILT_TRANCHES_1_2_3.'
+      - 'Row-level anchors web-verified July 2026 per authority_rules.verification_mandate; Lex_Nova_Fix TBD/DEFERRED pending fintech fix-doc inventory.'
   - version: v1.0
     changes:
       - "Initial fintech taxonomy key built to AI_Registry_Key.yml structure exactly."
@@ -352,7 +367,7 @@ version_history:
 
 # ---------------------------------------------------------------------------
 # DOMAIN DERIVATION RULES (fintech)
-#   Migrated from retired domain registry authority. Instances here; agnostic
+#   Migrated from retired DOMAIN_DERIVATION_REGISTRY_v0. Instances here; agnostic
 #   grammar/resolution order in the Field Derivation Registry.
 # ---------------------------------------------------------------------------
 domain_derivation_rules:
@@ -652,8 +667,3 @@ domain_control_obligation:
       diligence_question: "Is insurance risk-carrying authorised and claims conduct fair, or unlicensed/unfair distribution?"
       linked_subcat: CONS
       limitation_note: "many insurtechs distribute rather than carry risk; distinguish carrier vs distributor from evidence."
-
-# ---------------------------------------------------------------------------
-# PHASE 5 ACTIVITY TAXONOMY MOUNT DECLARATIONS
-# ---------------------------------------------------------------------------
-activity_evidence_roots: []
