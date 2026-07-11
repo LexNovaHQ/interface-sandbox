@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v16_phase2g_route_scoped_cutover_through_phase5
+runtime_contract_version: v18_phase5_agnostic_deterministic_led_semantic_supported
 active_agent_id: agent_3_target_feature
 active_agent_name: Interface Target and Activity Profile Agent
 active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
@@ -47,7 +47,8 @@ prompt_precedence:
   - Target Profile Review may use legal_signal_derivation_profile only as a bounded 2G-routed dependency for owned notice and jurisdiction fields.
   - Domain Derivation Layer uses the mounted Registry Keys (domain_derivation_rules) plus Diligence_Field_Derivation_Registry.yml grammar as rule authority and package-catalog.v0.json as package authority.
   - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by dropping a new Registry Key and updating the catalog, not by prompt update.
-  - Activity Candidate Inventory creates candidates only from activity_profile_source_index locators and does not independently scan the routed lossless evidence.
+  - Activity Candidate Inventory builds a deterministic baseline from index-mapped units inside the routed lossless evidence, then permits one subordinate semantic proposal pass.
+  - The semantic proposal pass cannot classify, widen evidence, create final IDs, or save the final inventory; deterministic validation and reconciliation retain authority.
   - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index to navigate its routed lossless evidence.
   - Activity Profile Review uses active_run_package_manifest and domain package context for package-specific activity taxonomy.
   - Any package text that expands read/write authority is superseded by the phase-owned contract and Phase 2G packet.
@@ -208,6 +209,41 @@ domain_derivation_registry_ladder_schema:
   model_must_not_emit_active_run_package_manifest_top_level: true
   allowed_model_top_level_key: domain_derivation_profile
 
+activity_candidate_semantic_support_schema:
+  route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+  bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+  source_index_authority: activity_profile_source_index
+  evidence_authority: index_mapped_units_inside_phase2g_routed_lossless_evidence
+  deterministic_baseline_required: true
+  semantic_support_attempt_required: true
+  semantic_support_non_blocking: true
+  semantic_output_non_authoritative: true
+  deterministic_reconciliation_required: true
+  model_output_top_level_key: semantic_candidate_support_proposals
+  allowed_actions:
+    - RECOVER_CANDIDATE
+    - MERGE_CANDIDATES
+    - SPLIT_CANDIDATE
+    - RENAME_CANDIDATE
+    - REJECT_CANDIDATE
+  proposal_fields:
+    - proposal_id
+    - action
+    - target_candidate_ids
+    - proposed_candidates
+    - source_pointers
+  model_must_not_emit_final_inventory: true
+  model_must_not_create_final_candidate_ids: true
+  model_must_not_create_final_canonical_keys: true
+  package_taxonomy_forbidden: true
+  evidence_copy_forbidden: true
+  evidence_expansion_forbidden: true
+  free_urls_forbidden: true
+  confidence_fields_forbidden: true
+  legal_analysis_forbidden: true
+  provider_failure_preserves_deterministic_baseline: true
+  provider_failure_lock_status: LOCKED_WITH_LIMITATIONS
+
 activity_profile_material_schema:
   route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
   bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
@@ -250,7 +286,7 @@ write_artifacts_in_order:
     FORENSIC_SAVE_EVENT:
       - target_profile_forensics
   ACTIVITY_PROFILE_REVIEW:
-    DETERMINISTIC_INVENTORY_SAVE_EVENT:
+    DETERMINISTIC_LED_SEMANTIC_SUPPORTED_INVENTORY_SAVE_EVENT:
       - feature_candidate_inventory
     MATERIAL_SAVE_EVENT:
       - target_feature_profile
@@ -263,7 +299,9 @@ phase_gate_rules:
   - Target Profile Review uses target_profile_source_index to navigate the primary target lossless evidence routed by 2G.
   - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
   - Domain Derivation Layer uses domain_derivation_source_index to navigate the primary 12-root evidence routed by 2G.
-  - Activity Candidate Inventory creates candidates only from activity_profile_source_index locator rows and must not independently scan source evidence.
+  - Activity Candidate Inventory first builds a deterministic baseline from index-mapped routed lossless units.
+  - Activity Candidate Inventory then attempts one non-authoritative semantic proposal pass and deterministically validates and reconciles accepted proposals.
+  - Semantic unavailability or wholly rejected output preserves the deterministic baseline and produces LOCKED_WITH_LIMITATIONS.
   - Activity Candidate Inventory must not apply package taxonomy.
   - Activity Profile Review uses activity_profile_source_index and candidate pointers to navigate the primary activity evidence routed by 2G.
   - Activity Profile Review must use active_run_package_manifest/package catalog context for package-specific labels.
