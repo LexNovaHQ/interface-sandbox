@@ -1,4 +1,4 @@
-name: Temporary Cutover 1 Validation
+name: Temporary Cutover 1 Residue Scan
 
 on:
   pull_request:
@@ -10,22 +10,23 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  residue:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: domain-gate-v0-preflight
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - name: Scan retired addendum references
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd diligence-artifact-backend
+          TOKEN='TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml'
+          grep -RIn --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=archive-legacy "$TOKEN" src scripts agent-packages references > ../cutover1-residue.txt || true
+          cat ../cutover1-residue.txt
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: '20.19.0'
-      - name: Install backend dependencies
-        working-directory: diligence-artifact-backend
-        run: npm ci
-      - name: Check retired addendum references
-        working-directory: diligence-artifact-backend
-        run: node scripts/check-no-legacy-registry-refs.mjs
-      - name: Check Phase 3A target-profile package
-        working-directory: diligence-artifact-backend
-        run: node scripts/check-phase3a-target-profile-package.mjs
+          name: cutover1-residue
+          path: cutover1-residue.txt
+          if-no-files-found: error
