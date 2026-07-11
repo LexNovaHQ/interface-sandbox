@@ -7,9 +7,10 @@ const dead = Object.freeze([
   ["AI", "REGISTRY", "KEY.md"].join("_"),
   ["FIELD", "DERIVATION", "REGISTRY", "v2", "LOCKED"].join("_"),
   ["REGISTRY", "KEY", "v3", "0"].join("_"),
-  ["CLASSIFICATION", "DERIVATION", "MATRIX"].join("_")
+  ["CLASSIFICATION", "DERIVATION", "MATRIX"].join("_"),
+  ["TARGET", "PROFILE", "PUBLIC", "REGULATORY", "GRIEVANCE", "FIELD", "ADDENDUM.yaml"].join("_")
 ]);
-const roots = ["src", "scripts", "agent-packages"];
+const roots = ["src", "scripts", "agent-packages", "references"];
 const files = roots.flatMap(collectFiles);
 const bad = [];
 for (const file of files) {
