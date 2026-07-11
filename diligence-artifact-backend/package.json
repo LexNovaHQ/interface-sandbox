@@ -14,8 +14,9 @@
     "check:domain-gate-v0": "node scripts/check-domain-package-key.mjs && node scripts/check-package-catalog-v0.mjs && node scripts/check-pre-phase-1-domain-preflight.mjs && node scripts/check-no-pre-phase-1-lock.mjs && node scripts/check-active-run-package-manifest-v0.mjs && node scripts/check-domain-selection-manifest-sync.mjs",
     "check:domain-derivation-registry-v0": "node scripts/check-domain-derivation-registry-v0.mjs",
     "check:phase3-barrels": "node scripts/check-phase3-barrels-load.mjs",
+    "check:phase3b-reference-packet": "node scripts/check-phase3b-reference-packet.mjs",
     "check:phase3a-target-profile": "node scripts/check-phase3a-target-profile-package.mjs",
-    "check:phase3-domain-derivation": "node scripts/check-phase3-domain-derivation-contract.mjs && node scripts/check-phase3-domain-derivation-downstream.mjs && npm run check:phase3-barrels",
+    "check:phase3-domain-derivation": "node scripts/check-phase3-domain-derivation-contract.mjs && node scripts/check-phase3-domain-derivation-downstream.mjs && npm run check:phase3-barrels && npm run check:phase3b-reference-packet",
     "check:phase3-sync-v0": "node scripts/check-phase3-sync-v0.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"

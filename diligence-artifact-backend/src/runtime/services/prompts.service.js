@@ -2,16 +2,15 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getInternalJobContract } from "../contracts/internal-job.contract.js";
+import { loadReferencePacket as loadReferencePacketFromRoots } from "../../reference-loader.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
 const PROMPT_DIR = path.join(BACKEND_ROOT, "prompts");
 const AGENT_PACKAGE_DIR = path.join(BACKEND_ROOT, "agent-packages");
-const REFERENCE_ROOT = path.join(BACKEND_ROOT, "references", "registry");
 
 const SAFE_PROMPT_FILE = /^[a-z0-9_\-.]+\.md$/i;
 const SAFE_PACKAGE_FILE = /^agent-packages\/(?:[a-z0-9_\-.]+\/)?[A-Z0-9_\-.]+\.(md|yaml|yml|json)$/i;
-const SAFE_REFERENCE_FILE = /^[A-Z0-9_\-.]+\.(yaml|yml|md|json)$/i;
 
 export const PROMPTS_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "prompts.service",
@@ -41,21 +40,11 @@ function safePackagePath(file, promptFile) {
   return resolved;
 }
 
+// Single source of truth: delegate to the canonical multi-root reference loader.
+// It resolves references/registry/, references/domain-packages/, and bare names,
+// with directory traversal fenced. Do not reintroduce a local reference loader here.
 export async function loadReferencePacket(referenceFiles = []) {
-  const files = Array.isArray(referenceFiles) ? referenceFiles : [];
-  if (!files.length) return { reference_root: "registry", files: {} };
-  const packet = { reference_root: "registry", files: {} };
-  for (const fileName of files) {
-    assertSafeReferenceFile(fileName);
-    const content = await readFile(path.join(REFERENCE_ROOT, fileName), "utf8");
-    packet.files[fileName] = { file_name: fileName, content };
-  }
-  return packet;
-}
-
-function assertSafeReferenceFile(fileName) {
-  if (!SAFE_REFERENCE_FILE.test(fileName || "")) throw new Error(`INVALID_REFERENCE_FILE:${fileName || "missing"}`);
-  if (fileName.includes("/") || fileName.includes("\\") || fileName.includes("..")) throw new Error(`UNSAFE_REFERENCE_FILE:${fileName}`);
+  return loadReferencePacketFromRoots(referenceFiles);
 }
 
 export async function buildPhasePrompt({ prompt_file, prompt_files, phase, run, artifacts = {}, writes = [], references = [] }) {
