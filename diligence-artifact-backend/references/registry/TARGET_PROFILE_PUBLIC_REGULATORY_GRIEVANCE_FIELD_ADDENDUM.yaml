@@ -1,11 +1,11 @@
 schema: TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM_v1
 purpose: Add two Target Profile business-context material fields for Phase 1 v5 regulatory/licensing and grievance/complaints source roots without mutating the locked base field registry during authority sync.
-base_registry: FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
-base_registry_status: LOCKED_REFERENCE_RETAINED
+base_registry: Diligence_Field_Derivation_Registry.yml
+base_registry_status: ACTIVE_GOVERNING_REFERENCE
 phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
 lock_status: LOCKED
-integration_rule: This addendum is a reference-authority extension read together with FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml and M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml until the next full registry rebuild absorbs these rows.
+integration_rule: This addendum is a reference-authority extension read together with Diligence_Field_Derivation_Registry.yml and M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml.
 columns:
   - field_id
   - profile_section

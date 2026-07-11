@@ -6721,7 +6721,7 @@ fields:
 
 # ===========================================================================
 # DOMAIN DERIVATION GRAMMAR (agnostic)
-#   Migrated from the retired DOMAIN_DERIVATION_REGISTRY_v0.yaml. This block holds
+#   Migrated from the retired the retired standalone domain registry. This block holds
 #   the domain-AGNOSTIC rule grammar, controlled vocabularies, resolution order,
 #   the FALLBACK + FUSION + REGULATORY_OVERLAY rule schemas, and validator
 #   requirements used by Phase 3B. Domain-SPECIFIC rule INSTANCES live in each
@@ -6729,7 +6729,6 @@ fields:
 #   the mounted key's instances against this grammar; it hardcodes no domain logic.
 # ===========================================================================
 domain_derivation_grammar:
-  retires: DOMAIN_DERIVATION_REGISTRY_v0.yaml
   single_source_of_truth: "grammar here; domain rule instances in the Registry Keys"
   controlled_vocabularies:
     rule_type: [PRIMARY_DOMAIN, AI_MOUNT, REGULATORY_OVERLAY, FUSION_CANDIDATE, FALLBACK]

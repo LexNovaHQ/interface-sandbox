@@ -152,7 +152,7 @@ forbidden_material_profile_read_artifacts:
   - exposure artifacts
   - compiler artifacts
   - Qualified Review artifacts
-  - lossless_family__*
+  - retired_family_artifact_taxonomy
 
 required_reference_files:
   TARGET_PROFILE_REVIEW:

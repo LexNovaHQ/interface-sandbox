@@ -33,7 +33,7 @@ source_boundary:
     - legal_signal_derivation_profile
   allowed_reference_documents:
     - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
-    - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+    - Diligence_Field_Derivation_Registry.yml
     - TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   forbidden_model_sources:
