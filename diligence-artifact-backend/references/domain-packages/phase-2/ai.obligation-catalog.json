@@ -5,10 +5,408 @@
   "may_lock_domain": false,
   "uses_legal_index": true,
   "obligation_families": [
-    { "id": "automated_decision_governance", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONTROL_MECHANISM", "REGULATED_ACTIVITY"], "locator_families": ["HUMAN_OVERSIGHT_LOCATOR", "GOVERNANCE_CONTROL_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["ai_policy", "usage_policy"], "shell_field_targets": ["control_mechanism_present", "linked_activity", "control_posture_status"], "reading_priority": ["responsible-ai/safety pages", "usage policy"] },
-    { "id": "model_evaluation_safety", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONTROL_MECHANISM"], "locator_families": ["GOVERNANCE_CONTROL_LOCATOR", "CONTROL_MECHANISM_LOCATOR"], "legal_doc_types": ["safety_policy"], "shell_field_targets": ["control_mechanism_present", "control_posture_status"], "reading_priority": ["safety/eval pages", "safety policy"] },
-    { "id": "model_supply_licensing", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "REGULATED_ACTIVITY", "DATA_FLOW_MECHANICS"], "locator_families": ["MODEL_SUPPLY_LICENSING_LOCATOR", "COUNTERPARTY_INSTITUTION_LOCATOR"], "legal_doc_types": ["usage_policy"], "shell_field_targets": ["authority_dependency", "exposure_role_context"], "reading_priority": ["model/provider pages", "docs/api"] },
-    { "id": "capability_limitation_disclosure", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONSUMER_DISCLOSURE"], "locator_families": ["GOVERNANCE_CONTROL_LOCATOR", "CONSUMER_DISCLOSURE_LOCATOR"], "legal_doc_types": ["ai_policy"], "shell_field_targets": ["obligation_trigger_timing", "control_mechanism_present"], "reading_priority": ["model cards", "transparency pages"] },
-    { "id": "conformity_attestation", "control_source_route_codes": ["GOVERNANCE_TRANSPARENCY", "CONTROL_MECHANISM"], "locator_families": ["GOVERNANCE_CONTROL_LOCATOR", "REGULATORY_DISCLOSURE_LOCATOR"], "legal_doc_types": [], "shell_field_targets": ["obligation_locus", "control_posture_status"], "reading_priority": ["compliance/trust pages"] }
+    {
+      "id": "automated_decision_governance",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONTROL_MECHANISM",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "HUMAN_OVERSIGHT_LOCATOR",
+        "GOVERNANCE_CONTROL_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "usage_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "linked_activity",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "responsible-ai/safety pages",
+        "usage policy"
+      ]
+    },
+    {
+      "id": "model_evaluation_safety",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "GOVERNANCE_CONTROL_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "safety_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "safety/eval pages",
+        "safety policy"
+      ]
+    },
+    {
+      "id": "model_supply_licensing",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "REGULATED_ACTIVITY",
+        "DATA_FLOW_MECHANICS"
+      ],
+      "locator_families": [
+        "MODEL_SUPPLY_LICENSING_LOCATOR",
+        "COUNTERPARTY_INSTITUTION_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "usage_policy"
+      ],
+      "shell_field_targets": [
+        "authority_dependency",
+        "exposure_role_context"
+      ],
+      "reading_priority": [
+        "model/provider pages",
+        "docs/api"
+      ]
+    },
+    {
+      "id": "capability_limitation_disclosure",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONSUMER_DISCLOSURE"
+      ],
+      "locator_families": [
+        "GOVERNANCE_CONTROL_LOCATOR",
+        "CONSUMER_DISCLOSURE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy"
+      ],
+      "shell_field_targets": [
+        "obligation_trigger_timing",
+        "control_mechanism_present"
+      ],
+      "reading_priority": [
+        "model cards",
+        "transparency pages"
+      ]
+    },
+    {
+      "id": "conformity_attestation",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "GOVERNANCE_CONTROL_LOCATOR",
+        "REGULATORY_DISCLOSURE_LOCATOR"
+      ],
+      "legal_doc_types": [],
+      "shell_field_targets": [
+        "obligation_locus",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "compliance/trust pages"
+      ]
+    },
+    {
+      "id": "transparency_ai_interaction",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONSUMER_DISCLOSURE",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "AI_DISCLOSURE_LOCATOR",
+        "GOVERNANCE_CONTROL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "usage_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "responsible-ai/transparency pages",
+        "usage policy"
+      ]
+    },
+    {
+      "id": "human_oversight",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONTROL_MECHANISM",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "HUMAN_OVERSIGHT_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "safety_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "safety/responsible-ai pages",
+        "oversight statement"
+      ]
+    },
+    {
+      "id": "bias_nondiscrimination_audit",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONTROL_MECHANISM",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "BIAS_AUDIT_LOCATOR",
+        "MODEL_GOVERNANCE_LOCATOR",
+        "GOVERNANCE_CONTROL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "model_governance_policy",
+        "fairness_assessment"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "responsible-ai/fairness pages",
+        "model-governance docs"
+      ]
+    },
+    {
+      "id": "ai_data_protection_dpia",
+      "control_source_route_codes": [
+        "CONTROL_MECHANISM",
+        "DATA_FLOW_MECHANICS",
+        "GOVERNANCE_TRANSPARENCY"
+      ],
+      "locator_families": [
+        "DATA_PROTECTION_LOCATOR",
+        "DPIA_LOCATOR",
+        "CONTROL_MECHANISM_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "privacy_policy",
+        "dpia_document",
+        "data_governance_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "privacy policy",
+        "data-governance pages"
+      ]
+    },
+    {
+      "id": "biometric_consent",
+      "control_source_route_codes": [
+        "CONTROL_MECHANISM",
+        "CONSUMER_DISCLOSURE",
+        "DATA_FLOW_MECHANICS"
+      ],
+      "locator_families": [
+        "BIOMETRIC_CONSENT_LOCATOR",
+        "DATA_PROTECTION_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "privacy_policy",
+        "biometric_consent_notice"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "privacy/biometric-consent pages"
+      ]
+    },
+    {
+      "id": "content_moderation_appeals",
+      "control_source_route_codes": [
+        "CONSUMER_DISCLOSURE",
+        "GRIEVANCE_MACHINERY",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "CONTENT_MODERATION_LOCATOR",
+        "APPEALS_ROUTE_LOCATOR",
+        "GRIEVANCE_COMPLAINTS_SIGNAL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "content_policy",
+        "appeals_procedure"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "content-policy/appeals pages"
+      ]
+    },
+    {
+      "id": "data_governance_training",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "DATA_FLOW_MECHANICS",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "TRAINING_DATA_GOVERNANCE_LOCATOR",
+        "DATA_PROTECTION_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "data_governance_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "data-governance/training-data pages",
+        "model cards"
+      ]
+    },
+    {
+      "id": "fundamental_rights_impact",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "REGULATED_ACTIVITY",
+        "CONTROL_MECHANISM"
+      ],
+      "locator_families": [
+        "FRIA_LOCATOR",
+        "GOVERNANCE_CONTROL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "impact_assessment"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "responsible-ai/impact-assessment pages"
+      ]
+    },
+    {
+      "id": "prohibited_practices_screen",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "PROHIBITED_PRACTICE_LOCATOR",
+        "GOVERNANCE_CONTROL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "acceptable_use_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "product/use-case pages",
+        "acceptable-use policy"
+      ]
+    },
+    {
+      "id": "subprocessor_transfer_governance",
+      "control_source_route_codes": [
+        "DATA_FLOW_MECHANICS",
+        "CONTROL_MECHANISM",
+        "CONSUMER_DISCLOSURE"
+      ],
+      "locator_families": [
+        "SUBPROCESSOR_LOCATOR",
+        "DATA_TRANSFER_LOCATOR",
+        "DATA_PROTECTION_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "privacy_policy",
+        "subprocessor_list",
+        "dpa_terms"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "subprocessor/DPA pages",
+        "privacy policy"
+      ]
+    },
+    {
+      "id": "synthetic_content_marking",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONSUMER_DISCLOSURE",
+        "REGULATED_ACTIVITY"
+      ],
+      "locator_families": [
+        "SYNTHETIC_CONTENT_LOCATOR",
+        "AI_DISCLOSURE_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "content_policy"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "product/transparency pages",
+        "content policy"
+      ]
+    },
+    {
+      "id": "technical_documentation_logging",
+      "control_source_route_codes": [
+        "GOVERNANCE_TRANSPARENCY",
+        "CONTROL_MECHANISM",
+        "DATA_FLOW_MECHANICS"
+      ],
+      "locator_families": [
+        "TECHNICAL_DOCUMENTATION_LOCATOR",
+        "LOGGING_CONTROL_LOCATOR"
+      ],
+      "legal_doc_types": [
+        "ai_policy",
+        "technical_documentation"
+      ],
+      "shell_field_targets": [
+        "control_mechanism_present",
+        "control_posture_status"
+      ],
+      "reading_priority": [
+        "technical/model-card docs",
+        "security pages"
+      ]
+    }
   ]
 }
