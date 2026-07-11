@@ -1,1 +1,2 @@
-export { runM11OrchestratedPhase } from "./m11-orchestrator-m11v2.js";
+// Compatibility bridge only. Active Phase 9 implementation is phase-owned.
+export * from "./phases/09-exposure-profile/exposure-profile.runner.js";
