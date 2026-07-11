@@ -9,7 +9,7 @@ Phase 5 is package-aware and Phase 2G-routed:
 ```text
 2G = sole runtime routing authority.
 2C = activity_profile_source_index navigation substrate plus primary activity lossless evidence bucket.
-M8_FEATURE_CANDIDATE_INVENTORY = deterministic candidate universe from 2C locator rows only.
+M8_FEATURE_CANDIDATE_INVENTORY = deterministic-led candidate universe from activity_profile_source_index locator rows resolved into index-mapped routed lossless evidence units.
 M8_TARGET_FEATURE_PROFILE = material activity profile using feature_candidate_inventory + mounted domain package context + 2C-navigated primary evidence.
 ```
 
@@ -71,13 +71,13 @@ Lossless evidence in the 2C bucket is primary evidence. It is not a fallback.
 
 `activity_profile_source_index` is the mandatory navigation map into that evidence.
 
-The candidate inventory job may create candidates only from index locator rows. It receives the routed bucket for custody and audit consistency but must not independently scan the lossless evidence.
+The candidate inventory job may create candidates only from activity_profile_source_index locator rows that resolve to index-mapped routed lossless evidence units. It must not free-scan the routed bucket, but it must open the mapped units as primary evidence.
 
 The material profile may navigate the routed primary evidence through the index and inventory pointers to derive mechanics and activity facts. It must not make free-corpus reads or expand beyond the 2C bucket.
 
 ## Candidate inventory rule
 
-`feature_candidate_inventory` is created only from `activity_profile_source_index` locator rows.
+`feature_candidate_inventory` is created only from `activity_profile_source_index` locator rows that resolve to index-mapped routed lossless evidence units.
 
 It must not apply domain package taxonomy. It must not emit archetypes, surfaces, package labels, mechanics proof, activity summaries, source excerpts, or legal/data/exposure conclusions.
 

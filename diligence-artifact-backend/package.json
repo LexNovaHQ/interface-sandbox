@@ -8,9 +8,9 @@
     "check": "node scripts/check-syntax.mjs && node scripts/check-normalized-hardening.mjs && npm run check:phase5-activity-profile && npm run check:phase1-8-runtime && npm run check:domain-gate-v0 && npm run check:runtime-yaml-dep && npm run check:domain-registry-assembled && npm run check:no-legacy-registry-refs && npm run check:phase3a-target-profile && npm run check:phase3-domain-derivation && npm run check:phase3-sync-v0 && npm run check:runtime-cleanup",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:normalized": "node scripts/check-normalized-hardening.mjs",
-    "check:m8-feature-candidates": "node scripts/check-phase5-pass1-7-cutover.mjs",
-    "check:phase5-pass1-7": "node scripts/check-phase5-pass1-7-cutover.mjs",
-    "check:phase5-activity-profile": "npm run check:phase5-pass1-7",
+    "check:m8-feature-candidates": "node scripts/check-m8-feature-candidate-inventory.mjs",
+    "check:phase5-pass1-7": "npm run check:phase5-layer1",
+    "check:phase5-activity-profile": "npm run check:phase5-layer1",
     "check:phase1-8-runtime": "node scripts/check-phase1-8-central-runtime.mjs && node scripts/check-phase1-agnostic-source-discovery.mjs && node scripts/check-phase2a-target-profile-source-index.mjs && node scripts/check-phase2a-target-profile-source-index-package.mjs && node scripts/check-phase2a-target-profile-source-index-implementation.mjs && node scripts/check-phase2b-domain-derivation-source-index-package.mjs && node scripts/check-phase2b-domain-derivation-source-index-implementation.mjs && node scripts/check-phase2c-activity-profile-source-index-package.mjs && node scripts/check-phase2c-activity-profile-source-index-implementation.mjs && node scripts/check-phase2d-data-privacy-navigation-index-package.mjs && node scripts/check-phase2d-data-privacy-navigation-index-implementation.mjs && node scripts/check-phase2-domain-control-obligation-navigation-index.mjs && node scripts/check-phase2g-phase-router.mjs && node scripts/check-phase2g-runtime-cutover-through-compiler.mjs && node scripts/check-phase2g-no-competing-routing-authority.mjs && node scripts/check-phase2-cartography-index.mjs && node scripts/check-phase2-no-legacy-family-inputs.mjs",
     "check:domain-gate-v0": "node scripts/check-domain-package-key.mjs && node scripts/check-package-catalog-v0.mjs && node scripts/check-pre-phase-1-domain-preflight.mjs && node scripts/check-no-pre-phase-1-lock.mjs && node scripts/check-active-run-package-manifest-v0.mjs && node scripts/check-domain-selection-manifest-sync.mjs",
     "check:runtime-yaml-dep": "node scripts/check-runtime-yaml-dep.mjs",
@@ -33,7 +33,8 @@
     "check:runtime-cleanup-c6": "node scripts/check-central-runtime-no-legacy-implementation.mjs",
     "check:runtime-cleanup": "npm run check:runtime-cleanup-c1 && npm run check:runtime-cleanup-c2 && npm run check:runtime-cleanup-c3 && npm run check:runtime-cleanup-c4 && npm run check:runtime-cleanup-c5 && npm run check:runtime-cleanup-c6",
     "smoke:health": "node scripts/smoke-health.mjs",
-    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
+    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs",
+    "check:phase5-layer1": "node scripts/check-activity-candidate-semantic-support.mjs && node scripts/check-activity-candidate-inventory-contract.mjs && node scripts/check-phase5-prompt-schema-sync.mjs && node scripts/check-m8-feature-candidate-inventory.mjs && node scripts/check-phase5-activity-profile-review.mjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.0",

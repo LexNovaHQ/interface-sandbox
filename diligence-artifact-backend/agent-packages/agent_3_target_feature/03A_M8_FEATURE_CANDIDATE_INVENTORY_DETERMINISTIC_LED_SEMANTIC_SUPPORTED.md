@@ -4,7 +4,9 @@
 
 This prompt governs only the semantic-support call inside `M8_FEATURE_CANDIDATE_INVENTORY`.
 
-The backend has already built an authoritative deterministic baseline from index-mapped routed lossless evidence. Your role is limited to proposing bounded corrections to that baseline.
+The backend has already built the authoritative deterministic baseline from `activity_profile_source_index` locator rows resolved into index-mapped Phase-2G-routed lossless evidence units.
+
+Your role is limited to proposing bounded corrections to that baseline.
 
 You are not the final inventory compiler, validator, classifier, or save authority.
 
@@ -44,25 +46,33 @@ RENAME_CANDIDATE
 REJECT_CANDIDATE
 ```
 
-Use semantic support only where the supplied evidence justifies a correction. An empty proposal array is valid and preferred when the deterministic baseline requires no correction.
+Use semantic support only where the supplied evidence justifies a correction. An empty `proposals[]` array is valid and preferred when the deterministic baseline requires no correction.
 
 You must not classify candidates, generate final candidate IDs, generate final canonical keys, save the inventory, or decide the final lock status.
 
 ## 4. Required response shape
 
-Return strict JSON only:
+Return strict JSON only.
+
+You must emit exactly one top-level object:
 
 ```json
 {
-  "semantic_candidate_support_proposals": []
+  "semantic_candidate_support_proposal": {
+    "proposal_version": "v1",
+    "proposals": [],
+    "limitations": []
+  }
 }
 ```
 
 Do not return markdown, prose, a receipt, `feature_candidate_inventory`, or any additional top-level key.
 
+The old plural top-level key is invalid.
+
 ## 5. Proposal schema
 
-Each proposal must contain exactly:
+Each `proposals[]` entry must contain exactly:
 
 ```text
 proposal_id
@@ -108,7 +118,7 @@ REJECT_CANDIDATE -> exactly 1 target ID; 0 proposed candidates
 
 ## 7. Mandatory grounding
 
-Every proposal must cite one or more exact `source_pointers` already present in the supplied locator/pointer packet.
+Every non-rejection proposal must cite one or more exact `source_pointers` already present in the supplied locator/pointer packet.
 
 A proposal is invalid if it introduces:
 
@@ -132,6 +142,8 @@ Do not output:
 - deterministic ledgers;
 - semantic-support receipt;
 - taxonomy or package labels;
+- `package_id`;
+- `overlay_id`;
 - archetype codes;
 - surface tokens;
 - Lane;
@@ -156,14 +168,15 @@ Candidate names, types, route classes, and capability keys must remain domain-ne
 
 Your output is only a proposal packet. The backend will:
 
-1. validate the exact schema;
-2. validate target candidate IDs;
-3. validate every pointer against the Phase 2G route and 2C index;
-4. reject forbidden content;
-5. deterministically reconcile accepted proposals;
-6. generate final candidate IDs and canonical keys;
-7. generate the semantic-support receipt;
-8. save `feature_candidate_inventory`.
+1. validate the exact packet schema;
+2. validate action shape;
+3. validate target candidate IDs;
+4. validate every pointer against the Phase 2G route and 2C index;
+5. reject forbidden content;
+6. deterministically reconcile accepted proposals;
+7. generate final candidate IDs and canonical keys;
+8. generate the semantic-support receipt;
+9. save `feature_candidate_inventory`.
 
 You must not imitate or bypass those backend steps.
 
@@ -173,7 +186,11 @@ If no correction is justified, return:
 
 ```json
 {
-  "semantic_candidate_support_proposals": []
+  "semantic_candidate_support_proposal": {
+    "proposal_version": "v1",
+    "proposals": [],
+    "limitations": []
+  }
 }
 ```
 

@@ -16,7 +16,6 @@ source_index_artifact = activity_profile_source_index
 candidates[] exists
 raw_feature_hit_index[] exists
 context_pointer_index[] exists
-deterministic_baseline_metadata exists
 semantic_support_receipt exists
 ```
 
@@ -35,9 +34,37 @@ Every baseline candidate must:
 
 Locator-only candidate creation without opening the mapped lossless unit fails.
 
-## 3. Semantic proposal gate
+## 3. Semantic proposal packet gate
 
-The semantic response may contain only `semantic_candidate_support_proposals[]`.
+The semantic response may contain only:
+
+```json
+{
+  "semantic_candidate_support_proposal": {
+    "proposal_version": "v1",
+    "proposals": [],
+    "limitations": []
+  }
+}
+```
+
+The packet object must contain exactly:
+
+```text
+proposal_version
+proposals
+limitations
+```
+
+Each proposal must contain exactly:
+
+```text
+proposal_id
+action
+target_candidate_ids
+proposed_candidates
+source_pointers
+```
 
 Allowed actions:
 
