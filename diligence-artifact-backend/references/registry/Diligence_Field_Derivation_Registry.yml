@@ -1,9 +1,9 @@
 registry:
-  name: FIELD_DERIVATION_REGISTRY_v2_LOCKED_QR_CONTACT_PATCH_20260704
-  version: v2_locked_qr_contact_patch_20260704
-  scope: full_registry_with_qr_013_014_016_057_plus_notice_privacy_contact_patch
-  source_file: FIELD_DERIVATION_REGISTRY_v2_LOCKED_QR_CONTACT_PATCH_20260704.yml
-  row_count: 427
+  name: Diligence_Field_Derivation_Registry
+  version: v3_agnostic_multidomain_provenance
+  scope: agnostic_multidomain_covers_3A_3B_5_7_7B_9_plus_provenance_and_domain_derivation_grammar
+  source_file: Diligence_Field_Derivation_Registry.yml
+  row_count: 454
   columns:
   - field_id
   - profile_section
@@ -5276,13 +5276,13 @@ fields:
   profile_section: Legal Exposure Profile
   field_family: Registry route keys
   output_field: Registry route keys
-  covers: Archetype; surface; universal/always-run route; conditional route flags
+  covers: Behavior class; surface; universal/always-run route; conditional route flags
   mode: PICK_FROM_REGISTRY
   source_basis: active_threat_registry.rows[]
   conditions: C1 row contains route key; C2 key maps to active domain taxonomy; C3 row active/evaluable.
   trigger_outcome: DERIVED_IF C1 AND C2.
   exclude_fallback: FALLBACK_IF route key missing/malformed -> registry_integrity_error.
-  forbidden_inference: Do not invent archetype/surface values outside registry.
+  forbidden_inference: Do not invent behavior class/surface values outside registry.
   lock_status: LOCKED
 - field_id: LEP.REG.005
   profile_section: Legal Exposure Profile
@@ -5337,12 +5337,12 @@ fields:
   lock_status: LOCKED
 - field_id: LEP.APPLY.001
   profile_section: Legal Exposure Profile
-  field_family: Activity / archetype route match
-  output_field: Activity / archetype route match
-  covers: Behavior/activity trigger match; matched activity; matched archetype; route basis
+  field_family: Activity / behavior class route match
+  output_field: Activity / behavior class route match
+  covers: Behavior/activity trigger match; matched activity; matched behavior class; route basis
   mode: MATCH_ROUTE
   source_basis: registry route keys + Product/Activity Profile
-  conditions: C1 row universal OR archetype/behavior matches Product/Activity Profile; C2 matched activity has evidence; C3
+  conditions: C1 row universal OR behavior class/behavior matches Product/Activity Profile; C2 matched activity has evidence; C3
     match behavior-based not exposure-based.
   trigger_outcome: MATCHED_IF C1 AND C2. MATCHED_WITH_LIMITATION_IF activity exists but behavior weak. NOT_MATCHED_IF no matching
     activity/behavior.
@@ -5460,7 +5460,7 @@ fields:
   profile_section: Legal Exposure Profile
   field_family: Exposure summary rollups
   output_field: Exposure summary rollups
-  covers: Highest-priority triggered/controlled/missing-proof areas; dominant categories/archetypes/surfaces
+  covers: Highest-priority triggered/controlled/missing-proof areas; dominant categories/behavior classes/surfaces
   mode: SUMMARIZE / COUNT
   source_basis: evaluated rows + registry metadata + status
   conditions: C1 row statuses exist; C2 pain/category/route metadata exists; C3 rollup uses deterministic counts plus short
@@ -5473,7 +5473,7 @@ fields:
   profile_section: Legal Exposure Profile
   field_family: Activity-to-exposure matrix
   output_field: Activity-to-exposure matrix
-  covers: Activity; behavior archetype; surface/context; linked row IDs; triggered/controlled/absent rows
+  covers: Activity; behavior behavior class; surface/context; linked row IDs; triggered/controlled/absent rows
   mode: JOIN / SUMMARIZE
   source_basis: Product/Activity Profile + evaluated rows
   conditions: C1 activity rows exist; C2 evaluated exposure rows link to activities; C3 matrix preserves statuses.
@@ -6394,3 +6394,389 @@ fields:
   forbidden_inference: Do not cure missing privacy contact evidence by inventing a standard privacy/grievance email or by
     assuming legal/support contact is suitable.
   lock_status: LOCKED
+- field_id: PA.PROV.001
+  profile_section: Product / Activity Profile
+  field_family: Activity Taxonomy Provenance
+  output_field: Behavior source package
+  covers: null
+  mode: JOIN
+  source_basis: active_run_package_manifest + mounted domain registry key
+  conditions: C1 behavior code derived for the activity; C2 the mounted package or overlay that defines that code is identified from active_run_package_manifest; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF C1 and provenance partial. FALLBACK_IF upstream basis missing.
+  exclude_fallback: EXCLUDE_IF the code is not present in any mounted package taxonomy. FALLBACK_IF provenance unresolved -> package_context_limited.
+  forbidden_inference: Do not attribute a behavior code to a package that does not define it in its registry key.
+  lock_status: LOCKED
+- field_id: PA.PROV.002
+  profile_section: Product / Activity Profile
+  field_family: Activity Taxonomy Provenance
+  output_field: Behavior source role
+  covers: null
+  mode: CLASSIFY
+  source_basis: active_run_package_manifest package roles
+  conditions: C1 behavior source package identified; C2 its role is one of primary_domain / capability_overlay / regulatory_overlay per the manifest; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF role partial. FALLBACK_IF upstream basis missing.
+  exclude_fallback: EXCLUDE_IF role not represented in the manifest. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not infer overlay role from behavior meaning; role comes only from the active manifest.
+  lock_status: LOCKED
+- field_id: PA.PROV.003
+  profile_section: Product / Activity Profile
+  field_family: Activity Taxonomy Provenance
+  output_field: Surface source package
+  covers: null
+  mode: JOIN
+  source_basis: active_run_package_manifest + mounted domain registry key
+  conditions: C1 surface token derived for the activity; C2 the mounted package or overlay that defines that token is identified from active_run_package_manifest; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF provenance partial. FALLBACK_IF upstream basis missing.
+  exclude_fallback: EXCLUDE_IF the token is not present in any mounted package taxonomy. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not attribute a surface token to a package that does not define it in its registry key.
+  lock_status: LOCKED
+- field_id: PA.PROV.004
+  profile_section: Product / Activity Profile
+  field_family: Activity Taxonomy Provenance
+  output_field: Surface source role
+  covers: null
+  mode: CLASSIFY
+  source_basis: active_run_package_manifest package roles
+  conditions: C1 surface source package identified; C2 its role is one of primary_domain / capability_overlay / regulatory_overlay per the manifest; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF role partial. FALLBACK_IF upstream basis missing.
+  exclude_fallback: EXCLUDE_IF role not represented in the manifest. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not infer overlay role from surface meaning; role comes only from the active manifest.
+  lock_status: LOCKED
+- field_id: PA.PROV.005
+  profile_section: Product / Activity Profile
+  field_family: Activity Taxonomy Provenance
+  output_field: Active package composition
+  covers: null
+  mode: JOIN
+  source_basis: active_run_package_manifest
+  conditions: C1 locked primary domain package present; C2 mounted capability and regulatory overlays enumerated from the manifest; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF overlays partial. FALLBACK_IF manifest incomplete -> primary_only_context.
+  exclude_fallback: EXCLUDE_IF no locked primary package. FALLBACK_IF manifest unavailable -> package_context_limited.
+  forbidden_inference: Do not add a package or overlay not locked/mounted in the active manifest.
+  lock_status: LOCKED
+- field_id: PA.PROV.006
+  profile_section: Product / Activity Profile
+  field_family: Activity Taxonomy Provenance
+  output_field: Cross-package fusion signal
+  covers: null
+  mode: CLASSIFY
+  source_basis: behavior/surface provenance across mounted packages
+  conditions: C1 an activity carries behavior or surface codes sourced from more than one mounted package/overlay; C2 tied to reviewed target/activity; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF fusion partial/thin. FALLBACK_IF single-package activity -> no_fusion.
+  exclude_fallback: EXCLUDE_IF all codes trace to a single package. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not synthesize a fusion where every code traces to one package; do not resolve exposure here (Phase 9 owns exposure).
+  lock_status: LOCKED
+- field_id: DD.PRI.001
+  profile_section: Domain Derivation Profile
+  field_family: Primary Domain Derivation
+  output_field: Primary domain package
+  covers: null
+  mode: CLASSIFY
+  source_basis: mounted domain registry key PRIMARY_DOMAIN rules + package-catalog.v0.json
+  conditions: C1 exactly one mounted key PRIMARY_DOMAIN rule trigger_if evaluates true on admitted lossless evidence after exclude_if; C2 package_id exists in the catalog; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND NOT disqualified. DERIVED_WITH_LIMITATION_IF single rule fires with thin evidence. REVIEW_REQUIRED_IF multiple unfenced primary rules fire. FALLBACK_IF no primary rule fires.
+  exclude_fallback: EXCLUDE_IF the only signal is index-only/generic-marketing/vertical-example. FALLBACK_IF no supported primary domain -> NO_SUPPORTED_PRIMARY_DOMAIN_LOCK (REVIEW_REQUIRED).
+  forbidden_inference: Do not hardcode domain names in phase logic; evaluate the mounted key rules only. Do not lock a package absent from the catalog.
+  lock_status: LOCKED
+- field_id: DD.PRI.002
+  profile_section: Domain Derivation Profile
+  field_family: Primary Domain Derivation
+  output_field: Primary domain status
+  covers: null
+  mode: CLASSIFY
+  source_basis: domain_derivation_grammar.primary_domain_status + fired rule result
+  conditions: C1 primary domain package derived or fallback fired; C2 status is one of LOCKED / LOCKED_WITH_LIMITATIONS / REVIEW_REQUIRED / REJECTED / NOT_EVALUATED; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF evidence partial. FALLBACK_IF unresolved -> REVIEW_REQUIRED.
+  exclude_fallback: EXCLUDE_IF status not in controlled vocabulary. FALLBACK_IF conflict -> REVIEW_REQUIRED.
+  forbidden_inference: Do not emit a legal/compliance conclusion; status is package-selection state only.
+  lock_status: LOCKED
+- field_id: DD.AI.001
+  profile_section: Domain Derivation Profile
+  field_family: AI Package Mount Derivation
+  output_field: AI package mount
+  covers: null
+  mode: CLASSIFY
+  source_basis: AI key capability_overlay_mount_rules (AI_OVERLAY_MOUNTED / AI_CANDIDATE_ONLY / AI_NOT_VISIBLE) + primary result
+  conditions: C1 if primary is ai-governance then AI_PRIMARY; C2 else evaluate ai-native mount rules in priority order on admitted evidence; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 OR C2. DERIVED_WITH_LIMITATION_IF mount evidence thin. FALLBACK_IF none -> AI_NOT_VISIBLE.
+  exclude_fallback: EXCLUDE_IF AI_PRIMARY and AI_OVERLAY_MOUNTED both claimed. FALLBACK_IF only generic AI wording -> AI_CANDIDATE_ONLY.
+  forbidden_inference: AI mount is package availability only; do not lock behavior class, surface, lane, or exposure here (deferred to Phase 5/9).
+  lock_status: LOCKED
+- field_id: DD.AI.002
+  profile_section: Domain Derivation Profile
+  field_family: AI Package Mount Derivation
+  output_field: AI mount status
+  covers: null
+  mode: JOIN
+  source_basis: ai_package_mount + lock_scope
+  conditions: C1 ai_package_mount derived; C2 status maps (AI_PRIMARY->LOCKED, AI_OVERLAY_MOUNTED->LOCKED_FOR_PACKAGE_MOUNT_ONLY, AI_CANDIDATE_ONLY->CANDIDATE_ONLY, AI_NOT_VISIBLE->NOT_VISIBLE); C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF unresolved -> NOT_VISIBLE.
+  exclude_fallback: EXCLUDE_IF status not in vocabulary. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not treat AI_OVERLAY_MOUNTED as an exposure trigger.
+  lock_status: LOCKED
+- field_id: DD.REG.001
+  profile_section: Domain Derivation Profile
+  field_family: Regulatory Overlay Derivation
+  output_field: Regulatory overlay
+  covers: null
+  mode: CLASSIFY
+  source_basis: mounted domain registry key regulatory_overlay axis + package-catalog.v0.json:regulatory_overlays
+  conditions: C1 overlay_id exists in the package catalog regulatory_overlays; C2 the mounted key's overlay trigger_if is supported by scoped lossless evidence after exclude_if; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 (status CANDIDATE_ONLY or REVIEW_REQUIRED). DERIVED_WITH_LIMITATION_IF evidence thin. FALLBACK_IF unsupported -> NOT_VISIBLE.
+  exclude_fallback: EXCLUDE_IF overlay_id not in catalog. FALLBACK_IF no supporting evidence -> NOT_VISIBLE.
+  forbidden_inference: Do not determine legal applicability, license validity, regulator applicability, or a compliance conclusion; overlays are routing context only (deferred to Phase 7B/9/12).
+  lock_status: LOCKED
+- field_id: DD.REG.002
+  profile_section: Domain Derivation Profile
+  field_family: Regulatory Overlay Derivation
+  output_field: Regulatory overlay status
+  covers: null
+  mode: CLASSIFY
+  source_basis: domain_derivation_grammar.regulatory_overlay_status
+  conditions: C1 overlay derived; C2 status is one of NOT_VISIBLE / CANDIDATE_ONLY / REVIEW_REQUIRED; C3 legal applicability marked NOT_DETERMINED_IN_PHASE_3B.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND C3. DERIVED_WITH_LIMITATION_IF evidence partial. FALLBACK_IF conflict -> REVIEW_REQUIRED.
+  exclude_fallback: EXCLUDE_IF a compliance conclusion is asserted. FALLBACK_IF unresolved -> NOT_VISIBLE.
+  forbidden_inference: Do not elevate to a legal determination; status is candidate routing only.
+  lock_status: LOCKED
+- field_id: DD.FUS.001
+  profile_section: Domain Derivation Profile
+  field_family: Fusion Candidate Derivation
+  output_field: Fusion candidate
+  covers: null
+  mode: CLASSIFY
+  source_basis: domain_derivation_grammar DOMAIN_FUSION_CANDIDATE rule
+  conditions: C1 non-AI primary locked; C2 AI_OVERLAY_MOUNTED fires; C3 candidate depends on both primary-domain activity and AI mechanics; C4 duty (if later confirmed) would be created by the primary domain's law/regulator/control framework.
+  trigger_outcome: DERIVED_IF C1 AND C2 AND C3 AND C4 -> FUSION_CANDIDATE_ONLY. FALLBACK_IF pure-AI or pure-domain -> FUSION_NOT_VISIBLE.
+  exclude_fallback: EXCLUDE_IF AI mount is AI_CANDIDATE_ONLY/AI_NOT_VISIBLE, or issue is fully pure-AI or fully pure-domain. FALLBACK_IF unresolved -> FUSION_NOT_VISIBLE.
+  forbidden_inference: Fusion candidates never trigger exposure rows in Phase 3B; deferred to Phase 5 + Phase 9.
+  lock_status: LOCKED
+- field_id: DD.FUS.002
+  profile_section: Domain Derivation Profile
+  field_family: Fusion Candidate Derivation
+  output_field: Fusion owner
+  covers: null
+  mode: JOIN
+  source_basis: locked primary domain package
+  conditions: C1 fusion candidate present; C2 owner equals the locked primary domain package; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. FALLBACK_IF no fusion -> no_owner.
+  exclude_fallback: EXCLUDE_IF owner is set to the AI package. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not assign fusion ownership to the AI package; the primary domain owns fusion.
+  lock_status: LOCKED
+- field_id: DD.MAN.001
+  profile_section: Domain Derivation Profile
+  field_family: Manifest Update
+  output_field: Active run package manifest update
+  covers: null
+  mode: JOIN
+  source_basis: derived primary/ai-mount/regulatory-overlay/fusion + prior active_run_package_manifest
+  conditions: C1 all domain-derivation fields derived or controlled; C2 validator passed; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2 (compiler writes manifest after validation). DERIVED_WITH_LIMITATION_IF any field is CANDIDATE/REVIEW. FALLBACK_IF validation fails -> CONTROLLED_FAILURE.
+  exclude_fallback: EXCLUDE_IF model emits the manifest top-level. FALLBACK_IF unresolved -> PROVISIONAL_OR_LIMITED.
+  forbidden_inference: The model must not write active_run_package_manifest; only the compiler writes it after validation.
+  lock_status: LOCKED
+- field_id: DCO.OBL.001
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Identity
+  output_field: Obligation id
+  covers: null
+  mode: JOIN
+  source_basis: installed obligation catalogs (references/domain-packages/phase-2/{package}.obligation-catalog.json) via domain_control_obligation_navigation_index
+  conditions: C1 obligation shell row present in the navigation index for a mounted package; C2 obligation_id exists in an installed obligation catalog; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF catalog partial. FALLBACK_IF no catalog obligation -> not_visible.
+  exclude_fallback: EXCLUDE_IF obligation not present in any installed catalog. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not invent obligations outside the installed obligation catalogs.
+  lock_status: LOCKED
+- field_id: DCO.OBL.002
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Identity
+  output_field: Obligation family
+  covers: null
+  mode: CLASSIFY
+  source_basis: installed obligation catalog obligation_family
+  conditions: C1 obligation id derived; C2 family present in the catalog entry; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF missing -> controlled fallback.
+  exclude_fallback: EXCLUDE_IF family not catalog-defined. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not create new obligation families outside the catalog.
+  lock_status: LOCKED
+- field_id: DCO.OBL.003
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Linkage
+  output_field: Linked activity
+  covers: null
+  mode: JOIN
+  source_basis: target_feature_profile activities + obligation catalog linkage
+  conditions: C1 obligation maps to a derived activity behavior/surface; C2 tied to reviewed target; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF linkage partial. FALLBACK_IF no linked activity -> unlinked_obligation.
+  exclude_fallback: EXCLUDE_IF linkage requires forbidden inference. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not resolve exposure here; Phase 9 owns exposure.
+  lock_status: LOCKED
+- field_id: DCO.OBL.004
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Linkage
+  output_field: Exposure role context
+  covers: null
+  mode: CLASSIFY
+  source_basis: lane axis (A / B / Both) from the mounted domain registry key
+  conditions: C1 obligation carries an exposure-role context; C2 role derived per-activity (not per-company); C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF role partial. FALLBACK_IF unresolved -> role_context_limited.
+  exclude_fallback: EXCLUDE_IF a company-level lane is asserted. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Lane resolves per-activity, never per-company.
+  lock_status: LOCKED
+- field_id: DCO.OBL.005
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Linkage
+  output_field: Authority dependency
+  covers: null
+  mode: JOIN
+  source_basis: mounted key compliance_framework + regulatory_overlay links
+  conditions: C1 obligation references a named authority/instrument dependency; C2 dependency maps to a framework token in the mounted key; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF dependency partial. FALLBACK_IF unresolved -> dependency_not_determined.
+  exclude_fallback: EXCLUDE_IF a legal applicability conclusion is asserted. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not determine legal applicability or regulator conclusion here.
+  lock_status: LOCKED
+- field_id: DCO.OBL.006
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Attributes
+  output_field: Obligation locus
+  covers: null
+  mode: CLASSIFY
+  source_basis: installed obligation catalog obligation_locus
+  conditions: C1 obligation id derived; C2 locus present in catalog; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF missing -> controlled fallback.
+  exclude_fallback: EXCLUDE_IF locus not catalog-defined. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not infer locus from sector alone.
+  lock_status: LOCKED
+- field_id: DCO.OBL.007
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Attributes
+  output_field: Obligation trigger timing
+  covers: null
+  mode: CLASSIFY
+  source_basis: installed obligation catalog obligation_trigger_timing
+  conditions: C1 obligation id derived; C2 trigger timing present in catalog; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF missing -> controlled fallback.
+  exclude_fallback: EXCLUDE_IF timing not catalog-defined. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not assert enforcement timing beyond the catalog.
+  lock_status: LOCKED
+- field_id: DCO.CTL.001
+  profile_section: Domain Control Obligation Profile
+  field_family: Control Posture
+  output_field: Control mechanism present
+  covers: null
+  mode: CLASSIFY
+  source_basis: scoped lossless control evidence (security_trust_compliance / data_governance_controls)
+  conditions: C1 admitted lossless evidence shows a visible control mechanism relevant to the obligation; C2 tied to reviewed target; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF evidence thin. FALLBACK_IF no visible control -> not_visible.
+  exclude_fallback: EXCLUDE_IF marketing-only claim. FALLBACK_IF unresolved -> missing_proof.
+  forbidden_inference: Do not infer control satisfaction from generic trust-page wording.
+  lock_status: LOCKED
+- field_id: DCO.CTL.002
+  profile_section: Domain Control Obligation Profile
+  field_family: Control Posture
+  output_field: Control posture status
+  covers: null
+  mode: CLASSIFY
+  source_basis: control_mechanism_present + evidence strength
+  conditions: C1 control mechanism evaluated; C2 posture status derived as visible/partial/not-visible control posture (not compliance verdict); C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF unresolved -> not_visible.
+  exclude_fallback: EXCLUDE_IF posture is stated as a compliance conclusion. FALLBACK_IF unresolved -> missing_proof.
+  forbidden_inference: Control posture is a visibility signal, not obligation satisfaction or a compliance verdict.
+  lock_status: LOCKED
+- field_id: DCO.EV.001
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Evidence
+  output_field: Evidence basis
+  covers: null
+  mode: SUMMARIZE
+  source_basis: scoped lossless evidence reached through domain_control_obligation_navigation_index
+  conditions: C1 evidence explains why the obligation is in scope using mechanics not legal conclusion; C2 tied to reviewed target; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF thin -> missing_proof.
+  exclude_fallback: EXCLUDE_IF basis is a compliance conclusion. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not use a registry exposure row as basis.
+  lock_status: LOCKED
+- field_id: DCO.LIM.001
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Limitations
+  output_field: Missing proof
+  covers: null
+  mode: SUMMARIZE
+  source_basis: gaps between installed obligation catalog and admitted evidence
+  conditions: C1 an in-scope obligation lacks visible control/evidence; C2 tied to reviewed target; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF none -> no_missing_proof.
+  exclude_fallback: EXCLUDE_IF gap requires forbidden inference. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Do not convert a missing-proof note into a compliance failure conclusion.
+  lock_status: LOCKED
+- field_id: DCO.LIM.002
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Limitations
+  output_field: Limitation
+  covers: null
+  mode: SUMMARIZE
+  source_basis: obligation-level limitation signals
+  conditions: C1 obligation derivation is thin/gated/conflicted; C2 tied to reviewed target; C3 no disqualifying inference.
+  trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF none -> no_limitation.
+  exclude_fallback: EXCLUDE_IF limitation asserts a legal conclusion. FALLBACK_IF unresolved -> package_context_limited.
+  forbidden_inference: Limitations are visibility notes, not legal verdicts.
+  lock_status: LOCKED
+
+# ===========================================================================
+# DOMAIN DERIVATION GRAMMAR (agnostic)
+#   Migrated from the retired DOMAIN_DERIVATION_REGISTRY_v0.yaml. This block holds
+#   the domain-AGNOSTIC rule grammar, controlled vocabularies, resolution order,
+#   the FALLBACK + FUSION + REGULATORY_OVERLAY rule schemas, and validator
+#   requirements used by Phase 3B. Domain-SPECIFIC rule INSTANCES live in each
+#   Registry Key (domain_derivation_rules + regulatory_overlay). Phase 3B evaluates
+#   the mounted key's instances against this grammar; it hardcodes no domain logic.
+# ===========================================================================
+domain_derivation_grammar:
+  retires: DOMAIN_DERIVATION_REGISTRY_v0.yaml
+  single_source_of_truth: "grammar here; domain rule instances in the Registry Keys"
+  controlled_vocabularies:
+    rule_type: [PRIMARY_DOMAIN, AI_MOUNT, REGULATORY_OVERLAY, FUSION_CANDIDATE, FALLBACK]
+    lock_scope: [PRIMARY_DOMAIN_LOCK, PACKAGE_MOUNT_ONLY, CANDIDATE_ONLY, NOT_VISIBLE, REVIEW_REQUIRED]
+    primary_domain_status: [LOCKED, LOCKED_WITH_LIMITATIONS, REVIEW_REQUIRED, REJECTED, NOT_EVALUATED]
+    ai_package_mount: [AI_PRIMARY, AI_OVERLAY_MOUNTED, AI_CANDIDATE_ONLY, AI_NOT_VISIBLE]
+    regulatory_overlay_status: [NOT_VISIBLE, CANDIDATE_ONLY, REVIEW_REQUIRED]
+    fusion_bucket_status: [FUSION_CANDIDATE_ONLY, FUSION_NOT_VISIBLE, FUSION_REVIEW_REQUIRED]
+  evidence_rule:
+    phase_2_indexes_are_navigation_only: true
+    phase_2_indexes_are_evidence: false
+    evidence_must_be_lossless_phase_1_artifacts: true
+  rule_schema:
+    required_fields: [rule_id, rule_type, normalized_name, priority, conditions, trigger_if, exclude_if, evidence_policy, result, lock_scope]
+    condition_grammar: "CONDITION_N -> TRIGGER_IF -> EXCLUDE_IF; trigger_if may use AND/OR/NOT/parentheses over declared condition ids; exclude_if mandatory; conditions must be concrete public-footprint criteria; no Phase 2 index as evidence."
+  resolution_policy:
+    evaluation_order: [PRIMARY_DOMAIN, AI_MOUNT, REGULATORY_OVERLAY, FUSION_CANDIDATE, FALLBACK]
+    primary_domain_resolution: "Evaluate all mounted-key PRIMARY_DOMAIN rules; apply exclude_if before priority; exactly one fires -> lock/limit; multiple unfenced -> REVIEW_REQUIRED."
+    ai_mount_resolution: "ai-governance primary -> AI_PRIMARY (overlay prohibited); non-AI primary -> AI_OVERLAY_MOUNTED then AI_CANDIDATE_ONLY then AI_NOT_VISIBLE. AI_OVERLAY is availability only."
+    regulatory_overlay_resolution: "For each mounted-key regulatory_overlay whose overlay_id is in package-catalog.regulatory_overlays and whose trigger_if is evidence-supported, record CANDIDATE_ONLY (or REVIEW_REQUIRED on conflict). Legal applicability is NOT determined in Phase 3B."
+    fusion_resolution: "Fusion candidates recorded only after non-AI primary + AI_OVERLAY_MOUNTED both fire; owned by the locked primary domain package; never trigger exposure rows in 3B."
+  fallback_rule:
+    rule_id: NO_SUPPORTED_PRIMARY_DOMAIN_LOCK
+    rule_type: FALLBACK
+    priority: 0
+    conditions: {C1: "No mounted-key PRIMARY_DOMAIN rule fires.", C2: "Evidence too thin/gated/contradictory, or points to a package that does not exist yet."}
+    trigger_if: "C1 OR C2"
+    exclude_if: ["Any mounted-key PRIMARY_DOMAIN rule fires."]
+    result: {primary_domain_status: REVIEW_REQUIRED, active_run_package_manifest_status: PROVISIONAL_OR_LIMITED}
+    lock_scope: REVIEW_REQUIRED
+    defer_to: PHASE_12_QUALIFIED_REVIEW_OR_PACKAGE_BUILD
+  fusion_rule:
+    rule_id: DOMAIN_FUSION_CANDIDATE
+    rule_type: FUSION_CANDIDATE
+    priority: 60
+    owner: locked_primary_domain_package
+    conditions: {C1: "non-AI primary locked", C2: "AI_OVERLAY_MOUNTED fires", C3: "AI used inside a primary-domain activity", C4: "candidate depends on both primary activity and AI mechanics", C5: "duty (if later confirmed) is created by the primary domain's law/regulator/control framework"}
+    trigger_if: "C1 AND C2 AND C3 AND C4 AND C5"
+    exclude_if: ["Fully pure-AI exposure.", "Fully pure-domain exposure.", "AI mount is AI_CANDIDATE_ONLY or AI_NOT_VISIBLE."]
+    result: {fusion_bucket_status: FUSION_CANDIDATE_ONLY, fusion_owner: locked_primary_domain_package}
+    lock_scope: CANDIDATE_ONLY
+    defer_to: PHASE_5_ACTIVITY_PROFILE_AND_PHASE_9_EXPOSURE_PROFILE
+  validator_requirements:
+    - "Every mounted-key PRIMARY_DOMAIN rule package_id must exist in the package catalog."
+    - "Each active primary domain package has exactly one PRIMARY_DOMAIN rule in its key."
+    - "AI_PRIMARY and AI_OVERLAY_MOUNTED cannot both be active for one run."
+    - "Every regulatory_overlay candidate overlay_id must exist in package-catalog.regulatory_overlays."
+    - "No regulatory_overlay candidate may assert legal applicability or a compliance conclusion in Phase 3B."
+    - "DOMAIN_FUSION_CANDIDATE must resolve fusion_owner to the locked primary domain package."
+    - "Phase 3B code must not hardcode domain names except to validate registry/catalog consistency."
