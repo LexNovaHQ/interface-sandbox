@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildQualifiedReviewSystemArtifacts } from "../src/qualified-review-system/branch.js";
 import { loadQualifiedReviewMatrix } from "../src/qualified-review-system/qualified-review-matrix-loader.js";
-import { NORMALIZED_SECTION_KEYS } from "../src/normalized-profiler-m9-section6-v4.js";
+import { NORMALIZED_SECTION_KEYS } from "../src/phases/11-normalized-compiler/normalized-profiler-m9-section6-v4.js";
 import { NORMALIZED_SECTION_ARTIFACT_NAMES } from "../src/constants.js";
 
 const EXPECTED_QR_ARTIFACT_KEYS = ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber"];
@@ -69,7 +69,6 @@ function hydrateFixtureFromMatrix({ matrix, normalized_compiler_output }) {
     }
   }
 }
-
 function findOrCreateSubsection(section, subsectionId) { let subsection = section.subsections.find((item) => item.subsection_id === subsectionId); if (!subsection) { subsection = { subsection_id: subsectionId, subsection_title: subsectionId, fields: [] }; section.subsections.push(subsection); } return subsection; }
 function buildFixtureValue(selector, row) { const sample = sampleAnswer(row); const valuePath = selector.split(".value")[1] || ""; if (!valuePath) return sample; if (valuePath.startsWith("[*].")) return [{ [valuePath.slice(4)]: sample }]; const keys = valuePath.replace(/^\./, "").split(".").filter(Boolean); return keys.reduceRight((nested, key) => ({ [key]: nested }), sample); }
 function sampleAnswer(row) { const options = Array.isArray(row.answer_options) ? row.answer_options : String(row.answer_options || "").split(",").map((value) => value.trim()).filter(Boolean); if ((row.answer_type === "dropdown" || row.answer_type === "select") && options.length) return options.includes("Yes") ? "Yes" : options[0]; return row.demo_prefill_value || "Visible public signal for checker fixture"; }
