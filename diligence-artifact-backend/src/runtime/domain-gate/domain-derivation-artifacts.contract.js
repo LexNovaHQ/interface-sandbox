@@ -19,7 +19,11 @@ export const DOMAIN_DERIVATION_ARTIFACT_CONTRACT = Object.freeze({
     "active_run_package_manifest",
     "target_profile"
   ]),
-  registry_reference: "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml",
+  registry_grammar_reference: "references/registry/Diligence_Field_Derivation_Registry.yml",
+  package_key_references: Object.freeze([
+    "references/registry/AI_Registry_Key.yml",
+    "references/registry/FinTech_Registry_Key.yml"
+  ]),
   package_catalog_reference: "references/domain-packages/package-catalog.v0.json",
   domain_package_key_reference: "references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md",
   runtime_boundary: Object.freeze({

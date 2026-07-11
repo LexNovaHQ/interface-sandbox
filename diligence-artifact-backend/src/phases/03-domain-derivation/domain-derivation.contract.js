@@ -45,7 +45,7 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
     expected_prompt_files: Object.freeze([
       "agent-packages/agent_3_target_feature/02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md"
     ]),
-    prompt_non_updatability_rule: "New domains, overlays, fusion candidates, and regulatory overlays must be added through DOMAIN_DERIVATION_REGISTRY_v0.yaml and package-catalog.v0.json, not by editing the prompt."
+    prompt_non_updatability_rule: "New domains, overlays, fusion candidates, and regulatory overlays must be added through the mounted Registry Keys (domain_derivation_rules) and package-catalog.v0.json, not by editing the prompt."
   }),
   reads: Object.freeze([
     "phase_routing_manifest",
@@ -64,7 +64,9 @@ export const DOMAIN_DERIVATION_CONTRACT = Object.freeze({
   references: Object.freeze([
     "references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md",
     "references/domain-packages/package-catalog.v0.json",
-    "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml"
+    "references/registry/Diligence_Field_Derivation_Registry.yml",
+    "references/registry/AI_Registry_Key.yml",
+    "references/registry/FinTech_Registry_Key.yml"
   ]),
   forbidden_reads: Object.freeze([
     "source_discovery_handoff",
