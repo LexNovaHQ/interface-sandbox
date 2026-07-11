@@ -87,7 +87,7 @@ src/phases/02-cartography-index/services/target-profile-deterministic-map.builde
 src/phases/02-cartography-index/validators/target-profile-semantic-profile.validator.js
 references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
 references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml
-references/registry/FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+references/registry/Diligence_Field_Derivation_Registry.yml
 ```
 
 The reference map inventories field IDs, downstream owner, allowed source scopes, locator families, and `LOCATE_ONLY` status. It does not define derivation rules.
