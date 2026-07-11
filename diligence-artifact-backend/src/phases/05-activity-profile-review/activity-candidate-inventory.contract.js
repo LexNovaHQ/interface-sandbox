@@ -13,7 +13,12 @@ const TA_ROOT = "agent-packages/agent_3_target_feature";
 
 export const ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES = Object.freeze([
   "agent-packages/00_SYSTEM_BLOCKING_DOCTRINE.md",
-  `${TA_ROOT}/03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC_LED_SEMANTIC_SUPPORTED.md`
+  `${TA_ROOT}/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md`,
+  `${TA_ROOT}/AGENT3_RUNTIME_BINDING_PACKET.yaml`,
+  `${TA_ROOT}/03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC_LED_SEMANTIC_SUPPORTED.md`,
+  `${TA_ROOT}/AGENT3_FEATURE_CANDIDATE_INVENTORY_OUTPUT_CONTRACT.md`,
+  `${TA_ROOT}/00_VALIDATOR_RULES_M8_FEATURE_INVENTORY_INDEX_ADDENDUM.md`,
+  `${TA_ROOT}/00_TERMINAL_RECEIPT_RULES_INTEGRATED.md`
 ]);
 
 const ACTIVITY_CANDIDATE_INVENTORY_READS = Object.freeze([
@@ -51,11 +56,12 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
   phase_job_id: "ACTIVITY_CANDIDATE_INVENTORY",
   public_label: "Activity Candidate Inventory",
   compatibility_internal_job_id: "M8_FEATURE_CANDIDATE_INVENTORY",
-  implementation_status: "PHASE5_PASS5_PHASE_OWNED_RUNNER_COMPLETE_CENTRAL_RUNTIME_INJECTION_DEFERRED",
-  production_entrypoint_switched: false,
+  implementation_status: "PHASE5_PASS5_DETERMINISTIC_LED_SEMANTIC_RUNTIME_CUTOVER_COMPLETE",
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "DETERMINISTIC_LED_SEMANTIC_SUPPORTED",
   runtime_version: "v18_phase5_agnostic_deterministic_led_semantic_supported",
+  provider_injected_by_central_runtime: true,
   route_contract: Object.freeze({
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
     route_id: "ROUTE.PHASE5.ACTIVITY_PROFILE",
@@ -70,7 +76,7 @@ export const ACTIVITY_CANDIDATE_INVENTORY_CONTRACT = Object.freeze({
   semantic_support: Object.freeze({
     prompt_bundle_id: "ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES",
     prompt_files: ACTIVITY_CANDIDATE_SEMANTIC_PROMPT_FILES,
-    prompt_bundle_wiring_status: "PHASE_OWNED_ACTIVE_CENTRAL_RUNTIME_INJECTION_DEFERRED",
+    prompt_bundle_wiring_status: "ACTIVE_CENTRAL_RUNTIME_INJECTED",
     semantic_support_attempt_required: true,
     semantic_support_non_blocking: true,
     semantic_output_non_authoritative: true,
