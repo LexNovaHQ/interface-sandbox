@@ -1,1 +1,0 @@
-export { FEATURE_CANDIDATE_INDEX_BOUNDARY, FEATURE_CANDIDATE_INVENTORY_ARTIFACT, FEATURE_CANDIDATE_INVENTORY_MODE, FEATURE_CANDIDATE_INVENTORY_VERSION } from "./phases/05-activity-profile-review/services/activity-candidate-inventory.boundary.js";
