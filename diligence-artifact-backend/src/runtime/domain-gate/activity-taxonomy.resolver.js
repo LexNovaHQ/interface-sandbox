@@ -1,6 +1,9 @@
 import { discoverPackageKeys } from "./domain-derivation-registry.loader.js";
 import { BASE_ACTIVITY_EVIDENCE_ROOTS } from "../../phases/05-activity-profile-review/activity-profile.constants.js";
 
+const OVERLAY_DECLARATION_COMPATIBILITY_LIMITATION = "OVERLAY_DECLARATION_DEFERRED_COMPATIBILITY_ACTIVE";
+const EVIDENCE_ROOT_DECLARATION_DEFERRED_LIMITATION = "ACTIVITY_EVIDENCE_ROOT_DECLARATION_DEFERRED";
+
 export async function resolveActivityTaxonomy({ primaryPackageId, capabilityOverlayIds = [] } = {}) {
   const primaryId = normalizeId(primaryPackageId);
   const overlayIds = uniqueStrings(capabilityOverlayIds);
@@ -21,6 +24,14 @@ export async function resolveActivityTaxonomy({ primaryPackageId, capabilityOver
       limitations.push(`OVERLAY_HAS_NO_TAXONOMY_KEY:${overlayId}`);
       continue;
     }
+
+    if (match.declaration_source === "DOMAIN_DERIVATION_RULES_COMPATIBILITY") {
+      limitations.push(`${OVERLAY_DECLARATION_COMPATIBILITY_LIMITATION}:${overlayId}`);
+      if (!Object.hasOwn(match.entry.key || {}, "activity_evidence_roots")) {
+        limitations.push(`${EVIDENCE_ROOT_DECLARATION_DEFERRED_LIMITATION}:${match.packageId}`);
+      }
+    }
+
     overlays.push(normalizeMountedKey(match.entry.key, {
       packageId: match.packageId,
       overlayId
@@ -37,15 +48,32 @@ export async function resolveActivityTaxonomy({ primaryPackageId, capabilityOver
     primary: primary ? Object.freeze(primary) : null,
     overlays: Object.freeze(overlays.map((overlay) => Object.freeze(overlay))),
     evidence_roots: Object.freeze(evidenceRoots),
-    limitations: Object.freeze(limitations)
+    limitations: Object.freeze(uniqueStrings(limitations))
   });
 }
 
 function findOverlayKey(discovered, overlayId) {
   for (const [packageId, entry] of Object.entries(discovered || {})) {
     const declared = uniqueStrings(asArray(entry?.key?.serves_capability_overlay));
-    if (declared.includes(overlayId)) return { packageId, entry };
+    if (declared.includes(overlayId)) {
+      return { packageId, entry, declaration_source: "REGISTRY_SELF_DECLARATION" };
+    }
   }
+
+  // Temporary compatibility bridge while the append-only registry declarations are
+  // deferred. This reads the key's existing mount rules; it does not invent package
+  // mappings. A future explicit serves_capability_overlay declaration wins above and
+  // automatically retires this path without a resolver change.
+  for (const [packageId, entry] of Object.entries(discovered || {})) {
+    const mountedOverlayIds = uniqueStrings(
+      asArray(entry?.key?.domain_derivation_rules?.capability_overlay_mount_rules)
+        .map((rule) => rule?.package_id)
+    );
+    if (mountedOverlayIds.includes(overlayId)) {
+      return { packageId, entry, declaration_source: "DOMAIN_DERIVATION_RULES_COMPATIBILITY" };
+    }
+  }
+
   return null;
 }
 
