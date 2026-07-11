@@ -1,0 +1,138 @@
+name: Temporary FDR Phase2A Cutover
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  cutover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+      - name: Apply exact FDR and Phase 2A cutover
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('diligence-artifact-backend')
+          fdr = root / 'references/registry/Diligence_Field_Derivation_Registry.yml'
+          addendum = root / 'references/registry/TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml'
+
+          fdr_text = fdr.read_text(encoding='utf-8')
+          addendum_lines = addendum.read_text(encoding='utf-8').splitlines()
+
+          if re.search(r'^- field_id: TP\.BIZ\.009$', fdr_text, flags=re.M) or re.search(r'^- field_id: TP\.BIZ\.010$', fdr_text, flags=re.M):
+              raise SystemExit('TP_BIZ_009_010_ALREADY_PRESENT')
+          if 'row_count: 454' not in fdr_text:
+              raise SystemExit('EXPECTED_FDR_ROW_COUNT_454_NOT_FOUND')
+          if 'version: v3_agnostic_multidomain_provenance' not in fdr_text:
+              raise SystemExit('EXPECTED_FDR_VERSION_NOT_FOUND')
+
+          start = next(i for i, line in enumerate(addendum_lines) if line == '  - field_id: TP.BIZ.009')
+          end = next(i for i, line in enumerate(addendum_lines) if line == 'hard_rules:')
+          block_lines = addendum_lines[start:end]
+          if not any(line == '  - field_id: TP.BIZ.010' for line in block_lines):
+              raise SystemExit('ADDENDUM_TP_BIZ_010_NOT_FOUND')
+          block = '\n'.join(line[2:] if line.startswith('  ') else line for line in block_lines).rstrip() + '\n'
+
+          marker = '- field_id: TP.WRAP.001\n'
+          if marker not in fdr_text:
+              raise SystemExit('FDR_INSERTION_MARKER_NOT_FOUND')
+          fdr_text = fdr_text.replace(marker, block + marker, 1)
+          fdr_text = fdr_text.replace('row_count: 454', 'row_count: 456', 1)
+          fdr_text = fdr_text.replace('version: v3_agnostic_multidomain_provenance', 'version: v3.1_agnostic_multidomain_provenance', 1)
+
+          field_count = len(re.findall(r'^- field_id:', fdr_text, flags=re.M))
+          if field_count != 456:
+              raise SystemExit(f'FDR_FIELD_COUNT_MISMATCH:{field_count}')
+          if len(re.findall(r'^- field_id: TP\.BIZ\.009$', fdr_text, flags=re.M)) != 1:
+              raise SystemExit('TP_BIZ_009_COUNT_INVALID')
+          if len(re.findall(r'^- field_id: TP\.BIZ\.010$', fdr_text, flags=re.M)) != 1:
+              raise SystemExit('TP_BIZ_010_COUNT_INVALID')
+          fdr.write_text(fdr_text, encoding='utf-8')
+
+          legacy_names = (
+              'M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml',
+              'TARGET_PROFILE_PUBLIC_REGULATORY_GRIEVANCE_FIELD_ADDENDUM.yaml',
+          )
+          replacement = 'Diligence_Field_Derivation_Registry.yml'
+          targets = [root / 'src/phases/02-cartography-index']
+          targets.append(root / 'agent-packages/phase_2a_target_profile_source_index')
+
+          script_root = root / 'scripts'
+          for path in script_root.rglob('*'):
+              if not path.is_file() or path.suffix.lower() not in {'.js', '.mjs', '.cjs'}:
+                  continue
+              name = path.name.lower()
+              text = path.read_text(encoding='utf-8')
+              if ('phase2a' in name or 'target-profile-source-index' in name or 'target_profile_source_index' in text) and any(token in text for token in legacy_names):
+                  targets.append(path)
+
+          files = []
+          for target in targets:
+              if target.is_file():
+                  files.append(target)
+              elif target.exists():
+                  files.extend(path for path in target.rglob('*') if path.is_file() and path.suffix.lower() in {'.js', '.mjs', '.cjs', '.md', '.yaml', '.yml', '.json'})
+
+          changed = []
+          for path in sorted(set(files)):
+              text = path.read_text(encoding='utf-8')
+              original = text
+              for token in legacy_names:
+                  text = text.replace(token, replacement)
+              text = text.replace('["Diligence_Field_Derivation_Registry.yml", "Diligence_Field_Derivation_Registry.yml"]', '["Diligence_Field_Derivation_Registry.yml"]')
+              text = text.replace('["references/registry/Diligence_Field_Derivation_Registry.yml", "references/registry/Diligence_Field_Derivation_Registry.yml"]', '["references/registry/Diligence_Field_Derivation_Registry.yml"]')
+              lines = text.splitlines(keepends=True)
+              deduped = []
+              for line in lines:
+                  if deduped and line.strip() in {'- Diligence_Field_Derivation_Registry.yml', '- references/registry/Diligence_Field_Derivation_Registry.yml'} and line.strip() == deduped[-1].strip():
+                      continue
+                  deduped.append(line)
+              text = ''.join(deduped)
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+                  changed.append(str(path))
+
+          scan_roots = [root / 'src/phases/02-cartography-index', root / 'agent-packages/phase_2a_target_profile_source_index']
+          scan_roots.extend(path for path in script_root.rglob('*') if path.is_file() and ('phase2a' in path.name.lower() or 'target-profile-source-index' in path.name.lower()))
+          residue = []
+          for target in scan_roots:
+              paths = [target] if target.is_file() else [p for p in target.rglob('*') if p.is_file()]
+              for path in paths:
+                  if path.suffix.lower() not in {'.js', '.mjs', '.cjs', '.md', '.yaml', '.yml', '.json'}:
+                      continue
+                  text = path.read_text(encoding='utf-8')
+                  for token in legacy_names:
+                      if token in text:
+                          residue.append(f'{path}:{token}')
+          if residue:
+              raise SystemExit('PHASE2A_LEGACY_AUTHORITY_REFS_REMAIN:' + ','.join(residue))
+
+          print('CHANGED_FILES')
+          for item in changed:
+              print(item)
+          PY
+      - name: Commit cutover
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diligence-artifact-backend/references/registry/Diligence_Field_Derivation_Registry.yml \
+                  diligence-artifact-backend/src/phases/02-cartography-index \
+                  diligence-artifact-backend/agent-packages/phase_2a_target_profile_source_index \
+                  diligence-artifact-backend/scripts
+          git commit -m 'Integrate Target Profile regulatory fields into FDR'
+          git push origin HEAD:domain-gate-v0-preflight
