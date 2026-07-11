@@ -23,8 +23,9 @@ jobs:
       - name: Install backend dependencies
         working-directory: diligence-artifact-backend
         run: npm ci
-      - name: Run Cutover 1 checks
+      - name: Check retired addendum references
         working-directory: diligence-artifact-backend
-        run: |
-          node scripts/check-no-legacy-registry-refs.mjs
-          node scripts/check-phase3a-target-profile-package.mjs
+        run: node scripts/check-no-legacy-registry-refs.mjs
+      - name: Check Phase 3A target-profile package
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase3a-target-profile-package.mjs
