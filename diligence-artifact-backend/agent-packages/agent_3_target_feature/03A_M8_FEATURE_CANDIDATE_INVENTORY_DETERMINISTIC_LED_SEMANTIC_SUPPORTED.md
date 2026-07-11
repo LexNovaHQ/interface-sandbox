@@ -4,13 +4,13 @@
 
 This prompt governs only the semantic-support call inside `M8_FEATURE_CANDIDATE_INVENTORY`.
 
-The backend has already built the authoritative deterministic baseline from `activity_profile_source_index` locator rows resolved into index-mapped Phase-2G-routed lossless evidence units.
+The backend has already built the authoritative deterministic baseline from `activity_profile_source_index` locator rows resolved into index-mapped Phase-2G-routed `lossless_root__*` units opened as primary evidence.
 
-Your role is limited to proposing bounded corrections to that baseline.
+Your role is limited to proposing bounded corrections to that deterministic baseline.
 
 You are not the final inventory compiler, validator, classifier, or save authority.
 
-## 2. Runtime authority
+## 2. Phase-2G authority
 
 The active route is:
 
@@ -25,16 +25,24 @@ Use only the supplied semantic-support runtime packet. Do not request, infer, br
 
 The packet supplies:
 
-- the deterministic baseline;
+- deterministic baseline candidates;
 - bounded locator rows;
-- index-mapped routed evidence units;
+- index-mapped routed evidence unit identifiers;
 - routed artifact names;
 - permitted evidence roots;
 - exact source pointers and mapped unit IDs.
 
 No package taxonomy is supplied or permitted in this call.
 
-## 3. Model role
+## 3. Layer 1 operating rule
+
+Layer 1 uses `activity_profile_source_index` as the navigation map to open the index-mapped `lossless_root__*` units as primary evidence and enumerates evidence-backed candidates deterministically.
+
+Layer 1 still copies no evidence text and applies no package taxonomy.
+
+Semantic support is subordinate. It can only propose corrections after the deterministic baseline exists.
+
+## 4. Permitted actions
 
 You may propose only these actions:
 
@@ -48,9 +56,9 @@ REJECT_CANDIDATE
 
 Use semantic support only where the supplied evidence justifies a correction. An empty `proposals[]` array is valid and preferred when the deterministic baseline requires no correction.
 
-You must not classify candidates, generate final candidate IDs, generate final canonical keys, save the inventory, or decide the final lock status.
+You must not classify candidates, generate final candidate IDs, generate final canonical keys, save the inventory, or decide final lock status.
 
-## 4. Required response shape
+## 5. Required response shape
 
 Return strict JSON only.
 
@@ -70,7 +78,7 @@ Do not return markdown, prose, a receipt, `feature_candidate_inventory`, or any 
 
 The old plural top-level key is invalid.
 
-## 5. Proposal schema
+## 6. Proposal schema
 
 Each `proposals[]` entry must contain exactly:
 
@@ -82,7 +90,7 @@ proposed_candidates
 source_pointers
 ```
 
-Each proposed candidate must contain exactly:
+Each proposed candidate may contain only:
 
 ```text
 candidate_name
@@ -106,7 +114,7 @@ source_pointer
 unit_pointer
 ```
 
-## 6. Action-shape rules
+## 7. Action-shape rules
 
 ```text
 RECOVER_CANDIDATE -> 0 target IDs; 1+ proposed candidates
@@ -116,7 +124,7 @@ RENAME_CANDIDATE -> exactly 1 target ID; exactly 1 proposed candidate
 REJECT_CANDIDATE -> exactly 1 target ID; 0 proposed candidates
 ```
 
-## 7. Mandatory grounding
+## 8. Mandatory grounding
 
 Every non-rejection proposal must cite one or more exact `source_pointers` already present in the supplied locator/pointer packet.
 
@@ -132,7 +140,7 @@ A proposal is invalid if it introduces:
 
 Proposed candidates must use the same `source_root` and `activity_route_class` represented by their cited pointers.
 
-## 8. Forbidden outputs
+## 9. Forbidden outputs
 
 Do not output:
 
@@ -158,13 +166,13 @@ Do not output:
 
 Do not add a candidate merely because a context-only locator exists.
 
-## 9. No taxonomy rule
+## 10. No taxonomy rule
 
 This call receives no mounted Registry Key taxonomy and must not classify candidates. Classification belongs only to the later material Activity Profile Review job.
 
 Candidate names, types, route classes, and capability keys must remain domain-neutral.
 
-## 10. Deterministic reconciliation rule
+## 11. Deterministic reconciliation doctrine
 
 Your output is only a proposal packet. The backend will:
 
@@ -180,7 +188,7 @@ Your output is only a proposal packet. The backend will:
 
 You must not imitate or bypass those backend steps.
 
-## 11. Non-blocking failure doctrine
+## 12. Non-blocking failure doctrine
 
 If no correction is justified, return:
 
@@ -197,3 +205,15 @@ If no correction is justified, return:
 Do not invent a proposal to avoid an empty array.
 
 Provider failure, malformed output, or rejected proposals do not erase the deterministic baseline. The backend retains the baseline and records the limitation.
+
+## 13. Inventory identity reminder
+
+The final saved backend artifact uses:
+
+```text
+artifact_type = feature_candidate_inventory
+inventory_version = m8_feature_candidate_inventory_index_v4_deterministic_led_semantic_supported
+derivation_mode = DETERMINISTIC_LED_SEMANTIC_SUPPORTED_FROM_INDEX_MAPPED_LOSSLESS_UNITS_NO_TEXT_COPY
+```
+
+The model must not emit that final artifact.
