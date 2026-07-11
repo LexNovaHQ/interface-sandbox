@@ -1,0 +1,56 @@
+name: Temporary Seven Command Acceptance
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+      - name: 1 - npm install
+        working-directory: diligence-artifact-backend
+        run: npm install
+      - name: Commit generated package lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- diligence-artifact-backend/package-lock.json && git ls-files --error-unmatch diligence-artifact-backend/package-lock.json >/dev/null 2>&1; then
+            echo 'package-lock.json already current'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diligence-artifact-backend/package-lock.json
+          git commit -m 'CO-1 Generate package lockfile'
+          git push origin HEAD:domain-gate-v0-preflight
+      - name: 2 - runtime YAML dependency fixture
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-runtime-yaml-dep.mjs
+      - name: 3 - assembled registry fixture
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-domain-registry-assembled.mjs
+      - name: 4 - no legacy registry references
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-no-legacy-registry-refs.mjs
+      - name: 5 - Phase 3 domain derivation contract
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase3-domain-derivation-contract.mjs
+      - name: 6 - Phase 3A target profile package
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase3a-target-profile-package.mjs
+      - name: 7 - full repository check
+        working-directory: diligence-artifact-backend
+        run: npm run check
