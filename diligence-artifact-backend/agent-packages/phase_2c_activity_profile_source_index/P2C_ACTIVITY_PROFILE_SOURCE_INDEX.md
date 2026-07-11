@@ -136,8 +136,9 @@ primary_domain_package
 domain_package_selected
 AI_REGISTRY_KEY
 FIELD_DERIVATION_REGISTRY
-CLASSIFICATION_DERIVATION_MATRIX
 ```
+
+Product and Activity taxonomy is derived later from `Diligence_Field_Derivation_Registry.yml` plus the mounted Registry Key's `behavior_class` and `surface` axes.
 
 These belong to Phase 5 after the domain package is mounted.
 
