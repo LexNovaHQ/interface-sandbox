@@ -66,7 +66,15 @@ RENAME_CANDIDATE
 REJECT_CANDIDATE
 ```
 
-## 3. Final saved artifact
+## 3. Layer 1 evidence-grounded derivation
+
+Layer 1 uses `activity_profile_source_index` as the navigation map to open index-mapped `lossless_root__*` units as primary evidence and enumerate evidence-backed candidates deterministically.
+
+Layer 1 copies no evidence text and applies no package taxonomy.
+
+Semantic support is attempted only after the deterministic baseline exists. Semantic output is non-authoritative and cannot become the saved artifact directly.
+
+## 4. Final saved artifact
 
 The backend saves exactly one artifact:
 
@@ -95,7 +103,7 @@ The backend saves exactly one artifact:
 }
 ```
 
-## 4. Candidate row contract
+## 5. Candidate row contract
 
 Every final candidate contains exactly:
 
@@ -130,7 +138,7 @@ source_pointer
 unit_pointer
 ```
 
-## 5. Semantic-support receipt
+## 6. Semantic-support receipt
 
 The receipt contains exactly:
 
@@ -156,7 +164,7 @@ UNAVAILABLE
 OUTPUT_REJECTED
 ```
 
-## 6. Derivation order
+## 7. Derivation order
 
 1. Open only Phase-2G-routed activity lossless evidence.
 2. Use `activity_profile_source_index` as mandatory navigation.
@@ -166,13 +174,11 @@ OUTPUT_REJECTED
 6. Generate final IDs and canonical keys deterministically.
 7. Save the inventory with its receipt.
 
-## 7. Non-blocking semantic failure
+## 8. Non-blocking semantic failure
 
 Provider unavailability or wholly rejected semantic output must retain the deterministic baseline and save the artifact as `LOCKED_WITH_LIMITATIONS`.
 
-Partial proposal rejection does not automatically degrade the lock when the remaining proposal packet is usable and the deterministic baseline has no material limitation.
-
-## 8. Forbidden inventory and proposal content
+## 9. Forbidden inventory and proposal content
 
 The final inventory and transient proposal packet must not contain copied evidence text, source excerpts, mechanics proof, activity summaries, package taxonomy, archetype or surface classifications, legal analysis, privacy analysis, exposure analysis, risk scoring, recommendations, free URLs, or confidence fields.
 
