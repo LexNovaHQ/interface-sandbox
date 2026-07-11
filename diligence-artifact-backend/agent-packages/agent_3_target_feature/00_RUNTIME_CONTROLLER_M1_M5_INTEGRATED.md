@@ -146,7 +146,9 @@ Domain Derivation Layer may use only these references:
 
 - `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
 - `references/domain-packages/package-catalog.v0.json`
-- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+- `references/registry/Diligence_Field_Derivation_Registry.yml`
+- `references/registry/AI_Registry_Key.yml`
+- `references/registry/FinTech_Registry_Key.yml`
 
 `domain_derivation_source_index` is navigation only. The scoped 12 `lossless_root__*` artifacts are primary evidence. `target_profile` is context only and not proof.
 
@@ -163,7 +165,7 @@ Domain Derivation Layer must not read or request:
 - data-provenance roots
 - exposure, compiler, or Qualified Review artifacts
 
-Domain Derivation Layer must evaluate the active rules in `DOMAIN_DERIVATION_REGISTRY_v0.yaml`; new domains and overlays are added by registry/catalog update, not prompt update. The model performs condition-level semantic evaluation and the deterministic validator/compiler remains lock authority.
+Domain Derivation Layer must evaluate the active rules assembled from the mounted Registry Keys (`domain_derivation_rules`) plus the Field Derivation Registry grammar; new domains and overlays are added by dropping a Registry Key and updating the catalog, not by prompt update. The model performs condition-level semantic evaluation and the deterministic validator/compiler remains lock authority.
 
 Domain Derivation Layer must not derive or emit target profile edits, activity profile rows, archetypes, surface locks, exposure rows, legal advice, compliance conclusion, risk conclusion, Lane, or remediation route.
 

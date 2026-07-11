@@ -134,7 +134,9 @@ For `P3_DOMAIN_DERIVATION_LAYER`, allowed references are exactly:
 
 - `references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md`
 - `references/domain-packages/package-catalog.v0.json`
-- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+- `references/registry/Diligence_Field_Derivation_Registry.yml`
+- `references/registry/AI_Registry_Key.yml`
+- `references/registry/FinTech_Registry_Key.yml`
 
 `domain_derivation_source_index` is navigation only. The scoped 12 `lossless_root__*` artifacts are evidence authority.
 
@@ -160,7 +162,7 @@ The Domain Derivation Layer prompt is domain-agnostic. It must not hardcode doma
 
 The registry is the ladder:
 
-- `DOMAIN_DERIVATION_REGISTRY_v0.yaml` is rule authority.
+- The mounted Registry Keys (`domain_derivation_rules`) plus `Diligence_Field_Derivation_Registry.yml` grammar are rule authority.
 - `package-catalog.v0.json` is package authority.
 - scoped 12 domain-derivation `lossless_root__*` artifacts are evidence authority.
 - Phase 2 indexes are navigation only.

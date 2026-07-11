@@ -195,7 +195,7 @@ primary_domain_package
 domain_package_selected
 AI_REGISTRY_KEY
 FIELD_DERIVATION_REGISTRY
-CLASSIFICATION_DERIVATION_MATRIX
+retired_standalone_product_activity_matrix
 ```
 
 If Phase 5 needs any of those, Phase 5 must derive them using the active package after 3B has mounted the package.

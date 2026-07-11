@@ -111,7 +111,7 @@ primary_domain_package
 domain_package_selected
 AI_REGISTRY_KEY
 FIELD_DERIVATION_REGISTRY
-CLASSIFICATION_DERIVATION_MATRIX
+retired_standalone_product_activity_matrix
 ```
 
 ## 6. Permitted Work
