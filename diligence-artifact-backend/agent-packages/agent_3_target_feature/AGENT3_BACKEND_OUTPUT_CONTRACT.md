@@ -152,65 +152,147 @@ Return exactly one plain top-level JSON object:
 
 ### Activity Profile Review material response shape
 
-Return exactly one plain top-level JSON object:
+`M8_TARGET_FEATURE_PROFILE` returns exactly:
 
 ```json
 {
-  "target_feature_profile": {}
+  "target_feature_profile": {
+    "activities": [],
+    "commercial_availability_posture": {},
+    "profile_level_limitations": [],
+    "mounted_taxonomy_ref": {
+      "primary_package_id": "",
+      "primary_key_version": "",
+      "overlays": []
+    }
+  }
 }
 ```
 
-Rules:
+`target_feature_profile` contains exactly four top-level keys:
 
-- The top-level value must be an object, not an array.
-- Do not wrap the object inside `phase_output`, `output`, `result`, `data`, an internal job label, or a compatibility module label.
-- Do not return `[ { "target_feature_profile": {} } ]`.
-- Do not include `target_feature_profile_forensics` in the material response.
-- Do not put source ledgers, archetype ledgers, surface-token ledgers, derivation ledgers, runtime trace, validation status, lock status, confidence, source URLs, source IDs, source pointers, copied excerpts, extraction capsule, or forensic/provenance material inside `target_feature_profile`.
-- `target_feature_profile.commercial_availability_posture.evidence_basis[]` is allowed only as short business-readable source-basis notes. It must not contain source URLs, source IDs, source pointers, copied source text, confidence fields, or forensic/provenance material.
-- `target_feature_profile` must contain exactly:
-  - `activities`
-  - `commercial_availability_posture`
-  - `profile_level_limitations`
-- `target_feature_profile.activities` must be an array.
-- Each `target_feature_profile.activities[]` row must contain exactly:
-  - `activity_reference`
-  - `product_service_wrapper`
-  - `activity_feature_name`
-  - `activity_candidate_summary`
-  - `mechanics_proof`
-  - `autonomy_human_control_signal`
-  - `data_content_object_touched`
-  - `external_internal_action_signal`
-  - `archetype_codes`
-  - `archetype_derivation_basis`
-  - `surface_context_tokens`
-  - `surface_derivation_basis`
-- Do not emit the retired fields `archetype_proof` or `surface_proof_and_routing_limits`.
-- `archetype_codes[]` may contain more than one archetype when each selected archetype is independently supported by activity mechanics.
-- `archetype_derivation_basis` and `surface_derivation_basis` must be arrays of material basis objects.
-- Each derivation-basis object must contain exactly:
-  - `code_or_token`
-  - `normalized_name`
-  - `conditions_satisfied`
-  - `trigger_if_applied`
-  - `exclude_if_checked`
-  - `material_basis`
-  - `limitation`
-- `conditions_satisfied` must be an array.
-- Every selected archetype code must have exactly one matching `archetype_derivation_basis[]` object where `code_or_token` equals the selected code.
-- No `archetype_derivation_basis[]` object may exist for an unselected archetype code.
-- Every selected surface token must have exactly one matching `surface_derivation_basis[]` object where `code_or_token` equals the selected token.
-- No `surface_derivation_basis[]` object may exist for an unselected surface token.
-- `target_feature_profile.commercial_availability_posture` must be an object with exactly:
-  - `posture`
-  - `free_trial_freemium_signal`
-  - `beta_pilot_early_access_signal`
-  - `paid_production_enterprise_plan_signal`
-  - `evidence_basis`
-  - `limitation`
-- Every emitted activity must use the locked activity-card schema.
-- The backend runner must validate and save `target_feature_profile` before Activity Profile Forensics begins.
+```text
+activities
+commercial_availability_posture
+profile_level_limitations
+mounted_taxonomy_ref
+```
+
+Each `activities[]` row contains exactly ten keys:
+
+```text
+activity_reference
+product_service_wrapper
+activity_feature_name
+activity_candidate_summary
+mechanics_proof
+autonomy_human_control_signal
+data_content_object_touched
+external_internal_action_signal
+primary_classification
+overlay_classifications
+```
+
+The first eight fields are non-empty domain-blind strings.
+
+`primary_classification` contains exactly:
+
+```text
+package_id
+archetype_codes
+archetype_derivation_basis
+surface_context_tokens
+surface_derivation_basis
+```
+
+Each `overlay_classifications[]` entry contains exactly:
+
+```text
+package_id
+overlay_id
+archetype_codes
+archetype_derivation_basis
+surface_context_tokens
+surface_derivation_basis
+```
+
+Each archetype or surface derivation-basis entry contains exactly:
+
+```text
+code_or_token
+normalized_name
+conditions_satisfied
+trigger_if_applied
+exclude_if_checked
+material_basis
+limitation
+```
+
+Per-block basis rule:
+
+- every selected `archetype_codes[]` value has exactly one matching `archetype_derivation_basis[]` entry by `code_or_token`;
+- every selected `surface_context_tokens[]` value has exactly one matching `surface_derivation_basis[]` entry by `code_or_token`;
+- no basis entry may exist for an unselected value;
+- membership is checked against that block's `package_id` vocabulary.
+
+`commercial_availability_posture` contains exactly:
+
+```text
+posture
+free_trial_freemium_signal
+beta_pilot_early_access_signal
+paid_production_enterprise_plan_signal
+evidence_basis
+limitation
+```
+
+`mounted_taxonomy_ref` contains exactly:
+
+```text
+primary_package_id
+primary_key_version
+overlays
+```
+
+Each `mounted_taxonomy_ref.overlays[]` entry contains exactly:
+
+```text
+overlay_id
+package_id
+key_version
+```
+
+The backend stamps `mounted_taxonomy_ref`; the model must not override it.
+
+Forbidden anywhere in `target_feature_profile`:
+
+```text
+URLs
+source_id
+source_url
+source_pointer
+source_ref
+candidate_id
+confidence
+validation_status
+lock_status
+*_ledger
+runtime_trace
+archetype_proof
+surface_proof_and_routing_limits
+excerpt
+lossless_text
+clean_text
+raw text
+```
+
+Controlled degradation rules:
+
+- unresolved primary package key: empty primary arrays plus `PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>`;
+- resolved primary with no legitimate archetype match: empty primary arrays plus `NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>`;
+- unresolved capability overlay: no overlay block plus `OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>`;
+- regulatory overlays are excluded from activity archetype and surface classification;
+- no catch-all archetype may be forced.
 
 ### Activity Profile Forensics response shape
 
