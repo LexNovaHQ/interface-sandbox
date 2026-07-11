@@ -1,8 +1,8 @@
-import { logEvent } from "./firestore.js";
-import { buildPhasePrompt } from "./prompt-loader.js";
-import { loadReferencePacket } from "./reference-loader.js";
-import { callGeminiJson } from "./gemini-client.js";
-import { artifactSaveBody, lockPhase, readArtifact, readArtifactPayload, saveArtifact } from "./artifact-service.js";
+import { logEvent } from "./runtime/services/storage/firestore.service.js";
+import { buildPhasePrompt } from "./runtime/services/prompts.service.js";
+import { loadReferencePacket } from "./runtime/services/reference.service.js";
+import { callGeminiJson } from "./runtime/services/provider.service.js";
+import { lockPhase, readArtifact, readArtifactPayload, saveArtifact } from "./runtime/services/artifacts.service.js";
 import { assembleM11AcceptedBatchLedger, buildExposureRegistryRoutePlan, buildM11BatchPacket, mergeExposureRegistryWorkpad98, projectControlledProfile, projectTriggeredProfile, validateM11BatchLedger } from "./m11-deterministic-system-m11v2.js";
 import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-deterministic-forensics-m11v2.js";
 import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
@@ -23,7 +23,8 @@ export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   delivery_mode: "SOURCE_BUCKET_PROFILE",
   lossless_evidence_is_primary: true,
   index_navigation_mandatory: true,
-  preceding_forensic_inputs_forbidden: true
+  preceding_forensic_inputs_forbidden: true,
+  infrastructure_authority: "CENTRAL_RUNTIME_SERVICES"
 });
 
 export async function runM11OrchestratedPhase({ run, phase, contract }) {
@@ -90,7 +91,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const triggered = await getOrBuildProjection({ run, phase, artifactName: ART.triggered, isCurrent: isM11V2Projection, build: () => projectTriggeredProfile({ [ART.workpad]: workpad.artifact })[ART.triggered] });
   const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket });
   const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
-  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, infrastructure_authority: "CENTRAL_RUNTIME_SERVICES" } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
 }
 
@@ -205,6 +206,7 @@ function assertM11RoutePacket(packet = {}) {
   if (packet.profile_forensics_inputs_allowed !== false) throw new Error("M11_PHASE2G_FORENSICS_INPUT_BOUNDARY_MISSING");
 }
 
+function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) { return { run_id, phase, agent_id, artifact_name, lock_status, artifact }; }
 function routePlanLockStatus(status) { return status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "CONTROLLED_FAILURE"; }
 function isAccepted(status) { return ACCEPTED.has(status); }
 function deriveFinalM11Status({ routeStatus, forensicStatus, batchValidations }) { if (routeStatus === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS"; if (forensicStatus === "LOCKED_WITH_LIMITATIONS" || !isAccepted(forensicStatus)) return "LOCKED_WITH_LIMITATIONS"; return batchValidations.some((v) => v?.exposure_registry_batch_validation?.status === "PASS_WITH_LIMITATION") ? "LOCKED_WITH_LIMITATIONS" : "LOCKED"; }
