@@ -45,8 +45,8 @@ prompt_precedence:
   - Lossless evidence is primary and must be navigated through the route's required index.
   - Material profile jobs must not read forensic profiles.
   - Target Profile Review may use legal_signal_derivation_profile only as a bounded 2G-routed dependency for owned notice and jurisdiction fields.
-  - Domain Derivation Layer uses DOMAIN_DERIVATION_REGISTRY_v0.yaml as rule authority and package-catalog.v0.json as package authority.
-  - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by registry/catalog update, not prompt update.
+  - Domain Derivation Layer uses the mounted Registry Keys (domain_derivation_rules) plus Diligence_Field_Derivation_Registry.yml grammar as rule authority and package-catalog.v0.json as package authority.
+  - Domain Derivation Layer must not hardcode domain-specific classification logic; new domains are added by dropping a new Registry Key and updating the catalog, not by prompt update.
   - Activity Candidate Inventory creates candidates only from activity_profile_source_index locators and does not independently scan the routed lossless evidence.
   - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index to navigate its routed lossless evidence.
   - Activity Profile Review uses active_run_package_manifest and domain package context for package-specific activity taxonomy.
@@ -161,11 +161,15 @@ required_reference_files:
   P3_DOMAIN_DERIVATION_LAYER:
     - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
     - references/domain-packages/package-catalog.v0.json
-    - references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+    - references/registry/Diligence_Field_Derivation_Registry.yml
+    - references/registry/AI_Registry_Key.yml
+    - references/registry/FinTech_Registry_Key.yml
   ACTIVITY_PROFILE_REVIEW:
     - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
     - references/domain-packages/package-catalog.v0.json
-    - references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+    - references/registry/Diligence_Field_Derivation_Registry.yml
+    - references/registry/AI_Registry_Key.yml
+    - references/registry/FinTech_Registry_Key.yml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 target_profile_review_phase2a_boundary:
@@ -190,7 +194,11 @@ domain_derivation_phase2b_boundary:
 
 domain_derivation_registry_ladder_schema:
   prompt_file: 02B_P3_DOMAIN_DERIVATION_LAYER_BACKEND.md
-  registry_authority: references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+  assembled_registry_id: DILIGENCE_DOMAIN_REGISTRY_v1
+  registry_grammar_authority: references/registry/Diligence_Field_Derivation_Registry.yml
+  package_key_authorities:
+    - references/registry/AI_Registry_Key.yml
+    - references/registry/FinTech_Registry_Key.yml
   package_authority: references/domain-packages/package-catalog.v0.json
   prompt_is_domain_agnostic: true
   new_domains_added_by_registry_not_prompt: true
@@ -207,8 +215,8 @@ activity_profile_material_schema:
   candidate_universe_authority: feature_candidate_inventory
   package_context_authority: active_run_package_manifest
   package_catalog_authority: references/domain-packages/package-catalog.v0.json
-  archetype_derivation_authority: mounted_domain_package_or_active_run_package_manifest
-  surface_derivation_authority: mounted_domain_package_or_active_run_package_manifest
+  archetype_derivation_authority: AI_Registry_Key.yml behavior_class
+  surface_derivation_authority: AI_Registry_Key.yml surface
   fixed_ai_registry_key_universal_authority_forbidden: true
   fixed_ai_archetype_enum_forbidden: true
   fixed_ai_surface_enum_forbidden: true
