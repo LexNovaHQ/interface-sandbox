@@ -1,0 +1,6 @@
+{
+  "branch": "domain-gate-v0-preflight",
+  "base_head": "8df51f6cc40c5446fddcf9d4a3359d1245b09c98",
+  "overall_status": 1,
+  "commands": [{"command":1,"label":"npm install","exit_status":0},{"command":2,"label":"runtime YAML dependency fixture","exit_status":0},{"command":3,"label":"assembled registry fixture","exit_status":0},{"command":4,"label":"no legacy registry references","exit_status":0},{"command":5,"label":"Phase 3 domain derivation contract","exit_status":0},{"command":6,"label":"Phase 3A target profile package","exit_status":1},{"command":7,"label":"full repository check","exit_status":1}]
+}
