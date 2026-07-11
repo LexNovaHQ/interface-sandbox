@@ -1,0 +1,9 @@
+agent-packages/phase_2c_activity_profile_source_index/00_TERMINAL_RECEIPT_RULES_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md:165:CLASSIFICATION_DERIVATION_MATRIX
+agent-packages/phase_2c_activity_profile_source_index/00_RUNTIME_CONTROLLER_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md:114:CLASSIFICATION_DERIVATION_MATRIX
+agent-packages/phase_2c_activity_profile_source_index/00_VALIDATOR_RULES_PHASE2C_ACTIVITY_PROFILE_SOURCE_INDEX.md:198:CLASSIFICATION_DERIVATION_MATRIX
+agent-packages/phase_2b_domain_derivation_source_index/P2B_PACKET_MANIFEST.json:51:    "references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml",
+agent-packages/phase_2b_domain_derivation_source_index/P2B_DOMAIN_DERIVATION_SOURCE_INDEX.md:104:references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml
+agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md:137:- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md:163:- `DOMAIN_DERIVATION_REGISTRY_v0.yaml` is rule authority.
+agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md:149:- `references/domain-packages/DOMAIN_DERIVATION_REGISTRY_v0.yaml`
+agent-packages/agent_3_target_feature/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md:166:Domain Derivation Layer must evaluate the active rules in `DOMAIN_DERIVATION_REGISTRY_v0.yaml`; new domains and overlays are added by registry/catalog update, not prompt update. The model performs condition-level semantic evaluation and the deterministic validator/compiler remains lock authority.
