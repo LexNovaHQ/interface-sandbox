@@ -17,8 +17,8 @@ This validator is bounded by the backend phase contract. It cannot expand read a
 
 For Target Profile Review, allowed inputs are exactly:
 
-- `source_discovery_handoff`
-- `cartography_index`
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
 - `target_profile_source_index`
 - `lossless_root__homepage_landing`
 - `lossless_root__company_identity`
@@ -27,10 +27,8 @@ For Target Profile Review, allowed inputs are exactly:
 - `lossless_root__regulatory_licensing_status`
 - `lossless_root__grievance_complaints`
 - `legal_signal_derivation_profile`
-- `domain_selection_profile`
-- `active_run_package_manifest`
 
-`cartography_index` and `target_profile_source_index` are navigation only. The scoped `lossless_root__*` target artifacts are the evidence source.
+`target_profile_source_index` is navigation only. The scoped `lossless_root__*` target artifacts are the evidence source. `source_discovery_handoff`, `cartography_index`, `domain_selection_profile`, and `active_run_package_manifest` are NOT Target Profile Review inputs and must be rejected.
 
 `target_profile_deterministic_map` and `target_profile_semantic_profile` are Phase 2A internal artifacts and must not be treated as Target Profile Review model inputs.
 
@@ -111,9 +109,8 @@ No forensic branch, profile metadata, evidence ledger, source ledger, confidence
 
 For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs are exactly:
 
-- `source_discovery_handoff`
-- `cartography_index`
-- `target_profile_source_index`
+- `phase_routing_manifest`
+- `phase_route_runtime_packet`
 - `domain_derivation_source_index`
 - `target_profile`
 - `lossless_root__homepage_landing`
@@ -130,6 +127,8 @@ For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs are exactly:
 - `lossless_root__grievance_complaints`
 - `domain_selection_profile`
 - `active_run_package_manifest`
+
+`source_discovery_handoff`, `cartography_index`, and `target_profile_source_index` are NOT Domain Derivation Layer inputs and must be rejected.
 
 For `P3_DOMAIN_DERIVATION_LAYER`, allowed references are exactly:
 
