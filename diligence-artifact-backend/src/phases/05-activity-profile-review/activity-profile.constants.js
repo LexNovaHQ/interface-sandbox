@@ -52,8 +52,8 @@ export const DERIVATION_BASIS_FIELDS = Object.freeze([
 
 export const CLASSIFICATION_BLOCK_FIELDS = Object.freeze([
   "package_id",
-  "archetype_codes",
-  "archetype_derivation_basis",
+  "behavior_class_codes",
+  "behavior_class_derivation_basis",
   "surface_context_tokens",
   "surface_derivation_basis"
 ]);
@@ -61,8 +61,8 @@ export const CLASSIFICATION_BLOCK_FIELDS = Object.freeze([
 export const OVERLAY_CLASSIFICATION_BLOCK_FIELDS = Object.freeze([
   "package_id",
   "overlay_id",
-  "archetype_codes",
-  "archetype_derivation_basis",
+  "behavior_class_codes",
+  "behavior_class_derivation_basis",
   "surface_context_tokens",
   "surface_derivation_basis"
 ]);
