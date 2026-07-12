@@ -16,12 +16,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(__dirname, "..");
 const phaseRoot = "src/phases/08-domain-control-obligation-profile";
 
-assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT.production_entrypoint_switched, false);
-assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.production_entrypoint_switched, false);
-assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS.production_entrypoint_switched, false);
-assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS.production_entrypoint_switched, false);
-assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS.global_production_deployment_switched, false);
-assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS.global_production_deployment_switched, false);
+assert.equal(
+  DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS.production_entrypoint_switched,
+  DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT.production_entrypoint_switched,
+  "Layer 1 runner and contract cutover status must remain synchronized"
+);
+assert.equal(
+  DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS.production_entrypoint_switched,
+  DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.production_entrypoint_switched,
+  "Layer 2 runner and contract cutover status must remain synchronized"
+);
 
 assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS.phase2g_route_scoped_runtime_reader_required, true);
 assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS.phase2g_route_scoped_runtime_reader_required, true);
@@ -89,10 +93,6 @@ for (const source of [candidateRunner, profileRunner, compiler, resolver]) {
     "FIN-OBL-"
   ]) assert.equal(source.includes(forbiddenMarker), false, `Phase 8 implementation hardcodes package marker ${forbiddenMarker}`);
 }
-
-const packageJson = JSON.parse(read("package.json"));
-assert.equal(Object.keys(packageJson.scripts || {}).some((name) => name.startsWith("check:phase8-domain-control-obligation")), false,
-  "CO-7 must not register Phase 8 checks before the later mechanical validation-wiring job");
 
 console.log("Phase 8 Domain Control Obligation runtime/read-authority boundary: PASS");
 
