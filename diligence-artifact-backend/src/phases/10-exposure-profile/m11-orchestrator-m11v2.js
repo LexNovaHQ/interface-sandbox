@@ -61,11 +61,13 @@ const ART = Object.freeze({
   forensics: "exposure_registry_profile_forensics"
 });
 const CHECKPOINT_SCHEMAS = Object.freeze({
-  [ART.workpad]: "exposure_registry_workpad.v3.dynamic",
-  [ART.controlled]: "exposure_registry_controlled_profile.v3.dynamic",
-  [ART.triggered]: "exposure_registry_triggered_profile.v3.dynamic",
-  [ART.forensics]: "M11_DOMAIN_AGNOSTIC_FORENSICS_v1"
+  [ART.workpad]: "exposure_registry_workpad.v4.complete_registry_spine",
+  [ART.controlled]: "exposure_registry_controlled_profile.v4.complete_report_row",
+  [ART.triggered]: "exposure_registry_triggered_profile.v4.complete_report_row",
+  [ART.forensics]: "M11_DOMAIN_AGNOSTIC_FORENSICS_v2_COMPLETE_REPORT_ROW"
 });
+const BATCH_VALIDATION_SCHEMA = "exposure_registry_batch_validation.v4.complete_registry_spine";
+const ACCEPTED_BATCH_SCHEMA = "m11_batch_registry_ledger.v4.complete_registry_spine.accepted";
 
 export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
@@ -77,11 +79,11 @@ export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   preceding_forensic_inputs_forbidden: true,
   infrastructure_authority: "CENTRAL_RUNTIME_SERVICES",
   phase_owned_path: "src/phases/10-exposure-profile",
-  deterministic_route_stage: "CO_4_CO_5_CO_6_ACTIVE",
-  semantic_package_stage: "CO_7_CONTRACT_READY",
-  semantic_runtime_stage: "CO_8_DOMAIN_AGNOSTIC_LAYER2_ACTIVE",
-  deterministic_finalization_stage: "CO_9_DYNAMIC_LAYER3_ACTIVE",
-  forensics_stage: "CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE"
+  deterministic_route_stage: "BEHAVIOR_CLASS_CANONICAL_ACTIVE",
+  semantic_package_stage: "COMPLETE_REGISTRY_SPINE_READ_ONLY_ACTIVE",
+  semantic_runtime_stage: "MODEL_SEMANTIC_FIELDS_ONLY_ACTIVE",
+  deterministic_finalization_stage: "COMPLETE_REPORT_ROW_ACTIVE",
+  forensics_stage: "COMPLETE_REGISTRY_SPINE_TRACE_ACTIVE"
 });
 
 export async function runM11OrchestratedPhase({ run, phase, contract }) {
@@ -188,6 +190,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
       controlled_rows: controlled.artifact.controlled_rows?.length || 0,
       triggered_rows: triggered.artifact.triggered_rows?.length || 0,
       phase10_execution_fingerprint: manifest.artifact.phase10_execution_fingerprint,
+      report_row_schema_version: controlled.artifact.report_row_schema_version,
       final_status: finalStatus
     }
   });
@@ -248,8 +251,8 @@ async function readCompletedBatchCheckpoint({ run_id, batch, expectedExecutionFi
   if (!artifactMatchesPhase10ExecutionFingerprint(validation.artifact, expectedExecutionFingerprint) || !artifactMatchesPhase10ExecutionFingerprint(accepted.artifact, expectedExecutionFingerprint)) return null;
   const validationRoot = validation.artifact?.exposure_registry_batch_validation || {};
   const root = accepted.artifact?.m11_batch_registry_ledger || {};
-  if (validationRoot.schema_version !== "exposure_registry_batch_validation.v3.package_scoped") return null;
-  if (root.schema_version !== "m11_batch_registry_ledger.v3.package_scoped.accepted") return null;
+  if (validationRoot.schema_version !== BATCH_VALIDATION_SCHEMA) return null;
+  if (root.schema_version !== ACCEPTED_BATCH_SCHEMA) return null;
   if (root.batch_id !== batch.batch_id || root.stream_id !== batch.stream_id || root.package_id !== batch.package_id) return null;
   return { validationArtifact: validation.artifact, batchArtifact: accepted.artifact };
 }
@@ -257,7 +260,7 @@ async function readCompletedBatchCheckpoint({ run_id, batch, expectedExecutionFi
 async function failBatch({ run, phase, batch, failures, manifest, validation = null }) {
   const artifact = stampPhase10ExecutionMetadata(validation || {
     exposure_registry_batch_validation: {
-      schema_version: "exposure_registry_batch_validation.v3.package_scoped",
+      schema_version: BATCH_VALIDATION_SCHEMA,
       batch_id: batch.batch_id,
       stream_id: batch.stream_id,
       stream_type: batch.stream_type,
