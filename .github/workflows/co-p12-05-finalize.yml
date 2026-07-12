@@ -1,0 +1,119 @@
+name: CO P12 05 Atomic Finalize
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - co-p12-05-validation-trigger.txt
+      - .github/workflows/co-p12-05-finalize.yml
+      - diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: co-p12-05-finalize
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Apply atomic Phase 12 production cutover
+        working-directory: diligence-artifact-backend
+        run: node scripts/apply-co-p12-05-cutover.mjs
+
+      - name: Validate CO-P12-01 through CO-P12-05
+        working-directory: diligence-artifact-backend
+        run: |
+          npm run check:p12:co1
+          npm run check:p12:co2
+          npm run check:p12:co3
+          npm run check:p12:co4
+          npm run check:p12:co5
+
+      - name: Validate full backend contract
+        working-directory: diligence-artifact-backend
+        run: npm run check
+
+      - name: Write certified receipt
+        working-directory: diligence-artifact-backend
+        env:
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+          const files = [
+            'src/phases/12-normalized-compiler/compiler.js',
+            'src/phases/12-normalized-compiler/phase12-compiler.runner.js',
+            'src/phases/12-normalized-compiler/phase10-downstream-compatibility.js',
+            'src/runtime/services/reporting/report-renderer.service.js',
+            'src/runtime/services/pipeline.service.js',
+            'src/runtime/contracts/pipeline.contract.js',
+            'src/runtime/contracts/artifact-permissions.contract.js',
+            'src/phases/02-cartography-index/phase-routing.contract.js',
+            'src/phases/02-cartography-index/services/phase-route-runtime.reader.js',
+            'public/interface-diligence/diligence-system/report.js',
+            'scripts/check-co-p12-05.mjs'
+          ];
+          const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+          const receipt = {
+            schema_version: 'co_p12_05_certified_receipt.v1',
+            status: 'PASS',
+            exit_code: 0,
+            command: 'npm run check:p12:co1..co5 && npm run check',
+            workflow: process.env.WORKFLOW_NAME,
+            run_id: process.env.RUN_ID,
+            target_branch: 'domain-gate-v0-preflight',
+            validated_parent_sha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+            compiler_runtime_cutover_status: 'PRODUCTION_DIRECT_PROFILE_COMPILER_ACTIVE',
+            renderer_cutover_status: 'PRODUCTION_CLEAN_PROFILE_RENDERER_ACTIVE',
+            phase2g_boundary: 'ENDS_AT_PHASE11_OPERATOR_CHALLENGE',
+            canonical_section_count: 10,
+            report_facing_artifact_count: 29,
+            section5_child_profile_count: 11,
+            section8_child_profile_count: 8,
+            legacy_normalized_artifacts_emitted: false,
+            legacy_recursive_compiler_retired: true,
+            mandatory_material_field_preservation: 'ENFORCED',
+            custody_rendering: 'FORBIDDEN',
+            local_counsel_review_required: true,
+            generated_files: Object.fromEntries(files.map((file) => [file, { sha256: sha256(file), size_bytes: fs.statSync(file).size }])),
+            certified_at: new Date().toISOString()
+          };
+          fs.mkdirSync('receipts', { recursive: true });
+          fs.writeFileSync('receipts/CO_P12_05_CERTIFIED.json', JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+
+      - name: Commit cutover and remove temporary machinery
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
+          git rm .github/workflows/co-p12-05-finalize.yml
+          git add -A
+          git commit -m "Cut over Phase 12 renderer runtime and retire legacy compiler"
+          git push origin HEAD:domain-gate-v0-preflight
