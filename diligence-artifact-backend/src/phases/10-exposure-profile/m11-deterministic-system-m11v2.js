@@ -51,7 +51,6 @@ export const MATERIAL_FIELDS = Object.freeze([
 
 export const parseAiThreatRegistryYaml = base.parseAiThreatRegistryYaml;
 export const parseReferencePacket = base.parseReferencePacket;
-export const validateThreatIdDecomposition = base.validateThreatIdDecomposition;
 export const normalizeField23 = base.normalizeField23;
 export const parseHunterTrigger = base.parseHunterTrigger;
 export const validateM11BatchLedger = base.validateM11BatchLedger;
@@ -59,21 +58,41 @@ export const deriveM11FinalEvaluationStatus = base.deriveM11FinalEvaluationStatu
 export const buildExposureRegistryForensics = base.buildExposureRegistryForensics;
 export { buildPhase5ClassificationInventory, finalizePhase10RoutingContext };
 
+export function validateThreatIdDecomposition(row = {}) {
+  const threatId = String(row.Threat_ID || "").trim();
+  const parts = threatId.split("_");
+  if (parts.length < 3) return { ok: false, reason: "Threat_ID must contain at least three underscore-delimited segments" };
+  const expected21 = parts[0];
+  const expected22 = parts.slice(1, -1).join("_");
+  const expected23 = normalizeField23(parts.at(-1));
+  const actual21 = String(row.FIELD21 || "").trim();
+  const actual22 = String(row.FIELD22 || "").trim();
+  const actual23 = String(row.FIELD23 || "").trim();
+  if (actual21 !== expected21) return { ok: false, reason: `FIELD21 expected ${expected21} got ${actual21 || "missing"}` };
+  if (actual22 !== expected22) return { ok: false, reason: `FIELD22 expected ${expected22} got ${actual22 || "missing"}` };
+  if (actual23 !== expected23) return { ok: false, reason: `FIELD23 expected ${expected23} got ${actual23 || "missing"}` };
+  return { ok: true };
+}
+
 export function validateRegistryRows(rows, options = {}) {
-  const baseline = base.validateRegistryRows(rows, options);
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const baselineRows = sourceRows.map(toLegacyDecompositionShape);
+  const baseline = base.validateRegistryRows(baselineRows, options);
   const failures = [...(baseline.failures || [])];
   const mandatory = [
     "Threat_ID", "Threat_Name", "Lane", "Surface", "Velocity", "Pain_Tier", "Pain_Category",
     "Pain_Depth", "Status", "Effective_Date", "Legal_Pain", "FP_Mechanism", "FP_Impact",
     "Lex_Nova_Fix", "Hunter_Trigger", "Provenance", "FIELD21", "FIELD22", "FIELD23"
   ];
-  for (const [index, row] of (Array.isArray(rows) ? rows : []).entries()) {
+  for (const [index, row] of sourceRows.entries()) {
     const id = String(row?.Threat_ID || `ROW_${index + 1}`);
     const behaviorClass = String(row?.Behavior_Class || row?.Archetype || row?.FIELD21 || "").trim();
     if (!behaviorClass) failures.push(`REGISTRY_BEHAVIOR_CLASS_MISSING:${id}`);
     for (const field of mandatory) {
       if (!String(row?.[field] ?? "").trim()) failures.push(`REGISTRY_MANDATORY_FIELD_MISSING:${id}:${field}`);
     }
+    const decomposition = validateThreatIdDecomposition(row);
+    if (!decomposition.ok) failures.push(`${id} FIELD21/22/23 mismatch: ${decomposition.reason}`);
     if (![row?.Authority_IN, row?.Authority_EU, row?.Authority_US].some((value) => String(value || "").trim() && String(value).trim() !== "—")) {
       failures.push(`REGISTRY_AUTHORITY_ANCHOR_MISSING:${id}`);
     }
@@ -88,6 +107,8 @@ export function validateRegistryRows(rows, options = {}) {
     severity_presence_validation_status: severityPresenceFailures.length ? "CONTROLLED_FAILURE" : "PASS",
     mounted_key_severity_validation_required: true,
     generic_cross_package_severity_vocabulary_forbidden: true,
+    compound_subcategory_id_support: true,
+    compound_subcategory_identity_authority: "Threat_ID middle segments + FIELD22",
     deterministic_report_row_contract: "phase10_report_row.v1.complete_registry_spine"
   };
 }
@@ -137,6 +158,17 @@ export function projectTriggeredProfile(workpadRoot) {
       report_row_schema_version: "phase10_report_row.v1.complete_registry_spine",
       triggered_rows: rows
     }
+  };
+}
+function toLegacyDecompositionShape(row = {}) {
+  const parts = String(row.Threat_ID || "").trim().split("_");
+  if (parts.length <= 3) return row;
+  const compound = validateThreatIdDecomposition(row);
+  if (!compound.ok) return row;
+  return {
+    ...row,
+    FIELD22: parts[1],
+    FIELD23: normalizeField23(parts.slice(2).join("_"))
   };
 }
 function projectCompleteRow(row = {}) {
