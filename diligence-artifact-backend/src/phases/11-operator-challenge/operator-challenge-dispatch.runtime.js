@@ -8,10 +8,10 @@ import { runDomainDerivationPhase } from "../03-domain-derivation/domain-derivat
 import { runActivityProfileReviewPhase } from "../05-activity-profile-review/activity-profile-review.runner.js";
 import { runDataProvenanceProfilePhase } from "../07-data-provenance-profile/data-provenance-profile.runner.js";
 import { runDomainControlObligationProfilePhase } from "../08-domain-control-obligation-profile/domain-control-obligation-profile.runner.js";
-import { runM11OrchestratedPhase } from "../10-exposure-profile/exposure-profile.runner.js";
 import { buildOperatorChallengeInventory } from "./operator-challenge-inventory.js";
 import { buildOperatorChallengeLayer3 } from "./operator-challenge-adjudication.js";
 import { recordOperatorChallengeReinvestigationAttempt } from "./operator-challenge-reinvestigation.js";
+import { runPhase10TargetedReinvestigation } from "./phase10-targeted-reinvestigation.js";
 import {
   createPhase11ReinvestigationDispatch,
   phase11DispatchContractForRun,
@@ -49,9 +49,10 @@ export async function executePhase11ReinvestigationLoop({
     const dispatch = createPhase11ReinvestigationDispatch({ challengeGate: gate, run, baselineArtifactVersions });
     const previousCandidate = candidateForDispatch({ challengeGate: gate, dispatch });
     let runtimeError = null;
+    let ownerReceipt = null;
 
     try {
-      await executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, callProvider });
+      ownerReceipt = await executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, callProvider });
     } catch (error) {
       runtimeError = error;
       await logEvent({
@@ -76,7 +77,8 @@ export async function executePhase11ReinvestigationLoop({
       owner_internal_job: dispatch.owner_internal_job,
       result: attemptResult.result,
       validation_basis: attemptResult.validation_basis,
-      return_fingerprint: attemptResult.return_fingerprint
+      return_fingerprint: attemptResult.return_fingerprint,
+      owner_receipt: ownerReceipt || null
     });
 
     if (dispatchCount > Math.max(1, Number(initialChallengeGate?.operator_challenge_reinvestigation_ledger?.entries?.length || 0) * 2 + 2)) {
@@ -112,6 +114,14 @@ async function executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, ca
   };
   const actor = OWNER_ACTOR[dispatch.owner_internal_job];
   if (!actor) throw new Error(`PHASE11_REINVESTIGATION_OWNER_JOB_UNSUPPORTED:${dispatch.owner_internal_job}`);
+  if (dispatch.owner_internal_job === "M11") return runPhase10TargetedReinvestigation({
+    run: targetedRun,
+    dispatch,
+    contract: scopedContract,
+    readArtifacts,
+    buildPrompt,
+    callProvider
+  });
   const saveArtifact = async ({ artifact_name, artifact, lock_status }) => saveRuntimeArtifact({
     run_id: run.run_id,
     phase: dispatch.owner_internal_job,
@@ -139,12 +149,6 @@ async function executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, ca
   if (dispatch.owner_internal_job === "M8_TARGET_FEATURE_PROFILE") return runActivityProfileReviewPhase(common);
   if (dispatch.owner_internal_job === "DATA_PROVENANCE_PROFILE_LAYER4") return runDataProvenanceProfilePhase(common);
   if (dispatch.owner_internal_job === "DOMAIN_CONTROL_OBLIGATION_PROFILE") return runDomainControlObligationProfilePhase(common);
-  if (dispatch.owner_internal_job === "M11") return runM11OrchestratedPhase({
-    run: targetedRun,
-    phase: "M11",
-    contract: scopedContract,
-    readArtifacts
-  });
   throw new Error(`PHASE11_REINVESTIGATION_OWNER_JOB_UNSUPPORTED:${dispatch.owner_internal_job}`);
 }
 
