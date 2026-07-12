@@ -4,9 +4,9 @@
 **Branch:** `domain-gate-v0-preflight`  
 **Audit baseline commit:** `80a7bdc26db3891fd4a8f27b91e4ac2fe390463e`  
 **Audit basis:** LOCKED  
-**Change-order status:** READY FOR FOUNDER REVIEW  
+**Change-order status:** LOCKED — OPTION A FULL PRODUCTION CLOSURE  
 **Scope:** Phase 11 Operator Challenge production closure only  
-**Code changes authorized by this document:** None until this change order is locked
+**Code changes authorized by this document:** CO-00 through CO-14 authorized for implementation in mandatory order
 
 ---
 
