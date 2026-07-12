@@ -21,7 +21,7 @@ export const PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT = Object.freeze({
   package_label: "Semantic-Led Data and Privacy Architecture Profile",
   implementation_status: "PHASE7_LAYER4_PHASE2G_ROUTE_SCOPED_RUNTIME_CUTOVER_COMPLETE",
   runtime_entrypoint_switched: true,
-  global_production_deployment_switched: false,
+  global_production_deployment_switched: true,
   blocking_is_exception_noncritical_limitations_pass: true,
   material_dap_field_base_count: PHASE7_EXPECTED_DAP_FIELD_COUNT,
   material_family_section_count: 18,
