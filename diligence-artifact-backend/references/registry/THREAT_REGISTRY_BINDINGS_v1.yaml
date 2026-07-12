@@ -6,6 +6,16 @@ registry_binding_manifest:
     Package keys remain taxonomy authorities; this manifest owns executable registry
     filenames, declared row parity, and the Phase 10 status-inclusion policy.
 
+  authority_model:
+    package_keys:
+      role: TAXONOMY_VOCABULARY_AUTHORITY
+      executable_registry_binding_forbidden: true
+    binding_manifest:
+      role: SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY
+      competing_binding_authority_forbidden: true
+    field_derivation_registry:
+      role: DOMAIN_AGNOSTIC_DERIVATION_MECHANICS_AUTHORITY
+
   status_policy:
     mode: INCLUDE_ALL_DECLARED_ROWS
     row_filter: NONE
