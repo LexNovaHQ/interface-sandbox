@@ -9,7 +9,7 @@ const expectedWrites = activityProfileForensicsWriteArtifacts();
 assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.central_phase_id, "ACTIVITY_PROFILE_FORENSICS");
 assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.public_label, "Activity Profile Forensics");
 assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.compatibility_internal_job_id, "M8_TARGET_FEATURE_PROFILE_FORENSICS");
-assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.implementation_status, "PHASE_RUNNER_CUTOVER_STAGED");
+assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.implementation_status, "PHASE2G_DERIVED_ONLY_RUNTIME_CUTOVER");
 assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.production_entrypoint_switched, true);
 assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.global_production_deployment_switched, false);
 assert.equal(ACTIVITY_PROFILE_FORENSICS_CONTRACT.model_usage, "NONE_DETERMINISTIC");
