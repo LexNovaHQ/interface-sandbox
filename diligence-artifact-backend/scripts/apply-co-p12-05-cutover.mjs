@@ -96,16 +96,24 @@ function write(relative, content) {
 function replaceExact(relative, before, after) {
   const file = resolve(relative);
   const source = fs.readFileSync(file, "utf8");
-  if (!source.includes(before)) throw new Error(`CO_P12_05_EXACT_MARKER_MISSING:${relative}:${before.slice(0, 120)}`);
+  if (!source.includes(before)) {
+    console.warn(`CO_P12_05_OPTIONAL_EXACT_MARKER_SKIPPED:${relative}:${before.slice(0, 120)}`);
+    return false;
+  }
   fs.writeFileSync(file, source.split(before).join(after));
+  return true;
 }
 
 function replaceRegex(relative, pattern, replacement) {
   const file = resolve(relative);
   const source = fs.readFileSync(file, "utf8");
-  if (!pattern.test(source)) throw new Error(`CO_P12_05_REGEX_MARKER_MISSING:${relative}:${pattern}`);
+  if (!pattern.test(source)) {
+    console.warn(`CO_P12_05_OPTIONAL_REGEX_MARKER_SKIPPED:${relative}:${pattern}`);
+    return false;
+  }
   pattern.lastIndex = 0;
   fs.writeFileSync(file, source.replace(pattern, replacement));
+  return true;
 }
 
 function resolve(relative) { return path.join(ROOT, relative); }
