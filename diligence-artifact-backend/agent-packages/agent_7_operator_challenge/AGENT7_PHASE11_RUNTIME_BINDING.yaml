@@ -1,10 +1,10 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
-runtime_contract_version: v3_layer3_deterministic_adjudication
+runtime_contract_version: v4_reinvestigation_dispatch_return
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
 functional_name: CROSS_PHASE_ADVERSARIAL_CHALLENGE_AND_COMPILER_READINESS_GATE
-synchronization_status: PHASE11_THREE_LAYER_RUNTIME_ACTIVE
+synchronization_status: PHASE11_THREE_LAYER_RUNTIME_AND_REINVESTIGATION_LOOP_ACTIVE
 
 routing_contract:
   authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
@@ -68,21 +68,45 @@ layer_3:
     - REINVESTIGATION_REQUIRED
     - CONTROLLED_FAILURE
 
+reinvestigation_dispatch_return:
+  status: ACTIVE
+  dispatch_version: phase11_reinvestigation_dispatch.v1
+  return_version: phase11_reinvestigation_return.v1
+  adapter_version: phase11_reinvestigation_dispatch_return_adapter.v1
+  execution_boundary: INSIDE_PHASE11_ORCHESTRATION
+  owner_phase_locking_performed: false
+  normal_owner_downstream_cascade_allowed: false
+  return_directly_to_phase11: true
+  owner_contract_is_temporary_clone: true
+  targeted_addendum: PHASE11_TARGETED_REINVESTIGATION_ADDENDUM.md
+  exact_field_scope_preserved: true
+  exact_row_identity_preserved: true
+  unaffected_fields_must_be_preserved: true
+  owner_self_report_is_resolution_authority: false
+  resolution_authority: REBUILT_LAYER1_DETERMINISTIC_INVENTORY
+  resolved_only_if_exact_candidate_disappears: true
+  artifact_version_advance_required: true
+  owner_runtime_error_counts_as_unresolved_attempt: true
+  maximum_dispatches_per_candidate: 2
+  third_dispatch_forbidden: true
+
+supported_reinvestigation_owners:
+  PHASE_3_DOMAIN_DERIVATION: P3_DOMAIN_DERIVATION_LAYER
+  PHASE_5_ACTIVITY_PROFILE: M8_TARGET_FEATURE_PROFILE
+  PHASE_7_DATA_PROVENANCE: DATA_PROVENANCE_PROFILE_LAYER4
+  PHASE_8_DOMAIN_CONTROL_OBLIGATION: DOMAIN_CONTROL_OBLIGATION_PROFILE
+  PHASE_10_EXPOSURE_PROFILE: M11
+
+non_dispatch_owners:
+  PHASE_2G_ROUTING: CRITICAL_CUSTODY_PATH_OR_LAYER3_REVIEW_ONLY
+  COMPILER_PRESENTATION_ONLY: ADVISORY_WARNING_CARRIED_TO_COMPILER
+
 critical_failure_classes:
   - REQUIRED_ARTIFACT_MISSING
   - REQUIRED_ARTIFACT_UNUSABLE
   - FORENSIC_INPUT_BOUNDARY_BREACH
   - PHASE10_COMPOUND_CUSTODY_MISMATCH
   - MATERIAL_PROFILE_OVERLAP
-
-reinvestigation_owners:
-  - PHASE_3_DOMAIN_DERIVATION
-  - PHASE_5_ACTIVITY_PROFILE
-  - PHASE_7_DATA_PROVENANCE
-  - PHASE_8_DOMAIN_CONTROL_OBLIGATION
-  - PHASE_10_EXPOSURE_PROFILE
-  - PHASE_2G_ROUTING
-  - COMPILER_PRESENTATION_ONLY
 
 required_derived_inputs:
   - target_profile
@@ -106,6 +130,7 @@ contract_files:
   - PHASE11_LAYER1_DETERMINISTIC_CHALLENGE_INVENTORY.md
   - PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md
   - PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION.md
+  - PHASE11_TARGETED_REINVESTIGATION_ADDENDUM.md
 
 runtime_state_machine:
   no_pending_issues_no_warnings:
@@ -117,14 +142,13 @@ runtime_state_machine:
     runtime_lock_status: LOCKED_WITH_LIMITATIONS
     compiler_handoff_allowed: true
   pending_material_reinvestigation:
-    gate_status: REINVESTIGATION_REQUIRED
-    runtime_lock_status: CREATED
-    remain_on_phase: M12
-    compiler_handoff_allowed: false
+    action: EXECUTE_TARGETED_OWNER_DISPATCH
+    owner_phase_locking_performed: false
+    return_to: M12
+    maximum_attempts: 2
   confirmed_critical_failure:
     gate_status: CONTROLLED_FAILURE
     runtime_lock_status: CONTROLLED_FAILURE
-    remain_on_phase: M12
     compiler_handoff_allowed: false
 
 canonical_storage:
@@ -138,6 +162,7 @@ canonical_storage:
     - advisory_warnings
     - rejected_challenges
     - reinvestigation_directives
+    - reinvestigation_dispatch_adapter
 
 compiler_contract:
   reads_final_challenge_gate_only: true
