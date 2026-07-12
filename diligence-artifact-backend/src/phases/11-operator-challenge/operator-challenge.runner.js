@@ -3,7 +3,7 @@ import { buildPhasePrompt } from "../../runtime/services/prompts.service.js";
 import { callProviderJson } from "../../runtime/services/provider.service.js";
 import { saveRuntimeArtifact } from "../../runtime/services/artifacts.service.js";
 import { buildOperatorChallengeInventory } from "./operator-challenge-inventory.js";
-import { buildOperatorChallengeSemanticPacket, validateOperatorChallengeSemanticLedger } from "./operator-challenge-semantic.js";
+import { buildOperatorChallengeSemanticPacket, validateOperatorChallengeSemanticLedger, buildOperatorChallengeSemanticFallbackLedger } from "./operator-challenge-semantic.js";
 import { buildOperatorChallengeLayer3 } from "./operator-challenge-adjudication.js";
 import { executePhase11ReinvestigationLoop } from "./operator-challenge-dispatch.runtime.js";
 import { callPhase11WithTechnicalRetry } from "./operator-challenge-technical-retry.js";
@@ -13,7 +13,8 @@ const LAYER2_PROMPT = "agent-packages/agent_7_operator_challenge/PHASE11_LAYER2_
 
 export const M12_PHASE2G_RUNNER_STATUS = Object.freeze({
   runner: "operator-challenge.runner", phase_owned_path: "src/phases/11-operator-challenge", routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY", route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE", bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS", delivery_mode: "DERIVED_ONLY", source_bucket_delivered: false, forensic_inputs_forbidden: true, dynamic_m11_batches_loaded_by_2g: true,
-  layer1_status: "PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_ACTIVE", layer2_status: "PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE_ACTIVE", layer3_status: "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_REINVESTIGATION_GATE_ACTIVE", reinvestigation_dispatch_status: "PHASE11_TARGETED_DISPATCH_AND_RETURN_ACTIVE", independent_artifact_status: "PHASE11_INDEPENDENT_ARTIFACT_CUTOVER_ACTIVE", mutation_guard_status: "PHASE11_TARGETED_MUTATION_GUARD_ACTIVE", durable_checkpoint_status: "PHASE11_DURABLE_DISPATCH_CHECKPOINT_ACTIVE", technical_retry_status: "PHASE11_BOUNDED_TECHNICAL_RETRY_ACTIVE", blocking_is_exception: true, only_critical_failure_blocks: true, maximum_reinvestigation_attempts: 2
+  layer1_status: "PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_ACTIVE", layer2_status: "PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE_ACTIVE", layer3_status: "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_REINVESTIGATION_GATE_ACTIVE", reinvestigation_dispatch_status: "PHASE11_TARGETED_DISPATCH_AND_RETURN_ACTIVE", independent_artifact_status: "PHASE11_INDEPENDENT_ARTIFACT_CUTOVER_ACTIVE", mutation_guard_status: "PHASE11_TARGETED_MUTATION_GUARD_ACTIVE", durable_checkpoint_status: "PHASE11_DURABLE_DISPATCH_CHECKPOINT_ACTIVE", technical_retry_status: "PHASE11_BOUNDED_TECHNICAL_RETRY_ACTIVE", blocking_is_exception: true, only_critical_failure_blocks: true, maximum_reinvestigation_attempts: 2,
+  semantic_fallback_prevents_false_blocker: true
 });
 
 export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contract, readArtifacts, buildPrompt = buildPhasePrompt, callProvider = callProviderJson } = {}) {
@@ -31,6 +32,8 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   let validation = validateOperatorChallengeSemanticLedger({ semanticOutput, inventory });
   let outputRepairAttempts = 0;
   let technicalRetryCount = firstCall.technical_retry_count;
+  let semanticFallbackUsed = false;
+  let layer2ValidationFailures = validation.failures;
   if (validation.status !== "PASS") {
     outputRepairAttempts = 1;
     const repairPrompt = `${prompt}\n\nOUTPUT REPAIR REQUIRED. Return the complete ledger again for the identical packet. Fix only these validator failures: ${validation.failures.join(" | ")}. Do not change candidate identity, order, scope, or inventory fingerprint.`;
@@ -39,11 +42,14 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
     providerResult = repairCall.result;
     semanticOutput = providerResult?.json || providerResult || {};
     validation = validateOperatorChallengeSemanticLedger({ semanticOutput, inventory });
+    layer2ValidationFailures = validation.failures;
   }
-  if (validation.status !== "PASS") throw new Error(`PHASE11_LAYER2_SEMANTIC_LEDGER_INVALID:${validation.failures.join("|")}`);
-  const semanticLedger = validation.semantic_ledger;
+  const semanticLedger = validation.status === "PASS"
+    ? validation.semantic_ledger
+    : buildOperatorChallengeSemanticFallbackLedger({ inventory, validationFailures: layer2ValidationFailures });
+  semanticFallbackUsed = validation.status !== "PASS";
   await saveIndependent(run.run_id, "operator_challenge_inventory", inventory, "LOCKED");
-  await saveIndependent(run.run_id, "operator_challenge_semantic_ledger", semanticLedger, "LOCKED");
+  await saveIndependent(run.run_id, "operator_challenge_semantic_ledger", semanticLedger, semanticFallbackUsed ? "LOCKED_WITH_LIMITATIONS" : "LOCKED");
   const priorArtifacts = await readArtifacts({ reads: ["challenge_gate"], agent_id: contract.actor_id || contract.agent_id || AGENT, strict: false });
   const initialLayer3 = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate: priorArtifacts?.challenge_gate || null, run });
   let challengeGate = initialLayer3.challenge_gate;
@@ -55,7 +61,7 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   challengeGate = {
     ...challengeGate,
     independent_artifact_contract: { version: "PHASE11_INDEPENDENT_ARTIFACT_CONTRACT_v1", inventory_artifact: "operator_challenge_inventory", semantic_ledger_artifact: "operator_challenge_semantic_ledger", reinvestigation_ledger_artifact: "operator_challenge_reinvestigation_ledger", dispatch_checkpoint_artifact: "operator_challenge_dispatch_checkpoint", compiler_authority_artifact: "challenge_gate" },
-    layer2_validation: { status: "PASS", exact_candidate_coverage: true, candidate_count: inventory.candidate_count, output_repair_attempts: outputRepairAttempts, technical_retry_count: technicalRetryCount, technical_retry_is_not_field_reinvestigation: true, output_repair_is_not_field_reinvestigation: true }
+    layer2_validation: { status: semanticFallbackUsed ? "PASS_WITH_FALLBACK" : "PASS", exact_candidate_coverage: true, candidate_count: inventory.candidate_count, output_repair_attempts: outputRepairAttempts, technical_retry_count: technicalRetryCount, technical_retry_is_not_field_reinvestigation: true, output_repair_is_not_field_reinvestigation: true, semantic_fallback_used: semanticFallbackUsed, fallback_reason: semanticFallbackUsed ? "PHASE11_LAYER2_MODEL_OUTPUT_UNUSABLE" : "" }
   };
   const runtimeLockStatus = challengeGate.status === "CONTROLLED_FAILURE" ? "CONTROLLED_FAILURE" : challengeGate.status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : challengeGate.status === "PASS" ? "LOCKED" : "CREATED";
   await saveIndependent(run.run_id, "operator_challenge_reinvestigation_ledger", challengeGate.operator_challenge_reinvestigation_ledger, runtimeLockStatus);
