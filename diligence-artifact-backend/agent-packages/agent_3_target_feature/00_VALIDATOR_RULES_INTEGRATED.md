@@ -1,71 +1,39 @@
 # Target and Activity Profile Validator Rules
 
-## Validator kernel
-
-This validator is bounded by the backend phase contract. It cannot expand read authority.
-
 ## Universal gates
 
-- Validate exact active phase.
-- Validate exact run_id.
-- Validate phase-owned output only.
-- Validate material artifacts are saved before forensic artifacts.
-- Reject downstream artifacts, Source Discovery artifacts, Legal Cartography and Index artifacts, Data Provenance Profile artifacts, Exposure Profile artifacts, challenge gates, final handoffs, renderer payloads, and Qualified Review artifacts from this package's outputs.
-- Reject model memory, unsupported source claims, route labels copied as facts, and schema-shaped but unsupported values.
+- Validate the exact active phase and phase-owned root.
+- Material artifacts are separate from forensic artifacts.
+- Reject downstream profiles, exposure outputs, challenge gates, compiler output and renderer payloads.
+- Reject unsupported source claims, model memory, copied evidence and schema-shaped but ungrounded values.
 
-## Target Profile Review input gate
+## Target Profile Review
 
-For Target Profile Review, allowed inputs remain governed by `ROUTE.PHASE3A.TARGET_PROFILE`, the 2A bucket, `target_profile_source_index`, scoped target `lossless_root__*` evidence, and `legal_signal_derivation_profile` only.
+`target_profile` contains exactly:
 
-`target_profile_source_index` is navigation only. Scoped target artifacts are the evidence source. `source_discovery_handoff`, `cartography_index`, `domain_selection_profile`, `active_run_package_manifest`, forensic artifacts, legal source text, data-provenance roots, and retired family artifacts are forbidden.
+```text
+target_identity
+jurisdiction_notice
+business_context
+product_service_wrapper
+target_profile_limitations
+```
 
-## Target Profile Review direct signal gate
+Regulatory/licensing and grievance fields remain factual public-context signals, not legal conclusions.
 
-`legal_signal_derivation_profile` may support only bounded legal notice and jurisdiction fields. Direct signal rows are bounded field signals, not legal advice, legal sufficiency, or permission to inspect legal source text.
+## Internal Sector Derivation Layer
 
-## Target Profile Review material output gate
+The internal artifact remains `domain_derivation_profile`. It is Registry-Key-led and domain-agnostic. Regulatory overlays are candidate-only and may not state legal applicability, licensing validity, compliance status or legal advice.
 
-`target_profile` must contain exactly five parent sections:
+## Phase 5 Activity Profile Review — v9 Behavior Class canonical
 
-- `target_identity`
-- `jurisdiction_notice`
-- `business_context`
-- `product_service_wrapper`
-- `target_profile_limitations`
+`M8_TARGET_FEATURE_PROFILE` emits exactly one root:
 
-`business_context` must not include `lane`. Regulatory/licensing and grievance fields must remain factual public operating-context signals only.
+```text
+target_feature_profile
+```
 
-## Domain Derivation Layer input gate
-
-For `P3_DOMAIN_DERIVATION_LAYER`, allowed inputs remain governed by `ROUTE.PHASE3B.DOMAIN_DERIVATION`, the 2B bucket, `domain_derivation_source_index`, `target_profile`, scoped domain-derivation `lossless_root__*` evidence, `domain_selection_profile`, and `active_run_package_manifest`.
-
-`activity_profile_source_index` is reserved for 2C / Phase 5 and forbidden in 3B. Legal source text, data/privacy roots, exposure artifacts, compiler artifacts, and Qualified Review artifacts are forbidden.
-
-## Domain Derivation Layer registry ladder gate
-
-The Domain Derivation Layer prompt is domain-agnostic. The registry is the ladder. Mounted Registry Keys plus Field Derivation Registry grammar are rule authority, package catalog is package authority, scoped lossless artifacts are evidence authority, and deterministic validator/compiler is lock authority.
-
-New supported domains, overlays, fusion candidates, and regulatory overlays must be added through registry/catalog updates, not prompt edits.
-
-## Domain Derivation Layer regulatory overlay gate
-
-`regulatory_overlay_derivation` is candidate-only. It must avoid legal applicability, license validity, license requirement, applicable-regulator conclusion, compliance-status, grievance sufficiency, ombudsman requirement, statutory-obligation, legal advice, compliance conclusion, and risk conclusion.
-
-## Domain Derivation Layer output gate
-
-The model response must contain exactly one top-level key: `domain_derivation_profile`. The model must not emit top-level `active_run_package_manifest`. The compiler writes `active_run_package_manifest` after validation.
-
-## Activity Profile Review gate
-
-Activity Profile Review must use its own backend phase contract. It may read `activity_profile_source_index` only when 2C / Phase 5 has made that artifact available.
-
-Activity Profile Review must not use Domain Derivation Layer to backdoor legal/governance source material.
-
-## Phase 5 Activity Profile Review material validator schema — agnostic v8
-
-`M8_TARGET_FEATURE_PROFILE` must emit exactly one top-level object: `target_feature_profile`.
-
-`target_feature_profile` contains exactly:
+The profile contains exactly:
 
 ```text
 activities
@@ -74,7 +42,7 @@ profile_level_limitations
 mounted_taxonomy_ref
 ```
 
-Each `activities[]` row contains exactly:
+Each activity contains exactly:
 
 ```text
 activity_reference
@@ -89,28 +57,39 @@ primary_classification
 overlay_classifications
 ```
 
-`primary_classification` contains exactly:
+Primary classification contains exactly:
 
 ```text
 package_id
-archetype_codes
-archetype_derivation_basis
+behavior_class_codes
+behavior_class_derivation_basis
 surface_context_tokens
 surface_derivation_basis
 ```
 
-Each `overlay_classifications[]` entry contains exactly:
+Each capability-overlay block contains exactly:
 
 ```text
 package_id
 overlay_id
-archetype_codes
-archetype_derivation_basis
+behavior_class_codes
+behavior_class_derivation_basis
 surface_context_tokens
 surface_derivation_basis
 ```
 
-Each derivation-basis entry contains exactly:
+Validate independently for the primary block and every overlay block:
+
+- package-scoped membership against that block's mounted Registry Key;
+- every selected Behavior Class has exactly one matching basis entry;
+- every selected Surface has exactly one matching basis entry;
+- no basis exists for an unselected code or token;
+- primary and overlay arrays may differ and must not be collapsed;
+- no unresolved capability-overlay block;
+- no regulatory-overlay block;
+- no forced catch-all Behavior Class.
+
+Each basis entry contains exactly:
 
 ```text
 code_or_token
@@ -122,30 +101,26 @@ material_basis
 limitation
 ```
 
-Validation applies per block:
+The backend stamps `mounted_taxonomy_ref`; the model may not override it.
 
-- package-scoped membership against that block's `package_id`;
-- exactly one basis entry per selected archetype code;
-- exactly one basis entry per selected surface token;
-- no basis entry for an unselected code or token;
-- no unresolved overlay block;
-- no regulatory overlay block;
-- no false catch-all archetype.
-
-`mounted_taxonomy_ref` contains exactly:
+Controlled empty-primary classification requires:
 
 ```text
-primary_package_id
-primary_key_version
-overlays
+PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
 ```
 
-Each overlay reference contains exactly:
+or:
 
 ```text
-overlay_id
-package_id
-key_version
+NO_PRIMARY_BEHAVIOR_CLASS_MATCH:<activity_reference>
 ```
 
-Forbidden in the material profile: URLs, source IDs, source pointers, candidate IDs, confidence, validation status, lock status, ledgers, runtime traces, `archetype_proof`, `surface_proof_and_routing_limits`, excerpts, lossless text, clean text, and raw text.
+Forbidden in the material profile:
+
+- URLs, source IDs and source pointers;
+- candidate IDs and confidence;
+- validation or lock status;
+- ledgers and runtime traces;
+- copied evidence or lossless text;
+- forensic branches;
+- retired Phase 5 classification paths or limitation tokens.
