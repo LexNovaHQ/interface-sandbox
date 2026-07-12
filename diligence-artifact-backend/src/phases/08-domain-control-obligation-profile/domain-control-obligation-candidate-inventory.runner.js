@@ -17,7 +17,7 @@ export const DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS = Objec
   central_phase_id: DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT.central_phase_id,
   phase_job_id: DOMAIN_CONTROL_OBLIGATION_CANDIDATE_JOB_ID,
   phase_owned_runner: true,
-  production_entrypoint_switched: false,
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: "NONE_DETERMINISTIC",
   provider_call_allowed: false,
