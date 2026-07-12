@@ -46,8 +46,8 @@ const replacement = [
   '  }',
   '',
   '  const phase7Files = collectFiles(["src/phases/07-data-provenance-profile"]);',
-  '  const activeKeys = ["artifact_type", "artifact_name", "material_source_of_truth", "expected_artifact_name", "compatibility_outputs", "material_outputs", "writes"];
-  for (const file of phase7Files) {',
+  '  const activeKeys = ["artifact_type", "artifact_name", "material_source_of_truth", "expected_artifact_name", "compatibility_outputs", "material_outputs", "writes"];',
+  '  for (const file of phase7Files) {',
   '    const lines = fs.readFileSync(path.join(repoRoot, file), "utf8").split(/\\r?\\n/);',
   '    for (let index = 0; index < lines.length; index += 1) {',
   '      const line = lines[index];',
