@@ -81,7 +81,8 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
   if (!runtimeError && proposal && !commitReceipt) {
     try {
       const writeNames = proposalWriteNames(proposal);
-      const beforeArtifacts = await readNamedArtifacts(run.run_id, writeNames, AGENT);
+      const ownerActor = ownerActorFor(dispatch.owner_internal_job);
+      const beforeArtifacts = await readNamedArtifacts(run.run_id, writeNames, ownerActor);
       const proposalBaselineVersions = await artifactVersions(run.run_id, writeNames);
       commitReceipt = await commitPhase11TargetedMutationProposal({
         run,
@@ -89,7 +90,7 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
         proposal,
         beforeArtifacts,
         baselineArtifactVersions: proposalBaselineVersions,
-        ownerActor: ownerActorFor(dispatch.owner_internal_job),
+        ownerActor,
         ownerPhase: dispatch.owner_internal_job
       });
       returnedArtifactVersions = await artifactVersions(run.run_id, [...new Set([...(dispatch.artifact_names || []), ...writeNames])]);
