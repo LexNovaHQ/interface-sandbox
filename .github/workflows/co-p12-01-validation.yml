@@ -34,11 +34,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Phase 5 Behavior Class cutover
-        run: npm run check:phase5:behavior-class-cutover
+      - name: Run CO-P12-01 validation
+        id: acceptance
+        shell: bash
+        run: |
+          set +e
+          npm run check:p12:co1 > co-p12-01-validation.log 2>&1
+          code=$?
+          cat co-p12-01-validation.log
+          printf '%s\n' "$code" > co-p12-01-exit-code.txt
+          exit "$code"
 
-      - name: Phase 10 deterministic report-row custody
-        run: npm run check:phase10:report-row-custody
-
-      - name: Phase 11 exact compiler gate
-        run: npm run check:phase11:compiler-exact-gate
+      - name: Upload CO-P12-01 validation log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-p12-01-validation-log
+          path: |
+            diligence-artifact-backend/co-p12-01-validation.log
+            diligence-artifact-backend/co-p12-01-exit-code.txt
+          if-no-files-found: error
+          retention-days: 2
