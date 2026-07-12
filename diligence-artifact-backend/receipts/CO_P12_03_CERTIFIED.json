@@ -1,0 +1,48 @@
+{
+  "schema_version": "co_p12_03_certified_receipt.v1",
+  "status": "PASS",
+  "exit_code": 0,
+  "command": "npm run check:p12:co3",
+  "workflow": "CO P12 03 Atomic Finalize",
+  "run_id": "29198245046",
+  "target_branch": "domain-gate-v0-preflight",
+  "validated_parent_sha": "4b95c8e1c301f69a3227080ed6ec78a5f06a283d",
+  "adapter_scope": [
+    "route",
+    "admission",
+    "projection",
+    "renderer_payload_surface"
+  ],
+  "active_owned_field_count": 430,
+  "blocked_upstream_gap_field_count": 27,
+  "report_section_count": 10,
+  "compiler_runtime_cutover_status": "ADAPTER_READY_NOT_COMPILER_SWAPPED",
+  "legacy_recursive_compiler_deletion_status": "NOT_APPLIED_IN_CO_P12_03",
+  "generated_files": {
+    "src/phases/12-normalized-compiler/phase12-report-contract.js": {
+      "sha256": "1719c3b7d57624dfd1f71cc7d067d92f57df3c7e79e895d01403a8601474f5e7",
+      "size_bytes": 5812
+    },
+    "src/phases/12-normalized-compiler/phase12-admission-adapter.js": {
+      "sha256": "c6340190f975abebafa563c5a5195fe6f9c66b3e2f5c45d0f014775328984db1",
+      "size_bytes": 4164
+    },
+    "src/phases/12-normalized-compiler/phase12-route-adapter.js": {
+      "sha256": "a9a8012a39c0e6845b3f9ce210af94ab0f281b7a3dd7955e82b84828c2dd2ff0",
+      "size_bytes": 6097
+    },
+    "src/phases/12-normalized-compiler/phase12-projection-adapter.js": {
+      "sha256": "cbed91681fb61ede2aa7f1cf3e536c81c80aa5aed708ba6e563dc6fe7e33c48b",
+      "size_bytes": 9564
+    },
+    "src/phases/12-normalized-compiler/phase12-adapters.js": {
+      "sha256": "9f347aa9c40c27d0323e311824e328a04a0322ee7dfa7480b404cdc128900e46",
+      "size_bytes": 420
+    },
+    "scripts/check-co-p12-03.mjs": {
+      "sha256": "6522347b195544067726b518e9f91b255eab3a5693f2bccb701251276d8fd4e8",
+      "size_bytes": 10715
+    }
+  },
+  "certified_at": "2026-07-12T15:28:37.452Z"
+}
