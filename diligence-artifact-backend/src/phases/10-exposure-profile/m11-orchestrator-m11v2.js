@@ -36,7 +36,8 @@ export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   infrastructure_authority: "CENTRAL_RUNTIME_SERVICES",
   phase_owned_path: "src/phases/10-exposure-profile",
   deterministic_route_stage: "CO_4_CO_5_CO_6_ACTIVE",
-  semantic_stage: "PENDING_CO_7_AGENT5_PACKAGE_AND_CO_8_RUNTIME"
+  semantic_package_stage: "CO_7_CONTRACT_READY",
+  semantic_runtime_stage: "PENDING_CO_8_DOMAIN_AGNOSTIC_LAYER2_RUNTIME"
 });
 
 export async function runM11OrchestratedPhase({ run, phase, contract }) {
@@ -117,7 +118,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   if (!registryContext.semantic_layer_compatibility?.ok) {
     await logEvent({
       run_id: run.run_id,
-      event_type: "M11_PACKAGE_SCOPED_ROUTE_PLAN_READY_SEMANTIC_PACKAGE_PENDING",
+      event_type: "M11_PACKAGE_SCOPED_ROUTE_PLAN_READY_SEMANTIC_RUNTIME_PENDING",
       actor: AGENT_5,
       payload: {
         primary_package: manifest.artifact.primary_package,
@@ -129,7 +130,9 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
         stream_count: route.artifact.stream_plans?.length || 0,
         batch_count: route.artifact.batch_plan?.length || 0,
         maximum_rows_per_batch: route.artifact.batch_plan_validation?.maximum_rows_per_batch || null,
-        pending_change_orders: registryContext.semantic_layer_compatibility.pending_change_orders
+        semantic_package_contract: "M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1",
+        semantic_package_status: "CO_7_CONTRACT_READY",
+        pending_change_orders: ["CO_8_DOMAIN_AGNOSTIC_LAYER2_RUNTIME"]
       }
     });
     await lockPhase({
@@ -142,7 +145,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     return;
   }
 
-  throw new Error("M11_SEMANTIC_STAGE_MUST_NOT_RUN_BEFORE_CO_7_AND_CO_8");
+  throw new Error("M11_SEMANTIC_STAGE_MUST_NOT_RUN_BEFORE_CO_8");
 }
 
 async function getOrBuildActiveThreatRegistryManifest({ run, phase, registryContext }) {
