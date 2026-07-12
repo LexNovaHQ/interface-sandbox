@@ -1,5 +1,5 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
-runtime_contract_version: v1_layer1_deterministic_inventory
+runtime_contract_version: v2_layer2_semantic_adversarial_challenge
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
@@ -15,20 +15,34 @@ routing_contract:
 layer_1:
   status: ACTIVE
   version: PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_v1
-  model_usage: NONE
   canonical_object: operator_challenge_inventory
-  current_storage_envelope: challenge_gate
-  storage_envelope_stage: LAYER1_STAGING_ONLY
   creates_new_findings: false
   adjudicates_challenges: false
   initiates_reinvestigation: false
   blocks_run: false
-  emits_repair_required: false
-  compiler_handoff_allowed: false
 
 layer_2:
-  status: PENDING
+  status: ACTIVE
+  packet_version: PHASE11_LAYER2_SEMANTIC_PACKET_v1
+  ledger_version: operator_challenge_semantic_ledger.v1
   role: SEMANTIC_ADVERSARIAL_CHALLENGE
+  model_root: operator_challenge_semantic_ledger
+  exact_candidate_coverage_required: true
+  preserve_candidate_order: true
+  maximum_output_repair_attempts: 1
+  output_repair_is_field_reinvestigation: false
+  source_search_forbidden: true
+  forensic_inputs_forbidden: true
+  upstream_rewrite_forbidden: true
+  final_adjudication_forbidden: true
+  blocking_decision_forbidden: true
+  reinvestigation_execution_forbidden: true
+  allowed_recommendations:
+    - REJECT
+    - ADVISORY
+    - MATERIAL_REINVESTIGATION
+    - CRITICAL_REVIEW_CANDIDATE
+  critical_review_candidate_is_blocking_decision: false
 
 layer_3:
   status: PENDING
@@ -37,7 +51,7 @@ layer_3:
   only_critical_failure_blocks: true
   material_field_problem_routes_to_reinvestigation: true
   maximum_reinvestigation_attempts: 2
-  unresolved_after_two_attempts: PASS_WITH_LIMITATION
+  unresolved_after_two_attempts: PASS_WITH_LIMITATION_UNLESS_CRITICAL_SYSTEMIC_FAILURE
 
 required_derived_inputs:
   - target_profile
@@ -57,18 +71,14 @@ forbidden_inputs:
   - dap_forensics_profile
   - exposure_registry_profile_forensics
 
-candidate_classes:
-  - CRITICAL_SUBSTRATE_CANDIDATE
-  - MATERIAL_FIELD_CANDIDATE
-  - ADVISORY_CANDIDATE
-
-candidate_rule:
-  layer1_candidate_is_final_conclusion: false
-  token_overlap_is_substantive_proof: false
-  semantic_adjudication_required_for_material_candidates: true
-  smallest_owner_and_field_path_required: true
+semantic_prompt_files:
+  - PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md
 
 runtime_terminal_state:
   phase_status: CREATED
   remain_on_phase: M12
-  reason: LAYER1_COMPLETE_LAYER2_LAYER3_PENDING
+  layer_1: COMPLETE
+  layer_2: COMPLETE
+  layer_3: PENDING
+  compiler_handoff_allowed: false
+  reason: LAYER1_LAYER2_COMPLETE_LAYER3_PENDING
