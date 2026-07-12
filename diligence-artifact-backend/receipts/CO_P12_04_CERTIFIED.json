@@ -1,0 +1,60 @@
+{
+  "schema_version": "co_p12_04_certified_receipt.v1",
+  "status": "PASS",
+  "exit_code": 0,
+  "command": "npm run check:p12:co2 && npm run check:p12:co3 && npm run check:p12:co4",
+  "workflow": "CO P12 04 Atomic Finalize",
+  "run_id": "29200063322",
+  "target_branch": "domain-gate-v0-preflight",
+  "validated_parent_sha": "ba8a2baf4067a072b0db10414bca22037f4b4320",
+  "canonical_section_count": 10,
+  "report_facing_artifact_count": 29,
+  "section5_child_profile_count": 11,
+  "section8_child_profile_count": 8,
+  "active_owned_field_count": 430,
+  "blocked_upstream_gap_field_count": 27,
+  "mandatory_material_field_preservation": "ENFORCED",
+  "report_artifact_purity": "ENFORCED",
+  "custody_isolation": "ENFORCED",
+  "compiler_runtime_cutover_status": "CLEAN_ARTIFACT_SURFACE_READY_NOT_COMPILER_SWAPPED",
+  "legacy_recursive_compiler_deletion_status": "NOT_APPLIED_IN_CO_P12_04",
+  "generated_files": {
+    "src/phases/12-normalized-compiler/phase12-artifact-family.contract.js": {
+      "sha256": "1d8a8ff415c57c4d79c3c5c773579e739c4b8cf2ddb0e612d5fa62b8cd819b09",
+      "size_bytes": 7278
+    },
+    "src/phases/12-normalized-compiler/phase12-taxonomy-normalizer.js": {
+      "sha256": "dfbf3b5bc5ff1cbee36e82a3b5e971aa653e6c9d3ae0e0695b467c58a8301c37",
+      "size_bytes": 3452
+    },
+    "src/phases/12-normalized-compiler/phase12-profile-normalizer.js": {
+      "sha256": "6aa7a0ad398ffc5980c5b41514000b357c32f6f24077ccb764af8c0f64ccb892",
+      "size_bytes": 6502
+    },
+    "src/phases/12-normalized-compiler/phase12-compiler-validator.js": {
+      "sha256": "7c86d549f2590339f52282469d7f29bfe0cd02ce3c16b8c94f23a4fcf4bd3f30",
+      "size_bytes": 11460
+    },
+    "src/phases/12-normalized-compiler/phase12-projection-adapter.js": {
+      "sha256": "cdb5b5fd7f3aa210c9e75b656c3d7773c426848669e4c015c993d4c257340e2c",
+      "size_bytes": 20963
+    },
+    "src/phases/12-normalized-compiler/phase12-adapters.js": {
+      "sha256": "8187493b22381a4efe760e7d336680dd0767e78502c58178dae3c65187a63069",
+      "size_bytes": 702
+    },
+    "src/phases/12-normalized-compiler/CO_P12_04_SECTION_ARTIFACTS_MANIFEST_HANDOFF_VALIDATOR.md": {
+      "sha256": "352abae7875bba04889c3c377db9fdec65739f67364b9e7a8264b730a8a12694",
+      "size_bytes": 7108
+    },
+    "scripts/check-co-p12-03.mjs": {
+      "sha256": "602734f2c807cbcb14331ea3058ebaa7d8963d824449e047d35d75807a551d25",
+      "size_bytes": 10001
+    },
+    "scripts/check-co-p12-04.mjs": {
+      "sha256": "4b36f0ca9b40e3d4d85b2042bf196168a7e054f7cb77bc8ceddd8b2e48fffabd",
+      "size_bytes": 14191
+    }
+  },
+  "certified_at": "2026-07-12T16:24:31.691Z"
+}
