@@ -135,17 +135,15 @@ function normalizeMountedTaxonomyRef(value = {}) {
         overlay_id: normalizeId(row.overlay_id),
         package_id: normalizeId(row.package_id),
         key_version: normalizeId(row.key_version)
-      }))
-      .sort((left, right) => left.overlay_id.localeCompare(right.overlay_id)),
+      })),
     regulatory_overlays: normalizeArray(value.regulatory_overlays)
       .filter(isPlainObject)
       .map((row) => ({
         overlay_id: normalizeId(row.overlay_id),
         package_id: normalizeId(row.package_id),
         key_version: normalizeId(row.key_version),
-        framework_links: uniqueStrings(row.framework_links || []).sort()
+        framework_links: uniqueStrings(row.framework_links || [])
       }))
-      .sort((left, right) => left.overlay_id.localeCompare(right.overlay_id))
   });
 }
 
