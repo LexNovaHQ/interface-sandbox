@@ -1,6 +1,20 @@
 import { buildPhase12AdmissionAdapter } from "./phase12-admission-adapter.js";
 import { buildPhase12RouteAdapter } from "./phase12-route-adapter.js";
-import { artifactRoot, assertPhase12ReportContract, loadPhase12ReportContract } from "./phase12-report-contract.js";
+import { assertPhase12ReportContract, loadPhase12ReportContract } from "./phase12-report-contract.js";
+import {
+  CANONICAL_SECTION_ARTIFACTS,
+  CONTROL_ARTIFACTS,
+  PHASE12_ARTIFACT_FAMILY_SCHEMA,
+  REPORT_FACING_ARTIFACTS,
+  REPORT_PROFILE_SCHEMA,
+  REPORT_WRAPPER_SCHEMA,
+  SECTION5_CHILD_PROFILES,
+  SECTION8_CHILD_PROFILES,
+  section5ChildForFieldId,
+  section8ChildForRow
+} from "./phase12-artifact-family.contract.js";
+import { buildExposureDisplayRow, projectFdrFinding } from "./phase12-profile-normalizer.js";
+import { validatePhase12CompilerOutput } from "./phase12-compiler-validator.js";
 
 export function buildPhase12ProjectionAdapter({ run = {}, artifacts = {}, admission = null, routePlan = null, contract = loadPhase12ReportContract() } = {}) {
   const reportContract = assertPhase12ReportContract(contract);
@@ -10,198 +24,407 @@ export function buildPhase12ProjectionAdapter({ run = {}, artifacts = {}, admiss
   const warnings = [];
   if (admissionRoot.validation?.status === "CONTROLLED_FAILURE") failures.push(...(admissionRoot.validation.failures || []).map((failure) => `ADMISSION:${failure}`));
   if (routeRoot.validation?.status === "CONTROLLED_FAILURE") failures.push(...(routeRoot.validation.failures || []).map((failure) => `ROUTE:${failure}`));
+  if (admissionRoot.status === "PASS_WITH_LIMITATION") warnings.push("PHASE11_LIMITATIONS_CARRIED_FROM_FINAL_GATE");
 
-  const sections = {};
+  const preliminaryStatus = failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS";
+  const custody = {
+    schema_version: "phase12_report_custody_manifest.v1.co_p12_04",
+    renderable: false,
+    status: preliminaryStatus,
+    field_bindings: [],
+    profile_family_bindings: [],
+    exposure_row_bindings: [],
+    warning_bindings: []
+  };
+
+  const reportArtifacts = {};
   for (const section of reportContract.section_schema.sections || []) {
-    const sectionRoute = (routeRoot.section_routes || []).find((candidate) => candidate.section_id === section.section_id) || {};
+    if (["05", "08"].includes(section.section_id)) continue;
     const routes = (routeRoot.route_rows || []).filter((row) => row.primary_report_section === section.section_id);
-    sections[section.artifact_name] = buildReportSection({ section, sectionRoute, routes, artifacts, admissionRoot });
+    reportArtifacts[section.artifact_name] = buildCleanSectionProfile({ section, routes, artifacts, custody, status: preliminaryStatus });
   }
-  injectExposureRegister(sections.report_section__08_exposure_register, admissionRoot);
-  injectOpenHandoff(sections.report_section__09_open_review_items_handoff, admissionRoot);
-  injectMethodology(sections.report_section__10_methodology_limitations_annexure, { admissionRoot, routeRoot, reportContract });
 
-  const sectionArtifacts = (reportContract.section_schema.sections || []).map((section) => ({
-    section_id: section.section_id,
-    section_key: section.section_key,
-    artifact_name: section.artifact_name,
-    title: section.title,
-    status: failures.length ? "CONTROLLED_FAILURE" : "PROJECTED",
-    field_count: sections[section.artifact_name]?.field_count || 0
-  }));
+  Object.assign(reportArtifacts, buildSection5ArtifactFamily({ reportContract, routeRoot, artifacts, custody, status: preliminaryStatus }));
+  Object.assign(reportArtifacts, buildSection8ArtifactFamily({ admissionRoot, routeRoot, custody, status: preliminaryStatus }));
+  injectMatterBoundary(reportArtifacts.report_section__01_matter_review_boundary, admissionRoot);
+  injectExecutiveOverview(reportArtifacts.report_section__02_executive_legal_risk_overview, reportArtifacts, admissionRoot);
+  injectOpenReviewItems(reportArtifacts.report_section__09_open_review_items_handoff, reportArtifacts, admissionRoot, custody);
+  injectMethodology(reportArtifacts.report_section__10_methodology_limitations_annexure, { admissionRoot, routeRoot, reportContract });
 
-  const status = failures.length ? "CONTROLLED_FAILURE" : warnings.length || admissionRoot.status === "PASS_WITH_LIMITATION" ? "PASS_WITH_LIMITATION" : "PASS";
-  const normalized_report_manifest = {
-    schema_version: "normalized_report_manifest.v12.phase12_direct_projection",
-    status,
+  custody.field_binding_count = custody.field_bindings.length;
+  custody.profile_family_binding_count = custody.profile_family_bindings.length;
+  custody.exposure_row_binding_count = custody.exposure_row_bindings.length;
+  custody.warning_binding_count = custody.warning_bindings.length;
+
+  const sectionArtifacts = buildCanonicalSectionManifest(reportContract, reportArtifacts);
+  const orderedReportArtifacts = buildOrderedReportArtifacts();
+  const report_manifest = {
+    schema_version: "report_manifest.v1.co_p12_04",
+    renderable: false,
+    status: preliminaryStatus,
     doctrine: "Upstream phases decide. Phase 12 arranges.",
-    route_plan_ref: "phase12_route_plan",
-    admission_ref: "phase12_admission",
-    section_count: sectionArtifacts.length,
+    artifact_family_schema: PHASE12_ARTIFACT_FAMILY_SCHEMA,
+    canonical_section_count: 10,
+    report_facing_artifact_count: REPORT_FACING_ARTIFACTS.length,
+    canonical_section_artifacts: CANONICAL_SECTION_ARTIFACTS,
+    report_facing_artifacts: REPORT_FACING_ARTIFACTS,
+    ordered_report_artifacts: orderedReportArtifacts,
     section_artifacts: sectionArtifacts,
+    control_artifacts: CONTROL_ARTIFACTS,
+    admission_ref: "phase12_admission",
+    route_plan_ref: "phase12_route_plan",
+    custody_manifest_ref: "phase12_report_custody_manifest",
+    compiler_validation_ref: "phase12_compiler_validation",
     old_normalized_section_artifacts_emitted: false,
     renderer_semantic_merge_forbidden: true,
     p12_model_usage: "FORBIDDEN",
     phase2g_dependency_forbidden: true,
-    phase12_projection_contract: {
-      schema_version: "phase12_projection_contract.v1",
-      one_report_section_one_artifact: true,
-      section_8_complete_exposure_register: true,
-      section_9_open_items_only: true,
-      no_compiler_authored_questions_priorities_routes_or_limitations: true,
-      route_path_contract_status: "CO_P12_03_ADAPTER_BOUND_TO_OWNER_ARTIFACTS"
-    },
-    validation: { status, failures, warnings }
+    artifact_purity_contract: {
+      mandatory_upstream_material_fields_preserved: true,
+      report_facing_profiles_only: true,
+      forensic_payloads_forbidden: true,
+      unnecessary_mechanical_fields_forbidden: true,
+      custody_isolated_from_renderable_artifacts: true,
+      p12_new_questions_priorities_routes_limitations_or_remediation_forbidden: true
+    }
   };
 
-  const review_ready_section_handoff = {
-    schema_version: "review_ready_section_handoff.v12.phase12_direct_projection",
-    status,
-    normalized_report_manifest_ref: "normalized_report_manifest",
-    section_artifacts: sectionArtifacts,
+  const report_handoff = {
+    schema_version: "report_handoff.v1.co_p12_04",
+    renderable: false,
+    status: preliminaryStatus,
+    report_manifest_ref: "report_manifest",
+    report_facing_artifacts: REPORT_FACING_ARTIFACTS,
+    ordered_report_artifacts: orderedReportArtifacts,
+    custody_manifest_ref: "phase12_report_custody_manifest",
+    compiler_validation_ref: "phase12_compiler_validation",
+    renderer_payload_ref: "renderer_payload",
     local_counsel_review_required: true,
     review_ready_draft_notice: "This is a Review-Ready Draft projection for local counsel review; it is not legal advice and does not replace jurisdiction-specific counsel review."
   };
 
   const final_output_handoff = {
-    schema_version: "final_output_handoff.v12.phase12_direct_projection",
-    status,
-    normalized_report_manifest,
-    section_artifacts: sectionArtifacts,
+    schema_version: "final_output_handoff.v13.co_p12_04",
+    renderable: false,
+    status: preliminaryStatus,
+    report_manifest_ref: "report_manifest",
+    report_handoff_ref: "report_handoff",
+    renderer_payload_ref: "renderer_payload",
+    compiler_validation_ref: "phase12_compiler_validation",
     compiler_trace: {
-      compiler_version: "phase12_direct_projection_adapter_v1_co_p12_03",
+      compiler_version: "phase12_clean_report_profile_adapter_v1_co_p12_04",
       deterministic_only: true,
       p12_model_usage: "FORBIDDEN",
       no_new_findings_created: true,
       no_row_re_evaluation: true,
+      mandatory_material_fields_preserved: true,
+      custody_isolated_from_report_profiles: true,
       phase2g_dependency_forbidden: true,
       old_recursive_profiler_not_used_by_adapter: true
     }
   };
 
   const renderer_payload = {
-    schema_version: "renderer_payload.v12.phase12_direct_projection",
-    status,
-    normalized_report_manifest_ref: "normalized_report_manifest",
-    sections: sectionArtifacts.map((row) => sections[row.artifact_name]),
-    renderer_must_not_merge_sections_semantically: true
+    schema_version: "renderer_payload.v13.clean_report_artifact_refs",
+    renderable: false,
+    status: preliminaryStatus,
+    report_manifest_ref: "report_manifest",
+    report_artifact_refs: orderedReportArtifacts,
+    render_plan: sectionArtifacts,
+    renderer_must_not_merge_sections_semantically: true,
+    renderer_must_not_read_control_artifacts: true,
+    custody_artifact_rendering_forbidden: true
   };
 
-  return {
+  const output = {
     phase12_admission: admissionRoot,
     phase12_route_plan: routeRoot,
-    normalized_report_manifest,
-    review_ready_section_handoff,
+    phase12_report_custody_manifest: custody,
+    report_manifest,
+    normalized_report_manifest: report_manifest,
+    report_handoff,
+    review_ready_section_handoff: report_handoff,
     final_output_handoff,
     renderer_payload,
-    ...sections
+    ...reportArtifacts
   };
+  const validation = validatePhase12CompilerOutput({ output, contract: reportContract });
+  output.phase12_compiler_validation = validation.phase12_compiler_validation;
+  const finalStatus = validation.phase12_compiler_validation.status;
+  for (const artifactName of REPORT_FACING_ARTIFACTS) if (output[artifactName]) output[artifactName].status = finalStatus;
+  for (const artifact of [output.phase12_report_custody_manifest, output.report_manifest, output.report_handoff, output.final_output_handoff, output.renderer_payload]) artifact.status = finalStatus;
+  output.normalized_report_manifest = output.report_manifest;
+  output.review_ready_section_handoff = output.report_handoff;
+  return output;
 }
 
 export const compilePhase12DirectReportProjection = buildPhase12ProjectionAdapter;
 
-function buildReportSection({ section, sectionRoute, routes, artifacts }) {
-  const fields = routes.map((route) => projectField(route, artifacts));
-  const unresolved = fields.filter((field) => field.value_status !== "RESOLVED");
+function buildCleanSectionProfile({ section, routes, artifacts, custody, status }) {
+  const findings = routes.map((route) => projectFdrFinding({ route, artifacts, reportArtifactName: section.artifact_name, custodyManifest: custody }));
   return {
-    schema_version: "report_section.v12.phase12_direct_projection",
+    schema_version: REPORT_PROFILE_SCHEMA,
+    artifact_role: "SECTION_PROFILE",
+    renderable: true,
     section_id: section.section_id,
     section_key: section.section_key,
     artifact_name: section.artifact_name,
     title: section.title,
-    status: "PROJECTED",
-    route_field_count: sectionRoute.route_field_count || routes.length,
-    field_count: fields.length,
-    unresolved_value_count: unresolved.length,
-    subsections: section.subsections || [],
-    fields,
-    limitations: unresolved.map((field) => ({
-      field_id: field.field_id,
-      limitation: "Upstream value was not found through the bound deterministic owner-artifact route. Phase 12 did not synthesize it.",
-      source_artifact: field.selected_source_artifact
-    })),
+    status,
+    summary: summarizeFindings(findings),
+    findings,
+    limitations: findings.filter((finding) => finding.report_importance === "LIMITATION"),
     p12_substantive_derivation_forbidden: true
   };
 }
 
-function projectField(route, artifacts) {
-  const resolved = resolveValue(route, artifacts);
-  return {
-    field_id: route.field_id,
-    label: route.canonical_label,
-    value: resolved.value,
-    value_status: resolved.status,
-    value_path: resolved.path,
-    owner_phase: route.owner_phase,
-    selected_source_artifact: route.selected_source_artifact,
-    source_value_route: route.source_value_route,
-    taxonomy_resolver: route.taxonomy_resolver,
-    report_importance: route.report_importance,
-    presentation: route.presentation,
-    p12_value_mutation_forbidden: true,
-    p12_generated: false
-  };
-}
-
-function resolveValue(route, artifacts) {
-  const artifactName = route.selected_source_artifact;
-  const root = artifactRoot(artifacts[artifactName], artifactName);
-  if (!artifactName || !Object.keys(root).length) return unresolved("OWNER_ARTIFACT_MISSING");
-  const id = route.field_id;
-  for (const [path, value] of [
-    [`${artifactName}.__fdr_values.${id}`, root.__fdr_values?.[id]],
-    [`${artifactName}.fields_by_id.${id}`, root.fields_by_id?.[id]],
-    [`${artifactName}.${id}`, root[id]],
-    [`${artifactName}.${slug(route.canonical_label)}`, root[slug(route.canonical_label)]]
-  ]) {
-    if (value !== undefined && value !== null && !(typeof value === "string" && !value.trim())) {
-      return { status: "RESOLVED", value, path };
-    }
+function buildSection5ArtifactFamily({ reportContract, routeRoot, artifacts, custody, status }) {
+  const section = (reportContract.section_schema.sections || []).find((row) => row.section_id === "05");
+  const routes = (routeRoot.route_rows || []).filter((row) => row.primary_report_section === "05");
+  const out = {};
+  for (const profile of SECTION5_CHILD_PROFILES) {
+    const profileRoutes = routes.filter((route) => section5ChildForFieldId(route.field_id)?.artifact_name === profile.artifact_name);
+    const findings = profileRoutes.map((route) => projectFdrFinding({ route, artifacts, reportArtifactName: profile.artifact_name, custodyManifest: custody }));
+    out[profile.artifact_name] = {
+      schema_version: REPORT_PROFILE_SCHEMA,
+      artifact_role: "SECTION_PROFILE",
+      renderable: true,
+      section_id: "05",
+      profile_id: profile.profile_id,
+      artifact_name: profile.artifact_name,
+      title: profile.public_title,
+      status,
+      summary: summarizeFindings(findings),
+      findings,
+      limitations: findings.filter((finding) => finding.report_importance === "LIMITATION"),
+      p12_substantive_derivation_forbidden: true
+    };
   }
-  return unresolved("VALUE_NOT_BOUND_IN_OWNER_ARTIFACT");
+  const children = SECTION5_CHILD_PROFILES.map((row) => row.artifact_name);
+  const childFieldCount = children.reduce((sum, name) => sum + (out[name]?.findings?.length || 0), 0);
+  const unresolvedCount = children.reduce((sum, name) => sum + (out[name]?.summary?.unresolved_field_count || 0), 0);
+  out[section.artifact_name] = {
+    schema_version: REPORT_WRAPPER_SCHEMA,
+    artifact_role: "SECTION_WRAPPER",
+    renderable: true,
+    section_id: "05",
+    section_key: section.section_key,
+    artifact_name: section.artifact_name,
+    title: section.title,
+    status,
+    child_artifacts: children,
+    render_order: children,
+    summary: {
+      profile_count: children.length,
+      material_field_count: childFieldCount,
+      unresolved_field_count: unresolvedCount,
+      missing_proof_profile_ref: "report_section__05_missing_proof_diligence_requests"
+    },
+    renderer_instruction: {
+      render_child_artifacts: true,
+      do_not_render_custody: true,
+      do_not_merge_profiles_semantically: true
+    },
+    p12_substantive_derivation_forbidden: true
+  };
+  return out;
 }
 
-function injectExposureRegister(section, admissionRoot) {
+function buildSection8ArtifactFamily({ admissionRoot, routeRoot, custody, status }) {
+  const out = {};
+  const sourceRows = admissionRoot.phase10_downstream_compatibility?.material_rows || [];
+  const section8Routes = (routeRoot.route_rows || []).filter((row) => row.primary_report_section === "08");
+  for (const route of section8Routes) {
+    custody.profile_family_bindings.push({
+      report_section: "08",
+      field_id: route.field_id,
+      route_id: route.route_id,
+      owner_phase: route.owner_phase,
+      source_artifact_candidates: route.owner_artifact_candidates,
+      projection_mode: "CLEAN_EXPOSURE_ROW_PROFILE_FAMILY"
+    });
+  }
+  for (const profile of SECTION8_CHILD_PROFILES) {
+    const selectedRows = sourceRows.filter((row) => section8ChildForRow(row)?.artifact_name === profile.artifact_name);
+    const rows = selectedRows.map((row, index) => buildExposureDisplayRow({ row, reportArtifactName: profile.artifact_name, rowIndex: index, custodyManifest: custody }));
+    out[profile.artifact_name] = {
+      schema_version: REPORT_PROFILE_SCHEMA,
+      artifact_role: "SECTION_PROFILE",
+      renderable: true,
+      section_id: "08",
+      profile_id: profile.profile_id,
+      artifact_name: profile.artifact_name,
+      title: profile.public_title,
+      stream_scope: profile.stream_scope,
+      material_status: profile.material_status,
+      public_status_label: profile.public_status_label,
+      status,
+      summary: summarizeExposureRows(rows),
+      rows,
+      p12_substantive_derivation_forbidden: true,
+      p12_row_re_evaluation_forbidden: true
+    };
+  }
+  const children = SECTION8_CHILD_PROFILES.map((row) => row.artifact_name);
+  out.report_section__08_exposure_register = {
+    schema_version: REPORT_WRAPPER_SCHEMA,
+    artifact_role: "SECTION_WRAPPER",
+    renderable: true,
+    section_id: "08",
+    section_key: "exposure_register",
+    artifact_name: "report_section__08_exposure_register",
+    title: "Exposure Register",
+    status,
+    child_artifacts: children,
+    render_order: children,
+    summary: buildSection8Summary(out),
+    status_definitions: Object.fromEntries(SECTION8_CHILD_PROFILES.slice(0, 4).map((profile) => [profile.material_status, profile.public_status_label])),
+    renderer_instruction: {
+      render_child_artifacts: true,
+      do_not_render_custody: true,
+      do_not_merge_status_groups: true,
+      do_not_merge_primary_and_overlay_streams: true
+    },
+    p12_substantive_derivation_forbidden: true
+  };
+  return out;
+}
+
+function injectMatterBoundary(section, admissionRoot) {
   if (!section) return;
-  const phase10 = admissionRoot.phase10_downstream_compatibility || {};
-  section.exposure_register = {
-    schema_version: "phase12_section8_exposure_register.v1",
-    triggered_rows: phase10.material_rows?.filter((row) => row.evaluation_status === "TRIGGERED") || [],
-    controlled_rows: phase10.material_rows?.filter((row) => row.evaluation_status !== "TRIGGERED") || [],
-    final_status_counts: phase10.final_status_counts || {},
-    no_row_re_evaluation: true,
-    complete_exposure_register: true
+  section.review_boundary = {
+    doctrine: "Upstream phases decide. Phase 12 arranges.",
+    phase11_gate_status: admissionRoot.phase10_downstream_compatibility?.challenge_status || "UNKNOWN",
+    evidence_boundary: "Public-footprint diligence projection unless an upstream material profile expressly records another reviewed source.",
+    review_ready_draft_notice: "Review-Ready Draft only; local counsel review is required before reliance.",
+    local_counsel_review_required: true
   };
 }
 
-function injectOpenHandoff(section, admissionRoot) {
+function injectExecutiveOverview(section, reportArtifacts, admissionRoot) {
+  if (!section) return;
+  const childArtifacts = SECTION8_CHILD_PROFILES.map((profile) => reportArtifacts[profile.artifact_name]).filter(Boolean);
+  const allRows = childArtifacts.flatMap((artifact) => artifact.rows || []);
+  section.exposure_overview = {
+    total_material_exposure_rows: allRows.length,
+    triggered_count: allRows.filter((row) => row.identity?.material_status === "TRIGGERED").length,
+    controlled_by_visible_control_count: allRows.filter((row) => row.identity?.material_status === "CONTROLLED_BY_VISIBLE_CONTROL").length,
+    controlled_by_exclusion_count: allRows.filter((row) => row.identity?.material_status === "CONTROLLED_BY_EXCLUSION").length,
+    controlled_by_public_evidence_limitation_count: allRows.filter((row) => row.identity?.material_status === "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION").length,
+    primary_stream_count: allRows.filter((row) => row.identity?.stream_scope === "Primary Sector").length,
+    overlay_stream_count: allRows.filter((row) => row.identity?.stream_scope === "Capability Overlay").length,
+    highest_upstream_pain_tier: highestPainTier(allRows),
+    carried_phase11_warning_count: admissionRoot.phase10_downstream_compatibility?.phase11_warning_projection?.warning_count || 0,
+    deterministic_rollup_only: true
+  };
+}
+
+function injectOpenReviewItems(section, reportArtifacts, admissionRoot, custody) {
   if (!section) return;
   const warnings = admissionRoot.phase10_downstream_compatibility?.phase11_warning_projection?.warnings || [];
-  section.open_handoff_items = {
-    schema_version: "phase12_section9_open_handoff.v1",
-    item_count: warnings.length,
-    items: warnings,
-    open_or_unresolved_items_only: true,
-    exposure_register_duplication_forbidden: true,
-    p12_question_creation_forbidden: true,
-    p12_priority_creation_forbidden: true,
-    p12_route_creation_forbidden: true
+  const items = warnings.map((warning, index) => {
+    custody.warning_bindings.push({
+      report_artifact: "report_section__09_open_review_items_handoff",
+      report_item_index: index,
+      challenge_candidate_id: warning.challenge_candidate_id,
+      affected_artifacts: warning.affected_artifacts,
+      affected_field_paths: warning.affected_field_paths,
+      affected_registry_row_keys: warning.affected_registry_row_keys
+    });
+    return {
+      warning_type: warning.warning_type,
+      remaining_uncertainty: warning.remaining_uncertainty,
+      possible_report_impact: warning.possible_report_impact,
+      local_counsel_review_route: warning.local_counsel_review_route
+    };
+  });
+  section.open_review_items = items;
+  section.summary = {
+    ...(section.summary || {}),
+    open_item_count: items.length,
+    phase7_missing_proof_profile_ref: reportArtifacts.report_section__05_missing_proof_diligence_requests?.artifact_name,
+    exposure_register_duplication_forbidden: true
   };
+  section.p12_question_creation_forbidden = true;
+  section.p12_priority_creation_forbidden = true;
+  section.p12_route_creation_forbidden = true;
 }
 
 function injectMethodology(section, { admissionRoot, routeRoot, reportContract }) {
   if (!section) return;
   section.methodology = {
-    schema_version: "phase12_methodology_projection.v1",
     doctrine: "Upstream phases decide. Phase 12 arranges.",
+    artifact_purity_rule: "Report-facing artifacts preserve mandatory upstream material fields and exclude forensic or unnecessary mechanical payloads.",
     admission_status: admissionRoot.status,
     route_status: routeRoot.status,
     active_owned_field_count: reportContract.validation.active_owned_field_count,
     blocked_gap_field_count: reportContract.validation.blocked_gap_field_count,
+    custody_manifest_ref: "phase12_report_custody_manifest",
     local_counsel_review_required: true,
     review_ready_draft_boundary: "Review-Ready Draft only; local counsel review required before use."
   };
 }
 
-function unresolved(reason) { return { status: reason, value: null, path: null }; }
-function slug(value) { return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); }
+function buildCanonicalSectionManifest(reportContract, reportArtifacts) {
+  return (reportContract.section_schema.sections || []).map((section) => {
+    const artifact = reportArtifacts[section.artifact_name] || {};
+    return {
+      section_id: section.section_id,
+      section_key: section.section_key,
+      artifact_name: section.artifact_name,
+      artifact_role: artifact.artifact_role,
+      title: section.title,
+      status: artifact.status,
+      child_artifacts: artifact.child_artifacts || [],
+      material_field_count: artifact.summary?.material_field_count ?? artifact.summary?.field_count ?? artifact.findings?.length ?? 0,
+      render_order: artifact.render_order || [section.artifact_name]
+    };
+  });
+}
+
+function buildOrderedReportArtifacts() {
+  const ordered = [];
+  for (const artifactName of CANONICAL_SECTION_ARTIFACTS) {
+    ordered.push(artifactName);
+    if (artifactName === "report_section__05_data_provenance_privacy_architecture") ordered.push(...SECTION5_CHILD_PROFILES.map((row) => row.artifact_name));
+    if (artifactName === "report_section__08_exposure_register") ordered.push(...SECTION8_CHILD_PROFILES.map((row) => row.artifact_name));
+  }
+  return ordered;
+}
+
+function summarizeFindings(findings) {
+  return {
+    field_count: findings.length,
+    resolved_field_count: findings.filter((finding) => finding.value_status === "RESOLVED").length,
+    unresolved_field_count: findings.filter((finding) => finding.value_status !== "RESOLVED").length,
+    limitation_field_count: findings.filter((finding) => finding.report_importance === "LIMITATION").length
+  };
+}
+
+function summarizeExposureRows(rows) {
+  return {
+    row_count: rows.length,
+    highest_upstream_pain_tier: highestPainTier(rows),
+    represented_pain_depths: [...new Set(rows.map((row) => row.severity?.pain_depth?.code || row.severity?.pain_depth).filter(Boolean))],
+    mandatory_material_fields_preserved: true
+  };
+}
+
+function buildSection8Summary(artifacts) {
+  const rows = SECTION8_CHILD_PROFILES.flatMap((profile) => artifacts[profile.artifact_name]?.rows || []);
+  return {
+    total_exposure_row_count: rows.length,
+    primary_row_count: rows.filter((row) => row.identity?.stream_scope === "Primary Sector").length,
+    overlay_row_count: rows.filter((row) => row.identity?.stream_scope === "Capability Overlay").length,
+    triggered_count: rows.filter((row) => row.identity?.material_status === "TRIGGERED").length,
+    controlled_by_visible_control_count: rows.filter((row) => row.identity?.material_status === "CONTROLLED_BY_VISIBLE_CONTROL").length,
+    controlled_by_exclusion_count: rows.filter((row) => row.identity?.material_status === "CONTROLLED_BY_EXCLUSION").length,
+    controlled_by_public_evidence_limitation_count: rows.filter((row) => row.identity?.material_status === "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION").length
+  };
+}
+
+function highestPainTier(rows) {
+  const order = ["T1", "T2", "T3", "T4", "T5"];
+  const tiers = rows.map((row) => row.severity?.pain_tier?.code || row.severity?.pain_tier).filter(Boolean);
+  return tiers.sort((a, b) => order.indexOf(a) - order.indexOf(b))[0] || null;
+}
