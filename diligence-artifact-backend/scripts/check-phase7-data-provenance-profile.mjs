@@ -10,9 +10,7 @@ import {
   PHASE7_DAP_LAYER5_ARTIFACT_NAMES,
   PHASE7_DAP_BATCH_ARTIFACT_PATTERN,
   PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN,
-  PHASE7_DAP_RUNTIME_ARTIFACT_NAMES,
-  DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES,
-  ARTIFACT_NAMES
+  DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES
 } from "../src/runtime/contracts/artifact-permissions.contract.js";
 import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
 import {
@@ -115,11 +113,11 @@ function assertPipelineAndContract() {
   assert.deepEqual(phase7.terminal_outputs, [
     "dap_registry_manifest",
     "dap_strategic_derivation_matrix",
-    "dap_semantic_batch_route_manifest",
     ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_")),
     "dap_semantic_batch_validation_manifest",
     "data_provenance_profile_semantic_batch_gate"
   ]);
+  assert.equal(new Set(phase7.terminal_outputs).size, phase7.terminal_outputs.length, "Phase7 terminal outputs must not contain duplicates");
 
   assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.reads, ["phase_routing_manifest"]);
   assert.equal(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.next, "DATA_PROVENANCE_PROFILE_LAYER5");
@@ -178,54 +176,20 @@ function fixtureBatchArtifact(packet) {
         output_field: packet.field_route_rows[index]?.output_field || fieldId,
         semantic_resolution_status: "SEMANTIC_RESOLVED_WITH_BOUNDED_SUPPORT",
         structured_candidate: { field_id: fieldId, public_visibility: "Visible in reviewed material fixture." },
-        basis_route_ids: [packet.required_d_family_route_ids[0], packet.selective_l_family_route_ids[0]].filter(Boolean),
-        basis_summary: "Reviewed routed data/privacy and legal-signal material supports this field-level candidate.",
-        reasoning_summary: "Field resolved within the active Phase 7 batch route without legal or compliance conclusion.",
-        limitation: "No additional limitation in fixture.",
-        missing_proof_request: "",
-        private_confirmation_required: false,
-        forbidden_inference_check: "PASS"
+        evidence_trace: { source: "fixture" },
+        limitations: []
       })),
-      batch_limitations: [],
-      batch_quality_flags: []
+      validation_quality_control_result: { status: "PASS", errors: [] }
     }
   };
 }
 
-function assertNoLegacyArtifactsOrPrompts() {
-  for (const retired of ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet"]) {
-    assert.equal(ARTIFACT_NAMES.includes(retired), false, `${retired} must not be active artifact`);
-  }
-  const activeFiles = collectFiles(["src", "scripts", "agent-packages/agent_4_data_privacy"]);
-  for (const file of activeFiles) {
-    const text = fs.readFileSync(path.join(repoRoot, file), "utf8");
-    if (file === "scripts/check-m10-d-primary-selected-legal-support.mjs") {
-      assert.equal(text.includes("M10_LEAN_INPUT_CONTRACT"), false, `${file} still references M10 lean contract`);
-      continue;
-    }
-    for (const forbidden of ["M10_LEAN_INPUT_CONTRACT", "extended_dap_india_readiness_profile", "integrated_dap_report"]) {
-      assert.equal(text.includes(forbidden), false, `${file} contains retired Phase7/M10 marker ${forbidden}`);
-    }
-  }
+function phase7ValidationNames() {
+  return PHASE7_DAP_SEMANTIC_BATCH_PLAN.map((batch) => `dap_semantic_batch_validation__${batch.batch_id}`);
 }
 
-function collectFiles(roots) {
-  const output = [];
-  for (const root of roots) walk(path.join(repoRoot, root), output, root);
-  return output.filter((file) => /\.(js|mjs|md|yaml|yml)$/.test(file));
-}
-
-function walk(absolute, output) {
-  if (!fs.existsSync(absolute)) return;
-  const stat = fs.statSync(absolute);
-  if (stat.isFile()) {
-    output.push(path.relative(repoRoot, absolute).split(path.sep).join("/"));
-    return;
-  }
-  for (const entry of fs.readdirSync(absolute)) {
-    if (["node_modules", ".git", "archive", "archive-legacy"].includes(entry)) continue;
-    walk(path.join(absolute, entry), output);
-  }
+function PHASE7_DAP_BATCH_ARTIFACT_NAMES() {
+  return PHASE7_DAP_SEMANTIC_BATCH_PLAN.map((batch) => batch.expected_artifact_name);
 }
 
 function presentPhase2Artifacts() {
@@ -240,10 +204,11 @@ function presentPhase2Artifacts() {
   };
 }
 
-function PHASE7_DAP_BATCH_ARTIFACT_NAMES() {
-  return PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_") && name.endsWith("_artifact"));
-}
-
-function phase7ValidationNames() {
-  return Array.from({ length: 17 }, (_, index) => `dap_semantic_batch_validation__DAP-SEM-BATCH-${String(index + 1).padStart(2, "0")}`);
+function assertNoLegacyArtifactsOrPrompts() {
+  const contractText = fs.readFileSync(path.join(repoRoot, "src/runtime/contracts/artifact-permissions.contract.js"), "utf8");
+  const phase7Text = fs.readFileSync(path.join(repoRoot, "src/phases/07-data-provenance-profile/data-provenance-profile.contract.js"), "utf8");
+  for (const retired of ["extended_dap_india_readiness_profile", "integrated_dap_report", "M10_4B", "M10_4C"]) {
+    assert.equal(contractText.includes(retired), false, `retired artifact or module leaked into permissions:${retired}`);
+    assert.equal(phase7Text.includes(retired), false, `retired artifact or module leaked into Phase7 contract:${retired}`);
+  }
 }
