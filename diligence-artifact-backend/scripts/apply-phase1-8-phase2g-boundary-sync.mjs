@@ -16,13 +16,18 @@ patch("scripts/check-phase1-8-central-runtime.mjs", [
   ["PHASE2G_RUNTIME_CUTOVER_COMPLETE_THROUGH_COMPILER", "PHASE2G_RUNTIME_BOUNDARY_ENDS_BEFORE_COMPILER"]
 ]);
 
-console.log("Phase 2G runtime boundary through Phase 11: APPLIED");
+console.log("Phase 2G runtime boundary through Phase 11: APPLIED_OR_ALREADY_SYNCED");
 
 function patch(file, replacements) {
   let source = fs.readFileSync(file, "utf8");
+  let changed = false;
   for (const [before, after] of replacements) {
-    if (!source.includes(before)) throw new Error(`PHASE2G_BOUNDARY_MARKER_MISSING:${file}:${before}`);
-    source = source.replace(before, after);
+    if (source.includes(before)) {
+      source = source.replace(before, after);
+      changed = true;
+    } else if (!source.includes(after)) {
+      throw new Error(`PHASE2G_BOUNDARY_MARKER_MISSING:${file}:${before}`);
+    }
   }
-  fs.writeFileSync(file, source);
+  if (changed) fs.writeFileSync(file, source);
 }
