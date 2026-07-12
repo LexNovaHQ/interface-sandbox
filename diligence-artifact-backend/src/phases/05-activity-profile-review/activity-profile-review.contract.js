@@ -46,18 +46,20 @@ const MOUNTED_TAXONOMY_OVERLAY_REF_FIELDS = Object.freeze([
 ]);
 
 export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
-  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v8_AGNOSTIC_TAXONOMY",
+  contract_name: "ACTIVITY_PROFILE_REVIEW_CONTRACT_v9_BEHAVIOR_CLASS_CANONICAL",
+  schema_version: "activity_profile_material.v9.behavior_class",
   central_phase_id: "ACTIVITY_PROFILE_REVIEW",
   central_phase_label: "Activity Profile Review",
   phase_job_id: "ACTIVITY_PROFILE_REVIEW_MATERIAL",
   public_label: "Activity Profile Review",
   compatibility_internal_job_id: "M8_TARGET_FEATURE_PROFILE",
-  implementation_status: "PHASE5_LAYER2_CODE_CUTOVER_CONTRACT_RUNNER_VALIDATOR",
+  implementation_status: "PHASE5_BEHAVIOR_CLASS_CANONICAL_CUTOVER",
   production_entrypoint_switched: true,
   global_production_deployment_switched: true,
   model_usage: "MODEL_JSON_ONLY_PACKAGE_TAXONOMY_INJECTED",
   mounted_taxonomy_ref_stamped_by_backend: true,
   primary_overlay_schema_active: true,
+  primary_overlay_behavior_class_and_surface_independent: true,
   route_contract: Object.freeze({
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
     route_id: "ROUTE.PHASE5.ACTIVITY_PROFILE",
@@ -95,7 +97,7 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     hardcoded_registry_key_list_forbidden: true,
     hardcoded_ai_registry_key_for_activity_taxonomy_forbidden: true,
     hardcoded_ai_safety_root_forbidden: true,
-    fixed_archetype_enum_forbidden: true,
+    fixed_behavior_class_enum_forbidden: true,
     fixed_surface_token_enum_forbidden: true,
     p2c_activity_profile_source_index_is_navigation_only: true,
     p1_lossless_family_reads_forbidden: true,
@@ -130,51 +132,22 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     empty_primary_allowed_when_unkeyed_or_no_legitimate_match_only: true,
     false_catch_all_classification_forbidden: true,
     unkeyed_primary_limitation: "PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>",
-    no_primary_match_limitation: "NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>",
+    no_primary_match_limitation: "NO_PRIMARY_BEHAVIOR_CLASS_MATCH:<activity_reference>",
     unresolved_overlay_limitation: "OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>",
     declared_unrouted_root_limitation: "DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>"
   }),
   forbidden_material_keys: Object.freeze([
-    "feature_candidate_inventory",
-    "target_feature_profile_forensics",
-    "target_profile",
-    "target_profile_forensics",
-    "activity_profile_source_index",
-    "phase_route_runtime_packet",
-    "legal_cartography_index",
-    "legal_signal_derivation_profile",
-    "data_provenance_profile",
-    "exposure_registry_profile",
-    "challenge_gate",
-    "final_output_handoff",
-    "renderer_payload",
-    "candidate_id",
-    "source_candidate_ids",
-    "source_pointers",
-    "source_pointer",
-    "source_ref",
-    "source_refs",
-    "source_url",
-    "source_urls",
-    "source_id",
-    "source_ids",
-    "confidence",
-    "validation_status",
-    "lock_status",
-    "profile_meta",
-    "runtime_trace",
-    "derivation_ledger",
-    "validation_ledger",
-    "archetype_ledger",
-    "surface_token_ledger",
-    "forensic_contract",
-    "forensic_boundary",
-    "archetype_proof",
-    "surface_proof_and_routing_limits",
-    "excerpt",
-    "lossless_text",
-    "clean_text",
-    "text"
+    "feature_candidate_inventory", "target_feature_profile_forensics", "target_profile",
+    "target_profile_forensics", "activity_profile_source_index", "phase_route_runtime_packet",
+    "legal_cartography_index", "legal_signal_derivation_profile", "data_provenance_profile",
+    "exposure_registry_profile", "challenge_gate", "final_output_handoff", "renderer_payload",
+    "candidate_id", "source_candidate_ids", "source_pointers", "source_pointer", "source_ref",
+    "source_refs", "source_url", "source_urls", "source_id", "source_ids", "confidence",
+    "validation_status", "lock_status", "profile_meta", "runtime_trace", "derivation_ledger",
+    "validation_ledger", "behavior_class_ledger", "surface_token_ledger", "forensic_contract",
+    "forensic_boundary", "behavior_class_proof", "surface_proof_and_routing_limits",
+    "excerpt", "lossless_text", "clean_text", "text",
+    "archetype_codes", "archetype_derivation_basis"
   ]),
   boundary_rules: Object.freeze({
     phase2g_route_scoped_runtime_reader_required: true,
@@ -190,43 +163,17 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
     must_not_include_urls_ids_pointers_or_confidence: true,
     must_use_activity_profile_source_index_for_navigation: true,
     must_use_active_run_package_manifest_for_package_context: true,
-    fixed_ai_archetype_and_surface_taxonomies_forbidden: true,
+    fixed_behavior_class_and_surface_taxonomies_forbidden: true,
     next_phase: "M8_TARGET_FEATURE_PROFILE_FORENSICS"
   })
 });
 
-export function activityProfileReviewReadArtifacts() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads];
-}
-
-export function activityProfileReviewWriteArtifacts() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.writes];
-}
-
-export function activityProfileReviewPromptFiles() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.prompt_files];
-}
-
-export function activityProfileReviewReferenceFiles() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.references];
-}
-
-export function activityProfileReviewActivityRowFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.activity_row_fields];
-}
-
-export function activityProfileReviewCommercialAvailabilityFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.commercial_availability_fields];
-}
-
-export function activityProfileReviewPrimaryClassificationFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.primary_classification_fields];
-}
-
-export function activityProfileReviewOverlayClassificationFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.overlay_classification_fields];
-}
-
-export function activityProfileReviewMountedTaxonomyRefFields() {
-  return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.mounted_taxonomy_ref_fields];
-}
+export function activityProfileReviewReadArtifacts() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads]; }
+export function activityProfileReviewWriteArtifacts() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.writes]; }
+export function activityProfileReviewPromptFiles() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.prompt_files]; }
+export function activityProfileReviewReferenceFiles() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.references]; }
+export function activityProfileReviewActivityRowFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.activity_row_fields]; }
+export function activityProfileReviewCommercialAvailabilityFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.commercial_availability_fields]; }
+export function activityProfileReviewPrimaryClassificationFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.primary_classification_fields]; }
+export function activityProfileReviewOverlayClassificationFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.overlay_classification_fields]; }
+export function activityProfileReviewMountedTaxonomyRefFields() { return [...ACTIVITY_PROFILE_REVIEW_CONTRACT.output_contract.mounted_taxonomy_ref_fields]; }
