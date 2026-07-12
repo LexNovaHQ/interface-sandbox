@@ -92,8 +92,25 @@ jobs:
           npm run check:p12:co5
 
       - name: Validate full backend contract
+        id: full_backend_check
+        continue-on-error: true
         working-directory: diligence-artifact-backend
-        run: npm run check
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee co-p12-05-full-backend.log
+
+      - name: Upload full backend diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-p12-05-full-backend-log-${{ github.run_number }}
+          path: diligence-artifact-backend/co-p12-05-full-backend.log
+          retention-days: 3
+
+      - name: Stop after full backend failure
+        if: steps.full_backend_check.outcome == 'failure'
+        run: exit 1
 
       - name: Write certified receipt
         working-directory: diligence-artifact-backend
@@ -154,6 +171,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
           git rm .github/workflows/co-p12-05-finalize.yml
+          rm -f diligence-artifact-backend/co-p12-05-apply.log diligence-artifact-backend/co-p12-05-full-backend.log
           git add -A
           git commit -m "Cut over Phase 12 renderer runtime and retire legacy compiler"
           git push origin HEAD:domain-gate-v0-preflight
