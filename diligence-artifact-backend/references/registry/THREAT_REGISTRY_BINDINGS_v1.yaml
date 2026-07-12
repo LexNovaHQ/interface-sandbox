@@ -25,6 +25,15 @@ registry_binding_manifest:
       of Status. Active, Upcoming, Pending, Watch, and combined status labels remain
       material row metadata and must not be used to exclude a row from routing.
 
+  execution_identity_contract:
+    version: PHASE10_EXECUTION_IDENTITY_v2
+    global_identity_field: registry_row_key
+    format: "<package_id>::<Threat_ID>"
+    canonical_threat_id_preserved: true
+    cross_package_canonical_id_collision_allowed: true
+    duplicate_registry_row_key_forbidden: true
+    silent_namespacing_forbidden: true
+
   packages:
     ai-governance:
       package_id: ai-governance
