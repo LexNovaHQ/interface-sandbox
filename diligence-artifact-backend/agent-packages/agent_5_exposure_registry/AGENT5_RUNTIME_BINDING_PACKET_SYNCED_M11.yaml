@@ -1,9 +1,10 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: AGENT5_PHASE10_EXPOSURE_PHASE2G
-runtime_contract_version: v17_domain_agnostic_layer2_layer3_forensics
+runtime_contract_version: v18_final_runtime_package_downstream_sync
 active_agent_id: agent_5_exposure_registry
 active_phase_scope: M11_EXPOSURE_REGISTRY
 run_mode: PACKAGE_SCOPED_BATCHED_AGENT
+synchronization_status: FINAL_CO_11_SYNC_COMPLETE
 
 routing_authority:
   authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
@@ -15,72 +16,54 @@ routing_authority:
   index_gap_navigation_role: SAME_BUCKET_PRIMARY_EVIDENCE_NAVIGATION_NOT_FALLBACK
   profile_forensics_inputs_allowed: false
 
-registry_binding_authority:
-  file: references/registry/THREAT_REGISTRY_BINDINGS_v1.yaml
-  authority_role: SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY
-  selector_authority: domain_derivation_profile
+registry_authority:
+  selector: domain_derivation_profile
   active_run_package_manifest_role: CONSISTENCY_CHECK_ONLY
+  binding_file: references/registry/THREAT_REGISTRY_BINDINGS_v1.yaml
+  binding_role: SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY
+  selected_package_key_loading: DYNAMIC
+  selected_threat_registry_loading: DYNAMIC
+  static_ai_reference_injection_forbidden: true
+  status_policy: INCLUDE_ALL_DECLARED_ROWS
+  status_field_role: METADATA_ONLY
 
 execution_identity_contract:
   version: PHASE10_EXECUTION_IDENTITY_v2
   global_identity_field: registry_row_key
   format: <package_id>::<Threat_ID>
   canonical_threat_id_preserved: true
-  raw_threat_id_may_repeat_across_package_streams: true
+  raw_threat_id_may_repeat_across_packages: true
   raw_threat_id_unique_inside_one_batch: true
   model_may_read_registry_row_key: true
   model_may_emit_registry_row_key: false
-  model_output_identity_field: Threat_ID
 
-phase5_classification_inventory_contract:
-  schema_version: phase5_classification_inventory.v1
-  source_authority: target_feature_profile
-  phase10_projects_only: true
-  primary_source_path: activities[].primary_classification
-  overlay_source_path: activities[].overlay_classifications[]
-  missing_mounted_stream_classification_result: CONTROLLED_FAILURE
-  global_cross_package_archetype_union_forbidden: true
-
-package_scoped_route_contract:
-  version: M11_PACKAGE_SCOPED_ROUTE_RULES_v1
-  primary_and_overlay_streams_separate: true
+layer1_contract:
+  classification_schema: phase5_classification_inventory.v1
+  routing_version: M11_PACKAGE_SCOPED_ROUTE_RULES_v1
+  primary_overlay_streams_separate: true
   uni_always_run: true
-  non_uni_requires_matching_package_archetype: true
+  non_uni_requires_same_package_archetype: true
   surface_only_routing_forbidden: true
-  registry_row_key_reconciliation_required: true
-
-batch_planner_contract:
-  version: M11_MAX_15_PACKAGE_SCOPED_BATCH_PLANNER_v1
-  max_rows: 15
+  batch_planner_version: M11_MAX_15_PACKAGE_SCOPED_BATCH_PLANNER_v1
+  maximum_rows_per_batch: 15
   packet_ceiling_chars: 180000
-  one_package_per_batch: true
-  one_stream_per_batch: true
-  one_archetype_group_per_batch: true
-  evidence_or_registry_truncation_forbidden: true
+  registry_or_evidence_truncation_forbidden: true
 
-semantic_packet_contract:
-  version: M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
-  exact_batch_identity_required: true
-  model_may_change_packet: false
-
-semantic_output_contract:
-  version: M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
-  only_root: m11_batch_registry_ledger
-  model_identity_field: Threat_ID
+layer2_contract:
+  status: CO_8_DOMAIN_AGNOSTIC_RUNTIME_ACTIVE
+  packet_version: M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
+  output_version: M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
+  repair_version: M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1
+  only_model_root: m11_batch_registry_ledger
   exact_expected_coverage_required: true
   preserve_expected_order: true
-  partial_ledger_forbidden: true
-  deterministic_fields_forbidden: true
-  final_status_forbidden: true
-
-semantic_repair_contract:
-  version: M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1
-  maximum_attempts: 1
-  same_packet_required: true
-  complete_ledger_return_required: true
-  immutable_batch_identity_required: true
+  maximum_repair_attempts: 1
+  one_package_per_call: true
+  one_stream_per_call: true
+  one_archetype_group_per_call: true
 
 layer3_contract:
+  status: CO_9_DYNAMIC_FINALIZATION_ACTIVE
   version: M11_DYNAMIC_LAYER3_v1
   final_status_authority: DETERMINISTIC_BACKEND
   final_status_order:
@@ -93,22 +76,24 @@ layer3_contract:
     - CONTROLLED_BY_VISIBLE_CONTROL
     - CONTROLLED_BY_EXCLUSION
     - CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
-  not_applicable_route_status: NOT_TRIGGERED_NOT_APPLICABLE
-  workpad_row_count: DYNAMIC_FROM_ACTIVE_MANIFEST
-  stable_workpad_artifact_token: exposure_registry_workpad_98
-  compound_identity_reconciliation_required: true
+  route_only_status: NOT_TRIGGERED_NOT_APPLICABLE
+  workpad_count_authority: active_threat_registry_manifest.expected_registry_row_key_count
+  stable_workpad_token: exposure_registry_workpad_98
+  fixed_98_functional_assumption: false
 
 forensics_contract:
+  status: CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE
   version: M11_DOMAIN_AGNOSTIC_FORENSICS_v1
   expected_count_authority: active_threat_registry_manifest
-  fixed_98_row_assumption: false
-  fixed_ai_subcategory_assumption: false
+  compound_identity_required: true
   primary_overlay_trace_separate: true
-  registry_row_key_trace_required: true
-  batch_validation_custody_required: true
-  route_workpad_profile_reconciliation_required: true
+  accepted_batch_validation_pairing_required: true
+  fixed_ai_subcategory_assumption: false
+  fixed_98_row_assumption: false
 
 checkpoint_contract:
+  registry_set_fingerprint_required: true
+  phase5_classification_fingerprint_required: true
   phase10_execution_fingerprint_required: true
   stale_checkpoint_reuse_forbidden: true
   accepted_batch_schema: m11_batch_registry_ledger.v3.package_scoped.accepted
@@ -117,7 +102,7 @@ checkpoint_contract:
   triggered_schema: exposure_registry_triggered_profile.v3.dynamic
   forensics_schema: M11_DOMAIN_AGNOSTIC_FORENSICS_v1
 
-semantic_prompt_files:
+active_semantic_prompt_files:
   - AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml
   - 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md
   - 00_M11_RUNTIME_CONTROLLER.md
@@ -128,7 +113,7 @@ semantic_prompt_files:
   - 00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md
   - BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 
-semantic_repair_prompt_files:
+active_repair_prompt_files:
   - AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml
   - 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md
   - 00_M11_RUNTIME_CONTROLLER.md
@@ -139,34 +124,21 @@ semantic_repair_prompt_files:
   - 00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md
   - BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 
-m11_three_layer_contract:
-  layer_1_backend:
-    status: ACTIVE
-  layer_2_model:
-    status: CO_8_DOMAIN_AGNOSTIC_RUNTIME_ACTIVE
-    current_runtime_may_call_model: true
-  layer_3_backend:
-    status: CO_9_DYNAMIC_FINALIZATION_ACTIVE
-  forensics:
-    status: CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE
-
 model_forbidden_actions:
-  - select_or_mount_threat_registry
+  - select_or_mount_registry
   - create_or_rewrite_registry_row_key
   - reclassify_phase5_activity
-  - create_or_rewrite_route_plan
-  - choose_stream_membership
-  - choose_batch_membership
+  - alter_route_or_batch_membership
   - rewrite_registry_spine
   - choose_final_material_status
   - save_artifacts
   - merge_workpad
-  - project_material_profiles
+  - project_profiles
   - assemble_forensics
   - emit_challenge_gate
   - compile_or_render
 
-write_artifacts_in_order:
+write_order:
   - active_threat_registry_manifest
   - exposure_registry_route_plan
   - exposure_registry_batch_validation__{batch_id}
@@ -176,10 +148,17 @@ write_artifacts_in_order:
   - exposure_registry_triggered_profile
   - exposure_registry_profile_forensics
 
-m12_boundary:
-  owner: agent_7_m12
-  delivery_mode: DERIVED_ONLY
-  exposure_forensics_required: false
-  challenge_gate_written_by_agent5: false
-  current_handoff_allowed: true
+downstream_contract:
+  m12_status: CO_13_DYNAMIC_COMPOUND_IDENTITY_COMPATIBLE
+  compiler_status: CO_13_DYNAMIC_COMPOUND_IDENTITY_COMPATIBLE
+  m12_forensics_input_forbidden: true
+  downstream_re_evaluation_forbidden: true
+  raw_threat_id_global_deduplication_forbidden: true
+  registry_row_key_preservation_required: true
+  package_stream_custody_preservation_required: true
+
+validation_contract:
+  dedicated_suite: check:phase10-full
+  co12_status: ACTIVE
+  full_local_validation_status: DEFERRED_TO_FINAL_LOCAL_RUN
 </RUNTIME_BINDING_PACKET>
