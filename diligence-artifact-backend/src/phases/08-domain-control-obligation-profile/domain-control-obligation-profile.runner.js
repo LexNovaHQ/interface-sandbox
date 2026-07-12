@@ -31,7 +31,7 @@ export const DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS = Object.freeze({
   central_phase_id: DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.central_phase_id,
   phase_job_id: DOMAIN_CONTROL_OBLIGATION_PROFILE_JOB_ID,
   phase_owned_runner: true,
-  production_entrypoint_switched: false,
+  production_entrypoint_switched: true,
   global_production_deployment_switched: false,
   model_usage: DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.model_usage,
   provider_injected_by_central_runtime: true,
