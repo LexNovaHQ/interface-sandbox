@@ -17,12 +17,18 @@ import {
   P2G_ROUTE_BUCKETS,
   P2G_ROUTING_DOCTRINE,
   P2G_NO_FALLBACK_DOCTRINE,
+  P2G_SOURCE_BUCKET_DELIVERY_MODE,
   P2G_DERIVED_ONLY_DELIVERY_MODE,
   P2G_DYNAMIC_M11_BATCH_INPUT,
   PHASE_ROUTE_BUCKET_IDS
 } from "../src/phases/02-cartography-index/phase-routing.contract.js";
 import { buildPhaseRoutingManifest, buildPhaseRouteValidationManifest } from "../src/phases/02-cartography-index/services/phase-routing-manifest.builder.js";
 import { validatePhaseRoutingManifest, validatePhaseRouteValidationManifest } from "../src/phases/02-cartography-index/validators/phase-routing-manifest.validator.js";
+
+const PHASE8_SOURCE_BUCKET_JOBS = new Set([
+  "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY",
+  "DOMAIN_CONTROL_OBLIGATION_PROFILE"
+]);
 
 assert.deepEqual(PHASE_ROUTING_ARTIFACT_NAMES, ["phase_routing_manifest", "phase_route_validation_manifest"]);
 assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2G_PHASE_ROUTER, PHASE_ROUTING_ARTIFACT_NAMES);
@@ -85,18 +91,23 @@ for (const bucket of P2G_ROUTE_BUCKETS) {
   }
   for (const [jobId, mode] of Object.entries(bucket.job_scoped_delivery_modes || {})) {
     assert.ok(authorizedJobs.has(jobId), `${bucket.bucket_id} delivery mode declared for unauthorized job ${jobId}`);
-    assert.equal(mode, P2G_DERIVED_ONLY_DELIVERY_MODE, `${bucket.bucket_id} unsupported job delivery mode ${mode}`);
+    const expectedMode = PHASE8_SOURCE_BUCKET_JOBS.has(jobId) ? P2G_SOURCE_BUCKET_DELIVERY_MODE : P2G_DERIVED_ONLY_DELIVERY_MODE;
+    assert.equal(mode, expectedMode, `${bucket.bucket_id} unsupported job delivery mode ${mode} for ${jobId}`);
   }
 }
 
 const targetBucket = P2G_ROUTE_BUCKETS.find((bucket) => bucket.bucket_id === PHASE_ROUTE_BUCKET_IDS.targetProfile);
 const activityBucket = P2G_ROUTE_BUCKETS.find((bucket) => bucket.bucket_id === PHASE_ROUTE_BUCKET_IDS.activityProfile);
 const dataBucket = P2G_ROUTE_BUCKETS.find((bucket) => bucket.bucket_id === PHASE_ROUTE_BUCKET_IDS.dataPrivacy);
+const domainControlBucket = P2G_ROUTE_BUCKETS.find((bucket) => bucket.bucket_id === PHASE_ROUTE_BUCKET_IDS.domainControlObligation);
 const legalBucket = P2G_ROUTE_BUCKETS.find((bucket) => bucket.bucket_id === PHASE_ROUTE_BUCKET_IDS.legalCartographySignals);
 assert.deepEqual(targetBucket.downstream_jobs, ["M7_TARGET_PROFILE_FORENSICS"]);
 assert.deepEqual(activityBucket.job_scoped_derived_profiles.M8_TARGET_FEATURE_PROFILE, ["feature_candidate_inventory"]);
 assert.deepEqual(activityBucket.downstream_jobs, ["M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
 assert.deepEqual(dataBucket.downstream_jobs, ["DATA_PROVENANCE_PROFILE_FORENSICS"]);
+assert.deepEqual(domainControlBucket.parent_jobs, ["DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY", "DOMAIN_CONTROL_OBLIGATION_PROFILE"]);
+assert.equal(domainControlBucket.job_scoped_delivery_modes.DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY, P2G_SOURCE_BUCKET_DELIVERY_MODE);
+assert.equal(domainControlBucket.job_scoped_delivery_modes.DOMAIN_CONTROL_OBLIGATION_PROFILE, P2G_SOURCE_BUCKET_DELIVERY_MODE);
 assert.equal(legalBucket.route_id, "ROUTE.PHASE10.EXPOSURE_PROFILE");
 assert.equal(legalBucket.parent_phase, "EXPOSURE_PROFILE");
 assert.deepEqual(legalBucket.parent_jobs, ["M11"]);
