@@ -4,8 +4,8 @@ const file = "scripts/check-phase7-data-provenance-profile.mjs";
 let source = fs.readFileSync(file, "utf8");
 let changed = false;
 
-const duplicateBefore = '...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_")),';
-const duplicateAfter = '...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_") && name !== "dap_semantic_batch_route_manifest"),';
+const duplicateBefore = '"dap_semantic_batch_route_manifest",\n    ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_")),';
+const duplicateAfter = '...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_")),';
 if (source.includes(duplicateBefore)) {
   source = source.replace(duplicateBefore, duplicateAfter);
   changed = true;
@@ -14,11 +14,12 @@ if (source.includes(duplicateBefore)) {
 }
 
 const oldLayer5Read = 'assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES(), ...phase7ValidationNames()]);';
-const newLayer5Read = 'assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_") && name !== "dap_semantic_batch_route_manifest"), ...phase7ValidationNames()]);';
+const currentLayer5Read = 'assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, ...phase7ValidationNames()]);';
+const alternativeLayer5Read = 'assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => name.startsWith("dap_semantic_batch_") && name !== "dap_semantic_batch_route_manifest"), ...phase7ValidationNames()]);';
 if (source.includes(oldLayer5Read)) {
-  source = source.replace(oldLayer5Read, newLayer5Read);
+  source = source.replace(oldLayer5Read, currentLayer5Read);
   changed = true;
-} else if (!source.includes(newLayer5Read)) {
+} else if (!source.includes(currentLayer5Read) && !source.includes(alternativeLayer5Read)) {
   throw new Error("PHASE7_LAYER5_BATCH_ARTIFACT_EXPECTATION_MARKER_MISSING");
 }
 
