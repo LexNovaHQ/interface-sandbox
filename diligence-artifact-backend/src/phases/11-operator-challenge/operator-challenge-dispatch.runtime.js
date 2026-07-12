@@ -104,9 +104,8 @@ export async function executePhase11ReinvestigationLoop({
 
 async function executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, callProvider }) {
   const baseContract = getInternalJobContract(dispatch.owner_internal_job);
-  const promptFiles = [...new Set([...(baseContract.prompt_files || []), ADDENDUM])];
   const scopedContract = phase11DispatchContractForRun({
-    contract: { ...baseContract, prompt_files: promptFiles, next: "M12" },
+    contract: { ...baseContract, next: "M12" },
     dispatch
   });
   const targetedRun = {
@@ -124,12 +123,17 @@ async function executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, ca
     artifact,
     lock_status: lock_status || artifact?.status || "LOCKED_WITH_LIMITATIONS"
   });
+  const targetedBuildPrompt = (params = {}) => buildPrompt({
+    ...params,
+    prompt_files: [...new Set([...(params.prompt_files || []), ADDENDUM])],
+    run: { ...(params.run || targetedRun), phase11_reinvestigation_context: scopedContract.phase11_reinvestigation_context }
+  });
   const common = {
     run: targetedRun,
     internalJobId: dispatch.owner_internal_job,
     contract: scopedContract,
     readArtifacts,
-    buildPrompt,
+    buildPrompt: targetedBuildPrompt,
     callProvider,
     saveArtifact
   };
