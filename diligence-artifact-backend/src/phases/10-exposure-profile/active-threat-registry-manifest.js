@@ -54,9 +54,15 @@ export async function resolveActiveThreatRegistryContext({
     binding,
     referencePacket
   }));
+
   const identity = buildExecutionIdentity(registries);
   const classificationFingerprint = buildClassificationFingerprint(artifacts.target_feature_profile);
-  const registrySetFingerprint = buildRegistrySetFingerprint({ selection, registries, identity, bindingManifest });
+  const registrySetFingerprint = buildRegistrySetFingerprint({
+    selection,
+    registries,
+    identity,
+    bindingManifest
+  });
   const phase10ExecutionFingerprint = sha256(stableJson({
     identity_version: IDENTITY_VERSION,
     registry_set_fingerprint: registrySetFingerprint,
@@ -151,7 +157,9 @@ function resolveMountedPackages({ domainProfile = {}, activeRunManifest = {} } =
   const aiMount = String(ai.ai_package_mount || "").trim();
 
   if (!primaryPackage) throw new Error("PRIMARY_PACKAGE_NOT_SELECTED");
-  if (primaryStatus !== "LOCKED") throw new Error(`DOMAIN_PROFILE_NOT_LOCKED:${primaryStatus || "missing"}`);
+  if (primaryStatus !== "LOCKED") {
+    throw new Error(`DOMAIN_PROFILE_NOT_LOCKED:${primaryStatus || "missing"}`);
+  }
   if (!VALID_AI_MOUNTS.has(aiMount)) {
     throw new Error(`DOMAIN_MOUNT_INCONSISTENCY:INVALID_AI_MOUNT:${aiMount || "missing"}`);
   }
@@ -247,11 +255,18 @@ function loadRegistry({ packageId, streamType, binding, referencePacket }) {
   });
   const rows = enrichment.rows;
 
-  const validation = validateRegistryRows(rows, { expectedCount: Number(binding.declared_row_count) });
+  const validation = validateRegistryRows(rows, {
+    expectedCount: Number(binding.declared_row_count)
+  });
   if (!validation.ok) {
     throw new Error(`REGISTRY_INTEGRITY_ERROR:${packageId}:${validation.failures.join("|")}`);
   }
-  const severityValidation = validateRowsAgainstMountedSeverityContract(rows, severityContract, packageId);
+
+  const severityValidation = validateRowsAgainstMountedSeverityContract(
+    rows,
+    severityContract,
+    packageId
+  );
   if (!severityValidation.ok) {
     throw new Error(`REGISTRY_SEVERITY_INTEGRITY_ERROR:${packageId}:${severityValidation.failures.join("|")}`);
   }
@@ -273,12 +288,19 @@ function loadRegistry({ packageId, streamType, binding, referencePacket }) {
     package_key_file: binding.package_key_file,
     package_key_version: String(binding.package_key_version || ""),
     registry_file: binding.threat_registry_file,
-    registry_version: String(binding.registry_version || binding.threat_registry_version || binding.threat_registry_file || ""),
+    registry_version: String(
+      binding.registry_version
+      || binding.threat_registry_version
+      || binding.threat_registry_file
+      || ""
+    ),
     registry_format: binding.registry_format || "yaml",
     declared_row_count: Number(binding.declared_row_count),
     parsed_row_count: rows.length,
     routable_row_count: rows.length,
-    uni_row_count: rows.filter((row) => String(row.Archetype || row.FIELD21 || "").trim().toUpperCase() === "UNI").length,
+    uni_row_count: rows.filter(
+      (row) => String(row.Archetype || row.FIELD21 || "").trim().toUpperCase() === "UNI"
+    ).length,
     status_counts: statusCounts,
     threat_ids: threatIds,
     registry_row_keys: registryRowKeys,
@@ -306,7 +328,11 @@ function loadRegistry({ packageId, streamType, binding, referencePacket }) {
   };
 }
 
-function parseMountedSeverityContract(key, { packageId, packageKeyFile, packageKeyVersion }) {
+function parseMountedSeverityContract(key, {
+  packageId,
+  packageKeyFile,
+  packageKeyVersion
+}) {
   const tierRows = asArray(key?.severity?.pain_tier?.codes);
   const depthRows = asArray(key?.severity?.pain_depth?.codes);
   if (!tierRows.length) {
@@ -326,6 +352,7 @@ function parseMountedSeverityContract(key, { packageId, packageKeyFile, packageK
     normalized_name: String(row?.normalized_name || "").trim(),
     trigger_if: String(row?.trigger_if || "").trim()
   }));
+
   const failures = [];
   for (const row of painTiers) {
     if (!row.tier || !row.pain_category || !row.normalized_name) {
@@ -363,7 +390,9 @@ function parseMountedSeverityContract(key, { packageId, packageKeyFile, packageK
 }
 
 function normalizeRegistryRowsFromMountedKey({ rows, severityContract, packageId }) {
-  const tierMap = new Map(asArray(severityContract.pain_tiers).map((row) => [row.tier, row]));
+  const tierMap = new Map(
+    asArray(severityContract.pain_tiers).map((row) => [row.tier, row])
+  );
   const defaultDepth = String(severityContract.default_pain_depth || "").trim();
   const enrichments = [];
 
@@ -372,11 +401,14 @@ function normalizeRegistryRowsFromMountedKey({ rows, severityContract, packageId
     const threatId = String(row.Threat_ID || "unknown");
     const tier = String(row.Pain_Tier || "").trim();
     const tierRule = tierMap.get(tier);
+    const category = String(row.Pain_Category || "").trim();
 
-    if (!String(row.Pain_Category || "").trim()) {
-      if (!tierRule?.pain_category) {
-        throw new Error(`REGISTRY_PAIN_CATEGORY_NOT_DETERMINISTIC:${packageId}:${threatId}:${tier || "missing"}`);
-      }
+    if (!tierRule?.pain_category) {
+      throw new Error(
+        `REGISTRY_PAIN_CATEGORY_NOT_DETERMINISTIC:${packageId}:${threatId}:${tier || "missing"}`
+      );
+    }
+    if (category !== tierRule.pain_category) {
       recordEnrichment({
         enrichments,
         packageId,
@@ -385,7 +417,9 @@ function normalizeRegistryRowsFromMountedKey({ rows, severityContract, packageId
         originalValue: row.Pain_Category,
         normalizedValue: tierRule.pain_category,
         authority: `${severityContract.package_key_file}#severity.pain_tier.codes.${tier}.pain_category`,
-        reason: "MISSING_VALUE_FILLED_FROM_SELECTED_MOUNTED_KEY_TIER"
+        reason: category
+          ? "CONFLICTING_VALUE_CANONICALIZED_TO_MOUNTED_KEY_TIER"
+          : "MISSING_VALUE_FILLED_FROM_SELECTED_MOUNTED_KEY_TIER"
       });
       row.Pain_Category = tierRule.pain_category;
     }
@@ -410,7 +444,15 @@ function normalizeRegistryRowsFromMountedKey({ rows, severityContract, packageId
     const effectiveDate = String(row.Effective_Date || "").trim();
     const status = String(row.Status || "").trim().toUpperCase();
     const velocity = String(row.Velocity || "").trim().toUpperCase();
-    if (!effectiveDate && (velocity === "WATCH" || status === "PENDING" || status === "WATCH" || status === "PENDING / WATCH")) {
+    if (
+      !effectiveDate
+      && (
+        velocity === "WATCH"
+        || status === "PENDING"
+        || status === "WATCH"
+        || status === "PENDING / WATCH"
+      )
+    ) {
       recordEnrichment({
         enrichments,
         packageId,
@@ -424,7 +466,7 @@ function normalizeRegistryRowsFromMountedKey({ rows, severityContract, packageId
       row.Effective_Date = "TBD";
     }
 
-    if (String(row.Effective_Date || "").trim() === "1900-01-02") {
+    if (/^1900-01-0[12]$/.test(String(row.Effective_Date || "").trim())) {
       recordEnrichment({
         enrichments,
         packageId,
@@ -481,23 +523,36 @@ function recordEnrichment({
 
 function validateRowsAgainstMountedSeverityContract(rows, contract, packageId) {
   const failures = [];
-  const tierMap = new Map(asArray(contract.pain_tiers).map((row) => [row.tier, row]));
-  const depthSet = new Set(asArray(contract.pain_depths).map((row) => row.value));
+  const tierMap = new Map(
+    asArray(contract.pain_tiers).map((row) => [row.tier, row])
+  );
+  const depthSet = new Set(
+    asArray(contract.pain_depths).map((row) => row.value)
+  );
+
   for (const row of rows) {
     const id = String(row.Threat_ID || "unknown");
     const tier = String(row.Pain_Tier || "").trim();
     const category = String(row.Pain_Category || "").trim();
     const depth = String(row.Pain_Depth || "").trim();
     const tierRule = tierMap.get(tier);
+
     if (!tierRule) {
-      failures.push(`REGISTRY_PAIN_TIER_OUTSIDE_MOUNTED_KEY:${packageId}:${id}:${tier || "missing"}`);
+      failures.push(
+        `REGISTRY_PAIN_TIER_OUTSIDE_MOUNTED_KEY:${packageId}:${id}:${tier || "missing"}`
+      );
     } else if (tierRule.pain_category !== category) {
-      failures.push(`REGISTRY_PAIN_CATEGORY_MOUNTED_KEY_MISMATCH:${packageId}:${id}:${tier}:${category || "missing"}:${tierRule.pain_category}`);
+      failures.push(
+        `REGISTRY_PAIN_CATEGORY_MOUNTED_KEY_MISMATCH:${packageId}:${id}:${tier}:${category || "missing"}:${tierRule.pain_category}`
+      );
     }
     if (!depthSet.has(depth)) {
-      failures.push(`REGISTRY_PAIN_DEPTH_OUTSIDE_MOUNTED_KEY:${packageId}:${id}:${depth || "missing"}`);
+      failures.push(
+        `REGISTRY_PAIN_DEPTH_OUTSIDE_MOUNTED_KEY:${packageId}:${id}:${depth || "missing"}`
+      );
     }
   }
+
   return {
     ok: failures.length === 0,
     status: failures.length ? "CONTROLLED_FAILURE" : "PASS",
@@ -521,14 +576,18 @@ function buildExecutionIdentity(registries) {
       keySet.add(key);
     }
   }
+
   const canonicalThreatIdCollisions = [...rawIdPackages.entries()]
     .filter(([, packages]) => packages.size > 1)
     .map(([Threat_ID, packages]) => ({
       Threat_ID,
       package_ids: [...packages].sort(),
-      registry_row_keys: [...packages].sort().map((packageId) => registryRowKey(packageId, Threat_ID))
+      registry_row_keys: [...packages]
+        .sort()
+        .map((packageId) => registryRowKey(packageId, Threat_ID))
     }))
     .sort((a, b) => a.Threat_ID.localeCompare(b.Threat_ID));
+
   return {
     version: IDENTITY_VERSION,
     global_identity_field: "registry_row_key",
@@ -597,12 +656,19 @@ function buildManifestArtifact({
   phase10ExecutionFingerprint,
   bindingManifest
 }) {
-  const expectedRowCount = registries.reduce((total, registry) => total + registry.routable_row_count, 0);
-  const expectedUniCount = registries.reduce((total, registry) => total + registry.uni_row_count, 0);
+  const expectedRowCount = registries.reduce(
+    (total, registry) => total + registry.routable_row_count,
+    0
+  );
+  const expectedUniCount = registries.reduce(
+    (total, registry) => total + registry.uni_row_count,
+    0
+  );
   const totalEnrichmentCount = registries.reduce(
     (total, registry) => total + registry.deterministic_enrichment_count,
     0
   );
+
   return {
     schema_version: SCHEMA_VERSION,
     run_id: runId,
@@ -672,10 +738,14 @@ function buildManifestArtifact({
     execution_fingerprint_inputs: {
       routing_rules_version: ROUTING_RULES_VERSION,
       registry_enrichment_version: ENRICHMENT_VERSION,
-      registry_enrichment_digests: registries.map((registry) => registry.deterministic_enrichment_digest),
+      registry_enrichment_digests: registries.map(
+        (registry) => registry.deterministic_enrichment_digest
+      ),
       max_m11_batch_rows: MAX_M11_BATCH_ROWS,
       packet_ceiling_version: PACKET_CEILING_VERSION,
-      mounted_key_severity_contract_digests: registries.map((registry) => registry.severity_contract_digest)
+      mounted_key_severity_contract_digests: registries.map(
+        (registry) => registry.severity_contract_digest
+      )
     },
     validation: {
       status: "PASS",
@@ -709,7 +779,9 @@ function fileContent(packet, fileName) {
   const files = packet?.files && typeof packet.files === "object" ? packet.files : {};
   const direct = files[fileName]?.content;
   if (direct) return direct;
-  const match = Object.entries(files).find(([key]) => key === fileName || key.endsWith(`/${fileName}`));
+  const match = Object.entries(files).find(
+    ([key]) => key === fileName || key.endsWith(`/${fileName}`)
+  );
   return match?.[1]?.content || "";
 }
 
@@ -735,7 +807,9 @@ function countBy(rows, selector) {
 }
 
 function sortObject(value) {
-  return Object.fromEntries(Object.entries(value || {}).sort(([a], [b]) => a.localeCompare(b)));
+  return Object.fromEntries(
+    Object.entries(value || {}).sort(([a], [b]) => a.localeCompare(b))
+  );
 }
 
 function unique(values) {
