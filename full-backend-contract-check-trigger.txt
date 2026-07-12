@@ -1,0 +1,1 @@
+Temporary trigger for full backend contract suite with diagnostics. Do not merge.
