@@ -13,6 +13,11 @@ const bindingDoc = yaml.load(await readFile(bindingPath, "utf8"));
 const manifest = bindingDoc?.registry_binding_manifest;
 assert.equal(manifest?.schema_version, "THREAT_REGISTRY_BINDINGS_v1");
 assert.equal(manifest?.status, "LOCKED");
+assert.equal(manifest?.authority_model?.package_keys?.role, "TAXONOMY_VOCABULARY_AUTHORITY");
+assert.equal(manifest?.authority_model?.package_keys?.executable_registry_binding_forbidden, true);
+assert.equal(manifest?.authority_model?.binding_manifest?.role, "SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY");
+assert.equal(manifest?.authority_model?.binding_manifest?.competing_binding_authority_forbidden, true);
+assert.equal(manifest?.authority_model?.field_derivation_registry?.role, "DOMAIN_AGNOSTIC_DERIVATION_MECHANICS_AUTHORITY");
 assert.equal(manifest?.status_policy?.mode, "INCLUDE_ALL_DECLARED_ROWS");
 assert.equal(manifest?.status_policy?.row_filter, "NONE");
 assert.equal(manifest?.status_policy?.status_field_role, "METADATA_ONLY");
@@ -38,6 +43,7 @@ for (const [packageId, binding] of Object.entries(manifest?.packages || {})) {
   const keyDoc = yaml.load(await readFile(path.join(registryRoot, binding.package_key_file), "utf8"));
   assert.equal(keyDoc?.registry_key?.domain_package, packageId, `${packageId}: key domain_package mismatch`);
   assert.equal(String(keyDoc?.registry_key?.version || ""), String(binding.package_key_version || ""), `${packageId}: key version mismatch`);
+  assert.equal(Object.prototype.hasOwnProperty.call(keyDoc?.registry_key || {}, "threat_registry_binding"), false, `${packageId}: executable binding must not pollute taxonomy key`);
 
   const registryDoc = yaml.load(await readFile(path.join(registryRoot, binding.threat_registry_file), "utf8"));
   assert.ok(Array.isArray(registryDoc), `${packageId}: registry root must be an array`);
@@ -72,6 +78,7 @@ assert.deepEqual(Object.keys(manifest.packages || {}).sort(), ["ai-governance", 
 console.log(JSON.stringify({
   check: "phase10 registry parity and status-policy preflight",
   status: "PASS",
+  binding_authority: manifest.authority_model.binding_manifest.role,
   status_policy: manifest.status_policy,
   registries: summaries
 }, null, 2));
