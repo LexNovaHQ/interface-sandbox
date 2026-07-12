@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: AGENT5_PHASE9_EXPOSURE_PHASE2G
-runtime_contract_version: v13_active_registry_manifest
+runtime_contract_version: v14_auto_selector_execution_identity
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
 active_phase_scope: M11_EXPOSURE_REGISTRY
@@ -71,19 +71,37 @@ forbidden_read_artifacts:
   - lossless_family__*
   - source_outside_active_2f_packet
 
-required_reference_files:
-  - AI_THREAT_REGISTRY.yaml
-  - AI_Registry_Key.yml
+shared_reference_files:
   - 03_REGISTRY_EVALUATION_RULES.yaml
   - Diligence_Field_Derivation_Registry.yml
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 registry_binding_authority:
   file: references/registry/THREAT_REGISTRY_BINDINGS_v1.yaml
-  stage: CO_0_PREFLIGHT_AUTHORITY
-  runtime_auto_selection: PENDING_CO_2
+  authority_role: SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY
+  runtime_auto_selection: ACTIVE
+  selector_authority: domain_derivation_profile
+  active_run_package_manifest_role: CONSISTENCY_CHECK_ONLY
+  selected_reference_loading:
+    - package_key_file_from_binding_authority
+    - threat_registry_file_from_binding_authority
+
+execution_identity_contract:
+  version: PHASE10_EXECUTION_IDENTITY_v2
+  global_identity_field: registry_row_key
+  format: <package_id>::<Threat_ID>
+  canonical_threat_id_preserved: true
+  silent_namespacing_forbidden: true
+  model_may_emit_registry_row_key: false
+
+checkpoint_fingerprint_contract:
+  registry_set_fingerprint_required: true
+  phase5_classification_fingerprint_required: true
+  phase10_execution_fingerprint_required: true
+  stale_checkpoint_reuse_forbidden: true
 
 active_prompt_files:
+  - PHASE10_AUTO_SELECTOR_AND_FINGERPRINT_ADDENDUM.md
   - M11_EXPOSURE_REGISTRY.md
   - 00_M11_RUNTIME_CONTROLLER.md
   - M11_A_DETERMINISTIC_ROUTING_PREFILL.md
@@ -93,8 +111,11 @@ active_prompt_files:
 
 m11_three_layer_contract:
   layer_1_backend:
-    - validate_registry
+    - resolve_phase3_primary_and_ai_mount
+    - load_selected_registry_bindings
+    - validate_registry_union_identity
     - build_active_threat_registry_manifest
+    - calculate_registry_and_execution_fingerprints
     - persist_active_threat_registry_manifest_before_route_plan
     - build_route_plan
     - build_batch_plan
@@ -115,6 +136,8 @@ m11_three_layer_contract:
 model_forbidden_actions:
   - create_or_rewrite_active_threat_registry_manifest
   - select_or_mount_threat_registry
+  - create_or_rewrite_registry_row_key
+  - create_or_rewrite_execution_fingerprint
   - create_or_rewrite_route_plan
   - choose_batch_membership
   - rewrite_registry_spine
