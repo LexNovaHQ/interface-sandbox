@@ -1,3 +1,5 @@
+import { buildM12DomainControlObligationChallenge } from "./domain-control-obligation-profile.handoff.js";
+
 const PHASE7_DAP_REQUIRED = Object.freeze([
   "dap_semantic_batch_route_manifest",
   "dap_semantic_batch_validation_manifest",
@@ -30,14 +32,14 @@ const REQUIRED = Object.freeze([
   "target_feature_profile",
   "domain_control_obligation_profile",
   ...PHASE7_DAP_REQUIRED,
+  "active_threat_registry_manifest",
   "exposure_registry_route_plan",
   "exposure_registry_workpad_98",
   "exposure_registry_controlled_profile",
   "exposure_registry_triggered_profile"
 ]);
-
 const FORBIDDEN_FORENSIC_INPUTS = Object.freeze(["target_profile_forensics", "target_feature_profile_forensics", "dap_forensics_profile", "exposure_registry_profile_forensics"]);
-const MATERIAL_FIELDS = Object.freeze(["Threat_ID", "target_match", "evaluation_status", "basis_proof", "control_exclusion_evaluation", "evidence_source_basis", "fp_mechanism", "Archetype", "Subcategory", "Surface", "authority_anchors", "Pain_Tier", "Pain_Depth", "Pain_Category", "Legal_Pain", "remediation", "review_route", "row_limitations"]);
+const MATERIAL_FIELDS = Object.freeze(["Threat_ID", "Threat_Name", "target_match", "evaluation_status", "basis_proof", "control_exclusion_evaluation", "evidence_source_basis", "fp_mechanism", "Archetype", "Subcategory", "Surface", "authority_anchors", "Pain_Tier", "Pain_Depth", "Pain_Category", "Legal_Pain", "remediation", "review_route", "row_limitations"]);
 const CONTROLLED_FINAL_STATUSES = new Set(["CONTROLLED_BY_VISIBLE_CONTROL", "CONTROLLED_BY_EXCLUSION", "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION"]);
 const FINAL_MATERIAL_STATUSES = new Set(["TRIGGERED", ...CONTROLLED_FINAL_STATUSES]);
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE", "PASS", "PASS_WITH_LIMITATION"]);
@@ -48,7 +50,6 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
   const input_artifact_statuses = {};
   const critical_failures = [];
   const warnings = [];
-
   for (const forbidden of FORBIDDEN_FORENSIC_INPUTS) if (Object.prototype.hasOwnProperty.call(artifacts, forbidden)) critical_failures.push(`forbidden forensic input delivered: ${forbidden}`);
   for (const name of REQUIRED) {
     const value = artifacts[name];
@@ -64,6 +65,7 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
   if (dapGate.non_blocking_repair_required === true) warnings.push("Phase 7 DAP gate carried non-blocking repair signal");
   if (Number(dapGate.field_count || dapManifest.observed_field_count || 0) !== 150) warnings.push(`Phase 7 DAP field count carried: ${Number(dapGate.field_count || dapManifest.observed_field_count || 0)}`);
 
+  const activeManifest = unwrap(artifacts.active_threat_registry_manifest, "active_threat_registry_manifest");
   const route = unwrap(artifacts.exposure_registry_route_plan, "exposure_registry_route_plan");
   const workpad = unwrap(artifacts.exposure_registry_workpad_98, "exposure_registry_workpad_98");
   const controlled = unwrap(artifacts.exposure_registry_controlled_profile, "exposure_registry_controlled_profile");
@@ -72,8 +74,10 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
   const phase8ChallengeReceipt = phase8Challenge.phase8_domain_control_obligation_challenge;
   critical_failures.push(...arr(phase8ChallengeReceipt.critical_failures));
   warnings.push(...arr(phase8ChallengeReceipt.warnings));
-  const manifest = artifacts.m12_global_dynamic_artifact_manifest || {};
+  const dynamicManifest = artifacts.m12_global_dynamic_artifact_manifest || {};
 
+  const expectedRowKeys = Number(activeManifest.expected_registry_row_key_count || activeManifest.expected_row_count || 0);
+  const routeRows = arr(route.route_rows);
   const batchCount = arr(route.batch_plan).length;
   const workpadRows = arr(workpad.registry_rows);
   const controlledRows = arr(controlled.controlled_rows);
@@ -82,13 +86,16 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
   critical_failures.push(...materialGate.failures);
   warnings.push(...materialGate.warnings);
 
-  if (!batchCount) critical_failures.push("route plan batch count is zero");
-  if (workpadRows.length !== 98) critical_failures.push(`workpad row count mismatch: ${workpadRows.length}`);
-  if (!controlledRows.length && !triggeredRows.length) critical_failures.push("both split exposure profiles are empty");
+  if (!expectedRowKeys) critical_failures.push("active threat registry manifest expected row-key count is zero");
+  if (routeRows.length !== expectedRowKeys) critical_failures.push(`route row count mismatch:${routeRows.length}:${expectedRowKeys}`);
+  if (workpadRows.length !== expectedRowKeys) critical_failures.push(`workpad row count mismatch:${workpadRows.length}:${expectedRowKeys}`);
+  if (new Set(routeRows.map(rowKey).filter(Boolean)).size !== expectedRowKeys) critical_failures.push("route compound identity reconciliation failed");
+  if (new Set(workpadRows.map(rowKey).filter(Boolean)).size !== expectedRowKeys) critical_failures.push("workpad compound identity reconciliation failed");
+  if (!batchCount && routeRows.some((row) => row.route === "EVALUATION_ROUTED")) critical_failures.push("route plan batch count is zero while routed rows exist");
+  if (!controlledRows.length && !triggeredRows.length && workpadRows.some((row) => FINAL_MATERIAL_STATUSES.has(String(row.final_material_status || "").toUpperCase()))) critical_failures.push("material workpad rows exist but both split exposure profiles are empty");
 
-  for (const artifactName of arr(manifest.missing_batch_artifacts)) critical_failures.push(`missing M11 batch artifact: ${artifactName}`);
-  for (const artifactName of arr(manifest.missing_batch_validation_artifacts)) critical_failures.push(`missing M11 batch validation artifact: ${artifactName}`);
-
+  for (const artifactName of arr(dynamicManifest.missing_batch_artifacts)) critical_failures.push(`missing M11 batch artifact: ${artifactName}`);
+  for (const artifactName of arr(dynamicManifest.missing_batch_validation_artifacts)) critical_failures.push(`missing M11 batch validation artifact: ${artifactName}`);
   for (const entry of arr(artifacts.m12_batch_validation_artifacts)) {
     const validation = entry.artifact?.exposure_registry_batch_validation || entry.artifact || {};
     const status = normalizeStatus(validation.status || validation.semantic_m12_validation_status);
@@ -99,14 +106,14 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
     for (const limitation of arr(validation.limitations)) warnings.push(`M11 batch validation limitation carried: ${label}:${stringifyLimitation(limitation)}`);
     for (const warning of arr(validation.warnings)) warnings.push(`M11 batch validation warning carried: ${label}:${stringifyLimitation(warning)}`);
   }
-
-  if (Number(manifest.batch_count || 0) !== arr(artifacts.m12_batch_validation_artifacts).length) critical_failures.push("M11 batch validation count does not match route plan batch count");
+  if (Number(dynamicManifest.batch_count || 0) !== arr(artifacts.m12_batch_validation_artifacts).length) critical_failures.push("M11 batch validation count does not match route plan batch count");
 
   const status = critical_failures.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
   return { challenge_gate: {
+    schema_version: "challenge_gate.v3.phase10_dynamic",
     status,
     gate: critical_failures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATIONS" : "PASS",
-    generated_by: "m12_deterministic_challenge_phase2g_derived_only",
+    generated_by: "m12_deterministic_challenge_phase2g_dynamic_compound_identity",
     run_id: run.run_id || "",
     target: run.target || null,
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
@@ -116,12 +123,12 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
     input_artifact_statuses,
     critical_failures,
     warnings,
-    dynamic_artifact_manifest: manifest,
+    dynamic_artifact_manifest: dynamicManifest,
     phase7_dap_integrity: { required_artifact_count: PHASE7_DAP_REQUIRED.length, field_count: Number(dapGate.field_count || dapManifest.observed_field_count || 0), gate_status: dapGate.status || "UNKNOWN", all_fields_covered_once: dapGate.all_fields_covered_once === true },
-    m11_integrity: { batch_count_expected: batchCount, batch_count_loaded: arr(artifacts.m11_batch_artifacts).length, batch_validation_count_loaded: arr(artifacts.m12_batch_validation_artifacts).length, workpad_rows: workpadRows.length, controlled_rows: controlledRows.length, triggered_rows: triggeredRows.length, material_contract: "M11_THREE_LAYER_FULL_ROW_V1", material_gate: materialGate },
+    m11_integrity: { expected_registry_row_keys: expectedRowKeys, route_rows: routeRows.length, batch_count_expected: batchCount, batch_count_loaded: arr(artifacts.m11_batch_artifacts).length, batch_validation_count_loaded: arr(artifacts.m12_batch_validation_artifacts).length, workpad_rows: workpadRows.length, controlled_rows: controlledRows.length, triggered_rows: triggeredRows.length, compound_identity_contract: "PHASE10_EXECUTION_IDENTITY_v2", material_contract: "M11_DYNAMIC_LAYER3_v1", material_gate: materialGate },
     phase8_domain_control_obligation_challenge: phase8ChallengeReceipt,
-    operator_challenge_gate: { lock_status: status, deterministic: true, challenge_basis: "Phase 7 DAP material artifacts, M11 static material artifacts, M11 dynamic batch artifacts, and deterministic batch validation artifacts. Forensic profiles are excluded from challenge derivation.", challenge_result: critical_failures.length ? "BLOCKED" : "ACCEPTED" },
-    non_blocking_rule: "Only missing/unusable structural inputs or material-contract failures block. Limitations and warnings carry forward.",
+    operator_challenge_gate: { lock_status: status, deterministic: true, challenge_basis: "Dynamic Phase 10 manifest, route plan, workpad, split material profiles, accepted package-scoped batches and deterministic validations. Forensic profiles remain excluded.", challenge_result: critical_failures.length ? "BLOCKED" : "ACCEPTED" },
+    non_blocking_rule: "Only missing/unusable structural inputs, compound-identity reconciliation failures, or material-contract failures block. Limitations and warnings carry forward.",
     model_usage: "NONE_DETERMINISTIC",
     next_phase: "NORMALIZED_COMPILER"
   } };
@@ -130,23 +137,36 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
 function validateM11MaterialOutputs({ workpadRows, controlledRows, triggeredRows }) {
   const failures = [];
   const warnings = [];
-  const controlledIds = new Set();
-  const triggeredIds = new Set();
-  for (const row of controlledRows) { const id = row.Threat_ID || row.threat_id || ""; if (!id) failures.push("controlled row missing Threat_ID"); if (controlledIds.has(id)) failures.push(`duplicate controlled Threat_ID: ${id}`); controlledIds.add(id); const status = String(row.evaluation_status || row.final_material_status || "").toUpperCase(); if (status === "CONTROLLED") failures.push(`plain CONTROLLED status forbidden in controlled profile: ${id}`); if (!CONTROLLED_FINAL_STATUSES.has(status)) failures.push(`controlled row has invalid evaluation_status: ${id}:${status || "blank"}`); validateMaterialFields(row, `controlled:${id || "unknown"}`, failures); }
-  for (const row of triggeredRows) { const id = row.Threat_ID || row.threat_id || ""; if (!id) failures.push("triggered row missing Threat_ID"); if (triggeredIds.has(id)) failures.push(`duplicate triggered Threat_ID: ${id}`); triggeredIds.add(id); const status = String(row.evaluation_status || row.final_material_status || "").toUpperCase(); if (status !== "TRIGGERED") failures.push(`triggered row has invalid evaluation_status: ${id}:${status || "blank"}`); validateMaterialFields(row, `triggered:${id || "unknown"}`, failures); }
-  for (const id of controlledIds) if (triggeredIds.has(id)) failures.push(`Threat_ID appears in both controlled and triggered profiles: ${id}`);
-  const workpadControlled = workpadRows.filter((row) => CONTROLLED_FINAL_STATUSES.has(String(row.final_material_status || "").toUpperCase())).map((row) => row.Threat_ID).filter(Boolean);
-  const workpadTriggered = workpadRows.filter((row) => String(row.final_material_status || "").toUpperCase() === "TRIGGERED").map((row) => row.Threat_ID).filter(Boolean);
-  for (const id of workpadControlled) if (!controlledIds.has(id)) failures.push(`workpad controlled row missing from controlled profile: ${id}`);
-  for (const id of workpadTriggered) if (!triggeredIds.has(id)) failures.push(`workpad triggered row missing from triggered profile: ${id}`);
-  for (const row of workpadRows) { const status = String(row.final_material_status || "").toUpperCase(); if (status === "CONTROLLED") failures.push(`plain CONTROLLED status forbidden in workpad: ${row.Threat_ID || "unknown"}`); if (status && status !== "WORKPAD_ONLY" && status !== "CONTROLLED_FAILURE" && !FINAL_MATERIAL_STATUSES.has(status)) warnings.push(`non-material workpad status carried: ${row.Threat_ID || "unknown"}:${status}`); }
-  return { status: failures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS", failures, warnings, controlled_statuses: [...CONTROLLED_FINAL_STATUSES], triggered_status: "TRIGGERED" };
+  const controlledKeys = new Set();
+  const triggeredKeys = new Set();
+  for (const row of controlledRows) validateProfileRow(row, "controlled", controlledKeys, CONTROLLED_FINAL_STATUSES, failures);
+  for (const row of triggeredRows) validateProfileRow(row, "triggered", triggeredKeys, new Set(["TRIGGERED"]), failures);
+  for (const key of controlledKeys) if (triggeredKeys.has(key)) failures.push(`registry_row_key appears in both controlled and triggered profiles: ${key}`);
+  const workpadControlled = workpadRows.filter((row) => CONTROLLED_FINAL_STATUSES.has(String(row.final_material_status || "").toUpperCase())).map(rowKey).filter(Boolean);
+  const workpadTriggered = workpadRows.filter((row) => String(row.final_material_status || "").toUpperCase() === "TRIGGERED").map(rowKey).filter(Boolean);
+  for (const key of workpadControlled) if (!controlledKeys.has(key)) failures.push(`workpad controlled row missing from controlled profile: ${key}`);
+  for (const key of workpadTriggered) if (!triggeredKeys.has(key)) failures.push(`workpad triggered row missing from triggered profile: ${key}`);
+  for (const row of workpadRows) {
+    const status = String(row.final_material_status || "").toUpperCase();
+    if (status === "CONTROLLED") failures.push(`plain CONTROLLED status forbidden in workpad: ${rowKey(row) || "unknown"}`);
+    if (status && status !== "NOT_TRIGGERED_NOT_APPLICABLE" && !FINAL_MATERIAL_STATUSES.has(status)) warnings.push(`non-material workpad status carried: ${rowKey(row) || "unknown"}:${status}`);
+  }
+  return { status: failures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS", failures, warnings, controlled_statuses: [...CONTROLLED_FINAL_STATUSES], triggered_status: "TRIGGERED", identity_field: "registry_row_key" };
 }
-function validateMaterialFields(row, label, failures) { for (const field of MATERIAL_FIELDS) if (!(field in row)) failures.push(`${label} missing material field ${field}`); }
+function validateProfileRow(row, label, seen, allowedStatuses, failures) {
+  const key = rowKey(row);
+  if (!key) failures.push(`${label} row missing registry_row_key`);
+  if (seen.has(key)) failures.push(`duplicate ${label} registry_row_key: ${key}`);
+  seen.add(key);
+  const status = String(row.evaluation_status || row.final_material_status || "").toUpperCase();
+  if (status === "CONTROLLED") failures.push(`plain CONTROLLED status forbidden in ${label} profile: ${key || "unknown"}`);
+  if (!allowedStatuses.has(status)) failures.push(`${label} row has invalid evaluation_status: ${key || "unknown"}:${status || "blank"}`);
+  for (const field of MATERIAL_FIELDS) if (!(field in row)) failures.push(`${label}:${key || "unknown"} missing material field ${field}`);
+}
+function rowKey(row = {}) { return String(row.registry_row_key || `${row.package_id || ""}::${row.Threat_ID || row.threat_id || ""}`).trim(); }
 function statusOf(value) { const unwrapped = unwrapKnown(value); return String(value?.lock_status || unwrapped?.lock_status || unwrapped?.status || unwrapped?.validation_status || "LOCKED"); }
 function normalizeStatus(value) { const status = String(value || "").trim().toUpperCase(); return status === "PASS_WITH_LIMITATIONS" ? "PASS_WITH_LIMITATION" : status; }
 function unwrapKnown(value) { if (!value || typeof value !== "object" || Array.isArray(value)) return value; const keys = Object.keys(value); if (keys.length === 1 && value[keys[0]] && typeof value[keys[0]] === "object") return value[keys[0]]; return value; }
 function unwrap(value, key) { return value?.[key] || value?.artifact?.[key] || value || {}; }
 function stringifyLimitation(value) { if (typeof value === "string") return value; if (!value || typeof value !== "object") return String(value || ""); return value.code || value.message || JSON.stringify(value); }
 function arr(value) { return Array.isArray(value) ? value : []; }
-import { buildM12DomainControlObligationChallenge } from "./domain-control-obligation-profile.handoff.js";
