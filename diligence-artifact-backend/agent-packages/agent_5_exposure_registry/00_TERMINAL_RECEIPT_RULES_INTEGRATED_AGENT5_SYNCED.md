@@ -1,148 +1,98 @@
 # 00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT5_SYNCED
-## Agent 5 / M11 Terminal and Manual Receipt Rules
 
----
+## Ownership lock
 
-# TERMINAL LOCK
+Agent 5 owns Phase 10 only. It must never claim that it saved `challenge_gate`; that artifact belongs to Agent 7 / M12.
 
-`A5.TERM.C1` Backend execution for Agent 5 emits strict JSON only at the active boundary. Terminal receipts are manual/same-chat receipts only.
+Terminal receipts are manual summaries. Runtime outputs remain strict JSON artifacts.
 
-`A5.TERM.C2` Agent 5 terminal receipts must not contain report prose, legal-risk prose, legal conclusions, renderer output, final handoff JSON, hidden chain-of-thought, or M12 global challenge output during M11/M12 batch boundaries.
-
-`A5.TERM.C3` If validator status is `SOURCE_REPAIR_REQUIRED`, `REPAIR_REQUIRED`, or `CONTROLLED_FAILURE`, do not emit the next-agent command.
-
----
-
-# SECTION 1 — SUCCESS RECEIPT
-
-For successful Agent 5 lock, emit exactly:
+## Successful Phase 10 receipt
 
 ```text
 PHASE LOCKED: M11_EXPOSURE_REGISTRY
 Run ID: <run_id>
+Runtime contract: v18_final_runtime_package_downstream_sync
+
+Mounted packages:
+- <package_id / stream_type>
 
 Saved:
 - active_threat_registry_manifest
 - exposure_registry_route_plan
-- exposure_registry_batch__{GROUP}__{NNN}
-- exposure_registry_batch_validation__{GROUP}__{NNN}
+- exposure_registry_batch_validation__<permission-compatible suffix> for every evaluated batch
+- exposure_registry_batch__<permission-compatible suffix> for every accepted batch
 - exposure_registry_workpad_98
 - exposure_registry_controlled_profile
 - exposure_registry_triggered_profile
 - exposure_registry_profile_forensics
-- challenge_gate
+
+Dynamic registry rows reconciled: <actual>/<expected>
+Accepted batches: <actual>/<expected>
 
 NEXT STEP:
-Backend may advance to COMPILER only after challenge_gate locks with PASS or PASS_WITH_LIMITATION.
+Backend may advance to M12 Operator Challenge.
 ```
 
-`A5.TERM.S1.C1` Manual terminal receipts may summarize batch count, but must not dump full registry rows.
+`exposure_registry_workpad_98` is a stable artifact token only. Never describe it as proof of a 98-row run.
 
-`A5.TERM.S1.C2` Saved artifacts must match the actual backend save manifest. Do not claim a registry manifest, batch, workpad, split profile, or forensic artifact was saved unless backend save receipts exist.
+## Locked with limitations receipt
 
----
-
-# SECTION 2 — LOCKED WITH LIMITATIONS RECEIPT
-
-For successful Agent 5 lock with safe limitations, emit exactly:
+Use the same receipt, replacing the first line with:
 
 ```text
 PHASE LOCKED WITH LIMITATIONS: M11_EXPOSURE_REGISTRY
-Run ID: <run_id>
-
-Saved:
-- active_threat_registry_manifest
-- exposure_registry_route_plan
-- exposure_registry_batch__{GROUP}__{NNN}
-- exposure_registry_batch_validation__{GROUP}__{NNN}
-- exposure_registry_workpad_98
-- exposure_registry_controlled_profile
-- exposure_registry_triggered_profile
-- exposure_registry_profile_forensics
-- challenge_gate
-
-Limitations carried forward:
-- <short limitation 1>
-- <short limitation 2>
-
-NEXT STEP:
-Backend may advance to COMPILER only after challenge_gate locks with PASS or PASS_WITH_LIMITATION.
 ```
 
-`A5.TERM.S2.C1` Limitations must be short. Detailed limitation ledgers belong in `exposure_registry_profile_forensics`.
+List only short limitations. Detailed evidence and custody traces remain in the saved artifacts.
 
----
-
-# SECTION 3 — REPAIR REQUIRED RECEIPT
-
-If Agent 5 requires repair, emit exactly:
+## Repair required receipt
 
 ```text
 PHASE REPAIR REQUIRED: M11_EXPOSURE_REGISTRY
 Run ID: <run_id>
 
 Repair owner:
-<Agent 5 / backend deterministic system / M12 batch validator / upstream owner>
+<Agent 5 semantic batch / deterministic Layer 1 / deterministic Layer 3 / upstream owner>
 
 Repair scope:
-<active registry manifest | route plan | batch {GROUP}__{NNN} | M12 batch validation | accepted batch save | workpad merge | controlled projection | triggered projection | forensics | upstream artifact>
+<manifest | route plan | package/stream batch | batch validation | accepted batch | workpad | controlled profile | triggered profile | forensics>
+
+Compound identity:
+<registry_row_key or batch_id>
 
 Blocking reasons:
-- <blocking_reason_1>
-- <blocking_reason_2>
+- <reason>
 
 NEXT STEP:
-Repair the smallest affected unit before continuing. Do not move to M12 global challenge yet.
+Repair the smallest affected unit. Do not advance to M12.
 ```
 
----
-
-# SECTION 4 — CONTROLLED FAILURE RECEIPT
-
-If Agent 5 controlled-fails, emit exactly:
+## Controlled failure receipt
 
 ```text
 PHASE CONTROLLED FAILURE: M11_EXPOSURE_REGISTRY
 Run ID: <run_id_or_UNRESOLVED>
-
-Failure class:
-<failure_class>
-
+Failure class: <failure_class>
 Blocking reasons:
-- <blocking_reason_1>
-- <blocking_reason_2>
+- <reason>
 
-No next-agent command is available because M11 did not lock.
+No next-phase command is available because Phase 10 did not lock.
 ```
 
----
+## Forbidden receipt content
 
-# SECTION 5 — FORBIDDEN RECEIPT CONTENT
+Do not include:
 
-Agent 5 receipts must not include:
+- complete registry or batch ledgers;
+- fixed 98-row claims;
+- raw `Threat_ID` as global identity;
+- legal advice or compliance/liability conclusions;
+- risk-score verdicts;
+- `challenge_gate` as an Agent 5 save;
+- compiler, renderer, or final handoff output;
+- retired combined exposure artifacts;
+- rebuilt legal cartography.
 
-```text
-full 98-row registry ledger
-full batch ledger dumps
-legal advice
-compliance conclusions
-liability findings
-risk-score verdicts
-final_output_handoff
-renderer_payload
-HTML/report prose
-target_exposure_profile
-target_exposure_profile_forensics
-exposure_registry_profile
-rebuilt legal cartography map
-```
+## M12 boundary
 
----
-
-# SECTION 6 — TERMINAL MATRIX ROW
-
-| active_agent_id | terminal_receipt_profile | successful_phase_line | saved_artifacts | next step |
-|---|---|---|---|---|
-| `agent_5_exposure_registry` | `agent_5_m11_batched_manual_receipt` | `PHASE LOCKED: M11_EXPOSURE_REGISTRY` / `M12_GLOBAL_CHALLENGE` | `active_threat_registry_manifest`, `exposure_registry_route_plan`, all accepted `exposure_registry_batch__{GROUP}__{NNN}`, all paired `exposure_registry_batch_validation__{GROUP}__{NNN}`, `exposure_registry_workpad_98`, `exposure_registry_controlled_profile`, `exposure_registry_triggered_profile`, `exposure_registry_profile_forensics`, `challenge_gate` | backend advances to COMPILER only after challenge_gate locks |
-
-`A5.TERM.S6.C1` Agent 5 provides no compiler command until M12 global challenge_gate is saved and locked with PASS or PASS_WITH_LIMITATION.
+M12 independently reads the locked Phase 10 derived outputs through Phase 2G, validates dynamic counts and compound identities, and saves `challenge_gate`. Agent 5 does not simulate or pre-announce the M12 result.
