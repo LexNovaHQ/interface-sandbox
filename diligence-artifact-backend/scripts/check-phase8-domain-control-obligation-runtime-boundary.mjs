@@ -26,6 +26,12 @@ assert.equal(
   DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.production_entrypoint_switched,
   "Layer 2 runner and contract cutover status must remain synchronized"
 );
+assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT.production_entrypoint_switched, true);
+assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.production_entrypoint_switched, true);
+assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS.production_entrypoint_switched, true);
+assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS.production_entrypoint_switched, true);
+assert.ok(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT.implementation_status.includes("RUNTIME_CUTOVER_COMPLETE"));
+assert.ok(DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.implementation_status.includes("RUNTIME_CUTOVER_COMPLETE"));
 
 assert.equal(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_RUNNER_STATUS.phase2g_route_scoped_runtime_reader_required, true);
 assert.equal(DOMAIN_CONTROL_OBLIGATION_PROFILE_RUNNER_STATUS.phase2g_route_scoped_runtime_reader_required, true);
@@ -57,6 +63,7 @@ const candidateRunner = read(`${phaseRoot}/domain-control-obligation-candidate-i
 const profileRunner = read(`${phaseRoot}/domain-control-obligation-profile.runner.js`);
 const compiler = read(`${phaseRoot}/services/domain-control-obligation-profile.compiler.js`);
 const resolver = read(`${phaseRoot}/services/domain-control-obligation-taxonomy.resolver.js`);
+const pipelineService = read("src/runtime/services/pipeline.service.js");
 
 for (const [label, source] of [
   ["candidate runner", candidateRunner],
@@ -70,6 +77,11 @@ for (const [label, source] of [
   assert.equal(/from\s+["'][^"']*\/07-[^"']*["']/.test(source), false, `${label} must not import Phase 7 implementation`);
   assert.equal(/from\s+["'][^"']*\/09-[^"']*["']/.test(source), false, `${label} must not import downstream Phase 9 implementation`);
 }
+
+assert.ok(pipelineService.includes("runDomainControlObligationCandidateInventoryPhase"), "Central runtime must import Phase 8 Layer 1 runner");
+assert.ok(pipelineService.includes("runDomainControlObligationProfilePhase"), "Central runtime must import Phase 8 Layer 2 runner");
+assert.ok(pipelineService.includes("internalJobId === JOB.domainControlObligationCandidateInventory"), "Central runtime must dispatch Phase 8 Layer 1");
+assert.ok(pipelineService.includes("internalJobId === JOB.domainControlObligationProfile"), "Central runtime must dispatch Phase 8 Layer 2");
 
 assert.ok(profileRunner.includes("assertNoForbiddenInputs"), "Layer 2 runner must enforce forbidden input gate");
 assert.ok(profileRunner.includes("DAP_ARTIFACT_RE"), "Layer 2 runner must enforce DAP input rejection");
