@@ -1,5 +1,9 @@
 # Phase 10 Auto-Selector and Execution Fingerprint Addendum
 
+## Precedence
+
+This addendum supersedes any older Agent 5 language stating `CURRENT_SINGLE_REGISTRY_PRE_AUTO_SELECTOR`, `PENDING_CO_2`, or treating the AI registry as the only selectable Phase 10 registry. Older material-row and semantic-output rules remain in force where they do not conflict with this addendum.
+
 ## Authority
 
 This addendum governs the deterministic Phase 10 registry mount and checkpoint-custody boundary.
