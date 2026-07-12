@@ -1,1 +1,1 @@
-Temporary CO-P12-05 certification trigger. Retry 22 after Phase 1 runtime contract authority check sync. Do not merge.
+Temporary CO-P12-05 certification trigger. Retry 23 after Phase 1 scan scope correction. Do not merge.
