@@ -23,7 +23,6 @@ const taxonomy = read("src/phases/01-source-discovery/services/source-discovery-
 const permissions = read("src/runtime/contracts/artifact-permissions.contract.js");
 const pipelineService = read("src/runtime/services/pipeline.service.js");
 const pipelineContract = read("src/runtime/contracts/pipeline.contract.js");
-const phaseContracts = read("src/phase-contracts.js");
 
 const LOCKED_ROOTS = Object.freeze([
   "homepage_landing",
@@ -65,7 +64,7 @@ for (const artifact of ["source_discovery_matrix_manifest", "adapter_expansion_l
   assert.ok(contract.includes(artifact), `contract missing ${artifact}`);
   assert.ok(permissions.includes(artifact), `permissions missing ${artifact}`);
 }
-for (const file of [contract, urlService, extractionService, handoffService, validator, permissions, phaseContracts]) {
+for (const file of [contract, urlService, extractionService, handoffService, validator, permissions]) {
   assert.equal(file.includes("lossless_family__"), false, "Phase 1 active runtime must not mention lossless_family__");
   assert.equal(file.includes("ROOT_FAMILY"), false, "Phase 1 active runtime must not mention ROOT_FAMILY");
   assert.equal(file.includes("T0_ROOT"), false, "Phase 1 active runtime must not mention T/P/D/L root codes");
@@ -120,8 +119,9 @@ assert.ok(pipelineService.includes("sparse_lossless_root_resolution_enabled: tru
 assert.ok(pipelineService.includes("resolveLosslessRootArtifact"), "pipeline must resolve virtual lossless roots through source_family_index");
 assert.ok(pipelineService.includes("root_artifact_manifest"), "pipeline root resolver must use source_family_index.root_artifact_manifest");
 assert.ok(pipelineService.includes("UNSAVED_EMPTY"), "pipeline root resolver must return controlled empty roots for unsaved sparse roots");
-assert.ok(phaseContracts.includes("runtime/contracts/pipeline.contract.js"), "legacy phase-contracts shim must delegate to runtime pipeline contract");
-assert.ok(phaseContracts.includes("old_phase_contract_table_removed: true"), "legacy phase-contracts table must be retired");
+assert.ok(pipelineContract.includes("export const PIPELINE_CONTRACTS"), "runtime pipeline contract must remain the Phase 1 contract authority");
+assert.ok(pipelineContract.includes("export function getPipelineContract"), "runtime pipeline contract must expose the canonical contract reader");
+assert.equal(fs.existsSync(path.join(ROOT, "src/phase-contracts.js")), false, "retired phase-contracts compatibility shim must not return");
 assert.ok(pipelineContract.includes("dynamic_writes: [\"legal_doc_{DOC_TYPE}\"]"), "runtime pipeline contract must allow dynamic legal doc writes");
 assert.ok(!contract.includes("domain_locking_allowed"), "Phase 1 must not allow domain locking");
 
@@ -169,6 +169,7 @@ assertFixtureRow(manifest, "/licenses", "regulatory_licensing_status", { routeTy
 assertFixtureRow(manifest, "/regulatory-disclosures", "regulatory_licensing_status", { routeType: "regulatory_disclosure", tier: "PRIMARY", role: "LICENSING_REGULATORY_SIGNAL" });
 assertFixtureRow(manifest, "/bank-partners", "regulatory_licensing_status", { routeType: "bank_partner_sponsor_bank", tier: "PRIMARY", role: "COUNTERPARTY_INSTITUTION_SIGNAL" });
 assertFixtureRow(manifest, "/grievance", "grievance_complaints", { routeType: "grievance_redressal", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
+assertFixtureRow(manifest, "/grievance-redressal", "grievance_complaints", { routeType: "grievance_redressal", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
 assertFixtureRow(manifest, "/complaints", "grievance_complaints", { routeType: "complaints_route", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
 assertFixtureRow(manifest, "/ombudsman", "grievance_complaints", { routeType: "ombudsman_escalation", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
 assertFixtureRow(manifest, "/nodal-officer", "grievance_complaints", { routeType: "nodal_officer", tier: "PRIMARY", role: "GRIEVANCE_REDRESSAL_SIGNAL" });
