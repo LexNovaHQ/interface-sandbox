@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 export const OPERATOR_CHALLENGE_SEMANTIC_PACKET_VERSION = "PHASE11_LAYER2_SEMANTIC_PACKET_v1";
 export const OPERATOR_CHALLENGE_SEMANTIC_LEDGER_VERSION = "operator_challenge_semantic_ledger.v1";
+export const OPERATOR_CHALLENGE_SEMANTIC_FALLBACK_VERSION = "operator_challenge_semantic_fallback.v1";
 
 const RECOMMENDATIONS = new Set(["REJECT", "ADVISORY", "MATERIAL_REINVESTIGATION", "CRITICAL_REVIEW_CANDIDATE"]);
 const CONFIDENCE = new Set(["HIGH", "MEDIUM", "LOW"]);
@@ -91,18 +92,56 @@ export function validateOperatorChallengeSemanticLedger({ semanticOutput, invent
     status: failures.length ? "REPAIR_REQUIRED" : "PASS",
     failures,
     exact_candidate_coverage: failures.length === 0,
-    semantic_ledger: failures.length ? null : {
-      ...ledger,
-      schema_version: OPERATOR_CHALLENGE_SEMANTIC_LEDGER_VERSION,
-      semantic_output_fingerprint: sha(ledger),
-      authoritative: false,
-      final_adjudication_performed: false,
-      blocking_decision_made: false,
-      reinvestigation_attempted: false
-    }
+    semantic_ledger: failures.length ? null : normalizeLedger(ledger, { authoritative: false, fallback: false })
   };
 }
 
+export function buildOperatorChallengeSemanticFallbackLedger({ inventory, validationFailures = [] } = {}) {
+  assertInventory(inventory);
+  const expected = array(inventory.challenge_candidates).map((row) => row.challenge_candidate_id);
+  const challengeReviews = array(inventory.challenge_candidates).map((candidate) => {
+    const material = candidate.candidate_class === "MATERIAL_FIELD_CANDIDATE";
+    const critical = candidate.candidate_class === "CRITICAL_SUBSTRATE_CANDIDATE";
+    return {
+      challenge_candidate_id: candidate.challenge_candidate_id,
+      recommended_disposition: critical ? "CRITICAL_REVIEW_CANDIDATE" : material ? "MATERIAL_REINVESTIGATION" : "ADVISORY",
+      confidence: "LOW",
+      adversarial_analysis: "Layer 2 model output was unusable after bounded repair; backend fallback preserves the deterministic Layer 1 candidate.",
+      materiality_analysis: critical ? "Criticality remains for deterministic Layer 3 only." : material ? "Materiality is preserved from deterministic candidate class." : "Advisory candidate retained as warning.",
+      contradiction_test: string(candidate.contradiction_statement),
+      supporting_inventory_paths: array(candidate.deterministic_basis),
+      proposed_owner: string(candidate.proposed_owner),
+      proposed_reinvestigation_scope: string(candidate.proposed_reinvestigation_scope),
+      limitation_if_unresolved: "PHASE11_LAYER2_MODEL_OUTPUT_UNUSABLE; fallback ledger used. Local counsel should review the affected field if it remains unresolved."
+    };
+  });
+  const ledger = {
+    semantic_contract_version: OPERATOR_CHALLENGE_SEMANTIC_LEDGER_VERSION,
+    fallback_version: OPERATOR_CHALLENGE_SEMANTIC_FALLBACK_VERSION,
+    inventory_fingerprint: inventory.inventory_fingerprint,
+    expected_challenge_candidate_ids: expected,
+    returned_challenge_candidate_ids: expected,
+    challenge_reviews: challengeReviews,
+    semantic_fallback_used: true,
+    fallback_reason: "PHASE11_LAYER2_MODEL_OUTPUT_UNUSABLE",
+    fallback_validation_failures: array(validationFailures),
+    fallback_authority: "DETERMINISTIC_BACKEND_LAYER2_FALLBACK"
+  };
+  return normalizeLedger(ledger, { authoritative: false, fallback: true });
+}
+
+function normalizeLedger(ledger, { authoritative, fallback }) {
+  return {
+    ...ledger,
+    schema_version: OPERATOR_CHALLENGE_SEMANTIC_LEDGER_VERSION,
+    semantic_output_fingerprint: sha(ledger),
+    authoritative,
+    semantic_fallback_used: fallback === true || ledger.semantic_fallback_used === true,
+    final_adjudication_performed: false,
+    blocking_decision_made: false,
+    reinvestigation_attempted: false
+  };
+}
 function assertInventory(inventory) {
   if (!inventory || inventory.schema_version !== "operator_challenge_inventory.v1") throw new Error("PHASE11_LAYER2_INVENTORY_INVALID");
   if (!inventory.inventory_fingerprint) throw new Error("PHASE11_LAYER2_INVENTORY_FINGERPRINT_MISSING");
