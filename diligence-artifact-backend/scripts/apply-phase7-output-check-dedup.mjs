@@ -46,8 +46,8 @@ const replacement = [
   '  }',
   '',
   '  const phase7Files = collectFiles(["src/phases/07-data-provenance-profile"]);',
-  '  const activeKeys = ["artifact_type", "artifact_name", "material_source_of_truth", "expected_artifact_name", "compatibility_outputs", "material_outputs", "writes"];',
-  '  for (const file of phase7Files) {',
+  '  const activeKeys = ["artifact_type", "artifact_name", "material_source_of_truth", "expected_artifact_name", "compatibility_outputs", "material_outputs", "writes"];
+  for (const file of phase7Files) {',
   '    const lines = fs.readFileSync(path.join(repoRoot, file), "utf8").split(/\\r?\\n/);',
   '    for (let index = 0; index < lines.length; index += 1) {',
   '      const line = lines[index];',
@@ -71,7 +71,7 @@ if (functionPattern.test(source)) {
     source = replaced;
     changed = true;
   }
-} else if (!source.includes('const retired = ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet"];')) {
+} else if (!source.includes("function assertNoLegacyArtifactsOrPrompts()") || !source.includes("extended_dap_india_readiness_profile") || !source.includes("integrated_dap_report")) {
   throw new Error("PHASE7_LEGACY_SCANNER_FUNCTION_MARKER_MISSING");
 }
 
