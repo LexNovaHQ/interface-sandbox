@@ -13,6 +13,13 @@ const CRITICAL_TYPES = new Set([
 ]);
 const MATERIAL_RECOMMENDATIONS = new Set(["MATERIAL_REINVESTIGATION", "CRITICAL_REVIEW_CANDIDATE"]);
 const SAFE_FINAL_STATUSES = new Set(["PASS", "PASS_WITH_LIMITATION"]);
+const DISPATCHABLE_OWNERS = new Set([
+  "PHASE_3_DOMAIN_DERIVATION",
+  "PHASE_5_ACTIVITY_PROFILE",
+  "PHASE_7_DATA_PROVENANCE",
+  "PHASE_8_DOMAIN_CONTROL_OBLIGATION",
+  "PHASE_10_EXPOSURE_PROFILE"
+]);
 
 export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate = null, run = {} } = {}) {
   assertInputs(inventory, semanticLedger);
@@ -41,10 +48,16 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
       disposition = "ADVISORY_WARNING";
       advisoryWarnings.push(issue(candidate, semantic, disposition));
     } else if (MATERIAL_RECOMMENDATIONS.has(semantic.recommended_disposition) || candidate.candidate_class === "MATERIAL_FIELD_CANDIDATE") {
-      const entry = buildReinvestigationEntry({ candidate, semantic, priorEntry: priorLedger.get(candidateId) });
-      reinvestigationEntries.push(entry);
-      disposition = entry.final_disposition;
-      if (entry.final_disposition === "UNRESOLVED_AFTER_REINVESTIGATION") advisoryWarnings.push(issue(candidate, semantic, "UNRESOLVED_AFTER_REINVESTIGATION", entry));
+      const deterministicOwner = ownerPhase(candidate.proposed_owner || semantic.proposed_owner);
+      if (!DISPATCHABLE_OWNERS.has(deterministicOwner)) {
+        disposition = "ADVISORY_WARNING";
+        advisoryWarnings.push(issue(candidate, semantic, "NON_DISPATCHABLE_OWNER_WARNING"));
+      } else {
+        const entry = buildReinvestigationEntry({ candidate, semantic, priorEntry: priorLedger.get(candidateId), deterministicOwner });
+        reinvestigationEntries.push(entry);
+        disposition = entry.final_disposition;
+        if (entry.final_disposition === "UNRESOLVED_AFTER_REINVESTIGATION") advisoryWarnings.push(issue(candidate, semantic, "UNRESOLVED_AFTER_REINVESTIGATION", entry));
+      }
     } else {
       disposition = "ADVISORY_WARNING";
       advisoryWarnings.push(issue(candidate, semantic, disposition));
@@ -129,7 +142,7 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
   return { challenge_gate: challengeGate, runtime_lock_status: runtimeLockStatus };
 }
 
-function buildReinvestigationEntry({ candidate, semantic, priorEntry }) {
+function buildReinvestigationEntry({ candidate, semantic, priorEntry, deterministicOwner }) {
   const priorAttempts = Array.isArray(priorEntry?.attempts) ? priorEntry.attempts.slice(0, 2) : [];
   const successful = priorAttempts.find((attempt) => attempt?.result === "RESOLVED" && attempt?.validated === true);
   const attemptsUsed = priorAttempts.length;
@@ -139,7 +152,7 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry }) {
   const nextAttempt = finalDisposition === "REINVESTIGATION_REQUIRED" ? attemptsUsed + 1 : null;
   return {
     challenge_candidate_id: candidate.challenge_candidate_id,
-    owning_phase: ownerPhase(semantic.proposed_owner || candidate.proposed_owner),
+    owning_phase: deterministicOwner,
     artifact_names: unique(candidate.affected_artifacts),
     field_paths: unique(candidate.affected_field_paths),
     affected_registry_row_keys: unique(candidate.affected_registry_row_keys),
@@ -147,7 +160,7 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry }) {
     affected_data_field_ids: unique(candidate.affected_data_field_ids),
     affected_obligation_ids: unique(candidate.affected_obligation_ids),
     problem: candidate.contradiction_statement,
-    required_reinvestigation: semantic.proposed_reinvestigation_scope || candidate.proposed_reinvestigation_scope,
+    required_reinvestigation: candidate.proposed_reinvestigation_scope || semantic.proposed_reinvestigation_scope,
     attempts: priorAttempts,
     attempts_used: attemptsUsed,
     maximum_attempts: 2,
@@ -156,7 +169,7 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry }) {
     warning_if_unresolved: semantic.limitation_if_unresolved,
     directive: finalDisposition === "REINVESTIGATION_REQUIRED" ? {
       challenge_candidate_id: candidate.challenge_candidate_id,
-      owning_phase: ownerPhase(semantic.proposed_owner || candidate.proposed_owner),
+      owning_phase: deterministicOwner,
       artifact_names: unique(candidate.affected_artifacts),
       field_paths: unique(candidate.affected_field_paths),
       affected_row_identity: unique([
@@ -166,7 +179,7 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry }) {
         ...candidate.affected_obligation_ids
       ]),
       problem: candidate.contradiction_statement,
-      required_reinvestigation: semantic.proposed_reinvestigation_scope || candidate.proposed_reinvestigation_scope,
+      required_reinvestigation: candidate.proposed_reinvestigation_scope || semantic.proposed_reinvestigation_scope,
       attempt_number: nextAttempt,
       full_phase_rerun_required: false,
       smallest_affected_unit_only: true
