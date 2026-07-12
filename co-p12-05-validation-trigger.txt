@@ -1,1 +1,1 @@
-Temporary CO-P12-05 certification trigger. Retry 6 after Phase 6 acceptance sync. Do not merge.
+Temporary CO-P12-05 certification trigger. Retry 7 after Phase 6 routed-contract assertion repair. Do not merge.
