@@ -4,7 +4,7 @@ import { loadReferencePacket } from "../../runtime/services/reference.service.js
 import { MAX_M11_BATCH_ROWS, parseAiThreatRegistryYaml, validateRegistryRows } from "./m11-deterministic-system-m11v2.js";
 
 const ARTIFACT_NAME = "active_threat_registry_manifest";
-const SCHEMA_VERSION = "active_threat_registry_manifest.v2";
+const SCHEMA_VERSION = "active_threat_registry_manifest.v3.mounted_key_severity";
 const STATUS_POLICY = "INCLUDE_ALL_DECLARED_ROWS";
 const BINDING_FILE = "THREAT_REGISTRY_BINDINGS_v1.yaml";
 const BINDING_AUTHORITY = `references/registry/${BINDING_FILE}`;
@@ -82,6 +82,7 @@ export function isCurrentActiveThreatRegistryManifest(artifact = {}, expectedExe
     && artifact?.auto_selector_status === "ACTIVE"
     && artifact?.execution_identity_contract?.version === IDENTITY_VERSION
     && artifact?.validation?.status === "PASS"
+    && artifact?.validation?.mounted_key_severity_validation_status === "PASS"
     && typeof artifact?.registry_set_fingerprint === "string"
     && artifact.registry_set_fingerprint.length === 64
     && typeof artifact?.phase10_execution_fingerprint === "string"
@@ -123,7 +124,6 @@ function resolveMountedPackages({ domainProfile = {}, activeRunManifest = {} } =
   if (primaryPackage === "ai-governance" && aiMount === "AI_OVERLAY_MOUNTED") throw new Error("DOMAIN_MOUNT_INCONSISTENCY:AI_PRIMARY_AND_OVERLAY");
 
   assertActiveRunManifestParity({ primaryPackage, primaryStatus, aiMount, activeRunManifest });
-
   const streams = [{ package_id: primaryPackage, stream_type: "PRIMARY" }];
   if (primaryPackage !== "ai-governance" && aiMount === "AI_OVERLAY_MOUNTED") streams.push({ package_id: "ai-governance", stream_type: "OVERLAY" });
 
@@ -169,6 +169,9 @@ function loadRegistry({ packageId, streamType, binding, referencePacket }) {
   const rows = parseAiThreatRegistryYaml(registryText);
   const validation = validateRegistryRows(rows, { expectedCount: Number(binding.declared_row_count) });
   if (!validation.ok) throw new Error(`REGISTRY_INTEGRITY_ERROR:${packageId}:${validation.failures.join("|")}`);
+  const severityContract = parseMountedSeverityContract(key, { packageId, packageKeyFile: binding.package_key_file, packageKeyVersion: binding.package_key_version });
+  const severityValidation = validateRowsAgainstMountedSeverityContract(rows, severityContract, packageId);
+  if (!severityValidation.ok) throw new Error(`REGISTRY_SEVERITY_INTEGRITY_ERROR:${packageId}:${severityValidation.failures.join("|")}`);
   if (rows.length !== Number(binding.routable_row_count)) throw new Error(`KEY_REGISTRY_COUNT_MISMATCH:${packageId}:ROUTABLE:${rows.length}:${binding.routable_row_count}`);
 
   const statusCounts = countBy(rows, (row) => String(row.Status || "").trim() || "MISSING");
@@ -183,17 +186,21 @@ function loadRegistry({ packageId, streamType, binding, referencePacket }) {
     package_key_file: binding.package_key_file,
     package_key_version: String(binding.package_key_version || ""),
     registry_file: binding.threat_registry_file,
+    registry_version: String(binding.registry_version || binding.threat_registry_version || binding.threat_registry_file || ""),
     registry_format: binding.registry_format || "yaml",
     declared_row_count: Number(binding.declared_row_count),
     parsed_row_count: rows.length,
     routable_row_count: rows.length,
-    uni_row_count: rows.filter((row) => String(row.Archetype || "").trim().toUpperCase() === "UNI").length,
+    uni_row_count: rows.filter((row) => String(row.Archetype || row.FIELD21 || "").trim().toUpperCase() === "UNI").length,
     status_counts: statusCounts,
     threat_ids: threatIds,
     registry_row_keys: registryRowKeys,
     threat_id_inventory_hash: sha256(threatIds.join("\n")),
     registry_row_key_inventory_hash: sha256(registryRowKeys.join("\n")),
     validation_status: validation.status,
+    severity_validation_status: severityValidation.status,
+    severity_contract: severityContract,
+    severity_contract_digest: severityContract.contract_digest,
     metadata_limitations: validation.metadata_limitations || [],
     rows,
     execution_rows: rows.map((registry_row) => ({
@@ -205,6 +212,56 @@ function loadRegistry({ packageId, streamType, binding, referencePacket }) {
       registry_row
     }))
   };
+}
+
+function parseMountedSeverityContract(key, { packageId, packageKeyFile, packageKeyVersion }) {
+  const tierRows = asArray(key?.severity?.pain_tier?.codes);
+  const depthRows = asArray(key?.severity?.pain_depth?.codes);
+  if (!tierRows.length) throw new Error(`PACKAGE_KEY_SEVERITY_TIER_VOCABULARY_MISSING:${packageId}`);
+  if (!depthRows.length) throw new Error(`PACKAGE_KEY_SEVERITY_DEPTH_VOCABULARY_MISSING:${packageId}`);
+
+  const painTiers = tierRows.map((row) => ({
+    tier: String(row?.tier || "").trim(),
+    pain_category: String(row?.pain_category || "").trim(),
+    normalized_name: String(row?.normalized_name || "").trim()
+  }));
+  const painDepths = depthRows.map((row) => ({
+    value: String(row?.value || "").trim(),
+    normalized_name: String(row?.normalized_name || "").trim()
+  }));
+  const failures = [];
+  for (const row of painTiers) if (!row.tier || !row.pain_category || !row.normalized_name) failures.push(`PACKAGE_KEY_SEVERITY_TIER_ROW_INVALID:${packageId}:${row.tier || "missing"}`);
+  for (const row of painDepths) if (!row.value || !row.normalized_name) failures.push(`PACKAGE_KEY_SEVERITY_DEPTH_ROW_INVALID:${packageId}:${row.value || "missing"}`);
+  if (new Set(painTiers.map((row) => row.tier)).size !== painTiers.length) failures.push(`PACKAGE_KEY_SEVERITY_TIER_DUPLICATE:${packageId}`);
+  if (new Set(painDepths.map((row) => row.value)).size !== painDepths.length) failures.push(`PACKAGE_KEY_SEVERITY_DEPTH_DUPLICATE:${packageId}`);
+  if (failures.length) throw new Error(failures.join("|"));
+
+  const contract = {
+    authority: "MOUNTED_REGISTRY_KEY",
+    package_id: packageId,
+    package_key_file: packageKeyFile,
+    package_key_version: String(packageKeyVersion || ""),
+    pain_tiers: painTiers,
+    pain_depths: painDepths
+  };
+  return { ...contract, contract_digest: sha256(stableJson(contract)) };
+}
+
+function validateRowsAgainstMountedSeverityContract(rows, contract, packageId) {
+  const failures = [];
+  const tierMap = new Map(asArray(contract.pain_tiers).map((row) => [row.tier, row]));
+  const depthSet = new Set(asArray(contract.pain_depths).map((row) => row.value));
+  for (const row of rows) {
+    const id = String(row.Threat_ID || "unknown");
+    const tier = String(row.Pain_Tier || "").trim();
+    const category = String(row.Pain_Category || "").trim();
+    const depth = String(row.Pain_Depth || "").trim();
+    const tierRule = tierMap.get(tier);
+    if (!tierRule) failures.push(`REGISTRY_PAIN_TIER_OUTSIDE_MOUNTED_KEY:${packageId}:${id}:${tier || "missing"}`);
+    else if (tierRule.pain_category !== category) failures.push(`REGISTRY_PAIN_CATEGORY_MOUNTED_KEY_MISMATCH:${packageId}:${id}:${tier}:${category || "missing"}:${tierRule.pain_category}`);
+    if (!depthSet.has(depth)) failures.push(`REGISTRY_PAIN_DEPTH_OUTSIDE_MOUNTED_KEY:${packageId}:${id}:${depth || "missing"}`);
+  }
+  return { ok: failures.length === 0, status: failures.length ? "CONTROLLED_FAILURE" : "PASS", failures, checked_row_count: rows.length, severity_contract_digest: contract.contract_digest };
 }
 
 function buildExecutionIdentity(registries) {
@@ -254,11 +311,13 @@ function buildRegistrySetFingerprint({ selection, registries, identity, bindingM
       package_key_file: registry.package_key_file,
       package_key_version: registry.package_key_version,
       registry_file: registry.registry_file,
+      registry_version: registry.registry_version,
       declared_row_count: registry.declared_row_count,
       parsed_row_count: registry.parsed_row_count,
       status_counts: registry.status_counts,
       threat_id_inventory_hash: registry.threat_id_inventory_hash,
-      registry_row_key_inventory_hash: registry.registry_row_key_inventory_hash
+      registry_row_key_inventory_hash: registry.registry_row_key_inventory_hash,
+      severity_contract_digest: registry.severity_contract_digest
     })),
     union_registry_row_key_inventory_hash: identity.registry_row_key_inventory_hash
   }));
@@ -307,6 +366,7 @@ function buildManifestArtifact({ runId, selection, registries, identity, registr
       package_key_file: registry.package_key_file,
       package_key_version: registry.package_key_version,
       registry_file: registry.registry_file,
+      registry_version: registry.registry_version,
       registry_format: registry.registry_format,
       declared_row_count: registry.declared_row_count,
       parsed_row_count: registry.parsed_row_count,
@@ -321,6 +381,8 @@ function buildManifestArtifact({ runId, selection, registries, identity, registr
       threat_id_inventory_hash: registry.threat_id_inventory_hash,
       registry_row_key_inventory_hash: registry.registry_row_key_inventory_hash,
       validation_status: registry.validation_status,
+      severity_validation_status: registry.severity_validation_status,
+      severity_contract: registry.severity_contract,
       metadata_limitation_count: registry.metadata_limitations.length
     })),
     expected_row_count: expectedRowCount,
@@ -332,7 +394,8 @@ function buildManifestArtifact({ runId, selection, registries, identity, registr
     execution_fingerprint_inputs: {
       routing_rules_version: ROUTING_RULES_VERSION,
       max_m11_batch_rows: MAX_M11_BATCH_ROWS,
-      packet_ceiling_version: PACKET_CEILING_VERSION
+      packet_ceiling_version: PACKET_CEILING_VERSION,
+      mounted_key_severity_contract_digests: registries.map((registry) => registry.severity_contract_digest)
     },
     validation: {
       status: "PASS",
@@ -343,6 +406,7 @@ function buildManifestArtifact({ runId, selection, registries, identity, registr
       unique_registry_row_keys: identity.registry_row_key_count,
       canonical_threat_id_collision_count: identity.canonical_threat_id_collision_count,
       compound_identity_resolution_status: "PASS",
+      mounted_key_severity_validation_status: registries.every((registry) => registry.severity_validation_status === "PASS") ? "PASS" : "CONTROLLED_FAILURE",
       status_policy_verified: true,
       failures: []
     }
@@ -391,6 +455,10 @@ function sortObject(value) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function stableJson(value) {
