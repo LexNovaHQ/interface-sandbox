@@ -1,0 +1,1 @@
+Temporary full backend contract check trigger after stale checker cleanup. Do not merge.
