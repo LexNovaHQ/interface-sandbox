@@ -10,6 +10,7 @@ on:
       - diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
       - diligence-artifact-backend/scripts/apply-phase6-behavior-forensics-sync.mjs
       - diligence-artifact-backend/scripts/apply-phase7-p2g-legal-permission-sync.mjs
+      - diligence-artifact-backend/scripts/apply-phase7-output-check-dedup.mjs
 
 permissions:
   contents: write
@@ -49,6 +50,7 @@ jobs:
           set -o pipefail
           node scripts/apply-phase6-behavior-forensics-sync.mjs 2>&1 | tee co-p12-05-apply.log
           node scripts/apply-phase7-p2g-legal-permission-sync.mjs 2>&1 | tee -a co-p12-05-apply.log
+          node scripts/apply-phase7-output-check-dedup.mjs 2>&1 | tee -a co-p12-05-apply.log
           rm -f \
             src/phases/12-normalized-compiler/normalized-compiler.runner.js \
             src/phases/12-normalized-compiler/compiler-m9-section6-v3.js \
@@ -180,6 +182,7 @@ jobs:
           git rm diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
           git rm diligence-artifact-backend/scripts/apply-phase6-behavior-forensics-sync.mjs
           git rm diligence-artifact-backend/scripts/apply-phase7-p2g-legal-permission-sync.mjs
+          git rm diligence-artifact-backend/scripts/apply-phase7-output-check-dedup.mjs
           git rm .github/workflows/co-p12-05-finalize.yml
           rm -f diligence-artifact-backend/co-p12-05-apply.log diligence-artifact-backend/co-p12-05-full-backend.log
           git add -A
