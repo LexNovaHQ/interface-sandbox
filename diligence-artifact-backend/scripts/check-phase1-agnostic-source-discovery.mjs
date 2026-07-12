@@ -24,39 +24,8 @@ const permissions = read("src/runtime/contracts/artifact-permissions.contract.js
 const pipelineService = read("src/runtime/services/pipeline.service.js");
 const pipelineContract = read("src/runtime/contracts/pipeline.contract.js");
 
-const LOCKED_ROOTS = Object.freeze([
-  "homepage_landing",
-  "company_identity",
-  "contact_notice",
-  "product_service",
-  "platform_feature_solution",
-  "technical_docs_api",
-  "docs_api_data_flow",
-  "integrations_ecosystem",
-  "pricing_commercial_availability",
-  "use_case_customer_industry",
-  "privacy_data_processing",
-  "security_trust_compliance",
-  "data_governance_controls",
-  "ai_safety_transparency",
-  "support_help_resources",
-  "regulatory_licensing_status",
-  "grievance_complaints"
-]);
-const PRIMARY_FULL = Object.freeze([
-  "company_identity",
-  "contact_notice",
-  "product_service",
-  "platform_feature_solution",
-  "technical_docs_api",
-  "docs_api_data_flow",
-  "privacy_data_processing",
-  "security_trust_compliance",
-  "data_governance_controls",
-  "ai_safety_transparency",
-  "regulatory_licensing_status",
-  "grievance_complaints"
-]);
+const LOCKED_ROOTS = Object.freeze(["homepage_landing", "company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "support_help_resources", "regulatory_licensing_status", "grievance_complaints"]);
+const PRIMARY_FULL = Object.freeze(["company_identity", "contact_notice", "product_service", "platform_feature_solution", "technical_docs_api", "docs_api_data_flow", "privacy_data_processing", "security_trust_compliance", "data_governance_controls", "ai_safety_transparency", "regulatory_licensing_status", "grievance_complaints"]);
 const SECONDARY_CONDITIONAL = Object.freeze(["integrations_ecosystem", "pricing_commercial_availability", "use_case_customer_industry", "support_help_resources"]);
 const RETIRED_ROOT_ARTIFACTS = Object.freeze(["lossless_root__about_company", "lossless_root__legal_identity_notice", "lossless_root__operator_entity_signals", "lossless_root__supporting_company_signals", "lossless_root__technical_docs_api_developer", "lossless_root__security_trust", "lossless_root__trust_compliance", "lossless_root__support_help"]);
 
@@ -98,8 +67,7 @@ assert.ok(urlService.includes("classifyCompanyIdentity"), "URL manifest service 
 assert.ok(urlService.includes("classifyDataGovernanceControls"), "URL manifest service must include dedicated data governance classifier");
 assert.ok(urlService.includes("classifyRegulatoryLicensingStatus"), "URL manifest service must include dedicated regulatory/licensing classifier");
 assert.ok(urlService.includes("classifyGrievanceComplaints"), "URL manifest service must include dedicated grievance/complaints classifier");
-assert.ok(extractionService.includes("persistLosslessRootArtifact"), "extraction service must persist lossless_root artifacts");
-assert.ok(extractionService.includes("shouldPersistRoot"), "extraction service must include empty-page skip helper");
+assert.ok(extractionService.includes("buildSparseRootArtifacts") && extractionService.includes("lossless_root__${artifact.common_root}"), "extraction service must persist lossless_root artifacts through sparse root artifacts");
 assert.ok(extractionService.includes("source_text_cutting_allowed: false"), "extraction service must explicitly forbid source text cutting");
 assert.ok(handoffService.includes("lossless_root__"), "handoff must advertise lossless_root names");
 assert.ok(validator.includes("legal_doc_lossless_validation_manifest"), "validator must require legal document validation manifest");
@@ -121,7 +89,4 @@ console.log(JSON.stringify({ check: "phase1 agnostic source discovery", status: 
 function containsArtifactIdentity(source, artifact) {
   return new RegExp(`(^|[^A-Za-z0-9_])${escapeRegExp(artifact)}([^A-Za-z0-9_]|$)`).test(source);
 }
-
-function escapeRegExp(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
