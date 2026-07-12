@@ -59,14 +59,14 @@ for (const marker of [
   "PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE_ACTIVE",
   "validateOperatorChallengeSemanticLedger",
   "output_repair_is_not_field_reinvestigation: true",
-  "compiler_handoff_allowed: false"
+  "buildOperatorChallengeLayer3"
 ]) assert.ok(runner.includes(marker), `runner marker missing: ${marker}`);
 for (const marker of [
-  "runtime_contract_version: v2_layer2_semantic_adversarial_challenge",
+  "runtime_contract_version: v3_layer3_deterministic_adjudication",
   "status: ACTIVE",
   "blocking_decision_forbidden: true",
   "maximum_reinvestigation_attempts: 2",
-  "layer_3: PENDING"
+  "final_adjudication_authority: DETERMINISTIC_BACKEND"
 ]) assert.ok(binding.includes(marker), `binding marker missing: ${marker}`);
 for (const marker of [
   "CRITICAL_REVIEW_CANDIDATE",
@@ -82,7 +82,8 @@ console.log(JSON.stringify({
   blocking_authority: false,
   field_reinvestigation_attempts_executed: 0,
   malformed_output_repair_maximum: 1,
-  repeated_raw_threat_ids_preserved_by_compound_reference: true
+  repeated_raw_threat_ids_preserved_by_compound_reference: true,
+  downstream_adjudication_authority: "DETERMINISTIC_LAYER3"
 }, null, 2));
 
 function candidate(id, candidate_class, challenge_type, affected_registry_row_keys) {
