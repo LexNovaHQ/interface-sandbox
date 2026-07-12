@@ -11,7 +11,18 @@ Public/report wording normalization is outside M11 scope. M11 emits auditable ma
 
 ## Layer 1 — deterministic backend prefill
 
-Backend owns registry/reference load, schema validation, route plan, batch plan, evidence packet formation, deterministic registry spine prefill, accepted-batch save, workpad merge, material projection, and forensics.
+Backend owns registry/reference load, schema validation, `active_threat_registry_manifest` construction and first-save custody, route plan, batch plan, evidence packet formation, deterministic registry spine prefill, accepted-batch save, workpad merge, material projection, and forensics.
+
+`active_threat_registry_manifest` is deterministic and must be saved before `exposure_registry_route_plan`. The model must not select or mount registries, create or rewrite the manifest, change registry counts, or change the registry-set fingerprint.
+
+During CO-1 compatibility mode, the manifest records the current single AI registry and stamps:
+
+```text
+selection_mode: CURRENT_SINGLE_REGISTRY_PRE_AUTO_SELECTOR
+auto_selector_status: PENDING_CO_2
+```
+
+The domain-driven auto-selector is not part of CO-1. It is introduced only by CO-2.
 
 Backend-prefilled registry spine fields:
 
@@ -34,9 +45,9 @@ route reason
 batch membership
 ```
 
-`Threat_Name` is mandatory. It comes from `AI_THREAT_REGISTRY.Threat_Name` and the model must not rewrite it.
+`Threat_Name` is mandatory. It comes from the active threat registry row and the model must not rewrite it.
 
-`Subcategory` is code-only inside M11. Display labels are normalizer/compiler scope only. Known legacy `FIN` is normalized to `LIA` as a non-blocking registry-drift warning because the registry key folds financial-agent commitment into the liability harm mechanism.
+`Subcategory` is code-only inside M11. Display labels are normalizer/compiler scope only. Known legacy `FIN` is normalized to `LIA` as a non-blocking registry-drift warning because the current AI registry key folds financial-agent commitment into the liability harm mechanism.
 
 The M11 model must not rewrite this spine.
 
@@ -62,7 +73,7 @@ The model must not assemble the final material row, choose final profile placeme
 
 ## Layer 3 — deterministic final status and projection
 
-Backend assembles the full material row, derives final evaluation status, saves accepted batches, merges the 98-row workpad, and projects controlled/triggered profiles.
+Backend assembles the full material row, derives final evaluation status, saves accepted batches, merges the current workpad, and projects controlled/triggered profiles.
 
 Allowed final material statuses:
 
@@ -72,6 +83,46 @@ CONTROLLED_BY_VISIBLE_CONTROL
 CONTROLLED_BY_EXCLUSION
 CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
 ```
+
+# ACTIVE THREAT REGISTRY MANIFEST CONTRACT
+
+The first persisted Phase 10 artifact is:
+
+```text
+active_threat_registry_manifest
+```
+
+Minimum CO-1 fields:
+
+```text
+schema_version
+run_id
+generated_by
+selection_mode
+auto_selector_status
+binding_authority
+status_policy
+primary_package
+ai_mount
+mounted_packages[]
+registries[]
+expected_row_count
+expected_uni_count
+registry_set_fingerprint
+validation
+```
+
+The status policy is locked as:
+
+```text
+mode: INCLUDE_ALL_DECLARED_ROWS
+row_filter: NONE
+status_field_role: METADATA_ONLY
+```
+
+Therefore all 98 declared AI registry rows remain in the current routable inventory. `Status` values such as Active, Upcoming, Pending, Watch, and Pending / Watch are preserved as row metadata and do not remove a row from Phase 10 routing.
+
+The manifest must validate and lock before route-plan construction begins.
 
 # ROUTING CONTRACT
 
@@ -152,13 +203,14 @@ Both profiles emit the full 19-field material row contract.
 # SAVE ORDER
 
 ```text
-1. exposure_registry_route_plan
-2. for each batch: M11 semantic ledger -> validation -> deterministic status/fp discipline -> accepted batch save
-3. exposure_registry_workpad_98
-4. exposure_registry_controlled_profile
-5. exposure_registry_triggered_profile
-6. exposure_registry_profile_forensics
-7. M12 global challenge may begin
+1. active_threat_registry_manifest
+2. exposure_registry_route_plan
+3. for each batch: M11 semantic ledger -> validation -> deterministic status/fp discipline -> accepted batch save
+4. exposure_registry_workpad_98
+5. exposure_registry_controlled_profile
+6. exposure_registry_triggered_profile
+7. exposure_registry_profile_forensics
+8. M12 global challenge may begin
 ```
 
 # LEGACY OUTPUT PROHIBITION
