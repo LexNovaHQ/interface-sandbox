@@ -2,138 +2,110 @@
 
 ## Status
 
-This addendum defines the substantive M11 use of the locked `domain_control_obligation_profile`.
+This contract is active inside the CO-7 Agent 5 semantic package.
 
-It is not active until the later mechanical prompt-bundle and P2G cutover explicitly include it.
+It defines the bounded use of the locked `domain_control_obligation_profile` within one package-scoped M11 batch.
 
-## 1. Source boundary
+## Source boundary
 
-M11 may receive only:
+M11 may receive only the locked profile:
 
 ```text
 domain_control_obligation_profile
 ```
 
-M11 must not receive or request:
+M11 must not receive or request candidate inventories, Phase 8 candidate packets, Phase 8 Registry Key payloads, Phase 8 route packets, or Phase 8 derivation ledgers as substitutes for M11 evidence.
 
-```text
-domain_control_obligation_candidate_inventory
-Phase 8 candidate packets
-Phase 8 Registry Key payloads
-Phase 8 P2E route packets
-Phase 8 derivation-basis ledgers as a substitute for M11 evidence
-```
+The profile must be `LOCKED` or `LOCKED_WITH_LIMITATIONS` before use.
 
-The Phase 8 profile must be locked as `LOCKED` or `LOCKED_WITH_LIMITATIONS` before M11 may use it.
+## Context role
 
-## 2. Context role
+The profile is derived context only. It may help identify:
 
-The Phase 8 profile is derived material context only.
-
-It may help M11 understand:
-
-- the mounted-package obligation identity;
-- the target-specific obligation context;
-- linked target activities;
+- mounted-package obligation identity;
+- target-specific obligation context;
+- linked activities;
 - authority-dependency anchors;
-- the expected control signal;
-- the public-footprint control visibility and posture;
+- expected control signals;
+- public-footprint control visibility;
 - missing proof;
-- diligence questions;
-- limitations;
+- diligence questions and limitations;
 - candidate-only regulatory-overlay context.
 
 It is not:
 
 - an exposure verdict;
 - a Hunter Trigger result;
-- threat-registry authority;
-- proof that a law applies;
-- proof that an obligation is satisfied or breached;
-- proof that a regulator has jurisdiction;
-- proof that a visible control defeats an M11 threat;
+- registry authority;
+- proof of legal applicability, jurisdiction, satisfaction, breach, or licensing status;
+- proof that a visible control defeats a registry row;
 - a substitute for M11 primary evidence.
 
-## 3. Routing and registry spine lock
+## Package and stream boundary
+
+Use only context admitted for the active packet’s `package_id`, `stream_id`, and expected canonical Threat IDs.
+
+Do not use primary-package obligation context to satisfy an overlay row, or overlay context to alter a primary row, unless the backend explicitly linked that context to the active row through deterministic packet assembly.
 
 Phase 8 context must not:
 
-- create a new `Threat_ID`;
-- delete a registry row;
-- change the M11 route plan;
-- change batch membership;
-- replace `Hunter_Trigger`;
-- rewrite `Archetype`, `Subcategory`, `Surface`, authority anchors, pain fields, remediation, or review-route defaults;
-- change a row from routed to not routed or the reverse;
-- choose the final M11 material status.
+- create, delete, or rename a Threat ID;
+- create or rewrite `registry_row_key`;
+- change registry selection;
+- change the route plan;
+- change package, stream, archetype group, or batch membership;
+- replace Hunter Trigger;
+- rewrite deterministic registry fields;
+- choose final material status.
 
-The threat registry and M11 deterministic route plan remain the only authorities for M11 row identity and routing.
+## Backend-scoped links
 
-## 4. Backend-scoped context links
-
-Where the backend provides `m11_domain_control_obligation_context`, use only the obligation rows linked to the active batch or active `Threat_ID` by exact deterministic token intersection.
-
-The link may use exact intersections among:
+Where the backend supplies `m11_domain_control_obligation_context`, use only rows linked to the active batch through exact deterministic intersections such as:
 
 ```text
-Phase 8 authority_dependency <-> M11 authority anchors
-Phase 8 matched_behavior_codes <-> M11 Archetype/Subcategory tokens
-Phase 8 matched_surface_tokens <-> M11 Surface tokens
+authority_dependency <-> M11 authority anchors
+matched_behavior_codes <-> M11 Archetype/Subcategory tokens
+matched_surface_tokens <-> M11 Surface tokens
 ```
 
-A context link is a navigation and review aid only. It is not an exposure trigger and does not prove substantive alignment between the obligation and threat.
+A context link is a navigation and review aid only. It is not substantive proof. If no exact link exists, do not force one.
 
-If no exact link exists, do not semantically force one.
+## Permitted semantic use
 
-## 5. Permitted semantic use
+For an already-routed row, linked context may help the model:
 
-For an already-routed M11 row, the model may use linked Phase 8 context to:
-
-- focus review on a target-specific activity or control surface;
-- identify an expected control signal that M11 should verify against its own admitted evidence;
-- identify a public-footprint control claim that requires independent M11 evidence confirmation;
+- focus review on a target activity or control surface;
+- identify a claimed control that requires verification against M11 evidence;
 - preserve missing-proof and limitation signals;
-- ask whether a visible Phase 8 control actually defeats, reduces, or does not affect the active Hunter Trigger;
-- flag authority or regulatory-overlay language that requires qualified review.
+- test whether a visible mechanism defeats, reduces, or does not affect the Hunter Trigger;
+- flag authority or regulatory-overlay language for qualified review.
 
-The model must still derive M11 semantic fields from the active M11 batch packet and M11-admitted primary evidence.
+The semantic fields must still be derived from the active M11 packet and admitted primary evidence.
 
-## 6. Control discipline
+## Control discipline
 
-`control_mechanism_present` and `control_posture_status` are Phase 8 public-footprint visibility signals.
-
-They do not automatically set:
+Phase 8 control-visibility fields do not automatically determine:
 
 ```text
 visible_control_present
 visible_control_defeats_or_reduces_exposure
 control_exclusion_evaluation
-final_material_status
+final material status
 ```
 
-M11 must independently determine those M11 fields from its own Hunter Trigger, control/exclusion rules, and admitted evidence.
+M11 must independently assess those values against the active Hunter Trigger and admitted evidence.
 
-A Phase 8 `VISIBLE` signal may be carried only as a control lead until M11 verifies that the mechanism is relevant to the active threat and actually defeats or reduces it.
+A visible Phase 8 signal is only a control lead until verified. Partial, not-visible, or unresolved posture must not become a breach or compliance conclusion.
 
-A Phase 8 `PARTIAL`, `NOT_VISIBLE`, or `UNRESOLVED` posture must not be converted into a breach or compliance conclusion.
+## Authority and overlay discipline
 
-## 7. Authority and overlay discipline
+Authority dependencies and regulatory-overlay references are contextual vocabulary, not legal-applicability decisions.
 
-`authority_dependency` is contextual vocabulary from the mounted Registry Key. It is not a legal-applicability decision.
+They must not independently establish jurisdiction, licensing duty, satisfaction, breach, or a new obligation row.
 
-`regulatory_overlay_refs` are candidate-only contextual references. They must not be used to assert:
+## Output boundary
 
-- legal applicability;
-- regulator jurisdiction;
-- licence requirement or validity;
-- satisfaction or breach;
-- an independent regulatory obligation row.
-
-## 8. M11 output boundary
-
-The existing M11 model row schema remains unchanged.
-
-Phase 8 context may influence only the already-authorized semantic fields:
+Phase 8 context may influence only:
 
 ```text
 target_match
@@ -145,20 +117,12 @@ row_limitations
 status_inputs
 ```
 
-Do not emit Phase 8 rows, obligation profiles, candidate IDs, regulatory-overlay references, handoff packets, or new output branches in the M11 model response.
+Do not emit Phase 8 rows, obligation profiles, candidate IDs, regulatory-overlay references, handoff packets, deterministic fields, or new output branches.
 
-## 9. Limitation carry-forward
+## Limitation carry-forward
 
-Where Phase 8 reports missing proof, unresolved role, unclear control, partial posture, or profile-level limitations:
+Where Phase 8 reports missing proof, unresolved role, unclear control, partial posture, or profile limitations, preserve the issue in `row_limitations` where relevant. Do not convert it into an automatic trigger or automatic control.
 
-- preserve the issue in M11 `row_limitations` where relevant to the active threat;
-- do not hide it because the threat row otherwise appears supported;
-- do not convert it into an automatic trigger;
-- do not convert it into an automatic control;
-- continue under the system-wide blocking doctrine unless a structural M11 failure exists.
+## Final lock
 
-## 10. Final lock
-
-M11 remains the sole owner of exposure evaluation.
-
-Phase 8 provides bounded obligation/control context. It never replaces the threat registry, M11 evidence discipline, Hunter Trigger evaluation, false-positive discipline, or deterministic final-status authority.
+M11 remains the owner of exposure evaluation. Phase 8 provides bounded context only and never replaces registry authority, Hunter Trigger evaluation, admitted evidence, false-positive discipline, or backend final-status authority.
