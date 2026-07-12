@@ -3,8 +3,8 @@
   "status": "FAIL",
   "exit_code": 1,
   "workflow": "CO P12 01 Self Report Validation",
-  "run_id": "29196564716",
-  "head_sha": "b85a1edfab7a4008db2d36aae99b286149bd1c33",
+  "run_id": "29196707764",
+  "head_sha": "7a9d28485dd3e8b44045d0ad95c59802da785d4e",
   "log_tail": [
     "",
     "> interface-diligence-artifacts@0.1.0 check:p12:co1",
