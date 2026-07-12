@@ -8,10 +8,10 @@ const duplicateAfter = '...PHASE7_DAP_LAYER4_ARTIFACT_NAMES.filter((name) => nam
 if (!source.includes(duplicateBefore)) throw new Error("PHASE7_OUTPUT_CHECK_DEDUP_MARKER_MISSING");
 source = source.replace(duplicateBefore, duplicateAfter);
 
-const scannerBefore = '    if (file === "scripts/check-m10-d-primary-selected-legal-support.mjs") {';
-const scannerAfter = '    if (file === "src/phases/02-cartography-index/data-privacy-navigation-index.contract.js") continue;\n    if (file === "scripts/check-m10-d-primary-selected-legal-support.mjs") {';
-if (!source.includes(scannerBefore)) throw new Error("PHASE7_LEGACY_SCANNER_SCOPE_MARKER_MISSING");
-source = source.replace(scannerBefore, scannerAfter);
+const rootsBefore = '  const activeFiles = collectFiles(["src", "scripts", "agent-packages/agent_4_data_privacy"]);';
+const rootsAfter = '  const activeFiles = collectFiles(["src/phases/07-data-provenance-profile", "agent-packages/agent_4_data_privacy"]);';
+if (!source.includes(rootsBefore)) throw new Error("PHASE7_LEGACY_SCANNER_ROOTS_MARKER_MISSING");
+source = source.replace(rootsBefore, rootsAfter);
 
 fs.writeFileSync(file, source);
-console.log("Phase 7 output assertion and legacy-scanner scope sync: APPLIED");
+console.log("Phase 7 output assertion and active-surface legacy scan: APPLIED");
