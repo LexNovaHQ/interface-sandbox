@@ -33,9 +33,16 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
   const workpadRows = arr(workpad.registry_rows);
   const controlledRows = arr(controlled.controlled_rows);
   const triggeredRows = arr(triggered.triggered_rows);
+
   if (!expected) failures.push("PHASE10_MANIFEST_EXPECTED_COUNT_MISSING");
+  if (manifest.report_row_contract?.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) failures.push(`PHASE10_MANIFEST_REPORT_ROW_SCHEMA_INVALID:${manifest.report_row_contract?.report_row_schema_version || "missing"}`);
+  if (manifest.report_row_contract?.registry_spine_completeness_status !== "PASS") failures.push(`PHASE10_MANIFEST_REGISTRY_SPINE_NOT_COMPLETE:${manifest.report_row_contract?.registry_spine_completeness_status || "missing"}`);
+  if (manifest.report_row_contract?.severity_validation_status !== "PASS") failures.push(`PHASE10_MANIFEST_SEVERITY_NOT_VALID:${manifest.report_row_contract?.severity_validation_status || "missing"}`);
+  if (controlled.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) failures.push(`PHASE10_CONTROLLED_REPORT_ROW_SCHEMA_INVALID:${controlled.report_row_schema_version || "missing"}`);
+  if (triggered.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) failures.push(`PHASE10_TRIGGERED_REPORT_ROW_SCHEMA_INVALID:${triggered.report_row_schema_version || "missing"}`);
   if (routeRows.length !== expected) failures.push(`PHASE10_ROUTE_COUNT_MISMATCH:${routeRows.length}:${expected}`);
   if (workpadRows.length !== expected) failures.push(`PHASE10_WORKPAD_COUNT_MISMATCH:${workpadRows.length}:${expected}`);
+
   assertUniqueKeys(routeRows, "route", failures);
   assertUniqueKeys(workpadRows, "workpad", failures);
   assertUniqueKeys(controlledRows, "controlled", failures);
@@ -71,13 +78,14 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
     } else if (status) failures.push(`PHASE10_NON_STANDARD_WORKPAD_STATUS:${rowKey(row)}:${status}`);
   }
 
-  validateChallengeGate(challenge, failures, warnings);
+  const challengeStatus = validateChallengeGate(challenge, failures, warnings);
   const warningProjection = projectFinalGateWarnings(challenge);
-  if (challenge.status === "PASS_WITH_LIMITATION" && !warningProjection.length) failures.push("PHASE11_PASS_WITH_LIMITATION_WARNING_PROJECTION_MISSING");
+  if (challengeStatus === "PASS_WITH_LIMITATION" && !warningProjection.length) failures.push("PHASE11_PASS_WITH_LIMITATION_WARNING_PROJECTION_MISSING");
+  if (challengeStatus === "PASS" && warningProjection.length) failures.push("PHASE11_PASS_CONTAINS_ADVISORY_WARNING_PROJECTION");
 
   return {
     phase10_downstream_compatibility: {
-      schema_version: "phase10_downstream_compatibility.v4.exact_phase11_gate_complete_report_rows",
+      schema_version: "phase10_downstream_compatibility.v4.phase11_exact_gate",
       identity_contract: "PHASE10_EXECUTION_IDENTITY_v2",
       report_row_schema_version: REQUIRED_REPORT_ROW_SCHEMA,
       expected_registry_row_key_count: expected,
@@ -92,7 +100,7 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
       material_rows: materialRows,
       workpad_only_rows: workpadOnlyRows,
       final_status_counts: countBy(workpadRows, (row) => String(row.final_material_status || row.evaluation_status || "UNKNOWN")),
-      challenge_status: String(challenge.status || "UNKNOWN"),
+      challenge_status: challengeStatus,
       challenge_gate_version: challenge.schema_version || "UNKNOWN",
       challenge_final_gate_fingerprint: challenge.final_gate_fingerprint || "",
       compiler_handoff_allowed: challenge.compiler_handoff_allowed === true,
@@ -124,6 +132,7 @@ export function assertPhase10CompilerCompatibility(value) {
 }
 
 function validateChallengeGate(challenge, failures, warnings) {
+  if (!challenge || typeof challenge !== "object" || Array.isArray(challenge) || !Object.keys(challenge).length) failures.push("PHASE11_CHALLENGE_GATE_MISSING_OR_EMPTY");
   if (challenge.schema_version !== REQUIRED_GATE_SCHEMA) failures.push(`PHASE11_CHALLENGE_GATE_SCHEMA_INVALID:${challenge.schema_version || "missing"}`);
   const status = String(challenge.status || "").toUpperCase();
   if (!ACCEPTED_CHALLENGE_STATUSES.has(status)) failures.push(`PHASE11_CHALLENGE_GATE_NOT_COMPILER_READY:${status || "missing"}`);
@@ -131,8 +140,8 @@ function validateChallengeGate(challenge, failures, warnings) {
   if (!String(challenge.final_gate_fingerprint || "").trim()) failures.push("PHASE11_FINAL_GATE_FINGERPRINT_MISSING");
   if (challenge.layer_status?.layer_3 !== "COMPLETE") failures.push(`PHASE11_LAYER3_NOT_COMPLETE:${challenge.layer_status?.layer_3 || "missing"}`);
   if (challenge.reinvestigation_dispatch_required === true) failures.push("PHASE11_REINVESTIGATION_STILL_PENDING");
-  if (Number(challenge.operator_challenge_reinvestigation_ledger?.pending_count || 0) > 0) failures.push("PHASE11_REINVESTIGATION_LEDGER_PENDING_COUNT_NONZERO");
   if (status === "PASS_WITH_LIMITATION") warnings.push("PHASE11_LIMITATIONS_CARRIED_FROM_FINAL_GATE");
+  return status;
 }
 
 function validateMaterialRow(row, failures) {
