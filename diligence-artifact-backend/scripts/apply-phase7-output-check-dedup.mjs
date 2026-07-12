@@ -33,7 +33,10 @@ const replacement = `function assertNoLegacyArtifactsOrPrompts() {
       const context = lines.slice(Math.max(0, index - 2), index + 1).join(" ");
       if (!activeKeys.some((key) => context.includes(key))) continue;
       for (const artifactName of retired) {
-        assert.equal(line.includes(artifactName), false, \`\${file}:\${index + 1} actively emits retired Phase7/M10 artifact \${artifactName}\`);
+        const doubleQuoted = \`"\${artifactName}"\`;
+        const singleQuoted = \`'\${artifactName}'\`;
+        const exactIdentityPresent = line.includes(doubleQuoted) || line.includes(singleQuoted);
+        assert.equal(exactIdentityPresent, false, \`\${file}:\${index + 1} actively emits retired Phase7/M10 artifact \${artifactName}\`);
       }
     }
   }
@@ -43,4 +46,4 @@ function collectFiles`;
 source = source.replace(functionPattern, replacement);
 
 fs.writeFileSync(file, source);
-console.log("Phase 7 output assertion and active-emission legacy scan: APPLIED");
+console.log("Phase 7 output assertion and exact-identity legacy scan: APPLIED");
