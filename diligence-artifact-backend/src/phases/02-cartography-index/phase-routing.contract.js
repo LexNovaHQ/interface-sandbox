@@ -21,7 +21,7 @@ export const P2G_PHASE_ROUTING_ARTIFACTS = Object.freeze({ manifest: "phase_rout
 export const P2G_PHASE_ROUTING_SAVE_ORDER = Object.freeze([P2G_PHASE_ROUTING_ARTIFACTS.manifest, P2G_PHASE_ROUTING_ARTIFACTS.validation]);
 
 export const PHASE_ROUTE_BUCKET_IDS = Object.freeze({ targetProfile: "2A_BUCKET_TARGET_PROFILE", domainDerivation: "2B_BUCKET_DOMAIN_DERIVATION", activityProfile: "2C_BUCKET_ACTIVITY_PROFILE", dataPrivacy: "2D_BUCKET_DATA_PRIVACY", domainControlObligation: "2E_BUCKET_DOMAIN_CONTROL_OBLIGATION", legalCartographySignals: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS" });
-export const PHASE_ROUTE_IDS = Object.freeze({ targetProfile: "ROUTE.PHASE3A.TARGET_PROFILE", domainDerivation: "ROUTE.PHASE3B.DOMAIN_DERIVATION", activityProfile: "ROUTE.PHASE5.ACTIVITY_PROFILE", dataPrivacy: "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE", domainControlObligation: "ROUTE.PHASE7B.DOMAIN_CONTROL_OBLIGATION_PROFILE", legalCartographySignals: "ROUTE.PHASE9.EXPOSURE_PROFILE" });
+export const PHASE_ROUTE_IDS = Object.freeze({ targetProfile: "ROUTE.PHASE3A.TARGET_PROFILE", domainDerivation: "ROUTE.PHASE3B.DOMAIN_DERIVATION", activityProfile: "ROUTE.PHASE5.ACTIVITY_PROFILE", dataPrivacy: "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE", domainControlObligation: "ROUTE.PHASE8.DOMAIN_CONTROL_OBLIGATION_PROFILE", legalCartographySignals: "ROUTE.PHASE9.EXPOSURE_PROFILE" });
 
 const ROUTE_BOUNDARY = Object.freeze({ lossless_evidence_role: "PRIMARY_EVIDENCE", index_role: "MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE", direct_lossless_as_fallback_forbidden: true, free_corpus_read_forbidden: true, bucket_scope_required: true, phase_may_read_only_routed_bucket: true, profile_forensics_inputs_forbidden: true, derived_value_generation_forbidden_in_2g: true, legal_or_compliance_conclusions_forbidden: true });
 const TARGET_FORENSICS_DERIVED_INPUTS = Object.freeze(["target_profile_source_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile"]);
@@ -95,14 +95,16 @@ export const P2G_ROUTE_BUCKETS = Object.freeze([
     route_id: PHASE_ROUTE_IDS.domainControlObligation,
     bucket_id: PHASE_ROUTE_BUCKET_IDS.domainControlObligation,
     parent_phase: "DOMAIN_CONTROL_OBLIGATION_PROFILE",
-    parent_jobs: ["DOMAIN_CONTROL_OBLIGATION_PROFILE"],
+    parent_jobs: ["DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY", "DOMAIN_CONTROL_OBLIGATION_PROFILE"],
     required_index_artifacts: ["domain_control_obligation_navigation_index"],
     primary_lossless_evidence: DOMAIN_CONTROL_OBLIGATION_SOURCE_ARTIFACT_NAMES,
     allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile", "target_feature_profile"],
+    job_scoped_derived_profiles: { DOMAIN_CONTROL_OBLIGATION_PROFILE: ["domain_control_obligation_candidate_inventory"] },
+    job_scoped_delivery_modes: { DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: P2G_SOURCE_BUCKET_DELIVERY_MODE, DOMAIN_CONTROL_OBLIGATION_PROFILE: P2G_SOURCE_BUCKET_DELIVERY_MODE },
     allowed_runtime_context: ["domain_selection_profile", "active_run_package_manifest"],
     requires_legal_dependency: true,
     allowed_legal_artifacts: ["legal_cartography_index", "legal_signal_derivation_profile"],
-    forbidden_artifacts: ["target_profile_forensics", "target_feature_profile_forensics", "dap_forensics_profile", "exposure_registry_profile_forensics"]
+    forbidden_artifacts: ["target_profile_forensics", "target_feature_profile_forensics", "dap_forensics_profile", "exposure_registry_profile_forensics", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES]
   }),
   route({
     route_id: PHASE_ROUTE_IDS.legalCartographySignals,
