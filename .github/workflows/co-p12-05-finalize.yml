@@ -9,6 +9,7 @@ on:
       - .github/workflows/co-p12-05-finalize.yml
       - diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
       - diligence-artifact-backend/scripts/apply-co-p12-05-upstream-repairs.mjs
+      - diligence-artifact-backend/scripts/apply-phase1-active-runtime-legacy-token-sanitize.mjs
 
 permissions:
   contents: write
@@ -71,6 +72,7 @@ jobs:
             scripts/check-normalizer-validator.mjs \
             scripts/check-public-report-ui.mjs
           node scripts/apply-co-p12-05-cutover.mjs 2>&1 | tee -a co-p12-05-apply.log
+          node scripts/apply-phase1-active-runtime-legacy-token-sanitize.mjs 2>&1 | tee -a co-p12-05-apply.log
 
       - name: Upload applicator diagnostics
         if: always()
@@ -179,6 +181,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
           git rm diligence-artifact-backend/scripts/apply-co-p12-05-upstream-repairs.mjs
+          git rm diligence-artifact-backend/scripts/apply-phase1-active-runtime-legacy-token-sanitize.mjs
           git rm diligence-artifact-backend/scripts/apply-phase6-behavior-forensics-sync.mjs
           git rm diligence-artifact-backend/scripts/apply-phase7-p2g-legal-permission-sync.mjs
           git rm diligence-artifact-backend/scripts/apply-phase7-output-check-dedup.mjs
