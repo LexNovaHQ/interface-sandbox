@@ -1,0 +1,32 @@
+{
+  "schema_version": "co_p12_01_validation_result.v1",
+  "status": "FAIL",
+  "exit_code": 1,
+  "workflow": "CO P12 01 Self Report Validation",
+  "run_id": "29196564716",
+  "head_sha": "b85a1edfab7a4008db2d36aae99b286149bd1c33",
+  "log_tail": [
+    "",
+    "> interface-diligence-artifacts@0.1.0 check:p12:co1",
+    "> npm run check:phase5:behavior-class-cutover && npm run check:phase10:report-row-custody && npm run check:phase11:compiler-exact-gate",
+    "",
+    "",
+    "> interface-diligence-artifacts@0.1.0 check:phase5:behavior-class-cutover",
+    "> node --check src/runtime/domain-gate/activity-taxonomy.resolver.js && node --check src/phases/05-activity-profile-review/activity-profile.constants.js && node --check src/phases/05-activity-profile-review/activity-profile-review.contract.js && node --check src/phases/05-activity-profile-review/validators/activity-profile-review.validator.js && node --check scripts/check-co-p12-01.mjs && node scripts/check-activity-taxonomy-resolver.mjs && node scripts/check-co-p12-01.mjs",
+    "",
+    "Activity taxonomy resolver Behavior Class canonical: PASS",
+    "file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/src/phases/10-exposure-profile/active-threat-registry-manifest.js:262",
+    "    throw new Error(`REGISTRY_INTEGRITY_ERROR:${packageId}:${validation.failures.join(\"|\")}`);",
+    "          ^",
+    "",
+    "Error: REGISTRY_INTEGRITY_ERROR:fintech:CUST_SETL_H_001 FIELD21/22/23 mismatch: FIELD22 expected SETL got SETL_H|SETL_SETL_H_001 FIELD21/22/23 mismatch: FIELD22 expected SETL got SETL_H",
+    "    at loadRegistry (file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/src/phases/10-exposure-profile/active-threat-registry-manifest.js:262:11)",
+    "    at file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/src/phases/10-exposure-profile/active-threat-registry-manifest.js:51:85",
+    "    at Array.map (<anonymous>)",
+    "    at resolveActiveThreatRegistryContext (file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/src/phases/10-exposure-profile/active-threat-registry-manifest.js:51:39)",
+    "    at async checkRegistries (file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/scripts/check-co-p12-01.mjs:129:26)",
+    "    at async file:///home/runner/work/interface-sandbox/interface-sandbox/diligence-artifact-backend/scripts/check-co-p12-01.mjs:26:1",
+    "",
+    "Node.js v20.20.2"
+  ]
+}
