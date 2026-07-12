@@ -104,10 +104,7 @@ export async function executePhase11ReinvestigationLoop({
 
 async function executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, callProvider }) {
   const baseContract = getInternalJobContract(dispatch.owner_internal_job);
-  const scopedContract = phase11DispatchContractForRun({
-    contract: { ...baseContract, next: "M12" },
-    dispatch
-  });
+  const scopedContract = phase11DispatchContractForRun({ contract: { ...baseContract }, dispatch });
   const targetedRun = {
     ...run,
     current_phase: dispatch.owner_internal_job,
