@@ -18,6 +18,7 @@ assert.equal(contract.unresolved_after_two_attempts, "PASS_WITH_LIMITATION");
 assert.deepEqual(applyPhase11ProductionContract({ writes: [] }).writes, expectedArtifacts);
 for (const name of expectedArtifacts) { assert.doesNotThrow(() => assertCanWriteArtifact("agent_7_m12", name)); assert.doesNotThrow(() => assertCanReadArtifact("agent_7_m12", name)); assert.doesNotThrow(() => assertInternalJobCanWriteArtifact("M12", name)); }
 assert.doesNotThrow(() => assertCanReadArtifact("compiler", "challenge_gate"));
+assert.throws(() => assertCanReadArtifact("compiler", "operator_challenge_semantic_ledger"), /READ_FORBIDDEN/);
 assert.throws(() => assertCanWriteArtifact("compiler", "operator_challenge_semantic_ledger"), /WRITE_FORBIDDEN/);
 
 const dispatch = { schema_version: "phase11_reinvestigation_dispatch.v1", dispatch_id: "dispatch-1", challenge_candidate_id: "OCI-1", attempt_number: 1, owner_internal_job: "M8_TARGET_FEATURE_PROFILE", targeted_reinvestigation_only: true, full_phase_rerun_forbidden: true, artifact_names: ["target_feature_profile"], field_paths: ["target_feature_profile.activities.0.primary_classification"] };
