@@ -8,11 +8,12 @@ import { buildOperatorChallengeInventory } from "./operator-challenge-inventory.
 import { buildOperatorChallengeLayer3 } from "./operator-challenge-adjudication.js";
 import { recordOperatorChallengeReinvestigationAttempt } from "./operator-challenge-reinvestigation.js";
 import { callPhase11WithTechnicalRetry } from "./operator-challenge-technical-retry.js";
-import { acquirePhase11DispatchLease, releasePhase11DispatchLease, buildPhase11DispatchCheckpoint, checkpointMayResume } from "./operator-challenge-dispatch-checkpoint.js";
+import { acquirePhase11DispatchLease, renewPhase11DispatchLease, releasePhase11DispatchLease, buildPhase11DispatchCheckpoint, checkpointMayResume } from "./operator-challenge-dispatch-checkpoint.js";
 import { createPhase11ReinvestigationDispatch, evaluatePhase11ReinvestigationReturn, candidateForDispatch } from "./operator-challenge-dispatch.js";
 import { buildPhase11TargetedPacket, assertPhase11TargetedPacket } from "./operator-challenge-targeted-packet.js";
 import { runPhase11RegisteredOwnerAdapter } from "./operator-challenge-owner-adapter.registry.js";
 import { commitPhase11TargetedMutationProposal } from "./operator-challenge-targeted-commit.js";
+import { classifyPhase11AttemptOutcome, buildPhase11NonSubstantiveReceipt } from "./operator-challenge-attempt-classifier.js";
 
 const AGENT = "agent_7_m12";
 const CHECKPOINT = "operator_challenge_dispatch_checkpoint";
@@ -32,20 +33,32 @@ export async function executePhase11ReinvestigationLoop({ run, m12Contract, inve
     const baselineArtifactVersions = await artifactVersions(run.run_id, directive.artifact_names);
     const dispatch = createPhase11ReinvestigationDispatch({ challengeGate: gate, run, baselineArtifactVersions });
     const previousCandidate = candidateForDispatch({ challengeGate: gate, dispatch });
-    await acquirePhase11DispatchLease({ runId: run.run_id, dispatch, workerId });
+    const lease = await acquirePhase11DispatchLease({ runId: run.run_id, dispatch, workerId });
     try {
-      const completed = await executeOneDispatch({ run, m12Contract, dispatch, previousCandidate, gate, readArtifacts, buildPrompt, callProvider });
-      gate = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate: completed.gateWithAttempt, run }).challenge_gate;
+      const completed = await executeOneDispatch({ run, m12Contract, dispatch, previousCandidate, gate, readArtifacts, buildPrompt, callProvider, workerId, lease });
       dispatchCount += 1; dispatchReceipts.push(completed.receipt);
+      if (completed.nonSubstantive === true) {
+        gate = {
+          ...completed.gateWithAttempt,
+          reinvestigation_dispatch_non_substantive_pending: true,
+          compiler_handoff_allowed: false,
+          reinvestigation_dispatch_required: true
+        };
+        await saveCheckpoint(run, dispatch, "NON_SUBSTANTIVE_RETRY_REQUIRED", completed.checkpoint, { receipt: completed.receipt, resulting_gate_status: gate.status });
+        break;
+      }
+      gate = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate: completed.gateWithAttempt, run }).challenge_gate;
       await saveIndependent(run.run_id, "operator_challenge_reinvestigation_ledger", gate.operator_challenge_reinvestigation_ledger, gate.status);
       await saveCheckpoint(run, dispatch, "COMPLETE", completed.checkpoint, { receipt: completed.receipt, resulting_gate_status: gate.status });
-    } finally { await releasePhase11DispatchLease({ runId: run.run_id, dispatchId: dispatch.dispatch_id, workerId }); }
+    } finally {
+      await releasePhase11DispatchLease({ runId: run.run_id, dispatchId: dispatch.dispatch_id, workerId, leaseToken: lease.lease_token });
+    }
     if (dispatchCount > Math.max(1, Number(initialChallengeGate?.operator_challenge_reinvestigation_ledger?.entries?.length || 0) * 2 + 2)) throw new Error("PHASE11_REINVESTIGATION_LOOP_GUARD_EXCEEDED");
   }
-  return { challenge_gate: { ...gate, reinvestigation_dispatch_adapter: { schema_version: "phase11_reinvestigation_dispatch_return_adapter.v3.staged_proposal", status: "COMPLETE", dispatch_count: dispatchCount, mutation_guard_active: true, staged_mutation_proposals_active: true, persistence_before_mutation_guard: false, durable_checkpoints_active: true, run_scoped_lease_active: true, technical_retry_active: true, owner_phase_locking_performed: false, ordinary_owner_runners_forbidden: true, normal_downstream_cascade_allowed: false, returned_directly_to_phase11: true, dispatch_receipts: dispatchReceipts } }, dispatch_count: dispatchCount, dispatch_receipts: dispatchReceipts };
+  return { challenge_gate: { ...gate, reinvestigation_dispatch_adapter: { schema_version: "phase11_reinvestigation_dispatch_return_adapter.v4.attempt_safe", status: "COMPLETE", dispatch_count: dispatchCount, mutation_guard_active: true, staged_mutation_proposals_active: true, persistence_before_mutation_guard: false, durable_checkpoints_active: true, run_scoped_lease_active: true, lease_owner_token_required: true, technical_retry_active: true, technical_failures_are_not_substantive_attempts: true, owner_phase_locking_performed: false, ordinary_owner_runners_forbidden: true, normal_downstream_cascade_allowed: false, returned_directly_to_phase11: true, dispatch_receipts: dispatchReceipts } }, dispatch_count: dispatchCount, dispatch_receipts: dispatchReceipts };
 }
 
-async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidate, gate, readArtifacts, buildPrompt, callProvider }) {
+async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidate, gate, readArtifacts, buildPrompt, callProvider, workerId, lease }) {
   let checkpoint = await readCheckpoint(run.run_id);
   if (!checkpointMayResume(checkpoint, dispatch) || checkpoint.stage === "COMPLETE") checkpoint = null;
   const baselineVersions = checkpoint?.payload?.baseline_artifact_versions || dispatch.baseline_artifact_versions;
@@ -57,6 +70,10 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
     if (!recorded) throw new Error("PHASE11_CHECKPOINT_ATTEMPT_RESULT_MISSING");
     return buildCompletedDispatch({ dispatch, checkpoint, gateWithAttempt: recordOperatorChallengeReinvestigationAttempt({ challengeGate: gate, result: recorded }), attemptResult: recorded, commitReceipt: checkpoint.payload?.commit_receipt || null });
   }
+  if (checkpoint.stage === "NON_SUBSTANTIVE_RETRY_REQUIRED") {
+    const receipt = checkpoint.payload?.receipt || buildPhase11NonSubstantiveReceipt({ dispatch, classification: checkpoint.payload?.attempt_classification || {}, technicalRetryCount: checkpoint.payload?.technical_retry_count || 0 });
+    return { gateWithAttempt: gate, checkpoint, receipt, nonSubstantive: true };
+  }
 
   let runtimeError = checkpoint?.payload?.runtime_error ? new Error(checkpoint.payload.runtime_error) : null;
   let proposal = checkpoint?.payload?.proposal || null;
@@ -66,6 +83,7 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
 
   if (!proposal && !runtimeError) {
     checkpoint = await saveCheckpoint(run, dispatch, "OWNER_PROPOSAL_RUNNING", checkpoint, { ...checkpoint.payload, phase11_reinvestigation_context: targetedPacket });
+    await renewPhase11DispatchLease({ runId: run.run_id, dispatchId: dispatch.dispatch_id, workerId, leaseToken: lease.lease_token });
     try {
       const ownerCall = await callPhase11WithTechnicalRetry({ label: `PHASE11_OWNER_${dispatch.owner_internal_job}`, call: () => executeOwnerAdapter({ run, dispatch, targetedPacket, readArtifacts, buildPrompt, callProvider }) });
       technicalRetryCount += ownerCall.technical_retry_count;
@@ -80,6 +98,7 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
 
   if (!runtimeError && proposal && !commitReceipt) {
     try {
+      await renewPhase11DispatchLease({ runId: run.run_id, dispatchId: dispatch.dispatch_id, workerId, leaseToken: lease.lease_token });
       const writeNames = proposalWriteNames(proposal);
       const ownerActor = ownerActorFor(dispatch.owner_internal_job);
       const beforeArtifacts = await readNamedArtifacts(run.run_id, writeNames, ownerActor);
@@ -103,14 +122,21 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
     checkpoint = await saveCheckpoint(run, dispatch, "PROPOSAL_COMMITTED", checkpoint, { ...checkpoint.payload, proposal, commit_receipt: commitReceipt, returned_artifact_versions: returnedArtifactVersions, technical_retry_count: technicalRetryCount, runtime_error: runtimeError?.message || "", phase11_reinvestigation_context: targetedPacket });
   }
 
+  const classification = classifyPhase11AttemptOutcome({ proposal, commitReceipt, runtimeError });
+  if (classification.substantive_attempt !== true) {
+    const receipt = buildPhase11NonSubstantiveReceipt({ dispatch, classification, technicalRetryCount });
+    checkpoint = await saveCheckpoint(run, dispatch, "NON_SUBSTANTIVE_RETRY_REQUIRED", checkpoint, { ...checkpoint.payload, proposal, commit_receipt: commitReceipt, attempt_classification: classification, receipt, returned_artifact_versions: returnedArtifactVersions || {}, technical_retry_count: technicalRetryCount, runtime_error: runtimeError?.message || "", phase11_reinvestigation_context: targetedPacket });
+    return { gateWithAttempt: gate, checkpoint, receipt, nonSubstantive: true };
+  }
+
   const currentInventory = await rebuildInventory({ run, m12Contract, readArtifacts });
-  const attemptResult = evaluatePhase11ReinvestigationReturn({ dispatch, previousCandidate, currentInventory, returnedArtifactVersions: returnedArtifactVersions || {}, runtimeError });
+  const attemptResult = evaluatePhase11ReinvestigationReturn({ dispatch, previousCandidate, currentInventory, returnedArtifactVersions: returnedArtifactVersions || {}, runtimeError: null });
   const gateWithAttempt = recordOperatorChallengeReinvestigationAttempt({ challengeGate: gate, result: attemptResult });
-  checkpoint = await saveCheckpoint(run, dispatch, "ATTEMPT_RECORDED", checkpoint, { ...checkpoint.payload, attempt_result: attemptResult, phase11_reinvestigation_context: targetedPacket });
+  checkpoint = await saveCheckpoint(run, dispatch, "ATTEMPT_RECORDED", checkpoint, { ...checkpoint.payload, attempt_result: attemptResult, attempt_classification: classification, phase11_reinvestigation_context: targetedPacket });
   return buildCompletedDispatch({ dispatch, checkpoint, gateWithAttempt, attemptResult, commitReceipt, technicalRetryCount });
 }
 
-function buildCompletedDispatch({ dispatch, checkpoint, gateWithAttempt, attemptResult, commitReceipt = null, technicalRetryCount = 0 }) { return { gateWithAttempt, checkpoint, receipt: { dispatch_id: dispatch.dispatch_id, challenge_candidate_id: dispatch.challenge_candidate_id, attempt_number: dispatch.attempt_number, owning_phase: dispatch.owning_phase, owner_internal_job: dispatch.owner_internal_job, result: attemptResult.result, technical_retry_count: technicalRetryCount, technical_retry_is_not_substantive_attempt: true, mutation_guard_status: commitReceipt?.mutation_guard?.status || (commitReceipt?.status === "COMMITTED" ? "PASS" : "NOT_COMMITTED"), staged_mutation_proposal_used: true, persistence_before_mutation_guard: false, validation_basis: attemptResult.validation_basis, return_fingerprint: attemptResult.return_fingerprint } }; }
+function buildCompletedDispatch({ dispatch, checkpoint, gateWithAttempt, attemptResult, commitReceipt = null, technicalRetryCount = 0 }) { return { gateWithAttempt, checkpoint, receipt: { dispatch_id: dispatch.dispatch_id, challenge_candidate_id: dispatch.challenge_candidate_id, attempt_number: dispatch.attempt_number, owning_phase: dispatch.owning_phase, owner_internal_job: dispatch.owner_internal_job, result: attemptResult.result, substantive_attempt_recorded: true, technical_retry_count: technicalRetryCount, technical_retry_is_not_substantive_attempt: true, mutation_guard_status: commitReceipt?.mutation_guard?.status || (commitReceipt?.status === "COMMITTED" ? "PASS" : "NOT_COMMITTED"), staged_mutation_proposal_used: true, persistence_before_mutation_guard: false, validation_basis: attemptResult.validation_basis, return_fingerprint: attemptResult.return_fingerprint } }; }
 
 async function executeOwnerAdapter({ run, dispatch, targetedPacket, readArtifacts, buildPrompt, callProvider }) {
   assertPhase11TargetedPacket({ packet: targetedPacket, dispatch });
