@@ -1,0 +1,12 @@
+{
+  "schema_version": "co_p12_01_certified_receipt.v1",
+  "status": "PASS",
+  "exit_code": 0,
+  "workflow": "CO P12 01 Certify",
+  "run_id": "29196879638",
+  "base_sha": "21af960d458bac6bf8b28465ac074ad353bf647b",
+  "tested_head_sha": "6114fa21aff1f50d94a2fbfedcc6415cb7d98074",
+  "target_branch": "domain-gate-v0-preflight",
+  "command": "npm run check:p12:co1",
+  "certified_at": "2026-07-12T14:46:07.225Z"
+}
