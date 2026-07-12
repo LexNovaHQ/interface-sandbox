@@ -10,14 +10,15 @@ export const CENTRAL_PHASES = Object.freeze([
   phase(5, "ACTIVITY_PROFILE_REVIEW", "Activity Profile Review", ["M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE"], ["M7_TARGET_PROFILE_FORENSICS"], ["feature_candidate_inventory", "target_feature_profile"]),
   phase(6, "ACTIVITY_PROFILE_FORENSICS", "Activity Profile Forensics", ["M8_TARGET_FEATURE_PROFILE_FORENSICS"], ["M8_TARGET_FEATURE_PROFILE"], ["target_feature_profile_forensics"]),
   phase(7, "DATA_PROVENANCE_PROFILE", "Data Provenance Profile", ["DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5"], ["M8_TARGET_FEATURE_PROFILE_FORENSICS"], ["dap_registry_manifest", "dap_strategic_derivation_matrix", "dap_semantic_batch_route_manifest", ...PHASE7_BATCH_OUTPUTS, "dap_semantic_batch_validation_manifest", "data_provenance_profile_semantic_batch_gate"]),
-  phase(8, "DATA_PROVENANCE_FORENSICS", "DAP Forensics", ["DATA_PROVENANCE_PROFILE_FORENSICS"], ["DATA_PROVENANCE_PROFILE_LAYER5"], ["dap_forensics_profile"]),
-  phase(9, "EXPOSURE_PROFILE", "Exposure Profile", ["M11"], ["DATA_PROVENANCE_PROFILE_FORENSICS"], ["exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "exposure_registry_profile_forensics"]),
-  phase(10, "OPERATOR_CHALLENGE", "Operator Challenge", ["M12"], ["M11"], ["challenge_gate"]),
-  phase(11, "COMPILER", "Compiler", ["NORMALIZED_COMPILER", "NORMALIZED_REPORT_RENDERER"], ["M12"], ["normalized_report_manifest", "review_ready_section_handoff", "final_output_handoff", "renderer_payload"]),
-  phase(12, "QUALIFIED_REVIEW", "Qualified Review", ["QUALIFIED_REVIEW"], ["NORMALIZED_COMPILER"], ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber", "qualified_review_renderer_payload", "qualified_review_validation_manifest"]),
-  phase(13, "DILIGENCE_QA_COMPLETE", "Diligence-QA Complete", ["DILIGENCE_QA_COMPLETE"], ["COMPILER", "QUALIFIED_REVIEW"], ["diligence_qa_completion_receipt"]),
-  phase(14, "QUALIFIED_REVIEW_SUBMISSION", "Qualified Review Submission", ["QUALIFIED_REVIEW_SUBMISSION"], ["QUALIFIED_REVIEW"], ["qualified_review_submission"]),
-  phase(15, "ASSEMBLY_ENGINE", "Assembly Engine Phases", ["ASSEMBLY_ENGINE"], ["QUALIFIED_REVIEW_SUBMISSION"], [])
+  phase(8, "DOMAIN_CONTROL_OBLIGATION_PROFILE", "Domain Control Obligation Profile", ["DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY", "DOMAIN_CONTROL_OBLIGATION_PROFILE"], ["DATA_PROVENANCE_PROFILE_LAYER5"], ["domain_control_obligation_candidate_inventory", "domain_control_obligation_profile"]),
+  phase(9, "DATA_PROVENANCE_FORENSICS", "DAP Forensics", ["DATA_PROVENANCE_PROFILE_FORENSICS"], ["DOMAIN_CONTROL_OBLIGATION_PROFILE"], ["dap_forensics_profile"]),
+  phase(10, "EXPOSURE_PROFILE", "Exposure Profile", ["M11"], ["DATA_PROVENANCE_PROFILE_FORENSICS"], ["exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "exposure_registry_profile_forensics"]),
+  phase(11, "OPERATOR_CHALLENGE", "Operator Challenge", ["M12"], ["M11"], ["challenge_gate"]),
+  phase(12, "COMPILER", "Compiler", ["NORMALIZED_COMPILER", "NORMALIZED_REPORT_RENDERER"], ["M12"], ["normalized_report_manifest", "review_ready_section_handoff", "final_output_handoff", "renderer_payload"]),
+  phase(13, "QUALIFIED_REVIEW", "Qualified Review", ["QUALIFIED_REVIEW"], ["NORMALIZED_COMPILER"], ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber", "qualified_review_renderer_payload", "qualified_review_validation_manifest"]),
+  phase(14, "DILIGENCE_QA_COMPLETE", "Diligence-QA Complete", ["DILIGENCE_QA_COMPLETE"], ["COMPILER", "QUALIFIED_REVIEW"], ["diligence_qa_completion_receipt"]),
+  phase(15, "QUALIFIED_REVIEW_SUBMISSION", "Qualified Review Submission", ["QUALIFIED_REVIEW_SUBMISSION"], ["QUALIFIED_REVIEW"], ["qualified_review_submission"]),
+  phase(16, "ASSEMBLY_ENGINE", "Assembly Engine Phases", ["ASSEMBLY_ENGINE"], ["QUALIFIED_REVIEW_SUBMISSION"], [])
 ]);
 
 export const CENTRAL_PHASE_BY_ID = Object.freeze(Object.fromEntries(CENTRAL_PHASES.map((row) => [row.central_phase_id, row])));
