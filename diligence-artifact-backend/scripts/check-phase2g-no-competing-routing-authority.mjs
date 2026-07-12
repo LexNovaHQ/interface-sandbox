@@ -24,6 +24,8 @@ const CUTOVER_RUNNERS = Object.freeze({
   M8_TARGET_FEATURE_PROFILE_FORENSICS: "src/phases/06-activity-profile-forensics/activity-profile-forensics.runner.js",
   DATA_PROVENANCE_PROFILE_LAYER4: "src/phases/07-data-provenance-profile/data-provenance-profile.runner.js",
   DATA_PROVENANCE_PROFILE_FORENSICS: "src/phases/09-data-provenance-forensics/dap-forensics.runner.js",
+  DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: "src/phases/08-domain-control-obligation-profile/domain-control-obligation-candidate-inventory.runner.js",
+  DOMAIN_CONTROL_OBLIGATION_PROFILE: "src/phases/08-domain-control-obligation-profile/domain-control-obligation-profile.runner.js",
   M11: "src/m11-orchestrator-m11v2.js",
   M12: "src/m12-phase2g.runner.js",
   NORMALIZED_COMPILER: "src/compiler-phase2g.runner.js"
@@ -78,7 +80,7 @@ for (const route of P2G_ROUTE_BUCKETS) {
   for (const artifacts of Object.values(route.job_scoped_derived_profiles || {})) for (const artifact of artifacts || []) assert.equal(PROFILE_FORENSIC_INPUTS.includes(artifact), false, `${route.route_id} job scope permits forensic profile input ${artifact}`);
 }
 
-for (const agentId of [AGENT_IDS.targetActivity, AGENT_IDS.dataProvenance, AGENT_IDS.operatorChallenge, AGENT_IDS.compiler, AGENT_IDS.qualifiedReview]) {
+for (const agentId of [AGENT_IDS.targetActivity, AGENT_IDS.dataProvenance, AGENT_IDS.domainControlObligation, AGENT_IDS.operatorChallenge, AGENT_IDS.compiler, AGENT_IDS.qualifiedReview]) {
   const reads = READ_PERMISSIONS[agentId] || [];
   for (const forensic of PROFILE_FORENSIC_INPUTS) assert.equal(reads.includes(forensic), false, `${agentId} retains forensic read permission ${forensic}`);
 }
@@ -109,6 +111,7 @@ console.log(JSON.stringify({
     "ONE_RUNTIME_ROUTE_RESOLVER_ONLY",
     "NO_DOWNSTREAM_SHADOW_READ_ARRAYS",
     "NO_DIRECT_CONTRACT_READ_LOADING",
+    "PHASE8_ROUTE_SCOPED_RUNNERS_INCLUDED",
     "NO_BACKWARD_2F_ROUTE_TO_M9",
     "NO_PROFILE_FORENSIC_INPUTS",
     "NO_FORENSIC_PERMISSION_PROPAGATION",
