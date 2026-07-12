@@ -28,6 +28,7 @@ const REQUIRED = Object.freeze([
   "domain_derivation_profile",
   "feature_candidate_inventory",
   "target_feature_profile",
+  "domain_control_obligation_profile",
   ...PHASE7_DAP_REQUIRED,
   "exposure_registry_route_plan",
   "exposure_registry_workpad_98",
@@ -67,6 +68,10 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
   const workpad = unwrap(artifacts.exposure_registry_workpad_98, "exposure_registry_workpad_98");
   const controlled = unwrap(artifacts.exposure_registry_controlled_profile, "exposure_registry_controlled_profile");
   const triggered = unwrap(artifacts.exposure_registry_triggered_profile, "exposure_registry_triggered_profile");
+  const phase8Challenge = buildM12DomainControlObligationChallenge({ domainControlObligationProfile: artifacts.domain_control_obligation_profile, sourceLockStatus: statusOf(artifacts.domain_control_obligation_profile) });
+  const phase8ChallengeReceipt = phase8Challenge.phase8_domain_control_obligation_challenge;
+  critical_failures.push(...arr(phase8ChallengeReceipt.critical_failures));
+  warnings.push(...arr(phase8ChallengeReceipt.warnings));
   const manifest = artifacts.m12_global_dynamic_artifact_manifest || {};
 
   const batchCount = arr(route.batch_plan).length;
@@ -114,6 +119,7 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
     dynamic_artifact_manifest: manifest,
     phase7_dap_integrity: { required_artifact_count: PHASE7_DAP_REQUIRED.length, field_count: Number(dapGate.field_count || dapManifest.observed_field_count || 0), gate_status: dapGate.status || "UNKNOWN", all_fields_covered_once: dapGate.all_fields_covered_once === true },
     m11_integrity: { batch_count_expected: batchCount, batch_count_loaded: arr(artifacts.m11_batch_artifacts).length, batch_validation_count_loaded: arr(artifacts.m12_batch_validation_artifacts).length, workpad_rows: workpadRows.length, controlled_rows: controlledRows.length, triggered_rows: triggeredRows.length, material_contract: "M11_THREE_LAYER_FULL_ROW_V1", material_gate: materialGate },
+    phase8_domain_control_obligation_challenge: phase8ChallengeReceipt,
     operator_challenge_gate: { lock_status: status, deterministic: true, challenge_basis: "Phase 7 DAP material artifacts, M11 static material artifacts, M11 dynamic batch artifacts, and deterministic batch validation artifacts. Forensic profiles are excluded from challenge derivation.", challenge_result: critical_failures.length ? "BLOCKED" : "ACCEPTED" },
     non_blocking_rule: "Only missing/unusable structural inputs or material-contract failures block. Limitations and warnings carry forward.",
     model_usage: "NONE_DETERMINISTIC",
@@ -143,3 +149,4 @@ function unwrapKnown(value) { if (!value || typeof value !== "object" || Array.i
 function unwrap(value, key) { return value?.[key] || value?.artifact?.[key] || value || {}; }
 function stringifyLimitation(value) { if (typeof value === "string") return value; if (!value || typeof value !== "object") return String(value || ""); return value.code || value.message || JSON.stringify(value); }
 function arr(value) { return Array.isArray(value) ? value : []; }
+import { buildM12DomainControlObligationChallenge } from "./domain-control-obligation-profile.handoff.js";

@@ -28,7 +28,7 @@ const TARGET_FORENSICS_DERIVED_INPUTS = Object.freeze(["target_profile_source_in
 const ACTIVITY_FORENSICS_DERIVED_INPUTS = Object.freeze(["activity_profile_source_index", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile"]);
 const PHASE8_DERIVED_INPUTS = Object.freeze(["data_privacy_navigation_index", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES]);
 const M11_MATERIAL_OUTPUTS = Object.freeze(["exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile"]);
-const M12_DERIVED_INPUTS = Object.freeze(["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ...M11_MATERIAL_OUTPUTS]);
+const M12_DERIVED_INPUTS = Object.freeze(["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", "domain_control_obligation_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ...M11_MATERIAL_OUTPUTS]);
 const COMPILER_DERIVED_INPUTS = Object.freeze([...M12_DERIVED_INPUTS, "challenge_gate"]);
 
 function route({ route_id, bucket_id, parent_phase, parent_jobs, downstream_jobs = [], required_index_artifacts, primary_lossless_evidence, allowed_preceding_derived_profiles = [], job_scoped_derived_profiles = {}, job_scoped_delivery_modes = {}, job_scoped_dynamic_inputs = {}, allowed_runtime_context = [], requires_legal_dependency = false, allowed_legal_artifacts = [], forbidden_artifacts = [] }) {
@@ -114,7 +114,7 @@ export const P2G_ROUTE_BUCKETS = Object.freeze([
     downstream_jobs: ["M12", "NORMALIZED_COMPILER"],
     required_index_artifacts: ["legal_cartography_index", "legal_signal_derivation_profile"],
     primary_lossless_evidence: LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES,
-    allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES],
+    allowed_preceding_derived_profiles: ["target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", "domain_control_obligation_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES],
     job_scoped_derived_profiles: { M12: M12_DERIVED_INPUTS, NORMALIZED_COMPILER: COMPILER_DERIVED_INPUTS },
     job_scoped_delivery_modes: { M12: P2G_DERIVED_ONLY_DELIVERY_MODE, NORMALIZED_COMPILER: P2G_DERIVED_ONLY_DELIVERY_MODE },
     job_scoped_dynamic_inputs: { M12: [P2G_DYNAMIC_M11_BATCH_INPUT], NORMALIZED_COMPILER: [P2G_DYNAMIC_M11_BATCH_INPUT] },

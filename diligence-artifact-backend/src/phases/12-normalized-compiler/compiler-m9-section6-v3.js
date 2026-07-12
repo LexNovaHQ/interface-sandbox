@@ -3,12 +3,15 @@ import { normalizeExposureTierSections } from "./exposure-tier-normalizer.js";
 import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normalized-profiler-m9-section6-v4.js";
 import { toMachineStatus } from "./normalized-status.js";
 import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
+import { buildDomainControlObligationCompilerHandoff } from "./domain-control-obligation-profile.handoff.js";
 
 export function compileFinalOutputHandoff({ run, artifacts }) {
   const compilerArtifacts = withPhase7DapProjection({ run, artifacts });
   const output = normalizeExposureTierSections(buildNormalizedProfilerOutput({ run, artifacts: compilerArtifacts }), compilerArtifacts);
   const final = output.final_output_handoff?.final_output_handoff || {};
   const status = toMachineStatus(final.validation_status || output.normalized_report_manifest?.validation_status || run?.status);
+  const domainControlObligationHandoff = buildDomainControlObligationCompilerHandoff({ domainControlObligationProfile: artifacts.domain_control_obligation_profile });
+  mergeDomainControlObligationContributions(output, domainControlObligationHandoff.existing_section_contributions);
 
   for (const sectionId of NORMALIZED_SECTION_KEYS) {
     const artifactName = `normalized_section__${sectionId}`;
@@ -34,6 +37,17 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
   output.normalizer_validation = validateNormalizedProfilerOutput(output);
   output.final_output_handoff.final_output_handoff.normalizer_validation = output.normalizer_validation;
   return output;
+}
+
+function mergeDomainControlObligationContributions(output, contributions = {}) {
+  const sectionAliases = { methodology_limitations_review_notes: "methodology_limitations_forensic_annexure" };
+  for (const [sectionId, contribution] of Object.entries(contributions)) {
+    const activeSectionId = sectionAliases[sectionId] || sectionId;
+    const artifactName = `normalized_section__${activeSectionId}`;
+    const section = output[artifactName];
+    if (!section || typeof section !== "object" || Array.isArray(section)) throw new Error(`DOMAIN_CONTROL_OBLIGATION_COMPILER_SECTION_MISSING:${sectionId}`);
+    output[artifactName] = { ...section, [contribution.contribution_key]: contribution.rows };
+  }
 }
 
 function withPhase7DapProjection({ run, artifacts = {} }) {

@@ -7,6 +7,7 @@ import { assembleM11AcceptedBatchLedger, buildExposureRegistryRoutePlan, buildM1
 import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-deterministic-forensics-m11v2.js";
 import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
+import { buildM11DomainControlObligationHandoff } from "./domain-control-obligation-profile.handoff.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
@@ -54,12 +55,14 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
 
     const batchPacketRoot = buildM11BatchPacket({ routePlan: { [ART.route]: route.artifact }, batchId: batch.batch_id, upstreamArtifacts: artifacts, referencePacket });
     const compactPacket = buildCompactM11BatchPacket({ batchPacket: batchPacketRoot, upstreamArtifacts: artifacts });
-    let semanticOutput = await runModelBatch({ run, phase, batch, compactPacket, repair: false });
+    const m11DomainControlObligationContext = buildM11DomainControlObligationHandoff({ domainControlObligationProfile: artifacts.domain_control_obligation_profile, activeThreatRows: batchPacketRoot?.m11_batch_packet?.registry_rows || [] });
+    const activeModelPacket = { ...compactPacket, m11_domain_control_obligation_context: m11DomainControlObligationContext };
+    let semanticOutput = await runModelBatch({ run, phase, batch, compactPacket: activeModelPacket, repair: false });
     let shape = validateM11BatchLedger(semanticOutput, batch.expected_threat_ids || []);
     const validationName = `exposure_registry_batch_validation__${batch.batch_id}`;
 
     if (!shape.ok) {
-      semanticOutput = await runModelBatch({ run, phase, batch, compactPacket, repair: true, batchOutput: semanticOutput, shape, validationArtifact: null, repairReason: "SEMANTIC_SHAPE" });
+      semanticOutput = await runModelBatch({ run, phase, batch, compactPacket: activeModelPacket, repair: true, batchOutput: semanticOutput, shape, validationArtifact: null, repairReason: "SEMANTIC_SHAPE" });
       shape = validateM11BatchLedger(semanticOutput, batch.expected_threat_ids || []);
       if (!shape.ok) return failBatch({ run, phase, batch, validationName, shape });
     }
@@ -67,7 +70,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     let validationArtifact = validateSemanticBatch({ batch, batchOutput: semanticOutput, shape, routePlan: route.artifact });
     let validationStatus = validationArtifact.exposure_registry_batch_validation.status;
     if (!isAcceptedBatchValidationStatus(validationStatus)) {
-      semanticOutput = await runModelBatch({ run, phase, batch, compactPacket, repair: true, batchOutput: semanticOutput, shape, validationArtifact, repairReason: "BATCH_VALIDATION" });
+      semanticOutput = await runModelBatch({ run, phase, batch, compactPacket: activeModelPacket, repair: true, batchOutput: semanticOutput, shape, validationArtifact, repairReason: "BATCH_VALIDATION" });
       shape = validateM11BatchLedger(semanticOutput, batch.expected_threat_ids || []);
       if (!shape.ok) return failBatch({ run, phase, batch, validationName, shape, prior: validationArtifact });
       validationArtifact = validateSemanticBatch({ batch, batchOutput: semanticOutput, shape, routePlan: route.artifact });
