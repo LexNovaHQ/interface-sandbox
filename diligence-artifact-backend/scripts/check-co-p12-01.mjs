@@ -25,29 +25,41 @@ function checkDoctrine() {
   assert.match(authority, /Upstream phases decide\. Phase 12 arranges\./);
   assert.match(authority, /PHASE12_DIRECT_PROFILE_ARTIFACTS_NO_PHASE2G/);
   assert.match(authority, /Current runtime cutover: `NOT_YET_APPLIED`/);
+  assert.match(authority, /must never read Phase 2G and direct phase artifacts simultaneously/i);
 }
 
 function checkPhase5() {
   assert.deepEqual(CLASSIFICATION_BLOCK_FIELDS, ["package_id", "behavior_class_codes", "behavior_class_derivation_basis", "surface_context_tokens", "surface_derivation_basis"]);
   assert.deepEqual(OVERLAY_CLASSIFICATION_BLOCK_FIELDS, ["package_id", "overlay_id", "behavior_class_codes", "behavior_class_derivation_basis", "surface_context_tokens", "surface_derivation_basis"]);
+
   const taxonomy = {
     mounted_primary_package_id: "fintech",
     primary: { package_id: "fintech", key_version: "1", behavior_class_vocabulary: [{ code: "PAY" }], surface_axes: [{ tokens: [{ token: "Transaction-Data" }] }] },
     overlays: [{ overlay_id: "ai-native", package_id: "ai-governance", key_version: "4", behavior_class_vocabulary: [{ code: "JDG" }], surface_axes: [{ tokens: [{ token: "PII" }] }] }],
     limitations: [], routing_limitations: [], excluded_regulatory_overlay_ids: ["regulatory"]
   };
+
   const output = phase5Fixture();
   validateM8TargetFeatureOutput(output, { resolvedTaxonomy: taxonomy });
-  assert.notDeepEqual(output.target_feature_profile.activities[0].primary_classification.behavior_class_codes, output.target_feature_profile.activities[0].overlay_classifications[0].behavior_class_codes);
-  assert.notDeepEqual(output.target_feature_profile.activities[0].primary_classification.surface_context_tokens, output.target_feature_profile.activities[0].overlay_classifications[0].surface_context_tokens);
-  const retired = structuredClone(output);
-  const block = retired.target_feature_profile.activities[0].primary_classification;
-  block.archetype_codes = block.behavior_class_codes;
-  delete block.behavior_class_codes;
-  assert.throws(() => validateM8TargetFeatureOutput(retired, { resolvedTaxonomy: taxonomy }), /retired Phase 5 material key|keys mismatch/);
+  const activity = output.target_feature_profile.activities[0];
+  assert.notDeepEqual(activity.primary_classification.behavior_class_codes, activity.overlay_classifications[0].behavior_class_codes);
+  assert.notDeepEqual(activity.primary_classification.surface_context_tokens, activity.overlay_classifications[0].surface_context_tokens);
+
+  const retiredCode = structuredClone(output);
+  const retiredCodeBlock = retiredCode.target_feature_profile.activities[0].primary_classification;
+  retiredCodeBlock.archetype_codes = retiredCodeBlock.behavior_class_codes;
+  delete retiredCodeBlock.behavior_class_codes;
+  assert.throws(() => validateM8TargetFeatureOutput(retiredCode, { resolvedTaxonomy: taxonomy }), /retired Phase 5 material key|keys mismatch/);
+
+  const retiredBasis = structuredClone(output);
+  const retiredBasisBlock = retiredBasis.target_feature_profile.activities[0].primary_classification;
+  retiredBasisBlock.archetype_derivation_basis = retiredBasisBlock.behavior_class_derivation_basis;
+  delete retiredBasisBlock.behavior_class_derivation_basis;
+  assert.throws(() => validateM8TargetFeatureOutput(retiredBasis, { resolvedTaxonomy: taxonomy }), /retired Phase 5 material key|keys mismatch/);
+
   const collapsed = structuredClone(output);
   collapsed.target_feature_profile.activities[0].overlay_classifications = [];
-  assert.throws(() => validateM8TargetFeatureOutput(collapsed, { resolvedTaxonomy: taxonomy }), /overlay_id/);
+  assert.throws(() => validateM8TargetFeatureOutput(collapsed, { resolvedTaxonomy: taxonomy }), /overlay_id|overlay classification/i);
 }
 
 function checkRegistries() {
@@ -58,8 +70,10 @@ function checkRegistries() {
     assert.equal(result.ok, true, `${relative}: ${result.failures.join("|")}`);
     assert.equal(result.severity_validation_status, "PASS");
   }
+
   for (const field of ["Behavior_Class", "Pain_Tier", "Pain_Category", "Pain_Depth", "FP_Impact", "Provenance"]) assert.ok(DETERMINISTIC_REGISTRY_SPINE_FIELDS.includes(field));
-  for (const field of ["registry_row_key", "package_id", "stream_id", "stream_type", "batch_id"]) assert.ok(EXECUTION_CUSTODY_FIELDS.includes(field));
+  for (const field of ["registry_row_key", "package_id", "source_domain", "stream_id", "stream_type", "batch_id", "registry_key_version", "threat_registry_version"]) assert.ok(EXECUTION_CUSTODY_FIELDS.includes(field));
+
   const bad = parseAiThreatRegistryYaml(read("references/registry/AI_THREAT_REGISTRY.yaml")).slice(0, 1);
   bad[0] = { ...bad[0], Pain_Tier: "", Pain_Category: "", Pain_Depth: "" };
   const invalid = validateRegistryRows(bad, { expectedCount: 1 });
@@ -71,42 +85,59 @@ function checkSemanticFirewall() {
   const routePlan = { exposure_registry_route_plan: { route_rows: [{ registry_row_key: batch.expected_registry_row_keys[0], Threat_ID: batch.expected_threat_ids[0], package_id: batch.package_id, stream_id: batch.stream_id, stream_type: batch.stream_type }] } };
   const valid = semanticLedger(batch, semanticRow());
   assert.equal(validateSemanticLedger({ semanticOutput: valid, batch, routePlan }).exposure_registry_batch_validation.status, "PASS");
-  const illegal = semanticLedger(batch, { ...semanticRow(), Pain_Tier: "T1" });
-  const result = validateSemanticLedger({ semanticOutput: illegal, batch, routePlan }).exposure_registry_batch_validation;
-  assert.equal(result.status, "REPAIR_REQUIRED");
-  assert.ok(result.failures.some((failure) => failure.includes("MODEL_FIELD_FORBIDDEN") && failure.includes("Pain_Tier")));
+
+  for (const forbiddenField of ["Pain_Tier", "Behavior_Class", "Lane", "Surface"]) {
+    const illegal = semanticLedger(batch, { ...semanticRow(), [forbiddenField]: forbiddenField === "Pain_Tier" ? "T1" : "forbidden" });
+    const result = validateSemanticLedger({ semanticOutput: illegal, batch, routePlan }).exposure_registry_batch_validation;
+    assert.equal(result.status, "REPAIR_REQUIRED");
+    assert.ok(result.failures.some((failure) => failure.includes("MODEL_FIELD_FORBIDDEN") && failure.includes(forbiddenField)));
+  }
 }
 
 function checkExactGate() {
   assert.equal(compatibility("PASS", []).validation.status, "PASS");
   assert.equal(compatibility("PASS_WITH_LIMITATION", [warning()]).validation.status, "PASS_WITH_LIMITATION");
   for (const status of ["LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE", ""]) assert.equal(compatibility(status, []).validation.status, "CONTROLLED_FAILURE");
+
   const noHandoff = artifacts("PASS", []); noHandoff.challenge_gate.compiler_handoff_allowed = false;
   assert.equal(rootCompatibility(noHandoff).validation.status, "CONTROLLED_FAILURE");
   const noFingerprint = artifacts("PASS", []); noFingerprint.challenge_gate.final_gate_fingerprint = "";
   assert.equal(rootCompatibility(noFingerprint).validation.status, "CONTROLLED_FAILURE");
   const pending = artifacts("PASS", []); pending.challenge_gate.reinvestigation_dispatch_required = true;
   assert.equal(rootCompatibility(pending).validation.status, "CONTROLLED_FAILURE");
+  const incomplete = artifacts("PASS", []); incomplete.challenge_gate.layer_status.layer_3 = "CREATED";
+  assert.equal(rootCompatibility(incomplete).validation.status, "CONTROLLED_FAILURE");
+  assert.equal(compatibility("PASS_WITH_LIMITATION", []).validation.status, "CONTROLLED_FAILURE");
 }
 
 function checkStaticMarkers() {
-  const active = [
-    "src/phases/05-activity-profile-review/activity-profile.constants.js",
-    "src/phases/05-activity-profile-review/activity-profile-review.contract.js",
-    "src/phases/05-activity-profile-review/validators/activity-profile-review.validator.js",
-    "src/runtime/domain-gate/activity-taxonomy.resolver.js",
-    "src/phases/10-exposure-profile/phase10-classification-routing.js",
+  const promptFiles = [
     "agent-packages/agent_3_target_feature/03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md",
     "agent-packages/agent_3_target_feature/03B_M8_ACTIVITY_PROFILE_PACKAGE_AWARE_SYNC.md",
     "agent-packages/agent_3_target_feature/AGENT3_BACKEND_OUTPUT_CONTRACT.md",
     "agent-packages/agent_3_target_feature/00_VALIDATOR_RULES_INTEGRATED.md"
   ].map(read).join("\n");
-  for (const token of ["archetype_codes", "archetype_derivation_basis", "archetype_vocabulary", "NO_PRIMARY_ARCHETYPE_MATCH"]) assert.equal(active.includes(token), false, token);
+  for (const token of ["archetype_codes", "archetype_derivation_basis", "archetype_vocabulary", "NO_PRIMARY_ARCHETYPE_MATCH"]) assert.equal(promptFiles.includes(token), false, `active Phase 5 prompt still requires ${token}`);
+
+  const constants = read("src/phases/05-activity-profile-review/activity-profile.constants.js");
+  const resolver = read("src/runtime/domain-gate/activity-taxonomy.resolver.js");
+  const contract = read("src/phases/05-activity-profile-review/activity-profile-review.contract.js");
+  assert.match(constants, /behavior_class_codes/);
+  assert.match(constants, /behavior_class_derivation_basis/);
+  assert.match(resolver, /behavior_class_vocabulary/);
+  assert.doesNotMatch(resolver, /\barchetype_vocabulary\s*:/);
+  assert.match(contract, /NO_PRIMARY_BEHAVIOR_CLASS_MATCH/);
+  assert.match(contract, /primary_overlay_behavior_class_and_surface_independent/);
+
+  const routing = read("src/phases/10-exposure-profile/phase10-classification-routing.js");
+  for (const marker of ["phase10_report_row.v1.complete_registry_spine", "buildReportRowContract", "severity_validation_status", "registry_spine_completeness_status"]) assert.ok(routing.includes(marker), marker);
+
   const p10 = read("src/phases/10-exposure-profile/phase10-semantic-finalization.js");
-  for (const marker of ["deterministic_registry_spine_read_only", "model_must_not_emit_registry_spine_fields", "phase10_report_row.v1.complete_registry_spine"]) assert.ok(p10.includes(marker));
+  for (const marker of ["deterministic_registry_spine_read_only", "model_must_not_emit_registry_spine_fields", "phase10_report_row.v1.complete_registry_spine"]) assert.ok(p10.includes(marker), marker);
+
   const gate = read("src/phases/12-normalized-compiler/phase10-downstream-compatibility.js");
   assert.ok(gate.includes('new Set(["PASS", "PASS_WITH_LIMITATION"])'));
-  assert.equal(gate.includes("operator_challenge_reinvestigation_ledger"), false);
+  for (const forbidden of ["operator_challenge_reinvestigation_ledger", "operator_challenge_semantic_ledger", "lock_status ||", "challenge.gate"]) assert.equal(gate.includes(forbidden), false, forbidden);
 }
 
 function phase5Fixture() {
@@ -119,7 +150,7 @@ function phase5Fixture() {
     commercial_availability_posture: { posture: "Paid production", free_trial_freemium_signal: "No public free tier.", beta_pilot_early_access_signal: "No public beta limit.", paid_production_enterprise_plan_signal: "Paid enterprise plan visible.", evidence_basis: ["Public commercial statements."], limitation: "Private terms not reviewed." },
     profile_level_limitations: [],
     mounted_taxonomy_ref: { primary_package_id: "fintech", primary_key_version: "1", overlays: [{ overlay_id: "ai-native", package_id: "ai-governance", key_version: "4" }] }
-  }};
+  } };
 }
 function basis(code, name) { return { code_or_token: code, normalized_name: name, conditions_satisfied: ["Condition satisfied."], trigger_if_applied: "Trigger applied.", exclude_if_checked: "Exclusion checked.", material_basis: "Reviewed mechanics support the classification.", limitation: "Public-material classification." }; }
 function semanticRow() { return { Threat_ID: "UNI_CNS_001", trigger_status: "evaluated", target_match: "Match.", basis_proof: "Basis.", control_exclusion_evaluation: "No defeating control.", evidence_source_basis: "Public evidence.", applied_fp_mechanism: "Mechanism.", row_limitations: "Private evidence unavailable.", status_inputs: { target_match_present: "yes", hunter_conditions_met: "yes", trigger_if_met: "yes", exclude_if_met: "no", visible_control_present: "no", visible_control_defeats_or_reduces_exposure: "no", evidence_sufficient: "yes", public_evidence_limitation: "no", false_positive_concern: "no" } }; }
