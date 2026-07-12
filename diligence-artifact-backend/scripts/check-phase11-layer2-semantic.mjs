@@ -62,7 +62,7 @@ for (const marker of [
   "buildOperatorChallengeLayer3"
 ]) assert.ok(runner.includes(marker), `runner marker missing: ${marker}`);
 for (const marker of [
-  "runtime_contract_version: v3_layer3_deterministic_adjudication",
+  "runtime_contract_version: v4_reinvestigation_dispatch_return",
   "status: ACTIVE",
   "blocking_decision_forbidden: true",
   "maximum_reinvestigation_attempts: 2",
@@ -82,8 +82,7 @@ console.log(JSON.stringify({
   blocking_authority: false,
   field_reinvestigation_attempts_executed: 0,
   malformed_output_repair_maximum: 1,
-  repeated_raw_threat_ids_preserved_by_compound_reference: true,
-  downstream_adjudication_authority: "DETERMINISTIC_LAYER3"
+  repeated_raw_threat_ids_preserved_by_compound_reference: true
 }, null, 2));
 
 function candidate(id, candidate_class, challenge_type, affected_registry_row_keys) {
