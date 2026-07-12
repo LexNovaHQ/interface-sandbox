@@ -1,9 +1,10 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
-runtime_contract_version: v2_layer2_semantic_adversarial_challenge
+runtime_contract_version: v3_layer3_deterministic_adjudication
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
 functional_name: CROSS_PHASE_ADVERSARIAL_CHALLENGE_AND_COMPILER_READINESS_GATE
+synchronization_status: PHASE11_THREE_LAYER_RUNTIME_ACTIVE
 
 routing_contract:
   authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
@@ -45,13 +46,43 @@ layer_2:
   critical_review_candidate_is_blocking_decision: false
 
 layer_3:
-  status: PENDING
+  status: ACTIVE
+  version: PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_v1
+  reinvestigation_ledger_version: operator_challenge_reinvestigation_ledger.v1
+  final_gate_version: challenge_gate.v4.operator_challenge
   role: DETERMINISTIC_ADJUDICATION_REINVESTIGATION_AND_FINAL_GATE
+  final_adjudication_authority: DETERMINISTIC_BACKEND
   blocking_exception_only: true
   only_critical_failure_blocks: true
+  material_field_problem_is_blocking: false
   material_field_problem_routes_to_reinvestigation: true
   maximum_reinvestigation_attempts: 2
-  unresolved_after_two_attempts: PASS_WITH_LIMITATION_UNLESS_CRITICAL_SYSTEMIC_FAILURE
+  unresolved_after_two_attempts: PASS_WITH_LIMITATION
+  third_attempt_forbidden: true
+  resolved_attempt_requires_backend_validation: true
+  full_phase_rerun_default: false
+  smallest_affected_unit_only: true
+  allowed_final_gate_statuses:
+    - PASS
+    - PASS_WITH_LIMITATION
+    - REINVESTIGATION_REQUIRED
+    - CONTROLLED_FAILURE
+
+critical_failure_classes:
+  - REQUIRED_ARTIFACT_MISSING
+  - REQUIRED_ARTIFACT_UNUSABLE
+  - FORENSIC_INPUT_BOUNDARY_BREACH
+  - PHASE10_COMPOUND_CUSTODY_MISMATCH
+  - MATERIAL_PROFILE_OVERLAP
+
+reinvestigation_owners:
+  - PHASE_3_DOMAIN_DERIVATION
+  - PHASE_5_ACTIVITY_PROFILE
+  - PHASE_7_DATA_PROVENANCE
+  - PHASE_8_DOMAIN_CONTROL_OBLIGATION
+  - PHASE_10_EXPOSURE_PROFILE
+  - PHASE_2G_ROUTING
+  - COMPILER_PRESENTATION_ONLY
 
 required_derived_inputs:
   - target_profile
@@ -71,14 +102,44 @@ forbidden_inputs:
   - dap_forensics_profile
   - exposure_registry_profile_forensics
 
-semantic_prompt_files:
+contract_files:
+  - PHASE11_LAYER1_DETERMINISTIC_CHALLENGE_INVENTORY.md
   - PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md
+  - PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION.md
 
-runtime_terminal_state:
-  phase_status: CREATED
-  remain_on_phase: M12
-  layer_1: COMPLETE
-  layer_2: COMPLETE
-  layer_3: PENDING
-  compiler_handoff_allowed: false
-  reason: LAYER1_LAYER2_COMPLETE_LAYER3_PENDING
+runtime_state_machine:
+  no_pending_issues_no_warnings:
+    gate_status: PASS
+    runtime_lock_status: LOCKED
+    compiler_handoff_allowed: true
+  warnings_or_exhausted_material_fields:
+    gate_status: PASS_WITH_LIMITATION
+    runtime_lock_status: LOCKED_WITH_LIMITATIONS
+    compiler_handoff_allowed: true
+  pending_material_reinvestigation:
+    gate_status: REINVESTIGATION_REQUIRED
+    runtime_lock_status: CREATED
+    remain_on_phase: M12
+    compiler_handoff_allowed: false
+  confirmed_critical_failure:
+    gate_status: CONTROLLED_FAILURE
+    runtime_lock_status: CONTROLLED_FAILURE
+    remain_on_phase: M12
+    compiler_handoff_allowed: false
+
+canonical_storage:
+  artifact_name: challenge_gate
+  contains:
+    - operator_challenge_inventory
+    - operator_challenge_semantic_ledger
+    - operator_challenge_reinvestigation_ledger
+    - adjudications
+    - confirmed_critical_failures
+    - advisory_warnings
+    - rejected_challenges
+    - reinvestigation_directives
+
+compiler_contract:
+  reads_final_challenge_gate_only: true
+  compiler_handoff_requires_pass_or_pass_with_limitation: true
+  semantic_ledger_is_not_compiler_authority: true
