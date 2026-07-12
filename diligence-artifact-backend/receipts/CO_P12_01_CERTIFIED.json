@@ -1,13 +1,12 @@
 {
-  "schema_version": "co_p12_01_certified_receipt.v2.atomic",
+  "schema_version": "co_p12_01_certified_receipt.v1",
   "status": "PASS",
   "exit_code": 0,
-  "command": "npm run check:p12:co1",
-  "workflow": "CO P12 01 Atomic Finalize",
-  "run_id": "29196928375",
+  "workflow": "CO P12 01 Certify",
+  "run_id": "29196928367",
+  "base_sha": "9b7a144ef6f829ec5dffe87baf9ed34afc7fe2ff",
+  "tested_head_sha": "5311c675e9332b9306175a1d7b5fa302e20f0f0a",
   "target_branch": "domain-gate-v0-preflight",
-  "validated_target_parent_sha": "9b7a144ef6f829ec5dffe87baf9ed34afc7fe2ff",
-  "tested_pr_head_sha": "5311c675e9332b9306175a1d7b5fa302e20f0f0a",
-  "certified_at": "2026-07-12T14:47:38.079Z",
-  "temporary_validation_workflows_removed": true
+  "command": "npm run check:p12:co1",
+  "certified_at": "2026-07-12T14:47:39.275Z"
 }
