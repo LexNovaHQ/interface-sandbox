@@ -1,156 +1,58 @@
-# Target and Activity Profile Backend Output Contract
+# Agent 3 Backend Output Contract
 
-This file overrides older same-chat receipt, phase-output, checkpoint, markdown, visible terminal language, or combined-artifact response language for backend model execution.
+Backend model responses are strict JSON only. Each active save event returns exactly one phase-owned artifact root. Combined material/forensic responses are forbidden.
 
-When this package runs inside the backend, the model response must be strict JSON only. No markdown. No XML-like phase block. No array wrapper. No prose receipt. No checkpoint lines. No same-chat next-agent instruction.
+## Target Profile Review
 
-Compatibility note: existing internal job IDs and file names remain until explicit runtime cutover. Product-facing phase names control this document.
-
----
-
-## Target Profile Review required response shape
-
-Target Profile Review has one material save event.
-
-For the Target Profile Review material save event, return exactly one plain top-level JSON object:
+Return exactly:
 
 ```json
-{
-  "target_profile": {}
-}
+{"target_profile": {}}
 ```
 
-Rules:
+`target_profile` contains only its five material branches:
 
-- The top-level value must be an object, not an array.
-- Do not wrap the object inside `phase_output`, `output`, `result`, `data`, an internal job label, or a compatibility module label.
-- Do not return `[ { "target_profile": {} } ]`.
-- Do not include `target_profile_forensics` in the Target Profile Review material response.
-- Do not put source ledgers, derivation ledgers, runtime trace, validation status, lock status, confidence, evidence basis, extraction capsule, or forensic/provenance material inside `target_profile`.
-- Do not emit `target_profile_source_index`, `target_profile_deterministic_map`, or `target_profile_semantic_profile` as output. They are Phase 2A inputs/support artifacts only.
-- Do not emit `legal_signal_derivation_profile` as an output. It is an input only.
-- Do not emit `legal_cartography_index`, legal/governance material, downstream profiles, exposure artifacts, final handoff, renderer payload, or Qualified Review artifacts.
-- `target_profile` must contain exactly the five material parent branches required by Target Profile Review:
-  - `target_identity`
-  - `jurisdiction_notice`
-  - `business_context`
-  - `product_service_wrapper`
-  - `target_profile_limitations`
-- `business_context` must contain the active backend contract fields, including:
-  - `business_category`
-  - `primary_customer_type`
-  - `market_type_candidate`
-  - `industry_sector`
-  - `regulated_sector_hints`
-  - `public_regulatory_licensing_signal`
-  - `public_grievance_complaints_signal`
-- `business_context.public_regulatory_licensing_signal` and `business_context.public_grievance_complaints_signal` are factual public operating-context fields only. They must not contain legal, regulatory, grievance, ombudsman, license-validity, regulator-applicability, compliance, sufficiency, or obligation conclusions.
-- The backend runner must validate and save `target_profile` before Target Profile Forensics begins.
+```text
+target_identity
+jurisdiction_notice
+business_context
+product_service_wrapper
+target_profile_limitations
+```
 
-Forbidden Target Profile Review combined shape:
+Do not emit forensics, indexes, source ledgers, downstream profiles, challenge, compiler or renderer output.
+
+## Sector derivation backend artifact
+
+The internal artifact name remains `domain_derivation_profile`. Return exactly:
 
 ```json
-{
-  "target_profile": {},
-  "target_profile_forensics": {}
-}
+{"domain_derivation_profile": {}}
 ```
 
-That shape incorrectly mixes material and forensic artifacts into one backend call.
+The backend—not the model—writes `active_run_package_manifest` after validation. Regulatory overlay derivation remains candidate-only and does not make legal-applicability or compliance conclusions.
 
----
+## Target Profile Forensics
 
-## Domain Derivation Layer required response shape
-
-Domain Derivation Layer has one model response save event. The backend compiler/validator writes the corresponding `active_run_package_manifest` after validating the model response.
-
-For the Domain Derivation Layer model response, return exactly one plain top-level JSON object:
+Return exactly:
 
 ```json
-{
-  "domain_derivation_profile": {}
-}
+{"target_profile_forensics": {}}
 ```
 
-Rules:
+Do not re-emit the material profile.
 
-- The top-level value must be an object, not an array.
-- Do not wrap the object inside `phase_output`, `output`, `result`, `data`, an internal job label, or a compatibility module label.
-- Do not return `[ { "domain_derivation_profile": {} } ]`.
-- Do not emit top-level `active_run_package_manifest`; the compiler writes it after validation.
-- Do not emit `domain_derivation_source_index`, `domain_derivation_deterministic_map`, or `domain_derivation_semantic_profile` as output. They are Phase 2B inputs/support artifacts only.
-- Do not emit `activity_profile_source_index`; it is reserved for 2C / Phase 5.
-- Do not emit `target_profile`, `target_profile_forensics`, `feature_candidate_inventory`, `target_feature_profile`, `target_feature_profile_forensics`, data provenance artifacts, exposure artifacts, challenge gates, final handoffs, renderer payloads, or Qualified Review artifacts.
-- `domain_derivation_profile` must contain the active phase-owned contract branches, including:
-  - `domain_derivation_metadata`
-  - `input_scope`
-  - `source_evidence_ledger`
-  - `primary_domain_derivation`
-  - `ai_mount_derivation`
-  - `regulatory_overlay_derivation`
-  - `fusion_candidate_derivation`
-  - `manifest_update`
-  - `limitation_ledger`
-  - `contradiction_ledger`
-  - `validation_summary`
-- `primary_domain_derivation` is registry-gated and must not be hardcoded in prompt logic.
-- `ai_mount_derivation` is package availability only. It must not lock AI archetype, surface, exposure rows, or Lane.
-- `regulatory_overlay_derivation` is candidate-only and catalog-gated. It must not contain legal applicability, license-validity, license-requirement, applicable-regulator, compliance-status, grievance-sufficiency, ombudsman-requirement, statutory-obligation, legal-advice, compliance-conclusion, enforceability, or risk conclusions.
-- `fusion_candidate_derivation` is candidate-only and deferred to Phase 5 Activity Profile and Phase 9 Exposure Profile.
-- Every fired registry condition must carry scoped lossless evidence anchors. Phase 2 indexes and `target_profile` must not be cited as evidence.
-- Every regulatory overlay candidate must carry scoped lossless evidence anchors. Phase 2 indexes and `target_profile` must not be cited as regulatory evidence.
+## Activity candidate inventory
 
-Forbidden Domain Derivation combined shape:
+Return exactly:
 
 ```json
-{
-  "domain_derivation_profile": {},
-  "active_run_package_manifest": {}
-}
+{"feature_candidate_inventory": {}}
 ```
 
-That shape incorrectly bypasses the backend compiler/validator manifest update authority.
+This deterministic-led inventory is a separate save event from the material activity profile.
 
----
-
-## Target Profile Forensics required response shape
-
-For the Target Profile Forensics save event, consume the saved `target_profile` artifact and return exactly one plain top-level JSON object:
-
-```json
-{
-  "target_profile_forensics": {}
-}
-```
-
-Rules:
-
-- The top-level value must be an object, not an array.
-- Do not wrap the object inside `phase_output`, `output`, `result`, `data`, an internal job label, or a compatibility module label.
-- Do not return `[ { "target_profile_forensics": {} } ]`.
-- Do not re-emit `target_profile` in the Target Profile Forensics response.
-- `target_profile_forensics` must be separate from `target_profile`.
-- `target_profile_forensics` must contain the forensic/provenance branches required by the active validator.
-- The forensic ledger branches must be JSON arrays, never summary objects.
-- The backend runner must validate and save `target_profile_forensics` before Activity Profile Review may begin.
-
----
-
-## Activity Profile Review required response shapes
-
-Activity Profile Review has deterministic inventory, material, and forensic save events. They are separate.
-
-### Activity candidate inventory response shape
-
-Return exactly one plain top-level JSON object:
-
-```json
-{
-  "feature_candidate_inventory": {}
-}
-```
-
-### Activity Profile Review material response shape
+## Activity Profile Review material output
 
 `M8_TARGET_FEATURE_PROFILE` returns exactly:
 
@@ -169,16 +71,7 @@ Return exactly one plain top-level JSON object:
 }
 ```
 
-`target_feature_profile` contains exactly four top-level keys:
-
-```text
-activities
-commercial_availability_posture
-profile_level_limitations
-mounted_taxonomy_ref
-```
-
-Each `activities[]` row contains exactly ten keys:
+Each activity contains exactly:
 
 ```text
 activity_reference
@@ -193,30 +86,30 @@ primary_classification
 overlay_classifications
 ```
 
-The first eight fields are non-empty domain-blind strings.
-
 `primary_classification` contains exactly:
 
 ```text
 package_id
-archetype_codes
-archetype_derivation_basis
+behavior_class_codes
+behavior_class_derivation_basis
 surface_context_tokens
 surface_derivation_basis
 ```
 
-Each `overlay_classifications[]` entry contains exactly:
+Each `overlay_classifications[]` block contains exactly:
 
 ```text
 package_id
 overlay_id
-archetype_codes
-archetype_derivation_basis
+behavior_class_codes
+behavior_class_derivation_basis
 surface_context_tokens
 surface_derivation_basis
 ```
 
-Each archetype or surface derivation-basis entry contains exactly:
+Primary and capability-overlay classifications are package-scoped and independent. Each has its own Behavior Class and Surface arrays and derivation bases. Regulatory overlays are forbidden from activity classification.
+
+Each basis entry contains exactly:
 
 ```text
 code_or_token
@@ -228,130 +121,43 @@ material_basis
 limitation
 ```
 
-Per-block basis rule:
-
-- every selected `archetype_codes[]` value has exactly one matching `archetype_derivation_basis[]` entry by `code_or_token`;
-- every selected `surface_context_tokens[]` value has exactly one matching `surface_derivation_basis[]` entry by `code_or_token`;
-- no basis entry may exist for an unselected value;
-- membership is checked against that block's `package_id` vocabulary.
-
-`commercial_availability_posture` contains exactly:
+Controlled limitations are:
 
 ```text
-posture
-free_trial_freemium_signal
-beta_pilot_early_access_signal
-paid_production_enterprise_plan_signal
-evidence_basis
-limitation
+PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
+NO_PRIMARY_BEHAVIOR_CLASS_MATCH:<activity_reference>
+OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>
+DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>
+DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_INDEXED:<root>
 ```
 
-`mounted_taxonomy_ref` contains exactly:
-
-```text
-primary_package_id
-primary_key_version
-overlays
-```
-
-Each `mounted_taxonomy_ref.overlays[]` entry contains exactly:
-
-```text
-overlay_id
-package_id
-key_version
-```
-
-The backend stamps `mounted_taxonomy_ref`; the model must not override it.
+The backend stamps `mounted_taxonomy_ref`. The model must not override it.
 
 Forbidden anywhere in `target_feature_profile`:
 
 ```text
 URLs
-source_id
-source_url
-source_pointer
-source_ref
-candidate_id
+source IDs or pointers
+candidate IDs
 confidence
-validation_status
-lock_status
-*_ledger
-runtime_trace
-archetype_proof
-surface_proof_and_routing_limits
-excerpt
-lossless_text
-clean_text
-raw text
+validation or lock status
+ledgers
+runtime traces
+copied evidence text
+forensic artifacts
+retired Phase 5 classification paths
 ```
 
-Controlled degradation rules:
+## Activity Profile Forensics
 
-- unresolved primary package key: empty primary arrays plus `PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>`;
-- resolved primary with no legitimate archetype match: empty primary arrays plus `NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>`;
-- unresolved capability overlay: no overlay block plus `OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>`;
-- regulatory overlays are excluded from activity archetype and surface classification;
-- no catch-all archetype may be forced.
-
-### Activity Profile Forensics response shape
-
-Return exactly one plain top-level JSON object:
+Return exactly:
 
 ```json
-{
-  "target_feature_profile_forensics": {}
-}
+{"target_feature_profile_forensics": {}}
 ```
 
-Rules:
+Do not re-emit the material activity profile.
 
-- The top-level value must be an object, not an array.
-- Do not wrap the object inside `phase_output`, `output`, `result`, `data`, an internal job label, or a compatibility module label.
-- Do not return `[ { "target_feature_profile_forensics": {} } ]`.
-- Do not re-emit `target_feature_profile` in the forensic response.
-- `target_feature_profile_forensics` must be separate from `target_feature_profile`.
-- The backend runner must validate and save `target_feature_profile_forensics` before Data Provenance Profile may begin.
+## Global response rule
 
----
-
-## Global forbidden backend response shapes
-
-This package must not return any combined production backend shape that includes artifacts from more than one save event.
-
-Forbidden examples:
-
-```json
-{
-  "target_profile": {},
-  "target_profile_forensics": {},
-  "target_feature_profile": {},
-  "target_feature_profile_forensics": {}
-}
-```
-
-```json
-{
-  "target_profile": {},
-  "target_feature_profile": {}
-}
-```
-
-```json
-{
-  "target_profile_forensics": {},
-  "target_feature_profile_forensics": {}
-}
-```
-
-```json
-{
-  "phase_output": {}
-}
-```
-
-```json
-{
-  "output": {}
-}
-```
+Never wrap a phase-owned artifact inside `phase_output`, `output`, `result` or an array. Never return multiple production artifacts from one save event.
