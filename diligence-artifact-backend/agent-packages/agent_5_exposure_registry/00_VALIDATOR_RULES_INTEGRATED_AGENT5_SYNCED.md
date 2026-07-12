@@ -1,75 +1,167 @@
 # 00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED
-## Agent 5 / M11 Three-Layer Material Row Validator Contract
 
-# VALIDATOR LOCK
+## Agent 5 / M11 Package-Scoped Semantic Validator Contract
 
-This validator governs Agent 5 / M11 package execution after the three-layer material row upgrade.
-
-If this validator conflicts with older seven-field language, this validator controls for Agent 5 material-row validation.
-
-# REQUIRED INPUT AND ACCESS GATES
-
-Validate that Agent 5 receives or can load:
+## VALIDATOR VERSION
 
 ```text
-source_discovery_handoff
+AGENT5_PACKAGE_SCOPED_SEMANTIC_VALIDATOR_v1
+```
+
+This validator governs Agent 5 semantic batch execution after CO-7. It supersedes older AI-only, 98-row, L1-L6, eight-row, and cross-package-union language.
+
+## RUNTIME INPUT GATE
+
+Agent 5 may use only the active Phase 2G packet and its own current Phase 10 checkpoints.
+
+Required routed authorities include:
+
+```text
+phase_routing_manifest
+phase_route_runtime_packet
 legal_cartography_index
+legal_signal_derivation_profile
+admitted 2F legal/governance primary evidence
+admitted legal_doc_* artifacts
 target_profile
-target_profile_forensics
+domain_derivation_profile
 target_feature_profile
-target_feature_profile_forensics
-data_provenance_profile
-data_provenance_profile_forensics
-lossless_family__L1_CORE_TERMS_PRIVACY
-lossless_family__L2_B2B_CONTRACTING
-lossless_family__L3_AI_USAGE_GOVERNANCE
-lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-lossless_family__L5_LEGAL_HUB_HOSTED
-lossless_family__L6_ENTITY_NOTICE
-AI_THREAT_REGISTRY.yaml
-AI_Registry_Key.yml
-03_REGISTRY_EVALUATION_RULES.yaml
-Diligence_Field_Derivation_Registry.yml
-FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+active_run_package_manifest
+current Phase 7 data-provenance material admitted by the route
+active_threat_registry_manifest
+exposure_registry_route_plan
 ```
 
-Agent 5 must not mutate or backfill upstream M6, M7, M8, M9, or M10 artifacts.
-
-# M9 LEGAL CARTOGRAPHY CONSUMPTION GATE
-
-Validate that `legal_cartography_index` is consumed as the saved M9 artifact. Reject any Agent 5 output that builds, rebuilds, saves, mutates, replaces, or renames legal cartography.
-
-Evidence use must follow this chain:
+Forbidden inputs include:
 
 ```text
-M9 navigation/custody -> full lossless L1-L6 unit or locked upstream proof -> row evidence basis
+target_profile_forensics
+target_feature_profile_forensics
+dap_forensics_profile
+any preceding profile forensics
+lossless_family__*
+retired M10/4B/4C artifacts
+source outside the active 2F packet
+alternate route maps
+free-corpus scans
 ```
 
-M9 silence is not evidence absence. If M9 is silent or thin, backend may supply closest relevant full lossless section/part. Blind L1-L6 bucket scanning remains forbidden.
+Missing preceding forensic artifacts are never blockers.
 
-# ROUTE PLAN AND BATCH PLAN GATE
+## REGISTRY AND EXECUTION IDENTITY GATE
 
-`exposure_registry_route_plan` must account for all 98 active Threat_IDs exactly once.
+Validate:
 
-Every UNI row must be `EVALUATION_ROUTED` with route reason `UNI_ALWAYS_RUN`.
+- registry selection comes from `domain_derivation_profile`;
+- `active_run_package_manifest` is consistency-check only;
+- every mounted registry is declared by `THREAT_REGISTRY_BINDINGS_v1.yaml`;
+- global deterministic identity is `registry_row_key = <package_id>::<Threat_ID>`;
+- canonical `Threat_ID` is preserved;
+- `registry_row_key` is never model-authored;
+- all active checkpoints carry the current Phase 10 execution fingerprint.
 
-Non-UNI rows may be routed only by active M8 archetype intersection. Surface-only routing is forbidden.
+## PHASE 5 CLASSIFICATION GATE
 
-Every model-routed batch must contain max 8 rows. Reject grouped, composite, duplicate, missing, unexpected, or category Threat_ID route rows.
+Validate that Phase 10 projects only:
 
-# ACTIVE BATCH MODEL OUTPUT GATE
+```text
+target_feature_profile.activities[].primary_classification
+target_feature_profile.activities[].overlay_classifications[]
+```
 
-M11 model batch output must have exactly one root:
+Reject flat activity-level classification paths.
+
+Every mounted primary or overlay stream must have a matching non-empty package-scoped Phase 5 classification inventory. Reject missing overlay classification, package escape, source-type mixing, or a global cross-package archetype union.
+
+## ROUTE PLAN GATE
+
+`exposure_registry_route_plan` must reconcile dynamically against:
+
+```text
+active_threat_registry_manifest.expected_registry_row_key_count
+```
+
+Validate:
+
+- one route row per expected `registry_row_key`;
+- separate primary and overlay stream plans;
+- every UNI row is `EVALUATION_ROUTED` with `UNI_ALWAYS_RUN`;
+- every non-UNI routed row has `PACKAGE_ARCHETYPE_MATCH` against its own package inventory;
+- non-matching non-UNI rows are `NOT_TRIGGERED_NOT_APPLICABLE`;
+- surface-only routing is forbidden;
+- route rows from different packages or streams are never merged.
+
+No fixed 98-row assumption is permitted.
+
+## BATCH PLAN GATE
+
+Every semantic batch must contain exactly one package, one stream, and one archetype group.
+
+Validate:
+
+- `1 <= row_count <= 15`;
+- package mixing is forbidden;
+- primary/overlay stream mixing is forbidden;
+- archetype-group mixing is forbidden;
+- packet-size ceiling is satisfied;
+- no registry or evidence content was truncated to satisfy the ceiling;
+- `expected_registry_row_keys[]` are unique and belong to the batch package;
+- canonical `expected_threat_ids[]` are unique within the batch;
+- every routed registry row key appears in exactly one batch;
+- no non-routed registry row key appears in a batch.
+
+## SEMANTIC PACKET GATE
+
+The packet must declare:
+
+```text
+semantic_packet_contract_version = M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
+```
+
+Validate exact equality among:
+
+```text
+row_count
+registry_rows.length
+expected_registry_row_keys.length
+expected_threat_ids.length
+```
+
+The model may read deterministic custody metadata but cannot emit or alter it.
+
+## MODEL OUTPUT ROOT GATE
+
+The semantic model must return exactly one root:
 
 ```text
 m11_batch_registry_ledger
 ```
 
-Batch `returned_threat_ids[]` must match backend-provided `expected_threat_ids[]` exactly.
+The ledger must declare:
 
-`batch_registry_ledger[]` must contain exactly one row per expected Threat_ID and no other rows.
+```text
+semantic_contract_version = M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
+```
 
-Each semantic batch row may contain only:
+The following echoed fields must exactly match the packet:
+
+```text
+batch_id
+batch_group
+stream_id
+stream_type
+package_id
+source_domain
+expected_threat_ids[]
+```
+
+`returned_threat_ids[]` must equal `expected_threat_ids[]` exactly and in order.
+
+## SEMANTIC ROW GATE
+
+`batch_registry_ledger[]` must contain exactly one row per expected canonical Threat ID and no other row.
+
+Allowed row keys are only:
 
 ```text
 Threat_ID
@@ -83,11 +175,33 @@ row_limitations
 status_inputs
 ```
 
-Model batch rows must not emit deterministic registry spine fields, final material profiles, workpad, forensics, M12 validation, challenge gate, final handoff, renderer, report prose, or terminal receipts.
+`trigger_status` is optional and non-authoritative.
 
-# STATUS INPUT GATE
+Reject model rows containing:
 
-Each semantic row must include `status_inputs` sufficient for backend final status derivation:
+```text
+registry_row_key
+Threat_Name
+package_id
+source_domain
+stream_id
+stream_type
+Archetype
+Subcategory
+Surface
+authority_anchors
+pain fields
+remediation
+review_route
+route
+route_reason
+evaluation_status
+profile placement
+```
+
+## STATUS INPUT GATE
+
+Each row must contain exactly these keys:
 
 ```text
 target_match_present
@@ -101,20 +215,52 @@ public_evidence_limitation
 false_positive_concern
 ```
 
-# M12 BATCH VALIDATION / ACCEPTED BATCH GATE
+Every value must be lower-case `yes`, `no`, or `partial`.
 
-Batch validation artifact must exist before accepted batch artifact.
+## NARRATIVE QUALITY GATE
 
-Batch validation status must be PASS or PASS_WITH_LIMITATION before accepted batch is saved.
+These fields must be non-empty concise narrative text and cannot be only a scalar label:
 
-M11 model output must not simulate M12 batch validation or claim save/acceptance state.
+```text
+target_match
+basis_proof
+control_exclusion_evaluation
+evidence_source_basis
+row_limitations
+```
 
-# FULL MATERIAL ROW GATE
+`basis_proof` must apply the parsed Hunter Trigger condition by condition and identify the supplied evidence used.
 
-Backend-assembled accepted batch/workpad/material projection rows must contain the full material row contract:
+Reject unsupported jurisdiction, deployment, user-flow, control, exclusion, or applicability claims.
+
+Phase 5 classification, route reason, package selection, registry status, legal-cartography metadata, or domain-control-obligation context cannot independently prove a Hunter Trigger.
+
+Lossless legal/governance evidence is primary evidence. Legal cartography is the mandatory navigation map. Recorded index-gap navigation inside the same routed bucket is not fallback evidence.
+
+## REPAIR GATE
+
+Repair uses:
+
+```text
+M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1
+```
+
+One repair pass may change only identified semantic fields. It must return the complete ledger for all expected Threat IDs and preserve immutable batch metadata.
+
+After one repair pass:
+
+- unresolved non-structural uncertainty becomes a limitation;
+- exact-root, exact-coverage, identity, package/stream, schema, or unusable-output failures remain blocking.
+
+## BACKEND ACCEPTED-BATCH GATE
+
+The backend, not the model, maps canonical Threat IDs to deterministic `registry_row_key` values and assembles the full material row.
+
+The full material row contains 19 fields:
 
 ```text
 Threat_ID
+Threat_Name
 target_match
 evaluation_status
 basis_proof
@@ -134,11 +280,7 @@ review_route
 row_limitations
 ```
 
-The model must not be treated as the author of deterministic registry spine fields.
-
-# FINAL STATUS GATE
-
-Final material `evaluation_status` must be one of:
+Allowed final material statuses remain:
 
 ```text
 TRIGGERED
@@ -147,42 +289,16 @@ CONTROLLED_BY_EXCLUSION
 CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
 ```
 
-# SPLIT MATERIAL OUTPUT GATES
+The model must never be treated as author of deterministic spine fields or final status.
 
-`exposure_registry_controlled_profile` must contain exactly one top-level key:
+## DYNAMIC FINALIZATION GATE
 
-```text
-controlled_rows
-```
+Workpad and forensic coverage must reconcile against the mounted registry manifest and compound row-key inventory, not a fixed 98-row count.
 
-Controlled rows must have one of:
+The stable artifact token `exposure_registry_workpad_98` may remain for compatibility, but its metadata and validation are dynamic.
 
-```text
-CONTROLLED_BY_VISIBLE_CONTROL
-CONTROLLED_BY_EXCLUSION
-CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
-```
+LEP coverage remains governed separately by the locked 22-row field-derivation registry.
 
-`exposure_registry_triggered_profile` must contain exactly one top-level key:
+## OUTPUT FIREWALL
 
-```text
-triggered_rows
-```
-
-Triggered rows must have:
-
-```text
-TRIGGERED
-```
-
-Both controlled and triggered rows must use the full material row contract.
-
-# FORENSIC GATE
-
-Forensics must prove 98/98 row coverage, 22/22 LEP coverage, accepted batch + validation custody, deterministic registry spine prefill, semantic evidence application, backend-derived final status, controlled/triggered projection reconciliation, and M9 legal-cartography consumption without rebuild.
-
-Forensics must not re-emit material profiles, challenge gate, final handoff, renderer payload, report prose, or terminal receipts.
-
-# FIREWALL
-
-Reject final findings that use legal verdict language, compliance verdicts, liability findings, breach findings, enforceability verdicts, transfer-legality conclusions, security-adequacy conclusions, risk scores, or high/low risk verdict labels.
+Reject model output containing backend artifacts, validation artifacts, workpads, profiles, forensics, challenge gates, compiler output, renderer output, report prose, legal verdicts, compliance verdicts, liability findings, breach findings, enforceability conclusions, security-adequacy conclusions, transfer-legality conclusions, or risk scores.
