@@ -1,0 +1,30 @@
+{
+  "schema_version": "co_p12_01_validation_result.v1",
+  "status": "PASS",
+  "exit_code": 0,
+  "workflow": "CO P12 01 Self Report Validation",
+  "run_id": "29196928394",
+  "head_sha": "d002d50e3bbf20988e723551fecc29888771b0f8",
+  "log_tail": [
+    "",
+    "> interface-diligence-artifacts@0.1.0 check:p12:co1",
+    "> npm run check:phase5:behavior-class-cutover && npm run check:phase10:report-row-custody && npm run check:phase11:compiler-exact-gate",
+    "",
+    "",
+    "> interface-diligence-artifacts@0.1.0 check:phase5:behavior-class-cutover",
+    "> node --check src/runtime/domain-gate/activity-taxonomy.resolver.js && node --check src/phases/05-activity-profile-review/activity-profile.constants.js && node --check src/phases/05-activity-profile-review/activity-profile-review.contract.js && node --check src/phases/05-activity-profile-review/validators/activity-profile-review.validator.js && node --check scripts/check-co-p12-01.mjs && node scripts/check-activity-taxonomy-resolver.mjs && node scripts/check-co-p12-01.mjs",
+    "",
+    "Activity taxonomy resolver Behavior Class canonical: PASS",
+    "CO-P12-01 executable acceptance: PASS",
+    "",
+    "> interface-diligence-artifacts@0.1.0 check:phase10:report-row-custody",
+    "> node --check src/phases/10-exposure-profile/phase10-classification-routing.js && node --check src/phases/10-exposure-profile/phase10-classification-inventory.validator.js && node --check src/phases/10-exposure-profile/m11-deterministic-system-m11v2.js && node --check src/phases/10-exposure-profile/phase10-semantic-finalization.js && node --check src/phases/10-exposure-profile/m11-orchestrator-m11v2.js && node --check src/phases/12-normalized-compiler/phase10-downstream-compatibility.js && node --check scripts/check-co-p12-01.mjs && node scripts/check-co-p12-01.mjs",
+    "",
+    "CO-P12-01 executable acceptance: PASS",
+    "",
+    "> interface-diligence-artifacts@0.1.0 check:phase11:compiler-exact-gate",
+    "> node --check src/phases/12-normalized-compiler/phase10-downstream-compatibility.js && node scripts/check-co-p12-01.mjs",
+    "",
+    "CO-P12-01 executable acceptance: PASS"
+  ]
+}
