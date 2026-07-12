@@ -1,0 +1,1 @@
+Temporary contract sync patch trigger. Do not merge.
