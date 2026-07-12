@@ -1,1 +1,1 @@
-Temporary CO-P12-05 certification trigger. Retry 17 after Phase 7 active-surface legacy scan repair. Do not merge.
+Temporary CO-P12-05 certification trigger. Retry 18 after Phase 7 production descriptor sync. Do not merge.
