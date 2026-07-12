@@ -4,14 +4,18 @@ import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_KEYS } from "./normal
 import { toMachineStatus } from "./normalized-status.js";
 import { validateNormalizedProfilerOutput } from "./normalizer-validator.js";
 import { buildDomainControlObligationCompilerHandoff } from "./domain-control-obligation-profile.handoff.js";
+import { assertPhase10CompilerCompatibility, buildPhase10CompilerCompatibility } from "./phase10-downstream-compatibility.js";
 
 export function compileFinalOutputHandoff({ run, artifacts }) {
-  const compilerArtifacts = withPhase7DapProjection({ run, artifacts });
+  const phase10Compatibility = buildPhase10CompilerCompatibility({ artifacts });
+  const phase10 = assertPhase10CompilerCompatibility(phase10Compatibility);
+  const compilerArtifacts = withPhase7DapProjection({ run, artifacts: { ...artifacts, ...phase10Compatibility } });
   const output = normalizeExposureTierSections(buildNormalizedProfilerOutput({ run, artifacts: compilerArtifacts }), compilerArtifacts);
   const final = output.final_output_handoff?.final_output_handoff || {};
   const status = toMachineStatus(final.validation_status || output.normalized_report_manifest?.validation_status || run?.status);
   const domainControlObligationHandoff = buildDomainControlObligationCompilerHandoff({ domainControlObligationProfile: artifacts.domain_control_obligation_profile });
   mergeDomainControlObligationContributions(output, domainControlObligationHandoff.existing_section_contributions);
+  mergePhase10Compatibility(output, phase10);
 
   for (const sectionId of NORMALIZED_SECTION_KEYS) {
     const artifactName = `normalized_section__${sectionId}`;
@@ -20,7 +24,20 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
   }
 
   const normalized_sections = Object.fromEntries(NORMALIZED_SECTION_KEYS.map((sectionId) => [sectionId, output[`normalized_section__${sectionId}`]]));
-  output.normalized_report_manifest = { ...(output.normalized_report_manifest || {}), validation_status: status, section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status })) };
+  output.normalized_report_manifest = {
+    ...(output.normalized_report_manifest || {}),
+    validation_status: status,
+    section_artifacts: (output.normalized_report_manifest?.section_artifacts || []).map((row) => ({ ...row, status })),
+    phase10_downstream_compatibility: {
+      schema_version: phase10.schema_version,
+      identity_contract: phase10.identity_contract,
+      expected_registry_row_key_count: phase10.expected_registry_row_key_count,
+      mounted_packages: phase10.mounted_packages,
+      stream_summary: phase10.stream_summary,
+      final_status_counts: phase10.final_status_counts,
+      challenge_status: phase10.challenge_status
+    }
+  };
 
   output.final_output_handoff = {
     validation_status: status,
@@ -31,7 +48,30 @@ export function compileFinalOutputHandoff({ run, artifacts }) {
       validation_status: status,
       normalized_report_manifest: output.normalized_report_manifest,
       normalized_sections,
-      compiler_trace: { ...(final.compiler_trace || {}), compiler_version: "normalized_profiler_compiler_replacement_v10_phase7_dap_batch_projection", deterministic_only: true, no_new_findings_created: true, no_row_re_evaluation: true, normalized_section_count: NORMALIZED_SECTION_KEYS.length, section_6_m9_summary_not_raw_index: true, section_6_legal_cartography_summary_not_raw_index: true, section_6_legal_signal_derivation_profile_summary_present: true, section_789_artifact_split: true, section_10_merged_forensic_annexure: true, no_separate_section_11: true, full_forensic_payload_rendered_inline: false, exposure_tier_carry_forward: true, exposure_tier_sort_locked: true, archived_legacy_outputs_not_emitted: true, phase7_dap_batch_projection_used: true, four_b_four_c_retired_from_runtime: true }
+      phase10_downstream_compatibility: output.normalized_report_manifest.phase10_downstream_compatibility,
+      compiler_trace: {
+        ...(final.compiler_trace || {}),
+        compiler_version: "normalized_profiler_compiler_v11_phase10_dynamic_compound_identity",
+        deterministic_only: true,
+        no_new_findings_created: true,
+        no_row_re_evaluation: true,
+        phase10_compound_identity_preserved: true,
+        phase10_package_stream_custody_preserved: true,
+        phase10_raw_threat_id_global_deduplication_forbidden: true,
+        normalized_section_count: NORMALIZED_SECTION_KEYS.length,
+        section_6_m9_summary_not_raw_index: true,
+        section_6_legal_cartography_summary_not_raw_index: true,
+        section_6_legal_signal_derivation_profile_summary_present: true,
+        section_789_artifact_split: true,
+        section_10_merged_forensic_annexure: true,
+        no_separate_section_11: true,
+        full_forensic_payload_rendered_inline: false,
+        exposure_tier_carry_forward: true,
+        exposure_tier_sort_locked: true,
+        archived_legacy_outputs_not_emitted: true,
+        phase7_dap_batch_projection_used: true,
+        four_b_four_c_retired_from_runtime: true
+      }
     }
   };
   output.normalizer_validation = validateNormalizedProfilerOutput(output);
@@ -50,12 +90,31 @@ function mergeDomainControlObligationContributions(output, contributions = {}) {
   }
 }
 
+function mergePhase10Compatibility(output, phase10) {
+  const exposureSectionNames = [
+    "normalized_section__exposure_summary_harm_mechanism_workpad_summary",
+    "normalized_section__exposure_diagnosis_table",
+    "normalized_section__exposure_control_discipline",
+    "normalized_section__review_route_action_plan",
+    "normalized_section__control_handoff_readiness",
+    "normalized_section__exposure_clarification_queue"
+  ];
+  for (const artifactName of exposureSectionNames) {
+    const section = output[artifactName];
+    if (!section || typeof section !== "object" || Array.isArray(section)) continue;
+    output[artifactName] = {
+      ...section,
+      phase10_identity_contract: phase10.identity_contract,
+      phase10_mounted_packages: phase10.mounted_packages,
+      phase10_stream_summary: phase10.stream_summary,
+      phase10_final_status_counts: phase10.final_status_counts
+    };
+  }
+}
+
 function withPhase7DapProjection({ run, artifacts = {} }) {
   const projection = unwrapPhase7Projection(artifacts.phase7_dap_report_projection) || buildPhase7DapReportProjection({ run, artifacts })?.phase7_dap_report_projection;
   if (!projection || projection.artifact_type !== "phase7_dap_report_projection") return artifacts;
   return { ...artifacts, phase7_dap_report_projection: projection };
 }
-
-function unwrapPhase7Projection(value) {
-  return value?.phase7_dap_report_projection && typeof value.phase7_dap_report_projection === "object" ? value.phase7_dap_report_projection : value?.artifact?.phase7_dap_report_projection || value;
-}
+function unwrapPhase7Projection(value) { return value?.phase7_dap_report_projection && typeof value.phase7_dap_report_projection === "object" ? value.phase7_dap_report_projection : value?.artifact?.phase7_dap_report_projection || value; }
