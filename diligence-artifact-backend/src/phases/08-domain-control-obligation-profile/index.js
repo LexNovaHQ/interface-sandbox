@@ -1,6 +1,7 @@
 export * from "./domain-control-obligation.constants.js";
 export * from "./domain-control-obligation-candidate-inventory.contract.js";
 export * from "./domain-control-obligation-profile.contract.js";
+export * from "./domain-control-obligation-downstream-handoff.contract.js";
 export * from "./domain-control-obligation-candidate-inventory.runner.js";
 export * from "./domain-control-obligation-profile.runner.js";
 export * from "./services/domain-control-obligation-taxonomy.resolver.js";
