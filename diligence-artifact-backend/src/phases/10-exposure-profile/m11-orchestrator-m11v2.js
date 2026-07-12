@@ -1,13 +1,7 @@
 import { logEvent } from "../../runtime/services/storage/firestore.service.js";
-import { buildPhasePrompt } from "../../runtime/services/prompts.service.js";
 import { loadReferencePacket } from "../../runtime/services/reference.service.js";
-import { callGeminiJson } from "../../runtime/services/provider.service.js";
 import { lockPhase, readArtifact, readArtifactPayload, saveArtifact } from "../../runtime/services/artifacts.service.js";
-import { assembleM11AcceptedBatchLedger, buildExposureRegistryRoutePlan, buildM11BatchPacket, mergeExposureRegistryWorkpad98, projectControlledProfile, projectTriggeredProfile, validateM11BatchLedger } from "./m11-deterministic-system-m11v2.js";
-import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-deterministic-forensics-m11v2.js";
-import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
-import { buildM11DomainControlObligationHandoff } from "./domain-control-obligation-profile.handoff.js";
 import {
   artifactMatchesPhase10ExecutionFingerprint,
   buildActiveThreatRegistryManifest,
@@ -15,14 +9,20 @@ import {
   resolveActiveThreatRegistryContext,
   stampPhase10ExecutionMetadata
 } from "./active-threat-registry-manifest.js";
+import {
+  buildPackageScopedExposureRegistryRoutePlan,
+  finalizePhase10RoutingContext,
+  PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA
+} from "./phase10-classification-routing.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
-const STATUS_INPUT_FIELDS = Object.freeze(["target_match_present", "hunter_conditions_met", "trigger_if_met", "exclude_if_met", "visible_control_present", "visible_control_defeats_or_reduces_exposure", "evidence_sufficient", "public_evidence_limitation", "false_positive_concern"]);
-const BATCH_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/PHASE10_AUTO_SELECTOR_AND_FINGERPRINT_ADDENDUM.md", "agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md", "agent-packages/agent_5_exposure_registry/M11_C_BATCH_EVALUATION.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
-const REPAIR_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/PHASE10_AUTO_SELECTOR_AND_FINGERPRINT_ADDENDUM.md", "agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md", "agent-packages/agent_5_exposure_registry/M11_D_BATCH_REINVESTIGATION_REPAIR.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
-const ART = Object.freeze({ manifest: "active_threat_registry_manifest", legalIndex: "legal_cartography_index", featureMain: "target_feature_profile", route: "exposure_registry_route_plan", workpad: "exposure_registry_workpad_98", controlled: "exposure_registry_controlled_profile", triggered: "exposure_registry_triggered_profile", forensics: "exposure_registry_profile_forensics" });
-const M11_SCHEMA_UPGRADE = "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1";
+const ART = Object.freeze({
+  manifest: "active_threat_registry_manifest",
+  legalIndex: "legal_cartography_index",
+  featureMain: "target_feature_profile",
+  route: "exposure_registry_route_plan"
+});
 
 export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
@@ -33,15 +33,23 @@ export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   index_navigation_mandatory: true,
   preceding_forensic_inputs_forbidden: true,
   infrastructure_authority: "CENTRAL_RUNTIME_SERVICES",
-  phase_owned_path: "src/phases/10-exposure-profile"
+  phase_owned_path: "src/phases/10-exposure-profile",
+  deterministic_route_stage: "CO_4_CO_5_CO_6_ACTIVE",
+  semantic_stage: "PENDING_CO_7_AGENT5_PACKAGE_AND_CO_8_RUNTIME"
 });
 
 export async function runM11OrchestratedPhase({ run, phase, contract }) {
   if (!(contract.reads || []).includes("phase_routing_manifest")) throw new Error("M11_PHASE2G_MANIFEST_READ_MISSING");
+
   const routed = await readPhaseRouteRuntimePacket({
     internalJobId: "M11",
     consumerAgentId: contract.agent_id || AGENT_5,
-    readArtifacts: ({ reads, agent_id, strict }) => readArtifactsForM11({ run_id: run.run_id, reads, agent_id, strict })
+    readArtifacts: ({ reads, agent_id, strict }) => readArtifactsForM11({
+      run_id: run.run_id,
+      reads,
+      agent_id,
+      strict
+    })
   });
   const artifacts = routed.artifacts;
   assertM11RoutePacket(artifacts.phase_route_runtime_packet);
@@ -49,221 +57,170 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
 
   let registryContext;
   try {
-    registryContext = await resolveActiveThreatRegistryContext({ runId: run.run_id, artifacts, baseReferencePacket });
+    const selectedContext = await resolveActiveThreatRegistryContext({
+      runId: run.run_id,
+      artifacts,
+      baseReferencePacket
+    });
+    registryContext = finalizePhase10RoutingContext({
+      registryContext: selectedContext,
+      targetFeatureProfile: artifacts[ART.featureMain]
+    });
   } catch (error) {
-    await logEvent({ run_id: run.run_id, event_type: "M11_AUTO_SELECTOR_CONTROLLED_FAILURE", actor: AGENT_5, payload: { error: String(error?.message || error), selector_authority: "domain_derivation_profile" } });
+    await logEvent({
+      run_id: run.run_id,
+      event_type: "M11_AUTO_SELECTOR_OR_CLASSIFICATION_ADAPTER_CONTROLLED_FAILURE",
+      actor: AGENT_5,
+      payload: {
+        error: String(error?.message || error),
+        selector_authority: "domain_derivation_profile",
+        classification_authority: "target_feature_profile"
+      }
+    });
+    await lockPhase({
+      run_id: run.run_id,
+      phase,
+      agent_id: AGENT_5,
+      status: "CONTROLLED_FAILURE",
+      next_phase: phase
+    });
+    return;
+  }
+
+  const manifest = await getOrBuildActiveThreatRegistryManifest({
+    run,
+    phase,
+    registryContext
+  });
+  if (!isAccepted(manifest.lock_status)) {
     await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
     return;
   }
 
-  const referencePacket = registryContext.referencePacket;
-  const manifest = await getOrBuildActiveThreatRegistryManifest({ run, phase, registryContext });
-  if (!isAccepted(manifest.lock_status)) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
+  const route = await getOrBuildRoutePlan({
+    run,
+    phase,
+    artifacts,
+    registryContext,
+    manifest: manifest.artifact
+  });
+  if (!isAccepted(route.lock_status)) {
+    await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
+    return;
+  }
 
-  if (!registryContext.legacy_route_compatibility.ok) {
+  if (!registryContext.semantic_layer_compatibility?.ok) {
     await logEvent({
       run_id: run.run_id,
-      event_type: "M11_AUTO_SELECTOR_MOUNTED_ROUTE_ADAPTER_PENDING",
+      event_type: "M11_PACKAGE_SCOPED_ROUTE_PLAN_READY_SEMANTIC_PACKAGE_PENDING",
       actor: AGENT_5,
       payload: {
         primary_package: manifest.artifact.primary_package,
         ai_mount: manifest.artifact.ai_mount,
         mounted_packages: manifest.artifact.mounted_packages,
         phase10_execution_fingerprint: manifest.artifact.phase10_execution_fingerprint,
-        pending_change_orders: registryContext.legacy_route_compatibility.pending_change_orders
+        classification_inventory_digest: manifest.artifact.phase5_classification_inventory_digest,
+        route_plan_schema: route.artifact.schema_version,
+        stream_count: route.artifact.stream_plans?.length || 0,
+        batch_count: route.artifact.batch_plan?.length || 0,
+        maximum_rows_per_batch: route.artifact.batch_plan_validation?.maximum_rows_per_batch || null,
+        pending_change_orders: registryContext.semantic_layer_compatibility.pending_change_orders
       }
     });
-    await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
+    await lockPhase({
+      run_id: run.run_id,
+      phase,
+      agent_id: AGENT_5,
+      status: "CONTROLLED_FAILURE",
+      next_phase: phase
+    });
     return;
   }
 
-  const route = await getOrBuildRoutePlan({ run, phase, artifacts, referencePacket, manifest: manifest.artifact });
-  if (!isAccepted(route.lock_status)) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
-
-  const acceptedBatches = [];
-  const batchValidations = [];
-  for (const batch of route.artifact.batch_plan || []) {
-    const completed = await readCompletedBatchCheckpoint({ run_id: run.run_id, batch_id: batch.batch_id, expectedExecutionFingerprint: manifest.artifact.phase10_execution_fingerprint });
-    if (completed) {
-      acceptedBatches.push(completed.batchArtifact);
-      batchValidations.push(completed.validationArtifact);
-      await logEvent({ run_id: run.run_id, event_type: "M11_V2_CHECKPOINT_REUSED", actor: AGENT_5, payload: { artifact_name: `exposure_registry_batch__${batch.batch_id}`, lock_status: completed.batchLockStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase10_execution_fingerprint: manifest.artifact.phase10_execution_fingerprint } });
-      continue;
-    }
-
-    const batchPacketRoot = buildM11BatchPacket({ routePlan: { [ART.route]: route.artifact }, batchId: batch.batch_id, upstreamArtifacts: artifacts, referencePacket });
-    const compactPacket = buildCompactM11BatchPacket({ batchPacket: batchPacketRoot, upstreamArtifacts: artifacts });
-    const m11DomainControlObligationContext = buildM11DomainControlObligationHandoff({ domainControlObligationProfile: artifacts.domain_control_obligation_profile, activeThreatRows: batchPacketRoot?.m11_batch_packet?.registry_rows || [] });
-    const activeModelPacket = {
-      ...compactPacket,
-      m11_domain_control_obligation_context: m11DomainControlObligationContext,
-      phase10_execution_context: {
-        identity_version: manifest.artifact.execution_identity_contract.version,
-        registry_set_fingerprint: manifest.artifact.registry_set_fingerprint,
-        phase10_execution_fingerprint: manifest.artifact.phase10_execution_fingerprint,
-        primary_package: manifest.artifact.primary_package,
-        ai_mount: manifest.artifact.ai_mount,
-        mounted_packages: manifest.artifact.mounted_packages
-      }
-    };
-    let semanticOutput = await runModelBatch({ run, phase, batch, compactPacket: activeModelPacket, repair: false });
-    let shape = validateM11BatchLedger(semanticOutput, batch.expected_threat_ids || []);
-    const validationName = `exposure_registry_batch_validation__${batch.batch_id}`;
-
-    if (!shape.ok) {
-      semanticOutput = await runModelBatch({ run, phase, batch, compactPacket: activeModelPacket, repair: true, batchOutput: semanticOutput, shape, validationArtifact: null, repairReason: "SEMANTIC_SHAPE" });
-      shape = validateM11BatchLedger(semanticOutput, batch.expected_threat_ids || []);
-      if (!shape.ok) return failBatch({ run, phase, batch, validationName, shape, manifest: manifest.artifact });
-    }
-
-    let validationArtifact = validateSemanticBatch({ batch, batchOutput: semanticOutput, shape, routePlan: route.artifact });
-    let validationStatus = validationArtifact.exposure_registry_batch_validation.status;
-    if (!isAcceptedBatchValidationStatus(validationStatus)) {
-      semanticOutput = await runModelBatch({ run, phase, batch, compactPacket: activeModelPacket, repair: true, batchOutput: semanticOutput, shape, validationArtifact, repairReason: "BATCH_VALIDATION" });
-      shape = validateM11BatchLedger(semanticOutput, batch.expected_threat_ids || []);
-      if (!shape.ok) return failBatch({ run, phase, batch, validationName, shape, prior: validationArtifact, manifest: manifest.artifact });
-      validationArtifact = validateSemanticBatch({ batch, batchOutput: semanticOutput, shape, routePlan: route.artifact });
-      validationStatus = validationArtifact.exposure_registry_batch_validation.status;
-      if (!isAcceptedBatchValidationStatus(validationStatus)) {
-        validationArtifact.exposure_registry_batch_validation.status = "PASS_WITH_LIMITATION";
-        validationArtifact.exposure_registry_batch_validation.limitations.push({ code: "POST_REPAIR_SEMANTIC_LIMITATION", batch_id: batch.batch_id });
-        validationStatus = "PASS_WITH_LIMITATION";
-      }
-    }
-
-    validationArtifact = stampPhase10ExecutionMetadata(validationArtifact, manifest.artifact);
-    const acceptedBatch = stampPhase10ExecutionMetadata(assembleM11AcceptedBatchLedger({ semanticBatch: semanticOutput, batchPacket: batchPacketRoot }), manifest.artifact);
-    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: validationName, artifact: validationArtifact, lock_status: batchValidationLockStatus(validationStatus) }));
-    await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: `exposure_registry_batch__${batch.batch_id}`, artifact: acceptedBatch, lock_status: validationStatus === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }));
-    acceptedBatches.push(acceptedBatch);
-    batchValidations.push(validationArtifact);
-  }
-
-  const workpad = await getOrBuildWorkpad({ run, phase, route, acceptedBatches, batchValidations, manifest: manifest.artifact });
-  if (!isAccepted(workpad.lock_status)) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "REPAIR_REQUIRED", next_phase: phase });
-  const controlled = await getOrBuildProjection({ run, phase, artifactName: ART.controlled, isCurrent: isM11V2Projection, build: () => projectControlledProfile({ [ART.workpad]: workpad.artifact })[ART.controlled], manifest: manifest.artifact });
-  const triggered = await getOrBuildProjection({ run, phase, artifactName: ART.triggered, isCurrent: isM11V2Projection, build: () => projectTriggeredProfile({ [ART.workpad]: workpad.artifact })[ART.triggered], manifest: manifest.artifact });
-  const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket, manifest: manifest.artifact });
-  const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
-  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", active_threat_registry_manifest_status: manifest.lock_status, registry_set_fingerprint: manifest.artifact.registry_set_fingerprint, phase10_execution_fingerprint: manifest.artifact.phase10_execution_fingerprint, expected_registry_rows: manifest.artifact.expected_row_count, route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, infrastructure_authority: "CENTRAL_RUNTIME_SERVICES", phase_owned_path: "src/phases/10-exposure-profile" } });
-  await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
-}
-
-async function runModelBatch({ run, phase, batch, compactPacket, repair, batchOutput = null, shape = null, validationArtifact = null, repairReason = "" }) {
-  const prompt = await buildPhasePrompt({ prompt_files: repair ? REPAIR_PROMPTS : BATCH_PROMPTS, phase: `${phase}:${repair ? "M11_REPAIR" : "M11_BATCH"}:${batch.batch_id}`, run, artifacts: repair ? { m11_batch_packet: compactPacket, m11_batch_registry_ledger: batchOutput, backend_structural_validation: shape, m12_batch_validation: validationArtifact, repair_context: { batch_id: batch.batch_id, repair_reason: repairReason, rule: "Repair only semantic evidence-application fields. Do not emit final material status, profile placement, deterministic registry spine, workpad, projections, or forensics." } } : { m11_batch_packet: compactPacket }, writes: ["m11_batch_registry_ledger"], references: [] });
-  return (await callGeminiJson({ prompt, phase: `${phase}:${repair ? "REPAIR" : "BATCH"}:${batch.batch_id}` })).json;
+  throw new Error("M11_SEMANTIC_STAGE_MUST_NOT_RUN_BEFORE_CO_7_AND_CO_8");
 }
 
 async function getOrBuildActiveThreatRegistryManifest({ run, phase, registryContext }) {
   const expectedExecutionFingerprint = registryContext.phase10_execution_fingerprint;
-  const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.manifest });
+  const existing = await readAcceptedCheckpoint({
+    run_id: run.run_id,
+    artifact_name: ART.manifest
+  });
   if (existing && isCurrentActiveThreatRegistryManifest(existing.artifact, expectedExecutionFingerprint)) return existing;
+
   const output = buildActiveThreatRegistryManifest({ context: registryContext });
   const artifact = output[ART.manifest];
-  const lock_status = artifact.validation?.status === "PASS" ? "LOCKED" : "CONTROLLED_FAILURE";
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.manifest, artifact, lock_status }));
+  const lock_status = artifact.validation?.status === "PASS" || artifact.validation?.status === "PASS_WITH_LIMITATION"
+    ? "LOCKED"
+    : "CONTROLLED_FAILURE";
+  await saveArtifact(artifactSaveBody({
+    run_id: run.run_id,
+    phase,
+    agent_id: AGENT_5,
+    artifact_name: ART.manifest,
+    artifact,
+    lock_status
+  }));
   return { artifact, lock_status };
 }
 
-async function getOrBuildRoutePlan({ run, phase, artifacts, referencePacket, manifest }) {
+async function getOrBuildRoutePlan({ run, phase, artifacts, registryContext, manifest }) {
   const expectedExecutionFingerprint = manifest.phase10_execution_fingerprint;
-  const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.route });
-  if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, expectedExecutionFingerprint) && !hasSurfaceTriggeredRoutes(existing.artifact) && isM11V2RoutePlan(existing.artifact)) return existing;
-  const output = buildExposureRegistryRoutePlan({ upstreamArtifacts: artifacts, targetFeatureProfile: artifacts[ART.featureMain], legalCartographyIndex: artifacts[ART.legalIndex], referencePacket, runId: run.run_id });
+  const existing = await readAcceptedCheckpoint({
+    run_id: run.run_id,
+    artifact_name: ART.route
+  });
+  if (
+    existing
+    && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, expectedExecutionFingerprint)
+    && existing.artifact?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA
+  ) return existing;
+
+  const output = buildPackageScopedExposureRegistryRoutePlan({
+    registryContext,
+    targetFeatureProfile: artifacts[ART.featureMain],
+    legalCartographyIndex: artifacts[ART.legalIndex],
+    upstreamArtifacts: artifacts,
+    runId: run.run_id,
+    manifest
+  });
   const artifact = stampPhase10ExecutionMetadata(output[ART.route], manifest);
   const lock_status = routePlanLockStatus(artifact.phase_a_validation?.status);
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.route, artifact, lock_status }));
+  await saveArtifact(artifactSaveBody({
+    run_id: run.run_id,
+    phase,
+    agent_id: AGENT_5,
+    artifact_name: ART.route,
+    artifact,
+    lock_status
+  }));
   return { artifact, lock_status };
-}
-
-function validateSemanticBatch({ batch, batchOutput, shape, routePlan }) {
-  const ledger = batchOutput?.m11_batch_registry_ledger || batchOutput || {};
-  const rows = Array.isArray(ledger.batch_registry_ledger) ? ledger.batch_registry_ledger : [];
-  const expected = Array.isArray(batch.expected_threat_ids) ? batch.expected_threat_ids.map(String) : [];
-  const returned = Array.isArray(ledger.returned_threat_ids) ? ledger.returned_threat_ids.map(String) : rows.map((row) => String(row.Threat_ID || "")).filter(Boolean);
-  const failures = [];
-  const limitations = [];
-  if (!shape?.ok) failures.push(...(shape.failures || []));
-  if (!arraysEqualAsSets(expected, returned)) failures.push("returned_threat_ids do not match expected_threat_ids");
-  if (rows.length !== expected.length) failures.push(`batch_registry_ledger length ${rows.length} does not match expected ${expected.length}`);
-  for (const row of rows) {
-    const id = String(row.Threat_ID || "").trim();
-    if (!id) failures.push("batch row missing Threat_ID");
-    const statusInputs = row.status_inputs && typeof row.status_inputs === "object" && !Array.isArray(row.status_inputs) ? row.status_inputs : {};
-    for (const field of STATUS_INPUT_FIELDS) if (!(field in statusInputs)) failures.push(`${id || "row"} missing status_inputs.${field}`);
-    if (String(row.row_limitations || "").trim()) limitations.push(`row limitation carried: ${id || "unknown"}`);
-    if (["yes", "partial"].includes(String(statusInputs.public_evidence_limitation || "").toLowerCase())) limitations.push(`public evidence limitation carried: ${id || "unknown"}`);
-    if (["yes", "partial"].includes(String(statusInputs.false_positive_concern || "").toLowerCase())) limitations.push(`false positive concern carried: ${id || "unknown"}`);
-  }
-  const status = failures.length ? "REPAIR_REQUIRED" : limitations.length ? "PASS_WITH_LIMITATION" : "PASS";
-  return { exposure_registry_batch_validation: { batch_id: batch.batch_id, batch_group: batch.batch_group, status, validation_owner: "backend_deterministic_semantic_batch_validator", semantic_m12_validation_status: status, expected_threat_ids: expected, validated_threat_ids: returned, shape_checks: { backend_structural_validation_status: shape?.status || "UNKNOWN", expected_count: expected.length, returned_count: returned.length, row_count: rows.length, route_plan_status: routePlan?.phase_a_validation?.status || "UNKNOWN" }, challenge_checks: { deterministic: true, model_usage: "NONE_DETERMINISTIC", semantic_evidence_application_only: true, final_status_owner: "backend_after_validation", false_positive_discipline: "STATUS_INPUT_VALIDATED_NO_POST_RUN_MUTATION", m11_schema_upgrade: M11_SCHEMA_UPGRADE }, findings: [], failures, repair_directives: failures.map((failure) => ({ failure, directive: "Repair active semantic batch only." })), limitations, model_metadata: { model_usage: "NONE_DETERMINISTIC" } } };
-}
-
-async function failBatch({ run, phase, batch, validationName, shape, prior = null, manifest }) {
-  let artifact = { exposure_registry_batch_validation: { batch_id: batch.batch_id, batch_group: batch.batch_group, status: "REPAIR_REQUIRED", validation_owner: "backend_semantic_shape_validator", expected_threat_ids: batch.expected_threat_ids || [], failures: shape.failures || [], prior_m12_validation: prior?.exposure_registry_batch_validation || null } };
-  artifact = stampPhase10ExecutionMetadata(artifact, manifest);
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: validationName, artifact, lock_status: "REPAIR_REQUIRED" }));
-  await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "REPAIR_REQUIRED", next_phase: phase });
-}
-
-async function getOrBuildWorkpad({ run, phase, route, acceptedBatches, batchValidations, manifest }) {
-  const expectedExecutionFingerprint = manifest.phase10_execution_fingerprint;
-  const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.workpad });
-  if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, expectedExecutionFingerprint) && isM11V2Workpad(existing.artifact)) return existing;
-  const output = mergeExposureRegistryWorkpad98({ routePlan: { [ART.route]: route.artifact }, acceptedBatches, batchValidations });
-  const artifact = stampPhase10ExecutionMetadata(output[ART.workpad], manifest);
-  const lock_status = artifact.merge_validation?.status === "PASS" ? "LOCKED" : artifact.merge_validation?.status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "REPAIR_REQUIRED";
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.workpad, artifact, lock_status }));
-  return { artifact, lock_status };
-}
-
-async function getOrBuildProjection({ run, phase, artifactName, isCurrent, build, manifest }) {
-  const expectedExecutionFingerprint = manifest.phase10_execution_fingerprint;
-  const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: artifactName });
-  if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, expectedExecutionFingerprint) && isCurrent(existing.artifact)) return existing;
-  const artifact = stampPhase10ExecutionMetadata({ ...build(), m11_schema_upgrade: M11_SCHEMA_UPGRADE, material_row_field_count: 19 }, manifest);
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: artifactName, artifact, lock_status: "LOCKED" }));
-  return { artifact, lock_status: "LOCKED" };
-}
-
-async function getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket, manifest }) {
-  const expectedExecutionFingerprint = manifest.phase10_execution_fingerprint;
-  const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.forensics });
-  if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, expectedExecutionFingerprint) && isM11V2Forensics(existing.artifact)) return { ...existing, diagnostic_status: existing.artifact?.forensic_lock_gate_result?.status || existing.artifact?.registry_lock_gate_result?.status || existing.lock_status };
-  const output = buildExposureRegistryForensicsFromSavedArtifacts({ routePlan: { [ART.route]: route.artifact }, acceptedBatches, batchValidations, workpad: { [ART.workpad]: workpad.artifact }, controlledProfile: { [ART.controlled]: controlled.artifact }, triggeredProfile: { [ART.triggered]: triggered.artifact }, fieldDerivationRegistryText: referencePacket.files?.["Diligence_Field_Derivation_Registry.yml"]?.content || "" });
-  const artifact = stampPhase10ExecutionMetadata(output[ART.forensics], manifest);
-  const diagnostic_status = artifact.forensic_lock_gate_result?.status || artifact.registry_lock_gate_result?.status || "REPAIR_REQUIRED";
-  const lock_status = diagnostic_status === "PASS" ? "LOCKED" : "LOCKED_WITH_LIMITATIONS";
-  if (diagnostic_status !== "PASS" && diagnostic_status !== "PASS_WITH_LIMITATION") {
-    artifact.non_blocking_forensic_repair = { status: diagnostic_status, policy: "FORENSICS_DIAGNOSTIC_ONLY_DOES_NOT_BLOCK_M11_TO_M12", note: "Forensic repair requirements are preserved for audit but do not block controlled/triggered profile handoff." };
-  }
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.forensics, artifact, lock_status }));
-  return { artifact, lock_status, diagnostic_status };
 }
 
 async function readAcceptedCheckpoint({ run_id, artifact_name }) {
   try {
     const result = await readArtifact({ run_id, artifact_name, agent_id: AGENT_5 });
-    return isAccepted(result.lock_status) ? { artifact: result.artifact, lock_status: result.lock_status } : null;
+    return isAccepted(result.lock_status)
+      ? { artifact: result.artifact, lock_status: result.lock_status }
+      : null;
   } catch (_error) {
     return null;
   }
 }
 
-async function readCompletedBatchCheckpoint({ run_id, batch_id, expectedExecutionFingerprint }) {
-  const validation = await readAcceptedCheckpoint({ run_id, artifact_name: `exposure_registry_batch_validation__${batch_id}` });
-  const batch = await readAcceptedCheckpoint({ run_id, artifact_name: `exposure_registry_batch__${batch_id}` });
-  const fingerprintsMatch = validation && batch
-    && artifactMatchesPhase10ExecutionFingerprint(validation.artifact, expectedExecutionFingerprint)
-    && artifactMatchesPhase10ExecutionFingerprint(batch.artifact, expectedExecutionFingerprint);
-  return fingerprintsMatch && isM11V2Batch(batch.artifact) ? { validationArtifact: validation.artifact, batchArtifact: batch.artifact, validationLockStatus: validation.lock_status, batchLockStatus: batch.lock_status } : null;
-}
-
 async function readArtifactsForM11({ run_id, reads, agent_id, strict = true }) {
   const artifacts = {};
   for (const artifactName of reads || []) {
-    try { artifacts[artifactName] = await readArtifactPayload({ run_id, artifact_name: artifactName, agent_id }); }
-    catch (error) { if (strict) throw error; artifacts[artifactName] = null; }
+    try {
+      artifacts[artifactName] = await readArtifactPayload({
+        run_id,
+        artifact_name: artifactName,
+        agent_id
+      });
+    } catch (error) {
+      if (strict) throw error;
+      artifacts[artifactName] = null;
+    }
   }
   return artifacts;
 }
@@ -279,17 +236,16 @@ function assertM11RoutePacket(packet = {}) {
   if (packet.profile_forensics_inputs_allowed !== false) throw new Error("M11_PHASE2G_FORENSICS_INPUT_BOUNDARY_MISSING");
 }
 
-function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) { return { run_id, phase, agent_id, artifact_name, lock_status, artifact }; }
-function routePlanLockStatus(status) { return status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "CONTROLLED_FAILURE"; }
-function isAccepted(status) { return ACCEPTED.has(status); }
-function deriveFinalM11Status({ routeStatus, forensicStatus, batchValidations }) { if (routeStatus === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS"; if (forensicStatus === "LOCKED_WITH_LIMITATIONS" || !isAccepted(forensicStatus)) return "LOCKED_WITH_LIMITATIONS"; return batchValidations.some((v) => v?.exposure_registry_batch_validation?.status === "PASS_WITH_LIMITATION") ? "LOCKED_WITH_LIMITATIONS" : "LOCKED"; }
-function isAcceptedBatchValidationStatus(status) { return status === "PASS" || status === "PASS_WITH_LIMITATION"; }
-function batchValidationLockStatus(status) { return status === "PASS" ? "LOCKED" : status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : status === "CONTROLLED_FAILURE" ? "CONTROLLED_FAILURE" : "REPAIR_REQUIRED"; }
-function hasSurfaceTriggeredRoutes(routePlan) { const retired = ["SURFACE", "TRIGGERED"].join("_"); return (Array.isArray(routePlan?.route_rows) ? routePlan.route_rows : []).some((row) => row.route_reason === retired); }
-function arraysEqualAsSets(a, b) { const aa = new Set((Array.isArray(a) ? a : []).map(String)); const bb = new Set((Array.isArray(b) ? b : []).map(String)); if (aa.size !== bb.size) return false; for (const item of aa) if (!bb.has(item)) return false; return true; }
-function isM11V2RoutePlan(artifact = {}) { return artifact?.registry_inventory?.m11_schema_upgrade === M11_SCHEMA_UPGRADE; }
-function isM11V2Batch(artifact = {}) { return artifact?.m11_batch_registry_ledger?.material_row_field_count === 19 && asArray(artifact?.m11_batch_registry_ledger?.batch_registry_ledger).every((row) => row.Threat_Name && row.Subcategory); }
-function isM11V2Workpad(artifact = {}) { return artifact?.workpad_metadata?.m11_schema_upgrade === M11_SCHEMA_UPGRADE && artifact?.workpad_metadata?.material_row_field_count === 19; }
-function isM11V2Projection(artifact = {}) { return artifact?.m11_schema_upgrade === M11_SCHEMA_UPGRADE && artifact?.material_row_field_count === 19; }
-function isM11V2Forensics(artifact = {}) { return artifact?.registry_input_manifest?.m11_schema_upgrade === M11_SCHEMA_UPGRADE && artifact?.registry_input_manifest?.material_row_field_count === 19; }
-function asArray(value) { return Array.isArray(value) ? value : []; }
+function artifactSaveBody({ run_id, phase, agent_id, artifact_name, artifact, lock_status = "LOCKED" }) {
+  return { run_id, phase, agent_id, artifact_name, lock_status, artifact };
+}
+
+function routePlanLockStatus(status) {
+  if (status === "PASS") return "LOCKED";
+  if (status === "PASS_WITH_LIMITATION") return "LOCKED_WITH_LIMITATIONS";
+  return "CONTROLLED_FAILURE";
+}
+
+function isAccepted(status) {
+  return ACCEPTED.has(status);
+}
