@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after idempotent upstream repair fix. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after Phase 7 idempotent repair fix. Do not merge.
