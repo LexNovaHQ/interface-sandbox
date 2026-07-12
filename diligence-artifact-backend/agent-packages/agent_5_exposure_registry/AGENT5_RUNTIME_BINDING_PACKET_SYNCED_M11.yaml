@@ -1,10 +1,10 @@
 <RUNTIME_BINDING_PACKET>
-runtime_contract: AGENT5_PHASE9_EXPOSURE_PHASE2G
-runtime_contract_version: v15_package_scoped_route_max15
+runtime_contract: AGENT5_PHASE10_EXPOSURE_PHASE2G
+runtime_contract_version: v16_package_scoped_semantic_contract
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
 active_phase_scope: M11_EXPOSURE_REGISTRY
-run_mode: BATCHED_AGENT
+run_mode: PACKAGE_SCOPED_BATCHED_AGENT
 run_id_required: true
 run_id: "{{run_id}}"
 
@@ -15,6 +15,7 @@ routing_authority:
   delivery_mode: SOURCE_BUCKET_PROFILE
   lossless_evidence_role: PRIMARY_EVIDENCE
   index_role: MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE
+  index_gap_navigation_role: SAME_BUCKET_PRIMARY_EVIDENCE_NAVIGATION_NOT_FALLBACK
   direct_lossless_as_fallback_allowed: false
   free_corpus_read_allowed: false
   profile_forensics_inputs_allowed: false
@@ -57,7 +58,7 @@ read_artifacts:
   - dap_semantic_batch_req_artifact
   - dap_semantic_batch_validation_manifest
   - data_provenance_profile_semantic_batch_gate
-  - domain_selection_profile
+  - domain_control_obligation_profile
   - active_run_package_manifest
 
 forbidden_read_artifacts:
@@ -70,6 +71,8 @@ forbidden_read_artifacts:
   - integrated_dap_report
   - lossless_family__*
   - source_outside_active_2f_packet
+  - alternate_route_map
+  - free_corpus_scan
 
 shared_reference_files:
   - 03_REGISTRY_EVALUATION_RULES.yaml
@@ -82,17 +85,19 @@ registry_binding_authority:
   runtime_auto_selection: ACTIVE
   selector_authority: domain_derivation_profile
   active_run_package_manifest_role: CONSISTENCY_CHECK_ONLY
-  selected_reference_loading:
-    - package_key_file_from_binding_authority
-    - threat_registry_file_from_binding_authority
+  model_registry_selection_authority: NONE
 
 execution_identity_contract:
   version: PHASE10_EXECUTION_IDENTITY_v2
   global_identity_field: registry_row_key
   format: <package_id>::<Threat_ID>
   canonical_threat_id_preserved: true
+  raw_threat_id_may_repeat_across_package_streams: true
+  raw_threat_id_unique_inside_one_batch: true
   silent_namespacing_forbidden: true
+  model_may_read_registry_row_key: true
   model_may_emit_registry_row_key: false
+  model_output_identity_field: Threat_ID
 
 phase5_classification_inventory_contract:
   schema_version: phase5_classification_inventory.v1
@@ -102,6 +107,7 @@ phase5_classification_inventory_contract:
   primary_source_path: activities[].primary_classification
   overlay_source_path: activities[].overlay_classifications[]
   flat_activity_classification_paths_forbidden: true
+  missing_mounted_stream_classification_result: CONTROLLED_FAILURE
   global_cross_package_archetype_union_forbidden: true
 
 package_scoped_route_contract:
@@ -118,10 +124,56 @@ batch_planner_contract:
   fixed_batch_size_required: false
   packet_ceiling_chars: 180000
   packet_ceiling_version: M11_PACKET_CHARS_180000_v1
+  one_package_per_batch: true
+  one_stream_per_batch: true
+  one_archetype_group_per_batch: true
   package_mixing_forbidden: true
   stream_mixing_forbidden: true
+  archetype_group_mixing_forbidden: true
   evidence_or_registry_truncation_forbidden: true
   single_row_over_ceiling_result: CONTROLLED_FAILURE
+
+semantic_packet_contract:
+  version: M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
+  required_identity_fields:
+    - batch_id
+    - batch_group
+    - stream_id
+    - stream_type
+    - package_id
+    - source_domain
+    - expected_registry_row_keys
+    - expected_threat_ids
+    - row_count
+  model_may_change_packet: false
+
+semantic_output_contract:
+  version: M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
+  only_root: m11_batch_registry_ledger
+  model_identity_field: Threat_ID
+  exact_expected_coverage_required: true
+  preserve_expected_order: true
+  partial_ledger_forbidden: true
+  allowed_row_fields:
+    - Threat_ID
+    - trigger_status
+    - target_match
+    - basis_proof
+    - control_exclusion_evaluation
+    - evidence_source_basis
+    - applied_fp_mechanism
+    - row_limitations
+    - status_inputs
+  deterministic_fields_forbidden: true
+  final_status_forbidden: true
+
+semantic_repair_contract:
+  version: M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1
+  maximum_attempts: 1
+  same_packet_required: true
+  complete_ledger_return_required: true
+  immutable_batch_identity_required: true
+  repair_only_identified_semantic_fields: true
 
 checkpoint_fingerprint_contract:
   registry_set_fingerprint_required: true
@@ -131,44 +183,57 @@ checkpoint_fingerprint_contract:
   routing_and_batch_configuration_in_fingerprint: true
   stale_checkpoint_reuse_forbidden: true
 
-active_prompt_files:
+backend_contract_files:
   - PHASE10_AUTO_SELECTOR_AND_FINGERPRINT_ADDENDUM.md
   - PHASE10_CLASSIFICATION_ROUTING_BATCH_ADDENDUM.md
-  - M11_EXPOSURE_REGISTRY.md
+
+semantic_prompt_files:
+  - AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml
+  - 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md
   - 00_M11_RUNTIME_CONTROLLER.md
-  - M11_A_DETERMINISTIC_ROUTING_PREFILL.md
+  - M11_EXPOSURE_REGISTRY.md
   - M11_B_BATCH_PACKET_ASSEMBLY.md
+  - M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md
   - M11_C_BATCH_EVALUATION.md
+  - 00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md
+  - BACKEND_CANONICAL_OUTPUT_ADAPTER.md
+
+semantic_repair_prompt_files:
+  - AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml
+  - 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md
+  - 00_M11_RUNTIME_CONTROLLER.md
+  - M11_EXPOSURE_REGISTRY.md
+  - M11_B_BATCH_PACKET_ASSEMBLY.md
+  - M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md
   - M11_D_BATCH_REINVESTIGATION_REPAIR.md
+  - 00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md
+  - BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 
 m11_three_layer_contract:
   layer_1_backend:
-    - resolve_phase3_primary_and_ai_mount
-    - load_selected_registry_bindings
-    - validate_registry_union_identity
-    - build_active_threat_registry_manifest
-    - calculate_registry_and_execution_fingerprints
-    - persist_active_threat_registry_manifest_before_route_plan
-    - project_phase5_classifications_into_package_scoped_inventories
-    - build_separate_primary_and_overlay_route_streams
-    - route_uni_rows_mandatorily
-    - route_non_uni_rows_only_by_matching_package_archetype
-    - forbid_surface_only_routing
-    - build_maximum_15_package_scoped_batches
-    - enforce_180000_character_packet_ceiling
-    - persist_exposure_registry_route_plan
+    status: ACTIVE_CO_4_CO_5_CO_6
+    duties:
+      - resolve_phase3_primary_and_ai_mount
+      - load_selected_registry_bindings
+      - validate_registry_union_identity
+      - persist_active_threat_registry_manifest
+      - project_phase5_package_scoped_inventories
+      - build_separate_primary_and_overlay_routes
+      - build_maximum_15_package_scoped_batches
+      - enforce_packet_ceiling
+      - persist_exposure_registry_route_plan
   layer_2_model:
-    status: BLOCKED_PENDING_CO_7_AND_CO_8
+    status: CONTRACT_READY_RUNTIME_BLOCKED_PENDING_CO_8
+    semantic_package_version: M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
     current_runtime_may_call_model: false
     pending:
-      - redesign_agent5_semantic_package
       - implement_domain_agnostic_layer2_runtime
   layer_3_backend:
     status: PENDING_CO_9_AND_LATER_BUILD_ORDER
 
 model_forbidden_actions:
-  - create_or_rewrite_active_threat_registry_manifest
   - select_or_mount_threat_registry
+  - create_or_rewrite_active_threat_registry_manifest
   - create_or_rewrite_registry_row_key
   - create_or_rewrite_execution_fingerprint
   - create_or_rewrite_phase5_classification_inventory
@@ -192,9 +257,9 @@ write_artifacts_in_current_order:
   - active_threat_registry_manifest
   - exposure_registry_route_plan
 
-future_write_artifacts_after_semantic_cutover:
-  - exposure_registry_batch_validation__STREAM__GROUP__NNN
-  - exposure_registry_batch__STREAM__GROUP__NNN
+future_write_artifacts_after_co_8:
+  - exposure_registry_batch_validation__{batch_id}
+  - exposure_registry_batch__{batch_id}
   - exposure_registry_workpad_98
   - exposure_registry_controlled_profile
   - exposure_registry_triggered_profile
@@ -203,7 +268,7 @@ future_write_artifacts_after_semantic_cutover:
 current_stage_terminal_rule:
   stop_after_package_scoped_route_plan: true
   stop_status: CONTROLLED_FAILURE
-  reason: CO_7_AGENT5_SEMANTIC_PACKAGE_AND_CO_8_RUNTIME_PENDING
+  reason: CO_8_DOMAIN_AGNOSTIC_LAYER2_RUNTIME_PENDING
   no_model_call_allowed: true
 
 m12_boundary:
