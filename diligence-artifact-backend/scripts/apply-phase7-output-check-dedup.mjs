@@ -29,39 +29,41 @@ if (helperPattern.test(source)) {
 }
 
 const functionPattern = /function assertNoLegacyArtifactsOrPrompts\(\) \{[\s\S]*?\n\}\n\nfunction collectFiles/;
-const replacement = `function assertNoLegacyArtifactsOrPrompts() {
-  const retired = ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet"];
-  for (const artifactName of retired) {
-    assert.equal(ARTIFACT_NAMES.includes(artifactName), false, \`${artifactName} must not be active artifact\`);
-  }
-
-  const promptFiles = collectFiles(["agent-packages/agent_4_data_privacy"]);
-  for (const file of promptFiles) {
-    const text = fs.readFileSync(path.join(repoRoot, file), "utf8");
-    for (const forbidden of ["M10_LEAN_INPUT_CONTRACT", "extended_dap_india_readiness_profile", "integrated_dap_report"]) {
-      assert.equal(text.includes(forbidden), false, \`${file} contains retired Phase7/M10 prompt marker ${forbidden}\`);
-    }
-  }
-
-  const phase7Files = collectFiles(["src/phases/07-data-provenance-profile"]);
-  const activeKeys = ["artifact_type", "artifact_name", "material_source_of_truth", "expected_artifact_name", "compatibility_outputs", "material_outputs", "writes"];
-  for (const file of phase7Files) {
-    const lines = fs.readFileSync(path.join(repoRoot, file), "utf8").split(/\\r?\\n/);
-    for (let index = 0; index < lines.length; index += 1) {
-      const line = lines[index];
-      const context = lines.slice(Math.max(0, index - 2), index + 1).join(" ");
-      if (!activeKeys.some((key) => context.includes(key))) continue;
-      for (const artifactName of retired) {
-        const doubleQuoted = \`"${artifactName}"\`;
-        const singleQuoted = \`'${artifactName}'\`;
-        const exactIdentityPresent = line.includes(doubleQuoted) || line.includes(singleQuoted);
-        assert.equal(exactIdentityPresent, false, \`${file}:${index + 1} actively emits retired Phase7/M10 artifact ${artifactName}\`);
-      }
-    }
-  }
-}
-
-function collectFiles`;
+const replacement = [
+  'function assertNoLegacyArtifactsOrPrompts() {',
+  '  const retired = ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet"];',
+  '  for (const artifactName of retired) {',
+  '    assert.equal(ARTIFACT_NAMES.includes(artifactName), false, `${artifactName} must not be active artifact`);',
+  '  }',
+  '',
+  '  const promptFiles = collectFiles(["agent-packages/agent_4_data_privacy"]);',
+  '  for (const file of promptFiles) {',
+  '    const text = fs.readFileSync(path.join(repoRoot, file), "utf8");',
+  '    for (const forbidden of ["M10_LEAN_INPUT_CONTRACT", "extended_dap_india_readiness_profile", "integrated_dap_report"]) {',
+  '      assert.equal(text.includes(forbidden), false, `${file} contains retired Phase7/M10 prompt marker ${forbidden}`);',
+  '    }',
+  '  }',
+  '',
+  '  const phase7Files = collectFiles(["src/phases/07-data-provenance-profile"]);',
+  '  const activeKeys = ["artifact_type", "artifact_name", "material_source_of_truth", "expected_artifact_name", "compatibility_outputs", "material_outputs", "writes"];',
+  '  for (const file of phase7Files) {',
+  '    const lines = fs.readFileSync(path.join(repoRoot, file), "utf8").split(/\\r?\\n/);',
+  '    for (let index = 0; index < lines.length; index += 1) {',
+  '      const line = lines[index];',
+  '      const context = lines.slice(Math.max(0, index - 2), index + 1).join(" ");',
+  '      if (!activeKeys.some((key) => context.includes(key))) continue;',
+  '      for (const artifactName of retired) {',
+  '        const doubleQuoted = `"${artifactName}"`;',
+  '        const singleQuoted = `\'${artifactName}\'`;',
+  '        const exactIdentityPresent = line.includes(doubleQuoted) || line.includes(singleQuoted);',
+  '        assert.equal(exactIdentityPresent, false, `${file}:${index + 1} actively emits retired Phase7/M10 artifact ${artifactName}`);',
+  '      }',
+  '    }',
+  '  }',
+  '}',
+  '',
+  'function collectFiles'
+].join("\n");
 if (functionPattern.test(source)) {
   const replaced = source.replace(functionPattern, replacement);
   if (replaced !== source) {
