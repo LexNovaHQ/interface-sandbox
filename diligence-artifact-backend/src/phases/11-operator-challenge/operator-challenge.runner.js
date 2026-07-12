@@ -3,6 +3,7 @@ import { buildPhasePrompt } from "../../runtime/services/prompts.service.js";
 import { callProviderJson } from "../../runtime/services/provider.service.js";
 import { buildOperatorChallengeInventory } from "./operator-challenge-inventory.js";
 import { buildOperatorChallengeSemanticPacket, validateOperatorChallengeSemanticLedger } from "./operator-challenge-semantic.js";
+import { buildOperatorChallengeLayer3 } from "./operator-challenge-adjudication.js";
 
 const LAYER2_PROMPT = "agent-packages/agent_7_operator_challenge/PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md";
 
@@ -18,7 +19,10 @@ export const M12_PHASE2G_RUNNER_STATUS = Object.freeze({
   dynamic_m11_batches_loaded_by_2g: true,
   layer1_status: "PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_ACTIVE",
   layer2_status: "PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE_ACTIVE",
-  layer3_status: "PENDING_DETERMINISTIC_ADJUDICATION_REINVESTIGATION_GATE"
+  layer3_status: "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_REINVESTIGATION_GATE_ACTIVE",
+  blocking_is_exception: true,
+  only_critical_failure_blocks: true,
+  maximum_reinvestigation_attempts: 2
 });
 
 export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contract, readArtifacts, buildPrompt = buildPhasePrompt, callProvider = callProviderJson } = {}) {
@@ -55,40 +59,33 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   if (validation.status !== "PASS") throw new Error(`PHASE11_LAYER2_SEMANTIC_LEDGER_INVALID:${validation.failures.join("|")}`);
 
   const semanticLedger = validation.semantic_ledger;
-  const stagingEnvelope = {
-    schema_version: "challenge_gate.phase11_layer2_staging.v1",
-    status: "CREATED",
-    gate: "LAYER1_LAYER2_COMPLETE_LAYER3_PENDING",
-    generated_by: "phase11_layer2_semantic_adversarial_runner",
-    run_id: run?.run_id || "",
-    delivery_mode: "DERIVED_ONLY",
-    forensic_inputs_used: false,
-    blocking_decision_made: false,
-    reinvestigation_decision_made: false,
-    operator_challenge_inventory: inventory,
-    operator_challenge_semantic_ledger: semanticLedger,
+  const priorArtifacts = await readArtifacts({ reads: ["challenge_gate"], agent_id: contract.actor_id || contract.agent_id || "agent_7_m12", strict: false });
+  const priorChallengeGate = priorArtifacts?.challenge_gate || null;
+  const layer3 = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate, run });
+  const challengeGate = {
+    ...layer3.challenge_gate,
     layer2_validation: {
       status: "PASS",
       exact_candidate_coverage: true,
       candidate_count: inventory.candidate_count,
       output_repair_attempts: outputRepairAttempts,
       output_repair_is_not_field_reinvestigation: true
-    },
-    layer_status: { layer_1: "COMPLETE", layer_2: "COMPLETE", layer_3: "PENDING" },
-    next_required_layer: "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_REINVESTIGATION_GATE",
-    compiler_handoff_allowed: false
+    }
   };
 
   return Object.freeze({
     ok: true,
-    output: { challenge_gate: stagingEnvelope },
-    phase_lock_status: "CREATED",
+    output: { challenge_gate: challengeGate },
+    phase_lock_status: layer3.runtime_lock_status,
     phase2g_route_id: routed.route.route_id,
     phase2g_bucket_id: routed.route.bucket_id,
     phase2g_delivery_mode: routed.route.delivery_mode,
     artifacts_read: Object.keys(artifacts).sort(),
     layer1_inventory_fingerprint: inventory.inventory_fingerprint,
-    layer2_semantic_output_fingerprint: semanticLedger.semantic_output_fingerprint
+    layer2_semantic_output_fingerprint: semanticLedger.semantic_output_fingerprint,
+    layer3_final_gate_fingerprint: challengeGate.final_gate_fingerprint,
+    reinvestigation_dispatch_required: challengeGate.reinvestigation_dispatch_required,
+    compiler_handoff_allowed: challengeGate.compiler_handoff_allowed
   });
 }
 
