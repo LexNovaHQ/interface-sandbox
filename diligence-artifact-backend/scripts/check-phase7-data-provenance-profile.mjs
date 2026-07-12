@@ -8,6 +8,7 @@ import { CENTRAL_PHASES } from "../src/runtime/contracts/central-phase.contract.
 import {
   PHASE7_DAP_LAYER4_ARTIFACT_NAMES,
   PHASE7_DAP_LAYER5_ARTIFACT_NAMES,
+  PHASE7_DAP_BATCH_ARTIFACT_NAMES,
   PHASE7_DAP_BATCH_ARTIFACT_PATTERN,
   PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN,
   DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES
@@ -125,7 +126,7 @@ function assertPipelineAndContract() {
   assert.equal(P2G_RUNTIME_ROUTE_BY_JOB.DATA_PROVENANCE_PROFILE_LAYER4, "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE");
 
   assert.equal(Object.prototype.hasOwnProperty.call(P2G_RUNTIME_ROUTE_BY_JOB, "DATA_PROVENANCE_PROFILE_LAYER5"), false, "Layer5 must remain route-neutral");
-  assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES(), ...phase7ValidationNames()]);
+  assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads, ["dap_semantic_batch_route_manifest", ...PHASE7_DAP_BATCH_ARTIFACT_NAMES, ...phase7ValidationNames()]);
   assert.deepEqual(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.writes, PHASE7_DAP_LAYER5_ARTIFACT_NAMES);
 
   assert.equal(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.route_contract.route_id, "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE");
@@ -186,10 +187,6 @@ function fixtureBatchArtifact(packet) {
 
 function phase7ValidationNames() {
   return PHASE7_DAP_SEMANTIC_BATCH_PLAN.map((batch) => `dap_semantic_batch_validation__${batch.batch_id}`);
-}
-
-function PHASE7_DAP_BATCH_ARTIFACT_NAMES() {
-  return PHASE7_DAP_SEMANTIC_BATCH_PLAN.map((batch) => batch.expected_artifact_name);
 }
 
 function presentPhase2Artifacts() {
