@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after retired root sanitizer map. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after exact retired root scan. Do not merge.
