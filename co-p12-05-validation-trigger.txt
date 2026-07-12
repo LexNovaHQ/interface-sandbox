@@ -1,1 +1,1 @@
-Temporary CO-P12-05 certification trigger. Retry 19 after Phase 7 active-emission scanner repair. Do not merge.
+Temporary CO-P12-05 certification trigger. Retry 20 after exact Phase 7 legacy identity scan repair. Do not merge.
