@@ -1,4 +1,17 @@
 import * as base from "./m11-deterministic-system.js";
+import {
+  buildPackageScopedBatchPlan,
+  buildPackageScopedExposureRegistryRoutePlan,
+  buildPhase5ClassificationInventory,
+  finalizePhase10RoutingContext,
+  MAX_M11_BATCH_PACKET_CHARS,
+  MAX_M11_BATCH_ROWS,
+  M11_PACKAGE_ROUTING_RULES_VERSION,
+  M11_PACKET_CEILING_VERSION,
+  PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA,
+  PHASE5_CLASSIFICATION_INVENTORY_SCHEMA,
+  validatePackageScopedBatchPlan
+} from "./phase10-classification-routing.js";
 
 const S_TRIGGERED = "TR" + "IGGERED";
 const S_VISIBLE = "CONTROLLED_BY_VISIBLE_CONTROL";
@@ -12,7 +25,7 @@ const LEGACY_SUBCAT_NORMALIZATION = Object.freeze({ FIN: "LIA" });
 export const CRITICAL_REGISTRY_FIELDS = base.CRITICAL_REGISTRY_FIELDS;
 export const EXPECTED_ACTIVE_REGISTRY_ROWS = base.EXPECTED_ACTIVE_REGISTRY_ROWS;
 export const EXPECTED_LEP_ROWS = base.EXPECTED_LEP_ROWS;
-export const MAX_M11_BATCH_ROWS = base.MAX_M11_BATCH_ROWS;
+export { MAX_M11_BATCH_PACKET_CHARS, MAX_M11_BATCH_ROWS, M11_PACKAGE_ROUTING_RULES_VERSION, M11_PACKET_CEILING_VERSION, PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA, PHASE5_CLASSIFICATION_INVENTORY_SCHEMA };
 export const METADATA_REGISTRY_FIELDS = base.METADATA_REGISTRY_FIELDS;
 export const REQUIRED_REGISTRY_FIELDS = base.REQUIRED_REGISTRY_FIELDS;
 export const SEMANTIC_FIELDS = base.SEMANTIC_FIELDS;
@@ -26,15 +39,26 @@ export const validateRegistryRows = base.validateRegistryRows;
 export const validateThreatIdDecomposition = base.validateThreatIdDecomposition;
 export const normalizeField23 = base.normalizeField23;
 export const parseHunterTrigger = base.parseHunterTrigger;
-export const extractM11RoutingSubstrate = base.extractM11RoutingSubstrate;
-export const buildBatchPlan = base.buildBatchPlan;
-export const validateBatchPlan = base.validateBatchPlan;
 export const validateM11BatchLedger = base.validateM11BatchLedger;
 export const deriveM11FinalEvaluationStatus = base.deriveM11FinalEvaluationStatus;
 export const buildExposureRegistryForensics = base.buildExposureRegistryForensics;
+export { buildPhase5ClassificationInventory, finalizePhase10RoutingContext };
 
-export function buildExposureRegistryRoutePlan(args) {
-  const output = base.buildExposureRegistryRoutePlan(args);
+export function extractM11RoutingSubstrate(targetFeatureProfile = {}, manifest = {}) {
+  return buildPhase5ClassificationInventory({ targetFeatureProfile, manifest });
+}
+
+export function buildBatchPlan(routeRows, options = {}) {
+  return buildPackageScopedBatchPlan(routeRows, options);
+}
+
+export function validateBatchPlan(batchPlan, options = {}) {
+  return validatePackageScopedBatchPlan(batchPlan, options);
+}
+
+export function buildExposureRegistryRoutePlan(args = {}) {
+  if (!args.registryContext) throw new Error("PACKAGE_SCOPED_REGISTRY_CONTEXT_REQUIRED");
+  const output = buildPackageScopedExposureRegistryRoutePlan(args);
   const plan = output.exposure_registry_route_plan;
   const warnings = [];
   plan.route_rows = asArray(plan.route_rows).map((row) => normalizeRouteRow(row, warnings));
@@ -45,7 +69,7 @@ export function buildExposureRegistryRoutePlan(args) {
     material_row_field_count: 19,
     split_profile_roots_clean: true,
     subcategory_code_only: true,
-    allowed_subcategories: [...VALID_SUBCATS],
+    allowed_subcategories: asArray(plan.registry_inventory?.allowed_subcategories),
     subcategory_normalization_warnings: warnings
   };
   plan.phase_a_validation = normalizeValidationWithWarnings(plan.phase_a_validation, warnings);
@@ -53,6 +77,9 @@ export function buildExposureRegistryRoutePlan(args) {
 }
 
 export function buildM11BatchPacket(args) {
+  if (args?.routePlan?.exposure_registry_route_plan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA || args?.routePlan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA) {
+    throw new Error("PACKAGE_SCOPED_M11_BATCH_PACKET_PENDING_CO_7_AND_CO_8");
+  }
   const output = base.buildM11BatchPacket(args);
   const packet = output.m11_batch_packet;
   const warnings = [];
