@@ -1,61 +1,38 @@
 # AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11
-## Backend Output Contract — M11 Threat_Name + Subcategory Material Row Upgrade
 
-# CONTRACT LOCK
+## Final synchronized contract
 
-Agent 5 / M11 remains phased and batched. Each boundary emits or saves exactly one declared artifact family.
+This file governs the active Phase 10 runtime after CO-0 through CO-10. Older AI-only, fixed-98, eight-row, or pre-auto-selector language is retired.
 
-Public/report wording normalization is outside M11 scope. M11 emits auditable material rows only.
+## Three-layer ownership
 
-# THREE-LAYER OWNERSHIP
+### Layer 1 — deterministic backend
 
-## Layer 1 — deterministic backend prefill
+The backend owns:
 
-Backend owns registry/reference load, schema validation, `active_threat_registry_manifest` construction and first-save custody, route plan, batch plan, evidence packet formation, deterministic registry spine prefill, accepted-batch save, workpad merge, material projection, and forensics.
+- Phase 3 package selection and AI mount resolution;
+- dynamic package-key and threat-registry loading;
+- `active_threat_registry_manifest`;
+- `registry_row_key = package_id::Threat_ID`;
+- Phase 5 classification inventory projection;
+- package-scoped primary and overlay route plans;
+- package/stream/archetype-isolated batch planning;
+- maximum 15 rows and packet-ceiling enforcement;
+- deterministic registry spine and evidence packet formation.
 
-`active_threat_registry_manifest` is deterministic and must be saved before `exposure_registry_route_plan`. The model must not select or mount registries, create or rewrite the manifest, change registry counts, or change the registry-set fingerprint.
+The canonical registry `Threat_ID` is never rewritten. Raw Threat IDs may repeat across packages. Global reconciliation uses `registry_row_key`.
 
-During CO-1 compatibility mode, the manifest records the current single AI registry and stamps:
+### Layer 2 — semantic model
+
+Each call evaluates exactly one package, one stream, one archetype group, and one batch.
+
+The model returns exactly one root:
 
 ```text
-selection_mode: CURRENT_SINGLE_REGISTRY_PRE_AUTO_SELECTOR
-auto_selector_status: PENDING_CO_2
+m11_batch_registry_ledger
 ```
 
-The domain-driven auto-selector is not part of CO-1. It is introduced only by CO-2.
-
-Backend-prefilled registry spine fields:
-
-```text
-Threat_ID
-Threat_Name
-Archetype
-Subcategory
-Surface
-authority_anchors
-Pain_Tier
-Pain_Depth
-Pain_Category
-Legal_Pain
-base registry FP_Mechanism
-registry remediation source from Lex_Nova_Fix
-review_route default
-parsed Hunter_Trigger
-route reason
-batch membership
-```
-
-`Threat_Name` is mandatory. It comes from the active threat registry row and the model must not rewrite it.
-
-`Subcategory` is code-only inside M11. Display labels are normalizer/compiler scope only. Known legacy `FIN` is normalized to `LIA` as a non-blocking registry-drift warning because the current AI registry key folds financial-agent commitment into the liability harm mechanism.
-
-The M11 model must not rewrite this spine.
-
-## Layer 2 — semantic M11 active-batch evidence application
-
-Each M11 model call evaluates one active batch only.
-
-The model returns only:
+The model may emit only:
 
 ```text
 Threat_ID
@@ -69,13 +46,15 @@ row_limitations
 status_inputs
 ```
 
-The model must not assemble the final material row, choose final profile placement, emit `Threat_Name`, normalize `Subcategory`, or normalize public wording.
+The model must not emit `registry_row_key`, deterministic registry fields, routing changes, batch changes, final status, profiles, workpad, forensics, challenge output, compiler output, or report prose.
 
-## Layer 3 — deterministic final status and projection
+### Layer 3 — deterministic backend
 
-Backend assembles the full material row, derives final evaluation status, saves accepted batches, merges the current workpad, and projects controlled/triggered profiles.
+The backend validates exact ledger coverage, performs at most one repair attempt, maps canonical Threat IDs back to compound execution identities, derives final status, saves accepted batches, merges the dynamic workpad, projects controlled/triggered profiles, and assembles forensics.
 
-Allowed final material statuses:
+## Final status contract
+
+Allowed final material statuses are:
 
 ```text
 TRIGGERED
@@ -84,75 +63,72 @@ CONTROLLED_BY_EXCLUSION
 CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
 ```
 
-# ACTIVE THREAT REGISTRY MANIFEST CONTRACT
-
-The first persisted Phase 10 artifact is:
+Deterministic derivation order:
 
 ```text
-active_threat_registry_manifest
+1. CONTROLLED_BY_EXCLUSION
+2. CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
+3. CONTROLLED_BY_VISIBLE_CONTROL
+4. TRIGGERED
 ```
 
-Minimum CO-1 fields:
+`NOT_TRIGGERED_NOT_APPLICABLE` is a route/workpad-only status, not a final material-profile status.
+
+## Dynamic registry manifest
+
+The first persisted Phase 10 artifact is `active_threat_registry_manifest`.
+
+It records:
+
+- selected primary package;
+- AI mount status;
+- mounted package and stream inventory;
+- key and registry bindings;
+- parsed and routable counts;
+- status counts;
+- UNI counts;
+- compound identity inventory;
+- canonical collision inventory;
+- registry-set, Phase 5, and Phase 10 execution fingerprints.
+
+Status policy remains:
 
 ```text
-schema_version
-run_id
-generated_by
-selection_mode
-auto_selector_status
-binding_authority
-status_policy
-primary_package
-ai_mount
-mounted_packages[]
-registries[]
-expected_row_count
-expected_uni_count
-registry_set_fingerprint
-validation
-```
-
-The status policy is locked as:
-
-```text
-mode: INCLUDE_ALL_DECLARED_ROWS
+INCLUDE_ALL_DECLARED_ROWS
 row_filter: NONE
-status_field_role: METADATA_ONLY
+Status: metadata only
 ```
 
-Therefore all 98 declared AI registry rows remain in the current routable inventory. `Status` values such as Active, Upcoming, Pending, Watch, and Pending / Watch are preserved as row metadata and do not remove a row from Phase 10 routing.
+No fixed registry count is permitted.
 
-The manifest must validate and lock before route-plan construction begins.
+## Routing and batching
 
-# ROUTING CONTRACT
+- UNI rows are always routed within every mounted registry.
+- Non-UNI rows require matching archetype classification from the same Phase 5 package stream.
+- Surface is context only.
+- Primary and overlay streams remain separate through routing, batching, semantic evaluation, deterministic validation, and accepted-batch custody.
+- Maximum batch rows: 15.
+- Evidence and registry content must never be truncated to fill a batch.
 
-UNI rows are evaluation-routed. Non-UNI rows may be evaluation-routed only when registry Archetype intersects active M8 archetypes. Surface is context only and must never independently route a non-UNI row.
+## Accepted batch contract
 
-# PHASE B MODEL OUTPUT CONTRACT
-
-Each M11 model call returns exactly one `m11_batch_registry_ledger` root with one semantic row per expected Threat_ID.
-
-Semantic row shape:
+Accepted batch schema:
 
 ```text
-Threat_ID
-trigger_status
-target_match
-basis_proof
-control_exclusion_evaluation
-evidence_source_basis
-applied_fp_mechanism
-row_limitations
-status_inputs
+m11_batch_registry_ledger.v3.package_scoped.accepted
 ```
 
-`returned_threat_ids[]` must equal `expected_threat_ids[]` exactly. Grouped, duplicate, composite, category, or unexpected Threat_ID rows are forbidden.
+Each accepted row carries:
 
-# FULL MATERIAL ROW CONTRACT
+- `registry_row_key`;
+- package and stream identity;
+- canonical `Threat_ID`;
+- deterministic registry spine;
+- semantic evidence application;
+- backend-derived final status;
+- 19-field material projection.
 
-Accepted batch/workpad/material projection rows are assembled by backend from deterministic spine + semantic evidence application + deterministic final status.
-
-Full material row fields:
+## Material row contract
 
 ```text
 Threat_ID
@@ -176,43 +152,43 @@ review_route
 row_limitations
 ```
 
-Material row field count: `19`.
+Package and stream custody fields may wrap the 19-field material projection but do not replace it.
 
-# CONTROLLED/TRIGGERED PROJECTION CONTRACT
+## Dynamic workpad and profiles
 
-`exposure_registry_controlled_profile` may contain only `controlled_rows` at top level.
+The stable artifact token remains `exposure_registry_workpad_98`, but its row count is dynamic and must equal `active_threat_registry_manifest.expected_registry_row_key_count`.
 
-Controlled profile includes only:
+`exposure_registry_controlled_profile` contains only the three controlled statuses.
 
-```text
-CONTROLLED_BY_VISIBLE_CONTROL
-CONTROLLED_BY_EXCLUSION
-CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
-```
+`exposure_registry_triggered_profile` contains only `TRIGGERED` rows.
 
-`exposure_registry_triggered_profile` may contain only `triggered_rows` at top level.
+Global duplicate checks use `registry_row_key`, never raw `Threat_ID`.
 
-Triggered profile includes only:
+## Forensics
 
-```text
-TRIGGERED
-```
+`exposure_registry_profile_forensics` uses `M11_DOMAIN_AGNOSTIC_FORENSICS_v1` and must prove:
 
-Both profiles emit the full 19-field material row contract.
+- manifest, route, batch, workpad, and profile reconciliation;
+- package and stream isolation;
+- compound identity custody;
+- dynamic row counts;
+- accepted batch and validation pairing;
+- no fixed AI vocabulary or 98-row assumption.
 
-# SAVE ORDER
+## Save order
 
 ```text
 1. active_threat_registry_manifest
 2. exposure_registry_route_plan
-3. for each batch: M11 semantic ledger -> validation -> deterministic status/fp discipline -> accepted batch save
-4. exposure_registry_workpad_98
-5. exposure_registry_controlled_profile
-6. exposure_registry_triggered_profile
-7. exposure_registry_profile_forensics
-8. M12 global challenge may begin
+3. each batch validation
+4. each accepted batch
+5. exposure_registry_workpad_98
+6. exposure_registry_controlled_profile
+7. exposure_registry_triggered_profile
+8. exposure_registry_profile_forensics
+9. M12 may begin
 ```
 
-# LEGACY OUTPUT PROHIBITION
+## Downstream boundary
 
-Do not emit old combined material roots, old seven-field material rows, or old eighteen-field material rows without `Threat_Name` as the production contract.
+M12 and the normalized compiler consume Phase 10 material outputs through Phase 2G derived-only routing. They must preserve `registry_row_key`, package ID, stream ID, stream type, canonical Threat ID, and final status. They must not reclassify, re-evaluate, merge duplicate raw Threat IDs, or use forensics as substantive challenge evidence.
