@@ -16,6 +16,7 @@ import { validatePhase11TargetedMutation } from "./operator-challenge-mutation-g
 import { callPhase11WithTechnicalRetry } from "./operator-challenge-technical-retry.js";
 import { acquirePhase11DispatchLease, releasePhase11DispatchLease, buildPhase11DispatchCheckpoint, checkpointMayResume } from "./operator-challenge-dispatch-checkpoint.js";
 import { createPhase11ReinvestigationDispatch, phase11DispatchContractForRun, evaluatePhase11ReinvestigationReturn, candidateForDispatch } from "./operator-challenge-dispatch.js";
+import { buildPhase11TargetedPacket, injectPhase11TargetedPacket, assertPhase11TargetedPacket } from "./operator-challenge-targeted-packet.js";
 
 const AGENT = "agent_7_m12";
 const CHECKPOINT = "operator_challenge_dispatch_checkpoint";
@@ -49,7 +50,9 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
   const guardNames = ownerGuardArtifactNames(dispatch);
   const beforeArtifacts = checkpoint?.payload?.before_artifacts || await readNamedArtifacts(run.run_id, guardNames, AGENT);
   const baselineVersions = checkpoint?.payload?.baseline_artifact_versions || dispatch.baseline_artifact_versions;
-  if (!checkpoint) checkpoint = await saveCheckpoint(run, dispatch, "DISPATCH_CREATED", null, { dispatch, guard_artifact_names: guardNames, before_artifacts: beforeArtifacts, baseline_artifact_versions: baselineVersions });
+  const targetedPacket = checkpoint?.payload?.phase11_reinvestigation_context || buildPhase11TargetedPacket({ dispatch, baselineArtifactVersions: baselineVersions });
+  assertPhase11TargetedPacket({ packet: targetedPacket, dispatch });
+  if (!checkpoint) checkpoint = await saveCheckpoint(run, dispatch, "DISPATCH_CREATED", null, { dispatch, guard_artifact_names: guardNames, before_artifacts: beforeArtifacts, baseline_artifact_versions: baselineVersions, phase11_reinvestigation_context: targetedPacket });
   if (checkpoint.stage === "ATTEMPT_RECORDED") {
     const recorded = checkpoint.payload?.attempt_result;
     if (!recorded) throw new Error("PHASE11_CHECKPOINT_ATTEMPT_RESULT_MISSING");
@@ -61,9 +64,9 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
   if (!["OWNER_RETURNED", "RETURN_VALIDATED"].includes(checkpoint.stage)) {
     const currentVersions = await artifactVersions(run.run_id, dispatch.artifact_names);
     if (!versionAdvanced(baselineVersions, currentVersions)) {
-      checkpoint = await saveCheckpoint(run, dispatch, "OWNER_RUNNING", checkpoint, { ...checkpoint.payload });
+      checkpoint = await saveCheckpoint(run, dispatch, "OWNER_RUNNING", checkpoint, { ...checkpoint.payload, phase11_reinvestigation_context: targetedPacket });
       try {
-        const ownerCall = await callPhase11WithTechnicalRetry({ label: `PHASE11_OWNER_${dispatch.owner_internal_job}`, call: () => executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, callProvider }) });
+        const ownerCall = await callPhase11WithTechnicalRetry({ label: `PHASE11_OWNER_${dispatch.owner_internal_job}`, call: () => executeOwnerPhase({ run, dispatch, targetedPacket, readArtifacts, buildPrompt, callProvider }) });
         technicalRetryCount += ownerCall.technical_retry_count;
       } catch (error) {
         runtimeError = error;
@@ -72,7 +75,7 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
       }
     }
     returnedArtifactVersions = await artifactVersions(run.run_id, dispatch.artifact_names);
-    checkpoint = await saveCheckpoint(run, dispatch, "OWNER_RETURNED", checkpoint, { ...checkpoint.payload, returned_artifact_versions: returnedArtifactVersions, technical_retry_count: technicalRetryCount, runtime_error: runtimeError?.message || "" });
+    checkpoint = await saveCheckpoint(run, dispatch, "OWNER_RETURNED", checkpoint, { ...checkpoint.payload, returned_artifact_versions: returnedArtifactVersions, technical_retry_count: technicalRetryCount, runtime_error: runtimeError?.message || "", phase11_reinvestigation_context: targetedPacket });
   }
   let mutation = checkpoint.payload?.mutation_guard || null;
   if (checkpoint.stage !== "RETURN_VALIDATED") {
@@ -83,25 +86,34 @@ async function executeOneDispatch({ run, m12Contract, dispatch, previousCandidat
       runtimeError = new Error(`PHASE11_UNAUTHORIZED_MUTATION:${mutation.unauthorized_changes.map((row) => row.path).join("|")}`);
       returnedArtifactVersions = await artifactVersions(run.run_id, dispatch.artifact_names);
     }
-    checkpoint = await saveCheckpoint(run, dispatch, "RETURN_VALIDATED", checkpoint, { ...checkpoint.payload, returned_artifact_versions: returnedArtifactVersions, mutation_guard: mutation, technical_retry_count: technicalRetryCount, runtime_error: runtimeError?.message || "" });
+    checkpoint = await saveCheckpoint(run, dispatch, "RETURN_VALIDATED", checkpoint, { ...checkpoint.payload, returned_artifact_versions: returnedArtifactVersions, mutation_guard: mutation, technical_retry_count: technicalRetryCount, runtime_error: runtimeError?.message || "", phase11_reinvestigation_context: targetedPacket });
   }
   const currentInventory = await rebuildInventory({ run, m12Contract, readArtifacts });
   const attemptResult = evaluatePhase11ReinvestigationReturn({ dispatch, previousCandidate, currentInventory, returnedArtifactVersions, runtimeError });
   const gateWithAttempt = recordOperatorChallengeReinvestigationAttempt({ challengeGate: gate, result: attemptResult });
-  checkpoint = await saveCheckpoint(run, dispatch, "ATTEMPT_RECORDED", checkpoint, { ...checkpoint.payload, attempt_result: attemptResult });
+  checkpoint = await saveCheckpoint(run, dispatch, "ATTEMPT_RECORDED", checkpoint, { ...checkpoint.payload, attempt_result: attemptResult, phase11_reinvestigation_context: targetedPacket });
   return buildCompletedDispatch({ dispatch, checkpoint, gateWithAttempt, attemptResult, mutation, technicalRetryCount });
 }
 function buildCompletedDispatch({ dispatch, checkpoint, gateWithAttempt, attemptResult, mutation, technicalRetryCount = 0 }) { return { gateWithAttempt, checkpoint, receipt: { dispatch_id: dispatch.dispatch_id, challenge_candidate_id: dispatch.challenge_candidate_id, attempt_number: dispatch.attempt_number, owning_phase: dispatch.owning_phase, owner_internal_job: dispatch.owner_internal_job, result: attemptResult.result, technical_retry_count: technicalRetryCount, technical_retry_is_not_substantive_attempt: true, mutation_guard_status: mutation?.status || "PASS", validation_basis: attemptResult.validation_basis, return_fingerprint: attemptResult.return_fingerprint } }; }
 
-async function executeOwnerPhase({ run, dispatch, readArtifacts, buildPrompt, callProvider }) {
-  if (dispatch.owner_internal_job === "M11") return runPhase10TargetedReinvestigation({ run, dispatch, contract: getInternalJobContract("M11"), readArtifacts, buildPrompt, callProvider });
+async function executeOwnerPhase({ run, dispatch, targetedPacket, readArtifacts, buildPrompt, callProvider }) {
+  assertPhase11TargetedPacket({ packet: targetedPacket, dispatch });
+  if (dispatch.owner_internal_job === "M11") return runPhase10TargetedReinvestigation({ run, dispatch, contract: getInternalJobContract("M11"), readArtifacts, buildPrompt, callProvider, phase11TargetedPacket: targetedPacket });
   const baseContract = getInternalJobContract(dispatch.owner_internal_job);
   const scopedContract = phase11DispatchContractForRun({ contract: { ...baseContract }, dispatch });
-  const targetedRun = { ...run, current_phase: dispatch.owner_internal_job, phase11_reinvestigation_context: scopedContract.phase11_reinvestigation_context };
+  const targetedRun = { ...run, current_phase: dispatch.owner_internal_job, phase11_reinvestigation_context: targetedPacket };
   const actor = OWNER_ACTOR[dispatch.owner_internal_job];
   if (!actor) throw new Error(`PHASE11_REINVESTIGATION_OWNER_JOB_UNSUPPORTED:${dispatch.owner_internal_job}`);
   const saveArtifact = async ({ artifact_name, artifact, lock_status }) => saveRuntimeArtifact({ run_id: run.run_id, phase: dispatch.owner_internal_job, agent_id: actor, artifact_name, artifact, lock_status: lock_status || artifact?.status || "LOCKED_WITH_LIMITATIONS" });
-  const targetedBuildPrompt = (params = {}) => buildPrompt({ ...params, prompt_files: [...new Set([...(params.prompt_files || []), ADDENDUM])], run: { ...(params.run || targetedRun), phase11_reinvestigation_context: scopedContract.phase11_reinvestigation_context } });
+  const targetedBuildPrompt = (params = {}) => {
+    const promptArtifacts = injectPhase11TargetedPacket({ artifacts: params.artifacts || {}, packet: targetedPacket });
+    return buildPrompt({
+      ...params,
+      prompt_files: [...new Set([...(params.prompt_files || []), ADDENDUM])],
+      run: { ...(params.run || targetedRun), phase11_reinvestigation_context: targetedPacket },
+      artifacts: promptArtifacts
+    });
+  };
   const common = { run: targetedRun, internalJobId: dispatch.owner_internal_job, contract: scopedContract, readArtifacts, buildPrompt: targetedBuildPrompt, callProvider, saveArtifact };
   if (dispatch.owner_internal_job === "P3_DOMAIN_DERIVATION_LAYER") return runDomainDerivationPhase(common);
   if (dispatch.owner_internal_job === "M8_TARGET_FEATURE_PROFILE") return runActivityProfileReviewPhase(common);
