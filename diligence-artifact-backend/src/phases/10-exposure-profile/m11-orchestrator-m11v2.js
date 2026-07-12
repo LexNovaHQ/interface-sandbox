@@ -14,6 +14,7 @@ import {
   finalizePhase10RoutingContext,
   PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA
 } from "./phase10-classification-routing.js";
+import { assertRequiredPhase5ClassificationStreams } from "./phase10-classification-inventory.validator.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
@@ -65,6 +66,10 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     registryContext = finalizePhase10RoutingContext({
       registryContext: selectedContext,
       targetFeatureProfile: artifacts[ART.featureMain]
+    });
+    assertRequiredPhase5ClassificationStreams({
+      inventory: registryContext.classification_inventory,
+      manifest: registryContext.artifact
     });
   } catch (error) {
     await logEvent({
