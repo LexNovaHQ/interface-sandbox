@@ -1,0 +1,74 @@
+runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
+runtime_contract_version: v1_layer1_deterministic_inventory
+active_agent_id: agent_7_m12
+active_phase_scope: OPERATOR_CHALLENGE
+public_phase_name: Operator Challenge
+functional_name: CROSS_PHASE_ADVERSARIAL_CHALLENGE_AND_COMPILER_READINESS_GATE
+
+routing_contract:
+  authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+  route_id: ROUTE.PHASE10.EXPOSURE_PROFILE
+  delivery_mode: DERIVED_ONLY
+  source_bucket_delivered: false
+  forensic_inputs_allowed: false
+
+layer_1:
+  status: ACTIVE
+  version: PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_v1
+  model_usage: NONE
+  canonical_object: operator_challenge_inventory
+  current_storage_envelope: challenge_gate
+  storage_envelope_stage: LAYER1_STAGING_ONLY
+  creates_new_findings: false
+  adjudicates_challenges: false
+  initiates_reinvestigation: false
+  blocks_run: false
+  emits_repair_required: false
+  compiler_handoff_allowed: false
+
+layer_2:
+  status: PENDING
+  role: SEMANTIC_ADVERSARIAL_CHALLENGE
+
+layer_3:
+  status: PENDING
+  role: DETERMINISTIC_ADJUDICATION_REINVESTIGATION_AND_FINAL_GATE
+  blocking_exception_only: true
+  only_critical_failure_blocks: true
+  material_field_problem_routes_to_reinvestigation: true
+  maximum_reinvestigation_attempts: 2
+  unresolved_after_two_attempts: PASS_WITH_LIMITATION
+
+required_derived_inputs:
+  - target_profile
+  - domain_derivation_profile
+  - target_feature_profile
+  - data_provenance_profile_semantic_batch_gate
+  - domain_control_obligation_profile
+  - active_threat_registry_manifest
+  - exposure_registry_route_plan
+  - exposure_registry_workpad_98
+  - exposure_registry_controlled_profile
+  - exposure_registry_triggered_profile
+
+forbidden_inputs:
+  - target_profile_forensics
+  - target_feature_profile_forensics
+  - dap_forensics_profile
+  - exposure_registry_profile_forensics
+
+candidate_classes:
+  - CRITICAL_SUBSTRATE_CANDIDATE
+  - MATERIAL_FIELD_CANDIDATE
+  - ADVISORY_CANDIDATE
+
+candidate_rule:
+  layer1_candidate_is_final_conclusion: false
+  token_overlap_is_substantive_proof: false
+  semantic_adjudication_required_for_material_candidates: true
+  smallest_owner_and_field_path_required: true
+
+runtime_terminal_state:
+  phase_status: CREATED
+  remain_on_phase: M12
+  reason: LAYER1_COMPLETE_LAYER2_LAYER3_PENDING
