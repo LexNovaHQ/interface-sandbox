@@ -1,11 +1,13 @@
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
 import { buildPhasePrompt } from "../../runtime/services/prompts.service.js";
 import { callProviderJson } from "../../runtime/services/provider.service.js";
+import { saveRuntimeArtifact } from "../../runtime/services/artifacts.service.js";
 import { buildOperatorChallengeInventory } from "./operator-challenge-inventory.js";
 import { buildOperatorChallengeSemanticPacket, validateOperatorChallengeSemanticLedger } from "./operator-challenge-semantic.js";
 import { buildOperatorChallengeLayer3 } from "./operator-challenge-adjudication.js";
 import { executePhase11ReinvestigationLoop } from "./operator-challenge-dispatch.runtime.js";
 
+const AGENT = "agent_7_m12";
 const LAYER2_PROMPT = "agent-packages/agent_7_operator_challenge/PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md";
 
 export const M12_PHASE2G_RUNNER_STATUS = Object.freeze({
@@ -35,7 +37,7 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   assertCallback(buildPrompt, "buildPrompt");
   assertCallback(callProvider, "callProvider");
   if (!(contract?.reads || []).includes("phase_routing_manifest")) throw new Error("M12_PHASE2G_MANIFEST_READ_MISSING");
-  const routed = await readPhaseRouteRuntimePacket({ internalJobId, readArtifacts, consumerAgentId: contract.actor_id || contract.agent_id || "agent_7_m12" });
+  const routed = await readPhaseRouteRuntimePacket({ internalJobId, readArtifacts, consumerAgentId: contract.actor_id || contract.agent_id || AGENT });
   const artifacts = routed.artifacts;
   assertRoutePacket(artifacts.phase_route_runtime_packet, internalJobId);
 
@@ -57,7 +59,10 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   if (validation.status !== "PASS") throw new Error(`PHASE11_LAYER2_SEMANTIC_LEDGER_INVALID:${validation.failures.join("|")}`);
 
   const semanticLedger = validation.semantic_ledger;
-  const priorArtifacts = await readArtifacts({ reads: ["challenge_gate"], agent_id: contract.actor_id || contract.agent_id || "agent_7_m12", strict: false });
+  await saveIndependent(run.run_id, "operator_challenge_inventory", inventory, "LOCKED");
+  await saveIndependent(run.run_id, "operator_challenge_semantic_ledger", semanticLedger, "LOCKED");
+
+  const priorArtifacts = await readArtifacts({ reads: ["challenge_gate"], agent_id: contract.actor_id || contract.agent_id || AGENT, strict: false });
   const priorChallengeGate = priorArtifacts?.challenge_gate || null;
   const initialLayer3 = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate, run });
   let challengeGate = initialLayer3.challenge_gate;
@@ -82,6 +87,7 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
     layer2_validation: { status: "PASS", exact_candidate_coverage: true, candidate_count: inventory.candidate_count, output_repair_attempts: outputRepairAttempts, output_repair_is_not_field_reinvestigation: true }
   };
   const runtimeLockStatus = challengeGate.status === "CONTROLLED_FAILURE" ? "CONTROLLED_FAILURE" : challengeGate.status === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : challengeGate.status === "PASS" ? "LOCKED" : "CREATED";
+  await saveIndependent(run.run_id, "operator_challenge_reinvestigation_ledger", challengeGate.operator_challenge_reinvestigation_ledger, runtimeLockStatus);
 
   return Object.freeze({
     ok: true,
@@ -105,6 +111,9 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   });
 }
 
+async function saveIndependent(runId, artifactName, artifact, lockStatus) {
+  return saveRuntimeArtifact({ run_id: runId, phase: "M12", agent_id: AGENT, artifact_name: artifactName, artifact, lock_status: lockStatus || "LOCKED" });
+}
 function assertRoutePacket(packet = {}, internalJobId) {
   if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("M12_PHASE2G_AUTHORITY_MISSING");
   if (packet.internal_job_id !== internalJobId) throw new Error(`M12_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`);
