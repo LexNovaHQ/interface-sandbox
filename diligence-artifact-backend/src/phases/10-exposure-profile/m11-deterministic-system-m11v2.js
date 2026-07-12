@@ -13,14 +13,14 @@ import {
   validatePackageScopedBatchPlan
 } from "./phase10-classification-routing.js";
 
-const S_TRIGGERED = "TR" + "IGGERED";
+const S_TRIGGERED = "TRIGGERED";
 const S_VISIBLE = "CONTROLLED_BY_VISIBLE_CONTROL";
 const S_EXCLUSION = "CONTROLLED_BY_EXCLUSION";
 const S_PUBLIC_LIMIT = "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION";
 const CONTROLLED_FINAL_STATUSES = new Set([S_VISIBLE, S_EXCLUSION, S_PUBLIC_LIMIT]);
 const FINAL_MATERIAL_STATUSES = new Set([S_TRIGGERED, S_VISIBLE, S_EXCLUSION, S_PUBLIC_LIMIT]);
-const VALID_SUBCATS = new Set(["CNS", "LIA", "HAL", "INF", "PRV", "BIO", "DEC", "HRM", "FRD", "TRD"]);
-const LEGACY_SUBCAT_NORMALIZATION = Object.freeze({ FIN: "LIA" });
+const PAIN_TIER_CATEGORY = Object.freeze({ T1: "Existential", T2: "Uncapped Money", T3: "Deal Death", T4: "Regulatory Heat", T5: "Friction" });
+const PAIN_DEPTH_VALUES = new Set(["Corporate", "Personal", "Criminal"]);
 
 export const CRITICAL_REGISTRY_FIELDS = base.CRITICAL_REGISTRY_FIELDS;
 export const EXPECTED_ACTIVE_REGISTRY_ROWS = base.EXPECTED_ACTIVE_REGISTRY_ROWS;
@@ -31,11 +31,28 @@ export const REQUIRED_REGISTRY_FIELDS = base.REQUIRED_REGISTRY_FIELDS;
 export const SEMANTIC_FIELDS = base.SEMANTIC_FIELDS;
 export const STATUS_INPUT_FIELDS = base.STATUS_INPUT_FIELDS;
 export { FINAL_MATERIAL_STATUSES };
-export const MATERIAL_FIELDS = Object.freeze(["Threat_ID", "Threat_Name", "target_match", "evaluation_status", "basis_proof", "control_exclusion_evaluation", "evidence_source_basis", "fp_mechanism", "Archetype", "Subcategory", "Surface", "authority_anchors", "Pain_Tier", "Pain_Depth", "Pain_Category", "Legal_Pain", "remediation", "review_route", "row_limitations"]);
+
+export const DETERMINISTIC_REGISTRY_SPINE_FIELDS = Object.freeze([
+  "Threat_ID", "Threat_Name", "Lane", "Behavior_Class", "Surface", "Subcategory",
+  "Compliance_Framework", "Authority_IN", "Authority_EU", "Authority_US", "Velocity",
+  "Pain_Tier", "Pain_Category", "Pain_Depth", "Status", "Effective_Date", "Legal_Pain",
+  "FP_Mechanism", "FP_Impact", "Lex_Nova_Fix", "Hunter_Trigger", "Provenance",
+  "FIELD21", "FIELD22", "FIELD23"
+]);
+
+export const EXECUTION_CUSTODY_FIELDS = Object.freeze([
+  "registry_row_key", "package_id", "source_domain", "stream_id", "stream_type", "batch_id",
+  "matched_activity_references", "route_reason", "registry_order", "registry_key_version", "threat_registry_version"
+]);
+
+export const MATERIAL_FIELDS = Object.freeze([
+  ...DETERMINISTIC_REGISTRY_SPINE_FIELDS,
+  "target_match", "evaluation_status", "basis_proof", "control_exclusion_evaluation",
+  "evidence_source_basis", "applied_fp_mechanism", "row_limitations", "review_route"
+]);
 
 export const parseAiThreatRegistryYaml = base.parseAiThreatRegistryYaml;
 export const parseReferencePacket = base.parseReferencePacket;
-export const validateRegistryRows = base.validateRegistryRows;
 export const validateThreatIdDecomposition = base.validateThreatIdDecomposition;
 export const normalizeField23 = base.normalizeField23;
 export const parseHunterTrigger = base.parseHunterTrigger;
@@ -44,211 +61,63 @@ export const deriveM11FinalEvaluationStatus = base.deriveM11FinalEvaluationStatu
 export const buildExposureRegistryForensics = base.buildExposureRegistryForensics;
 export { buildPhase5ClassificationInventory, finalizePhase10RoutingContext };
 
-export function extractM11RoutingSubstrate(targetFeatureProfile = {}, manifest = {}) {
-  return buildPhase5ClassificationInventory({ targetFeatureProfile, manifest });
-}
-
-export function buildBatchPlan(routeRows, options = {}) {
-  return buildPackageScopedBatchPlan(routeRows, options);
-}
-
-export function validateBatchPlan(batchPlan, options = {}) {
-  return validatePackageScopedBatchPlan(batchPlan, options);
-}
-
-export function buildExposureRegistryRoutePlan(args = {}) {
-  if (!args.registryContext) throw new Error("PACKAGE_SCOPED_REGISTRY_CONTEXT_REQUIRED");
-  const output = buildPackageScopedExposureRegistryRoutePlan(args);
-  const plan = output.exposure_registry_route_plan;
-  const warnings = [];
-  plan.route_rows = asArray(plan.route_rows).map((row) => normalizeRouteRow(row, warnings));
-  plan.deterministic_not_applicable_rows = plan.route_rows.filter((row) => row.route === "NOT_TRIGGERED_NOT_APPLICABLE");
-  plan.registry_inventory = {
-    ...plan.registry_inventory,
-    m11_schema_upgrade: "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1",
-    material_row_field_count: 19,
-    split_profile_roots_clean: true,
-    subcategory_code_only: true,
-    allowed_subcategories: asArray(plan.registry_inventory?.allowed_subcategories),
-    subcategory_normalization_warnings: warnings
+export function validateRegistryRows(rows, options = {}) {
+  const baseline = base.validateRegistryRows(rows, options);
+  const failures = [...(baseline.failures || [])];
+  const mandatory = [
+    "Threat_ID", "Threat_Name", "Lane", "Surface", "Velocity", "Pain_Tier", "Pain_Category",
+    "Pain_Depth", "Status", "Effective_Date", "Legal_Pain", "FP_Mechanism", "FP_Impact",
+    "Lex_Nova_Fix", "Hunter_Trigger", "Provenance", "FIELD21", "FIELD22", "FIELD23"
+  ];
+  for (const [index, row] of (Array.isArray(rows) ? rows : []).entries()) {
+    const id = String(row?.Threat_ID || `ROW_${index + 1}`);
+    const behaviorClass = String(row?.Behavior_Class || row?.Archetype || row?.FIELD21 || "").trim();
+    if (!behaviorClass) failures.push(`REGISTRY_BEHAVIOR_CLASS_MISSING:${id}`);
+    for (const field of mandatory) if (!String(row?.[field] ?? "").trim()) failures.push(`REGISTRY_MANDATORY_FIELD_MISSING:${id}:${field}`);
+    if (![row?.Authority_IN, row?.Authority_EU, row?.Authority_US].some((value) => String(value || "").trim() && String(value).trim() !== "—")) failures.push(`REGISTRY_AUTHORITY_ANCHOR_MISSING:${id}`);
+    const tier = String(row?.Pain_Tier || "").trim();
+    const category = String(row?.Pain_Category || "").trim();
+    const depth = String(row?.Pain_Depth || "").trim();
+    if (!tier) failures.push(`REGISTRY_PAIN_TIER_MISSING:${id}`);
+    else if (!Object.prototype.hasOwnProperty.call(PAIN_TIER_CATEGORY, tier)) failures.push(`REGISTRY_PAIN_TIER_INVALID:${id}:${tier}`);
+    if (!category) failures.push(`REGISTRY_PAIN_CATEGORY_MISSING:${id}`);
+    else if (PAIN_TIER_CATEGORY[tier] && PAIN_TIER_CATEGORY[tier] !== category) failures.push(`REGISTRY_PAIN_CATEGORY_TIER_MISMATCH:${id}:${tier}:${category}`);
+    if (!depth) failures.push(`REGISTRY_PAIN_DEPTH_MISSING:${id}`);
+    else if (!PAIN_DEPTH_VALUES.has(depth)) failures.push(`REGISTRY_PAIN_DEPTH_INVALID:${id}:${depth}`);
+  }
+  const uniqueFailures = [...new Set(failures)];
+  return {
+    ...baseline,
+    ok: uniqueFailures.length === 0,
+    status: uniqueFailures.length ? "CONTROLLED_FAILURE" : "PASS",
+    failures: uniqueFailures,
+    severity_validation_status: uniqueFailures.some((failure) => failure.includes("PAIN_")) ? "CONTROLLED_FAILURE" : "PASS",
+    deterministic_report_row_contract: "phase10_report_row.v1.complete_registry_spine"
   };
-  plan.phase_a_validation = normalizeValidationWithWarnings(plan.phase_a_validation, warnings);
-  return output;
 }
+
+export function extractM11RoutingSubstrate(targetFeatureProfile = {}, manifest = {}) { return buildPhase5ClassificationInventory({ targetFeatureProfile, manifest }); }
+export function buildBatchPlan(routeRows, options = {}) { return buildPackageScopedBatchPlan(routeRows, options); }
+export function validateBatchPlan(batchPlan, options = {}) { return validatePackageScopedBatchPlan(batchPlan, options); }
+export function buildExposureRegistryRoutePlan(args = {}) { if (!args.registryContext) throw new Error("PACKAGE_SCOPED_REGISTRY_CONTEXT_REQUIRED"); return buildPackageScopedExposureRegistryRoutePlan(args); }
 
 export function buildM11BatchPacket(args) {
-  if (args?.routePlan?.exposure_registry_route_plan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA || args?.routePlan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA) {
-    throw new Error("PACKAGE_SCOPED_M11_BATCH_PACKET_PENDING_CO_7_AND_CO_8");
-  }
-  const output = base.buildM11BatchPacket(args);
-  const packet = output.m11_batch_packet;
-  const warnings = [];
-  packet.registry_rows = asArray(packet.registry_rows).map((row) => normalizeBatchRegistryRow(row, warnings));
-  packet.material_row_contract = "M11_THREE_LAYER_FULL_ROW_V1";
-  packet.material_row_field_count = 19;
-  packet.m11_schema_upgrade = "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1";
-  packet.subcategory_normalization_warnings = warnings;
-  return output;
+  if (args?.routePlan?.exposure_registry_route_plan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA || args?.routePlan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA) throw new Error("USE_PHASE10_SEMANTIC_FINALIZATION_FOR_PACKAGE_SCOPED_BATCH_PACKET");
+  return base.buildM11BatchPacket(args);
 }
-
-export function assembleM11AcceptedBatchLedger({ semanticBatch, batchPacket }) {
-  const output = base.assembleM11AcceptedBatchLedger({ semanticBatch, batchPacket });
-  const root = output.m11_batch_registry_ledger;
-  const packet = batchPacket?.m11_batch_packet || batchPacket || {};
-  const registryById = mapRegistryRows(packet.registry_rows);
-  const warnings = [];
-  root.batch_registry_ledger = asArray(root.batch_registry_ledger).map((row) => normalizeMaterialRow(row, registryById.get(row.Threat_ID), warnings));
-  root.material_row_contract = "M11_THREE_LAYER_FULL_ROW_V1";
-  root.material_row_field_count = 19;
-  root.m11_schema_upgrade = "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1";
-  root.threat_name_required = true;
-  root.subcategory_code_only = true;
-  root.subcategory_normalization_warnings = warnings;
-  return output;
-}
-
-export function mergeExposureRegistryWorkpad98(args) {
-  const output = base.mergeExposureRegistryWorkpad98(args);
-  const workpad = output.exposure_registry_workpad_98;
-  const plan = args?.routePlan?.exposure_registry_route_plan || args?.routePlan || {};
-  const routeById = mapRegistryRows(plan.route_rows);
-  const warnings = [];
-  workpad.registry_rows = asArray(workpad.registry_rows).map((row) => normalizeWorkpadRow(row, routeById.get(row.Threat_ID), warnings));
-  workpad.workpad_metadata = {
-    ...workpad.workpad_metadata,
-    material_row_field_count: 19,
-    m11_schema_upgrade: "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1",
-    threat_name_required: true,
-    subcategory_code_only: true,
-    subcategory_normalization_warnings: warnings
-  };
-  workpad.merge_validation = normalizeValidationWithWarnings(workpad.merge_validation, warnings);
-  return output;
-}
+export function assembleM11AcceptedBatchLedger(args) { return base.assembleM11AcceptedBatchLedger(args); }
+export function mergeExposureRegistryWorkpad98(args) { return base.mergeExposureRegistryWorkpad98(args); }
 
 export function projectControlledProfile(workpadRoot) {
   const workpad = workpadRoot?.exposure_registry_workpad_98 || workpadRoot;
-  const rows = asArray(workpad?.registry_rows)
-    .filter((row) => CONTROLLED_FINAL_STATUSES.has(row.final_material_status))
-    .sort((a, b) => (a.registry_order ?? 9999) - (b.registry_order ?? 9999))
-    .map((row) => pickMaterialFields(row.material_projection || row));
-  return { exposure_registry_controlled_profile: { controlled_rows: rows } };
+  const rows = asArray(workpad?.registry_rows).filter((row) => CONTROLLED_FINAL_STATUSES.has(row.final_material_status)).sort(byRegistryOrder).map(projectCompleteRow);
+  return { exposure_registry_controlled_profile: { schema_version: "exposure_registry_controlled_profile.v4.complete_report_row", controlled_rows: rows } };
 }
-
 export function projectTriggeredProfile(workpadRoot) {
   const workpad = workpadRoot?.exposure_registry_workpad_98 || workpadRoot;
-  const rows = asArray(workpad?.registry_rows)
-    .filter((row) => row.final_material_status === S_TRIGGERED)
-    .sort((a, b) => (a.registry_order ?? 9999) - (b.registry_order ?? 9999))
-    .map((row) => pickMaterialFields(row.material_projection || row));
-  return { exposure_registry_triggered_profile: { triggered_rows: rows } };
+  const rows = asArray(workpad?.registry_rows).filter((row) => row.final_material_status === S_TRIGGERED).sort(byRegistryOrder).map(projectCompleteRow);
+  return { exposure_registry_triggered_profile: { schema_version: "exposure_registry_triggered_profile.v4.complete_report_row", triggered_rows: rows } };
 }
-
-function normalizeRouteRow(row = {}, warnings = []) {
-  const normalized = normalizeSubcategory(row.FIELD22 || row.registry_row?.FIELD22 || deriveThreatIdPart(row.Threat_ID, 1));
-  pushWarning(warnings, normalized, row.Threat_ID);
-  const registryRow = normalizeRegistryRow(row.registry_row || row, warnings, row.Threat_ID);
-  return {
-    ...row,
-    Threat_Name: row.Threat_Name || registryRow.Threat_Name || "",
-    FIELD22: normalized.code,
-    Subcategory: normalized.code,
-    subcategory_normalization: normalized.record,
-    registry_row: registryRow
-  };
-}
-
-function normalizeBatchRegistryRow(row = {}, warnings = []) {
-  const registryRow = normalizeRegistryRow(row, warnings, row.Threat_ID);
-  return {
-    ...registryRow,
-    deterministic_registry_spine: normalizeMaterialRow(row.deterministic_registry_spine || {}, registryRow, warnings)
-  };
-}
-
-function normalizeRegistryRow(row = {}, warnings = [], threatId = row.Threat_ID) {
-  const normalized = normalizeSubcategory(row.FIELD22 || row.Subcategory || deriveThreatIdPart(threatId, 1));
-  pushWarning(warnings, normalized, threatId);
-  return {
-    ...row,
-    Threat_Name: row.Threat_Name || "",
-    FIELD22: normalized.code,
-    Subcategory: normalized.code,
-    original_FIELD22: normalized.changed ? normalized.raw : row.original_FIELD22,
-    subcategory_normalization: normalized.record
-  };
-}
-
-function normalizeMaterialRow(row = {}, registryRow = {}, warnings = []) {
-  const threatId = row.Threat_ID || registryRow.Threat_ID || "";
-  const normalized = normalizeSubcategory(row.Subcategory || registryRow.Subcategory || registryRow.FIELD22 || deriveThreatIdPart(threatId, 1));
-  pushWarning(warnings, normalized, threatId);
-  return pickMaterialFields({
-    ...row,
-    Threat_ID: threatId,
-    Threat_Name: row.Threat_Name || registryRow.Threat_Name || "",
-    Subcategory: normalized.code
-  });
-}
-
-function normalizeWorkpadRow(row = {}, routeRow = {}, warnings = []) {
-  const materialProjection = row.material_projection ? normalizeMaterialRow(row.material_projection, routeRow.registry_row || routeRow, warnings) : row.material_projection;
-  const normalized = normalizeSubcategory(row.subcategory || row.Subcategory || materialProjection?.Subcategory || routeRow.FIELD22 || deriveThreatIdPart(row.Threat_ID, 1));
-  pushWarning(warnings, normalized, row.Threat_ID);
-  return {
-    ...row,
-    Threat_Name: row.Threat_Name || materialProjection?.Threat_Name || routeRow.Threat_Name || "",
-    Subcategory: normalized.code,
-    subcategory: normalized.code,
-    material_projection: materialProjection
-  };
-}
-
-function normalizeSubcategory(value) {
-  const raw = String(value || "").trim().toUpperCase();
-  const code = LEGACY_SUBCAT_NORMALIZATION[raw] || raw;
-  const changed = Boolean(raw && raw !== code);
-  const valid = VALID_SUBCATS.has(code);
-  return {
-    raw,
-    code: valid ? code : raw,
-    changed,
-    valid,
-    record: changed ? { original_subcategory: raw, normalized_subcategory: code, policy: "KNOWN_LEGACY_SUBCAT_NORMALIZATION_NON_BLOCKING" } : null
-  };
-}
-
-function pushWarning(warnings, normalized, Threat_ID) {
-  if (!normalized?.changed) return;
-  warnings.push({ Threat_ID: Threat_ID || "", code: "LEGACY_SUBCATEGORY_NORMALIZED", original_subcategory: normalized.raw, normalized_subcategory: normalized.code, severity: "WARNING_NON_BLOCKING" });
-}
-
-function normalizeValidationWithWarnings(validation = {}, warnings = []) {
-  const failures = asArray(validation.failures);
-  const existingWarnings = asArray(validation.warnings);
-  const nextWarnings = [...existingWarnings, ...warnings];
-  return {
-    ...validation,
-    warnings: nextWarnings,
-    non_blocking_warning_count: nextWarnings.length,
-    status: failures.length ? validation.status || "REPAIR_REQUIRED" : nextWarnings.length ? "PASS_WITH_LIMITATION" : validation.status || "PASS"
-  };
-}
-
-function pickMaterialFields(row = {}) {
-  return Object.fromEntries(MATERIAL_FIELDS.map((field) => [field, field === "evaluation_status" ? String(row[field] || "").trim().toUpperCase() : row[field] ?? ""]));
-}
-
-function mapRegistryRows(rows) {
-  const map = new Map();
-  for (const row of asArray(rows)) if (row?.Threat_ID) map.set(row.Threat_ID, row);
-  return map;
-}
-
-function deriveThreatIdPart(threatId, index) {
-  return String(threatId || "").split("_")[index] || "";
-}
-
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+function projectCompleteRow(row = {}) { return { ...Object.fromEntries(EXECUTION_CUSTODY_FIELDS.map((field) => [field, row[field] ?? ""])), ...(row.material_projection || row) }; }
+function byRegistryOrder(a, b) { return (a.registry_order ?? 9999) - (b.registry_order ?? 9999); }
+function asArray(value) { return Array.isArray(value) ? value : []; }
