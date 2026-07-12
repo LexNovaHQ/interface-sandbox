@@ -7,19 +7,34 @@ export const M11_PACKAGE_ROUTING_RULES_VERSION = "M11_PACKAGE_SCOPED_BEHAVIOR_CL
 export const M11_PACKET_CEILING_VERSION = "M11_PACKET_CHARS_180000_v1";
 export const PHASE5_CLASSIFICATION_INVENTORY_SCHEMA = "phase5_classification_inventory.v2.behavior_class";
 export const PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA = "exposure_registry_route_plan.v4.behavior_class_package_scoped";
+export const PHASE10_REPORT_ROW_SCHEMA_VERSION = "phase10_report_row.v1.complete_registry_spine";
 
 const ROUTED = "EVALUATION_ROUTED";
 const NOT_APPLICABLE = "NOT_TRIGGERED_NOT_APPLICABLE";
+const REPORT_REGISTRY_SPINE_FIELDS = Object.freeze([
+  "Threat_ID", "Threat_Name", "Lane", "Behavior_Class", "Surface", "Subcategory",
+  "Compliance_Framework", "Authority_IN", "Authority_EU", "Authority_US", "Velocity",
+  "Pain_Tier", "Pain_Category", "Pain_Depth", "Status", "Effective_Date", "Legal_Pain",
+  "FP_Mechanism", "FP_Impact", "Lex_Nova_Fix", "Hunter_Trigger", "Provenance",
+  "FIELD21", "FIELD22", "FIELD23"
+]);
+const MANDATORY_REGISTRY_FIELDS = Object.freeze(REPORT_REGISTRY_SPINE_FIELDS.filter((field) => field !== "Compliance_Framework"));
 
 export function finalizePhase10RoutingContext({ registryContext, targetFeatureProfile } = {}) {
   if (!registryContext?.artifact) throw new Error("PHASE10_REGISTRY_CONTEXT_REQUIRED");
   const inventory = buildPhase5ClassificationInventory({ targetFeatureProfile, manifest: registryContext.artifact });
   if (inventory.validation.status === "CONTROLLED_FAILURE") throw new Error(`PHASE5_CLASSIFICATION_INVENTORY_INVALID:${inventory.validation.failures.join("|")}`);
+  const reportRowContract = buildReportRowContract(registryContext);
+  if (reportRowContract.registry_spine_completeness_status !== "PASS" || reportRowContract.severity_validation_status !== "PASS") {
+    throw new Error(`PHASE10_REPORT_ROW_REGISTRY_PREFLIGHT_FAILED:${reportRowContract.failures.join("|")}`);
+  }
   const priorFingerprint = String(registryContext.phase10_execution_fingerprint || registryContext.artifact.phase10_execution_fingerprint || "");
   const phase10ExecutionFingerprint = sha256(stableJson({
     prior_phase10_execution_fingerprint: priorFingerprint,
     routing_rules_version: M11_PACKAGE_ROUTING_RULES_VERSION,
     classification_inventory_digest: inventory.inventory_digest,
+    report_row_schema_version: PHASE10_REPORT_ROW_SCHEMA_VERSION,
+    report_row_contract_digest: reportRowContract.contract_digest,
     max_m11_batch_rows: MAX_M11_BATCH_ROWS,
     max_m11_batch_packet_chars: MAX_M11_BATCH_PACKET_CHARS,
     packet_ceiling_version: M11_PACKET_CEILING_VERSION
@@ -28,11 +43,14 @@ export function finalizePhase10RoutingContext({ registryContext, targetFeaturePr
     ...registryContext.artifact,
     phase10_execution_fingerprint: phase10ExecutionFingerprint,
     phase5_classification_inventory_digest: inventory.inventory_digest,
+    report_row_contract: reportRowContract,
     execution_fingerprint_inputs: {
       ...(registryContext.artifact.execution_fingerprint_inputs || {}),
       routing_rules_version: M11_PACKAGE_ROUTING_RULES_VERSION,
       classification_inventory_schema: PHASE5_CLASSIFICATION_INVENTORY_SCHEMA,
       classification_inventory_digest: inventory.inventory_digest,
+      report_row_schema_version: PHASE10_REPORT_ROW_SCHEMA_VERSION,
+      report_row_contract_digest: reportRowContract.contract_digest,
       max_m11_batch_rows: MAX_M11_BATCH_ROWS,
       max_m11_batch_packet_chars: MAX_M11_BATCH_PACKET_CHARS,
       packet_ceiling_version: M11_PACKET_CEILING_VERSION
@@ -41,6 +59,8 @@ export function finalizePhase10RoutingContext({ registryContext, targetFeaturePr
     validation: {
       ...(registryContext.artifact.validation || {}),
       phase5_classification_inventory_status: inventory.validation.status,
+      registry_spine_completeness_status: reportRowContract.registry_spine_completeness_status,
+      severity_validation_status: reportRowContract.severity_validation_status,
       package_scoped_route_planner_status: "ACTIVE",
       max_15_batch_planner_status: "ACTIVE"
     }
@@ -49,9 +69,10 @@ export function finalizePhase10RoutingContext({ registryContext, targetFeaturePr
     ...registryContext,
     artifact,
     classification_inventory: inventory,
+    report_row_contract: reportRowContract,
     phase10_execution_fingerprint: phase10ExecutionFingerprint,
-    route_plan_compatibility: { ok: true, behavior_class_canonical: true },
-    semantic_layer_compatibility: { ok: true, package_scoped_behavior_class_streams: true }
+    route_plan_compatibility: { ok: true, behavior_class_canonical: true, complete_report_row: true },
+    semantic_layer_compatibility: { ok: true, package_scoped_behavior_class_streams: true, deterministic_registry_spine_read_only: true }
   };
   delete next.legacy_route_compatibility;
   return next;
@@ -192,6 +213,7 @@ export function buildPackageScopedExposureRegistryRoutePlan({ registryContext, t
     generated_by: "phase10_package_scoped_behavior_class_route_planner",
     routing_rules_version: M11_PACKAGE_ROUTING_RULES_VERSION,
     batch_planner_version: "M11_MAX_15_PACKAGE_SCOPED_BATCH_PLANNER_v2",
+    report_row_schema_version: PHASE10_REPORT_ROW_SCHEMA_VERSION,
     registry_inventory: {
       expected_active_rows: Number(activeManifest?.expected_row_count || 0),
       loaded_active_rows: routeRows.length,
@@ -310,6 +332,40 @@ export function validatePackageScopedBatchPlan(batchPlan, { routedRows = [], max
   return { ok: !failures.length, status: failures.length ? "CONTROLLED_FAILURE" : "PASS", failures, batch_count: asArray(batchPlan).length, routed_registry_row_key_count: expected.size, batched_registry_row_key_count: seen.size, maximum_rows_per_batch: maxRows, maximum_packet_chars: maxPacketChars, package_and_stream_isolation: true };
 }
 
+function buildReportRowContract(registryContext) {
+  const failures = [];
+  const packageSchemaLimitations = [];
+  let rowCount = 0;
+  for (const registry of asArray(registryContext?.registries)) {
+    const rows = asArray(registry.rows);
+    rowCount += rows.length;
+    const hasPhysicalFrameworkColumn = rows.some((row) => Object.prototype.hasOwnProperty.call(row, "Compliance_Framework"));
+    if (!hasPhysicalFrameworkColumn) packageSchemaLimitations.push({ package_id: registry.package_id, limitation: "NO_SEPARATE_PHYSICAL_COMPLIANCE_FRAMEWORK_COLUMN", treatment: "FIELD_NOT_DECLARED_AND_NOT_INFERRED" });
+    for (const row of rows) {
+      const key = `${registry.package_id}::${row.Threat_ID || "unknown"}`;
+      const canonical = { ...row, Behavior_Class: row.Behavior_Class || row.Archetype || row.FIELD21, Subcategory: row.Subcategory || row.FIELD22 };
+      for (const field of MANDATORY_REGISTRY_FIELDS) if (!String(canonical[field] ?? "").trim()) failures.push(`REGISTRY_REPORT_SPINE_FIELD_MISSING:${key}:${field}`);
+      if (![row.Authority_IN, row.Authority_EU, row.Authority_US].some((value) => String(value || "").trim() && String(value).trim() !== "—")) failures.push(`REGISTRY_AUTHORITY_ANCHOR_MISSING:${key}`);
+    }
+  }
+  const severityFailures = failures.filter((failure) => /Pain_Tier|Pain_Category|Pain_Depth/.test(failure));
+  const contract = {
+    report_row_schema_version: PHASE10_REPORT_ROW_SCHEMA_VERSION,
+    declared_registry_spine_fields: [...REPORT_REGISTRY_SPINE_FIELDS],
+    mandatory_registry_fields: [...MANDATORY_REGISTRY_FIELDS],
+    mounted_registry_key_versions: asArray(registryContext?.registries).map((registry) => ({ package_id: registry.package_id, version: registry.package_key_version })),
+    mounted_threat_registry_versions: asArray(registryContext?.registries).map((registry) => ({ package_id: registry.package_id, version: registry.registry_version || registry.registry_file })),
+    severity_validation_status: severityFailures.length ? "CONTROLLED_FAILURE" : "PASS",
+    severity_failure_count: severityFailures.length,
+    registry_spine_completeness_status: failures.length ? "CONTROLLED_FAILURE" : "PASS",
+    registry_row_key_count: Number(registryContext?.identity?.registry_row_key_count || rowCount),
+    material_projection_field_count: 33,
+    execution_custody_field_count: 11,
+    package_schema_limitations: packageSchemaLimitations,
+    failures
+  };
+  return { ...contract, contract_digest: sha256(stableJson(contract)) };
+}
 function createStreamInventory(stream, index) { const packageId = String(stream?.package_id || "").trim(); const streamType = String(stream?.stream_type || "").trim().toUpperCase(); return { stream_id: makeStreamId(streamType, packageId), stream_index: index, stream_type: streamType, package_id: packageId, source_domain: packageId, classifications: [], activity_references: [], behavior_class_codes: [], surface_context_tokens: [], overlay_ids: [], classification_count: 0, inventory_digest: "" }; }
 function addClassification(inventory, { activityReference, classificationSource, overlayId, block, failures, path }) { const behaviorClasses = normalizeCodes(block.behavior_class_codes, `${path}.behavior_class_codes`, failures); const surfaces = normalizeStrings(block.surface_context_tokens, `${path}.surface_context_tokens`, failures); inventory.classifications.push({ activity_reference: activityReference, classification_source: classificationSource, overlay_id: overlayId, package_id: inventory.package_id, behavior_class_codes: behaviorClasses, surface_context_tokens: surfaces }); }
 function routeExecutionRow({ executionRow, streamInventory, globalOrder, streamOrder, registryKeyVersion, threatRegistryVersion }) {
