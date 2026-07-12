@@ -8,6 +8,7 @@ import {
   DOMAIN_DERIVATION_SOURCE_ROOT_ARTIFACT_NAMES,
   ACTIVITY_PROFILE_SOURCE_ARTIFACT_NAMES,
   DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES,
+  DOMAIN_CONTROL_OBLIGATION_SOURCE_ARTIFACT_NAMES,
   LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES,
   PHASE7_DAP_LAYER4_ARTIFACT_NAMES,
   PHASE7_DAP_LAYER5_ARTIFACT_NAMES
@@ -31,6 +32,10 @@ import { ACTIVITY_CANDIDATE_INVENTORY_CONTRACT } from "../src/phases/05-activity
 import { ACTIVITY_PROFILE_REVIEW_CONTRACT } from "../src/phases/05-activity-profile-review/activity-profile-review.contract.js";
 import { ACTIVITY_PROFILE_FORENSICS_CONTRACT } from "../src/phases/06-activity-profile-forensics/activity-profile-forensics.contract.js";
 import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
+import {
+  DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT,
+  DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT
+} from "../src/phases/08-domain-control-obligation-profile/index.js";
 import { DAP_FORENSICS_CONTRACT } from "../src/phases/09-data-provenance-forensics/dap-forensics.contract.js";
 import { M11_PHASE2G_RUNTIME_STATUS } from "../src/m11-orchestrator-m11v2.js";
 import { M12_PHASE2G_RUNNER_STATUS } from "../src/m12-phase2g.runner.js";
@@ -42,6 +47,8 @@ const SOURCE_JOBS = Object.freeze([
   "M8_FEATURE_CANDIDATE_INVENTORY",
   "M8_TARGET_FEATURE_PROFILE",
   "DATA_PROVENANCE_PROFILE_LAYER4",
+  "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY",
+  "DOMAIN_CONTROL_OBLIGATION_PROFILE",
   "M11"
 ]);
 const DERIVED_ONLY_JOBS = Object.freeze([
@@ -60,6 +67,8 @@ const CUTOVER_JOBS = Object.freeze([
   "M8_TARGET_FEATURE_PROFILE_FORENSICS",
   "DATA_PROVENANCE_PROFILE_LAYER4",
   "DATA_PROVENANCE_PROFILE_FORENSICS",
+  "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY",
+  "DOMAIN_CONTROL_OBLIGATION_PROFILE",
   "M11",
   "M12",
   "NORMALIZED_COMPILER"
@@ -90,9 +99,11 @@ assertSourcePlan(plans.M8_TARGET_FEATURE_PROFILE, "ROUTE.PHASE5.ACTIVITY_PROFILE
 assertDerivedPlan(plans.M8_TARGET_FEATURE_PROFILE_FORENSICS, "ROUTE.PHASE5.ACTIVITY_PROFILE", ["activity_profile_source_index", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile"]);
 assertSourcePlan(plans.DATA_PROVENANCE_PROFILE_LAYER4, "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE", "2D_BUCKET_DATA_PRIVACY", ["data_privacy_navigation_index"], DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES);
 assertDerivedPlan(plans.DATA_PROVENANCE_PROFILE_FORENSICS, "ROUTE.PHASE7.DATA_PROVENANCE_PROFILE", ["data_privacy_navigation_index", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES]);
+assertSourcePlan(plans.DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY, "ROUTE.PHASE8.DOMAIN_CONTROL_OBLIGATION_PROFILE", "2E_BUCKET_DOMAIN_CONTROL_OBLIGATION", ["domain_control_obligation_navigation_index"], DOMAIN_CONTROL_OBLIGATION_SOURCE_ARTIFACT_NAMES);
+assertSourcePlan(plans.DOMAIN_CONTROL_OBLIGATION_PROFILE, "ROUTE.PHASE8.DOMAIN_CONTROL_OBLIGATION_PROFILE", "2E_BUCKET_DOMAIN_CONTROL_OBLIGATION", ["domain_control_obligation_navigation_index"], DOMAIN_CONTROL_OBLIGATION_SOURCE_ARTIFACT_NAMES);
 assertSourcePlan(plans.M11, "ROUTE.PHASE10.EXPOSURE_PROFILE", "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS", ["legal_cartography_index", "legal_signal_derivation_profile"], LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES);
-assertDerivedPlan(plans.M12, "ROUTE.PHASE10.EXPOSURE_PROFILE", ["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, "exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile"], [P2G_DYNAMIC_M11_BATCH_INPUT]);
-assertDerivedPlan(plans.NORMALIZED_COMPILER, "ROUTE.PHASE10.EXPOSURE_PROFILE", ["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, "exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "challenge_gate"], [P2G_DYNAMIC_M11_BATCH_INPUT]);
+assertDerivedPlan(plans.M12, "ROUTE.PHASE10.EXPOSURE_PROFILE", ["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", "domain_control_obligation_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, "exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile"], [P2G_DYNAMIC_M11_BATCH_INPUT]);
+assertDerivedPlan(plans.NORMALIZED_COMPILER, "ROUTE.PHASE10.EXPOSURE_PROFILE", ["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", "domain_control_obligation_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, "exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "challenge_gate"], [P2G_DYNAMIC_M11_BATCH_INPUT]);
 
 assertEffectiveContract(TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads, plans.M7_TARGET_PROFILE, "3A");
 assertEffectiveContract(DOMAIN_DERIVATION_CONTRACT.reads, plans.P3_DOMAIN_DERIVATION_LAYER, "3B");
@@ -102,6 +113,8 @@ assertEffectiveContract(ACTIVITY_PROFILE_REVIEW_CONTRACT.material_job.reads, pla
 assertEffectiveContract(ACTIVITY_PROFILE_FORENSICS_CONTRACT.deterministic_job.reads, plans.M8_TARGET_FEATURE_PROFILE_FORENSICS, "Activity forensics");
 assert.deepEqual(new Set(PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT.approved_input_universe), new Set(["phase_routing_manifest", "phase_route_runtime_packet", ...plans.DATA_PROVENANCE_PROFILE_LAYER4.artifact_reads]));
 assertEffectiveContract(DAP_FORENSICS_CONTRACT.deterministic_job.reads, plans.DATA_PROVENANCE_PROFILE_FORENSICS, "DAP forensics");
+assertEffectiveContract(DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY_CONTRACT.deterministic_job.reads, plans.DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY, "Phase8 candidate inventory");
+assertEffectiveContract(DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.material_job.reads, plans.DOMAIN_CONTROL_OBLIGATION_PROFILE, "Phase8 material profile");
 
 assert.equal(M11_PHASE2G_RUNTIME_STATUS.route_id, "ROUTE.PHASE10.EXPOSURE_PROFILE");
 assert.equal(M11_PHASE2G_RUNTIME_STATUS.delivery_mode, P2G_SOURCE_BUCKET_DELIVERY_MODE);
@@ -123,6 +136,7 @@ console.log(JSON.stringify({
     "ROUTE_SCOPED_RUNTIME_READER",
     "SPARSE_LOSSLESS_ROOT_RESOLUTION_OWNED_BY_2G",
     "PROFILE_JOBS_RECEIVE_PRIMARY_BUCKET",
+    "PHASE8_2E_SOURCE_BUCKET_CUTOVER",
     "FORENSICS_CHALLENGE_COMPILER_DERIVED_ONLY",
     "2F_FORWARD_TO_M11",
     "M12_COMPILER_DYNAMIC_M11_BATCH_ROUTING",
