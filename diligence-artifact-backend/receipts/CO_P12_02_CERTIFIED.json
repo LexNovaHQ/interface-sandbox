@@ -1,0 +1,36 @@
+{
+  "schema_version": "co_p12_02_certified_receipt.v1",
+  "status": "PASS",
+  "exit_code": 0,
+  "command": "npm run check:p12:co2",
+  "workflow": "CO P12 02 Atomic Finalize",
+  "run_id": "29197356776",
+  "target_branch": "domain-gate-v0-preflight",
+  "validated_parent_sha": "59bdd13efb27ed71d51cdf72eb502e37bd30c233",
+  "fdr_declared_row_count": 456,
+  "fdr_parsed_unique_row_count": 457,
+  "active_owned_field_count": 430,
+  "blocked_upstream_gap_field_count": 27,
+  "report_section_count": 10,
+  "route_path_contract_status": "DEFERRED_TO_CO_P12_03",
+  "compiler_runtime_cutover_status": "NOT_APPLIED_IN_CO_P12_02",
+  "generated_files": {
+    "references/registry/REPORT_NORMALIZER_KEY.yml": {
+      "sha256": "02d62fd44258d863089465e62d85733fe46f3d866fd02d0faa03af3132b966b9",
+      "size_bytes": 291413
+    },
+    "src/phases/12-normalized-compiler/report-contract/REPORT_SECTION_SCHEMA.yml": {
+      "sha256": "e529b2e0af631058e05e3f33502ef3375b31e1f7d5f661375f73e40bc0d47080",
+      "size_bytes": 13580
+    },
+    "src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json": {
+      "sha256": "b00995251ecc3fb7c6eee8d206bd55984fb5421b1554ae2da1101c687f6d689d",
+      "size_bytes": 305837
+    },
+    "src/phases/12-normalized-compiler/report-contract/UPSTREAM_REPORT_GAP_REGISTER.yml": {
+      "sha256": "f7bae7e0eb959e1e2c4b8be166a14a3cc7f3b184f12291ed4b886c8629f8542d",
+      "size_bytes": 2018
+    }
+  },
+  "certified_at": "2026-07-12T15:01:15.818Z"
+}

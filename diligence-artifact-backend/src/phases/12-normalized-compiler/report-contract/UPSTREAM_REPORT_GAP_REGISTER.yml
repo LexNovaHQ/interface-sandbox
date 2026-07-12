@@ -1,0 +1,60 @@
+upstream_report_gap_register:
+  schema_version: upstream_report_gap_register.v1.co_p12_02
+  status: LOCKED
+  blocking_rule: Phase 12 must not derive, repair or synthesize a field whose upstream owner is absent.
+  gaps:
+    - gap_id: P12.GAP.FDR.ROW_COUNT
+      type: REGISTRY_METADATA_MISMATCH
+      declared_row_count: 456
+      parsed_unique_row_count: 457
+      treatment: Use all unique locked parsed rows; amend FDR metadata separately. No row may be dropped.
+    - gap_id: P12.GAP.DRR.OWNER
+      type: UPSTREAM_OWNER_MISSING
+      field_prefix: DRR
+      field_count: 17
+      affected_field_ids:
+        - DRR.SCOPE.001
+        - DRR.EXP.001
+        - DRR.ROUTE.001
+        - DRR.ROUTE.002
+        - DRR.DOC.001
+        - DRR.CLAUSE.001
+        - DRR.CTRL.001
+        - DRR.DATA.001
+        - DRR.LGC.001
+        - DRR.IND.001
+        - DRR.DOM.001
+        - DRR.REQ.001
+        - DRR.COUNSEL.001
+        - DRR.PRIO.001
+        - DRR.ROAD.001
+        - DRR.SUM.001
+        - DRR.LIM.001
+      treatment: BLOCK_FROM_REPORT_UNTIL_EXPLICIT_UPSTREAM_REMEDIATION_OWNER_EXISTS
+      p12_derivation_forbidden: true
+    - gap_id: P12.GAP.FPA.OWNER
+      type: UPSTREAM_OWNER_MISSING
+      field_prefix: FPA
+      field_count: 10
+      affected_field_ids:
+        - FPA.HEAD.001
+        - FPA.POST.001
+        - FPA.PROF.001
+        - FPA.FIND.001
+        - FPA.DEAL.001
+        - FPA.REM.001
+        - FPA.REQ.001
+        - FPA.ROUTE.001
+        - FPA.BOUND.001
+        - FPA.LIM.001
+      treatment: BLOCK_FROM_REPORT_UNTIL_PHASE11_OR_AN_EXPLICIT_FINAL_ASSESSMENT_OWNER_EMITS_THE_FIELDS
+      p12_derivation_forbidden: true
+    - gap_id: P12.GAP.ROUTE_BINDINGS
+      type: SOURCE_PATH_BINDING_NOT_YET_FROZEN
+      affected_active_field_count: 430
+      treatment: CO_P12_03 must bind each active field to an exact material artifact path before compiler cutover.
+      current_change_order_may_not_guess_paths: true
+  summary:
+    active_owned_fields: 430
+    blocked_upstream_gap_fields: 27
+    total_fdr_fields: 457

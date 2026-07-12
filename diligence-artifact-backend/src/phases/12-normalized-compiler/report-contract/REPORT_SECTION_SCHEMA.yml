@@ -1,0 +1,335 @@
+report_section_schema:
+  schema_version: phase12_report_section_schema.v1
+  status: LOCKED
+  doctrine: Upstream phases decide. Phase 12 arranges.
+  public_terminology:
+    domain: Sector
+    primary_domain_package: Primary Sector
+    domain_derivation_profile: Sector Classification Profile
+    capability_overlays: Capability Overlays
+    regulatory_overlays: Regulatory Context Overlays
+    domain_control_obligation_profile: Sector-Specific Control Obligations
+  section_count: 10
+  one_canonical_artifact_per_section: true
+  renderer_semantic_merge_forbidden: true
+  p12_model_usage: FORBIDDEN
+  p12_new_substantive_fields_forbidden: true
+  sections:
+    - section_id: "01"
+      artifact_name: report_section__01_matter_review_boundary
+      section_key: matter_review_boundary
+      title: Matter Overview & Review Boundary
+      subsections:
+        - subsection_id: "01.01"
+          subsection_key: matter_identity
+          title: Matter Identity
+        - subsection_id: "01.02"
+          subsection_key: reviewed_source_scope
+          title: Reviewed Target and Source Scope
+        - subsection_id: "01.03"
+          subsection_key: mounted_sector_context
+          title: Primary Sector and Mounted Context
+        - subsection_id: "01.04"
+          subsection_key: phase11_gate_status
+          title: Final Operator-Challenge Gate
+        - subsection_id: "01.05"
+          subsection_key: reliance_boundary
+          title: Public-Footprint and Reliance Boundary
+        - subsection_id: "01.06"
+          subsection_key: review_ready_notice
+          title: Review-Ready Draft and Local Counsel Notice
+      rules:
+        field_role: CONTROL_METADATA_AND_DETERMINISTIC_SUMMARY_ONLY
+        allowed_summary_prefixes:
+          - TP
+          - DD
+        substantive_field_creation_forbidden: true
+    - section_id: "02"
+      artifact_name: report_section__02_executive_legal_risk_overview
+      section_key: executive_legal_risk_overview
+      title: Executive Legal Risk Overview
+      subsections:
+        - subsection_id: "02.01"
+          subsection_key: target_sector_snapshot
+          title: Target and Sector Snapshot
+        - subsection_id: "02.02"
+          subsection_key: exposure_status_distribution
+          title: Exposure Status Distribution
+        - subsection_id: "02.03"
+          subsection_key: pain_tier_distribution
+          title: Pain Tier Distribution
+        - subsection_id: "02.04"
+          subsection_key: pain_depth_distribution
+          title: Pain Depth Distribution
+        - subsection_id: "02.05"
+          subsection_key: highest_upstream_priorities
+          title: Highest Upstream-Owned Review Priorities
+        - subsection_id: "02.06"
+          subsection_key: carried_phase11_warnings
+          title: Carried Phase 11 Warnings
+      rules:
+        field_role: DETERMINISTIC_ROLLUP_OF_UPSTREAM_VALUES
+        primary_fdr_prefixes:
+          - LEP
+        final_assessment_owner_required: true
+        compiler_priority_derivation_forbidden: true
+    - section_id: "03"
+      artifact_name: report_section__03_target_entity_sector_profile
+      section_key: target_entity_sector_profile
+      title: Target, Entity & Sector Profile
+      subsections:
+        - subsection_id: "03.01"
+          subsection_key: target_identity
+          title: Target Identity
+        - subsection_id: "03.02"
+          subsection_key: entity_and_jurisdiction
+          title: Entity and Jurisdiction Signals
+        - subsection_id: "03.03"
+          subsection_key: business_context
+          title: Business Context
+        - subsection_id: "03.04"
+          subsection_key: product_service_wrapper
+          title: Product and Service Wrapper
+        - subsection_id: "03.05"
+          subsection_key: primary_sector
+          title: Primary Sector
+        - subsection_id: "03.06"
+          subsection_key: capability_overlays
+          title: Capability Overlays
+        - subsection_id: "03.07"
+          subsection_key: regulatory_context_overlays
+          title: Regulatory Context Overlays
+        - subsection_id: "03.08"
+          subsection_key: profile_limitations
+          title: Profile Limitations
+      rules:
+        primary_fdr_prefixes:
+          - TP
+          - DD
+    - section_id: "04"
+      artifact_name: report_section__04_product_activity_architecture
+      section_key: product_activity_architecture
+      title: Product & Activity Architecture
+      subsections:
+        - subsection_id: "04.01"
+          subsection_key: activity_inventory
+          title: Activity Inventory
+        - subsection_id: "04.02"
+          subsection_key: activity_mechanics
+          title: Activity Mechanics
+        - subsection_id: "04.03"
+          subsection_key: behavior_classification
+          title: Behavior Class Classification
+        - subsection_id: "04.04"
+          subsection_key: surface_context
+          title: Surface and Context Classification
+        - subsection_id: "04.05"
+          subsection_key: commercial_availability
+          title: Commercial Availability and Deployment Posture
+        - subsection_id: "04.06"
+          subsection_key: taxonomy_provenance
+          title: Taxonomy Provenance
+        - subsection_id: "04.07"
+          subsection_key: activity_limitations
+          title: Activity Limitations
+      rules:
+        primary_fdr_prefixes:
+          - PA
+    - section_id: "05"
+      artifact_name: report_section__05_data_provenance_privacy_architecture
+      section_key: data_provenance_privacy_architecture
+      title: Data Provenance & Privacy Architecture
+      subsections:
+        - subsection_id: "05.01"
+          subsection_key: provenance_executive_map
+          title: Provenance Executive Map
+        - subsection_id: "05.02"
+          subsection_key: parties_and_roles
+          title: Parties, Roles and Affected Persons
+        - subsection_id: "05.03"
+          subsection_key: objects_and_flows
+          title: Objects, Data, Assets and Flows
+        - subsection_id: "05.04"
+          subsection_key: purpose_authorization_controls
+          title: Purpose, Authorization, Notice and User Controls
+        - subsection_id: "05.05"
+          subsection_key: vendor_processor_chain
+          title: Vendor, Processor and Partner Chain
+        - subsection_id: "05.06"
+          subsection_key: location_transfer_custody
+          title: Location, Transfer and Custody
+        - subsection_id: "05.07"
+          subsection_key: retention_deletion_return
+          title: Retention, Deletion, Return and Portability
+        - subsection_id: "05.08"
+          subsection_key: security_incident_governance
+          title: Security, Access, Incident and Governance Controls
+        - subsection_id: "05.09"
+          subsection_key: sensitive_contexts
+          title: Sensitive and High-Risk Contexts
+        - subsection_id: "05.10"
+          subsection_key: regulatory_readiness
+          title: Regulatory Readiness
+        - subsection_id: "05.11"
+          subsection_key: contacts_consent_manager
+          title: Privacy Contacts and Consent Manager Readiness
+        - subsection_id: "05.12"
+          subsection_key: missing_proof
+          title: Missing Proof and Diligence Requests
+        - subsection_id: "05.13"
+          subsection_key: provenance_limitations
+          title: Provenance Limitations
+      rules:
+        primary_fdr_prefixes:
+          - DAP
+    - section_id: "06"
+      artifact_name: report_section__06_sector_control_obligations
+      section_key: sector_control_obligations
+      title: Sector-Specific Control Obligations
+      subsections:
+        - subsection_id: "06.01"
+          subsection_key: obligation_inventory
+          title: Obligation Inventory
+        - subsection_id: "06.02"
+          subsection_key: obligation_linkage
+          title: Target, Activity and Authority Linkage
+        - subsection_id: "06.03"
+          subsection_key: expected_controls
+          title: Expected Operational Controls
+        - subsection_id: "06.04"
+          subsection_key: visible_control_posture
+          title: Visible Control Posture
+        - subsection_id: "06.05"
+          subsection_key: obligation_evidence
+          title: Obligation Evidence
+        - subsection_id: "06.06"
+          subsection_key: obligation_limitations
+          title: Obligation Limitations
+      rules:
+        primary_fdr_prefixes:
+          - DCO
+        legal_applicability_conclusion_forbidden: true
+    - section_id: "07"
+      artifact_name: report_section__07_legal_governance_architecture
+      section_key: legal_governance_architecture
+      title: Legal & Governance Architecture
+      subsections:
+        - subsection_id: "07.01"
+          subsection_key: document_stack
+          title: Legal Document Stack
+        - subsection_id: "07.02"
+          subsection_key: artifact_inventory
+          title: Artifact Inventory and Coverage
+        - subsection_id: "07.03"
+          subsection_key: notice_contact_map
+          title: Notice and Contact Map
+        - subsection_id: "07.04"
+          subsection_key: control_language
+          title: Control-Language Locations
+        - subsection_id: "07.05"
+          subsection_key: liability_indemnity
+          title: Liability and Indemnity Controls
+        - subsection_id: "07.06"
+          subsection_key: service_support
+          title: Service-Level and Support Commitments
+        - subsection_id: "07.07"
+          subsection_key: cross_document_references
+          title: Cross-Document References
+        - subsection_id: "07.08"
+          subsection_key: missing_artifacts
+          title: Missing or Inaccessible Artifacts
+        - subsection_id: "07.09"
+          subsection_key: legal_limitations
+          title: Legal Cartography Limitations
+      rules:
+        primary_fdr_prefixes:
+          - LGC
+    - section_id: "08"
+      artifact_name: report_section__08_exposure_register
+      section_key: exposure_register
+      title: Exposure Register
+      subsections:
+        - subsection_id: "08.01"
+          subsection_key: exposure_summary
+          title: Exposure Summary
+        - subsection_id: "08.02"
+          subsection_key: triggered_exposures
+          title: Triggered Exposures
+        - subsection_id: "08.03"
+          subsection_key: controlled_exposures
+          title: Controlled Exposures
+        - subsection_id: "08.04"
+          subsection_key: severity_enforcement
+          title: Severity and Enforcement Posture
+        - subsection_id: "08.05"
+          subsection_key: legal_pain_impact
+          title: Legal Pain and Business Impact
+        - subsection_id: "08.06"
+          subsection_key: control_exclusion_basis
+          title: Control, Exclusion and False-Positive Basis
+        - subsection_id: "08.07"
+          subsection_key: response_and_review_route
+          title: Response, Remediation and Review Route
+        - subsection_id: "08.08"
+          subsection_key: exposure_limitations
+          title: Exposure Limitations
+      rules:
+        primary_fdr_prefixes:
+          - LEP
+        complete_exposure_and_upstream_response_required: true
+        open_handoff_items_only_forbidden: true
+    - section_id: "09"
+      artifact_name: report_section__09_open_review_items_handoff
+      section_key: open_review_items_handoff
+      title: Open Review Items & Handoff Plan
+      subsections:
+        - subsection_id: "09.01"
+          subsection_key: unresolved_material_items
+          title: Unresolved Material Items
+        - subsection_id: "09.02"
+          subsection_key: confirmatory_evidence_requests
+          title: Confirmatory Evidence Requests
+        - subsection_id: "09.03"
+          subsection_key: open_control_questions
+          title: Open Control and Diligence Questions
+        - subsection_id: "09.04"
+          subsection_key: carried_warnings
+          title: Carried Warnings and Limitations
+        - subsection_id: "09.05"
+          subsection_key: local_counsel_routes
+          title: Local Counsel and Specialist Review Routes
+      rules:
+        projection_filter: OPEN_OR_UNRESOLVED_UPSTREAM_ITEMS_ONLY
+        exposure_register_duplication_forbidden: true
+        compiler_question_creation_forbidden: true
+        compiler_route_creation_forbidden: true
+    - section_id: "10"
+      artifact_name: report_section__10_methodology_limitations_annexure
+      section_key: methodology_limitations_annexure
+      title: Methodology, Limitations & Technical Annexure Index
+      subsections:
+        - subsection_id: "10.01"
+          subsection_key: methodology
+          title: Methodology
+        - subsection_id: "10.02"
+          subsection_key: evidence_boundary
+          title: Evidence and Public-Footprint Boundary
+        - subsection_id: "10.03"
+          subsection_key: artifact_custody
+          title: Artifact Custody
+        - subsection_id: "10.04"
+          subsection_key: consolidated_limitations
+          title: Consolidated Upstream Limitations
+        - subsection_id: "10.05"
+          subsection_key: phase11_warning_ledger
+          title: Phase 11 Warning Projection
+        - subsection_id: "10.06"
+          subsection_key: technical_annexure_index
+          title: Technical Annexure Index
+        - subsection_id: "10.07"
+          subsection_key: review_ready_disclaimer
+          title: Review-Ready Draft and Local Counsel Mandate
+      rules:
+        field_role: CONTROL_METADATA_LIMITATIONS_AND_REFERENCE_INDEX
+        forensic_artifacts_reference_only: true
+        forensic_substantive_consumption_forbidden: true
