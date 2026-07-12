@@ -117,7 +117,13 @@ export function projectControlledProfile(workpadRoot) {
     .filter((row) => CONTROLLED_FINAL_STATUSES.has(row.final_material_status))
     .sort(byRegistryOrder)
     .map(projectCompleteRow);
-  return { exposure_registry_controlled_profile: { schema_version: "exposure_registry_controlled_profile.v4.complete_report_row", rows } };
+  return {
+    exposure_registry_controlled_profile: {
+      schema_version: "exposure_registry_controlled_profile.v4.complete_report_row",
+      report_row_schema_version: "phase10_report_row.v1.complete_registry_spine",
+      controlled_rows: rows
+    }
+  };
 }
 export function projectTriggeredProfile(workpadRoot) {
   const workpad = workpadRoot?.exposure_registry_workpad_98 || workpadRoot;
@@ -125,7 +131,13 @@ export function projectTriggeredProfile(workpadRoot) {
     .filter((row) => row.final_material_status === S_TRIGGERED)
     .sort(byRegistryOrder)
     .map(projectCompleteRow);
-  return { exposure_registry_triggered_profile: { schema_version: "exposure_registry_triggered_profile.v4.complete_report_row", rows } };
+  return {
+    exposure_registry_triggered_profile: {
+      schema_version: "exposure_registry_triggered_profile.v4.complete_report_row",
+      report_row_schema_version: "phase10_report_row.v1.complete_registry_spine",
+      triggered_rows: rows
+    }
+  };
 }
 function projectCompleteRow(row = {}) {
   return {
