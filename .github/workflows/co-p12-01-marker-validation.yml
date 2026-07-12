@@ -1,0 +1,94 @@
+name: CO P12 01 Marker Validation
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - diligence-artifact-backend/**
+      - .github/workflows/co-p12-01-marker-validation.yml
+      - co-p12-01-validation-trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: diligence-artifact-backend
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run acceptance
+        shell: bash
+        run: |
+          set +e
+          npm run check:p12:co1 > co-p12-01-validation.log 2>&1
+          code=$?
+          printf '%s\n' "$code" > co-p12-01-exit-code.txt
+          cat co-p12-01-validation.log
+          exit 0
+
+      - name: Write result and exclusive marker
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          code_path = Path('co-p12-01-exit-code.txt')
+          log_path = Path('co-p12-01-validation.log')
+          code = int(code_path.read_text().strip()) if code_path.exists() else 999
+          log = log_path.read_text(errors='replace') if log_path.exists() else 'validation log missing'
+          status = 'PASS' if code == 0 else 'FAIL'
+          result = {
+              'schema_version': 'co_p12_01_validation_result.v2.marker',
+              'status': status,
+              'exit_code': code,
+              'workflow': os.environ.get('GITHUB_WORKFLOW', ''),
+              'run_id': os.environ.get('GITHUB_RUN_ID', ''),
+              'head_sha': os.environ.get('GITHUB_SHA', ''),
+              'log_tail': log.splitlines()[-160:],
+          }
+          Path('../co-p12-01-validation-result.json').write_text(json.dumps(result, indent=2) + '\n')
+          pass_marker = Path('../co-p12-01-validation-PASS.marker')
+          fail_marker = Path('../co-p12-01-validation-FAIL.marker')
+          pass_marker.unlink(missing_ok=True)
+          fail_marker.unlink(missing_ok=True)
+          marker = pass_marker if status == 'PASS' else fail_marker
+          marker.write_text(f'{status}\nexit_code={code}\nrun_id={result["run_id"]}\n')
+          PY
+
+      - name: Commit validation evidence
+        if: always()
+        shell: bash
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add co-p12-01-validation-result.json co-p12-01-validation-PASS.marker co-p12-01-validation-FAIL.marker || true
+          git commit -m "Record marker-based CO-P12-01 validation" || true
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Enforce result
+        shell: bash
+        run: |
+          code=$(cat co-p12-01-exit-code.txt)
+          exit "$code"
