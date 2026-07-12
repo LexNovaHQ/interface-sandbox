@@ -60,6 +60,12 @@ const ART = Object.freeze({
   triggered: "exposure_registry_triggered_profile",
   forensics: "exposure_registry_profile_forensics"
 });
+const CHECKPOINT_SCHEMAS = Object.freeze({
+  [ART.workpad]: "exposure_registry_workpad.v3.dynamic",
+  [ART.controlled]: "exposure_registry_controlled_profile.v3.dynamic",
+  [ART.triggered]: "exposure_registry_triggered_profile.v3.dynamic",
+  [ART.forensics]: "M11_DOMAIN_AGNOSTIC_FORENSICS_v1"
+});
 
 export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
@@ -106,11 +112,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const acceptedBatches = [];
   const batchValidations = [];
   for (const batch of route.artifact.batch_plan || []) {
-    const checkpoint = await readCompletedBatchCheckpoint({
-      run_id: run.run_id,
-      batch,
-      expectedExecutionFingerprint: manifest.artifact.phase10_execution_fingerprint
-    });
+    const checkpoint = await readCompletedBatchCheckpoint({ run_id: run.run_id, batch, expectedExecutionFingerprint: manifest.artifact.phase10_execution_fingerprint });
     if (checkpoint) {
       acceptedBatches.push(checkpoint.batchArtifact);
       batchValidations.push(checkpoint.validationArtifact);
@@ -136,8 +138,8 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
 
     const stampedValidation = stampPhase10ExecutionMetadata(validation, manifest.artifact);
     const accepted = stampPhase10ExecutionMetadata(assembleAcceptedBatch({ semanticOutput, batch, routePlan: route.artifact }), manifest.artifact);
-    const validationName = `exposure_registry_batch_validation__${batch.batch_id}`;
-    const batchName = `exposure_registry_batch__${batch.batch_id}`;
+    const validationName = batchValidationArtifactName(batch);
+    const batchName = batchArtifactName(batch);
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: validationName, artifact: stampedValidation, lock_status: "LOCKED" }));
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: batchName, artifact: accepted, lock_status: "LOCKED" }));
     acceptedBatches.push(accepted);
@@ -201,13 +203,7 @@ async function callSemanticModel({ run, phase, batch, packet, repair, priorOutpu
       m11_batch_packet: packet.m11_batch_packet,
       m11_batch_registry_ledger: priorOutput,
       backend_structural_validation: priorValidation,
-      repair_context: {
-        batch_id: batch.batch_id,
-        package_id: batch.package_id,
-        stream_id: batch.stream_id,
-        repair_reason: "SEMANTIC_LEDGER_VALIDATION",
-        maximum_attempts: 1
-      }
+      repair_context: { batch_id: batch.batch_id, package_id: batch.package_id, stream_id: batch.stream_id, repair_reason: "SEMANTIC_LEDGER_VALIDATION", maximum_attempts: 1 }
     } : { m11_batch_packet: packet.m11_batch_packet },
     writes: ["m11_batch_registry_ledger"],
     references: []
@@ -237,7 +233,8 @@ async function getOrBuildRoutePlan({ run, phase, artifacts, registryContext, man
 
 async function getOrBuildArtifact({ run, phase, artifactName, manifest, build }) {
   const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: artifactName });
-  if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, manifest.phase10_execution_fingerprint)) return existing;
+  const expectedSchema = CHECKPOINT_SCHEMAS[artifactName];
+  if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, manifest.phase10_execution_fingerprint) && (!expectedSchema || existing.artifact?.schema_version === expectedSchema)) return existing;
   const artifact = stampPhase10ExecutionMetadata(build(), manifest);
   const lock_status = artifact?.forensic_lock_gate_result?.status === "REPAIR_REQUIRED" ? "REPAIR_REQUIRED" : "LOCKED";
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: artifactName, artifact, lock_status }));
@@ -245,13 +242,14 @@ async function getOrBuildArtifact({ run, phase, artifactName, manifest, build })
 }
 
 async function readCompletedBatchCheckpoint({ run_id, batch, expectedExecutionFingerprint }) {
-  const validationName = `exposure_registry_batch_validation__${batch.batch_id}`;
-  const batchName = `exposure_registry_batch__${batch.batch_id}`;
-  const validation = await readAcceptedCheckpoint({ run_id, artifact_name: validationName });
-  const accepted = await readAcceptedCheckpoint({ run_id, artifact_name: batchName });
+  const validation = await readAcceptedCheckpoint({ run_id, artifact_name: batchValidationArtifactName(batch) });
+  const accepted = await readAcceptedCheckpoint({ run_id, artifact_name: batchArtifactName(batch) });
   if (!validation || !accepted) return null;
   if (!artifactMatchesPhase10ExecutionFingerprint(validation.artifact, expectedExecutionFingerprint) || !artifactMatchesPhase10ExecutionFingerprint(accepted.artifact, expectedExecutionFingerprint)) return null;
+  const validationRoot = validation.artifact?.exposure_registry_batch_validation || {};
   const root = accepted.artifact?.m11_batch_registry_ledger || {};
+  if (validationRoot.schema_version !== "exposure_registry_batch_validation.v3.package_scoped") return null;
+  if (root.schema_version !== "m11_batch_registry_ledger.v3.package_scoped.accepted") return null;
   if (root.batch_id !== batch.batch_id || root.stream_id !== batch.stream_id || root.package_id !== batch.package_id) return null;
   return { validationArtifact: validation.artifact, batchArtifact: accepted.artifact };
 }
@@ -268,7 +266,7 @@ async function failBatch({ run, phase, batch, failures, manifest, validation = n
       failures: failures || []
     }
   }, manifest);
-  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: `exposure_registry_batch_validation__${batch.batch_id}`, artifact, lock_status: "CONTROLLED_FAILURE" }));
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: batchValidationArtifactName(batch), artifact, lock_status: "CONTROLLED_FAILURE" }));
   await logEvent({ run_id: run.run_id, event_type: "M11_PACKAGE_SCOPED_BATCH_CONTROLLED_FAILURE", actor: AGENT_5, payload: { batch_id: batch.batch_id, package_id: batch.package_id, stream_id: batch.stream_id, failures } });
   return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
 }
@@ -293,6 +291,15 @@ async function readArtifactsForM11({ run_id, reads, agent_id, strict = true }) {
   }
   return artifacts;
 }
+
+function batchArtifactSuffix(batch = {}) {
+  const prefix = `${batch.stream_type || ""}${batch.package_id || ""}${batch.batch_group || ""}`.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const number = String(batch.batch_number || String(batch.batch_id || "").split("__").pop() || "1").padStart(3, "0");
+  if (!prefix) throw new Error("M11_BATCH_ARTIFACT_SUFFIX_MISSING");
+  return `${prefix}__${number}`;
+}
+function batchArtifactName(batch) { return `exposure_registry_batch__${batchArtifactSuffix(batch)}`; }
+function batchValidationArtifactName(batch) { return `exposure_registry_batch_validation__${batchArtifactSuffix(batch)}`; }
 
 function assertM11RoutePacket(packet = {}) {
   if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("M11_PHASE2G_AUTHORITY_MISSING");
