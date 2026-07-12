@@ -52,6 +52,19 @@ const routeIndex = binding.indexOf("  - exposure_registry_route_plan", writeOrde
 assert.ok(writeOrderIndex >= 0 && manifestIndex > writeOrderIndex && routeIndex > manifestIndex, "Agent 5 must write manifest before route plan");
 assert.ok(binding.includes("build_active_threat_registry_manifest"));
 assert.ok(binding.includes("create_or_rewrite_active_threat_registry_manifest"));
+assert.ok(binding.includes("runtime_auto_selection: PENDING_CO_2"));
+
+const outputContract = await readFile(path.join(agentRoot, "AGENT5_BACKEND_OUTPUT_CONTRACT_SYNCED_M11.md"), "utf8");
+assert.ok(outputContract.includes("# ACTIVE THREAT REGISTRY MANIFEST CONTRACT"));
+assert.ok(outputContract.includes("1. active_threat_registry_manifest"));
+assert.ok(outputContract.includes("status_field_role: METADATA_ONLY"));
+assert.ok(outputContract.includes("auto_selector_status: PENDING_CO_2"));
+
+const terminalRules = await readFile(path.join(agentRoot, "00_TERMINAL_RECEIPT_RULES_INTEGRATED_AGENT5_SYNCED.md"), "utf8");
+const firstSavedManifest = terminalRules.indexOf("- active_threat_registry_manifest");
+const firstSavedRoute = terminalRules.indexOf("- exposure_registry_route_plan");
+assert.ok(firstSavedManifest >= 0 && firstSavedRoute > firstSavedManifest, "terminal receipt must list manifest before route plan");
+assert.ok(terminalRules.includes("<active registry manifest | route plan"));
 
 console.log(JSON.stringify({
   check: "phase10 active threat registry manifest contract",
