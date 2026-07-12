@@ -4,6 +4,7 @@ const CONTROLLED = new Set([
   "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION"
 ]);
 const MATERIAL = new Set(["TRIGGERED", ...CONTROLLED]);
+const ACCEPTED_CHALLENGE_STATUSES = new Set(["PASS", "PASS_WITH_LIMITATION", "LOCKED", "LOCKED_WITH_LIMITATIONS"]);
 
 export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
   const manifest = unwrap(artifacts.active_threat_registry_manifest, "active_threat_registry_manifest");
@@ -47,12 +48,14 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
     } else if (status) warnings.push(`PHASE10_NON_STANDARD_WORKPAD_STATUS:${rowKey(row)}:${status}`);
   }
 
-  if (challenge.status === "REPAIR_REQUIRED" || challenge.gate === "REPAIR_REQUIRED") failures.push("PHASE10_M12_CHALLENGE_NOT_ACCEPTED");
-  if (challenge.status === "LOCKED_WITH_LIMITATIONS") warnings.push("PHASE10_M12_LIMITATIONS_CARRIED");
+  const challengeStatus = String(challenge.status || challenge.lock_status || challenge.gate || "UNKNOWN").toUpperCase();
+  if (!ACCEPTED_CHALLENGE_STATUSES.has(challengeStatus)) failures.push(`PHASE11_CHALLENGE_GATE_NOT_COMPILER_READY:${challengeStatus}`);
+  if (challenge.compiler_handoff_allowed === false) failures.push("PHASE11_COMPILER_HANDOFF_FORBIDDEN");
+  if (challengeStatus === "PASS_WITH_LIMITATION" || challengeStatus === "LOCKED_WITH_LIMITATIONS") warnings.push("PHASE11_LIMITATIONS_CARRIED");
 
   return {
     phase10_downstream_compatibility: {
-      schema_version: "phase10_downstream_compatibility.v1",
+      schema_version: "phase10_downstream_compatibility.v2.phase11_layer3",
       identity_contract: "PHASE10_EXECUTION_IDENTITY_v2",
       expected_registry_row_key_count: expected,
       mounted_packages: [...arr(manifest.mounted_packages)],
@@ -68,14 +71,17 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
       stream_summary: summarizeByStream(workpadRows),
       package_summary: summarizeByPackage(workpadRows),
       final_status_counts: countBy(workpadRows, (row) => String(row.final_material_status || row.evaluation_status || "UNKNOWN")),
-      challenge_status: challenge.status || challenge.gate || "UNKNOWN",
+      challenge_status: challengeStatus,
+      challenge_gate_version: challenge.schema_version || "UNKNOWN",
+      compiler_handoff_allowed: challenge.compiler_handoff_allowed === true,
       validation: {
         status: failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS",
         failures,
         warnings,
         compound_identity_reconciled: failures.every((item) => !item.includes("KEY")),
         no_row_re_evaluation: true,
-        raw_threat_id_global_deduplication_forbidden: true
+        raw_threat_id_global_deduplication_forbidden: true,
+        phase11_layer3_gate_enforced: true
       }
     }
   };
