@@ -1,12 +1,23 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
+const wrapper = readFileSync("src/phases/10-exposure-profile/m11-final-synchronized.runner.js", "utf8");
+const runner = readFileSync("src/phases/10-exposure-profile/exposure-profile.runner.js", "utf8");
 const m11 = readFileSync("src/phases/10-exposure-profile/m11-orchestrator-m11v2.js", "utf8");
 const routing = readFileSync("src/phases/10-exposure-profile/phase10-classification-routing.js", "utf8");
 const finalization = readFileSync("src/phases/10-exposure-profile/phase10-semantic-finalization.js", "utf8");
 const binding = readFileSync("agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "utf8");
 const prompts = readFileSync("src/runtime/services/prompts.service.js", "utf8");
 const runtimeReference = readFileSync("src/runtime/services/reference.service.js", "utf8");
+
+assert.ok(runner.includes('from "./m11-final-synchronized.runner.js"'));
+for (const marker of [
+  "CO_11_COMPLETE",
+  "v18_final_runtime_package_downstream_sync",
+  "static_package_reference_injection_forbidden",
+  "selected_registry_references_loaded_dynamically",
+  "synchronizeReferences"
+]) assert.ok(wrapper.includes(marker), `M11 synchronized wrapper missing: ${marker}`);
 
 for (const marker of [
   "../../runtime/services/storage/firestore.service.js",
@@ -54,12 +65,14 @@ for (const marker of [
 ]) assert.ok(finalization.includes(marker), `M11 finalization implementation missing: ${marker}`);
 
 for (const marker of [
-  "runtime_contract_version: v17_domain_agnostic_layer2_layer3_forensics",
+  "runtime_contract_version: v18_final_runtime_package_downstream_sync",
+  "synchronization_status: FINAL_CO_11_SYNC_COMPLETE",
   "status: CO_8_DOMAIN_AGNOSTIC_RUNTIME_ACTIVE",
-  "current_runtime_may_call_model: true",
   "status: CO_9_DYNAMIC_FINALIZATION_ACTIVE",
-  "status: CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE"
-]) assert.ok(binding.includes(marker), `Agent 5 binding missing active marker: ${marker}`);
+  "status: CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE",
+  "m12_status: CO_13_DYNAMIC_COMPOUND_IDENTITY_COMPATIBLE",
+  "compiler_status: CO_13_DYNAMIC_COMPOUND_IDENTITY_COMPATIBLE"
+]) assert.ok(binding.includes(marker), `Agent 5 binding missing final marker: ${marker}`);
 
 for (const retired of [
   "src/m11-orchestrator.js",
@@ -82,10 +95,13 @@ console.log(JSON.stringify({
   status: "PASS",
   enforced_gates: [
     "M11_PHASE_OWNED",
+    "CO11_FINAL_SYNCHRONIZED_WRAPPER_ACTIVE",
+    "STATIC_PACKAGE_REFERENCE_INJECTION_BLOCKED",
     "CENTRAL_PROMPT_PROVIDER_STORAGE_REFERENCE_SERVICES",
     "CO8_DOMAIN_AGNOSTIC_LAYER2_ACTIVE",
     "CO9_DYNAMIC_LAYER3_ACTIVE",
     "CO10_DOMAIN_AGNOSTIC_FORENSICS_ACTIVE",
+    "CO13_DOWNSTREAM_COMPATIBILITY_ACTIVE",
     "PACKAGE_SCOPED_CLASSIFICATION_ROUTING",
     "MAXIMUM_15_PACKET_CEILING_BATCHING",
     "COMPOUND_IDENTITY_RECONCILIATION",
