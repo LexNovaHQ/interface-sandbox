@@ -4,7 +4,19 @@ const CONTROLLED = new Set([
   "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION"
 ]);
 const MATERIAL = new Set(["TRIGGERED", ...CONTROLLED]);
-const ACCEPTED_CHALLENGE_STATUSES = new Set(["PASS", "PASS_WITH_LIMITATION", "LOCKED", "LOCKED_WITH_LIMITATIONS"]);
+const ACCEPTED_CHALLENGE_STATUSES = new Set(["PASS", "PASS_WITH_LIMITATION"]);
+const REQUIRED_GATE_SCHEMA = "challenge_gate.v4.operator_challenge";
+const REQUIRED_REPORT_ROW_SCHEMA = "phase10_report_row.v1.complete_registry_spine";
+const REQUIRED_MATERIAL_FIELDS = Object.freeze([
+  "registry_row_key", "package_id", "source_domain", "stream_id", "stream_type",
+  "Threat_ID", "Threat_Name", "Lane", "Behavior_Class", "Surface", "Subcategory",
+  "Authority_IN", "Authority_EU", "Authority_US", "Velocity", "Pain_Tier",
+  "Pain_Category", "Pain_Depth", "Status", "Effective_Date", "Legal_Pain",
+  "FP_Mechanism", "FP_Impact", "Lex_Nova_Fix", "Hunter_Trigger", "Provenance",
+  "FIELD21", "FIELD22", "FIELD23", "target_match", "evaluation_status",
+  "basis_proof", "control_exclusion_evaluation", "evidence_source_basis",
+  "applied_fp_mechanism", "row_limitations", "review_route"
+]);
 
 export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
   const manifest = unwrap(artifacts.active_threat_registry_manifest, "active_threat_registry_manifest");
@@ -15,6 +27,7 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
   const challenge = unwrap(artifacts.challenge_gate, "challenge_gate");
   const failures = [];
   const warnings = [];
+
   const expected = Number(manifest.expected_registry_row_key_count || manifest.expected_row_count || 0);
   const routeRows = arr(route.route_rows);
   const workpadRows = arr(workpad.registry_rows);
@@ -23,34 +36,50 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
   if (!expected) failures.push("PHASE10_MANIFEST_EXPECTED_COUNT_MISSING");
   if (routeRows.length !== expected) failures.push(`PHASE10_ROUTE_COUNT_MISMATCH:${routeRows.length}:${expected}`);
   if (workpadRows.length !== expected) failures.push(`PHASE10_WORKPAD_COUNT_MISMATCH:${workpadRows.length}:${expected}`);
-  assertUniqueKeys(routeRows, "route", failures); assertUniqueKeys(workpadRows, "workpad", failures); assertUniqueKeys(controlledRows, "controlled", failures); assertUniqueKeys(triggeredRows, "triggered", failures);
+  assertUniqueKeys(routeRows, "route", failures);
+  assertUniqueKeys(workpadRows, "workpad", failures);
+  assertUniqueKeys(controlledRows, "controlled", failures);
+  assertUniqueKeys(triggeredRows, "triggered", failures);
+
   const controlledKeys = new Set(controlledRows.map(rowKey));
   const triggeredKeys = new Set(triggeredRows.map(rowKey));
   for (const key of controlledKeys) if (triggeredKeys.has(key)) failures.push(`PHASE10_PROFILE_OVERLAP:${key}`);
+
   const materialRows = [];
   const workpadOnlyRows = [];
   for (const row of workpadRows) {
     const status = String(row.final_material_status || row.evaluation_status || "").toUpperCase();
     if (MATERIAL.has(status)) {
-      const projection = row.material_projection || row;
-      materialRows.push(withCustody(row, projection, status));
-      if (CONTROLLED.has(status) && !controlledKeys.has(rowKey(row))) failures.push(`PHASE10_CONTROLLED_PROFILE_MISSING:${rowKey(row)}`);
-      if (status === "TRIGGERED" && !triggeredKeys.has(rowKey(row))) failures.push(`PHASE10_TRIGGERED_PROFILE_MISSING:${rowKey(row)}`);
-    } else if (status === "NOT_TRIGGERED_NOT_APPLICABLE") workpadOnlyRows.push(withCustody(row, null, status));
-    else if (status) warnings.push(`PHASE10_NON_STANDARD_WORKPAD_STATUS:${rowKey(row)}:${status}`);
+      const profileRow = status === "TRIGGERED"
+        ? triggeredRows.find((candidate) => rowKey(candidate) === rowKey(row))
+        : controlledRows.find((candidate) => rowKey(candidate) === rowKey(row));
+      if (!profileRow) failures.push(`PHASE10_MATERIAL_PROFILE_ROW_MISSING:${rowKey(row)}:${status}`);
+      else {
+        validateMaterialRow(profileRow, failures);
+        materialRows.push(cloneWithoutMutation(profileRow));
+      }
+    } else if (status === "NOT_TRIGGERED_NOT_APPLICABLE") {
+      workpadOnlyRows.push({
+        registry_row_key: rowKey(row),
+        package_id: row.package_id || "",
+        source_domain: row.source_domain || "",
+        stream_id: row.stream_id || "",
+        stream_type: row.stream_type || "",
+        Threat_ID: row.Threat_ID || "",
+        final_material_status: status
+      });
+    } else if (status) failures.push(`PHASE10_NON_STANDARD_WORKPAD_STATUS:${rowKey(row)}:${status}`);
   }
-  const challengeStatus = String(challenge.status || challenge.lock_status || challenge.gate || "UNKNOWN").toUpperCase();
-  if (!ACCEPTED_CHALLENGE_STATUSES.has(challengeStatus)) failures.push(`PHASE11_CHALLENGE_GATE_NOT_COMPILER_READY:${challengeStatus}`);
-  if (challenge.compiler_handoff_allowed === false) failures.push("PHASE11_COMPILER_HANDOFF_FORBIDDEN");
-  const phase11Limitations = projectPhase11Limitations(challenge);
-  if (challengeStatus === "PASS_WITH_LIMITATION" || challengeStatus === "LOCKED_WITH_LIMITATIONS") {
-    warnings.push("PHASE11_LIMITATIONS_CARRIED");
-    if (!phase11Limitations.length) failures.push("PHASE11_PASS_WITH_LIMITATION_WARNING_PROJECTION_MISSING");
-  }
+
+  validateChallengeGate(challenge, failures, warnings);
+  const warningProjection = projectFinalGateWarnings(challenge);
+  if (challenge.status === "PASS_WITH_LIMITATION" && !warningProjection.length) failures.push("PHASE11_PASS_WITH_LIMITATION_WARNING_PROJECTION_MISSING");
+
   return {
     phase10_downstream_compatibility: {
-      schema_version: "phase10_downstream_compatibility.v3.phase11_production",
+      schema_version: "phase10_downstream_compatibility.v4.exact_phase11_gate_complete_report_rows",
       identity_contract: "PHASE10_EXECUTION_IDENTITY_v2",
+      report_row_schema_version: REQUIRED_REPORT_ROW_SCHEMA,
       expected_registry_row_key_count: expected,
       mounted_packages: [...arr(manifest.mounted_packages)],
       primary_package: manifest.primary_package || "",
@@ -62,40 +91,76 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
       workpad_only_row_count: workpadOnlyRows.length,
       material_rows: materialRows,
       workpad_only_rows: workpadOnlyRows,
-      stream_summary: summarizeByStream(workpadRows),
-      package_summary: summarizeByPackage(workpadRows),
       final_status_counts: countBy(workpadRows, (row) => String(row.final_material_status || row.evaluation_status || "UNKNOWN")),
-      challenge_status: challengeStatus,
+      challenge_status: String(challenge.status || "UNKNOWN"),
       challenge_gate_version: challenge.schema_version || "UNKNOWN",
+      challenge_final_gate_fingerprint: challenge.final_gate_fingerprint || "",
       compiler_handoff_allowed: challenge.compiler_handoff_allowed === true,
       phase11_warning_projection: {
-        schema_version: "phase11_warning_projection.v1",
-        warning_count: phase11Limitations.length,
-        warnings: phase11Limitations,
-        local_counsel_review_required: phase11Limitations.length > 0
+        schema_version: "phase11_warning_projection.v2.final_gate_only",
+        warning_count: warningProjection.length,
+        warnings: warningProjection,
+        local_counsel_review_required: warningProjection.length > 0
       },
-      validation: { status: failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS", failures, warnings, compound_identity_reconciled: failures.every((item) => !item.includes("KEY")), no_row_re_evaluation: true, raw_threat_id_global_deduplication_forbidden: true, phase11_layer3_gate_enforced: true, phase11_limitations_visibly_projected: phase11Limitations.length > 0 || challengeStatus === "PASS" }
+      validation: {
+        status: failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS",
+        failures,
+        warnings,
+        compound_identity_reconciled: failures.every((item) => !item.includes("ROW_KEY") && !item.includes("OVERLAP")),
+        no_row_re_evaluation: true,
+        no_row_mutation: true,
+        raw_threat_id_global_deduplication_forbidden: true,
+        phase11_exact_gate_enforced: true,
+        phase11_internal_ledgers_not_consumed: true
+      }
     }
   };
 }
 
-export function assertPhase10CompilerCompatibility(value) { const root = unwrap(value, "phase10_downstream_compatibility"); if (root.validation?.status === "CONTROLLED_FAILURE") throw new Error(`PHASE10_DOWNSTREAM_COMPATIBILITY_FAILED:${arr(root.validation.failures).join("|")}`); return root; }
-function projectPhase11Limitations(challenge = {}) {
-  const warnings = [];
-  for (const issue of arr(challenge.advisory_warnings)) warnings.push(projectWarning(issue, "ADVISORY_WARNING"));
-  for (const entry of arr(challenge.operator_challenge_reinvestigation_ledger?.entries)) {
-    if (entry.final_disposition !== "UNRESOLVED_AFTER_REINVESTIGATION") continue;
-    warnings.push({ challenge_candidate_id: entry.challenge_candidate_id || "", warning_type: "UNRESOLVED_AFTER_REINVESTIGATION", owning_phase: entry.owning_phase || "", affected_artifacts: arr(entry.artifact_names), affected_field_paths: arr(entry.field_paths), affected_registry_row_keys: arr(entry.affected_registry_row_keys), attempts_used: Number(entry.attempts_used || arr(entry.attempts).length), remaining_uncertainty: entry.warning_if_unresolved || "Material field remained unresolved after two targeted reinvestigation attempts.", possible_report_impact: entry.problem || "The affected conclusion carries unresolved uncertainty.", local_counsel_review_route: "LOCAL_COUNSEL_REVIEW_REQUIRED" });
-  }
-  return dedupeWarnings(warnings);
+export function assertPhase10CompilerCompatibility(value) {
+  const root = unwrap(value, "phase10_downstream_compatibility");
+  if (root.validation?.status === "CONTROLLED_FAILURE") throw new Error(`PHASE10_DOWNSTREAM_COMPATIBILITY_FAILED:${arr(root.validation.failures).join("|")}`);
+  return root;
 }
-function projectWarning(issue = {}, type) { return { challenge_candidate_id: issue.challenge_candidate_id || "", warning_type: issue.disposition || type, owning_phase: issue.reinvestigation?.owning_phase || "", affected_artifacts: arr(issue.affected_artifacts), affected_field_paths: arr(issue.affected_field_paths), affected_registry_row_keys: arr(issue.affected_registry_row_keys), attempts_used: Number(issue.reinvestigation?.attempts_used || 0), remaining_uncertainty: issue.limitation_if_unresolved || "Advisory limitation carried from Phase 11.", possible_report_impact: issue.materiality_analysis || issue.semantic_analysis || "The report should state this limitation explicitly.", local_counsel_review_route: "LOCAL_COUNSEL_REVIEW_REQUIRED" }; }
-function dedupeWarnings(rows) { const seen = new Set(); return rows.filter((row) => { const key = `${row.challenge_candidate_id}:${row.warning_type}`; if (seen.has(key)) return false; seen.add(key); return true; }); }
-function withCustody(row, projection, status) { return { registry_row_key: rowKey(row), package_id: row.package_id || "", source_domain: row.source_domain || "", stream_id: row.stream_id || "", stream_type: row.stream_type || "", batch_id: row.batch_id || "", Threat_ID: row.Threat_ID || projection?.Threat_ID || "", final_material_status: status, material_projection: projection }; }
+
+function validateChallengeGate(challenge, failures, warnings) {
+  if (challenge.schema_version !== REQUIRED_GATE_SCHEMA) failures.push(`PHASE11_CHALLENGE_GATE_SCHEMA_INVALID:${challenge.schema_version || "missing"}`);
+  const status = String(challenge.status || "").toUpperCase();
+  if (!ACCEPTED_CHALLENGE_STATUSES.has(status)) failures.push(`PHASE11_CHALLENGE_GATE_NOT_COMPILER_READY:${status || "missing"}`);
+  if (challenge.compiler_handoff_allowed !== true) failures.push("PHASE11_COMPILER_HANDOFF_NOT_AFFIRMATIVE");
+  if (!String(challenge.final_gate_fingerprint || "").trim()) failures.push("PHASE11_FINAL_GATE_FINGERPRINT_MISSING");
+  if (challenge.layer_status?.layer_3 !== "COMPLETE") failures.push(`PHASE11_LAYER3_NOT_COMPLETE:${challenge.layer_status?.layer_3 || "missing"}`);
+  if (challenge.reinvestigation_dispatch_required === true) failures.push("PHASE11_REINVESTIGATION_STILL_PENDING");
+  if (Number(challenge.operator_challenge_reinvestigation_ledger?.pending_count || 0) > 0) failures.push("PHASE11_REINVESTIGATION_LEDGER_PENDING_COUNT_NONZERO");
+  if (status === "PASS_WITH_LIMITATION") warnings.push("PHASE11_LIMITATIONS_CARRIED_FROM_FINAL_GATE");
+}
+
+function validateMaterialRow(row, failures) {
+  const key = rowKey(row);
+  for (const field of REQUIRED_MATERIAL_FIELDS) {
+    const value = row?.[field];
+    if (field === "Compliance_Framework") continue;
+    if (value === undefined || value === null || (typeof value === "string" && !value.trim())) failures.push(`PHASE10_MATERIAL_ROW_FIELD_MISSING:${key || "unknown"}:${field}`);
+  }
+  if (!/^T[1-5]$/.test(String(row.Pain_Tier || ""))) failures.push(`PHASE10_MATERIAL_ROW_PAIN_TIER_INVALID:${key}:${row.Pain_Tier || "missing"}`);
+  if (!["Corporate", "Personal", "Criminal"].includes(String(row.Pain_Depth || ""))) failures.push(`PHASE10_MATERIAL_ROW_PAIN_DEPTH_INVALID:${key}:${row.Pain_Depth || "missing"}`);
+}
+
+function projectFinalGateWarnings(challenge = {}) {
+  return arr(challenge.advisory_warnings).map((issue) => ({
+    challenge_candidate_id: issue.challenge_candidate_id || "",
+    warning_type: issue.disposition || "ADVISORY_WARNING",
+    affected_artifacts: arr(issue.affected_artifacts),
+    affected_field_paths: arr(issue.affected_field_paths),
+    affected_registry_row_keys: arr(issue.affected_registry_row_keys),
+    remaining_uncertainty: issue.limitation_if_unresolved || "Upstream limitation carried from the final Phase 11 gate.",
+    possible_report_impact: issue.materiality_analysis || issue.semantic_analysis || "Qualified review required.",
+    local_counsel_review_route: "LOCAL_COUNSEL_REVIEW_REQUIRED"
+  }));
+}
+function cloneWithoutMutation(value) { return JSON.parse(JSON.stringify(value)); }
 function assertUniqueKeys(rows, label, failures) { const seen = new Set(); for (const row of rows) { const key = rowKey(row); if (!key) failures.push(`PHASE10_${label.toUpperCase()}_ROW_KEY_MISSING`); else if (seen.has(key)) failures.push(`PHASE10_${label.toUpperCase()}_ROW_KEY_DUPLICATE:${key}`); seen.add(key); } }
-function summarizeByStream(rows) { const map = new Map(); for (const row of rows) { const key = row.stream_id || `${row.stream_type || "UNKNOWN"}::${row.package_id || "UNKNOWN"}`; const current = map.get(key) || { stream_id: key, stream_type: row.stream_type || "", package_id: row.package_id || "", row_count: 0, final_status_counts: {} }; current.row_count += 1; const status = String(row.final_material_status || "UNKNOWN"); current.final_status_counts[status] = (current.final_status_counts[status] || 0) + 1; map.set(key, current); } return [...map.values()]; }
-function summarizeByPackage(rows) { const map = new Map(); for (const row of rows) map.set(row.package_id || "UNKNOWN", (map.get(row.package_id || "UNKNOWN") || 0) + 1); return [...map.entries()].map(([package_id, row_count]) => ({ package_id, row_count })); }
 function countBy(rows, pick) { const out = {}; for (const row of rows) { const key = pick(row); out[key] = (out[key] || 0) + 1; } return out; }
-function rowKey(row = {}) { return String(row.registry_row_key || `${row.package_id || ""}::${row.Threat_ID || row.threat_id || ""}`).trim(); }
+function rowKey(row = {}) { return String(row.registry_row_key || "").trim(); }
 function unwrap(value, key) { return value?.[key] || value?.artifact?.[key] || value || {}; }
 function arr(value) { return Array.isArray(value) ? value : []; }
