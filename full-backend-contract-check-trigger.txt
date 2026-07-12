@@ -1,1 +1,1 @@
-Temporary full backend contract check trigger after stale checker cleanup. Do not merge.
+Temporary full backend contract check trigger after Phase 6 contract sync. Do not merge.
