@@ -1,21 +1,26 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { getInternalJobContract } from "../src/runtime/contracts/internal-job.contract.js";
+import { getInternalJobContract, listInternalJobContracts } from "../src/runtime/contracts/internal-job.contract.js";
+import { PIPELINE_CONTRACTS, PIPELINE_CONTRACT_STATUS } from "../src/runtime/contracts/pipeline.contract.js";
 import { assertCanWriteArtifact, assertCanReadArtifact, assertInternalJobCanWriteArtifact, PHASE11_ARTIFACT_NAMES } from "../src/runtime/contracts/artifact-permissions.contract.js";
 import { validatePhase11TargetedMutation } from "../src/phases/11-operator-challenge/operator-challenge-mutation-guard.js";
 import { buildPhase11DispatchCheckpoint, checkpointMayResume } from "../src/phases/11-operator-challenge/operator-challenge-dispatch-checkpoint.js";
-import { applyPhase11ProductionContract } from "../src/phases/11-operator-challenge/operator-challenge-production.contract.js";
 import { callPhase11WithTechnicalRetry } from "../src/phases/11-operator-challenge/operator-challenge-technical-retry.js";
 import { buildPhase10CompilerCompatibility } from "../src/phases/12-normalized-compiler/phase10-downstream-compatibility.js";
 
 const expectedArtifacts = ["operator_challenge_inventory", "operator_challenge_semantic_ledger", "operator_challenge_reinvestigation_ledger", "operator_challenge_dispatch_checkpoint", "challenge_gate"];
 assert.deepEqual(PHASE11_ARTIFACT_NAMES, expectedArtifacts);
-const contract = getInternalJobContract("M12");
-assert.equal(contract.runtime_contract_version, "PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1");
-assert.deepEqual(contract.writes, expectedArtifacts);
-assert.equal(contract.only_critical_failure_blocks, true);
-assert.equal(contract.unresolved_after_two_attempts, "PASS_WITH_LIMITATION");
-assert.deepEqual(applyPhase11ProductionContract({ writes: [] }).writes, expectedArtifacts);
+const canonicalContract = PIPELINE_CONTRACTS.M12;
+const runtimeContract = getInternalJobContract("M12");
+const listedContract = listInternalJobContracts().find((entry) => entry.internal_job_id === "M12")?.contract;
+assert.equal(canonicalContract.runtime_contract_version, "PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1");
+assert.deepEqual(canonicalContract.writes, expectedArtifacts);
+assert.strictEqual(runtimeContract, canonicalContract);
+assert.strictEqual(listedContract, canonicalContract);
+assert.equal(canonicalContract.only_critical_failure_blocks, true);
+assert.equal(canonicalContract.unresolved_after_two_attempts, "PASS_WITH_LIMITATION");
+assert.equal(PIPELINE_CONTRACT_STATUS.phase11_canonical_pipeline_contract_synced, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase11_production_contract_override_active, false);
 for (const name of expectedArtifacts) { assert.doesNotThrow(() => assertCanWriteArtifact("agent_7_m12", name)); assert.doesNotThrow(() => assertCanReadArtifact("agent_7_m12", name)); assert.doesNotThrow(() => assertInternalJobCanWriteArtifact("M12", name)); }
 assert.doesNotThrow(() => assertCanReadArtifact("compiler", "challenge_gate"));
 assert.throws(() => assertCanReadArtifact("compiler", "operator_challenge_semantic_ledger"), /READ_FORBIDDEN/);
@@ -69,4 +74,4 @@ for (const marker of ["assertUnaffectedRowsPreserved", "unaffected_rows_preserve
 for (const marker of ["runtime_contract_version: v5_production_integration_mutation_checkpoint", "mutation_guard_version: phase11_mutation_guard.v1", "dispatch_checkpoint_version: phase11_dispatch_checkpoint.v1", "run_scoped_lease_active: true"]) assert.ok(binding.includes(marker), `binding missing ${marker}`);
 for (const marker of ["Independent artifacts", "Mutation boundary", "Durable checkpoint sequence", "A third substantive attempt is forbidden"]) assert.ok(productionContract.includes(marker), `production contract missing ${marker}`);
 
-console.log(JSON.stringify({ check: "Phase 11 production integration", status: "PASS", independent_artifacts: expectedArtifacts, effective_contract_override: true, mutation_guard: true, rollback_required_on_unrelated_mutation: true, targeted_phase10_sibling_rows_preserved: true, durable_checkpoint_sequence: true, lease_wiring: true, bounded_technical_retries: true, warning_projection: true, compiler_single_authority: "challenge_gate" }, null, 2));
+console.log(JSON.stringify({ check: "Phase 11 production integration", status: "PASS", independent_artifacts: expectedArtifacts, canonical_pipeline_contract_synced: true, shadow_contract_override_active: false, mutation_guard: true, rollback_required_on_unrelated_mutation: true, targeted_phase10_sibling_rows_preserved: true, durable_checkpoint_sequence: true, lease_wiring: true, bounded_technical_retries: true, warning_projection: true, compiler_single_authority: "challenge_gate" }, null, 2));
