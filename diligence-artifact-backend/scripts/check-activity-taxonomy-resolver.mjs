@@ -5,17 +5,21 @@ assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.compatibility_fallbacks_allowed, 
 assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.domain_derivation_rules_overlay_fallback_allowed, false);
 assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.resolver_reads_runtime_artifacts, false);
 assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.resolver_expands_phase2g_reads, false);
-assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.behavior_class_source, "behavior_class");
+assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.behavior_class_source, "behavior_class.codes");
+assert.equal(ACTIVITY_TAXONOMY_RESOLVER_STATUS.surface_source, "surface.tokens");
 
 const fintechAi = await resolveActivityTaxonomy({ primaryPackageId: "fintech", capabilityOverlayIds: ["ai-native"] });
 assert.equal(fintechAi.primary?.package_id, "fintech");
 assert.ok(Array.isArray(fintechAi.primary.behavior_class_vocabulary));
 assert.ok(fintechAi.primary.behavior_class_vocabulary.length > 0);
+assert.ok(Array.isArray(fintechAi.primary.surface_axes));
+assert.ok(fintechAi.primary.surface_axes.flatMap((axis) => axis.tokens || []).length > 0);
 assert.equal("archetype_vocabulary" in fintechAi.primary, false);
 assert.equal(fintechAi.overlays.length, 1);
 assert.equal(fintechAi.overlays[0].overlay_id, "ai-native");
 assert.equal(fintechAi.overlays[0].package_id, "ai-governance");
 assert.ok(fintechAi.overlays[0].behavior_class_vocabulary.length > 0);
+assert.ok(fintechAi.overlays[0].surface_axes.flatMap((axis) => axis.tokens || []).length > 0);
 assert.equal("archetype_vocabulary" in fintechAi.overlays[0], false);
 assert.ok(fintechAi.evidence_roots.includes("lossless_root__product_service"));
 assert.ok(fintechAi.evidence_roots.includes("lossless_root__ai_safety_transparency"));
