@@ -8,7 +8,7 @@
 # Archetype = fintech behavior_class code; Subcat = terminal-harm code;
 # Surface = fintech surface tokens.
 #
-# COMPLETE: 44 threat rows across all 14 behavior classes and all 10 subcats.
+# COMPLETE: 46 threat rows across all 14 behavior classes and all 10 subcats.
 #   Tranche 3 (12 rows) adds India + US DEPTH: fair-lending/ECOA, algorithmic-underwriting
 #   bias, Military Lending Act, OFAC sanctions, RBI PA-CB cross-border, sponsor-bank/BaaS
 #   third-party risk, NYDFS/GLBA/CERT-In cybersecurity, crypto tax (India 194S/115BBH +
@@ -22,7 +22,7 @@
 #   Tranche 2 (13 rows): FRD, MKT, SETL_H, CONS + behavior classes ISSU, BRKR,
 #     TRAD, SETL, INSR, AGGR, plus 4 forward-dated Upcoming regime rows
 #     (PSD3/PSR ~2028, EU AMLR 10 Jul 2027, EU CCD2 20 Nov 2026, India DPDP-core 13 May 2027).
-# Status: 28 Active / 4 Upcoming. SETL_H is a compound subcat (FIELD22=SETL_H) carried
+# Status: 42 Active / 4 Upcoming. SETL_H is a compound subcat (FIELD22=SETL_H) carried
 # in Threat_IDs as CUST_SETL_H_001 / SETL_SETL_H_001; FIELD21/22/23 are authoritative.
 #
 # Lex_Nova_Fix = TBD/DEFERRED for every row. Triad Authority_IN/EU/US; UK noted in cells.
@@ -80,7 +80,7 @@
     Provenance: 't1:LIC_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: LEND
     FIELD22: LIC
-    FIELD23: 2
+    FIELD23: 1
 -
     Threat_ID: XCHG_LIC_001
     Threat_Name: Unauthorised Crypto-Asset Service (CASP / VASP)
@@ -104,7 +104,7 @@
     Provenance: 't1:LIC_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: XCHG
     FIELD22: LIC
-    FIELD23: 3
+    FIELD23: 1
 -
     Threat_ID: PAY_FUND_001
     Threat_Name: Customer-Funds Commingling / Escrow Breach
@@ -152,12 +152,12 @@
     Provenance: 't1:FUND_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: CUST
     FIELD22: FUND
-    FIELD23: 2
+    FIELD23: 1
 -
-    Threat_ID: KYCV_AML_001
+    Threat_ID: UNI_AML_001
     Threat_Name: Inadequate KYC / CDD at Onboarding
     Lane: Both
-    Archetype: KYCV
+    Archetype: UNI
     Surface: KYC-Identity-Data
     Authority_IN: Prevention of Money Laundering Act, 2002 + PML (Maintenance of Records) Rules, 2005 + RBI Master Direction KYC (amended Jun & Aug 2025)
     Authority_EU: AMLD framework in national law (single-rulebook AMLR (Reg (EU) 2024/1624) applies 10 July 2027)
@@ -173,15 +173,15 @@
     FP_Impact: 'PMLA and BSA carry criminal exposure and personal officer liability; regulators impose remediation, monitorships, and penalties; partner banks and card networks terminate for AML-program deficiency. this reaches principals, not just the entity.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product onboards customers OR opens accounts OR enables funds movement for identified users. | CONDITION_2: Product serves India OR US OR EU OR does not exclude those markets. | CONDITION_3: No evidence of risk-based CDD OR identity verification from reliable independent sources OR sanctions/PEP screening OR beneficial-ownership collection. | CONDITION_4: Accounts can transact before verification completes OR no periodic re-KYC is described. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product performs documented risk-based CDD with reliable-source identity verification, sanctions/PEP screening, beneficial-ownership capture, and periodic re-KYC before or at account activation.'
-    Provenance: 't1:AML_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: KYCV
+    Provenance: 't1:AML_001 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified KYCV_AML_001->UNI_AML_001 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: AML
     FIELD23: 1
 -
-    Threat_ID: PAY_AML_001
+    Threat_ID: UNI_AML_002
     Threat_Name: Transaction-Monitoring / SAR-STR Failure
     Lane: A
-    Archetype: PAY
+    Archetype: UNI
     Surface: Transaction-Data | Cross-Border
     Authority_IN: PMLA, 2002 + PML (Maintenance of Records) Rules + FIU-IND reporting (STR/CTR)
     Authority_EU: AMLD-based national suspicious-transaction reporting (AMLR from 10 July 2027) + Transfer of Funds Regulation (travel rule)
@@ -197,8 +197,8 @@
     FP_Impact: 'BSA/PMLA program-failure enforcement with criminal exposure, per-violation penalties, and monitorships; loss of banking and network access. travel-rule gaps additionally block regulated crypto/cross-border rails.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product transmits OR settles OR routes funds OR crypto-asset transfers between parties. | CONDITION_2: Product serves India OR US OR EU OR cross-border corridors OR does not exclude those markets. | CONDITION_3: No evidence of transaction monitoring OR suspicious-activity/transaction reporting OR travel-rule originator/beneficiary data. | CONDITION_4: Cross-border transfers occur without originator/beneficiary information capture. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_3 = TRUE AND AT_LEAST_1_OF(CONDITION_2, CONDITION_4) = TRUE | EXCLUDE_IF: Product operates documented transaction monitoring with SAR/STR workflows and travel-rule data capture appropriate to the corridors served.'
-    Provenance: 't1:AML_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: PAY
+    Provenance: 't1:AML_002 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified PAY_AML_001->UNI_AML_002 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: AML
     FIELD23: 2
 -
@@ -296,7 +296,7 @@
     Provenance: 't1:DISC_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: ADVS
     FIELD22: DISC
-    FIELD23: 2
+    FIELD23: 1
 -
     Threat_ID: PAY_DISC_001
     Threat_Name: Unauthorised-Transfer / Error-Resolution Failure
@@ -320,12 +320,12 @@
     Provenance: 't1:DISC_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: PAY
     FIELD22: DISC
-    FIELD23: 3
+    FIELD23: 1
 -
-    Threat_ID: KYCV_PRV_001
+    Threat_ID: UNI_PRV_002
     Threat_Name: KYC / Identity-Data Over-Retention and Breach Exposure
     Lane: Both
-    Archetype: KYCV
+    Archetype: UNI
     Surface: KYC-Identity-Data | Sensitive-Financial
     Authority_IN: Digital Personal Data Protection Act, 2023 + DPDP Rules, 2025 (core duties effective 13 May 2027) + IT Act, 2000 s.43A / SPDI Rules
     Authority_EU: GDPR (Reg 2016/679) Arts. 5, 6, 32
@@ -341,10 +341,10 @@
     FP_Impact: 'GDPR fines up to 4 percent of global turnover and DPDP penalties; breach-notification and remediation costs; US GLBA/state-breach liability. identity-data breaches carry the highest per-record cost and regulator attention.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product collects OR stores identity documents OR biometrics OR financial personal data for KYC/onboarding. | CONDITION_2: Product serves EU OR India OR US users OR does not exclude those markets. | CONDITION_3: No lawful-basis/consent record OR retention schedule OR deletion route OR described encryption for the identity store. | CONDITION_4: KYC data is retained beyond the purpose or shared without a lawful basis. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product documents lawful basis/consent, applies a retention-and-deletion schedule, encrypts identity data at rest and in transit, and restricts access and sharing to the KYC purpose.'
-    Provenance: 't1:PRV_001 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: KYCV
+    Provenance: 't1:PRV_001 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified KYCV_PRV_001->UNI_PRV_002 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: PRV
-    FIELD23: 1
+    FIELD23: 2
 -
     Threat_ID: SCOR_PRV_001
     Threat_Name: Credit-Scoring / Bureau-Data Misuse and Automated Decisioning
@@ -368,7 +368,7 @@
     Provenance: 't1:PRV_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: SCOR
     FIELD22: PRV
-    FIELD23: 2
+    FIELD23: 1
 -
     Threat_ID: PAY_PRV_001
     Threat_Name: Cardholder-Data Exposure / PCI Non-Compliance
@@ -392,7 +392,7 @@
     Provenance: 't1:PRV_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: PAY
     FIELD22: PRV
-    FIELD23: 3
+    FIELD23: 1
 -
     Threat_ID: PAY_PRV_002
     Threat_Name: Payment-Data Localisation Breach (India)
@@ -416,7 +416,7 @@
     Provenance: 't1:PRV_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: PAY
     FIELD22: PRV
-    FIELD23: 4
+    FIELD23: 2
 -
     Threat_ID: PAY_PRV_003
     Threat_Name: Card-on-File Storage Prohibition / Tokenisation (India)
@@ -440,7 +440,7 @@
     Provenance: 't1:PRV_005 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: PAY
     FIELD22: PRV
-    FIELD23: 5
+    FIELD23: 3
 -
     Threat_ID: LEND_PRV_001
     Threat_Name: Digital-Lending App Data-Minimisation / Mobile-Resource Access (India)
@@ -464,7 +464,7 @@
     Provenance: 't1:PRV_006 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: LEND
     FIELD22: PRV
-    FIELD23: 6
+    FIELD23: 1
 -
     Threat_ID: UNI_CONS_001
     Threat_Name: Dark Patterns / Unfair Terms in Fintech Onboarding
@@ -585,7 +585,7 @@
     Provenance: 't2:MKT_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: TRAD
     FIELD22: MKT
-    FIELD23: 2
+    FIELD23: 1
 -
     Threat_ID: CUST_SETL_H_001
     Threat_Name: Crypto / Client-Asset Custody Segregation Failure
@@ -633,7 +633,7 @@
     Provenance: 't2:SETL_H_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: SETL
     FIELD22: SETL_H
-    FIELD23: 2
+    FIELD23: 1
 -
     Threat_ID: INSR_DISC_001
     Threat_Name: Insurance Mis-selling / Suitability (Demands and Needs)
@@ -657,7 +657,7 @@
     Provenance: 't2:DISC_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: INSR
     FIELD22: DISC
-    FIELD23: 4
+    FIELD23: 1
 -
     Threat_ID: AGGR_PRV_001
     Threat_Name: Unregistered / Non-Consent Financial-Data Aggregation
@@ -681,12 +681,12 @@
     Provenance: 't2:PRV_007 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: AGGR
     FIELD22: PRV
-    FIELD23: 7
+    FIELD23: 1
 -
-    Threat_ID: LEND_CONS_001
+    Threat_ID: UNI_CONS_002
     Threat_Name: Unfair / Deceptive / Abusive Acts and Practices (UDAAP)
     Lane: A
-    Archetype: LEND
+    Archetype: UNI
     Surface: Consumer-Retail
     Authority_IN: Consumer Protection Act, 2019 + RBI Fair Practices Code
     Authority_EU: Unfair Commercial Practices Directive (2005/29/EC) + Unfair Contract Terms Directive (93/13/EEC)
@@ -702,10 +702,10 @@
     FP_Impact: 'FTC and state-AG enforcement with restitution and injunctions, unenforceable unfair terms, and RBI fair-practices action in India. reliance on the (now weakened) CFPB is unsafe; FTC/state channels are the live exposure.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product offers consumer credit, payments, or financial services with fees, terms, or marketing claims. | CONDITION_2: Product serves US OR India OR EU consumers OR does not exclude those markets. | CONDITION_3: Terms or practices include hidden/misleading fees OR deceptive claims OR one-sided unfair terms OR obstacle-laden cancellation. | CONDITION_4: Marketing overstates benefits or understates cost/risk. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product uses accurate non-deceptive marketing, conspicuous fees, balanced terms, and symmetric easy cancellation, with no enumerated unfair/deceptive/abusive practice.'
-    Provenance: 't2:CONS_002 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: LEND
+    Provenance: 't2:CONS_002 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified LEND_CONS_001->UNI_CONS_002 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: CONS
-    FIELD23: 1
+    FIELD23: 2
 -
     Threat_ID: PAY_LIC_002
     Threat_Name: PSD3 / PSR Payment-Institution Re-Authorisation Gap (Upcoming)
@@ -731,10 +731,10 @@
     FIELD22: LIC
     FIELD23: 2
 -
-    Threat_ID: KYCV_AML_002
+    Threat_ID: UNI_AML_004
     Threat_Name: EU AMLR Single-Rulebook Uplift (Upcoming)
     Lane: Both
-    Archetype: KYCV
+    Archetype: UNI
     Surface: KYC-Identity-Data | Cross-Border
     Authority_IN: 'Not applicable (EU-specific reform)'
     Authority_EU: Anti-Money Laundering Regulation (Reg (EU) 2024/1624) applies 10 July 2027 + AMLA direct supervision of selected obliged entities from 2028
@@ -750,10 +750,10 @@
     FP_Impact: 'scheduled AML-programme uplift before 10 July 2027 and potential AMLA direct supervision from 2028; firms that delay face a harmonised-rulebook compliance cliff. treat as an Upcoming planning obligation.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product is an EU obliged entity performing CDD/AML (payments, crypto, lending, or other regulated activity). | CONDITION_2: Product serves EU customers OR does not exclude the EU. | CONDITION_3: AML programme is mapped only to current national AMLD rules with no AMLR single-rulebook gap analysis. | CONDITION_4: No plan for harmonised CDD/beneficial-ownership/EDD uplift before 10 July 2027. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product has a documented AMLR readiness plan mapping harmonised CDD, beneficial-ownership, and EDD changes with a timeline to 10 July 2027, or is out of EU AML scope.'
-    Provenance: 't2:AML_003 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: KYCV
+    Provenance: 't2:AML_003 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified KYCV_AML_002->UNI_AML_004 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: AML
-    FIELD23: 3
+    FIELD23: 4
 -
     Threat_ID: LEND_CRED_003
     Threat_Name: EU CCD2 BNPL & Creditworthiness Uplift (Upcoming)
@@ -779,10 +779,10 @@
     FIELD22: CRED
     FIELD23: 3
 -
-    Threat_ID: KYCV_PRV_002
+    Threat_ID: UNI_PRV_003
     Threat_Name: India DPDP Core-Duty Enforcement (Upcoming)
     Lane: Both
-    Archetype: KYCV
+    Archetype: UNI
     Surface: KYC-Identity-Data | Sensitive-Financial
     Authority_IN: Digital Personal Data Protection Act, 2023 + DPDP Rules, 2025; core duties (notice, security safeguards, breach notification, Significant Data Fiduciary obligations, consent-manager registration) phased to 13 May 2027
     Authority_EU: 'Cross-reference GDPR (already in force) for equivalent duties'
@@ -798,10 +798,10 @@
     FP_Impact: 'scheduled DPDP build before 13 May 2027 with penalties for non-compliance once live; large financial-data processors face SDF obligations (DPIAs, audits, data-protection officer). treat as an Upcoming planning obligation layered on current IT-Act/SPDI duties.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product processes personal or financial data of Indian data principals. | CONDITION_2: Product serves Indian users OR does not exclude India. | CONDITION_3: No DPDP-core readiness (consent notices, security safeguards, breach-notification workflow, data-principal-rights handling). | CONDITION_4: Large-volume financial-data processing likely triggers Significant Data Fiduciary duties with no DPIA/audit/DPO plan. | TRIGGER_IF: CONDITION_1 = TRUE AND CONDITION_2 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product has a documented DPDP readiness plan covering consent notices, security safeguards, breach notification, data-principal rights, and (where applicable) Significant Data Fiduciary duties with a timeline to 13 May 2027.'
-    Provenance: 't2:PRV_008 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: KYCV
+    Provenance: 't2:PRV_008 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified KYCV_PRV_002->UNI_PRV_003 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: PRV
-    FIELD23: 8
+    FIELD23: 3
 
 -
     Threat_ID: LEND_CONS_002
@@ -876,10 +876,10 @@
     FIELD22: CRED
     FIELD23: 4
 -
-    Threat_ID: PAY_AML_002
+    Threat_ID: UNI_AML_003
     Threat_Name: Sanctions / OFAC Screening Failure (Strict Liability)
     Lane: Both
-    Archetype: PAY
+    Archetype: UNI
     Surface: Cross-Border | Transaction-Data
     Authority_IN: FEMA, 1999 + UAPA sanctions / MHA and UNSC-list obligations + PMLA sanctions-screening expectations
     Authority_EU: EU restrictive-measures (sanctions) regulations + national enforcement
@@ -895,10 +895,10 @@
     FP_Impact: 'OFAC strict-liability civil penalties per transaction plus criminal exposure for willful conduct, loss of banking/correspondent access, and forced remediation. sanctions hits on crypto/cross-border rails draw priority enforcement.'
     Lex_Nova_Fix: TBD/DEFERRED
     Hunter_Trigger: 'CONDITION_1: Product transmits OR settles OR routes funds OR crypto between parties or jurisdictions. | CONDITION_2: Product serves US OR EU OR India OR cross-border corridors OR does not exclude those markets. | CONDITION_3: No real-time sanctions/PEP screening against OFAC/UN/EU/India lists OR no blocking-reject-report workflow OR no geographic sanctions controls. | CONDITION_4: Transactions can reach sanctioned persons, wallets, or jurisdictions without a block. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product screens all parties and jurisdictions against current sanctions lists in real time, blocks/rejects and reports hits, and applies geographic controls consistent with OFAC/UN/EU/India regimes.'
-    Provenance: 't3:AML_004 web-verified 2026-07 FinTech_Registry_Key v1.0'
-    FIELD21: PAY
+    Provenance: 't3:AML_004 web-verified 2026-07 FinTech_Registry_Key v1.0; reclassified PAY_AML_002->UNI_AML_003 residual-UNI 2026-07'
+    FIELD21: UNI
     FIELD22: AML
-    FIELD23: 2
+    FIELD23: 3
 -
     Threat_ID: PAY_LIC_003
     Threat_Name: Cross-Border Payment Aggregation (PA-CB) / FEMA Authorisation
@@ -970,7 +970,7 @@
     Provenance: 't3:PRV_009 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: UNI
     FIELD22: PRV
-    FIELD23: 9
+    FIELD23: 1
 -
     Threat_ID: XCHG_DISC_001
     Threat_Name: Crypto Tax Reporting / TDS & Broker Reporting Failure
@@ -994,7 +994,7 @@
     Provenance: 't3:DISC_005 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: XCHG
     FIELD22: DISC
-    FIELD23: 5
+    FIELD23: 1
 -
     Threat_ID: INSR_CONS_001
     Threat_Name: Unfair Claims Settlement / Policyholder-Protection Failure
@@ -1090,4 +1090,52 @@
     Provenance: 't3:LIC_008 web-verified 2026-07 FinTech_Registry_Key v1.0'
     FIELD21: ISSU
     FIELD22: LIC
+    FIELD23: 1
+-
+    Threat_ID: UNI_CONS_003
+    Threat_Name: Grievance Redressal / Complaint-Handling Failure
+    Lane: A
+    Archetype: UNI
+    Surface: Consumer-Retail | Merchant-SME
+    Authority_IN: RBI Reserve Bank-Integrated Ombudsman Scheme (RB-IOS 2021; RB-IOS 2026 in force 1 Jul 2026) + Internal Ombudsman Directions + RBI (Digital Lending) Directions, 2025 (Grievance Redressal Officer) + Consumer Protection Act, 2019
+    Authority_EU: PSD2 (Dir 2015/2366) Art. 101 complaints procedures + Consumer ADR Directive 2013/11/EU
+    Authority_US: No standalone federal grievance mandate; EFTA / Regulation E error-resolution (12 CFR 1005) + state UDAP complaint duties
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T4
+    Pain_Category: Regulatory Heat
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2021-11-12
+    Legal_Pain: 'Regulated financial firms must run a documented, time-bound grievance-redressal mechanism with escalation to an ombudsman. In India the RBI Integrated Ombudsman Scheme (RB-IOS 2021, superseded by RB-IOS 2026 in force 1 July 2026) requires every Regulated Entity to appoint a Principal Nodal Officer, display the scheme, resolve complaints within defined timelines, and for larger entities maintain an Internal Ombudsman, with digital-lending and payment-aggregator rules adding a dedicated Grievance Redressal Officer; the EU requires PSD2 complaint-handling and consumer ADR access; US consumers get Regulation E error-resolution and state UDAP complaint remedies. Absent or unresponsive grievance handling converts routine disputes into supervisory findings and ombudsman awards.'
+    FP_Mechanism: 'your product has no documented grievance-redressal mechanism with a named nodal/grievance officer, published complaint route, defined resolution timelines, and ombudsman/ADR escalation, so customer complaints go unresolved and unescalated contrary to RB-IOS, PSD2/ADR, and Regulation E duties'
+    FP_Impact: 'RBI ombudsman awards and supervisory action in India, EU complaint-handling and ADR findings, and Regulation E / state exposure in the US, plus reputational and licence pressure. a missing nodal/grievance officer and published complaint route is a first-order, easily-evidenced deficiency.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product serves customers who can raise complaints about financial services, payments, credit, or accounts. | CONDITION_2: Product serves India OR EU/UK OR US OR does not exclude those markets. | CONDITION_3: No published grievance-redressal mechanism OR named nodal/grievance officer OR defined resolution timelines OR ombudsman/ADR escalation route. | CONDITION_4: Complaint handling has no audit trail or escalation beyond first-line support. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product publishes a grievance-redressal mechanism with a named nodal/grievance officer, defined resolution timelines, an audit trail, and ombudsman/ADR escalation appropriate to the markets served.'
+    Provenance: 't4:CONS_006 web-verified 2026-07 FinTech_Registry_Key v1.1'
+    FIELD21: UNI
+    FIELD22: CONS
+    FIELD23: 3
+-
+    Threat_ID: UNI_DISC_001
+    Threat_Name: Books-and-Records / Regulatory Record-Keeping Failure
+    Lane: Both
+    Archetype: UNI
+    Surface: Transaction-Data | Sensitive-Financial
+    Authority_IN: PMLA, 2002 + PML (Maintenance of Records) Rules, 2005 (5-year retention) + RBI record-maintenance norms + Companies Act, 2013 (books of account)
+    Authority_EU: MiFID II (Dir 2014/65/EU) Art. 16(6) record-keeping (5-7 years) + DORA (Reg (EU) 2022/2554) ICT records + GDPR Art. 30 records of processing
+    Authority_US: SEC Rule 17a-4 (amended electronic-recordkeeping WORM/audit-trail, compliance from 3 May 2023) + FINRA Rule 4511 + Bank Secrecy Act record-retention (31 CFR 1010.410, 5 years)
+    Velocity: ACTIVE_NOW
+    Pain_Tier: T4
+    Pain_Category: Regulatory Heat
+    Pain_Depth: Corporate
+    Status: Active
+    Effective_Date: 2023-05-03
+    Legal_Pain: 'Financial firms must create and preserve complete, tamper-evident books and records for defined retention periods and produce them on demand. US SEC Rule 17a-4 (as amended, compliance from 3 May 2023) requires broker-dealer electronic records to meet a WORM or audit-trail standard and be furnished in a reasonably usable format, with FINRA Rule 4511 and Bank Secrecy Act five-year retention alongside; EU MiFID II Art. 16(6) mandates five-to-seven-year record-keeping and DORA adds ICT records; India PMLA and its Maintenance of Records Rules require five-year retention and the Companies Act mandates books of account. Gaps, un-preserved communications, or unproducible records are a standalone enforcement exposure independent of any underlying misconduct.'
+    FP_Mechanism: 'your product does not create and preserve complete, tamper-evident transaction, communication, and compliance records for the required retention period, or cannot produce them promptly in a usable format, breaching SEC 17a-4/FINRA, MiFID II, PMLA, and BSA record-keeping duties'
+    FP_Impact: 'record-keeping and off-channel-communication failures draw large standalone penalties (the SEC and CFTC sweeps ran to billions), supervisory findings, and adverse inferences in any related matter. inability to produce records also stalls audits, partner-bank diligence, and acquisitions.'
+    Lex_Nova_Fix: TBD/DEFERRED
+    Hunter_Trigger: 'CONDITION_1: Product creates OR processes financial transactions, customer records, communications, or compliance data. | CONDITION_2: Product serves US OR EU OR India OR does not exclude those markets. | CONDITION_3: No defined record-retention schedule OR no tamper-evident WORM-or-audit-trail preservation OR no ability to produce records promptly in a usable format. | CONDITION_4: Business or compliance communications are conducted on unretained off-channel systems. | TRIGGER_IF: CONDITION_1 = TRUE AND AT_LEAST_1_OF(CONDITION_3, CONDITION_4) = TRUE | EXCLUDE_IF: Product maintains a defined record-retention schedule with tamper-evident preservation, captures business communications, and can produce records promptly in a usable format consistent with SEC 17a-4/FINRA, MiFID II, PMLA, and BSA duties.'
+    Provenance: 't4:DISC_006 web-verified 2026-07 FinTech_Registry_Key v1.1'
+    FIELD21: UNI
+    FIELD22: DISC
     FIELD23: 1
