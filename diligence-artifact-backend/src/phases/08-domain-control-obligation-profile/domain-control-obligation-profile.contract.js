@@ -132,7 +132,8 @@ export const DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT = Object.freeze({
     candidate_inventory_artifact: DOMAIN_CONTROL_OBLIGATION_CANDIDATE_ARTIFACT,
     candidate_inventory_created_by: DOMAIN_CONTROL_OBLIGATION_CANDIDATE_JOB_ID,
     model_may_not_create_new_candidates: true,
-    model_may_not_drop_candidates_without_controlled_limitation: true,
+    model_may_not_drop_candidates: true,
+    controlled_limitation_must_be_emitted_in_candidate_row: true,
     model_candidate_identity_field: "candidate_id",
     compiler_must_reconcile_to_exact_candidate_universe: true,
     candidate_inventory_propagation_past_phase8_forbidden: true
