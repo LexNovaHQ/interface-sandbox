@@ -1,12 +1,9 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: AGENT5_PHASE10_EXPOSURE_PHASE2G
-runtime_contract_version: v16_package_scoped_semantic_contract
+runtime_contract_version: v17_domain_agnostic_layer2_layer3_forensics
 active_agent_id: agent_5_exposure_registry
-active_agent_name: Interface Exposure Registry Agent
 active_phase_scope: M11_EXPOSURE_REGISTRY
 run_mode: PACKAGE_SCOPED_BATCHED_AGENT
-run_id_required: true
-run_id: "{{run_id}}"
 
 routing_authority:
   authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
@@ -16,76 +13,13 @@ routing_authority:
   lossless_evidence_role: PRIMARY_EVIDENCE
   index_role: MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE
   index_gap_navigation_role: SAME_BUCKET_PRIMARY_EVIDENCE_NAVIGATION_NOT_FALLBACK
-  direct_lossless_as_fallback_allowed: false
-  free_corpus_read_allowed: false
   profile_forensics_inputs_allowed: false
-  phase2f_forward_owner: M11
-  m9_is_index_builder_not_route_owner: true
-
-allowed_phases:
-  - M11_EXPOSURE_REGISTRY
-
-read_artifacts:
-  - phase_routing_manifest
-  - phase_route_runtime_packet
-  - legal_cartography_index
-  - legal_signal_derivation_profile
-  - admitted_2f_lossless_legal_governance_bucket
-  - admitted_legal_doc_dynamic_artifacts
-  - target_profile
-  - domain_derivation_profile
-  - feature_candidate_inventory
-  - target_feature_profile
-  - dap_registry_manifest
-  - dap_strategic_derivation_matrix
-  - dap_semantic_batch_route_manifest
-  - dap_semantic_batch_exec_artifact
-  - dap_semantic_batch_lim_artifact
-  - dap_semantic_batch_party_artifact
-  - dap_semantic_batch_role_artifact
-  - dap_semantic_batch_flow_artifact
-  - dap_semantic_batch_obj_artifact
-  - dap_semantic_batch_auth_artifact
-  - dap_semantic_batch_ctrl_artifact
-  - dap_semantic_batch_contact_cm_artifact
-  - dap_semantic_batch_vend_artifact
-  - dap_semantic_batch_loc_artifact
-  - dap_semantic_batch_ret_artifact
-  - dap_semantic_batch_sec_artifact
-  - dap_semantic_batch_sens_artifact
-  - dap_semantic_batch_dom_artifact
-  - dap_semantic_batch_ready_artifact
-  - dap_semantic_batch_req_artifact
-  - dap_semantic_batch_validation_manifest
-  - data_provenance_profile_semantic_batch_gate
-  - domain_control_obligation_profile
-  - active_run_package_manifest
-
-forbidden_read_artifacts:
-  - target_profile_forensics
-  - target_feature_profile_forensics
-  - dap_forensics_profile
-  - retired_data_provenance_profile
-  - retired_data_provenance_profile_forensics
-  - extended_dap_india_readiness_profile
-  - integrated_dap_report
-  - lossless_family__*
-  - source_outside_active_2f_packet
-  - alternate_route_map
-  - free_corpus_scan
-
-shared_reference_files:
-  - 03_REGISTRY_EVALUATION_RULES.yaml
-  - Diligence_Field_Derivation_Registry.yml
-  - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
 registry_binding_authority:
   file: references/registry/THREAT_REGISTRY_BINDINGS_v1.yaml
   authority_role: SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY
-  runtime_auto_selection: ACTIVE
   selector_authority: domain_derivation_profile
   active_run_package_manifest_role: CONSISTENCY_CHECK_ONLY
-  model_registry_selection_authority: NONE
 
 execution_identity_contract:
   version: PHASE10_EXECUTION_IDENTITY_v2
@@ -94,7 +28,6 @@ execution_identity_contract:
   canonical_threat_id_preserved: true
   raw_threat_id_may_repeat_across_package_streams: true
   raw_threat_id_unique_inside_one_batch: true
-  silent_namespacing_forbidden: true
   model_may_read_registry_row_key: true
   model_may_emit_registry_row_key: false
   model_output_identity_field: Threat_ID
@@ -102,11 +35,9 @@ execution_identity_contract:
 phase5_classification_inventory_contract:
   schema_version: phase5_classification_inventory.v1
   source_authority: target_feature_profile
-  phase5_owns_classification: true
   phase10_projects_only: true
   primary_source_path: activities[].primary_classification
   overlay_source_path: activities[].overlay_classifications[]
-  flat_activity_classification_paths_forbidden: true
   missing_mounted_stream_classification_result: CONTROLLED_FAILURE
   global_cross_package_archetype_union_forbidden: true
 
@@ -121,30 +52,15 @@ package_scoped_route_contract:
 batch_planner_contract:
   version: M11_MAX_15_PACKAGE_SCOPED_BATCH_PLANNER_v1
   max_rows: 15
-  fixed_batch_size_required: false
   packet_ceiling_chars: 180000
-  packet_ceiling_version: M11_PACKET_CHARS_180000_v1
   one_package_per_batch: true
   one_stream_per_batch: true
   one_archetype_group_per_batch: true
-  package_mixing_forbidden: true
-  stream_mixing_forbidden: true
-  archetype_group_mixing_forbidden: true
   evidence_or_registry_truncation_forbidden: true
-  single_row_over_ceiling_result: CONTROLLED_FAILURE
 
 semantic_packet_contract:
   version: M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
-  required_identity_fields:
-    - batch_id
-    - batch_group
-    - stream_id
-    - stream_type
-    - package_id
-    - source_domain
-    - expected_registry_row_keys
-    - expected_threat_ids
-    - row_count
+  exact_batch_identity_required: true
   model_may_change_packet: false
 
 semantic_output_contract:
@@ -154,16 +70,6 @@ semantic_output_contract:
   exact_expected_coverage_required: true
   preserve_expected_order: true
   partial_ledger_forbidden: true
-  allowed_row_fields:
-    - Threat_ID
-    - trigger_status
-    - target_match
-    - basis_proof
-    - control_exclusion_evaluation
-    - evidence_source_basis
-    - applied_fp_mechanism
-    - row_limitations
-    - status_inputs
   deterministic_fields_forbidden: true
   final_status_forbidden: true
 
@@ -173,19 +79,43 @@ semantic_repair_contract:
   same_packet_required: true
   complete_ledger_return_required: true
   immutable_batch_identity_required: true
-  repair_only_identified_semantic_fields: true
 
-checkpoint_fingerprint_contract:
-  registry_set_fingerprint_required: true
-  phase5_classification_fingerprint_required: true
+layer3_contract:
+  version: M11_DYNAMIC_LAYER3_v1
+  final_status_authority: DETERMINISTIC_BACKEND
+  final_status_order:
+    - CONTROLLED_BY_EXCLUSION
+    - CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
+    - CONTROLLED_BY_VISIBLE_CONTROL
+    - TRIGGERED
+  allowed_final_statuses:
+    - TRIGGERED
+    - CONTROLLED_BY_VISIBLE_CONTROL
+    - CONTROLLED_BY_EXCLUSION
+    - CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
+  not_applicable_route_status: NOT_TRIGGERED_NOT_APPLICABLE
+  workpad_row_count: DYNAMIC_FROM_ACTIVE_MANIFEST
+  stable_workpad_artifact_token: exposure_registry_workpad_98
+  compound_identity_reconciliation_required: true
+
+forensics_contract:
+  version: M11_DOMAIN_AGNOSTIC_FORENSICS_v1
+  expected_count_authority: active_threat_registry_manifest
+  fixed_98_row_assumption: false
+  fixed_ai_subcategory_assumption: false
+  primary_overlay_trace_separate: true
+  registry_row_key_trace_required: true
+  batch_validation_custody_required: true
+  route_workpad_profile_reconciliation_required: true
+
+checkpoint_contract:
   phase10_execution_fingerprint_required: true
-  classification_inventory_digest_required: true
-  routing_and_batch_configuration_in_fingerprint: true
   stale_checkpoint_reuse_forbidden: true
-
-backend_contract_files:
-  - PHASE10_AUTO_SELECTOR_AND_FINGERPRINT_ADDENDUM.md
-  - PHASE10_CLASSIFICATION_ROUTING_BATCH_ADDENDUM.md
+  accepted_batch_schema: m11_batch_registry_ledger.v3.package_scoped.accepted
+  workpad_schema: exposure_registry_workpad.v3.dynamic
+  controlled_schema: exposure_registry_controlled_profile.v3.dynamic
+  triggered_schema: exposure_registry_triggered_profile.v3.dynamic
+  forensics_schema: M11_DOMAIN_AGNOSTIC_FORENSICS_v1
 
 semantic_prompt_files:
   - AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml
@@ -211,38 +141,22 @@ semantic_repair_prompt_files:
 
 m11_three_layer_contract:
   layer_1_backend:
-    status: ACTIVE_CO_4_CO_5_CO_6
-    duties:
-      - resolve_phase3_primary_and_ai_mount
-      - load_selected_registry_bindings
-      - validate_registry_union_identity
-      - persist_active_threat_registry_manifest
-      - project_phase5_package_scoped_inventories
-      - build_separate_primary_and_overlay_routes
-      - build_maximum_15_package_scoped_batches
-      - enforce_packet_ceiling
-      - persist_exposure_registry_route_plan
+    status: ACTIVE
   layer_2_model:
-    status: CONTRACT_READY_RUNTIME_BLOCKED_PENDING_CO_8
-    semantic_package_version: M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
-    current_runtime_may_call_model: false
-    pending:
-      - implement_domain_agnostic_layer2_runtime
+    status: CO_8_DOMAIN_AGNOSTIC_RUNTIME_ACTIVE
+    current_runtime_may_call_model: true
   layer_3_backend:
-    status: PENDING_CO_9_AND_LATER_BUILD_ORDER
+    status: CO_9_DYNAMIC_FINALIZATION_ACTIVE
+  forensics:
+    status: CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE
 
 model_forbidden_actions:
   - select_or_mount_threat_registry
-  - create_or_rewrite_active_threat_registry_manifest
   - create_or_rewrite_registry_row_key
-  - create_or_rewrite_execution_fingerprint
-  - create_or_rewrite_phase5_classification_inventory
   - reclassify_phase5_activity
-  - move_classification_between_primary_and_overlay
   - create_or_rewrite_route_plan
   - choose_stream_membership
   - choose_batch_membership
-  - change_batch_size_or_packet_ceiling
   - rewrite_registry_spine
   - choose_final_material_status
   - save_artifacts
@@ -250,14 +164,11 @@ model_forbidden_actions:
   - project_material_profiles
   - assemble_forensics
   - emit_challenge_gate
-  - perform_global_m12_challenge
   - compile_or_render
 
-write_artifacts_in_current_order:
+write_artifacts_in_order:
   - active_threat_registry_manifest
   - exposure_registry_route_plan
-
-future_write_artifacts_after_co_8:
   - exposure_registry_batch_validation__{batch_id}
   - exposure_registry_batch__{batch_id}
   - exposure_registry_workpad_98
@@ -265,17 +176,10 @@ future_write_artifacts_after_co_8:
   - exposure_registry_triggered_profile
   - exposure_registry_profile_forensics
 
-current_stage_terminal_rule:
-  stop_after_package_scoped_route_plan: true
-  stop_status: CONTROLLED_FAILURE
-  reason: CO_8_DOMAIN_AGNOSTIC_LAYER2_RUNTIME_PENDING
-  no_model_call_allowed: true
-
 m12_boundary:
   owner: agent_7_m12
   delivery_mode: DERIVED_ONLY
   exposure_forensics_required: false
-  preceding_forensics_required: false
   challenge_gate_written_by_agent5: false
-  current_handoff_allowed: false
+  current_handoff_allowed: true
 </RUNTIME_BINDING_PACKET>
