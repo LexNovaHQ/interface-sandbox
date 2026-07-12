@@ -21,20 +21,17 @@ assert.equal(manifest?.authority_model?.field_derivation_registry?.role, "DOMAIN
 assert.equal(manifest?.status_policy?.mode, "INCLUDE_ALL_DECLARED_ROWS");
 assert.equal(manifest?.status_policy?.row_filter, "NONE");
 assert.equal(manifest?.status_policy?.status_field_role, "METADATA_ONLY");
+assert.equal(manifest?.execution_identity_contract?.version, "PHASE10_EXECUTION_IDENTITY_v2");
+assert.equal(manifest?.execution_identity_contract?.global_identity_field, "registry_row_key");
+assert.equal(manifest?.execution_identity_contract?.canonical_threat_id_preserved, true);
+assert.equal(manifest?.execution_identity_contract?.duplicate_registry_row_key_forbidden, true);
+assert.equal(manifest?.execution_identity_contract?.silent_namespacing_forbidden, true);
 
-const requiredRowFields = Object.freeze([
-  "Threat_ID",
-  "Threat_Name",
-  "Archetype",
-  "Surface",
-  "Status",
-  "Hunter_Trigger",
-  "FIELD21",
-  "FIELD22",
-  "FIELD23"
-]);
-
+const requiredRowFields = Object.freeze(["Threat_ID", "Threat_Name", "Archetype", "Surface", "Status", "Hunter_Trigger", "FIELD21", "FIELD22", "FIELD23"]);
 const summaries = [];
+const rawIdPackages = new Map();
+const executionKeys = new Set();
+
 for (const [packageId, binding] of Object.entries(manifest?.packages || {})) {
   assert.equal(binding.package_id, packageId, `${packageId}: package_id mismatch`);
   assert.ok(binding.package_key_file, `${packageId}: package key file missing`);
@@ -56,6 +53,11 @@ for (const [packageId, binding] of Object.entries(manifest?.packages || {})) {
     const threatId = String(row.Threat_ID).trim();
     assert.equal(ids.has(threatId), false, `${packageId}: duplicate Threat_ID ${threatId}`);
     ids.add(threatId);
+    if (!rawIdPackages.has(threatId)) rawIdPackages.set(threatId, new Set());
+    rawIdPackages.get(threatId).add(packageId);
+    const registryRowKey = `${packageId}::${threatId}`;
+    assert.equal(executionKeys.has(registryRowKey), false, `duplicate registry_row_key ${registryRowKey}`);
+    executionKeys.add(registryRowKey);
     const status = String(row.Status).trim();
     statusCounts[status] = (statusCounts[status] || 0) + 1;
   }
@@ -64,21 +66,27 @@ for (const [packageId, binding] of Object.entries(manifest?.packages || {})) {
   assert.equal(registryDoc.length, Number(binding.routable_row_count), `${packageId}: INCLUDE_ALL_DECLARED_ROWS requires routable count to equal parsed count`);
   assert.deepEqual(statusCounts, binding.declared_status_counts || {}, `${packageId}: declared/parsed Status counts mismatch`);
 
-  summaries.push({
-    package_id: packageId,
-    key_file: binding.package_key_file,
-    registry_file: binding.threat_registry_file,
-    parsed_rows: registryDoc.length,
-    routable_rows: registryDoc.length,
-    status_counts: statusCounts
-  });
+  summaries.push({ package_id: packageId, key_file: binding.package_key_file, registry_file: binding.threat_registry_file, parsed_rows: registryDoc.length, routable_rows: registryDoc.length, status_counts: statusCounts });
 }
 
+const collisions = [...rawIdPackages.entries()]
+  .filter(([, packages]) => packages.size > 1)
+  .map(([Threat_ID, packages]) => ({ Threat_ID, package_ids: [...packages].sort(), registry_row_keys: [...packages].sort().map((packageId) => `${packageId}::${Threat_ID}`) }))
+  .sort((a, b) => a.Threat_ID.localeCompare(b.Threat_ID));
+
 assert.deepEqual(Object.keys(manifest.packages || {}).sort(), ["ai-governance", "fintech"]);
+assert.equal(executionKeys.size, summaries.reduce((total, row) => total + row.parsed_rows, 0));
+assert.ok(collisions.some((row) => row.Threat_ID === "UNI_PRV_001"), "known cross-package Threat_ID collision must remain visible");
+
 console.log(JSON.stringify({
   check: "phase10 registry parity and status-policy preflight",
   status: "PASS",
   binding_authority: manifest.authority_model.binding_manifest.role,
   status_policy: manifest.status_policy,
+  execution_identity_version: "PHASE10_EXECUTION_IDENTITY_v2",
+  global_identity_field: "registry_row_key",
+  canonical_threat_id_collision_count: collisions.length,
+  canonical_threat_id_collisions: collisions,
+  unique_registry_row_keys: executionKeys.size,
   registries: summaries
 }, null, 2));
