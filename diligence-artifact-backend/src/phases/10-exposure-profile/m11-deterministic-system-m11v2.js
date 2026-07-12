@@ -19,8 +19,6 @@ const S_EXCLUSION = "CONTROLLED_BY_EXCLUSION";
 const S_PUBLIC_LIMIT = "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION";
 const CONTROLLED_FINAL_STATUSES = new Set([S_VISIBLE, S_EXCLUSION, S_PUBLIC_LIMIT]);
 const FINAL_MATERIAL_STATUSES = new Set([S_TRIGGERED, S_VISIBLE, S_EXCLUSION, S_PUBLIC_LIMIT]);
-const PAIN_TIER_CATEGORY = Object.freeze({ T1: "Existential", T2: "Uncapped Money", T3: "Deal Death", T4: "Regulatory Heat", T5: "Friction" });
-const PAIN_DEPTH_VALUES = new Set(["Corporate", "Personal", "Criminal"]);
 
 export const CRITICAL_REGISTRY_FIELDS = base.CRITICAL_REGISTRY_FIELDS;
 export const EXPECTED_ACTIVE_REGISTRY_ROWS = base.EXPECTED_ACTIVE_REGISTRY_ROWS;
@@ -73,36 +71,41 @@ export function validateRegistryRows(rows, options = {}) {
     const id = String(row?.Threat_ID || `ROW_${index + 1}`);
     const behaviorClass = String(row?.Behavior_Class || row?.Archetype || row?.FIELD21 || "").trim();
     if (!behaviorClass) failures.push(`REGISTRY_BEHAVIOR_CLASS_MISSING:${id}`);
-    for (const field of mandatory) if (!String(row?.[field] ?? "").trim()) failures.push(`REGISTRY_MANDATORY_FIELD_MISSING:${id}:${field}`);
-    if (![row?.Authority_IN, row?.Authority_EU, row?.Authority_US].some((value) => String(value || "").trim() && String(value).trim() !== "—")) failures.push(`REGISTRY_AUTHORITY_ANCHOR_MISSING:${id}`);
-    const tier = String(row?.Pain_Tier || "").trim();
-    const category = String(row?.Pain_Category || "").trim();
-    const depth = String(row?.Pain_Depth || "").trim();
-    if (!tier) failures.push(`REGISTRY_PAIN_TIER_MISSING:${id}`);
-    else if (!Object.prototype.hasOwnProperty.call(PAIN_TIER_CATEGORY, tier)) failures.push(`REGISTRY_PAIN_TIER_INVALID:${id}:${tier}`);
-    if (!category) failures.push(`REGISTRY_PAIN_CATEGORY_MISSING:${id}`);
-    else if (PAIN_TIER_CATEGORY[tier] && PAIN_TIER_CATEGORY[tier] !== category) failures.push(`REGISTRY_PAIN_CATEGORY_TIER_MISMATCH:${id}:${tier}:${category}`);
-    if (!depth) failures.push(`REGISTRY_PAIN_DEPTH_MISSING:${id}`);
-    else if (!PAIN_DEPTH_VALUES.has(depth)) failures.push(`REGISTRY_PAIN_DEPTH_INVALID:${id}:${depth}`);
+    for (const field of mandatory) {
+      if (!String(row?.[field] ?? "").trim()) failures.push(`REGISTRY_MANDATORY_FIELD_MISSING:${id}:${field}`);
+    }
+    if (![row?.Authority_IN, row?.Authority_EU, row?.Authority_US].some((value) => String(value || "").trim() && String(value).trim() !== "—")) {
+      failures.push(`REGISTRY_AUTHORITY_ANCHOR_MISSING:${id}`);
+    }
   }
   const uniqueFailures = [...new Set(failures)];
+  const severityPresenceFailures = uniqueFailures.filter((failure) => /:Pain_Tier$|:Pain_Category$|:Pain_Depth$/.test(failure));
   return {
     ...baseline,
     ok: uniqueFailures.length === 0,
     status: uniqueFailures.length ? "CONTROLLED_FAILURE" : "PASS",
     failures: uniqueFailures,
-    severity_validation_status: uniqueFailures.some((failure) => failure.includes("PAIN_")) ? "CONTROLLED_FAILURE" : "PASS",
+    severity_presence_validation_status: severityPresenceFailures.length ? "CONTROLLED_FAILURE" : "PASS",
+    mounted_key_severity_validation_required: true,
+    generic_cross_package_severity_vocabulary_forbidden: true,
     deterministic_report_row_contract: "phase10_report_row.v1.complete_registry_spine"
   };
 }
 
-export function extractM11RoutingSubstrate(targetFeatureProfile = {}, manifest = {}) { return buildPhase5ClassificationInventory({ targetFeatureProfile, manifest }); }
+export function extractM11RoutingSubstrate(targetFeatureProfile = {}, manifest = {}) {
+  return buildPhase5ClassificationInventory({ targetFeatureProfile, manifest });
+}
 export function buildBatchPlan(routeRows, options = {}) { return buildPackageScopedBatchPlan(routeRows, options); }
 export function validateBatchPlan(batchPlan, options = {}) { return validatePackageScopedBatchPlan(batchPlan, options); }
-export function buildExposureRegistryRoutePlan(args = {}) { if (!args.registryContext) throw new Error("PACKAGE_SCOPED_REGISTRY_CONTEXT_REQUIRED"); return buildPackageScopedExposureRegistryRoutePlan(args); }
+export function buildExposureRegistryRoutePlan(args = {}) {
+  if (!args.registryContext) throw new Error("PACKAGE_SCOPED_REGISTRY_CONTEXT_REQUIRED");
+  return buildPackageScopedExposureRegistryRoutePlan(args);
+}
 
 export function buildM11BatchPacket(args) {
-  if (args?.routePlan?.exposure_registry_route_plan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA || args?.routePlan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA) throw new Error("USE_PHASE10_SEMANTIC_FINALIZATION_FOR_PACKAGE_SCOPED_BATCH_PACKET");
+  if (args?.routePlan?.exposure_registry_route_plan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA || args?.routePlan?.schema_version === PACKAGE_SCOPED_ROUTE_PLAN_SCHEMA) {
+    throw new Error("USE_PHASE10_SEMANTIC_FINALIZATION_FOR_PACKAGE_SCOPED_BATCH_PACKET");
+  }
   return base.buildM11BatchPacket(args);
 }
 export function assembleM11AcceptedBatchLedger(args) { return base.assembleM11AcceptedBatchLedger(args); }
@@ -110,14 +113,25 @@ export function mergeExposureRegistryWorkpad98(args) { return base.mergeExposure
 
 export function projectControlledProfile(workpadRoot) {
   const workpad = workpadRoot?.exposure_registry_workpad_98 || workpadRoot;
-  const rows = asArray(workpad?.registry_rows).filter((row) => CONTROLLED_FINAL_STATUSES.has(row.final_material_status)).sort(byRegistryOrder).map(projectCompleteRow);
-  return { exposure_registry_controlled_profile: { schema_version: "exposure_registry_controlled_profile.v4.complete_report_row", controlled_rows: rows } };
+  const rows = asArray(workpad?.registry_rows)
+    .filter((row) => CONTROLLED_FINAL_STATUSES.has(row.final_material_status))
+    .sort(byRegistryOrder)
+    .map(projectCompleteRow);
+  return { exposure_registry_controlled_profile: { schema_version: "exposure_registry_controlled_profile.v4.complete_report_row", rows } };
 }
 export function projectTriggeredProfile(workpadRoot) {
   const workpad = workpadRoot?.exposure_registry_workpad_98 || workpadRoot;
-  const rows = asArray(workpad?.registry_rows).filter((row) => row.final_material_status === S_TRIGGERED).sort(byRegistryOrder).map(projectCompleteRow);
-  return { exposure_registry_triggered_profile: { schema_version: "exposure_registry_triggered_profile.v4.complete_report_row", triggered_rows: rows } };
+  const rows = asArray(workpad?.registry_rows)
+    .filter((row) => row.final_material_status === S_TRIGGERED)
+    .sort(byRegistryOrder)
+    .map(projectCompleteRow);
+  return { exposure_registry_triggered_profile: { schema_version: "exposure_registry_triggered_profile.v4.complete_report_row", rows } };
 }
-function projectCompleteRow(row = {}) { return { ...Object.fromEntries(EXECUTION_CUSTODY_FIELDS.map((field) => [field, row[field] ?? ""])), ...(row.material_projection || row) }; }
+function projectCompleteRow(row = {}) {
+  return {
+    ...Object.fromEntries(EXECUTION_CUSTODY_FIELDS.map((field) => [field, row[field] ?? ""])),
+    ...(row.material_projection || row)
+  };
+}
 function byRegistryOrder(a, b) { return (a.registry_order ?? 9999) - (b.registry_order ?? 9999); }
 function asArray(value) { return Array.isArray(value) ? value : []; }
