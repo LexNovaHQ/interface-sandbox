@@ -91,6 +91,8 @@ assert.throws(() => createPhase11ReinvestigationDispatch({ challengeGate: { ...g
 
 const runner = readFileSync("src/phases/11-operator-challenge/operator-challenge.runner.js", "utf8");
 const runtime = readFileSync("src/phases/11-operator-challenge/operator-challenge-dispatch.runtime.js", "utf8");
+const phase10Targeted = readFileSync("src/phases/11-operator-challenge/phase10-targeted-reinvestigation.js", "utf8");
+const adjudication = readFileSync("src/phases/11-operator-challenge/operator-challenge-adjudication.js", "utf8");
 const binding = readFileSync("agent-packages/agent_7_operator_challenge/AGENT7_PHASE11_RUNTIME_BINDING.yaml", "utf8");
 const addendum = readFileSync("agent-packages/agent_7_operator_challenge/PHASE11_TARGETED_REINVESTIGATION_ADDENDUM.md", "utf8");
 
@@ -104,8 +106,22 @@ for (const marker of [
   "normal_downstream_cascade_allowed: false",
   "returned_directly_to_phase11: true",
   "buildOperatorChallengeInventory",
-  "recordOperatorChallengeReinvestigationAttempt"
+  "recordOperatorChallengeReinvestigationAttempt",
+  "runPhase10TargetedReinvestigation"
 ]) assert.ok(runtime.includes(marker), `dispatch runtime missing ${marker}`);
+for (const marker of [
+  "buildPackageScopedSemanticPacket",
+  "targetBatch",
+  "unaffected_batch_count_reused",
+  "full_phase_batch_rerun_performed: false",
+  "buildDynamicWorkpad",
+  "buildDomainAgnosticForensics"
+]) assert.ok(phase10Targeted.includes(marker), `targeted Phase 10 adapter missing ${marker}`);
+for (const marker of [
+  "DISPATCHABLE_OWNERS",
+  "candidate.proposed_owner || semantic.proposed_owner",
+  "NON_DISPATCHABLE_OWNER_WARNING"
+]) assert.ok(adjudication.includes(marker), `deterministic owner authority missing ${marker}`);
 for (const marker of [
   "runtime_contract_version: v4_reinvestigation_dispatch_return",
   "status: ACTIVE",
@@ -127,5 +143,6 @@ console.log(JSON.stringify({
   owner_phase_locking_performed: false,
   normal_downstream_cascade_allowed: false,
   deterministic_return_validation: true,
+  targeted_phase10_batch_reinvestigation: true,
   maximum_attempts_per_candidate: 2
 }, null, 2));
