@@ -6612,7 +6612,7 @@ fields:
   output_field: Obligation id
   covers: null
   mode: JOIN
-  source_basis: installed obligation catalogs (references/domain-packages/phase-2/{package}.obligation-catalog.json) via domain_control_obligation_navigation_index
+  source_basis: mounted Registry Key obligation entries resolved from active_run_package_manifest; obligation catalog family join and P2E navigation index provide route context only
   conditions: C1 obligation shell row present in the navigation index for a mounted package; C2 obligation_id exists in an installed obligation catalog; C3 no disqualifying inference.
   trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF catalog partial. FALLBACK_IF no catalog obligation -> not_visible.
   exclude_fallback: EXCLUDE_IF obligation not present in any installed catalog. FALLBACK_IF unresolved -> package_context_limited.
@@ -6672,7 +6672,7 @@ fields:
   output_field: Obligation locus
   covers: null
   mode: CLASSIFY
-  source_basis: installed obligation catalog obligation_locus
+  source_basis: mounted Registry Key obligation entry obligation_locus
   conditions: C1 obligation id derived; C2 locus present in catalog; C3 no disqualifying inference.
   trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF missing -> controlled fallback.
   exclude_fallback: EXCLUDE_IF locus not catalog-defined. FALLBACK_IF unresolved -> package_context_limited.
@@ -6684,11 +6684,23 @@ fields:
   output_field: Obligation trigger timing
   covers: null
   mode: CLASSIFY
-  source_basis: installed obligation catalog obligation_trigger_timing
+  source_basis: mounted Registry Key obligation entry obligation_trigger_timing
   conditions: C1 obligation id derived; C2 trigger timing present in catalog; C3 no disqualifying inference.
   trigger_outcome: DERIVED_IF C1 AND C2. DERIVED_WITH_LIMITATION_IF partial. FALLBACK_IF missing -> controlled fallback.
   exclude_fallback: EXCLUDE_IF timing not catalog-defined. FALLBACK_IF unresolved -> package_context_limited.
   forbidden_inference: Do not assert enforcement timing beyond the catalog.
+  lock_status: LOCKED
+- field_id: DCO.OBL.008
+  profile_section: Domain Control Obligation Profile
+  field_family: Obligation Linkage
+  output_field: Regulatory overlay references
+  covers: Mounted overlay; matched framework token; candidate-only overlay status
+  mode: JOIN
+  source_basis: active_run_package_manifest.regulatory_overlays + mounted Registry Key regulatory_overlay framework links + model-derived authority_dependency
+  conditions: C1 regulatory overlay is mounted as candidate/review context; C2 obligation authority_dependency contains a framework token linked by the overlay; C3 reference remains contextual and does not assert legal applicability.
+  trigger_outcome: DERIVED_IF C1 AND C2. NO_VALUE_IF no mounted-overlay/framework intersection.
+  exclude_fallback: EXCLUDE_IF the result would create a duplicate obligation row, independent regulatory obligation source, legal-applicability conclusion, regulator-jurisdiction conclusion, satisfaction conclusion, or breach conclusion. FALLBACK_IF overlay metadata is malformed -> no overlay reference and record a mechanical limitation only if material.
+  forbidden_inference: Do not treat an overlay reference as applicability, satisfaction, breach, regulator jurisdiction, or an independent obligation source.
   lock_status: LOCKED
 - field_id: DCO.CTL.001
   profile_section: Domain Control Obligation Profile
