@@ -12,9 +12,10 @@ Current package status:
 - Layer 2 Agent 8 prompt package: built;
 - Layer 2 runner, compiler, and validator: built;
 - package barrel and focused checks: built;
+- substantive downstream handoff for M11, M12, and Compiler: built;
 - central runtime activation: not yet switched;
 - P2G route activation and artifact permissions: not yet switched;
-- downstream handoff and phase-folder renumbering: not yet switched;
+- phase-folder renumbering and mechanical downstream read propagation: not yet switched;
 - final local validation and controlled live test: pending.
 
 The package is intentionally dormant until the later mechanical cutover jobs are executed.
@@ -209,12 +210,66 @@ control_posture_status:
 
 These are public-footprint visibility and posture signals, not legal or compliance verdicts.
 
+## Substantive downstream handoff
+
+Only the locked material artifact propagates downstream:
+
+```text
+domain_control_obligation_profile
+```
+
+The candidate inventory, Phase 8 candidate packets, route packets, Registry Key payloads, and forensic profiles do not propagate.
+
+No standalone downstream handoff artifact is saved. The downstream adapters build bounded in-memory views from the locked profile.
+
+### Exposure Profile / M11
+
+M11 receives Phase 8 as derived context only. The backend may link obligation rows to an active threat batch through exact authority, behavior, or surface token intersections.
+
+The link:
+
+- does not create or route a `Threat_ID`;
+- does not replace the threat registry or Hunter Trigger;
+- does not alter batch membership;
+- does not prove that a Phase 8 visible control defeats an M11 threat;
+- does not determine legal applicability, breach, compliance, or regulator jurisdiction.
+
+M11 must independently verify any control lead against its own admitted primary evidence and evaluation rules. The existing M11 model-output schema remains unchanged.
+
+### Operator Challenge / M12
+
+M12 receives the locked profile through the derived-only packet and performs deterministic challenge only. It may challenge:
+
+- unsupported obligation linkage;
+- control-posture overstatement;
+- authority-dependency overstatement;
+- hidden missing proof;
+- regulatory-overlay misuse.
+
+M12 may not rederive, repair, or rewrite the Phase 8 profile and may not create obligation rows.
+
+### Compiler
+
+The compiler projects the locked profile only into existing report structures:
+
+```text
+legal_document_control_review
+exposure_control_discipline
+review_route_action_plan
+control_handoff_readiness
+exposure_clarification_queue
+methodology_limitations_review_notes
+```
+
+No new rendered report section is authorized. The projection creates no new findings and does not render candidate inventory, derivation-basis entries, Registry Key references, catalog references, or P2E route pointers.
+
 ## Package files
 
 ```text
 domain-control-obligation.constants.js
 domain-control-obligation-candidate-inventory.contract.js
 domain-control-obligation-profile.contract.js
+domain-control-obligation-downstream-handoff.contract.js
 domain-control-obligation-candidate-inventory.runner.js
 domain-control-obligation-profile.runner.js
 index.js
@@ -228,6 +283,15 @@ services/
 validators/
   domain-control-obligation-candidate-inventory.validator.js
   domain-control-obligation-profile.validator.js
+```
+
+Downstream substantive files:
+
+```text
+src/phases/09-exposure-profile/domain-control-obligation-profile.handoff.js
+src/phases/10-operator-challenge/domain-control-obligation-profile.handoff.js
+src/phases/11-normalized-compiler/domain-control-obligation-profile.handoff.js
+agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md
 ```
 
 Agent package:
@@ -247,9 +311,10 @@ scripts/check-phase8-domain-control-obligation-contract.mjs
 scripts/check-phase8-domain-control-obligation-layer1.mjs
 scripts/check-phase8-domain-control-obligation-layer2.mjs
 scripts/check-phase8-domain-control-obligation-runtime-boundary.mjs
+scripts/check-phase8-domain-control-obligation-downstream-handoff.mjs
 ```
 
-These checks are intentionally not registered in `package.json` during this change job. Registration belongs to the later mechanical validation-wiring change job.
+These checks are intentionally not registered in `package.json` during the substantive build jobs. Registration belongs to the later mechanical validation-wiring change job.
 
 ## Validation and failure doctrine
 
@@ -273,4 +338,4 @@ Do not activate the Phase 8 runtime before the mechanical FDR surgery is complet
 
 The current FDR still contains pre-cutover source-authority language for obligation ID, obligation locus, and trigger timing. The locked correction changes those authorities to the mounted Registry Key. Because the Layer 2 runner dynamically loads DCO FDR rows, production activation before that correction would create an authority conflict.
 
-Runtime activation, P2G route activation, artifact permissions, folder renumbering, downstream handoff, package.json registration, full local validation, and live testing remain later change jobs.
+Runtime activation, P2G route activation, artifact permissions, phase-folder renumbering, mechanical downstream read propagation, prompt-bundle activation, package.json registration, full local validation, and live testing remain later change jobs.
