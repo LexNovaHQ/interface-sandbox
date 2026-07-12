@@ -20,7 +20,7 @@ assert.deepEqual(runtimeContract.reads, ["phase_routing_manifest"]);
 assert.deepEqual(runtimeContract.writes, expectedWrites);
 assert.equal(runtimeContract.central_phase_id, ACTIVITY_PROFILE_FORENSICS_CONTRACT.central_phase_id);
 assert.equal(runtimeContract.public_label, ACTIVITY_PROFILE_FORENSICS_CONTRACT.public_label);
-assert.equal(runtimeContract.next, "M10");
+assert.equal(runtimeContract.next, "DATA_PROVENANCE_PROFILE_LAYER4");
 assert.deepEqual(expectedEffectiveReads, [
   "phase_routing_manifest",
   "phase_route_runtime_packet",
