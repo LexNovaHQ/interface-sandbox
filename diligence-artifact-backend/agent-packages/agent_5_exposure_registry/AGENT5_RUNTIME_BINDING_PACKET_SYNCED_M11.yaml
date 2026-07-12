@@ -72,12 +72,16 @@ forbidden_read_artifacts:
   - source_outside_active_2f_packet
 
 required_reference_files:
-  - THREAT_REGISTRY_BINDINGS_v1.yaml
   - AI_THREAT_REGISTRY.yaml
   - AI_Registry_Key.yml
   - 03_REGISTRY_EVALUATION_RULES.yaml
   - Diligence_Field_Derivation_Registry.yml
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+
+registry_binding_authority:
+  file: references/registry/THREAT_REGISTRY_BINDINGS_v1.yaml
+  stage: CO_0_PREFLIGHT_AUTHORITY
+  runtime_auto_selection: PENDING_CO_2
 
 active_prompt_files:
   - M11_EXPOSURE_REGISTRY.md
