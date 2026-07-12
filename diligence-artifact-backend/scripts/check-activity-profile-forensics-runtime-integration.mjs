@@ -33,7 +33,7 @@ assert.equal(pipelineSource.includes("buildActivityProfileForensics"), false, "r
 assert.ok(runnerSource.includes("readPhaseRouteRuntimePacket"));
 assert.ok(runnerSource.includes("phase2g_route_scoped_runtime_reader_active: true"));
 assert.ok(runnerSource.includes('delivery_mode: "DERIVED_ONLY"'));
-assert.ok(runnerSource.includes('target_feature_profile_forensics'));
+assert.ok(runnerSource.includes("ACTIVITY_PROFILE_FORENSICS_CONTRACT.deterministic_job.writes"));
 
 console.log("Activity Profile Forensics runtime integration: PASS");
 
