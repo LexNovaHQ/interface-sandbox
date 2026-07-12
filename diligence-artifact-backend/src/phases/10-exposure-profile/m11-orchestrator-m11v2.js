@@ -8,13 +8,14 @@ import { buildExposureRegistryForensicsFromSavedArtifacts } from "./m11-determin
 import { buildCompactM11BatchPacket } from "./m11-batch-evidence-resolver.js";
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
 import { buildM11DomainControlObligationHandoff } from "./domain-control-obligation-profile.handoff.js";
+import { buildActiveThreatRegistryManifest, isCurrentActiveThreatRegistryManifest } from "./active-threat-registry-manifest.js";
 
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const STATUS_INPUT_FIELDS = Object.freeze(["target_match_present", "hunter_conditions_met", "trigger_if_met", "exclude_if_met", "visible_control_present", "visible_control_defeats_or_reduces_exposure", "evidence_sufficient", "public_evidence_limitation", "false_positive_concern"]);
 const BATCH_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md", "agent-packages/agent_5_exposure_registry/M11_C_BATCH_EVALUATION.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
 const REPAIR_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md", "agent-packages/agent_5_exposure_registry/M11_D_BATCH_REINVESTIGATION_REPAIR.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
-const ART = Object.freeze({ legalIndex: "legal_cartography_index", featureMain: "target_feature_profile", route: "exposure_registry_route_plan", workpad: "exposure_registry_workpad_98", controlled: "exposure_registry_controlled_profile", triggered: "exposure_registry_triggered_profile", forensics: "exposure_registry_profile_forensics" });
+const ART = Object.freeze({ manifest: "active_threat_registry_manifest", legalIndex: "legal_cartography_index", featureMain: "target_feature_profile", route: "exposure_registry_route_plan", workpad: "exposure_registry_workpad_98", controlled: "exposure_registry_controlled_profile", triggered: "exposure_registry_triggered_profile", forensics: "exposure_registry_profile_forensics" });
 const M11_SCHEMA_UPGRADE = "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1";
 
 export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
@@ -39,6 +40,8 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const artifacts = routed.artifacts;
   assertM11RoutePacket(artifacts.phase_route_runtime_packet);
   const referencePacket = await loadReferencePacket(contract.references || []);
+  const manifest = await getOrBuildActiveThreatRegistryManifest({ run, phase, referencePacket });
+  if (!isAccepted(manifest.lock_status)) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
   const route = await getOrBuildRoutePlan({ run, phase, artifacts, referencePacket });
   if (!isAccepted(route.lock_status)) return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: "CONTROLLED_FAILURE", next_phase: phase });
 
@@ -95,13 +98,23 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const triggered = await getOrBuildProjection({ run, phase, artifactName: ART.triggered, isCurrent: isM11V2Projection, build: () => projectTriggeredProfile({ [ART.workpad]: workpad.artifact })[ART.triggered] });
   const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket });
   const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
-  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, infrastructure_authority: "CENTRAL_RUNTIME_SERVICES", phase_owned_path: "src/phases/10-exposure-profile" } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", active_threat_registry_manifest_status: manifest.lock_status, registry_set_fingerprint: manifest.artifact.registry_set_fingerprint, expected_registry_rows: manifest.artifact.expected_row_count, route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, infrastructure_authority: "CENTRAL_RUNTIME_SERVICES", phase_owned_path: "src/phases/10-exposure-profile" } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
 }
 
 async function runModelBatch({ run, phase, batch, compactPacket, repair, batchOutput = null, shape = null, validationArtifact = null, repairReason = "" }) {
   const prompt = await buildPhasePrompt({ prompt_files: repair ? REPAIR_PROMPTS : BATCH_PROMPTS, phase: `${phase}:${repair ? "M11_REPAIR" : "M11_BATCH"}:${batch.batch_id}`, run, artifacts: repair ? { m11_batch_packet: compactPacket, m11_batch_registry_ledger: batchOutput, backend_structural_validation: shape, m12_batch_validation: validationArtifact, repair_context: { batch_id: batch.batch_id, repair_reason: repairReason, rule: "Repair only semantic evidence-application fields. Do not emit final material status, profile placement, deterministic registry spine, workpad, projections, or forensics." } } : { m11_batch_packet: compactPacket }, writes: ["m11_batch_registry_ledger"], references: [] });
   return (await callGeminiJson({ prompt, phase: `${phase}:${repair ? "REPAIR" : "BATCH"}:${batch.batch_id}` })).json;
+}
+
+async function getOrBuildActiveThreatRegistryManifest({ run, phase, referencePacket }) {
+  const existing = await readAcceptedCheckpoint({ run_id: run.run_id, artifact_name: ART.manifest });
+  if (existing && isCurrentActiveThreatRegistryManifest(existing.artifact)) return existing;
+  const output = buildActiveThreatRegistryManifest({ runId: run.run_id, referencePacket });
+  const artifact = output[ART.manifest];
+  const lock_status = artifact.validation?.status === "PASS" ? "LOCKED" : "CONTROLLED_FAILURE";
+  await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: ART.manifest, artifact, lock_status }));
+  return { artifact, lock_status };
 }
 
 async function getOrBuildRoutePlan({ run, phase, artifacts, referencePacket }) {
