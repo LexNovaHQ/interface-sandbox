@@ -18,8 +18,8 @@ import { DOMAIN_DERIVATION_CONTRACT } from "../src/phases/03-domain-derivation/d
 import { P2G_RUNTIME_ROUTE_BY_JOB } from "../src/phases/02-cartography-index/services/phase-route-runtime.reader.js";
 
 const read = (file) => fs.readFileSync(path.join(process.cwd(), file), "utf8");
-const chain = ["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX", "P2_SOURCE_INVENTORY_CARTOGRAPHY", "P2_LOCATOR_SPINE", "P2_PROFILE_ROUTE_MATRIX", "P2_SEMANTIC_NAVIGATION_OVERLAY", "M9", "P2A_TARGET_PROFILE_SOURCE_INDEX", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX", "P2C_ACTIVITY_PROFILE_SOURCE_INDEX", "P2D_DATA_PRIVACY_NAVIGATION_INDEX", "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX", "P2G_PHASE_ROUTER", "P2_INDEX_COMPILER_VALIDATION", "M7_TARGET_PROFILE", "P3_DOMAIN_DERIVATION_LAYER", "M7_TARGET_PROFILE_FORENSICS", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5", "DATA_PROVENANCE_PROFILE_FORENSICS"];
-const routedPhase1To8Jobs = ["M7_TARGET_PROFILE", "P3_DOMAIN_DERIVATION_LAYER", "M7_TARGET_PROFILE_FORENSICS", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_FORENSICS"];
+const chain = ["AGENT_1A_URL_MANIFEST", "AGENT_1B_EXTRACT", "M6_BUCKET_INDEX", "P2_SOURCE_INVENTORY_CARTOGRAPHY", "P2_LOCATOR_SPINE", "P2_PROFILE_ROUTE_MATRIX", "P2_SEMANTIC_NAVIGATION_OVERLAY", "M9", "P2A_TARGET_PROFILE_SOURCE_INDEX", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX", "P2C_ACTIVITY_PROFILE_SOURCE_INDEX", "P2D_DATA_PRIVACY_NAVIGATION_INDEX", "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX", "P2G_PHASE_ROUTER", "P2_INDEX_COMPILER_VALIDATION", "M7_TARGET_PROFILE", "P3_DOMAIN_DERIVATION_LAYER", "M7_TARGET_PROFILE_FORENSICS", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "DATA_PROVENANCE_PROFILE_LAYER4", "DATA_PROVENANCE_PROFILE_LAYER5", "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY", "DOMAIN_CONTROL_OBLIGATION_PROFILE"];
+const routedPhase1To8Jobs = ["M7_TARGET_PROFILE", "P3_DOMAIN_DERIVATION_LAYER", "M7_TARGET_PROFILE_FORENSICS", "M8_FEATURE_CANDIDATE_INVENTORY", "M8_TARGET_FEATURE_PROFILE", "M8_TARGET_FEATURE_PROFILE_FORENSICS", "DATA_PROVENANCE_PROFILE_LAYER4", "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY", "DOMAIN_CONTROL_OBLIGATION_PROFILE"];
 const tRoots = ["lossless_root__homepage_landing", "lossless_root__company_identity", "lossless_root__contact_notice", "lossless_root__pricing_commercial_availability", "lossless_root__regulatory_licensing_status", "lossless_root__grievance_complaints"];
 const dRoots = ["lossless_root__homepage_landing", "lossless_root__company_identity", "lossless_root__product_service", "lossless_root__platform_feature_solution", "lossless_root__technical_docs_api", "lossless_root__docs_api_data_flow", "lossless_root__pricing_commercial_availability", "lossless_root__use_case_customer_industry", "lossless_root__integrations_ecosystem", "lossless_root__ai_safety_transparency", "lossless_root__regulatory_licensing_status", "lossless_root__grievance_complaints"];
 const aRoots = ["lossless_root__product_service", "lossless_root__platform_feature_solution", "lossless_root__technical_docs_api", "lossless_root__docs_api_data_flow", "lossless_root__integrations_ecosystem", "lossless_root__pricing_commercial_availability", "lossless_root__use_case_customer_industry", "lossless_root__support_help_resources", "lossless_root__ai_safety_transparency"];
@@ -28,13 +28,14 @@ const dconiRoots = ["lossless_root__regulatory_licensing_status", "lossless_root
 
 assert.equal(JSON.parse(read("package.json")).scripts.start, "node src/runtime/main.js");
 assert.ok(read("server.js").includes("./src/runtime/main.js"));
-assert.deepEqual(INTERNAL_PIPELINE_JOB_IDS.slice(0, chain.length + 1), [...chain, "M11"]);
+assert.deepEqual(INTERNAL_PIPELINE_JOB_IDS.slice(0, chain.length), chain);
 assert.deepEqual(CENTRAL_PHASES.filter((phase) => phase.sequence <= 8).flatMap((phase) => [...phase.internal_jobs]), chain);
 for (const id of chain) {
   assert.ok(PIPELINE_CONTRACTS[id], `missing ${id}`);
   for (const write of PIPELINE_CONTRACTS[id].writes || []) assert.ok((INTERNAL_JOB_WRITE_PERMISSIONS[id] || []).some((permission) => artifactMatchesPermission(write, permission)), `${id} write ${write} not permitted`);
 }
-for (const id of chain.slice(0, -1)) assert.equal(PIPELINE_CONTRACTS[id].next, [...chain, "M11"][[...chain, "M11"].indexOf(id) + 1], `${id} next mismatch`);
+for (const id of chain.slice(0, -1)) assert.equal(PIPELINE_CONTRACTS[id].next, chain[chain.indexOf(id) + 1], `${id} next mismatch`);
+assert.equal(PIPELINE_CONTRACTS.DOMAIN_CONTROL_OBLIGATION_PROFILE.next, "DATA_PROVENANCE_PROFILE_FORENSICS");
 
 assert.equal(PIPELINE_CONTRACTS.M9.next, "P2A_TARGET_PROFILE_SOURCE_INDEX");
 assert.equal(PIPELINE_CONTRACTS.P2A_TARGET_PROFILE_SOURCE_INDEX.next, "P2B_DOMAIN_DERIVATION_SOURCE_INDEX");
@@ -83,4 +84,4 @@ assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_no_shadow_downstream_read_arrays, 
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_profile_forensics_inputs_forbidden, true);
 for (const retired of ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]) assert.equal(ARTIFACT_NAMES.includes(retired), false, `${retired} active`);
 
-console.log(JSON.stringify({ check: "phase1-8 central runtime", status: "PASS", enforced_gates: ["PHASE1_8_JOB_CHAIN", "PHASE2G_SOLE_ROUTING_AUTHORITY", "PHASE2G_RUNTIME_CUTOVER_COMPLETE_THROUGH_COMPILER", "NO_SHADOW_DOWNSTREAM_READ_ARRAYS", "PROFILE_FORENSICS_DERIVED_ONLY", "PHASE7_LAYER5_ROUTE_NEUTRAL", "PHASE2A_TO_2F_INDEX_OWNERSHIP"] }, null, 2));
+console.log(JSON.stringify({ check: "phase1-8 central runtime", status: "PASS", enforced_gates: ["PHASE1_8_JOB_CHAIN", "PHASE8_DCO_INSERTED_BEFORE_PHASE9_FORENSICS", "PHASE2G_SOLE_ROUTING_AUTHORITY", "PHASE2G_RUNTIME_CUTOVER_COMPLETE_THROUGH_COMPILER", "NO_SHADOW_DOWNSTREAM_READ_ARRAYS", "PROFILE_FORENSICS_DERIVED_ONLY", "PHASE7_LAYER5_ROUTE_NEUTRAL", "PHASE2A_TO_2F_INDEX_OWNERSHIP"] }, null, 2));
