@@ -1,10 +1,10 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
-runtime_contract_version: v4_reinvestigation_dispatch_return
+runtime_contract_version: v5_production_integration_mutation_checkpoint
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
 functional_name: CROSS_PHASE_ADVERSARIAL_CHALLENGE_AND_COMPILER_READINESS_GATE
-synchronization_status: PHASE11_THREE_LAYER_RUNTIME_AND_REINVESTIGATION_LOOP_ACTIVE
+synchronization_status: PHASE11_PRODUCTION_RUNTIME_CONTRACT_SYNCED
 
 routing_contract:
   authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
@@ -16,75 +16,99 @@ routing_contract:
 layer_1:
   status: ACTIVE
   version: PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_v1
-  canonical_object: operator_challenge_inventory
+  canonical_artifact: operator_challenge_inventory
   creates_new_findings: false
-  adjudicates_challenges: false
-  initiates_reinvestigation: false
   blocks_run: false
 
 layer_2:
   status: ACTIVE
   packet_version: PHASE11_LAYER2_SEMANTIC_PACKET_v1
   ledger_version: operator_challenge_semantic_ledger.v1
-  role: SEMANTIC_ADVERSARIAL_CHALLENGE
-  model_root: operator_challenge_semantic_ledger
+  canonical_artifact: operator_challenge_semantic_ledger
   exact_candidate_coverage_required: true
-  preserve_candidate_order: true
   maximum_output_repair_attempts: 1
-  output_repair_is_field_reinvestigation: false
   source_search_forbidden: true
-  forensic_inputs_forbidden: true
   upstream_rewrite_forbidden: true
   final_adjudication_forbidden: true
   blocking_decision_forbidden: true
-  reinvestigation_execution_forbidden: true
   allowed_recommendations:
     - REJECT
     - ADVISORY
     - MATERIAL_REINVESTIGATION
     - CRITICAL_REVIEW_CANDIDATE
-  critical_review_candidate_is_blocking_decision: false
 
 layer_3:
   status: ACTIVE
   version: PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_v1
   reinvestigation_ledger_version: operator_challenge_reinvestigation_ledger.v1
   final_gate_version: challenge_gate.v4.operator_challenge
-  role: DETERMINISTIC_ADJUDICATION_REINVESTIGATION_AND_FINAL_GATE
   final_adjudication_authority: DETERMINISTIC_BACKEND
-  blocking_exception_only: true
   only_critical_failure_blocks: true
   material_field_problem_is_blocking: false
-  material_field_problem_routes_to_reinvestigation: true
   maximum_reinvestigation_attempts: 2
   unresolved_after_two_attempts: PASS_WITH_LIMITATION
   third_attempt_forbidden: true
-  resolved_attempt_requires_backend_validation: true
-  full_phase_rerun_default: false
   smallest_affected_unit_only: true
-  allowed_final_gate_statuses:
-    - PASS
-    - PASS_WITH_LIMITATION
-    - REINVESTIGATION_REQUIRED
-    - CONTROLLED_FAILURE
+
+production_integration:
+  status: ACTIVE
+  effective_contract_version: PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1
+  independent_artifact_contract_version: PHASE11_INDEPENDENT_ARTIFACT_CONTRACT_v1
+  mutation_guard_version: phase11_mutation_guard.v1
+  dispatch_checkpoint_version: phase11_dispatch_checkpoint.v1
+  dispatch_lease_version: phase11_dispatch_lease.v1
+  dispatch_adapter_version: phase11_reinvestigation_dispatch_return_adapter.v2.production
+  internal_job_contract_override_active: true
+  artifact_permission_cutover_active: true
+  restart_safe_dispatch_active: true
+  run_scoped_lease_active: true
+  unauthorized_mutation_rollback_active: true
+  owner_contract_exactness_preserved: true
+  normal_owner_downstream_cascade_allowed: false
+  owner_phase_locking_performed: false
+  return_directly_to_phase11: true
+
+independent_artifacts:
+  operator_challenge_inventory:
+    producer: LAYER_1_DETERMINISTIC_BACKEND
+    compiler_read_allowed: false
+  operator_challenge_semantic_ledger:
+    producer: LAYER_2_MODEL_BACKEND_VALIDATED
+    authoritative: false
+    compiler_read_allowed: false
+  operator_challenge_reinvestigation_ledger:
+    producer: LAYER_3_DETERMINISTIC_BACKEND
+    compiler_read_allowed: false
+  operator_challenge_dispatch_checkpoint:
+    producer: PHASE11_DISPATCH_RUNTIME
+    compiler_read_allowed: false
+  challenge_gate:
+    producer: LAYER_3_DETERMINISTIC_BACKEND
+    compiler_authority: true
+
+mutation_guard:
+  status: ACTIVE
+  exact_field_paths_only: true
+  mechanically_required_metadata_allowed: true
+  unrelated_mutation_forbidden: true
+  unauthorized_change_result: ATTEMPT_UNRESOLVED_AND_ROLLBACK
+  owner_self_report_is_resolution_authority: false
+  resolution_authority: REBUILT_LAYER1_DETERMINISTIC_INVENTORY
+
+checkpoint_state_machine:
+  - DISPATCH_CREATED
+  - OWNER_RUNNING
+  - OWNER_RETURNED
+  - RETURN_VALIDATED
+  - ATTEMPT_RECORDED
+  - COMPLETE
 
 reinvestigation_dispatch_return:
   status: ACTIVE
   dispatch_version: phase11_reinvestigation_dispatch.v1
   return_version: phase11_reinvestigation_return.v1
-  adapter_version: phase11_reinvestigation_dispatch_return_adapter.v1
-  execution_boundary: INSIDE_PHASE11_ORCHESTRATION
-  owner_phase_locking_performed: false
-  normal_owner_downstream_cascade_allowed: false
-  return_directly_to_phase11: true
-  owner_contract_is_temporary_clone: true
-  targeted_addendum: PHASE11_TARGETED_REINVESTIGATION_ADDENDUM.md
   exact_field_scope_preserved: true
   exact_row_identity_preserved: true
-  unaffected_fields_must_be_preserved: true
-  owner_self_report_is_resolution_authority: false
-  resolution_authority: REBUILT_LAYER1_DETERMINISTIC_INVENTORY
-  resolved_only_if_exact_candidate_disappears: true
   artifact_version_advance_required: true
   owner_runtime_error_counts_as_unresolved_attempt: true
   maximum_dispatches_per_candidate: 2
@@ -95,7 +119,7 @@ supported_reinvestigation_owners:
   PHASE_5_ACTIVITY_PROFILE: M8_TARGET_FEATURE_PROFILE
   PHASE_7_DATA_PROVENANCE: DATA_PROVENANCE_PROFILE_LAYER4
   PHASE_8_DOMAIN_CONTROL_OBLIGATION: DOMAIN_CONTROL_OBLIGATION_PROFILE
-  PHASE_10_EXPOSURE_PROFILE: M11
+  PHASE_10_EXPOSURE_PROFILE: M11_TARGETED_BATCH_ONLY
 
 non_dispatch_owners:
   PHASE_2G_ROUTING: CRITICAL_CUSTODY_PATH_OR_LAYER3_REVIEW_ONLY
@@ -131,6 +155,7 @@ contract_files:
   - PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md
   - PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION.md
   - PHASE11_TARGETED_REINVESTIGATION_ADDENDUM.md
+  - PHASE11_PRODUCTION_INTEGRATION_CONTRACT.md
 
 runtime_state_machine:
   no_pending_issues_no_warnings:
@@ -143,26 +168,11 @@ runtime_state_machine:
     compiler_handoff_allowed: true
   pending_material_reinvestigation:
     action: EXECUTE_TARGETED_OWNER_DISPATCH
-    owner_phase_locking_performed: false
-    return_to: M12
     maximum_attempts: 2
   confirmed_critical_failure:
     gate_status: CONTROLLED_FAILURE
     runtime_lock_status: CONTROLLED_FAILURE
     compiler_handoff_allowed: false
-
-canonical_storage:
-  artifact_name: challenge_gate
-  contains:
-    - operator_challenge_inventory
-    - operator_challenge_semantic_ledger
-    - operator_challenge_reinvestigation_ledger
-    - adjudications
-    - confirmed_critical_failures
-    - advisory_warnings
-    - rejected_challenges
-    - reinvestigation_directives
-    - reinvestigation_dispatch_adapter
 
 compiler_contract:
   reads_final_challenge_gate_only: true
