@@ -1,6 +1,6 @@
 const CONTRACTS = Object.freeze({
   target_profile_forensics: "M7_DETERMINISTIC_FORENSIC_TRACE_CONTRACT_V1",
-  target_feature_profile_forensics: "M8_DETERMINISTIC_FORENSIC_TRACE_CONTRACT_V2_SPLIT_TAXONOMY"
+  target_feature_profile_forensics: "M8_DETERMINISTIC_FORENSIC_TRACE_CONTRACT_V3_BEHAVIOR_CLASS"
 });
 
 const MATERIAL_ACTIVITY_FIELDS = Object.freeze([
@@ -172,9 +172,9 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} } = {}) {
       activity_feature_name: activity.activity_feature_name || "",
       primary_classification: primary,
       overlay_classifications: overlays,
-      package_scoped_archetype_codes: [
-        ...packageScopedValues(primary.package_id, primary.archetype_codes),
-        ...overlays.flatMap((block) => packageScopedValues(block.package_id, block.archetype_codes))
+      package_scoped_behavior_class_codes: [
+        ...packageScopedValues(primary.package_id, primary.behavior_class_codes),
+        ...overlays.flatMap((block) => packageScopedValues(block.package_id, block.behavior_class_codes))
       ],
       package_scoped_surface_context_tokens: [
         ...packageScopedValues(primary.package_id, primary.surface_context_tokens),
@@ -196,7 +196,7 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} } = {}) {
 
   return {
     target_feature_profile_forensics: {
-      forensic_contract: contract("target_feature_profile_forensics", "M8 target feature inventory, split-taxonomy and activity-level deterministic trace"),
+      forensic_contract: contract("target_feature_profile_forensics", "M8 target feature inventory, behavior-class and activity-level deterministic trace"),
       ...coverageTrace,
       semantic_classification_ledger: activityTrace,
       material_profile_trace_index: activityTrace,
@@ -223,11 +223,11 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} } = {}) {
       })),
       selected_pa_field_derivation_ledger: fieldTrace,
       activity_mechanics_derivation_ledger: fieldTrace.filter((row) => row.field_path.includes("mechanics")),
-      archetype_derivation_ledger: activityTrace.map((row) => ({
+      behavior_class_derivation_ledger: activityTrace.map((row) => ({
         activity_reference: row.activity_reference,
         primary_classification: row.primary_classification,
         overlay_classifications: row.overlay_classifications,
-        package_scoped_archetype_codes: row.package_scoped_archetype_codes,
+        package_scoped_behavior_class_codes: row.package_scoped_behavior_class_codes,
         trace_present: true
       })),
       surface_token_derivation_ledger: activityTrace.map((row) => ({
@@ -353,8 +353,8 @@ function phraseInFields(phrase, fields) {
 function classificationTrace(block = {}) {
   return {
     package_id: block.package_id || "",
-    archetype_codes: asArray(block.archetype_codes),
-    archetype_derivation_basis: asArray(block.archetype_derivation_basis),
+    behavior_class_codes: asArray(block.behavior_class_codes),
+    behavior_class_derivation_basis: asArray(block.behavior_class_derivation_basis),
     surface_context_tokens: asArray(block.surface_context_tokens),
     surface_derivation_basis: asArray(block.surface_derivation_basis)
   };
@@ -394,7 +394,7 @@ function runtimeTrace(phase) {
 
 function sourceFamilyManifest(artifacts) {
   const rows = Object.keys(artifacts || {})
-    .filter((key) => key.startsWith("lossless_root__") || key.startsWith("lossless_family__") || [
+    .filter((key) => key.startsWith("lossless_root__") || [
       "source_discovery_handoff",
       "legal_cartography_index",
       "legal_signal_derivation_profile",
@@ -429,7 +429,7 @@ function sourceCustodyRow(artifactName, artifact) {
 
 function buildCrossRouteLedger(artifacts) {
   return Object.keys(artifacts || {})
-    .filter((name) => !name.startsWith("lossless_root__") && !name.startsWith("lossless_family__"))
+    .filter((name) => !name.startsWith("lossless_root__"))
     .map((artifact_name) => ({ artifact_name, consumed_as_upstream: true }));
 }
 
