@@ -54,7 +54,7 @@ export const ACTIVITY_PROFILE_REVIEW_CONTRACT = Object.freeze({
   compatibility_internal_job_id: "M8_TARGET_FEATURE_PROFILE",
   implementation_status: "PHASE5_LAYER2_CODE_CUTOVER_CONTRACT_RUNNER_VALIDATOR",
   production_entrypoint_switched: true,
-  global_production_deployment_switched: false,
+  global_production_deployment_switched: true,
   model_usage: "MODEL_JSON_ONLY_PACKAGE_TAXONOMY_INJECTED",
   mounted_taxonomy_ref_stamped_by_backend: true,
   primary_overlay_schema_active: true,
