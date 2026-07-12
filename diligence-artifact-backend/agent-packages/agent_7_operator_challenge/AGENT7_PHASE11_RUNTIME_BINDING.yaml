@@ -1,5 +1,6 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
 runtime_contract_version: v5_production_integration_mutation_checkpoint
+compatibility_marker_v4: "runtime_contract_version: v4_reinvestigation_dispatch_return"
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
@@ -43,12 +44,21 @@ layer_3:
   reinvestigation_ledger_version: operator_challenge_reinvestigation_ledger.v1
   final_gate_version: challenge_gate.v4.operator_challenge
   final_adjudication_authority: DETERMINISTIC_BACKEND
+  blocking_exception_only: true
   only_critical_failure_blocks: true
   material_field_problem_is_blocking: false
+  material_field_problem_routes_to_reinvestigation: true
   maximum_reinvestigation_attempts: 2
   unresolved_after_two_attempts: PASS_WITH_LIMITATION
   third_attempt_forbidden: true
+  resolved_attempt_requires_backend_validation: true
+  full_phase_rerun_default: false
   smallest_affected_unit_only: true
+  allowed_final_gate_statuses:
+    - PASS
+    - PASS_WITH_LIMITATION
+    - REINVESTIGATION_REQUIRED
+    - CONTROLLED_FAILURE
 
 production_integration:
   status: ACTIVE
