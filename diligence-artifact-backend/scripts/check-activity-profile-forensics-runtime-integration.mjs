@@ -18,7 +18,7 @@ assert.equal(registry.folder, "06-activity-profile-forensics");
 assert.equal(contract.central_phase_id, ACTIVITY_PROFILE_FORENSICS_CONTRACT.central_phase_id);
 assert.equal(contract.public_label, ACTIVITY_PROFILE_FORENSICS_CONTRACT.public_label);
 assert.deepEqual(contract.writes, ["target_feature_profile_forensics"]);
-assert.equal(contract.next, "M10");
+assert.equal(contract.next, "DATA_PROVENANCE_PROFILE_LAYER4");
 
 assert.ok(pipelineSource.includes("activityProfileForensics: \"M8_TARGET_FEATURE_PROFILE_FORENSICS\""), "pipeline.service.js must define Activity Profile Forensics job alias");
 assert.ok(pipelineSource.includes("DETERMINISTIC_PROFILE_FORENSIC_JOBS"), "pipeline.service.js must keep deterministic profile forensic job set");
