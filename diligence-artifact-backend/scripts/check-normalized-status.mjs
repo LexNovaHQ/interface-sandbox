@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { toMachineStatus } from "../src/phases/11-normalized-compiler/normalized-status.js";
+import { toMachineStatus } from "../src/phases/12-normalized-compiler/normalized-status.js";
 
 assert.equal(toMachineStatus("LOCKED"), "LOCKED");
 assert.equal(toMachineStatus("PASS"), "LOCKED");

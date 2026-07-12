@@ -14,14 +14,14 @@ The phase tree uses central product language, not legacy micro-phase labels. Exi
 05-activity-profile-review
 06-activity-profile-forensics
 07-data-provenance-profile
-08-data-provenance-forensics
-09-exposure-profile
-10-operator-challenge
+09-data-provenance-forensics
+10-exposure-profile
+11-operator-challenge
 11-compiler
-12-qualified-review
-13-diligence-qa-complete
-14-qualified-review-submission
-15-assembly-engine
+13-qualified-review
+14-diligence-qa-complete
+15-qualified-review-submission
+16-assembly-engine
 ```
 
 ## Migration rule

@@ -3,7 +3,7 @@ import { compileFinalOutputHandoff } from "./compiler.js";
 
 export const COMPILER_PHASE2G_RUNNER_STATUS = Object.freeze({
   runner: "normalized-compiler.runner",
-  phase_owned_path: "src/phases/11-normalized-compiler",
+  phase_owned_path: "src/phases/12-normalized-compiler",
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
   route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
   bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",

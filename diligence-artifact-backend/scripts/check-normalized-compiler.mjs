@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { compileFinalOutputHandoff } from "../src/phases/11-normalized-compiler/compiler.js";
+import { compileFinalOutputHandoff } from "../src/phases/12-normalized-compiler/compiler.js";
 
 const run = { run_id: "TEST-COMPILER", target: "Example", root_url: "https://example.com", status: "LOCKED" };
 const artifacts = {

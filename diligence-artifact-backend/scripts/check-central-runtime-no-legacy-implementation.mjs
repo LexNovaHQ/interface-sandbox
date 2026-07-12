@@ -71,9 +71,9 @@ const requiredAuthorities = Object.freeze([
   "src/runtime/services/storage/drive.service.js",
   "src/runtime/routes/public.routes.js",
   "src/runtime/services/qualified-review-submission.service.js",
-  "src/phases/09-exposure-profile/exposure-profile.runner.js",
-  "src/phases/10-operator-challenge/operator-challenge.runner.js",
-  "src/phases/11-normalized-compiler/normalized-compiler.runner.js",
+  "src/phases/10-exposure-profile/exposure-profile.runner.js",
+  "src/phases/11-operator-challenge/operator-challenge.runner.js",
+  "src/phases/12-normalized-compiler/normalized-compiler.runner.js",
   "src/runtime/services/reporting/report-renderer.service.js"
 ]);
 for (const file of requiredAuthorities) assert.ok(existsSync(file), `central/phase authority missing: ${file}`);
@@ -98,9 +98,9 @@ assert.ok(app.includes('app.use("/v1", operatorRouter)'));
 
 const pipeline = readFileSync("src/runtime/services/pipeline.service.js", "utf8");
 for (const required of [
-  "../../phases/09-exposure-profile/exposure-profile.runner.js",
-  "../../phases/10-operator-challenge/operator-challenge.runner.js",
-  "../../phases/11-normalized-compiler/normalized-compiler.runner.js",
+  "../../phases/10-exposure-profile/exposure-profile.runner.js",
+  "../../phases/11-operator-challenge/operator-challenge.runner.js",
+  "../../phases/12-normalized-compiler/normalized-compiler.runner.js",
   "./reporting/report-renderer.service.js"
 ]) assert.ok(pipeline.includes(required), `central pipeline missing direct implementation import: ${required}`);
 assert.ok(pipeline.includes("root_downstream_compatibility_bridges_not_used: true"));

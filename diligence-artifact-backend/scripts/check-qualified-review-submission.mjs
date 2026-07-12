@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { buildQualifiedReviewSystemArtifacts } from "../src/qualified-review-system/branch.js";
 import { buildQualifiedReviewSubmission } from "../src/runtime/services/qualified-review-submission.service.js";
-import { NORMALIZED_SECTION_KEYS } from "../src/phases/11-normalized-compiler/normalized-profiler.js";
+import { NORMALIZED_SECTION_KEYS } from "../src/phases/12-normalized-compiler/normalized-profiler.js";
 
 const run = { run_id: "TEST-QR-SUBMISSION", target: "Example", root_url: "https://example.com", status: "COMPLETE" };
 const normalized_report_manifest = { run_id: run.run_id, target: run.target, target_url: run.root_url, validation_status: "LOCKED", section_order: NORMALIZED_SECTION_KEYS };

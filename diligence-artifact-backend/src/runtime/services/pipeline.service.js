@@ -25,10 +25,10 @@ import { runActivityProfileReviewPhase } from "../../phases/05-activity-profile-
 import { validateM8TargetFeatureOutput as validateActivityProfileOutput } from "../../phases/05-activity-profile-review/validators/activity-profile-review.validator.js";
 import { runActivityProfileForensicsPhase } from "../../phases/06-activity-profile-forensics/activity-profile-forensics.runner.js";
 import { runDataProvenanceProfilePhase } from "../../phases/07-data-provenance-profile/data-provenance-profile.runner.js";
-import { runDapForensicsPhase } from "../../phases/08-data-provenance-forensics/dap-forensics.runner.js";
-import { runM11OrchestratedPhase as runExposureProfileOrchestrator } from "../../phases/09-exposure-profile/exposure-profile.runner.js";
-import { runM12Phase2GChallenge } from "../../phases/10-operator-challenge/operator-challenge.runner.js";
-import { runCompilerPhase2G } from "../../phases/11-normalized-compiler/normalized-compiler.runner.js";
+import { runDapForensicsPhase } from "../../phases/09-data-provenance-forensics/dap-forensics.runner.js";
+import { runM11OrchestratedPhase as runExposureProfileOrchestrator } from "../../phases/10-exposure-profile/exposure-profile.runner.js";
+import { runM12Phase2GChallenge } from "../../phases/11-operator-challenge/operator-challenge.runner.js";
+import { runCompilerPhase2G } from "../../phases/12-normalized-compiler/normalized-compiler.runner.js";
 import { buildRendererPayload } from "./reporting/report-renderer.service.js";
 
 const ADVANCE_OK = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);

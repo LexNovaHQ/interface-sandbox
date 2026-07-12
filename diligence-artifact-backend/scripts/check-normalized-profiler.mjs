@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "../src/phases/11-normalized-compiler/normalized-profiler-m9-section6-v4.js";
+import { buildNormalizedProfilerOutput, NORMALIZED_SECTION_ARTIFACT_NAMES, NORMALIZED_SECTION_KEYS } from "../src/phases/12-normalized-compiler/normalized-profiler-m9-section6-v4.js";
 
 const run = { run_id: "TEST-NORMALIZED", target: "Example", root_url: "https://example.com", status: "LOCKED_WITH_LIMITATIONS" };
 const artifacts = {

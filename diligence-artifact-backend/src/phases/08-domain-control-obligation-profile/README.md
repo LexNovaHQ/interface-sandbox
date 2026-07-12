@@ -288,9 +288,9 @@ validators/
 Downstream substantive files:
 
 ```text
-src/phases/09-exposure-profile/domain-control-obligation-profile.handoff.js
-src/phases/10-operator-challenge/domain-control-obligation-profile.handoff.js
-src/phases/11-normalized-compiler/domain-control-obligation-profile.handoff.js
+src/phases/10-exposure-profile/domain-control-obligation-profile.handoff.js
+src/phases/11-operator-challenge/domain-control-obligation-profile.handoff.js
+src/phases/12-normalized-compiler/domain-control-obligation-profile.handoff.js
 agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md
 ```
 

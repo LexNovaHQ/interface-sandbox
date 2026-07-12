@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const orchestrator = fs.readFileSync(path.join(root, "src/phases/09-exposure-profile/m11-orchestrator-m11v2.js"), "utf8");
+const orchestrator = fs.readFileSync(path.join(root, "src/phases/10-exposure-profile/m11-orchestrator-m11v2.js"), "utf8");
 const artifactService = fs.readFileSync(path.join(root, "src/runtime/services/artifacts.service.js"), "utf8");
 
 assert.match(orchestrator, /const diagnostic_status = artifact\.forensic_lock_gate_result\?\.status \|\| artifact\.registry_lock_gate_result\?\.status \|\| "REPAIR_REQUIRED";/);

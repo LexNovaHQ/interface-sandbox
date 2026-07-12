@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildQualifiedReviewSystemArtifacts } from "../src/qualified-review-system/branch.js";
 import { loadQualifiedReviewMatrix } from "../src/qualified-review-system/qualified-review-matrix-loader.js";
-import { NORMALIZED_SECTION_KEYS } from "../src/phases/11-normalized-compiler/normalized-profiler-m9-section6-v4.js";
+import { NORMALIZED_SECTION_KEYS } from "../src/phases/12-normalized-compiler/normalized-profiler-m9-section6-v4.js";
 import { NORMALIZED_SECTION_ARTIFACT_NAMES } from "../src/runtime/contracts/artifact-permissions.contract.js";
 
 const EXPECTED_QR_ARTIFACT_KEYS = ["qr_artifact__entity_commercial", "qr_artifact__technology_infrastructure", "qr_artifact__ai_capability_product_behavior", "qr_artifact__dap_privacy_india_cyber"];

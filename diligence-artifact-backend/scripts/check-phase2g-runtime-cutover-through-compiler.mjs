@@ -31,7 +31,7 @@ import { ACTIVITY_CANDIDATE_INVENTORY_CONTRACT } from "../src/phases/05-activity
 import { ACTIVITY_PROFILE_REVIEW_CONTRACT } from "../src/phases/05-activity-profile-review/activity-profile-review.contract.js";
 import { ACTIVITY_PROFILE_FORENSICS_CONTRACT } from "../src/phases/06-activity-profile-forensics/activity-profile-forensics.contract.js";
 import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
-import { DAP_FORENSICS_CONTRACT } from "../src/phases/08-data-provenance-forensics/dap-forensics.contract.js";
+import { DAP_FORENSICS_CONTRACT } from "../src/phases/09-data-provenance-forensics/dap-forensics.contract.js";
 import { M11_PHASE2G_RUNTIME_STATUS } from "../src/m11-orchestrator-m11v2.js";
 import { M12_PHASE2G_RUNNER_STATUS } from "../src/m12-phase2g.runner.js";
 import { COMPILER_PHASE2G_RUNNER_STATUS } from "../src/compiler-phase2g.runner.js";

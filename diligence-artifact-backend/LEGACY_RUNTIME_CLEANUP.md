@@ -23,9 +23,9 @@ node src/runtime/main.js
 | Artifact persistence and lock gates | `src/runtime/services/artifacts.service.js` |
 | Firestore, Sheets, Drive and Google clients | `src/runtime/services/storage/*` |
 | Public diligence API | `src/runtime/routes/public.routes.js` |
-| Exposure Profile / M11 | `src/phases/09-exposure-profile/*` |
-| Operator Challenge / M12 | `src/phases/10-operator-challenge/*` |
-| Normalized Compiler | `src/phases/11-normalized-compiler/*` |
+| Exposure Profile / M11 | `src/phases/10-exposure-profile/*` |
+| Operator Challenge / M12 | `src/phases/11-operator-challenge/*` |
+| Normalized Compiler | `src/phases/12-normalized-compiler/*` |
 | Public report renderer | `src/runtime/services/reporting/report-renderer.service.js` |
 | Qualified Review submission | `src/runtime/services/qualified-review-submission.service.js` |
 

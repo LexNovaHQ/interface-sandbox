@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
-const m11 = readFileSync("src/phases/09-exposure-profile/m11-orchestrator-m11v2.js", "utf8");
+const m11 = readFileSync("src/phases/10-exposure-profile/m11-orchestrator-m11v2.js", "utf8");
 const prompts = readFileSync("src/runtime/services/prompts.service.js", "utf8");
 const runtimeReference = readFileSync("src/runtime/services/reference.service.js", "utf8");
 
@@ -16,7 +16,7 @@ for (const marker of [
 for (const retired of ["src/m11-orchestrator.js", "src/m11-orchestrator-m11v2.js", "src/reference-loader.js", "src/prompt-loader.js", "src/gemini-client.js", "src/artifact-service.js"]) assert.equal(existsSync(retired), false, `obsolete root file still exists: ${retired}`);
 
 assert.ok(m11.includes('infrastructure_authority: "CENTRAL_RUNTIME_SERVICES"'));
-assert.ok(m11.includes('phase_owned_path: "src/phases/09-exposure-profile"'));
+assert.ok(m11.includes('phase_owned_path: "src/phases/10-exposure-profile"'));
 assert.ok(prompts.includes('from "./reference.service.js"'));
 assert.equal(prompts.includes("../../reference-loader.js"), false);
 assert.ok(prompts.includes('reference_loader_authority: "reference.service"'));

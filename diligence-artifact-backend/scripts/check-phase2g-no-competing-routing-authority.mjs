@@ -23,7 +23,7 @@ const CUTOVER_RUNNERS = Object.freeze({
   M8_TARGET_FEATURE_PROFILE: "src/phases/05-activity-profile-review/activity-profile-review.runner.js",
   M8_TARGET_FEATURE_PROFILE_FORENSICS: "src/phases/06-activity-profile-forensics/activity-profile-forensics.runner.js",
   DATA_PROVENANCE_PROFILE_LAYER4: "src/phases/07-data-provenance-profile/data-provenance-profile.runner.js",
-  DATA_PROVENANCE_PROFILE_FORENSICS: "src/phases/08-data-provenance-forensics/dap-forensics.runner.js",
+  DATA_PROVENANCE_PROFILE_FORENSICS: "src/phases/09-data-provenance-forensics/dap-forensics.runner.js",
   M11: "src/m11-orchestrator-m11v2.js",
   M12: "src/m12-phase2g.runner.js",
   NORMALIZED_COMPILER: "src/compiler-phase2g.runner.js"

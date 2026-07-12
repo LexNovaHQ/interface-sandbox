@@ -3,7 +3,7 @@ import { buildM12DeterministicChallengeGate } from "./m12-deterministic-challeng
 
 export const M12_PHASE2G_RUNNER_STATUS = Object.freeze({
   runner: "operator-challenge.runner",
-  phase_owned_path: "src/phases/10-operator-challenge",
+  phase_owned_path: "src/phases/11-operator-challenge",
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
   route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
   bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",

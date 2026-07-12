@@ -10,9 +10,9 @@ import {
   domainControlObligationDownstreamFields,
   domainControlObligationDownstreamReadArtifacts
 } from "../src/phases/08-domain-control-obligation-profile/index.js";
-import { buildM11DomainControlObligationHandoff } from "../src/phases/09-exposure-profile/domain-control-obligation-profile.handoff.js";
-import { buildM12DomainControlObligationChallenge } from "../src/phases/10-operator-challenge/domain-control-obligation-profile.handoff.js";
-import { buildDomainControlObligationCompilerHandoff } from "../src/phases/11-normalized-compiler/domain-control-obligation-profile.handoff.js";
+import { buildM11DomainControlObligationHandoff } from "../src/phases/10-exposure-profile/domain-control-obligation-profile.handoff.js";
+import { buildM12DomainControlObligationChallenge } from "../src/phases/11-operator-challenge/domain-control-obligation-profile.handoff.js";
+import { buildDomainControlObligationCompilerHandoff } from "../src/phases/12-normalized-compiler/domain-control-obligation-profile.handoff.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(__dirname, "..");
@@ -155,9 +155,9 @@ assert.equal(compiler.projection_boundaries.visible_control_is_not_compliance_or
 
 for (const relativePath of [
   "src/phases/08-domain-control-obligation-profile/domain-control-obligation-downstream-handoff.contract.js",
-  "src/phases/09-exposure-profile/domain-control-obligation-profile.handoff.js",
-  "src/phases/10-operator-challenge/domain-control-obligation-profile.handoff.js",
-  "src/phases/11-normalized-compiler/domain-control-obligation-profile.handoff.js",
+  "src/phases/10-exposure-profile/domain-control-obligation-profile.handoff.js",
+  "src/phases/11-operator-challenge/domain-control-obligation-profile.handoff.js",
+  "src/phases/12-normalized-compiler/domain-control-obligation-profile.handoff.js",
   "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md"
 ]) assert.ok(fs.existsSync(path.join(backendRoot, relativePath)), `Phase 8 downstream handoff file missing: ${relativePath}`);
 

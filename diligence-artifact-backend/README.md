@@ -147,7 +147,7 @@ src/phases/04-target-profile-forensics/
 src/phases/05-activity-profile-review/
 src/phases/06-activity-profile-forensics/
 src/phases/07-data-provenance-profile/
-src/phases/08-data-provenance-forensics/
+src/phases/09-data-provenance-forensics/
 src/phases/_shared/forensics/
 ```
 

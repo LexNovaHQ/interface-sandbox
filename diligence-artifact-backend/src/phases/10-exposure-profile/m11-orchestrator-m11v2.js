@@ -25,7 +25,7 @@ export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   index_navigation_mandatory: true,
   preceding_forensic_inputs_forbidden: true,
   infrastructure_authority: "CENTRAL_RUNTIME_SERVICES",
-  phase_owned_path: "src/phases/09-exposure-profile"
+  phase_owned_path: "src/phases/10-exposure-profile"
 });
 
 export async function runM11OrchestratedPhase({ run, phase, contract }) {
@@ -92,7 +92,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
   const triggered = await getOrBuildProjection({ run, phase, artifactName: ART.triggered, isCurrent: isM11V2Projection, build: () => projectTriggeredProfile({ [ART.workpad]: workpad.artifact })[ART.triggered] });
   const forensics = await getOrBuildForensics({ run, phase, route, workpad, controlled, triggered, acceptedBatches, batchValidations, referencePacket });
   const finalStatus = deriveFinalM11Status({ routeStatus: route.lock_status, forensicStatus: forensics.lock_status, batchValidations });
-  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, infrastructure_authority: "CENTRAL_RUNTIME_SERVICES", phase_owned_path: "src/phases/09-exposure-profile" } });
+  await logEvent({ run_id: run.run_id, event_type: "M11_V2_ORCHESTRATED_PHASE_COMPLETED", actor: AGENT_5, payload: { batch_prompt_mode: "semantic_evidence_application_then_backend_materialization", route_status: route.lock_status, batch_count: acceptedBatches.length, forensic_lock_status: forensics.lock_status, forensic_diagnostic_status: forensics.diagnostic_status || "UNKNOWN", phase_status: finalStatus, m11_schema_upgrade: M11_SCHEMA_UPGRADE, phase2g_route_id: routed.route.route_id, phase2g_bucket_id: routed.route.bucket_id, infrastructure_authority: "CENTRAL_RUNTIME_SERVICES", phase_owned_path: "src/phases/10-exposure-profile" } });
   await lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: isAccepted(finalStatus) ? contract.next : phase });
 }
 
