@@ -1,1 +1,0 @@
-Temporary full backend contract check trigger path. Remove after validation.
