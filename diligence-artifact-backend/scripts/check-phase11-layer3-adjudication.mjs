@@ -118,7 +118,7 @@ for (const marker of [
   "compiler_handoff_allowed"
 ]) assert.ok(runner.includes(marker), `runner missing Layer 3 marker: ${marker}`);
 for (const marker of [
-  "runtime_contract_version: v3_layer3_deterministic_adjudication",
+  "runtime_contract_version: v4_reinvestigation_dispatch_return",
   "status: ACTIVE",
   "only_critical_failure_blocks: true",
   "maximum_reinvestigation_attempts: 2",
