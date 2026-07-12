@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
+import { resolvePhase11Owner } from "./operator-challenge-owner-adjudication.js";
 
-export const OPERATOR_CHALLENGE_LAYER3_VERSION = "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_v1";
+export const OPERATOR_CHALLENGE_LAYER3_VERSION = "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_v2_OWNER_ADJUDICATED";
 export const OPERATOR_CHALLENGE_REINVESTIGATION_VERSION = "operator_challenge_reinvestigation_ledger.v1";
 export const OPERATOR_CHALLENGE_GATE_VERSION = "challenge_gate.v4.operator_challenge";
 
@@ -48,12 +49,14 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
       disposition = "ADVISORY_WARNING";
       advisoryWarnings.push(issue(candidate, semantic, disposition));
     } else if (MATERIAL_RECOMMENDATIONS.has(semantic.recommended_disposition) || candidate.candidate_class === "MATERIAL_FIELD_CANDIDATE") {
-      const deterministicOwner = ownerPhase(candidate.proposed_owner || semantic.proposed_owner);
+      const priorEntry = priorLedger.get(candidateId);
+      const ownerDecision = resolvePhase11Owner({ candidate, semantic, priorAttempts: priorEntry?.attempts || [] });
+      const deterministicOwner = ownerDecision.owner;
       if (!DISPATCHABLE_OWNERS.has(deterministicOwner)) {
         disposition = "ADVISORY_WARNING";
         advisoryWarnings.push(issue(candidate, semantic, "NON_DISPATCHABLE_OWNER_WARNING"));
       } else {
-        const entry = buildReinvestigationEntry({ candidate, semantic, priorEntry: priorLedger.get(candidateId), deterministicOwner });
+        const entry = buildReinvestigationEntry({ candidate, semantic, priorEntry, deterministicOwner, ownerDecision });
         reinvestigationEntries.push(entry);
         disposition = entry.final_disposition;
         if (entry.final_disposition === "UNRESOLVED_AFTER_REINVESTIGATION") advisoryWarnings.push(issue(candidate, semantic, "UNRESOLVED_AFTER_REINVESTIGATION", entry));
@@ -100,6 +103,8 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
     maximum_attempts_per_field: 2,
     blocking_is_exception: true,
     only_critical_failure_blocks: true,
+    owner_adjudication_version: "phase11_owner_adjudication.v1",
+    substring_order_owner_selection_forbidden: true,
     entries: reinvestigationEntries,
     pending_count: pending.length,
     exhausted_with_warning_count: exhausted.length,
@@ -142,7 +147,7 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
   return { challenge_gate: challengeGate, runtime_lock_status: runtimeLockStatus };
 }
 
-function buildReinvestigationEntry({ candidate, semantic, priorEntry, deterministicOwner }) {
+function buildReinvestigationEntry({ candidate, semantic, priorEntry, deterministicOwner, ownerDecision }) {
   const priorAttempts = Array.isArray(priorEntry?.attempts) ? priorEntry.attempts.slice(0, 2) : [];
   const successful = priorAttempts.find((attempt) => attempt?.result === "RESOLVED" && attempt?.validated === true);
   const attemptsUsed = priorAttempts.length;
@@ -153,6 +158,10 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry, determinis
   return {
     challenge_candidate_id: candidate.challenge_candidate_id,
     owning_phase: deterministicOwner,
+    owner_candidates: unique(ownerDecision.owner_candidates),
+    owner_relation: ownerDecision.owner_relation,
+    primary_owner_basis: ownerDecision.primary_owner_basis,
+    alternate_owner_basis: ownerDecision.alternate_owner_basis,
     artifact_names: unique(candidate.affected_artifacts),
     field_paths: unique(candidate.affected_field_paths),
     affected_registry_row_keys: unique(candidate.affected_registry_row_keys),
@@ -170,6 +179,10 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry, determinis
     directive: finalDisposition === "REINVESTIGATION_REQUIRED" ? {
       challenge_candidate_id: candidate.challenge_candidate_id,
       owning_phase: deterministicOwner,
+      owner_candidates: unique(ownerDecision.owner_candidates),
+      owner_relation: ownerDecision.owner_relation,
+      primary_owner_basis: ownerDecision.primary_owner_basis,
+      alternate_owner_basis: ownerDecision.alternate_owner_basis,
       artifact_names: unique(candidate.affected_artifacts),
       field_paths: unique(candidate.affected_field_paths),
       affected_row_identity: unique([
@@ -182,7 +195,8 @@ function buildReinvestigationEntry({ candidate, semantic, priorEntry, determinis
       required_reinvestigation: candidate.proposed_reinvestigation_scope || semantic.proposed_reinvestigation_scope,
       attempt_number: nextAttempt,
       full_phase_rerun_required: false,
-      smallest_affected_unit_only: true
+      smallest_affected_unit_only: true,
+      deterministic_owner_selection: true
     } : null
   };
 }
@@ -209,17 +223,6 @@ function issue(candidate, semantic, disposition, reinvestigation = null) {
     limitation_if_unresolved: semantic.limitation_if_unresolved,
     reinvestigation
   };
-}
-function ownerPhase(value) {
-  const text = String(value || "").toUpperCase();
-  if (text.includes("PHASE_3")) return "PHASE_3_DOMAIN_DERIVATION";
-  if (text.includes("PHASE_5")) return "PHASE_5_ACTIVITY_PROFILE";
-  if (text.includes("PHASE_7")) return "PHASE_7_DATA_PROVENANCE";
-  if (text.includes("PHASE_8")) return "PHASE_8_DOMAIN_CONTROL_OBLIGATION";
-  if (text.includes("PHASE_10")) return "PHASE_10_EXPOSURE_PROFILE";
-  if (text.includes("COMPILER")) return "COMPILER_PRESENTATION_ONLY";
-  if (text.includes("PHASE_2G")) return "PHASE_2G_ROUTING";
-  return "PHASE_11_OPERATOR_CHALLENGE_REVIEW";
 }
 function assertInputs(inventory, ledger) {
   if (!inventory || inventory.schema_version !== "operator_challenge_inventory.v1") throw new Error("PHASE11_LAYER3_INVENTORY_INVALID");
