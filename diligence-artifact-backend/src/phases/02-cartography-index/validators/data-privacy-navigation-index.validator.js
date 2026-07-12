@@ -78,6 +78,13 @@ function scanForbiddenInputs(value, errors) {
   }
 }
 
+function containsExactMarker(value, marker) {
+  if (typeof value === "string") return value === marker;
+  if (Array.isArray(value)) return value.some((item) => containsExactMarker(item, marker));
+  if (!value || typeof value !== "object") return false;
+  return Object.entries(value).some(([key, item]) => key === marker || containsExactMarker(item, marker));
+}
+
 function scanForbiddenRootKeys(value, errors) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
   for (const key of Object.keys(value)) {

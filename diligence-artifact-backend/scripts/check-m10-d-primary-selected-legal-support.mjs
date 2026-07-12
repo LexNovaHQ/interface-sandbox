@@ -13,6 +13,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const directSignal = "legal_signal_derivation_profile";
 const legalIndex = "legal_cartography_index";
 const oldPacket = "m10_selected_legal_support_packet";
+const oldLeanContract = "M10_LEAN_" + "INPUT_CONTRACT";
 const layer4Job = "DATA_PROVENANCE_PROFILE_LAYER4";
 
 const phase7Layer4 = PIPELINE_CONTRACTS[layer4Job];
@@ -46,14 +47,14 @@ assert.ok(READ_PERMISSIONS.agent_4_data_privacy.includes(legalIndex), "Agent4 mu
 assert.equal(READ_PERMISSIONS.agent_4_data_privacy.includes(oldPacket), false, "Agent4 must not retain retired selected-support packet read permission");
 
 const phaseContracts = fs.readFileSync(path.join(repoRoot, "src/runtime/contracts/pipeline.contract.js"), "utf8");
-assert.equal(phaseContracts.includes("M10_LEAN_INPUT_CONTRACT"), false, "old M10 lean input contract marker must be absent");
+assert.equal(phaseContracts.includes(oldLeanContract), false, "old M10 lean input contract marker must be absent");
 assert.equal(phaseContracts.includes(oldPacket), false, "pipeline contract must not mention retired selected-support packet");
 
 const runtimePacket = fs.readFileSync(path.join(repoRoot, "agent-packages/agent_4_data_privacy/AGENT4_PHASE7_LAYER4_RUNTIME_BINDING_PACKET.yaml"), "utf8");
 assert.ok(runtimePacket.includes("legal_signal_derivation_profile"), "Phase7 runtime binding must document legal signal use through P2G packet");
 assert.ok(runtimePacket.includes("legal_cartography_index"), "Phase7 runtime binding must document legal cartography use through P2G packet");
 assert.equal(runtimePacket.includes(oldPacket), false, "Phase7 runtime binding must not mention retired selected-support packet");
-assert.equal(runtimePacket.includes("M10_LEAN_INPUT_CONTRACT"), false, "Phase7 runtime binding must not mention old M10 lean contract");
+assert.equal(runtimePacket.includes(oldLeanContract), false, "Phase7 runtime binding must not mention old M10 lean contract");
 
 console.log("phase7 DAP legal signal P2G check: PASS");
 

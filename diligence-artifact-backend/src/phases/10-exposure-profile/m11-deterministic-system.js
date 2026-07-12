@@ -74,8 +74,8 @@ export function validateThreatIdDecomposition(row) {
   const parts = threatId.split("_");
   if (parts.length < 3) return { ok: false, reason: "Threat_ID must contain at least three underscore-delimited segments" };
   const expected21 = parts[0];
-  const expected22 = parts[1];
-  const expected23 = normalizeField23(parts.slice(2).join("_"));
+  const expected22 = parts.slice(1, -1).join("_");
+  const expected23 = normalizeField23(parts.at(-1));
   const actual21 = String(row.FIELD21 || "").trim();
   const actual22 = String(row.FIELD22 || "").trim();
   const actual23 = String(row.FIELD23 || "").trim();

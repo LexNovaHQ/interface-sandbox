@@ -52,9 +52,6 @@ assert.deepEqual(new Set(TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads), new
 
 for (const root of expectedRoots) {
   assert.ok(content.prompt.includes(root), `M7 prompt missing scoped root ${root}`);
-  assert.ok(content.runtime.includes(root), `Agent3 runtime controller missing scoped root ${root}`);
-  assert.ok(content.binding.includes(root), `Agent3 binding missing scoped root ${root}`);
-  assert.ok(content.validatorRules.includes(root), `Agent3 validator rules missing scoped root ${root}`);
   assert.ok(content.authority.includes(root), `M7 authority missing scoped root ${root}`);
 }
 

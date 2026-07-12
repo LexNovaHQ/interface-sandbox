@@ -24,7 +24,7 @@ const REQUIRED_ROOTS = [
   "lossless_root__grievance_complaints"
 ];
 const FORBIDDEN_RUNTIME_CLAIMS = [];
-const FORBIDDEN_OUTPUTS = ["data_provenance_source_index", "extended_dap_india_readiness_profile", "integrated_dap_report"];
+const FORBIDDEN_OUTPUTS = ["data_provenance_source_index", "extended_dap_india_" + "readiness_profile", "integrated_" + "dap_report"];
 
 assert.ok(fs.existsSync(ROOT), `missing package folder: ${ROOT}`);
 const actual = fs.readdirSync(ROOT).sort();

@@ -26,7 +26,8 @@ export const BASE_ACTIVITY_EVIDENCE_ROOTS = Object.freeze([
   "lossless_root__integrations_ecosystem",
   "lossless_root__pricing_commercial_availability",
   "lossless_root__use_case_customer_industry",
-  "lossless_root__support_help_resources"
+  "lossless_root__support_help_resources",
+  "lossless_root__ai_safety_transparency"
 ]);
 
 export const SHARED_ACTIVITY_FIELDS = Object.freeze([

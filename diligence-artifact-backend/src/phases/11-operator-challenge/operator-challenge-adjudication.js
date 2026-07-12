@@ -52,7 +52,8 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
     } else if (MATERIAL_RECOMMENDATIONS.has(semantic.recommended_disposition) || candidate.candidate_class === "MATERIAL_FIELD_CANDIDATE") {
       const priorEntry = priorLedger.get(candidateId);
       void OWNER_FALLBACK_EXPRESSION;
-      const ownerDecision = resolvePhase11Owner({ candidate, semantic, priorAttempts: priorEntry?.attempts || [] });
+      const proposedOwner = candidate.proposed_owner || semantic.proposed_owner;
+      const ownerDecision = resolvePhase11Owner({ candidate, semantic: { ...semantic, proposed_owner: proposedOwner }, priorAttempts: priorEntry?.attempts || [] });
       const deterministicOwner = ownerDecision.owner;
       if (!DISPATCHABLE_OWNERS.has(deterministicOwner)) {
         disposition = "ADVISORY_WARNING";

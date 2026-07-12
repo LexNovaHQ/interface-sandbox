@@ -14,6 +14,7 @@ import { buildPhase11TargetedPacket, assertPhase11TargetedPacket } from "./opera
 import { runPhase11RegisteredOwnerAdapter } from "./operator-challenge-owner-adapter.registry.js";
 import { commitPhase11TargetedMutationProposal } from "./operator-challenge-targeted-commit.js";
 import { classifyPhase11AttemptOutcome, buildPhase11NonSubstantiveReceipt } from "./operator-challenge-attempt-classifier.js";
+import { runPhase10TargetedReinvestigation } from "./phase10-targeted-reinvestigation.js";
 
 const AGENT = "agent_7_m12";
 const CHECKPOINT = "operator_challenge_dispatch_checkpoint";
@@ -24,6 +25,7 @@ const OWNER_ACTOR = Object.freeze({
   DOMAIN_CONTROL_OBLIGATION_PROFILE: "agent_8_domain_control_obligation",
   M11: "agent_5_exposure_registry"
 });
+const REGISTERED_TARGETED_OWNER_ADAPTERS = Object.freeze({ M11: runPhase10TargetedReinvestigation });
 
 export async function executePhase11ReinvestigationLoop({ run, m12Contract, inventory, semanticLedger, initialChallengeGate, readArtifacts, buildPrompt = buildPhasePrompt, callProvider = callProviderJson, workerId = `phase11-${process.pid || "worker"}` } = {}) {
   let gate = initialChallengeGate; let dispatchCount = 0; const dispatchReceipts = [];

@@ -85,7 +85,7 @@ M9 may emit `qualified_review_legal_signals` only as a deterministic locator-sig
 
 `downstream_rules.target_profile_legal_signal_locators_owned_by_2a` must be `true`.
 
-`downstream_rules.full_legal_governance_cartography_owned_by_2e` must be `true`.
+`downstream_rules.full_legal_governance_cartography_owned_by_2f` must be `true`.
 
 `downstream_rules.regulatory_grievance_conclusions_forbidden` must be `true`.
 

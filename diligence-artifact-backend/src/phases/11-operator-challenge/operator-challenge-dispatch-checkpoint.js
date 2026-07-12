@@ -61,15 +61,18 @@ export async function releasePhase11DispatchLease({ runId, dispatchId, workerId 
 export function buildPhase11DispatchCheckpoint({ run, dispatch, stage, previous = null, payload = {} } = {}) {
   const allowed = new Set([
     "DISPATCH_CREATED",
+    "OWNER_RUNNING",
     "OWNER_PROPOSAL_RUNNING",
+    "OWNER_RETURNED",
     "OWNER_PROPOSAL_CREATED",
+    "RETURN_VALIDATED",
     "PROPOSAL_COMMITTED",
     "NON_SUBSTANTIVE_RETRY_REQUIRED",
     "ATTEMPT_RECORDED",
     "COMPLETE"
   ]);
   if (!allowed.has(stage)) throw new Error(`PHASE11_DISPATCH_CHECKPOINT_STAGE_INVALID:${stage}`);
-  const sequence = ["DISPATCH_CREATED", "OWNER_PROPOSAL_RUNNING", "OWNER_PROPOSAL_CREATED", "PROPOSAL_COMMITTED", "NON_SUBSTANTIVE_RETRY_REQUIRED", "ATTEMPT_RECORDED", "COMPLETE"];
+  const sequence = ["DISPATCH_CREATED", "OWNER_RUNNING", "OWNER_PROPOSAL_RUNNING", "OWNER_RETURNED", "OWNER_PROPOSAL_CREATED", "RETURN_VALIDATED", "PROPOSAL_COMMITTED", "NON_SUBSTANTIVE_RETRY_REQUIRED", "ATTEMPT_RECORDED", "COMPLETE"];
   if (previous?.stage && sequence.indexOf(stage) < sequence.indexOf(previous.stage)) throw new Error("PHASE11_DISPATCH_CHECKPOINT_REGRESSION");
   const checkpoint = {
     schema_version: PHASE11_DISPATCH_CHECKPOINT_VERSION,

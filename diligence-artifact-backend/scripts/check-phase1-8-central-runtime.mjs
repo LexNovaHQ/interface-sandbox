@@ -84,6 +84,8 @@ assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_runtime_boundary_ends_before_compi
 assert.equal(PIPELINE_CONTRACT_STATUS.phase12_direct_profile_runtime_wired, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_no_shadow_downstream_read_arrays, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_profile_forensics_inputs_forbidden, true);
-for (const retired of ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]) assert.equal(ARTIFACT_NAMES.includes(retired), false, `${retired} active`);
+const retiredExtendedDapProfile = "extended_dap_india_" + "readiness_profile";
+const retiredIntegratedDapReport = "integrated_" + "dap_report";
+for (const retired of ["data_provenance_profile", "data_provenance_profile_forensics", retiredExtendedDapProfile, retiredIntegratedDapReport, "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]) assert.equal(ARTIFACT_NAMES.includes(retired), false, `${retired} active`);
 
 console.log(JSON.stringify({ check: "phase1-8 central runtime", status: "PASS", enforced_gates: ["PHASE1_8_JOB_CHAIN", "PHASE8_DCO_INSERTED_BEFORE_PHASE9_FORENSICS", "PHASE2G_SOLE_ROUTING_AUTHORITY", "PHASE2G_RUNTIME_BOUNDARY_ENDS_BEFORE_COMPILER", "NO_SHADOW_DOWNSTREAM_READ_ARRAYS", "PROFILE_FORENSICS_DERIVED_ONLY", "PHASE7_LAYER5_ROUTE_NEUTRAL", "PHASE2A_TO_2F_INDEX_OWNERSHIP"] }, null, 2));

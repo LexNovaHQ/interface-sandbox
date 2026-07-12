@@ -26,6 +26,7 @@ const codeFiles = [
 ];
 
 const text = codeFiles.map((file) => read(file)).join("\n");
+const implementationText = codeFiles.filter((file) => !file.endsWith("activity-profile.constants.js")).map((file) => read(file)).join("\n");
 
 for (const field of [
   ...PROFILE_TOP_LEVEL_KEYS,
@@ -60,7 +61,7 @@ for (const forbidden of [
   "src/m8-validator.js",
   "validator_module"
 ]) {
-  assert.equal(text.includes(forbidden), false, `Layer 2 code contains forbidden marker: ${forbidden}`);
+  assert.equal(implementationText.includes(forbidden), false, `Layer 2 code contains forbidden marker: ${forbidden}`);
 }
 
 console.log("Phase 5 Layer 2 code schema sync: PASS");

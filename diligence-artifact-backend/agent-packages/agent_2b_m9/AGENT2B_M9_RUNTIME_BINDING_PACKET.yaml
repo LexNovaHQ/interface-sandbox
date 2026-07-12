@@ -78,7 +78,7 @@ phase_lock_meaning: "Agent 2B locks only Legal Cartography and Index after legal
 
 ownership_boundary:
   target_profile_legal_signal_locators_owned_by_2a: true
-  full_legal_governance_cartography_owned_by_2e: true
+  full_legal_governance_cartography_owned_by_2f: true
   legal_signal_derivation_profile_compatibility_only: true
   m9_must_not_override_2a_target_profile_source_index: true
 
