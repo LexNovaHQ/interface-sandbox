@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-This addendum governs Phase 10 deterministic Layer 1B after the registry auto-selector has mounted the active registry set.
+This addendum governs deterministic Phase 10 Layer 1B.
 
 - Phase 5 owns activity classification.
 - Phase 10 projects Phase 5 classifications into package-scoped routing inventories.
@@ -11,32 +11,20 @@ This addendum governs Phase 10 deterministic Layer 1B after the registry auto-se
 
 ## Phase 5 source contract
 
-Phase 10 reads only the current nested Phase 5 structure:
+Phase 10 reads only:
 
 ```text
-target_feature_profile.activities[]
-  primary_classification
-    package_id
-    archetype_codes[]
-    surface_context_tokens[]
-
-  overlay_classifications[]
-    overlay_id
-    package_id
-    archetype_codes[]
-    surface_context_tokens[]
+target_feature_profile.activities[].primary_classification
+target_feature_profile.activities[].overlay_classifications[]
 ```
 
-Flat activity-level classification paths are forbidden:
+Flat activity-level classification paths are forbidden.
 
-```text
-activities[].archetype_codes
-activities[].surface_context_tokens
-```
+Every mounted primary or overlay stream must have a matching non-empty Phase 5 classification inventory. Missing mounted-stream classification is a controlled failure.
 
-## Package-scoped inventory projection
+## Package-scoped inventory
 
-The backend creates one inventory for every mounted Phase 10 stream:
+The backend creates one inventory for each mounted stream:
 
 ```text
 PRIMARY::<primary_package>
@@ -57,15 +45,11 @@ classifications[]
 inventory_digest
 ```
 
-Primary inventory values come only from `primary_classification` for the selected primary package.
-
-Overlay inventory values come only from matching `overlay_classifications[]` blocks for that mounted overlay package.
-
-A global cross-package archetype union is forbidden.
+Primary values come only from matching `primary_classification` blocks. Overlay values come only from matching `overlay_classifications[]` blocks. A global cross-package archetype union is forbidden.
 
 ## Registry routing
 
-Each mounted registry is routed only against its matching package and stream inventory.
+Each registry is routed only against its matching package and stream inventory.
 
 ```text
 Archetype == UNI
@@ -83,7 +67,7 @@ Non-UNI Archetype absent from matching package inventory
 
 Surface tokens remain context only. Surface-only routing is forbidden.
 
-Every execution row carries deterministic custody metadata:
+Every route row carries deterministic custody:
 
 ```text
 registry_row_key
@@ -99,13 +83,13 @@ route_reason
 matched_activity_references[]
 ```
 
-The canonical `Threat_ID` remains unchanged. Global reconciliation uses `registry_row_key` under `PHASE10_EXECUTION_IDENTITY_v2`.
+Canonical `Threat_ID` remains unchanged. Global reconciliation uses `registry_row_key` under `PHASE10_EXECUTION_IDENTITY_v2`.
 
-## Primary and overlay isolation
+## Stream isolation
 
 Primary and overlay streams are independently routed and batched.
 
-A batch may contain exactly one:
+A batch contains exactly one:
 
 ```text
 package_id
@@ -114,7 +98,7 @@ stream_type
 Archetype batch group
 ```
 
-Rows from different packages or different streams must never be combined to fill a batch.
+Rows from different packages, streams, or archetype groups must never be combined.
 
 ## Batch ceiling
 
@@ -124,18 +108,9 @@ MAX_M11_BATCH_PACKET_CHARS = 180000
 packet_ceiling_version = M11_PACKET_CHARS_180000_v1
 ```
 
-Fifteen is a maximum, not a required fixed size.
+Fifteen is a maximum, not a fixed size. The planner splits before either ceiling is exceeded. Evidence or registry content must not be truncated to force fifteen rows into one packet.
 
-The deterministic planner greedily fills a package-scoped archetype batch while both conditions remain true:
-
-```text
-row_count <= 15
-estimated_packet_chars <= 180000
-```
-
-The planner must split before either ceiling is exceeded. Evidence or registry content must not be truncated to force fifteen rows into one packet.
-
-A single row exceeding the packet ceiling creates a controlled failure. It must not be silently truncated.
+A single row over the packet ceiling creates a controlled failure.
 
 Every batch records:
 
@@ -156,17 +131,22 @@ classification_inventory_digest
 activity_references[]
 ```
 
-Raw `Threat_ID` may repeat across different package streams. `registry_row_key` must remain globally unique and appear in exactly one batch.
+Raw `Threat_ID` may repeat across package streams. `registry_row_key` remains globally unique and appears in exactly one batch.
 
-## Current semantic safety gate
+## Semantic handoff
 
-CO-4, CO-5 and CO-6 authorize deterministic inventory projection, route planning and batch planning only.
-
-After saving a valid `exposure_registry_route_plan`, the active runtime must controlled-stop before any model call until:
+CO-7 defines the package-scoped semantic contracts:
 
 ```text
-CO-7 Agent 5 semantic package and prompt contract
-CO-8 domain-agnostic Layer 2 runtime
+packet: M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
+output: M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
+repair: M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1
 ```
 
-The old AI-only semantic package must not receive the new package-scoped or 15-row batches.
+The model returns canonical Threat IDs only. It must not emit `registry_row_key`, change routing, mix streams, or alter batch membership.
+
+## Current runtime safety gate
+
+CO-4 through CO-7 are contract-complete. The active runtime must continue to stop after saving the package-scoped route plan until CO-8 implements the domain-agnostic Layer 2 runtime.
+
+The pre-CO-7 AI-only semantic path must remain unreachable.
