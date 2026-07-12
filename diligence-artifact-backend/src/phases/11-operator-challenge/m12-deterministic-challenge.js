@@ -110,7 +110,7 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
     run_id: run.run_id || "",
     target: run.target || null,
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-    route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+    route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE",
     delivery_mode: "DERIVED_ONLY",
     forensic_inputs_used: false,
     input_artifact_statuses,

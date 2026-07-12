@@ -5,7 +5,7 @@ export const M12_PHASE2G_RUNNER_STATUS = Object.freeze({
   runner: "operator-challenge.runner",
   phase_owned_path: "src/phases/11-operator-challenge",
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-  route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+  route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE",
   bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",
   delivery_mode: "DERIVED_ONLY",
   source_bucket_delivered: false,
@@ -28,7 +28,7 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
 function assertRoutePacket(packet = {}, internalJobId) {
   if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("M12_PHASE2G_AUTHORITY_MISSING");
   if (packet.internal_job_id !== internalJobId) throw new Error(`M12_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`);
-  if (packet.route_id !== "ROUTE.PHASE9.EXPOSURE_PROFILE") throw new Error(`M12_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
+  if (packet.route_id !== "ROUTE.PHASE10.EXPOSURE_PROFILE") throw new Error(`M12_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
   if (packet.delivery_mode !== "DERIVED_ONLY") throw new Error(`M12_PHASE2G_DELIVERY_MODE_MISMATCH:${packet.delivery_mode || "missing"}`);
   if (packet.source_bucket_delivered !== false) throw new Error("M12_PHASE2G_SOURCE_BUCKET_DELIVERED");
   if (packet.profile_forensics_inputs_allowed !== false) throw new Error("M12_PHASE2G_FORENSICS_INPUT_BOUNDARY_MISSING");

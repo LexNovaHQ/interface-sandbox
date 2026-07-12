@@ -12,14 +12,14 @@ import { buildM11DomainControlObligationHandoff } from "./domain-control-obligat
 const AGENT_5 = "agent_5_exposure_registry";
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const STATUS_INPUT_FIELDS = Object.freeze(["target_match_present", "hunter_conditions_met", "trigger_if_met", "exclude_if_met", "visible_control_present", "visible_control_defeats_or_reduces_exposure", "evidence_sufficient", "public_evidence_limitation", "false_positive_concern"]);
-const BATCH_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_C_BATCH_EVALUATION.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
-const REPAIR_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_D_BATCH_REINVESTIGATION_REPAIR.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
+const BATCH_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md", "agent-packages/agent_5_exposure_registry/M11_C_BATCH_EVALUATION.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
+const REPAIR_PROMPTS = Object.freeze(["agent-packages/agent_5_exposure_registry/AGENT5_RUNTIME_BINDING_PACKET_SYNCED_M11.yaml", "agent-packages/agent_5_exposure_registry/00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/00_M11_RUNTIME_CONTROLLER.md", "agent-packages/agent_5_exposure_registry/M11_DOMAIN_CONTROL_OBLIGATION_HANDOFF.md", "agent-packages/agent_5_exposure_registry/M11_D_BATCH_REINVESTIGATION_REPAIR.md", "agent-packages/agent_5_exposure_registry/00_VALIDATOR_RULES_INTEGRATED_AGENT5_SYNCED.md", "agent-packages/agent_5_exposure_registry/BACKEND_CANONICAL_OUTPUT_ADAPTER.md"]);
 const ART = Object.freeze({ legalIndex: "legal_cartography_index", featureMain: "target_feature_profile", route: "exposure_registry_route_plan", workpad: "exposure_registry_workpad_98", controlled: "exposure_registry_controlled_profile", triggered: "exposure_registry_triggered_profile", forensics: "exposure_registry_profile_forensics" });
 const M11_SCHEMA_UPGRADE = "THREAT_NAME_AND_SUBCATEGORY_NORMALIZATION_V1";
 
 export const M11_PHASE2G_RUNTIME_STATUS = Object.freeze({
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-  route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+  route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE",
   bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",
   delivery_mode: "SOURCE_BUCKET_PROFILE",
   lossless_evidence_is_primary: true,
@@ -202,7 +202,7 @@ async function readArtifactsForM11({ run_id, reads, agent_id, strict = true }) {
 function assertM11RoutePacket(packet = {}) {
   if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("M11_PHASE2G_AUTHORITY_MISSING");
   if (packet.internal_job_id !== "M11") throw new Error(`M11_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`);
-  if (packet.route_id !== "ROUTE.PHASE9.EXPOSURE_PROFILE") throw new Error(`M11_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
+  if (packet.route_id !== "ROUTE.PHASE10.EXPOSURE_PROFILE") throw new Error(`M11_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
   if (packet.delivery_mode !== "SOURCE_BUCKET_PROFILE") throw new Error(`M11_PHASE2G_DELIVERY_MODE_MISMATCH:${packet.delivery_mode || "missing"}`);
   if (packet.source_bucket_delivered !== true) throw new Error("M11_PHASE2G_SOURCE_BUCKET_MISSING");
   if (packet.lossless_evidence_role !== "PRIMARY_EVIDENCE") throw new Error("M11_PHASE2G_LOSSLESS_PRIMARY_MISSING");

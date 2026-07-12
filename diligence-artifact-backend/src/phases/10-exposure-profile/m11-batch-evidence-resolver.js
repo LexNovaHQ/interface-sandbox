@@ -25,7 +25,7 @@ export function buildCompactM11BatchPacket({ batchPacket, upstreamArtifacts = {}
     backend_full_lossless_evidence_access_policy: {
       full_legal_governance_lossless_package_read_permission: true,
       routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-      route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+      route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE",
       navigation_layer: "legal_cartography_index",
       evidence_role: "PRIMARY_EVIDENCE",
       evidence_selection_policy: "index_navigation_into_routed_primary_lossless_evidence",
@@ -111,7 +111,7 @@ function buildLegalGovernanceEvidenceBundle({ packet, upstreamArtifacts, evidenc
 
   return {
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-    route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+    route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE",
     evidence_role: "PRIMARY_EVIDENCE",
     selection_method: "m9_index_navigation_into_routed_primary_evidence_with_recorded_index_gap_navigation",
     direct_lossless_fallback_used: false,

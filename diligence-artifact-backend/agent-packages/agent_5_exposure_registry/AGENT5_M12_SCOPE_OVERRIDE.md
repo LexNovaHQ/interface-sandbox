@@ -44,7 +44,7 @@ M12 receives a Phase 2G `DERIVED_ONLY` packet under:
 
 ```text
 routing_authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
-route_id: ROUTE.PHASE9.EXPOSURE_PROFILE
+route_id: ROUTE.PHASE10.EXPOSURE_PROFILE
 delivery_mode: DERIVED_ONLY
 ```
 

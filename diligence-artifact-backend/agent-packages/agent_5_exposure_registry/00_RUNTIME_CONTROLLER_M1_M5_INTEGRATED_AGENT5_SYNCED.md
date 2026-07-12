@@ -8,7 +8,7 @@ The backend Phase 2G route packet is the sole runtime read authority. Prompt tex
 
 ```text
 routing_authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
-route_id: ROUTE.PHASE9.EXPOSURE_PROFILE
+route_id: ROUTE.PHASE10.EXPOSURE_PROFILE
 bucket_id: 2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS
 delivery_mode: SOURCE_BUCKET_PROFILE
 ```

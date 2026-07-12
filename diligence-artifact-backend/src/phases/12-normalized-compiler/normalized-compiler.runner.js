@@ -5,7 +5,7 @@ export const COMPILER_PHASE2G_RUNNER_STATUS = Object.freeze({
   runner: "normalized-compiler.runner",
   phase_owned_path: "src/phases/12-normalized-compiler",
   routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-  route_id: "ROUTE.PHASE9.EXPOSURE_PROFILE",
+  route_id: "ROUTE.PHASE10.EXPOSURE_PROFILE",
   bucket_id: "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS",
   delivery_mode: "DERIVED_ONLY",
   source_bucket_delivered: false,
@@ -27,7 +27,7 @@ export async function runCompilerPhase2G({ run, internalJobId = "NORMALIZED_COMP
 function assertRoutePacket(packet = {}, internalJobId) {
   if (packet.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") throw new Error("COMPILER_PHASE2G_AUTHORITY_MISSING");
   if (packet.internal_job_id !== internalJobId) throw new Error(`COMPILER_PHASE2G_JOB_MISMATCH:${packet.internal_job_id || "missing"}`);
-  if (packet.route_id !== "ROUTE.PHASE9.EXPOSURE_PROFILE") throw new Error(`COMPILER_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
+  if (packet.route_id !== "ROUTE.PHASE10.EXPOSURE_PROFILE") throw new Error(`COMPILER_PHASE2G_ROUTE_MISMATCH:${packet.route_id || "missing"}`);
   if (packet.delivery_mode !== "DERIVED_ONLY") throw new Error(`COMPILER_PHASE2G_DELIVERY_MODE_MISMATCH:${packet.delivery_mode || "missing"}`);
   if (packet.source_bucket_delivered !== false) throw new Error("COMPILER_PHASE2G_SOURCE_BUCKET_DELIVERED");
   if (packet.profile_forensics_inputs_allowed !== false) throw new Error("COMPILER_PHASE2G_FORENSICS_INPUT_BOUNDARY_MISSING");

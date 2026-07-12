@@ -44,7 +44,7 @@ assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.runtime_cutover_complete_through
 
 const legalRoute = P2G_ROUTE_BUCKETS.find((route) => route.route_id === PHASE_ROUTE_IDS.legalCartographySignals);
 assert.ok(legalRoute, "2F legal route missing");
-assert.equal(legalRoute.route_id, "ROUTE.PHASE9.EXPOSURE_PROFILE");
+assert.equal(legalRoute.route_id, "ROUTE.PHASE10.EXPOSURE_PROFILE");
 assert.equal(legalRoute.parent_phase, "EXPOSURE_PROFILE");
 assert.deepEqual(legalRoute.parent_jobs, ["M11"]);
 assert.deepEqual(legalRoute.downstream_jobs, ["M12", "NORMALIZED_COMPILER"]);

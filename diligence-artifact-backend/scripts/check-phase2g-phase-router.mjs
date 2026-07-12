@@ -97,7 +97,7 @@ assert.deepEqual(targetBucket.downstream_jobs, ["M7_TARGET_PROFILE_FORENSICS"]);
 assert.deepEqual(activityBucket.job_scoped_derived_profiles.M8_TARGET_FEATURE_PROFILE, ["feature_candidate_inventory"]);
 assert.deepEqual(activityBucket.downstream_jobs, ["M8_TARGET_FEATURE_PROFILE_FORENSICS"]);
 assert.deepEqual(dataBucket.downstream_jobs, ["DATA_PROVENANCE_PROFILE_FORENSICS"]);
-assert.equal(legalBucket.route_id, "ROUTE.PHASE9.EXPOSURE_PROFILE");
+assert.equal(legalBucket.route_id, "ROUTE.PHASE10.EXPOSURE_PROFILE");
 assert.equal(legalBucket.parent_phase, "EXPOSURE_PROFILE");
 assert.deepEqual(legalBucket.parent_jobs, ["M11"]);
 assert.deepEqual(legalBucket.downstream_jobs, ["M12", "NORMALIZED_COMPILER"]);
