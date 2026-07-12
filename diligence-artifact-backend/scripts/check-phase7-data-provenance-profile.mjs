@@ -8,10 +8,11 @@ import { CENTRAL_PHASES } from "../src/runtime/contracts/central-phase.contract.
 import {
   PHASE7_DAP_LAYER4_ARTIFACT_NAMES,
   PHASE7_DAP_LAYER5_ARTIFACT_NAMES,
-  PHASE7_DAP_BATCH_ARTIFACT_NAMES,
   PHASE7_DAP_BATCH_ARTIFACT_PATTERN,
   PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN,
-  DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES
+  PHASE7_DAP_RUNTIME_ARTIFACT_NAMES,
+  DATA_PROVENANCE_SOURCE_ARTIFACT_NAMES,
+  ARTIFACT_NAMES
 } from "../src/runtime/contracts/artifact-permissions.contract.js";
 import { PHASE7_DATA_PRIVACY_ARCHITECTURE_CONTRACT } from "../src/phases/07-data-provenance-profile/data-provenance-profile.contract.js";
 import {
@@ -167,6 +168,7 @@ function fixtureDataPrivacyNavigationIndex() {
 }
 
 function fixtureBatchArtifact(packet) {
+  const routeBasis = [packet.required_d_family_route_ids[0], packet.selective_l_family_route_ids[0]].filter(Boolean);
   return {
     [packet.expected_artifact_name]: {
       batch_id: packet.batch_id,
@@ -176,7 +178,10 @@ function fixtureBatchArtifact(packet) {
         field_id: fieldId,
         output_field: packet.field_route_rows[index]?.output_field || fieldId,
         semantic_resolution_status: "SEMANTIC_RESOLVED_WITH_BOUNDED_SUPPORT",
+        basis_route_ids: routeBasis,
         structured_candidate: { field_id: fieldId, public_visibility: "Visible in reviewed material fixture." },
+        reasoning_summary: "Bounded public signal carried from route fixture.",
+        forbidden_inference_check: "PASS",
         evidence_trace: { source: "fixture" },
         limitations: []
       })),
