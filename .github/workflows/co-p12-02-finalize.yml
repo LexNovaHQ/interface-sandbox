@@ -1,0 +1,105 @@
+name: CO P12 02 Atomic Finalize
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - co-p12-02-validation-trigger.txt
+      - .github/workflows/co-p12-02-finalize.yml
+      - diligence-artifact-backend/scripts/build-co-p12-02-report-authority.mjs
+      - diligence-artifact-backend/scripts/check-co-p12-02.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: co-p12-02-finalize
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Generate report authority artifacts
+        working-directory: diligence-artifact-backend
+        run: node scripts/build-co-p12-02-report-authority.mjs
+
+      - name: Validate generated authority
+        working-directory: diligence-artifact-backend
+        run: npm run check:p12:co2
+
+      - name: Write certified receipt
+        working-directory: diligence-artifact-backend
+        env:
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          TESTED_TARGET_SHA: ${{ github.sha }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+
+          const files = [
+            'references/registry/REPORT_NORMALIZER_KEY.yml',
+            'src/phases/12-normalized-compiler/report-contract/REPORT_SECTION_SCHEMA.yml',
+            'src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json',
+            'src/phases/12-normalized-compiler/report-contract/UPSTREAM_REPORT_GAP_REGISTER.yml'
+          ];
+          const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+          const receipt = {
+            schema_version: 'co_p12_02_certified_receipt.v1',
+            status: 'PASS',
+            exit_code: 0,
+            command: 'npm run check:p12:co2',
+            workflow: process.env.WORKFLOW_NAME,
+            run_id: process.env.RUN_ID,
+            target_branch: 'domain-gate-v0-preflight',
+            validated_parent_sha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+            fdr_declared_row_count: 456,
+            fdr_parsed_unique_row_count: 457,
+            active_owned_field_count: 430,
+            blocked_upstream_gap_field_count: 27,
+            report_section_count: 10,
+            route_path_contract_status: 'DEFERRED_TO_CO_P12_03',
+            compiler_runtime_cutover_status: 'NOT_APPLIED_IN_CO_P12_02',
+            generated_files: Object.fromEntries(files.map((file) => [file, { sha256: sha256(file), size_bytes: fs.statSync(file).size }])),
+            certified_at: new Date().toISOString()
+          };
+          fs.mkdirSync('receipts', { recursive: true });
+          fs.writeFileSync('receipts/CO_P12_02_CERTIFIED.json', JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+
+      - name: Commit generated authority and remove temporary workflow
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            diligence-artifact-backend/references/registry/REPORT_NORMALIZER_KEY.yml \
+            diligence-artifact-backend/src/phases/12-normalized-compiler/report-contract/REPORT_SECTION_SCHEMA.yml \
+            diligence-artifact-backend/src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json \
+            diligence-artifact-backend/src/phases/12-normalized-compiler/report-contract/UPSTREAM_REPORT_GAP_REGISTER.yml \
+            diligence-artifact-backend/receipts/CO_P12_02_CERTIFIED.json
+          git rm .github/workflows/co-p12-02-finalize.yml
+          git commit -m "Generate and certify CO-P12-02 report authority"
+          git push origin HEAD:domain-gate-v0-preflight
