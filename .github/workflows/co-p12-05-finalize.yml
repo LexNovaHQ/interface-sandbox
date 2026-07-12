@@ -45,6 +45,29 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          rm -f \
+            src/phases/12-normalized-compiler/normalized-compiler.runner.js \
+            src/phases/12-normalized-compiler/compiler-m9-section6-v3.js \
+            src/phases/12-normalized-compiler/phase7-dap-report-projection.js \
+            src/phases/12-normalized-compiler/exposure-tier-normalizer.js \
+            src/phases/12-normalized-compiler/normalized-profiler-m9-section6-v4.js \
+            src/phases/12-normalized-compiler/normalized-profiler-section10-v3.js \
+            src/phases/12-normalized-compiler/normalized-profiler-section789-v2.js \
+            src/phases/12-normalized-compiler/normalized-profiler.js \
+            src/phases/12-normalized-compiler/legal-section-normalizer.js \
+            src/phases/12-normalized-compiler/report-safe-language.js \
+            src/phases/12-normalized-compiler/forensic-annexure-normalizer.js \
+            src/phases/12-normalized-compiler/report-normalization-map.js \
+            src/phases/12-normalized-compiler/normalized-status.js \
+            src/phases/12-normalized-compiler/normalizer-validator.js \
+            src/phases/12-normalized-compiler/normalizer-validator-new-field-sync-v5.js \
+            src/phases/12-normalized-compiler/normalizer-validator-section10-v4.js \
+            scripts/check-normalized-compiler.mjs \
+            scripts/check-normalized-profiler.mjs \
+            scripts/check-normalized-renderer.mjs \
+            scripts/check-normalized-shape.mjs \
+            scripts/check-normalizer-validator.mjs \
+            scripts/check-public-report-ui.mjs
           node scripts/apply-co-p12-05-cutover.mjs 2>&1 | tee co-p12-05-apply.log
 
       - name: Upload applicator diagnostics
