@@ -9,6 +9,7 @@ on:
       - .github/workflows/co-p12-05-finalize.yml
       - diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
       - diligence-artifact-backend/scripts/apply-phase6-behavior-forensics-sync.mjs
+      - diligence-artifact-backend/scripts/apply-phase7-p2g-legal-permission-sync.mjs
 
 permissions:
   contents: write
@@ -47,6 +48,7 @@ jobs:
         run: |
           set -o pipefail
           node scripts/apply-phase6-behavior-forensics-sync.mjs 2>&1 | tee co-p12-05-apply.log
+          node scripts/apply-phase7-p2g-legal-permission-sync.mjs 2>&1 | tee -a co-p12-05-apply.log
           rm -f \
             src/phases/12-normalized-compiler/normalized-compiler.runner.js \
             src/phases/12-normalized-compiler/compiler-m9-section6-v3.js \
@@ -160,6 +162,7 @@ jobs:
             legacy_recursive_compiler_retired: true,
             mandatory_material_field_preservation: 'ENFORCED',
             phase6_behavior_class_forensic_custody: 'ENFORCED',
+            phase7_p2g_legal_permission: 'ENFORCED',
             custody_rendering: 'FORBIDDEN',
             local_counsel_review_required: true,
             generated_files: Object.fromEntries(files.map((file) => [file, { sha256: sha256(file), size_bytes: fs.statSync(file).size }])),
@@ -176,6 +179,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm diligence-artifact-backend/scripts/apply-co-p12-05-cutover.mjs
           git rm diligence-artifact-backend/scripts/apply-phase6-behavior-forensics-sync.mjs
+          git rm diligence-artifact-backend/scripts/apply-phase7-p2g-legal-permission-sync.mjs
           git rm .github/workflows/co-p12-05-finalize.yml
           rm -f diligence-artifact-backend/co-p12-05-apply.log diligence-artifact-backend/co-p12-05-full-backend.log
           git add -A
