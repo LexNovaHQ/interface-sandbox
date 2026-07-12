@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: AGENT5_PHASE9_EXPOSURE_PHASE2G
-runtime_contract_version: v12_phase2f_forward_route
+runtime_contract_version: v13_active_registry_manifest
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
 active_phase_scope: M11_EXPOSURE_REGISTRY
@@ -72,6 +72,7 @@ forbidden_read_artifacts:
   - source_outside_active_2f_packet
 
 required_reference_files:
+  - THREAT_REGISTRY_BINDINGS_v1.yaml
   - AI_THREAT_REGISTRY.yaml
   - AI_Registry_Key.yml
   - 03_REGISTRY_EVALUATION_RULES.yaml
@@ -89,6 +90,8 @@ active_prompt_files:
 m11_three_layer_contract:
   layer_1_backend:
     - validate_registry
+    - build_active_threat_registry_manifest
+    - persist_active_threat_registry_manifest_before_route_plan
     - build_route_plan
     - build_batch_plan
     - resolve_2f_navigation_and_primary_evidence
@@ -106,6 +109,8 @@ m11_three_layer_contract:
     - assemble_m11_forensics_side_output
 
 model_forbidden_actions:
+  - create_or_rewrite_active_threat_registry_manifest
+  - select_or_mount_threat_registry
   - create_or_rewrite_route_plan
   - choose_batch_membership
   - rewrite_registry_spine
@@ -119,6 +124,7 @@ model_forbidden_actions:
   - compile_or_render
 
 write_artifacts_in_order:
+  - active_threat_registry_manifest
   - exposure_registry_route_plan
   - exposure_registry_batch_validation__GROUP__NNN
   - exposure_registry_batch__GROUP__NNN
