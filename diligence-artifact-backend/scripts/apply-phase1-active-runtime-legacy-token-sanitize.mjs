@@ -28,7 +28,7 @@ for (const file of files) {
   source = source
     .replaceAll("lossless_family__", "lossless_root__")
     .replaceAll("ROOT_FAMILY", "ROOT");
-  for (const [retired, active] of Object.entries(retiredRootMap)) source = source.replaceAll(retired, active);
+  for (const [retired, active] of Object.entries(retiredRootMap)) source = replaceArtifactIdentity(source, retired, active);
   if (source !== before) {
     fs.writeFileSync(file, source);
     changed = true;
@@ -38,9 +38,28 @@ for (const file of files) {
 for (const file of files) {
   if (!fs.existsSync(file)) continue;
   const source = fs.readFileSync(file, "utf8");
-  for (const retired of ["lossless_family__", "ROOT_FAMILY", ...Object.keys(retiredRootMap)]) {
+  for (const retired of ["lossless_family__", "ROOT_FAMILY"]) {
     if (source.includes(retired)) throw new Error(`PHASE1_ACTIVE_RUNTIME_RETIRED_TOKEN_REMAINS:${file}:${retired}`);
+  }
+  for (const retired of Object.keys(retiredRootMap)) {
+    if (containsArtifactIdentity(source, retired)) throw new Error(`PHASE1_ACTIVE_RUNTIME_RETIRED_ROOT_REMAINS:${file}:${retired}`);
   }
 }
 
 console.log(`Phase 1 active runtime legacy token sanitize: ${changed ? "APPLIED" : "ALREADY_CLEAN"}`);
+
+function replaceArtifactIdentity(source, retired, active) {
+  return source.replace(artifactIdentityPattern(retired), (match, left = "", right = "") => `${left}${active}${right}`);
+}
+
+function containsArtifactIdentity(source, artifact) {
+  return artifactIdentityPattern(artifact).test(source);
+}
+
+function artifactIdentityPattern(artifact) {
+  return new RegExp(`(^|[^A-Za-z0-9_])${escapeRegExp(artifact)}([^A-Za-z0-9_]|$)`, "g");
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
