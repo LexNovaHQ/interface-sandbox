@@ -1,6 +1,6 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: AGENT5_PHASE9_EXPOSURE_PHASE2G
-runtime_contract_version: v14_auto_selector_execution_identity
+runtime_contract_version: v15_package_scoped_route_max15
 active_agent_id: agent_5_exposure_registry
 active_agent_name: Interface Exposure Registry Agent
 active_phase_scope: M11_EXPOSURE_REGISTRY
@@ -94,14 +94,46 @@ execution_identity_contract:
   silent_namespacing_forbidden: true
   model_may_emit_registry_row_key: false
 
+phase5_classification_inventory_contract:
+  schema_version: phase5_classification_inventory.v1
+  source_authority: target_feature_profile
+  phase5_owns_classification: true
+  phase10_projects_only: true
+  primary_source_path: activities[].primary_classification
+  overlay_source_path: activities[].overlay_classifications[]
+  flat_activity_classification_paths_forbidden: true
+  global_cross_package_archetype_union_forbidden: true
+
+package_scoped_route_contract:
+  version: M11_PACKAGE_SCOPED_ROUTE_RULES_v1
+  primary_and_overlay_streams_separate: true
+  uni_always_run: true
+  non_uni_requires_matching_package_archetype: true
+  surface_only_routing_forbidden: true
+  registry_row_key_reconciliation_required: true
+
+batch_planner_contract:
+  version: M11_MAX_15_PACKAGE_SCOPED_BATCH_PLANNER_v1
+  max_rows: 15
+  fixed_batch_size_required: false
+  packet_ceiling_chars: 180000
+  packet_ceiling_version: M11_PACKET_CHARS_180000_v1
+  package_mixing_forbidden: true
+  stream_mixing_forbidden: true
+  evidence_or_registry_truncation_forbidden: true
+  single_row_over_ceiling_result: CONTROLLED_FAILURE
+
 checkpoint_fingerprint_contract:
   registry_set_fingerprint_required: true
   phase5_classification_fingerprint_required: true
   phase10_execution_fingerprint_required: true
+  classification_inventory_digest_required: true
+  routing_and_batch_configuration_in_fingerprint: true
   stale_checkpoint_reuse_forbidden: true
 
 active_prompt_files:
   - PHASE10_AUTO_SELECTOR_AND_FINGERPRINT_ADDENDUM.md
+  - PHASE10_CLASSIFICATION_ROUTING_BATCH_ADDENDUM.md
   - M11_EXPOSURE_REGISTRY.md
   - 00_M11_RUNTIME_CONTROLLER.md
   - M11_A_DETERMINISTIC_ROUTING_PREFILL.md
@@ -117,29 +149,35 @@ m11_three_layer_contract:
     - build_active_threat_registry_manifest
     - calculate_registry_and_execution_fingerprints
     - persist_active_threat_registry_manifest_before_route_plan
-    - build_route_plan
-    - build_batch_plan
-    - resolve_2f_navigation_and_primary_evidence
-    - prefill_registry_spine
+    - project_phase5_classifications_into_package_scoped_inventories
+    - build_separate_primary_and_overlay_route_streams
+    - route_uni_rows_mandatorily
+    - route_non_uni_rows_only_by_matching_package_archetype
+    - forbid_surface_only_routing
+    - build_maximum_15_package_scoped_batches
+    - enforce_180000_character_packet_ceiling
+    - persist_exposure_registry_route_plan
   layer_2_model:
-    - apply_hunter_trigger_to_active_batch_evidence
-    - return_semantic_status_inputs
-    - return_basis_and_limitation_fields
+    status: BLOCKED_PENDING_CO_7_AND_CO_8
+    current_runtime_may_call_model: false
+    pending:
+      - redesign_agent5_semantic_package
+      - implement_domain_agnostic_layer2_runtime
   layer_3_backend:
-    - deterministic_batch_validation
-    - deterministic_final_material_status
-    - save_accepted_batch
-    - merge_workpad_98
-    - project_controlled_and_triggered_profiles
-    - assemble_m11_forensics_side_output
+    status: PENDING_CO_9_AND_LATER_BUILD_ORDER
 
 model_forbidden_actions:
   - create_or_rewrite_active_threat_registry_manifest
   - select_or_mount_threat_registry
   - create_or_rewrite_registry_row_key
   - create_or_rewrite_execution_fingerprint
+  - create_or_rewrite_phase5_classification_inventory
+  - reclassify_phase5_activity
+  - move_classification_between_primary_and_overlay
   - create_or_rewrite_route_plan
+  - choose_stream_membership
   - choose_batch_membership
+  - change_batch_size_or_packet_ceiling
   - rewrite_registry_spine
   - choose_final_material_status
   - save_artifacts
@@ -150,15 +188,23 @@ model_forbidden_actions:
   - perform_global_m12_challenge
   - compile_or_render
 
-write_artifacts_in_order:
+write_artifacts_in_current_order:
   - active_threat_registry_manifest
   - exposure_registry_route_plan
-  - exposure_registry_batch_validation__GROUP__NNN
-  - exposure_registry_batch__GROUP__NNN
+
+future_write_artifacts_after_semantic_cutover:
+  - exposure_registry_batch_validation__STREAM__GROUP__NNN
+  - exposure_registry_batch__STREAM__GROUP__NNN
   - exposure_registry_workpad_98
   - exposure_registry_controlled_profile
   - exposure_registry_triggered_profile
   - exposure_registry_profile_forensics
+
+current_stage_terminal_rule:
+  stop_after_package_scoped_route_plan: true
+  stop_status: CONTROLLED_FAILURE
+  reason: CO_7_AGENT5_SEMANTIC_PACKAGE_AND_CO_8_RUNTIME_PENDING
+  no_model_call_allowed: true
 
 m12_boundary:
   owner: agent_7_m12
@@ -166,7 +212,5 @@ m12_boundary:
   exposure_forensics_required: false
   preceding_forensics_required: false
   challenge_gate_written_by_agent5: false
-
-terminal_rule:
-  stop_after_m11_lock: true
+  current_handoff_allowed: false
 </RUNTIME_BINDING_PACKET>
