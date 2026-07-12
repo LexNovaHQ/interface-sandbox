@@ -4,6 +4,7 @@ import { callProviderJson } from "../../runtime/services/provider.service.js";
 import { buildOperatorChallengeInventory } from "./operator-challenge-inventory.js";
 import { buildOperatorChallengeSemanticPacket, validateOperatorChallengeSemanticLedger } from "./operator-challenge-semantic.js";
 import { buildOperatorChallengeLayer3 } from "./operator-challenge-adjudication.js";
+import { executePhase11ReinvestigationLoop } from "./operator-challenge-dispatch.runtime.js";
 
 const LAYER2_PROMPT = "agent-packages/agent_7_operator_challenge/PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md";
 
@@ -20,6 +21,7 @@ export const M12_PHASE2G_RUNNER_STATUS = Object.freeze({
   layer1_status: "PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_ACTIVE",
   layer2_status: "PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE_ACTIVE",
   layer3_status: "PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_REINVESTIGATION_GATE_ACTIVE",
+  reinvestigation_dispatch_status: "PHASE11_TARGETED_DISPATCH_AND_RETURN_ACTIVE",
   blocking_is_exception: true,
   only_critical_failure_blocks: true,
   maximum_reinvestigation_attempts: 2
@@ -61,9 +63,27 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
   const semanticLedger = validation.semantic_ledger;
   const priorArtifacts = await readArtifacts({ reads: ["challenge_gate"], agent_id: contract.actor_id || contract.agent_id || "agent_7_m12", strict: false });
   const priorChallengeGate = priorArtifacts?.challenge_gate || null;
-  const layer3 = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate, run });
-  const challengeGate = {
-    ...layer3.challenge_gate,
+  const initialLayer3 = buildOperatorChallengeLayer3({ inventory, semanticLedger, priorChallengeGate, run });
+  let challengeGate = initialLayer3.challenge_gate;
+  let dispatchCount = 0;
+
+  if (challengeGate.status === "REINVESTIGATION_REQUIRED") {
+    const loop = await executePhase11ReinvestigationLoop({
+      run,
+      m12Contract: contract,
+      inventory,
+      semanticLedger,
+      initialChallengeGate: challengeGate,
+      readArtifacts,
+      buildPrompt,
+      callProvider
+    });
+    challengeGate = loop.challenge_gate;
+    dispatchCount = loop.dispatch_count;
+  }
+
+  challengeGate = {
+    ...challengeGate,
     layer2_validation: {
       status: "PASS",
       exact_candidate_coverage: true,
@@ -72,11 +92,18 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
       output_repair_is_not_field_reinvestigation: true
     }
   };
+  const runtimeLockStatus = challengeGate.status === "CONTROLLED_FAILURE"
+    ? "CONTROLLED_FAILURE"
+    : challengeGate.status === "PASS_WITH_LIMITATION"
+      ? "LOCKED_WITH_LIMITATIONS"
+      : challengeGate.status === "PASS"
+        ? "LOCKED"
+        : "CREATED";
 
   return Object.freeze({
     ok: true,
     output: { challenge_gate: challengeGate },
-    phase_lock_status: layer3.runtime_lock_status,
+    phase_lock_status: runtimeLockStatus,
     phase2g_route_id: routed.route.route_id,
     phase2g_bucket_id: routed.route.bucket_id,
     phase2g_delivery_mode: routed.route.delivery_mode,
@@ -85,6 +112,7 @@ export async function runM12Phase2GChallenge({ run, internalJobId = "M12", contr
     layer2_semantic_output_fingerprint: semanticLedger.semantic_output_fingerprint,
     layer3_final_gate_fingerprint: challengeGate.final_gate_fingerprint,
     reinvestigation_dispatch_required: challengeGate.reinvestigation_dispatch_required,
+    reinvestigation_dispatch_count: dispatchCount,
     compiler_handoff_allowed: challengeGate.compiler_handoff_allowed
   });
 }
