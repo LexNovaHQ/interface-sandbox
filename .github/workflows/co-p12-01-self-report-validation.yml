@@ -1,0 +1,90 @@
+name: CO P12 01 Self Report Validation
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - diligence-artifact-backend/**
+      - .github/workflows/co-p12-01-self-report-validation.yml
+      - co-p12-01-validation-trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: diligence-artifact-backend
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run CO-P12-01 validation
+        id: acceptance
+        shell: bash
+        run: |
+          set +e
+          npm run check:p12:co1 > co-p12-01-validation.log 2>&1
+          code=$?
+          cat co-p12-01-validation.log
+          printf '%s\n' "$code" > co-p12-01-exit-code.txt
+          exit 0
+
+      - name: Write validation result
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path('.')
+          code_path = root / 'co-p12-01-exit-code.txt'
+          log_path = root / 'co-p12-01-validation.log'
+          code = int(code_path.read_text().strip()) if code_path.exists() else 999
+          log = log_path.read_text(errors='replace') if log_path.exists() else 'validation log missing'
+          result = {
+              'schema_version': 'co_p12_01_validation_result.v1',
+              'status': 'PASS' if code == 0 else 'FAIL',
+              'exit_code': code,
+              'workflow': os.environ.get('GITHUB_WORKFLOW', ''),
+              'run_id': os.environ.get('GITHUB_RUN_ID', ''),
+              'head_sha': os.environ.get('GITHUB_SHA', ''),
+              'log_tail': log.splitlines()[-120:],
+          }
+          Path('../co-p12-01-validation-result.json').write_text(json.dumps(result, indent=2) + '\n')
+          PY
+
+      - name: Commit validation result to trigger branch
+        if: always() && github.event_name == 'pull_request'
+        shell: bash
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add co-p12-01-validation-result.json
+          git commit -m "Record CO-P12-01 validation result" || true
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Enforce validation result
+        shell: bash
+        run: |
+          code=$(cat co-p12-01-exit-code.txt)
+          exit "$code"
