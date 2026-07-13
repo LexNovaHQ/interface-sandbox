@@ -67,6 +67,93 @@ export function buildPhase12ProductionFixture(contract, { challengeStatus = "PAS
     }
   };
 
+  artifacts.domain_control_obligation_profile = {
+    ...(artifacts.domain_control_obligation_profile || {}),
+    artifact_type: "domain_control_obligation_profile",
+    schema_version: "phase8_dco_material_profile_v1",
+    run_id: "PHASE12_PRODUCTION_ACCEPTANCE",
+    derivation_mode: "MODEL_DERIVED_MATERIAL_FIELDS_DETERMINISTIC_MECHANICAL_COMPILATION",
+    mounted_taxonomy_ref: {
+      primary_package_id: "fintech",
+      capability_overlays: [{ overlay_id: "AI_OVERLAY", package_id: "ai-governance" }],
+      regulatory_overlays: [{ overlay_id: "INDIA_DPDP", package_id: "india-data-protection" }]
+    },
+    obligation_count: 3,
+    obligations: [
+      obligationRow({
+        candidateId: "DCO-C-001",
+        obligationId: "DCO-PAY-001",
+        family: "Payment authorization and customer control",
+        sourceLayer: "PRIMARY",
+        activities: ["ACT-001"],
+        behaviors: ["PAY"],
+        surfaces: ["Financial", "Consumer-Public"],
+        name: "Payment authorization controls",
+        requirement: "Maintain visible authorization, reversal and customer-control mechanisms for the payment activity.",
+        context: "The target publicly describes automated payment decisioning for customer transactions.",
+        authority: "Authority depends on the mounted Primary Sector package and the reviewed customer/payment context.",
+        exposureRole: "Provides the expected-control benchmark for payment-related exposure review.",
+        locus: "Customer payment workflow",
+        timing: "Before and during transaction execution",
+        expectedControl: "Visible authorization, transaction confirmation, reversal and dispute route.",
+        mechanism: "VISIBLE",
+        posture: "VISIBLE",
+        evidence: "Fixture payment workflow and support-route evidence.",
+        missingProof: null,
+        question: null,
+        limitation: null
+      }),
+      obligationRow({
+        candidateId: "DCO-C-002",
+        obligationId: "DCO-PAY-002",
+        family: "Transaction records and dispute support",
+        sourceLayer: "PRIMARY",
+        activities: ["ACT-001"],
+        behaviors: ["PAY"],
+        surfaces: ["Financial", "Enterprise-Private"],
+        name: "Transaction record and dispute-support controls",
+        requirement: "Maintain transaction records and an operational dispute-support route.",
+        context: "Public materials identify the payment activity but do not fully evidence the private record-retention workflow.",
+        authority: "Authority depends on the mounted Primary Sector package and transaction context.",
+        exposureRole: "Provides the expected-control benchmark for payment record and dispute exposure review.",
+        locus: "Transaction operations and support",
+        timing: "During the transaction lifecycle and after a dispute",
+        expectedControl: "Transaction records, escalation route and retained dispute evidence.",
+        mechanism: "NOT_VISIBLE",
+        posture: "NOT_VISIBLE",
+        evidence: "Public support route is visible; private record controls are not publicly evidenced.",
+        missingProof: "Private transaction record and dispute-handling procedure.",
+        question: "Confirm the transaction record, retention and dispute-escalation workflow.",
+        limitation: "Public-footprint evidence does not establish private operational controls."
+      }),
+      obligationRow({
+        candidateId: "DCO-C-003",
+        obligationId: "DCO-AI-001",
+        family: "AI-assisted communication governance",
+        sourceLayer: "CAPABILITY_OVERLAY",
+        capabilityOverlayId: "AI_OVERLAY",
+        activities: ["ACT-002"],
+        behaviors: ["CRT"],
+        surfaces: ["Content&IP", "Consumer-Public"],
+        name: "AI-assisted customer communication controls",
+        requirement: "Maintain review, disclosure and escalation controls for synthetic customer communication.",
+        context: "The target exposes a synthetic customer-communication capability.",
+        authority: "Authority depends on the mounted Capability Overlay and the communication context.",
+        exposureRole: "Provides the expected-control benchmark for synthetic-content exposure review.",
+        locus: "Customer communication generation and delivery",
+        timing: "Before publication or delivery",
+        expectedControl: "Human-review route, disclosure signal and escalation mechanism.",
+        mechanism: "UNCLEAR",
+        posture: "PARTIAL",
+        evidence: "A review signal is visible, but the full escalation workflow is not.",
+        missingProof: "Complete human-review and escalation workflow.",
+        question: "Confirm when human review is mandatory and how disputed outputs are escalated.",
+        limitation: "The public footprint supports only a partial control posture."
+      })
+    ],
+    profile_level_limitations: ["Private operational evidence is not available in the public footprint."]
+  };
+
   const materialRows = [];
   for (const streamType of ["PRIMARY", "OVERLAY"]) {
     for (const [index, status] of MATERIAL_STATUSES.entries()) {
@@ -145,6 +232,74 @@ function activityRow({ reference, name, primaryBehavior, primarySurface, overlay
       surface_context_tokens: overlaySurface,
       surface_derivation_basis: overlaySurface.map((token) => classificationBasis(token, "Overlay surface"))
     }]
+  };
+}
+
+function obligationRow({
+  candidateId,
+  obligationId,
+  family,
+  sourceLayer,
+  capabilityOverlayId = null,
+  activities,
+  behaviors,
+  surfaces,
+  name,
+  requirement,
+  context,
+  authority,
+  exposureRole,
+  locus,
+  timing,
+  expectedControl,
+  mechanism,
+  posture,
+  evidence,
+  missingProof,
+  question,
+  limitation
+}) {
+  return {
+    candidate_id: candidateId,
+    obligation_id: obligationId,
+    obligation_family: family,
+    source_layer: sourceLayer,
+    source_package_id: sourceLayer === "PRIMARY" ? "fintech" : "ai-governance",
+    catalog_package_id: sourceLayer === "PRIMARY" ? "fintech" : "ai-governance",
+    capability_overlay_id: capabilityOverlayId,
+    linked_activity_references: activities,
+    matched_behavior_codes: behaviors,
+    matched_surface_tokens: surfaces,
+    registry_key_ref: `REGISTRY::${obligationId}`,
+    obligation_catalog_ref: `CATALOG::${obligationId}`,
+    p2e_navigation_route_refs: [`P2E::${obligationId}`],
+    regulatory_overlay_refs: [{
+      overlay_id: "INDIA_DPDP",
+      matched_frameworks: ["DPDP Act 2023"],
+      overlay_status: "CANDIDATE_ONLY"
+    }],
+    normalized_name: name,
+    what_it_requires: requirement,
+    target_specific_obligation_context: context,
+    authority_dependency: authority,
+    exposure_role_context: exposureRole,
+    obligation_locus: locus,
+    obligation_trigger_timing: timing,
+    expected_control_signal: expectedControl,
+    control_mechanism_present: mechanism,
+    control_posture_status: posture,
+    evidence_basis: evidence,
+    missing_proof: missingProof,
+    diligence_question: question,
+    derivation_basis: [{
+      field_id: `${obligationId}.BASIS`,
+      output_field: "Obligation presentation",
+      conditions_satisfied: ["fixture condition"],
+      trigger_outcome_applied: true,
+      material_basis: `Fixture derivation basis for ${obligationId}.`,
+      limitation
+    }],
+    limitation
   };
 }
 
