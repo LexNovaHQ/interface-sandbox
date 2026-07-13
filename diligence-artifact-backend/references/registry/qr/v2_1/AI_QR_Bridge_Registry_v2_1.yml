@@ -1,0 +1,5035 @@
+registry:
+  registry_id: AI_QR_BRIDGE_REGISTRY
+  registry_name: AI Qualified Review Bridge Registry
+  version: 2.1.0
+  status: DOCUMENT_PLACEHOLDERS_INSERTED_AND_VALIDATED_RUNTIME_NOT_YET_WIRED
+  phase_owner: PHASE_13_QUALIFIED_REVIEW
+  record_count: 46
+  lane_a_record_count: 28
+  lane_b_record_count: 18
+  atomic_value_count: 82
+  lane_a_atomic_value_count: 57
+  lane_b_atomic_value_count: 25
+  contract:
+    schema_id: QR_BRIDGE_REGISTRY_SCHEMA_v2
+    doctrine: No QR field may exist independently. Every field must bridge Phase 12 or operator/default input to at least
+      one document placeholder or document action.
+    valid_routes:
+    - PHASE12_FIELD_VALUE -> QR_FIELD -> REVIEWER_CONFIRMED_VALUE -> DOCUMENT_PLACEHOLDER_OR_ACTION
+    - MARKET_BASED_DEMO_OR_OPERATOR_VALUE -> QR_FIELD -> REVIEWER_CONFIRMED_VALUE -> DOCUMENT_PLACEHOLDER_OR_ACTION
+    phase12_authority: Phase 12 emitted material field IDs and values are the sole diligence-prefill authority.
+    upstream_profiles_are_provenance_only: true
+    phase12_mutation_forbidden: true
+    document_consequence_required: true
+    market_demo_policy:
+      required_for_every_field: true
+      visible_label: '{MARKET BASED}'
+      used_only_when_phase12_value_or_component_is_unresolved: true
+      not_evidence: true
+      reviewer_confirmation_or_edit_required: true
+      blank_prefill_forbidden: true
+    hard_validation_rules:
+    - EVERY_FIELD_HAS_DOCUMENT_BINDING
+    - FULL_OR_PARTIAL_FIELD_HAS_PHASE12_BINDING
+    - NONE_OR_DEFAULT_ONLY_FIELD_HAS_NO_PHASE12_BINDING
+    - EVERY_DOCUMENT_BINDING_HAS_PLACEHOLDER_OR_ACTION_TOKEN
+    - EVERY_ATOMIC_FIELD_HAS_NONEMPTY_MARKET_BASED_DEMO_VALUE
+    - PHASE12_BINDINGS_REFERENCE_REPORT_ARTIFACTS_NOT_RAW_UPSTREAM_ARTIFACTS
+    - FINAL_DOCUMENT_VALUE_COMES_FROM_REVIEWER_CONFIRMED_QR_VALUE
+    review_ready_boundary:
+      lex_nova_role: LEGAL_ARCHITECT
+      review_ready_draft_only: true
+      local_counsel_review_required: true
+      not_legal_advice: true
+  registry_activation_contract:
+    activate_full_registry_when:
+      any:
+      - active_run_package_manifest.primary_domain_package == ai-governance
+      - active_run_package_manifest.capability_overlays contains ai-native
+    primary_domain_mode: FULL_REGISTRY
+    overlay_mode: TAGGED_ROWS_ONLY
+    load_order: 2
+    universal_registry_required: true
+  lane_resolution_contract:
+    source_axis: AI_Registry_Key.v4.0.lane
+    resolution_scope: PER_ACTIVITY_AND_PER_EXPOSURE_NOT_PER_COMPANY
+    lane_a_trigger:
+      all:
+      - entity develops, sells, licenses, or makes an AI system available externally
+      - document exposure arises from shipped product, customer terms, or outputs to third parties
+    lane_b_trigger:
+      all:
+      - entity operates or deploys AI internally or uses AI in workforce, operations, or governance
+      - document exposure arises from internal deployment or employer role
+    both_lanes_may_be_active: true
+    operator_lane_selection_forbidden: true
+    upstream_evidence_resolves_lane: true
+    phase13_may_ask_only_missing_operational_fact: true
+    lane_b_unknown_rule: Do not infer INACTIVE from absent public evidence; render B01.
+  document_activation_rules:
+  - document_id: DOC_AI_A_TOS
+    activate_when:
+      all:
+      - lane_a_active == true
+  - document_id: DOC_AI_A_AUP
+    activate_when:
+      all:
+      - lane_a_active == true
+  - document_id: DOC_AI_A_AGT
+    activate_when:
+      all:
+      - lane_a_active == true
+      - A03 == true
+  - document_id: DOC_AI_A_DPA
+    activate_when:
+      all:
+      - lane_a_active == true
+      - A26 includes PROCESSOR or SERVICE_PROVIDER or CONTRACTOR
+  - document_id: DOC_AI_A_PP
+    activate_when:
+      all:
+      - lane_a_active == true
+      - A17 is not empty
+  - document_id: DOC_AI_A_SLA
+    activate_when:
+      all:
+      - lane_a_active == true
+      - U19 == true
+  - document_id: DOC_AI_A_PBK
+    activate_when:
+      all:
+      - lane_a_active == true
+    inherit_only: true
+  - document_id: DOC_AI_B_HND
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+  - document_id: DOC_AI_B_SCAN
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+    blank_operational_instrument_only: true
+  - document_id: DOC_AI_B_DPIA
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+      any:
+      - B06 == true
+      - B12 > 0
+    blank_operational_instrument_only: true
+  - document_id: DOC_AI_B_IP
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+      - B02 is not empty
+  - document_id: DOC_AI_B_SOP
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+      any:
+      - B05 == true
+      - B06 == true
+    blank_operational_instrument_only: true
+  - document_id: DOC_AI_B_PBK
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+    inherit_only: true
+  overlay_export_contract:
+    whole_registry_mount_for_non_ai_primary_domain_forbidden: true
+    supported_export_tags:
+    - fintech.ai_underwriting
+    - fintech.agentic_payments
+    - employment.ai_decisioning
+    - biometric.processing
+    - children.minors
+    - privacy.cross_border
+    field_export_tags:
+      fintech.ai_underwriting:
+      - A01
+      - A07
+      - A12
+      - A13
+      - A16
+      - A17
+      - A18
+      - A19
+      - A20
+      - A21
+      - A24
+      - A26
+      fintech.agentic_payments:
+      - A03
+      - A04
+      - A05
+      - A06
+      - A15
+      employment.ai_decisioning:
+      - A07
+      - A12
+      - A13
+      - A17
+      - A18
+      - A19
+      - A24
+      biometric.processing:
+      - A14
+      - A17
+      - A18
+      - A19
+      - A24
+      - A25
+      children.minors:
+      - A10
+      - A11
+      - A17
+      - A18
+      - A19
+      - A24
+      privacy.cross_border:
+      - A17
+      - A18
+      - A19
+      - A21
+      - A22
+      - A24
+      - A25
+      - A26
+  sections:
+  - section_id: G08
+    lane: A
+    title: Model stack and integrations
+    field_ids:
+    - A01
+    - A02
+    operator_task: Complete model/provider records and connected services.
+    display_order: 8
+  - section_id: G09
+    lane: A
+    title: Agentic capability and controls
+    field_ids:
+    - A03
+    - A04
+    - A05
+    - A06
+    - A07
+    operator_task: Confirm agentic signals; override private guardrail limits if needed.
+    display_order: 9
+  - section_id: G10
+    lane: A
+    title: Interface and audience
+    field_ids:
+    - A08
+    - A09
+    - A10
+    - A11
+    operator_task: Confirm conversational, companion, minor and vulnerable-user contexts.
+    display_order: 10
+  - section_id: G11
+    lane: A
+    title: Regulated and high-impact use
+    field_ids:
+    - A12
+    - A13
+    - A14
+    - A15
+    operator_task: Confirm use contexts and high-impact switches; set reliance threshold.
+    display_order: 11
+  - section_id: G12
+    lane: A
+    title: Training and data architecture
+    field_ids:
+    - A16
+    - A17
+    - A18
+    - A19
+    - A20
+    operator_task: Complete training posture, data categories, subjects and architecture.
+    display_order: 12
+  - section_id: G13
+    lane: A
+    title: Subprocessors, transfers and resilience
+    field_ids:
+    - A21
+    - A22
+    - A23
+    - A24
+    - A25
+    - A26
+    operator_task: Complete vendor records and private operational details; confirm jurisdiction scopes.
+    display_order: 13
+  - section_id: G14
+    lane: A
+    title: Cookies and SLA metrics
+    field_ids:
+    - A27
+    - A28
+    operator_task: Complete cookie configuration and override SLA defaults only if needed.
+    display_order: 14
+  - section_id: G15
+    lane: B
+    title: Internal-use and workforce gate
+    field_ids:
+    - B01
+    - B02
+    - B03
+    operator_task: Resolve Lane B applicability and workforce scope.
+    display_order: 15
+  - section_id: G16
+    lane: B
+    title: Tools, deliverables and people decisions
+    field_ids:
+    - B04
+    - B05
+    - B06
+    operator_task: Complete internal tool inventory and confirm high-risk workforce use.
+    display_order: 16
+  - section_id: G17
+    lane: B
+    title: Organization and jurisdiction context
+    field_ids:
+    - B07
+    - B08
+    - B09
+    - B10
+    - B11
+    operator_task: Provide team/department facts and private NDA/geographic context.
+    display_order: 17
+  - section_id: G18
+    lane: B
+    title: Governance demand and use-case scale
+    field_ids:
+    - B12
+    - B13
+    operator_task: Provide internal use-case count and enterprise documentation demand.
+    display_order: 18
+  - section_id: G19
+    lane: B
+    title: IP, HITL and deployment ownership
+    field_ids:
+    - B14
+    - B15
+    - B16
+    - B17
+    - B18
+    operator_task: Complete private IP/HITL posture, designate owner and select scanner mode.
+    display_order: 19
+  fields:
+  - qr_field_id: A01
+    canonical_key: ai.lane_a.model_stack
+    label: Model stack
+    registry_scope: LANE_A
+    lane: A
+    section_id: G08
+    shape: REPEATABLE_OBJECT
+    atomic_fields:
+    - model_name
+    - provider_name
+    - hosting_posture
+    - provider_processing_jurisdiction
+    - provider_privacy_url
+    atomic_value_count: 5
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification + overlay_classifications
+        filters:
+          behavior_class_codes_any:
+          - ORC
+          - RDR
+        fills:
+        - model_name
+        - provider_name
+        - hosting_posture
+        transform: DETERMINISTIC_PROJECT
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.VEND.
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id startsWith "DAP.VEND."].value
+        canonical_label_query:
+        - model provider
+        - AI provider
+        - subprocessor
+        fills:
+        - model_name
+        - provider_name
+        - hosting_posture
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.LOC.
+        report_artifact: report_section__05_location_transfer_custody
+        value_selector: findings[field_id startsWith "DAP.LOC."].value
+        canonical_label_query:
+        - processing location
+        - transfer route
+        fills:
+        - provider_processing_jurisdiction
+        - provider_privacy_url
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A01
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        model_name: GPT-4.1
+        provider_name: OpenAI
+        hosting_posture: Third-party API
+        provider_processing_jurisdiction: United States
+        provider_privacy_url: https://openai.com/policies/privacy-policy
+      display_value: 'model name: GPT-4.1 | provider name: OpenAI | hosting posture: Third-party API | provider processing
+        jurisdiction: United States | provider privacy url: https://openai.com/policies/privacy-policy'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      value_placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      clause_selector_token: '{{QR.A01.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      value_placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      clause_selector_token: '{{QR.A01.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      value_placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      clause_selector_token: '{{QR.A01.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PBK
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      value_placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      clause_selector_token: '{{QR.A01.CLAUSE_SELECTOR}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_LIA_001
+      - ORC_PRV_001
+      - ORC_PRV_002
+      - UNI_INF_001
+    ui:
+      panel_id: G08
+      display_label: Model stack
+      prompt: Confirm the models, model providers, hosting posture, and permitted provider-substitution position.
+      input_type: repeatable_table
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A02
+    canonical_key: ai.lane_a.third_party_integrations
+    label: Third-party integrations
+    registry_scope: LANE_A
+    lane: A
+    section_id: G08
+    shape: LIST
+    atomic_fields:
+    - integration_names[]
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.011
+        route_id: P12.ROUTE.PA.MECH.011
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.011"].value
+        fills:
+        - integration_names[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.012
+        route_id: P12.ROUTE.PA.MECH.012
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.012"].value
+        fills:
+        - integration_names[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.VEND.
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id startsWith "DAP.VEND."].value
+        canonical_label_query:
+        - integration
+        - vendor
+        - partner
+        fills:
+        - integration_names[]
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A02
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        integration_names[]:
+        - Slack
+        - Salesforce
+        - Stripe
+      display_value: 'integration names: Slack; Salesforce; Stripe'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A and §2.5; third-party-system allocation
+      value_placeholders:
+        integration_names[]: '{{QR.A02.INTEGRATION_NAMES_LIST}}'
+      clause_selector_token: '{{QR.A02.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A and §2.5; third-party-system allocation
+      value_placeholders:
+        integration_names[]: '{{QR.A02.INTEGRATION_NAMES_LIST}}'
+      clause_selector_token: '{{QR.A02.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - DOE_LIA_002
+      - ORC_PRV_002
+      - UNI_FRD_LB1
+    ui:
+      panel_id: G08
+      display_label: Third-party integrations
+      prompt: Confirm the external systems, tools, APIs, or services connected to the AI service.
+      input_type: multi_value
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A03
+    canonical_key: ai.lane_a.agentic.enabled
+    label: Autonomous-agent capability
+    registry_scope: LANE_A
+    lane: A
+    section_id: G09
+    shape: BOOLEAN
+    atomic_fields:
+    - autonomous_agent_enabled
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.008
+        route_id: P12.ROUTE.PA.MECH.008
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.008"].value
+        fills:
+        - autonomous_agent_enabled
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.009
+        route_id: P12.ROUTE.PA.MECH.009
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.009"].value
+        fills:
+        - autonomous_agent_enabled
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.011
+        route_id: P12.ROUTE.PA.MECH.011
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.011"].value
+        fills:
+        - autonomous_agent_enabled
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: DOE
+        fills:
+        - autonomous_agent_enabled
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A03
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        autonomous_agent_enabled: true
+      display_value: 'autonomous agent enabled: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: TOS §2.7; activates Agentic Addendum; AUP agentic safeguards
+      value_placeholders:
+        autonomous_agent_enabled: '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}'
+      clause_selector_token: '{{QR.A03.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A03.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: TOS §2.7; activates Agentic Addendum; AUP agentic safeguards
+      value_placeholders:
+        autonomous_agent_enabled: '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}'
+      clause_selector_token: '{{QR.A03.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A03.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: TOS §2.7; activates Agentic Addendum; AUP agentic safeguards
+      value_placeholders:
+        autonomous_agent_enabled: '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}'
+      clause_selector_token: '{{QR.A03.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A03.DOCUMENT_ACTIVE}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - DOE_FIN_001
+      - DOE_HAL_001
+      - DOE_LIA_007
+      - UNI_CNS_007
+    ui:
+      panel_id: G09
+      display_label: Autonomous-agent capability
+      prompt: Can the AI independently execute external actions without approval for every action?
+      input_type: boolean
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A04
+    canonical_key: ai.lane_a.agentic.control_profile
+    label: Agent control profile
+    registry_scope: LANE_A
+    lane: A
+    section_id: G09
+    shape: OBJECT
+    atomic_fields:
+    - permission_scope
+    - session_spend_cap
+    - period_spend_cap
+    - retry_limit
+    - rate_limit
+    - failure_kill_threshold
+    - loop_threshold
+    - graceful_shutdown_timeout
+    atomic_value_count: 8
+    required_for_assembly: true
+    fillability: DEFAULT_ONLY
+    coverage_status: DEFAULT_OVERRIDE
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_OVERRIDE_DEMO
+      final_value_path: assembly_payload.qr_values.A04
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: The document default is represented by the market-based demo fallback; reviewer confirms or overrides.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        permission_scope: Tier 1 — Read
+        session_spend_cap: USD 50
+        period_spend_cap: USD 500 per day
+        retry_limit: 3
+        rate_limit: 60 calls per minute
+        failure_kill_threshold: 3
+        loop_threshold: 5
+        graceful_shutdown_timeout: 30 seconds
+      display_value: 'permission scope: Tier 1 — Read | session spend cap: USD 50 | period spend cap: USD 500 per day | retry
+        limit: 3 | rate limit: 60 calls per minute | failure kill threshold: 3 | loop threshold: 5 | graceful shutdown timeout:
+        30 seconds'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      document_target: Schedule C circuit breakers, retry and kill-switch controls
+      value_placeholders:
+        permission_scope: '{{QR.A04.PERMISSION_SCOPE}}'
+        session_spend_cap: '{{QR.A04.SESSION_SPEND_CAP}}'
+        period_spend_cap: '{{QR.A04.PERIOD_SPEND_CAP}}'
+        retry_limit: '{{QR.A04.RETRY_LIMIT}}'
+        rate_limit: '{{QR.A04.RATE_LIMIT}}'
+        failure_kill_threshold: '{{QR.A04.FAILURE_KILL_THRESHOLD}}'
+        loop_threshold: '{{QR.A04.LOOP_THRESHOLD}}'
+        graceful_shutdown_timeout: '{{QR.A04.GRACEFUL_SHUTDOWN_TIMEOUT}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - DOE_FIN_001
+      - DOE_HAL_001
+      - DOE_LIA_002
+      - DOE_LIA_003
+      - DOE_PRV_001
+    ui:
+      panel_id: G09
+      display_label: Agent control profile
+      prompt: Review or override the default agent limits, retry controls, loop threshold, permission scope, and kill-switch
+        settings.
+      input_type: agent_control_object
+      render_when:
+        all:
+        - A03 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: A05
+    canonical_key: ai.lane_a.orchestration_architecture
+    label: Multi-agent or model-orchestration architecture
+    registry_scope: LANE_A
+    lane: A
+    section_id: G09
+    shape: BOOLEAN
+    atomic_fields:
+    - multi_agent_or_orchestration
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: ORC
+        fills:
+        - multi_agent_or_orchestration
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A05
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        multi_agent_or_orchestration: true
+      display_value: 'multi agent or orchestration: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - SELECT_CLAUSE
+      document_target: AGT §3.5; model-routing disclosures
+      value_placeholders:
+        multi_agent_or_orchestration: '{{QR.A05.MULTI_AGENT_OR_ORCHESTRATION}}'
+      clause_selector_token: '{{QR.A05.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: AGT §3.5; model-routing disclosures
+      value_placeholders:
+        multi_agent_or_orchestration: '{{QR.A05.MULTI_AGENT_OR_ORCHESTRATION}}'
+      clause_selector_token: '{{QR.A05.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_LIA_001
+      - ORC_PRV_002
+      - ORC_PRV_003
+    ui:
+      panel_id: G09
+      display_label: Multi-agent or model-orchestration architecture
+      prompt: Does the service route work across multiple models, agents, or providers?
+      input_type: boolean
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A06
+    canonical_key: ai.lane_a.agentic.financial_system_access
+    label: Agent interaction with payment or financial systems
+    registry_scope: LANE_A
+    lane: A
+    section_id: G09
+    shape: BOOLEAN
+    atomic_fields:
+    - payment_system_interaction
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.007
+        route_id: P12.ROUTE.PA.MECH.007
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.007"].value
+        fills:
+        - payment_system_interaction
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.surface_context_tokens + overlay_classifications[*].surface_context_tokens
+        filters:
+          contains: Financial
+        fills:
+        - payment_system_interaction
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A06
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        payment_system_interaction: true
+      display_value: 'payment system interaction: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - SELECT_CLAUSE
+      document_target: Tier 3 guidance; financial-use conditions; monetary exposure warnings
+      value_placeholders:
+        payment_system_interaction: '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}'
+      clause_selector_token: '{{QR.A06.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Tier 3 guidance; financial-use conditions; monetary exposure warnings
+      value_placeholders:
+        payment_system_interaction: '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}'
+      clause_selector_token: '{{QR.A06.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: Tier 3 guidance; financial-use conditions; monetary exposure warnings
+      value_placeholders:
+        payment_system_interaction: '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}'
+      clause_selector_token: '{{QR.A06.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - DOE_FIN_001
+      - OPT_TRD_003
+      - OPT_TRD_004
+    ui:
+      panel_id: G09
+      display_label: Agent interaction with payment or financial systems
+      prompt: Can an AI agent access, initiate, approve, or affect payments, credit, trading, or other financial systems?
+      input_type: boolean
+      render_when:
+        all:
+        - A03 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A07
+    canonical_key: ai.lane_a.agentic.high_stakes_use
+    label: Agent use in high-stakes decisions
+    registry_scope: LANE_A
+    lane: A
+    section_id: G09
+    shape: BOOLEAN
+    atomic_fields:
+    - agent_high_stakes_decision_use
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: JDG
+        fills:
+        - agent_high_stakes_decision_use
+        transform: BOOLEAN_ANY_MATCH
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DCO.
+        report_artifact: report_section__06_sector_control_obligations
+        value_selector: findings[field_id startsWith "DCO."].value
+        canonical_label_query:
+        - high-stakes
+        - employment
+        - financial decision
+        - human review
+        fills:
+        - agent_high_stakes_decision_use
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A07
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        agent_high_stakes_decision_use: false
+      display_value: 'agent high stakes decision use: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - SELECT_CLAUSE
+      document_target: Employment/lending/insurance controls and elevated allocation
+      value_placeholders:
+        agent_high_stakes_decision_use: '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}'
+      clause_selector_token: '{{QR.A07.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: Employment/lending/insurance controls and elevated allocation
+      value_placeholders:
+        agent_high_stakes_decision_use: '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}'
+      clause_selector_token: '{{QR.A07.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Employment/lending/insurance controls and elevated allocation
+      value_placeholders:
+        agent_high_stakes_decision_use: '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}'
+      clause_selector_token: '{{QR.A07.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_001
+      - JDG_DEC_003
+      - JDG_DEC_006
+      - JDG_HRM_001
+    ui:
+      panel_id: G09
+      display_label: Agent use in high-stakes decisions
+      prompt: Can an AI agent make or materially influence legal, medical, employment, credit, insurance, education, or similarly
+        high-stakes decisions?
+      input_type: boolean
+      render_when:
+        all:
+        - A03 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A08
+    canonical_key: ai.lane_a.interface.conversational
+    label: Conversational end-user interface
+    registry_scope: LANE_A
+    lane: A
+    section_id: G10
+    shape: BOOLEAN
+    atomic_fields:
+    - conversational_interface
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*]
+        filters:
+          mechanics_or_surface: conversational end-user interface
+        fills:
+        - conversational_interface
+        transform: BOOLEAN_SEMANTIC_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A08
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        conversational_interface: true
+      display_value: 'conversational interface: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §3.4 disclosure; AUP companion trigger component
+      value_placeholders:
+        conversational_interface: '{{QR.A08.CONVERSATIONAL_INTERFACE}}'
+      clause_selector_token: '{{QR.A08.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §3.4 disclosure; AUP companion trigger component
+      value_placeholders:
+        conversational_interface: '{{QR.A08.CONVERSATIONAL_INTERFACE}}'
+      clause_selector_token: '{{QR.A08.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §3.4 disclosure; AUP companion trigger component
+      value_placeholders:
+        conversational_interface: '{{QR.A08.CONVERSATIONAL_INTERFACE}}'
+      clause_selector_token: '{{QR.A08.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_HAL_004
+      - UNI_HAL_001
+    ui:
+      panel_id: G10
+      display_label: Conversational end-user interface
+      prompt: Does an end user interact directly with the AI through chat, voice, or another conversational interface?
+      input_type: boolean
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A09
+    canonical_key: ai.lane_a.interface.companion_relational
+    label: Companion / relational system
+    registry_scope: LANE_A
+    lane: A
+    section_id: G10
+    shape: BOOLEAN
+    atomic_fields:
+    - companion_system
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: CMP
+        fills:
+        - companion_system
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A09
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        companion_system: false
+      display_value: 'companion system: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: California companion block; AUP companion conditions
+      value_placeholders:
+        companion_system: '{{QR.A09.COMPANION_SYSTEM}}'
+      clause_selector_token: '{{QR.A09.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: California companion block; AUP companion conditions
+      value_placeholders:
+        companion_system: '{{QR.A09.COMPANION_SYSTEM}}'
+      clause_selector_token: '{{QR.A09.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CMP_HRM_001
+      - CMP_HRM_002
+      - CMP_HRM_003
+      - CMP_HRM_005
+      - CMP_HRM_006
+    ui:
+      panel_id: G10
+      display_label: Companion / relational system
+      prompt: Is forming an ongoing personalized or emotional relationship with the user a principal product function?
+      input_type: boolean
+      render_when:
+        all:
+        - A08 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A10
+    canonical_key: ai.lane_a.audience.minors
+    label: Minor access or child-directed service
+    registry_scope: LANE_A
+    lane: A
+    section_id: G10
+    shape: BOOLEAN
+    atomic_fields:
+    - minor_access
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.surface_context_tokens + overlay_classifications[*].surface_context_tokens
+        filters:
+          contains: Minors
+        fills:
+        - minor_access
+        transform: BOOLEAN_ANY_MATCH
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.PARTY.
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id startsWith "DAP.PARTY."].value
+        canonical_label_query:
+        - children
+        - minors
+        - data subjects
+        fills:
+        - minor_access
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A10
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        minor_access: false
+      display_value: 'minor access: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §3.2; AUP §3.5; PP children section
+      value_placeholders:
+        minor_access: '{{QR.A10.MINOR_ACCESS}}'
+      clause_selector_token: '{{QR.A10.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §3.2; AUP §3.5; PP children section
+      value_placeholders:
+        minor_access: '{{QR.A10.MINOR_ACCESS}}'
+      clause_selector_token: '{{QR.A10.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §3.2; AUP §3.5; PP children section
+      value_placeholders:
+        minor_access: '{{QR.A10.MINOR_ACCESS}}'
+      clause_selector_token: '{{QR.A10.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CMP_HRM_004
+      - CMP_HRM_007
+      - UNI_PRV_IN1
+    ui:
+      panel_id: G10
+      display_label: Minor access or child-directed service
+      prompt: Can minors access the service, or is the service directed to children or teenagers?
+      input_type: boolean
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A11
+    canonical_key: ai.lane_a.audience.vulnerable_users
+    label: Vulnerable-user context
+    registry_scope: LANE_A
+    lane: A
+    section_id: G10
+    shape: BOOLEAN
+    atomic_fields:
+    - vulnerable_user_context
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.surface_context_tokens + overlay_classifications[*].surface_context_tokens
+        filters:
+          contains_any:
+          - Minors
+          - Sensitive/Biometric
+        fills:
+        - vulnerable_user_context
+        transform: BOOLEAN_ANY_MATCH
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.SENS.
+        report_artifact: report_section__05_sensitive_high_risk_contexts
+        value_selector: findings[field_id startsWith "DAP.SENS."].value
+        canonical_label_query:
+        - vulnerable users
+        - high-risk contexts
+        - sensitive contexts
+        fills:
+        - vulnerable_user_context
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A11
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        vulnerable_user_context: false
+      display_value: 'vulnerable user context: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §5.5 and heightened reliance warnings
+      value_placeholders:
+        vulnerable_user_context: '{{QR.A11.VULNERABLE_USER_CONTEXT}}'
+      clause_selector_token: '{{QR.A11.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §5.5 and heightened reliance warnings
+      value_placeholders:
+        vulnerable_user_context: '{{QR.A11.VULNERABLE_USER_CONTEXT}}'
+      clause_selector_token: '{{QR.A11.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CMP_HRM_001
+      - CMP_HRM_003
+      - CMP_HRM_006
+    ui:
+      panel_id: G10
+      display_label: Vulnerable-user context
+      prompt: Is the service intended for or reasonably likely to be used by vulnerable users?
+      input_type: boolean
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A12
+    canonical_key: ai.lane_a.regulated_use_contexts
+    label: Regulated-use contexts
+    registry_scope: LANE_A
+    lane: A
+    section_id: G11
+    shape: MULTI-SELECT
+    atomic_fields:
+    - healthcare
+    - financial_advice_or_trading
+    - legal_content
+    - employment_decisions
+    atomic_value_count: 4
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.BIZ.005
+        route_id: P12.ROUTE.TP.BIZ.005
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.BIZ.005"].value
+        fills:
+        - healthcare
+        - financial_advice_or_trading
+        - legal_content
+        - employment_decisions
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.surface_context_tokens + overlay_classifications[*].surface_context_tokens
+        filters:
+          contains_any:
+          - Financial
+          - Employment
+          - Sensitive/Biometric
+        fills:
+        - healthcare
+        - financial_advice_or_trading
+        - legal_content
+        - employment_decisions
+        transform: MULTI_BOOLEAN_CLASSIFICATION
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DCO.
+        report_artifact: report_section__06_sector_control_obligations
+        value_selector: findings[field_id startsWith "DCO."].value
+        canonical_label_query:
+        - regulated use
+        - healthcare
+        - financial
+        - legal
+        - employment
+        fills:
+        - healthcare
+        - financial_advice_or_trading
+        - legal_content
+        - employment_decisions
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A12
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        healthcare: false
+        financial_advice_or_trading: true
+        legal_content: false
+        employment_decisions: false
+      display_value: 'healthcare: No | financial advice or trading: Yes | legal content: No | employment decisions: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: AUP §§3.1–3.4; DPA/high-risk routing; TOS reliance controls
+      value_placeholders:
+        healthcare: '{{QR.A12.HEALTHCARE}}'
+        financial_advice_or_trading: '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}'
+        legal_content: '{{QR.A12.LEGAL_CONTENT}}'
+        employment_decisions: '{{QR.A12.EMPLOYMENT_DECISIONS}}'
+      clause_selector_token: '{{QR.A12.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: AUP §§3.1–3.4; DPA/high-risk routing; TOS reliance controls
+      value_placeholders:
+        healthcare: '{{QR.A12.HEALTHCARE}}'
+        financial_advice_or_trading: '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}'
+        legal_content: '{{QR.A12.LEGAL_CONTENT}}'
+        employment_decisions: '{{QR.A12.EMPLOYMENT_DECISIONS}}'
+      clause_selector_token: '{{QR.A12.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: AUP §§3.1–3.4; DPA/high-risk routing; TOS reliance controls
+      value_placeholders:
+        healthcare: '{{QR.A12.HEALTHCARE}}'
+        financial_advice_or_trading: '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}'
+        legal_content: '{{QR.A12.LEGAL_CONTENT}}'
+        employment_decisions: '{{QR.A12.EMPLOYMENT_DECISIONS}}'
+      clause_selector_token: '{{QR.A12.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_003
+      - JDG_DEC_004
+      - JDG_DEC_005
+      - JDG_DEC_006
+      - JDG_DEC_007
+      - JDG_DEC_008
+      - JDG_DEC_009
+      - JDG_DEC_010
+      - OPT_TRD_001
+      - OPT_TRD_002
+    ui:
+      panel_id: G11
+      display_label: Regulated-use contexts
+      prompt: Confirm every regulated-use context in which customers may deploy the service.
+      input_type: multi_select
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A13
+    canonical_key: ai.lane_a.person_affecting_decisions
+    label: Consequential or automated person-affecting decisions
+    registry_scope: LANE_A
+    lane: A
+    section_id: G11
+    shape: BOOLEAN
+    atomic_fields:
+    - consequential_decision_use
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.007
+        route_id: P12.ROUTE.PA.MECH.007
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.007"].value
+        fills:
+        - consequential_decision_use
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.009
+        route_id: P12.ROUTE.PA.MECH.009
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.009"].value
+        fills:
+        - consequential_decision_use
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: JDG
+        fills:
+        - consequential_decision_use
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A13
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        consequential_decision_use: false
+      display_value: 'consequential decision use: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §5.6; PP automated decisions; high-risk conditions
+      value_placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      clause_selector_token: '{{QR.A13.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §5.6; PP automated decisions; high-risk conditions
+      value_placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      clause_selector_token: '{{QR.A13.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §5.6; PP automated decisions; high-risk conditions
+      value_placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      clause_selector_token: '{{QR.A13.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §5.6; PP automated decisions; high-risk conditions
+      value_placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      clause_selector_token: '{{QR.A13.CLAUSE_SELECTOR}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_001
+      - JDG_DEC_002
+      - JDG_DEC_004
+      - JDG_DEC_005
+      - JDG_DEC_006
+      - JDG_DEC_008
+      - JDG_DEC_009
+      - JDG_DEC_010
+    ui:
+      panel_id: G11
+      display_label: Consequential or automated person-affecting decisions
+      prompt: Does the service make, score, rank, recommend, or materially influence decisions about identifiable people?
+      input_type: boolean
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A14
+    canonical_key: ai.lane_a.biometric_or_human_signal_processing
+    label: Biometric or human-signal processing
+    registry_scope: LANE_A
+    lane: A
+    section_id: G11
+    shape: BOOLEAN
+    atomic_fields:
+    - biometric_processing
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: TRN
+        fills:
+        - biometric_processing
+        transform: BOOLEAN_ANY_MATCH
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.SENS.
+        report_artifact: report_section__05_sensitive_high_risk_contexts
+        value_selector: findings[field_id startsWith "DAP.SENS."].value
+        canonical_label_query:
+        - biometric
+        - voiceprint
+        - human signal
+        fills:
+        - biometric_processing
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A14
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        biometric_processing: false
+      display_value: 'biometric processing: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: AUP §3.6; sensitive-data and privacy disclosures
+      value_placeholders:
+        biometric_processing: '{{QR.A14.BIOMETRIC_PROCESSING}}'
+      clause_selector_token: '{{QR.A14.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: AUP §3.6; sensitive-data and privacy disclosures
+      value_placeholders:
+        biometric_processing: '{{QR.A14.BIOMETRIC_PROCESSING}}'
+      clause_selector_token: '{{QR.A14.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: AUP §3.6; sensitive-data and privacy disclosures
+      value_placeholders:
+        biometric_processing: '{{QR.A14.BIOMETRIC_PROCESSING}}'
+      clause_selector_token: '{{QR.A14.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - TRN_BIO_001
+      - TRN_BIO_002
+      - TRN_BIO_003
+      - TRN_BIO_004
+      - JDG_DEC_009
+      - CRT_INF_005
+    ui:
+      panel_id: G11
+      display_label: Biometric or human-signal processing
+      prompt: Does the service process voice, face, gait, emotion, biometric identifiers, or other human signals?
+      input_type: boolean
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A15
+    canonical_key: ai.lane_a.financial_reliance_threshold
+    label: Financial reliance threshold
+    registry_scope: LANE_A
+    lane: A
+    section_id: G11
+    shape: SCALAR
+    atomic_fields:
+    - financial_impact_threshold
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: DEFAULT_ONLY
+    coverage_status: DEFAULT_OVERRIDE
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_OVERRIDE_DEMO
+      final_value_path: assembly_payload.qr_values.A15
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: The document default is represented by the market-based demo fallback; reviewer confirms or overrides.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        financial_impact_threshold: USD 10,000
+      display_value: 'financial impact threshold: USD 10,000'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: TOS §5.4 reliance threshold
+      value_placeholders:
+        financial_impact_threshold: '{{QR.A15.FINANCIAL_IMPACT_THRESHOLD}}'
+    - document_id: DOC_AI_A_PBK
+      actions:
+      - POPULATE
+      document_target: TOS §5.4 reliance threshold
+      value_placeholders:
+        financial_impact_threshold: '{{QR.A15.FINANCIAL_IMPACT_THRESHOLD}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_HAL_003
+      - OPT_TRD_003
+    ui:
+      panel_id: G11
+      display_label: Financial reliance threshold
+      prompt: Review or override the maximum amount on which a user may rely without independent verification.
+      input_type: currency
+      render_when:
+        any:
+        - A06 == true
+        - A07 == true
+        - A12 contains FINANCIAL_TRADING
+        - A13 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: A16
+    canonical_key: ai.lane_a.training.customer_data_posture
+    label: Customer-data training posture
+    registry_scope: LANE_A
+    lane: A
+    section_id: G12
+    shape: ENUM
+    atomic_fields:
+    - prohibited
+    - opt_in_only
+    - permitted_under_terms
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.AUTH.
+        report_artifact: report_section__05_purpose_authorization_user_controls
+        value_selector: findings[field_id startsWith "DAP.AUTH."].value
+        canonical_label_query:
+        - training
+        - model improvement
+        - authorization
+        fills:
+        - prohibited
+        - opt_in_only
+        - permitted_under_terms
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CTRL.
+        report_artifact: report_section__05_purpose_authorization_user_controls
+        value_selector: findings[field_id startsWith "DAP.CTRL."].value
+        canonical_label_query:
+        - training controls
+        - opt-in
+        - consent
+        fills:
+        - prohibited
+        - opt_in_only
+        - permitted_under_terms
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A16
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        prohibited: false
+        opt_in_only: true
+        permitted_under_terms: false
+      display_value: 'prohibited: No | opt in only: Yes | permitted under terms: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §6.1; DPA model-training controls; privacy disclosure
+      value_placeholders:
+        prohibited: '{{QR.A16.PROHIBITED}}'
+        opt_in_only: '{{QR.A16.OPT_IN_ONLY}}'
+        permitted_under_terms: '{{QR.A16.PERMITTED_UNDER_TERMS}}'
+      clause_selector_token: '{{QR.A16.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §6.1; DPA model-training controls; privacy disclosure
+      value_placeholders:
+        prohibited: '{{QR.A16.PROHIBITED}}'
+        opt_in_only: '{{QR.A16.OPT_IN_ONLY}}'
+        permitted_under_terms: '{{QR.A16.PERMITTED_UNDER_TERMS}}'
+      clause_selector_token: '{{QR.A16.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: TOS §6.1; DPA model-training controls; privacy disclosure
+      value_placeholders:
+        prohibited: '{{QR.A16.PROHIBITED}}'
+        opt_in_only: '{{QR.A16.OPT_IN_ONLY}}'
+        permitted_under_terms: '{{QR.A16.PERMITTED_UNDER_TERMS}}'
+      clause_selector_token: '{{QR.A16.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_PRV_001
+      - RDR_PRV_001
+      - RDR_PRV_002
+      - UNI_INF_004
+    ui:
+      panel_id: G12
+      display_label: Customer-data training posture
+      prompt: Confirm whether customer data is excluded from training, used only in de-identified form, or used for fine-tuning.
+      input_type: select
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A17
+    canonical_key: ai.lane_a.data.personal_data_types
+    label: Personal-data types processed
+    registry_scope: LANE_A
+    lane: A
+    section_id: G12
+    shape: LIST
+    atomic_fields:
+    - personal_data_categories[]
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.OBJ.
+        report_artifact: report_section__05_data_objects_flows
+        value_selector: findings[field_id startsWith "DAP.OBJ."].value
+        canonical_label_query:
+        - personal data
+        - data object
+        fills:
+        - personal_data_categories[]
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.FLOW.
+        report_artifact: report_section__05_data_objects_flows
+        value_selector: findings[field_id startsWith "DAP.FLOW."].value
+        canonical_label_query:
+        - data flow
+        - input data
+        fills:
+        - personal_data_categories[]
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A17
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        personal_data_categories[]:
+        - Names
+        - Email addresses
+        - IP addresses
+        - User content
+        - Usage data
+      display_value: 'personal data categories: Names; Email addresses; IP addresses; User content; Usage data'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: DPA Schedule A; PP collection/use disclosures; TOS DPA gateway
+      value_placeholders:
+        personal_data_categories[]: '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: DPA Schedule A; PP collection/use disclosures; TOS DPA gateway
+      value_placeholders:
+        personal_data_categories[]: '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: DPA Schedule A; PP collection/use disclosures; TOS DPA gateway
+      value_placeholders:
+        personal_data_categories[]: '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_IN1
+      - UNI_PRV_002
+      - UNI_PRV_003
+      - UNI_PRV_IN2
+      - UNI_PRV_IN4
+      - UNI_PRV_IN5
+    ui:
+      panel_id: G12
+      display_label: Personal-data types processed
+      prompt: Confirm the personal-data types processed by the service.
+      input_type: multi_value
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A18
+    canonical_key: ai.lane_a.data.sensitive_categories
+    label: Sensitive-data categories
+    registry_scope: LANE_A
+    lane: A
+    section_id: G12
+    shape: LIST
+    atomic_fields:
+    - sensitive_data_categories[]
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.SENS.
+        report_artifact: report_section__05_sensitive_high_risk_contexts
+        value_selector: findings[field_id startsWith "DAP.SENS."].value
+        canonical_label_query:
+        - sensitive data
+        - special category
+        fills:
+        - sensitive_data_categories[]
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.surface_context_tokens + overlay_classifications[*].surface_context_tokens
+        filters:
+          contains_any:
+          - Sensitive/Biometric
+          - Financial
+        fills:
+        - sensitive_data_categories[]
+        transform: COLLECT_MATCHES
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A18
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        sensitive_data_categories[]:
+        - None identified
+      display_value: 'sensitive data categories: None identified'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: DPA Schedule A; PP sensitive data; sector-specific controls
+      value_placeholders:
+        sensitive_data_categories[]: '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}'
+      clause_selector_token: '{{QR.A18.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: DPA Schedule A; PP sensitive data; sector-specific controls
+      value_placeholders:
+        sensitive_data_categories[]: '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}'
+      clause_selector_token: '{{QR.A18.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: DPA Schedule A; PP sensitive data; sector-specific controls
+      value_placeholders:
+        sensitive_data_categories[]: '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}'
+      clause_selector_token: '{{QR.A18.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - TRN_BIO_001
+      - TRN_BIO_002
+      - UNI_PRV_IN1
+      - UNI_PRV_IN2
+    ui:
+      panel_id: G12
+      display_label: Sensitive-data categories
+      prompt: Confirm every sensitive-data category processed by the service.
+      input_type: multi_value
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A19
+    canonical_key: ai.lane_a.data.subject_categories
+    label: Data-subject categories
+    registry_scope: LANE_A
+    lane: A
+    section_id: G12
+    shape: LIST
+    atomic_fields:
+    - data_subject_categories[]
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.PARTY.001
+        route_id: P12.ROUTE.DAP.PARTY.001
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id="DAP.PARTY.001"].value
+        fills:
+        - data_subject_categories[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.PARTY.002
+        route_id: P12.ROUTE.DAP.PARTY.002
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id="DAP.PARTY.002"].value
+        fills:
+        - data_subject_categories[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.PARTY.003
+        route_id: P12.ROUTE.DAP.PARTY.003
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id="DAP.PARTY.003"].value
+        fills:
+        - data_subject_categories[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.PARTY.004
+        route_id: P12.ROUTE.DAP.PARTY.004
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id="DAP.PARTY.004"].value
+        fills:
+        - data_subject_categories[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.PARTY.005
+        route_id: P12.ROUTE.DAP.PARTY.005
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id="DAP.PARTY.005"].value
+        fills:
+        - data_subject_categories[]
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A19
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        data_subject_categories[]:
+        - Customer end users
+        - Customer administrators
+      display_value: 'data subject categories: Customer end users; Customer administrators'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: DPA Schedule A; PP audience and rights architecture
+      value_placeholders:
+        data_subject_categories[]: '{{QR.A19.DATA_SUBJECT_CATEGORIES_LIST}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: DPA Schedule A; PP audience and rights architecture
+      value_placeholders:
+        data_subject_categories[]: '{{QR.A19.DATA_SUBJECT_CATEGORIES_LIST}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_PRV_IN1
+      - JDG_DEC_009
+    ui:
+      panel_id: G12
+      display_label: Data-subject categories
+      prompt: Confirm the categories of people whose data is processed.
+      input_type: multi_value
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A20
+    canonical_key: ai.lane_a.processing_architecture
+    label: AI processing architecture
+    registry_scope: LANE_A
+    lane: A
+    section_id: G12
+    shape: ENUM
+    atomic_fields:
+    - stateless
+    - rag
+    - fine_tuning
+    - both
+    atomic_value_count: 4
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.FLOW.
+        report_artifact: report_section__05_data_objects_flows
+        value_selector: findings[field_id startsWith "DAP.FLOW."].value
+        canonical_label_query:
+        - retrieval
+        - RAG
+        - fine-tuning
+        - processing architecture
+        fills:
+        - stateless
+        - rag
+        - fine_tuning
+        - both
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.OBJ.
+        report_artifact: report_section__05_data_objects_flows
+        value_selector: findings[field_id startsWith "DAP.OBJ."].value
+        canonical_label_query:
+        - knowledge base
+        - training dataset
+        fills:
+        - stateless
+        - rag
+        - fine_tuning
+        - both
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.RET.
+        report_artifact: report_section__05_retention_deletion_portability
+        value_selector: findings[field_id startsWith "DAP.RET."].value
+        canonical_label_query:
+        - retention
+        - ephemeral
+        - state
+        fills:
+        - stateless
+        - rag
+        - fine_tuning
+        - both
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A20
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        stateless: false
+        rag: true
+        fine_tuning: false
+        both: false
+      display_value: 'stateless: No | rag: Yes | fine tuning: No | both: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: DPA §4 architecture; TOS training language; privacy disclosure
+      value_placeholders:
+        stateless: '{{QR.A20.STATELESS}}'
+        rag: '{{QR.A20.RAG}}'
+        fine_tuning: '{{QR.A20.FINE_TUNING}}'
+        both: '{{QR.A20.BOTH}}'
+      clause_selector_token: '{{QR.A20.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: DPA §4 architecture; TOS training language; privacy disclosure
+      value_placeholders:
+        stateless: '{{QR.A20.STATELESS}}'
+        rag: '{{QR.A20.RAG}}'
+        fine_tuning: '{{QR.A20.FINE_TUNING}}'
+        both: '{{QR.A20.BOTH}}'
+      clause_selector_token: '{{QR.A20.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: DPA §4 architecture; TOS training language; privacy disclosure
+      value_placeholders:
+        stateless: '{{QR.A20.STATELESS}}'
+        rag: '{{QR.A20.RAG}}'
+        fine_tuning: '{{QR.A20.FINE_TUNING}}'
+        both: '{{QR.A20.BOTH}}'
+      clause_selector_token: '{{QR.A20.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - RDR_INF_001
+      - RDR_INF_003
+      - RDR_PRV_001
+      - RDR_PRV_002
+      - MOV_LIA_002
+    ui:
+      panel_id: G12
+      display_label: AI processing architecture
+      prompt: Confirm whether the service uses stateless processing, RAG, persistent memory, fine-tuning, or a hybrid architecture.
+      input_type: select
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A21
+    canonical_key: ai.lane_a.subprocessor_register
+    label: Subprocessor register
+    registry_scope: LANE_A
+    lane: A
+    section_id: G13
+    shape: REPEATABLE_OBJECT
+    atomic_fields:
+    - name
+    - provider_type
+    - processing_activity
+    - processing_location
+    - dpf_certified
+    atomic_value_count: 5
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.VEND.001
+        route_id: P12.ROUTE.DAP.VEND.001
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id="DAP.VEND.001"].value
+        fills:
+        - name
+        - provider_type
+        - processing_activity
+        - processing_location
+        - dpf_certified
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.VEND.002
+        route_id: P12.ROUTE.DAP.VEND.002
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id="DAP.VEND.002"].value
+        fills:
+        - name
+        - provider_type
+        - processing_activity
+        - processing_location
+        - dpf_certified
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.VEND.003
+        route_id: P12.ROUTE.DAP.VEND.003
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id="DAP.VEND.003"].value
+        fills:
+        - name
+        - provider_type
+        - processing_activity
+        - processing_location
+        - dpf_certified
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.VEND.004
+        route_id: P12.ROUTE.DAP.VEND.004
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id="DAP.VEND.004"].value
+        fills:
+        - name
+        - provider_type
+        - processing_activity
+        - processing_location
+        - dpf_certified
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.VEND.005
+        route_id: P12.ROUTE.DAP.VEND.005
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id="DAP.VEND.005"].value
+        fills:
+        - name
+        - provider_type
+        - processing_activity
+        - processing_location
+        - dpf_certified
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: DAP.VEND.006
+        route_id: P12.ROUTE.DAP.VEND.006
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id="DAP.VEND.006"].value
+        fills:
+        - name
+        - provider_type
+        - processing_activity
+        - processing_location
+        - dpf_certified
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.LOC.
+        report_artifact: report_section__05_location_transfer_custody
+        value_selector: findings[field_id startsWith "DAP.LOC."].value
+        canonical_label_query:
+        - location
+        - transfer mechanism
+        - DPF
+        fills:
+        - processing_location
+        - dpf_certified
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A21
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        name: OpenAI
+        provider_type: AI model provider
+        processing_activity: Inference
+        processing_location: United States
+        dpf_certified: true
+      display_value: 'name: OpenAI | provider type: AI model provider | processing activity: Inference | processing location:
+        United States | dpf certified: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: DPA Schedule C; PP provider disclosures; transfer analysis
+      value_placeholders:
+        name: '{{QR.A21.NAME}}'
+        provider_type: '{{QR.A21.PROVIDER_TYPE}}'
+        processing_activity: '{{QR.A21.PROCESSING_ACTIVITY}}'
+        processing_location: '{{QR.A21.PROCESSING_LOCATION}}'
+        dpf_certified: '{{QR.A21.DPF_CERTIFIED}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: DPA Schedule C; PP provider disclosures; transfer analysis
+      value_placeholders:
+        name: '{{QR.A21.NAME}}'
+        provider_type: '{{QR.A21.PROVIDER_TYPE}}'
+        processing_activity: '{{QR.A21.PROCESSING_ACTIVITY}}'
+        processing_location: '{{QR.A21.PROCESSING_LOCATION}}'
+        dpf_certified: '{{QR.A21.DPF_CERTIFIED}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: DPA Schedule C; PP provider disclosures; transfer analysis
+      value_placeholders:
+        name: '{{QR.A21.NAME}}'
+        provider_type: '{{QR.A21.PROVIDER_TYPE}}'
+        processing_activity: '{{QR.A21.PROCESSING_ACTIVITY}}'
+        processing_location: '{{QR.A21.PROCESSING_LOCATION}}'
+        dpf_certified: '{{QR.A21.DPF_CERTIFIED}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_PRV_002
+      - ORC_PRV_003
+      - UNI_PRV_001
+      - UNI_PRV_002
+    ui:
+      panel_id: G13
+      display_label: Subprocessor register
+      prompt: Complete the subprocessor register with each provider’s role, processing activity, location, and relevant transfer
+        certification.
+      input_type: repeatable_table
+      render_when:
+        any:
+        - A01 is not empty
+        - A02 is not empty
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A22
+    canonical_key: ai.lane_a.subprocessor_list_url
+    label: Live subprocessor-list URL
+    registry_scope: LANE_A
+    lane: A
+    section_id: G13
+    shape: SCALAR
+    atomic_fields:
+    - subprocessor_list_url
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.VEND.
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id startsWith "DAP.VEND."].value
+        canonical_label_query:
+        - subprocessor list URL
+        - vendor transparency route
+        fills:
+        - subprocessor_list_url
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - subprocessor list
+        - privacy center
+        fills:
+        - subprocessor_list_url
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A22
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        subprocessor_list_url: https://demo.example/subprocessors
+      display_value: 'subprocessor list url: https://demo.example/subprocessors'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: DPA §5.2 and public vendor transparency route
+      value_placeholders:
+        subprocessor_list_url: '{{QR.A22.SUBPROCESSOR_LIST_URL}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: DPA §5.2 and public vendor transparency route
+      value_placeholders:
+        subprocessor_list_url: '{{QR.A22.SUBPROCESSOR_LIST_URL}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_PRV_002
+      - UNI_PRV_002
+    ui:
+      panel_id: G13
+      display_label: Live subprocessor-list URL
+      prompt: Provide the live URL where customers can review the current subprocessor list.
+      input_type: url
+      render_when:
+        all:
+        - A21 is not empty
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A23
+    canonical_key: ai.lane_a.resilience_summary
+    label: Disaster recovery / business continuity summary
+    registry_scope: LANE_A
+    lane: A
+    section_id: G13
+    shape: LONG_TEXT
+    atomic_fields:
+    - dr_bcp_summary
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.SEC.
+        report_artifact: report_section__05_security_access_incident_governance
+        value_selector: findings[field_id startsWith "DAP.SEC."].value
+        canonical_label_query:
+        - disaster recovery
+        - business continuity
+        - backup
+        - resilience
+        fills:
+        - dr_bcp_summary
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.READY.
+        report_artifact: report_section__05_regulatory_readiness
+        value_selector: findings[field_id startsWith "DAP.READY."].value
+        canonical_label_query:
+        - readiness
+        - resilience
+        fills:
+        - dr_bcp_summary
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A23
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        dr_bcp_summary: Daily encrypted backups, multi-region recovery and annual recovery testing
+      display_value: 'dr bcp summary: Daily encrypted backups, multi-region recovery and annual recovery testing'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: DPA security schedule and operational resilience summary
+      value_placeholders:
+        dr_bcp_summary: '{{QR.A23.DR_BCP_SUMMARY}}'
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - POPULATE
+      document_target: DPA security schedule and operational resilience summary
+      value_placeholders:
+        dr_bcp_summary: '{{QR.A23.DR_BCP_SUMMARY}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_INF_IN1
+      - UNI_PRV_003
+      - UNI_PRV_IN4
+      - SHD_LIA_001
+      - SHD_LIA_002
+      - SHD_LIA_003
+    ui:
+      panel_id: G13
+      display_label: Disaster recovery / business continuity summary
+      prompt: Provide the disaster-recovery and business-continuity summary used in customer documents.
+      input_type: textarea
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A24
+    canonical_key: ai.lane_a.jurisdiction.eu_uk_swiss_scope
+    label: EU/UK/Swiss personal-data scope
+    registry_scope: LANE_A
+    lane: A
+    section_id: G13
+    shape: BOOLEAN
+    atomic_fields:
+    - eu_uk_swiss_data_scope
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.LOC.
+        report_artifact: report_section__05_location_transfer_custody
+        value_selector: findings[field_id startsWith "DAP.LOC."].value
+        canonical_label_query:
+        - EU
+        - UK
+        - Swiss
+        - cross-border
+        fills:
+        - eu_uk_swiss_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.DOM.
+        report_artifact: report_section__05_regulatory_readiness
+        value_selector: findings[field_id startsWith "DAP.DOM."].value
+        canonical_label_query:
+        - GDPR
+        - EU AI Act
+        - UK
+        fills:
+        - eu_uk_swiss_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.PARTY.
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id startsWith "DAP.PARTY."].value
+        canonical_label_query:
+        - EU data subjects
+        fills:
+        - eu_uk_swiss_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DD.
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id startsWith "DD."].value
+        canonical_label_query:
+        - gdpr overlay
+        - eu ai act overlay
+        fills:
+        - eu_uk_swiss_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A24
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        eu_uk_swiss_data_scope: true
+      display_value: 'eu uk swiss data scope: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      value_placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A24.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A24.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      value_placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A24.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A24.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      value_placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A24.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A24.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      value_placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A24.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.A24.DOCUMENT_ACTIVE}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_006
+      - JDG_DEC_008
+      - UNI_PRV_001
+    ui:
+      panel_id: G13
+      display_label: EU/UK/Swiss personal-data scope
+      prompt: Will the service process personal data subject to EU, UK, or Swiss data-protection law?
+      input_type: boolean
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A25
+    canonical_key: ai.lane_a.jurisdiction.california_scope
+    label: California personal-information scope
+    registry_scope: LANE_A
+    lane: A
+    section_id: G13
+    shape: BOOLEAN
+    atomic_fields:
+    - california_data_scope
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.PARTY.
+        report_artifact: report_section__05_parties_roles
+        value_selector: findings[field_id startsWith "DAP.PARTY."].value
+        canonical_label_query:
+        - California consumer
+        - California resident
+        fills:
+        - california_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.LOC.
+        report_artifact: report_section__05_location_transfer_custody
+        value_selector: findings[field_id startsWith "DAP.LOC."].value
+        canonical_label_query:
+        - California
+        - United States
+        fills:
+        - california_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DD.
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id startsWith "DD."].value
+        canonical_label_query:
+        - US state privacy overlay
+        - California
+        fills:
+        - california_data_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A25
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        california_data_scope: true
+      display_value: 'california data scope: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: CCPA/CPRA section; California-specific companion context
+      value_placeholders:
+        california_data_scope: '{{QR.A25.CALIFORNIA_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A25.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: CCPA/CPRA section; California-specific companion context
+      value_placeholders:
+        california_data_scope: '{{QR.A25.CALIFORNIA_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A25.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: CCPA/CPRA section; California-specific companion context
+      value_placeholders:
+        california_data_scope: '{{QR.A25.CALIFORNIA_DATA_SCOPE}}'
+      clause_selector_token: '{{QR.A25.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_PRV_003
+      - CRT_INF_003
+    ui:
+      panel_id: G13
+      display_label: California personal-information scope
+      prompt: Will the service process California personal information in a service-provider or contractor relationship?
+      input_type: boolean
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A26
+    canonical_key: ai.lane_a.privacy_role_configuration
+    label: Privacy-role configuration
+    registry_scope: LANE_A
+    lane: A
+    section_id: G13
+    shape: OBJECT
+    atomic_fields:
+    - dpo_appointed
+    - dpo_contact
+    - eu_uk_representative_appointed
+    - representative_contact
+    atomic_value_count: 4
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CONTACT.
+        report_artifact: report_section__05_privacy_contacts_consent_manager
+        value_selector: findings[field_id startsWith "DAP.CONTACT."].value
+        canonical_label_query:
+        - DPO
+        - privacy officer
+        - representative
+        fills:
+        - dpo_appointed
+        - dpo_contact
+        - eu_uk_representative_appointed
+        - representative_contact
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CM.
+        report_artifact: report_section__05_privacy_contacts_consent_manager
+        value_selector: findings[field_id startsWith "DAP.CM."].value
+        canonical_label_query:
+        - consent manager
+        - representative
+        fills:
+        - dpo_appointed
+        - dpo_contact
+        - eu_uk_representative_appointed
+        - representative_contact
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A26
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        dpo_appointed: false
+        dpo_contact: Not appointed
+        eu_uk_representative_appointed: false
+        representative_contact: Not appointed
+      display_value: 'dpo appointed: No | dpo contact: Not appointed | eu uk representative appointed: No | representative
+        contact: Not appointed'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: PP §11; DPO and representative disclosures
+      value_placeholders:
+        dpo_appointed: '{{QR.A26.DPO_APPOINTED}}'
+        dpo_contact: '{{QR.A26.DPO_CONTACT}}'
+        eu_uk_representative_appointed: '{{QR.A26.EU_UK_REPRESENTATIVE_APPOINTED}}'
+        representative_contact: '{{QR.A26.REPRESENTATIVE_CONTACT}}'
+      clause_selector_token: '{{QR.A26.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: PP §11; DPO and representative disclosures
+      value_placeholders:
+        dpo_appointed: '{{QR.A26.DPO_APPOINTED}}'
+        dpo_contact: '{{QR.A26.DPO_CONTACT}}'
+        eu_uk_representative_appointed: '{{QR.A26.EU_UK_REPRESENTATIVE_APPOINTED}}'
+        representative_contact: '{{QR.A26.REPRESENTATIVE_CONTACT}}'
+      clause_selector_token: '{{QR.A26.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_PRV_003
+      - UNI_PRV_002
+    ui:
+      panel_id: G13
+      display_label: Privacy-role configuration
+      prompt: Confirm the controller, processor, service-provider, contractor, and business roles used in the document set.
+      input_type: object_form
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A27
+    canonical_key: ai.lane_a.cookie_configuration
+    label: Cookie configuration
+    registry_scope: LANE_A
+    lane: A
+    section_id: G14
+    shape: OBJECT
+    atomic_fields:
+    - cookie_categories
+    - marketing_or_advertising_cookies
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CTRL.
+        report_artifact: report_section__05_purpose_authorization_user_controls
+        value_selector: findings[field_id startsWith "DAP.CTRL."].value
+        canonical_label_query:
+        - cookie
+        - tracking
+        - marketing consent
+        fills:
+        - cookie_categories
+        - marketing_or_advertising_cookies
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - cookie notice
+        - privacy notice
+        fills:
+        - cookie_categories
+        - marketing_or_advertising_cookies
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.A27
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        cookie_categories:
+        - Essential
+        - Analytics
+        marketing_or_advertising_cookies: false
+      display_value: 'cookie categories: Essential; Analytics | marketing or advertising cookies: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: PP §8 cookie table and marketing-cookie section
+      value_placeholders:
+        cookie_categories: '{{QR.A27.COOKIE_CATEGORIES}}'
+        marketing_or_advertising_cookies: '{{QR.A27.MARKETING_OR_ADVERTISING_COOKIES}}'
+      clause_selector_token: '{{QR.A27.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_IN1
+      - UNI_CNS_IN2
+    ui:
+      panel_id: G14
+      display_label: Cookie configuration
+      prompt: Confirm the cookies or tracking technologies used by the website or service and their purposes.
+      input_type: object_form
+      render_when:
+        all:
+        - lane_a_active == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: A28
+    canonical_key: ai.lane_a.sla.performance_metrics
+    label: SLA performance metrics
+    registry_scope: LANE_A
+    lane: A
+    section_id: G14
+    shape: OBJECT
+    atomic_fields:
+    - availability_target
+    - ttft_target
+    - credit_cap
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: DEFAULT_ONLY
+    coverage_status: DEFAULT_OVERRIDE
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_OVERRIDE_DEMO
+      final_value_path: assembly_payload.qr_values.A28
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: The document default is represented by the market-based demo fallback; reviewer confirms or overrides.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        availability_target: 99.9% monthly uptime
+        ttft_target: Under 3 seconds for 99% of requests
+        credit_cap: 30% of monthly fees
+      display_value: 'availability target: 99.9% monthly uptime | ttft target: Under 3 seconds for 99% of requests | credit
+        cap: 30% of monthly fees'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - POPULATE
+      document_target: SLA Schedule A; TOS Schedule A reference
+      value_placeholders:
+        availability_target: '{{QR.A28.AVAILABILITY_TARGET}}'
+        ttft_target: '{{QR.A28.TTFT_TARGET}}'
+        credit_cap: '{{QR.A28.CREDIT_CAP}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: SLA Schedule A; TOS Schedule A reference
+      value_placeholders:
+        availability_target: '{{QR.A28.AVAILABILITY_TARGET}}'
+        ttft_target: '{{QR.A28.TTFT_TARGET}}'
+        credit_cap: '{{QR.A28.CREDIT_CAP}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_LIA_001
+      - SHD_LIA_003
+      - SHD_LIA_004
+    ui:
+      panel_id: G14
+      display_label: SLA performance metrics
+      prompt: Review or override the default uptime, support, response-time, latency, service-credit, and exclusion metrics.
+      input_type: sla_metrics_object
+      render_when:
+        all:
+        - U19 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B01
+    canonical_key: ai.lane_b.internal_workforce_use
+    label: Internal workforce AI use
+    registry_scope: LANE_B
+    lane: B
+    section_id: G15
+    shape: BOOLEAN
+    atomic_fields:
+    - internal_ai_use
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*]
+        filters:
+          lane: B
+          external_internal_action_signal: INTERNAL
+        fills:
+        - internal_ai_use
+        transform: BOOLEAN_ANY_MATCH
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__08_exposure_register
+        value_selector: child_artifacts[*].rows[*].classification.lane
+        filters:
+          equals: B
+        fills:
+        - internal_ai_use
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B01
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        internal_ai_use: true
+      display_value: 'internal ai use: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Activates Lane B governance stack
+      value_placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      document_activation_token: '{{QR.B01.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Activates Lane B governance stack
+      value_placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      document_activation_token: '{{QR.B01.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Activates Lane B governance stack
+      value_placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      document_activation_token: '{{QR.B01.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Activates Lane B governance stack
+      value_placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      document_activation_token: '{{QR.B01.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Activates Lane B governance stack
+      value_placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      document_activation_token: '{{QR.B01.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_PBK
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Activates Lane B governance stack
+      value_placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      document_activation_token: '{{QR.B01.DOCUMENT_ACTIVE}}'
+    document_binding_count: 6
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_LIA_LB1
+      - UNI_FRD_LB1
+    ui:
+      panel_id: G15
+      display_label: Internal workforce AI use
+      prompt: Do employees, contractors, or freelancers use AI tools in company work?
+      input_type: boolean
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B02
+    canonical_key: ai.lane_b.workforce_composition
+    label: Workforce composition
+    registry_scope: LANE_B
+    lane: B
+    section_id: G15
+    shape: OBJECT
+    atomic_fields:
+    - employees_in_scope
+    - contractors_used
+    - freelancers_used
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B02
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        employees_in_scope: true
+        contractors_used: true
+        freelancers_used: false
+      display_value: 'employees in scope: Yes | contractors used: Yes | freelancers used: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      document_target: Scope, acknowledgement, contractor variants and IP deed versions
+      value_placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      clause_selector_token: '{{QR.B02.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: Scope, acknowledgement, contractor variants and IP deed versions
+      value_placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      clause_selector_token: '{{QR.B02.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Scope, acknowledgement, contractor variants and IP deed versions
+      value_placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      clause_selector_token: '{{QR.B02.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Scope, acknowledgement, contractor variants and IP deed versions
+      value_placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      clause_selector_token: '{{QR.B02.CLAUSE_SELECTOR}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CRT_INF_LB1
+      - RDR_PRV_LB1
+    ui:
+      panel_id: G15
+      display_label: Workforce composition
+      prompt: 'Identify which workforce groups use AI: employees, contractors, freelancers, interns, or other personnel.'
+      input_type: object_form
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B03
+    canonical_key: ai.lane_b.jurisdiction.eu_workforce_or_operations
+    label: EU workforce or operations
+    registry_scope: LANE_B
+    lane: B
+    section_id: G15
+    shape: BOOLEAN
+    atomic_fields:
+    - eu_workforce_or_operations
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: TP.JUR.
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id startsWith "TP.JUR."].value
+        canonical_label_query:
+        - EU
+        - European
+        - registered country
+        - operations
+        fills:
+        - eu_workforce_or_operations
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DD.
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id startsWith "DD."].value
+        canonical_label_query:
+        - gdpr overlay
+        - eu ai act overlay
+        fills:
+        - eu_workforce_or_operations
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B03
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        eu_workforce_or_operations: false
+      display_value: 'eu workforce or operations: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      document_target: EU employee procedures; EU AI Act and GDPR emphasis
+      value_placeholders:
+        eu_workforce_or_operations: '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}'
+      clause_selector_token: '{{QR.B03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: EU employee procedures; EU AI Act and GDPR emphasis
+      value_placeholders:
+        eu_workforce_or_operations: '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}'
+      clause_selector_token: '{{QR.B03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - SELECT_CLAUSE
+      document_target: EU employee procedures; EU AI Act and GDPR emphasis
+      value_placeholders:
+        eu_workforce_or_operations: '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}'
+      clause_selector_token: '{{QR.B03.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_LB2
+    ui:
+      panel_id: G15
+      display_label: EU workforce or operations
+      prompt: Does the organization have EU workforce members, EU establishments, or internal operations subject to EU employment
+        or AI rules?
+      input_type: boolean
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B04
+    canonical_key: ai.lane_b.company_provided_tools
+    label: Company-provided AI tools
+    registry_scope: LANE_B
+    lane: B
+    section_id: G16
+    shape: LIST
+    atomic_fields:
+    - approved_enterprise_ai_tools[]
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.VEND.
+        report_artifact: report_section__05_vendor_processor_chain
+        value_selector: findings[field_id startsWith "DAP.VEND."].value
+        canonical_label_query:
+        - AI tool
+        - enterprise tool
+        - model provider
+        fills:
+        - approved_enterprise_ai_tools[]
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B04
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        approved_enterprise_ai_tools[]:
+        - ChatGPT Enterprise
+        - GitHub Copilot Business
+      display_value: 'approved enterprise ai tools: ChatGPT Enterprise; GitHub Copilot Business'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - POPULATE
+      document_target: Traffic-light tables and pre-populated Shadow AI survey choices
+      value_placeholders:
+        approved_enterprise_ai_tools[]: '{{QR.B04.APPROVED_ENTERPRISE_AI_TOOLS_LIST}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - POPULATE
+      document_target: Traffic-light tables and pre-populated Shadow AI survey choices
+      value_placeholders:
+        approved_enterprise_ai_tools[]: '{{QR.B04.APPROVED_ENTERPRISE_AI_TOOLS_LIST}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_LIA_LB1
+      - UNI_FRD_LB1
+      - RDR_PRV_LB1
+    ui:
+      panel_id: G16
+      display_label: Company-provided AI tools
+      prompt: List the AI tools approved, restricted, or prohibited for workforce use.
+      input_type: multi_value
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B05
+    canonical_key: ai.lane_b.client_facing_ai_deliverables
+    label: Client-facing AI-assisted deliverables
+    registry_scope: LANE_B
+    lane: B
+    section_id: G16
+    shape: BOOLEAN
+    atomic_fields:
+    - client_facing_ai_deliverables
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*]
+        filters:
+          output_or_action: external/client-facing
+        fills:
+        - client_facing_ai_deliverables
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B05
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        client_facing_ai_deliverables: true
+      display_value: 'client facing ai deliverables: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Mandatory HITL protocol; IP deed flags; survey weighting
+      value_placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      clause_selector_token: '{{QR.B05.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B05.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Mandatory HITL protocol; IP deed flags; survey weighting
+      value_placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      clause_selector_token: '{{QR.B05.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B05.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Mandatory HITL protocol; IP deed flags; survey weighting
+      value_placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      clause_selector_token: '{{QR.B05.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B05.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Mandatory HITL protocol; IP deed flags; survey weighting
+      value_placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      clause_selector_token: '{{QR.B05.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B05.DOCUMENT_ACTIVE}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CRT_INF_LB1
+      - JDG_DEC_LB3
+    ui:
+      panel_id: G16
+      display_label: Client-facing AI-assisted deliverables
+      prompt: Does the workforce create client-facing or customer-facing deliverables using AI?
+      input_type: boolean
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B06
+    canonical_key: ai.lane_b.workforce_decision_use
+    label: AI in hiring, performance or workforce decisions
+    registry_scope: LANE_B
+    lane: B
+    section_id: G16
+    shape: BOOLEAN
+    atomic_fields:
+    - people_decision_ai_use
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*].primary_classification.behavior_class_codes + overlay_classifications[*].behavior_class_codes
+        filters:
+          contains: JDG
+        fills:
+        - people_decision_ai_use
+        transform: BOOLEAN_ANY_MATCH
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__08_exposure_register
+        value_selector: child_artifacts[*].rows[*]
+        filters:
+          lane: B
+          surface_contains: Employment
+        fills:
+        - people_decision_ai_use
+        transform: BOOLEAN_ANY_MATCH
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B06
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        people_decision_ai_use: false
+      display_value: 'people decision ai use: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Automated-decision framework; bias-audit question; DPIA priority
+      value_placeholders:
+        people_decision_ai_use: '{{QR.B06.PEOPLE_DECISION_AI_USE}}'
+      clause_selector_token: '{{QR.B06.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B06.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Automated-decision framework; bias-audit question; DPIA priority
+      value_placeholders:
+        people_decision_ai_use: '{{QR.B06.PEOPLE_DECISION_AI_USE}}'
+      clause_selector_token: '{{QR.B06.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B06.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: Automated-decision framework; bias-audit question; DPIA priority
+      value_placeholders:
+        people_decision_ai_use: '{{QR.B06.PEOPLE_DECISION_AI_USE}}'
+      clause_selector_token: '{{QR.B06.CLAUSE_SELECTOR}}'
+      document_activation_token: '{{QR.B06.DOCUMENT_ACTIVE}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_LB1
+      - JDG_DEC_LB2
+      - JDG_DEC_LB3
+    ui:
+      panel_id: G16
+      display_label: AI in hiring, performance or workforce decisions
+      prompt: Is AI used in hiring, performance management, promotion, discipline, termination, or other workforce decisions?
+      input_type: boolean
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B07
+    canonical_key: ai.lane_b.team_size
+    label: Team size
+    registry_scope: LANE_B
+    lane: B
+    section_id: G17
+    shape: SCALAR
+    atomic_fields:
+    - team_size_band
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B07
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        team_size_band: 11–20
+      display_value: 'team size band: 11–20'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      document_target: Approval timing; anonymity recommendation; documentation burden
+      value_placeholders:
+        team_size_band: '{{QR.B07.TEAM_SIZE_BAND}}'
+      clause_selector_token: '{{QR.B07.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: Approval timing; anonymity recommendation; documentation burden
+      value_placeholders:
+        team_size_band: '{{QR.B07.TEAM_SIZE_BAND}}'
+      clause_selector_token: '{{QR.B07.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Approval timing; anonymity recommendation; documentation burden
+      value_placeholders:
+        team_size_band: '{{QR.B07.TEAM_SIZE_BAND}}'
+      clause_selector_token: '{{QR.B07.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G17
+      display_label: Team size
+      prompt: Provide the current team-size band.
+      input_type: number_or_band
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B08
+    canonical_key: ai.lane_b.small_department_privacy_threshold
+    label: Small-department privacy threshold
+    registry_scope: LANE_B
+    lane: B
+    section_id: G17
+    shape: BOOLEAN
+    atomic_fields:
+    - departments_below_five_people
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B08
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        departments_below_five_people: true
+      display_value: 'departments below five people: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: Department merging and anonymity configuration
+      value_placeholders:
+        departments_below_five_people: '{{QR.B08.DEPARTMENTS_BELOW_FIVE_PEOPLE}}'
+      clause_selector_token: '{{QR.B08.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G17
+      display_label: Small-department privacy threshold
+      prompt: Set the minimum department size below which scanner results must be aggregated to preserve anonymity.
+      input_type: number
+      render_when:
+        all:
+        - B01 == true
+        - B18 == ANONYMOUS
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B09
+    canonical_key: ai.lane_b.industry_context
+    label: Industry context
+    registry_scope: LANE_B
+    lane: B
+    section_id: G17
+    shape: SCALAR
+    atomic_fields:
+    - industry
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_EXACT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.BIZ.004
+        route_id: P12.ROUTE.TP.BIZ.004
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.BIZ.004"].value
+        fills:
+        - industry
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: false
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: AUTO_CONFIRM_COLLAPSED
+      final_value_path: assembly_payload.qr_values.B09
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies the complete value; reviewer confirms only if limited or conflicted.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        industry: Software / Engineering
+      display_value: 'industry: Software / Engineering'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      document_target: Industry examples and sector-specific use-case prompts
+      value_placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      clause_selector_token: '{{QR.B09.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: Industry examples and sector-specific use-case prompts
+      value_placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      clause_selector_token: '{{QR.B09.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - SELECT_CLAUSE
+      document_target: Industry examples and sector-specific use-case prompts
+      value_placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      clause_selector_token: '{{QR.B09.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Industry examples and sector-specific use-case prompts
+      value_placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      clause_selector_token: '{{QR.B09.CLAUSE_SELECTOR}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CRT_INF_LB1
+      - UNI_LIA_LB1
+    ui:
+      panel_id: G17
+      display_label: Industry context
+      prompt: Confirm the organization’s industry context for the internal governance documents.
+      input_type: text
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B10
+    canonical_key: ai.lane_b.client_nda_restriction
+    label: Client NDA restriction on third-party AI tools
+    registry_scope: LANE_B
+    lane: B
+    section_id: G17
+    shape: BOOLEAN
+    atomic_fields:
+    - client_nda_ai_tool_restriction
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B10
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        client_nda_ai_tool_restriction: true
+      display_value: 'client nda ai tool restriction: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      document_target: Data-paste ban and client-contract survey question
+      value_placeholders:
+        client_nda_ai_tool_restriction: '{{QR.B10.CLIENT_NDA_AI_TOOL_RESTRICTION}}'
+      clause_selector_token: '{{QR.B10.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: Data-paste ban and client-contract survey question
+      value_placeholders:
+        client_nda_ai_tool_restriction: '{{QR.B10.CLIENT_NDA_AI_TOOL_RESTRICTION}}'
+      clause_selector_token: '{{QR.B10.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_LIA_LB1
+      - UNI_FRD_LB1
+    ui:
+      panel_id: G17
+      display_label: Client NDA restriction on third-party AI tools
+      prompt: Do client contracts or NDAs restrict the use of third-party AI tools?
+      input_type: boolean
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B11
+    canonical_key: ai.lane_b.jurisdiction.colorado_scope
+    label: Colorado operations or affected persons
+    registry_scope: LANE_B
+    lane: B
+    section_id: G17
+    shape: BOOLEAN
+    atomic_fields:
+    - colorado_scope
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DD.
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id startsWith "DD."].value
+        canonical_label_query:
+        - US state privacy overlay
+        - Colorado
+        fills:
+        - colorado_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: TP.JUR.
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id startsWith "TP.JUR."].value
+        canonical_label_query:
+        - Colorado
+        - United States
+        fills:
+        - colorado_scope
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B11
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        colorado_scope: false
+      display_value: 'colorado scope: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - SELECT_CLAUSE
+      document_target: Colorado-specific assessment emphasis
+      value_placeholders:
+        colorado_scope: '{{QR.B11.COLORADO_SCOPE}}'
+      clause_selector_token: '{{QR.B11.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_005
+      - JDG_DEC_LB2
+      - TRN_BIO_003
+    ui:
+      panel_id: G17
+      display_label: Colorado operations or affected persons
+      prompt: Does the organization operate in Colorado or use AI affecting Colorado residents or workers?
+      input_type: boolean
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B12
+    canonical_key: ai.lane_b.internal_use_case_count
+    label: Number of internal AI use cases
+    registry_scope: LANE_B
+    lane: B
+    section_id: G18
+    shape: SCALAR
+    atomic_fields:
+    - internal_ai_use_case_count_band
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B12
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        internal_ai_use_case_count_band: 1–3
+      display_value: 'internal ai use case count band: 1–3'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - SELECT_CLAUSE
+      document_target: Assessment count and dashboard emphasis
+      value_placeholders:
+        internal_ai_use_case_count_band: '{{QR.B12.INTERNAL_AI_USE_CASE_COUNT_BAND}}'
+      clause_selector_token: '{{QR.B12.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_LB2
+      - SHD_LIA_LB1
+    ui:
+      panel_id: G18
+      display_label: Number of internal AI use cases
+      prompt: How many distinct internal AI use cases are currently known?
+      input_type: number
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B13
+    canonical_key: ai.lane_b.enterprise_governance_documentation_demand
+    label: Enterprise clients require AI-governance documentation
+    registry_scope: LANE_B
+    lane: B
+    section_id: G18
+    shape: BOOLEAN
+    atomic_fields:
+    - enterprise_governance_documentation_required
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B13
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        enterprise_governance_documentation_required: true
+      display_value: 'enterprise governance documentation required: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - SELECT_CLAUSE
+      document_target: Dashboard positioning and delivery guidance
+      value_placeholders:
+        enterprise_governance_documentation_required: '{{QR.B13.ENTERPRISE_GOVERNANCE_DOCUMENTATION_REQUIRED}}'
+      clause_selector_token: '{{QR.B13.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_PBK
+      actions:
+      - SELECT_CLAUSE
+      document_target: Dashboard positioning and delivery guidance
+      value_placeholders:
+        enterprise_governance_documentation_required: '{{QR.B13.ENTERPRISE_GOVERNANCE_DOCUMENTATION_REQUIRED}}'
+      clause_selector_token: '{{QR.B13.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - SHD_LIA_LB1
+      - UNI_FRD_LB1
+    ui:
+      panel_id: G18
+      display_label: Enterprise clients require AI-governance documentation
+      prompt: Do enterprise clients require AI-governance policies, assessments, logs, or other documentation?
+      input_type: boolean
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B14
+    canonical_key: ai.lane_b.existing_employment_ip_assignment
+    label: Existing employment IP-assignment posture
+    registry_scope: LANE_B
+    lane: B
+    section_id: G19
+    shape: OBJECT
+    atomic_fields:
+    - existing_ip_assignment_clause
+    - agreement_reference
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: NONE
+    coverage_status: INPUT_REQUIRED
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT_DEMO
+      final_value_path: assembly_payload.qr_values.B14
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: No Phase 12 value exists; market-based demo fallback is shown and reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        existing_ip_assignment_clause: true
+        agreement_reference: Employment Agreement dated 2025-01-15
+      display_value: 'existing ip assignment clause: Yes | agreement reference: Employment Agreement dated 2025-01-15'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_IP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Supplement-versus-primary deed language and conflict note
+      value_placeholders:
+        existing_ip_assignment_clause: '{{QR.B14.EXISTING_IP_ASSIGNMENT_CLAUSE}}'
+        agreement_reference: '{{QR.B14.AGREEMENT_REFERENCE}}'
+      clause_selector_token: '{{QR.B14.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CRT_INF_LB1
+    ui:
+      panel_id: G19
+      display_label: Existing employment IP-assignment posture
+      prompt: Confirm whether existing employment or contractor agreements already assign AI-assisted work product, prompts,
+        workflows, and related IP.
+      input_type: object_form
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  - qr_field_id: B15
+    canonical_key: ai.lane_b.client_originality_or_noninfringement_warranty
+    label: Client originality or non-infringement warranty
+    registry_scope: LANE_B
+    lane: B
+    section_id: G19
+    shape: BOOLEAN
+    atomic_fields:
+    - client_originality_warranty
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - originality warranty
+        - non-infringement warranty
+        - customer contract warranty
+        fills:
+        - client_originality_warranty
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B15
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        client_originality_warranty: true
+      display_value: 'client originality warranty: Yes'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - SELECT_CLAUSE
+      document_target: Mandatory full HITL documentation and creative-output guidance
+      value_placeholders:
+        client_originality_warranty: '{{QR.B15.CLIENT_ORIGINALITY_WARRANTY}}'
+      clause_selector_token: '{{QR.B15.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Mandatory full HITL documentation and creative-output guidance
+      value_placeholders:
+        client_originality_warranty: '{{QR.B15.CLIENT_ORIGINALITY_WARRANTY}}'
+      clause_selector_token: '{{QR.B15.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CRT_INF_LB1
+    ui:
+      panel_id: G19
+      display_label: Client originality or non-infringement warranty
+      prompt: Do client contracts include originality, authorship, or non-infringement warranties that may apply to AI-assisted
+        work?
+      input_type: boolean
+      render_when:
+        all:
+        - B05 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B16
+    canonical_key: ai.lane_b.version_control_posture
+    label: Version-control posture
+    registry_scope: LANE_B
+    lane: B
+    section_id: G19
+    shape: OBJECT
+    atomic_fields:
+    - version_control_used
+    - method
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_STRUCTURED_FIELD
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: activity_register.rows[*]
+        filters:
+          evidence_contains_any:
+          - git
+          - version history
+          - repository
+        fills:
+        - version_control_used
+        - method
+        transform: PROJECT_VERSION_CONTROL_SIGNAL
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B16
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        version_control_used: true
+        method: Git and Google Docs version history
+      display_value: 'version control used: Yes | method: Git and Google Docs version history'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - SELECT_CLAUSE
+      document_target: HITL evidence method and versioning instructions
+      value_placeholders:
+        version_control_used: '{{QR.B16.VERSION_CONTROL_USED}}'
+        method: '{{QR.B16.METHOD}}'
+      clause_selector_token: '{{QR.B16.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - JDG_DEC_LB3
+      - SHD_LIA_LB1
+    ui:
+      panel_id: G19
+      display_label: Version-control posture
+      prompt: Confirm the version-control and audit-trail posture for AI-assisted work product.
+      input_type: object_form
+      render_when:
+        any:
+        - B05 == true
+        - B06 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B17
+    canonical_key: ai.lane_b.governance_contact
+    label: Designated AI governance contact
+    registry_scope: LANE_B
+    lane: B
+    section_id: G19
+    shape: OBJECT
+    atomic_fields:
+    - name_or_role
+    - contact_route
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CONTACT.
+        report_artifact: report_section__05_privacy_contacts_consent_manager
+        value_selector: findings[field_id startsWith "DAP.CONTACT."].value
+        canonical_label_query:
+        - privacy contact
+        - officer contact
+        fills:
+        - name_or_role
+        - contact_route
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.NOT.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC.NOT."].value
+        canonical_label_query:
+        - legal notice contact
+        - governance contact
+        fills:
+        - name_or_role
+        - contact_route
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.B17
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        name_or_role: Chief Operating Officer
+        contact_route: ai-governance@demo.example
+      display_value: 'name or role: Chief Operating Officer | contact route: ai-governance@demo.example'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_HND
+      actions:
+      - POPULATE
+      document_target: Approval, incident, exception and governance contact placeholders
+      value_placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - POPULATE
+      document_target: Approval, incident, exception and governance contact placeholders
+      value_placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+    - document_id: DOC_AI_B_DPIA
+      actions:
+      - POPULATE
+      document_target: Approval, incident, exception and governance contact placeholders
+      value_placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - POPULATE
+      document_target: Approval, incident, exception and governance contact placeholders
+      value_placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+    - document_id: DOC_AI_B_PBK
+      actions:
+      - POPULATE
+      document_target: Approval, incident, exception and governance contact placeholders
+      value_placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+    document_binding_count: 5
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - SHD_LIA_LB1
+      - UNI_PRV_IN5
+    ui:
+      panel_id: G19
+      display_label: Designated AI governance contact
+      prompt: Designate the person or role responsible for internal AI governance.
+      input_type: contact_form
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: B18
+    canonical_key: ai.lane_b.scanner_anonymity_mode
+    label: Shadow AI Scanner anonymity mode
+    registry_scope: LANE_B
+    lane: B
+    section_id: G19
+    shape: ENUM
+    atomic_fields:
+    - full_anonymity
+    - department_only
+    - named
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: DEFAULT_ONLY
+    coverage_status: DEFAULT_OVERRIDE
+    phase12_bridge:
+      linked: false
+      authoritative_source: NO_PHASE12_CORRESPONDING_MATERIAL_FIELD
+      source_is_immutable: true
+      bindings: []
+      resolved_value_policy: NOT_APPLICABLE
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - MARKET_BASED_DEMO_FALLBACK
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_OVERRIDE_DEMO
+      final_value_path: assembly_payload.qr_values.B18
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: The document default is represented by the market-based demo fallback; reviewer confirms or overrides.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        full_anonymity: true
+        department_only: false
+        named: false
+      display_value: 'full anonymity: Yes | department only: No | named: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - SELECT_CLAUSE
+      document_target: Survey deployment and small-team privacy configuration
+      value_placeholders:
+        full_anonymity: '{{QR.B18.FULL_ANONYMITY}}'
+        department_only: '{{QR.B18.DEPARTMENT_ONLY}}'
+        named: '{{QR.B18.NAMED}}'
+      clause_selector_token: '{{QR.B18.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_LIA_LB1
+    ui:
+      panel_id: G19
+      display_label: Shadow AI Scanner anonymity mode
+      prompt: Select whether Shadow AI Scanner responses are anonymous, confidential, or identified.
+      input_type: select
+      render_when:
+        all:
+        - B01 == true
+      prefill_badge: '{MARKET BASED}'
+      never_render_empty: true
+  threat_registry_contract:
+    authority: AI_THREAT_REGISTRY
+    row_count: 98
+    lane_distribution:
+      A: 80
+      B: 8
+      BOTH: 10
+    use: TRACEABILITY_AND_DOCUMENT-CONSEQUENCE VALIDATION ONLY
+    may_not_create_additional_qr_rows: true
+    hunter_trigger_evaluation_owned_upstream: true
+  playbook_contract:
+    DOC_AI_A_PBK: inherits resolved Lane A contractual and operational positions; creates no independent QR rows
+    DOC_AI_B_PBK: inherits resolved Lane B governance positions; creates no independent QR rows
+  operational_instrument_contract:
+    completed_scanner_responses_forbidden: true
+    completed_dpia_findings_forbidden: true
+    completed_hitl_records_forbidden: true
+    assembler_may_generate: customized blank framework, settings, scoring rules, instructions, and forms
+  validation_summary:
+    status: PASS
+    field_count: 65
+    universal_count: 19
+    lane_a_count: 28
+    lane_b_count: 18
+    phase12_linked_count: 54
+    operator_or_default_only_count: 11
+    atomic_value_count: 126
+    document_binding_count: 185
+    market_based_demo_field_count: 65
+    market_based_demo_atomic_count: 126
+    failures: []
+  document_injection_contract:
+    template_set_version: qr_document_injection.v2.1
+    inline_direct_placeholders_inserted_where_unambiguous: true
+    complete_binding_schedule_appended_to_every_template: true
+    assembly_control_schedule_removed_from_final_draft: true
+    execution_specific_and_local_counsel_fields_remain_outside_qr: true

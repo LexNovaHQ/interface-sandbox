@@ -1,0 +1,57 @@
+qr_registry_catalog:
+  catalog_id: QR_REGISTRY_CATALOG_v2
+  version: 2.0.0
+  status: BRIDGE_REBUILT_VALIDATED_RUNTIME_NOT_YET_WIRED
+  load_order:
+  - registry_id: UNIVERSAL_QR_BRIDGE_REGISTRY
+    path: references/registry/Universal_QR_Registry.yml
+    records: 19
+    atomic_values: 44
+    activation: ALWAYS
+  - registry_id: AI_QR_BRIDGE_REGISTRY_LANE_A
+    path: references/registry/qr/AI_QR_Registry_Lane_A.yml
+    records: 28
+    atomic_values: 57
+    activation: LANE_A_RESOLVED
+  - registry_id: AI_QR_BRIDGE_REGISTRY_LANE_B
+    path: references/registry/qr/AI_QR_Registry_Lane_B.yml
+    records: 18
+    atomic_values: 25
+    activation: LANE_B_RESOLVED_OR_UNKNOWN_REQUIRING_CONFIRMATION
+  main_registry_paths:
+  - references/registry/Universal_QR_Registry.yml
+  - references/registry/AI_QR_Registry.yml
+  schema_path: references/registry/qr/QR_Assembly_Registry_Schema_v2.yml
+  counts:
+    status: PASS
+    field_count: 65
+    universal_count: 19
+    lane_a_count: 28
+    lane_b_count: 18
+    phase12_linked_count: 54
+    operator_or_default_only_count: 11
+    atomic_value_count: 126
+    document_binding_count: 185
+    market_based_demo_field_count: 65
+    market_based_demo_atomic_count: 126
+    failures: []
+  rendering_rules:
+    universal_only_for_non_ai: true
+    ai_lane_a_run_max_fields: 47
+    ai_lane_b_run_max_fields: 37
+    ai_both_lanes_run_max_fields: 65
+    suppress_inactive_lane: true
+    prefill_unresolved_with_market_based_demo: true
+version: v2.1
+status: DOCUMENT_PLACEHOLDERS_INSERTED_AND_VALIDATED_RUNTIME_NOT_YET_WIRED
+current_totals:
+  canonical_record_count: 65
+  atomic_value_count: 126
+  document_binding_count: 188
+  document_template_count: 13
+document_injection:
+  version: qr_document_injection.v2.1
+  template_directory: documents/
+  map_path: QR_Document_Injection_Map_v2_1.yml
+  validation_report_path: QR_Document_Injection_Validation_v2_1.md
+  complete_registry_binding_coverage_required: true

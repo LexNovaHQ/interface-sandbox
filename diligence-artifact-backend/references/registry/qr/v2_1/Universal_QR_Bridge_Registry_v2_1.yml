@@ -1,0 +1,2220 @@
+registry:
+  registry_id: UNIVERSAL_QR_BRIDGE_REGISTRY
+  registry_name: Universal Qualified Review Bridge Registry
+  version: 2.1.0
+  status: DOCUMENT_PLACEHOLDERS_INSERTED_AND_VALIDATED_RUNTIME_NOT_YET_WIRED
+  phase_owner: PHASE_13_QUALIFIED_REVIEW
+  record_count: 19
+  atomic_value_count: 44
+  lane_scope: ALWAYS_ACTIVE_SHARED
+  contract:
+    schema_id: QR_BRIDGE_REGISTRY_SCHEMA_v2
+    doctrine: No QR field may exist independently. Every field must bridge Phase 12 or operator/default input to at least
+      one document placeholder or document action.
+    valid_routes:
+    - PHASE12_FIELD_VALUE -> QR_FIELD -> REVIEWER_CONFIRMED_VALUE -> DOCUMENT_PLACEHOLDER_OR_ACTION
+    - MARKET_BASED_DEMO_OR_OPERATOR_VALUE -> QR_FIELD -> REVIEWER_CONFIRMED_VALUE -> DOCUMENT_PLACEHOLDER_OR_ACTION
+    phase12_authority: Phase 12 emitted material field IDs and values are the sole diligence-prefill authority.
+    upstream_profiles_are_provenance_only: true
+    phase12_mutation_forbidden: true
+    document_consequence_required: true
+    market_demo_policy:
+      required_for_every_field: true
+      visible_label: '{MARKET BASED}'
+      used_only_when_phase12_value_or_component_is_unresolved: true
+      not_evidence: true
+      reviewer_confirmation_or_edit_required: true
+      blank_prefill_forbidden: true
+    hard_validation_rules:
+    - EVERY_FIELD_HAS_DOCUMENT_BINDING
+    - FULL_OR_PARTIAL_FIELD_HAS_PHASE12_BINDING
+    - NONE_OR_DEFAULT_ONLY_FIELD_HAS_NO_PHASE12_BINDING
+    - EVERY_DOCUMENT_BINDING_HAS_PLACEHOLDER_OR_ACTION_TOKEN
+    - EVERY_ATOMIC_FIELD_HAS_NONEMPTY_MARKET_BASED_DEMO_VALUE
+    - PHASE12_BINDINGS_REFERENCE_REPORT_ARTIFACTS_NOT_RAW_UPSTREAM_ARTIFACTS
+    - FINAL_DOCUMENT_VALUE_COMES_FROM_REVIEWER_CONFIRMED_QR_VALUE
+    review_ready_boundary:
+      lex_nova_role: LEGAL_ARCHITECT
+      review_ready_draft_only: true
+      local_counsel_review_required: true
+      not_legal_advice: true
+  activation_contract:
+    activate_when: PHASE_13_IS_INVOKED_FOR_ANY_DOCUMENT_ASSEMBLY
+    load_order: 1
+    canonical_ownership: Universal fields are defined once and consumed by every active domain registry.
+    domain_registries_may_consume_but_may_not_redefine: true
+  sections:
+  - section_id: G01
+    lane: SHARED
+    title: Entity and public identity
+    field_ids:
+    - U01
+    - U02
+    - U03
+    - U04
+    operator_task: Review legal identity and complete the formal address.
+    display_order: 1
+  - section_id: G02
+    lane: SHARED
+    title: Notice and privacy contacts
+    field_ids:
+    - U05
+    - U06
+    operator_task: Confirm legal notice route and complete privacy contact details.
+    display_order: 2
+  - section_id: G03
+    lane: SHARED
+    title: Governed services
+    field_ids:
+    - U07
+    - U08
+    - U09
+    - U10
+    operator_task: Confirm the product set, intended use, outputs and delivery channels.
+    display_order: 3
+  - section_id: G04
+    lane: SHARED
+    title: Market and legal anchor
+    field_ids:
+    - U11
+    - U12
+    - U13
+    operator_task: Confirm customer posture, governing law and dispute forum.
+    display_order: 4
+  - section_id: G05
+    lane: SHARED
+    title: Revenue, liability and pricing
+    field_ids:
+    - U14
+    - U15
+    operator_task: Complete private commercial figures and liability-floor basis.
+    display_order: 5
+  - section_id: G06
+    lane: SHARED
+    title: Term, refund and free-tier posture
+    field_ids:
+    - U16
+    - U17
+    operator_task: Complete renewal, grace, refund and free-tier terms.
+    display_order: 6
+  - section_id: G07
+    lane: SHARED
+    title: Output rights and SLA election
+    field_ids:
+    - U18
+    - U19
+    operator_task: Select output-rights posture and SLA package.
+    display_order: 7
+  fields:
+  - qr_field_id: U01
+    canonical_key: organization.legal_name
+    label: Legal entity name
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G01
+    shape: SCALAR
+    atomic_fields:
+    - legal_entity_name
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_EXACT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.ID.002
+        route_id: P12.ROUTE.TP.ID.002
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.ID.002"].value
+        fills:
+        - legal_entity_name
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: false
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: AUTO_CONFIRM_COLLAPSED
+      final_value_path: assembly_payload.qr_values.U01
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies the complete value; reviewer confirms only if limited or conflicted.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        legal_entity_name: Demo AI Systems, Inc.
+      display_value: 'legal entity name: Demo AI Systems, Inc.'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - POPULATE
+      document_target: Preambles; defined Provider/Company; signature blocks
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_B_HND
+      actions:
+      - POPULATE
+      document_target: Company-name placeholders throughout policy scope, ownership and acknowledgements
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    - document_id: DOC_AI_B_SCAN
+      actions:
+      - POPULATE
+      document_target: Company name in survey deployment and risk-summary dashboard
+      value_placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+    document_binding_count: 9
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G01
+      display_label: Legal entity name
+      prompt: Confirm the full legal entity name that must appear as the contracting party.
+      input_type: text
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U02
+    canonical_key: organization.entity_type
+    label: Entity type
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G01
+    shape: SCALAR
+    atomic_fields:
+    - entity_type
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_EXACT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.ID.005
+        route_id: P12.ROUTE.TP.ID.005
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.ID.005"].value
+        fills:
+        - entity_type
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: false
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: AUTO_CONFIRM_COLLAPSED
+      final_value_path: assembly_payload.qr_values.U02
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies the complete value; reviewer confirms only if limited or conflicted.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        entity_type: Delaware C-Corporation
+      display_value: 'entity type: Delaware C-Corporation'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: Preambles and entity description
+      value_placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      document_target: Preambles and entity description
+      value_placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      document_target: Preambles and entity description
+      value_placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: Preambles and entity description
+      value_placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - POPULATE
+      document_target: Company recital entity description
+      value_placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+    document_binding_count: 5
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G01
+      display_label: Entity type
+      prompt: Confirm the entity type that must appear in the document set.
+      input_type: text
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U03
+    canonical_key: organization.registered_address_and_jurisdiction
+    label: Registered address and incorporation jurisdiction
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G01
+    shape: OBJECT
+    atomic_fields:
+    - street_address
+    - country
+    - state_or_province
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.JUR.001
+        route_id: P12.ROUTE.TP.JUR.001
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.JUR.001"].value
+        fills:
+        - country
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.JUR.002
+        route_id: P12.ROUTE.TP.JUR.002
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.JUR.002"].value
+        fills:
+        - state_or_province
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U03
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        street_address: 251 Little Falls Drive, Wilmington, DE 19808
+        country: United States
+        state_or_province: Delaware
+      display_value: 'street address: 251 Little Falls Drive, Wilmington, DE 19808 | country: United States | state or province:
+        Delaware'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      value_placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      value_placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      value_placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      value_placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      value_placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U03.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      value_placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U03.CLAUSE_SELECTOR}}'
+    document_binding_count: 6
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G01
+      display_label: Registered address and incorporation jurisdiction
+      prompt: Provide the registered address and incorporation jurisdiction for the contracting entity.
+      input_type: object_form
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U04
+    canonical_key: organization.website_url
+    label: Official website URL
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G01
+    shape: SCALAR
+    atomic_fields:
+    - website_url
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_EXACT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.ID.003
+        route_id: P12.ROUTE.TP.ID.003
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.ID.003"].value
+        fills:
+        - website_url
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: false
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: AUTO_CONFIRM_COLLAPSED
+      final_value_path: assembly_payload.qr_values.U04
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies the complete value; reviewer confirms only if limited or conflicted.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        website_url: https://demo.example
+      display_value: 'website url: https://demo.example'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: Privacy Policy introduction; service identity
+      value_placeholders:
+        website_url: '{{QR.U04.WEBSITE_URL}}'
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: Privacy Policy introduction; service identity
+      value_placeholders:
+        website_url: '{{QR.U04.WEBSITE_URL}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G01
+      display_label: Official website URL
+      prompt: Confirm the official website URL governed by this document set.
+      input_type: url
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U05
+    canonical_key: contacts.legal_notice_email
+    label: Legal notice / contract contact email
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G02
+    shape: SCALAR
+    atomic_fields:
+    - legal_notice_email
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_EXACT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: LGC.NOT.010
+        route_id: P12.ROUTE.LGC.NOT.010
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id="LGC.NOT.010"].value
+        fills:
+        - legal_notice_email
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: LGC.NOT.011
+        route_id: P12.ROUTE.LGC.NOT.011
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id="LGC.NOT.011"].value
+        fills:
+        - legal_notice_email
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: false
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: AUTO_CONFIRM_COLLAPSED
+      final_value_path: assembly_payload.qr_values.U05
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies the complete value; reviewer confirms only if limited or conflicted.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        legal_notice_email: legal@demo.example
+      display_value: 'legal notice email: legal@demo.example'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: Notices; AUP violation reporting; contract contact route
+      value_placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      document_target: Notices; AUP violation reporting; contract contact route
+      value_placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      document_target: Notices; AUP violation reporting; contract contact route
+      value_placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: Notices; AUP violation reporting; contract contact route
+      value_placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G02
+      display_label: Legal notice / contract contact email
+      prompt: Confirm the email address for legal notices and contract communications.
+      input_type: email
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U06
+    canonical_key: contacts.privacy_contact
+    label: Privacy contact
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G02
+    shape: OBJECT
+    atomic_fields:
+    - name
+    - title_or_role
+    - email
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CONTACT.
+        report_artifact: report_section__05_privacy_contacts_consent_manager
+        value_selector: findings[field_id startsWith "DAP.CONTACT."].value
+        canonical_label_query:
+        - privacy contact
+        - grievance contact
+        - officer contact
+        fills:
+        - name
+        - title_or_role
+        - email
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: DAP.CM.
+        report_artifact: report_section__05_privacy_contacts_consent_manager
+        value_selector: findings[field_id startsWith "DAP.CM."].value
+        canonical_label_query:
+        - consent manager contact
+        - withdrawal route
+        fills:
+        - email
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U06
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        name: Maya Rao
+        title_or_role: Privacy Lead
+        email: privacy@demo.example
+      display_value: 'name: Maya Rao | title or role: Privacy Lead | email: privacy@demo.example'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: PP §11; data-rights and privacy contact blocks
+      value_placeholders:
+        name: '{{QR.U06.NAME}}'
+        title_or_role: '{{QR.U06.TITLE_OR_ROLE}}'
+        email: '{{QR.U06.EMAIL}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: PP §11; data-rights and privacy contact blocks
+      value_placeholders:
+        name: '{{QR.U06.NAME}}'
+        title_or_role: '{{QR.U06.TITLE_OR_ROLE}}'
+        email: '{{QR.U06.EMAIL}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_IN1
+      - UNI_PRV_IN2
+      - UNI_PRV_IN4
+    ui:
+      panel_id: G02
+      display_label: Privacy contact
+      prompt: Provide the privacy contact’s name, role, and email address.
+      input_type: contact_form
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U07
+    canonical_key: services.catalog
+    label: Service catalog
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G03
+    shape: REPEATABLE_OBJECT
+    atomic_fields:
+    - service_name
+    - service_description
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.003
+        route_id: P12.ROUTE.TP.WRAP.003
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.003"].value
+        fills:
+        - service_name
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.004
+        route_id: P12.ROUTE.TP.WRAP.004
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.004"].value
+        fills:
+        - service_description
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U07
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        service_name: Demo Agent Platform
+        service_description: AI workflow automation platform for enterprise customer-support operations
+      display_value: 'service name: Demo Agent Platform | service description: AI workflow automation platform for enterprise
+        customer-support operations'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; definition of Service; cross-document service references
+      value_placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; definition of Service; cross-document service references
+      value_placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; definition of Service; cross-document service references
+      value_placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; definition of Service; cross-document service references
+      value_placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; definition of Service; cross-document service references
+      value_placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; definition of Service; cross-document service references
+      value_placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+    document_binding_count: 6
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G03
+      display_label: Service catalog
+      prompt: Confirm each product or service governed by this document set and provide a short description.
+      input_type: repeatable_table
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U08
+    canonical_key: services.intended_customer_use_case
+    label: Intended customer use case
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G03
+    shape: SCALAR
+    atomic_fields:
+    - intended_use_case
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.001
+        route_id: P12.ROUTE.TP.WRAP.001
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.001"].value
+        fills:
+        - intended_use_case
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.004
+        route_id: P12.ROUTE.TP.WRAP.004
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.004"].value
+        fills:
+        - intended_use_case
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.INV.004
+        route_id: P12.ROUTE.PA.INV.004
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.INV.004"].value
+        fills:
+        - intended_use_case
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.005
+        route_id: P12.ROUTE.PA.MECH.005
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.005"].value
+        fills:
+        - intended_use_case
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U08
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        intended_use_case: Customer-support workflow automation
+      display_value: 'intended use case: Customer-support workflow automation'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; bounded permitted-use context
+      value_placeholders:
+        intended_use_case: '{{QR.U08.INTENDED_USE_CASE}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; bounded permitted-use context
+      value_placeholders:
+        intended_use_case: '{{QR.U08.INTENDED_USE_CASE}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: TOS Schedule A; bounded permitted-use context
+      value_placeholders:
+        intended_use_case: '{{QR.U08.INTENDED_USE_CASE}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_FRD_001
+      - UNI_HAL_003
+    ui:
+      panel_id: G03
+      display_label: Intended customer use case
+      prompt: Confirm the intended customer use case that the documents should permit.
+      input_type: text
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U09
+    canonical_key: services.output_type
+    label: Output type
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G03
+    shape: LIST
+    atomic_fields:
+    - output_types[]
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.006
+        route_id: P12.ROUTE.PA.MECH.006
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.006"].value
+        fills:
+        - output_types[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.007
+        route_id: P12.ROUTE.PA.MECH.007
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.007"].value
+        fills:
+        - output_types[]
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.BEH.001
+        route_id: P12.ROUTE.PA.BEH.001
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.BEH.001"].value
+        fills:
+        - output_types[]
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U09
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        output_types[]:
+        - Text
+        - Structured data
+        - Tool actions
+      display_value: 'output types: Text; Structured data; Tool actions'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A; AUP content clauses; HITL examples
+      value_placeholders:
+        output_types[]: '{{QR.U09.OUTPUT_TYPES_LIST}}'
+      clause_selector_token: '{{QR.U09.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A; AUP content clauses; HITL examples
+      value_placeholders:
+        output_types[]: '{{QR.U09.OUTPUT_TYPES_LIST}}'
+      clause_selector_token: '{{QR.U09.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_SOP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS Schedule A; AUP content clauses; HITL examples
+      value_placeholders:
+        output_types[]: '{{QR.U09.OUTPUT_TYPES_LIST}}'
+      clause_selector_token: '{{QR.U09.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_HAL_001
+      - UNI_HAL_002
+      - UNI_HAL_003
+      - CRT_INF_001
+    ui:
+      panel_id: G03
+      display_label: Output type
+      prompt: Confirm the principal output types produced by the service.
+      input_type: multi_value
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U10
+    canonical_key: services.delivery_channels
+    label: Delivery channels
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G03
+    shape: LIST
+    atomic_fields:
+    - web_app
+    - mobile_or_desktop
+    - api_sdk
+    - white_label_or_partner
+    atomic_value_count: 4
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.005
+        route_id: P12.ROUTE.TP.WRAP.005
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.005"].value
+        fills:
+        - web_app
+        - mobile_or_desktop
+        - api_sdk
+        - white_label_or_partner
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.006
+        route_id: P12.ROUTE.TP.WRAP.006
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.006"].value
+        fills:
+        - web_app
+        - mobile_or_desktop
+        - api_sdk
+        - white_label_or_partner
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.007
+        route_id: P12.ROUTE.TP.WRAP.007
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.007"].value
+        fills:
+        - web_app
+        - mobile_or_desktop
+        - api_sdk
+        - white_label_or_partner
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.WRAP.008
+        route_id: P12.ROUTE.TP.WRAP.008
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.WRAP.008"].value
+        fills:
+        - web_app
+        - mobile_or_desktop
+        - api_sdk
+        - white_label_or_partner
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.010
+        route_id: P12.ROUTE.PA.MECH.010
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.010"].value
+        fills:
+        - web_app
+        - mobile_or_desktop
+        - api_sdk
+        - white_label_or_partner
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U10
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        web_app: true
+        mobile_or_desktop: false
+        api_sdk: true
+        white_label_or_partner: false
+      display_value: 'web app: Yes | mobile or desktop: No | api sdk: Yes | white label or partner: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: API/downstream clauses; delivery references
+      value_placeholders:
+        web_app: '{{QR.U10.WEB_APP}}'
+        mobile_or_desktop: '{{QR.U10.MOBILE_OR_DESKTOP}}'
+        api_sdk: '{{QR.U10.API_SDK}}'
+        white_label_or_partner: '{{QR.U10.WHITE_LABEL_OR_PARTNER}}'
+      clause_selector_token: '{{QR.U10.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: API/downstream clauses; delivery references
+      value_placeholders:
+        web_app: '{{QR.U10.WEB_APP}}'
+        mobile_or_desktop: '{{QR.U10.MOBILE_OR_DESKTOP}}'
+        api_sdk: '{{QR.U10.API_SDK}}'
+        white_label_or_partner: '{{QR.U10.WHITE_LABEL_OR_PARTNER}}'
+      clause_selector_token: '{{QR.U10.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - SELECT_CLAUSE
+      document_target: API/downstream clauses; delivery references
+      value_placeholders:
+        web_app: '{{QR.U10.WEB_APP}}'
+        mobile_or_desktop: '{{QR.U10.MOBILE_OR_DESKTOP}}'
+        api_sdk: '{{QR.U10.API_SDK}}'
+        white_label_or_partner: '{{QR.U10.WHITE_LABEL_OR_PARTNER}}'
+      clause_selector_token: '{{QR.U10.CLAUSE_SELECTOR}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_001
+      - UNI_CNS_002
+    ui:
+      panel_id: G03
+      display_label: Delivery channels
+      prompt: Confirm every delivery channel through which customers access the service.
+      input_type: multi_value
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U11
+    canonical_key: commercial.customer_and_market_posture
+    label: Customer and market posture
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G04
+    shape: ENUM
+    atomic_fields:
+    - b2b
+    - b2c
+    - hybrid
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.BIZ.002
+        route_id: P12.ROUTE.TP.BIZ.002
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.BIZ.002"].value
+        fills:
+        - b2b
+        - b2c
+        - hybrid
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.BIZ.003
+        route_id: P12.ROUTE.TP.BIZ.003
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.BIZ.003"].value
+        fills:
+        - b2b
+        - b2c
+        - hybrid
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U11
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        b2b: true
+        b2c: false
+        hybrid: false
+      display_value: 'b2b: Yes | b2c: No | hybrid: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - SELECT_CLAUSE
+      document_target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      value_placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      clause_selector_token: '{{QR.U11.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      value_placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      clause_selector_token: '{{QR.U11.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PP
+      actions:
+      - SELECT_CLAUSE
+      document_target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      value_placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      clause_selector_token: '{{QR.U11.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PBK
+      actions:
+      - SELECT_CLAUSE
+      document_target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      value_placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      clause_selector_token: '{{QR.U11.CLAUSE_SELECTOR}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_004
+      - UNI_CNS_IN2
+    ui:
+      panel_id: G04
+      display_label: Customer and market posture
+      prompt: Confirm whether the service is B2B, B2C, or hybrid and identify the principal customer groups.
+      input_type: select
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U12
+    canonical_key: jurisdiction.governing_law
+    label: Governing law
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G04
+    shape: OBJECT
+    atomic_fields:
+    - country
+    - state_or_province
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.JUR.003
+        route_id: P12.ROUTE.TP.JUR.003
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.JUR.003"].value
+        fills:
+        - country
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.JUR.004
+        route_id: P12.ROUTE.TP.JUR.004
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.JUR.004"].value
+        fills:
+        - state_or_province
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U12
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        country: United States
+        state_or_province: Delaware
+      display_value: 'country: United States | state or province: Delaware'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Governing-law clauses and jurisdiction-specific variants
+      value_placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U12.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Governing-law clauses and jurisdiction-specific variants
+      value_placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U12.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Governing-law clauses and jurisdiction-specific variants
+      value_placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U12.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Governing-law clauses and jurisdiction-specific variants
+      value_placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U12.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_B_IP
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Governing-law clauses and jurisdiction-specific variants
+      value_placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      clause_selector_token: '{{QR.U12.CLAUSE_SELECTOR}}'
+    document_binding_count: 5
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids: []
+    ui:
+      panel_id: G04
+      display_label: Governing law
+      prompt: Confirm the governing-law country and state or province.
+      input_type: object_form
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U13
+    canonical_key: jurisdiction.dispute_forum
+    label: Dispute forum / venue
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G04
+    shape: SCALAR
+    atomic_fields:
+    - courts_or_arbitration_forum
+    atomic_value_count: 1
+    required_for_assembly: true
+    fillability: FULL
+    coverage_status: PREFILLED_CONFIRM
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: TP.JUR.005
+        route_id: P12.ROUTE.TP.JUR.005
+        report_artifact: report_section__03_target_entity_sector_profile
+        value_selector: findings[field_id="TP.JUR.005"].value
+        fills:
+        - courts_or_arbitration_forum
+        transform: DIRECT_OR_MERGE
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U13
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies a material value; reviewer confirms or edits.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        courts_or_arbitration_forum: State and federal courts located in Delaware
+      display_value: 'courts or arbitration forum: State and federal courts located in Delaware'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: Dispute and venue clauses
+      value_placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+    - document_id: DOC_AI_A_AUP
+      actions:
+      - POPULATE
+      document_target: Dispute and venue clauses
+      value_placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      document_target: Dispute and venue clauses
+      value_placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+    - document_id: DOC_AI_A_DPA
+      actions:
+      - POPULATE
+      document_target: Dispute and venue clauses
+      value_placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_003
+    ui:
+      panel_id: G04
+      display_label: Dispute forum / venue
+      prompt: Confirm the court, arbitration, or other dispute forum.
+      input_type: text
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U14
+    canonical_key: commercial.revenue_and_liability_floor
+    label: Revenue model and liability-floor basis
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G05
+    shape: OBJECT
+    atomic_fields:
+    - revenue_model
+    - maximum_annual_contract_value
+    - liability_floor_amount
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: PA.
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id startsWith "PA."].value
+        canonical_label_query:
+        - commercial availability
+        - pricing
+        - revenue model
+        fills:
+        - revenue_model
+        - maximum_annual_contract_value
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - liability cap
+        - liability floor
+        - limitation of liability
+        fills:
+        - liability_floor_amount
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U14
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        revenue_model: Enterprise subscription contracts
+        maximum_annual_contract_value: USD 25,000
+        liability_floor_amount: USD 5,000
+      display_value: 'revenue model: Enterprise subscription contracts | maximum annual contract value: USD 25,000 | liability
+        floor amount: USD 5,000'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      value_placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      clause_selector_token: '{{QR.U14.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_AGT
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      value_placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      clause_selector_token: '{{QR.U14.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      value_placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      clause_selector_token: '{{QR.U14.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PBK
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      value_placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      clause_selector_token: '{{QR.U14.CLAUSE_SELECTOR}}'
+    document_binding_count: 4
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - DOE_LIA_003
+      - UNI_LIA_004
+      - UNI_LIA_006
+    ui:
+      panel_id: G05
+      display_label: Revenue model and liability-floor basis
+      prompt: Provide the revenue model, maximum annual contract value, and selected liability-floor amount.
+      input_type: commercial_object
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U15
+    canonical_key: commercial.pricing_and_payment_terms
+    label: Pricing and payment terms
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G05
+    shape: OBJECT
+    atomic_fields:
+    - pricing_tier
+    - fee_amount
+    - currency
+    - billing_frequency
+    - payment_terms
+    - payment_methods
+    atomic_value_count: 6
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: PA.
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id startsWith "PA."].value
+        canonical_label_query:
+        - pricing
+        - payment
+        - billing
+        - commercial availability
+        fills:
+        - pricing_tier
+        - fee_amount
+        - currency
+        - billing_frequency
+        - payment_terms
+        - payment_methods
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U15
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        pricing_tier: Enterprise
+        fee_amount: '2400'
+        currency: USD
+        billing_frequency: Annual
+        payment_terms: Net 30
+        payment_methods: ACH or wire transfer
+      display_value: 'pricing tier: Enterprise | fee amount: 2400 | currency: USD | billing frequency: Annual | payment terms:
+        Net 30 | payment methods: ACH or wire transfer'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      document_target: TOS Schedule B; fee-conditioned output licence; SLA credit base
+      value_placeholders:
+        pricing_tier: '{{QR.U15.PRICING_TIER}}'
+        fee_amount: '{{QR.U15.FEE_AMOUNT}}'
+        currency: '{{QR.U15.CURRENCY}}'
+        billing_frequency: '{{QR.U15.BILLING_FREQUENCY}}'
+        payment_terms: '{{QR.U15.PAYMENT_TERMS}}'
+        payment_methods: '{{QR.U15.PAYMENT_METHODS}}'
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - POPULATE
+      document_target: TOS Schedule B; fee-conditioned output licence; SLA credit base
+      value_placeholders:
+        pricing_tier: '{{QR.U15.PRICING_TIER}}'
+        fee_amount: '{{QR.U15.FEE_AMOUNT}}'
+        currency: '{{QR.U15.CURRENCY}}'
+        billing_frequency: '{{QR.U15.BILLING_FREQUENCY}}'
+        payment_terms: '{{QR.U15.PAYMENT_TERMS}}'
+        payment_methods: '{{QR.U15.PAYMENT_METHODS}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_004
+      - UNI_CNS_005
+      - UNI_CNS_006
+      - UNI_CNS_IN2
+    ui:
+      panel_id: G05
+      display_label: Pricing and payment terms
+      prompt: Provide the pricing structure, billing cadence, payment due period, taxes, and late-payment terms.
+      input_type: commercial_object
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U16
+    canonical_key: commercial.term_and_renewal
+    label: Initial term and renewal terms
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G06
+    shape: OBJECT
+    atomic_fields:
+    - initial_term
+    - auto_renewal
+    - renewal_notice_period
+    - nonpayment_grace_period
+    atomic_value_count: 4
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - initial term
+        - renewal
+        - auto-renewal
+        - nonpayment grace
+        fills:
+        - initial_term
+        - auto_renewal
+        - renewal_notice_period
+        - nonpayment_grace_period
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U16
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        initial_term: 12 months
+        auto_renewal: true
+        renewal_notice_period: 30 days
+        nonpayment_grace_period: 10 days
+      display_value: 'initial term: 12 months | auto renewal: Yes | renewal notice period: 30 days | nonpayment grace period:
+        10 days'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Schedule B; renewal and suspension mechanics
+      value_placeholders:
+        initial_term: '{{QR.U16.INITIAL_TERM}}'
+        auto_renewal: '{{QR.U16.AUTO_RENEWAL}}'
+        renewal_notice_period: '{{QR.U16.RENEWAL_NOTICE_PERIOD}}'
+        nonpayment_grace_period: '{{QR.U16.NONPAYMENT_GRACE_PERIOD}}'
+      clause_selector_token: '{{QR.U16.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_004
+      - UNI_CNS_005
+      - UNI_CNS_006
+    ui:
+      panel_id: G06
+      display_label: Initial term and renewal terms
+      prompt: Provide the initial term, renewal method, renewal period, and non-renewal notice period.
+      input_type: term_object
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U17
+    canonical_key: commercial.refund_and_free_tier
+    label: Refund and free-tier terms
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G06
+    shape: OBJECT
+    atomic_fields:
+    - refund_policy
+    - free_trial_or_freemium_terms
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - refund
+        - free trial
+        - freemium
+        fills:
+        - refund_policy
+        - free_trial_or_freemium_terms
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U17
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        refund_policy: No convenience refunds after service activation
+        free_trial_or_freemium_terms: 14-day free trial
+      display_value: 'refund policy: No convenience refunds after service activation | free trial or freemium terms: 14-day
+        free trial'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: Schedule B; beta/free-tier protections
+      value_placeholders:
+        refund_policy: '{{QR.U17.REFUND_POLICY}}'
+        free_trial_or_freemium_terms: '{{QR.U17.FREE_TRIAL_OR_FREEMIUM_TERMS}}'
+      clause_selector_token: '{{QR.U17.CLAUSE_SELECTOR}}'
+    document_binding_count: 1
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - UNI_CNS_004
+      - UNI_CNS_006
+      - UNI_CNS_IN2
+    ui:
+      panel_id: G06
+      display_label: Refund and free-tier terms
+      prompt: Confirm the refund posture, free-trial terms, and free-tier limitations.
+      input_type: policy_object
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U18
+    canonical_key: commercial.output_rights_and_verification
+    label: Output-rights and verification posture
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G07
+    shape: OBJECT
+    atomic_fields:
+    - output_license_scope
+    - verification_service_tier
+    atomic_value_count: 2
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.006
+        route_id: P12.ROUTE.PA.MECH.006
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.006"].value
+        fills:
+        - output_license_scope
+        - verification_service_tier
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_ID
+        field_id: PA.MECH.007
+        route_id: P12.ROUTE.PA.MECH.007
+        report_artifact: report_section__04_product_activity_architecture
+        value_selector: findings[field_id="PA.MECH.007"].value
+        fills:
+        - output_license_scope
+        - verification_service_tier
+        transform: DIRECT_OR_MERGE
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - output rights
+        - verification
+        - ownership
+        fills:
+        - output_license_scope
+        - verification_service_tier
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U18
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        output_license_scope: Commercial-use licence subject to third-party rights
+        verification_service_tier: No independent verification service
+      display_value: 'output license scope: Commercial-use licence subject to third-party rights | verification service tier:
+        No independent verification service'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS §6.2; Schedule A verification tier; negotiation playbook position
+      value_placeholders:
+        output_license_scope: '{{QR.U18.OUTPUT_LICENSE_SCOPE}}'
+        verification_service_tier: '{{QR.U18.VERIFICATION_SERVICE_TIER}}'
+      clause_selector_token: '{{QR.U18.CLAUSE_SELECTOR}}'
+    - document_id: DOC_AI_A_PBK
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      document_target: TOS §6.2; Schedule A verification tier; negotiation playbook position
+      value_placeholders:
+        output_license_scope: '{{QR.U18.OUTPUT_LICENSE_SCOPE}}'
+        verification_service_tier: '{{QR.U18.VERIFICATION_SERVICE_TIER}}'
+      clause_selector_token: '{{QR.U18.CLAUSE_SELECTOR}}'
+    document_binding_count: 2
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - CRT_INF_001
+      - UNI_INF_001
+      - UNI_LIA_001
+    ui:
+      panel_id: G07
+      display_label: Output-rights and verification posture
+      prompt: Select the output-rights position and the customer verification obligations.
+      input_type: object_form
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  - qr_field_id: U19
+    canonical_key: commercial.sla_election
+    label: SLA election
+    registry_scope: UNIVERSAL
+    lane: SHARED
+    section_id: G07
+    shape: ENUM
+    atomic_fields:
+    - none
+    - standard
+    - custom
+    atomic_value_count: 3
+    required_for_assembly: true
+    fillability: PARTIAL
+    coverage_status: PARTIAL_INPUT
+    phase12_bridge:
+      linked: true
+      authoritative_source: PHASE12_MATERIAL_FIELD_VALUE
+      source_is_immutable: true
+      bindings:
+      - binding_type: PHASE12_FIELD_FAMILY
+        field_id_prefix: LGC.
+        report_artifact: report_section__07_legal_governance_architecture
+        value_selector: findings[field_id startsWith "LGC."].value
+        canonical_label_query:
+        - service level
+        - SLA
+        - support commitments
+        fills:
+        - none
+        - standard
+        - custom
+        transform: COLLECT_VALUES
+        runtime_must_resolve_concrete_field_ids: true
+      resolved_value_policy: USE_PHASE12_VALUE_WHEN_RESOLVED
+      unresolved_or_missing_component_policy: USE_MARKET_BASED_DEMO_FALLBACK
+      reviewer_confirmation_required: true
+    resolution:
+      resolution_order:
+      - PHASE12_RESOLVED_MATERIAL_VALUE
+      - MARKET_BASED_DEMO_FALLBACK_FOR_ANY_UNRESOLVED_ATOMIC_COMPONENT
+      - REVIEWER_CONFIRMED_OR_EDITED_VALUE
+      reviewer_action: COMPLETE_CONFIRM_OR_EDIT
+      final_value_path: assembly_payload.qr_values.U19
+      final_value_is_document_authority: true
+      phase12_writeback_forbidden: true
+      notes: Phase 12 supplies one or more components; remaining components use the market-based demo fallback until reviewer
+        confirmation or edit.
+    demo_fallback:
+      source_class: MARKET_BASED
+      visible_label: '{MARKET BASED}'
+      use_when: Phase 12 does not resolve the field or an atomic component.
+      atomic_values:
+        none: false
+        standard: true
+        custom: false
+      display_value: 'none: No | standard: Yes | custom: No'
+      not_diligence_evidence: true
+      reviewer_may_confirm_or_edit: true
+      must_never_render_blank: true
+    document_bindings:
+    - document_id: DOC_AI_A_TOS
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: TOS Schedule A; activates DOC_AI_A_SLA
+      value_placeholders:
+        none: '{{QR.U19.NONE}}'
+        standard: '{{QR.U19.STANDARD}}'
+        custom: '{{QR.U19.CUSTOM}}'
+      document_activation_token: '{{QR.U19.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_SLA
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: TOS Schedule A; activates DOC_AI_A_SLA
+      value_placeholders:
+        none: '{{QR.U19.NONE}}'
+        standard: '{{QR.U19.STANDARD}}'
+        custom: '{{QR.U19.CUSTOM}}'
+      document_activation_token: '{{QR.U19.DOCUMENT_ACTIVE}}'
+    - document_id: DOC_AI_A_PBK
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      document_target: TOS Schedule A; activates DOC_AI_A_SLA
+      value_placeholders:
+        none: '{{QR.U19.NONE}}'
+        standard: '{{QR.U19.STANDARD}}'
+        custom: '{{QR.U19.CUSTOM}}'
+      document_activation_token: '{{QR.U19.DOCUMENT_ACTIVE}}'
+    document_binding_count: 3
+    document_consequence_required: true
+    threat_traceability:
+      mode: TRACEABILITY_ONLY_NOT_QUESTION_SOURCE
+      threat_ids:
+      - ORC_LIA_001
+    ui:
+      panel_id: G07
+      display_label: SLA election
+      prompt: Should the AI service be delivered with a contractual SLA?
+      input_type: boolean
+      render_when:
+        all:
+        - active_scope == true
+      prefill_badge: DILIGENCE OR {MARKET BASED}
+      never_render_empty: true
+  validation_summary:
+    status: PASS
+    field_count: 65
+    universal_count: 19
+    lane_a_count: 28
+    lane_b_count: 18
+    phase12_linked_count: 54
+    operator_or_default_only_count: 11
+    atomic_value_count: 126
+    document_binding_count: 185
+    market_based_demo_field_count: 65
+    market_based_demo_atomic_count: 126
+    failures: []
+  document_injection_contract:
+    template_set_version: qr_document_injection.v2.1
+    inline_direct_placeholders_inserted_where_unambiguous: true
+    complete_binding_schedule_appended_to_every_template: true
+    assembly_control_schedule_removed_from_final_draft: true
+    execution_specific_and_local_counsel_fields_remain_outside_qr: true

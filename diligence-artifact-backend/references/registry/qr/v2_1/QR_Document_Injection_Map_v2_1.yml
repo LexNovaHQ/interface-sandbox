@@ -1,0 +1,3032 @@
+qr_document_injection_map:
+  version: 2.1.0
+  status: FINAL_DOCUMENT_QA_PASS
+  document_count: 13
+  registry_field_count: 65
+  atomic_value_count: 126
+  policy:
+    direct_inline_replacement_where_unambiguous: true
+    complete_control_schedule_in_every_template: true
+    market_based_demo_values_live_in_registry_not_document_text: true
+    control_schedule_removed_from_final_review_ready_draft: true
+    execution_specific_placeholders_preserved: true
+    local_counsel_placeholders_preserved: true
+  documents:
+  - document_id: DOC_AI_A_TOS
+    source_file: DOC_AI_A_TOS.docx
+    output_file: documents/DOC_AI_A_TOS_QR_READY_v2_1.docx
+    bound_field_count: 38
+    required_token_count: 79
+    direct_replacements:
+      terminology:Tally responses: 2
+      terminology:Tally Question: 1
+      terminology:Tally question: 4
+      terminology:Tally Injection: 1
+      terminology:Tally: 27
+      terminology:tally: 2
+      '[Provider Legal Name]': 1
+      '[entity type]': 1
+      '[Service Name]': 1
+      '[GOVERNING LAW JURISDICTION]': 1
+      '[PROVIDER JURISDICTION]': 1
+      '[jurisdiction]': 1
+      '[address]': 1
+    bindings:
+    - field_id: A01
+      label: Model stack
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      action_token: null
+      demo_atomic_values: &id025
+        model_name: GPT-4.1
+        provider_name: OpenAI
+        hosting_posture: Third-party API
+        provider_processing_jurisdiction: United States
+        provider_privacy_url: https://openai.com/policies/privacy-policy
+    - field_id: A02
+      label: Third-party integrations
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A and §2.5; third-party-system allocation
+      placeholders:
+        integration_names[]: '{{QR.A02.INTEGRATION_NAMES_LIST}}'
+      action_token: null
+      demo_atomic_values: &id021
+        integration_names[]:
+        - Slack
+        - Salesforce
+        - Stripe
+    - field_id: A03
+      label: Autonomous-agent capability
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: TOS §2.7; activates Agentic Addendum; AUP agentic safeguards
+      placeholders:
+        autonomous_agent_enabled: '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}'
+      action_token: null
+      demo_atomic_values: &id001
+        autonomous_agent_enabled: true
+    - field_id: A05
+      label: Multi-agent or model-orchestration architecture
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AGT §3.5; model-routing disclosures
+      placeholders:
+        multi_agent_or_orchestration: '{{QR.A05.MULTI_AGENT_OR_ORCHESTRATION}}'
+      action_token: null
+      demo_atomic_values: &id022
+        multi_agent_or_orchestration: true
+    - field_id: A06
+      label: Agent interaction with payment or financial systems
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: Tier 3 guidance; financial-use conditions; monetary exposure warnings
+      placeholders:
+        payment_system_interaction: '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}'
+      action_token: null
+      demo_atomic_values: &id002
+        payment_system_interaction: true
+    - field_id: A07
+      label: Agent use in high-stakes decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: Employment/lending/insurance controls and elevated allocation
+      placeholders:
+        agent_high_stakes_decision_use: '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: &id003
+        agent_high_stakes_decision_use: false
+    - field_id: A08
+      label: Conversational end-user interface
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §3.4 disclosure; AUP companion trigger component
+      placeholders:
+        conversational_interface: '{{QR.A08.CONVERSATIONAL_INTERFACE}}'
+      action_token: null
+      demo_atomic_values: &id004
+        conversational_interface: true
+    - field_id: A09
+      label: Companion / relational system
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: California companion block; AUP companion conditions
+      placeholders:
+        companion_system: '{{QR.A09.COMPANION_SYSTEM}}'
+      action_token: null
+      demo_atomic_values: &id005
+        companion_system: false
+    - field_id: A10
+      label: Minor access or child-directed service
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §3.2; AUP §3.5; PP children section
+      placeholders:
+        minor_access: '{{QR.A10.MINOR_ACCESS}}'
+      action_token: null
+      demo_atomic_values: &id006
+        minor_access: false
+    - field_id: A11
+      label: Vulnerable-user context
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §5.5 and heightened reliance warnings
+      placeholders:
+        vulnerable_user_context: '{{QR.A11.VULNERABLE_USER_CONTEXT}}'
+      action_token: null
+      demo_atomic_values: &id007
+        vulnerable_user_context: false
+    - field_id: A12
+      label: Regulated-use contexts
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AUP §§3.1–3.4; DPA/high-risk routing; TOS reliance controls
+      placeholders:
+        healthcare: '{{QR.A12.HEALTHCARE}}'
+        financial_advice_or_trading: '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}'
+        legal_content: '{{QR.A12.LEGAL_CONTENT}}'
+        employment_decisions: '{{QR.A12.EMPLOYMENT_DECISIONS}}'
+      action_token: null
+      demo_atomic_values: &id008
+        healthcare: false
+        financial_advice_or_trading: true
+        legal_content: false
+        employment_decisions: false
+    - field_id: A13
+      label: Consequential or automated person-affecting decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §5.6; PP automated decisions; high-risk conditions
+      placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: &id009
+        consequential_decision_use: false
+    - field_id: A15
+      label: Financial reliance threshold
+      fillability: DEFAULT_ONLY
+      lane: A
+      actions:
+      - POPULATE
+      target: TOS §5.4 reliance threshold
+      placeholders:
+        financial_impact_threshold: '{{QR.A15.FINANCIAL_IMPACT_THRESHOLD}}'
+      action_token: null
+      demo_atomic_values: &id042
+        financial_impact_threshold: USD 10,000
+    - field_id: A16
+      label: Customer-data training posture
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §6.1; DPA model-training controls; privacy disclosure
+      placeholders:
+        prohibited: '{{QR.A16.PROHIBITED}}'
+        opt_in_only: '{{QR.A16.OPT_IN_ONLY}}'
+        permitted_under_terms: '{{QR.A16.PERMITTED_UNDER_TERMS}}'
+      action_token: null
+      demo_atomic_values: &id027
+        prohibited: false
+        opt_in_only: true
+        permitted_under_terms: false
+    - field_id: A17
+      label: Personal-data types processed
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule A; PP collection/use disclosures; TOS DPA gateway
+      placeholders:
+        personal_data_categories[]: '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: &id028
+        personal_data_categories[]:
+        - Names
+        - Email addresses
+        - IP addresses
+        - User content
+        - Usage data
+    - field_id: A20
+      label: AI processing architecture
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: DPA §4 architecture; TOS training language; privacy disclosure
+      placeholders:
+        stateless: '{{QR.A20.STATELESS}}'
+        rag: '{{QR.A20.RAG}}'
+        fine_tuning: '{{QR.A20.FINE_TUNING}}'
+        both: '{{QR.A20.BOTH}}'
+      action_token: null
+      demo_atomic_values: &id030
+        stateless: false
+        rag: true
+        fine_tuning: false
+        both: false
+    - field_id: A21
+      label: Subprocessor register
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule C; PP provider disclosures; transfer analysis
+      placeholders:
+        name: '{{QR.A21.NAME}}'
+        provider_type: '{{QR.A21.PROVIDER_TYPE}}'
+        processing_activity: '{{QR.A21.PROCESSING_ACTIVITY}}'
+        processing_location: '{{QR.A21.PROCESSING_LOCATION}}'
+        dpf_certified: '{{QR.A21.DPF_CERTIFIED}}'
+      action_token: null
+      demo_atomic_values: &id031
+        name: OpenAI
+        provider_type: AI model provider
+        processing_activity: Inference
+        processing_location: United States
+        dpf_certified: true
+    - field_id: A24
+      label: EU/UK/Swiss personal-data scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: &id023
+        eu_uk_swiss_data_scope: true
+    - field_id: A25
+      label: California personal-information scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: CCPA/CPRA section; California-specific companion context
+      placeholders:
+        california_data_scope: '{{QR.A25.CALIFORNIA_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: &id032
+        california_data_scope: true
+    - field_id: A28
+      label: SLA performance metrics
+      fillability: DEFAULT_ONLY
+      lane: A
+      actions:
+      - POPULATE
+      target: SLA Schedule A; TOS Schedule A reference
+      placeholders:
+        availability_target: '{{QR.A28.AVAILABILITY_TARGET}}'
+        ttft_target: '{{QR.A28.TTFT_TARGET}}'
+        credit_cap: '{{QR.A28.CREDIT_CAP}}'
+      action_token: null
+      demo_atomic_values: &id039
+        availability_target: 99.9% monthly uptime
+        ttft_target: Under 3 seconds for 99% of requests
+        credit_cap: 30% of monthly fees
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: &id010
+        legal_entity_name: Demo AI Systems, Inc.
+    - field_id: U02
+      label: Entity type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles and entity description
+      placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+      action_token: null
+      demo_atomic_values: &id011
+        entity_type: Delaware C-Corporation
+    - field_id: U03
+      label: Registered address and incorporation jurisdiction
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: &id012
+        street_address: 251 Little Falls Drive, Wilmington, DE 19808
+        country: United States
+        state_or_province: Delaware
+    - field_id: U04
+      label: Official website URL
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Privacy Policy introduction; service identity
+      placeholders:
+        website_url: '{{QR.U04.WEBSITE_URL}}'
+      action_token: null
+      demo_atomic_values: &id036
+        website_url: https://demo.example
+    - field_id: U05
+      label: Legal notice / contract contact email
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Notices; AUP violation reporting; contract contact route
+      placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+      action_token: null
+      demo_atomic_values: &id013
+        legal_notice_email: legal@demo.example
+    - field_id: U07
+      label: Service catalog
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; definition of Service; cross-document service references
+      placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+      action_token: null
+      demo_atomic_values: &id014
+        service_name: Demo Agent Platform
+        service_description: AI workflow automation platform for enterprise customer-support operations
+    - field_id: U08
+      label: Intended customer use case
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; bounded permitted-use context
+      placeholders:
+        intended_use_case: '{{QR.U08.INTENDED_USE_CASE}}'
+      action_token: null
+      demo_atomic_values: &id015
+        intended_use_case: Customer-support workflow automation
+    - field_id: U09
+      label: Output type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A; AUP content clauses; HITL examples
+      placeholders:
+        output_types[]: '{{QR.U09.OUTPUT_TYPES_LIST}}'
+      action_token: null
+      demo_atomic_values: &id016
+        output_types[]:
+        - Text
+        - Structured data
+        - Tool actions
+    - field_id: U10
+      label: Delivery channels
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: API/downstream clauses; delivery references
+      placeholders:
+        web_app: '{{QR.U10.WEB_APP}}'
+        mobile_or_desktop: '{{QR.U10.MOBILE_OR_DESKTOP}}'
+        api_sdk: '{{QR.U10.API_SDK}}'
+        white_label_or_partner: '{{QR.U10.WHITE_LABEL_OR_PARTNER}}'
+      action_token: null
+      demo_atomic_values: &id017
+        web_app: true
+        mobile_or_desktop: false
+        api_sdk: true
+        white_label_or_partner: false
+    - field_id: U11
+      label: Customer and market posture
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      action_token: null
+      demo_atomic_values: &id018
+        b2b: true
+        b2c: false
+        hybrid: false
+    - field_id: U12
+      label: Governing law
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Governing-law clauses and jurisdiction-specific variants
+      placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: &id019
+        country: United States
+        state_or_province: Delaware
+    - field_id: U13
+      label: Dispute forum / venue
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Dispute and venue clauses
+      placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+      action_token: null
+      demo_atomic_values: &id020
+        courts_or_arbitration_forum: State and federal courts located in Delaware
+    - field_id: U14
+      label: Revenue model and liability-floor basis
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      action_token: null
+      demo_atomic_values: &id024
+        revenue_model: Enterprise subscription contracts
+        maximum_annual_contract_value: USD 25,000
+        liability_floor_amount: USD 5,000
+    - field_id: U15
+      label: Pricing and payment terms
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule B; fee-conditioned output licence; SLA credit base
+      placeholders:
+        pricing_tier: '{{QR.U15.PRICING_TIER}}'
+        fee_amount: '{{QR.U15.FEE_AMOUNT}}'
+        currency: '{{QR.U15.CURRENCY}}'
+        billing_frequency: '{{QR.U15.BILLING_FREQUENCY}}'
+        payment_terms: '{{QR.U15.PAYMENT_TERMS}}'
+        payment_methods: '{{QR.U15.PAYMENT_METHODS}}'
+      action_token: null
+      demo_atomic_values: &id040
+        pricing_tier: Enterprise
+        fee_amount: '2400'
+        currency: USD
+        billing_frequency: Annual
+        payment_terms: Net 30
+        payment_methods: ACH or wire transfer
+    - field_id: U16
+      label: Initial term and renewal terms
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Schedule B; renewal and suspension mechanics
+      placeholders:
+        initial_term: '{{QR.U16.INITIAL_TERM}}'
+        auto_renewal: '{{QR.U16.AUTO_RENEWAL}}'
+        renewal_notice_period: '{{QR.U16.RENEWAL_NOTICE_PERIOD}}'
+        nonpayment_grace_period: '{{QR.U16.NONPAYMENT_GRACE_PERIOD}}'
+      action_token: null
+      demo_atomic_values:
+        initial_term: 12 months
+        auto_renewal: true
+        renewal_notice_period: 30 days
+        nonpayment_grace_period: 10 days
+    - field_id: U17
+      label: Refund and free-tier terms
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Schedule B; beta/free-tier protections
+      placeholders:
+        refund_policy: '{{QR.U17.REFUND_POLICY}}'
+        free_trial_or_freemium_terms: '{{QR.U17.FREE_TRIAL_OR_FREEMIUM_TERMS}}'
+      action_token: null
+      demo_atomic_values:
+        refund_policy: No convenience refunds after service activation
+        free_trial_or_freemium_terms: 14-day free trial
+    - field_id: U18
+      label: Output-rights and verification posture
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS §6.2; Schedule A verification tier; negotiation playbook position
+      placeholders:
+        output_license_scope: '{{QR.U18.OUTPUT_LICENSE_SCOPE}}'
+        verification_service_tier: '{{QR.U18.VERIFICATION_SERVICE_TIER}}'
+      action_token: null
+      demo_atomic_values: &id043
+        output_license_scope: Commercial-use licence subject to third-party rights
+        verification_service_tier: No independent verification service
+    - field_id: U19
+      label: SLA election
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: TOS Schedule A; activates DOC_AI_A_SLA
+      placeholders:
+        none: '{{QR.U19.NONE}}'
+        standard: '{{QR.U19.STANDARD}}'
+        custom: '{{QR.U19.CUSTOM}}'
+      action_token: null
+      demo_atomic_values: &id041
+        none: false
+        standard: true
+        custom: false
+    structural_token_occurrences:
+      '{{QR.A01.HOSTING_POSTURE}}': 1
+      '{{QR.A01.MODEL_NAME}}': 1
+      '{{QR.A01.PROVIDER_NAME}}': 1
+      '{{QR.A01.PROVIDER_PRIVACY_URL}}': 1
+      '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}': 1
+      '{{QR.A02.INTEGRATION_NAMES_LIST}}': 1
+      '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}': 1
+      '{{QR.A05.MULTI_AGENT_OR_ORCHESTRATION}}': 1
+      '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}': 1
+      '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}': 1
+      '{{QR.A08.CONVERSATIONAL_INTERFACE}}': 1
+      '{{QR.A09.COMPANION_SYSTEM}}': 1
+      '{{QR.A10.MINOR_ACCESS}}': 1
+      '{{QR.A11.VULNERABLE_USER_CONTEXT}}': 1
+      '{{QR.A12.EMPLOYMENT_DECISIONS}}': 1
+      '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}': 1
+      '{{QR.A12.HEALTHCARE}}': 1
+      '{{QR.A12.LEGAL_CONTENT}}': 1
+      '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}': 1
+      '{{QR.A15.FINANCIAL_IMPACT_THRESHOLD}}': 1
+      '{{QR.A16.OPT_IN_ONLY}}': 1
+      '{{QR.A16.PERMITTED_UNDER_TERMS}}': 1
+      '{{QR.A16.PROHIBITED}}': 1
+      '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}': 1
+      '{{QR.A20.BOTH}}': 1
+      '{{QR.A20.FINE_TUNING}}': 1
+      '{{QR.A20.RAG}}': 1
+      '{{QR.A20.STATELESS}}': 1
+      '{{QR.A21.DPF_CERTIFIED}}': 1
+      '{{QR.A21.NAME}}': 1
+      '{{QR.A21.PROCESSING_ACTIVITY}}': 1
+      '{{QR.A21.PROCESSING_LOCATION}}': 1
+      '{{QR.A21.PROVIDER_TYPE}}': 1
+      '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}': 1
+      '{{QR.A25.CALIFORNIA_DATA_SCOPE}}': 1
+      '{{QR.A28.AVAILABILITY_TARGET}}': 1
+      '{{QR.A28.CREDIT_CAP}}': 1
+      '{{QR.A28.TTFT_TARGET}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 2
+      '{{QR.U02.ENTITY_TYPE}}': 2
+      '{{QR.U03.COUNTRY}}': 4
+      '{{QR.U03.STATE_OR_PROVINCE}}': 4
+      '{{QR.U03.STREET_ADDRESS}}': 2
+      '{{QR.U04.WEBSITE_URL}}': 1
+      '{{QR.U05.LEGAL_NOTICE_EMAIL}}': 1
+      '{{QR.U07.SERVICE_DESCRIPTION}}': 1
+      '{{QR.U07.SERVICE_NAME}}': 2
+      '{{QR.U08.INTENDED_USE_CASE}}': 1
+      '{{QR.U09.OUTPUT_TYPES_LIST}}': 1
+      '{{QR.U10.API_SDK}}': 1
+      '{{QR.U10.MOBILE_OR_DESKTOP}}': 1
+      '{{QR.U10.WEB_APP}}': 1
+      '{{QR.U10.WHITE_LABEL_OR_PARTNER}}': 1
+      '{{QR.U11.B2B}}': 1
+      '{{QR.U11.B2C}}': 1
+      '{{QR.U11.HYBRID}}': 1
+      '{{QR.U12.COUNTRY}}': 2
+      '{{QR.U12.STATE_OR_PROVINCE}}': 2
+      '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}': 1
+      '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}': 1
+      '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}': 1
+      '{{QR.U14.REVENUE_MODEL}}': 1
+      '{{QR.U15.BILLING_FREQUENCY}}': 1
+      '{{QR.U15.CURRENCY}}': 1
+      '{{QR.U15.FEE_AMOUNT}}': 1
+      '{{QR.U15.PAYMENT_METHODS}}': 1
+      '{{QR.U15.PAYMENT_TERMS}}': 1
+      '{{QR.U15.PRICING_TIER}}': 1
+      '{{QR.U16.AUTO_RENEWAL}}': 1
+      '{{QR.U16.INITIAL_TERM}}': 1
+      '{{QR.U16.NONPAYMENT_GRACE_PERIOD}}': 1
+      '{{QR.U16.RENEWAL_NOTICE_PERIOD}}': 1
+      '{{QR.U17.FREE_TRIAL_OR_FREEMIUM_TERMS}}': 1
+      '{{QR.U17.REFUND_POLICY}}': 1
+      '{{QR.U18.OUTPUT_LICENSE_SCOPE}}': 1
+      '{{QR.U18.VERIFICATION_SERVICE_TIER}}': 1
+      '{{QR.U19.CUSTOM}}': 1
+      '{{QR.U19.NONE}}': 1
+      '{{QR.U19.STANDARD}}': 1
+    expected_footer_identifier: DOC_TOS_AI
+    expected_body_reference: DOC_TOS-AI-v1
+  - document_id: DOC_AI_A_AUP
+    source_file: DOC_AI_A_AUP.docx
+    output_file: documents/DOC_AI_A_AUP_QR_READY_v2_1.docx
+    bound_field_count: 22
+    required_token_count: 34
+    direct_replacements:
+      terminology:Tally Injection: 1
+      terminology:Tally: 7
+      '[Provider Legal Name]': 1
+      '[entity type]': 1
+      '[INJECTION POINT: Provider contact email]': 1
+      '[jurisdiction]': 1
+      '[address]': 1
+    bindings:
+    - field_id: A03
+      label: Autonomous-agent capability
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: TOS §2.7; activates Agentic Addendum; AUP agentic safeguards
+      placeholders:
+        autonomous_agent_enabled: '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}'
+      action_token: null
+      demo_atomic_values: *id001
+    - field_id: A06
+      label: Agent interaction with payment or financial systems
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: Tier 3 guidance; financial-use conditions; monetary exposure warnings
+      placeholders:
+        payment_system_interaction: '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}'
+      action_token: null
+      demo_atomic_values: *id002
+    - field_id: A07
+      label: Agent use in high-stakes decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: Employment/lending/insurance controls and elevated allocation
+      placeholders:
+        agent_high_stakes_decision_use: '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: *id003
+    - field_id: A08
+      label: Conversational end-user interface
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §3.4 disclosure; AUP companion trigger component
+      placeholders:
+        conversational_interface: '{{QR.A08.CONVERSATIONAL_INTERFACE}}'
+      action_token: null
+      demo_atomic_values: *id004
+    - field_id: A09
+      label: Companion / relational system
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: California companion block; AUP companion conditions
+      placeholders:
+        companion_system: '{{QR.A09.COMPANION_SYSTEM}}'
+      action_token: null
+      demo_atomic_values: *id005
+    - field_id: A10
+      label: Minor access or child-directed service
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §3.2; AUP §3.5; PP children section
+      placeholders:
+        minor_access: '{{QR.A10.MINOR_ACCESS}}'
+      action_token: null
+      demo_atomic_values: *id006
+    - field_id: A11
+      label: Vulnerable-user context
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §5.5 and heightened reliance warnings
+      placeholders:
+        vulnerable_user_context: '{{QR.A11.VULNERABLE_USER_CONTEXT}}'
+      action_token: null
+      demo_atomic_values: *id007
+    - field_id: A12
+      label: Regulated-use contexts
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AUP §§3.1–3.4; DPA/high-risk routing; TOS reliance controls
+      placeholders:
+        healthcare: '{{QR.A12.HEALTHCARE}}'
+        financial_advice_or_trading: '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}'
+        legal_content: '{{QR.A12.LEGAL_CONTENT}}'
+        employment_decisions: '{{QR.A12.EMPLOYMENT_DECISIONS}}'
+      action_token: null
+      demo_atomic_values: *id008
+    - field_id: A13
+      label: Consequential or automated person-affecting decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §5.6; PP automated decisions; high-risk conditions
+      placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: *id009
+    - field_id: A14
+      label: Biometric or human-signal processing
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AUP §3.6; sensitive-data and privacy disclosures
+      placeholders:
+        biometric_processing: '{{QR.A14.BIOMETRIC_PROCESSING}}'
+      action_token: null
+      demo_atomic_values: &id026
+        biometric_processing: false
+    - field_id: A18
+      label: Sensitive-data categories
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: DPA Schedule A; PP sensitive data; sector-specific controls
+      placeholders:
+        sensitive_data_categories[]: '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: &id029
+        sensitive_data_categories[]:
+        - None identified
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    - field_id: U02
+      label: Entity type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles and entity description
+      placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+      action_token: null
+      demo_atomic_values: *id011
+    - field_id: U03
+      label: Registered address and incorporation jurisdiction
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id012
+    - field_id: U05
+      label: Legal notice / contract contact email
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Notices; AUP violation reporting; contract contact route
+      placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+      action_token: null
+      demo_atomic_values: *id013
+    - field_id: U07
+      label: Service catalog
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; definition of Service; cross-document service references
+      placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+      action_token: null
+      demo_atomic_values: *id014
+    - field_id: U08
+      label: Intended customer use case
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; bounded permitted-use context
+      placeholders:
+        intended_use_case: '{{QR.U08.INTENDED_USE_CASE}}'
+      action_token: null
+      demo_atomic_values: *id015
+    - field_id: U09
+      label: Output type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A; AUP content clauses; HITL examples
+      placeholders:
+        output_types[]: '{{QR.U09.OUTPUT_TYPES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id016
+    - field_id: U10
+      label: Delivery channels
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: API/downstream clauses; delivery references
+      placeholders:
+        web_app: '{{QR.U10.WEB_APP}}'
+        mobile_or_desktop: '{{QR.U10.MOBILE_OR_DESKTOP}}'
+        api_sdk: '{{QR.U10.API_SDK}}'
+        white_label_or_partner: '{{QR.U10.WHITE_LABEL_OR_PARTNER}}'
+      action_token: null
+      demo_atomic_values: *id017
+    - field_id: U11
+      label: Customer and market posture
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      action_token: null
+      demo_atomic_values: *id018
+    - field_id: U12
+      label: Governing law
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Governing-law clauses and jurisdiction-specific variants
+      placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id019
+    - field_id: U13
+      label: Dispute forum / venue
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Dispute and venue clauses
+      placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+      action_token: null
+      demo_atomic_values: *id020
+    structural_token_occurrences:
+      '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}': 1
+      '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}': 1
+      '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}': 1
+      '{{QR.A08.CONVERSATIONAL_INTERFACE}}': 1
+      '{{QR.A09.COMPANION_SYSTEM}}': 1
+      '{{QR.A10.MINOR_ACCESS}}': 1
+      '{{QR.A11.VULNERABLE_USER_CONTEXT}}': 1
+      '{{QR.A12.EMPLOYMENT_DECISIONS}}': 1
+      '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}': 1
+      '{{QR.A12.HEALTHCARE}}': 1
+      '{{QR.A12.LEGAL_CONTENT}}': 1
+      '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}': 1
+      '{{QR.A14.BIOMETRIC_PROCESSING}}': 1
+      '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 2
+      '{{QR.U02.ENTITY_TYPE}}': 2
+      '{{QR.U03.COUNTRY}}': 3
+      '{{QR.U03.STATE_OR_PROVINCE}}': 3
+      '{{QR.U03.STREET_ADDRESS}}': 2
+      '{{QR.U05.LEGAL_NOTICE_EMAIL}}': 2
+      '{{QR.U07.SERVICE_DESCRIPTION}}': 1
+      '{{QR.U07.SERVICE_NAME}}': 1
+      '{{QR.U08.INTENDED_USE_CASE}}': 1
+      '{{QR.U09.OUTPUT_TYPES_LIST}}': 1
+      '{{QR.U10.API_SDK}}': 1
+      '{{QR.U10.MOBILE_OR_DESKTOP}}': 1
+      '{{QR.U10.WEB_APP}}': 1
+      '{{QR.U10.WHITE_LABEL_OR_PARTNER}}': 1
+      '{{QR.U11.B2B}}': 1
+      '{{QR.U11.B2C}}': 1
+      '{{QR.U11.HYBRID}}': 1
+      '{{QR.U12.COUNTRY}}': 1
+      '{{QR.U12.STATE_OR_PROVINCE}}': 1
+      '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}': 1
+    expected_footer_identifier: DOC_AUP_AI
+    expected_body_reference: DOC_AUP-AI-v1
+  - document_id: DOC_AI_A_AGT
+    source_file: DOC_AI_A_AGT.docx
+    output_file: documents/DOC_AI_A_AGT_QR_READY_v2_1.docx
+    bound_field_count: 15
+    required_token_count: 28
+    direct_replacements:
+      terminology:Tally responses: 1
+      terminology:Tally Question: 1
+      terminology:Tally Injection: 1
+      terminology:Tally injection: 1
+      terminology:Tally: 3
+      '[Provider Legal Name]': 1
+      '[entity type]': 1
+      '[jurisdiction]': 1
+      '[address]': 1
+    bindings:
+    - field_id: A02
+      label: Third-party integrations
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A and §2.5; third-party-system allocation
+      placeholders:
+        integration_names[]: '{{QR.A02.INTEGRATION_NAMES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id021
+    - field_id: A03
+      label: Autonomous-agent capability
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: TOS §2.7; activates Agentic Addendum; AUP agentic safeguards
+      placeholders:
+        autonomous_agent_enabled: '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}'
+      action_token: null
+      demo_atomic_values: *id001
+    - field_id: A04
+      label: Agent control profile
+      fillability: DEFAULT_ONLY
+      lane: A
+      actions:
+      - POPULATE
+      target: Schedule C circuit breakers, retry and kill-switch controls
+      placeholders:
+        permission_scope: '{{QR.A04.PERMISSION_SCOPE}}'
+        session_spend_cap: '{{QR.A04.SESSION_SPEND_CAP}}'
+        period_spend_cap: '{{QR.A04.PERIOD_SPEND_CAP}}'
+        retry_limit: '{{QR.A04.RETRY_LIMIT}}'
+        rate_limit: '{{QR.A04.RATE_LIMIT}}'
+        failure_kill_threshold: '{{QR.A04.FAILURE_KILL_THRESHOLD}}'
+        loop_threshold: '{{QR.A04.LOOP_THRESHOLD}}'
+        graceful_shutdown_timeout: '{{QR.A04.GRACEFUL_SHUTDOWN_TIMEOUT}}'
+      action_token: null
+      demo_atomic_values:
+        permission_scope: Tier 1 — Read
+        session_spend_cap: USD 50
+        period_spend_cap: USD 500 per day
+        retry_limit: 3
+        rate_limit: 60 calls per minute
+        failure_kill_threshold: 3
+        loop_threshold: 5
+        graceful_shutdown_timeout: 30 seconds
+    - field_id: A05
+      label: Multi-agent or model-orchestration architecture
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AGT §3.5; model-routing disclosures
+      placeholders:
+        multi_agent_or_orchestration: '{{QR.A05.MULTI_AGENT_OR_ORCHESTRATION}}'
+      action_token: null
+      demo_atomic_values: *id022
+    - field_id: A06
+      label: Agent interaction with payment or financial systems
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: Tier 3 guidance; financial-use conditions; monetary exposure warnings
+      placeholders:
+        payment_system_interaction: '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}'
+      action_token: null
+      demo_atomic_values: *id002
+    - field_id: A07
+      label: Agent use in high-stakes decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: Employment/lending/insurance controls and elevated allocation
+      placeholders:
+        agent_high_stakes_decision_use: '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: *id003
+    - field_id: A24
+      label: EU/UK/Swiss personal-data scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: *id023
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    - field_id: U02
+      label: Entity type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles and entity description
+      placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+      action_token: null
+      demo_atomic_values: *id011
+    - field_id: U03
+      label: Registered address and incorporation jurisdiction
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id012
+    - field_id: U05
+      label: Legal notice / contract contact email
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Notices; AUP violation reporting; contract contact route
+      placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+      action_token: null
+      demo_atomic_values: *id013
+    - field_id: U07
+      label: Service catalog
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; definition of Service; cross-document service references
+      placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+      action_token: null
+      demo_atomic_values: *id014
+    - field_id: U12
+      label: Governing law
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Governing-law clauses and jurisdiction-specific variants
+      placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id019
+    - field_id: U13
+      label: Dispute forum / venue
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Dispute and venue clauses
+      placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+      action_token: null
+      demo_atomic_values: *id020
+    - field_id: U14
+      label: Revenue model and liability-floor basis
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      action_token: null
+      demo_atomic_values: *id024
+    structural_token_occurrences:
+      '{{QR.A02.INTEGRATION_NAMES_LIST}}': 1
+      '{{QR.A03.AUTONOMOUS_AGENT_ENABLED}}': 1
+      '{{QR.A04.FAILURE_KILL_THRESHOLD}}': 1
+      '{{QR.A04.GRACEFUL_SHUTDOWN_TIMEOUT}}': 1
+      '{{QR.A04.LOOP_THRESHOLD}}': 1
+      '{{QR.A04.PERIOD_SPEND_CAP}}': 1
+      '{{QR.A04.PERMISSION_SCOPE}}': 1
+      '{{QR.A04.RATE_LIMIT}}': 1
+      '{{QR.A04.RETRY_LIMIT}}': 1
+      '{{QR.A04.SESSION_SPEND_CAP}}': 1
+      '{{QR.A05.MULTI_AGENT_OR_ORCHESTRATION}}': 1
+      '{{QR.A06.PAYMENT_SYSTEM_INTERACTION}}': 1
+      '{{QR.A07.AGENT_HIGH_STAKES_DECISION_USE}}': 1
+      '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 2
+      '{{QR.U02.ENTITY_TYPE}}': 2
+      '{{QR.U03.COUNTRY}}': 3
+      '{{QR.U03.STATE_OR_PROVINCE}}': 3
+      '{{QR.U03.STREET_ADDRESS}}': 2
+      '{{QR.U05.LEGAL_NOTICE_EMAIL}}': 1
+      '{{QR.U07.SERVICE_DESCRIPTION}}': 1
+      '{{QR.U07.SERVICE_NAME}}': 1
+      '{{QR.U12.COUNTRY}}': 1
+      '{{QR.U12.STATE_OR_PROVINCE}}': 1
+      '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}': 1
+      '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}': 1
+      '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}': 1
+      '{{QR.U14.REVENUE_MODEL}}': 1
+    expected_footer_identifier: DOC_AGT_AI
+    expected_body_reference: DOC_AGT-AI-v1
+  - document_id: DOC_AI_A_DPA
+    source_file: DOC_AI_A_DPA.docx
+    output_file: documents/DOC_AI_A_DPA_QR_READY_v2_1.docx
+    bound_field_count: 25
+    required_token_count: 53
+    direct_replacements:
+      terminology:Tally responses: 1
+      terminology:Tally response: 1
+      terminology:Tally Question: 1
+      terminology:Tally: 7
+      '[Provider Legal Name]': 1
+      '[entity type]': 1
+      '[INJECTION: URL to live sub-processor list, if applicable]': 1
+      '[INJECTION — Provider''s DR/BCP summary]': 1
+      '[INJECTION — AI Model Provider name, e.g., "OpenAI, LLC"]': 1
+      '[INJECTION — populated from Main Terms Schedule A]': 1
+      '[INJECTION — e.g., "United States (us-east-1)"]': 1
+      '[jurisdiction]': 1
+      '[address]': 1
+    bindings:
+    - field_id: A01
+      label: Model stack
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      action_token: null
+      demo_atomic_values: *id025
+    - field_id: A12
+      label: Regulated-use contexts
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AUP §§3.1–3.4; DPA/high-risk routing; TOS reliance controls
+      placeholders:
+        healthcare: '{{QR.A12.HEALTHCARE}}'
+        financial_advice_or_trading: '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}'
+        legal_content: '{{QR.A12.LEGAL_CONTENT}}'
+        employment_decisions: '{{QR.A12.EMPLOYMENT_DECISIONS}}'
+      action_token: null
+      demo_atomic_values: *id008
+    - field_id: A13
+      label: Consequential or automated person-affecting decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §5.6; PP automated decisions; high-risk conditions
+      placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: *id009
+    - field_id: A14
+      label: Biometric or human-signal processing
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AUP §3.6; sensitive-data and privacy disclosures
+      placeholders:
+        biometric_processing: '{{QR.A14.BIOMETRIC_PROCESSING}}'
+      action_token: null
+      demo_atomic_values: *id026
+    - field_id: A16
+      label: Customer-data training posture
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §6.1; DPA model-training controls; privacy disclosure
+      placeholders:
+        prohibited: '{{QR.A16.PROHIBITED}}'
+        opt_in_only: '{{QR.A16.OPT_IN_ONLY}}'
+        permitted_under_terms: '{{QR.A16.PERMITTED_UNDER_TERMS}}'
+      action_token: null
+      demo_atomic_values: *id027
+    - field_id: A17
+      label: Personal-data types processed
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule A; PP collection/use disclosures; TOS DPA gateway
+      placeholders:
+        personal_data_categories[]: '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id028
+    - field_id: A18
+      label: Sensitive-data categories
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: DPA Schedule A; PP sensitive data; sector-specific controls
+      placeholders:
+        sensitive_data_categories[]: '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id029
+    - field_id: A19
+      label: Data-subject categories
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule A; PP audience and rights architecture
+      placeholders:
+        data_subject_categories[]: '{{QR.A19.DATA_SUBJECT_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: &id033
+        data_subject_categories[]:
+        - Customer end users
+        - Customer administrators
+    - field_id: A20
+      label: AI processing architecture
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: DPA §4 architecture; TOS training language; privacy disclosure
+      placeholders:
+        stateless: '{{QR.A20.STATELESS}}'
+        rag: '{{QR.A20.RAG}}'
+        fine_tuning: '{{QR.A20.FINE_TUNING}}'
+        both: '{{QR.A20.BOTH}}'
+      action_token: null
+      demo_atomic_values: *id030
+    - field_id: A21
+      label: Subprocessor register
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule C; PP provider disclosures; transfer analysis
+      placeholders:
+        name: '{{QR.A21.NAME}}'
+        provider_type: '{{QR.A21.PROVIDER_TYPE}}'
+        processing_activity: '{{QR.A21.PROCESSING_ACTIVITY}}'
+        processing_location: '{{QR.A21.PROCESSING_LOCATION}}'
+        dpf_certified: '{{QR.A21.DPF_CERTIFIED}}'
+      action_token: null
+      demo_atomic_values: *id031
+    - field_id: A22
+      label: Live subprocessor-list URL
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA §5.2 and public vendor transparency route
+      placeholders:
+        subprocessor_list_url: '{{QR.A22.SUBPROCESSOR_LIST_URL}}'
+      action_token: null
+      demo_atomic_values: &id034
+        subprocessor_list_url: https://demo.example/subprocessors
+    - field_id: A23
+      label: Disaster recovery / business continuity summary
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA security schedule and operational resilience summary
+      placeholders:
+        dr_bcp_summary: '{{QR.A23.DR_BCP_SUMMARY}}'
+      action_token: null
+      demo_atomic_values: &id038
+        dr_bcp_summary: Daily encrypted backups, multi-region recovery and annual recovery testing
+    - field_id: A24
+      label: EU/UK/Swiss personal-data scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: *id023
+    - field_id: A25
+      label: California personal-information scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: CCPA/CPRA section; California-specific companion context
+      placeholders:
+        california_data_scope: '{{QR.A25.CALIFORNIA_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: *id032
+    - field_id: A26
+      label: Privacy-role configuration
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: PP §11; DPO and representative disclosures
+      placeholders:
+        dpo_appointed: '{{QR.A26.DPO_APPOINTED}}'
+        dpo_contact: '{{QR.A26.DPO_CONTACT}}'
+        eu_uk_representative_appointed: '{{QR.A26.EU_UK_REPRESENTATIVE_APPOINTED}}'
+        representative_contact: '{{QR.A26.REPRESENTATIVE_CONTACT}}'
+      action_token: null
+      demo_atomic_values: &id035
+        dpo_appointed: false
+        dpo_contact: Not appointed
+        eu_uk_representative_appointed: false
+        representative_contact: Not appointed
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    - field_id: U02
+      label: Entity type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles and entity description
+      placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+      action_token: null
+      demo_atomic_values: *id011
+    - field_id: U03
+      label: Registered address and incorporation jurisdiction
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id012
+    - field_id: U05
+      label: Legal notice / contract contact email
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Notices; AUP violation reporting; contract contact route
+      placeholders:
+        legal_notice_email: '{{QR.U05.LEGAL_NOTICE_EMAIL}}'
+      action_token: null
+      demo_atomic_values: *id013
+    - field_id: U06
+      label: Privacy contact
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: PP §11; data-rights and privacy contact blocks
+      placeholders:
+        name: '{{QR.U06.NAME}}'
+        title_or_role: '{{QR.U06.TITLE_OR_ROLE}}'
+        email: '{{QR.U06.EMAIL}}'
+      action_token: null
+      demo_atomic_values: &id037
+        name: Maya Rao
+        title_or_role: Privacy Lead
+        email: privacy@demo.example
+    - field_id: U07
+      label: Service catalog
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; definition of Service; cross-document service references
+      placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+      action_token: null
+      demo_atomic_values: *id014
+    - field_id: U08
+      label: Intended customer use case
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; bounded permitted-use context
+      placeholders:
+        intended_use_case: '{{QR.U08.INTENDED_USE_CASE}}'
+      action_token: null
+      demo_atomic_values: *id015
+    - field_id: U10
+      label: Delivery channels
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: API/downstream clauses; delivery references
+      placeholders:
+        web_app: '{{QR.U10.WEB_APP}}'
+        mobile_or_desktop: '{{QR.U10.MOBILE_OR_DESKTOP}}'
+        api_sdk: '{{QR.U10.API_SDK}}'
+        white_label_or_partner: '{{QR.U10.WHITE_LABEL_OR_PARTNER}}'
+      action_token: null
+      demo_atomic_values: *id017
+    - field_id: U12
+      label: Governing law
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Governing-law clauses and jurisdiction-specific variants
+      placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id019
+    - field_id: U13
+      label: Dispute forum / venue
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Dispute and venue clauses
+      placeholders:
+        courts_or_arbitration_forum: '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}'
+      action_token: null
+      demo_atomic_values: *id020
+    structural_token_occurrences:
+      '{{QR.A01.HOSTING_POSTURE}}': 1
+      '{{QR.A01.MODEL_NAME}}': 1
+      '{{QR.A01.PROVIDER_NAME}}': 2
+      '{{QR.A01.PROVIDER_PRIVACY_URL}}': 1
+      '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}': 3
+      '{{QR.A12.EMPLOYMENT_DECISIONS}}': 1
+      '{{QR.A12.FINANCIAL_ADVICE_OR_TRADING}}': 1
+      '{{QR.A12.HEALTHCARE}}': 1
+      '{{QR.A12.LEGAL_CONTENT}}': 1
+      '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}': 1
+      '{{QR.A14.BIOMETRIC_PROCESSING}}': 1
+      '{{QR.A16.OPT_IN_ONLY}}': 1
+      '{{QR.A16.PERMITTED_UNDER_TERMS}}': 1
+      '{{QR.A16.PROHIBITED}}': 1
+      '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}': 1
+      '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}': 1
+      '{{QR.A19.DATA_SUBJECT_CATEGORIES_LIST}}': 1
+      '{{QR.A20.BOTH}}': 1
+      '{{QR.A20.FINE_TUNING}}': 1
+      '{{QR.A20.RAG}}': 1
+      '{{QR.A20.STATELESS}}': 1
+      '{{QR.A21.DPF_CERTIFIED}}': 1
+      '{{QR.A21.NAME}}': 1
+      '{{QR.A21.PROCESSING_ACTIVITY}}': 1
+      '{{QR.A21.PROCESSING_LOCATION}}': 1
+      '{{QR.A21.PROVIDER_TYPE}}': 1
+      '{{QR.A22.SUBPROCESSOR_LIST_URL}}': 2
+      '{{QR.A23.DR_BCP_SUMMARY}}': 2
+      '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}': 1
+      '{{QR.A25.CALIFORNIA_DATA_SCOPE}}': 1
+      '{{QR.A26.DPO_APPOINTED}}': 1
+      '{{QR.A26.DPO_CONTACT}}': 1
+      '{{QR.A26.EU_UK_REPRESENTATIVE_APPOINTED}}': 1
+      '{{QR.A26.REPRESENTATIVE_CONTACT}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 2
+      '{{QR.U02.ENTITY_TYPE}}': 2
+      '{{QR.U03.COUNTRY}}': 3
+      '{{QR.U03.STATE_OR_PROVINCE}}': 3
+      '{{QR.U03.STREET_ADDRESS}}': 2
+      '{{QR.U05.LEGAL_NOTICE_EMAIL}}': 1
+      '{{QR.U06.EMAIL}}': 1
+      '{{QR.U06.NAME}}': 1
+      '{{QR.U06.TITLE_OR_ROLE}}': 1
+      '{{QR.U07.SERVICE_DESCRIPTION}}': 1
+      '{{QR.U07.SERVICE_NAME}}': 1
+      '{{QR.U08.INTENDED_USE_CASE}}': 1
+      '{{QR.U10.API_SDK}}': 1
+      '{{QR.U10.MOBILE_OR_DESKTOP}}': 1
+      '{{QR.U10.WEB_APP}}': 1
+      '{{QR.U10.WHITE_LABEL_OR_PARTNER}}': 1
+      '{{QR.U12.COUNTRY}}': 1
+      '{{QR.U12.STATE_OR_PROVINCE}}': 1
+      '{{QR.U13.COURTS_OR_ARBITRATION_FORUM}}': 1
+    expected_footer_identifier: DOC_DPA_AI
+    expected_body_reference: DOC_DPA-AI-v1
+  - document_id: DOC_AI_A_PP
+    source_file: DOC_AI_A_PP.docx
+    output_file: documents/DOC_AI_A_PP_QR_READY_v2_1.docx
+    bound_field_count: 22
+    required_token_count: 46
+    direct_replacements:
+      terminology:Tally responses: 1
+      terminology:Tally Question: 1
+      terminology:Tally: 1
+      '[Provider Legal Name]': 1
+      '[Service Name]': 1
+      '[INJECTION — privacy email]': 5
+      '[domain.com]': 1
+      '[INJECTION — Name / Title]': 1
+      '[INJECTION — Mailing address]': 1
+      '[INJECTION — DPO contact details, or "Not appointed — see Section 11"]': 1
+    bindings:
+    - field_id: A01
+      label: Model stack
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      action_token: null
+      demo_atomic_values: *id025
+    - field_id: A08
+      label: Conversational end-user interface
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §3.4 disclosure; AUP companion trigger component
+      placeholders:
+        conversational_interface: '{{QR.A08.CONVERSATIONAL_INTERFACE}}'
+      action_token: null
+      demo_atomic_values: *id004
+    - field_id: A10
+      label: Minor access or child-directed service
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §3.2; AUP §3.5; PP children section
+      placeholders:
+        minor_access: '{{QR.A10.MINOR_ACCESS}}'
+      action_token: null
+      demo_atomic_values: *id006
+    - field_id: A13
+      label: Consequential or automated person-affecting decisions
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §5.6; PP automated decisions; high-risk conditions
+      placeholders:
+        consequential_decision_use: '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}'
+      action_token: null
+      demo_atomic_values: *id009
+    - field_id: A14
+      label: Biometric or human-signal processing
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: AUP §3.6; sensitive-data and privacy disclosures
+      placeholders:
+        biometric_processing: '{{QR.A14.BIOMETRIC_PROCESSING}}'
+      action_token: null
+      demo_atomic_values: *id026
+    - field_id: A16
+      label: Customer-data training posture
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: TOS §6.1; DPA model-training controls; privacy disclosure
+      placeholders:
+        prohibited: '{{QR.A16.PROHIBITED}}'
+        opt_in_only: '{{QR.A16.OPT_IN_ONLY}}'
+        permitted_under_terms: '{{QR.A16.PERMITTED_UNDER_TERMS}}'
+      action_token: null
+      demo_atomic_values: *id027
+    - field_id: A17
+      label: Personal-data types processed
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule A; PP collection/use disclosures; TOS DPA gateway
+      placeholders:
+        personal_data_categories[]: '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id028
+    - field_id: A18
+      label: Sensitive-data categories
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: DPA Schedule A; PP sensitive data; sector-specific controls
+      placeholders:
+        sensitive_data_categories[]: '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id029
+    - field_id: A19
+      label: Data-subject categories
+      fillability: FULL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule A; PP audience and rights architecture
+      placeholders:
+        data_subject_categories[]: '{{QR.A19.DATA_SUBJECT_CATEGORIES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id033
+    - field_id: A20
+      label: AI processing architecture
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: DPA §4 architecture; TOS training language; privacy disclosure
+      placeholders:
+        stateless: '{{QR.A20.STATELESS}}'
+        rag: '{{QR.A20.RAG}}'
+        fine_tuning: '{{QR.A20.FINE_TUNING}}'
+        both: '{{QR.A20.BOTH}}'
+      action_token: null
+      demo_atomic_values: *id030
+    - field_id: A21
+      label: Subprocessor register
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA Schedule C; PP provider disclosures; transfer analysis
+      placeholders:
+        name: '{{QR.A21.NAME}}'
+        provider_type: '{{QR.A21.PROVIDER_TYPE}}'
+        processing_activity: '{{QR.A21.PROCESSING_ACTIVITY}}'
+        processing_location: '{{QR.A21.PROCESSING_LOCATION}}'
+        dpf_certified: '{{QR.A21.DPF_CERTIFIED}}'
+      action_token: null
+      demo_atomic_values: *id031
+    - field_id: A22
+      label: Live subprocessor-list URL
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA §5.2 and public vendor transparency route
+      placeholders:
+        subprocessor_list_url: '{{QR.A22.SUBPROCESSOR_LIST_URL}}'
+      action_token: null
+      demo_atomic_values: *id034
+    - field_id: A24
+      label: EU/UK/Swiss personal-data scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: DPA/SCC gateway; TOS §7.3; cross-border sections
+      placeholders:
+        eu_uk_swiss_data_scope: '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: *id023
+    - field_id: A25
+      label: California personal-information scope
+      fillability: FULL
+      lane: A
+      actions:
+      - SELECT_CLAUSE
+      target: CCPA/CPRA section; California-specific companion context
+      placeholders:
+        california_data_scope: '{{QR.A25.CALIFORNIA_DATA_SCOPE}}'
+      action_token: null
+      demo_atomic_values: *id032
+    - field_id: A26
+      label: Privacy-role configuration
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: PP §11; DPO and representative disclosures
+      placeholders:
+        dpo_appointed: '{{QR.A26.DPO_APPOINTED}}'
+        dpo_contact: '{{QR.A26.DPO_CONTACT}}'
+        eu_uk_representative_appointed: '{{QR.A26.EU_UK_REPRESENTATIVE_APPOINTED}}'
+        representative_contact: '{{QR.A26.REPRESENTATIVE_CONTACT}}'
+      action_token: null
+      demo_atomic_values: *id035
+    - field_id: A27
+      label: Cookie configuration
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: PP §8 cookie table and marketing-cookie section
+      placeholders:
+        cookie_categories: '{{QR.A27.COOKIE_CATEGORIES}}'
+        marketing_or_advertising_cookies: '{{QR.A27.MARKETING_OR_ADVERTISING_COOKIES}}'
+      action_token: null
+      demo_atomic_values:
+        cookie_categories:
+        - Essential
+        - Analytics
+        marketing_or_advertising_cookies: false
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    - field_id: U03
+      label: Registered address and incorporation jurisdiction
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id012
+    - field_id: U04
+      label: Official website URL
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Privacy Policy introduction; service identity
+      placeholders:
+        website_url: '{{QR.U04.WEBSITE_URL}}'
+      action_token: null
+      demo_atomic_values: *id036
+    - field_id: U06
+      label: Privacy contact
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: PP §11; data-rights and privacy contact blocks
+      placeholders:
+        name: '{{QR.U06.NAME}}'
+        title_or_role: '{{QR.U06.TITLE_OR_ROLE}}'
+        email: '{{QR.U06.EMAIL}}'
+      action_token: null
+      demo_atomic_values: *id037
+    - field_id: U07
+      label: Service catalog
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; definition of Service; cross-document service references
+      placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+      action_token: null
+      demo_atomic_values: *id014
+    - field_id: U11
+      label: Customer and market posture
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      action_token: null
+      demo_atomic_values: *id018
+    structural_token_occurrences:
+      '{{QR.A01.HOSTING_POSTURE}}': 1
+      '{{QR.A01.MODEL_NAME}}': 1
+      '{{QR.A01.PROVIDER_NAME}}': 1
+      '{{QR.A01.PROVIDER_PRIVACY_URL}}': 1
+      '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}': 1
+      '{{QR.A08.CONVERSATIONAL_INTERFACE}}': 1
+      '{{QR.A10.MINOR_ACCESS}}': 1
+      '{{QR.A13.CONSEQUENTIAL_DECISION_USE}}': 1
+      '{{QR.A14.BIOMETRIC_PROCESSING}}': 1
+      '{{QR.A16.OPT_IN_ONLY}}': 1
+      '{{QR.A16.PERMITTED_UNDER_TERMS}}': 1
+      '{{QR.A16.PROHIBITED}}': 1
+      '{{QR.A17.PERSONAL_DATA_CATEGORIES_LIST}}': 1
+      '{{QR.A18.SENSITIVE_DATA_CATEGORIES_LIST}}': 1
+      '{{QR.A19.DATA_SUBJECT_CATEGORIES_LIST}}': 1
+      '{{QR.A20.BOTH}}': 1
+      '{{QR.A20.FINE_TUNING}}': 1
+      '{{QR.A20.RAG}}': 1
+      '{{QR.A20.STATELESS}}': 1
+      '{{QR.A21.DPF_CERTIFIED}}': 1
+      '{{QR.A21.NAME}}': 1
+      '{{QR.A21.PROCESSING_ACTIVITY}}': 1
+      '{{QR.A21.PROCESSING_LOCATION}}': 1
+      '{{QR.A21.PROVIDER_TYPE}}': 1
+      '{{QR.A22.SUBPROCESSOR_LIST_URL}}': 1
+      '{{QR.A24.EU_UK_SWISS_DATA_SCOPE}}': 1
+      '{{QR.A25.CALIFORNIA_DATA_SCOPE}}': 1
+      '{{QR.A26.DPO_APPOINTED}}': 1
+      '{{QR.A26.DPO_CONTACT}}': 1
+      '{{QR.A26.EU_UK_REPRESENTATIVE_APPOINTED}}': 1
+      '{{QR.A26.REPRESENTATIVE_CONTACT}}': 1
+      '{{QR.A27.COOKIE_CATEGORIES}}': 1
+      '{{QR.A27.MARKETING_OR_ADVERTISING_COOKIES}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 2
+      '{{QR.U03.COUNTRY}}': 2
+      '{{QR.U03.STATE_OR_PROVINCE}}': 2
+      '{{QR.U03.STREET_ADDRESS}}': 2
+      '{{QR.U04.WEBSITE_URL}}': 2
+      '{{QR.U06.EMAIL}}': 7
+      '{{QR.U06.NAME}}': 3
+      '{{QR.U06.TITLE_OR_ROLE}}': 3
+      '{{QR.U07.SERVICE_DESCRIPTION}}': 1
+      '{{QR.U07.SERVICE_NAME}}': 2
+      '{{QR.U11.B2B}}': 1
+      '{{QR.U11.B2C}}': 1
+      '{{QR.U11.HYBRID}}': 1
+    expected_footer_identifier: DOC_PP_AI
+    expected_body_reference: DOC_PP-AI-v1
+  - document_id: DOC_AI_A_SLA
+    source_file: DOC_AI_A_SLA.docx
+    output_file: documents/DOC_AI_A_SLA_QR_READY_v2_1.docx
+    bound_field_count: 7
+    required_token_count: 19
+    direct_replacements:
+      terminology:Tally responses: 1
+      terminology:Tally Question: 1
+      terminology:Tally Injection: 1
+      '[INJECTION: PROVIDER_NAME]': 1
+    bindings:
+    - field_id: A23
+      label: Disaster recovery / business continuity summary
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      target: DPA security schedule and operational resilience summary
+      placeholders:
+        dr_bcp_summary: '{{QR.A23.DR_BCP_SUMMARY}}'
+      action_token: null
+      demo_atomic_values: *id038
+    - field_id: A28
+      label: SLA performance metrics
+      fillability: DEFAULT_ONLY
+      lane: A
+      actions:
+      - POPULATE
+      target: SLA Schedule A; TOS Schedule A reference
+      placeholders:
+        availability_target: '{{QR.A28.AVAILABILITY_TARGET}}'
+        ttft_target: '{{QR.A28.TTFT_TARGET}}'
+        credit_cap: '{{QR.A28.CREDIT_CAP}}'
+      action_token: null
+      demo_atomic_values: *id039
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    - field_id: U07
+      label: Service catalog
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule A; definition of Service; cross-document service references
+      placeholders:
+        service_name: '{{QR.U07.SERVICE_NAME}}'
+        service_description: '{{QR.U07.SERVICE_DESCRIPTION}}'
+      action_token: null
+      demo_atomic_values: *id014
+    - field_id: U14
+      label: Revenue model and liability-floor basis
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      action_token: null
+      demo_atomic_values: *id024
+    - field_id: U15
+      label: Pricing and payment terms
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: TOS Schedule B; fee-conditioned output licence; SLA credit base
+      placeholders:
+        pricing_tier: '{{QR.U15.PRICING_TIER}}'
+        fee_amount: '{{QR.U15.FEE_AMOUNT}}'
+        currency: '{{QR.U15.CURRENCY}}'
+        billing_frequency: '{{QR.U15.BILLING_FREQUENCY}}'
+        payment_terms: '{{QR.U15.PAYMENT_TERMS}}'
+        payment_methods: '{{QR.U15.PAYMENT_METHODS}}'
+      action_token: null
+      demo_atomic_values: *id040
+    - field_id: U19
+      label: SLA election
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: TOS Schedule A; activates DOC_AI_A_SLA
+      placeholders:
+        none: '{{QR.U19.NONE}}'
+        standard: '{{QR.U19.STANDARD}}'
+        custom: '{{QR.U19.CUSTOM}}'
+      action_token: null
+      demo_atomic_values: *id041
+    structural_token_occurrences:
+      '{{QR.A23.DR_BCP_SUMMARY}}': 1
+      '{{QR.A28.AVAILABILITY_TARGET}}': 1
+      '{{QR.A28.CREDIT_CAP}}': 1
+      '{{QR.A28.TTFT_TARGET}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 2
+      '{{QR.U07.SERVICE_DESCRIPTION}}': 1
+      '{{QR.U07.SERVICE_NAME}}': 1
+      '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}': 1
+      '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}': 1
+      '{{QR.U14.REVENUE_MODEL}}': 1
+      '{{QR.U15.BILLING_FREQUENCY}}': 1
+      '{{QR.U15.CURRENCY}}': 1
+      '{{QR.U15.FEE_AMOUNT}}': 1
+      '{{QR.U15.PAYMENT_METHODS}}': 1
+      '{{QR.U15.PAYMENT_TERMS}}': 1
+      '{{QR.U15.PRICING_TIER}}': 1
+      '{{QR.U19.CUSTOM}}': 1
+      '{{QR.U19.NONE}}': 1
+      '{{QR.U19.STANDARD}}': 1
+    expected_footer_identifier: DOC_SLA_AI
+    expected_body_reference: DOC_SLA-AI-v1
+  - document_id: DOC_AI_A_PBK
+    source_file: DOC_AI_A_PBK.docx
+    output_file: documents/DOC_AI_A_PBK_QR_READY_v2_1.docx
+    bound_field_count: 6
+    required_token_count: 17
+    direct_replacements:
+      terminology:tally: 1
+    bindings:
+    - field_id: A01
+      label: Model stack
+      fillability: PARTIAL
+      lane: A
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A and §§1.2/2.3/6; DPA Schedule C; PP §4.3
+      placeholders:
+        model_name: '{{QR.A01.MODEL_NAME}}'
+        provider_name: '{{QR.A01.PROVIDER_NAME}}'
+        hosting_posture: '{{QR.A01.HOSTING_POSTURE}}'
+        provider_processing_jurisdiction: '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}'
+        provider_privacy_url: '{{QR.A01.PROVIDER_PRIVACY_URL}}'
+      action_token: null
+      demo_atomic_values: *id025
+    - field_id: A15
+      label: Financial reliance threshold
+      fillability: DEFAULT_ONLY
+      lane: A
+      actions:
+      - POPULATE
+      target: TOS §5.4 reliance threshold
+      placeholders:
+        financial_impact_threshold: '{{QR.A15.FINANCIAL_IMPACT_THRESHOLD}}'
+      action_token: null
+      demo_atomic_values: *id042
+    - field_id: U11
+      label: Customer and market posture
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - SELECT_CLAUSE
+      target: Business-use gate; consumer-protection variants; eligibility and dispute architecture
+      placeholders:
+        b2b: '{{QR.U11.B2B}}'
+        b2c: '{{QR.U11.B2C}}'
+        hybrid: '{{QR.U11.HYBRID}}'
+      action_token: null
+      demo_atomic_values: *id018
+    - field_id: U14
+      label: Revenue model and liability-floor basis
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS §9 liability cap; AGT inherited cap; commercial negotiation position
+      placeholders:
+        revenue_model: '{{QR.U14.REVENUE_MODEL}}'
+        maximum_annual_contract_value: '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}'
+        liability_floor_amount: '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}'
+      action_token: null
+      demo_atomic_values: *id024
+    - field_id: U18
+      label: Output-rights and verification posture
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS §6.2; Schedule A verification tier; negotiation playbook position
+      placeholders:
+        output_license_scope: '{{QR.U18.OUTPUT_LICENSE_SCOPE}}'
+        verification_service_tier: '{{QR.U18.VERIFICATION_SERVICE_TIER}}'
+      action_token: null
+      demo_atomic_values: *id043
+    - field_id: U19
+      label: SLA election
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: TOS Schedule A; activates DOC_AI_A_SLA
+      placeholders:
+        none: '{{QR.U19.NONE}}'
+        standard: '{{QR.U19.STANDARD}}'
+        custom: '{{QR.U19.CUSTOM}}'
+      action_token: null
+      demo_atomic_values: *id041
+    structural_token_occurrences:
+      '{{QR.A01.HOSTING_POSTURE}}': 1
+      '{{QR.A01.MODEL_NAME}}': 1
+      '{{QR.A01.PROVIDER_NAME}}': 1
+      '{{QR.A01.PROVIDER_PRIVACY_URL}}': 1
+      '{{QR.A01.PROVIDER_PROCESSING_JURISDICTION}}': 1
+      '{{QR.A15.FINANCIAL_IMPACT_THRESHOLD}}': 1
+      '{{QR.U11.B2B}}': 1
+      '{{QR.U11.B2C}}': 1
+      '{{QR.U11.HYBRID}}': 1
+      '{{QR.U14.LIABILITY_FLOOR_AMOUNT}}': 1
+      '{{QR.U14.MAXIMUM_ANNUAL_CONTRACT_VALUE}}': 1
+      '{{QR.U14.REVENUE_MODEL}}': 1
+      '{{QR.U18.OUTPUT_LICENSE_SCOPE}}': 1
+      '{{QR.U18.VERIFICATION_SERVICE_TIER}}': 1
+      '{{QR.U19.CUSTOM}}': 1
+      '{{QR.U19.NONE}}': 1
+      '{{QR.U19.STANDARD}}': 1
+    expected_footer_identifier: DOC_PBK_A_AI
+    expected_body_reference: DOC_PBK_A-AI
+  - document_id: DOC_AI_B_HND
+    source_file: DOC_AI_B_HND.docx
+    output_file: documents/DOC_AI_B_HND_QR_READY_v2_1.docx
+    bound_field_count: 12
+    required_token_count: 15
+    direct_replacements:
+      terminology:Tally/Vault responses: 1
+      terminology:Tally responses: 1
+      terminology:Vault Intake Injection Table: 1
+      terminology:Vault Injection Table: 5
+      terminology:Lane B Vault intake form: 1
+      terminology:Vault responses: 1
+      terminology:Vault Question: 1
+      terminology:Tally: 1
+      '[COMPANY NAME]': 6
+      '[DESIGNATED CONTACT]': 17
+      '[DESIGNATED CONTACT — e.g., your manager, IT lead, or the AI Policy contact identified in Section 7.2]': 1
+      This Scanner is a risk discovery tool — not a compliance certification.: 1
+    bindings:
+    - field_id: B01
+      label: Internal workforce AI use
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Activates Lane B governance stack
+      placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      action_token: null
+      demo_atomic_values: &id044
+        internal_ai_use: true
+    - field_id: B02
+      label: Workforce composition
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Scope, acknowledgement, contractor variants and IP deed versions
+      placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      action_token: null
+      demo_atomic_values: &id045
+        employees_in_scope: true
+        contractors_used: true
+        freelancers_used: false
+    - field_id: B03
+      label: EU workforce or operations
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: EU employee procedures; EU AI Act and GDPR emphasis
+      placeholders:
+        eu_workforce_or_operations: '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}'
+      action_token: null
+      demo_atomic_values: &id046
+        eu_workforce_or_operations: false
+    - field_id: B04
+      label: Company-provided AI tools
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Traffic-light tables and pre-populated Shadow AI survey choices
+      placeholders:
+        approved_enterprise_ai_tools[]: '{{QR.B04.APPROVED_ENTERPRISE_AI_TOOLS_LIST}}'
+      action_token: null
+      demo_atomic_values: &id047
+        approved_enterprise_ai_tools[]:
+        - ChatGPT Enterprise
+        - GitHub Copilot Business
+    - field_id: B05
+      label: Client-facing AI-assisted deliverables
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Mandatory HITL protocol; IP deed flags; survey weighting
+      placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      action_token: null
+      demo_atomic_values: &id048
+        client_facing_ai_deliverables: true
+    - field_id: B06
+      label: AI in hiring, performance or workforce decisions
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Automated-decision framework; bias-audit question; DPIA priority
+      placeholders:
+        people_decision_ai_use: '{{QR.B06.PEOPLE_DECISION_AI_USE}}'
+      action_token: null
+      demo_atomic_values: &id049
+        people_decision_ai_use: false
+    - field_id: B07
+      label: Team size
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Approval timing; anonymity recommendation; documentation burden
+      placeholders:
+        team_size_band: '{{QR.B07.TEAM_SIZE_BAND}}'
+      action_token: null
+      demo_atomic_values: &id050
+        team_size_band: 11–20
+    - field_id: B09
+      label: Industry context
+      fillability: FULL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Industry examples and sector-specific use-case prompts
+      placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      action_token: null
+      demo_atomic_values: &id051
+        industry: Software / Engineering
+    - field_id: B10
+      label: Client NDA restriction on third-party AI tools
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Data-paste ban and client-contract survey question
+      placeholders:
+        client_nda_ai_tool_restriction: '{{QR.B10.CLIENT_NDA_AI_TOOL_RESTRICTION}}'
+      action_token: null
+      demo_atomic_values: &id052
+        client_nda_ai_tool_restriction: true
+    - field_id: B15
+      label: Client originality or non-infringement warranty
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Mandatory full HITL documentation and creative-output guidance
+      placeholders:
+        client_originality_warranty: '{{QR.B15.CLIENT_ORIGINALITY_WARRANTY}}'
+      action_token: null
+      demo_atomic_values: &id054
+        client_originality_warranty: true
+    - field_id: B17
+      label: Designated AI governance contact
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Approval, incident, exception and governance contact placeholders
+      placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+      action_token: null
+      demo_atomic_values: &id053
+        name_or_role: Chief Operating Officer
+        contact_route: ai-governance@demo.example
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Company-name placeholders throughout policy scope, ownership and acknowledgements
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    structural_token_occurrences:
+      '{{QR.B01.INTERNAL_AI_USE}}': 1
+      '{{QR.B02.CONTRACTORS_USED}}': 1
+      '{{QR.B02.EMPLOYEES_IN_SCOPE}}': 1
+      '{{QR.B02.FREELANCERS_USED}}': 1
+      '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}': 1
+      '{{QR.B04.APPROVED_ENTERPRISE_AI_TOOLS_LIST}}': 1
+      '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}': 1
+      '{{QR.B06.PEOPLE_DECISION_AI_USE}}': 1
+      '{{QR.B07.TEAM_SIZE_BAND}}': 1
+      '{{QR.B09.INDUSTRY}}': 1
+      '{{QR.B10.CLIENT_NDA_AI_TOOL_RESTRICTION}}': 1
+      '{{QR.B15.CLIENT_ORIGINALITY_WARRANTY}}': 1
+      '{{QR.B17.CONTACT_ROUTE}}': 19
+      '{{QR.B17.NAME_OR_ROLE}}': 19
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 7
+    expected_footer_identifier: DOC_HND_AI_B
+    expected_body_reference: DOC_HND_AI_B
+  - document_id: DOC_AI_B_SCAN
+    source_file: DOC_AI_B__SCAN.docx
+    output_file: documents/DOC_AI_B__SCAN_QR_READY_v2_1.docx
+    bound_field_count: 13
+    required_token_count: 18
+    direct_replacements:
+      terminology:Tally/Vault responses: 1
+      terminology:Vault Intake Injection Table: 1
+      terminology:Vault Injection Table: 2
+      terminology:Lane B Vault intake form: 1
+      terminology:Vault responses: 1
+      terminology:Vault Question: 1
+      '[Company Name]': 1
+    bindings:
+    - field_id: B01
+      label: Internal workforce AI use
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Activates Lane B governance stack
+      placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id044
+    - field_id: B02
+      label: Workforce composition
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Scope, acknowledgement, contractor variants and IP deed versions
+      placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      action_token: null
+      demo_atomic_values: *id045
+    - field_id: B03
+      label: EU workforce or operations
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: EU employee procedures; EU AI Act and GDPR emphasis
+      placeholders:
+        eu_workforce_or_operations: '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}'
+      action_token: null
+      demo_atomic_values: *id046
+    - field_id: B04
+      label: Company-provided AI tools
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Traffic-light tables and pre-populated Shadow AI survey choices
+      placeholders:
+        approved_enterprise_ai_tools[]: '{{QR.B04.APPROVED_ENTERPRISE_AI_TOOLS_LIST}}'
+      action_token: null
+      demo_atomic_values: *id047
+    - field_id: B05
+      label: Client-facing AI-assisted deliverables
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Mandatory HITL protocol; IP deed flags; survey weighting
+      placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      action_token: null
+      demo_atomic_values: *id048
+    - field_id: B06
+      label: AI in hiring, performance or workforce decisions
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Automated-decision framework; bias-audit question; DPIA priority
+      placeholders:
+        people_decision_ai_use: '{{QR.B06.PEOPLE_DECISION_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id049
+    - field_id: B07
+      label: Team size
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Approval timing; anonymity recommendation; documentation burden
+      placeholders:
+        team_size_band: '{{QR.B07.TEAM_SIZE_BAND}}'
+      action_token: null
+      demo_atomic_values: *id050
+    - field_id: B08
+      label: Small-department privacy threshold
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Department merging and anonymity configuration
+      placeholders:
+        departments_below_five_people: '{{QR.B08.DEPARTMENTS_BELOW_FIVE_PEOPLE}}'
+      action_token: null
+      demo_atomic_values:
+        departments_below_five_people: true
+    - field_id: B09
+      label: Industry context
+      fillability: FULL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Industry examples and sector-specific use-case prompts
+      placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      action_token: null
+      demo_atomic_values: *id051
+    - field_id: B10
+      label: Client NDA restriction on third-party AI tools
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Data-paste ban and client-contract survey question
+      placeholders:
+        client_nda_ai_tool_restriction: '{{QR.B10.CLIENT_NDA_AI_TOOL_RESTRICTION}}'
+      action_token: null
+      demo_atomic_values: *id052
+    - field_id: B17
+      label: Designated AI governance contact
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Approval, incident, exception and governance contact placeholders
+      placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+      action_token: null
+      demo_atomic_values: *id053
+    - field_id: B18
+      label: Shadow AI Scanner anonymity mode
+      fillability: DEFAULT_ONLY
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Survey deployment and small-team privacy configuration
+      placeholders:
+        full_anonymity: '{{QR.B18.FULL_ANONYMITY}}'
+        department_only: '{{QR.B18.DEPARTMENT_ONLY}}'
+        named: '{{QR.B18.NAMED}}'
+      action_token: null
+      demo_atomic_values:
+        full_anonymity: true
+        department_only: false
+        named: false
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Company name in survey deployment and risk-summary dashboard
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    structural_token_occurrences:
+      '{{QR.B01.INTERNAL_AI_USE}}': 1
+      '{{QR.B02.CONTRACTORS_USED}}': 1
+      '{{QR.B02.EMPLOYEES_IN_SCOPE}}': 1
+      '{{QR.B02.FREELANCERS_USED}}': 1
+      '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}': 1
+      '{{QR.B04.APPROVED_ENTERPRISE_AI_TOOLS_LIST}}': 1
+      '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}': 1
+      '{{QR.B06.PEOPLE_DECISION_AI_USE}}': 1
+      '{{QR.B07.TEAM_SIZE_BAND}}': 1
+      '{{QR.B08.DEPARTMENTS_BELOW_FIVE_PEOPLE}}': 1
+      '{{QR.B09.INDUSTRY}}': 1
+      '{{QR.B10.CLIENT_NDA_AI_TOOL_RESTRICTION}}': 1
+      '{{QR.B17.CONTACT_ROUTE}}': 1
+      '{{QR.B17.NAME_OR_ROLE}}': 1
+      '{{QR.B18.DEPARTMENT_ONLY}}': 1
+      '{{QR.B18.FULL_ANONYMITY}}': 1
+      '{{QR.B18.NAMED}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 5
+    expected_footer_identifier: DOC_SCAN_AI_B
+    expected_body_reference: DOC_SCAN_AI_B
+  - document_id: DOC_AI_B_DPIA
+    source_file: DOC_AI_B_DPIA.docx
+    output_file: documents/DOC_AI_B_DPIA_QR_READY_v2_1.docx
+    bound_field_count: 8
+    required_token_count: 9
+    direct_replacements:
+      terminology:Tally/Vault responses: 1
+      terminology:VAULT INTAKE INJECTION TABLE: 1
+      terminology:Vault Injection Table: 3
+      terminology:Lane B Vault intake form: 1
+      terminology:Vault intake: 1
+      terminology:Vault responses: 2
+      terminology:Vault Question: 1
+      This Scanner is a risk discovery tool — not a compliance certification.: 1
+    bindings:
+    - field_id: B01
+      label: Internal workforce AI use
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Activates Lane B governance stack
+      placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id044
+    - field_id: B03
+      label: EU workforce or operations
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: EU employee procedures; EU AI Act and GDPR emphasis
+      placeholders:
+        eu_workforce_or_operations: '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}'
+      action_token: null
+      demo_atomic_values: *id046
+    - field_id: B06
+      label: AI in hiring, performance or workforce decisions
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Automated-decision framework; bias-audit question; DPIA priority
+      placeholders:
+        people_decision_ai_use: '{{QR.B06.PEOPLE_DECISION_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id049
+    - field_id: B09
+      label: Industry context
+      fillability: FULL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Industry examples and sector-specific use-case prompts
+      placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      action_token: null
+      demo_atomic_values: *id051
+    - field_id: B11
+      label: Colorado operations or affected persons
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Colorado-specific assessment emphasis
+      placeholders:
+        colorado_scope: '{{QR.B11.COLORADO_SCOPE}}'
+      action_token: null
+      demo_atomic_values:
+        colorado_scope: false
+    - field_id: B12
+      label: Number of internal AI use cases
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Assessment count and dashboard emphasis
+      placeholders:
+        internal_ai_use_case_count_band: '{{QR.B12.INTERNAL_AI_USE_CASE_COUNT_BAND}}'
+      action_token: null
+      demo_atomic_values:
+        internal_ai_use_case_count_band: 1–3
+    - field_id: B13
+      label: Enterprise clients require AI-governance documentation
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Dashboard positioning and delivery guidance
+      placeholders:
+        enterprise_governance_documentation_required: '{{QR.B13.ENTERPRISE_GOVERNANCE_DOCUMENTATION_REQUIRED}}'
+      action_token: null
+      demo_atomic_values: &id055
+        enterprise_governance_documentation_required: true
+    - field_id: B17
+      label: Designated AI governance contact
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Approval, incident, exception and governance contact placeholders
+      placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+      action_token: null
+      demo_atomic_values: *id053
+    structural_token_occurrences:
+      '{{QR.B01.INTERNAL_AI_USE}}': 1
+      '{{QR.B03.EU_WORKFORCE_OR_OPERATIONS}}': 1
+      '{{QR.B06.PEOPLE_DECISION_AI_USE}}': 1
+      '{{QR.B09.INDUSTRY}}': 1
+      '{{QR.B11.COLORADO_SCOPE}}': 1
+      '{{QR.B12.INTERNAL_AI_USE_CASE_COUNT_BAND}}': 1
+      '{{QR.B13.ENTERPRISE_GOVERNANCE_DOCUMENTATION_REQUIRED}}': 1
+      '{{QR.B17.CONTACT_ROUTE}}': 1
+      '{{QR.B17.NAME_OR_ROLE}}': 1
+    expected_footer_identifier: DOC_DPIA_AI_B
+    expected_body_reference: DOC_DPIA-AI
+  - document_id: DOC_AI_B_IP
+    source_file: DOC_AI_B_IP.docx
+    output_file: documents/DOC_AI_B_IP_QR_READY_v2_1.docx
+    bound_field_count: 8
+    required_token_count: 14
+    direct_replacements:
+      terminology:Tally/Vault responses: 1
+      terminology:VAULT INTAKE INJECTION TABLE: 1
+      terminology:Vault Injection Table: 8
+      terminology:Lane B Vault intake form: 1
+      terminology:Vault responses: 1
+      terminology:Vault response: 1
+      terminology:Vault Question: 1
+      terminology:Vault: 2
+      '[GOVERNING LAW JURISDICTION]': 2
+      '[COMPANY NAME]': 3
+      '[Populated from Qualified Review]': 1
+      This Scanner is a risk discovery tool — not a compliance certification.: 1
+      '[ENTITY TYPE]': 1
+      '[JURISDICTION]': 1
+      '[ADDRESS]': 1
+    bindings:
+    - field_id: B01
+      label: Internal workforce AI use
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Activates Lane B governance stack
+      placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id044
+    - field_id: B02
+      label: Workforce composition
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Scope, acknowledgement, contractor variants and IP deed versions
+      placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      action_token: null
+      demo_atomic_values: *id045
+    - field_id: B05
+      label: Client-facing AI-assisted deliverables
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Mandatory HITL protocol; IP deed flags; survey weighting
+      placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      action_token: null
+      demo_atomic_values: *id048
+    - field_id: B14
+      label: Existing employment IP-assignment posture
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Supplement-versus-primary deed language and conflict note
+      placeholders:
+        existing_ip_assignment_clause: '{{QR.B14.EXISTING_IP_ASSIGNMENT_CLAUSE}}'
+        agreement_reference: '{{QR.B14.AGREEMENT_REFERENCE}}'
+      action_token: null
+      demo_atomic_values:
+        existing_ip_assignment_clause: true
+        agreement_reference: Employment Agreement dated 2025-01-15
+    - field_id: U01
+      label: Legal entity name
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Preambles; defined Provider/Company; signature blocks
+      placeholders:
+        legal_entity_name: '{{QR.U01.LEGAL_ENTITY_NAME}}'
+      action_token: null
+      demo_atomic_values: *id010
+    - field_id: U02
+      label: Entity type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      target: Company recital entity description
+      placeholders:
+        entity_type: '{{QR.U02.ENTITY_TYPE}}'
+      action_token: null
+      demo_atomic_values: *id011
+    - field_id: U03
+      label: Registered address and incorporation jurisdiction
+      fillability: PARTIAL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Preambles; TOS §7.5; DPA §6.1(a); B_IP governing-law anchor
+      placeholders:
+        street_address: '{{QR.U03.STREET_ADDRESS}}'
+        country: '{{QR.U03.COUNTRY}}'
+        state_or_province: '{{QR.U03.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id012
+    - field_id: U12
+      label: Governing law
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: Governing-law clauses and jurisdiction-specific variants
+      placeholders:
+        country: '{{QR.U12.COUNTRY}}'
+        state_or_province: '{{QR.U12.STATE_OR_PROVINCE}}'
+      action_token: null
+      demo_atomic_values: *id019
+    structural_token_occurrences:
+      '{{QR.B01.INTERNAL_AI_USE}}': 1
+      '{{QR.B02.CONTRACTORS_USED}}': 1
+      '{{QR.B02.EMPLOYEES_IN_SCOPE}}': 1
+      '{{QR.B02.FREELANCERS_USED}}': 1
+      '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}': 1
+      '{{QR.B14.AGREEMENT_REFERENCE}}': 1
+      '{{QR.B14.EXISTING_IP_ASSIGNMENT_CLAUSE}}': 1
+      '{{QR.U01.LEGAL_ENTITY_NAME}}': 4
+      '{{QR.U02.ENTITY_TYPE}}': 2
+      '{{QR.U03.COUNTRY}}': 3
+      '{{QR.U03.STATE_OR_PROVINCE}}': 3
+      '{{QR.U03.STREET_ADDRESS}}': 2
+      '{{QR.U12.COUNTRY}}': 4
+      '{{QR.U12.STATE_OR_PROVINCE}}': 4
+    expected_footer_identifier: DOC_IP_AI_B
+    expected_body_reference: DOC_IP_AI_B
+  - document_id: DOC_AI_B_SOP
+    source_file: DOC_AI_B_SOP.docx
+    output_file: documents/DOC_AI_B_SOP_QR_READY_v2_1.docx
+    bound_field_count: 9
+    required_token_count: 13
+    direct_replacements:
+      terminology:Tally/Vault responses: 1
+      terminology:VAULT INTAKE INJECTION TABLE: 1
+      terminology:Vault Injection Table: 3
+      terminology:Lane B Vault intake form: 1
+      terminology:Vault responses: 1
+      terminology:Vault Question: 1
+      This Scanner is a risk discovery tool — not a compliance certification.: 1
+    bindings:
+    - field_id: B01
+      label: Internal workforce AI use
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Activates Lane B governance stack
+      placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id044
+    - field_id: B02
+      label: Workforce composition
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Scope, acknowledgement, contractor variants and IP deed versions
+      placeholders:
+        employees_in_scope: '{{QR.B02.EMPLOYEES_IN_SCOPE}}'
+        contractors_used: '{{QR.B02.CONTRACTORS_USED}}'
+        freelancers_used: '{{QR.B02.FREELANCERS_USED}}'
+      action_token: null
+      demo_atomic_values: *id045
+    - field_id: B05
+      label: Client-facing AI-assisted deliverables
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Mandatory HITL protocol; IP deed flags; survey weighting
+      placeholders:
+        client_facing_ai_deliverables: '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}'
+      action_token: null
+      demo_atomic_values: *id048
+    - field_id: B07
+      label: Team size
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Approval timing; anonymity recommendation; documentation burden
+      placeholders:
+        team_size_band: '{{QR.B07.TEAM_SIZE_BAND}}'
+      action_token: null
+      demo_atomic_values: *id050
+    - field_id: B09
+      label: Industry context
+      fillability: FULL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Industry examples and sector-specific use-case prompts
+      placeholders:
+        industry: '{{QR.B09.INDUSTRY}}'
+      action_token: null
+      demo_atomic_values: *id051
+    - field_id: B15
+      label: Client originality or non-infringement warranty
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Mandatory full HITL documentation and creative-output guidance
+      placeholders:
+        client_originality_warranty: '{{QR.B15.CLIENT_ORIGINALITY_WARRANTY}}'
+      action_token: null
+      demo_atomic_values: *id054
+    - field_id: B16
+      label: Version-control posture
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: HITL evidence method and versioning instructions
+      placeholders:
+        version_control_used: '{{QR.B16.VERSION_CONTROL_USED}}'
+        method: '{{QR.B16.METHOD}}'
+      action_token: null
+      demo_atomic_values:
+        version_control_used: true
+        method: Git and Google Docs version history
+    - field_id: B17
+      label: Designated AI governance contact
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Approval, incident, exception and governance contact placeholders
+      placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+      action_token: null
+      demo_atomic_values: *id053
+    - field_id: U09
+      label: Output type
+      fillability: FULL
+      lane: SHARED
+      actions:
+      - POPULATE
+      - SELECT_CLAUSE
+      target: TOS Schedule A; AUP content clauses; HITL examples
+      placeholders:
+        output_types[]: '{{QR.U09.OUTPUT_TYPES_LIST}}'
+      action_token: null
+      demo_atomic_values: *id016
+    structural_token_occurrences:
+      '{{QR.B01.INTERNAL_AI_USE}}': 1
+      '{{QR.B02.CONTRACTORS_USED}}': 1
+      '{{QR.B02.EMPLOYEES_IN_SCOPE}}': 1
+      '{{QR.B02.FREELANCERS_USED}}': 1
+      '{{QR.B05.CLIENT_FACING_AI_DELIVERABLES}}': 1
+      '{{QR.B07.TEAM_SIZE_BAND}}': 1
+      '{{QR.B09.INDUSTRY}}': 1
+      '{{QR.B15.CLIENT_ORIGINALITY_WARRANTY}}': 1
+      '{{QR.B16.METHOD}}': 1
+      '{{QR.B16.VERSION_CONTROL_USED}}': 1
+      '{{QR.B17.CONTACT_ROUTE}}': 1
+      '{{QR.B17.NAME_OR_ROLE}}': 1
+      '{{QR.U09.OUTPUT_TYPES_LIST}}': 1
+    expected_footer_identifier: DOC_SOP_AI_B
+    expected_body_reference: DOC_SOP_AI_B
+  - document_id: DOC_AI_B_PBK
+    source_file: DOC_AI_B_PBK.docx
+    output_file: documents/DOC_AI_B_PBK_QR_READY_v2_1.docx
+    bound_field_count: 3
+    required_token_count: 4
+    direct_replacements: {}
+    bindings:
+    - field_id: B01
+      label: Internal workforce AI use
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - ACTIVATE_OR_SUPPRESS_DOCUMENT
+      target: Activates Lane B governance stack
+      placeholders:
+        internal_ai_use: '{{QR.B01.INTERNAL_AI_USE}}'
+      action_token: null
+      demo_atomic_values: *id044
+    - field_id: B13
+      label: Enterprise clients require AI-governance documentation
+      fillability: NONE
+      lane: B
+      actions:
+      - SELECT_CLAUSE
+      target: Dashboard positioning and delivery guidance
+      placeholders:
+        enterprise_governance_documentation_required: '{{QR.B13.ENTERPRISE_GOVERNANCE_DOCUMENTATION_REQUIRED}}'
+      action_token: null
+      demo_atomic_values: *id055
+    - field_id: B17
+      label: Designated AI governance contact
+      fillability: PARTIAL
+      lane: B
+      actions:
+      - POPULATE
+      target: Approval, incident, exception and governance contact placeholders
+      placeholders:
+        name_or_role: '{{QR.B17.NAME_OR_ROLE}}'
+        contact_route: '{{QR.B17.CONTACT_ROUTE}}'
+      action_token: null
+      demo_atomic_values: *id053
+    structural_token_occurrences:
+      '{{QR.B01.INTERNAL_AI_USE}}': 1
+      '{{QR.B13.ENTERPRISE_GOVERNANCE_DOCUMENTATION_REQUIRED}}': 1
+      '{{QR.B17.CONTACT_ROUTE}}': 1
+      '{{QR.B17.NAME_OR_ROLE}}': 1
+    expected_footer_identifier: DOC_AI_B_PBK
+    expected_body_reference: DOC_AI_B_PBK
+  final_quality_corrections:
+    dpa_processing_jurisdiction_route_corrected: true
+    unsafe_repeated_subprocessor_direct_substitutions_removed: true
+    retired_vault_tally_terminology_removed: true
+    lane_b_document_specific_notices_corrected: true
+    document_reference_and_footer_identifiers_synchronized: true
+  final_render_validation:
+    document_count: 13
+    total_pages: 643
+    edge_or_clipping_flags: 0
+    blank_page_flags: 0
+    status: PASS
