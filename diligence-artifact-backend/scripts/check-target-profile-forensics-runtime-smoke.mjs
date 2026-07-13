@@ -1,14 +1,19 @@
 import assert from "node:assert/strict";
 import { getPipelineContract } from "../src/runtime/contracts/pipeline.contract.js";
-import { runTargetProfileForensicsPhase, TARGET_PROFILE_FORENSICS_CONTRACT } from "../src/phases/04-target-profile-forensics/index.js";
+import { buildPhaseRoutingManifest } from "../src/phases/02-cartography-index/services/phase-routing-manifest.builder.js";
+import { runTargetProfileForensicsPhase } from "../src/phases/04-target-profile-forensics/index.js";
 
 const contract = getPipelineContract("M7_TARGET_PROFILE_FORENSICS");
+const phaseRoutingManifest = buildPhaseRoutingManifest({
+  runId: "TPF-RUNTIME-SMOKE",
+  artifacts: presentPhase2Artifacts()
+}).phase_routing_manifest;
 
 await smokeForensicRunnerLockedOrLimited();
-await smokeForbiddenRuntimeArtifactFails();
-await smokeContractMismatchFails();
+await smokeUnexpectedRoutedArtifactFails();
+await smokeManifestReadMissingFails();
 
-console.log("Target Profile Forensics runtime smoke: PASS");
+console.log(JSON.stringify({ check: "Target Profile Forensics runtime smoke", status: "PASS", enforced_gates: ["REAL_PHASE2G_MANIFEST", "DERIVED_ONLY_RUNTIME_PACKET", "UNEXPECTED_ARTIFACT_FAILS", "MANIFEST_READ_REQUIRED", "DETERMINISTIC_FORENSIC_OUTPUT"] }, null, 2));
 
 async function smokeForensicRunnerLockedOrLimited() {
   const calls = makeRuntimeCalls();
@@ -40,25 +45,25 @@ async function smokeForensicRunnerLockedOrLimited() {
   assert.equal(artifact.runtime_trace_m7_only.phase, "M7_TARGET_PROFILE_FORENSICS");
 }
 
-async function smokeForbiddenRuntimeArtifactFails() {
+async function smokeUnexpectedRoutedArtifactFails() {
   const calls = makeRuntimeCalls({ extraRuntimeArtifact: { legal_cartography_index: {} } });
   await expectFailure(() => runTargetProfileForensicsPhase({
     run: { run_id: "TPF-RUNTIME-SMOKE-FORBIDDEN" },
     internalJobId: "M7_TARGET_PROFILE_FORENSICS",
     contract,
     ...calls.callbacks
-  }), "TARGET_PROFILE_FORENSICS_FORBIDDEN_RUNTIME_ARTIFACT:legal_cartography_index");
+  }), "P2G_RUNTIME_UNEXPECTED_ARTIFACT");
   assert.equal(calls.saved.length, 0);
 }
 
-async function smokeContractMismatchFails() {
+async function smokeManifestReadMissingFails() {
   const calls = makeRuntimeCalls();
   await expectFailure(() => runTargetProfileForensicsPhase({
     run: { run_id: "TPF-RUNTIME-SMOKE-MISMATCH" },
     internalJobId: "M7_TARGET_PROFILE_FORENSICS",
-    contract: { ...contract, reads: contract.reads.filter((name) => name !== "target_profile") },
+    contract: { ...contract, reads: [] },
     ...calls.callbacks
-  }), "TARGET_PROFILE_FORENSICS_READS_MISMATCH");
+  }), "TARGET_PROFILE_FORENSICS_PHASE2G_MANIFEST_READ_MISSING");
   assert.equal(calls.saved.length, 0);
 }
 
@@ -69,9 +74,12 @@ function makeRuntimeCalls({ extraRuntimeArtifact = {} } = {}) {
     readArgs,
     saved,
     callbacks: {
-      readArtifacts: async ({ reads, agent_id }) => {
-        readArgs.push({ reads, agent_id });
-        return { ...buildAllowedRuntimeArtifacts(reads), ...extraRuntimeArtifact };
+      readArtifacts: async ({ reads, agent_id, strict }) => {
+        readArgs.push({ reads, agent_id, strict });
+        const artifacts = {};
+        for (const name of reads) artifacts[name] = buildArtifact(name);
+        if (!reads.includes("phase_routing_manifest")) Object.assign(artifacts, extraRuntimeArtifact);
+        return artifacts;
       },
       saveArtifact: async (args) => {
         saved.push(args);
@@ -80,17 +88,25 @@ function makeRuntimeCalls({ extraRuntimeArtifact = {} } = {}) {
   };
 }
 
-function buildAllowedRuntimeArtifacts(reads) {
-  const artifacts = {};
-  for (const name of reads) artifacts[name] = buildArtifact(name);
-  return artifacts;
+function buildArtifact(name) {
+  if (name === "phase_routing_manifest") return phaseRoutingManifest;
+  if (name === "target_profile_source_index") return { artifact_name: name, field_locators: [] };
+  if (name === "legal_signal_derivation_profile") return { artifact_name: name, field_derivations: [{ field_id: "TP.JUR.003", derivation_status: "DERIVED", value: "India" }] };
+  if (name === "target_profile") return { target_profile: validTargetProfile() };
+  if (name === "domain_derivation_profile") return { domain_derivation_profile: { primary_domain_derivation: { selected_package: "ai", status: "LOCKED" }, ai_mount_derivation: { status: "LOCKED" }, regulatory_overlay_derivation: { status: "CANDIDATE_ONLY", candidates: [] }, fusion_candidate_derivation: { candidates: [] } } };
+  return { artifact_name: name };
 }
 
-function buildArtifact(name) {
-  if (name === "source_discovery_handoff") return { run_id: "TPF-RUNTIME-SMOKE", target_url: "https://example.test", status: "LOCKED" };
-  if (name === "legal_signal_derivation_profile") return { artifact_name: "legal_signal_derivation_profile", field_derivations: [{ field_id: "TP.JUR.003", derivation_status: "DERIVED", value: "India" }] };
-  if (name === "target_profile") return { target_profile: validTargetProfile() };
-  return { artifact_name: name, root_family: name.replace(/^lossless_family__/, ""), storage_mode: "SINGLE", sources: [{ source_id: `${name}.1`, lossless_text: "Brand: Example AI\nLegal entity: Example AI Private Limited\nEntity type: Company" }] };
+function presentPhase2Artifacts() {
+  return {
+    target_profile_source_index: {},
+    domain_derivation_source_index: {},
+    activity_profile_source_index: {},
+    data_privacy_navigation_index: {},
+    domain_control_obligation_navigation_index: {},
+    legal_cartography_index: {},
+    legal_signal_derivation_profile: {}
+  };
 }
 
 function validTargetProfile() {
