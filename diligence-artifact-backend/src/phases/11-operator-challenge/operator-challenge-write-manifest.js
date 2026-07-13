@@ -1,9 +1,11 @@
 import { assertPhase11TargetedMutationProposal } from "./operator-challenge-targeted-adapter.contract.js";
+import { validatePhase11ProposalWriteAuthority } from "./operator-challenge-write-authority.js";
 
-export const PHASE11_WRITE_MANIFEST_VALIDATION_VERSION = "phase11_write_manifest_validation.v1";
+export const PHASE11_WRITE_MANIFEST_VALIDATION_VERSION = "phase11_write_manifest_validation.v2.backend_authority";
 
-export function validatePhase11WriteManifest({ proposal, baselineArtifactVersions = {} } = {}) {
+export function validatePhase11WriteManifest({ dispatch, packet = null, proposal, baselineArtifactVersions = {} } = {}) {
   assertPhase11TargetedMutationProposal({ proposal });
+  const authority = validatePhase11ProposalWriteAuthority({ dispatch, packet, proposal, baselineArtifactVersions });
   const manifestNames = unique(proposal.actual_write_manifest.map((row) => row.artifact_name));
   const writeNames = unique(proposal.proposed_writes.map((row) => row.artifact_name));
   const unauthorized = [];
@@ -18,7 +20,7 @@ export function validatePhase11WriteManifest({ proposal, baselineArtifactVersion
     const actual = Number(baselineArtifactVersions[write.artifact_name] || 0);
     if (!actual || expected !== actual) missingBaseline.push(write.artifact_name);
   }
-  const status = unauthorized.length || missingBaseline.length || duplicateWrites.length ? "REJECTED" : "PASS";
+  const status = unauthorized.length || missingBaseline.length || duplicateWrites.length || authority.status !== "PASS" ? "REJECTED" : "PASS";
   return Object.freeze({
     schema_version: PHASE11_WRITE_MANIFEST_VALIDATION_VERSION,
     status,
@@ -30,6 +32,7 @@ export function validatePhase11WriteManifest({ proposal, baselineArtifactVersion
     duplicate_writes: duplicateWrites,
     missing_or_mismatched_baseline_artifacts: unique(missingBaseline),
     unauthorized_reasons: unauthorized,
+    authority,
     exact_runtime_write_manifest_required: true,
     new_artifact_creation_during_material_reinvestigation: false
   });

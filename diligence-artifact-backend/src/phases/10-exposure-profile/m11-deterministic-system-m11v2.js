@@ -161,15 +161,7 @@ export function projectTriggeredProfile(workpadRoot) {
   };
 }
 function toLegacyDecompositionShape(row = {}) {
-  const parts = String(row.Threat_ID || "").trim().split("_");
-  if (parts.length <= 3) return row;
-  const compound = validateThreatIdDecomposition(row);
-  if (!compound.ok) return row;
-  return {
-    ...row,
-    FIELD22: parts[1],
-    FIELD23: normalizeField23(parts.slice(2).join("_"))
-  };
+  return row;
 }
 function projectCompleteRow(row = {}) {
   return {

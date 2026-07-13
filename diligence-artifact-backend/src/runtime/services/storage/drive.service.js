@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { config } from "../../config.js";
+import { config } from "../runtime-config.service.js";
 import { getDriveClient } from "./google.service.js";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";

@@ -19,6 +19,6 @@ export function applyPhase11ProductionContract(base = {}) {
     blocking_is_exception: true,
     only_critical_failure_blocks: true,
     unresolved_after_two_attempts: "PASS_WITH_LIMITATION",
-    runtime_contract_version: "PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1"
+    runtime_contract_version: "PHASE11_PRODUCTION_RUNTIME_CONTRACT_v2"
   });
 }

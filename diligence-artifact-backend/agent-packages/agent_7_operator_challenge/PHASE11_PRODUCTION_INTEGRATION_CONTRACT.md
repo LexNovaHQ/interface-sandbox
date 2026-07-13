@@ -1,6 +1,6 @@
 # Phase 11 Production Integration Contract
 
-Version: `PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1`
+Version: `PHASE11_PRODUCTION_RUNTIME_CONTRACT_v2`
 
 ## Governing doctrine
 
@@ -35,12 +35,16 @@ Every dispatch follows the v2 attempt-safe state machine:
 - `DISPATCH_CREATED`
 - `OWNER_PROPOSAL_RUNNING`
 - `OWNER_PROPOSAL_CREATED`
+- `OWNER_PROPOSAL_RETURNED`
+- `WRITE_AUTHORITY_VALIDATED`
+- `TARGETED_COMMIT_APPLIED`
+- `LAYER1_REBUILT`
 - `PROPOSAL_COMMITTED`
 - `NON_SUBSTANTIVE_RETRY_REQUIRED` when a technical or non-committed outcome must not consume a substantive attempt
 - `ATTEMPT_RECORDED`
 - `COMPLETE`
 
-A restarted worker must resume a matching dispatch from the latest durable checkpoint. It must not issue a duplicate owner call after a proposal has been created, and it must not reapply a proposal after a commit receipt has been persisted.
+A restarted worker must resume a matching dispatch from the latest durable checkpoint. It must not issue a duplicate owner/model call after a proposal has been created or when the challenged artifact version already advanced after `OWNER_PROPOSAL_RUNNING`, and it must not reapply a proposal after a commit receipt has been persisted.
 
 ## Lease
 
@@ -58,6 +62,8 @@ A substantive attempt is `RESOLVED` only when:
 Otherwise the substantive attempt is `UNRESOLVED`.
 
 An owner runtime failure, malformed proposal, mutation rejection, or uncommitted proposal is classified separately. It must not be recorded as a substantive field attempt merely because a dispatch occurred.
+
+Technical owner/runtime failures and backend-rejected non-substantive proposals do not consume a substantive reinvestigation attempt. They must remain separated from the two-attempt unresolved limit and must not self-authorize writes.
 
 ## Phase 10 special rule
 

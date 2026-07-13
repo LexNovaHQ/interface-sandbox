@@ -27,6 +27,18 @@ export const CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS = Object.freeze([
 
 const PHASE3A_AUTHORITY = "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml";
 const REVIEWER_SMOKE = "scripts/smoke-reviewer-run.mjs";
+const CO_PROD_AUDIT_01_ACTIVE_POLLUTION_SCAN_FILES = Object.freeze([
+  "src/runtime/contracts/pipeline.contract.js",
+  "src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json",
+  PHASE3A_AUTHORITY,
+  REVIEWER_SMOKE
+]);
+const CO_PROD_AUDIT_01_FORBIDDEN_ACTIVE_MARKERS = Object.freeze([
+  "DEFERRED_TO_CO_P12_03",
+  "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+  'dispatch_checkpoint_version: "phase11_dispatch_checkpoint.v1"',
+  'dispatch_lease_version: "phase11_dispatch_lease.v1"'
+]);
 const PHASE3A_FORBIDDEN_ALLOWED_MODEL_SOURCES = Object.freeze([
   "source_discovery_handoff",
   "cartography_index",
@@ -70,6 +82,7 @@ export function assertNoUnreferencedCleaningArtifacts() {
 
   validatePhase3AAuthority({ failures });
   validateReviewerSmoke({ failures });
+  validateActivePollutionMarkers({ failures });
 
   assert.deepEqual(failures, [], `CO_CLEAN_02_UNREFERENCED_CLEANING_ARTIFACTS:${failures.join("|")}`);
   return {
@@ -78,6 +91,8 @@ export function assertNoUnreferencedCleaningArtifacts() {
     absent_files_asserted: CO_CLEAN_02_ABSENT_FILES.length,
     forbidden_package_scripts_asserted: CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS.length,
     post_clean_guard_wired: true,
+    active_pollution_scan_file_count: CO_PROD_AUDIT_01_ACTIVE_POLLUTION_SCAN_FILES.length,
+    active_pollution_markers_forbidden: CO_PROD_AUDIT_01_FORBIDDEN_ACTIVE_MARKERS.length,
     co_prod_audit_01_phase3a_authority_boundary: "PHASE2G_ROUTED_ONLY",
     co_prod_audit_01_reviewer_smoke_renderer_shape: "REPORT_ARTIFACT_REFS"
   };
@@ -122,17 +137,31 @@ function validateReviewerSmoke({ failures }) {
   if (!smoke.includes("custody_artifact_rendering_forbidden")) failures.push("SMOKE_REVIEWER_CUSTODY_BOUNDARY_CHECK_MISSING");
 }
 
+function validateActivePollutionMarkers({ failures }) {
+  for (const file of CO_PROD_AUDIT_01_ACTIVE_POLLUTION_SCAN_FILES) {
+    const source = read(file);
+    for (const marker of CO_PROD_AUDIT_01_FORBIDDEN_ACTIVE_MARKERS) {
+      if (source.includes(marker)) failures.push(`CO_PROD_AUDIT_01_ACTIVE_POLLUTION:${file}:${marker}`);
+    }
+  }
+}
+
 function yamlListBlock(source, key) {
   const lines = String(source || "").split(/\r?\n/);
   const start = lines.findIndex((line) => line.trim() === `${key}:`);
   if (start < 0) return [];
+  const baseIndent = leadingSpaces(lines[start]);
   const out = [];
   for (const line of lines.slice(start + 1)) {
-    if (/^\S/.test(line)) break;
+    if (line.trim() && leadingSpaces(line) <= baseIndent) break;
     const match = line.match(/^\s*-\s+(.+?)\s*$/);
     if (match) out.push(match[1]);
   }
   return out;
+}
+
+function leadingSpaces(value) {
+  return String(value).match(/^\s*/)[0].length;
 }
 
 function read(relativePath) {

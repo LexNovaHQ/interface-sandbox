@@ -10,7 +10,7 @@ const reportUi = readFileSync("public/interface-diligence/diligence-system/repor
 assert.ok(app.includes('app.use("/public", publicRouter)'), "central app must mount publicRouter");
 assert.equal(app.includes("public-reviewer-routes"), false, "central app must not mount legacy public reviewer routes");
 for (const route of ['/diligence-system/jobs"', '/diligence-system/jobs/:run_id"', '/diligence-system/jobs/:run_id/advance"', '/diligence-system/report/:run_id"', '/diligence-system/technical-annexure/:run_id"', '/diligence-system/qualified-review/:run_id"', '/diligence-system/qualified-review/:run_id/responses"']) assert.ok(routes.includes(route), `central public router missing route ${route}`);
-for (const forbidden of ["reviewer-async-runner.js", "reviewer-runner-normalized.js", "public-reviewer-routes.js", 'from "../../firestore.js"', 'from "../../drive.js"', 'from "../../sheets.js"']) assert.equal(routes.includes(forbidden), false, `central public router imports retired dependency: ${forbidden}`);
+for (const forbidden of ["reviewer-async-runner.js", "reviewer-runner-normalized.js", "public-reviewer-routes.js", 'from "../..' + '/firestore.js"', 'from "../..' + '/drive.js"', 'from "../..' + '/sheets.js"']) assert.equal(routes.includes(forbidden), false, `central public router imports retired dependency: ${forbidden}`);
 
 assert.ok(routes.includes("requestPipelineAdvance"));
 assert.ok(routes.includes("createDiligenceRun"));

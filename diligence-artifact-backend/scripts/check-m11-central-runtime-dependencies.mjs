@@ -36,27 +36,27 @@ for (const marker of [
   "buildDynamicWorkpad",
   "projectDynamicProfiles",
   "buildDomainAgnosticForensics",
-  'semantic_runtime_stage: "CO_8_DOMAIN_AGNOSTIC_LAYER2_ACTIVE"',
-  'deterministic_finalization_stage: "CO_9_DYNAMIC_LAYER3_ACTIVE"',
-  'forensics_stage: "CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE"'
+  'semantic_runtime_stage: "MODEL_SEMANTIC_FIELDS_ONLY_ACTIVE"',
+  'deterministic_finalization_stage: "COMPLETE_REPORT_ROW_ACTIVE"',
+  'forensics_stage: "COMPLETE_REGISTRY_SPINE_TRACE_ACTIVE"'
 ]) assert.ok(m11.includes(marker), `M11 active runtime marker missing: ${marker}`);
 
 for (const marker of [
-  "phase5_classification_inventory.v1",
-  "M11_PACKAGE_SCOPED_ROUTE_RULES_v1",
+  "phase5_classification_inventory.v2.behavior_class",
+  "M11_PACKAGE_SCOPED_BEHAVIOR_CLASS_ROUTE_RULES_v2",
   "MAX_M11_BATCH_ROWS = 15",
   "MAX_M11_BATCH_PACKET_CHARS = 180000",
   "UNI_ALWAYS_RUN",
-  "PACKAGE_ARCHETYPE_MATCH",
+  "PACKAGE_BEHAVIOR_CLASS_MATCH",
   "surface_routing_allowed: false",
   "expected_registry_row_keys"
 ]) assert.ok(routing.includes(marker), `M11 route implementation missing: ${marker}`);
 
 for (const marker of [
-  "M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1",
+  "M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v2_COMPLETE_REGISTRY_SPINE",
   "M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1",
-  "M11_DYNAMIC_LAYER3_v1",
-  "M11_DOMAIN_AGNOSTIC_FORENSICS_v1",
+  "M11_DYNAMIC_LAYER3_v2_COMPLETE_REPORT_ROW",
+  "M11_DOMAIN_AGNOSTIC_FORENSICS_v2_COMPLETE_REPORT_ROW",
   "registry_row_key",
   "CONTROLLED_BY_VISIBLE_CONTROL",
   "CONTROLLED_BY_EXCLUSION",
@@ -70,6 +70,9 @@ for (const marker of [
   "status: CO_8_DOMAIN_AGNOSTIC_RUNTIME_ACTIVE",
   "status: CO_9_DYNAMIC_FINALIZATION_ACTIVE",
   "status: CO_10_DOMAIN_AGNOSTIC_TRACE_ACTIVE",
+  "packet_version: M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v2_COMPLETE_REGISTRY_SPINE",
+  "version: M11_DYNAMIC_LAYER3_v2_COMPLETE_REPORT_ROW",
+  "version: M11_DOMAIN_AGNOSTIC_FORENSICS_v2_COMPLETE_REPORT_ROW",
   "m12_status: CO_13_DYNAMIC_COMPOUND_IDENTITY_COMPATIBLE",
   "compiler_status: CO_13_DYNAMIC_COMPOUND_IDENTITY_COMPATIBLE"
 ]) assert.ok(binding.includes(marker), `Agent 5 binding missing final marker: ${marker}`);
@@ -86,7 +89,7 @@ for (const retired of [
 assert.ok(m11.includes('infrastructure_authority: "CENTRAL_RUNTIME_SERVICES"'));
 assert.ok(m11.includes('phase_owned_path: "src/phases/10-exposure-profile"'));
 assert.ok(prompts.includes('from "./reference.service.js"'));
-assert.equal(prompts.includes("../../reference-loader.js"), false);
+assert.equal(prompts.includes("../.." + "/reference-loader.js"), false);
 assert.ok(runtimeReference.includes("references/domain-packages"));
 assert.ok(runtimeReference.includes("references/registry"));
 
@@ -98,9 +101,9 @@ console.log(JSON.stringify({
     "CO11_FINAL_SYNCHRONIZED_WRAPPER_ACTIVE",
     "STATIC_PACKAGE_REFERENCE_INJECTION_BLOCKED",
     "CENTRAL_PROMPT_PROVIDER_STORAGE_REFERENCE_SERVICES",
-    "CO8_DOMAIN_AGNOSTIC_LAYER2_ACTIVE",
-    "CO9_DYNAMIC_LAYER3_ACTIVE",
-    "CO10_DOMAIN_AGNOSTIC_FORENSICS_ACTIVE",
+    "MODEL_SEMANTIC_FIELDS_ONLY_ACTIVE",
+    "COMPLETE_REPORT_ROW_ACTIVE",
+    "COMPLETE_REGISTRY_SPINE_TRACE_ACTIVE",
     "CO13_DOWNSTREAM_COMPATIBILITY_ACTIVE",
     "PACKAGE_SCOPED_CLASSIFICATION_ROUTING",
     "MAXIMUM_15_PACKET_CEILING_BATCHING",

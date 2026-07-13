@@ -184,6 +184,10 @@ function fixtureBatchArtifact(packet) {
         reasoning_summary: "Bounded public signal carried from route fixture.",
         forbidden_inference_check: "PASS",
         evidence_trace: { source: "fixture" },
+        basis_route_ids: [packet.required_d_family_route_ids[0]],
+        bounded_source_basis: "fixture route-backed source basis",
+        reasoning_summary: "fixture route-backed semantic resolution",
+        forbidden_inference_check: "PASS",
         limitations: []
       })),
       validation_quality_control_result: { status: "PASS", errors: [] }

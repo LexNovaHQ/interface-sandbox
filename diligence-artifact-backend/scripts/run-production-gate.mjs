@@ -9,6 +9,7 @@ import {
 } from "./test-support/check-severity.mjs";
 
 const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
+const useShellForNpmCmd = process.platform === "win32";
 const results = [];
 
 for (const check of PRODUCTION_GATE_CHECKS) {
@@ -19,6 +20,7 @@ for (const check of PRODUCTION_GATE_CHECKS) {
     cwd: process.cwd(),
     env: process.env,
     encoding: "utf8",
+    shell: useShellForNpmCmd,
     maxBuffer: 64 * 1024 * 1024
   });
 
@@ -26,6 +28,7 @@ for (const check of PRODUCTION_GATE_CHECKS) {
   const stderr = String(child.stderr || "");
   if (stdout) process.stdout.write(stdout);
   if (stderr) process.stderr.write(stderr);
+  if (child.error) process.stderr.write(`${child.error.stack || child.error.message || String(child.error)}\n`);
 
   const resolved = resolveChildCheckStatus({
     exitCode: child.status,

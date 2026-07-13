@@ -4,7 +4,7 @@
   "fdr_source": "references/registry/Diligence_Field_Derivation_Registry.yml",
   "fdr_declared_row_count": 456,
   "fdr_parsed_unique_row_count": 457,
-  "route_contract_status": "DEFERRED_TO_CO_P12_03",
+  "route_contract_status": "CO_P12_03_ROUTE_CONTRACT_ACTIVE",
   "p12_substantive_derivation_forbidden": true,
   "rows": [
     {
@@ -21,7 +21,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -38,7 +38,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -55,7 +55,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -72,7 +72,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -89,7 +89,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -106,7 +106,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -125,7 +125,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -144,7 +144,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -164,7 +164,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -181,7 +181,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -198,7 +198,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -215,7 +215,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -232,7 +232,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -249,7 +249,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -268,7 +268,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -287,7 +287,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -307,7 +307,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -324,7 +324,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -341,7 +341,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -358,7 +358,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -375,7 +375,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -392,7 +392,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -411,7 +411,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -430,7 +430,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -450,7 +450,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -467,7 +467,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -484,7 +484,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -501,7 +501,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -518,7 +518,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -535,7 +535,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -552,7 +552,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -569,7 +569,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -586,7 +586,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -603,7 +603,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -620,7 +620,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -639,7 +639,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -659,7 +659,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -679,7 +679,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -699,7 +699,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -719,7 +719,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -739,7 +739,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -759,7 +759,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -779,7 +779,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -799,7 +799,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -819,7 +819,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -836,7 +836,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -853,7 +853,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -870,7 +870,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -887,7 +887,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -904,7 +904,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -923,7 +923,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -942,7 +942,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -959,7 +959,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -976,7 +976,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -993,7 +993,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1010,7 +1010,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1027,7 +1027,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1044,7 +1044,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1061,7 +1061,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1078,7 +1078,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1095,7 +1095,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1112,7 +1112,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1129,7 +1129,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1146,7 +1146,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1165,7 +1165,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1185,7 +1185,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1202,7 +1202,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1219,7 +1219,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1236,7 +1236,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1253,7 +1253,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1272,7 +1272,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1291,7 +1291,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1311,7 +1311,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1331,7 +1331,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1348,7 +1348,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1365,7 +1365,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1382,7 +1382,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1399,7 +1399,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1418,7 +1418,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1438,7 +1438,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1457,7 +1457,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1476,7 +1476,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1495,7 +1495,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1514,7 +1514,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1533,7 +1533,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1552,7 +1552,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1572,7 +1572,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1592,7 +1592,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1612,7 +1612,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1632,7 +1632,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1652,7 +1652,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1672,7 +1672,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1692,7 +1692,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1712,7 +1712,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1732,7 +1732,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1752,7 +1752,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1772,7 +1772,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1792,7 +1792,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1812,7 +1812,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1832,7 +1832,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1852,7 +1852,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1872,7 +1872,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1893,7 +1893,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1913,7 +1913,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1931,7 +1931,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1949,7 +1949,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1967,7 +1967,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -1985,7 +1985,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2003,7 +2003,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2021,7 +2021,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2041,7 +2041,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2062,7 +2062,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2080,7 +2080,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2098,7 +2098,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2116,7 +2116,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2134,7 +2134,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2152,7 +2152,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2170,7 +2170,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2190,7 +2190,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2211,7 +2211,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2229,7 +2229,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2247,7 +2247,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2265,7 +2265,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2283,7 +2283,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2301,7 +2301,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2319,7 +2319,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2337,7 +2337,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2357,7 +2357,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2375,7 +2375,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2393,7 +2393,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2411,7 +2411,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2429,7 +2429,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2447,7 +2447,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2465,7 +2465,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2483,7 +2483,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2501,7 +2501,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2519,7 +2519,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2539,7 +2539,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2559,7 +2559,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2577,7 +2577,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2597,7 +2597,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2615,7 +2615,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2633,7 +2633,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2651,7 +2651,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2671,7 +2671,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2692,7 +2692,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2713,7 +2713,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2731,7 +2731,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2749,7 +2749,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2767,7 +2767,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2785,7 +2785,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2803,7 +2803,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2821,7 +2821,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2839,7 +2839,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2859,7 +2859,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2880,7 +2880,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2898,7 +2898,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2916,7 +2916,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2934,7 +2934,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2952,7 +2952,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2970,7 +2970,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -2990,7 +2990,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3008,7 +3008,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3026,7 +3026,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3047,7 +3047,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3065,7 +3065,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3083,7 +3083,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3101,7 +3101,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3119,7 +3119,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3137,7 +3137,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3155,7 +3155,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3175,7 +3175,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3196,7 +3196,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3214,7 +3214,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3232,7 +3232,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3250,7 +3250,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3268,7 +3268,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3286,7 +3286,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3304,7 +3304,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3324,7 +3324,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3345,7 +3345,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3363,7 +3363,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3381,7 +3381,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3399,7 +3399,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3417,7 +3417,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3435,7 +3435,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3455,7 +3455,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3473,7 +3473,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3494,7 +3494,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3512,7 +3512,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3530,7 +3530,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3548,7 +3548,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3566,7 +3566,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3584,7 +3584,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3605,7 +3605,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3625,7 +3625,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3646,7 +3646,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3664,7 +3664,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3682,7 +3682,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3700,7 +3700,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3718,7 +3718,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3736,7 +3736,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3754,7 +3754,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3774,7 +3774,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3795,7 +3795,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3813,7 +3813,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3831,7 +3831,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3849,7 +3849,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3867,7 +3867,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3885,7 +3885,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3903,7 +3903,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3921,7 +3921,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3939,7 +3939,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3959,7 +3959,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -3980,7 +3980,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4000,7 +4000,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4018,7 +4018,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4039,7 +4039,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4059,7 +4059,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4079,7 +4079,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4099,7 +4099,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4120,7 +4120,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4140,7 +4140,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4160,7 +4160,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4180,7 +4180,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4201,7 +4201,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4222,7 +4222,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4243,7 +4243,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4264,7 +4264,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4285,7 +4285,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4306,7 +4306,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4327,7 +4327,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4348,7 +4348,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4369,7 +4369,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4387,7 +4387,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4405,7 +4405,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4423,7 +4423,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4441,7 +4441,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4459,7 +4459,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4480,7 +4480,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4498,7 +4498,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4516,7 +4516,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4534,7 +4534,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4552,7 +4552,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4570,7 +4570,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4588,7 +4588,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4608,7 +4608,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4626,7 +4626,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4644,7 +4644,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4662,7 +4662,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4680,7 +4680,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4698,7 +4698,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4716,7 +4716,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4736,7 +4736,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4757,7 +4757,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4775,7 +4775,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4793,7 +4793,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4811,7 +4811,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4829,7 +4829,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4849,7 +4849,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4867,7 +4867,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4885,7 +4885,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4903,7 +4903,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4921,7 +4921,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4939,7 +4939,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4959,7 +4959,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4980,7 +4980,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -4998,7 +4998,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5016,7 +5016,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5034,7 +5034,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5052,7 +5052,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5070,7 +5070,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5088,7 +5088,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5106,7 +5106,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5124,7 +5124,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5142,7 +5142,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5160,7 +5160,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5178,7 +5178,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5198,7 +5198,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5219,7 +5219,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5237,7 +5237,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5255,7 +5255,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5273,7 +5273,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5291,7 +5291,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5309,7 +5309,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5327,7 +5327,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5345,7 +5345,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5365,7 +5365,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5386,7 +5386,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5404,7 +5404,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5422,7 +5422,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5442,7 +5442,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5463,7 +5463,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5481,7 +5481,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5499,7 +5499,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5517,7 +5517,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5535,7 +5535,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5553,7 +5553,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5571,7 +5571,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5589,7 +5589,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5607,7 +5607,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5625,7 +5625,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5645,7 +5645,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5666,7 +5666,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5684,7 +5684,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5702,7 +5702,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5720,7 +5720,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5738,7 +5738,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5756,7 +5756,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5774,7 +5774,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5792,7 +5792,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5812,7 +5812,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5833,7 +5833,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5851,7 +5851,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5869,7 +5869,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5887,7 +5887,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5905,7 +5905,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5923,7 +5923,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5941,7 +5941,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5961,7 +5961,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -5982,7 +5982,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6003,7 +6003,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6024,7 +6024,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6045,7 +6045,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6066,7 +6066,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6087,7 +6087,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6108,7 +6108,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6129,7 +6129,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6150,7 +6150,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6171,7 +6171,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6191,7 +6191,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6211,7 +6211,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6231,7 +6231,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6251,7 +6251,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6272,7 +6272,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6292,7 +6292,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6313,7 +6313,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6334,7 +6334,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6355,7 +6355,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6376,7 +6376,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6397,7 +6397,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6418,7 +6418,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6439,7 +6439,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6460,7 +6460,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6481,7 +6481,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6502,7 +6502,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6523,7 +6523,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6541,7 +6541,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6559,7 +6559,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6577,7 +6577,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6595,7 +6595,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6613,7 +6613,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6631,7 +6631,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6649,7 +6649,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6667,7 +6667,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6685,7 +6685,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6703,7 +6703,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6721,7 +6721,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6739,7 +6739,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6757,7 +6757,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6777,7 +6777,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6795,7 +6795,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6815,7 +6815,7 @@
       "secondary_projection_sections": [
         "09"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6833,7 +6833,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6851,7 +6851,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6869,7 +6869,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6887,7 +6887,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6905,7 +6905,7 @@
       "owner_gap_code": null,
       "primary_report_section": "08",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -6926,7 +6926,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7352,7 +7352,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7373,7 +7373,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7394,7 +7394,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7415,7 +7415,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7436,7 +7436,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7457,7 +7457,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7478,7 +7478,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7495,7 +7495,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7512,7 +7512,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7529,7 +7529,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7546,7 +7546,7 @@
       "owner_gap_code": null,
       "primary_report_section": "04",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7565,7 +7565,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7585,7 +7585,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7603,7 +7603,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7621,7 +7621,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7639,7 +7639,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7657,7 +7657,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7675,7 +7675,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7693,7 +7693,7 @@
       "owner_gap_code": null,
       "primary_report_section": "07",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7713,7 +7713,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7734,7 +7734,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7752,7 +7752,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7770,7 +7770,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7788,7 +7788,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7806,7 +7806,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7824,7 +7824,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7844,7 +7844,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7865,7 +7865,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7883,7 +7883,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7901,7 +7901,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7919,7 +7919,7 @@
       "owner_gap_code": null,
       "primary_report_section": "05",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7939,7 +7939,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7960,7 +7960,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7979,7 +7979,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -7998,7 +7998,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8017,7 +8017,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8036,7 +8036,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8055,7 +8055,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8074,7 +8074,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8091,7 +8091,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8108,7 +8108,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8125,7 +8125,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8142,7 +8142,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8159,7 +8159,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8176,7 +8176,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8193,7 +8193,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8210,7 +8210,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8227,7 +8227,7 @@
       "owner_gap_code": null,
       "primary_report_section": "03",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8244,7 +8244,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8261,7 +8261,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8278,7 +8278,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8295,7 +8295,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8312,7 +8312,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8329,7 +8329,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8346,7 +8346,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8363,7 +8363,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8380,7 +8380,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8397,7 +8397,7 @@
       "owner_gap_code": null,
       "primary_report_section": "06",
       "secondary_projection_sections": [],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8416,7 +8416,7 @@
       "secondary_projection_sections": [
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8436,7 +8436,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     },
     {
@@ -8456,7 +8456,7 @@
         "09",
         "10"
       ],
-      "source_path_binding_status": "UNBOUND_PENDING_CO_P12_03_ROUTE_CONTRACT",
+      "source_path_binding_status": "BOUND_BY_PHASE12_ROUTE_ADAPTER",
       "source_path_binding_authority": "CO_P12_03_EXACT_ROUTE_CONTRACT"
     }
   ]

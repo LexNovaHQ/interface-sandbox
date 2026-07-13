@@ -5,9 +5,40 @@ export const PHASE11_DISPATCH_CHECKPOINT_VERSION = "phase11_dispatch_checkpoint.
 export const PHASE11_DISPATCH_LEASE_VERSION = "phase11_dispatch_lease.v2";
 const LEASE_MS = 10 * 60 * 1000;
 
-export async function acquirePhase11DispatchLease({ runId, dispatch, workerId = "phase11-runtime" } = {}) {
-  const db = getDb();
-  const ref = runRef(runId).collection("phase11_dispatch_leases").doc(dispatch.dispatch_id);
+export const PHASE11_DISPATCH_CHECKPOINT_STAGES = Object.freeze([
+  "DISPATCH_CREATED",
+  "OWNER_PROPOSAL_RUNNING",
+  "OWNER_PROPOSAL_CREATED",
+  "PROPOSAL_COMMITTED",
+  "NON_SUBSTANTIVE_RETRY_REQUIRED",
+  "ATTEMPT_RECORDED",
+  "COMPLETE"
+]);
+
+export const PHASE11_DISPATCH_CHECKPOINT_TRANSITIONS = Object.freeze({
+  DISPATCH_CREATED: Object.freeze(["OWNER_PROPOSAL_RUNNING"]),
+  OWNER_PROPOSAL_RUNNING: Object.freeze(["OWNER_PROPOSAL_CREATED", "NON_SUBSTANTIVE_RETRY_REQUIRED"]),
+  OWNER_PROPOSAL_CREATED: Object.freeze(["PROPOSAL_COMMITTED", "NON_SUBSTANTIVE_RETRY_REQUIRED"]),
+  PROPOSAL_COMMITTED: Object.freeze(["ATTEMPT_RECORDED", "NON_SUBSTANTIVE_RETRY_REQUIRED"]),
+  NON_SUBSTANTIVE_RETRY_REQUIRED: Object.freeze(["OWNER_PROPOSAL_RUNNING"]),
+  ATTEMPT_RECORDED: Object.freeze(["COMPLETE"]),
+  COMPLETE: Object.freeze([])
+});
+
+export function assertPhase11DispatchCheckpointTransition({ previous = null, stage } = {}) {
+  if (!PHASE11_DISPATCH_CHECKPOINT_STAGES.includes(stage)) throw new Error(`PHASE11_DISPATCH_CHECKPOINT_STAGE_INVALID:${stage || "missing"}`);
+  if (!previous) {
+    if (stage !== "DISPATCH_CREATED") throw new Error(`PHASE11_DISPATCH_CHECKPOINT_INITIAL_STAGE_INVALID:${stage}`);
+    return true;
+  }
+  if (previous.stage === stage) throw new Error(`PHASE11_DISPATCH_CHECKPOINT_DUPLICATE_STAGE:${stage}`);
+  const allowed = PHASE11_DISPATCH_CHECKPOINT_TRANSITIONS[previous.stage] || [];
+  if (!allowed.includes(stage)) throw new Error(`PHASE11_DISPATCH_CHECKPOINT_REGRESSION:${previous.stage}->${stage}`);
+  return true;
+}
+
+export async function acquirePhase11DispatchLease({ runId, dispatch, workerId = "phase11-runtime", db = getDb() } = {}) {
+  const ref = leaseRef(db, runId, dispatch.dispatch_id);
   const now = Date.now();
   const expiresAt = now + LEASE_MS;
   const leaseToken = randomUUID();
@@ -33,9 +64,8 @@ export async function acquirePhase11DispatchLease({ runId, dispatch, workerId = 
   return { dispatch_id: dispatch.dispatch_id, worker_id: workerId, lease_token: leaseToken, expires_at_epoch: expiresAt };
 }
 
-export async function renewPhase11DispatchLease({ runId, dispatchId, workerId = "phase11-runtime", leaseToken } = {}) {
-  const db = getDb();
-  const ref = runRef(runId).collection("phase11_dispatch_leases").doc(dispatchId);
+export async function renewPhase11DispatchLease({ runId, dispatchId, workerId = "phase11-runtime", leaseToken, db = getDb() } = {}) {
+  const ref = leaseRef(db, runId, dispatchId);
   const now = Date.now();
   const expiresAt = now + LEASE_MS;
   await db.runTransaction(async (tx) => {
@@ -47,9 +77,8 @@ export async function renewPhase11DispatchLease({ runId, dispatchId, workerId = 
   return { dispatch_id: dispatchId, worker_id: workerId, lease_token: leaseToken, expires_at_epoch: expiresAt };
 }
 
-export async function releasePhase11DispatchLease({ runId, dispatchId, workerId = "phase11-runtime", leaseToken, reason = "complete" } = {}) {
-  const db = getDb();
-  const ref = runRef(runId).collection("phase11_dispatch_leases").doc(dispatchId);
+export async function releasePhase11DispatchLease({ runId, dispatchId, workerId = "phase11-runtime", leaseToken, reason = "complete", db = getDb() } = {}) {
+  const ref = leaseRef(db, runId, dispatchId);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const existing = snap.exists ? snap.data() : null;
@@ -59,21 +88,7 @@ export async function releasePhase11DispatchLease({ runId, dispatchId, workerId 
 }
 
 export function buildPhase11DispatchCheckpoint({ run, dispatch, stage, previous = null, payload = {} } = {}) {
-  const allowed = new Set([
-    "DISPATCH_CREATED",
-    "OWNER_RUNNING",
-    "OWNER_PROPOSAL_RUNNING",
-    "OWNER_RETURNED",
-    "OWNER_PROPOSAL_CREATED",
-    "RETURN_VALIDATED",
-    "PROPOSAL_COMMITTED",
-    "NON_SUBSTANTIVE_RETRY_REQUIRED",
-    "ATTEMPT_RECORDED",
-    "COMPLETE"
-  ]);
-  if (!allowed.has(stage)) throw new Error(`PHASE11_DISPATCH_CHECKPOINT_STAGE_INVALID:${stage}`);
-  const sequence = ["DISPATCH_CREATED", "OWNER_RUNNING", "OWNER_PROPOSAL_RUNNING", "OWNER_RETURNED", "OWNER_PROPOSAL_CREATED", "RETURN_VALIDATED", "PROPOSAL_COMMITTED", "NON_SUBSTANTIVE_RETRY_REQUIRED", "ATTEMPT_RECORDED", "COMPLETE"];
-  if (previous?.stage && sequence.indexOf(stage) < sequence.indexOf(previous.stage)) throw new Error("PHASE11_DISPATCH_CHECKPOINT_REGRESSION");
+  assertPhase11DispatchCheckpointTransition({ previous, stage });
   const checkpoint = {
     schema_version: PHASE11_DISPATCH_CHECKPOINT_VERSION,
     status: stage === "COMPLETE" ? "COMPLETE" : "IN_PROGRESS",
@@ -84,7 +99,10 @@ export function buildPhase11DispatchCheckpoint({ run, dispatch, stage, previous 
     owner_internal_job: dispatch.owner_internal_job,
     stage,
     previous_stage: previous?.stage || null,
-    payload,
+    payload: {
+      ...(payload || {}),
+      technical_retry_cycle: Number(payload?.technical_retry_cycle || previous?.payload?.technical_retry_cycle || 0)
+    },
     checkpoint_fingerprint: sha({ dispatch_id: dispatch.dispatch_id, stage, payload })
   };
   return Object.freeze(checkpoint);
@@ -101,6 +119,9 @@ export function checkpointMayResume(checkpoint, dispatch) {
   );
 }
 
+function leaseRef(db, runId, dispatchId) {
+  return db.collection ? db.collection("runs").doc(runId).collection("phase11_dispatch_leases").doc(dispatchId) : runRef(runId).collection("phase11_dispatch_leases").doc(dispatchId);
+}
 function assertLeaseOwner(existing, { dispatchId, workerId, leaseToken }) {
   if (!existing?.active) throw new Error(`PHASE11_DISPATCH_LEASE_NOT_ACTIVE:${dispatchId || "missing"}`);
   if (String(existing.worker_id || "") !== String(workerId || "")) throw new Error(`PHASE11_DISPATCH_LEASE_WORKER_MISMATCH:${dispatchId || "missing"}`);

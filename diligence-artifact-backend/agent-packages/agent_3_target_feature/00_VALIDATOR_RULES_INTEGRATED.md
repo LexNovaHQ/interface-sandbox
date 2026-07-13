@@ -38,6 +38,8 @@ Treat those artifacts as `PRIMARY_EVIDENCE` and navigate them through the `MANDA
 
 `business_context` must not include `lane`. Company-level lane derivation belongs outside Target Profile Review.
 
+`business_context` must not include `lane`.
+
 ## Internal Sector Derivation Layer
 
 The internal artifact remains `domain_derivation_profile`. It is Registry-Key-led and domain-agnostic. Regulatory overlays are candidate-only and may not state legal applicability, licensing validity, compliance status or legal advice.

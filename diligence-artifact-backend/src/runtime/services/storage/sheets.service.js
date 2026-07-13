@@ -1,4 +1,4 @@
-import { config } from "../../config.js";
+import { config } from "../runtime-config.service.js";
 import { getSheetsClient } from "./google.service.js";
 
 const HEADER = Object.freeze([

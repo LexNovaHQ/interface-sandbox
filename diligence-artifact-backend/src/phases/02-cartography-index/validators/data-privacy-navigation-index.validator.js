@@ -92,13 +92,6 @@ function scanForbiddenRootKeys(value, errors) {
   }
 }
 
-function containsExactMarker(value, marker) {
-  if (typeof value === "string") return value === marker;
-  if (!value || typeof value !== "object") return false;
-  if (Array.isArray(value)) return value.some((item) => containsExactMarker(item, marker));
-  return Object.entries(value).some(([key, item]) => key === marker || containsExactMarker(item, marker));
-}
-
 function unwrap(value, artifactName) {
   if (value && typeof value === "object" && artifactName in value) return value[artifactName];
   if (value && typeof value === "object" && value.payload && artifactName in value.payload) return value.payload[artifactName];

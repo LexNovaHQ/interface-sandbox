@@ -81,7 +81,6 @@ export async function runPhase10TargetedReinvestigation({ run, dispatch, contrac
   for (const artifactName of Object.keys(proposedArtifacts)) baselineVersions[artifactName] = await artifactVersion(run.run_id, artifactName);
   const directBatch = batchArtifactName(targetBatch);
   const directValidation = batchValidationArtifactName(targetBatch);
-  const unaffected_batch_count_reused = Math.max(0, array(routePlan.batch_plan).length - 1);
   return buildPhase11TargetedMutationProposal({
     dispatch,
     phase11_reinvestigation_context: targetedPacket,

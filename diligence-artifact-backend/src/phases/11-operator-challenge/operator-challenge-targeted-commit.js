@@ -3,7 +3,7 @@ import { assertPhase11TargetedMutationProposal, PHASE11_TARGETED_PROPOSAL_STATUS
 import { validatePhase11WriteManifest } from "./operator-challenge-write-manifest.js";
 import { validatePhase11TargetedMutation } from "./operator-challenge-mutation-guard.js";
 
-export const PHASE11_TARGETED_COMMIT_VERSION = "phase11_targeted_mutation_commit.v1";
+export const PHASE11_TARGETED_COMMIT_VERSION = "phase11_targeted_mutation_commit.v2.backend_authority";
 
 export async function commitPhase11TargetedMutationProposal({ run, dispatch, proposal, beforeArtifacts = {}, baselineArtifactVersions = {}, ownerActor, ownerPhase } = {}) {
   assertPhase11TargetedMutationProposal({ proposal, dispatch });
@@ -18,11 +18,13 @@ export async function commitPhase11TargetedMutationProposal({ run, dispatch, pro
       validation_basis: "No proposed mutation was committed."
     });
   }
-  const manifestValidation = validatePhase11WriteManifest({ proposal, baselineArtifactVersions });
+  const manifestValidation = validatePhase11WriteManifest({ dispatch, packet: proposal.phase11_reinvestigation_context, proposal, baselineArtifactVersions });
   if (manifestValidation.status !== "PASS") throw new Error(`PHASE11_WRITE_MANIFEST_REJECTED:${manifestValidation.missing_or_mismatched_baseline_artifacts.join("|") || manifestValidation.unauthorized_reasons.join("|")}`);
+  const authority = manifestValidation.authority;
+  const authorizedNames = authority.authorized_write_names;
+  const authorizedPaths = authority.authorized_mutation_paths;
   const afterArtifacts = Object.fromEntries(proposal.proposed_writes.map((write) => [write.artifact_name, write.proposed_artifact]));
-  const fieldPaths = unique(proposal.proposed_writes.flatMap((write) => [...write.allowed_field_paths, ...write.mechanically_dependent_paths]));
-  const mutation = validatePhase11TargetedMutation({ dispatch: { ...dispatch, artifact_names: manifestValidation.proposed_write_names, field_paths: fieldPaths }, beforeArtifacts, afterArtifacts });
+  const mutation = validatePhase11TargetedMutation({ dispatch: { ...dispatch, artifact_names: authorizedNames, field_paths: authorizedPaths }, beforeArtifacts, afterArtifacts });
   if (mutation.status !== "PASS") throw new Error(`PHASE11_MUTATION_GUARD_REJECTED:${mutation.unauthorized_changes.map((row) => row.path).join("|")}`);
   const committed = [];
   try {
@@ -55,6 +57,7 @@ export async function commitPhase11TargetedMutationProposal({ run, dispatch, pro
     committed_writes: committed,
     mutation_guard: mutation,
     manifest_validation: manifestValidation,
+    write_authority: authority,
     substantive_attempt_committed: proposal.substantive_reinvestigation_performed === true,
     persistence_before_mutation_guard: false,
     exact_runtime_write_manifest_required: true

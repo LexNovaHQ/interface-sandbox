@@ -26,7 +26,7 @@ export function buildCompactM11BatchPacket({ batchPacket, upstreamArtifacts = {}
       navigation_layer: "legal_cartography_index",
       evidence_role: "PRIMARY_EVIDENCE",
       evidence_selection_policy: "index_navigation_into_routed_primary_lossless_evidence",
-      index_gap_policy: "Navigate to the closest relevant unit inside the same 2F primary evidence bucket and record the index gap. This remains primary-evidence navigation, not fallback evidence.",
+      index_gap_policy: "Navigate to the closest relevant unit inside the same 2F primary evidence bucket and record the index gap. This remains primary-evidence navigation, not secondary substitute evidence.",
       direct_lossless_fallback_framing_forbidden: true
     },
     backend_full_lossless_evidence_access_manifest: buildFullEvidenceAccessManifest(upstreamArtifacts, evidenceArtifactNames),

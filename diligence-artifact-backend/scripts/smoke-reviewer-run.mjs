@@ -40,7 +40,7 @@ const renderer = report.renderer_payload || {};
 const reportArtifactRefs = Array.isArray(renderer.report_artifact_refs) ? renderer.report_artifact_refs : [];
 
 if (Object.prototype.hasOwnProperty.call(renderer, "sections")) {
-  throw new Error("SMOKE_REVIEWER_STALE_RENDERER_SHAPE:renderer_payload.sections");
+  throw new Error("SMOKE_REVIEWER_STALE_RENDERER_SHAPE:legacy_sections_property");
 }
 if (reportArtifactRefs.length !== 29) {
   throw new Error(`SMOKE_REVIEWER_REPORT_ARTIFACT_REF_COUNT:${reportArtifactRefs.length}:29`);

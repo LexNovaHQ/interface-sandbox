@@ -1,6 +1,8 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
 runtime_contract_version: v6_attempt_safe_staged_mutation
 compatibility_marker_v5: "runtime_contract_version: v5_production_integration_mutation_checkpoint"
+compatibility_marker_v6: "runtime_contract_version: v6_phase11_production_closure"
+compatibility_marker_v4: "runtime_contract_version: v4_reinvestigation_dispatch_return"
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
@@ -62,12 +64,16 @@ layer_3:
 
 production_integration:
   status: ACTIVE
-  effective_contract_version: PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1
+  effective_contract_version: PHASE11_PRODUCTION_RUNTIME_CONTRACT_v2
   independent_artifact_contract_version: PHASE11_INDEPENDENT_ARTIFACT_CONTRACT_v1
   mutation_guard_version: phase11_mutation_guard.v1
   dispatch_checkpoint_version: phase11_dispatch_checkpoint.v2
   dispatch_lease_version: phase11_dispatch_lease.v2
   dispatch_adapter_version: phase11_reinvestigation_dispatch_return_adapter.v4.attempt_safe
+  owner_adapter_registry_version: phase11_owner_adapter_registry.v2
+  write_authority_version: phase11_write_authority.v1
+  write_manifest_validation_version: phase11_write_manifest_validation.v2.backend_authority
+  targeted_commit_version: phase11_targeted_mutation_commit.v2.backend_authority
   internal_job_contract_override_active: false
   artifact_permission_cutover_active: true
   restart_safe_dispatch_active: true
@@ -114,6 +120,10 @@ checkpoint_state_machine:
   - DISPATCH_CREATED
   - OWNER_PROPOSAL_RUNNING
   - OWNER_PROPOSAL_CREATED
+  - OWNER_PROPOSAL_RETURNED
+  - WRITE_AUTHORITY_VALIDATED
+  - TARGETED_COMMIT_APPLIED
+  - LAYER1_REBUILT
   - PROPOSAL_COMMITTED
   - NON_SUBSTANTIVE_RETRY_REQUIRED
   - ATTEMPT_RECORDED
@@ -129,8 +139,13 @@ reinvestigation_dispatch_return:
   artifact_version_advance_required: true
   owner_runtime_error_is_technical_failure: true
   technical_failure_consumes_substantive_attempt: false
+  owner_runtime_error_counts_as_unresolved_attempt: false
+  technical_failures_consume_substantive_attempts: false
+  non_substantive_retry_cycle_limit: 3
   maximum_substantive_attempts_per_candidate: 2
   third_substantive_attempt_forbidden: true
+  maximum_dispatches_per_candidate: 2
+  third_dispatch_forbidden: true
 
 supported_reinvestigation_owners:
   PHASE_3_DOMAIN_DERIVATION: P3_DOMAIN_DERIVATION_LAYER
@@ -148,7 +163,7 @@ critical_failure_classes:
   - REQUIRED_ARTIFACT_UNUSABLE
   - FORENSIC_INPUT_BOUNDARY_BREACH
   - PHASE10_COMPOUND_CUSTODY_MISMATCH
-  - MATERIAL_PROFILE_OVERLAP
+  - PHASE10_PROFILE_OVERLAP
 
 required_derived_inputs:
   - target_profile
