@@ -84,7 +84,8 @@
         section_number: sectionNumber,
         section_anchor: `report-section-${sectionId}`,
         section_nav_label: `${sectionId} ${sectionTitle}`,
-        public_navigation_index: index + 1
+        public_navigation_index: index + 1,
+        subsections: Array.isArray(section.subsections) ? section.subsections.map(normalizePublicSubsection) : []
       };
     });
 
@@ -95,7 +96,7 @@
         version: BRIDGE_VERSION,
         source: EXPECTED_RENDERER_SOURCE,
         section_ids: EXPECTED_SECTION_IDS.slice(),
-        note: "Phase 12 section_order validated and converted into public report navigation metadata."
+        note: "Phase 12 section_order validated and converted into public report navigation metadata. Exposure stream scope normalized to public labels without substantive reinterpretation."
       },
       public_report_navigation: sections.map(function (section) {
         return {
@@ -108,11 +109,25 @@
       })
     };
 
-    // Current report.js renders from `sections` and still treats raw `section_order` as
-    // legacy public-body leakage. The bridge validates it above, converts it into
-    // `public_report_navigation`, and strips the raw key before handing off.
+    // Current report document renders from `sections`. The bridge validates raw
+    // `section_order`, converts it into public navigation metadata, and strips the
+    // raw key before handing off to the browser renderer.
     delete bridged.section_order;
     return bridged;
+  }
+
+  function normalizePublicSubsection(subsection = {}) {
+    return {
+      ...subsection,
+      stream_scope: normalizeStreamScope(subsection.stream_scope)
+    };
+  }
+
+  function normalizeStreamScope(value) {
+    const normalized = String(value || "").toUpperCase();
+    if (normalized === "PRIMARY" || normalized === "PRIMARY SECTOR") return "Primary Sector";
+    if (normalized === "OVERLAY" || normalized === "CAPABILITY OVERLAY") return "Capability Overlay";
+    return value || null;
   }
 
   function assertP12Payload(payload) {
