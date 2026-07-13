@@ -106,7 +106,7 @@ export function buildQrActiveFieldLedger({
     artifact_type: "qr_active_field_ledger",
     artifact_version: "phase13_qr_active_field_ledger.v1",
     builder_version: QR_ACTIVE_FIELD_LEDGER_BUILDER_VERSION,
-    status: activeFields.some((field) => field.unresolved_atomic_fields.length) ? "LOCKED_WITH_LIMITATIONS" : "LOCKED",
+    status: probeIds.size || activeFields.some((field) => field.unresolved_atomic_fields.length) ? "LOCKED_WITH_LIMITATIONS" : "LOCKED",
     run_mode: String(run_mode || "PRODUCTION").toUpperCase() === "DEMO" ? "DEMO" : "PRODUCTION",
     confirmation_unit: "SECTION",
     per_question_confirmation_forbidden: true,
