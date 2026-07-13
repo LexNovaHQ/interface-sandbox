@@ -8,6 +8,7 @@ const ADVISORY_STATUSES = Object.freeze([
 const CRITICAL_ONLY = Object.freeze([]);
 
 export const PRODUCTION_GATE_CHECKS = Object.freeze([
+  gate("severity-policy", "Production gate severity policy", "check:production-gate-severity", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("syntax", "Active production syntax", "check:syntax:active", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("domain-gate", "Domain gate v0", "check:domain-gate-v0", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("phase1-8-runtime", "Phase 1-8 central runtime", "check:phase1-8-runtime", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
