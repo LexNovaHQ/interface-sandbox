@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Signals Preview</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
+  <link rel="stylesheet" href="./interface-header.css?v=20260703" />
+  <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
+  <link rel="stylesheet" href="./interface-signals-preview.css?v=signals-preview-v1-20260713" />
+</head>
+<body class="signals-page">
+  <a class="skip-link" href="#signalsMain">Skip to Signals Preview</a>
+  <div class="report-visually-hidden" id="signalsLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="progress-line" style="width:100%" aria-hidden="true"></div>
+  <header class="topbar interface-topbar no-print">
+    <div class="topbar-inner">
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="The Interface diligence home"><span class="wordmark-title">The Interface</span><span class="wordmark-subtitle">Law × Technology · AI Governance · Privacy · Systems</span></a>
+      <nav class="engine-nav" aria-label="Interface engines">
+        <a class="engine-nav-link" href="/interface-diligence/diligence-system/">Diligence</a>
+        <a class="engine-nav-link" id="signalsQrNav" href="qualified-review.html">Qualified Review</a>
+        <a class="engine-nav-link" id="signalsAssemblyNav" href="assembly-engine.html">Assembly Preview</a>
+        <a class="engine-nav-link active" id="signalsNavLink" href="signals-preview.html">Signals Preview</a>
+        <a class="engine-nav-link" href="https://portfolio-shwetabh.lexnovahq.com/" target="_blank" rel="noopener">Portfolio</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-shell signals-shell">
+    <main id="signalsMain" tabindex="-1">
+      <header class="signals-hero">
+        <div><div class="eyebrow">Signals Preview</div><h1>Multi-sector regulatory signal navigation</h1><p class="hero-copy">Explore sector packages, registry signals, jurisdiction context and potential report relevance. Signals are navigation inputs only and cannot override Phase 12 report outputs.</p></div>
+        <div class="signals-preview-badge">Preview · Navigation only</div>
+      </header>
+
+      <section class="signals-boundary" aria-label="Signals boundary"><strong>Signal-navigation layer.</strong><span>Signals may inform research and future package maintenance. They do not amend the report, re-rank exposures or replace the Phase 12 compilation.</span></section>
+
+      <section class="signals-control-panel" aria-labelledby="signalsSectorHeading">
+        <div class="signals-heading"><div><div class="eyebrow">Sector selector</div><h2 id="signalsSectorHeading">Active package display</h2></div><a class="btn secondary" id="signalsReportLink" href="report.html">Open Report</a></div>
+        <div class="signals-sector-controls" id="signalsSectorControls"></div>
+        <div class="signals-active-package" id="signalsActivePackage"></div>
+      </section>
+
+      <section aria-labelledby="signalCardsHeading"><div class="signals-heading"><div><div class="eyebrow">Registry signals</div><h2 id="signalCardsHeading">Signal cards</h2></div><div class="small-muted">Preview registry model · no live feed</div></div><div class="signals-card-grid" id="signalsCardGrid"></div></section>
+
+      <section class="signals-map" aria-labelledby="signalsMapHeading"><div class="signals-heading"><div><div class="eyebrow">Jurisdiction / obligation map</div><h2 id="signalsMapHeading">Context map</h2></div></div><div class="signals-map-grid" id="signalsMapGrid"></div></section>
+
+      <section class="signals-change-panel" aria-labelledby="signalsChangedHeading"><div><div class="eyebrow">Recent / changed signal state</div><h2 id="signalsChangedHeading">Change-feed status</h2><p class="small-muted">No live regulatory change feed is connected. Dates shown in preview cards describe fixture metadata only and must not be treated as current legal updates.</p></div><div class="signals-change-state">Live monitoring not active</div></section>
+
+      <section class="signals-bridge" aria-labelledby="signalsBridgeHeading"><div><div class="eyebrow">Signal-to-report bridge</div><h2 id="signalsBridgeHeading">Report relevance without report override</h2><p class="small-muted">Selected signal context may be used to navigate to the report and Qualified Review. The report remains authoritative for the completed run.</p></div><div class="signals-bridge-actions"><a class="btn" id="signalsBridgeReport" href="report.html">Open Phase 12 Report</a><a class="btn secondary" id="signalsBridgeQr" href="qualified-review.html">Open Qualified Review</a></div></section>
+    </main>
+    <div class="footer-note">Signals Preview. Multi-sector intelligence navigation only; Phase 12 report outputs remain authoritative.</div>
+  </div>
+  <script src="./signals-preview.js?v=signals-preview-v1-20260713" defer></script>
+</body>
+</html>
