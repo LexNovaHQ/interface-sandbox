@@ -27,12 +27,16 @@ function artifacts({ primaryPackage, aiMount, primaryCodes, overlayDeclarations 
         activity_reference: "ACT-SCENARIO",
         primary_classification: {
           package_id: primaryPackage,
-          archetype_codes: primaryCodes,
+          behavior_class_codes: primaryCodes,
           surface_context_tokens: [],
-          archetype_derivation_basis: [],
           surface_derivation_basis: []
         },
-        overlay_classifications: overlayClassifications
+        overlay_classifications: overlayClassifications.map((classification) => ({
+          ...classification,
+          behavior_class_codes: classification.behavior_class_codes || [],
+          surface_context_tokens: classification.surface_context_tokens || [],
+          surface_derivation_basis: classification.surface_derivation_basis || []
+        }))
       }]
     }
   };
@@ -71,6 +75,7 @@ async function buildScenario(runId, upstream) {
     manifest: context.artifact
   });
   assert.equal(output.exposure_registry_route_plan.phase_a_validation.status, "PASS");
+  assert.equal(context.classification_inventory.behavior_class_canonical, true);
   return { context, route: output.exposure_registry_route_plan };
 }
 
@@ -85,6 +90,7 @@ assert.equal(aiPrimary.route.stream_plans[0].stream_id, "PRIMARY::ai-governance"
 assert.equal(aiPrimary.route.stream_plans[0].stream_type, "PRIMARY");
 assert.ok(aiPrimary.route.route_rows.every((row) => row.stream_type === "PRIMARY" && row.package_id === "ai-governance"));
 assert.equal(aiPrimary.route.route_rows.length, 98);
+assert.ok(aiPrimary.route.route_rows.filter((row) => row.Behavior_Class === "DOE").every((row) => row.route === "EVALUATION_ROUTED"));
 
 const candidateOnly = await buildScenario("FIN-CANDIDATE-ROUTE", artifacts({
   primaryPackage: "fintech",
@@ -97,6 +103,19 @@ assert.equal(candidateOnly.route.stream_plans[0].stream_id, "PRIMARY::fintech");
 assert.ok(candidateOnly.route.route_rows.every((row) => row.package_id === "fintech"));
 assert.equal(candidateOnly.route.route_rows.length, 46);
 assert.equal(candidateOnly.route.route_rows.some((row) => row.package_id === "ai-governance"), false);
+assert.ok(candidateOnly.route.route_rows.filter((row) => row.Behavior_Class === "PAY").every((row) => row.route === "EVALUATION_ROUTED"));
+
+const overlay = await buildScenario("FIN-AI-OVERLAY-ROUTE", artifacts({
+  primaryPackage: "fintech",
+  aiMount: "AI_OVERLAY_MOUNTED",
+  primaryCodes: ["PAY"],
+  overlayDeclarations: [{ overlay_id: "ai-native", package_id: "ai-governance", key_version: "v4.0" }],
+  overlayClassifications: [{ overlay_id: "ai-native", package_id: "ai-governance", behavior_class_codes: ["DOE"] }]
+}));
+assert.deepEqual(overlay.context.artifact.mounted_packages, ["fintech", "ai-governance"]);
+assert.deepEqual(overlay.context.classification_inventory.stream_order, ["PRIMARY::fintech", "OVERLAY::ai-governance"]);
+assert.equal(overlay.route.stream_plans.length, 2);
+assert.ok(overlay.route.route_rows.some((row) => row.stream_id === "OVERLAY::ai-governance" && row.Behavior_Class === "DOE" && row.route === "EVALUATION_ROUTED"));
 
 const missingOverlayArtifacts = artifacts({
   primaryPackage: "fintech",
@@ -121,8 +140,10 @@ assert.throws(
 console.log(JSON.stringify({
   check: "phase10 route scenario and mounted classification stream gates",
   status: "PASS",
+  classification_authority: "BEHAVIOR_CLASS",
   ai_primary_rows: aiPrimary.route.route_rows.length,
   candidate_only_fintech_rows: candidateOnly.route.route_rows.length,
   candidate_only_ai_registry_mounted: false,
+  mounted_overlay_stream_verified: true,
   missing_required_overlay_classification_hard_stops: true
 }, null, 2));
