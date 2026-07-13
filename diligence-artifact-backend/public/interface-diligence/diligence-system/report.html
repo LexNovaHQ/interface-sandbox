@@ -14,8 +14,13 @@
   <link rel="stylesheet" href="./interface-report-document.css?v=report-document-v1-20260713" />
   <link rel="stylesheet" href="./interface-report-sections-01-05.css?v=sections-01-05-v1-20260713" />
   <link rel="stylesheet" href="./interface-report-sections-06-07.css?v=sections-06-07-v1-20260713" />
+  <link rel="stylesheet" href="./interface-report-sections-08-10.css?v=sections-08-10-v1-20260713" />
+  <link rel="stylesheet" href="./interface-report-responsive-accessible.css?v=responsive-accessible-v1-20260713" />
+  <link rel="stylesheet" href="./interface-report-print.css?v=print-v1-20260713" media="print" />
 </head>
 <body class="report-page">
+  <a class="skip-link no-print" href="#reportMain">Skip to report content</a>
+  <div class="report-visually-hidden" id="reportLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="progress-line" style="width:100%" aria-hidden="true"></div>
   <header class="topbar interface-topbar no-print">
     <div class="topbar-inner report-topbar-inner">
@@ -37,13 +42,15 @@
     <section class="report-utility-bar no-print" aria-label="Report controls">
       <div class="report-utility-context" id="reportUtilityContext">Loading report matter...</div>
       <div class="report-utility-actions">
-        <button class="btn" id="downloadPdfButton" type="button">Download PDF</button>
+        <button class="btn" id="downloadPdfButton" type="button" aria-describedby="reportPrintDescription">Download PDF</button>
+        <span class="report-visually-hidden" id="reportPrintDescription">Opens the browser print dialog with the complete report dataset expanded.</span>
         <a class="btn secondary" id="technicalAnnexureButton" href="#">Open Public Technical Annexure</a>
         <a class="btn secondary" id="qualifiedReviewButton" href="#">Proceed to Qualified Review</a>
         <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
       </div>
     </section>
 
+    <label class="report-visually-hidden" for="reportMobileSectionSelect">Jump to report section</label>
     <select class="report-mobile-section-select no-print" id="reportMobileSectionSelect" aria-label="Jump to report section">
       <option value="">Loading report sections...</option>
     </select>
@@ -54,8 +61,8 @@
         <div id="reportRail">Loading sections...</div>
       </aside>
 
-      <main class="report-main-workspace">
-        <article class="report-paper" id="reportPaper">
+      <main class="report-main-workspace" id="reportMain" tabindex="-1">
+        <article class="report-paper" id="reportPaper" aria-label="Diligence report document">
           <header class="report-cover">
             <div class="report-cover-main">
               <div class="report-cover-eyebrow">Diligence Report</div>
@@ -74,7 +81,7 @@
             <div id="reportMeta">Loading matter details...</div>
           </section>
 
-          <section class="report-status-strip" id="reportStatusStrip" aria-label="Report status summary"></section>
+          <section class="report-status-strip" id="reportStatusStrip" aria-label="Report status summary" aria-live="polite"></section>
 
           <div class="report-document-body" id="reportBody"></div>
         </article>
@@ -97,13 +104,16 @@
   </div>
 
   <script src="./report-p12-payload-adapter.js?v=p12-bridge-20260713" defer></script>
-  <script src="./report-pagination.js?v=report-pagination-v1-20260713" defer></script>
-  <script src="./report-document-runtime.js?v=report-runtime-v1-20260713" defer></script>
+  <script src="./report-pagination.js?v=report-pagination-v2-20260713" defer></script>
+  <script src="./report-print.js?v=report-print-v1-20260713" defer></script>
+  <script src="./report-document-runtime.js?v=report-runtime-v2-20260713" defer></script>
   <script src="./report-sections-01-03.js?v=rpt-06-v1-20260713" defer></script>
   <script src="./report-section-04.js?v=rpt-07-v1-20260713" defer></script>
   <script src="./report-section-05.js?v=rpt-08-v1-20260713" defer></script>
   <script src="./report-sections-06-07.js?v=rpt-09-v1-20260713" defer></script>
-  <script src="./report-sections-06-10.js?v=report-preserve-08-10-v1-20260713" defer></script>
+  <script src="./report-section-08.js?v=rpt-10-v1-20260713" defer></script>
+  <script src="./report-sections-09-10.js?v=rpt-11-v1-20260713" defer></script>
+  <script src="./report-accessibility.js?v=report-accessibility-v1-20260713" defer></script>
   <script src="./report-document.js?v=report-bootstrap-v1-20260713" defer></script>
 </body>
 </html>
