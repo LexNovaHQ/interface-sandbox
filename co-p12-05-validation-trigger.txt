@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after literal full rerun marker patch. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after owner fallback marker patch. Do not merge.
