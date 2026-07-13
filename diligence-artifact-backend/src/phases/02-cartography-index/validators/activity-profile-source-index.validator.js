@@ -153,10 +153,16 @@ function validateDownstreamRules(rules = {}, errors) {
 }
 
 function validateNoForbiddenMarkers(value, errors) {
-  const text = JSON.stringify(value || {});
-  for (const marker of [...P2C_ACTIVITY_PROFILE_RETIRED_ROOTS_FORBIDDEN]) if (text.includes(marker)) errors.push(`final index includes forbidden retired marker ${marker}`);
-  for (const marker of P2C_ACTIVITY_PROFILE_FORBIDDEN_OUTPUTS) if (text.includes(`"${marker}":`)) errors.push(`final index includes forbidden output marker ${marker}`);
-  for (const marker of [...P2C_ACTIVITY_PROFILE_FORBIDDEN_CLASSIFICATION_KEYS, ...P2C_ACTIVITY_PROFILE_FORBIDDEN_CONCLUSIONS]) if (text.includes(`"${marker}":`)) errors.push(`final index includes forbidden classification/conclusion key ${marker}`);
+  for (const marker of [...P2C_ACTIVITY_PROFILE_RETIRED_ROOTS_FORBIDDEN]) if (containsExactMarker(value, marker)) errors.push(`final index includes forbidden retired marker ${marker}`);
+  for (const marker of P2C_ACTIVITY_PROFILE_FORBIDDEN_OUTPUTS) if (containsExactMarker(value, marker)) errors.push(`final index includes forbidden output marker ${marker}`);
+  for (const marker of [...P2C_ACTIVITY_PROFILE_FORBIDDEN_CLASSIFICATION_KEYS, ...P2C_ACTIVITY_PROFILE_FORBIDDEN_CONCLUSIONS]) if (containsExactMarker(value, marker)) errors.push(`final index includes forbidden classification/conclusion key ${marker}`);
+}
+
+function containsExactMarker(value, marker) {
+  if (typeof value === "string") return value === marker;
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => containsExactMarker(item, marker));
+  return Object.entries(value).some(([key, item]) => key === marker || containsExactMarker(item, marker));
 }
 
 function ensureArray(value) { return Array.isArray(value) ? value : []; }
