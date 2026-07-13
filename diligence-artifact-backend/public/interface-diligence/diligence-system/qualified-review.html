@@ -3,14 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Qualified Review</title>
   <meta name="robots" content="noindex,nofollow" />
-  <link rel="stylesheet" href="./diligence-system.css" />
+  <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
   <link rel="stylesheet" href="./interface-header.css?v=20260703" />
-  <link rel="stylesheet" href="./qualified-review.css?v=qr-single-controller-20260703" />
   <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
+  <link rel="stylesheet" href="./qualified-review.css?v=qr-workspace-v2-20260713" />
 </head>
 <body class="qr-page">
+  <a class="skip-link no-print" href="#qualifiedReviewMain">Skip to review queue</a>
+  <div class="report-visually-hidden" id="qualifiedReviewLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="progress-line" style="width:100%" aria-hidden="true"></div>
   <header class="topbar interface-topbar qr-topbar no-print">
     <div class="topbar-inner qr-topbar-inner">
@@ -29,52 +34,66 @@
   </header>
 
   <div class="page-shell qr-shell">
-    <section class="qr-hero">
+    <header class="qr-hero">
       <div class="qr-hero-copy">
-        <div class="eyebrow">Review Workspace</div>
+        <div class="eyebrow">Qualified Review Workspace</div>
         <h1 id="handoffTitle">Loading review workspace...</h1>
-        <p class="hero-copy" id="handoffSubtitle">Preparing the reviewer workspace.</p>
+        <p class="hero-copy" id="handoffSubtitle">Preparing the report findings review queue.</p>
+        <div class="qr-boundary-line">
+          <span>Separate workspace</span>
+          <span>Shared run ID</span>
+          <span>No document assembly</span>
+        </div>
       </div>
       <div class="qr-action-row no-print">
-        <a class="quiet-link" id="backToReport" href="#">Return to Report</a>
-        <a class="btn secondary" href="/interface-diligence/diligence-system/">New Review</a>
+        <a class="btn secondary" id="backToReport" href="#">Return to Report</a>
+        <a class="btn secondary" id="openAnnexure" href="#">Open Technical Annexure</a>
       </div>
-      <div class="hairline"></div>
-    </section>
+    </header>
 
     <div class="qr-app-layout">
-      <aside class="qr-left-rail no-print" id="qualifiedReviewRailCard">
-        <div class="eyebrow">Sections</div>
+      <aside class="qr-left-rail no-print" id="qualifiedReviewRailCard" aria-label="Qualified Review sections">
+        <div class="eyebrow">Review queue</div>
         <div id="qualifiedReviewRail">Loading sections...</div>
       </aside>
 
-      <main class="qr-main-workspace">
-        <div class="qr-head-grid">
-          <section class="qr-panel qr-head-card" id="handoffMetaCard">
-            <div class="eyebrow">Review summary</div>
-            <div id="handoffMeta">Loading review details...</div>
-          </section>
-          <section class="qr-panel qr-head-card qr-workflow-card no-print" id="qrWorkflowPanel">
-            <div class="eyebrow">Workflow</div>
-            <p class="small-muted">Loading progress...</p>
-          </section>
-        </div>
+      <main class="qr-main-workspace" id="qualifiedReviewMain" tabindex="-1">
+        <section class="qr-matter-panel" aria-labelledby="qrMatterHeading">
+          <div class="qr-panel-heading">
+            <div>
+              <div class="eyebrow">Matter summary</div>
+              <h2 id="qrMatterHeading">Review context</h2>
+            </div>
+            <div class="qr-contract-badge">No assembly</div>
+          </div>
+          <div id="handoffMeta">Loading review details...</div>
+        </section>
 
-        <div class="qr-nav-strip no-print" id="qrNavigationPanel"></div>
+        <section class="qr-workflow-panel no-print" id="qrWorkflowPanel" aria-live="polite">
+          <div class="small-muted">Loading review progress...</div>
+        </section>
 
-        <section class="qr-work-body-card">
-          <div class="eyebrow">Review form</div>
+        <nav class="qr-nav-strip no-print" id="qrNavigationPanel" aria-label="Qualified Review controls"></nav>
+
+        <section class="qr-review-queue" aria-labelledby="qrQueueHeading">
+          <div class="qr-panel-heading">
+            <div>
+              <div class="eyebrow">Report findings review queue</div>
+              <h2 id="qrQueueHeading">Confirm, correct or qualify each item</h2>
+            </div>
+          </div>
           <div id="handoffBody"></div>
         </section>
 
-        <section class="qr-panel qr-final-gate-card" id="qrFinalGatePanel"></section>
-        <section class="qr-panel qr-alert-card hidden" id="qrValidationDrawer"></section>
+        <section class="qr-receipt-panel hidden" id="qrReceiptPanel" aria-labelledby="qrReceiptHeading"></section>
+        <section class="qr-final-gate" id="qrFinalGatePanel"></section>
+        <section class="qr-alert-panel hidden" id="qrValidationDrawer" aria-live="assertive"></section>
       </main>
     </div>
 
-    <div class="footer-note qr-footer">Qualified Review workspace. Review each section, attest the section, and proceed only when the final review gate is ready.</div>
+    <div class="footer-note qr-footer">Qualified Review is a separate confirmation and correction workspace. It does not assemble documents.</div>
   </div>
 
-  <script src="./qualified-review-system/qualified-review.js?v=qr-single-controller-20260703"></script>
+  <script src="./qualified-review-system/qualified-review.js?v=qr-workspace-v2-20260713" defer></script>
 </body>
 </html>
