@@ -26,8 +26,7 @@ export const P2G_RUNTIME_ROUTE_BY_JOB = Object.freeze({
   DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: PHASE_ROUTE_IDS.domainControlObligation,
   DOMAIN_CONTROL_OBLIGATION_PROFILE: PHASE_ROUTE_IDS.domainControlObligation,
   M11: PHASE_ROUTE_IDS.legalCartographySignals,
-  M12: PHASE_ROUTE_IDS.legalCartographySignals,
-  NORMALIZED_COMPILER: PHASE_ROUTE_IDS.legalCartographySignals
+  M12: PHASE_ROUTE_IDS.legalCartographySignals
 });
 
 export const P2G_PHASE_ROUTE_RUNTIME_READER_STATUS = Object.freeze({
@@ -36,7 +35,8 @@ export const P2G_PHASE_ROUTE_RUNTIME_READER_STATUS = Object.freeze({
   route_scoped_runtime_reader_active: true,
   cutover_jobs: Object.freeze(Object.keys(P2G_RUNTIME_ROUTE_BY_JOB)),
   router_reads_primary_evidence_and_indexes_for_profile_jobs: true,
-  derived_only_packets_for_forensics_challenge_compiler: true,
+  derived_only_packets_for_forensics_and_challenge: true,
+  phase12_compiler_excluded: true,
   derived_only_jobs_receive_exact_job_scope_only: true,
   consumer_reads_only_authorized_preceding_context: true,
   sparse_lossless_root_resolution_owned_by_2g: true,
