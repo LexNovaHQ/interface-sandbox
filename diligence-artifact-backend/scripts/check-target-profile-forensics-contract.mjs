@@ -42,7 +42,9 @@ assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.phase_owned_runner, true);
 assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.production_entrypoint_switched, true);
 assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.phase2g_route_scoped_runtime_reader_active, true);
 assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.delivery_mode, "DERIVED_ONLY");
-assert.deepEqual(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.reads, expectedReads);
+assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.source_bucket_delivered, false);
+assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.profile_forensics_inputs_forbidden, true);
+assert.equal(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.routing_manifest_read, "phase_routing_manifest");
 assert.deepEqual(TARGET_PROFILE_FORENSICS_RUNNER_STATUS.writes, expectedWrites);
 
 console.log(JSON.stringify({ check: "Target Profile Forensics contract", status: "PASS", enforced_gates: ["PHASE2G_DERIVED_ONLY_RUNTIME_CUTOVER", "CENTRAL_READS_MANIFEST_ONLY", "EFFECTIVE_PACKET_CONTRACT_LOCKED", "FORENSIC_INPUTS_FORBIDDEN", "FORENSIC_TRACE_OUTPUT_ONLY"] }, null, 2));
