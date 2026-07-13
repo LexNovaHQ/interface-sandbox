@@ -54,12 +54,14 @@ for (const marker of [
   "M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1",
   "Return the complete semantic ledger for every expected Threat ID"
 ]) assert.ok(text.repair.includes(marker), `repair contract missing: ${marker}`);
+
 for (const marker of [
-  "No fixed registry count is permitted",
-  "Global reconciliation uses `registry_row_key`",
-  "M11_DOMAIN_AGNOSTIC_FORENSICS_v1",
-  "M12 and the normalized compiler consume Phase 10 material outputs"
-]) assert.ok(text.output.includes(marker), `output contract missing final marker: ${marker}`);
+  "registry_row_key = package_id::Threat_ID",
+  "maximum 15 rows and packet-ceiling enforcement",
+  "exposure_registry_workpad_98` remains a stable artifact token with dynamic row count",
+  "Phase 11 and Phase 12 must preserve Phase 10 identities and values",
+  "canonical material profile artifacts directly"
+]) assert.ok(text.output.includes(marker), `output contract missing active authority marker: ${marker}`);
 
 const corpus = Object.values(text).join("\n");
 for (const stale of [
@@ -73,6 +75,10 @@ for (const stale of [
   "M11_A_DETERMINISTIC_ROUTING_PREFILL.md"
 ]) assert.equal(corpus.includes(stale), false, `stale Agent 5 marker remains: ${stale}`);
 
+assert.equal(/(?:fixed|exactly|all)\s+98\s+(?:rows|threats|threat_ids)/i.test(text.output), false, "output contract reintroduced a fixed 98-row functional assumption");
+assert.ok(text.output.includes("dynamic row count"), "output contract must explicitly preserve dynamic row count");
+assert.ok(text.output.includes("Raw `Threat_ID` may repeat across packages"), "output contract must preserve compound identity doctrine");
+
 const promptFiles = [...text.binding.matchAll(/^\s{2}- ([A-Za-z0-9_.-]+\.(?:md|yaml|yml|json))$/gm)].map((match) => match[1]);
 for (const file of new Set(promptFiles)) assert.equal(existsSync(join(ROOT, file)), true, `binding references missing package file: ${file}`);
 
@@ -84,6 +90,8 @@ console.log(JSON.stringify({
   layer3_runtime: "ACTIVE",
   domain_agnostic_forensics: "ACTIVE",
   downstream_compatibility: "ACTIVE",
+  dynamic_registry_count: true,
+  compound_identity_preserved: true,
   maximum_rows_per_batch: 15,
   model_output_root: "m11_batch_registry_ledger"
 }, null, 2));
