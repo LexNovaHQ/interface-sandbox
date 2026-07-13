@@ -1,2 +1,2 @@
 Trigger the one-time Phase 12 direct compiler and clean renderer authority cutover.
-Attempt 12 validates all Phase 11 layers against the active v6 attempt-safe staged-mutation contract.
+Attempt 13 validates the real Phase 10 unaffected-row enforcement path inside the Phase 11 production gate.
