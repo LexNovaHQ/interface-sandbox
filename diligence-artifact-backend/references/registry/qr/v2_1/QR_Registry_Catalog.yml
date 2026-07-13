@@ -1,57 +1,96 @@
 qr_registry_catalog:
-  catalog_id: QR_REGISTRY_CATALOG_v2
-  version: 2.0.0
-  status: BRIDGE_REBUILT_VALIDATED_RUNTIME_NOT_YET_WIRED
-  load_order:
-  - registry_id: UNIVERSAL_QR_BRIDGE_REGISTRY
-    path: references/registry/Universal_QR_Registry.yml
-    records: 19
-    atomic_values: 44
-    activation: ALWAYS
-  - registry_id: AI_QR_BRIDGE_REGISTRY_LANE_A
-    path: references/registry/qr/AI_QR_Registry_Lane_A.yml
-    records: 28
-    atomic_values: 57
-    activation: LANE_A_RESOLVED
-  - registry_id: AI_QR_BRIDGE_REGISTRY_LANE_B
-    path: references/registry/qr/AI_QR_Registry_Lane_B.yml
-    records: 18
-    atomic_values: 25
-    activation: LANE_B_RESOLVED_OR_UNKNOWN_REQUIRING_CONFIRMATION
-  main_registry_paths:
-  - references/registry/Universal_QR_Registry.yml
-  - references/registry/AI_QR_Registry.yml
-  schema_path: references/registry/qr/QR_Assembly_Registry_Schema_v2.yml
-  counts:
-    status: PASS
-    field_count: 65
-    universal_count: 19
-    lane_a_count: 28
-    lane_b_count: 18
-    phase12_linked_count: 54
-    operator_or_default_only_count: 11
+  catalog_id: QR_REGISTRY_CATALOG_v2_1
+  version: 2.1.0
+  status: ACTIVE_PHASE13_AUTHORITY
+  phase_owner: PHASE_13_QUALIFIED_REVIEW
+  governing_contract_path: docs/phase13/PHASE13_AUTHORITY_AND_VALIDATION_CONTRACT_v1.md
+
+  authority_boundary:
+    deterministic_only: true
+    phase12_material_values_are_sole_diligence_prefill_authority: true
+    raw_evidence_reads_forbidden: true
+    upstream_profile_reads_forbidden: true
+    legacy_qr_matrix_authority_forbidden: true
+    normalized_section_selectors_forbidden: true
+    operator_domain_selection_forbidden: true
+    operator_lane_selection_forbidden: true
+    confirmation_unit: SECTION
+    per_question_confirmation_forbidden: true
+
+  activation_order:
+    - UNIVERSAL
+    - PRIMARY_DOMAIN
+    - CAPABILITY_OVERLAY
+    - REGULATORY_OVERLAY
+    - DOMAIN_SUBPACKAGE
+
+  schema_path: references/registry/qr/v2_1/QR_Bridge_Registry_Schema.yml
+
+  phase12_authority:
+    ownership_matrix_path: src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json
+    report_manifest_artifact: report_manifest
+    report_handoff_artifact: report_handoff
+    compiler_validation_artifact: phase12_compiler_validation
+    report_artifact_prefix: report_section__
+    exact_route_prefix: P12.ROUTE.
+    exact_value_selector_contract: findings[field_id="<FIELD_ID>"].value
+
+  registries:
+    - registry_id: UNIVERSAL_QR_BRIDGE_REGISTRY
+      registry_class: UNIVERSAL
+      path: references/registry/qr/v2_1/Universal_QR_Bridge_Registry.yml
+      load_order: 1
+      activation:
+        mode: ALWAYS
+      expected_record_count: 19
+      expected_atomic_value_count: 44
+
+    - registry_id: AI_QR_BRIDGE_REGISTRY
+      registry_class: PRIMARY_DOMAIN_OR_CAPABILITY_OVERLAY
+      path: references/registry/qr/v2_1/AI_QR_Bridge_Registry.yml
+      load_order: 2
+      activation:
+        any:
+          - source: active_run_package_manifest.primary_domain_package
+            operator: EQUALS
+            value: ai-governance
+          - source: active_run_package_manifest.capability_overlays
+            operator: CONTAINS
+            value: ai-native
+      expected_record_count: 46
+      expected_atomic_value_count: 82
+
+  document_assets:
+    template_manifest_path: references/document-templates/ai/v2_1/TEMPLATE_MANIFEST.yml
+    injection_map_path: references/registry/qr/v2_1/QR_Document_Injection_Map.yml
+    registry_validation_report_path: references/registry/qr/v2_1/QR_Registry_Validation_Report.md
+    injection_validation_report_path: references/registry/qr/v2_1/QR_Document_Injection_Validation.md
+    template_root: references/document-templates/ai/v2_1
+
+  locked_counts:
+    registry_count: 2
+    canonical_field_count: 65
+    universal_field_count: 19
+    domain_field_count: 46
     atomic_value_count: 126
-    document_binding_count: 185
+    phase12_linked_field_count: 54
+    operator_or_default_only_field_count: 11
+    document_count: 13
+    document_binding_count: 188
+    section_count: 19
     market_based_demo_field_count: 65
     market_based_demo_atomic_count: 126
-    failures: []
-  rendering_rules:
-    universal_only_for_non_ai: true
-    ai_lane_a_run_max_fields: 47
-    ai_lane_b_run_max_fields: 37
-    ai_both_lanes_run_max_fields: 65
-    suppress_inactive_lane: true
-    prefill_unresolved_with_market_based_demo: true
-version: v2.1
-status: DOCUMENT_PLACEHOLDERS_INSERTED_AND_VALIDATED_RUNTIME_NOT_YET_WIRED
-current_totals:
-  canonical_record_count: 65
-  atomic_value_count: 126
-  document_binding_count: 188
-  document_template_count: 13
-document_injection:
-  version: qr_document_injection.v2.1
-  template_directory: documents/
-  map_path: QR_Document_Injection_Map_v2_1.yml
-  validation_report_path: QR_Document_Injection_Validation_v2_1.md
-  complete_registry_binding_coverage_required: true
+
+  integrity:
+    all_catalog_paths_must_resolve_inside_backend_root: true
+    registry_id_must_match_catalog_entry: true
+    registry_schema_validation_required: true
+    count_reconciliation_required: true
+    duplicate_field_detection_required: true
+    duplicate_canonical_key_detection_required: true
+    phase12_ownership_validation_required: true
+    document_manifest_validation_required: true
+    injection_map_reconciliation_required: true
+    duplicate_placeholder_authority_forbidden: true
+    missing_template_is_blocking: true
+    unknown_document_id_is_blocking: true
