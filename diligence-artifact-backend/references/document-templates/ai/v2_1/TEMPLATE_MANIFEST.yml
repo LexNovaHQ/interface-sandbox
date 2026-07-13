@@ -1,0 +1,107 @@
+template_manifest:
+  manifest_id: AI_QR_TEMPLATE_MANIFEST
+  version: v2.1
+  status: QR_PLACEHOLDERS_INSERTED_AND_VALIDATED_RUNTIME_NOT_YET_WIRED
+  registry_version: v2.1
+  template_root: diligence-artifact-backend/references/document-templates/ai/v2_1
+  review_ready_boundary:
+    legal_architect_not_law_firm: true
+    local_counsel_review_required: true
+    legal_advice_disclaimer_required: true
+    qr_assembly_control_schedule_removed_from_final_draft: true
+  activation:
+    universal_values_always_available: true
+    lane_a_templates_when_lane_a_active: true
+    lane_b_templates_when_lane_b_active: true
+    both_lanes_may_activate: true
+    operator_lane_selection_forbidden: true
+  documents:
+    - document_id: DOC_AI_A_AGT
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_AGT_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_A_AUP
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_AUP_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_A_DPA
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_DPA_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_A_PBK
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_PBK_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_A_PP
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_PP_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_A_SLA
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_SLA_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_A_TOS
+      lane: A
+      template_version: v2.1
+      template_path: lane-a/DOC_AI_A_TOS_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_B_DPIA
+      lane: B
+      template_version: v2.1
+      template_path: lane-b/DOC_AI_B_DPIA_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_B_HND
+      lane: B
+      template_version: v2.1
+      template_path: lane-b/DOC_AI_B_HND_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_B_IP
+      lane: B
+      template_version: v2.1
+      template_path: lane-b/DOC_AI_B_IP_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_B_PBK
+      lane: B
+      template_version: v2.1
+      template_path: lane-b/DOC_AI_B_PBK_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+    - document_id: DOC_AI_B_SCAN
+      lane: B
+      template_version: v2.1
+      template_path: lane-b/DOC_AI_B__SCAN_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+      filename_note: Source template retains the double underscore before SCAN.
+    - document_id: DOC_AI_B_SOP
+      lane: B
+      template_version: v2.1
+      template_path: lane-b/DOC_AI_B_SOP_QR_READY_v2_1.docx
+      review_ready_template: true
+      requires_local_counsel_review: true
+  counts:
+    total_templates: 13
+    lane_a_templates: 7
+    lane_b_templates: 6
+  integrity:
+    duplicate_document_ids_forbidden: true
+    missing_template_is_blocking: true
+    unknown_template_is_blocking: true
+    registry_document_binding_must_resolve: true
+    unregistered_qr_token_forbidden: true
