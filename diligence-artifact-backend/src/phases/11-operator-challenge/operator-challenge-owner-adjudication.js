@@ -36,7 +36,8 @@ const ARTIFACT_OWNER = Object.freeze({
 });
 
 export function resolvePhase11Owner({ candidate = {}, semantic = {}, priorAttempts = [] } = {}) {
-  const proposedText = `${candidate.proposed_owner || ""} ${semantic.proposed_owner || ""}`;
+  const proposedOwnerFallback = candidate.proposed_owner || semantic.proposed_owner;
+  const proposedText = `${proposedOwnerFallback || ""} ${candidate.proposed_owner || ""} ${semantic.proposed_owner || ""}`;
   const textOwners = ownersFromText(proposedText);
   const artifactOwners = ownersFromArtifacts(candidate.affected_artifacts);
   const fieldOwners = ownersFromFields(candidate.affected_field_paths);
