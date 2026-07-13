@@ -1,0 +1,51 @@
+name: CO P12 06 Validate
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - co-p12-06-validation-trigger.txt
+      - .github/workflows/co-p12-06-validate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: diligence-artifact-backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: domain-gate-v0-preflight
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run CO-P12-06 post-clean gate
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check:phase12-post-clean 2>&1 | tee co-p12-06-post-clean.log
+      - name: Run universal production gate
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee co-p12-06-production-gate.log
+      - name: Upload CO-P12-06 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-p12-06-validation-${{ github.run_number }}
+          path: |
+            diligence-artifact-backend/co-p12-06-post-clean.log
+            diligence-artifact-backend/co-p12-06-production-gate.log
+          retention-days: 3
