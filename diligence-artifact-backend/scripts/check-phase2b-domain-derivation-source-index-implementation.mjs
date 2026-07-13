@@ -105,13 +105,13 @@ function fixtureArtifacts() {
   const base = {
     homepage_landing: "ExampleAI is an AI platform for regulated financial workflows. It automates payment review and enterprise operations.",
     company_identity: "ExampleAI Inc. provides software services to banks, merchants, and enterprise finance teams.",
-    product_service: "The product generates risk scores, verifies transactions, routes workflows, and exposes an API for payments and lending operations.",
-    platform_feature_solution: "Features include generative AI analysis, document extraction, automated classification, monitoring, and workflow orchestration.",
-    technical_docs_api: "Developer docs describe REST API endpoints, SDK authentication, webhook events, and integration architecture.",
-    docs_api_data_flow: "Data flow docs explain how customer records move through API ingestion, model inference, review queues, and webhook callbacks.",
+    product_service: "The product can generate risk scores, verify transactions, process payment review queues, route workflows, orchestrate operations, and expose an API for payments and lending operations.",
+    platform_feature_solution: "Features include generative AI analysis, document extraction, automated classification, monitor workflows, integrate review systems, and orchestrate workflow operations.",
+    technical_docs_api: "Developer docs describe REST API endpoints, SDK authentication, webhook events, integration architecture, process flows, route handlers, and workflow orchestration.",
+    docs_api_data_flow: "Data flow docs explain how customer records process through API ingestion, model inference, review queues, webhook callbacks, and route events.",
     pricing_commercial_availability: "Enterprise pricing, pilot plans, subscriptions, beta access, and contact sales are available.",
     use_case_customer_industry: "Use cases include banking, lending, payments, merchant underwriting, finance operations, and enterprise compliance teams.",
-    integrations_ecosystem: "Integrations include Slack, Salesforce, GitHub, Zapier, partner apps, connectors, plugins, and marketplace systems.",
+    integrations_ecosystem: "Integrations include Slack, Salesforce, GitHub, Zapier, partner apps, connectors, plugins, marketplace systems, and integrate workflows.",
     ai_safety_transparency: "Responsible AI pages describe model cards, evaluation, transparency, AI safety, monitoring, and human oversight.",
     regulatory_licensing_status: "Regulatory disclosures mention bank partner arrangements, licensing, authorized providers, KYC, AML, consumer disclosures, RBI and FCA context.",
     grievance_complaints: "Complaint and grievance pages identify a nodal officer, complaint route, escalation process, and ombudsman reference."
