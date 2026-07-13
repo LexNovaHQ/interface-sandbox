@@ -1,2 +1,2 @@
 Trigger the one-time Phase 12 direct compiler and clean renderer authority cutover.
-Attempt 7 includes live Phase 3 and Phase 4 authority checks without staging receipts.
+Attempt 8 validates Phase 4 through executable runner ownership and dispatch rather than historical status strings.
