@@ -40,10 +40,12 @@ const ABSENT_RETIRED_FILES = Object.freeze([
   "scripts/apply-phase1-source-discovery-contract-check-sync.mjs",
   "scripts/apply-phase1-8-phase2g-boundary-sync.mjs",
   "scripts/apply-phase1-active-runtime-legacy-token-sanitize.mjs",
+  ".github/workflows/co-p12-06-validate.yml",
   ".github/workflows/co-p12-05-atomic-finalize.yml",
   ".github/workflows/co-p12-04-atomic-finalize.yml",
   ".github/workflows/co-p12-03-atomic-finalize.yml",
   ".github/workflows/full-backend-contract-check.yml",
+  "co-p12-06-validation-trigger.txt",
   "src/phases/12-normalized-compiler/compiler-m9-section6-v3.js",
   "src/phases/12-normalized-compiler/normalized-profiler-m9-section6-v4.js",
   "src/m9-hybrid-compiler-v2.js",
@@ -80,6 +82,18 @@ const compiler = read("src/phases/12-normalized-compiler/compiler.js");
 assert.ok(compiler.includes("compilePhase12DirectReportProjection"));
 assert.equal(compiler.includes("compiler-m9-section6-v3"), false);
 
+const admission = read("src/phases/12-normalized-compiler/phase12-admission-adapter.js");
+assert.ok(admission.includes("PRODUCTION_DIRECT_PROFILE_COMPILER_ACTIVE"));
+assert.equal(admission.includes("ADAPTER_READY_NOT_COMPILER_SWAPPED"), false);
+
+const reportContract = read("src/phases/12-normalized-compiler/phase12-report-contract.js");
+assert.ok(reportContract.includes("CO_P12_03_ROUTE_CONTRACT_ACTIVE"));
+assert.ok(reportContract.includes("phase12_report_contract.v1.co_p12_03_closeout"));
+
+const gapRegister = read("src/phases/12-normalized-compiler/report-contract/UPSTREAM_REPORT_GAP_REGISTER.yml");
+assert.ok(gapRegister.includes("P12.RESOLVED.ROUTE_BINDINGS"));
+assert.equal(gapRegister.includes("CO_P12_03 must bind each active field"), false);
+
 const projection = read("src/phases/12-normalized-compiler/phase12-projection-adapter.js");
 assert.ok(projection.includes("report_manifest"));
 assert.ok(projection.includes("report_handoff"));
@@ -106,6 +120,8 @@ console.log(JSON.stringify({
   retired_files_asserted_absent: ABSENT_RETIRED_FILES.length,
   phase12_compiler: "DIRECT_PROFILE_COMPILER_ACTIVE",
   phase12_renderer: "CLEAN_PROFILE_RENDERER_ACTIVE",
+  route_contract_status: "CO_P12_03_ROUTE_CONTRACT_ACTIVE",
+  closeout_stale_markers: "ABSENT",
   legacy_normalized_aliases: "ABSENT",
   one_time_applicators: "ABSENT"
 }, null, 2));
