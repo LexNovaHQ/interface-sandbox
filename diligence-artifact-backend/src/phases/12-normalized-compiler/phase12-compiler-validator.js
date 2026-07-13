@@ -164,13 +164,13 @@ function validateManifestAndHandoff(output, failures) {
   if (manifest.report_facing_artifact_count !== 29) failures.push(`REPORT_MANIFEST_ARTIFACT_COUNT:${manifest.report_facing_artifact_count}:29`);
   if (!sameSet(manifest.report_facing_artifacts, REPORT_FACING_ARTIFACTS)) failures.push("REPORT_MANIFEST_ARTIFACT_SET_INVALID");
   if (!sameSet((manifest.section_artifacts || []).map((row) => row.artifact_name), CANONICAL_SECTION_ARTIFACTS)) failures.push("REPORT_MANIFEST_CANONICAL_SECTION_SET_INVALID");
-  if (JSON.stringify(output.normalized_report_manifest) !== JSON.stringify(manifest)) failures.push("NORMALIZED_REPORT_MANIFEST_ALIAS_DRIFT");
+  if (Object.prototype.hasOwnProperty.call(output, "normalized_report_manifest")) failures.push("LEGACY_NORMALIZED_REPORT_MANIFEST_ALIAS_EMITTED");
 
   const handoff = output.report_handoff || {};
   if (handoff.schema_version !== "report_handoff.v1.co_p12_04") failures.push(`REPORT_HANDOFF_SCHEMA_INVALID:${handoff.schema_version || "missing"}`);
   if (!sameSet(handoff.report_facing_artifacts, REPORT_FACING_ARTIFACTS)) failures.push("REPORT_HANDOFF_ARTIFACT_SET_INVALID");
   if (handoff.local_counsel_review_required !== true) failures.push("REPORT_HANDOFF_LOCAL_COUNSEL_NOT_REQUIRED");
-  if (JSON.stringify(output.review_ready_section_handoff) !== JSON.stringify(handoff)) failures.push("REVIEW_READY_HANDOFF_ALIAS_DRIFT");
+  if (Object.prototype.hasOwnProperty.call(output, "review_ready_section_handoff")) failures.push("LEGACY_REVIEW_READY_HANDOFF_ALIAS_EMITTED");
 
   const renderer = output.renderer_payload || {};
   if (!sameSet(renderer.report_artifact_refs, REPORT_FACING_ARTIFACTS)) failures.push("RENDERER_PAYLOAD_ARTIFACT_SET_INVALID");

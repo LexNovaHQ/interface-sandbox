@@ -1,18 +1,7 @@
 const runId = queryParam("run_id");
-const LOCKED_RENDERER_SOURCE = "normalized_section_artifacts_only";
+const LOCKED_RENDERER_SOURCE = "report_manifest_clean_profiles";
 const DECK_PAGE_SIZE = 5;
-const EXPECTED_SECTION_IDS = Object.freeze([
-  "matter_overview",
-  "executive_summary",
-  "target_profile",
-  "product_activity_ip_profile",
-  "data_provenance_controls",
-  "legal_document_control_review",
-  "exposure_findings",
-  "review_route_handoff_plan",
-  "clarification_missing_source_queue",
-  "methodology_limitations_public_annexure"
-]);
+const EXPECTED_SECTION_IDS = Object.freeze(["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]);
 
 const ARCHETYPE_LABELS = Object.freeze({
   UNI: "Universal review item",
@@ -314,7 +303,7 @@ async function renderReportUnavailable(id, error) {
 }
 
 function assertLockedPayload(payload) {
-  if (payload.renderer_source !== LOCKED_RENDERER_SOURCE) throw new Error("Report renderer is not locked to normalized section artifacts.");
+  if (payload.renderer_source !== LOCKED_RENDERER_SOURCE) throw new Error("Report renderer is not locked to clean Phase 12 report profiles.");
   if (!Array.isArray(payload.sections)) throw new Error("Report payload is missing locked sections array.");
   const ids = payload.sections.map(function (section) { return section.section_id; });
   if (JSON.stringify(ids) !== JSON.stringify(EXPECTED_SECTION_IDS)) throw new Error("Report payload does not match the locked 10-section structure.");

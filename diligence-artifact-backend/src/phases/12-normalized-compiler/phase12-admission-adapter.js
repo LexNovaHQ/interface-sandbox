@@ -16,9 +16,6 @@ const FORBIDDEN_PHASE2G_INPUTS = Object.freeze([
 ]);
 
 const REQUIRED_PHASE10_ARTIFACTS = Object.freeze([
-  "active_threat_registry_manifest",
-  "exposure_registry_route_plan",
-  "exposure_registry_workpad_98",
   "exposure_registry_controlled_profile",
   "exposure_registry_triggered_profile",
   "challenge_gate"

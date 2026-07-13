@@ -1,5 +1,5 @@
 const ART = Object.freeze({
-  domainSelectionProfile: "domain_selection_profile", activeRunPackageManifest: "active_run_package_manifest", domainDerivationProfile: "domain_derivation_profile", domainDerivationDeterministicMap: "domain_derivation_deterministic_map", domainDerivationSemanticProfile: "domain_derivation_semantic_profile", domainDerivationSourceIndex: "domain_derivation_source_index", uploadedSourceDocumentIndex: "uploaded_source_document_index", uploadedSourceDocumentCorpus: "uploaded_source_document_corpus", sourceHandoff: "source_discovery_handoff", sourceDiscoveryMatrixManifest: "source_discovery_matrix_manifest", adapterExpansionLog: "adapter_expansion_log", neutralEvidenceBucketManifest: "neutral_evidence_bucket_manifest", postPhase1DomainGateHandoff: "post_phase_1_domain_gate_handoff", legalDocInventory: "legal_doc_inventory", legalDocExtractionIndex: "legal_doc_extraction_index", legalDocLosslessValidationManifest: "legal_doc_lossless_validation_manifest", legalDocDynamicPattern: "legal_doc_{DOC_TYPE}", cartographySourceInventory: "cartography_source_inventory", cartographyLocatorSpine: "cartography_locator_spine", cartographyProfileRouteMatrix: "cartography_profile_route_matrix", cartographySemanticNavigationOverlay: "cartography_semantic_navigation_overlay", targetProfileDeterministicMap: "target_profile_deterministic_map", targetProfileSemanticProfile: "target_profile_semantic_profile", targetProfileSourceIndex: "target_profile_source_index", activityProfileDeterministicMap: "activity_profile_deterministic_map", activityProfileSemanticProfile: "activity_profile_semantic_profile", activityProfileSourceIndex: "activity_profile_source_index", dataPrivacyDeterministicMap: "data_privacy_deterministic_map", dataPrivacySemanticProfile: "data_privacy_semantic_profile", dataPrivacyNavigationIndex: "data_privacy_navigation_index", domainControlObligationDeterministicMap: "domain_control_obligation_deterministic_map", domainControlObligationSemanticProfile: "domain_control_obligation_semantic_profile", domainControlObligationNavigationIndex: "domain_control_obligation_navigation_index", domainControlObligationCandidateInventory: "domain_control_obligation_candidate_inventory", domainControlObligationProfile: "domain_control_obligation_profile", phaseRoutingManifest: "phase_routing_manifest", phaseRouteValidationManifest: "phase_route_validation_manifest", legalCartographyDeterministicMap: "legal_cartography_deterministic_map", legalCartographySemanticProfile: "legal_cartography_semantic_profile", legalCartographyReinvestigationWorkpad: "legal_cartography_reinvestigation_workpad", legalCartographyIndex: "legal_cartography_index", legalSignalDerivationProfile: "legal_signal_derivation_profile", cartographyIndex: "cartography_index", cartographyValidationManifest: "cartography_validation_manifest", targetProfile: "target_profile", targetForensics: "target_profile_forensics", activityInventory: "feature_candidate_inventory", activityProfile: "target_feature_profile", activityForensics: "target_feature_profile_forensics", dapRegistryManifest: "dap_registry_manifest", dapStrategicDerivationMatrix: "dap_strategic_derivation_matrix", dapSemanticBatchRouteManifest: "dap_semantic_batch_route_manifest", dapSemanticBatchValidationManifest: "dap_semantic_batch_validation_manifest", dataProvenanceSemanticBatchGate: "data_provenance_profile_semantic_batch_gate", dapSemanticBatchValidationPattern: "dap_semantic_batch_validation__{BATCH_ID}", dapForensicsProfile: "dap_forensics_profile", activeThreatRegistryManifest: "active_threat_registry_manifest", exposureRoutePlan: "exposure_registry_route_plan", exposureBatchPattern: "exposure_registry_batch__{GROUP}__{NNN}", exposureBatchValidationPattern: "exposure_registry_batch_validation__{GROUP}__{NNN}", exposureWorkpad: "exposure_registry_workpad_98", exposureControlled: "exposure_registry_controlled_profile", exposureTriggered: "exposure_registry_triggered_profile", exposureForensics: "exposure_registry_profile_forensics", operatorChallengeInventory: "operator_challenge_inventory", operatorChallengeSemanticLedger: "operator_challenge_semantic_ledger", operatorChallengeReinvestigationLedger: "operator_challenge_reinvestigation_ledger", operatorChallengeDispatchCheckpoint: "operator_challenge_dispatch_checkpoint", challengeGate: "challenge_gate", normalizedReportManifest: "normalized_report_manifest", reviewReadySectionHandoff: "review_ready_section_handoff", finalOutputHandoff: "final_output_handoff", rendererPayload: "renderer_payload", qualifiedReviewHandoff: "qualified_review_handoff", qualifiedReviewRendererPayload: "qualified_review_renderer_payload", qualifiedReviewValidationManifest: "qualified_review_validation_manifest", qualifiedReviewSubmission: "qualified_review_submission", qrEntityCommercial: "qr_artifact__entity_commercial", qrTechnologyInfrastructure: "qr_artifact__technology_infrastructure", qrAiCapabilityProductBehavior: "qr_artifact__ai_capability_product_behavior", qrDapPrivacyIndiaCyber: "qr_artifact__dap_privacy_india_cyber", diligenceQaCompletionReceipt: "diligence_qa_completion_receipt"
+  domainSelectionProfile: "domain_selection_profile", activeRunPackageManifest: "active_run_package_manifest", domainDerivationProfile: "domain_derivation_profile", domainDerivationDeterministicMap: "domain_derivation_deterministic_map", domainDerivationSemanticProfile: "domain_derivation_semantic_profile", domainDerivationSourceIndex: "domain_derivation_source_index", uploadedSourceDocumentIndex: "uploaded_source_document_index", uploadedSourceDocumentCorpus: "uploaded_source_document_corpus", sourceHandoff: "source_discovery_handoff", sourceDiscoveryMatrixManifest: "source_discovery_matrix_manifest", adapterExpansionLog: "adapter_expansion_log", neutralEvidenceBucketManifest: "neutral_evidence_bucket_manifest", postPhase1DomainGateHandoff: "post_phase_1_domain_gate_handoff", legalDocInventory: "legal_doc_inventory", legalDocExtractionIndex: "legal_doc_extraction_index", legalDocLosslessValidationManifest: "legal_doc_lossless_validation_manifest", legalDocDynamicPattern: "legal_doc_{DOC_TYPE}", cartographySourceInventory: "cartography_source_inventory", cartographyLocatorSpine: "cartography_locator_spine", cartographyProfileRouteMatrix: "cartography_profile_route_matrix", cartographySemanticNavigationOverlay: "cartography_semantic_navigation_overlay", targetProfileDeterministicMap: "target_profile_deterministic_map", targetProfileSemanticProfile: "target_profile_semantic_profile", targetProfileSourceIndex: "target_profile_source_index", activityProfileDeterministicMap: "activity_profile_deterministic_map", activityProfileSemanticProfile: "activity_profile_semantic_profile", activityProfileSourceIndex: "activity_profile_source_index", dataPrivacyDeterministicMap: "data_privacy_deterministic_map", dataPrivacySemanticProfile: "data_privacy_semantic_profile", dataPrivacyNavigationIndex: "data_privacy_navigation_index", domainControlObligationDeterministicMap: "domain_control_obligation_deterministic_map", domainControlObligationSemanticProfile: "domain_control_obligation_semantic_profile", domainControlObligationNavigationIndex: "domain_control_obligation_navigation_index", domainControlObligationCandidateInventory: "domain_control_obligation_candidate_inventory", domainControlObligationProfile: "domain_control_obligation_profile", phaseRoutingManifest: "phase_routing_manifest", phaseRouteValidationManifest: "phase_route_validation_manifest", legalCartographyDeterministicMap: "legal_cartography_deterministic_map", legalCartographySemanticProfile: "legal_cartography_semantic_profile", legalCartographyReinvestigationWorkpad: "legal_cartography_reinvestigation_workpad", legalCartographyIndex: "legal_cartography_index", legalSignalDerivationProfile: "legal_signal_derivation_profile", cartographyIndex: "cartography_index", cartographyValidationManifest: "cartography_validation_manifest", targetProfile: "target_profile", targetForensics: "target_profile_forensics", activityInventory: "feature_candidate_inventory", activityProfile: "target_feature_profile", activityForensics: "target_feature_profile_forensics", dapRegistryManifest: "dap_registry_manifest", dapStrategicDerivationMatrix: "dap_strategic_derivation_matrix", dapSemanticBatchRouteManifest: "dap_semantic_batch_route_manifest", dapSemanticBatchValidationManifest: "dap_semantic_batch_validation_manifest", dataProvenanceSemanticBatchGate: "data_provenance_profile_semantic_batch_gate", dapSemanticBatchValidationPattern: "dap_semantic_batch_validation__{BATCH_ID}", dapForensicsProfile: "dap_forensics_profile", activeThreatRegistryManifest: "active_threat_registry_manifest", exposureRoutePlan: "exposure_registry_route_plan", exposureBatchPattern: "exposure_registry_batch__{GROUP}__{NNN}", exposureBatchValidationPattern: "exposure_registry_batch_validation__{GROUP}__{NNN}", exposureWorkpad: "exposure_registry_workpad_98", exposureControlled: "exposure_registry_controlled_profile", exposureTriggered: "exposure_registry_triggered_profile", exposureForensics: "exposure_registry_profile_forensics", operatorChallengeInventory: "operator_challenge_inventory", operatorChallengeSemanticLedger: "operator_challenge_semantic_ledger", operatorChallengeReinvestigationLedger: "operator_challenge_reinvestigation_ledger", operatorChallengeDispatchCheckpoint: "operator_challenge_dispatch_checkpoint", challengeGate: "challenge_gate", phase12Admission: "phase12_admission", phase12RoutePlan: "phase12_route_plan", phase12ReportCustodyManifest: "phase12_report_custody_manifest", phase12CompilerValidation: "phase12_compiler_validation", reportManifest: "report_manifest", reportHandoff: "report_handoff", finalOutputHandoff: "final_output_handoff", rendererPayload: "renderer_payload", qualifiedReviewHandoff: "qualified_review_handoff", qualifiedReviewRendererPayload: "qualified_review_renderer_payload", qualifiedReviewValidationManifest: "qualified_review_validation_manifest", qualifiedReviewSubmission: "qualified_review_submission", qrEntityCommercial: "qr_artifact__entity_commercial", qrTechnologyInfrastructure: "qr_artifact__technology_infrastructure", qrAiCapabilityProductBehavior: "qr_artifact__ai_capability_product_behavior", qrDapPrivacyIndiaCyber: "qr_artifact__dap_privacy_india_cyber", diligenceQaCompletionReceipt: "diligence_qa_completion_receipt"
 });
 
 export const DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES = Object.freeze([ART.domainSelectionProfile, ART.activeRunPackageManifest]);
@@ -64,9 +64,77 @@ export const M11_BATCH_VALIDATION_ARTIFACT_PATTERN = /^exposure_registry_batch_v
 export const PHASE7_DAP_BATCH_ARTIFACT_PATTERN = /^dap_semantic_batch_(exec|lim|party|role|flow|obj|auth|ctrl|contact_cm|vend|loc|ret|sec|sens|dom|ready|req)_artifact$/;
 export const PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN = /^dap_semantic_batch_validation__DAP-SEM-BATCH-\d{2}$/;
 export const UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES = Object.freeze([ART.uploadedSourceDocumentIndex, ART.uploadedSourceDocumentCorpus]);
-export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze(["normalized_section__matter_overview", "normalized_section__executive_summary", "normalized_section__target_profile", "normalized_section__product_activity_ip_profile", "normalized_section__data_provenance_controls", "normalized_section__legal_document_control_review", "normalized_section__exposure_summary_harm_mechanism_workpad_summary", "normalized_section__exposure_diagnosis_table", "normalized_section__exposure_control_discipline", "normalized_section__review_route_action_plan", "normalized_section__control_handoff_readiness", "normalized_section__exposure_clarification_queue", "normalized_section__global_confirmation_queue", "normalized_section__methodology_limitations_forensic_annexure"]);
-export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([ART.normalizedReportManifest, ART.reviewReadySectionHandoff, ART.finalOutputHandoff, ...NORMALIZED_SECTION_ARTIFACT_NAMES]);
-export const COMPILER_ARTIFACT_NAMES = NORMALIZED_COMPILER_ARTIFACT_NAMES;
+export const PHASE12_CANONICAL_SECTION_ARTIFACT_NAMES = Object.freeze([
+  "report_section__01_matter_review_boundary",
+  "report_section__02_executive_legal_risk_overview",
+  "report_section__03_target_entity_sector_profile",
+  "report_section__04_product_activity_architecture",
+  "report_section__05_data_provenance_privacy_architecture",
+  "report_section__06_sector_control_obligations",
+  "report_section__07_legal_governance_architecture",
+  "report_section__08_exposure_register",
+  "report_section__09_open_review_items_handoff",
+  "report_section__10_methodology_limitations_annexure"
+]);
+export const PHASE12_SECTION5_CHILD_ARTIFACT_NAMES = Object.freeze([
+  "report_section__05_parties_roles",
+  "report_section__05_data_objects_flows",
+  "report_section__05_purpose_authorization_user_controls",
+  "report_section__05_privacy_contacts_consent_manager",
+  "report_section__05_vendor_processor_chain",
+  "report_section__05_location_transfer_custody",
+  "report_section__05_retention_deletion_portability",
+  "report_section__05_security_access_incident_governance",
+  "report_section__05_sensitive_high_risk_contexts",
+  "report_section__05_regulatory_readiness",
+  "report_section__05_missing_proof_diligence_requests"
+]);
+export const PHASE12_SECTION8_CHILD_ARTIFACT_NAMES = Object.freeze([
+  "report_section__08_primary_triggered_exposures",
+  "report_section__08_primary_controlled_by_visible_control",
+  "report_section__08_primary_controlled_by_exclusion",
+  "report_section__08_primary_controlled_by_public_evidence_limitation",
+  "report_section__08_overlay_triggered_exposures",
+  "report_section__08_overlay_controlled_by_visible_control",
+  "report_section__08_overlay_controlled_by_exclusion",
+  "report_section__08_overlay_controlled_by_public_evidence_limitation"
+]);
+export const REPORT_FACING_ARTIFACT_NAMES = Object.freeze([
+  ...PHASE12_CANONICAL_SECTION_ARTIFACT_NAMES,
+  ...PHASE12_SECTION5_CHILD_ARTIFACT_NAMES,
+  ...PHASE12_SECTION8_CHILD_ARTIFACT_NAMES
+]);
+export const PHASE12_CONTROL_ARTIFACT_NAMES = Object.freeze([
+  ART.phase12Admission,
+  ART.phase12RoutePlan,
+  ART.phase12ReportCustodyManifest,
+  ART.phase12CompilerValidation,
+  ART.reportManifest,
+  ART.reportHandoff,
+  ART.finalOutputHandoff,
+  ART.rendererPayload
+]);
+export const COMPILER_ARTIFACT_NAMES = Object.freeze([
+  ART.phase12Admission,
+  ART.phase12RoutePlan,
+  ART.phase12ReportCustodyManifest,
+  ART.reportManifest,
+  ART.reportHandoff,
+  ...REPORT_FACING_ARTIFACT_NAMES,
+  ART.phase12CompilerValidation,
+  ART.finalOutputHandoff,
+  ART.rendererPayload
+]);
+export const PHASE12_RENDERER_READ_ARTIFACT_NAMES = Object.freeze([
+  ART.reportManifest,
+  ART.reportHandoff,
+  ART.finalOutputHandoff,
+  ART.phase12CompilerValidation,
+  ...REPORT_FACING_ARTIFACT_NAMES
+]);
+export const NORMALIZED_SECTION_ARTIFACT_NAMES = Object.freeze([]);
+export const NORMALIZED_COMPILER_ARTIFACT_NAMES = Object.freeze([]);
+
 export const QUALIFIED_REVIEW_SECTION_ARTIFACT_NAMES = Object.freeze([ART.qrEntityCommercial, ART.qrTechnologyInfrastructure, ART.qrAiCapabilityProductBehavior, ART.qrDapPrivacyIndiaCyber]);
 export const QUALIFIED_REVIEW_RUNTIME_ARTIFACT_NAMES = Object.freeze([...QUALIFIED_REVIEW_SECTION_ARTIFACT_NAMES, ART.qualifiedReviewRendererPayload, ART.qualifiedReviewValidationManifest]);
 export const QUALIFIED_REVIEW_ARTIFACT_NAMES = Object.freeze([ART.qualifiedReviewHandoff, ...QUALIFIED_REVIEW_SECTION_ARTIFACT_NAMES, ART.qualifiedReviewRendererPayload, ART.qualifiedReviewValidationManifest, ART.qualifiedReviewSubmission]);
@@ -77,8 +145,8 @@ export const AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES = LOSSLESS_COMMON_ROOT_ARTIFA
 export const AGENT_1B_WRITE_PERMISSION_ARTIFACT_NAMES = Object.freeze([...AGENT_1B_REQUIRED_ARTIFACT_NAMES, ...AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION]);
 export const AGENT_1B_ARTIFACT_NAMES = AGENT_1B_REQUIRED_ARTIFACT_NAMES;
 export const AGENT_1_ARTIFACT_NAMES = Object.freeze([...AGENT_1A_ARTIFACT_NAMES, ...AGENT_1B_REQUIRED_ARTIFACT_NAMES]);
-export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze([ART.phaseRoutingManifest, ART.domainDerivationProfile, ART.activeRunPackageManifest, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES]);
-export const ARTIFACT_NAMES = Object.freeze([...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ...CARTOGRAPHY_ARTIFACT_NAMES, ART.targetProfile, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...PHASE8_DOMAIN_CONTROL_OBLIGATION_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ...PHASE11_ARTIFACT_NAMES, ...NORMALIZED_COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES, ART.rendererPayload]);
+export const QUALIFIED_REVIEW_READ_ARTIFACT_NAMES = Object.freeze([ART.domainDerivationProfile, ART.activeRunPackageManifest, ...COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES]);
+export const ARTIFACT_NAMES = Object.freeze([...UPLOADED_SOURCE_DOCUMENT_ARTIFACT_NAMES, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_CONTROL_ARTIFACT_NAMES, ...SOURCE_DISCOVERY_LEGAL_DOC_CONTROL_ARTIFACT_NAMES, ...LOSSLESS_COMMON_ROOT_ARTIFACT_NAMES, ...AGENT_1_ARTIFACT_NAMES, ART.sourceHandoff, ART.postPhase1DomainGateHandoff, ...CARTOGRAPHY_ARTIFACT_NAMES, ART.targetProfile, ...DOMAIN_DERIVATION_ARTIFACT_NAMES, ART.targetForensics, ART.activityInventory, ART.activityProfile, ART.activityForensics, ...PHASE7_DAP_RUNTIME_ARTIFACT_NAMES, ...PHASE8_DAP_FORENSICS_ARTIFACT_NAMES, ...PHASE8_DOMAIN_CONTROL_OBLIGATION_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ...PHASE11_ARTIFACT_NAMES, ...COMPILER_ARTIFACT_NAMES, ...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES, ART.rendererPayload]);
 export const AGENTS = Object.freeze([...Object.values(AGENT_IDS)]);
 
 const TARGET_ACTIVITY_MINIMAL_READS = Object.freeze([ART.targetProfileSourceIndex, ART.activityProfileSourceIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.domainDerivationProfile, ART.domainSelectionProfile, ART.activeRunPackageManifest, ART.activityInventory, ART.activityProfile]);
@@ -87,7 +155,20 @@ const DOMAIN_CONTROL_OBLIGATION_MINIMAL_READS = Object.freeze([ART.targetProfile
 const EXPOSURE_MINIMAL_READS = Object.freeze([...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES, ART.targetProfile, ART.domainDerivationProfile, ART.activityInventory, ART.activityProfile, ART.domainControlObligationProfile, ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ...M11_STATIC_ARTIFACT_NAMES, ...M11_DYNAMIC_ARTIFACT_PATTERNS]);
 const PHASE11_UPSTREAM_READS = Object.freeze([ART.legalCartographyIndex, ART.legalSignalDerivationProfile, ART.targetProfile, ART.domainDerivationProfile, ART.activityInventory, ART.activityProfile, ART.domainControlObligationProfile, ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, ART.exposureRoutePlan, ART.exposureWorkpad, ART.exposureControlled, ART.exposureTriggered, ...M11_DYNAMIC_ARTIFACT_PATTERNS]);
 const M12_MINIMAL_READS = Object.freeze([...PHASE11_UPSTREAM_READS, ...PHASE11_ARTIFACT_NAMES]);
-const COMPILER_MINIMAL_READS = Object.freeze([...PHASE11_UPSTREAM_READS, ART.challengeGate]);
+export const PHASE12_DIRECT_PROFILE_READ_ARTIFACT_NAMES = Object.freeze([
+  ART.targetProfile,
+  ART.domainDerivationProfile,
+  ART.activityProfile,
+  ...PHASE7_DAP_BATCH_ARTIFACT_NAMES,
+  ART.dataProvenanceSemanticBatchGate,
+  ART.domainControlObligationProfile,
+  ART.legalCartographyIndex,
+  ART.legalSignalDerivationProfile,
+  ART.exposureControlled,
+  ART.exposureTriggered,
+  ART.challengeGate
+]);
+const COMPILER_MINIMAL_READS = PHASE12_DIRECT_PROFILE_READ_ARTIFACT_NAMES;
 
 export const WRITE_PERMISSIONS = Object.freeze({
   [AGENT_IDS.sourceUrlManifest]: AGENT_1A_ARTIFACT_NAMES,
@@ -124,7 +205,7 @@ export const READ_PERMISSIONS = Object.freeze({
   [AGENT_IDS.qualifiedReview]: QUALIFIED_REVIEW_READ_ARTIFACT_NAMES,
   [AGENT_IDS.diligenceQaGate]: QUALIFIED_REVIEW_ARTIFACT_NAMES,
   [AGENT_IDS.assemblyEngine]: [...QUALIFIED_REVIEW_ARTIFACT_NAMES, ...DILIGENCE_QA_ARTIFACT_NAMES],
-  [AGENT_IDS.renderer]: [...NORMALIZED_COMPILER_ARTIFACT_NAMES],
+  [AGENT_IDS.renderer]: PHASE12_RENDERER_READ_ARTIFACT_NAMES,
   [AGENT_IDS.operator]: [...ARTIFACT_NAMES, LEGAL_DOC_DYNAMIC_PERMISSION, ...M11_DYNAMIC_ARTIFACT_PATTERNS, ...PHASE7_DAP_DYNAMIC_ARTIFACT_PATTERNS]
 });
 

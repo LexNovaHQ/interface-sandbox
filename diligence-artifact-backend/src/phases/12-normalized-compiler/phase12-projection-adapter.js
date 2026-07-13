@@ -141,9 +141,7 @@ export function buildPhase12ProjectionAdapter({ run = {}, artifacts = {}, admiss
     phase12_route_plan: routeRoot,
     phase12_report_custody_manifest: custody,
     report_manifest,
-    normalized_report_manifest: report_manifest,
     report_handoff,
-    review_ready_section_handoff: report_handoff,
     final_output_handoff,
     renderer_payload,
     ...reportArtifacts
@@ -153,8 +151,6 @@ export function buildPhase12ProjectionAdapter({ run = {}, artifacts = {}, admiss
   const finalStatus = validation.phase12_compiler_validation.status;
   for (const artifactName of REPORT_FACING_ARTIFACTS) if (output[artifactName]) output[artifactName].status = finalStatus;
   for (const artifact of [output.phase12_report_custody_manifest, output.report_manifest, output.report_handoff, output.final_output_handoff, output.renderer_payload]) artifact.status = finalStatus;
-  output.normalized_report_manifest = output.report_manifest;
-  output.review_ready_section_handoff = output.report_handoff;
   return output;
 }
 

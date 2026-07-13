@@ -21,8 +21,8 @@ assert.equal(output.report_manifest.schema_version, "report_manifest.v1.co_p12_0
 assert.equal(output.report_manifest.canonical_section_count, 10);
 assert.equal(output.report_manifest.report_facing_artifact_count, 29);
 assert.deepEqual(new Set(output.report_manifest.report_facing_artifacts), new Set(REPORT_FACING_ARTIFACTS));
-assert.deepEqual(output.normalized_report_manifest, output.report_manifest);
-assert.deepEqual(output.review_ready_section_handoff, output.report_handoff);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "normalized_report_manifest"), false);
+assert.equal(Object.prototype.hasOwnProperty.call(output, "review_ready_section_handoff"), false);
 assert.equal(output.report_handoff.local_counsel_review_required, true);
 assert.equal(output.renderer_payload.custody_artifact_rendering_forbidden, true);
 assert.equal(Object.prototype.hasOwnProperty.call(output.renderer_payload, "sections"), false);

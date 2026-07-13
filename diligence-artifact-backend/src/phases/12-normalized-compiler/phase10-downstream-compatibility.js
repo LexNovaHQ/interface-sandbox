@@ -19,63 +19,49 @@ const REQUIRED_MATERIAL_FIELDS = Object.freeze([
 ]);
 
 export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
-  const manifest = unwrap(artifacts.active_threat_registry_manifest, "active_threat_registry_manifest");
-  const route = unwrap(artifacts.exposure_registry_route_plan, "exposure_registry_route_plan");
-  const workpad = unwrap(artifacts.exposure_registry_workpad_98, "exposure_registry_workpad_98");
   const controlled = unwrap(artifacts.exposure_registry_controlled_profile, "exposure_registry_controlled_profile");
   const triggered = unwrap(artifacts.exposure_registry_triggered_profile, "exposure_registry_triggered_profile");
   const challenge = unwrap(artifacts.challenge_gate, "challenge_gate");
   const failures = [];
   const warnings = [];
 
-  const expected = Number(manifest.expected_registry_row_key_count || manifest.expected_row_count || 0);
-  const routeRows = arr(route.route_rows);
-  const workpadRows = arr(workpad.registry_rows);
   const controlledRows = arr(controlled.controlled_rows);
   const triggeredRows = arr(triggered.triggered_rows);
 
-  if (!expected) failures.push("PHASE10_MANIFEST_EXPECTED_COUNT_MISSING");
-  if (manifest.report_row_contract?.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) failures.push(`PHASE10_MANIFEST_REPORT_ROW_SCHEMA_INVALID:${manifest.report_row_contract?.report_row_schema_version || "missing"}`);
-  if (manifest.report_row_contract?.registry_spine_completeness_status !== "PASS") failures.push(`PHASE10_MANIFEST_REGISTRY_SPINE_NOT_COMPLETE:${manifest.report_row_contract?.registry_spine_completeness_status || "missing"}`);
-  if (manifest.report_row_contract?.severity_validation_status !== "PASS") failures.push(`PHASE10_MANIFEST_SEVERITY_NOT_VALID:${manifest.report_row_contract?.severity_validation_status || "missing"}`);
-  if (controlled.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) failures.push(`PHASE10_CONTROLLED_REPORT_ROW_SCHEMA_INVALID:${controlled.report_row_schema_version || "missing"}`);
-  if (triggered.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) failures.push(`PHASE10_TRIGGERED_REPORT_ROW_SCHEMA_INVALID:${triggered.report_row_schema_version || "missing"}`);
-  if (routeRows.length !== expected) failures.push(`PHASE10_ROUTE_COUNT_MISMATCH:${routeRows.length}:${expected}`);
-  if (workpadRows.length !== expected) failures.push(`PHASE10_WORKPAD_COUNT_MISMATCH:${workpadRows.length}:${expected}`);
+  if (controlled.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) {
+    failures.push(`PHASE10_CONTROLLED_REPORT_ROW_SCHEMA_INVALID:${controlled.report_row_schema_version || "missing"}`);
+  }
+  if (triggered.report_row_schema_version !== REQUIRED_REPORT_ROW_SCHEMA) {
+    failures.push(`PHASE10_TRIGGERED_REPORT_ROW_SCHEMA_INVALID:${triggered.report_row_schema_version || "missing"}`);
+  }
 
-  assertUniqueKeys(routeRows, "route", failures);
-  assertUniqueKeys(workpadRows, "workpad", failures);
   assertUniqueKeys(controlledRows, "controlled", failures);
   assertUniqueKeys(triggeredRows, "triggered", failures);
-
   const controlledKeys = new Set(controlledRows.map(rowKey));
   const triggeredKeys = new Set(triggeredRows.map(rowKey));
   for (const key of controlledKeys) if (triggeredKeys.has(key)) failures.push(`PHASE10_PROFILE_OVERLAP:${key}`);
 
   const materialRows = [];
-  const workpadOnlyRows = [];
-  for (const row of workpadRows) {
-    const status = String(row.final_material_status || row.evaluation_status || "").toUpperCase();
-    if (MATERIAL.has(status)) {
-      const profileRow = status === "TRIGGERED"
-        ? triggeredRows.find((candidate) => rowKey(candidate) === rowKey(row))
-        : controlledRows.find((candidate) => rowKey(candidate) === rowKey(row));
-      if (!profileRow) failures.push(`PHASE10_MATERIAL_PROFILE_ROW_MISSING:${rowKey(row)}:${status}`);
-      else {
-        validateMaterialRow(profileRow, failures);
-        materialRows.push(cloneWithoutMutation(profileRow));
-      }
-    } else if (status === "NOT_TRIGGERED_NOT_APPLICABLE") {
-      workpadOnlyRows.push({
-        registry_row_key: rowKey(row),
-        package_id: row.package_id || "",
-        source_domain: row.source_domain || "",
-        stream_id: row.stream_id || "",
-        stream_type: row.stream_type || "",
-        Threat_ID: row.Threat_ID || "",
-        final_material_status: status
-      });
-    } else if (status) failures.push(`PHASE10_NON_STANDARD_WORKPAD_STATUS:${rowKey(row)}:${status}`);
+  for (const row of triggeredRows) {
+    validateMaterialRow(row, failures);
+    if (String(row.evaluation_status || "").toUpperCase() !== "TRIGGERED") {
+      failures.push(`PHASE10_TRIGGERED_PROFILE_STATUS_INVALID:${rowKey(row)}:${row.evaluation_status || "missing"}`);
+    }
+    materialRows.push(cloneWithoutMutation(row));
+  }
+  for (const row of controlledRows) {
+    validateMaterialRow(row, failures);
+    const status = String(row.evaluation_status || "").toUpperCase();
+    if (!CONTROLLED.has(status)) failures.push(`PHASE10_CONTROLLED_PROFILE_STATUS_INVALID:${rowKey(row)}:${status || "missing"}`);
+    materialRows.push(cloneWithoutMutation(row));
+  }
+
+  for (const row of materialRows) {
+    const status = String(row.evaluation_status || "").toUpperCase();
+    if (!MATERIAL.has(status)) failures.push(`PHASE10_NON_MATERIAL_PROFILE_STATUS:${rowKey(row)}:${status || "missing"}`);
+    if (!["PRIMARY", "OVERLAY"].includes(String(row.stream_type || "").toUpperCase())) {
+      failures.push(`PHASE10_STREAM_TYPE_INVALID:${rowKey(row)}:${row.stream_type || "missing"}`);
+    }
   }
 
   const challengeStatus = validateChallengeGate(challenge, failures, warnings);
@@ -83,23 +69,24 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
   if (challengeStatus === "PASS_WITH_LIMITATION" && !warningProjection.length) failures.push("PHASE11_PASS_WITH_LIMITATION_WARNING_PROJECTION_MISSING");
   if (challengeStatus === "PASS" && warningProjection.length) failures.push("PHASE11_PASS_CONTAINS_ADVISORY_WARNING_PROJECTION");
 
+  const mountedPackages = [...new Set(materialRows.map((row) => String(row.package_id || "").trim()).filter(Boolean))].sort();
+  const finalStatusCounts = countBy(materialRows, (row) => String(row.evaluation_status || "UNKNOWN").toUpperCase());
+  const streamSummary = countBy(materialRows, (row) => String(row.stream_type || "UNKNOWN").toUpperCase());
+
   return {
     phase10_downstream_compatibility: {
-      schema_version: "phase10_downstream_compatibility.v4.phase11_exact_gate",
+      schema_version: "phase10_downstream_compatibility.v5.direct_material_profiles",
       identity_contract: "PHASE10_EXECUTION_IDENTITY_v2",
       report_row_schema_version: REQUIRED_REPORT_ROW_SCHEMA,
-      expected_registry_row_key_count: expected,
-      mounted_packages: [...arr(manifest.mounted_packages)],
-      primary_package: manifest.primary_package || "",
-      ai_mount: manifest.ai_mount || "",
-      route_row_count: routeRows.length,
-      workpad_row_count: workpadRows.length,
+      expected_registry_row_key_count: materialRows.length,
+      mounted_packages: mountedPackages,
+      route_row_count: 0,
+      workpad_row_count: 0,
       controlled_row_count: controlledRows.length,
       triggered_row_count: triggeredRows.length,
-      workpad_only_row_count: workpadOnlyRows.length,
       material_rows: materialRows,
-      workpad_only_rows: workpadOnlyRows,
-      final_status_counts: countBy(workpadRows, (row) => String(row.final_material_status || row.evaluation_status || "UNKNOWN")),
+      final_status_counts: finalStatusCounts,
+      stream_summary: streamSummary,
       challenge_status: challengeStatus,
       challenge_gate_version: challenge.schema_version || "UNKNOWN",
       challenge_final_gate_fingerprint: challenge.final_gate_fingerprint || "",
@@ -110,6 +97,18 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
         warnings: warningProjection,
         local_counsel_review_required: warningProjection.length > 0
       },
+      input_contract: {
+        direct_material_profiles_only: true,
+        required_artifacts: [
+          "exposure_registry_controlled_profile",
+          "exposure_registry_triggered_profile",
+          "challenge_gate"
+        ],
+        phase2g_forbidden: true,
+        exposure_route_plan_forbidden: true,
+        exposure_workpad_forbidden: true,
+        forensics_forbidden: true
+      },
       validation: {
         status: failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS",
         failures,
@@ -119,7 +118,8 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
         no_row_mutation: true,
         raw_threat_id_global_deduplication_forbidden: true,
         phase11_exact_gate_enforced: true,
-        phase11_internal_ledgers_not_consumed: true
+        phase11_internal_ledgers_not_consumed: true,
+        direct_profile_input_boundary_enforced: true
       }
     }
   };
@@ -127,7 +127,9 @@ export function buildPhase10CompilerCompatibility({ artifacts = {} } = {}) {
 
 export function assertPhase10CompilerCompatibility(value) {
   const root = unwrap(value, "phase10_downstream_compatibility");
-  if (root.validation?.status === "CONTROLLED_FAILURE") throw new Error(`PHASE10_DOWNSTREAM_COMPATIBILITY_FAILED:${arr(root.validation.failures).join("|")}`);
+  if (root.validation?.status === "CONTROLLED_FAILURE") {
+    throw new Error(`PHASE10_DOWNSTREAM_COMPATIBILITY_FAILED:${arr(root.validation.failures).join("|")}`);
+  }
   return root;
 }
 
@@ -149,7 +151,9 @@ function validateMaterialRow(row, failures) {
   for (const field of REQUIRED_MATERIAL_FIELDS) {
     const value = row?.[field];
     if (field === "Compliance_Framework") continue;
-    if (value === undefined || value === null || (typeof value === "string" && !value.trim())) failures.push(`PHASE10_MATERIAL_ROW_FIELD_MISSING:${key || "unknown"}:${field}`);
+    if (value === undefined || value === null || (typeof value === "string" && !value.trim())) {
+      failures.push(`PHASE10_MATERIAL_ROW_FIELD_MISSING:${key || "unknown"}:${field}`);
+    }
   }
   if (!/^T[1-5]$/.test(String(row.Pain_Tier || ""))) failures.push(`PHASE10_MATERIAL_ROW_PAIN_TIER_INVALID:${key}:${row.Pain_Tier || "missing"}`);
   if (!["Corporate", "Personal", "Criminal"].includes(String(row.Pain_Depth || ""))) failures.push(`PHASE10_MATERIAL_ROW_PAIN_DEPTH_INVALID:${key}:${row.Pain_Depth || "missing"}`);
@@ -167,9 +171,25 @@ function projectFinalGateWarnings(challenge = {}) {
     local_counsel_review_route: "LOCAL_COUNSEL_REVIEW_REQUIRED"
   }));
 }
+
 function cloneWithoutMutation(value) { return JSON.parse(JSON.stringify(value)); }
-function assertUniqueKeys(rows, label, failures) { const seen = new Set(); for (const row of rows) { const key = rowKey(row); if (!key) failures.push(`PHASE10_${label.toUpperCase()}_ROW_KEY_MISSING`); else if (seen.has(key)) failures.push(`PHASE10_${label.toUpperCase()}_ROW_KEY_DUPLICATE:${key}`); seen.add(key); } }
-function countBy(rows, pick) { const out = {}; for (const row of rows) { const key = pick(row); out[key] = (out[key] || 0) + 1; } return out; }
+function assertUniqueKeys(rows, label, failures) {
+  const seen = new Set();
+  for (const row of rows) {
+    const key = rowKey(row);
+    if (!key) failures.push(`PHASE10_${label.toUpperCase()}_ROW_KEY_MISSING`);
+    else if (seen.has(key)) failures.push(`PHASE10_${label.toUpperCase()}_ROW_KEY_DUPLICATE:${key}`);
+    seen.add(key);
+  }
+}
+function countBy(rows, pick) {
+  const out = {};
+  for (const row of rows) {
+    const key = pick(row);
+    out[key] = (out[key] || 0) + 1;
+  }
+  return out;
+}
 function rowKey(row = {}) { return String(row.registry_row_key || "").trim(); }
 function unwrap(value, key) { return value?.[key] || value?.artifact?.[key] || value || {}; }
 function arr(value) { return Array.isArray(value) ? value : []; }

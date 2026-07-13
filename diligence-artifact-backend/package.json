@@ -63,7 +63,8 @@
     "check:p12:co3": "node --check src/phases/12-normalized-compiler/phase12-report-contract.js && node --check src/phases/12-normalized-compiler/phase12-admission-adapter.js && node --check src/phases/12-normalized-compiler/phase12-route-adapter.js && node --check src/phases/12-normalized-compiler/phase12-artifact-family.contract.js && node --check src/phases/12-normalized-compiler/phase12-taxonomy-normalizer.js && node --check src/phases/12-normalized-compiler/phase12-profile-normalizer.js && node --check src/phases/12-normalized-compiler/phase12-compiler-validator.js && node --check src/phases/12-normalized-compiler/phase12-projection-adapter.js && node --check src/phases/12-normalized-compiler/phase12-adapters.js && node --check scripts/check-co-p12-03.mjs && node scripts/check-co-p12-03.mjs",
     "check:p12:co4": "node --check src/phases/12-normalized-compiler/phase12-artifact-family.contract.js && node --check src/phases/12-normalized-compiler/phase12-taxonomy-normalizer.js && node --check src/phases/12-normalized-compiler/phase12-profile-normalizer.js && node --check src/phases/12-normalized-compiler/phase12-compiler-validator.js && node --check src/phases/12-normalized-compiler/phase12-projection-adapter.js && node --check scripts/check-co-p12-04.mjs && node scripts/check-co-p12-04.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
-    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
+    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs",
+    "check:p12:co5": "node --check src/phases/12-normalized-compiler/compiler.js && node --check src/phases/12-normalized-compiler/phase12-compiler.runner.js && node --check src/phases/12-normalized-compiler/phase10-downstream-compatibility.js && node --check src/runtime/services/reporting/report-renderer.service.js && node --check scripts/check-co-p12-05.mjs && node scripts/check-co-p12-05.mjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.0",

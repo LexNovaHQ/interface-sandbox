@@ -228,7 +228,7 @@ function missingProofTriggerFor(row) {
 
 function validateCompiledRules({ metadata, materialRules, sectionCounts, requiredRuleCoverage, expectedCount }) {
   const errors = [];
-  if (metadata.declared_row_count && metadata.declared_row_count !== 427) errors.push("registry_declared_row_count_not_427");
+  if (metadata.declared_row_count && metadata.declared_row_count < expectedCount) errors.push(`registry_declared_row_count_below_dap_scope:${metadata.declared_row_count}:${expectedCount}`);
   if (metadata.locked !== true) errors.push("registry_not_locked");
   if (!Array.isArray(materialRules) || materialRules.length !== expectedCount) errors.push(`dap_field_count_expected_${expectedCount}_actual_${materialRules?.length || 0}`);
   for (const sectionRow of PHASE7_DAP_MATERIAL_SECTION_MATRIX) {

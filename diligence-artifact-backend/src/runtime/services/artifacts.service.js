@@ -6,6 +6,7 @@ import {
   M11_BATCH_VALIDATION_ARTIFACT_PATTERN,
   PHASE7_DAP_BATCH_ARTIFACT_PATTERN,
   PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN,
+  COMPILER_ARTIFACT_NAMES,
   assertCanReadArtifact,
   assertCanWriteArtifact
 } from "../contracts/artifact-permissions.contract.js";
@@ -70,8 +71,13 @@ const ART = Object.freeze({
   exposureTriggered: "exposure_registry_triggered_profile",
   exposureForensics: "exposure_registry_profile_forensics",
   challengeGate: "challenge_gate",
+  phase12Admission: "phase12_admission",
+  phase12RoutePlan: "phase12_route_plan",
+  phase12ReportCustodyManifest: "phase12_report_custody_manifest",
+  phase12CompilerValidation: "phase12_compiler_validation",
+  reportManifest: "report_manifest",
+  reportHandoff: "report_handoff",
   finalOutputHandoff: "final_output_handoff",
-  normalizedReportManifest: "normalized_report_manifest",
   rendererPayload: "renderer_payload"
 });
 
@@ -274,7 +280,7 @@ async function assertArtifactSaveOrder(parsed) {
   if (artifact_name === ART.exposureTriggered) await Promise.all([requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:triggered_profile_requires_workpad"), requireSavedArtifact(run_id, ART.exposureControlled, "SAVE_ORDER_BLOCKED:triggered_profile_requires_controlled_profile")]);
   if (artifact_name === ART.exposureForensics) await Promise.all([requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:m11_forensics_requires_route"), requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:m11_forensics_requires_workpad"), requireSavedArtifact(run_id, ART.exposureControlled, "SAVE_ORDER_BLOCKED:m11_forensics_requires_controlled"), requireSavedArtifact(run_id, ART.exposureTriggered, "SAVE_ORDER_BLOCKED:m11_forensics_requires_triggered")]);
   if (artifact_name === ART.challengeGate) { await Promise.all([requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:challenge_requires_route"), requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:challenge_requires_workpad"), requireSavedArtifact(run_id, ART.exposureControlled, "SAVE_ORDER_BLOCKED:challenge_requires_controlled"), requireSavedArtifact(run_id, ART.exposureTriggered, "SAVE_ORDER_BLOCKED:challenge_requires_triggered")]); await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:challenge_requires_all_batches_and_validations"); }
-  if (artifact_name === ART.normalizedReportManifest || artifact_name === ART.finalOutputHandoff || artifact_name.startsWith("normalized_section__")) await requireSavedArtifact(run_id, ART.challengeGate, "SAVE_ORDER_BLOCKED:compiler_requires_challenge_gate");
+  if (COMPILER_ARTIFACT_NAMES.includes(artifact_name) && artifact_name !== ART.rendererPayload) await requireSavedArtifact(run_id, ART.challengeGate, "SAVE_ORDER_BLOCKED:phase12_compiler_requires_challenge_gate");
   if (artifact_name === ART.rendererPayload) await requireSavedArtifact(run_id, ART.finalOutputHandoff, "SAVE_ORDER_BLOCKED:renderer_requires_final_output_handoff");
 }
 

@@ -59,7 +59,8 @@ for (const root of [...tRoots, ...dRoots, ...aRoots, ...dpRoots, ...dconiRoots])
 assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.lossless_evidence_is_primary, true);
 assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.index_navigation_mandatory, true);
 assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.direct_lossless_fallback_framing_forbidden, true);
-assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.runtime_cutover_complete_through_compiler, true);
+assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.runtime_boundary_ends_at_operator_challenge, true);
+assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.phase12_compiler_excluded, true);
 
 for (const jobId of routedPhase1To8Jobs) {
   assert.deepEqual(PIPELINE_CONTRACTS[jobId].reads, ["phase_routing_manifest"], `${jobId} central contract retains shadow reads`);
@@ -79,9 +80,10 @@ assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_phase_router_declared, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_phase_router_runtime_wired, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_lossless_evidence_primary, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_index_navigation_mandatory, true);
-assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_runtime_cutover_complete_through_compiler, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_runtime_boundary_ends_before_compiler, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase12_direct_profile_runtime_wired, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_no_shadow_downstream_read_arrays, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_profile_forensics_inputs_forbidden, true);
 for (const retired of ["data_provenance_profile", "data_provenance_profile_forensics", "extended_dap_india_readiness_profile", "integrated_dap_report", "m10_selected_legal_support_packet", "m7_deterministic_legal_signal_overlay"]) assert.equal(ARTIFACT_NAMES.includes(retired), false, `${retired} active`);
 
-console.log(JSON.stringify({ check: "phase1-8 central runtime", status: "PASS", enforced_gates: ["PHASE1_8_JOB_CHAIN", "PHASE8_DCO_INSERTED_BEFORE_PHASE9_FORENSICS", "PHASE2G_SOLE_ROUTING_AUTHORITY", "PHASE2G_RUNTIME_CUTOVER_COMPLETE_THROUGH_COMPILER", "NO_SHADOW_DOWNSTREAM_READ_ARRAYS", "PROFILE_FORENSICS_DERIVED_ONLY", "PHASE7_LAYER5_ROUTE_NEUTRAL", "PHASE2A_TO_2F_INDEX_OWNERSHIP"] }, null, 2));
+console.log(JSON.stringify({ check: "phase1-8 central runtime", status: "PASS", enforced_gates: ["PHASE1_8_JOB_CHAIN", "PHASE8_DCO_INSERTED_BEFORE_PHASE9_FORENSICS", "PHASE2G_SOLE_ROUTING_AUTHORITY", "PHASE2G_RUNTIME_BOUNDARY_ENDS_BEFORE_COMPILER", "NO_SHADOW_DOWNSTREAM_READ_ARRAYS", "PROFILE_FORENSICS_DERIVED_ONLY", "PHASE7_LAYER5_ROUTE_NEUTRAL", "PHASE2A_TO_2F_INDEX_OWNERSHIP"] }, null, 2));
