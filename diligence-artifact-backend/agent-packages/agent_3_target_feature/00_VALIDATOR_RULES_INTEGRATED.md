@@ -19,7 +19,24 @@ product_service_wrapper
 target_profile_limitations
 ```
 
-Regulatory/licensing and grievance fields remain factual public-context signals, not legal conclusions.
+Target Profile Review is bound to `P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY`, route `ROUTE.PHASE3A.TARGET_PROFILE`, bucket `2A_BUCKET_TARGET_PROFILE`.
+
+The mandatory navigation authority is `target_profile_source_index`. The following routed artifacts are the complete scoped lossless-evidence universe for this phase:
+
+```text
+lossless_root__homepage_landing
+lossless_root__company_identity
+lossless_root__contact_notice
+lossless_root__pricing_commercial_availability
+lossless_root__regulatory_licensing_status
+lossless_root__grievance_complaints
+```
+
+Treat those artifacts as `PRIMARY_EVIDENCE` and navigate them through the `MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE`. The routed packet is the read ceiling. Free-corpus expansion, forensic-profile inputs, and direct lossless-evidence fallback framing are forbidden.
+
+`legal_signal_derivation_profile` is the only bounded legal-signal dependency. Regulatory/licensing and grievance fields remain factual public-context signals, not legal conclusions.
+
+`business_context` must not include `lane`. Company-level lane derivation belongs outside Target Profile Review.
 
 ## Internal Sector Derivation Layer
 
