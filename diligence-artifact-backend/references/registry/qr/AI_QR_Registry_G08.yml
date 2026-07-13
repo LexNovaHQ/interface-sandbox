@@ -1,0 +1,96 @@
+registry_section:
+  id: G08
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Model stack and integrations
+  display_order: 8
+  record_count: 2
+  atomic_value_count: 6
+  rows:
+  - id: A01
+    key: ai.lane_a.model_stack
+    section: G08
+    lane: A
+    shape: REPEATABLE_OBJECT
+    leaves:
+    - model_name
+    - provider_name
+    - hosting_posture
+    - provider_processing_jurisdiction
+    - provider_privacy_url
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_PBK
+    mapping_key: QR.A01
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_vend_artifact
+      - dap_semantic_batch_loc_artifact
+      selectors:
+      - PA.BEH ORC/RDR
+      - DAP.VEND
+      - DAP.LOC
+      - public model/provider signals
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Model stack
+      prompt: Confirm the models, model providers, hosting posture, and permitted provider-substitution position.
+      input: repeatable_table
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: GPT-4.1 | OpenAI | Third-party API | United States | provider privacy URL
+    threats:
+    - ORC_LIA_001
+    - ORC_PRV_001
+    - ORC_PRV_002
+    - UNI_INF_001
+  - id: A02
+    key: ai.lane_a.third_party_integrations
+    section: G08
+    lane: A
+    shape: LIST
+    leaves:
+    - integration_names[]
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AGT
+    mapping_key: QR.A02
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_vend_artifact
+      selectors:
+      - PA.MECH.011/012
+      - DAP.VEND linked activity
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Third-party integrations
+      prompt: Confirm the external systems, tools, APIs, or services connected to the AI service.
+      input: multi_value
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Slack; Salesforce; Stripe
+    threats:
+    - DOE_LIA_002
+    - ORC_PRV_002
+    - UNI_FRD_LB1
