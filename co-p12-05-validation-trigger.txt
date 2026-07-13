@@ -1,2 +1,2 @@
 Trigger the one-time Phase 12 direct compiler and clean renderer authority cutover.
-Attempt 5 includes synchronized Phase 3A package rules and Phase 3 downstream authority checks.
+Attempt 6 includes synchronized Phase 3 authority checks and the live Phase 4 derived-only contract gate.
