@@ -1,2 +1,2 @@
 Trigger the one-time Phase 12 direct compiler and clean renderer authority cutover.
-Attempt 8 validates Phase 4 through executable runner ownership and dispatch rather than historical status strings.
+Attempt 9 validates Phase 4 through a real Phase 2G derived-only runtime packet.
