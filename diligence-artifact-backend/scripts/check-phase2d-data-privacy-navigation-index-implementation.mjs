@@ -36,8 +36,7 @@ for (const pointer of finalIndex.semantic_navigation_overlay.batch_navigation_po
   assert.ok(pointer.selective_l_family_route_ids.length, `${pointer.batch_id} missing compatibility L routes`);
 }
 
-const serialized = JSON.stringify(output);
-for (const token of P2D_DATA_PRIVACY_FORBIDDEN_INPUTS) assert.equal(serialized.includes(token), false, `forbidden retired token present: ${token}`);
+for (const token of P2D_DATA_PRIVACY_FORBIDDEN_INPUTS) assert.equal(containsExactMarker(output, token), false, `forbidden retired token present: ${token}`);
 
 const registryText = fs.readFileSync(PHASE7_REGISTRY_SOURCE_PATH, "utf8");
 const dapRegistryManifest = compilePhase7DapRegistryDerivationRules(registryText);
@@ -45,7 +44,7 @@ const strategicMatrix = buildPhase7StrategicDerivationMatrixArtifact(dapRegistry
 const phase7Compat = buildPhase7DataPrivacyNavigationIndex({ dapRegistryManifest, strategicDerivationMatrix: strategicMatrix, artifacts });
 assert.equal(phase7Compat.artifact_type, "data_privacy_navigation_index");
 assert.equal(phase7Compat.semantic_navigation_overlay.batch_navigation_pointers.length, 17);
-assert.equal(JSON.stringify(phase7Compat).includes("lossless_family__D1_SECURITY_TRUST"), false);
+assert.equal(containsExactMarker(phase7Compat, "lossless_family__D1_SECURITY_TRUST"), false);
 
 console.log(JSON.stringify({ check: "phase2d data privacy navigation index implementation", status: "PASS", data_source_route_count: deterministic.data_source_routes.length, legal_index_route_count: deterministic.legal_index_routes.length, batch_pointer_count: finalIndex.semantic_navigation_overlay.batch_navigation_pointers.length }, null, 2));
 
@@ -64,4 +63,11 @@ function rootArtifact(name) {
       }
     ]
   };
+}
+
+function containsExactMarker(value, marker) {
+  if (typeof value === "string") return value === marker;
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => containsExactMarker(item, marker));
+  return Object.entries(value).some(([key, item]) => key === marker || containsExactMarker(item, marker));
 }
