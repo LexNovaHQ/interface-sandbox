@@ -7,6 +7,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 
 const uiLock = read("docs/ui/INTERFACE_UI_LOCK_v1.md");
 const shellCss = read("public/interface-diligence/diligence-system/interface-ui-shell.css");
+const landingPolishCss = read("public/interface-diligence/diligence-system/interface-landing-polish.css");
 const reportHtml = read("public/interface-diligence/diligence-system/report.html");
 const reportJs = read("public/interface-diligence/diligence-system/report.js");
 const p12Bridge = read("public/interface-diligence/diligence-system/report-p12-payload-adapter.js");
@@ -17,6 +18,7 @@ const packageJson = JSON.parse(read("package.json"));
 
 const expectedSectionIds = '["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]';
 const shellImport = "interface-ui-shell.css?v=shell-v1-20260713";
+const landingPolishImport = "interface-landing-polish.css?v=landing-v1-20260713";
 const shellPages = [
   ["landing", landing],
   ["report", reportHtml],
@@ -58,6 +60,17 @@ assert.match(shellCss, /\.qr-left-rail/, "shared shell CSS must include QR rail 
 assert.match(shellCss, /prefers-reduced-motion/, "shared shell CSS must include reduced-motion protection");
 assert.doesNotMatch(shellCss, /Lex Nova Diligence Engine/, "shared shell CSS must not introduce Lex Nova rebrand text");
 
+assert.match(landingPolishCss, /INTERFACE_LANDING_POLISH_V1/, "landing polish CSS must carry INTERFACE_LANDING_POLISH_V1 marker");
+assert.match(landingPolishCss, /--interface-landing-polish-version: "interface_landing_polish\.v1"/, "landing polish CSS must expose landing polish version token");
+assert.match(landingPolishCss, /\.diligence-gate-page \.gate-hero/, "landing polish must refine the landing hero");
+assert.match(landingPolishCss, /\.diligence-gate-page \.gate-status-priority/, "landing polish must refine Run Status command center");
+assert.match(landingPolishCss, /\.diligence-gate-page \.gate-run-monitor/, "landing polish must refine live run monitor");
+assert.match(landingPolishCss, /\.diligence-gate-page \.gate-workbench/, "landing polish must refine matter workbench layout");
+assert.match(landingPolishCss, /\.diligence-gate-page \.gate-path-list/, "landing polish must refine Review Path cards");
+assert.match(landingPolishCss, /\.diligence-gate-page \.mobile-funnel/, "landing polish must refine mobile funnel");
+assert.match(landingPolishCss, /prefers-reduced-motion/, "landing polish must include reduced-motion protection");
+assert.doesNotMatch(landingPolishCss, /Lex Nova Diligence Engine/, "landing polish CSS must not introduce Lex Nova rebrand text");
+
 for (const [pageName, source] of shellPages) {
   assert.match(source, new RegExp(escapeRegExp(shellImport)), `${pageName} must import shared Interface UI shell`);
   assert.match(source, /interface-header\.css/, `${pageName} must preserve Interface header CSS import`);
@@ -66,7 +79,9 @@ for (const [pageName, source] of shellPages) {
   assert.doesNotMatch(source, /Lex Nova Diligence Engine/, `${pageName} must not be rebranded to Lex Nova`);
 }
 
+assert.match(landing, new RegExp(escapeRegExp(landingPolishImport)), "landing page must import page-specific polish layer");
 assert.ok(landing.indexOf(shellImport) > landing.indexOf("diligence-homepage-gate.css"), "landing shell import must load after landing page CSS");
+assert.ok(landing.indexOf(landingPolishImport) > landing.indexOf(shellImport), "landing polish import must load after shared shell CSS");
 assert.ok(reportHtml.indexOf(shellImport) > reportHtml.indexOf("report-dap-row-layout.css"), "report shell import must load after report page CSS");
 assert.ok(annexure.indexOf(shellImport) > annexure.indexOf("interface-header.css"), "annexure shell import must load after header CSS");
 assert.ok(qualifiedReview.indexOf(shellImport) > qualifiedReview.indexOf("qualified-review.css"), "QR shell import must load after QR page CSS");
@@ -107,6 +122,7 @@ console.log(JSON.stringify({
   status: "PASS",
   ui_lock: "INTERFACE_UI_LOCK_v1",
   shell: "interface_ui_shell.v1",
+  landing_polish: "interface_landing_polish.v1",
   p12_bridge: "interface_p12_frontend_bridge.v1",
   renderer_schema: "renderer_payload.v14.co_p12_05",
   renderer_source: "report_manifest_clean_profiles",
