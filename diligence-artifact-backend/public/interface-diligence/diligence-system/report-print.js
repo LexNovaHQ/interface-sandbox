@@ -22,10 +22,11 @@
 
   function prepare(options = {}) {
     if (prepared) return;
+    const config = options && typeof options === "object" && !options.type ? options : {};
     prepared = true;
     originalTitle = document.title;
-    const target = options.target || document.getElementById("reportTarget")?.textContent || "Diligence Report";
-    const runId = options.runId || new URLSearchParams(window.location.search || "").get("run_id") || "";
+    const target = config.target || document.getElementById("reportTarget")?.textContent || "Diligence Report";
+    const runId = config.runId || new URLSearchParams(window.location.search || "").get("run_id") || "";
     document.title = filenameTitle(target, runId);
     document.documentElement.classList.add("report-print-expanded");
     document.documentElement.dataset.reportPrintState = "prepared";
