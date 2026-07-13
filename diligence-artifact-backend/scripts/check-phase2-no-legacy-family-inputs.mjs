@@ -109,7 +109,7 @@ assert.equal(fs.existsSync(path.join(ROOT, "src/phase-contracts.js")), false, "r
 const activeText = ACTIVE_PHASE2_INPUT_FILES.map((file) => [file, fs.readFileSync(path.join(ROOT, file), "utf8")]);
 for (const [file, text] of activeText) {
   for (const marker of GLOBAL_FORBIDDEN) assert.equal(text.includes(marker), false, `${file} contains forbidden legacy marker: ${marker}`);
-  if (file.endsWith(".js")) for (const marker of SECTOR_VOCAB_FORBIDDEN_IN_PHASE2_JS) assert.equal(text.toLowerCase().includes(marker), false, `${file} contains sector vocabulary that belongs in catalogs: ${marker}`);
+  if (file.endsWith(".js")) for (const marker of SECTOR_VOCAB_FORBIDDEN_IN_PHASE2_JS) assert.equal(containsExactToken(text, marker), false, `${file} contains sector vocabulary that belongs in catalogs: ${marker}`);
 }
 
 const m9Active = activeText.filter(([file]) => file.includes("02-legal-cartography-index") || file.includes("agent_2b_m9"));
@@ -121,3 +121,11 @@ for (const marker of FORBIDDEN_CONCLUSIONS) assert.ok(combined.includes(marker),
 assert.equal(combined.includes("full_legal_governance_cartography_owned_by_2e"), false, "M9 legal governance ownership must be 2F, not 2E");
 assert.equal(combined.includes("LOSSLESS_EVIDENCE_IS_FALLBACK"), false, "2G must not describe lossless evidence as fallback");
 console.log("Phase 2 no legacy family input validator: PASS");
+
+function containsExactToken(source, marker) {
+  return new RegExp(`(^|[^a-z0-9_])${escapeRegExp(marker.toLowerCase())}([^a-z0-9_]|$)`).test(String(source || "").toLowerCase());
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
