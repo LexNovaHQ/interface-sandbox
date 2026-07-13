@@ -30,8 +30,7 @@ export const CO_PROD_AUDIT_02_ABSENT_FILES = Object.freeze([
   "scripts/check-phase11-phase8-targeted.mjs",
   "scripts/check-phase11-staged-mutation-commit.mjs",
   "scripts/check-phase11-targeted-packet-runtime.mjs",
-  "scripts/check-phase11-technical-attempt-separation.mjs",
-  "scripts/phase11-executable-test-fixtures.mjs"
+  "scripts/check-phase11-technical-attempt-separation.mjs"
 ]);
 
 export const CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS = Object.freeze([
@@ -56,6 +55,8 @@ export const CO_PROD_AUDIT_02_FORBIDDEN_PACKAGE_SCRIPTS = Object.freeze([
 
 const PHASE3A_AUTHORITY = "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml";
 const REVIEWER_SMOKE = "scripts/smoke-reviewer-run.mjs";
+const PHASE11_LIVE_FIXTURE_HELPER = "scripts/phase11-executable-test-fixtures.mjs";
+const PHASE11_LIVE_INTEGRATION_CHECK = "scripts/check-phase11-production-integration.mjs";
 const CO_PROD_AUDIT_01_ACTIVE_POLLUTION_SCAN_FILES = Object.freeze([
   "src/runtime/contracts/pipeline.contract.js",
   "src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json",
@@ -119,6 +120,7 @@ export function assertNoUnreferencedCleaningArtifacts() {
 
   validatePhase3AAuthority({ failures });
   validateReviewerSmoke({ failures });
+  validatePhase11LiveFixtureBoundary({ failures });
   validateActivePollutionMarkers({ failures });
 
   assert.deepEqual(failures, [], `CO_CLEAN_02_UNREFERENCED_CLEANING_ARTIFACTS:${failures.join("|")}`);
@@ -134,7 +136,8 @@ export function assertNoUnreferencedCleaningArtifacts() {
     active_pollution_markers_forbidden: CO_PROD_AUDIT_01_FORBIDDEN_ACTIVE_MARKERS.length,
     co_prod_audit_01_phase3a_authority_boundary: "PHASE2G_ROUTED_ONLY",
     co_prod_audit_01_reviewer_smoke_renderer_shape: "REPORT_ARTIFACT_REFS",
-    co_prod_audit_02_phase11_closure_spillover: "ABSENT"
+    co_prod_audit_02_phase11_closure_spillover: "ABSENT",
+    phase11_live_fixture_helper: "RETAINED_FOR_PHASE11_PRODUCTION_INTEGRATION"
   };
 }
 
@@ -175,6 +178,12 @@ function validateReviewerSmoke({ failures }) {
   }
   if (!smoke.includes("report_artifact_refs")) failures.push("SMOKE_REVIEWER_REPORT_ARTIFACT_REFS_CHECK_MISSING");
   if (!smoke.includes("custody_artifact_rendering_forbidden")) failures.push("SMOKE_REVIEWER_CUSTODY_BOUNDARY_CHECK_MISSING");
+}
+
+function validatePhase11LiveFixtureBoundary({ failures }) {
+  if (!exists(PHASE11_LIVE_FIXTURE_HELPER)) failures.push("PHASE11_LIVE_FIXTURE_HELPER_MISSING");
+  const integration = read(PHASE11_LIVE_INTEGRATION_CHECK);
+  if (!integration.includes("./phase11-executable-test-fixtures.mjs")) failures.push("PHASE11_LIVE_FIXTURE_HELPER_NOT_REFERENCED_BY_INTEGRATION_CHECK");
 }
 
 function validateActivePollutionMarkers({ failures }) {
